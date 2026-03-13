@@ -186,30 +186,40 @@ def _get_polygon_client():
 
 
 def _polygon_bars(client, ticker, multiplier, timespan, start, end, limit=50000):
-    """Fetch aggregated bars from Polygon, handling pagination."""
-    all_bars = []
-    results = client.get_aggs(
-        ticker=ticker,
-        multiplier=multiplier,
-        timespan=timespan,
-        from_=start,
-        to=end,
-        limit=limit,
-        sort="asc",
-    )
-    if results:
-        for bar in results:
-            all_bars.append({
-                'timestamp': pd.Timestamp(bar.timestamp, unit='ms', tz='US/Eastern'),
-                'open': bar.open,
-                'high': bar.high,
-                'low': bar.low,
-                'close': bar.close,
-                'volume': bar.volume,
-                'vwap': getattr(bar, 'vwap', None),
-                'num_trades': getattr(bar, 'transactions', None),
-            })
-    return pd.DataFrame(all_bars)
+    """Fetch aggregated bars from Polygon with retry on rate limits."""
+    for attempt in range(5):
+        try:
+            all_bars = []
+            results = client.get_aggs(
+                ticker=ticker,
+                multiplier=multiplier,
+                timespan=timespan,
+                from_=start,
+                to=end,
+                limit=limit,
+                sort="asc",
+            )
+            if results:
+                for bar in results:
+                    all_bars.append({
+                        'timestamp': pd.Timestamp(bar.timestamp, unit='ms', tz='US/Eastern'),
+                        'open': bar.open,
+                        'high': bar.high,
+                        'low': bar.low,
+                        'close': bar.close,
+                        'volume': bar.volume,
+                        'vwap': getattr(bar, 'vwap', None),
+                        'num_trades': getattr(bar, 'transactions', None),
+                    })
+            return pd.DataFrame(all_bars)
+        except Exception as e:
+            if '429' in str(e) or 'Max retries' in str(e) or 'too many' in str(e).lower():
+                wait = 15 * (2 ** attempt)  # 15, 30, 60, 120, 240s
+                print(f"    Rate limited, waiting {wait}s (attempt {attempt+1}/5)...")
+                time.sleep(wait)
+            else:
+                raise
+    raise RuntimeError(f"Failed after 5 retries for {ticker} {start}-{end}")
 
 
 def _download_bars_chunked(client, ticker, multiplier, timespan, start_date, end_date):
@@ -229,7 +239,7 @@ def _download_bars_chunked(client, ticker, multiplier, timespan, start_date, end
         if len(df) > 0:
             all_dfs.append(df)
         current = chunk_end
-        time.sleep(0.15)  # rate limit courtesy
+        time.sleep(13)  # Polygon Starter: 5 calls/min = 12s between calls + margin
 
     if all_dfs:
         result = pd.concat(all_dfs, ignore_index=True)
@@ -276,7 +286,7 @@ def _download_options_snapshots(client, start_date, end_date):
             print(f"  {date_str}: {e}")
 
         current += pd.Timedelta(days=1)
-        time.sleep(0.2)  # rate limit
+        time.sleep(13)  # Polygon Starter: 5 calls/min
 
     if all_snapshots:
         result = pd.DataFrame(all_snapshots)
