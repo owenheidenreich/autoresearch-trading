@@ -1,0 +1,19 @@
+# autoresearch-trading
+results.tsv
+run.log
+*.pyc
+__pycache__/
+.venv/
+*.egg-info/
+dist/
+build/
+uv.lock
+
+# Data cache (downloaded separately)
+data/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store

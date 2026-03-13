@@ -1,0 +1,133 @@
+version: "2.0"
+
+# ============================================================================
+# Autoresearch-Trading: H100 GPU Training Instance
+# ============================================================================
+#
+# Purpose: Autonomous day trading model research via AI agent
+# Runtime: PyTorch training (NOT inference server)
+# GPU: H100 80GB required (full VRAM for model experimentation)
+# Cost: ~$1.50-3.00/hour (~$36-72/day for overnight run)
+#
+# What happens:
+#   1. Container boots with CUDA + PyTorch + uv
+#   2. Clones autoresearch-trading repo
+#   3. Runs prepare.py (downloads market data, computes features)
+#   4. You SSH in and point your AI agent at program.md
+#   5. Agent loops: modify train.py → train 5 min → evaluate → keep/discard
+#   6. ~100 experiments overnight, results logged to results.tsv
+#
+# Deploy:
+#   akash tx deployment create deploy-autoresearch.yaml --from <wallet>
+#
+# SSH into the running container:
+#   Use Akash console or the exposed SSH port
+# ============================================================================
+
+services:
+  trainer:
+    image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel
+    env:
+      - DEBIAN_FRONTEND=noninteractive
+      - REPO_URL=https://github.com/YOUR_USERNAME/autoresearch-trading.git
+    command:
+      - "bash"
+      - "-c"
+      - |
+        set -e
+        echo "=== Autoresearch-Trading GPU Training Instance ==="
+        echo "Starting at $(date)"
+
+        # --- 1. System packages ---
+        apt-get update -qq && apt-get install -y -qq git curl openssh-server vim > /dev/null 2>&1
+        echo "✓ System packages installed"
+
+        # --- 2. Install uv ---
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$PATH"
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+        echo "✓ uv installed"
+
+        # --- 3. Setup SSH for remote access ---
+        mkdir -p /run/sshd ~/.ssh
+        echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+        echo "root:autoresearch2026" | chpasswd
+        /usr/sbin/sshd
+        echo "✓ SSH ready (user: root, pass: autoresearch2026)"
+
+        # --- 4. Clone repo and install deps ---
+        cd /workspace
+        if [ -n "$REPO_URL" ] && [ "$REPO_URL" != "https://github.com/YOUR_USERNAME/autoresearch-trading.git" ]; then
+          git clone "$REPO_URL" autoresearch-trading
+        else
+          echo "No REPO_URL set — creating workspace from scratch"
+          mkdir -p autoresearch-trading
+        fi
+        cd autoresearch-trading
+
+        # If files exist, install deps
+        if [ -f pyproject.toml ]; then
+          uv sync
+          echo "✓ Dependencies installed"
+        fi
+
+        # --- 5. GPU check ---
+        python -c "import torch; print(f'✓ GPU: {torch.cuda.get_device_name(0)}, VRAM: {torch.cuda.get_device_properties(0).total_mem / 1024**3:.1f} GB')"
+
+        # --- 6. Prepare data (if prepare.py exists) ---
+        if [ -f prepare.py ]; then
+          uv run prepare.py
+          echo "✓ Data prepared"
+        fi
+
+        echo ""
+        echo "============================================"
+        echo "  READY FOR EXPERIMENTS"
+        echo "  Workspace: /workspace/autoresearch-trading"
+        echo "  SSH: root / autoresearch2026"
+        echo "  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
+        echo "============================================"
+        echo ""
+
+        # Keep container alive
+        tail -f /dev/null
+    expose:
+      - port: 22
+        as: 22
+        to:
+          - global: true
+      - port: 8888
+        as: 8888
+        to:
+          - global: true
+
+profiles:
+  compute:
+    trainer:
+      resources:
+        cpu:
+          units: 8
+        memory:
+          size: 64Gi
+        storage:
+          - size: 50Gi
+        gpu:
+          units: 1
+          attributes:
+            vendor:
+              nvidia:
+                - model: h100
+                  ram: 80Gi
+
+  placement:
+    akash:
+      pricing:
+        trainer:
+          denom: uakt
+          amount: 200000
+
+deployment:
+  trainer:
+    akash:
+      profile: trainer
+      count: 1
