@@ -12,7 +12,3 @@ dependencies = [
     "matplotlib>=3.7",
     "scipy>=1.11",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
