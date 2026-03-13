@@ -1,110 +1,78 @@
-# Autoresearch-Trading Handoff
+# Autoresearch-Trading Handoff (Intraday Edition)
 
 > **Date**: March 13, 2026
-> **Status**: Ready for overnight autonomous run
+> **Status**: Ready for deployment — intraday rewrite complete, needs data prep
 
 ## What This Is
 
-Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) framework adapted for day trading. An AI agent (you, Claude Opus 4.6 in VS Code Copilot) autonomously iterates on a trading model: edit `train.py` → train 5 min on H100 → evaluate → keep or discard → repeat.
+Karpathy's autoresearch framework adapted for **intraday SPY options trading**.
+The model predicts next-hour SPY direction every hour during RTH, outputting a
+position signal in [-1, 1]. End goal: give $500 to this model and let it trade
+0DTE/1DTE SPY options autonomously.
 
-**Read `program.md` first.** It is your complete instruction set — trading domain knowledge, experiment loop, ideas list, and rules.
+**Read `program.md` first.** It has the full instruction set.
+
+## What Changed (v0.1 daily → v0.2 intraday)
+
+| Component | Before (v0.1) | After (v0.2) |
+|-----------|--------------|--------------|
+| Data source | yfinance (daily bars) | **Polygon.io** (5-min bars) |
+| Features | 39 (daily) | **71** (intraday + session + internals + multi-instrument + daily context) |
+| Target | Next-day return | **Next-hour return** |
+| Decision frequency | Once per day | **6 times per day** (10:30-15:30 hourly) |
+| Lookback | 60 daily bars (3 months) | **36 hourly bars (6 trading days)** |
+| Transaction costs | 5 bps | **8 bps** (options bid-ask) |
+| Validation bars | ~250 (daily) | **~1500** (hourly, much more statistical power) |
+| New features | n/a | VWAP, IB, session structure, TICK/TRIN, A/D, NQ/ES, VIX term structure |
 
 ## Infrastructure
 
 | Component | Details |
 |-----------|---------|
 | **Local repo** | `/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading` |
-| **Branch** | `autoresearch/mar13` (already checked out locally and on container) |
+| **Branch** | `autoresearch/mar13` |
 | **GitHub** | `https://github.com/owenheidenreich/autoresearch-trading` |
-| **H100 Container** | Akash DSEQ `25914541`, provider `akash17erkmem6xcugfnew2c0ujfqtet32j29ztk03jt` |
+| **H100 Container** | Akash DSEQ `25914541` |
 | **SSH** | `sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 root@provider.h100.wdc.hh.akash.pub` |
 | **Container repo** | `/workspace/autoresearch-trading` |
 | **GPU** | NVIDIA H100 80GB HBM3 |
-| **Data** | Cached at `/root/.cache/autoresearch-trading/features/data.pt` on container (4072 trading days, 39 features) |
-| **Budget** | ~8 hours of compute funded |
-| **Akash wallet** | `trinity-wallet` / `akash155hphg6qyy3vtr584p38wlngtqxzdr0l6jutmp` |
+| **Polygon.io** | API key needed: set `POLYGON_API_KEY` env var |
+| **Data** | Needs re-download (old daily cache must be cleared) |
 
-## Current State
+## Before Running Experiments
 
-- Branch `autoresearch/mar13` is at baseline commit `a8414ae`
-- `results.tsv` on the container has 2 entries (baseline + 1 discarded experiment)
-- Baseline **val_sharpe = 0.8709**, max_drawdown = -0.2077, 814K params, 220MB VRAM
-- One experiment tried (D_MODEL=256, DEPTH=8, sharpe loss) → val_sharpe = -1.96, discarded
-- The H100 is massively underutilized (220MB / 80GB) — room to scale up significantly
+1. **Set Polygon API key on container** (user provides the key):
+   ```
+   $SSH 'export POLYGON_API_KEY=THE_KEY && cd /workspace/autoresearch-trading && git pull'
+   ```
 
-## The Experiment Loop (Quick Reference)
+2. **Clear old data cache**:
+   ```
+   $SSH 'rm -rf /root/.cache/autoresearch-trading/'
+   ```
 
-```bash
-# 1. Edit train.py locally
+3. **Install new dependencies and run data prep**:
+   ```
+   $SSH 'cd /workspace/autoresearch-trading && PATH="$HOME/.local/bin:$PATH" POLYGON_API_KEY=KEY uv run prepare.py'
+   ```
+   This downloads SPY/VIX/QQQ/SPX 5-min bars from Polygon (takes 5-15 min).
 
-# 2. Commit + push
-git commit -am "description"
-git push origin HEAD
+4. **Run baseline and start experiment loop** per program.md.
 
-# 3. Pull + run on H100
-sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 \
-  root@provider.h100.wdc.hh.akash.pub \
-  'cd /workspace/autoresearch-trading && git pull && PATH="$HOME/.local/bin:$PATH" uv run python train.py > run.log 2>&1; echo "EXIT:$?"'
-
-# 4. Read results
-sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 \
-  root@provider.h100.wdc.hh.akash.pub \
-  'cd /workspace/autoresearch-trading && grep "^val_sharpe:\|^max_drawdown:\|^num_trades:" run.log'
-
-# 5a. If IMPROVED — log as keep, advance branch
-sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 \
-  root@provider.h100.wdc.hh.akash.pub \
-  "cd /workspace/autoresearch-trading && printf 'HASH\tSHARPE\tDRAWDOWN\tTRADES\tkeep\tDESCRIPTION\n' >> results.tsv"
-
-# 5b. If WORSE — log as discard, revert
-sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 \
-  root@provider.h100.wdc.hh.akash.pub \
-  "cd /workspace/autoresearch-trading && printf 'HASH\tSHARPE\tDRAWDOWN\tTRADES\tdiscard\tDESCRIPTION\n' >> results.tsv"
-git reset --hard HEAD~1
-git push --force-with-lease origin HEAD
-sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 \
-  root@provider.h100.wdc.hh.akash.pub \
-  'cd /workspace/autoresearch-trading && git fetch origin && git reset --hard origin/autoresearch/mar13'
-
-# 6. If CRASHED — read traceback
-sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 \
-  root@provider.h100.wdc.hh.akash.pub \
-  'tail -n 50 /workspace/autoresearch-trading/run.log'
-```
-
-## Three Files That Matter
+## Key Files
 
 | File | Role | Modify? |
 |------|------|---------|
-| `prepare.py` | Data pipeline, features (39), evaluation harness (`evaluate_sharpe`), constants | **NO** |
-| `train.py` | Model architecture, optimizer, loss, hyperparameters, training loop | **YES — this is the only file you edit** |
-| `program.md` | Your instructions, domain knowledge, experiment ideas | Read-only for agent |
+| `prepare.py` | Polygon data download, 71 feature computation, hourly evaluation harness | **NO** |
+| `train.py` | IntradayTradingModel, optimizer, loss, hyperparameters | **YES** |
+| `program.md` | Instructions, domain knowledge, experiment ideas | Read-only |
+| `pyproject.toml` | Dependencies (`polygon-api-client` replaces `yfinance`) | NO |
+| `prepare_daily_backup.py` | Backup of old daily prepare.py | Archive |
+| `train_daily_backup.py` | Backup of old daily train.py | Archive |
 
-## Key Metrics From Baseline
+## Lessons from v0.1
 
-```
-val_sharpe:       0.870865   (target: maximize)
-max_drawdown:     -0.207704
-annual_return:    0.168257
-num_trades:       0          (continuous positioning)
-win_rate:         0.576000
-peak_vram_mb:     220.4      (of 80,000 available)
-num_steps:        19055
-num_params:       814,721
-```
-
-## What To Do
-
-Tell the agent:
-
-> Hi, have a look at program.md and let's kick off experiments! The setup is already done — branch `autoresearch/mar13` is active with baseline val_sharpe=0.8709. Start the experiment loop. NEVER STOP.
-
-The agent will run autonomously, ~12 experiments/hour, until you interrupt it.
-
-## Lessons Learned So Far
-
-- `set -e` in Akash startup scripts kills the container on non-fatal errors — removed it
-- PyTorch 2.10 renamed `total_mem` → `total_memory`
-- Docker containers need `tzdata` package for yfinance timezone handling
-- Sharpe loss alone made the model go strongly negative — may need combination with directional loss
-- The H100 can handle much larger models (only using 220MB of 80GB)
+- Sharpe loss alone went strongly negative — use `combined` loss (directional + sharpe)
+- H100 is massively underutilized (220MB / 80GB) — room for much larger models
+- `set -e` in Akash startup kills container on non-fatal errors
+- Docker needs `tzdata` package

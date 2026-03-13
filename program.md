@@ -1,9 +1,11 @@
-# autoresearch-trading
+# autoresearch-trading (intraday edition)
 
-This is an autonomous research experiment: an AI agent iterates on a day trading
-model, training for 5 minutes each run, keeping improvements and discarding
-failures. Adapted from [karpathy/autoresearch](https://github.com/karpathy/autoresearch)
-for financial markets instead of language modeling.
+Autonomous research experiment: an AI agent iterates on an **intraday SPY options
+trading model**, training for 5 minutes each run, keeping improvements and
+discarding failures. The end goal: a model that can trade $500 autonomously on
+SPY 0DTE/1DTE options during regular trading hours.
+
+Adapted from [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
 
 ## Architecture
 
@@ -14,416 +16,325 @@ Training runs execute on a remote H100 GPU container on the Akash network.
 **Container**: SSH via `sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 root@provider.h100.wdc.hh.akash.pub`
 **Container repo**: `/workspace/autoresearch-trading`
 
-Workflow: edit `train.py` locally → git commit + push → SSH pull on container → run training → read results.
+Workflow: edit `train.py` locally -> git commit + push -> SSH pull on container -> run training -> read results.
 
 ## Setup
 
-To set up a new experiment, work with the user to:
-
-1. **Agree on a run tag**: propose a tag based on today's date (e.g. `mar13`).
-   The branch `autoresearch/<tag>` must not already exist.
-2. **Create the branch locally**: `git checkout -b autoresearch/<tag>` from current main.
+1. **Agree on a run tag**: based on today's date (e.g. `mar13-intraday`).
+2. **Create the branch locally**: `git checkout -b autoresearch/<tag>`.
 3. **Read the in-scope files**:
-   - `README.md` — repository context.
-   - `prepare.py` — fixed constants, data pipeline, feature computation, dataloader,
-     evaluation harness. **Do not modify.**
-   - `train.py` — the file you modify. Model architecture, optimizer, hyperparameters,
-     training loop, loss function, feature selection. Everything is fair game.
-4. **Verify data exists on container**: SSH in and check that
-   `~/.cache/autoresearch-trading/features/data.pt` exists.
-   If not, run: `PATH="$HOME/.local/bin:$PATH" uv run prepare.py`
-5. **Initialize results.tsv** on the container with just the header row.
-   The baseline will be recorded after the first run.
-6. **Confirm and go**: Confirm setup looks good.
+   - `prepare.py` -- fixed data pipeline (Polygon.io), 71 features, evaluation harness. **Do not modify.**
+   - `train.py` -- the file you modify. Everything is fair game.
+4. **Set Polygon API key on container**:
+   ```
+   $SSH 'echo "export POLYGON_API_KEY=YOUR_KEY" >> ~/.bashrc'
+   ```
+5. **Run data prep on container**:
+   ```
+   $SSH 'cd /workspace/autoresearch-trading && PATH="$HOME/.local/bin:$PATH" POLYGON_API_KEY=KEY uv run prepare.py'
+   ```
+   This downloads SPY/VIX/QQQ/SPX 5-min bars + daily context from Polygon.io.
+   Takes 5-15 minutes first time (rate limits).
+6. **Initialize results.tsv** on the container.
+7. **Confirm and go**.
 
-Once you get confirmation, kick off the experimentation.
+## Data source: Polygon.io
 
-## Domain knowledge: Day trading with SPX
+We use **Polygon.io** ($29-99/mo) for all market data:
+- SPY 5-min bars (primary instrument)
+- VIX 5-min bars (fear gauge intraday)
+- QQQ 5-min bars (NQ proxy, risk-on/risk-off)
+- SPX index 5-min bars (ES proxy)
+- Market internals (TICK, TRIN, A/D where available, synthesized otherwise)
+- VIX futures proxy (VIXY ETF)
+- Daily bars for SPY, VIX, TNX going back to 2010 (context features)
+
+API key: set `POLYGON_API_KEY` environment variable.
+
+## Domain knowledge: Intraday SPY options trading
 
 ### Trader context
 
-This model is built by a trader with 17+ years of experience. Primarily a delta
-futures trader and SPX options (long/short & spreads). Trades ES/NQ/RTY/NG/GC/
-VIX/CL/SPX/SPY/QQQ, mostly intraday/day-trading. Goal is 1% portfolio per week.
-The model should reflect this style: disciplined, level-to-level, risk-aware,
-with clearly defined entries and exits — not a black-box gamble.
+17+ years experience. Primarily delta futures and SPX options (long/short & spreads).
+Trades ES/NQ/RTY/VIX/CL/SPX/SPY/QQQ, mostly intraday. Goal: 1% portfolio/week.
+Style: disciplined, level-to-level, risk-aware, clearly defined entries and exits.
 
-You are building a model that predicts daily SPX (S&P 500) trading positions.
+**End goal**: Give a $500 account to an AI model. It trades SPY 0DTE/1DTE options
+intraday based on the model's hourly position signals. The position signal maps to:
+- **+1**: Buy ATM SPY calls (max conviction bullish)
+- **-1**: Buy ATM SPY puts (max conviction bearish)
+- **0**: Flat (no position, preserve capital)
+- **Fractional**: Scale position size proportionally
 
 ### What the model does
-- Receives 60 days (configurable) of normalized market features
-- Outputs a position signal in [-1, 1] where:
-  - +1 = fully long (bullish, expect market to go up)
-  - -1 = fully short (bearish, expect market to go down)
-  - 0 = flat (no conviction)
-- The evaluation harness computes PnL = position × actual_return − transaction_costs
-- The metric is **Sharpe ratio** (annualized, higher is better)
+- Receives 36 hourly bars (6 trading days) of 71 normalized features
+- Outputs a position signal in [-1, 1] every hour during RTH
+- Decision points: 10:30, 11:30, 12:30, 13:30, 14:30, 15:30 ET
+- Target: next-hour log return (not next-day)
+- Evaluation: hourly PnL = position * return - transaction_costs
+- Metric: **Sharpe ratio** (annualized from hourly, higher is better)
 
-### Available features (39 total, in prepare.py)
+### Available features (71 total, in prepare.py)
 
-**Returns** (6): 1d, 2d, 5d, 10d, 21d, 63d log returns — momentum at multiple timescales.
+**Intraday Price** (12): 5m/15m/30m/1h/2h/4h returns, VWAP distance (session VWAP
+with +/-1 std bands), bar range, bar range ratio, bar volume ratio.
 
-**Realized Volatility** (5): 5d, 10d, 21d, 63d annualized vol + short/medium ratio.
-High vol often means mean-reversion; low vol often means trend continuation.
+**Session Structure** (8): Initial Balance high/low distance and width (first 30min),
+overnight high/low distance, session range %, session position [0,1], gap from
+previous close.
 
-**Momentum Indicators** (8): RSI (5d, 14d), MACD (line, signal, histogram),
-distance from SMA (20d, 50d, 200d). Classic technical analysis signals.
+**Intraday Momentum** (10): RSI(14) and RSI(5) on 5m bars, MACD (line/signal/hist)
+on 5m, EMA ribbon (8/21/34 on simulated 15m), EMA alignment signal (+1/-1/0),
+CCI(20) on 5m, ROC(12) = 1-hour rate of change.
 
-**Mean Reversion** (2): Bollinger Band position and width. Position near 0 = oversold,
-near 1 = overbought. Width measures volatility expansion/contraction.
+**Market Internals** (8): TICK level and MA distance, TRIN level and extreme flags,
+A/D line slope, A/D volume ratio, put/call ratio (placeholder), internals composite.
 
-**Volume** (2): Relative volume vs 20d average, volume change.
-High-volume moves are more significant.
+**Multi-Instrument** (8): ES-SPY basis, NQ/ES ratio change (risk-on/off), VIX level
+intraday, VIX session change, VIX term spread (contango/backwardation), VIX term
+ratio, TNX session change, ES-NQ correlation.
 
-**Price Range** (3): Daily range (high-low), range ratio vs 20d average, overnight gap.
-Wide ranges indicate volatility; gaps indicate overnight information.
+**Daily Context** (20): Carried forward from daily bars -- returns (1d/5d/21d),
+realized vol (5d/21d + ratio), RSI(14), SMA distances (20/50/200), Bollinger
+position and width, VIX (level/zscore/percentile/rv-iv spread), TNX (level/change),
+volume ratio, gap.
 
-**VIX** (6): Level, 1d/5d changes, z-score, percentile rank (1yr), realized-implied
-vol spread. VIX is the "fear gauge":
-- VIX < 15: Low fear, complacency, trend-following tends to work
-- VIX 15-25: Normal, mixed signals
-- VIX 25-35: Elevated fear, mean-reversion opportunities
-- VIX > 35: Crisis, extreme moves, high risk
-- VIX term structure matters: contango (normal) vs backwardation (fear)
+**Time Encoding** (5): Cyclical time-of-day, day-of-week, minutes since open.
 
-**Interest Rates** (3): 10yr Treasury yield level and changes.
-Rising rates can pressure growth stocks; falling rates support risk assets.
+### Key intraday patterns
 
-**Time** (4): Cyclical encoding of day-of-week and month-of-year.
-Known patterns: Monday weakness, January effect, opex week dynamics.
+1. **Initial Balance (IB)**: First 30 minutes set the tone. IB range < 0.5% typically
+   means range day (mean-revert). IB range > 1% means trend day (momentum). The model
+   has `ib_width`, `ib_high_dist`, `ib_low_dist` to detect this.
 
-### Key market patterns to know
+2. **VWAP is the magnet**: Price tends to revert to VWAP in range days, and VWAP acts
+   as support/resistance in trend days. `vwap_dist` is the most important single feature.
 
-1. **Volatility clustering**: High-vol days follow high-vol days. Regime changes
-   are persistent. Use rvol features + VIX to detect regimes.
+3. **Session position**: Where price sits within the session range predicts near-term
+   reversion. Position near 0 (session low) or 1 (session high) in a range day = fade.
 
-2. **Mean reversion in high vol**: When VIX is elevated (>25), short-term reversals
-   are more common. Buy dips, sell rips.
+4. **EMA ribbon alignment**: When 8 > 21 > 34 EMA (or inverted), trend is strong.
+   When mixed, market is choppy -- better to be flat (0 position).
 
-3. **Trend following in low vol**: When VIX is low (<15) and the market is trending,
-   momentum strategies work better.
+5. **Market internals confirm or deny**: TICK > +500 with bullish price = strong.
+   TICK diverging from price = warning. TRIN < 0.5 = extreme bullish breadth.
+   TRIN > 2.0 = extreme bearish breadth (potential reversal).
 
-4. **Volume confirms moves**: High-volume breakouts are more likely to continue
-   than low-volume breakouts.
+6. **VIX intraday**: Rising VIX during session = fear increasing = downside potential.
+   Falling VIX = complacency = trend continuation or upside.
 
-5. **Dealer gamma effects**: Large options positions at certain strikes create
-   "pinning" effects. When dealers are long gamma, they dampen moves (sell high,
-   buy low). The bb_position feature partially captures this.
+7. **Time-of-day effects**:
+   - 10:00-10:30: Initial reversal zone (the "10am fake-out")
+   - 11:30-13:30: Lunch hour, low volume, choppy (be flat or small)
+   - 14:00-15:30: Power hour, volume returns, strong moves
+   - 15:30-16:00: Last 30min, close positions
 
-6. **Transaction costs are real**: Every position change costs 5 bps. A model that
-   changes position every day will lose ~1.25% annually to costs alone. Prefer
-   strategies with lower turnover.
+8. **NQ/ES divergence**: When QQQ leads SPY higher or lower, the move is tech-driven.
+   When they diverge, it signals rotation (less conviction).
 
-7. **The overnight gap**: Most index returns happen overnight, not during trading
-   hours. The gap feature captures this.
+9. **Overnight gap behavior**: Large gaps (>0.5%) tend to fill same day.
+   Small gaps tend to signal direction continuation.
 
-8. **Trade clear untested levels**: The highest probability trades happen at
-   untouched levels where multiple factors offer confluence — e.g. an untested
-   prior high near VWAP near a major round number. The model should learn to
-   size up conviction when multiple features align (confluence).
+10. **Transaction costs are higher for options**: We use 8 bps (vs 5 for equities)
+    to account for bid-ask on options. Model should not flip positions every hour.
 
-9. **Range day vs trend day**: The AM session range (first hour) often signals
-   whether the day will be range-bound or trending. In a range day, mean-reversion
-   works. In a trend day, momentum works. The model needs to detect this early.
+### Risk management for $500 account
 
-### Real-world indicators the trader uses
+- **Position sizing**: $500 = 1-2 ATM SPY options at any time. Signal magnitude
+  determines whether we buy 1 or 2 contracts, or stay flat.
+- **Max loss per trade**: ~$100 (20% of account). Stop loss built into option decay.
+- **Daily loss limit**: ~$150 (30% of account). Model should go flat after losses.
+- **Prefer flat**: In a $500 account, preservation matters more than aggression.
+  A model that's flat 40-50% of the time is good.
+- **0DTE theta decay**: Options lose value fast. The model needs to have conviction
+  within 1 hour or exit. This is why we predict next-hour, not next-day.
 
-These are the indicators used by the trader IRL (not all are in our feature set,
-but understanding them guides experiment design):
+### What "good" looks like (intraday)
 
-- **VWAP** (session + weekly) with ±1/±2 std deviation bands for counter-trades
-- **Support/Resistance levels** (intraday, weekly, historical H/L) — level-to-level
-  is the primary trading method
-- **Fibonacci** retracements (overnight, session, weekly, prior week)
-- **Volume Profile / Volume-at-Price** (session, week, month, quarter)
-- **Bollinger Bands** on 4hr timeframe
-- **Market Internals**: A/D ratio, A/D volume, TRIN, TICK, P/C ratio
-- **EMA ribbons**: 8/21/34 EMA on multiple timeframes, 50/100/200/225 MAs
-- **CCI** zero-line reversals, overbought/oversold + Woodies CCI
-- **Tom DeMark 9/13** on 15m
-- **Larry Levlin OTF** on 15m/30m (one-time-framing)
-- **Initial Balance & overnight H/L**
+| Sharpe   | Assessment |
+|----------|------------|
+| < 0      | Losing money |
+| 0 - 0.5  | Noise |
+| 0.5 - 1.0 | Marginal edge |
+| 1.0 - 1.5 | Good -- tradeable signal with $500 account |
+| 1.5 - 2.0 | Very good -- consistent profits, scale up |
+| > 2.0    | Excellent -- but verify not overfitting |
+| > 3.0    | Almost certainly overfitting |
 
-Not every indicator gets used at once — market condition dictates. Keep it
-simple (<5 at a time). The model should similarly learn which features matter
-in which regime rather than trying to use all 39 features equally.
+### Overfitting red flags (intraday)
 
-### Multi-timeframe thinking
-
-The trader uses multiple timeframes simultaneously. For our daily model, this
-maps to different lookback windows capturing different scales:
-
-| Lookback  | Analogous to     | What it captures |
-|-----------|-----------------|------------------|
-| 5-10 days | 3-5 min chart   | Immediate momentum, noise |
-| 20-30 days | 10-15 min chart | Short-term trend, OTF |
-| 60 days   | 1hr chart       | Medium-term structure |
-| 120 days  | Daily chart     | Overall market sentiment |
-| 252 days  | Weekly chart    | Historical context, yearly cycles |
-
-Experiment with multi-scale processing: feed short-term and long-term lookbacks
-into separate model branches, then combine. Don't get tunnel vision on one
-timeframe.
-
-### Risk management philosophy
-
-These principles from 17 years of trading should inform model design:
-
-- **Size down**: The right position size is one where you're not excited or
-  scared at all. The model should output moderate positions by default, only
-  going to extremes with very high conviction. Prefer conservative sizing.
-- **Stop loss as last defense**: A good trader exits a losing trade before the
-  stop triggers. The model should learn to reduce position size when conditions
-  deteriorate, not just flip from +1 to -1.
-- **Never move stops down**: Once the model commits to a position threshold,
-  don't let subsequent features talk it into more risk. This maps to position
-  clipping and drawdown-based scaling.
-- **Plan the trade, trade the plan**: The model's output should be a *thesis*
-  with clear conviction, not random noise. Smooth, deliberate position changes
-  beat erratic flipping.
-- **Flatten what you don't like**: If the model can't find a clear signal, the
-  best position is flat (0). Being in cash is a valid position. Penalize the
-  model for taking positions with low conviction.
-
-### What "good" looks like
-
-| Sharpe  | Assessment |
-|---------|------------|
-| < 0     | Losing money — the model is anti-correlated or costs dominate |
-| 0 – 0.5 | Random noise / weak signal |
-| 0.5 – 1.0 | Marginal — real edge but small |
-| 1.0 – 1.5 | Good — publishable as a trading signal |
-| 1.5 – 2.0 | Very good — institutional quality |
-| > 2.0   | Excellent — but verify it's not overfitting |
-| > 3.0   | Almost certainly overfitting — investigate |
-
-### Overfitting red flags
-
-- Sharpe jumps dramatically (>1.0 improvement) from a small architectural change
-- Model achieves Sharpe >3 while baseline is <0.5
-- Performance depends entirely on a single feature
-- Model makes >200 trades in the evaluation period (overtrading)
-- Model makes <5 trades in the evaluation period (cherry-picking)
-- Model is "gambling, not trading" — erratic position changes with no pattern
-- Model never goes flat — a real trader spends meaningful time in cash
+- Sharpe > 3 while baseline < 0.5
+- Model trades on every single bar (no flat time)
+- Model makes > 500 trades (overtrading with 8bps costs)
+- Model makes < 10 trades (cherry-picking)
+- Same position all day every day (not actually trading)
+- Performance collapses outside of one specific time window
 
 ## Experimentation
 
-Each experiment runs on a single GPU. The training script runs for a **fixed time
-budget of 5 minutes** (wall clock training time, excluding startup/compilation).
-You launch it as: `uv run train.py`.
+Each experiment runs on a single GPU. Fixed **5-minute time budget**.
+Launch: `uv run train.py`.
 
 **What you CAN do:**
-- Modify `train.py` — this is the only file you edit. Everything is fair game:
-  - Model architecture (transformer, TCN, MLP, Mamba, mixture of experts…)
-  - Optimizer, learning rate, schedule
-  - Loss function (directional, MSE, Sharpe, custom reward)
-  - Feature selection and preprocessing within the model
-  - Lookback window length
-  - Batch size, dropout, weight decay
-  - Ensemble methods within a single train.py
-  - Position sizing strategy (built into the model output)
+- Modify `train.py` **only**. Everything is fair game:
+  - Architecture (transformer, TCN, MLP, Mamba, MoE...)
+  - Optimizer, LR, schedule
+  - Loss function
+  - Feature selection/preprocessing within the model
+  - Lookback window (default: 36 hourly bars)
+  - Position sizing strategy
 
 **What you CANNOT do:**
-- Modify `prepare.py`. It is read-only. Contains the fixed evaluation, data
-  loading, features, and constants.
-- Install new packages. Only what's in `pyproject.toml`.
-- Modify the evaluation harness. `evaluate_sharpe` is ground truth.
+- Modify `prepare.py` (read-only)
+- Install new packages
+- Modify the evaluation harness
 
-**The goal: maximize val_sharpe.** Since the time budget is fixed, you don't need
-to worry about training time — it's always 5 minutes. Everything in train.py is
-fair game.
-
-**Simplicity criterion**: All else being equal, simpler is better. A small Sharpe
-improvement that adds ugly complexity is not worth it. A simplification that
-maintains or improves Sharpe is a great outcome.
-
-**The first run**: Your very first run should always establish the baseline. Run
-the training script as-is and record the result.
+**Goal: maximize val_sharpe.**
 
 ## Output format
-
-The script prints a summary like this:
 
 ```
 ---
 val_sharpe:       0.823456
 max_drawdown:     -0.045678
 annual_return:    0.065432
-num_trades:       87
+num_trades:       187
 win_rate:         0.534567
 profit_factor:    1.234567
+num_val_bars:     1500
 num_val_days:     250
 training_seconds: 300.1
 total_seconds:    315.2
 peak_vram_mb:     1234.5
 num_steps:        14523
 num_params:       234,567
-lookback:         60
+lookback:         36
 depth:            4
 ```
 
-You can extract the key metric:
-
-```
-grep "^val_sharpe:" run.log
-```
+Extract: `grep "^val_sharpe:" run.log`
 
 ## Logging results
 
-When an experiment is done, log it to `results.tsv` (tab-separated, NOT
-comma-separated).
-
-The TSV has a header row and 6 columns:
+`results.tsv` on the container (tab-separated):
 
 ```
 commit	val_sharpe	max_drawdown	num_trades	status	description
-```
-
-1. git commit hash (short, 7 chars)
-2. val_sharpe achieved (e.g. 0.823456) — use 0.000000 for crashes
-3. max_drawdown (e.g. -0.045678) — use 0.000000 for crashes
-4. num_trades — use 0 for crashes
-5. status: `keep`, `discard`, or `crash`
-6. short text description of what this experiment tried
-
-Example:
-
-```
-commit	val_sharpe	max_drawdown	num_trades	status	description
-a1b2c3d	0.823456	-0.045678	87	keep	baseline
-b2c3d4e	0.912345	-0.038901	72	keep	increase d_model to 256
-c3d4e5f	0.712345	-0.056789	142	discard	switch to MSE loss (worse sharpe)
-d4e5f6g	0.000000	0.000000	0	crash	TCN architecture (shape mismatch)
-e5f6g7h	0.956789	-0.034567	65	keep	add regime-conditional output head
 ```
 
 ## The experiment loop
 
-The experiment runs on a dedicated branch (e.g. `autoresearch/mar13`).
-
-The SSH command prefix for running commands on the container:
+SSH prefix:
 ```
 SSH="sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 root@provider.h100.wdc.hh.akash.pub"
 ```
 
 LOOP FOREVER:
 
-1. Edit `train.py` locally with an experimental idea.
+1. Edit `train.py` locally.
 2. Commit and push:
    ```
    git commit -am "description of change"
    git push origin HEAD
    ```
-3. Pull on the container and run training:
+3. Pull and run on container:
    ```
    $SSH 'cd /workspace/autoresearch-trading && git pull && PATH="$HOME/.local/bin:$PATH" uv run python train.py > run.log 2>&1'
    ```
-   (redirect everything — do NOT let output flood your context)
 4. Read results:
    ```
    $SSH 'cd /workspace/autoresearch-trading && grep "^val_sharpe:\|^max_drawdown:\|^num_trades:" run.log'
    ```
-5. If grep output is empty, the run crashed.
-   Read the traceback: `$SSH 'tail -n 50 /workspace/autoresearch-trading/run.log'`
-   Attempt a fix. If you can't fix it after a few attempts, give up and move on.
-6. Record results in `results.tsv` on the container:
-   ```
-   $SSH 'cd /workspace/autoresearch-trading && echo "HASH\tSHARPE\tDRAWDOWN\tTRADES\tSTATUS\tDESC" >> results.tsv'
-   ```
-   (NOTE: do not commit results.tsv, leave it untracked by git)
-7. If val_sharpe improved (higher), you "advance" the branch — keep the commit.
-8. If val_sharpe is equal or worse, revert locally:
+5. If empty = crash. Read: `$SSH 'tail -n 50 /workspace/autoresearch-trading/run.log'`
+6. Log to results.tsv.
+7. If improved -> keep. If worse -> revert:
    ```
    git reset --hard HEAD~1
    git push --force-with-lease origin HEAD
    ```
 
-**Timeout**: Each experiment takes ~5 min training + startup. If a run exceeds
-10 minutes total, kill it and treat as failure.
+**NEVER STOP.**
 
-**Crashes**: If it's a simple fix (typo, shape mismatch), fix and re-run. If the
-idea is fundamentally broken, skip it and move on.
-
-**NEVER STOP**: Once the loop begins, do NOT pause to ask the human. The human may
-be asleep. Continue working indefinitely until manually stopped. If you run out
-of ideas, think harder:
-
-## Ideas to try (rough priority order)
+## Ideas to try (priority order for intraday)
 
 ### Architecture experiments
-- Scale up: increase D_MODEL to 256, 512 — the H100 can handle it
-- Deeper: DEPTH=8, DEPTH=12 with residual connections
-- TCN (temporal convolutional network) instead of transformer
-- State space model (S4/Mamba style) for long-range dependencies
-- Mixture of Experts: separate heads for different VIX regimes
-- Simple MLP baseline (sometimes simpler wins)
-- 1D CNN + transformer hybrid
-- Attention over features (cross-attention between time and feature dims)
+- **Multi-scale temporal**: Process recent bars (last 6 = today) separately from
+  historical bars (last 30 = prior week) with two branches, then combine
+- **Time-aware attention**: Weight attention by time-of-day (power hour matters more)
+- **Feature-group attention**: Cross-attention between feature groups (internals ×
+  price × session structure = confluence)
+- Scale up: D_MODEL=256, DEPTH=8 (H100 has plenty of headroom)
+- TCN for local patterns + transformer for global
+- Mamba/SSM for efficient long-range
+- Mixture of Experts: separate heads for range day vs trend day
+- Simple GRU (sometimes simpler wins for short sequences)
 
 ### Loss function experiments
-- Sharpe loss: directly optimize batch Sharpe ratio
-- Asymmetric loss: penalize losses more than gains
-- Combined: alpha * directional + (1-alpha) * sharpe
-- Sortino-like: only penalize downside deviation
-- Log-wealth: maximize E[log(1 + position * return)]
-- Huber loss on returns prediction
+- **Combined**: 0.7×directional + 0.3×sharpe (SHARPE_ALPHA=0.3)
+- Asymmetric loss: penalize losses 2× more than gains (options lose fast)
+- Sortino-like: only penalize downside
+- Log-wealth: maximize E[log(1 + position × return)]
+- Time-weighted: recent training data weighted more
+- Huber loss on return prediction
 
-### Feature engineering (within train.py)
-- Feature selection: try subsets (e.g., only VIX + returns + vol)
-- Feature interactions: multiply VIX features × momentum features
-- Regime gating: use VIX level to gate other features (range day vs trend day)
-- Learned feature embeddings per feature (treat features like tokens)
-- Multi-scale: process short-term (5d) and long-term (60d) features separately
-- Confluence detector: count how many features agree on direction, use as confidence
-- VWAP-style features: distance from rolling mean price, deviation bands
-- EMA ribbon state: encode whether short EMA > long EMA (trend alignment)
-- Overnight gap + prior day range combined feature (initial balance proxy)
+### Feature engineering (in train.py)
+- **Feature selection**: Only use intraday + session + internals (drop daily context)
+- **Regime gating**: Use ib_width to gate other features (range vs trend day)
+- **Confluence detector**: Count how many feature groups agree on direction
+- Feature interactions: VIX × momentum, VWAP × session_position
+- Learned feature embeddings (treat each feature as a token)
+- Feature dropout: randomly zero 20% of features (regularization)
+
+### Lookback experiments
+- Shorter: LOOKBACK=12 (2 trading days, more responsive)
+- Longer: LOOKBACK=48 (8 trading days, more context)
+- LOOKBACK=6 (today only -- pure intraday, no history)
+- LOOKBACK=72 (12 days, maximum daily context)
+
+### Position sizing ("Size Matters")
+- **Confidence threshold**: Flat when |pred| < 0.2 (force selectivity)
+- Position clipping: cap at ±0.5 (conservative, like the real trader)
+- Tanh temperature: tanh(pred / T) for sharper/softer
+- Volatility scaling: shrink position when intraday vol is high
+- Time-of-day scaling: reduce position during lunch (11:30-13:30)
+- Drawdown scaling: reduce size after consecutive losses
+- Three-state output: dedicated flat zone (dead band)
+- Smooth positions: penalize large jumps (|pos_t - pos_{t-1}|)
 
 ### Training tricks
-- Longer lookback: 120 or 252 days (full year)
-- Shorter lookback: 20 or 30 days (more responsive)
-- Learning rate: try 1e-3, 1e-4, sweep
-- Larger batch sizes: 128, 256, 512
+- Larger batches: 128, 256, 512
+- Learning rate sweep: 1e-3, 1e-4, 5e-4
 - Warmup ratio: 0.05 vs 0.2
-- Different optimizers: SGD with momentum, RAdam, Lion
-- Label smoothing on directional prediction
-- Gradient accumulation for effectively larger batches
-- Mixed precision training
+- RAdam, Lion optimizer
+- Gradient accumulation (effective batch=256)
+- Mixed precision (bfloat16)
+- Label smoothing on sign(return)
 
-### Position sizing experiments ("Size Matters")
-- Tanh with temperature: tanh(pred / T) for sharper or softer positions
-- Confidence threshold: only trade when |prediction| > threshold (flat otherwise)
-- Position clipping: cap at ±0.5 for lower risk — marathon, not a sprint
-- Volatility-scaled positions: shrink position when rvol is high (size down when scared)
-- Kelly criterion sizing based on predicted edge and variance
-- Drawdown-based position scaling: reduce size during drawdowns (never move stops down)
-- Confluence multiplier: scale position up only when multiple features agree
-- Smooth position changes: penalize large position jumps (|pos_t - pos_{t-1}|)
-- Three-state output: long / flat / short with explicit flat zone (dead band around 0)
+### Ensemble / meta
+- Train N small models, average positions
+- Snapshot ensemble from different checkpoints
+- Dropout at inference for uncertainty
+- Specialist models (trend/mean-revert/vol) + meta-combine
 
-### Ensemble / meta-learning
-- Train N small models with different seeds, average positions
-- Train specialist models (trend, mean-revert, vol) and meta-combine
-- Snapshot ensemble: save model at different checkpoints, average
-- Dropout at inference for uncertainty estimation
+### Advanced
+- **OTF detector**: If recent bars are HH/HL or LL/LH, trend is strong
+- **Regime classifier**: Auxiliary head predicts range/trend day, routes to specialist
+- **Anti-lunch filter**: Reduce weight on 11:30-13:30 predictions
+- Curriculum: Train on clear trend/range days first, then all
+- Time-weighted loss: Weight recent training years more heavily
+- Adversarial: Add noise to features during training
+- Return distribution: Predict mean + variance, use for Kelly sizing
 
-### Advanced ideas
-- Curriculum learning: train on easy regimes first (low vol), then all
-- Adversarial training: train model to be robust to feature noise
-- Contrastive learning: up-day representations vs down-day representations
-- Time-weighted loss: weight recent data more heavily
-- Walk-forward within training: subdivide training data into folds
-- Return distribution prediction (not just point estimate)
-- Regime classifier head: predict range/trend day, then route to specialist
-- Anti-news filter: reduce position before known high-volatility periods
-  (model can learn monthly/weekly patterns from time features)
-- OTF (one-time-framing) detector: if recent candles are all HH/HL or LL/LH,
-  trend is strong — go with it. If mixed, range — mean revert or go flat
-- Thesis quality output: add auxiliary loss that penalizes the model for having
-  high position with low feature agreement (forces confluence-based trading)
+## Mapping model output to live options trades
 
-As an example use case, a user might leave you running while they sleep. If each
-experiment takes ~5 minutes then you can run approx 12/hour, for a total of about
-100 experiments overnight. The user wakes up to a results.tsv full of experiments
-and (hopefully) a better model.
+When the model is eventually deployed with real money:
+
+| Signal range | Action | Size ($500 account) |
+|-------------|--------|-------------------|
+| pred > +0.5 | Buy ATM SPY call (0DTE/1DTE) | 2 contracts |
+| +0.2 < pred < +0.5 | Buy ATM SPY call | 1 contract |
+| -0.2 < pred < +0.2 | **FLAT** (no position) | 0 |
+| -0.5 < pred < -0.2 | Buy ATM SPY put | 1 contract |
+| pred < -0.5 | Buy ATM SPY put (0DTE/1DTE) | 2 contracts |
+
+Close all positions by 15:45 ET. Never hold 0DTE overnight.

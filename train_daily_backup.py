@@ -1,10 +1,6 @@
 """
-Autoresearch-trading training script (intraday edition).
-Single-GPU, single-file. The agent modifies THIS file.
-
-Predicts next-hour SPY direction for intraday options trading.
-71 features including intraday bars, session structure, market internals,
-multi-instrument data, and daily context.
+Autoresearch-trading training script.  Single-GPU, single-file.
+The agent modifies THIS file — architecture, optimizer, hypers, loss, everything.
 
 Usage: uv run train.py
 """
@@ -26,8 +22,7 @@ from prepare import (
     TIME_BUDGET,
     NUM_FEATURES,
     FEATURE_NAMES,
-    ANNUAL_TRADING_HOURS,
-    HOURS_PER_DAY,
+    ANNUAL_TRADING_DAYS,
     load_data,
     make_dataloader,
     evaluate_sharpe,
@@ -38,7 +33,7 @@ from prepare import (
 # ---------------------------------------------------------------------------
 
 # Model architecture
-LOOKBACK = 36            # hourly bars of history (36 = 6 trading days)
+LOOKBACK = 60            # trading days of history fed to the model
 D_MODEL = 128            # model embedding dimension
 N_HEADS = 4              # number of attention heads
 DEPTH = 4                # number of transformer layers
@@ -54,21 +49,17 @@ GRAD_CLIP = 1.0          # gradient norm clipping
 WARMUP_RATIO = 0.1       # fraction of time budget for LR warmup
 COOLDOWN_RATIO = 0.3     # fraction of time budget for LR cooldown
 
-# Loss: "directional" | "mse" | "sharpe" | "combined"
+# Loss: "directional" | "mse" | "sharpe"
 LOSS_TYPE = "directional"
-SHARPE_ALPHA = 0.3       # weight for sharpe component in "combined" loss
-
-# Position sizing
-CONFIDENCE_THRESHOLD = 0.0  # flat if |prediction| < threshold (0 = always trade)
 
 # ---------------------------------------------------------------------------
 # Model
 # ---------------------------------------------------------------------------
 
-class IntradayTradingModel(nn.Module):
-    """Causal temporal transformer for intraday market prediction.
+class TradingModel(nn.Module):
+    """Causal temporal transformer for market prediction.
 
-    Input:  (batch, lookback, num_features)  -- hourly bars with 71 features
+    Input:  (batch, lookback, num_features)
     Output: (batch,) position signals in [-1, 1]
     """
 
@@ -100,7 +91,7 @@ class IntradayTradingModel(nn.Module):
             dropout=dropout,
             batch_first=True,
             activation='gelu',
-            norm_first=True,
+            norm_first=True,  # Pre-norm (more stable training)
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
 
@@ -108,20 +99,21 @@ class IntradayTradingModel(nn.Module):
         mask = nn.Transformer.generate_square_subsequent_mask(lookback)
         self.register_buffer('causal_mask', mask)
 
-        # Output head
+        # Output: aggregate → predict position
         self.output_head = nn.Sequential(
             nn.LayerNorm(d_model),
             nn.Linear(d_model, d_model // 2),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(d_model // 2, 1),
-            nn.Tanh(),
+            nn.Tanh(),  # bound to [-1, 1]
         )
 
     def forward(self, x):
+        # x: (B, T, F)
         B, T, F = x.shape
 
-        x = self.input_proj(x)
+        x = self.input_proj(x)      # (B, T, d_model)
         x = self.input_norm(x)
         x = x + self.pos_embed[:, :T, :]
 
@@ -131,14 +123,9 @@ class IntradayTradingModel(nn.Module):
             is_causal=True,
         )
 
-        x = x[:, -1, :]
-        out = self.output_head(x).squeeze(-1)
-
-        # Apply confidence threshold
-        if CONFIDENCE_THRESHOLD > 0:
-            out = torch.where(out.abs() < CONFIDENCE_THRESHOLD, torch.zeros_like(out), out)
-
-        return out
+        # Use the last timestep's representation
+        x = x[:, -1, :]             # (B, d_model)
+        return self.output_head(x).squeeze(-1)  # (B,)
 
 
 # ---------------------------------------------------------------------------
@@ -153,14 +140,13 @@ device = torch.device("cuda")
 
 # Load data
 data = load_data()
-n_bars = len(data['dates'])
-print(f"Loaded {n_bars} hourly bars, {NUM_FEATURES} features")
-print(f"  ~{n_bars // HOURS_PER_DAY} trading days")
-print(f"Training:   up to idx {data['train_end_idx']}")
-print(f"Validation: idx {data['val_start_idx']}-{data['val_end_idx']}")
+print(f"Loaded {len(data['dates'])} trading days, {NUM_FEATURES} features")
+print(f"Training:   up to idx {data['train_end_idx']}  ({data['dates'][data['train_end_idx']]})")
+print(f"Validation: idx {data['val_start_idx']}–{data['val_end_idx']}  "
+      f"({data['dates'][data['val_start_idx']]} → {data['dates'][data['val_end_idx']]})")
 
 # Build model
-model = IntradayTradingModel().to(device)
+model = TradingModel().to(device)
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Model parameters: {num_params:,}")
 
@@ -177,7 +163,7 @@ model = torch.compile(model)
 
 # Dataloader
 train_loader = make_dataloader(data, LOOKBACK, BATCH_SIZE, "train", device)
-x_batch, y_batch = next(train_loader)
+x_batch, y_batch = next(train_loader)  # prefetch first batch
 
 print(f"\nTime budget: {TIME_BUDGET}s")
 print(f"Batch size: {BATCH_SIZE}  |  Lookback: {LOOKBACK}  |  Loss: {LOSS_TYPE}")
@@ -189,12 +175,13 @@ print()
 # ---------------------------------------------------------------------------
 
 def get_lr_multiplier(progress):
-    """Warmup -> constant -> cosine cooldown."""
+    """Warmup → constant → cosine cooldown."""
     if progress < WARMUP_RATIO:
         return progress / max(WARMUP_RATIO, 1e-8)
     elif progress < 1.0 - COOLDOWN_RATIO:
         return 1.0
     else:
+        # Cosine decay to 0
         t = (1.0 - progress) / max(COOLDOWN_RATIO, 1e-8)
         return 0.5 * (1.0 + math.cos(math.pi * (1.0 - t)))
 
@@ -213,29 +200,29 @@ while True:
     t0 = time.time()
 
     x, y = x_batch, y_batch
-    pred = model(x)
+    pred = model(x)  # (B,) positions in [-1, 1]
 
     # --- Loss ---
     if LOSS_TYPE == "directional":
+        # Maximize expected return: −E[position × return]
         loss = -(pred * y).mean()
     elif LOSS_TYPE == "mse":
+        # Predict return direction: MSE against sign(return)
         loss = F.mse_loss(pred, y.sign())
     elif LOSS_TYPE == "sharpe":
+        # Batch Sharpe proxy: −mean(pnl) / (std(pnl) + ε)
         pnl = pred * y
         loss = -(pnl.mean() / (pnl.std() + 1e-8))
-    elif LOSS_TYPE == "combined":
-        dir_loss = -(pred * y).mean()
-        pnl = pred * y
-        sharpe_loss = -(pnl.mean() / (pnl.std() + 1e-8))
-        loss = (1 - SHARPE_ALPHA) * dir_loss + SHARPE_ALPHA * sharpe_loss
     else:
         loss = -(pred * y).mean()
 
     loss.backward()
 
+    # Gradient clipping
     if GRAD_CLIP > 0:
         torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
 
+    # LR schedule
     progress = min(total_training_time / TIME_BUDGET, 1.0)
     lrm = get_lr_multiplier(progress)
     for pg in optimizer.param_groups:
@@ -244,8 +231,10 @@ while True:
     optimizer.step()
     optimizer.zero_grad(set_to_none=True)
 
+    # Prefetch next batch
     x_batch, y_batch = next(train_loader)
 
+    # Training-time accounting (skip first steps = compilation warmup)
     torch.cuda.synchronize()
     t1 = time.time()
     dt = t1 - t0
@@ -253,8 +242,10 @@ while True:
     if step > 5:
         total_training_time += dt
 
+    # --- Logging ---
     loss_val = loss.item()
 
+    # Fast-fail: NaN or exploding loss
     if math.isnan(loss_val) or loss_val > 100:
         print(f"\nFAIL: loss={loss_val} at step {step}")
         exit(1)
@@ -270,6 +261,7 @@ while True:
               f"| lr: {LR * lrm:.2e} | dt: {dt*1000:.0f}ms "
               f"| remaining: {remaining:.0f}s")
 
+    # GC management
     if step == 0:
         gc.collect()
         gc.freeze()
@@ -279,6 +271,7 @@ while True:
 
     step += 1
 
+    # Time's up (ignoring warmup steps for compilation)
     if step > 5 and total_training_time >= TIME_BUDGET:
         break
 
@@ -305,7 +298,6 @@ print(f"annual_return:    {metrics['annual_return']:.6f}")
 print(f"num_trades:       {metrics['num_trades']}")
 print(f"win_rate:         {metrics['win_rate']:.6f}")
 print(f"profit_factor:    {metrics['profit_factor']:.6f}")
-print(f"num_val_bars:     {metrics['num_val_bars']}")
 print(f"num_val_days:     {metrics['num_val_days']}")
 print(f"training_seconds: {total_training_time:.1f}")
 print(f"total_seconds:    {t_end - t_start:.1f}")
