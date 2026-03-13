@@ -53,6 +53,26 @@ RTH_CLOSE = dt.time(16, 0)
 CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "autoresearch-trading")
 DATA_DIR = os.path.join(CACHE_DIR, "data")
 FEATURES_DIR = os.path.join(CACHE_DIR, "features")
+LOG_FILE = os.path.join(CACHE_DIR, "prepare.log")
+
+# Tee stdout to log file so progress is always visible via:
+#   tail -f ~/.cache/autoresearch-trading/prepare.log
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+class _Tee:
+    def __init__(self, *streams):
+        self.streams = streams
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+            s.flush()
+    def flush(self):
+        for s in self.streams:
+            s.flush()
+
+_log_fh = open(LOG_FILE, "a")
+sys.stdout = _Tee(sys.__stdout__, _log_fh)
+sys.stderr = _Tee(sys.__stderr__, _log_fh)
 
 # ---------------------------------------------------------------------------
 # Feature names (105 features)
