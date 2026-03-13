@@ -40,6 +40,14 @@ Once you get confirmation, kick off the experimentation.
 
 ## Domain knowledge: Day trading with SPX
 
+### Trader context
+
+This model is built by a trader with 17+ years of experience. Primarily a delta
+futures trader and SPX options (long/short & spreads). Trades ES/NQ/RTY/NG/GC/
+VIX/CL/SPX/SPY/QQQ, mostly intraday/day-trading. Goal is 1% portfolio per week.
+The model should reflect this style: disciplined, level-to-level, risk-aware,
+with clearly defined entries and exits — not a black-box gamble.
+
 You are building a model that predicts daily SPX (S&P 500) trading positions.
 
 ### What the model does
@@ -109,6 +117,74 @@ Known patterns: Monday weakness, January effect, opex week dynamics.
 7. **The overnight gap**: Most index returns happen overnight, not during trading
    hours. The gap feature captures this.
 
+8. **Trade clear untested levels**: The highest probability trades happen at
+   untouched levels where multiple factors offer confluence — e.g. an untested
+   prior high near VWAP near a major round number. The model should learn to
+   size up conviction when multiple features align (confluence).
+
+9. **Range day vs trend day**: The AM session range (first hour) often signals
+   whether the day will be range-bound or trending. In a range day, mean-reversion
+   works. In a trend day, momentum works. The model needs to detect this early.
+
+### Real-world indicators the trader uses
+
+These are the indicators used by the trader IRL (not all are in our feature set,
+but understanding them guides experiment design):
+
+- **VWAP** (session + weekly) with ±1/±2 std deviation bands for counter-trades
+- **Support/Resistance levels** (intraday, weekly, historical H/L) — level-to-level
+  is the primary trading method
+- **Fibonacci** retracements (overnight, session, weekly, prior week)
+- **Volume Profile / Volume-at-Price** (session, week, month, quarter)
+- **Bollinger Bands** on 4hr timeframe
+- **Market Internals**: A/D ratio, A/D volume, TRIN, TICK, P/C ratio
+- **EMA ribbons**: 8/21/34 EMA on multiple timeframes, 50/100/200/225 MAs
+- **CCI** zero-line reversals, overbought/oversold + Woodies CCI
+- **Tom DeMark 9/13** on 15m
+- **Larry Levlin OTF** on 15m/30m (one-time-framing)
+- **Initial Balance & overnight H/L**
+
+Not every indicator gets used at once — market condition dictates. Keep it
+simple (<5 at a time). The model should similarly learn which features matter
+in which regime rather than trying to use all 39 features equally.
+
+### Multi-timeframe thinking
+
+The trader uses multiple timeframes simultaneously. For our daily model, this
+maps to different lookback windows capturing different scales:
+
+| Lookback  | Analogous to     | What it captures |
+|-----------|-----------------|------------------|
+| 5-10 days | 3-5 min chart   | Immediate momentum, noise |
+| 20-30 days | 10-15 min chart | Short-term trend, OTF |
+| 60 days   | 1hr chart       | Medium-term structure |
+| 120 days  | Daily chart     | Overall market sentiment |
+| 252 days  | Weekly chart    | Historical context, yearly cycles |
+
+Experiment with multi-scale processing: feed short-term and long-term lookbacks
+into separate model branches, then combine. Don't get tunnel vision on one
+timeframe.
+
+### Risk management philosophy
+
+These principles from 17 years of trading should inform model design:
+
+- **Size down**: The right position size is one where you're not excited or
+  scared at all. The model should output moderate positions by default, only
+  going to extremes with very high conviction. Prefer conservative sizing.
+- **Stop loss as last defense**: A good trader exits a losing trade before the
+  stop triggers. The model should learn to reduce position size when conditions
+  deteriorate, not just flip from +1 to -1.
+- **Never move stops down**: Once the model commits to a position threshold,
+  don't let subsequent features talk it into more risk. This maps to position
+  clipping and drawdown-based scaling.
+- **Plan the trade, trade the plan**: The model's output should be a *thesis*
+  with clear conviction, not random noise. Smooth, deliberate position changes
+  beat erratic flipping.
+- **Flatten what you don't like**: If the model can't find a clear signal, the
+  best position is flat (0). Being in cash is a valid position. Penalize the
+  model for taking positions with low conviction.
+
 ### What "good" looks like
 
 | Sharpe  | Assessment |
@@ -128,6 +204,8 @@ Known patterns: Monday weakness, January effect, opex week dynamics.
 - Performance depends entirely on a single feature
 - Model makes >200 trades in the evaluation period (overtrading)
 - Model makes <5 trades in the evaluation period (cherry-picking)
+- Model is "gambling, not trading" — erratic position changes with no pattern
+- Model never goes flat — a real trader spends meaningful time in cash
 
 ## Experimentation
 
@@ -294,9 +372,13 @@ of ideas, think harder:
 ### Feature engineering (within train.py)
 - Feature selection: try subsets (e.g., only VIX + returns + vol)
 - Feature interactions: multiply VIX features × momentum features
-- Regime gating: use VIX level to gate other features
+- Regime gating: use VIX level to gate other features (range day vs trend day)
 - Learned feature embeddings per feature (treat features like tokens)
 - Multi-scale: process short-term (5d) and long-term (60d) features separately
+- Confluence detector: count how many features agree on direction, use as confidence
+- VWAP-style features: distance from rolling mean price, deviation bands
+- EMA ribbon state: encode whether short EMA > long EMA (trend alignment)
+- Overnight gap + prior day range combined feature (initial balance proxy)
 
 ### Training tricks
 - Longer lookback: 120 or 252 days (full year)
@@ -309,13 +391,16 @@ of ideas, think harder:
 - Gradient accumulation for effectively larger batches
 - Mixed precision training
 
-### Position sizing experiments
+### Position sizing experiments ("Size Matters")
 - Tanh with temperature: tanh(pred / T) for sharper or softer positions
-- Confidence threshold: only trade when |prediction| > threshold
-- Position clipping: cap at ±0.5 for lower risk
-- Volatility-scaled positions: shrink position when rvol is high
+- Confidence threshold: only trade when |prediction| > threshold (flat otherwise)
+- Position clipping: cap at ±0.5 for lower risk — marathon, not a sprint
+- Volatility-scaled positions: shrink position when rvol is high (size down when scared)
 - Kelly criterion sizing based on predicted edge and variance
-- Drawdown-based position scaling: reduce size during drawdowns
+- Drawdown-based position scaling: reduce size during drawdowns (never move stops down)
+- Confluence multiplier: scale position up only when multiple features agree
+- Smooth position changes: penalize large position jumps (|pos_t - pos_{t-1}|)
+- Three-state output: long / flat / short with explicit flat zone (dead band around 0)
 
 ### Ensemble / meta-learning
 - Train N small models with different seeds, average positions
@@ -330,6 +415,13 @@ of ideas, think harder:
 - Time-weighted loss: weight recent data more heavily
 - Walk-forward within training: subdivide training data into folds
 - Return distribution prediction (not just point estimate)
+- Regime classifier head: predict range/trend day, then route to specialist
+- Anti-news filter: reduce position before known high-volatility periods
+  (model can learn monthly/weekly patterns from time features)
+- OTF (one-time-framing) detector: if recent candles are all HH/HL or LL/LH,
+  trend is strong — go with it. If mixed, range — mean revert or go flat
+- Thesis quality output: add auxiliary loss that penalizes the model for having
+  high position with low feature agreement (forces confluence-based trading)
 
 As an example use case, a user might leave you running while they sleep. If each
 experiment takes ~5 minutes then you can run approx 12/hour, for a total of about
