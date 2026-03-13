@@ -251,8 +251,10 @@ def _download_bars_chunked(client, ticker, multiplier, timespan, start_date, end
 def _download_options_snapshots(client, start_date, end_date):
     """Download SPY options chain snapshots (Greeks, IV, OI, volume).
 
-    Uses Polygon's options snapshot endpoint for ATM options near each
-    trading day. We build a daily snapshot of key options metrics.
+    Uses Polygon's options snapshot endpoint. The snapshot endpoint returns
+    current-day data only (not historical), so for historical dates we get
+    an empty DataFrame and the feature functions fill sensible defaults.
+    For recent/today's data, we capture a real snapshot.
 
     Returns a DataFrame indexed by date with columns for Greeks, IV, flow.
     """
@@ -262,31 +264,21 @@ def _download_options_snapshots(client, start_date, end_date):
         with open(options_path, 'rb') as f:
             return pickle.load(f)
 
-    print("Downloading SPY options chain data...")
-    print("  (This uses the Options Developer plan API)")
+    print("Downloading SPY options chain snapshot...")
+    print("  (Snapshot endpoint returns current-day data only)")
+    print("  (Historical options features will use VIX-derived defaults)")
 
     all_snapshots = []
-    current = pd.Timestamp(start_date)
-    end = pd.Timestamp(end_date)
 
-    while current <= end:
-        # Skip weekends
-        if current.weekday() >= 5:
-            current += pd.Timedelta(days=1)
-            continue
-
-        date_str = current.strftime('%Y-%m-%d')
-
-        try:
-            # Get options chain snapshot for SPY
-            snapshot = _fetch_options_snapshot_for_date(client, date_str)
-            if snapshot is not None:
-                all_snapshots.append(snapshot)
-        except Exception as e:
-            print(f"  {date_str}: {e}")
-
-        current += pd.Timedelta(days=1)
-        time.sleep(13)  # Polygon Starter: 5 calls/min
+    # Only fetch today's snapshot (the endpoint doesn't return historical data)
+    today_str = pd.Timestamp.now(tz='US/Eastern').strftime('%Y-%m-%d')
+    try:
+        snapshot = _fetch_options_snapshot_for_date(client, today_str)
+        if snapshot is not None:
+            all_snapshots.append(snapshot)
+            print(f"  Today's snapshot: OK (IV={snapshot.get('atm_iv', '?')})")
+    except Exception as e:
+        print(f"  Today's snapshot failed: {e}")
 
     if all_snapshots:
         result = pd.DataFrame(all_snapshots)
@@ -297,6 +289,7 @@ def _download_options_snapshots(client, start_date, end_date):
         pickle.dump(result, f)
 
     print(f"  -> {len(result)} daily options snapshots saved")
+    print("  (Feature functions fill defaults for dates without snapshots)")
     return result
 
 
