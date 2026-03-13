@@ -11,4 +11,5 @@ dependencies = [
     "pyarrow>=14.0",
     "matplotlib>=3.7",
     "scipy>=1.11",
+    "tzdata>=2024.1",
 ]
