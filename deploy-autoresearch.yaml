@@ -29,7 +29,7 @@ services:
     image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel
     env:
       - DEBIAN_FRONTEND=noninteractive
-      - REPO_URL=https://github.com/YOUR_USERNAME/autoresearch-trading.git
+      - REPO_URL=https://github.com/owenheidenreich/autoresearch-trading.git
     command:
       - "bash"
       - "-c"
