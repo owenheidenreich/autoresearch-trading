@@ -476,7 +476,7 @@ def _fetch_options_snapshot_for_date(client, date_str):
     return snapshot
 
 
-def download_intraday_data(start_date="2024-01-01", end_date=None):
+def download_intraday_data(start_date="2024-04-01", end_date=None):
     """Download all required intraday + options data from Polygon.io.
 
     Downloads:
@@ -518,7 +518,11 @@ def download_intraday_data(start_date="2024-01-01", end_date=None):
     print(f"  -> {len(data['spy_5m'])} bars")
 
     print("Downloading SPY daily bars...")
-    data['spy_daily'] = _download_bars_chunked(client, 'SPY', 1, 'day', '2010-01-01', end_date)
+    try:
+        data['spy_daily'] = _download_bars_chunked(client, 'SPY', 1, 'day', '2010-01-01', end_date)
+    except Exception:
+        print("  2010 start failed, falling back to intraday start date...")
+        data['spy_daily'] = _download_bars_chunked(client, 'SPY', 1, 'day', start_date, end_date)
     print(f"  -> {len(data['spy_daily'])} bars")
 
     print("Downloading VIX 5-min bars...")
@@ -541,7 +545,12 @@ def download_intraday_data(start_date="2024-01-01", end_date=None):
             if len(data['vix_daily']) > 0:
                 break
         except Exception:
-            pass
+            try:
+                data['vix_daily'] = _download_bars_chunked(client, sym, 1, 'day', start_date, end_date)
+                if len(data['vix_daily']) > 0:
+                    break
+            except Exception:
+                pass
     else:
         data['vix_daily'] = pd.DataFrame()
     print(f"  -> {len(data.get('vix_daily', pd.DataFrame()))} bars")
@@ -570,7 +579,12 @@ def download_intraday_data(start_date="2024-01-01", end_date=None):
             if len(data['tnx_daily']) > 0:
                 break
         except Exception:
-            pass
+            try:
+                data['tnx_daily'] = _download_bars_chunked(client, sym, 1, 'day', start_date, end_date)
+                if len(data['tnx_daily']) > 0:
+                    break
+            except Exception:
+                pass
     else:
         data['tnx_daily'] = pd.DataFrame()
     print(f"  -> {len(data.get('tnx_daily', pd.DataFrame()))} bars")
@@ -1708,7 +1722,7 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=256):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Prepare intraday + options data for autoresearch-trading v0.3")
-    parser.add_argument("--start", type=str, default="2024-01-01", help="Start date for intraday data")
+    parser.add_argument("--start", type=str, default="2024-04-01", help="Start date for intraday data")
     parser.add_argument("--end", type=str, default=None, help="End date (default: today)")
     parser.add_argument("--polygon-key", type=str, default=None, help="Polygon.io API key")
     args = parser.parse_args()
