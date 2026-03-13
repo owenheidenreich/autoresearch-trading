@@ -6,7 +6,7 @@ and provides evaluation harness.
 
 Usage:
     uv run prepare.py                           # full prep
-    uv run prepare.py --start 2022              # custom start year
+    uv run prepare.py --start 2024              # custom start year
     uv run prepare.py --polygon-key YOUR_KEY    # set API key
 
 Requires POLYGON_API_KEY env var or --polygon-key flag.
@@ -476,7 +476,7 @@ def _fetch_options_snapshot_for_date(client, date_str):
     return snapshot
 
 
-def download_intraday_data(start_date="2022-01-01", end_date=None):
+def download_intraday_data(start_date="2024-01-01", end_date=None):
     """Download all required intraday + options data from Polygon.io.
 
     Downloads:
@@ -1708,7 +1708,7 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=256):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Prepare intraday + options data for autoresearch-trading v0.3")
-    parser.add_argument("--start", type=str, default="2022-01-01", help="Start date for intraday data")
+    parser.add_argument("--start", type=str, default="2024-01-01", help="Start date for intraday data")
     parser.add_argument("--end", type=str, default=None, help="End date (default: today)")
     parser.add_argument("--polygon-key", type=str, default=None, help="Polygon.io API key")
     args = parser.parse_args()
