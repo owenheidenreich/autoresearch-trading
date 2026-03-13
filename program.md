@@ -1,9 +1,9 @@
-# autoresearch-trading (intraday edition)
+# autoresearch-trading v0.3 (options-native)
 
-Autonomous research experiment: an AI agent iterates on an **intraday SPY options
-trading model**, training for 5 minutes each run, keeping improvements and
-discarding failures. The end goal: a model that can trade $500 autonomously on
-SPY 0DTE/1DTE options during regular trading hours.
+Autonomous research experiment: an AI agent iterates on an **options-native
+intraday SPY trading model**, training for 5 minutes each run, keeping
+improvements and discarding failures. The end goal: a model that can trade
+$500 autonomously on SPY 0DTE/1DTE options during regular trading hours.
 
 Adapted from [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
 
@@ -16,15 +16,16 @@ Training runs execute on a remote H100 GPU container on the Akash network.
 **Container**: SSH via `sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 root@provider.h100.wdc.hh.akash.pub`
 **Container repo**: `/workspace/autoresearch-trading`
 
-Workflow: edit `train.py` locally -> git commit + push -> SSH pull on container -> run training -> read results.
+Workflow: edit `train.py` locally → git commit + push → SSH pull on container → run training → read results.
 
 ## Setup
 
-1. **Agree on a run tag**: based on today's date (e.g. `mar13-intraday`).
+1. **Agree on a run tag**: based on today's date (e.g. `mar13-options`).
 2. **Create the branch locally**: `git checkout -b autoresearch/<tag>`.
 3. **Read the in-scope files**:
-   - `prepare.py` -- fixed data pipeline (Polygon.io), 71 features, evaluation harness. **Do not modify.**
-   - `train.py` -- the file you modify. Everything is fair game.
+   - `prepare.py` — fixed data pipeline (Polygon.io), 105 features (including real
+     Greeks, IV surface, options flow, risk state), evaluation harness. **Do not modify.**
+   - `train.py` — the file you modify. Everything is fair game.
 4. **Set Polygon API key on container**:
    ```
    $SSH 'echo "export POLYGON_API_KEY=YOUR_KEY" >> ~/.bashrc'
@@ -33,25 +34,18 @@ Workflow: edit `train.py` locally -> git commit + push -> SSH pull on container 
    ```
    $SSH 'cd /workspace/autoresearch-trading && PATH="$HOME/.local/bin:$PATH" POLYGON_API_KEY=KEY uv run prepare.py'
    ```
-   This downloads SPY/VIX/QQQ/SPX 5-min bars + daily context from Polygon.io.
-   Takes 5-15 minutes first time (rate limits).
+   Downloads SPY equities + options chain data from Polygon.io. Takes 15-30 min first time.
 6. **Initialize results.tsv** on the container.
 7. **Confirm and go**.
 
-## Data source: Polygon.io
+## Data sources: Polygon.io Options Developer Plan
 
-We use **Polygon.io** ($29-99/mo) for all market data:
-- SPY 5-min bars (primary instrument)
-- VIX 5-min bars (fear gauge intraday)
-- QQQ 5-min bars (NQ proxy, risk-on/risk-off)
-- SPX index 5-min bars (ES proxy)
-- Market internals (TICK, TRIN, A/D where available, synthesized otherwise)
-- VIX futures proxy (VIXY ETF)
-- Daily bars for SPY, VIX, TNX going back to 2010 (context features)
+**Equity data**: SPY/QQQ/VIX/SPX 5-min bars, daily bars from 2010+.
+**Options data**: Full SPY options chain snapshots — real Greeks (delta, gamma,
+theta, vega), implied volatility, open interest, volume, bid/ask. 4 years of
+historical options data. This is the core differentiator vs v0.2.
 
-API key: set `POLYGON_API_KEY` environment variable.
-
-## Domain knowledge: Intraday SPY options trading
+## Domain knowledge: Options-native intraday trading
 
 ### Trader context
 
@@ -60,136 +54,192 @@ Trades ES/NQ/RTY/VIX/CL/SPX/SPY/QQQ, mostly intraday. Goal: 1% portfolio/week.
 Style: disciplined, level-to-level, risk-aware, clearly defined entries and exits.
 
 **End goal**: Give a $500 account to an AI model. It trades SPY 0DTE/1DTE options
-intraday based on the model's hourly position signals. The position signal maps to:
+intraday. The position signal maps to:
 - **+1**: Buy ATM SPY calls (max conviction bullish)
-- **-1**: Buy ATM SPY puts (max conviction bearish)
+- **+0.5**: Buy 1 ATM call (moderate conviction)
 - **0**: Flat (no position, preserve capital)
-- **Fractional**: Scale position size proportionally
+- **-0.5**: Buy 1 ATM put (moderate conviction)
+- **-1**: Buy ATM SPY puts (max conviction bearish)
+- Below confidence threshold (0.05): forced flat
 
-### What the model does
-- Receives 36 hourly bars (6 trading days) of 71 normalized features
+### What the model does (v0.3)
+
+- Receives 36 hourly bars × 105 features (including real Greeks, IV, options flow)
+- Feature group gating: learns which feature groups matter per timestep
 - Outputs a position signal in [-1, 1] every hour during RTH
 - Decision points: 10:30, 11:30, 12:30, 13:30, 14:30, 15:30 ET
-- Target: next-hour log return (not next-day)
-- Evaluation: hourly PnL = position * return - transaction_costs
-- Metric: **Sharpe ratio** (annualized from hourly, higher is better)
+- **Target: options-adjusted return** (delta P&L + gamma convexity - theta cost)
+- This means the model is directly optimizing for options P&L, not equity direction
+- Evaluation: hourly Sharpe on options-adjusted returns
 
-### Available features (71 total, in prepare.py)
+### Why options-adjusted targets matter
 
-**Intraday Price** (12): 5m/15m/30m/1h/2h/4h returns, VWAP distance (session VWAP
-with +/-1 std bands), bar range, bar range ratio, bar volume ratio.
+In v0.2, the target was raw equity return. The model learned "SPY goes up" but
+didn't know that being right costs $0.05/hr in theta on a 0DTE option. A +0.1%
+SPY move generates ~$0.30 delta P&L but costs ~$0.15 in theta → only $0.15 profit.
+The model must learn that **small moves aren't worth trading in options**.
 
-**Session Structure** (8): Initial Balance high/low distance and width (first 30min),
-overnight high/low distance, session range %, session position [0,1], gap from
-previous close.
+The v0.3 target encodes: `delta × return × price + 0.5 × gamma × return² - theta/6.5`
+So the model directly sees "this trade made $X on the option" not "SPY moved X%".
 
-**Intraday Momentum** (10): RSI(14) and RSI(5) on 5m bars, MACD (line/signal/hist)
-on 5m, EMA ribbon (8/21/34 on simulated 15m), EMA alignment signal (+1/-1/0),
-CCI(20) on 5m, ROC(12) = 1-hour rate of change.
+### Available features (105 total, in prepare.py)
 
-**Market Internals** (8): TICK level and MA distance, TRIN level and extreme flags,
-A/D line slope, A/D volume ratio, put/call ratio (placeholder), internals composite.
+**Intraday Price** (12): Returns at multiple timeframes, VWAP distance with bands,
+bar range and volume ratios.
 
-**Multi-Instrument** (8): ES-SPY basis, NQ/ES ratio change (risk-on/off), VIX level
-intraday, VIX session change, VIX term spread (contango/backwardation), VIX term
-ratio, TNX session change, ES-NQ correlation.
+**Session Structure** (8): Initial Balance (first 30min), overnight high/low,
+session range, position within session range, gap from previous close.
 
-**Daily Context** (20): Carried forward from daily bars -- returns (1d/5d/21d),
-realized vol (5d/21d + ratio), RSI(14), SMA distances (20/50/200), Bollinger
-position and width, VIX (level/zscore/percentile/rv-iv spread), TNX (level/change),
-volume ratio, gap.
+**Intraday Momentum** (10): RSI (fast and standard), MACD on 5m bars, EMA ribbon
+(8/21/34), CCI, rate of change.
+
+**Market Internals** (8): TICK, TRIN, A/D line, put/call volume ratio (real, from
+options data), internals composite.
+
+**Options Greeks & IV Surface** (16): ATM implied volatility, delta, gamma, theta
+(normalized), vega, IV skew (25-delta), IV term structure, IV change in session,
+IV percentile (20-session), gamma exposure, theta acceleration, net premium flow,
+OI put/call ratio, IV-RV spread (vol risk premium), ATM bid-ask spread (liquidity),
+IV slope over last hour.
+
+**Options Flow** (6): Call/put volume surges vs 20-day average, large trade bias,
+volume-weighted delta, near-term OI change, total options volume ratio.
+
+**Multi-Instrument** (8): ES-SPY basis, NQ/ES ratio, VIX intraday, VIX term
+structure, TNX change, ES-NQ correlation.
+
+**Risk Management State** (6): Session P&L, position duration, drawdown from
+session peak, consecutive losses, time to close, theta remaining.
+
+**Daily Context** (20): Returns (1d/5d/21d), realized vol, RSI, SMA distances,
+Bollinger bands, VIX context, TNX, volume ratio, gap.
 
 **Time Encoding** (5): Cyclical time-of-day, day-of-week, minutes since open.
 
-### Key intraday patterns
+**Options Target Context** (6): Current ATM price, breakeven move, expected theta
+cost, delta-adjusted leverage, gamma P&L potential, edge after costs.
 
-1. **Initial Balance (IB)**: First 30 minutes set the tone. IB range < 0.5% typically
-   means range day (mean-revert). IB range > 1% means trend day (momentum). The model
-   has `ib_width`, `ib_high_dist`, `ib_low_dist` to detect this.
+### Key options trading concepts the model must learn
 
-2. **VWAP is the magnet**: Price tends to revert to VWAP in range days, and VWAP acts
-   as support/resistance in trend days. `vwap_dist` is the most important single feature.
+1. **Theta decay is your enemy on 0DTE**: ATM SPY options lose ~$0.02-0.10/hour.
+   The model must only enter when expected directional move > theta cost + spread.
+   The `edge_after_costs` feature explicitly tells the model this threshold.
 
-3. **Session position**: Where price sits within the session range predicts near-term
-   reversion. Position near 0 (session low) or 1 (session high) in a range day = fade.
+2. **Gamma is your friend on 0DTE**: When you're right, gamma amplifies your gain
+   (convex payoff). A 0.5% move on SPY generates more than 0.5% * delta on the
+   option because gamma adds to delta as the option goes ITM.
 
-4. **EMA ribbon alignment**: When 8 > 21 > 34 EMA (or inverted), trend is strong.
-   When mixed, market is choppy -- better to be flat (0 position).
+3. **IV crush kills long vega positions**: If you buy calls into a news event and
+   IV drops 5 points, you lose on vega even if direction is right. The
+   `iv_change_session` and `iv_rv_spread` features capture this.
 
-5. **Market internals confirm or deny**: TICK > +500 with bullish price = strong.
-   TICK diverging from price = warning. TRIN < 0.5 = extreme bullish breadth.
-   TRIN > 2.0 = extreme bearish breadth (potential reversal).
+4. **Bid-ask spread is a hidden tax**: Tighter spread = cheaper to trade. The
+   `atm_bid_ask_spread` feature helps the model learn when liquidity is good.
 
-6. **VIX intraday**: Rising VIX during session = fear increasing = downside potential.
-   Falling VIX = complacency = trend continuation or upside.
+5. **Put/call ratio and flow as sentiment**: Heavy put buying (ratio > 1.2) can
+   signal hedging (bullish contrarian) or genuine fear (bearish confirmation).
+   The model has both ratio and flow direction to distinguish.
 
-7. **Time-of-day effects**:
-   - 10:00-10:30: Initial reversal zone (the "10am fake-out")
-   - 11:30-13:30: Lunch hour, low volume, choppy (be flat or small)
-   - 14:00-15:30: Power hour, volume returns, strong moves
-   - 15:30-16:00: Last 30min, close positions
+6. **IV skew tells you where the risk is**: When 25-delta put IV >> 25-delta call
+   IV, the market is pricing downside risk. `iv_skew_25d` captures this.
 
-8. **NQ/ES divergence**: When QQQ leads SPY higher or lower, the move is tech-driven.
-   When they diverge, it signals rotation (less conviction).
-
-9. **Overnight gap behavior**: Large gaps (>0.5%) tend to fill same day.
-   Small gaps tend to signal direction continuation.
-
-10. **Transaction costs are higher for options**: We use 8 bps (vs 5 for equities)
-    to account for bid-ask on options. Model should not flip positions every hour.
+7. **Time of day and theta acceleration**: Theta decay is non-linear — it
+   accelerates in the last 2 hours. The model has `theta_remaining` (sqrt of
+   time left) and `theta_acceleration` to learn this curve.
 
 ### Risk management for $500 account
 
-- **Position sizing**: $500 = 1-2 ATM SPY options at any time. Signal magnitude
-  determines whether we buy 1 or 2 contracts, or stay flat.
-- **Max loss per trade**: ~$100 (20% of account). Stop loss built into option decay.
-- **Daily loss limit**: ~$150 (30% of account). Model should go flat after losses.
-- **Prefer flat**: In a $500 account, preservation matters more than aggression.
-  A model that's flat 40-50% of the time is good.
-- **0DTE theta decay**: Options lose value fast. The model needs to have conviction
-  within 1 hour or exit. This is why we predict next-hour, not next-day.
+- **Position sizing**: $500 = 1-2 ATM SPY options. Signal magnitude → 0, 1, or 2.
+- **Max loss per trade**: ~$100 (20%). Built into option expiration mechanics.
+- **Daily loss limit**: ~$150 (30%). Model should go flat after session drawdown.
+  `drawdown_from_session_peak` and `session_pnl` features encode this.
+- **Prefer flat**: A model flat 40-60% of the time is GOOD for a $500 account.
+  `CONFIDENCE_THRESHOLD = 0.05` forces flat on low-conviction signals.
+- **Transaction costs**: 12 bps (up from 8 in v0.2) to account for options
+  spread + slippage realistically.
+- **Consecutive loss protection**: `consecutive_losses` feature lets the model
+  learn to reduce size or go flat after a losing streak.
 
-### What "good" looks like (intraday)
+### What "good" looks like (options-adjusted)
 
 | Sharpe   | Assessment |
 |----------|------------|
-| < 0      | Losing money |
-| 0 - 0.5  | Noise |
-| 0.5 - 1.0 | Marginal edge |
-| 1.0 - 1.5 | Good -- tradeable signal with $500 account |
-| 1.5 - 2.0 | Very good -- consistent profits, scale up |
-| > 2.0    | Excellent -- but verify not overfitting |
-| > 3.0    | Almost certainly overfitting |
+| < 0      | Losing money (theta + spread eating you alive) |
+| 0 - 0.3  | Not covering costs |
+| 0.3 - 0.8 | Marginal — might work with better position sizing |
+| 0.8 - 1.2 | Good — tradeable with $500 account |
+| 1.2 - 1.8 | Very good — consistent profits, prepare for live paper trading |
+| > 1.8    | Excellent — but verify not overfitting |
+| > 2.5    | Almost certainly overfitting |
 
-### Overfitting red flags (intraday)
+Note: Sharpe targets are LOWER than v0.2 because the options-adjusted target is
+harder. Covering theta + spread costs is a real hurdle. A Sharpe of 0.8 on
+options-adjusted return is better than a Sharpe of 1.2 on raw equity return.
 
-- Sharpe > 3 while baseline < 0.5
-- Model trades on every single bar (no flat time)
-- Model makes > 500 trades (overtrading with 8bps costs)
+### Overfitting red flags
+
+- Sharpe > 2.5 while baseline < 0.3
+- Model trades on every bar (no flat time, ignoring confidence threshold)
+- Model makes > 400 trades (overtrading with 12bps costs)
 - Model makes < 10 trades (cherry-picking)
-- Same position all day every day (not actually trading)
-- Performance collapses outside of one specific time window
+- Same position all day (not actually trading)
+- Performance only exists in one specific time window
+- Greeks features have zero gate weights (model ignoring options data)
 
 ## Experimentation
 
-Each experiment runs on a single GPU. Fixed **5-minute time budget**.
+Each experiment runs on a single H100 GPU. Fixed **5-minute time budget**.
 Launch: `uv run train.py`.
 
 **What you CAN do:**
 - Modify `train.py` **only**. Everything is fair game:
-  - Architecture (transformer, TCN, MLP, Mamba, MoE...)
+  - Architecture (transformer, TCN, MLP, Mamba, MoE, ...)
+  - Feature group gating weights/architecture
   - Optimizer, LR, schedule
-  - Loss function
-  - Feature selection/preprocessing within the model
+  - Loss function (including the new `options_aware` asymmetric loss)
   - Lookback window (default: 36 hourly bars)
-  - Position sizing strategy
+  - Confidence threshold (default: 0.05)
+  - Feature selection/preprocessing within the model
 
 **What you CANNOT do:**
 - Modify `prepare.py` (read-only)
 - Install new packages
 - Modify the evaluation harness
 
-**Goal: maximize val_sharpe.**
+**Goal: maximize val_sharpe** on options-adjusted returns.
+
+### Experiment ideas (prioritized)
+
+1. **Asymmetric loss** (`options_aware`): Penalize losses 1.5x more than gains.
+   Options have limited upside intraday (you can't hold overnight) but full
+   downside to zero.
+
+2. **Deeper feature gating**: The baseline uses a single sigmoid gate per group.
+   Try multi-head gating, or make the gate context-dependent (gate weights
+   change based on time-of-day or VIX level).
+
+3. **Mamba/SSM instead of transformer**: Temporal patterns in options markets
+   are more sequential than the attention-all-past-bars pattern. SSMs might
+   be better at learning theta decay curves.
+
+4. **Two-stage model**: First head predicts "should I trade?" (binary), second
+   head predicts direction. This separates the flat/trade decision from the
+   directional call.
+
+5. **Time-varying confidence threshold**: Instead of fixed 0.05, make the
+   threshold a function of `edge_after_costs` — be more selective when
+   theta is high (near close) and less selective when theta is low (morning).
+
+6. **Separate call/put outputs**: Instead of [-1, 1], output (call_signal,
+   put_signal) separately. This lets the model learn that calls and puts
+   have different theta profiles and different sensitivity to VIX.
+
+7. **Auxiliary loss on Greeks prediction**: Add a loss term that predicts
+   next-hour IV change or next-hour delta change. This forces the model
+   to build an internal options model.
+
+8. **Larger model**: With 105 features and H100 GPUs, try d_model=384,
+   depth=8. The baseline uses ~400K params on a card that can handle 100M+.
 
 ## Output format
 
@@ -209,7 +259,11 @@ peak_vram_mb:     1234.5
 num_steps:        14523
 num_params:       234,567
 lookback:         36
-depth:            4
+depth:            6
+d_model:          192
+n_heads:          6
+loss_type:        combined
+conf_threshold:   0.05
 ```
 
 Extract: `grep "^val_sharpe:" run.log`
@@ -247,94 +301,8 @@ LOOP FOREVER:
    ```
 5. If empty = crash. Read: `$SSH 'tail -n 50 /workspace/autoresearch-trading/run.log'`
 6. Log to results.tsv.
-7. If improved -> keep. If worse -> revert:
+7. If improved → keep. If worse → revert:
    ```
-   git reset --hard HEAD~1
-   git push --force-with-lease origin HEAD
+   git revert HEAD --no-edit && git push
    ```
-
-**NEVER STOP.**
-
-## Ideas to try (priority order for intraday)
-
-### Architecture experiments
-- **Multi-scale temporal**: Process recent bars (last 6 = today) separately from
-  historical bars (last 30 = prior week) with two branches, then combine
-- **Time-aware attention**: Weight attention by time-of-day (power hour matters more)
-- **Feature-group attention**: Cross-attention between feature groups (internals ×
-  price × session structure = confluence)
-- Scale up: D_MODEL=256, DEPTH=8 (H100 has plenty of headroom)
-- TCN for local patterns + transformer for global
-- Mamba/SSM for efficient long-range
-- Mixture of Experts: separate heads for range day vs trend day
-- Simple GRU (sometimes simpler wins for short sequences)
-
-### Loss function experiments
-- **Combined**: 0.7×directional + 0.3×sharpe (SHARPE_ALPHA=0.3)
-- Asymmetric loss: penalize losses 2× more than gains (options lose fast)
-- Sortino-like: only penalize downside
-- Log-wealth: maximize E[log(1 + position × return)]
-- Time-weighted: recent training data weighted more
-- Huber loss on return prediction
-
-### Feature engineering (in train.py)
-- **Feature selection**: Only use intraday + session + internals (drop daily context)
-- **Regime gating**: Use ib_width to gate other features (range vs trend day)
-- **Confluence detector**: Count how many feature groups agree on direction
-- Feature interactions: VIX × momentum, VWAP × session_position
-- Learned feature embeddings (treat each feature as a token)
-- Feature dropout: randomly zero 20% of features (regularization)
-
-### Lookback experiments
-- Shorter: LOOKBACK=12 (2 trading days, more responsive)
-- Longer: LOOKBACK=48 (8 trading days, more context)
-- LOOKBACK=6 (today only -- pure intraday, no history)
-- LOOKBACK=72 (12 days, maximum daily context)
-
-### Position sizing ("Size Matters")
-- **Confidence threshold**: Flat when |pred| < 0.2 (force selectivity)
-- Position clipping: cap at ±0.5 (conservative, like the real trader)
-- Tanh temperature: tanh(pred / T) for sharper/softer
-- Volatility scaling: shrink position when intraday vol is high
-- Time-of-day scaling: reduce position during lunch (11:30-13:30)
-- Drawdown scaling: reduce size after consecutive losses
-- Three-state output: dedicated flat zone (dead band)
-- Smooth positions: penalize large jumps (|pos_t - pos_{t-1}|)
-
-### Training tricks
-- Larger batches: 128, 256, 512
-- Learning rate sweep: 1e-3, 1e-4, 5e-4
-- Warmup ratio: 0.05 vs 0.2
-- RAdam, Lion optimizer
-- Gradient accumulation (effective batch=256)
-- Mixed precision (bfloat16)
-- Label smoothing on sign(return)
-
-### Ensemble / meta
-- Train N small models, average positions
-- Snapshot ensemble from different checkpoints
-- Dropout at inference for uncertainty
-- Specialist models (trend/mean-revert/vol) + meta-combine
-
-### Advanced
-- **OTF detector**: If recent bars are HH/HL or LL/LH, trend is strong
-- **Regime classifier**: Auxiliary head predicts range/trend day, routes to specialist
-- **Anti-lunch filter**: Reduce weight on 11:30-13:30 predictions
-- Curriculum: Train on clear trend/range days first, then all
-- Time-weighted loss: Weight recent training years more heavily
-- Adversarial: Add noise to features during training
-- Return distribution: Predict mean + variance, use for Kelly sizing
-
-## Mapping model output to live options trades
-
-When the model is eventually deployed with real money:
-
-| Signal range | Action | Size ($500 account) |
-|-------------|--------|-------------------|
-| pred > +0.5 | Buy ATM SPY call (0DTE/1DTE) | 2 contracts |
-| +0.2 < pred < +0.5 | Buy ATM SPY call | 1 contract |
-| -0.2 < pred < +0.2 | **FLAT** (no position) | 0 |
-| -0.5 < pred < -0.2 | Buy ATM SPY put | 1 contract |
-| pred < -0.5 | Buy ATM SPY put (0DTE/1DTE) | 2 contracts |
-
-Close all positions by 15:45 ET. Never hold 0DTE overnight.
+8. Go to step 1.

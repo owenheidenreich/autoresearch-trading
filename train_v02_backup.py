@@ -1,10 +1,10 @@
 """
-Autoresearch-trading training script v0.3 (options-native).
+Autoresearch-trading training script (intraday edition).
 Single-GPU, single-file. The agent modifies THIS file.
 
-Predicts next-hour SPY options P&L using 105 features including
-real Greeks, IV surface, options flow, risk management state,
-and options-adjusted targets.
+Predicts next-hour SPY direction for intraday options trading.
+71 features including intraday bars, session structure, market internals,
+multi-instrument data, and daily context.
 
 Usage: uv run train.py
 """
@@ -39,100 +39,36 @@ from prepare import (
 
 # Model architecture
 LOOKBACK = 36            # hourly bars of history (36 = 6 trading days)
-D_MODEL = 192            # model embedding dimension (up from 128 for 105 features)
-N_HEADS = 6              # number of attention heads
-DEPTH = 6                # number of transformer layers
+D_MODEL = 128            # model embedding dimension
+N_HEADS = 4              # number of attention heads
+DEPTH = 4                # number of transformer layers
 FF_MULT = 4              # feedforward expansion factor
 DROPOUT = 0.1            # dropout rate
 
 # Optimization
 BATCH_SIZE = 64          # batch size
-LR = 2e-4                # peak learning rate (AdamW)
-WEIGHT_DECAY = 0.02      # weight decay
-ADAM_BETAS = (0.9, 0.98)
+LR = 3e-4                # peak learning rate (AdamW)
+WEIGHT_DECAY = 0.01      # weight decay
+ADAM_BETAS = (0.9, 0.999)
 GRAD_CLIP = 1.0          # gradient norm clipping
 WARMUP_RATIO = 0.1       # fraction of time budget for LR warmup
 COOLDOWN_RATIO = 0.3     # fraction of time budget for LR cooldown
 
-# Loss: "directional" | "mse" | "sharpe" | "combined" | "options_aware"
-LOSS_TYPE = "combined"
+# Loss: "directional" | "mse" | "sharpe" | "combined"
+LOSS_TYPE = "directional"
 SHARPE_ALPHA = 0.3       # weight for sharpe component in "combined" loss
 
 # Position sizing
-CONFIDENCE_THRESHOLD = 0.05  # flat if |prediction| < threshold (avoid noise trades)
-
-# Feature groups for gating
-# These indices let the model learn group-level attention weights
-FEATURE_GROUPS = {
-    'price':      (0, 12),
-    'session':    (12, 20),
-    'momentum':   (20, 30),
-    'internals':  (30, 38),
-    'greeks_iv':  (38, 54),
-    'flow':       (54, 60),
-    'multi':      (60, 68),
-    'risk':       (68, 74),
-    'daily':      (74, 94),
-    'time':       (94, 99),
-    'options_ctx': (99, 105),
-}
+CONFIDENCE_THRESHOLD = 0.0  # flat if |prediction| < threshold (0 = always trade)
 
 # ---------------------------------------------------------------------------
 # Model
 # ---------------------------------------------------------------------------
 
-class FeatureGroupGating(nn.Module):
-    """Learn which feature groups matter most per timestep."""
+class IntradayTradingModel(nn.Module):
+    """Causal temporal transformer for intraday market prediction.
 
-    def __init__(self, num_features, d_model, groups):
-        super().__init__()
-        self.groups = groups
-        self.n_groups = len(groups)
-
-        # Gate network: features -> group weights
-        self.gate_net = nn.Sequential(
-            nn.Linear(num_features, self.n_groups * 2),
-            nn.GELU(),
-            nn.Linear(self.n_groups * 2, self.n_groups),
-            nn.Sigmoid(),
-        )
-
-        # Group-specific projections
-        self.group_projs = nn.ModuleDict()
-        for name, (start, end) in groups.items():
-            self.group_projs[name] = nn.Linear(end - start, d_model)
-
-        # Final mix
-        self.mix = nn.Linear(d_model * self.n_groups, d_model)
-
-    def forward(self, x):
-        B, T, F = x.shape
-
-        # Compute gate weights
-        gates = self.gate_net(x)  # (B, T, n_groups)
-
-        # Project each group separately
-        projected = []
-        for i, (name, (start, end)) in enumerate(self.groups.items()):
-            group_feat = x[:, :, start:end]
-            proj = self.group_projs[name](group_feat)  # (B, T, d_model)
-            proj = proj * gates[:, :, i:i+1]  # gate it
-            projected.append(proj)
-
-        # Concatenate and mix
-        cat = torch.cat(projected, dim=-1)  # (B, T, d_model * n_groups)
-        return self.mix(cat)  # (B, T, d_model)
-
-
-class OptionsAwareTradingModel(nn.Module):
-    """Options-native transformer for intraday trading.
-
-    Key differences from v0.2:
-    - Feature group gating: learns which groups (Greeks, flow, price, etc.) matter
-    - Larger capacity for 105 features
-    - Risk-aware output head
-
-    Input:  (batch, lookback, 105)  -- hourly bars with 105 features
+    Input:  (batch, lookback, num_features)  -- hourly bars with 71 features
     Output: (batch,) position signals in [-1, 1]
     """
 
@@ -149,8 +85,8 @@ class OptionsAwareTradingModel(nn.Module):
         super().__init__()
         self.lookback = lookback
 
-        # Feature group gating (learns to weight Greeks vs price vs risk etc.)
-        self.feature_gate = FeatureGroupGating(num_features, d_model, FEATURE_GROUPS)
+        # Feature projection
+        self.input_proj = nn.Linear(num_features, d_model)
         self.input_norm = nn.LayerNorm(d_model)
 
         # Learnable positional embeddings
@@ -172,44 +108,30 @@ class OptionsAwareTradingModel(nn.Module):
         mask = nn.Transformer.generate_square_subsequent_mask(lookback)
         self.register_buffer('causal_mask', mask)
 
-        # Risk-aware output head
-        # The last few features include risk state — we concatenate them
-        # with the transformer output for the final decision
-        risk_dim = 6  # risk management state features
+        # Output head
         self.output_head = nn.Sequential(
-            nn.LayerNorm(d_model + risk_dim),
-            nn.Linear(d_model + risk_dim, d_model // 2),
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(d_model // 2, d_model // 4),
-            nn.GELU(),
-            nn.Dropout(dropout * 0.5),
-            nn.Linear(d_model // 4, 1),
+            nn.Linear(d_model // 2, 1),
             nn.Tanh(),
         )
 
     def forward(self, x):
         B, T, F = x.shape
 
-        # Extract risk features from the last timestep for the output head
-        risk_start, risk_end = FEATURE_GROUPS['risk']
-        risk_features = x[:, -1, risk_start:risk_end]  # (B, risk_dim)
-
-        # Feature group gating
-        x = self.feature_gate(x)
+        x = self.input_proj(x)
         x = self.input_norm(x)
         x = x + self.pos_embed[:, :T, :]
 
-        # Transformer
         x = self.transformer(
             x,
             mask=self.causal_mask[:T, :T],
             is_causal=True,
         )
 
-        # Take last timestep + risk state
-        x = x[:, -1, :]  # (B, d_model)
-        x = torch.cat([x, risk_features], dim=-1)  # (B, d_model + risk_dim)
+        x = x[:, -1, :]
         out = self.output_head(x).squeeze(-1)
 
         # Apply confidence threshold
@@ -234,12 +156,11 @@ data = load_data()
 n_bars = len(data['dates'])
 print(f"Loaded {n_bars} hourly bars, {NUM_FEATURES} features")
 print(f"  ~{n_bars // HOURS_PER_DAY} trading days")
-print(f"  Feature groups: {list(FEATURE_GROUPS.keys())}")
 print(f"Training:   up to idx {data['train_end_idx']}")
 print(f"Validation: idx {data['val_start_idx']}-{data['val_end_idx']}")
 
 # Build model
-model = OptionsAwareTradingModel().to(device)
+model = IntradayTradingModel().to(device)
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Model parameters: {num_params:,}")
 
@@ -260,8 +181,7 @@ x_batch, y_batch = next(train_loader)
 
 print(f"\nTime budget: {TIME_BUDGET}s")
 print(f"Batch size: {BATCH_SIZE}  |  Lookback: {LOOKBACK}  |  Loss: {LOSS_TYPE}")
-print(f"LR: {LR}  |  Depth: {DEPTH}  |  d_model: {D_MODEL}  |  Heads: {N_HEADS}")
-print(f"Confidence threshold: {CONFIDENCE_THRESHOLD}")
+print(f"LR: {LR}  |  Depth: {DEPTH}  |  d_model: {D_MODEL}")
 print()
 
 # ---------------------------------------------------------------------------
@@ -308,13 +228,6 @@ while True:
         pnl = pred * y
         sharpe_loss = -(pnl.mean() / (pnl.std() + 1e-8))
         loss = (1 - SHARPE_ALPHA) * dir_loss + SHARPE_ALPHA * sharpe_loss
-    elif LOSS_TYPE == "options_aware":
-        # Options-aware loss: penalize more for losses than reward for gains
-        # (asymmetric because options have limited upside intraday vs full loss)
-        pnl = pred * y
-        gains = pnl.clamp(min=0)
-        losses = pnl.clamp(max=0)
-        loss = -(gains.mean() + 1.5 * losses.mean())  # 1.5x penalty for losses
     else:
         loss = -(pred * y).mean()
 
@@ -401,7 +314,3 @@ print(f"num_steps:        {step}")
 print(f"num_params:       {num_params:,}")
 print(f"lookback:         {LOOKBACK}")
 print(f"depth:            {DEPTH}")
-print(f"d_model:          {D_MODEL}")
-print(f"n_heads:          {N_HEADS}")
-print(f"loss_type:        {LOSS_TYPE}")
-print(f"conf_threshold:   {CONFIDENCE_THRESHOLD}")

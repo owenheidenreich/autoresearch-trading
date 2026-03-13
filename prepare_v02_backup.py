@@ -1,8 +1,7 @@
 """
-One-time data preparation for autoresearch-trading v0.3 (options-native).
-Downloads intraday market data AND options chain data from Polygon.io,
-computes features (including real Greeks, IV surface, options flow),
-and provides evaluation harness.
+One-time data preparation for autoresearch-trading (intraday edition).
+Downloads intraday market data from Polygon.io, computes features, and provides
+evaluation harness.
 
 Usage:
     uv run prepare.py                           # full prep
@@ -10,7 +9,6 @@ Usage:
     uv run prepare.py --polygon-key YOUR_KEY    # set API key
 
 Requires POLYGON_API_KEY env var or --polygon-key flag.
-Polygon Options Developer plan ($29/mo+) required for Greeks/IV data.
 Data and features are stored in ~/.cache/autoresearch-trading/.
 """
 
@@ -25,22 +23,23 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 import torch
 
 # ---------------------------------------------------------------------------
 # Constants (fixed, do not modify)
 # ---------------------------------------------------------------------------
 
-MAX_LOOKBACK = 78         # max lookback in hourly bars (~13 trading days)
+MAX_LOOKBACK = 78         # max lookback in hourly bars (~12 trading days worth)
 TIME_BUDGET = 300         # training time budget in seconds (5 minutes)
 TRAIN_END = "2024-12-31"  # last date in training set
 VAL_START = "2025-01-01"  # first date in validation set
 VAL_END = "2025-12-31"    # last date in validation set
-TRANSACTION_COST_BPS = 12 # round-trip cost in bps (options spread + slippage)
+TRANSACTION_COST_BPS = 8  # round-trip cost in bps (higher for intraday options)
 MIN_TRADES = 30           # minimum position changes for valid evaluation
-ANNUAL_TRADING_HOURS = 252 * 6  # ~1512 trading hours per year
+ANNUAL_TRADING_HOURS = 252 * 6  # ~1512 trading hours per year (6 decision points/day)
 BARS_PER_DAY = 78         # 5-min bars per RTH session (9:30-16:00)
-HOURS_PER_DAY = 6         # hourly prediction points per day
+HOURS_PER_DAY = 6         # hourly prediction points per day (10:30, ..., 15:30)
 RTH_OPEN = dt.time(9, 30)
 RTH_CLOSE = dt.time(16, 0)
 
@@ -53,94 +52,60 @@ DATA_DIR = os.path.join(CACHE_DIR, "data")
 FEATURES_DIR = os.path.join(CACHE_DIR, "features")
 
 # ---------------------------------------------------------------------------
-# Feature names (105 features)
+# Feature names (71 features)
 # ---------------------------------------------------------------------------
 
 FEATURE_NAMES = [
     # === Intraday price features (12) ===
     'return_5m', 'return_15m', 'return_30m', 'return_1h', 'return_2h', 'return_4h',
-    'vwap_dist',               # distance from session VWAP
+    'vwap_dist',               # distance from session VWAP (z-scored by session)
     'vwap_upper_dist',         # distance from VWAP + 1 std
     'vwap_lower_dist',         # distance from VWAP - 1 std
     'bar_range',               # (high - low) / close for current 5m bar
-    'bar_range_ratio',         # current bar range vs session avg
-    'bar_volume_ratio',        # current bar volume vs session avg
+    'bar_range_ratio',         # current bar range vs session avg bar range
+    'bar_volume_ratio',        # current bar volume vs session avg volume
 
     # === Session structure (8) ===
-    'ib_high_dist',            # distance from initial balance high
+    'ib_high_dist',            # distance from initial balance high (first 30m)
     'ib_low_dist',             # distance from initial balance low
     'ib_width',                # IB width as % of price
-    'overnight_high_dist',     # distance from session high so far
-    'overnight_low_dist',      # distance from session low so far
+    'overnight_high_dist',     # distance from overnight (pre-market) high
+    'overnight_low_dist',      # distance from overnight low
     'session_range_pct',       # current session range as % of price
     'session_position',        # where price is within session range [0, 1]
     'gap_from_prev_close',     # gap from previous session close
 
     # === Intraday momentum (10) ===
     'rsi_14_5m',               # RSI-14 on 5m bars
-    'rsi_5_5m',                # RSI-5 on 5m (fast)
-    'macd_5m',                 # MACD line on 5m (price-normalized)
+    'rsi_5_5m',                # RSI-5 on 5m bars (fast)
+    'macd_5m',                 # MACD line on 5m bars (price-normalized)
     'macd_signal_5m',          # MACD signal on 5m
     'macd_hist_5m',            # MACD histogram on 5m
-    'ema8_ema21_dist',         # EMA8-EMA21 on simulated 15m
-    'ema21_ema34_dist',        # EMA21-EMA34 on simulated 15m
-    'ema_ribbon_aligned',      # 1 if bullish ribbon, -1 if bearish, 0 mixed
-    'cci_20_5m',               # CCI(20) on 5m, scaled
+    'ema8_ema21_dist',         # EMA(8) - EMA(21) on 15m bars, normalized
+    'ema21_ema34_dist',        # EMA(21) - EMA(34) on 15m bars, normalized
+    'ema_ribbon_aligned',      # 1 if EMA(8) > EMA(21) > EMA(34), -1 if inverted, 0 mixed
+    'cci_20_5m',               # CCI(20) on 5m bars, scaled to ~[-1, 1]
     'roc_12_5m',               # Rate of change (12 bars = 1 hour)
 
     # === Market internals (8) ===
-    'tick_level',              # NYSE TICK level (scaled)
-    'tick_ma_dist',            # TICK distance from 20-bar MA
+    'tick_level',              # NYSE TICK index level (scaled)
+    'tick_ma_dist',            # TICK distance from its 20-bar MA
     'trin_level',              # TRIN (Arms Index) level
-    'trin_extreme',            # 1 if TRIN < 0.5 (bullish), -1 if > 2.0 (bearish)
-    'ad_line_slope',           # A/D line slope (5-bar regression)
-    'ad_volume_ratio',         # advancing / declining volume
-    'put_call_volume_ratio',   # actual P/C volume ratio from options data
-    'internals_composite',     # composite of TICK + TRIN + A/D
-
-    # === Options Greeks & IV surface (16) ===  [NEW in v0.3]
-    'atm_iv',                  # ATM implied volatility (call+put avg)
-    'atm_delta',               # ATM call delta (should be ~0.50)
-    'atm_gamma',               # ATM gamma (sensitivity to price moves)
-    'atm_theta',               # ATM theta (daily time decay, normalized by price)
-    'atm_vega',                # ATM vega (sensitivity to IV, normalized)
-    'iv_skew_25d',             # 25-delta put IV minus 25-delta call IV
-    'iv_term_spread',          # near-term IV minus next-term IV
-    'iv_change_session',       # IV change from session open
-    'iv_percentile_20d',       # current IV percentile in trailing 20 sessions
-    'gamma_exposure',          # notional gamma: gamma * OI * 100 * price, scaled
-    'theta_acceleration',      # rate of theta change (accelerating decay)
-    'net_premium_flow',        # call premium minus put premium (normalized)
-    'oi_put_call_ratio',       # open interest put/call ratio
-    'iv_rv_spread',            # implied vol minus realized vol (vol risk premium)
-    'atm_bid_ask_spread',      # bid-ask spread of ATM options (liquidity proxy)
-    'iv_slope_1h',             # rate of IV change over last hour
-
-    # === Options flow (6) ===  [NEW in v0.3]
-    'call_volume_surge',       # call volume vs 20-session avg
-    'put_volume_surge',        # put volume vs 20-session avg
-    'large_trade_bias',        # net direction of trades > 100 contracts
-    'volume_weighted_delta',   # volume-weighted delta of all trades
-    'near_term_oi_change',     # change in near-term open interest
-    'options_volume_ratio',    # today's options volume vs 20d avg
+    'trin_extreme',            # 1 if TRIN < 0.5 (bullish extreme), -1 if > 2.0 (bearish)
+    'ad_line_slope',           # A/D line slope (5-bar regression slope)
+    'ad_volume_ratio',         # advancing volume / declining volume
+    'put_call_ratio',          # put/call ratio if available, else 0
+    'internals_composite',     # composite: normalized score of TICK + TRIN + A/D
 
     # === Multi-instrument (8) ===
-    'es_spy_basis',            # ES-SPY spread
-    'nq_es_ratio_change',      # NQ/ES ratio change (risk-on/off)
+    'es_spy_basis',            # ES futures - SPY cash spread
+    'nq_es_ratio_change',      # NQ/ES ratio change (risk-on/risk-off)
     'vix_level_intraday',      # VIX level during session
-    'vix_change_session',      # VIX change within session
-    'vix_term_spread',         # VIX term structure spread
-    'vix_term_ratio',          # VIX term structure ratio
-    'tnx_change_session',      # 10yr yield change in session
-    'es_nq_correlation',       # rolling SPY-QQQ correlation
-
-    # === Risk management state (6) ===  [NEW in v0.3]
-    'session_pnl',             # cumulative hypothetical P&L this session
-    'position_duration',       # how many bars current position held (normalized)
-    'drawdown_from_session_peak', # drawdown from session's peak P&L
-    'consecutive_losses',      # count of consecutive losing hourly bars
-    'time_to_close',           # normalized time remaining in session (1->0)
-    'theta_remaining',         # estimated theta burn left at current IV
+    'vix_change_session',      # VIX change within current session
+    'vix_term_spread',         # VX1 - VX2 futures spread (contango/backwardation)
+    'vix_term_ratio',          # VX2/VX1 ratio (>1 = contango, <1 = backwardation)
+    'tnx_change_session',      # 10yr yield change within session
+    'es_nq_correlation',       # rolling 30-bar correlation between ES and NQ returns
 
     # === Daily context (carried forward intraday) (20) ===
     'daily_return_1d', 'daily_return_5d', 'daily_return_21d',
@@ -154,19 +119,11 @@ FEATURE_NAMES = [
     'daily_volume_ratio', 'daily_gap',
 
     # === Time encoding (5) ===
-    'time_of_day_sin',
+    'time_of_day_sin',         # cyclical encoding of time within session
     'time_of_day_cos',
     'day_of_week_sin',
     'day_of_week_cos',
-    'minutes_since_open',
-
-    # === Options-adjusted target context (6) ===  [NEW in v0.3]
-    'current_atm_price',       # current ATM option mid-price (normalized)
-    'breakeven_move',          # % move needed to break even on ATM option
-    'expected_theta_cost',     # theta cost for next hour hold (normalized)
-    'delta_adjusted_leverage', # effective leverage: delta * (underlying/option)
-    'gamma_pnl_potential',     # gamma * expected_move^2 * 100 (convexity P&L)
-    'edge_after_costs',        # model needs this much alpha to profit
+    'minutes_since_open',      # linear minutes since 9:30 (scaled 0-1)
 ]
 
 NUM_FEATURES = len(FEATURE_NAMES)
@@ -178,6 +135,7 @@ NUM_FEATURES = len(FEATURE_NAMES)
 def _get_polygon_client():
     """Get Polygon REST client, checking API key."""
     from polygon import RESTClient
+
     api_key = os.environ.get("POLYGON_API_KEY")
     if not api_key:
         print("ERROR: Set POLYGON_API_KEY environment variable or use --polygon-key flag")
@@ -221,6 +179,7 @@ def _download_bars_chunked(client, ticker, multiplier, timespan, start_date, end
     while current < end:
         chunk_end = min(current + pd.DateOffset(months=1), end)
         print(f"  {ticker} {multiplier}{timespan}: {current.date()} -> {chunk_end.date()}")
+
         df = _polygon_bars(
             client, ticker, multiplier, timespan,
             current.strftime('%Y-%m-%d'),
@@ -228,6 +187,7 @@ def _download_bars_chunked(client, ticker, multiplier, timespan, start_date, end
         )
         if len(df) > 0:
             all_dfs.append(df)
+
         current = chunk_end
         time.sleep(0.15)  # rate limit courtesy
 
@@ -238,261 +198,22 @@ def _download_bars_chunked(client, ticker, multiplier, timespan, start_date, end
     return pd.DataFrame()
 
 
-def _download_options_snapshots(client, start_date, end_date):
-    """Download SPY options chain snapshots (Greeks, IV, OI, volume).
-
-    Uses Polygon's options snapshot endpoint for ATM options near each
-    trading day. We build a daily snapshot of key options metrics.
-
-    Returns a DataFrame indexed by date with columns for Greeks, IV, flow.
-    """
-    options_path = os.path.join(DATA_DIR, "options_snapshots.pkl")
-    if os.path.exists(options_path):
-        print("Options snapshots: already downloaded")
-        with open(options_path, 'rb') as f:
-            return pickle.load(f)
-
-    print("Downloading SPY options chain data...")
-    print("  (This uses the Options Developer plan API)")
-
-    all_snapshots = []
-    current = pd.Timestamp(start_date)
-    end = pd.Timestamp(end_date)
-
-    while current <= end:
-        # Skip weekends
-        if current.weekday() >= 5:
-            current += pd.Timedelta(days=1)
-            continue
-
-        date_str = current.strftime('%Y-%m-%d')
-
-        try:
-            # Get options chain snapshot for SPY
-            snapshot = _fetch_options_snapshot_for_date(client, date_str)
-            if snapshot is not None:
-                all_snapshots.append(snapshot)
-        except Exception as e:
-            print(f"  {date_str}: {e}")
-
-        current += pd.Timedelta(days=1)
-        time.sleep(0.2)  # rate limit
-
-    if all_snapshots:
-        result = pd.DataFrame(all_snapshots)
-    else:
-        result = pd.DataFrame()
-
-    with open(options_path, 'wb') as f:
-        pickle.dump(result, f)
-
-    print(f"  -> {len(result)} daily options snapshots saved")
-    return result
-
-
-def _fetch_options_snapshot_for_date(client, date_str):
-    """Fetch options chain metrics for a single date.
-
-    Gets the nearest ATM call and put, extracts Greeks and IV,
-    and computes flow metrics from the chain.
-    """
-    try:
-        # Use the options chain snapshot endpoint
-        chain = list(client.list_snapshot_options_chain(
-            "SPY",
-            params={
-                "strike_price.gte": 0,
-                "expiration_date.gte": date_str,
-                "expiration_date.lte": (pd.Timestamp(date_str) + pd.Timedelta(days=7)).strftime('%Y-%m-%d'),
-                "limit": 250,
-            }
-        ))
-    except Exception:
-        return None
-
-    if not chain:
-        return None
-
-    # Parse snapshot data
-    calls = []
-    puts = []
-
-    for contract in chain:
-        details = getattr(contract, 'details', None)
-        greeks = getattr(contract, 'greeks', None)
-        day_data = getattr(contract, 'day', None)
-        underlying = getattr(contract, 'underlying_asset', None)
-
-        if details is None:
-            continue
-
-        contract_type = getattr(details, 'contract_type', '')
-        strike = getattr(details, 'strike_price', 0)
-        expiration = getattr(details, 'expiration_date', '')
-
-        iv = getattr(contract, 'implied_volatility', None)
-        bid = getattr(contract, 'bid', 0) or 0
-        ask = getattr(contract, 'ask', 0) or 0
-
-        rec = {
-            'strike': strike,
-            'expiration': expiration,
-            'iv': iv,
-            'bid': bid,
-            'ask': ask,
-            'mid': (bid + ask) / 2 if (bid + ask) > 0 else None,
-            'volume': getattr(day_data, 'volume', 0) if day_data else 0,
-            'open_interest': getattr(day_data, 'open_interest', 0) if day_data else 0,
-            'delta': getattr(greeks, 'delta', None) if greeks else None,
-            'gamma': getattr(greeks, 'gamma', None) if greeks else None,
-            'theta': getattr(greeks, 'theta', None) if greeks else None,
-            'vega': getattr(greeks, 'vega', None) if greeks else None,
-        }
-
-        if contract_type == 'call':
-            calls.append(rec)
-        elif contract_type == 'put':
-            puts.append(rec)
-
-    if not calls or not puts:
-        return None
-
-    # Get underlying price from first contract
-    underlying_price = None
-    for contract in chain:
-        ua = getattr(contract, 'underlying_asset', None)
-        if ua:
-            underlying_price = getattr(ua, 'price', None)
-            if underlying_price:
-                break
-
-    if not underlying_price:
-        return None
-
-    calls_df = pd.DataFrame(calls)
-    puts_df = pd.DataFrame(puts)
-
-    # Find ATM: closest strike to underlying price
-    calls_df['dist'] = (calls_df['strike'] - underlying_price).abs()
-    puts_df['dist'] = (puts_df['strike'] - underlying_price).abs()
-
-    atm_call = calls_df.loc[calls_df['dist'].idxmin()]
-    atm_put = puts_df.loc[puts_df['dist'].idxmin()]
-
-    # Find 25-delta options for skew
-    calls_with_delta = calls_df.dropna(subset=['delta'])
-    puts_with_delta = puts_df.dropna(subset=['delta'])
-
-    iv_skew_25d = 0.0
-    if len(puts_with_delta) > 0 and len(calls_with_delta) > 0:
-        # 25-delta put (delta ~ -0.25)
-        puts_with_delta = puts_with_delta.copy()
-        puts_with_delta['delta_dist_25'] = (puts_with_delta['delta'].astype(float) + 0.25).abs()
-        put_25d = puts_with_delta.loc[puts_with_delta['delta_dist_25'].idxmin()]
-
-        # 25-delta call (delta ~ 0.25)
-        calls_with_delta = calls_with_delta.copy()
-        calls_with_delta['delta_dist_25'] = (calls_with_delta['delta'].astype(float) - 0.25).abs()
-        call_25d = calls_with_delta.loc[calls_with_delta['delta_dist_25'].idxmin()]
-
-        if put_25d['iv'] and call_25d['iv']:
-            iv_skew_25d = float(put_25d['iv']) - float(call_25d['iv'])
-
-    # Compute aggregate metrics
-    total_call_vol = calls_df['volume'].sum()
-    total_put_vol = puts_df['volume'].sum()
-    total_call_oi = calls_df['open_interest'].sum()
-    total_put_oi = puts_df['open_interest'].sum()
-
-    # Net premium flow: sum(call_mid * call_vol) - sum(put_mid * put_vol)
-    calls_df['premium_flow'] = calls_df['mid'].fillna(0) * calls_df['volume']
-    puts_df['premium_flow'] = puts_df['mid'].fillna(0) * puts_df['volume']
-    net_premium = calls_df['premium_flow'].sum() - puts_df['premium_flow'].sum()
-
-    # Near-term expiration metrics
-    nearest_exp = min(calls_df['expiration'].unique()) if len(calls_df) > 0 else None
-    near_calls = calls_df[calls_df['expiration'] == nearest_exp] if nearest_exp else calls_df
-    near_puts = puts_df[puts_df['expiration'] == nearest_exp] if nearest_exp else puts_df
-
-    # IV term structure: nearest term ATM IV vs longer term
-    iv_term_spread = 0.0
-    expirations = sorted(calls_df['expiration'].unique())
-    if len(expirations) >= 2:
-        near_atm = near_calls.loc[near_calls['dist'].idxmin()]
-        far_calls = calls_df[calls_df['expiration'] == expirations[-1]]
-        if len(far_calls) > 0:
-            far_calls = far_calls.copy()
-            far_calls['dist'] = (far_calls['strike'] - underlying_price).abs()
-            far_atm = far_calls.loc[far_calls['dist'].idxmin()]
-            if near_atm['iv'] and far_atm['iv']:
-                iv_term_spread = float(near_atm['iv']) - float(far_atm['iv'])
-
-    # Gamma exposure estimate
-    gamma_exposure = 0.0
-    for _, row in calls_df.iterrows():
-        if row['gamma'] and row['open_interest']:
-            gamma_exposure += float(row['gamma']) * float(row['open_interest']) * 100 * underlying_price
-    for _, row in puts_df.iterrows():
-        if row['gamma'] and row['open_interest']:
-            gamma_exposure -= float(row['gamma']) * float(row['open_interest']) * 100 * underlying_price
-
-    # Normalize by a typical value
-    gamma_exposure_norm = gamma_exposure / 1e9  # in billions
-
-    # ATM bid-ask spread as % of mid
-    atm_call_spread = 0.0
-    if atm_call['mid'] and atm_call['mid'] > 0:
-        atm_call_spread = (atm_call['ask'] - atm_call['bid']) / atm_call['mid']
-
-    snapshot = {
-        'date': date_str,
-        'underlying_price': underlying_price,
-        # ATM Greeks
-        'atm_iv': float(atm_call.get('iv', 0) or 0 + atm_put.get('iv', 0) or 0) / 2,
-        'atm_call_delta': float(atm_call.get('delta', 0) or 0),
-        'atm_call_gamma': float(atm_call.get('gamma', 0) or 0),
-        'atm_call_theta': float(atm_call.get('theta', 0) or 0),
-        'atm_call_vega': float(atm_call.get('vega', 0) or 0),
-        'atm_put_delta': float(atm_put.get('delta', 0) or 0),
-        'atm_put_gamma': float(atm_put.get('gamma', 0) or 0),
-        'atm_put_theta': float(atm_put.get('theta', 0) or 0),
-        'atm_put_vega': float(atm_put.get('vega', 0) or 0),
-        'atm_call_mid': float(atm_call.get('mid', 0) or 0),
-        'atm_put_mid': float(atm_put.get('mid', 0) or 0),
-        'atm_call_bid_ask': float(atm_call_spread),
-        # IV surface
-        'iv_skew_25d': iv_skew_25d,
-        'iv_term_spread': iv_term_spread,
-        # Flow
-        'total_call_volume': total_call_vol,
-        'total_put_volume': total_put_vol,
-        'total_call_oi': total_call_oi,
-        'total_put_oi': total_put_oi,
-        'net_premium_flow': net_premium,
-        # Gamma exposure
-        'gamma_exposure_norm': gamma_exposure_norm,
-    }
-
-    return snapshot
-
-
 def download_intraday_data(start_date="2022-01-01", end_date=None):
-    """Download all required intraday + options data from Polygon.io.
+    """Download all required intraday data from Polygon.io.
 
     Downloads:
     - SPY 5-min bars (primary)
     - VIX 5-min bars
     - QQQ 5-min bars (NQ proxy)
-    - SPY daily bars (daily context)
+    - SPY daily bars (for daily context features)
     - VIX daily bars
     - TNX daily bars (10yr yield)
-    - Market internals proxies
+    - Market internals proxies (TICK, TRIN, A/D)
     - VIX futures proxy (VIXY)
-    - SPY options chain snapshots (Greeks, IV, OI, flow)
 
     Returns dict of DataFrames.
     """
-    raw_path = os.path.join(DATA_DIR, "intraday_raw_v3.pkl")
+    raw_path = os.path.join(DATA_DIR, "intraday_raw.pkl")
     if os.path.exists(raw_path):
         print(f"Data: already downloaded at {raw_path}")
         with open(raw_path, 'rb') as f:
@@ -505,22 +226,23 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
 
     client = _get_polygon_client()
 
-    print(f"Downloading data from {start_date} to {end_date}...")
+    print(f"Downloading intraday data from {start_date} to {end_date}...")
     print("This may take a while (rate limits)...")
     print()
 
     data = {}
 
-    # --- Equity bars (same as v0.2) ---
-
+    # SPY 5-min bars (primary)
     print("Downloading SPY 5-min bars...")
     data['spy_5m'] = _download_bars_chunked(client, 'SPY', 5, 'minute', start_date, end_date)
     print(f"  -> {len(data['spy_5m'])} bars")
 
+    # SPY daily bars (for daily context)
     print("Downloading SPY daily bars...")
     data['spy_daily'] = _download_bars_chunked(client, 'SPY', 1, 'day', '2010-01-01', end_date)
     print(f"  -> {len(data['spy_daily'])} bars")
 
+    # VIX 5-min bars
     print("Downloading VIX 5-min bars...")
     for sym in ['I:VIX', 'VIX']:
         try:
@@ -534,6 +256,7 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
         data['vix_5m'] = pd.DataFrame()
         print("  -> VIX 5m not available, will synthesize")
 
+    # VIX daily
     print("Downloading VIX daily bars...")
     for sym in ['I:VIX', 'VIX']:
         try:
@@ -546,6 +269,7 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
         data['vix_daily'] = pd.DataFrame()
     print(f"  -> {len(data.get('vix_daily', pd.DataFrame()))} bars")
 
+    # SPX index (ES proxy)
     print("Downloading SPX index 5-min bars (ES proxy)...")
     for sym in ['I:SPX', 'SPX']:
         try:
@@ -559,10 +283,12 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
         data['es_5m'] = pd.DataFrame()
         print("  -> SPX/ES not available")
 
+    # QQQ (NQ proxy)
     print("Downloading QQQ 5-min bars (NQ proxy)...")
     data['nq_5m'] = _download_bars_chunked(client, 'QQQ', 5, 'minute', start_date, end_date)
     print(f"  -> {len(data['nq_5m'])} bars")
 
+    # TNX daily (10yr yield)
     print("Downloading TNX daily bars...")
     for sym in ['I:TNX', 'TNX']:
         try:
@@ -575,6 +301,7 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
         data['tnx_daily'] = pd.DataFrame()
     print(f"  -> {len(data.get('tnx_daily', pd.DataFrame()))} bars")
 
+    # Market internals
     print("Downloading market internals proxies...")
     for sym, key in [('I:TICK', 'tick_5m'), ('I:TRIN', 'trin_5m')]:
         try:
@@ -592,6 +319,7 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
             print(f"  {sym} not available ({e}), will synthesize")
             data[key] = pd.DataFrame()
 
+    # VIX futures proxy
     print("Downloading VIX futures proxy (VIXY)...")
     try:
         data['vixy_daily'] = _download_bars_chunked(client, 'VIXY', 1, 'day', start_date, end_date)
@@ -599,18 +327,10 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
         data['vixy_daily'] = pd.DataFrame()
     print(f"  -> {len(data.get('vixy_daily', pd.DataFrame()))} bars")
 
-    # --- OPTIONS DATA (NEW in v0.3) ---
-    print()
-    print("=" * 60)
-    print("Downloading SPY options chain snapshots (Greeks, IV, OI)...")
-    print("=" * 60)
-    data['options_snapshots'] = _download_options_snapshots(client, start_date, end_date)
-    print(f"  -> {len(data['options_snapshots'])} daily snapshots")
-
     # Save
     with open(raw_path, 'wb') as f:
         pickle.dump(data, f)
-    print(f"\nAll data saved to {raw_path}")
+    print(f"\nData saved to {raw_path}")
 
     return data
 
@@ -620,7 +340,7 @@ def download_intraday_data(start_date="2022-01-01", end_date=None):
 # ---------------------------------------------------------------------------
 
 def _filter_rth(df, time_col='timestamp'):
-    """Filter to Regular Trading Hours (9:30-16:00 ET)."""
+    """Filter to Regular Trading Hours only (9:30-16:00 ET)."""
     if df.empty:
         return df
     ts = df[time_col]
@@ -677,9 +397,14 @@ def _align_to_spy(df, spy_timestamps, col_prefix=''):
 # ---------------------------------------------------------------------------
 
 def compute_intraday_features(raw_data):
-    """Compute all 105 features from raw intraday + options data.
+    """Compute all 71 features from raw intraday data.
 
     Returns (features_df, targets_series, hourly_timestamps).
+    - features_df: indexed by position in the 5m bar array, subsampled to hourly
+    - targets_series: next-hour log return at each hourly point
+    - hourly_timestamps: actual timestamps for each hourly bar
+
+    All features use only past data -- no lookahead.
     """
     # ----- Filter SPY to RTH -----
     spy = raw_data['spy_5m'].copy()
@@ -707,6 +432,7 @@ def compute_intraday_features(raw_data):
     for n, name in [(1, '5m'), (3, '15m'), (6, '30m'), (12, '1h'), (24, '2h'), (48, '4h')]:
         features[f'return_{name}'] = log_close.diff(n)
 
+    # Session VWAP
     cum_vol_price = (spy['volume'] * spy['vwap'].fillna(close)).groupby(spy['date']).cumsum()
     cum_vol = spy['volume'].groupby(spy['date']).cumsum().replace(0, 1e-10)
     session_vwap = cum_vol_price / cum_vol
@@ -751,6 +477,7 @@ def compute_intraday_features(raw_data):
     features['ib_low_dist'] = (close - ib_low) / close.replace(0, 1e-10)
     features['ib_width'] = (ib_high - ib_low) / close.replace(0, 1e-10)
 
+    # Overnight high/low approximation
     prev_close_map = {}
     dates = sorted(spy['date'].unique())
     for i, d in enumerate(dates):
@@ -789,6 +516,7 @@ def compute_intraday_features(raw_data):
     features['macd_signal_5m'] = macd_signal / close.replace(0, 1e-10)
     features['macd_hist_5m'] = (macd_line - macd_signal) / close.replace(0, 1e-10)
 
+    # EMA ribbon on 15m timeframe (multiply periods by 3 for 5m bars)
     ema8 = _ema(close, 8 * 3)
     ema21 = _ema(close, 21 * 3)
     ema34 = _ema(close, 34 * 3)
@@ -801,10 +529,11 @@ def compute_intraday_features(raw_data):
 
     raw_cci = _cci(high, low, close, 20)
     features['cci_20_5m'] = (raw_cci / 200.0).clip(-2, 2)
+
     features['roc_12_5m'] = close.pct_change(12)
 
     # =====================================================================
-    # MARKET INTERNALS (8) — note: put_call_ratio replaced with real data
+    # MARKET INTERNALS (8)
     # =====================================================================
 
     tick_df = raw_data.get('tick_5m', pd.DataFrame())
@@ -854,34 +583,14 @@ def compute_intraday_features(raw_data):
     )
     ad_slope_std = features['ad_line_slope'].rolling(50).std().replace(0, 1e-10)
     features['ad_line_slope'] = features['ad_line_slope'] / ad_slope_std
-    features['ad_volume_ratio'] = ad_vol.clip(0, 10)
 
-    # Real put/call volume ratio from options data (replacing the 0.0 placeholder)
-    options_snaps = raw_data.get('options_snapshots', pd.DataFrame())
-    if not options_snaps.empty and 'total_put_volume' in options_snaps.columns:
-        pc_ratio = options_snaps.set_index('date')['total_put_volume'] / \
-                   options_snaps.set_index('date')['total_call_volume'].replace(0, 1e-10)
-        spy_date_str = spy['date'].astype(str)
-        features['put_call_volume_ratio'] = spy_date_str.map(pc_ratio).fillna(1.0).values
-    else:
-        features['put_call_volume_ratio'] = 1.0
+    features['ad_volume_ratio'] = ad_vol.clip(0, 10)
+    features['put_call_ratio'] = 0.0
 
     tick_z = (features['tick_level'] - features['tick_level'].rolling(50).mean()) / features['tick_level'].rolling(50).std().replace(0, 1e-10)
     trin_z = -(features['trin_level'] - features['trin_level'].rolling(50).mean()) / features['trin_level'].rolling(50).std().replace(0, 1e-10)
     ad_z = features['ad_line_slope']
     features['internals_composite'] = ((tick_z + trin_z + ad_z) / 3.0).clip(-3, 3)
-
-    # =====================================================================
-    # OPTIONS GREEKS & IV SURFACE (16) [NEW in v0.3]
-    # =====================================================================
-
-    _compute_options_greeks_features(features, spy, close, raw_data)
-
-    # =====================================================================
-    # OPTIONS FLOW (6) [NEW in v0.3]
-    # =====================================================================
-
-    _compute_options_flow_features(features, spy, raw_data)
 
     # =====================================================================
     # MULTI-INSTRUMENT (8)
@@ -955,13 +664,7 @@ def compute_intraday_features(raw_data):
         features['es_nq_correlation'] = 0.0
 
     # =====================================================================
-    # RISK MANAGEMENT STATE (6) [NEW in v0.3]
-    # =====================================================================
-
-    _compute_risk_state_features(features, spy, close, log_close)
-
-    # =====================================================================
-    # DAILY CONTEXT (20) — carried forward from daily bars
+    # DAILY CONTEXT (20) -- carried forward from daily bars
     # =====================================================================
 
     spy_daily = raw_data.get('spy_daily', pd.DataFrame())
@@ -1021,6 +724,7 @@ def compute_intraday_features(raw_data):
         daily_feats['daily_volume_ratio'] = dc_vol / dc_vol.rolling(20).mean().replace(0, 1e-10)
         daily_feats['daily_gap'] = (dc['open'] - dc_close.shift(1)) / dc_close.shift(1).replace(0, 1e-10)
 
+        # Map daily features to 5m bars
         spy_dates_pd = pd.Series(pd.to_datetime(spy['date'].values), index=spy.index)
         for col in daily_feats.columns:
             daily_series = daily_feats[col].sort_index()
@@ -1049,27 +753,17 @@ def compute_intraday_features(raw_data):
     features['minutes_since_open'] = normalized_time
 
     # =====================================================================
-    # OPTIONS-ADJUSTED TARGET CONTEXT (6) [NEW in v0.3]
+    # TARGETS: Next-hour log return
     # =====================================================================
 
-    _compute_options_target_context(features, spy, close, raw_data)
-
-    # =====================================================================
-    # TARGETS: Options-adjusted next-hour return
-    # =====================================================================
-
-    # Base target: next-hour log return (12 five-minute bars ahead)
-    base_target = log_close.diff(12).shift(-12)
-
-    # Options-adjusted target: accounts for delta leverage and theta cost
-    # target = delta * base_return * leverage - theta_cost_per_hour
-    # This teaches the model what the ACTUAL P&L of holding an ATM option is
-    targets = _compute_options_adjusted_target(base_target, features, spy, raw_data)
+    targets = log_close.diff(12).shift(-12)
 
     # =====================================================================
     # SUBSAMPLE TO HOURLY DECISION POINTS
     # =====================================================================
 
+    # Decision points every hour: minutes 60, 120, 180, 240, 300, 360 into session
+    # = 10:30, 11:30, 12:30, 13:30, 14:30, 15:30
     hourly_mask = minutes_since_open.isin([60, 120, 180, 240, 300, 360])
 
     hourly_features = features.loc[hourly_mask].copy()
@@ -1086,370 +780,13 @@ def compute_intraday_features(raw_data):
 
 
 # ---------------------------------------------------------------------------
-# Options Greeks & IV features (16)
-# ---------------------------------------------------------------------------
-
-def _compute_options_greeks_features(features, spy, close, raw_data):
-    """Compute 16 options Greeks and IV surface features."""
-    options_snaps = raw_data.get('options_snapshots', pd.DataFrame())
-    spy_date_str = spy['date'].astype(str)
-
-    if options_snaps.empty or len(options_snaps) == 0:
-        # No options data: fill with sensible defaults
-        features['atm_iv'] = 0.20  # ~20% IV typical
-        features['atm_delta'] = 0.50
-        features['atm_gamma'] = 0.01
-        features['atm_theta'] = -0.01
-        features['atm_vega'] = 0.10
-        features['iv_skew_25d'] = 0.0
-        features['iv_term_spread'] = 0.0
-        features['iv_change_session'] = 0.0
-        features['iv_percentile_20d'] = 0.5
-        features['gamma_exposure'] = 0.0
-        features['theta_acceleration'] = 0.0
-        features['net_premium_flow'] = 0.0
-        features['oi_put_call_ratio'] = 1.0
-        features['iv_rv_spread'] = 0.0
-        features['atm_bid_ask_spread'] = 0.01
-        features['iv_slope_1h'] = 0.0
-        return
-
-    opts = options_snaps.set_index('date')
-
-    # Map daily options snapshots to every 5m bar (constant within day)
-    def _map_opt(col, default=0.0):
-        if col in opts.columns:
-            return spy_date_str.map(opts[col]).fillna(default).astype(float).values
-        return np.full(len(spy), default)
-
-    # ATM IV (average of call + put)
-    atm_iv_raw = _map_opt('atm_iv', 0.20)
-    features['atm_iv'] = atm_iv_raw
-
-    # ATM Greeks — use call Greeks (put mirrors with sign flip)
-    features['atm_delta'] = _map_opt('atm_call_delta', 0.50)
-    features['atm_gamma'] = _map_opt('atm_call_gamma', 0.01)
-
-    # Theta normalized by underlying price (so it's comparable across time)
-    theta_raw = _map_opt('atm_call_theta', -0.01)
-    features['atm_theta'] = theta_raw / np.maximum(close.values, 1.0)
-
-    # Vega normalized by underlying price
-    vega_raw = _map_opt('atm_call_vega', 0.10)
-    features['atm_vega'] = vega_raw / np.maximum(close.values, 1.0)
-
-    # IV skew (25-delta put - 25-delta call IV)
-    features['iv_skew_25d'] = _map_opt('iv_skew_25d', 0.0)
-
-    # IV term structure (near-term minus far-term IV)
-    features['iv_term_spread'] = _map_opt('iv_term_spread', 0.0)
-
-    # IV change within session (since this is daily snapshot, use diff)
-    iv_series = pd.Series(atm_iv_raw, index=spy.index)
-    iv_session_start = iv_series.groupby(spy['date']).transform('first')
-    features['iv_change_session'] = iv_series - iv_session_start
-
-    # IV percentile (rolling 20-session)
-    iv_daily = opts['atm_iv'] if 'atm_iv' in opts.columns else pd.Series(dtype=float)
-    if len(iv_daily) > 0:
-        iv_pctile = iv_daily.rolling(20, min_periods=5).apply(
-            lambda x: np.mean(x <= x.iloc[-1]), raw=False
-        ).fillna(0.5)
-        features['iv_percentile_20d'] = spy_date_str.map(iv_pctile).fillna(0.5).astype(float).values
-    else:
-        features['iv_percentile_20d'] = 0.5
-
-    # Gamma exposure
-    features['gamma_exposure'] = _map_opt('gamma_exposure_norm', 0.0)
-
-    # Theta acceleration: rate of theta change day-over-day
-    if 'atm_call_theta' in opts.columns and len(opts) > 1:
-        theta_daily = opts['atm_call_theta'].astype(float)
-        theta_accel = theta_daily.diff().fillna(0)
-        features['theta_acceleration'] = spy_date_str.map(theta_accel).fillna(0).astype(float).values
-    else:
-        features['theta_acceleration'] = 0.0
-
-    # Net premium flow (normalized by a typical daily value)
-    net_prem = _map_opt('net_premium_flow', 0.0)
-    net_prem_std = pd.Series(net_prem).rolling(100, min_periods=10).std().replace(0, 1e-10).values
-    features['net_premium_flow'] = net_prem / net_prem_std
-
-    # OI put/call ratio
-    total_put_oi = _map_opt('total_put_oi', 1.0)
-    total_call_oi = _map_opt('total_call_oi', 1.0)
-    features['oi_put_call_ratio'] = total_put_oi / np.maximum(total_call_oi, 1.0)
-
-    # IV minus realized vol spread (vol risk premium)
-    # Use daily rvol from features if available, else estimate from returns
-    rvol_5d = close.pct_change().rolling(30).std() * np.sqrt(252)  # 30-bar realized
-    features['iv_rv_spread'] = atm_iv_raw - rvol_5d.fillna(0.15).values
-
-    # ATM bid-ask spread (liquidity)
-    features['atm_bid_ask_spread'] = _map_opt('atm_call_bid_ask', 0.01)
-
-    # IV slope over last hour (12 bars) — approximated since we have daily snapshots
-    # Within a day, IV is constant from snapshot, so this picks up day-over-day change
-    features['iv_slope_1h'] = pd.Series(atm_iv_raw, index=spy.index).diff(12).fillna(0).values
-
-
-# ---------------------------------------------------------------------------
-# Options Flow features (6)
-# ---------------------------------------------------------------------------
-
-def _compute_options_flow_features(features, spy, raw_data):
-    """Compute 6 options flow features from chain snapshots."""
-    options_snaps = raw_data.get('options_snapshots', pd.DataFrame())
-    spy_date_str = spy['date'].astype(str)
-
-    if options_snaps.empty:
-        features['call_volume_surge'] = 1.0
-        features['put_volume_surge'] = 1.0
-        features['large_trade_bias'] = 0.0
-        features['volume_weighted_delta'] = 0.0
-        features['near_term_oi_change'] = 0.0
-        features['options_volume_ratio'] = 1.0
-        return
-
-    opts = options_snaps.set_index('date')
-
-    # Call volume surge: today's call volume vs 20-day avg
-    if 'total_call_volume' in opts.columns:
-        call_vol = opts['total_call_volume'].astype(float)
-        call_vol_avg = call_vol.rolling(20, min_periods=5).mean().replace(0, 1e-10)
-        call_surge = (call_vol / call_vol_avg).fillna(1.0)
-        features['call_volume_surge'] = spy_date_str.map(call_surge).fillna(1.0).astype(float).values
-    else:
-        features['call_volume_surge'] = 1.0
-
-    # Put volume surge
-    if 'total_put_volume' in opts.columns:
-        put_vol = opts['total_put_volume'].astype(float)
-        put_vol_avg = put_vol.rolling(20, min_periods=5).mean().replace(0, 1e-10)
-        put_surge = (put_vol / put_vol_avg).fillna(1.0)
-        features['put_volume_surge'] = spy_date_str.map(put_surge).fillna(1.0).astype(float).values
-    else:
-        features['put_volume_surge'] = 1.0
-
-    # Large trade bias — approximated as net premium direction
-    # (Full implementation would need trade-level data)
-    if 'net_premium_flow' in opts.columns:
-        net_flow = opts['net_premium_flow'].astype(float)
-        flow_std = net_flow.rolling(20, min_periods=5).std().replace(0, 1e-10)
-        bias = (net_flow / flow_std).clip(-3, 3).fillna(0)
-        features['large_trade_bias'] = spy_date_str.map(bias).fillna(0).astype(float).values
-    else:
-        features['large_trade_bias'] = 0.0
-
-    # Volume-weighted delta — approximated from P/C volume ratio
-    if 'total_call_volume' in opts.columns and 'total_put_volume' in opts.columns:
-        cv = opts['total_call_volume'].astype(float)
-        pv = opts['total_put_volume'].astype(float)
-        total = (cv + pv).replace(0, 1e-10)
-        vw_delta = ((cv * 0.5 - pv * 0.5) / total).fillna(0)
-        features['volume_weighted_delta'] = spy_date_str.map(vw_delta).fillna(0).astype(float).values
-    else:
-        features['volume_weighted_delta'] = 0.0
-
-    # Near-term OI change
-    if 'total_call_oi' in opts.columns and 'total_put_oi' in opts.columns:
-        total_oi = opts['total_call_oi'].astype(float) + opts['total_put_oi'].astype(float)
-        oi_change = total_oi.pct_change().fillna(0).clip(-1, 1)
-        features['near_term_oi_change'] = spy_date_str.map(oi_change).fillna(0).astype(float).values
-    else:
-        features['near_term_oi_change'] = 0.0
-
-    # Total options volume ratio vs 20d avg
-    if 'total_call_volume' in opts.columns and 'total_put_volume' in opts.columns:
-        total_vol = opts['total_call_volume'].astype(float) + opts['total_put_volume'].astype(float)
-        avg_vol = total_vol.rolling(20, min_periods=5).mean().replace(0, 1e-10)
-        vol_ratio = (total_vol / avg_vol).fillna(1.0)
-        features['options_volume_ratio'] = spy_date_str.map(vol_ratio).fillna(1.0).astype(float).values
-    else:
-        features['options_volume_ratio'] = 1.0
-
-
-# ---------------------------------------------------------------------------
-# Risk Management State features (6)
-# ---------------------------------------------------------------------------
-
-def _compute_risk_state_features(features, spy, close, log_close):
-    """Compute 6 risk management state features.
-
-    These track hypothetical session P&L, drawdown, consecutive losses,
-    and time remaining — teaching the model to manage risk intraday.
-
-    Uses a simple momentum-based proxy position (since we don't have actual
-    model positions during feature computation).
-    """
-    # Proxy position: sign of 1-hour return (what a simple trend-follower does)
-    proxy_pos = np.sign(log_close.diff(12)).fillna(0)
-
-    # Hourly returns
-    hourly_ret = log_close.diff(12).fillna(0)
-
-    # Session P&L (cumulative within each day)
-    proxy_pnl = proxy_pos.shift(1) * hourly_ret  # position taken 1h ago * return
-    session_pnl = proxy_pnl.groupby(spy['date']).cumsum()
-    features['session_pnl'] = session_pnl
-
-    # Position duration (how many consecutive bars same direction)
-    pos_sign = proxy_pos
-    pos_change = (pos_sign != pos_sign.shift(1)).astype(int)
-    duration = pos_change.groupby(pos_change.cumsum()).cumcount()
-    features['position_duration'] = (duration / 78).clip(0, 1)  # normalize by session length
-
-    # Drawdown from session peak P&L
-    session_peak = session_pnl.groupby(spy['date']).cummax()
-    features['drawdown_from_session_peak'] = session_pnl - session_peak
-
-    # Consecutive losing hourly bars
-    is_loss = (proxy_pnl < 0).astype(int)
-    # Count consecutive losses
-    not_loss = (proxy_pnl >= 0).astype(int)
-    loss_groups = not_loss.cumsum()
-    consec = is_loss.groupby(loss_groups).cumsum()
-    features['consecutive_losses'] = (consec / 6).clip(0, 1)  # normalize: 6 = full day of losses
-
-    # Time to close: 1 at open, 0 at close
-    minutes_since_open = (
-        spy['timestamp'].dt.hour * 60 + spy['timestamp'].dt.minute - (9 * 60 + 30)
-    ).clip(0, 390)
-    features['time_to_close'] = 1.0 - (minutes_since_open / 390.0)
-
-    # Theta remaining: how much theta burn is left today
-    # Theta accelerates through the day (most burn in last 2 hours)
-    # Model as sqrt(time_remaining) — options lose value slower early, faster late
-    features['theta_remaining'] = np.sqrt(features['time_to_close'].clip(0, 1))
-
-
-# ---------------------------------------------------------------------------
-# Options-adjusted target context (6)
-# ---------------------------------------------------------------------------
-
-def _compute_options_target_context(features, spy, close, raw_data):
-    """Compute 6 features that help the model understand options P&L math.
-
-    These tell the model: "given current Greeks, how big of a move do you need
-    to make money on an ATM option, and what's the cost of being wrong?"
-    """
-    options_snaps = raw_data.get('options_snapshots', pd.DataFrame())
-    spy_date_str = spy['date'].astype(str)
-
-    if options_snaps.empty:
-        # Reasonable defaults for typical ATM SPY options
-        features['current_atm_price'] = 0.005  # ~$2.50 / $500 underlying
-        features['breakeven_move'] = 0.005      # ~0.5% move to break even
-        features['expected_theta_cost'] = 0.001  # small hourly theta
-        features['delta_adjusted_leverage'] = 100.0  # typical leverage
-        features['gamma_pnl_potential'] = 0.0
-        features['edge_after_costs'] = 0.003    # need ~30bps alpha
-        return
-
-    opts = options_snaps.set_index('date')
-
-    def _map_opt(col, default=0.0):
-        if col in opts.columns:
-            return spy_date_str.map(opts[col]).fillna(default).astype(float).values
-        return np.full(len(spy), default)
-
-    # Current ATM option mid-price (normalized by underlying)
-    atm_mid = _map_opt('atm_call_mid', 2.50)
-    features['current_atm_price'] = atm_mid / np.maximum(close.values, 1.0)
-
-    # Breakeven move: how much underlying needs to move to cover the premium
-    # For ATM option: breakeven ≈ premium / (delta * 100 shares)
-    delta = np.maximum(np.abs(_map_opt('atm_call_delta', 0.50)), 0.01)
-    features['breakeven_move'] = (atm_mid / (delta * np.maximum(close.values, 1.0)))
-
-    # Expected theta cost for a 1-hour hold
-    # Daily theta / 6.5 trading hours
-    theta_daily = np.abs(_map_opt('atm_call_theta', 0.01))
-    features['expected_theta_cost'] = (theta_daily / 6.5) / np.maximum(close.values, 1.0)
-
-    # Delta-adjusted leverage: underlying price * delta / option price
-    features['delta_adjusted_leverage'] = (
-        close.values * delta / np.maximum(atm_mid, 0.01)
-    )
-
-    # Gamma P&L potential: gamma * expected_move^2 * 100
-    # Expected move ≈ IV * sqrt(1/252/6.5) * price (1-hour expected move)
-    iv = _map_opt('atm_iv', 0.20)
-    expected_move = iv * np.sqrt(1 / 252 / 6.5) * close.values
-    gamma = _map_opt('atm_call_gamma', 0.01)
-    features['gamma_pnl_potential'] = 0.5 * gamma * expected_move**2 * 100 / np.maximum(close.values, 1.0)
-
-    # Edge after costs: minimum alpha needed to profit
-    # = (theta_hourly + spread_cost) / (delta * price)
-    spread_cost = _map_opt('atm_call_bid_ask', 0.01) * atm_mid  # dollar spread
-    theta_hourly = theta_daily / 6.5
-    features['edge_after_costs'] = (theta_hourly + spread_cost) / (delta * np.maximum(close.values, 1.0))
-
-
-# ---------------------------------------------------------------------------
-# Options-adjusted target
-# ---------------------------------------------------------------------------
-
-def _compute_options_adjusted_target(base_target, features, spy, raw_data):
-    """Compute options-adjusted target.
-
-    Instead of raw equity return, the target is:
-    P&L = delta * return * leverage - hourly_theta_cost
-
-    This teaches the model to account for:
-    1. Delta leverage (ATM option amplifies returns by ~100x per contract)
-    2. Theta decay (holding costs money even if direction is right)
-    3. The asymmetry of options (gamma means convex payoff)
-
-    Falls back to base_target (raw return) if no options data available.
-    """
-    options_snaps = raw_data.get('options_snapshots', pd.DataFrame())
-
-    if options_snaps.empty:
-        return base_target
-
-    spy_date_str = spy['date'].astype(str)
-    opts = options_snaps.set_index('date')
-
-    def _map_opt(col, default=0.0):
-        if col in opts.columns:
-            return spy_date_str.map(opts[col]).fillna(default).astype(float).values
-        return np.full(len(spy), default)
-
-    delta = _map_opt('atm_call_delta', 0.50)
-    theta = _map_opt('atm_call_theta', -0.01)
-    gamma = _map_opt('atm_call_gamma', 0.01)
-    atm_mid = np.maximum(_map_opt('atm_call_mid', 2.50), 0.01)
-
-    base = base_target.values.copy()
-    base = np.nan_to_num(base, nan=0.0)
-
-    # Options P&L per dollar of underlying:
-    # pnl = delta * return + 0.5 * gamma * return^2 * price - theta/6.5/price
-    # Normalized by option price to get return on option premium
-    price = np.maximum(spy['close'].astype(float).values, 1.0)
-
-    delta_pnl = delta * base * price           # delta P&L in dollars
-    gamma_pnl = 0.5 * gamma * (base * price)**2  # gamma P&L (convexity bonus)
-    theta_cost = np.abs(theta) / 6.5           # hourly theta cost in dollars
-
-    option_pnl = (delta_pnl + gamma_pnl - theta_cost) / atm_mid  # return on premium
-
-    # Clip extreme values
-    option_pnl = np.clip(option_pnl, -2.0, 2.0)
-
-    return pd.Series(option_pnl, index=base_target.index)
-
-
-# ---------------------------------------------------------------------------
 # Normalization
 # ---------------------------------------------------------------------------
 
 _NO_NORMALIZE = {
     'time_of_day_sin', 'time_of_day_cos', 'day_of_week_sin', 'day_of_week_cos',
-    'minutes_since_open', 'ema_ribbon_aligned', 'trin_extreme',
-    'session_position', 'time_to_close', 'theta_remaining',
-    'consecutive_losses', 'position_duration',
+    'minutes_since_open', 'ema_ribbon_aligned', 'trin_extreme', 'put_call_ratio',
+    'session_position',
 }
 
 
@@ -1546,7 +883,7 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
 
     Yields (x, y) where:
         x: (batch, lookback, NUM_FEATURES) -- feature windows of hourly bars
-        y: (batch,)                        -- options-adjusted next-hour returns
+        y: (batch,)                        -- next-hour returns
     """
     features = data['features'].to(device)
     targets = data['targets'].to(device)
@@ -1591,7 +928,7 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
 
 def load_raw_data():
     """Load the raw intraday data dict."""
-    path = os.path.join(DATA_DIR, "intraday_raw_v3.pkl")
+    path = os.path.join(DATA_DIR, "intraday_raw.pkl")
     if not os.path.exists(path):
         print("Raw data not found. Run `uv run prepare.py` first.")
         sys.exit(1)
@@ -1606,13 +943,11 @@ def load_raw_data():
 @torch.no_grad()
 def evaluate_sharpe(model, data, lookback, device, batch_size=256):
     """
-    Walk-forward Sharpe ratio on held-out validation period.
-    **Higher is better.**
+    Walk-forward Sharpe ratio on the held-out validation period.
+    **Higher is better.** This is the single metric for autoresearch-trading.
 
-    Now evaluates on OPTIONS-ADJUSTED returns: the target already encodes
-    delta leverage and theta cost, so the Sharpe reflects actual options P&L.
-
-    PnL per hour = position_t * options_adjusted_return_{t->t+1hr} - |delta_pos| * cost
+    Now operates on HOURLY bars (6 per day).
+    PnL per hour = position_t * return_{t->t+1hr} - |delta_position_t| * cost
     Sharpe = mean(hourly_pnl) / std(hourly_pnl) * sqrt(trading_hours_per_year)
     """
     model.eval()
@@ -1707,10 +1042,19 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=256):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Prepare intraday + options data for autoresearch-trading v0.3")
-    parser.add_argument("--start", type=str, default="2022-01-01", help="Start date for intraday data")
-    parser.add_argument("--end", type=str, default=None, help="End date (default: today)")
-    parser.add_argument("--polygon-key", type=str, default=None, help="Polygon.io API key")
+    parser = argparse.ArgumentParser(description="Prepare intraday data for autoresearch-trading")
+    parser.add_argument(
+        "--start", type=str, default="2022-01-01",
+        help="Start date for intraday data (default: 2022-01-01)"
+    )
+    parser.add_argument(
+        "--end", type=str, default=None,
+        help="End date for data (default: today)"
+    )
+    parser.add_argument(
+        "--polygon-key", type=str, default=None,
+        help="Polygon.io API key (or set POLYGON_API_KEY env var)"
+    )
     args = parser.parse_args()
 
     if args.polygon_key:
@@ -1725,7 +1069,7 @@ if __name__ == "__main__":
     print(f"  ({time.time() - t0:.1f}s)")
     print()
 
-    print("Computing intraday + options features...")
+    print("Computing intraday features...")
     t0 = time.time()
     features_df, targets, timestamps = compute_intraday_features(raw_data)
     print(f"  Hourly bars: {len(features_df)} x {NUM_FEATURES} features")
