@@ -30,6 +30,8 @@ services:
     env:
       - DEBIAN_FRONTEND=noninteractive
       - REPO_URL=https://github.com/owenheidenreich/autoresearch-trading.git
+      - REPO_BRANCH=autoresearch/mar13
+      - POLYGON_API_KEY=faFr0Qs0mS42sUFqidmDJfI4OF2wWt3p
     command:
       - "bash"
       - "-c"
@@ -58,6 +60,10 @@ services:
         cd /workspace
         if [ -n "$REPO_URL" ] && [ "$REPO_URL" != "https://github.com/YOUR_USERNAME/autoresearch-trading.git" ]; then
           git clone "$REPO_URL" autoresearch-trading || echo "⚠ git clone failed"
+          if [ -n "$REPO_BRANCH" ]; then
+            cd autoresearch-trading && git checkout "$REPO_BRANCH" && cd ..
+            echo "✓ Checked out branch: $REPO_BRANCH"
+          fi
         else
           echo "No REPO_URL set — creating workspace from scratch"
           mkdir -p autoresearch-trading
