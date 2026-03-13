@@ -5,23 +5,35 @@ model, training for 5 minutes each run, keeping improvements and discarding
 failures. Adapted from [karpathy/autoresearch](https://github.com/karpathy/autoresearch)
 for financial markets instead of language modeling.
 
+## Architecture
+
+The agent (Claude Opus via VS Code Copilot) runs on the user's laptop.
+Training runs execute on a remote H100 GPU container on the Akash network.
+
+**Local repo**: `/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading`
+**Container**: SSH via `sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 root@provider.h100.wdc.hh.akash.pub`
+**Container repo**: `/workspace/autoresearch-trading`
+
+Workflow: edit `train.py` locally → git commit + push → SSH pull on container → run training → read results.
+
 ## Setup
 
 To set up a new experiment, work with the user to:
 
-1. **Agree on a run tag**: propose a tag based on today's date (e.g. `mar12`).
+1. **Agree on a run tag**: propose a tag based on today's date (e.g. `mar13`).
    The branch `autoresearch/<tag>` must not already exist.
-2. **Create the branch**: `git checkout -b autoresearch/<tag>` from current master.
+2. **Create the branch locally**: `git checkout -b autoresearch/<tag>` from current main.
 3. **Read the in-scope files**:
    - `README.md` — repository context.
    - `prepare.py` — fixed constants, data pipeline, feature computation, dataloader,
      evaluation harness. **Do not modify.**
    - `train.py` — the file you modify. Model architecture, optimizer, hyperparameters,
      training loop, loss function, feature selection. Everything is fair game.
-4. **Verify data exists**: Check that `~/.cache/autoresearch-trading/features/data.pt`
-   exists. If not, tell the human to run `uv run prepare.py`.
-5. **Initialize results.tsv** with just the header row. The baseline will be
-   recorded after the first run.
+4. **Verify data exists on container**: SSH in and check that
+   `~/.cache/autoresearch-trading/features/data.pt` exists.
+   If not, run: `PATH="$HOME/.local/bin:$PATH" uv run prepare.py`
+5. **Initialize results.tsv** on the container with just the header row.
+   The baseline will be recorded after the first run.
 6. **Confirm and go**: Confirm setup looks good.
 
 Once you get confirmation, kick off the experimentation.
@@ -210,20 +222,44 @@ e5f6g7h	0.956789	-0.034567	65	keep	add regime-conditional output head
 
 ## The experiment loop
 
-The experiment runs on a dedicated branch (e.g. `autoresearch/mar12`).
+The experiment runs on a dedicated branch (e.g. `autoresearch/mar13`).
+
+The SSH command prefix for running commands on the container:
+```
+SSH="sshpass -p 'autoresearch2026' ssh -o StrictHostKeyChecking=no -p 30974 root@provider.h100.wdc.hh.akash.pub"
+```
 
 LOOP FOREVER:
 
-1. Look at the git state: current branch/commit.
-2. Tune `train.py` with an experimental idea by directly editing the code.
-3. `git commit -am "description of change"`
-4. Run the experiment: `uv run train.py > run.log 2>&1`
-5. Read results: `grep "^val_sharpe:\|^max_drawdown:\|^num_trades:" run.log`
-6. If grep output is empty, the run crashed. Run `tail -n 50 run.log` to read
-   the traceback and attempt a fix.
-7. Record results in `results.tsv` (do NOT commit this file).
-8. If val_sharpe improved (higher), advance the branch — keep the commit.
-9. If val_sharpe is equal or worse, `git reset --hard HEAD~1` to discard.
+1. Edit `train.py` locally with an experimental idea.
+2. Commit and push:
+   ```
+   git commit -am "description of change"
+   git push origin HEAD
+   ```
+3. Pull on the container and run training:
+   ```
+   $SSH 'cd /workspace/autoresearch-trading && git pull && PATH="$HOME/.local/bin:$PATH" uv run python train.py > run.log 2>&1'
+   ```
+   (redirect everything — do NOT let output flood your context)
+4. Read results:
+   ```
+   $SSH 'cd /workspace/autoresearch-trading && grep "^val_sharpe:\|^max_drawdown:\|^num_trades:" run.log'
+   ```
+5. If grep output is empty, the run crashed.
+   Read the traceback: `$SSH 'tail -n 50 /workspace/autoresearch-trading/run.log'`
+   Attempt a fix. If you can't fix it after a few attempts, give up and move on.
+6. Record results in `results.tsv` on the container:
+   ```
+   $SSH 'cd /workspace/autoresearch-trading && echo "HASH\tSHARPE\tDRAWDOWN\tTRADES\tSTATUS\tDESC" >> results.tsv'
+   ```
+   (NOTE: do not commit results.tsv, leave it untracked by git)
+7. If val_sharpe improved (higher), you "advance" the branch — keep the commit.
+8. If val_sharpe is equal or worse, revert locally:
+   ```
+   git reset --hard HEAD~1
+   git push --force-with-lease origin HEAD
+   ```
 
 **Timeout**: Each experiment takes ~5 min training + startup. If a run exceeds
 10 minutes total, kill it and treat as failure.
