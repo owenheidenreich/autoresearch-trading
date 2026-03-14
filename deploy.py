@@ -3,18 +3,26 @@
 Akash Deployment Script for Autoresearch-Trading
 
 Deploys an H100/A100 GPU training container on Akash Network.
-Uses deploy-autoresearch.yaml SDL and handles the full lifecycle:
-  create deployment → wait for bids → select provider → lease → manifest → wait → SSH info
+Handles full lifecycle: deploy → upload cached data → train.
 
-Usage:
-  python3 deploy.py                    # Interactive — pick a provider from bids
-  python3 deploy.py --deposit 5.0      # Add extra AKT to escrow (default 0.5)
-  python3 deploy.py --close-all        # Close all active deployments and exit
-  python3 deploy.py --status           # Show status of active deployments
+WORKFLOW (data downloaded locally, GPU only does GPU work):
+  1. uv run prepare.py --download-only          # Local: download data (~4h, no GPU)
+  2. python3 deploy.py --deposit 5.0             # Deploy GPU container on Akash
+  3. python3 deploy.py --launch HOST PORT        # Upload cache + prepare tensors
+  4. SSH in → uv run train.py                    # Train on GPU
+
+CACHE MANAGEMENT:
+  python3 deploy.py --download-cache HOST PORT   # SCP cache FROM container
+  python3 deploy.py --upload-cache HOST PORT     # SCP cache TO container
+
+OTHER:
+  python3 deploy.py --status                     # Show active deployments
+  python3 deploy.py --close-all                  # Close all deployments
 
 Requires:
   - provider-services CLI (Akash CLI)
   - Wallet 'trinity-wallet' in keyring
+  - sshpass (brew install hudochenkov/sshpass/sshpass)
 """
 
 import subprocess
@@ -471,6 +479,50 @@ def upload_cache(host, port):
 # MAIN
 # =============================================================================
 
+def _ssh_cmd(host, port, cmd, password="autoresearch2026", timeout=120):
+    """Run a command on the Akash container via SSH. Returns (returncode, stdout)."""
+    full = [
+        "sshpass", "-p", password,
+        "ssh", "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
+        "-p", str(port), f"root@{host}",
+        cmd,
+    ]
+    result = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
+    return result.returncode, result.stdout.strip()
+
+
+def launch_on_container(host, port):
+    """Upload cache → run prepare --skip-download → kick off training."""
+    # Step 1: Upload cache
+    has_cache = any((LOCAL_CACHE_DIR / f).exists() for f in CACHE_FILES)
+    if not has_cache:
+        print("ERROR: No local cache files found.")
+        print(f"  Expected at: {LOCAL_CACHE_DIR}")
+        print("  Run locally first: uv run prepare.py --download-only")
+        sys.exit(1)
+
+    upload_cache(host, port)
+
+    # Step 2: Run prepare.py --skip-download on container
+    print("\nRunning prepare.py --skip-download on container...")
+    rc, out = _ssh_cmd(host, port,
+                       "cd /workspace/autoresearch-trading && uv run prepare.py --skip-download",
+                       timeout=600)
+    if rc != 0:
+        print(f"  prepare.py failed (exit {rc})")
+        print(f"  Output: {out[-500:]}")
+        return
+    # Print last few lines
+    for line in out.split('\n')[-10:]:
+        print(f"  {line}")
+
+    print("\n" + "=" * 60)
+    print("  DATA READY — GPU training can begin")
+    print("  SSH in and run: uv run train.py")
+    print("=" * 60)
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Deploy autoresearch-trading to Akash")
@@ -486,6 +538,8 @@ def main():
                         help="SCP cache files from container: --download-cache HOST PORT")
     parser.add_argument("--upload-cache", nargs=2, metavar=("HOST", "PORT"),
                         help="SCP cache files to container: --upload-cache HOST PORT")
+    parser.add_argument("--launch", nargs=2, metavar=("HOST", "PORT"),
+                        help="Upload cache + prepare data on container: --launch HOST PORT")
     args = parser.parse_args()
 
     # --- Cache management (no wallet needed) ---
@@ -494,6 +548,9 @@ def main():
         return
     if args.upload_cache:
         upload_cache(args.upload_cache[0], int(args.upload_cache[1]))
+        return
+    if args.launch:
+        launch_on_container(args.launch[0], int(args.launch[1]))
         return
 
     # --- Find RPC ---

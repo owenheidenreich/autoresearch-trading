@@ -78,14 +78,23 @@ services:
         # --- 5. GPU check ---
         python -c "import torch; p=torch.cuda.get_device_properties(0); print(f'GPU: {torch.cuda.get_device_name(0)}, VRAM: {p.total_memory / 1024**3:.1f} GB')" || echo "⚠ GPU check failed (non-fatal)"
 
-        # --- 6. Prepare data (if prepare.py exists) ---
-        if [ -f prepare.py ]; then
-          uv run prepare.py && echo "✓ Data prepared" || echo "⚠ prepare.py failed (run manually via SSH)"
+        # --- 6. Check for uploaded cache data ---
+        CACHE_DIR="$HOME/.cache/autoresearch-trading/data"
+        mkdir -p "$CACHE_DIR"
+        if [ -f "$CACHE_DIR/intraday_raw_v4.pkl" ]; then
+          echo "✓ Cache data found — running feature computation + tensor prep"
+          cd /workspace/autoresearch-trading
+          uv run prepare.py --skip-download && echo "✓ Data prepared" || echo "⚠ prepare.py failed (run manually via SSH)"
+        else
+          echo ""
+          echo "⚠ No cache data found. Upload cache before running prepare.py:"
+          echo "  python3 deploy.py --upload-cache <HOST> <PORT>"
+          echo "  Then SSH in and run: uv run prepare.py --skip-download"
         fi
 
         echo ""
         echo "============================================"
-        echo "  READY FOR EXPERIMENTS"
+        echo "  READY — upload cache + run training"
         echo "  Workspace: /workspace/autoresearch-trading"
         echo "  SSH: root / autoresearch2026"
         echo "  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'unknown')"

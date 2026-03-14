@@ -1,17 +1,25 @@
 """
-One-time data preparation for autoresearch-trading v0.3 (options-native).
-Downloads intraday market data AND options chain data from Polygon.io,
-computes features (including real Greeks, IV surface, options flow),
-and provides evaluation harness.
+Data preparation for autoresearch-trading v0.4 (options-native + Black-Scholes).
+Downloads intraday market data AND historical options bars from Polygon.io,
+computes IV/Greeks via Black-Scholes, builds 105 features, prepares tensors.
 
-Usage:
-    uv run prepare.py                           # full prep
-    uv run prepare.py --start 2024              # custom start year
-    uv run prepare.py --polygon-key YOUR_KEY    # set API key
+WORKFLOW:
+  1. Run LOCALLY (no GPU needed):
+     uv run prepare.py --download-only           # Downloads ~4h, saves cache
 
-Requires POLYGON_API_KEY env var or --polygon-key flag.
-Polygon Options Developer plan ($29/mo+) required for Greeks/IV data.
-Data and features are stored in ~/.cache/autoresearch-trading/.
+  2. Upload cache to GPU container:
+     python3 deploy.py --upload-cache HOST PORT
+
+  3. Run ON GPU container:
+     uv run prepare.py --skip-download            # Features + tensors only (~30s)
+
+Other flags:
+  --start 2024-04-01    Custom start date
+  --polygon-key KEY     Set API key (or use POLYGON_API_KEY env var)
+
+Requires POLYGON_API_KEY for download mode.
+Polygon Options Starter plan ($29/mo) required for options bars.
+Data stored in ~/.cache/autoresearch-trading/.
 """
 
 import os
@@ -1811,10 +1819,14 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=256):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Prepare intraday + options data for autoresearch-trading v0.3")
+    parser = argparse.ArgumentParser(description="Prepare intraday + options data for autoresearch-trading v0.4")
     parser.add_argument("--start", type=str, default="2024-04-01", help="Start date for intraday data")
     parser.add_argument("--end", type=str, default=None, help="End date (default: today)")
     parser.add_argument("--polygon-key", type=str, default=None, help="Polygon.io API key")
+    parser.add_argument("--download-only", action="store_true",
+                        help="Download data only (no features/tensors). Run locally to build cache.")
+    parser.add_argument("--skip-download", action="store_true",
+                        help="Skip download, use existing cache. Run on GPU after uploading cache.")
     args = parser.parse_args()
 
     if args.polygon_key:
@@ -1822,13 +1834,42 @@ if __name__ == "__main__":
 
     print(f"Cache directory: {CACHE_DIR}")
     print(f"Num features: {NUM_FEATURES}")
+    if args.download_only:
+        print("Mode: DOWNLOAD ONLY (run locally, then upload cache to GPU)")
+    elif args.skip_download:
+        print("Mode: SKIP DOWNLOAD (using uploaded cache files)")
     print()
 
-    t0 = time.time()
-    raw_data = download_intraday_data(args.start, args.end)
-    print(f"  ({time.time() - t0:.1f}s)")
+    # --- Step 1: Download data (or load from cache) ---
+    if args.skip_download:
+        raw_path = os.path.join(DATA_DIR, "intraday_raw_v4.pkl")
+        if not os.path.exists(raw_path):
+            print(f"ERROR: Cache not found at {raw_path}")
+            print("Upload cache first: python3 deploy.py --upload-cache HOST PORT")
+            sys.exit(1)
+        print(f"Loading cached data from {raw_path}...")
+        with open(raw_path, 'rb') as f:
+            raw_data = pickle.load(f)
+        print(f"  Loaded {len(raw_data)} datasets")
+    else:
+        t0 = time.time()
+        raw_data = download_intraday_data(args.start, args.end)
+        print(f"  ({time.time() - t0:.1f}s)")
+
     print()
 
+    if args.download_only:
+        print("Download complete. Cache files:")
+        for f in os.listdir(DATA_DIR):
+            fpath = os.path.join(DATA_DIR, f)
+            size_mb = os.path.getsize(fpath) / (1024 * 1024)
+            print(f"  {f}: {size_mb:.1f} MB")
+        print()
+        print("Next: upload to GPU container:")
+        print("  python3 deploy.py --upload-cache HOST PORT")
+        sys.exit(0)
+
+    # --- Step 2: Compute features (CPU-bound, fast) ---
     print("Computing intraday + options features...")
     t0 = time.time()
     features_df, targets, timestamps = compute_intraday_features(raw_data)
