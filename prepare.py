@@ -1080,6 +1080,10 @@ def compute_intraday_features(raw_data):
             term_spread = (vixy_ts.reindex(common_idx) - vix_daily_ts.reindex(common_idx)).ffill()
             term_ratio = (vixy_ts.reindex(common_idx) / vix_daily_ts.reindex(common_idx).replace(0, 1e-10)).ffill()
             spy_dates_pd = pd.Series(pd.to_datetime(spy['date'].values), index=spy.index)
+            if term_spread.index.tz is not None:
+                term_spread.index = term_spread.index.tz_localize(None)
+            if term_ratio.index.tz is not None:
+                term_ratio.index = term_ratio.index.tz_localize(None)
             features['vix_term_spread'] = spy_dates_pd.apply(lambda d: term_spread.asof(d) if len(term_spread) > 0 else 0).fillna(0).values / 100.0
             features['vix_term_ratio'] = spy_dates_pd.apply(lambda d: term_ratio.asof(d) if len(term_ratio) > 0 else 1).fillna(1).values
         else:
@@ -1092,6 +1096,8 @@ def compute_intraday_features(raw_data):
     tnx_daily = raw_data.get('tnx_daily', pd.DataFrame())
     if not tnx_daily.empty:
         tnx_ts = tnx_daily.set_index('timestamp')['close'].sort_index()
+        if tnx_ts.index.tz is not None:
+            tnx_ts.index = tnx_ts.index.tz_localize(None)
         spy_dates_pd = pd.Series(pd.to_datetime(spy['date'].values), index=spy.index)
         tnx_today = spy_dates_pd.apply(lambda d: tnx_ts.asof(d) if len(tnx_ts) > 0 else np.nan)
         tnx_prev = spy_dates_pd.apply(lambda d: tnx_ts.asof(d - pd.Timedelta(days=1)) if len(tnx_ts) > 0 else np.nan)
@@ -1176,6 +1182,9 @@ def compute_intraday_features(raw_data):
         spy_dates_pd = pd.Series(pd.to_datetime(spy['date'].values), index=spy.index)
         for col in daily_feats.columns:
             daily_series = daily_feats[col].sort_index()
+            # Normalize tz: strip tz from daily_series index to match spy_dates_pd
+            if daily_series.index.tz is not None:
+                daily_series.index = daily_series.index.tz_localize(None)
             features[col] = spy_dates_pd.apply(
                 lambda d, s=daily_series: s.asof(d) if len(s) > 0 else 0
             ).fillna(0).values
