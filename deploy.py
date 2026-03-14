@@ -388,6 +388,86 @@ def get_provider_host(provider_addr):
 
 
 # =============================================================================
+# CACHE MANAGEMENT — download/upload .pkl files to avoid re-downloading data
+# =============================================================================
+
+LOCAL_CACHE_DIR = Path.home() / ".cache" / "autoresearch-trading" / "data"
+REMOTE_CACHE_DIR = "/root/.cache/autoresearch-trading/data"
+
+CACHE_FILES = [
+    "equity_raw_v4.pkl",         # Equity data only (saved before options download)
+    "historical_options_5m.pkl", # Options bars + Greeks
+    "intraday_raw_v4.pkl",      # Complete dataset (equity + options)
+]
+
+
+def _scp_base_args(host, port, password="autoresearch2026"):
+    """Return base sshpass + scp args for Akash container."""
+    return [
+        "sshpass", "-p", password,
+        "scp", "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
+        "-P", str(port),
+    ]
+
+
+def download_cache(host, port):
+    """SCP cache files from Akash container to local machine."""
+    LOCAL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    print(f"\nDownloading cache files from {host}:{port}...")
+    for fname in CACHE_FILES:
+        remote = f"root@{host}:{REMOTE_CACHE_DIR}/{fname}"
+        local = LOCAL_CACHE_DIR / fname
+        cmd = _scp_base_args(host, port) + [remote, str(local)]
+        print(f"  {fname}...", end=" ", flush=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        if result.returncode == 0:
+            size_mb = local.stat().st_size / (1024 * 1024)
+            print(f"OK ({size_mb:.1f} MB)")
+        else:
+            print(f"SKIP (not found or error)")
+
+    print(f"  Local cache: {LOCAL_CACHE_DIR}")
+
+
+def upload_cache(host, port):
+    """SCP cache files from local machine to Akash container."""
+    print(f"\nUploading cache files to {host}:{port}...")
+
+    # Ensure remote dir exists
+    ssh_cmd = [
+        "sshpass", "-p", "autoresearch2026",
+        "ssh", "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
+        "-p", str(port), f"root@{host}",
+        f"mkdir -p {REMOTE_CACHE_DIR}"
+    ]
+    subprocess.run(ssh_cmd, capture_output=True, timeout=30)
+
+    uploaded = 0
+    for fname in CACHE_FILES:
+        local = LOCAL_CACHE_DIR / fname
+        if not local.exists():
+            continue
+        remote = f"root@{host}:{REMOTE_CACHE_DIR}/{fname}"
+        cmd = _scp_base_args(host, port) + [str(local), remote]
+        size_mb = local.stat().st_size / (1024 * 1024)
+        print(f"  {fname} ({size_mb:.1f} MB)...", end=" ", flush=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        if result.returncode == 0:
+            print("OK")
+            uploaded += 1
+        else:
+            print(f"FAILED: {result.stderr.strip()}")
+
+    if uploaded:
+        print(f"  {uploaded} file(s) uploaded — prepare.py will skip downloads")
+    else:
+        print("  No cache files found locally. Run --download-cache first.")
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -402,7 +482,19 @@ def main():
                         help="Show active deployment status and exit")
     parser.add_argument("--no-close", action="store_true",
                         help="Don't close existing deployments before creating new one")
+    parser.add_argument("--download-cache", nargs=2, metavar=("HOST", "PORT"),
+                        help="SCP cache files from container: --download-cache HOST PORT")
+    parser.add_argument("--upload-cache", nargs=2, metavar=("HOST", "PORT"),
+                        help="SCP cache files to container: --upload-cache HOST PORT")
     args = parser.parse_args()
+
+    # --- Cache management (no wallet needed) ---
+    if args.download_cache:
+        download_cache(args.download_cache[0], int(args.download_cache[1]))
+        return
+    if args.upload_cache:
+        upload_cache(args.upload_cache[0], int(args.upload_cache[1]))
+        return
 
     # --- Find RPC ---
     print("Testing RPC nodes...")
@@ -606,10 +698,18 @@ def main():
 
     print()
     print("  Next steps:")
-    print("    1. SSH into the container")
-    print("    2. cd /workspace/autoresearch-trading")
-    print(f"    3. export POLYGON_API_KEY=<your-key>")
-    print("    4. uv run prepare.py")
+    if LOCAL_CACHE_DIR.exists() and any((LOCAL_CACHE_DIR / f).exists() for f in CACHE_FILES):
+        if ssh_info:
+            print(f"    1. python3 deploy.py --upload-cache {ssh_host} {ssh_port}")
+            print("    2. SSH in → uv run prepare.py   (skips download, just computes features)")
+        else:
+            print("    1. Upload cache once SSH is available:")
+            print("       python3 deploy.py --upload-cache HOST PORT")
+    else:
+        print("    1. SSH into the container")
+        print("    2. cd /workspace/autoresearch-trading")
+        print(f"    3. export POLYGON_API_KEY=<your-key>")
+        print("    4. uv run prepare.py")
     print("    5. uv run python train.py > run.log 2>&1")
     print("=" * 60)
 

@@ -407,6 +407,12 @@ def download_intraday_data(start_date="2024-04-01", end_date=None):
         data['vixy_daily'] = pd.DataFrame()
     print(f"  -> {len(data.get('vixy_daily', pd.DataFrame()))} bars")
 
+    # Save equity data early so we can SCP it off before options finish
+    equity_path = os.path.join(DATA_DIR, "equity_raw_v4.pkl")
+    with open(equity_path, 'wb') as f:
+        pickle.dump(data, f)
+    print(f"\nEquity data saved to {equity_path}")
+
     # --- OPTIONS DATA (v0.4: real historical bars + Black-Scholes Greeks) ---
     print()
     print("=" * 60)
@@ -417,7 +423,7 @@ def download_intraday_data(start_date="2024-04-01", end_date=None):
                                                            start_date, end_date)
     print(f"  -> {len(data['options_5m'])} 5-min options bars")
 
-    # Save
+    # Save complete dataset
     with open(raw_path, 'wb') as f:
         pickle.dump(data, f)
     print(f"\nAll data saved to {raw_path}")
