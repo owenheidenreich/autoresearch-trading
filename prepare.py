@@ -278,7 +278,7 @@ def _download_bars_chunked(client, ticker, multiplier, timespan, start_date, end
     return pd.DataFrame()
 
 
-def download_intraday_data(start_date="2024-04-01", end_date=None):
+def download_intraday_data(start_date="2024-04-01", end_date=None, max_options_days=0):
     """Download all required intraday + options data from Polygon.io.
 
     Downloads:
@@ -291,6 +291,9 @@ def download_intraday_data(start_date="2024-04-01", end_date=None):
     - Market internals proxies
     - VIX futures proxy (VIXY)
     - SPY options chain snapshots (Greeks, IV, OI, flow)
+
+    Args:
+        max_options_days: Cap on trading days for options download. 0 = unlimited.
 
     Returns dict of DataFrames.
     """
@@ -428,7 +431,8 @@ def download_intraday_data(start_date="2024-04-01", end_date=None):
     print("This is the slow part (~3-4 hours at 13s/call rate limit)")
     print("=" * 60)
     data['options_5m'] = _download_historical_options_bars(client, data['spy_5m'],
-                                                           start_date, end_date)
+                                                           start_date, end_date,
+                                                           max_days=max_options_days)
     print(f"  -> {len(data['options_5m'])} 5-min options bars")
 
     # Save complete dataset
@@ -585,7 +589,7 @@ def _time_to_expiry_years(bar_timestamp, expiry_date):
     return T
 
 
-def _download_historical_options_bars(client, spy_5m_df, start_date, end_date):
+def _download_historical_options_bars(client, spy_5m_df, start_date, end_date, max_days=0):
     """Download historical 0DTE ATM call + put bars and compute Greeks.
 
     For each trading day:
@@ -594,8 +598,13 @@ def _download_historical_options_bars(client, spy_5m_df, start_date, end_date):
     3. Download 5-min bars for each contract
     4. Compute IV and Greeks via Black-Scholes at each 5-min bar
 
+    Args:
+        max_days: Cap on trading days to download. 0 = unlimited.
+
     Returns DataFrame aligned to SPY 5-min timestamps with options columns.
     """
+    if not max_days:
+        max_days = 0
     cache_path = os.path.join(DATA_DIR, "historical_options_5m.pkl")
     if os.path.exists(cache_path):
         print("Historical options bars: already downloaded")
@@ -612,6 +621,9 @@ def _download_historical_options_bars(client, spy_5m_df, start_date, end_date):
     daily_opens = spy_rth.groupby('date').first()['open']
 
     trading_dates = sorted(daily_opens.index)
+    if max_days and max_days > 0:
+        trading_dates = trading_dates[:max_days]
+        print(f"  Quick mode: capped to {max_days} trading days (of {len(daily_opens)} total)")
     print(f"  {len(trading_dates)} trading days to process")
     print(f"  ~{len(trading_dates) * 2} API calls needed (~{len(trading_dates) * 2 * 13 / 3600:.1f} hours)")
     print()
@@ -1827,6 +1839,8 @@ if __name__ == "__main__":
                         help="Download data only (no features/tensors). Run locally to build cache.")
     parser.add_argument("--skip-download", action="store_true",
                         help="Skip download, use existing cache. Run on GPU after uploading cache.")
+    parser.add_argument("--quick", action="store_true",
+                        help="Quick test: 1 month of data, 10 days of options (~5 min total)")
     args = parser.parse_args()
 
     if args.polygon_key:
@@ -1834,11 +1848,24 @@ if __name__ == "__main__":
 
     print(f"Cache directory: {CACHE_DIR}")
     print(f"Num features: {NUM_FEATURES}")
-    if args.download_only:
+    if args.quick:
+        print("Mode: QUICK TEST (1 month equity + 10 days options)")
+    elif args.download_only:
         print("Mode: DOWNLOAD ONLY (run locally, then upload cache to GPU)")
     elif args.skip_download:
         print("Mode: SKIP DOWNLOAD (using uploaded cache files)")
     print()
+
+    # Quick mode: override date range
+    if args.quick:
+        args.start = (dt.date.today() - dt.timedelta(days=30)).strftime('%Y-%m-%d')
+        args.end = dt.date.today().strftime('%Y-%m-%d')
+        # Delete existing cache so we get fresh quick data
+        for fname in ['intraday_raw_v4.pkl', 'historical_options_5m.pkl', 'equity_raw_v4.pkl']:
+            p = os.path.join(DATA_DIR, fname)
+            if os.path.exists(p):
+                os.remove(p)
+                print(f"  Cleared old cache: {fname}")
 
     # --- Step 1: Download data (or load from cache) ---
     if args.skip_download:
@@ -1853,7 +1880,8 @@ if __name__ == "__main__":
         print(f"  Loaded {len(raw_data)} datasets")
     else:
         t0 = time.time()
-        raw_data = download_intraday_data(args.start, args.end)
+        max_opt_days = 10 if args.quick else 0
+        raw_data = download_intraday_data(args.start, args.end, max_options_days=max_opt_days)
         print(f"  ({time.time() - t0:.1f}s)")
 
     print()
