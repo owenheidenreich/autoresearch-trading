@@ -1,7 +1,7 @@
 [project]
 name = "autoresearch-trading"
-version = "0.3.0"
-description = "Autonomous AI research for options-native intraday SPY trading model on single GPU"
+version = "1.0.0"
+description = "Autonomous AI research for SPX 0DTE options trading on H100 GPU"
 requires-python = ">=3.10"
 dependencies = [
     "torch>=2.5",
@@ -12,4 +12,5 @@ dependencies = [
     "matplotlib>=3.7",
     "scipy>=1.11",
     "tzdata>=2024.1",
+    "ib_insync>=0.9.86",
 ]

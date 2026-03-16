@@ -1,6 +1,11 @@
 # autoresearch-trading
+.env
+.deploy-state
 results.tsv
 run.log
+loop.log
+trade_log.csv
+*.pt
 *.pyc
 __pycache__/
 .venv/
@@ -17,3 +22,6 @@ data/
 
 # OS
 .DS_Store
+
+# Monitor backup files
+results/

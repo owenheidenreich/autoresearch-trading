@@ -1,0 +1,556 @@
+"""
+Autoresearch-trading v3: two-head sniper model for SPX 0DTE options.
+Single-GPU, single-file. The agent modifies THIS file.
+
+Two-head architecture:
+  Gate head: (batch, 2) — [NO_TRADE, TRADE]
+  Direction head: (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
+                                  PUT_ATM, PUT_OTM5, PUT_OTM10]
+
+Combined into 8 actions:
+  DO_NOTHING (0), BUY_CALL_ATM (1), BUY_CALL_OTM5 (2), BUY_CALL_OTM10 (3),
+  BUY_PUT_ATM (4), BUY_PUT_OTM5 (5), BUY_PUT_OTM10 (6), EXIT (7)
+
+  - Gate=TRADE + Dir=i → BUY action i+1
+  - Gate=NO_TRADE while in position → EXIT (handled at inference)
+  - Gate=NO_TRADE while flat → DO_NOTHING
+
+Loss: trained on actual SPXW option P&L (ATM + OTM at ±5 and ±10 strikes).
+Optimizes composite score = ProfitFactor * TradeSharpe * min(1, trades_per_day/2)
+
+Usage: uv run train.py  (or: python3 train.py)
+"""
+
+import os
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "4")
+
+import gc
+import math
+import time
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+
+from prepare import (
+    TIME_BUDGET,
+    NUM_FEATURES,
+    FEATURE_NAMES,
+    ANNUAL_TRADING_BARS,
+    BARS_PER_DAY,
+    NUM_ACTIONS,
+    ACTION_DO_NOTHING,
+    ACTION_BUY_CALL_ATM,
+    ACTION_BUY_CALL_OTM5,
+    ACTION_BUY_CALL_OTM10,
+    ACTION_BUY_PUT_ATM,
+    ACTION_BUY_PUT_OTM5,
+    ACTION_BUY_PUT_OTM10,
+    ACTION_BUY_CALL,
+    ACTION_BUY_PUT,
+    ACTION_EXIT,
+    load_data,
+    make_dataloader,
+    evaluate_trades,
+    evaluate_sharpe,
+)
+
+# ---------------------------------------------------------------------------
+# Hyperparameters
+# ---------------------------------------------------------------------------
+
+LOOKBACK = 120           # 1-min bars of context (120 = 2 hours)
+D_MODEL = 64             # embedding dim
+N_HEADS = 4              # attention heads
+DEPTH = 4                # transformer layers
+FF_MULT = 4              # feedforward expansion
+DROPOUT = 0.1
+
+BATCH_SIZE = 128
+LR = 3e-4
+WEIGHT_DECAY = 0.01
+ADAM_BETAS = (0.9, 0.98)
+GRAD_CLIP = 1.0
+WARMUP_RATIO = 0.1
+COOLDOWN_RATIO = 0.3
+
+# Loss mixing
+GATE_LOSS_WEIGHT = 1.0      # weight for gate head loss
+DIR_LOSS_WEIGHT = 1.0        # weight for direction head loss
+PNL_ALIGNMENT_WEIGHT = 0.1   # reward aligning predictions with option P&L
+EXIT_LOSS_WEIGHT = 0.3       # weight for EXIT signal (gate=NO_TRADE on exit bars)
+
+# Feature groups for gating (60 features: 39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks)
+FEATURE_GROUPS = {
+    'returns':   (0, 5),     # ret_1..ret_24
+    'volume':    (5, 8),     # volume_ratio, volume_zscore, vol_at_price
+    'vol':       (8, 11),    # bar_range, realized_vol, range_ratio
+    'vwap':      (11, 17),   # vwap_dist, slope, upper1, lower1, upper2, lower2
+    'session':   (17, 22),   # ib_high_dist, ib_low_dist, ib_width, am_range, session_range
+    'levels':    (22, 28),   # onh, onl, prev_h, prev_l, prev_c, prev_vwap
+    'trend':     (28, 31),   # trend_hh_hl, ema_cross, close_position
+    'micro':     (31, 33),   # gap, inside_bar
+    'time':      (33, 39),   # minutes_to_close, sin, cos, dow, half_hour, ib_complete
+    'options':   (39, 45),   # atm_iv, iv_skew, atm_premium_pct, put_call_vol, opt_vol, theta_rate
+    'vix':       (45, 49),   # vix_level, vix_change, vix_regime, vrp (regime awareness)
+    'otm':       (49, 55),   # otm_call_iv, otm_put_iv, iv_skew_5, iv_term_call, iv_term_put, otm_vol_ratio
+    'greeks':    (55, 60),   # delta, gamma, theta, vega, gamma_theta_ratio
+}
+
+# ---------------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------------
+
+class FeatureGroupGating(nn.Module):
+    """Learn which feature groups matter per timestep."""
+
+    def __init__(self, num_features, d_model, groups):
+        super().__init__()
+        self.groups = groups
+        self.n_groups = len(groups)
+
+        self.gate_net = nn.Sequential(
+            nn.Linear(num_features, self.n_groups * 2),
+            nn.GELU(),
+            nn.Linear(self.n_groups * 2, self.n_groups),
+            nn.Sigmoid(),
+        )
+        self.group_projs = nn.ModuleDict()
+        for name, (start, end) in groups.items():
+            self.group_projs[name] = nn.Linear(end - start, d_model)
+        self.mix = nn.Linear(d_model * self.n_groups, d_model)
+
+    def forward(self, x):
+        gates = self.gate_net(x)
+        projected = []
+        for i, (name, (start, end)) in enumerate(self.groups.items()):
+            proj = self.group_projs[name](x[:, :, start:end])
+            proj = proj * gates[:, :, i:i+1]
+            projected.append(proj)
+        return self.mix(torch.cat(projected, dim=-1))
+
+
+class TradingModel(nn.Module):
+    """Two-head sniper model for SPX 0DTE options.
+
+    Input:  (batch, lookback, NUM_FEATURES)
+    Output: (gate_logits, dir_logits)
+        gate_logits: (batch, 2) — [NO_TRADE, TRADE]
+        dir_logits:  (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
+                                     PUT_ATM, PUT_OTM5, PUT_OTM10]
+
+    The gate head decides "should I be in a trade right now?"
+    The direction head decides "which strike and direction?"
+    At inference, gate=NO_TRADE while in a position → EXIT signal.
+    """
+
+    def __init__(self, num_features=NUM_FEATURES, lookback=LOOKBACK,
+                 d_model=D_MODEL, n_heads=N_HEADS, n_layers=DEPTH,
+                 ff_mult=FF_MULT, dropout=DROPOUT):
+        super().__init__()
+        self.lookback = lookback
+
+        self.feature_gate = FeatureGroupGating(num_features, d_model, FEATURE_GROUPS)
+        self.input_norm = nn.LayerNorm(d_model)
+        self.pos_embed = nn.Parameter(torch.randn(1, lookback, d_model) * 0.02)
+
+        layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=n_heads,
+            dim_feedforward=d_model * ff_mult, dropout=dropout,
+            batch_first=True, activation='gelu', norm_first=True,
+        )
+        self.transformer = nn.TransformerEncoder(layer, num_layers=n_layers)
+        mask = nn.Transformer.generate_square_subsequent_mask(lookback)
+        self.register_buffer('causal_mask', mask)
+
+        # Gate head: "should I trade?" → [NO_TRADE, TRADE]
+        self.gate_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 2),
+        )
+
+        # Direction head: "which strike?" → [CALL_ATM, CALL_OTM5, CALL_OTM10,
+        #                                     PUT_ATM, PUT_OTM5, PUT_OTM10]
+        self.dir_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 6),
+        )
+
+        # Slight bias toward trading (gate) so model doesn't collapse to NO_TRADE
+        with torch.no_grad():
+            self.gate_head[-1].bias[0] = -0.5   # NO_TRADE bias (negative = less likely)
+
+    def forward(self, x):
+        x = self.feature_gate(x)
+        x = self.input_norm(x)
+        x = x + self.pos_embed[:, :x.size(1), :]
+        x = self.transformer(x, mask=self.causal_mask[:x.size(1), :x.size(1)],
+                              is_causal=True)
+        last = x[:, -1, :]  # (batch, d_model)
+        return self.gate_head(last), self.dir_head(last)
+
+
+# ---------------------------------------------------------------------------
+# Loss function
+# ---------------------------------------------------------------------------
+
+def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features,
+                exit_call_labels=None, exit_put_labels=None,
+                otm5_call_pnl=None, otm5_put_pnl=None,
+                otm10_call_pnl=None, otm10_put_pnl=None):
+    """Two-head loss trained on actual SPXW option P&L.
+
+    gate_logits: (batch, 2) — [NO_TRADE, TRADE]
+    dir_logits:  (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
+                                PUT_ATM, PUT_OTM5, PUT_OTM10]
+    call_pnl:    (batch,) — ATM call option P&L (NaN where unavailable)
+    put_pnl:     (batch,) — ATM put option P&L (NaN where unavailable)
+    time_features: (batch,) — minutes_to_close (feature index 33), normalized
+    exit_call_labels: (batch,) — 1.0 when call profit target hit (optional)
+    exit_put_labels:  (batch,) — 1.0 when put profit target hit (optional)
+    otm5_call_pnl:  (batch,) — OTM+5 call P&L (optional, NaN where unavailable)
+    otm5_put_pnl:   (batch,) — OTM-5 put P&L (optional, NaN where unavailable)
+    otm10_call_pnl: (batch,) — OTM+10 call P&L (optional, NaN where unavailable)
+    otm10_put_pnl:  (batch,) — OTM-10 put P&L (optional, NaN where unavailable)
+
+    Gate target: TRADE (1) when any option P&L > 0 (profitable trade exists)
+    Direction target: argmax of [call_atm, call_otm5, call_otm10, put_atm, put_otm5, put_otm10] P&L
+    EXIT target: gate=NO_TRADE (0) on bars where exit labels fire
+    """
+    B = gate_logits.shape[0]
+    device = gate_logits.device
+    n_dir = dir_logits.shape[-1]  # 6 for new model, 2 for legacy
+
+    # Mask: only compute loss where we have ATM option P&L data
+    valid = ~torch.isnan(call_pnl) & ~torch.isnan(put_pnl)
+    if valid.sum() < 2:
+        return gate_logits.sum() * 0.0
+
+    g_logits = gate_logits[valid]
+    d_logits = dir_logits[valid]
+    c_pnl = call_pnl[valid]
+    p_pnl = put_pnl[valid]
+    t_feat = time_features[valid]
+
+    # Build 6-class P&L array: [call_atm, call_otm5, call_otm10, put_atm, put_otm5, put_otm10]
+    # Use ATM P&L as fallback for missing OTM P&L (NaN → ATM value)
+    def _safe(arr):
+        if arr is None:
+            return torch.full_like(c_pnl, float('nan'))
+        return arr[valid]
+
+    all_pnl = torch.stack([
+        c_pnl,             # CALL_ATM
+        _safe(otm5_call_pnl),   # CALL_OTM5
+        _safe(otm10_call_pnl),  # CALL_OTM10
+        p_pnl,             # PUT_ATM
+        _safe(otm5_put_pnl),    # PUT_OTM5
+        _safe(otm10_put_pnl),   # PUT_OTM10
+    ], dim=-1)  # (valid, 6)
+
+    # Gate targets: TRADE (1) when ANY option is profitable
+    any_profitable = torch.any(torch.nan_to_num(all_pnl, nan=-999.0) > 0, dim=-1)
+    gate_targets = any_profitable.long()
+
+    # Gate class weights
+    n_trade = gate_targets.sum().float().clamp(min=1)
+    n_no_trade = (gate_targets == 0).sum().float().clamp(min=1)
+    gate_weights = torch.tensor([1.0, (n_no_trade / n_trade).clamp(max=10.0)], device=device)
+
+    time_weight = 1.0 + 0.5 * (1.0 - t_feat)
+    gate_loss = F.cross_entropy(g_logits, gate_targets, weight=gate_weights, reduction='none')
+    gate_loss = (gate_loss * time_weight).mean()
+
+    # Direction targets: only where gate_target = TRADE
+    trade_mask = gate_targets == 1
+    if trade_mask.sum() < 2:
+        return GATE_LOSS_WEIGHT * gate_loss
+
+    d_logits_trade = d_logits[trade_mask]
+    t_feat_trade = t_feat[trade_mask]
+    trade_pnl = all_pnl[trade_mask]  # (trade, 6)
+
+    if n_dir == 6:
+        # 6-class: argmax of P&L across all strikes/directions
+        # Replace NaN with -inf so they never win the argmax
+        trade_pnl_safe = torch.nan_to_num(trade_pnl, nan=-999.0)
+        dir_targets = torch.argmax(trade_pnl_safe, dim=-1)
+    else:
+        # Legacy 2-class: CALL (0) when call_pnl > put_pnl, else PUT (1)
+        dir_targets = (trade_pnl[:, 3] > trade_pnl[:, 0]).long()
+
+    dir_loss = F.cross_entropy(d_logits_trade, dir_targets, reduction='none')
+    dir_time_weight = 1.0 + 0.5 * (1.0 - t_feat_trade)
+    dir_loss = (dir_loss * dir_time_weight).mean()
+
+    # P&L alignment bonus: weighted sum of dir_probs × actual P&L
+    gate_probs = F.softmax(g_logits, dim=-1)
+    dir_probs = F.softmax(d_logits, dim=-1)
+    trade_prob = gate_probs[:, 1]
+    all_pnl_safe = torch.nan_to_num(all_pnl, nan=0.0)
+    if n_dir == 6:
+        pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
+    else:
+        pnl_signal = trade_prob * (dir_probs[:, 0] * c_pnl + dir_probs[:, 1] * p_pnl)
+    pnl_loss = -pnl_signal.mean()
+
+    # EXIT loss
+    exit_loss = torch.tensor(0.0, device=device)
+    if exit_call_labels is not None and exit_put_labels is not None:
+        ec = exit_call_labels[valid]
+        ep = exit_put_labels[valid]
+        exit_mask = (ec > 0.5) | (ep > 0.5)
+        if exit_mask.sum() > 1:
+            exit_g = g_logits[exit_mask]
+            exit_targets = torch.zeros(exit_mask.sum().item(), dtype=torch.long, device=device)
+            exit_loss = F.cross_entropy(exit_g, exit_targets)
+
+    total = (GATE_LOSS_WEIGHT * gate_loss + DIR_LOSS_WEIGHT * dir_loss
+             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss)
+    return total
+
+
+# ---------------------------------------------------------------------------
+# Setup
+# ---------------------------------------------------------------------------
+
+t_start = time.time()
+torch.manual_seed(42)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(42)
+torch.set_float32_matmul_precision("high")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+data = load_data()
+n_bars = len(data['dates'])
+
+# Replace NaN features with 0 so they don't poison gradients
+data['features'] = torch.nan_to_num(data['features'], nan=0.0)
+
+print(f"Loaded {n_bars} 1-min bars, {NUM_FEATURES} features, {NUM_ACTIONS} actions")
+print(f"  ~{n_bars // BARS_PER_DAY} trading days")
+print(f"Training:   up to idx {data['train_end_idx']}")
+print(f"Validation: idx {data['val_start_idx']}-{data['val_end_idx']}")
+
+has_pnl = 'call_pnl' in data
+if has_pnl:
+    pnl_valid = (~torch.isnan(data['call_pnl'])).sum().item()
+    print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%)")
+else:
+    print("  WARNING: No option P&L in data.pt — falling back to forward-return labels")
+
+model = TradingModel().to(device)
+num_params = sum(p.numel() for p in model.parameters())
+print(f"Parameters: {num_params:,}")
+print(f"Architecture: two-head (gate: NO_TRADE/TRADE, dir: 6-class ATM+OTM)")
+
+optimizer = torch.optim.AdamW(
+    model.parameters(), lr=LR,
+    weight_decay=WEIGHT_DECAY, betas=ADAM_BETAS,
+)
+
+# NOTE: torch.compile disabled — causes OOM on 64Gi Akash containers.
+# Model is tiny (< 1M params); compile overhead >> benefit.  Do NOT re-enable.
+# SAFETY: BATCH_SIZE must be ≤ 256, D_MODEL ≤ 128, DEPTH ≤ 8.
+# Violating these limits WILL crash the container.
+if os.environ.get("TORCH_COMPILE", "0") == "1":
+    model = torch.compile(model)
+train_loader = make_dataloader(data, LOOKBACK, BATCH_SIZE, "train", device)
+x_batch, y_batch = next(train_loader)
+
+print(f"\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {LOOKBACK}")
+print(f"LR: {LR} | Depth: {DEPTH} | d_model: {D_MODEL}")
+print()
+
+# ---------------------------------------------------------------------------
+# LR schedule
+# ---------------------------------------------------------------------------
+
+def get_lr_mult(progress):
+    if progress < WARMUP_RATIO:
+        return progress / max(WARMUP_RATIO, 1e-8)
+    elif progress < 1.0 - COOLDOWN_RATIO:
+        return 1.0
+    else:
+        t = (1.0 - progress) / max(COOLDOWN_RATIO, 1e-8)
+        return 0.5 * (1.0 + math.cos(math.pi * (1.0 - t)))
+
+# ---------------------------------------------------------------------------
+# Training
+# ---------------------------------------------------------------------------
+
+total_time = 0.0
+step = 0
+smooth_loss = 0.0
+
+while True:
+    model.train()
+    if torch.cuda.is_available(): torch.cuda.synchronize()
+    t0 = time.time()
+
+    gate_logits, dir_logits = model(x_batch)
+
+    # Unpack multi-target: (fwd_ret, call_pnl, put_pnl, exit_call, exit_put,
+    #   otm5_call_pnl, otm5_put_pnl, otm10_call_pnl, otm10_put_pnl)
+    (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
+     otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl) = y_batch
+
+    # Extract time feature (minutes_to_close) from last bar in lookback window
+    time_feat = x_batch[:, -1, 33]  # feature index 33 = minutes_to_close
+
+    loss = sniper_loss(gate_logits, dir_logits, call_pnl_batch, put_pnl_batch, time_feat,
+                       exit_call_batch, exit_put_batch,
+                       otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl)
+
+    loss.backward()
+    if GRAD_CLIP > 0:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+
+    progress = min(total_time / TIME_BUDGET, 1.0)
+    for pg in optimizer.param_groups:
+        pg['lr'] = LR * get_lr_mult(progress)
+
+    optimizer.step()
+    optimizer.zero_grad(set_to_none=True)
+    x_batch, y_batch = next(train_loader)
+
+    if torch.cuda.is_available(): torch.cuda.synchronize()
+    dt_step = time.time() - t0
+    if step > 5:
+        total_time += dt_step
+
+    loss_val = loss.item()
+    if math.isnan(loss_val) or loss_val > 100:
+        print(f"\nFAIL: loss={loss_val} at step {step}")
+        exit(1)
+
+    ema = 0.95
+    smooth_loss = ema * smooth_loss + (1 - ema) * loss_val
+    debiased = smooth_loss / (1 - ema ** (step + 1))
+
+    if step % 50 == 0:
+        remaining = max(0, TIME_BUDGET - total_time)
+        with torch.no_grad():
+            gate_probs = F.softmax(gate_logits, dim=-1).mean(dim=0)
+            dir_probs = F.softmax(dir_logits, dim=-1).mean(dim=0)
+            p_trade = gate_probs[1].item()
+            # Sum call vs put probabilities (ATM + OTM5 + OTM10)
+            p_call = dir_probs[:3].sum().item()
+            p_put = dir_probs[3:].sum().item()
+        print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
+              f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
+              f"| lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
+
+    if step == 0:
+        gc.collect(); gc.freeze(); gc.disable()
+    elif (step + 1) % 5000 == 0:
+        gc.collect()
+
+    step += 1
+    if step > 5 and total_time >= TIME_BUDGET:
+        break
+
+print()
+
+# ---------------------------------------------------------------------------
+# Evaluate (primary: trade simulation; secondary: legacy Sharpe)
+# ---------------------------------------------------------------------------
+
+model.eval()
+trade_metrics = evaluate_trades(model, data, LOOKBACK, device)
+sharpe_metrics = evaluate_sharpe(model, data, LOOKBACK, device)
+
+# Merge — trade_metrics is primary, sharpe_metrics only adds val_sharpe
+metrics = {**trade_metrics}
+metrics['val_sharpe'] = sharpe_metrics.get('val_sharpe', 0.0)
+
+# ---------------------------------------------------------------------------
+# Save & report
+# ---------------------------------------------------------------------------
+
+model_path = os.path.join(os.path.dirname(__file__), "best_model.pt")
+state = model.state_dict() if not hasattr(model, '_orig_mod') else model._orig_mod.state_dict()
+torch.save({
+    'model_state_dict': state,
+    'metrics': metrics,
+    'config': {
+        'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
+        'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
+        'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
+        'architecture': 'two_head',
+    },
+    'step': step,
+}, model_path)
+print(f"Model saved to {model_path}")
+
+# --- Export trade log CSV ---
+trade_log = metrics.get('trade_log', [])
+if trade_log:
+    import csv
+    log_path = os.path.join(os.path.dirname(__file__), "trade_log.csv")
+    fieldnames = ['trade_num', 'date', 'entry_time', 'exit_time', 'direction',
+                  'strike', 'entry_price', 'bars_held', 'hold_minutes',
+                  'pnl_pct', 'exit_reason', 'actual_prices', 'result']
+    with open(log_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        writer.writerows(trade_log)
+    print(f"Trade log: {len(trade_log)} trades -> {log_path}")
+
+t_end = time.time()
+peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else 0.0
+
+# --- Output section (parsed by run_loop.py) ---
+print("\n---")
+# Primary optimization target
+print(f"score:              {metrics['score']:.6f}")
+# Trader metrics
+print(f"profit_factor:      {metrics['profit_factor']:.6f}")
+print(f"win_rate:           {metrics['win_rate']:.6f}")
+print(f"avg_winner:         {metrics['avg_winner']:.6f}")
+print(f"avg_loser:          {metrics['avg_loser']:.6f}")
+print(f"trades_per_day:     {metrics['trades_per_day']:.6f}")
+print(f"max_consec_loss:    {metrics['max_consec_loss']}")
+print(f"num_trades:         {metrics['num_trades']}")
+# Quant metrics
+print(f"trade_sharpe:       {metrics['trade_sharpe']:.6f}")
+print(f"sortino:            {metrics['sortino']:.6f}")
+print(f"max_drawdown:       {metrics['max_drawdown']:.6f}")
+print(f"calmar:             {metrics['calmar']:.6f}")
+print(f"ev_per_trade:       {metrics['ev_per_trade']:.6f}")
+# Distribution
+print(f"do_nothing_pct:     {metrics['do_nothing_pct']:.6f}")
+print(f"exit_pct:           {metrics.get('exit_pct', 0.0):.6f}")
+print(f"model_exit_count:   {metrics.get('model_exit_count', 0)}")
+# Trade quality diagnostics
+print(f"cooldown_blocked:   {metrics.get('cooldown_blocked', 0)}")
+print(f"pre_10am_blocked:   {metrics.get('pre_10am_blocked', 0)}")
+print(f"short_hold_pct:     {metrics.get('short_hold_pct', 0.0):.6f}")
+print(f"stop_loss_rate:     {metrics.get('stop_loss_rate', 0.0):.6f}")
+# Equity curve (informational)
+print(f"final_capital:      {metrics.get('final_capital', 0.0):.2f}")
+print(f"equity_sharpe:      {metrics.get('equity_sharpe', 0.0):.6f}")
+print(f"max_equity_dd:      {metrics.get('max_equity_dd', 0.0):.6f}")
+print(f"total_dollar_return:{metrics.get('total_dollar_return', 0.0):.6f}")
+# Legacy Sharpe
+print(f"val_sharpe:         {metrics['val_sharpe']:.6f}")
+# Meta
+print(f"total_return:       {metrics['total_return']:.6f}")
+print(f"num_val_bars:       {metrics['num_val_bars']}")
+print(f"num_val_days:       {metrics['num_val_days']}")
+print(f"training_seconds:   {total_time:.1f}")
+print(f"total_seconds:      {t_end - t_start:.1f}")
+print(f"peak_vram_mb:       {peak_mb:.1f}")
+print(f"num_steps:          {step}")
+print(f"num_params:         {num_params:,}")
+print(f"lookback:           {LOOKBACK}")
+print(f"depth:              {DEPTH}")
+print(f"d_model:            {D_MODEL}")
