@@ -16,6 +16,31 @@ OTM options are cheaper (lower premium), which is valuable for live testing.
 
 Adapted from [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
 
+## Live Paper Trading Contract (IBKR)
+
+The training/inference contract now explicitly supports live paper execution:
+
+- Train for **IBKR-live feature availability** (no hidden dependency on unavailable feeds).
+- Keep feature order stable under a versioned contract (`ibkr_live_v1`).
+- Produce trade decisions that can be mirrored by execution:
+  - entry action (all 6 SPXW actions),
+  - confidence,
+  - risk intent (size, stop, take-profit),
+  - updates / exit.
+- Live execution hard rules:
+  - every entry is bracket/OCO (parent entry + stop + target),
+  - stop and target may only ratchet upward,
+  - kill switch and daily risk limits can block new entries.
+
+### Greeks-Driven Trade Management
+
+Greeks should influence not only classification loss but also live trade management behavior:
+
+- `gamma_theta_ratio` informs aggressiveness of take-profit extension.
+- `theta` acceleration near close should tighten protection / prefer exits.
+- `delta` and `gamma` should modulate confidence-aware sizing and stop ratcheting pace.
+- `vega` spikes should increase selectivity and reduce overtrading in unstable vol regimes.
+
 ## Architecture
 
 The agent (Claude Sonnet 4 via API) runs on H100 alongside training.
@@ -40,6 +65,12 @@ The Akash container has **64Gi RAM** and **1x H100 80GB**. Violating these rules
 6. **Do NOT add data augmentation** that duplicates data in memory.
 7. **Keep model under 2M params** — D_MODEL ≤ 128, DEPTH ≤ 8.
 8. **Peak VRAM must stay under 40GB.**
+9. **ARCHITECTURE IS LOCKED — DO NOT CHANGE D_MODEL, DEPTH, or N_HEADS.**
+   Current locked values: **D_MODEL=96, DEPTH=6, N_HEADS=4**.
+   Changing these breaks warm-start weight compatibility (tensor shape mismatch),
+   forcing the model to train from scratch. With only 5 min per experiment, that's
+   not enough to converge. Focus on loss functions, regularization, learning rate,
+   feature gating, and other hyperparameters that don't change tensor shapes.
 
 ```bash
 # STEP 1: Prepare data LOCALLY (requires IB Gateway running)
@@ -270,6 +301,8 @@ with high profit factor and good sharpe. Over-trading destroys score even with g
 - Win rate > 75% (too good to be true)
 - Trades only in one time window or one direction
 - Same action on all bars (always-call or always-put)
+- **direction_collapse_pct > 0.80** — model collapsed to single direction (all calls or all puts).
+  Penalized in scoring: >80% = 0.7x, >90% = 0.5x, 100% = 0.3x. A healthy sniper needs both calls and puts.
 - Gate head bias set explicitly (NO_TRADE/TRADE bias in initialization)
 
 ## Prior Training Run Findings (146 experiments, March 2026)
@@ -334,10 +367,35 @@ lottery tickets worthless and penalizing poor entries directly.
 - Coverage: Lower than ATM (OTM strikes less liquid, especially ATM±10 in afternoon).
   Missing P&L → NaN → loss masked out for those bars.
 
+## Warm-Start
+
+Each experiment **warm-starts** from `best_model.pt` — the model loads the
+previous best weights before training. This means experiments build on each
+other instead of starting from scratch. The LR is reduced to 0.3× base when
+warm-starting to avoid destroying learned weights.
+
+- `WARM_START=1` (default): load best_model.pt weights, use 0.3× LR
+- `WARM_START=0`: train from scratch with full LR (for architecture resets)
+
+**What this means for experiments**: Since the model already has good weights,
+focus on incremental improvements — loss function tweaks, regularization,
+feature gating. Large structural changes are less likely to help since the
+model can't re-learn from scratch in the time budget.
+
+## Walk-Forward Stability
+
+The validation set is evaluated in **chronological chunks** (~quarterly).
+If any chunk has profit_factor < 1.0 (losing quarter), the score gets a 20%
+penalty. This prevents overfitting to one market regime.
+
+The `worst_chunk_pf` metric is printed in the output. A good model should
+have `worst_chunk_pf >= 1.0` across all quarters.
+
 ## Experimentation
 
-Modify `train.py` only. Fixed 5-minute training budget. Everything in
-train.py is fair game: architecture, optimizer, loss, lookback, etc.
+Modify `train.py` only. Training budget is set by `TIME_BUDGET` env var
+(default 300s). Everything in train.py is fair game: architecture, optimizer,
+loss, lookback, etc.
 
 **Goal: maximize `score`.**
 
@@ -457,6 +515,7 @@ val_sharpe:         0.789012
 total_return:       1.580000
 num_val_bars:       2400
 num_val_days:       40
+worst_chunk_pf:     1.23
 training_seconds:   300.0
 total_seconds:      339.2
 peak_vram_mb:       1234.5

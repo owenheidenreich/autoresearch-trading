@@ -6,7 +6,7 @@
 #   ./deploy.sh start   → Upload code + data, start autoresearch loop
 #
 # Optional:
-#   ./deploy.sh sync    → Auto-download results as improvements are found
+#   ./deploy.sh sync    → Foreground sync (auto-sync runs with start)
 #   ./deploy.sh ssh     → Drop into SSH shell on the H100
 #   ./deploy.sh logs    → Tail the autoresearch loop log
 #   ./deploy.sh status  → Show GPU, loop PID, last experiment score
@@ -242,6 +242,12 @@ cmd_start() {
         "$SCRIPT_DIR/watchdog.sh" \
         "root@$SSH_HOST:/root/"
 
+    # Upload best_train.py if it exists — architecture lock reference
+    if [[ -f "$PROJECT_ROOT/training/best_train.py" ]]; then
+        log "Uploading best_train.py (architecture lock reference)..."
+        scp_cmd "$PROJECT_ROOT/training/best_train.py" "root@$SSH_HOST:/root/best_train.py"
+    fi
+
     # Upload best_model.pt if it exists — warm-start from previous training run
     if [[ -f "$PROJECT_ROOT/training/best_model.pt" ]]; then
         log "Uploading best_model.pt ($(du -h "$PROJECT_ROOT/training/best_model.pt" | cut -f1)) for warm-start..."
@@ -265,9 +271,19 @@ cmd_start() {
     log "Starting autoresearch loop... $LOOP_ARGS"
     ssh_cmd "chmod +x /root/start_loop.sh && ANTHROPIC_API_KEY='$ANTHROPIC_KEY' /root/start_loop.sh $LOOP_ARGS"
 
+    # Auto-launch sync in background — no more forgetting to run sync in 2nd terminal
+    local sync_dest="$PROJECT_ROOT/results/run-$(date +%Y-%m-%d)"
+    mkdir -p "$sync_dest"
+    log "Starting auto-sync to $sync_dest ..."
+    _run_sync "$sync_dest" > "$sync_dest/sync.log" 2>&1 &
+    local sync_pid=$!
+    echo "$sync_pid" > "$PROJECT_ROOT/.sync-pid"
+
     log ""
     log "=== LOOP RUNNING ==="
-    log "Sync:   ./deploy.sh sync    ← run in 2nd terminal to auto-download results"
+    log "Auto-sync: PID $sync_pid → $sync_dest (log: sync.log)"
+    log "  Sync log: tail -f $sync_dest/sync.log"
+    log "  Manual:   ./deploy.sh sync    ← foreground sync if you prefer"
     log "Logs:   ./deploy.sh logs"
     log "Status: ./deploy.sh status"
     log "SSH:    ./deploy.sh ssh"
@@ -292,29 +308,145 @@ cmd_logs() {
 
 cmd_status() {
     load_state
-    ssh_cmd bash -c "'
-        echo \"=== GPU ===\"
-        nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv,noheader 2>/dev/null
-        echo \"\"
-        echo \"=== Loop ===\"
-        if pgrep -f run_loop.py > /dev/null 2>&1; then
-            echo \"PID: \$(pgrep -f run_loop.py)\"
-            echo \"Uptime: \$(ps -o etime= -p \$(pgrep -f run_loop.py) 2>/dev/null)\"
-        else
-            echo \"NOT RUNNING\"
-        fi
-        echo \"\"
-        echo \"=== Last 3 experiments ===\"
-        tail -3 /root/experiments.jsonl 2>/dev/null | python3 -c \"
-import sys, json
-for line in sys.stdin:
-    e = json.loads(line)
-    print(f\\\"  #{e.get(\\\\\\\"iteration\\\\\\\",\\\\\\\"?\\\\\\\")}: score={e.get(\\\\\\\"score\\\\\\\",\\\\\\\"?\\\\\\\"):.4f}  sharpe={e.get(\\\\\\\"val_sharpe\\\\\\\",\\\\\\\"?\\\\\\\"):.4f}  trades/day={e.get(\\\\\\\"trades_per_day\\\\\\\",\\\\\\\"?\\\\\\\"):.2f}\\\")
-\" 2>/dev/null || echo \"  (no experiments yet)\"
-        echo \"\"
-        echo \"=== Last 5 log lines ===\"
-        tail -5 /root/loop.log 2>/dev/null || echo \"(no log)\"
-    '"
+
+    # Rich dashboard via heredoc Python script (avoids nested quoting)
+    ssh_cmd python3 - << 'PYEOF'
+import json, subprocess, os, textwrap
+
+def run(cmd):
+    try:
+        return subprocess.check_output(cmd, shell=True, stderr=subprocess.DEVNULL, timeout=5).decode().strip()
+    except:
+        return ""
+
+W = 76  # dashboard width
+
+def bar(label=""):
+    if label:
+        pad = W - len(label) - 4
+        print(f"== {label} " + "=" * pad)
+    else:
+        print("=" * W)
+
+def wrap(text, indent=4, width=W-4):
+    lines = textwrap.wrap(text, width=width)
+    return "\n".join(" " * indent + l for l in lines)
+
+bar()
+
+# --- Header: GPU + Loop ---
+gpu = run("nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv,noheader")
+if gpu:
+    parts = [p.strip() for p in gpu.split(",")]
+    gpu_name = parts[0] if len(parts) > 0 else "?"
+    gpu_mem = f"{parts[1]} / {parts[2]}" if len(parts) > 2 else "?"
+    gpu_util = parts[3] if len(parts) > 3 else "?"
+    print(f"  GPU:  {gpu_name}  |  Mem: {gpu_mem}  |  Util: {gpu_util}")
+else:
+    print("  GPU:  unavailable")
+
+pid = run("pgrep -f run_loop.py")
+if pid:
+    pid_line = pid.split("\n")[0]
+    uptime = run(f"ps -o etime= -p {pid_line}").strip()
+    print(f"  Loop: RUNNING (PID {pid_line}, uptime {uptime})")
+else:
+    print(f"  Loop: NOT RUNNING")
+
+# --- Progress ---
+if os.path.exists("/root/status.json"):
+    with open("/root/status.json") as f:
+        s = json.load(f)
+    phase = s.get("phase", "?")
+    best = s.get("best_score", 0)
+    kept = s.get("kept", 0)
+    failed = s.get("failed", 0)
+    total = s.get("total", 0)
+    remaining = s.get("time_remaining_h", 0)
+    exp_id = s.get("experiment_id", "?")
+
+    bar("Progress")
+    print(f"  Current:    Experiment #{exp_id}  ({phase})")
+    print(f"  Best Score: {best:.4f}")
+    print(f"  Results:    {kept} kept / {failed} failed / {total} total")
+    print(f"  Time Left:  {remaining:.1f}h")
+
+# --- Experiment History ---
+bar("Experiment History")
+if os.path.exists("/root/experiments.jsonl"):
+    with open("/root/experiments.jsonl") as f:
+        lines = f.readlines()
+
+    # Table header
+    print(f"  {'#':>3}  {'Score':>8}  {'PF':>5}  {'TPD':>5}  {'Sharpe':>7}  {'WR':>5}  {'Kept':>4}  Change")
+    print(f"  {'---':>3}  {'-----':>8}  {'--':>5}  {'---':>5}  {'------':>7}  {'--':>5}  {'----':>4}  ------")
+
+    for line in lines:
+        try:
+            e = json.loads(line)
+            eid = e.get("experiment_id", "?")
+            score = e.get("score", -999)
+            kept_flag = e.get("kept", False)
+            err = e.get("error", "")
+            change = e.get("change_summary", "")
+
+            # Truncate change summary to fit
+            if change:
+                change = change.replace("\n", " ")[:40]
+
+            if score == -999 and err:
+                # Safety rejection or crash
+                reason = err.split("\n")[0][:40]
+                print(f"  {eid:>3}  {'FAIL':>8}  {'':>5}  {'':>5}  {'':>7}  {'':>5}  {'':>4}  {reason}")
+            else:
+                pf = e.get("profit_factor", 0)
+                tpd = e.get("trades_per_day", 0)
+                sharpe = e.get("trade_sharpe", 0)
+                wr = e.get("win_rate", 0)
+                mark = " <--" if kept_flag else ""
+                print(f"  {eid:>3}  {score:>8.3f}  {pf:>5.2f}  {tpd:>5.1f}  {sharpe:>7.2f}  {wr:>4.0%}  {'YES' if kept_flag else '':>4}{mark}")
+        except:
+            pass
+else:
+    print("  (no experiments yet)")
+
+# --- Latest Experiment Detail ---
+if os.path.exists("/root/experiments.jsonl"):
+    with open("/root/experiments.jsonl") as f:
+        lines = f.readlines()
+    if lines:
+        last = json.loads(lines[-1])
+        bar(f"Latest: Experiment #{last.get('experiment_id', '?')}")
+
+        reasoning = last.get("reasoning", "")
+        change = last.get("change_summary", "")
+        err = last.get("error", "")
+
+        if change:
+            print(f"  Changes:")
+            for part in change.split(";"):
+                part = part.strip()
+                if part:
+                    print(f"    {part}")
+
+        if reasoning:
+            print(f"\n  Reasoning:")
+            print(wrap(reasoning, indent=4, width=W-6))
+
+        if err and last.get("score", 0) == -999:
+            print(f"\n  Error:")
+            print(wrap(err[:200], indent=4, width=W-6))
+
+        score = last.get("score", -999)
+        if score != -999:
+            print(f"\n  Result: score={score:.4f}  pf={last.get('profit_factor',0):.2f}"
+                  f"  tpd={last.get('trades_per_day',0):.1f}"
+                  f"  sharpe={last.get('trade_sharpe',0):.2f}"
+                  f"  wr={last.get('win_rate',0):.0%}"
+                  f"  {'KEPT' if last.get('kept') else 'reverted'}")
+
+bar()
+PYEOF
 }
 
 cmd_download() {
@@ -329,28 +461,37 @@ cmd_download() {
             rm -f "$dest/$f"
     done
 
-    # Preserve best_model.pt in training/ for next deployment's warm-start
+    # Preserve artifacts in training/ for next deployment
     if [[ -f "$dest/best_model.pt" ]]; then
         cp "$dest/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
         log "  ↳ Copied best_model.pt → training/ (warm-start for next run)"
+    fi
+    if [[ -f "$dest/best_train.py" ]]; then
+        cp "$dest/best_train.py" "$PROJECT_ROOT/training/best_train.py"
+        # best_train.py IS the best code — use it as train.py for next run
+        cp "$dest/best_train.py" "$PROJECT_ROOT/training/train.py"
+        log "  ↳ Copied best_train.py → training/train.py + best_train.py"
     fi
 
     log "Done! Results in: $dest"
 }
 
-cmd_sync() {
-    load_state
-    local dest="${EXTRA_ARGS:-$PROJECT_ROOT/results/run-$(date +%Y-%m-%d)}"
+# ===================================================================
+# _run_sync — core sync loop (used by cmd_start background + cmd_sync foreground)
+# Usage: _run_sync <dest_dir>
+# ===================================================================
+_run_sync() {
+    local dest="$1"
     mkdir -p "$dest"
 
     local last_kept=-1
     local last_total=-1
-    local poll_interval=60
+    local poll_interval=30
 
     log "=== AUTO-SYNC ==="
     log "  Remote:   $SSH_HOST:$SSH_PORT"
     log "  Save to:  $dest"
-    log "  Polling every ${poll_interval}s  (Ctrl-C to stop)"
+    log "  Polling every ${poll_interval}s"
     log ""
 
     while true; do
@@ -396,6 +537,16 @@ print(f'best_score={s.get(\"best_score\",0)}')
                     log "  ↓ $f  ($(du -h "$dest/$f" | cut -f1))"
                 fi
             done
+            # Copy best model + code to training/ for warm-start continuity
+            if [[ -f "$dest/best_model.pt" ]]; then
+                cp "$dest/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
+                log "  ↳ Updated training/best_model.pt"
+            fi
+            if [[ -f "$dest/best_train.py" ]]; then
+                cp "$dest/best_train.py" "$PROJECT_ROOT/training/best_train.py"
+                cp "$dest/best_train.py" "$PROJECT_ROOT/training/train.py"
+                log "  ↳ Updated training/train.py + best_train.py"
+            fi
             last_kept=$kept
             last_total=$total
             log "  Synced. Best score: $best_score"
@@ -426,12 +577,45 @@ print(f'best_score={s.get(\"best_score\",0)}')
                     log "  ↓ $f  ($(du -h "$dest/$f" | cut -f1))"
                 fi
             done
+            # Final warm-start copy
+            if [[ -f "$dest/best_model.pt" ]]; then
+                cp "$dest/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
+                log "  ↳ Updated training/best_model.pt"
+            fi
+            if [[ -f "$dest/best_train.py" ]]; then
+                cp "$dest/best_train.py" "$PROJECT_ROOT/training/best_train.py"
+                cp "$dest/best_train.py" "$PROJECT_ROOT/training/train.py"
+                log "  ↳ Updated training/train.py + best_train.py"
+            fi
             log "All results saved to: $dest"
+            # Clean up sync PID file if we were the background sync
+            rm -f "$PROJECT_ROOT/.sync-pid"
             break
         fi
 
         sleep "$poll_interval"
     done
+}
+
+cmd_sync() {
+    load_state
+
+    # Guard against duplicate sync — check if background sync is already running
+    if [[ -f "$PROJECT_ROOT/.sync-pid" ]]; then
+        local spid
+        spid=$(cat "$PROJECT_ROOT/.sync-pid")
+        if kill -0 "$spid" 2>/dev/null; then
+            log "Auto-sync already running (PID $spid)."
+            log "Kill it first with: kill $spid && rm '$PROJECT_ROOT/.sync-pid'"
+            exit 0
+        else
+            rm -f "$PROJECT_ROOT/.sync-pid"
+        fi
+    fi
+
+    local dest="${EXTRA_ARGS:-$PROJECT_ROOT/results/run-$(date +%Y-%m-%d)}"
+    log "Running foreground sync (Ctrl-C to stop)..."
+    _run_sync "$dest"
 }
 
 cmd_stop() {
@@ -440,6 +624,15 @@ cmd_stop() {
     echo "This will: kill loop → download results → close deployment"
     read -p "Continue? [y/N] " confirm
     [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
+
+    # Kill background sync if running
+    if [[ -f "$PROJECT_ROOT/.sync-pid" ]]; then
+        local spid
+        spid=$(cat "$PROJECT_ROOT/.sync-pid")
+        kill "$spid" 2>/dev/null || true
+        rm -f "$PROJECT_ROOT/.sync-pid"
+        log "Stopped background sync (PID $spid)"
+    fi
 
     log "Killing loop..."
     ssh_cmd "pkill -f run_loop.py 2>/dev/null || true"
@@ -493,7 +686,7 @@ case "$CMD" in
         echo "  status    GPU, loop PID, last experiments"
         echo "  download  Download results once (experiments, logs, trade_log, best model)"
         echo "            Optional: ./deploy.sh download /path/to/save"
-        echo "  sync      Auto-download results as improvements are found (run in 2nd terminal)"
+        echo "  sync      Foreground sync (auto-sync runs automatically with start)"
         echo "            Optional: ./deploy.sh sync /path/to/save"
         echo "  stop      Kill loop + close Akash deployment"
         exit 1

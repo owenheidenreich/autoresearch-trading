@@ -256,7 +256,7 @@ RULES:
 - Output ONLY the reasoning tags + Python code. No markdown fences, no other text.
 - Do NOT modify imports from prepare.py — those are fixed.
 - Do NOT change the evaluation section or save section at the bottom.
-- The training budget is fixed at 300 seconds. Do not change TIME_BUDGET.
+- The training budget is set via TIME_BUDGET env var. Do not change TIME_BUDGET in code.
 - Keep the same output format (score, profit_factor, trade_sharpe, etc.) so results parse.
 - Be creative but disciplined. One major change per iteration works best.
 - If the last experiment failed (syntax error, NaN loss, crash), fix it.
@@ -500,6 +500,51 @@ def validate_safety(code: str) -> str | None:
         if h > 0 and d % h != 0:
             return f"SAFETY: D_MODEL={d} not divisible by N_HEADS={h}. Choose D_MODEL that divides evenly by N_HEADS."
 
+    # Architecture locking — prevent changes to D_MODEL, DEPTH, N_HEADS.
+    # Changing these breaks warm-start weight compatibility (tensor shape mismatch),
+    # forcing the model to train from scratch in the limited experiment time budget.
+    # Read locked values from best_train.py (the current best model's architecture).
+    arch_err = validate_architecture_locked(code)
+    if arch_err:
+        return arch_err
+
+    return None
+
+
+def validate_architecture_locked(code: str) -> str | None:
+    """Ensure D_MODEL, DEPTH, and N_HEADS match best_train.py.
+
+    Changing these tensor-shape-determining hyperparameters invalidates
+    warm-start weights, forcing training from scratch. With only ~5 min
+    per experiment, that's not enough to converge on 60 features.
+    """
+    if not os.path.exists(BEST_TRAIN_PY):
+        return None  # no best model yet, nothing to lock
+
+    try:
+        with open(BEST_TRAIN_PY, 'r') as f:
+            best_code = f.read()
+    except Exception:
+        return None
+
+    locked = {}
+    for param in ('D_MODEL', 'DEPTH', 'N_HEADS'):
+        m = _re.search(rf'{param}\s*=\s*(\d+)', best_code)
+        if m:
+            locked[param] = int(m.group(1))
+
+    if not locked:
+        return None
+
+    for param, expected in locked.items():
+        m = _re.search(rf'{param}\s*=\s*(\d+)', code)
+        if m:
+            actual = int(m.group(1))
+            if actual != expected:
+                return (f"SAFETY: {param}={actual} differs from locked value {expected} "
+                        f"(best_train.py). Changing {param} breaks warm-start weight "
+                        f"compatibility. Keep {param}={expected}.")
+
     return None
 
 
@@ -520,19 +565,22 @@ def _reap_zombies():
             break
 
 
-def run_training(train_py_path: str, timeout: int = 420) -> dict:
+def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300) -> dict:
     """Run train.py and parse the output metrics.
 
-    Timeout: 420s = 300s training budget + 120s buffer for data loading/eval.
+    Timeout: time_budget + 120s buffer for data loading/eval.
     Returns dict with metrics or {'error': 'message'}.
     """
     try:
+        env = os.environ.copy()
+        env["TIME_BUDGET"] = str(time_budget)
         result = subprocess.run(
             [PYTHON, "-u", train_py_path],
             capture_output=True,
             text=True,
             timeout=timeout,
             cwd=SCRIPT_DIR,
+            env=env,
         )
 
         output = result.stdout + result.stderr
@@ -558,7 +606,8 @@ def run_training(train_py_path: str, timeout: int = 420) -> dict:
                            'peak_vram_mb', 'training_seconds', 'total_seconds',
                            'short_hold_pct', 'stop_loss_rate',
                            'final_capital', 'equity_sharpe',
-                           'max_equity_dd', 'total_dollar_return'):
+                           'max_equity_dd', 'total_dollar_return',
+                           'worst_chunk_pf'):
                     try:
                         metrics[key] = float(val)
                     except ValueError:
@@ -647,7 +696,8 @@ def write_status(phase: str, experiment_id: int, best_score: float,
 # ---------------------------------------------------------------------------
 
 def run_one_experiment(experiment_id: int, history: list, best_score: float,
-                       deadline: float, kept_count: int, failed_count: int) -> dict:
+                       deadline: float, kept_count: int, failed_count: int,
+                       time_budget: int = 300) -> dict:
     """Run a single experiment iteration. Returns experiment dict."""
     log(f"=== Experiment #{experiment_id} ===")
     total = len(history)
@@ -732,10 +782,11 @@ def run_one_experiment(experiment_id: int, history: list, best_score: float,
     write_status("training", experiment_id, best_score,
                  kept_count, failed_count, total, deadline,
                  {"change_summary": change_summary})
-    log("  Training (5 min budget)...")
+    log(f"  Training ({time_budget // 60} min budget)...")
     log_diagnostics(f"pre_train_{experiment_id}")
     t0 = time.time()
-    metrics = run_training(TRAIN_PY)
+    timeout = time_budget + 120
+    metrics = run_training(TRAIN_PY, timeout=timeout, time_budget=time_budget)
     train_wall_time = time.time() - t0
     log(f"  Done in {train_wall_time:.0f}s")
     log_diagnostics(f"post_train_{experiment_id}")
@@ -807,6 +858,8 @@ def main():
                         help="Max experiments to run (default: 200)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Validate setup without running experiments")
+    parser.add_argument("--time-budget", type=int, default=300,
+                        help="Training time budget per experiment in seconds (default: 300)")
     args = parser.parse_args()
 
     # Validate environment
@@ -905,6 +958,7 @@ def main():
 
     log(f"Autoresearch loop starting")
     log(f"  Runtime budget: {args.hours}h ({args.hours * 60:.0f} min)")
+    log(f"  Training budget per experiment: {args.time_budget}s ({args.time_budget // 60} min)")
     log(f"  Max experiments: {args.max_experiments}")
     log(f"  Previous experiments: {len(history)}")
     log(f"  Best score so far: {best_score:.4f}" if best_score > INITIAL_BASELINE else "  No previous results (baseline: -5.0)")
@@ -937,7 +991,8 @@ def main():
             f"Kept: {kept_count} | Failed: {failed_count}")
 
         exp = run_one_experiment(experiment_id, history, best_score,
-                                deadline, kept_count, failed_count)
+                                deadline, kept_count, failed_count,
+                                time_budget=args.time_budget)
         history.append(exp)
         append_experiment(exp)
 

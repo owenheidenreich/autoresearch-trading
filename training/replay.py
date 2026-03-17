@@ -25,16 +25,20 @@ import torch.nn as nn
 
 # Import from prepare.py (safe — guarded by __main__)
 from prepare import (
-    compute_features, normalize_features,
+    compute_features, normalize_features, normalize_features_with_context,
     _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
     download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
     is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
     BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS, OPTION_SPREAD_BPS,
+    STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
     THETA_DECAY_DAILY, ATM_DELTA,
     ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
     ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
     ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
 )
+
+# Path to pre-computed features (matches training exactly)
+DATA_PT_PATH = os.path.join(CACHE_DIR, "features", "data.pt")
 
 # ---------------------------------------------------------------------------
 # Feature groups (must match train.py)
@@ -182,6 +186,9 @@ def _load_model_class_from_train_py(train_py_path: str):
             _ast.ClassDef, _ast.Import, _ast.ImportFrom, _ast.FunctionDef
         )):
             if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                # Skip indented imports (inside if blocks, functions, etc.)
+                if isinstance(node, (_ast.Import, _ast.ImportFrom)) and node.col_offset > 0:
+                    continue
                 for ln in range(node.lineno, node.end_lineno + 1):
                     class_lines.add(ln)
 
@@ -207,8 +214,10 @@ def _load_model_class_from_train_py(train_py_path: str):
     # Execute in a namespace with required modules
     namespace = {
         'torch': torch, 'nn': nn, 'np': np,
+        'F': torch.nn.functional,
         'math': __import__('math'),
         'os': os,
+        '__file__': train_py_path,
         'NUM_FEATURES': NUM_FEATURES,
         'BARS_PER_DAY': BARS_PER_DAY,
     }
@@ -307,7 +316,7 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
         # Custom model may have different constructor args — try minimal
         model = model_cls()
 
-    model.load_state_dict(ckpt['model_state_dict'])
+    model.load_state_dict(ckpt['model_state_dict'], strict=False)
     model.to(device)
     model.eval()
 
@@ -480,6 +489,95 @@ def download_replay_data(replay_date: str, warmup_days: int = 5,
 
 
 # ---------------------------------------------------------------------------
+# Training feature loader (ensures replay sees same features as training)
+# ---------------------------------------------------------------------------
+
+def load_training_features(replay_date):
+    """Load pre-computed features from data.pt for a date that's in the training set.
+
+    Returns (features_t, raw_features, dates, valid, option_prices, timestamps)
+    matching the same interface as compute_features + normalize_features,
+    or None if the date is not found in data.pt.
+    """
+    if not os.path.exists(DATA_PT_PATH):
+        return None
+
+    print(f"  Checking data.pt for {replay_date}...")
+    data = torch.load(DATA_PT_PATH, map_location='cpu', weights_only=False)
+
+    all_dates = data['dates']  # list of date strings, length = total bars
+
+    # Check if replay_date exists in data.pt
+    date_indices = [i for i, d in enumerate(all_dates) if d == replay_date]
+    if not date_indices:
+        print(f"  {replay_date} not in data.pt — using live-computed features")
+        return None
+
+    print(f"  Found {len(date_indices)} bars for {replay_date} in data.pt")
+
+    # We need enough context before the replay day for the lookback window.
+    # Load ALL data up to and including the replay day to preserve
+    # the global indexing that the model was trained with.
+    last_idx = max(date_indices)
+    # We need bars from the start for proper lookback context
+    features_np = data['features'].numpy()  # already normalized
+    valid_np = data['valid_mask'].numpy()
+    dates_list = list(all_dates)
+    timestamps_list = list(data['timestamps'])
+
+    # Truncate to end at last bar of replay day (no future data)
+    end = last_idx + 1
+    features_np = features_np[:end]
+    valid_np = valid_np[:end]
+    dates_list = dates_list[:end]
+    timestamps_list = timestamps_list[:end]
+
+    # Build option_prices dict from data.pt
+    option_prices = {}
+    for key in ['atm_call_prices', 'atm_put_prices',
+                'otm5_call_prices', 'otm5_put_prices',
+                'otm10_call_prices', 'otm10_put_prices',
+                'atm_strikes']:
+        if key in data:
+            arr = data[key].numpy()[:end]
+            option_prices[key.replace('_prices', '').replace('_', '_')] = arr
+
+    # Remap to match the naming convention replay expects
+    px_remap = {
+        'atm_call': option_prices.get('atm_call'),
+        'atm_put': option_prices.get('atm_put'),
+        'otm5_call': option_prices.get('otm5_call'),
+        'otm5_put': option_prices.get('otm5_put'),
+        'otm10_call': option_prices.get('otm10_call'),
+        'otm10_put': option_prices.get('otm10_put'),
+        'atm_strikes': option_prices.get('atm_strikes'),
+    }
+
+    features_t = torch.tensor(features_np, dtype=torch.float32)
+
+    print(f"  Loaded {len(features_np)} bars from data.pt (pre-normalized, matches training)")
+
+    return features_t, features_np, dates_list, valid_np, px_remap, timestamps_list
+
+
+def _load_norm_context():
+    """Load raw feature buffer from data.pt for normalization continuity.
+
+    Returns (context_raw, context_valid) or None if not available.
+    """
+    if not os.path.exists(DATA_PT_PATH):
+        return None
+    data = torch.load(DATA_PT_PATH, map_location='cpu', weights_only=False)
+    if 'norm_raw_buffer' not in data:
+        return None
+    ctx_raw = data['norm_raw_buffer'].numpy()
+    ctx_valid = data['norm_valid_buffer'].numpy()
+    window = data.get('norm_window', len(ctx_raw))
+    print(f"  Loaded normalization context: {len(ctx_raw)} bars (window={window})")
+    return ctx_raw, ctx_valid
+
+
+# ---------------------------------------------------------------------------
 # Replay engine
 # ---------------------------------------------------------------------------
 
@@ -568,6 +666,19 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     # VIX feature index = 45 (vix_level in raw features)
     VIX_FEAT_IDX = 45
 
+    # Pre-compute bar_of_day for replay indices (0=9:30, 29=9:59, 30=10:00)
+    _bar_of_day = {}
+    _prev_date = None
+    _bod = 0
+    for gi in replay_indices:
+        d = dates[gi]
+        if d != _prev_date:
+            _bod = 0
+            _prev_date = d
+        else:
+            _bod += 1
+        _bar_of_day[gi] = _bod
+
     # Trade state
     trades = []
     bar_log = []  # per-bar decisions log
@@ -580,6 +691,9 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     trade_entry_gate_prob = 0.0
     trade_entry_dir_probs = None
     cum_pnl = 0.0
+    last_stop_k = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
+    cooldown_blocked = 0
+    pre_10am_blocked = 0
 
     offsets = torch.arange(-lookback, 0, device=device)
 
@@ -794,10 +908,24 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 if not trade_use_actual:
                     print(f"         (delta-estimated P&L — no option prices available)")
 
+                if reason == 'STOP_LOSS':
+                    last_stop_k = k_pos
                 in_trade = False
 
         # --- Handle trade entry ---
         if not in_trade and action in _ENTRY_ACTIONS:
+            # Cooldown after stop loss (matches evaluate_trades)
+            if (k_pos - last_stop_k) < STOP_COOLDOWN_BARS:
+                cooldown_blocked += 1
+                if verbose:
+                    print(f"  {time_str}  BLOCKED (cooldown {k_pos - last_stop_k}/{STOP_COOLDOWN_BARS} bars after stop)")
+                continue
+            # No entries before 10:00 AM (matches evaluate_trades)
+            if _bar_of_day.get(global_idx, 999) < NO_TRADE_BEFORE_BAR:
+                pre_10am_blocked += 1
+                if verbose:
+                    print(f"  {time_str}  BLOCKED (pre-10am, bar {_bar_of_day.get(global_idx, 0)} < {NO_TRADE_BEFORE_BAR})")
+                continue
             in_trade = True
             trade_entry_k = k_pos
             trade_action = action
@@ -836,6 +964,9 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         # Speed control
         if speed > 0:
             time.sleep(1.0 / speed)
+
+    if cooldown_blocked or pre_10am_blocked:
+        print(f"\n  Entries blocked: {cooldown_blocked} cooldown, {pre_10am_blocked} pre-10am")
 
     return trades, bar_log
 
@@ -1070,30 +1201,99 @@ def main():
     model, lookback, config, metrics = load_model(model_path, device,
                                                    train_py_path=args.train_py)
 
-    # Get data
+    # Try to load pre-computed features from data.pt (matches training exactly)
+    training_data = load_training_features(replay_date)
+
+    # Always download raw data for trade journal context (SPX prices, volume, etc.)
     df, options_data, vix_data, chain_data = download_replay_data(
         replay_date, args.warmup_days, args.ib_port, args.no_download
     )
 
-    # Compute features
-    print(f"\nComputing features...")
-    features, targets, dates, valid, option_prices, timestamps = compute_features(
-        df, options_data, vix_data, chain_data
-    )
+    if training_data is not None:
+        # Use data.pt features for model inference (identical to training)
+        features_t, _, dates, valid, option_prices, timestamps = training_data
+        print(f"  Using data.pt features for model inference (normalization-matched)")
 
-    # Keep raw (un-normalized) features for market context in trade journal
-    raw_features = features.copy()
+        # Still compute raw features for trade journal market context
+        print(f"\nComputing raw features for trade journal...")
+        raw_feat, _, _, _, _, _ = compute_features(df, options_data, vix_data, chain_data)
+        raw_features = raw_feat
 
-    print(f"Normalizing features...")
-    features = normalize_features(features, valid)
+        # Raw df needs to align with data.pt indexing. We build a minimal
+        # raw_df that covers the replay day bars within data.pt's date range.
+        # The raw_close/high/low/volume arrays in run_replay come from raw_df,
+        # but data.pt features span the full training history (much larger).
+        # We need a raw_df that matches data.pt length for global_idx access.
+        # Solution: pad raw arrays to match data.pt length, filling non-replay
+        # bars with NaN (they won't be accessed for trade journal).
+        n_training = len(features_t)
+        n_raw = len(df)
 
-    # Convert to tensor
-    features_t = torch.tensor(features, dtype=torch.float32)
+        # Find where replay day bars sit in data.pt
+        replay_day_indices_dt = [i for i, d in enumerate(dates) if d == replay_date]
+        # Find where replay day bars sit in raw df
+        replay_day_indices_raw = [i for i in range(len(df)) if df.iloc[i]['date'] == replay_date]
+
+        if len(replay_day_indices_dt) == len(replay_day_indices_raw):
+            # Build padded arrays for raw market data aligned to data.pt indices
+            padded_close = np.full(n_training, np.nan)
+            padded_high = np.full(n_training, np.nan)
+            padded_low = np.full(n_training, np.nan)
+            padded_volume = np.full(n_training, np.nan)
+            padded_raw_features = np.zeros((n_training, raw_features.shape[1]))
+
+            for dt_idx, raw_idx in zip(replay_day_indices_dt, replay_day_indices_raw):
+                padded_close[dt_idx] = df.iloc[raw_idx]['close']
+                padded_high[dt_idx] = df.iloc[raw_idx]['high']
+                padded_low[dt_idx] = df.iloc[raw_idx]['low']
+                padded_volume[dt_idx] = df.iloc[raw_idx]['volume']
+                if raw_idx < len(raw_features):
+                    padded_raw_features[dt_idx] = raw_features[raw_idx]
+
+            # Create a synthetic df with padded arrays
+            raw_df = pd.DataFrame({
+                'close': padded_close,
+                'high': padded_high,
+                'low': padded_low,
+                'volume': padded_volume,
+                'date': dates,
+            })
+            raw_features = padded_raw_features
+        else:
+            print(f"  WARNING: Bar count mismatch (data.pt={len(replay_day_indices_dt)}, "
+                  f"raw={len(replay_day_indices_raw)}). Falling back to live features.")
+            # Fallback to live-computed features
+            training_data = None
+
+    if training_data is None:
+        # Out-of-sample day or fallback: compute features from downloaded data
+        print(f"\nComputing features...")
+        features, targets, dates, valid, option_prices, timestamps = compute_features(
+            df, options_data, vix_data, chain_data
+        )
+        raw_features = features.copy()
+
+        # Use normalization context from data.pt if available (ensures continuity
+        # with training-era rolling statistics for OOS/live days)
+        norm_context = _load_norm_context()
+        if norm_context is not None:
+            ctx_raw, ctx_valid = norm_context
+            print(f"Normalizing with training context ({len(ctx_raw)} bars)...")
+            features = normalize_features_with_context(
+                features, valid, ctx_raw, ctx_valid
+            )
+        else:
+            print(f"WARNING: No normalization context in data.pt — using standalone normalization")
+            print(f"  (Regenerate data.pt with latest prepare.py to fix this)")
+            features = normalize_features(features, valid)
+
+        features_t = torch.tensor(features, dtype=torch.float32)
+        raw_df = df
 
     # Run replay
     trades, bar_log = run_replay(
         model, features_t, raw_features, dates, valid, option_prices, timestamps,
-        replay_date, lookback, raw_df=df,
+        replay_date, lookback, raw_df=raw_df,
         speed=args.speed, verbose=args.verbose, device=device
     )
 

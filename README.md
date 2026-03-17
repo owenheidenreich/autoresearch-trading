@@ -3,169 +3,184 @@
 A recursive self-improving AI that learns to trade SPX 0DTE options intraday.
 
 An LLM (Claude Sonnet 4) iteratively modifies a PyTorch training script, runs
-5-minute GPU experiments on a rented H100, and keeps only improvements — evolving
-the model autonomously over 6-8 hour runs. Adapted from
-[karpathy/autoresearch](https://github.com/karpathy/autoresearch).
+training experiments on a rented H100, and keeps only improvements — evolving
+the model autonomously. Adapted from [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
 
-## What This Actually Does
+---
 
-The model uses a **two-head architecture**:
-- **Gate head**: `[NO_TRADE, TRADE]` — decides if a trade opportunity exists
-- **Direction head**: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` — decides which strike and direction
-
-This produces 8 effective actions: **DO_NOTHING**, **BUY_CALL_ATM**, **BUY_CALL_OTM5**,
-**BUY_CALL_OTM10**, **BUY_PUT_ATM**, **BUY_PUT_OTM5**, **BUY_PUT_OTM10**, **EXIT**.
-The model is a **sniper** — it waits for A+ setups, takes few high-conviction trades
-(3-5 per day), and can actively exit positions when the gate head says "no longer a
-good time to trade." OTM options are cheaper (lower premium), which is valuable for
-live testing with real capital.
-
-### The Feedback Loop
+## How It Works
 
 ```
-Claude reads train.py + history → proposes one change → train 5 min on H100
+Claude reads train.py + history → proposes one change → train on H100
   → evaluate on held-out data → score improved? → keep : revert → repeat
 ```
 
-Over 6 hours (~50-80 experiments), the model architecture, loss function, and
+Over a 5-hour run (~24 experiments), the model architecture, loss function, and
 hyperparameters evolve without human intervention.
 
-## Cost Rules
+### The Model
 
-> **The H100 costs several dollars per hour. Never waste it on non-GPU work.**
+Two-head transformer sniper (~800K params):
+- **Gate head**: `[NO_TRADE, TRADE]` — should I trade right now?
+- **Direction head**: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` — which strike?
 
-1. **`prepare.py` runs LOCALLY** — downloads data, computes features, saves tensors
-2. **Only `train.py` and `run_loop.py` run on the H100**
-3. **Do NOT run data downloads or feature computation on the H100**
+This produces 8 effective actions: DO_NOTHING, BUY_CALL_ATM/OTM5/OTM10,
+BUY_PUT_ATM/OTM5/OTM10, EXIT. The model waits for A+ setups, takes 3-5
+trades per day, and can actively exit positions.
+
+### Scoring
+
+```
+score = profit_factor × trade_sharpe × freq_mult
+
+freq_mult:
+  tpd 2-6   → SWEET SPOT (full score)
+  tpd < 0.5 → -10.0 (DO_NOTHING trap)
+  tpd > 6   → quadratic decay (10→0.36x, 15→0.16x)
+
+Additional penalties: consecutive losses, 1-bar holds, stop-loss rate,
+direction collapse (>80% same direction)
+```
+
+---
 
 ## Quick Start
 
 ```bash
-# 1. Prepare data locally (1-min bars, requires IBKR Gateway running)
-python3 training/prepare.py --use-spx --ib-port 4002   # full rebuild: IBKR + Polygon flat files
+# 1. Prepare data locally (requires IBKR Gateway running)
+python3 training/prepare.py --use-spx --ib-port 4002
 
 # 2. Source API key
 set -a && source .env && set +a
 
-# 3. Deploy H100 + start loop (two commands)
-./infra/deploy.sh boot                                    # deploy H100 on Akash (~2 min)
-./infra/deploy.sh start --hours 6 --max-experiments 100   # upload + pre-flight + start loop
+# 3. Deploy + train (two commands, everything else is automatic)
+DEPOSIT_AKT=30 ./infra/deploy.sh boot
+./infra/deploy.sh start --hours 5 --max-experiments 24
 
-# 4. Monitor (sync in a second terminal)
-./infra/deploy.sh sync           # auto-download improvements as they happen
+# That's it. Auto-sync runs in background, continuously pulling results.
+# Monitor with:
 ./infra/deploy.sh status         # GPU, loop PID, last scores
 ./infra/deploy.sh logs           # tail loop.log
-./infra/deploy.sh ssh            # shell into H100
+tail -f results/run-$(date +%Y-%m-%d)/sync.log  # sync progress
 
-# 5. Stop (downloads results + copies model weights back, then closes deployment)
+# Stop (downloads results, closes deployment, refunds remaining AKT)
 ./infra/deploy.sh stop
 
-# 6. Paper trading validation (after training)
-python3 training/replay.py --date 2026-03-17                    # instant replay on unseen day
-python3 training/replay.py --date 2026-03-17 --output trades.csv # save full trade journal
+# Paper trading validation
+python3 training/replay.py --date 2026-03-17
 ```
+
+---
 
 ## Project Structure
 
 ```
 training/
-  prepare.py                 — data pipeline + 60 features + ATM/OTM P&L targets (runs locally)
-  train.py                   — two-head sniper model + 6-class direction + option-P&L loss (Claude modifies)
-  replay.py                  — paper trading replay: model vs unseen day + trade journal (runs locally)
-  run_loop.py                — autoresearch orchestrator (Claude API + train + model weight preservation)
-  program.md                 — domain knowledge + instructions for Claude
-  best_model.pt              — trained model weights (persisted across deployments via warm-start)
-  ib_probe.py                — IB Gateway connectivity test (ES, SPX, SPXW availability)
+  train.py              — model + loss + training loop (Claude modifies this)
+  best_train.py          — snapshot of train.py that produced best score (architecture lock)
+  best_model.pt          — trained model weights (persisted across deployments via warm-start)
+  prepare.py             — data pipeline: 60 features + option P&L targets (runs locally)
+  replay.py              — paper trading: model vs unseen market day (runs locally)
+  run_loop.py            — autoresearch orchestrator (runs on H100)
+  program.md             — domain knowledge + rules for Claude
+  ib_probe.py            — IBKR connectivity test
 infra/
-  deploy.sh                  — Akash deployment CLI (boot/start/sync/status/logs/download/stop)
-  deploy-autoresearch.yaml   — Akash SDL (container spec: H100 + SSH + tini + PyTorch)
-  start_loop.sh              — Remote loop launcher (called by deploy.sh start)
-  watchdog.sh                — Container health monitor (PID 1, loop, GPU mem, OOM events)
+  deploy.sh              — Akash deployment CLI (boot/start/stop/status/logs/ssh)
+  deploy-autoresearch.yaml — Akash SDL (H100 container spec)
+  start_loop.sh          — remote loop launcher
+  watchdog.sh            — container health monitor
 results/
-  run-YYYY-MM-DD/            — Downloaded artifacts from each training run
-docs/                        — operational docs, domain knowledge, historical plans
+  run-YYYY-MM-DD/        — artifacts from each training run
+docs/
+  0dte-domain-knowledge.md — Greeks, GEX, vol surface (from 130+ trading books)
+  pickles-trading-knowledge.md — expert trader journal extraction
 ```
 
-## How It Works
-
-1. **prepare.py** (LOCAL) downloads ~986 days of 1-min bars from IBKR (SPY volume,
-   real SPX prices, real VIX), plus SPXW 0DTE option bars from Polygon flat files (S3)
-   at ATM and OTM strikes (ATM±5, ATM±10). Covers March 14, 2022 → March 14, 2026
-   (MWF only before May 2022, daily after). Computes 60 features across 13 groups
-   (returns, volume, volatility, VWAP, session, key levels, trend, microstructure,
-   time, options, VIX/regime, OTM/skew, Greeks). Computes actual option P&L targets
-   for all 6 strike/direction combinations plus EXIT labels. Saves to
-   `~/.cache/autoresearch-trading/features/data.pt`.
-
-2. **run_loop.py** (H100) orchestrates the autoresearch loop: reads `program.md`
-   (domain knowledge) + current `train.py` + experiment history, calls Claude for
-   one code modification, validates syntax + structural safety, runs training,
-   evaluates, keeps or reverts. Auto-strips `torch.compile` and rejects attempts
-   to merge the two-head architecture back into a single head. Preserves model
-   weights across experiments (backup/restore pattern).
-
-3. **train.py** (H100) loads `data.pt`, trains a two-head transformer (~250K params):
-   - Input: `(batch, 120, 60)` — 2 hours of 1-min bars × 60 features
-   - Gate head: `(batch, 2)` → `[NO_TRADE, TRADE]`
-   - Direction head: `(batch, 6)` → `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]`
-   - Loss: cross-entropy on actual option P&L across all 6 strikes,
-     time-weighted (afternoon 1.5x), EXIT loss (EXIT_LOSS_WEIGHT=0.3),
-     P&L alignment bonus
-   - Evaluates via discrete trade simulation with model-driven EXIT across ATM and OTM
-
-4. **Metric**: `score = profit_factor × trade_sharpe × freq_mult`, where
-   `freq_mult = min(1, tpd/2)` below 6 tpd, and `max(0.1, (6/tpd)²)` above
-   (quadratic over-trading penalty). Sweet spot: 3-5 trades/day.
-
-5. **Claude** modifies only `train.py` — architecture, loss function, optimizer,
-   hyperparameters, lookback window. Everything is fair game except merging the
-   two heads, reducing direction outputs below 6, or reverting to percentile-based labels.
-
-6. **replay.py** (LOCAL) runs the trained model against unseen market days using
-   IBKR as the only data source for options — matching the live trading environment.
-   Produces a full trade journal with entry/exit prices, P&L, model confidence,
-   MFE/MAE, and session statistics.
-
-## Model Architecture
+### File Lifecycle
 
 ```
-Input: (batch, 120, 60) — 2 hours of 1-min bars × 60 features
-  → FeatureGroupGating (13 groups, auto-adapts to feature count)
-  → TransformerEncoder (depth=4-6, d_model=64-112, causal masking)
-  → Gate head: LayerNorm → Linear → GELU → Dropout → Linear(2)  → [NO_TRADE, TRADE]
-  → Dir head:  LayerNorm → Linear → GELU → Dropout → Linear(6)  → [CALL_ATM, ..., PUT_OTM10]
-
-Effective actions (8):
-  gate=NO_TRADE, not in trade → DO_NOTHING (0)
-  gate=TRADE,    dir=0-2      → BUY_CALL_ATM/OTM5/OTM10 (1-3)
-  gate=TRADE,    dir=3-5      → BUY_PUT_ATM/OTM5/OTM10 (4-6)
-  gate=NO_TRADE, in trade     → EXIT (7) — model-driven profit-taking
+                    LOCAL                           H100 (ephemeral)
+                    ─────                           ────────────────
+train.py       ──upload──>   train.py (Claude modifies each experiment)
+best_train.py  ──upload──>   best_train.py (architecture lock reference)
+best_model.pt  ──upload──>   best_model.pt (warm-start weights)
+                              │
+                              ▼  (after each improvement)
+                              best_train.py + best_model.pt updated
+                              │
+train.py       <──sync────   best_train.py (becomes new train.py)
+best_train.py  <──sync────   best_train.py
+best_model.pt  <──sync────   best_model.pt
 ```
 
-## Training Targets
+**Key rule**: After a run, `best_train.py` IS the new `train.py`. The sync
+handles this automatically — no manual copying needed.
 
-**Primary**: Actual SPXW option P&L for ATM and OTM strikes (in data.pt)
-- ATM: `call_pnl`, `put_pnl` — from real ATM SPXW prices
-- OTM+5: `otm5_call_pnl`, `otm5_put_pnl` — from ATM±5 strikes
-- OTM+10: `otm10_call_pnl`, `otm10_put_pnl` — from ATM±10 strikes
-- Formula: `(exit_price - entry_price) / entry_price - spread_cost`
-- Hold horizon: 30 bars (30 min), same day only
-- Gate target: TRADE when any option P&L > 0 across all 6 strikes
-- Direction target: argmax of 6 P&L values (best strike/direction wins)
+---
 
-**EXIT labels**: `exit_call_label`, `exit_put_label` — 1.0 when unrealized P&L > 20%.
-Now actively used in the loss function (EXIT_LOSS_WEIGHT = 0.3).
+## Deploy Lifecycle
 
-**Secondary**: Forward 6-bar return (kept for fallback/compatibility)
+```
+boot  → deploy H100 on Akash, wait for SSH, verify GPU
+start → upload code + data + best_model.pt (warm-start)
+        → pre-flight checks (data, GPU, API)
+        → launch training loop + watchdog
+        → auto-start background sync (polls every 30s)
+        → on each improvement: sync model + code back to training/
+stop  → kill background sync → kill training loop
+        → download all results → copy best model to training/
+        → close Akash deployment (refunds remaining AKT)
+```
 
-## Features (60)
+### Commands
+
+| Command | Purpose |
+|---------|---------|
+| `./infra/deploy.sh boot` | Deploy H100 container (~2 min) |
+| `./infra/deploy.sh start --hours H --max-experiments N` | Upload code, start loop + auto-sync |
+| `./infra/deploy.sh status` | GPU utilization, loop PID, last scores |
+| `./infra/deploy.sh logs` | Tail the training loop log |
+| `./infra/deploy.sh ssh` | Shell into the H100 |
+| `./infra/deploy.sh sync` | Manual foreground sync (auto-sync runs with start) |
+| `./infra/deploy.sh download` | One-time full download of results |
+| `./infra/deploy.sh stop` | Kill loop → download → close deployment |
+
+### Deposit Guide
+
+| AKT | Duration | Use Case |
+|-----|----------|----------|
+| 5 | ~1 hour | Quick test (2-3 experiments) |
+| 15 | ~3 hours | Short run (~12 experiments) |
+| 30 | ~5 hours | Full run (~24 experiments) |
+| 50 | ~8 hours | Extended run (~40 experiments) |
+
+---
+
+## Data Pipeline
+
+`prepare.py` runs locally (never on H100 — that wastes GPU money).
+
+### Sources
+- **SPX prices**: IBKR (real cash index, 1-min bars)
+- **SPY volume**: IBKR (1-min bars, proxy for SPX volume)
+- **VIX**: IBKR (real CBOE VIX, 1-min bars)
+- **SPXW options (training)**: Polygon flat files / S3 (ATM + OTM at ±5/±10 strikes)
+- **SPXW options (replay/live)**: IBKR only (matches live trading environment)
+
+### Dataset
+- ~382,920 bars × 60 features, ~986 trading days
+- March 2022 – March 2026 (MWF only before May 11, 2022; daily after)
+- Train/Val split: ~70/30 by chronological day index
+- Output: `~/.cache/autoresearch-trading/features/data.pt`
+
+### Features (60)
 
 | Group | Features | Count |
 |-------|----------|-------|
 | Returns | 5-bar, 15-bar, 30-bar, 60-bar, 120-bar | 5 |
 | Volume | ratio, z-score, at-price percentile | 3 |
 | Volatility | bar range, realized vol, range ratio | 3 |
-| VWAP | distance, slope, upper/lower ±1σ, upper/lower ±2σ | 6 |
+| VWAP | distance, slope, upper/lower ±1σ, ±2σ | 6 |
 | Session | IB high/low/width, AM range %, session range % | 5 |
 | Key Levels | ONH/ONL, prev high/low/close/VWAP distance | 6 |
 | Trend | HH/HL, EMA cross, close position | 3 |
@@ -177,60 +192,163 @@ Now actively used in the loss function (EXIT_LOSS_WEIGHT = 0.3).
 | Greeks | delta, gamma, theta, vega, gamma/theta ratio | 5 |
 
 All features (except time encodings) are rolling z-score normalized, clipped ±5.
+Normalization context buffer (500 bars) saved in data.pt for OOS/live continuity.
 
-## Data
+### Training Targets
+- **Option P&L**: Actual SPXW P&L for all 6 strike/direction combos (30-bar hold, same day)
+- **Gate target**: TRADE when any option P&L > 0 across all strikes
+- **Direction target**: argmax of 6 P&L values (best strike/direction wins)
+- **EXIT labels**: 1.0 when unrealized P&L > 20% (EXIT_LOSS_WEIGHT = 0.3)
 
-- **Equity prices**: IBKR (real SPX cash index + SPY volume via IB Gateway, 1-min bars)
-- **VIX**: IBKR (real CBOE VIX index, 1-min bars)
-- **Options (training)**: Polygon flat files / S3 (SPXW 0DTE bars — ATM + OTM chain at ±5/±10 strikes)
-- **Options (replay/live)**: IBKR only — matches live trading environment
-- **Dataset**: ~382,920 bars × 60 features, ~986 trading days (March 2022–March 2026)
-- **0DTE filtering**: MWF only before May 11, 2022 (before daily 0DTE launched)
-- **Train/Val split**: ~70/30 by day index
-- **Option coverage**: ~90%+ ATM, lower for OTM (NaN gracefully handled)
+---
+
+## Autoresearch Loop Details
+
+### Safety Guards (run_loop.py)
+- **Architecture lock**: D_MODEL, DEPTH, N_HEADS must match best_train.py
+- **Structural safety**: Rejects single-head merges, `torch.compile`, `DataParallel`, batch > 256
+- **Backup/restore**: Before each experiment, backs up model weights + code. Reverts on failure.
+- **5 consecutive failures**: Auto-restores best_train.py as starting point
+- **Warm-start**: Loads best_model.pt weights at start of each experiment (LR reduced to 0.3x)
+
+### What Claude Can Modify
+- Loss function, optimizer, hyperparameters, lookback window
+- Layer structure within the two-head architecture
+- Feature gating, dropout, normalization
+- Everything EXCEPT: merging heads, reducing direction outputs below 6, architecture constants
+
+### Cost Per Run
+| Item | Cost |
+|------|------|
+| H100 rental | ~$2–3/hr |
+| Claude API | ~$0.43/experiment |
+| **5-hour run (24 experiments)** | **~$25** |
+
+---
+
+## Replay Mode (Paper Trading)
+
+```bash
+python3 training/replay.py --date 2026-03-17                     # instant replay
+python3 training/replay.py --date 2026-03-17 --speed 10          # 10x speed
+python3 training/replay.py --date 2026-03-17 --verbose           # every bar decision
+python3 training/replay.py --date 2026-03-17 --output trades.csv # save trade journal
+```
+
+Uses IBKR as the only data source for options — matching the live trading environment.
+Produces trade journal with entry/exit prices, P&L, model confidence, MFE/MAE.
+
+---
+
+## Real-Time Paper Trader (IBKR + Polygon Context)
+
+New live subsystem (paper only) with:
+- Daily pre-open `context_refresh` using Polygon historical context (plus IBKR SPX/VIX fill-ins)
+- IBKR entitlement probe (`marketDataType=1`) before order enablement
+- 5-second intraminute ingestion -> minute-close decisions
+- Mandatory bracket/OCO orders on entry
+- Monotonic ratchet rules (`stop` and `take_profit` can only move up)
+- Kill-switch support
+
+Requirements:
+- `POLYGON_API_KEY` for context refresh (historical bootstrap)
+- IB Gateway/TWS paper session running with market data entitlements for SPX/SPXW/VIX/SPY
+
+### Commands
+
+```bash
+# 1) Refresh context bundle only (recommended pre-open, ~9:10 ET)
+python3 tools/paper_live.py --context-only --port 4002 --context-days 30
+
+# 2) Run session in dry-run mode (no orders, full decisions + audits)
+python3 tools/paper_live.py --dry-run --port 4002 --model training/best_model.pt
+
+# 3) Run fully automatic paper execution (places paper orders)
+python3 tools/paper_live.py --paper-auto --port 4002 --model training/best_model.pt
+
+# Optional: explicit entitlement probe only
+python3 tools/ib_entitlements.py --port 4002
+
+# 4) Enable kill switch (content: stop/on/true/1)
+echo stop > /tmp/trading-kill-switch
+python3 tools/paper_live.py --paper-auto --kill-switch /tmp/trading-kill-switch
+```
+
+Audit trail is written to `results/live/audit.jsonl` by default.
+See `docs/IBKR-LIVE-CHECKLIST.md` for required IBKR data/API settings.
+
+---
 
 ## Infrastructure
 
-- **GPU**: Akash Network, H100 80GB HBM3, `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel`
+- **GPU**: Akash Network, NVIDIA H100 80GB HBM3
+- **Container**: `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel`
 - **Resources**: 8 CPU, 64 GB RAM, 50 GB storage
-- **PID 1**: `tini` (proper init process — prevents zombie accumulation)
-- **SSH**: Password auth, port mapped to 30000–33000 range
-- **Watchdog**: `watchdog.sh` monitors container health every 5s (PID 1, loop status, GPU memory, cgroup memory, OOM events)
+- **PID 1**: `tini` (prevents zombie accumulation)
+- **SSH**: Password auth (`root`/`autoresearch2026`), port in 30000-33000 range
+- **Watchdog**: Monitors PID 1, loop status, GPU memory, cgroup, OOM events every 5s
 
-### Deploy lifecycle
+### Operational Notes
+- `torch.compile` is auto-stripped — it OOM-kills the 64GB container
+- Container files are ephemeral — pod restarts wipe `/root/`
+- Docker builds MUST use `--platform linux/amd64` (dev machine is arm64, Akash is amd64)
+- `OMP_NUM_THREADS=4` and `MKL_NUM_THREADS=4` prevent thread over-subscription
 
+### Troubleshooting: Finding SSH Port
+
+If Akash Console doesn't show the forwarded port, scan for it:
+
+```bash
+# Scan ports 30000-33000 for SSH
+for p in $(seq 30000 33000); do
+  (echo "" | nc -w 0.5 $HOST $p 2>/dev/null | grep -q SSH && echo "SSH on $p") &
+done; wait
+
+# Try your password on each SSH port found
+SSHPASS='autoresearch2026' sshpass -e ssh -p $PORT root@$HOST "nvidia-smi"
 ```
-boot  → deploy H100, wait for SSH, verify GPU
-start → upload code + data + best_model.pt (warm-start from previous run)
-        → pre-flight on H100 (validates data.pt, GPU, Claude API, disk space)
-        → launch loop + watchdog
-sync  → poll every 60s, auto-download improvements, heartbeat logging
-stop  → SIGTERM → wait 15s → SIGKILL → download all results
-        → copy best_model.pt to training/ (warm-start for next run)
-        → close Akash deployment
-```
 
-### Known operational notes
+---
 
-- `torch.compile` is **auto-stripped** by `run_loop.py` — it OOM-kills the 64GB container.
-- Set `OMP_NUM_THREADS=4` and `MKL_NUM_THREADS=4` to prevent thread over-subscription.
-- Container files are **ephemeral** — pod restarts wipe `/root/`. Always re-upload after restart.
-- `tini` as PID 1 prevents zombie process accumulation that previously caused silent restarts.
-- Structural safety patterns reject single-head merges, percentile label reversion, and `DataParallel`.
-- **Docker builds MUST use `--platform linux/amd64`** — dev machine is Apple Silicon but Akash is amd64.
-- Model weights are preserved across deployments: `stop` copies `best_model.pt` to `training/`, `start` uploads it for warm-start.
+## Project History
 
-## Cost Estimate (6-hour run)
+| Phase | What | When |
+|-------|------|------|
+| Data Pipeline | 60 features, 1-min bars, option P&L targets | March 2026 |
+| Training Script v3.1 | Two-head, 6-class direction, option-P&L loss, EXIT | March 2026 |
+| Autoresearch Loop | Claude → modify → eval → keep/revert | March 2026 |
+| Deploy Automation | deploy.sh + tini + watchdog + auto-sync | March 2026 |
+| Extended Data | 986 days, 382K bars, March 2022–March 2026 | March 15, 2026 |
+| Operational Hardening | Model weight backup/restore, pre-flight, warm-start | March 16, 2026 |
+| Normalization Fix | Rolling z-score context buffer for OOS continuity | March 16, 2026 |
+| Auto-Sync | Background sync on start, warm-start copy on improvement | March 17, 2026 |
 
-| Item | Cost |
-|------|------|
-| H100 rental | ~$2–3/hr × 6 hrs = ~$15 |
-| Claude API | ~$0.02/experiment × 60 experiments = ~$1.20 |
-| **Total** | **~$16** |
+### Training Run Results
 
-## Docs
+| Run | Experiments | Best Score | Key Finding |
+|-----|------------|------------|-------------|
+| v2 (March 15) | 86 | 155.9 | Low dropout, D_MODEL 80-112, DEPTH 5-6 optimal |
+| v3 test (March 15) | 3 | 15.72 | EXIT working, safety guards 0% failure rate |
+| v3.1 prod (March 16) | 2 | 0.91 | Extended data, 60 features |
+| v3.1 prod (March 17) | 8+ | 4.21 | Warm-start, 10-min budget |
 
-- [docs/AKASH-SSH.md](docs/AKASH-SSH.md) — How to find your SSH port when Akash Console doesn't show it
-- [docs/0dte-domain-knowledge.md](docs/0dte-domain-knowledge.md) — 0DTE Greeks, GEX mechanics, vol surface (from 150+ trading books)
+---
+
+## Future Work
+
+### Near Term
+- [ ] Paper trade 20+ days, validate metrics match backtest
+- [ ] Live trading (1 contract, OTM, risk limits, kill switch)
+
+### Feature Candidates
+- **GEX / Dealer Positioning**: 4 features from Polygon OI data (requires API tier testing)
+- **Market Internals (TICK, Breadth)**: Leading indicators, blocked on IBKR data availability
+- **Walk-forward validation**: Per-chunk eval to detect temporal instability
+
+---
+
+## Reference Docs
+
+- [docs/0dte-domain-knowledge.md](docs/0dte-domain-knowledge.md) — 0DTE Greeks, GEX mechanics, vol surface (from 130+ trading books)
 - [docs/pickles-trading-knowledge.md](docs/pickles-trading-knowledge.md) — Expert trader journal extraction (218 files, entry/exit rules)
-- [docs/FUTURE-FEATURES.md](docs/FUTURE-FEATURES.md) — Future features and training run findings
+- [docs/IBKR-LIVE-CHECKLIST.md](docs/IBKR-LIVE-CHECKLIST.md) — Required IBKR entitlements/settings for non-delayed paper automation

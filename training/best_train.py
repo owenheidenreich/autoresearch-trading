@@ -587,7 +587,6 @@ torch.save({
         'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
         'architecture': 'two_head_greeks_adaptive',
         'greeks_adaptation_strength': GREEKS_ADAPTATION_STRENGTH,
-        'feature_contract_version': 'ibkr_live_v1',
     },
     'step': step,
 }, model_path)
