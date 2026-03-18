@@ -2,6 +2,15 @@
 
 Use this checklist before running `tools/paper_live.py`.
 
+Detailed subscription walkthrough:
+- `docs/IBKR-SUBSCRIPTION-SETUP-GUIDE.md`
+
+Live session test flow:
+- `docs/LIVE-MARKET-HOURS-TEST-STRATEGY.md`
+
+Isolated historical mock training:
+- `docs/IBKR-MOCK-TRAINING-GUIDE.md`
+
 ## Foundation Alignment (Current)
 
 - This checklist covers the live-paper subsystem only.

@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from ib_insync import IB, Index, Stock
 
-from training.prepare import ACTION_DO_NOTHING
+from training.prepare import ACTION_DO_NOTHING, FEATURE_NAMES
 from training.live.context import LIVE_CONTEXT_DIR, load_latest_context_bundle, refresh_context_bundle
 from training.live.decision import ModelDecisionEngine
 from training.live.entitlements import EntitlementReport, probe_entitlements
@@ -296,6 +296,15 @@ class PaperTradingService:
                     {
                         "timestamp_ms": ts_ms,
                         "completeness": snap.completeness,
+                        "present_feature_count": snap.present_feature_count,
+                        "missing_feature_count": len(snap.missing_feature_indices),
+                        "missing_feature_indices": snap.missing_feature_indices,
+                        "missing_feature_names": [
+                            FEATURE_NAMES[i]
+                            for i in snap.missing_feature_indices
+                            if 0 <= i < len(FEATURE_NAMES)
+                        ],
+                        "non_nan_mask": snap.non_nan_mask,
                         "staleness_seconds": snap.staleness_seconds,
                     },
                 )

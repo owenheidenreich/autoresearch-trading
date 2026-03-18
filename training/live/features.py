@@ -22,6 +22,9 @@ class LiveFeatureSnapshot:
     latest_normalized_row: np.ndarray
     latest_raw_row: np.ndarray
     completeness: float
+    present_feature_count: int
+    missing_feature_indices: list[int]
+    non_nan_mask: list[int]
     staleness_seconds: dict[str, float]
 
 
@@ -195,7 +198,11 @@ class LiveFeatureEngine:
         window = view_norm[last_idx - lookback:last_idx]
         raw_last = view_features[last_idx]
         norm_last = view_norm[last_idx]
-        completeness = float(np.mean(~np.isnan(raw_last)))
+        non_nan = np.isfinite(raw_last)
+        missing_feature_indices = [int(i) for i in np.where(~non_nan)[0].tolist()]
+        non_nan_mask = [int(x) for x in non_nan.astype(np.int8).tolist()]
+        present_feature_count = int(np.sum(non_nan))
+        completeness = float(np.mean(non_nan))
         ts = int(self.df.iloc[last_idx]["timestamp"])
         return LiveFeatureSnapshot(
             timestamp_ms=ts,
@@ -203,6 +210,9 @@ class LiveFeatureEngine:
             latest_normalized_row=norm_last,
             latest_raw_row=raw_last,
             completeness=completeness,
+            present_feature_count=present_feature_count,
+            missing_feature_indices=missing_feature_indices,
+            non_nan_mask=non_nan_mask,
             staleness_seconds=dict(self.staleness),
         )
 

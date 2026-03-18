@@ -27,6 +27,13 @@ except ImportError:
 
 def probe(host: str = "127.0.0.1", port: int = 4001, client_id: int = 99):
     ib = IB()
+    ib_errors: list[tuple[int, str]] = []
+
+    def _on_error(reqId, errorCode, errorString, contract):
+        msg = str(errorString or "")
+        ib_errors.append((int(errorCode), msg))
+
+    ib.errorEvent += _on_error
 
     # --- Connect ---
     print(f"Connecting to IB Gateway at {host}:{port} ...")
@@ -140,16 +147,31 @@ def probe(host: str = "127.0.0.1", port: int = 4001, client_id: int = 99):
         status = "OK" if ok else "UNAVAILABLE"
         print(f"  {name:10s}: {status}")
 
-    if results.get("es"):
+    has_ip_conflict = any(
+        code == 162 and "different IP address" in msg
+        for code, msg in ib_errors
+    )
+    has_subscription_error = any(code in (354, 10089, 10090) for code, _ in ib_errors)
+
+    if has_ip_conflict:
+        print("\nDetected IBKR session/IP conflict (Error 162).")
+        print("Historical requests are blocked because another trading session is active on a different IP.")
+        print("Fix: log out all other IBKR sessions/devices, restart Gateway, reconnect from one machine/network.")
+    elif has_subscription_error:
+        print("\nDetected market-data subscription/API entitlement errors.")
+        print("Confirm SPY/SPX/VIX/SPXW packages + Market Data API Acknowledgement are active.")
+    elif results.get("es"):
         print("\nRecommendation: Use ES mini futures as primary data source.")
     elif results.get("spx"):
         print("\nRecommendation: Use I:SPX cash index (ES not available).")
     else:
-        print("\nNo SPX-level data available. Check market data subscriptions.")
-        print("  Required: 'US Equity and Options Add-On Streaming Bundle'")
-        print("  Or: 'US Securities Snapshot and Futures Value Bundle'")
+        print("\nNo SPX-level data available. Re-run during market hours and re-check entitlements.")
 
     ib.disconnect()
+    try:
+        ib.errorEvent -= _on_error
+    except Exception:
+        pass
     return all(results.values())
 
 

@@ -57,12 +57,19 @@ tools/
   monitor.py
   ingest_evidence.py
   data_quality_report.py
+  ib_account_snapshot.py
+  run_ibkr_mock_training.py
+  live_feature_parity_report.py
 
 infra/
   deploy.sh
 
 docs/
   IDEAS-BACKLOG.md
+  AFTER-HOURS-READINESS.md
+  IBKR-SUBSCRIPTION-SETUP-GUIDE.md
+  LIVE-MARKET-HOURS-TEST-STRATEGY.md
+  IBKR-MOCK-TRAINING-GUIDE.md
   0dte-domain-knowledge.md
   HANDOFF-LIVE-PAPER-TRADING-2026-03-17.md
 ```
