@@ -9,7 +9,7 @@
 #   ./deploy.sh sync    → Foreground sync (auto-sync runs with start)
 #   ./deploy.sh ssh     → Drop into SSH shell on the H100
 #   ./deploy.sh logs    → Tail the autoresearch loop log
-#   ./deploy.sh status  → Show GPU, loop PID, last experiment score
+#   ./deploy.sh status  → Show GPU, loop PID, active run status (from current_run.txt)
 #   ./deploy.sh stop    → Kill loop + close Akash deployment
 # ===========================================================================
 set -euo pipefail
@@ -67,6 +67,40 @@ scp_cmd() {
         -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
         -o ConnectTimeout=15 -o LogLevel=ERROR \
         -P "$SSH_PORT" "$@"
+}
+
+get_remote_run_name() {
+    local run_name
+    run_name=$(ssh_cmd "test -f /root/results/current_run.txt && tr -d '\\r\\n' < /root/results/current_run.txt" 2>/dev/null || true)
+    [[ -n "$run_name" ]] || die "Active run pointer missing: /root/results/current_run.txt"
+    ssh_cmd "test -d /root/results/$run_name" &>/dev/null || \
+        die "Active run pointer invalid: /root/results/$run_name not found"
+    echo "$run_name"
+}
+
+write_local_current_run_pointer() {
+    local run_name="$1"
+    local dest_root="${2:-$PROJECT_ROOT/results}"
+    mkdir -p "$dest_root"
+    printf '%s\n' "$run_name" > "$dest_root/current_run.txt"
+    # Keep canonical project pointer mirrored even when sync/download uses custom destination.
+    if [[ "$dest_root" != "$PROJECT_ROOT/results" ]]; then
+        mkdir -p "$PROJECT_ROOT/results"
+        printf '%s\n' "$run_name" > "$PROJECT_ROOT/results/current_run.txt"
+    fi
+}
+
+sync_promoted_ledger_local() {
+    local dest_root="${1:-$PROJECT_ROOT/results}"
+    local dest_promoted="$dest_root/promoted"
+    mkdir -p "$dest_promoted"
+    scp_cmd "root@$SSH_HOST:/root/results/promoted/history.jsonl" "$dest_promoted/history.jsonl" 2>/dev/null || true
+    scp_cmd "root@$SSH_HOST:/root/results/promoted/current.txt" "$dest_promoted/current.txt" 2>/dev/null || true
+    if [[ "$dest_root" != "$PROJECT_ROOT/results" ]]; then
+        mkdir -p "$PROJECT_ROOT/results/promoted"
+        [[ -f "$dest_promoted/history.jsonl" ]] && cp "$dest_promoted/history.jsonl" "$PROJECT_ROOT/results/promoted/history.jsonl"
+        [[ -f "$dest_promoted/current.txt" ]] && cp "$dest_promoted/current.txt" "$PROJECT_ROOT/results/promoted/current.txt"
+    fi
 }
 
 wait_for_ssh() {
@@ -256,6 +290,16 @@ cmd_start() {
         log "No best_model.pt found — starting from scratch"
     fi
 
+    # Seed remote promoted-history ledger so prompt context persists across deployments.
+    ssh_cmd "mkdir -p /root/results/promoted"
+    if [[ -f "$PROJECT_ROOT/results/promoted/history.jsonl" ]]; then
+        log "Uploading promoted history ledger..."
+        scp_cmd "$PROJECT_ROOT/results/promoted/history.jsonl" "root@$SSH_HOST:/root/results/promoted/history.jsonl"
+    fi
+    if [[ -f "$PROJECT_ROOT/results/promoted/current.txt" ]]; then
+        scp_cmd "$PROJECT_ROOT/results/promoted/current.txt" "root@$SSH_HOST:/root/results/promoted/current.txt"
+    fi
+
     # Verify
     log "Files on H100:"
     ssh_cmd "ls -lh /root/*.py /root/*.sh /root/.cache/autoresearch-trading/features/data.pt"
@@ -272,7 +316,7 @@ cmd_start() {
     ssh_cmd "chmod +x /root/start_loop.sh && ANTHROPIC_API_KEY='$ANTHROPIC_KEY' /root/start_loop.sh $LOOP_ARGS"
 
     # Auto-launch sync in background — no more forgetting to run sync in 2nd terminal
-    local sync_dest="$PROJECT_ROOT/results/run-$(date +%Y-%m-%d)"
+    local sync_dest="$PROJECT_ROOT/results"
     mkdir -p "$sync_dest"
     log "Starting auto-sync to $sync_dest ..."
     _run_sync "$sync_dest" > "$sync_dest/sync.log" 2>&1 &
@@ -281,7 +325,7 @@ cmd_start() {
 
     log ""
     log "=== LOOP RUNNING ==="
-    log "Auto-sync: PID $sync_pid → $sync_dest (log: sync.log)"
+    log "Auto-sync: PID $sync_pid → $sync_dest"
     log "  Sync log: tail -f $sync_dest/sync.log"
     log "  Manual:   ./deploy.sh sync    ← foreground sync if you prefer"
     log "Logs:   ./deploy.sh logs"
@@ -308,16 +352,23 @@ cmd_logs() {
 
 cmd_status() {
     load_state
+    local run_name
+    run_name=$(get_remote_run_name)
 
     # Rich dashboard via heredoc Python script (avoids nested quoting)
-    ssh_cmd python3 - << 'PYEOF'
-import json, subprocess, os, textwrap
+    ssh_cmd python3 - <<PYEOF
+import json, subprocess, os, textwrap, sys
 
 def run(cmd):
     try:
         return subprocess.check_output(cmd, shell=True, stderr=subprocess.DEVNULL, timeout=5).decode().strip()
     except:
         return ""
+
+run_name = "${run_name}"
+run_dir = f"/root/results/{run_name}"
+status_path = os.path.join(run_dir, "status.json")
+exp_path = os.path.join(run_dir, "experiments.v2.jsonl")
 
 W = 76  # dashboard width
 
@@ -353,33 +404,55 @@ if pid:
 else:
     print(f"  Loop: NOT RUNNING")
 
-# --- Progress ---
-if os.path.exists("/root/status.json"):
-    with open("/root/status.json") as f:
-        s = json.load(f)
-    phase = s.get("phase", "?")
-    best = s.get("best_score", 0)
-    kept = s.get("kept", 0)
-    failed = s.get("failed", 0)
-    total = s.get("total", 0)
-    remaining = s.get("time_remaining_h", 0)
-    exp_id = s.get("experiment_id", "?")
+bar("Run")
+print(f"  Active: {run_name}")
 
-    bar("Progress")
-    print(f"  Current:    Experiment #{exp_id}  ({phase})")
+# --- Progress ---
+if not os.path.exists(status_path):
+    print(f"ERROR: Missing status file: {status_path}")
+    sys.exit(2)
+
+with open(status_path) as f:
+    s = json.load(f)
+phase = s.get("phase", "?")
+best = s.get("best_score", 0)
+kept = s.get("kept", 0)
+failed = s.get("failed", 0)
+total = s.get("total", 0)
+remaining = s.get("time_remaining_h", 0)
+exp_id = s.get("experiment_id", "?")
+
+bar("Progress")
+print(f"  Current:    Experiment #{exp_id}  ({phase})")
+if isinstance(best, (int, float)):
     print(f"  Best Score: {best:.4f}")
-    print(f"  Results:    {kept} kept / {failed} failed / {total} total")
+else:
+    print(f"  Best Score: {best}")
+print(f"  Results:    {kept} kept / {failed} failed / {total} total")
+if isinstance(remaining, (int, float)):
     print(f"  Time Left:  {remaining:.1f}h")
+else:
+    print(f"  Time Left:  {remaining}")
+checksum = s.get("contract_checksum")
+if checksum:
+    print(f"  Contract:   {checksum}")
+last_failure = s.get("last_failure_type")
+last_flags = s.get("last_anomaly_flags", [])
+if last_failure or last_flags:
+    if not isinstance(last_flags, list):
+        last_flags = []
+    flags_txt = ",".join(last_flags) if last_flags else "none"
+    print(f"  Reliability: failure={last_failure or 'none'} anomalies={flags_txt}")
 
 # --- Experiment History ---
 bar("Experiment History")
-if os.path.exists("/root/experiments.jsonl"):
-    with open("/root/experiments.jsonl") as f:
+if os.path.exists(exp_path):
+    with open(exp_path) as f:
         lines = f.readlines()
 
     # Table header
-    print(f"  {'#':>3}  {'Score':>8}  {'PF':>5}  {'TPD':>5}  {'Sharpe':>7}  {'WR':>5}  {'Kept':>4}  Change")
-    print(f"  {'---':>3}  {'-----':>8}  {'--':>5}  {'---':>5}  {'------':>7}  {'--':>5}  {'----':>4}  ------")
+    print(f"  {'#':>3}  {'Score':>8}  {'PF':>5}  {'TPD':>5}  {'Sharpe':>7}  {'WR':>5}  {'Kept':>4}  Failure")
+    print(f"  {'---':>3}  {'-----':>8}  {'--':>5}  {'---':>5}  {'------':>7}  {'--':>5}  {'----':>4}  -------")
 
     for line in lines:
         try:
@@ -387,32 +460,25 @@ if os.path.exists("/root/experiments.jsonl"):
             eid = e.get("experiment_id", "?")
             score = e.get("score", -999)
             kept_flag = e.get("kept", False)
-            err = e.get("error", "")
-            change = e.get("change_summary", "")
+            failure = e.get("failure_type", "none")
 
-            # Truncate change summary to fit
-            if change:
-                change = change.replace("\n", " ")[:40]
-
-            if score == -999 and err:
-                # Safety rejection or crash
-                reason = err.split("\n")[0][:40]
-                print(f"  {eid:>3}  {'FAIL':>8}  {'':>5}  {'':>5}  {'':>7}  {'':>5}  {'':>4}  {reason}")
+            if score == -999:
+                print(f"  {eid:>3}  {'FAIL':>8}  {'':>5}  {'':>5}  {'':>7}  {'':>5}  {'':>4}  {str(failure)[:25]}")
             else:
                 pf = e.get("profit_factor", 0)
                 tpd = e.get("trades_per_day", 0)
                 sharpe = e.get("trade_sharpe", 0)
                 wr = e.get("win_rate", 0)
                 mark = " <--" if kept_flag else ""
-                print(f"  {eid:>3}  {score:>8.3f}  {pf:>5.2f}  {tpd:>5.1f}  {sharpe:>7.2f}  {wr:>4.0%}  {'YES' if kept_flag else '':>4}{mark}")
+                print(f"  {eid:>3}  {score:>8.3f}  {pf:>5.2f}  {tpd:>5.1f}  {sharpe:>7.2f}  {wr:>4.0%}  {'YES' if kept_flag else '':>4}{mark}  {str(failure)[:25]}")
         except:
             pass
 else:
     print("  (no experiments yet)")
 
 # --- Latest Experiment Detail ---
-if os.path.exists("/root/experiments.jsonl"):
-    with open("/root/experiments.jsonl") as f:
+if os.path.exists(exp_path):
+    with open(exp_path) as f:
         lines = f.readlines()
     if lines:
         last = json.loads(lines[-1])
@@ -436,6 +502,14 @@ if os.path.exists("/root/experiments.jsonl"):
         if err and last.get("score", 0) == -999:
             print(f"\n  Error:")
             print(wrap(err[:200], indent=4, width=W-6))
+        failure_type = last.get("failure_type")
+        anomaly_flags = last.get("anomaly_flags", [])
+        if failure_type or anomaly_flags:
+            if not isinstance(anomaly_flags, list):
+                anomaly_flags = []
+            print(f"\n  Reliability:")
+            print(f"    failure_type={failure_type or 'none'}")
+            print(f"    anomaly_flags={','.join(anomaly_flags) if anomaly_flags else 'none'}")
 
         score = last.get("score", -999)
         if score != -999:
@@ -451,29 +525,41 @@ PYEOF
 
 cmd_download() {
     load_state
-    local dest="${EXTRA_ARGS:-$PROJECT_ROOT/results/run-$(date +%Y-%m-%d)}"
+    local dest="${EXTRA_ARGS:-$PROJECT_ROOT/results}"
     mkdir -p "$dest"
-    log "Downloading results to $dest ..."
+    local run_name
+    run_name=$(get_remote_run_name)
+    local remote_run_dir="/root/results/$run_name"
+    local local_run_dir="$dest/$run_name"
 
-    for f in experiments.jsonl status.json loop.log best_train.py train.py trade_log.csv diagnostics.log best_model.pt; do
-        scp_cmd "root@$SSH_HOST:/root/$f" "$dest/$f" 2>/dev/null && \
-            log "  $f ($(du -h "$dest/$f" | cut -f1))" || \
-            rm -f "$dest/$f"
-    done
+    log "Downloading run $run_name to $dest ..."
+    write_local_current_run_pointer "$run_name" "$dest"
+    scp_cmd -r "root@$SSH_HOST:$remote_run_dir" "$dest/" 2>/dev/null || \
+        die "Failed to download canonical run folder: $remote_run_dir"
+    log "  ↓ $run_name ($(du -h "$local_run_dir" | cut -f1))"
+    log "  ↳ Updated current_run.txt -> $run_name"
+    sync_promoted_ledger_local "$dest"
+
+    if [[ -f "$PROJECT_ROOT/tools/ingest_evidence.py" ]]; then
+        python3 "$PROJECT_ROOT/tools/ingest_evidence.py" \
+            --results-root "$PROJECT_ROOT/results" \
+            --output-root "$PROJECT_ROOT/results/analysis" >/dev/null 2>&1 || \
+            log "  ⚠ evidence ingest failed (non-blocking)"
+    fi
 
     # Preserve artifacts in training/ for next deployment
-    if [[ -f "$dest/best_model.pt" ]]; then
-        cp "$dest/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
+    if [[ -f "$local_run_dir/best_model.pt" ]]; then
+        cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
         log "  ↳ Copied best_model.pt → training/ (warm-start for next run)"
     fi
-    if [[ -f "$dest/best_train.py" ]]; then
-        cp "$dest/best_train.py" "$PROJECT_ROOT/training/best_train.py"
+    if [[ -f "$local_run_dir/best_train.py" ]]; then
+        cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/best_train.py"
         # best_train.py IS the best code — use it as train.py for next run
-        cp "$dest/best_train.py" "$PROJECT_ROOT/training/train.py"
+        cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/train.py"
         log "  ↳ Copied best_train.py → training/train.py + best_train.py"
     fi
 
-    log "Done! Results in: $dest"
+    log "Done! Results in: $local_run_dir"
 }
 
 # ===================================================================
@@ -481,24 +567,47 @@ cmd_download() {
 # Usage: _run_sync <dest_dir>
 # ===================================================================
 _run_sync() {
-    local dest="$1"
-    mkdir -p "$dest"
+    local dest_root="$1"
+    mkdir -p "$dest_root"
 
     local last_kept=-1
     local last_total=-1
+    local last_run=""
     local poll_interval=30
 
     log "=== AUTO-SYNC ==="
     log "  Remote:   $SSH_HOST:$SSH_PORT"
-    log "  Save to:  $dest"
+    log "  Save to:  $dest_root"
     log "  Polling every ${poll_interval}s"
     log ""
 
     while true; do
-        # Fetch remote status.json (small file, cheap over SSH)
+        local run_name
+        run_name=$(ssh_cmd "test -f /root/results/current_run.txt && tr -d '\\r\\n' < /root/results/current_run.txt" 2>/dev/null || true)
+        if [[ -z "$run_name" ]]; then
+            log "ERROR: Active run pointer missing: /root/results/current_run.txt"
+            return 2
+        fi
+        local remote_run_dir="/root/results/$run_name"
+        if ! ssh_cmd "test -d $remote_run_dir" &>/dev/null; then
+            log "ERROR: Active run pointer invalid: $remote_run_dir not found"
+            return 2
+        fi
+        local local_run_dir="$dest_root/$run_name"
+        mkdir -p "$local_run_dir"
+        write_local_current_run_pointer "$run_name" "$dest_root"
+        sync_promoted_ledger_local "$dest_root"
+        if [[ "$last_run" != "$run_name" ]]; then
+            log "  Active run: $run_name"
+            last_run="$run_name"
+            last_kept=-1
+            last_total=-1
+        fi
+
+        # Fetch remote run-folder status.json
         local raw
-        raw=$(ssh_cmd "cat /root/status.json 2>/dev/null") 2>/dev/null || {
-            log "  ⚠ SSH unreachable — retrying in ${poll_interval}s"
+        raw=$(ssh_cmd "cat $remote_run_dir/status.json 2>/dev/null") 2>/dev/null || {
+            log "  ⚠ Status not ready at $remote_run_dir/status.json — retrying in ${poll_interval}s"
             sleep "$poll_interval"
             continue
         }
@@ -523,71 +632,76 @@ print(f'best_score={s.get(\"best_score\",0)}')
         if [[ "$last_kept" -eq -1 ]]; then
             last_kept=$kept
             last_total=$total
-            log "  Baseline: kept=$kept total=$total best=$best_score phase=$phase"
+            log "  Baseline: run=$run_name kept=$kept total=$total best=$best_score phase=$phase"
             sleep "$poll_interval"
             continue
         fi
 
-        # --- New improvement: full download (model + trade log + logs) ---
+        # --- New improvement: full canonical run-folder sync ---
         if [[ "$kept" -gt "$last_kept" ]]; then
-            log "★ IMPROVEMENT #$kept (score=$best_score) — downloading all results..."
-            for f in experiments.jsonl status.json loop.log best_train.py \
-                     trade_log.csv diagnostics.log best_model.pt; do
-                if scp_cmd "root@$SSH_HOST:/root/$f" "$dest/$f" 2>/dev/null; then
-                    log "  ↓ $f  ($(du -h "$dest/$f" | cut -f1))"
-                fi
-            done
+            log "★ IMPROVEMENT #$kept (score=$best_score) — syncing run folder..."
+            scp_cmd -r "root@$SSH_HOST:$remote_run_dir" "$dest_root/" 2>/dev/null || true
+            if [[ -f "$PROJECT_ROOT/tools/ingest_evidence.py" ]]; then
+                python3 "$PROJECT_ROOT/tools/ingest_evidence.py" \
+                    --results-root "$PROJECT_ROOT/results" \
+                    --output-root "$PROJECT_ROOT/results/analysis" >/dev/null 2>&1 || true
+            fi
             # Copy best model + code to training/ for warm-start continuity
-            if [[ -f "$dest/best_model.pt" ]]; then
-                cp "$dest/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
+            if [[ -f "$local_run_dir/best_model.pt" ]]; then
+                cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
                 log "  ↳ Updated training/best_model.pt"
             fi
-            if [[ -f "$dest/best_train.py" ]]; then
-                cp "$dest/best_train.py" "$PROJECT_ROOT/training/best_train.py"
-                cp "$dest/best_train.py" "$PROJECT_ROOT/training/train.py"
+            if [[ -f "$local_run_dir/best_train.py" ]]; then
+                cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/best_train.py"
+                cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/train.py"
                 log "  ↳ Updated training/train.py + best_train.py"
             fi
             last_kept=$kept
             last_total=$total
             log "  Synced. Best score: $best_score"
 
-        # --- Experiment finished but no improvement: sync logs only ---
+        # --- Experiment finished but no improvement: sync canonical logs ---
         elif [[ "$total" -gt "$last_total" ]]; then
-            log "  Exp #$total done (not kept). Syncing logs..."
-            for f in experiments.jsonl status.json loop.log diagnostics.log; do
-                scp_cmd "root@$SSH_HOST:/root/$f" "$dest/$f" 2>/dev/null || true
+            log "  Exp #$total done (not kept). Syncing run folder metadata..."
+            for f in experiments.v2.jsonl status.json run_metadata.json data_quality_report.json; do
+                scp_cmd "root@$SSH_HOST:$remote_run_dir/$f" "$local_run_dir/$f" 2>/dev/null || true
             done
+            if [[ -f "$PROJECT_ROOT/tools/ingest_evidence.py" ]]; then
+                python3 "$PROJECT_ROOT/tools/ingest_evidence.py" \
+                    --results-root "$PROJECT_ROOT/results" \
+                    --output-root "$PROJECT_ROOT/results/analysis" >/dev/null 2>&1 || true
+            fi
             last_total=$total
 
         # --- Heartbeat: show sync is alive even when nothing changed ---
         else
             local remaining
             remaining=$(echo "$raw" | python3 -c "import sys,json; print(f\"{json.load(sys.stdin).get('time_remaining_h','?'):.1f}h\")" 2>/dev/null || echo "?")
-            log "  ♻ Polling... exp=$total kept=$kept best=$best_score remaining=$remaining"
+            log "  ♻ Polling... run=$run_name exp=$total kept=$kept best=$best_score remaining=$remaining"
         fi
 
-        # --- Loop completed: final full download + exit ---
+        # --- Loop completed: final full canonical run-folder sync + exit ---
         if [[ "$phase" == "completed" ]]; then
             log ""
-            log "=== LOOP COMPLETED (score=$best_score, kept=$kept) ==="
-            log "Final download..."
-            for f in experiments.jsonl status.json loop.log best_train.py \
-                     train.py trade_log.csv diagnostics.log best_model.pt; do
-                if scp_cmd "root@$SSH_HOST:/root/$f" "$dest/$f" 2>/dev/null; then
-                    log "  ↓ $f  ($(du -h "$dest/$f" | cut -f1))"
-                fi
-            done
+            log "=== LOOP COMPLETED (run=$run_name score=$best_score, kept=$kept) ==="
+            log "Final sync..."
+            scp_cmd -r "root@$SSH_HOST:$remote_run_dir" "$dest_root/" 2>/dev/null || true
+            if [[ -f "$PROJECT_ROOT/tools/ingest_evidence.py" ]]; then
+                python3 "$PROJECT_ROOT/tools/ingest_evidence.py" \
+                    --results-root "$PROJECT_ROOT/results" \
+                    --output-root "$PROJECT_ROOT/results/analysis" >/dev/null 2>&1 || true
+            fi
             # Final warm-start copy
-            if [[ -f "$dest/best_model.pt" ]]; then
-                cp "$dest/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
+            if [[ -f "$local_run_dir/best_model.pt" ]]; then
+                cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
                 log "  ↳ Updated training/best_model.pt"
             fi
-            if [[ -f "$dest/best_train.py" ]]; then
-                cp "$dest/best_train.py" "$PROJECT_ROOT/training/best_train.py"
-                cp "$dest/best_train.py" "$PROJECT_ROOT/training/train.py"
+            if [[ -f "$local_run_dir/best_train.py" ]]; then
+                cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/best_train.py"
+                cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/train.py"
                 log "  ↳ Updated training/train.py + best_train.py"
             fi
-            log "All results saved to: $dest"
+            log "All results saved to: $local_run_dir"
             # Clean up sync PID file if we were the background sync
             rm -f "$PROJECT_ROOT/.sync-pid"
             break
@@ -613,7 +727,7 @@ cmd_sync() {
         fi
     fi
 
-    local dest="${EXTRA_ARGS:-$PROJECT_ROOT/results/run-$(date +%Y-%m-%d)}"
+    local dest="${EXTRA_ARGS:-$PROJECT_ROOT/results}"
     log "Running foreground sync (Ctrl-C to stop)..."
     _run_sync "$dest"
 }
@@ -683,8 +797,8 @@ case "$CMD" in
         echo "            Options: --hours H  --max-experiments N"
         echo "  ssh       SSH into the H100"
         echo "  logs      Tail the autoresearch loop log"
-        echo "  status    GPU, loop PID, last experiments"
-        echo "  download  Download results once (experiments, logs, trade_log, best model)"
+        echo "  status    GPU, loop PID, active run dashboard (fails fast if pointer missing)"
+        echo "  download  Download active canonical run folder once"
         echo "            Optional: ./deploy.sh download /path/to/save"
         echo "  sync      Foreground sync (auto-sync runs automatically with start)"
         echo "            Optional: ./deploy.sh sync /path/to/save"

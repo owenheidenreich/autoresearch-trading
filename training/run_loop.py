@@ -3,11 +3,11 @@
 Autoresearch loop: LLM-driven iterative model improvement.
 
 Runs on the H100 GPU container. Each iteration:
-  1. Reads program.md + current train.py + history of past experiments
+  1. Reads strict contract (program.md) + current train.py + promoted history
   2. Calls Claude API to propose a modified train.py
-  3. Validates syntax, runs training (5 min), captures val_sharpe
-  4. If improved → keep. If worse → revert.
-  5. Logs everything to experiments.jsonl
+  3. Validates syntax, runs training, captures score + reliability metrics
+  4. If improved and reliable -> keep and auto-promote. Otherwise revert.
+  5. Logs everything to results/run-*/experiments.v2.jsonl
 
 Usage (on H100, after uploading data.pt):
   ANTHROPIC_API_KEY=sk-ant-xxx python -u run_loop.py --hours 8
@@ -30,6 +30,8 @@ import resource
 import subprocess
 import datetime
 import traceback
+import hashlib
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Config
@@ -38,11 +40,90 @@ import traceback
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TRAIN_PY = os.path.join(SCRIPT_DIR, "train.py")
 PROGRAM_MD = os.path.join(SCRIPT_DIR, "program.md")
-EXPERIMENTS_LOG = os.path.join(SCRIPT_DIR, "experiments.jsonl")
 BEST_TRAIN_PY = os.path.join(SCRIPT_DIR, "best_train.py")
 BEST_MODEL_PT = os.path.join(SCRIPT_DIR, "best_model.pt")
-STATUS_JSON = os.path.join(SCRIPT_DIR, "status.json")
 PYTHON = sys.executable
+
+
+def _resolve_results_dir(script_dir: str) -> str:
+    """Resolve canonical results root.
+
+    Local repo execution:
+      <repo>/training/run_loop.py -> <repo>/results
+    Remote container execution:
+      /root/run_loop.py -> /root/results
+    """
+    parent = os.path.dirname(script_dir)
+    if os.path.basename(script_dir) == "training":
+        if os.path.isdir(os.path.join(parent, ".git")) or os.path.exists(os.path.join(parent, "README.md")):
+            return os.path.join(parent, "results")
+    return os.path.join(script_dir, "results")
+
+
+def _runtime_source() -> str:
+    if SCRIPT_DIR == "/root":
+        return "remote_container"
+    if os.path.basename(SCRIPT_DIR) == "training":
+        return "local_repo_training"
+    return "local"
+
+
+RUN_NAME = datetime.datetime.now().strftime("run-%Y-%m-%d-%H%M%S")
+RESULTS_DIR = _resolve_results_dir(SCRIPT_DIR)
+RUN_DIR = os.path.join(RESULTS_DIR, RUN_NAME)
+ARTIFACTS_DIR = os.path.join(RUN_DIR, "artifacts")
+RUN_METADATA_JSON = os.path.join(RUN_DIR, "run_metadata.json")
+RUN_EXPERIMENTS_V2_LOG = os.path.join(RUN_DIR, "experiments.v2.jsonl")
+STATUS_JSON = os.path.join(RUN_DIR, "status.json")
+CURRENT_RUN_TXT = os.path.join(RESULTS_DIR, "current_run.txt")
+RUN_BEST_TRAIN_PY = os.path.join(RUN_DIR, "best_train.py")
+RUN_TRAIN_PY = os.path.join(RUN_DIR, "train.py")
+RUN_BEST_MODEL_PT = os.path.join(RUN_DIR, "best_model.pt")
+PROMOTED_DIR = os.path.join(RESULTS_DIR, "promoted")
+PROMOTED_CURRENT_TXT = os.path.join(PROMOTED_DIR, "current.txt")
+PROMOTED_HISTORY_JSONL = os.path.join(PROMOTED_DIR, "history.jsonl")
+
+FEATURE_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "autoresearch-trading", "features")
+DATA_QUALITY_REPORT_JSON = os.path.join(FEATURE_CACHE_DIR, "data_quality_report.json")
+DATA_QUALITY_FINGERPRINT_JSON = os.path.join(FEATURE_CACHE_DIR, "data_quality_fingerprint.json")
+
+SCHEMA_VERSION = 2
+FAILURE_TYPE_ENUM = {
+    "api",
+    "syntax",
+    "safety",
+    "train_crash",
+    "timeout",
+    "parse",
+    "drift_guard",
+    "regression",
+    "none",
+}
+REQUIRED_OUTPUT_METRIC_KEYS = (
+    "score",
+    "profit_factor",
+    "trades_per_day",
+    "trade_sharpe",
+    "stop_loss_rate",
+    "worst_chunk_pf",
+)
+
+OBSERVABILITY_CONFIG = {
+    "schema_version": SCHEMA_VERSION,
+    "critical_anomaly_flags": {"metric_inconsistent", "trades_per_day_extreme"},
+    "near_tie_delta": 0.05,
+    "near_tie_stability": {
+        "worst_chunk_pf_min": 1.0,
+        "stop_loss_rate_max": 0.35,
+        "direction_collapse_pct_max": 0.85,
+    },
+    "anomaly_thresholds": {
+        "do_nothing_zero_max": 1e-6,
+        "exit_pct_extreme_min": 0.98,
+        "trades_per_day_extreme_min": 0.25,
+        "trades_per_day_extreme_max": 20.0,
+    },
+}
 
 # Claude model for code generation
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
@@ -66,11 +147,442 @@ def log(msg):
     print(f"[{ts}] {msg}", flush=True)
 
 
+def _ensure_dir(path: str) -> None:
+    os.makedirs(path, exist_ok=True)
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _sha256_file(path: str) -> str | None:
+    if not os.path.exists(path):
+        return None
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _now_iso() -> str:
+    return datetime.datetime.now().isoformat()
+
+
+def _write_text(path: str, text: str) -> None:
+    _ensure_dir(os.path.dirname(path))
+    with open(path, "w") as f:
+        f.write(text)
+
+
+def _write_text_atomic(path: str, text: str) -> None:
+    _ensure_dir(os.path.dirname(path))
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+
+def _write_json(path: str, obj: dict[str, Any] | list[Any]) -> None:
+    _ensure_dir(os.path.dirname(path))
+    with open(path, "w") as f:
+        json.dump(obj, f, indent=2, sort_keys=True)
+
+
+def _write_current_run_pointer() -> None:
+    _ensure_dir(RESULTS_DIR)
+    _write_text_atomic(CURRENT_RUN_TXT, f"{RUN_NAME}\n")
+
+
+def _initialize_run_layout() -> None:
+    _ensure_dir(RUN_DIR)
+    _ensure_dir(ARTIFACTS_DIR)
+    _ensure_dir(PROMOTED_DIR)
+    _write_current_run_pointer()
+
+
+def _snapshot_runtime_files_to_run_dir() -> None:
+    """Keep run folder self-contained for sync/download tooling."""
+    _ensure_dir(RUN_DIR)
+    if os.path.exists(TRAIN_PY):
+        shutil.copy2(TRAIN_PY, RUN_TRAIN_PY)
+    if os.path.exists(BEST_TRAIN_PY):
+        shutil.copy2(BEST_TRAIN_PY, RUN_BEST_TRAIN_PY)
+    if os.path.exists(BEST_MODEL_PT):
+        shutil.copy2(BEST_MODEL_PT, RUN_BEST_MODEL_PT)
+
+
+def _artifact_dir(experiment_id: int) -> str:
+    path = os.path.join(ARTIFACTS_DIR, f"exp-{experiment_id}")
+    _ensure_dir(path)
+    return path
+
+
+def _save_artifact_text(artifact_dir: str, name: str, text: str) -> None:
+    _write_text(os.path.join(artifact_dir, name), text)
+
+
+def _save_artifact_json(artifact_dir: str, name: str, obj: dict[str, Any] | list[Any]) -> None:
+    _write_json(os.path.join(artifact_dir, name), obj)
+
+
+def _compute_data_quality_report(data: dict[str, Any], feature_names: list[str]) -> dict[str, Any]:
+    import torch
+
+    features = data["features"]
+    dates = list(data.get("dates", []))
+    timestamps = list(data.get("timestamps", []))
+    n_bars = int(features.shape[0])
+    n_features = int(features.shape[1]) if features.ndim == 2 else 0
+    nan_mask = torch.isnan(features)
+    overall_nan_pct = float(nan_mask.float().mean().item() * 100.0) if n_bars and n_features else 0.0
+    nan_rate_by_feature = []
+    if n_features:
+        per_feat = nan_mask.float().mean(dim=0).cpu().numpy()
+        for i in range(n_features):
+            name = feature_names[i] if i < len(feature_names) else f"feature_{i}"
+            nan_rate_by_feature.append(
+                {
+                    "index": i,
+                    "name": name,
+                    "nan_rate": float(per_feat[i]),
+                }
+            )
+
+    # Aggregate per-bar missingness by bar-of-day to detect time-of-day blind spots.
+    by_minute_sum = [0.0] * 390
+    by_minute_count = [0] * 390
+    minute_idx = 0
+    prev_date = None
+    row_nan = nan_mask.float().mean(dim=1).cpu().numpy() if n_bars and n_features else []
+    for i, d in enumerate(dates):
+        if d != prev_date:
+            minute_idx = 0
+            prev_date = d
+        else:
+            minute_idx += 1
+        bod = max(0, min(389, minute_idx))
+        by_minute_sum[bod] += float(row_nan[i]) if i < len(row_nan) else 0.0
+        by_minute_count[bod] += 1
+    tod_missingness = []
+    for m in range(390):
+        if by_minute_count[m] == 0:
+            continue
+        tod_missingness.append(
+            {
+                "bar_of_day": m,
+                "avg_nan_rate": by_minute_sum[m] / by_minute_count[m],
+                "samples": by_minute_count[m],
+            }
+        )
+    tod_missingness = sorted(tod_missingness, key=lambda x: x["avg_nan_rate"], reverse=True)[:25]
+
+    def _coverage_for(key: str) -> float | None:
+        arr = data.get(key)
+        if arr is None:
+            return None
+        valid = (~torch.isnan(arr)).float().mean().item()
+        return float(valid)
+
+    option_coverage = {
+        "atm_call_prices": _coverage_for("atm_call_prices"),
+        "atm_put_prices": _coverage_for("atm_put_prices"),
+        "otm5_call_prices": _coverage_for("otm5_call_prices"),
+        "otm5_put_prices": _coverage_for("otm5_put_prices"),
+        "otm10_call_prices": _coverage_for("otm10_call_prices"),
+        "otm10_put_prices": _coverage_for("otm10_put_prices"),
+    }
+
+    date_start = min(dates) if dates else None
+    date_end = max(dates) if dates else None
+    num_days = len(set(dates)) if dates else 0
+    payload_for_hash = {
+        "n_bars": n_bars,
+        "n_features": n_features,
+        "date_start": date_start,
+        "date_end": date_end,
+        "num_days": num_days,
+        "overall_nan_pct": round(overall_nan_pct, 6),
+        "option_coverage": {k: (None if v is None else round(v, 6)) for k, v in option_coverage.items()},
+    }
+    fingerprint = _sha256_text(json.dumps(payload_for_hash, sort_keys=True))
+
+    return {
+        "created_at": _now_iso(),
+        "fingerprint": fingerprint,
+        "summary": payload_for_hash,
+        "nan_rate_by_feature": nan_rate_by_feature,
+        "time_of_day_missingness_top": tod_missingness,
+        "timestamp_samples": {
+            "first": str(timestamps[0]) if timestamps else None,
+            "last": str(timestamps[-1]) if timestamps else None,
+        },
+    }
+
+
+def _load_saved_data_fingerprint() -> dict[str, Any] | None:
+    if not os.path.exists(DATA_QUALITY_FINGERPRINT_JSON):
+        return None
+    try:
+        with open(DATA_QUALITY_FINGERPRINT_JSON, "r") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _save_data_quality(report: dict[str, Any]) -> None:
+    _ensure_dir(FEATURE_CACHE_DIR)
+    _write_json(DATA_QUALITY_REPORT_JSON, report)
+    _write_json(
+        DATA_QUALITY_FINGERPRINT_JSON,
+        {
+            "fingerprint": report.get("fingerprint"),
+            "summary": report.get("summary", {}),
+            "created_at": report.get("created_at"),
+        },
+    )
+
+
+def _save_run_metadata(metadata: dict[str, Any]) -> None:
+    _ensure_dir(RUN_DIR)
+    _write_json(RUN_METADATA_JSON, metadata)
+
+
+def _append_jsonl(path: str, rec: dict[str, Any]) -> None:
+    _ensure_dir(os.path.dirname(path))
+    with open(path, "a") as f:
+        f.write(json.dumps(rec, sort_keys=True) + "\n")
+
+
+def _load_checkpoint_score(checkpoint_path: str) -> float | None:
+    if not os.path.exists(checkpoint_path):
+        return None
+    try:
+        import torch
+
+        ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        metrics = ckpt.get("metrics", {}) if isinstance(ckpt, dict) else {}
+        score = metrics.get("score")
+        if score is None:
+            score = metrics.get("val_sharpe")
+        if score is None:
+            return None
+        return float(score)
+    except Exception:
+        return None
+
+
+def _promotion_event_from_exp(exp: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "timestamp": _now_iso(),
+        "run_name": RUN_NAME,
+        "experiment_id": exp.get("experiment_id"),
+        "score": float(exp.get("score", -999.0)),
+        "model_hash": exp.get("model_fingerprint_after") or _sha256_file(BEST_MODEL_PT),
+        "train_hash": exp.get("train_py_after_hash") or _sha256_file(BEST_TRAIN_PY),
+        "profit_factor": exp.get("profit_factor"),
+        "trades_per_day": exp.get("trades_per_day"),
+        "trade_sharpe": exp.get("trade_sharpe"),
+        "stop_loss_rate": exp.get("stop_loss_rate"),
+        "worst_chunk_pf": exp.get("worst_chunk_pf"),
+        "direction_collapse_pct": exp.get("direction_collapse_pct"),
+        "prompt_fingerprint": exp.get("prompt_fingerprint"),
+        "program_md_fingerprint": exp.get("program_md_fingerprint"),
+        "data_fingerprint": exp.get("data_fingerprint"),
+        "change_summary": exp.get("change_summary"),
+    }
+
+
+def _promoted_to_prompt_record(event: dict[str, Any]) -> dict[str, Any] | None:
+    try:
+        score = float(event.get("score"))
+    except Exception:
+        return None
+    run_name = str(event.get("run_name", "promoted"))
+    exp_id = event.get("experiment_id")
+    exp_label = f"{run_name}#{exp_id}" if exp_id is not None else run_name
+    return {
+        "experiment_id": exp_label,
+        "run_name": run_name,
+        "timestamp": event.get("timestamp"),
+        "kept": True,
+        "score": score,
+        "profit_factor": event.get("profit_factor"),
+        "trades_per_day": event.get("trades_per_day"),
+        "trade_sharpe": event.get("trade_sharpe"),
+        "stop_loss_rate": event.get("stop_loss_rate"),
+        "worst_chunk_pf": event.get("worst_chunk_pf"),
+        "direction_collapse_pct": event.get("direction_collapse_pct"),
+        "change_summary": event.get("change_summary") or "promoted baseline",
+        "error": "",
+    }
+
+
+def load_promoted_history() -> list[dict[str, Any]]:
+    """Load prompt history strictly from promoted events."""
+    if not os.path.exists(PROMOTED_HISTORY_JSONL):
+        return []
+    history: list[dict[str, Any]] = []
+    with open(PROMOTED_HISTORY_JSONL, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            rec = _promoted_to_prompt_record(event)
+            if rec is not None:
+                history.append(rec)
+    return history
+
+
+def record_promotion_event(exp: dict[str, Any]) -> dict[str, Any]:
+    """Append promotion ledger and advance promoted pointer atomically."""
+    event = _promotion_event_from_exp(exp)
+    _append_jsonl(PROMOTED_HISTORY_JSONL, event)
+    _write_text_atomic(PROMOTED_CURRENT_TXT, f"{RUN_NAME}\n")
+    return event
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, set):
+        return sorted(_json_safe(v) for v in value)
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+def prompt_contract_check(system_prompt: str, program_md: str) -> dict[str, Any]:
+    text = f"{system_prompt}\n\n{program_md}"
+    required_checks = [
+        ("two_head_output_contract", r"two-head"),
+        (
+            "six_direction_semantics",
+            r"CALL_ATM.*CALL_OTM5.*CALL_OTM10.*PUT_ATM.*PUT_OTM5.*PUT_OTM10",
+        ),
+        ("eight_action_semantics", r"8 effective actions"),
+        ("feature_contract_phase_lock_60", r"60 features"),
+    ]
+    forbidden_checks = [
+        ("stale_four_action_semantics", r"4 effective actions"),
+        ("stale_two_direction_head", r"Direction head:\s*\(batch,\s*2\)"),
+    ]
+
+    violations: list[dict[str, str]] = []
+    for rule_id, pattern in required_checks:
+        if _re.search(pattern, text, _re.IGNORECASE | _re.DOTALL) is None:
+            violations.append({"rule": rule_id, "detail": f"Missing required pattern: {pattern}"})
+    for rule_id, pattern in forbidden_checks:
+        if _re.search(pattern, text, _re.IGNORECASE | _re.DOTALL):
+            violations.append({"rule": rule_id, "detail": f"Forbidden pattern present: {pattern}"})
+    for key in REQUIRED_OUTPUT_METRIC_KEYS:
+        if _re.search(rf"{_re.escape(key)}\s*:", text) is None:
+            violations.append({"rule": f"missing_metric_key_{key}", "detail": f"Missing output metric key: {key}"})
+
+    checksum_payload = {
+        "required_checks": [r for r, _ in required_checks],
+        "forbidden_checks": [r for r, _ in forbidden_checks],
+        "required_output_metric_keys": list(REQUIRED_OUTPUT_METRIC_KEYS),
+        "program_md_fingerprint": _sha256_text(program_md),
+    }
+    checksum = _sha256_text(json.dumps(checksum_payload, sort_keys=True))
+    return {
+        "ok": len(violations) == 0,
+        "violations": violations,
+        "checksum": checksum,
+        "checksum_short": checksum[:12],
+    }
+
+
+def detect_anomaly_flags(metrics: dict[str, Any]) -> list[str]:
+    flags: list[str] = []
+    t = OBSERVABILITY_CONFIG["anomaly_thresholds"]
+    do_nothing = float(metrics.get("do_nothing_pct", 1.0))
+    exit_pct = float(metrics.get("exit_pct", 0.0))
+    trades_per_day = float(metrics.get("trades_per_day", 0.0))
+    num_trades = int(metrics.get("num_trades", 0))
+    win_rate = float(metrics.get("win_rate", 0.0))
+    profit_factor = float(metrics.get("profit_factor", 0.0))
+
+    if do_nothing <= float(t["do_nothing_zero_max"]):
+        flags.append("do_nothing_zero")
+    if exit_pct >= float(t["exit_pct_extreme_min"]):
+        flags.append("exit_pct_extreme")
+    if num_trades > 0 and (trades_per_day < float(t["trades_per_day_extreme_min"]) or trades_per_day > float(t["trades_per_day_extreme_max"])):
+        flags.append("trades_per_day_extreme")
+
+    inconsistent = False
+    if num_trades > 0 and trades_per_day <= 0:
+        inconsistent = True
+    if not (0.0 <= win_rate <= 1.0):
+        inconsistent = True
+    if profit_factor < 0:
+        inconsistent = True
+    if float(metrics.get("stop_loss_rate", 0.0)) > 1.0:
+        inconsistent = True
+    if inconsistent:
+        flags.append("metric_inconsistent")
+
+    return sorted(set(flags))
+
+
+def validate_experiment_v2_schema(exp: dict[str, Any]) -> list[str]:
+    required = [
+        "schema_version",
+        "experiment_id",
+        "timestamp",
+        "prompt_fingerprint",
+        "program_md_fingerprint",
+        "train_py_before_hash",
+        "train_py_after_hash",
+        "data_fingerprint",
+        "model_fingerprint_before",
+        "model_fingerprint_after",
+        "failure_type",
+        "anomaly_flags",
+        "kept",
+        "score",
+    ]
+    errs: list[str] = []
+    for k in required:
+        if k not in exp:
+            errs.append(f"missing:{k}")
+    if exp.get("schema_version") != SCHEMA_VERSION:
+        errs.append(f"schema_version:{exp.get('schema_version')}")
+    failure_type = str(exp.get("failure_type"))
+    if failure_type not in FAILURE_TYPE_ENUM:
+        errs.append(f"failure_type:{failure_type}")
+    if not isinstance(exp.get("anomaly_flags", []), list):
+        errs.append("anomaly_flags:not_list")
+    return errs
+
+
+def _critical_anomaly_flags(flags: list[str]) -> list[str]:
+    critical = OBSERVABILITY_CONFIG["critical_anomaly_flags"]
+    return [f for f in flags if f in critical]
+
+
+def _passes_near_tie_stability(metrics: dict[str, Any]) -> tuple[bool, list[str]]:
+    cfg = OBSERVABILITY_CONFIG["near_tie_stability"]
+    reasons: list[str] = []
+    if float(metrics.get("worst_chunk_pf", 0.0)) < float(cfg["worst_chunk_pf_min"]):
+        reasons.append("worst_chunk_pf_below_threshold")
+    if float(metrics.get("stop_loss_rate", 1.0)) > float(cfg["stop_loss_rate_max"]):
+        reasons.append("stop_loss_rate_above_threshold")
+    if float(metrics.get("direction_collapse_pct", 1.0)) > float(cfg["direction_collapse_pct_max"]):
+        reasons.append("direction_collapse_above_threshold")
+    return len(reasons) == 0, reasons
+
+
 # ---------------------------------------------------------------------------
 # Diagnostics — capture what kills the process and track resources
 # ---------------------------------------------------------------------------
 
-_DIAG_FILE = os.path.join(SCRIPT_DIR, "diagnostics.log")
+_DIAG_FILE = os.path.join(RUN_DIR, "diagnostics.log")
 
 
 def _diag(msg):
@@ -187,130 +699,75 @@ def call_claude(system_prompt: str, user_prompt: str) -> str:
 
 
 def build_system_prompt(program_md: str) -> str:
-    return f"""You are an expert ML researcher iterating on a TWO-HEAD SPX 0DTE options sniper model.
-Your job: modify train.py to improve the composite score:
-  if tpd <= 6: freq_mult = min(1, tpd/2)
-  else:        freq_mult = max(0.1, (6/tpd)²)  # QUADRATIC decay
-  score = profit_factor × trade_sharpe × freq_mult
+    return f"""You are an expert ML researcher running inside an autonomous experiment loop.
+Your only editable target is `train.py`.
 
-CRITICAL: The scoring has a BELL-CURVE trade frequency:
-  - trades_per_day < 0.5 → score = -10.0 (hard penalty)
-  - trades_per_day 0.5–1.5 → score ramps from -5 toward raw score
-  - trades_per_day 2–6 → SWEET SPOT — full score
-  - trades_per_day > 6 → QUADRATIC OVER-TRADING PENALTY (tpd=10→0.36x, tpd=12→0.25x, tpd=15→0.16x)
-  - Baseline is -5.0. Model MUST trade 1.5+ times/day to get a positive score.
+Mission:
+- Improve the scalar training objective reported by the script (higher score is better).
+- Propose one coherent hypothesis per iteration, not an unfocused rewrite.
+- Keep changes robust under a fixed wall-clock budget.
 
-The model is a SNIPER: 3-5 trades/day, not 20+. Over-trading is penalized.
-DO NOT add TRADE bias to gate head. DO NOT add TRADE_INCENTIVE_WEIGHT.
-These cause the gate to collapse to always-TRADE (0% DO_NOTHING, 22+ trades/day).
-If score is negative due to ZERO trades, focus on getting the model to trade.
-If score is low due to OVER-TRADING (>10 tpd), make the model more selective.
+Output contract (strict):
+- First output a short hypothesis in <reasoning>...</reasoning>.
+- Then output the COMPLETE modified `train.py`.
+- Output only reasoning tags + Python code (no markdown fences, no extra commentary).
 
-EVALUATION RULES (enforced by evaluate_trades):
-  - No entries before 10:00 AM (first 30 bars blocked — model still sees them in lookback)
-  - 5-bar cooldown after stop loss before re-entry is allowed
-  - Individual trade P&L capped at 200% (no fat-tail lottery dependency)
-  - Score penalties applied AFTER the base formula:
-    * Consecutive losses >3: score *= max(0.5, 1.0 - 0.05*(consec-3))
-    * 1-bar holds >30%: score *= max(0.7, 1.0 - (short_pct - 0.30))
-    * Stop-loss rate >30%: score *= max(0.5, 1.0 - (sl_rate - 0.30))
-  - Over-trading penalty is QUADRATIC above 6 tpd (much steeper than linear)
+Execution constraints:
+- Do not change files other than `train.py`.
+- Preserve parseable metric output keys.
+- Prefer small, testable deltas if history shows instability.
 
-TUNABLE EVALUATION PARAMETERS (pass as kwargs to evaluate_trades):
-  evaluate_trades(model, data, LOOKBACK, device, stop_loss_pct=0.20, max_hold_bars=45, max_trade_return=1.5)
-  - stop_loss_pct: default 0.30 (30%), range 0.15–0.50. Tighter = less drawdown but more stops.
-  - max_hold_bars: default 60 (60 min), range 15–90. Shorter = less theta decay risk.
-  - max_trade_return: default 2.0 (200%), range 0.5–5.0. Caps individual trade P&L to prevent fat-tail dependency.
-  These are strategy-level knobs you can experiment with alongside architecture/loss.
+The authoritative domain and strategy guidance is below.
+If any instruction you infer conflicts with this guidance, follow this guidance.
 
-ARCHITECTURE (TWO-HEAD — DO NOT MERGE INTO SINGLE HEAD):
-The model has TWO separate output heads:
-  1. Gate head: (batch, 2) → [NO_TRADE, TRADE] — decides "should I be in a trade?"
-  2. Direction head: (batch, 2) → [CALL, PUT] — decides "which direction?"
-
-forward() MUST return a tuple: (gate_logits, dir_logits)
-  - Gate=TRADE + Dir=CALL → BUY_CALL
-  - Gate=TRADE + Dir=PUT → BUY_PUT
-  - Gate=NO_TRADE while in position → EXIT (handled at inference by evaluate_trades)
-  - Gate=NO_TRADE while flat → DO_NOTHING
-
-This gives 4 effective actions: DO_NOTHING (0), BUY_CALL (1), BUY_PUT (2), EXIT (3).
-
-LOSS (OPTION P&L — DO NOT REVERT TO FORWARD-RETURN PERCENTILES):
-The loss function sniper_loss() trains on ACTUAL SPXW option P&L, not forward-return
-percentiles. The dataloader yields: (x, (fwd_ret, call_pnl, put_pnl, exit_call, exit_put))
-  - Gate targets: TRADE (1) when call_pnl > 0 OR put_pnl > 0 (actual profitable trade)
-  - Direction targets: CALL (0) when call_pnl > put_pnl, else PUT (1)
-  - Only computed on bars with option P&L data (NaN-masked)
-  - Time-weighted: afternoon errors cost more (theta acceleration)
-
-DO NOT revert to the old sniper_loss that uses forward_return percentiles.
-DO NOT merge gate_head and dir_head into a single head.
-The two-head architecture and option-P&L loss are load-bearing design decisions.
-
-RULES:
-- THINK FIRST: Before writing any code, write 2-3 sentences explaining your hypothesis
-  and what you expect to change. Wrap this in <reasoning>...</reasoning> tags.
-  Then output the complete modified train.py.
-- You MUST output the COMPLETE modified train.py file, not a diff or snippet.
-- Output ONLY the reasoning tags + Python code. No markdown fences, no other text.
-- Do NOT modify imports from prepare.py — those are fixed.
-- Do NOT change the evaluation section or save section at the bottom.
-- The training budget is set via TIME_BUDGET env var. Do not change TIME_BUDGET in code.
-- Keep the same output format (score, profit_factor, trade_sharpe, etc.) so results parse.
-- Be creative but disciplined. One major change per iteration works best.
-- If the last experiment failed (syntax error, NaN loss, crash), fix it.
-
-MEMORY / SAFETY CONSTRAINTS (VIOLATION = CONTAINER CRASH):
-- NEVER use torch.compile() — it causes OOM on 64Gi Akash containers. The model is <1M params; compile overhead >> benefit.
-- Keep BATCH_SIZE ≤ 256. Do NOT increase it beyond 256.
-- Do NOT add nn.DataParallel or DistributedDataParallel. There is one GPU.
-- Do NOT add gradient accumulation that stores extra tensors beyond what .backward() needs.
-- Do NOT clone/copy the full dataset into new tensors. Use the existing data dict.
-- Do NOT add data augmentation that duplicates the dataset in memory.
-- Do NOT use model.half() or autocast — the model is tiny and does not need mixed precision hacks.
-- Do NOT add torch.jit.trace or torch.jit.script.
-- Keep model size under 2M parameters. Do NOT make D_MODEL > 128 or DEPTH > 8.
-- The container has 64Gi RAM and an 80GB H100. Peak VRAM should stay under 40GB.
-
-COMMON MISTAKES (auto-rejected or auto-fixed):
-- Variable is LOOKBACK (not LOOKBOOK, lookBook, look_back, or similar).
-- D_MODEL must be divisible by N_HEADS. Always verify: D_MODEL % N_HEADS == 0.
-  Valid combos: 64/4, 80/4, 80/5, 96/4, 96/6, 112/4, 128/4, 128/8.
-- If you change LOOKBACK, also update pos_embed shape to match.
-- Loss must stay non-negative. If your loss function can produce negative values, add a lower bound.
-
-DOMAIN KNOWLEDGE:
-{program_md}"""
+{program_md}
+"""
 
 
 def build_user_prompt(current_train_py: str, history: list, experiment_id: int = 0) -> str:
     parts = []
 
     if history:
-        parts.append("## Full Experiment History (all experiments, most recent last)\n")
-        # Show ALL experiments so Claude can learn from the full trajectory
-        for exp in history:
+        best = max(history, key=lambda e: e.get("score", e.get("val_sharpe", -999)))
+        kept = [e for e in history if e.get("kept")]
+        failed = [e for e in history if e.get("error")]
+        parts.append("## Experiment Summary")
+        parts.append(
+            f"Total={len(history)} | Kept={len(kept)} | Failed={len(failed)} | "
+            f"Best score={best.get('score', best.get('val_sharpe', 'N/A'))} (#{best['experiment_id']})\n"
+        )
+
+        top_kept = sorted(
+            kept,
+            key=lambda e: e.get("score", e.get("val_sharpe", -999)),
+            reverse=True,
+        )[:8]
+        if top_kept:
+            parts.append("## Top Kept Experiments")
+            for exp in top_kept:
+                score = exp.get("score", exp.get("val_sharpe", "N/A"))
+                pf = exp.get("profit_factor", "?")
+                tpd = exp.get("trades_per_day", "?")
+                reason = exp.get("change_summary", "unknown")
+                parts.append(f"  #{exp['experiment_id']}: score={score} pf={pf} tpd={tpd} — {reason}")
+            parts.append("")
+
+        recent = history[-30:]
+        parts.append("## Recent Trajectory (last 30)")
+        for exp in recent:
             status = "✓ KEPT" if exp.get("kept") else "✗ reverted"
             score = exp.get("score", exp.get("val_sharpe", "N/A"))
             reason = exp.get("change_summary", "unknown")
             trades = exp.get("trades_per_day", "?")
             pf = exp.get("profit_factor", "?")
             err = exp.get("error", "")
-            reasoning = exp.get("reasoning", "")
             if err and err.startswith("SAFETY:"):
                 parts.append(f"  #{exp['experiment_id']}: REJECTED — {err}")
             elif err:
                 parts.append(f"  #{exp['experiment_id']}: FAILED — {err[:150]}")
             else:
-                line = f"  #{exp['experiment_id']}: score={score} pf={pf} tpd={trades} [{status}] — {reason}"
-                if reasoning:
-                    line += f"\n    Reasoning: {reasoning}"
-                parts.append(line)
+                parts.append(f"  #{exp['experiment_id']}: score={score} pf={pf} tpd={trades} [{status}] — {reason}")
         parts.append("")
-
-        best = max(history, key=lambda e: e.get("score", e.get("val_sharpe", -999)))
-        parts.append(f"## Current best: score={best.get('score', best.get('val_sharpe', 'N/A'))} (experiment #{best['experiment_id']})\n")
 
         if history[-1].get("error"):
             parts.append(f"## LAST EXPERIMENT FAILED:\n{history[-1]['error']}\n")
@@ -589,7 +1046,11 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
             # Get last 50 lines of output for error context (30 was too short, tracebacks got truncated)
             lines = output.strip().split('\n')
             tail = '\n'.join(lines[-50:])
-            return {"error": f"Exit code {result.returncode}:\n{tail}", "output": output}
+            return {
+                "error": f"Exit code {result.returncode}:\n{tail}",
+                "error_type": "train_crash",
+                "output": output,
+            }
 
         # Parse metrics from the --- section
         metrics = {"output": output}
@@ -607,7 +1068,7 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                            'short_hold_pct', 'stop_loss_rate',
                            'final_capital', 'equity_sharpe',
                            'max_equity_dd', 'total_dollar_return',
-                           'worst_chunk_pf'):
+                           'worst_chunk_pf', 'direction_collapse_pct'):
                     try:
                         metrics[key] = float(val)
                     except ValueError:
@@ -624,17 +1085,34 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                     metrics[key] = val
 
         if 'score' not in metrics:
-            return {"error": f"Could not parse score from output:\n{output[-500:]}",
-                    "output": output}
+            return {
+                "error": f"Could not parse score from output:\n{output[-500:]}",
+                "error_type": "parse",
+                "output": output,
+            }
 
-        # Drop full output to free memory early (metrics dict is returned to caller)
-        del metrics["output"]
+        parsed = sorted(k for k in metrics.keys() if k != "output")
+        metrics["parse_summary"] = {
+            "parsed_metric_keys": parsed,
+            "missing_required_metric_keys": [k for k in REQUIRED_OUTPUT_METRIC_KEYS if k not in metrics],
+        }
         return metrics
 
-    except subprocess.TimeoutExpired:
-        return {"error": f"Training timed out after {timeout}s"}
+    except subprocess.TimeoutExpired as e:
+        stdout = e.stdout or ""
+        stderr = e.stderr or ""
+        merged = ""
+        if stdout:
+            merged += str(stdout)
+        if stderr:
+            merged += ("\n" + str(stderr)) if merged else str(stderr)
+        return {
+            "error": f"Training timed out after {timeout}s",
+            "error_type": "timeout",
+            "output": merged,
+        }
     except Exception as e:
-        return {"error": f"Exception: {e}"}
+        return {"error": f"Exception: {e}", "error_type": "train_crash"}
 
 
 # ---------------------------------------------------------------------------
@@ -642,11 +1120,11 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
 # ---------------------------------------------------------------------------
 
 def load_history() -> list:
-    """Load experiment history from JSONL file."""
-    if not os.path.exists(EXPERIMENTS_LOG):
+    """Load experiment history from THIS run folder only."""
+    if not os.path.exists(RUN_EXPERIMENTS_V2_LOG):
         return []
     history = []
-    with open(EXPERIMENTS_LOG, 'r') as f:
+    with open(RUN_EXPERIMENTS_V2_LOG, 'r') as f:
         for line in f:
             line = line.strip()
             if line:
@@ -657,17 +1135,21 @@ def load_history() -> list:
     return history
 
 
-def append_experiment(exp: dict):
-    """Append one experiment to the JSONL log."""
-    with open(EXPERIMENTS_LOG, 'a') as f:
-        # Don't log the full output/code to keep the file manageable
-        log_entry = {k: v for k, v in exp.items() if k != 'output'}
-        f.write(json.dumps(log_entry) + '\n')
+def append_experiment_v2(exp: dict):
+    """Append one experiment to the v2 JSONL log (strict schema)."""
+    errors = validate_experiment_v2_schema(exp)
+    if errors:
+        raise ValueError(f"Invalid experiments.v2 record: {errors}")
+    line = json.dumps(exp) + "\n"
+    _ensure_dir(RUN_DIR)
+    with open(RUN_EXPERIMENTS_V2_LOG, "a") as f:
+        f.write(line)
 
 
 def write_status(phase: str, experiment_id: int, best_score: float,
                  kept: int, failed: int, total: int, deadline: float,
-                 last_exp: dict | None = None):
+                 last_exp: dict | None = None,
+                 contract_checksum: str | None = None):
     """Write status.json for the monitor to read."""
     remaining = max(0, (deadline - time.time()) / 3600)
     status = {
@@ -680,10 +1162,16 @@ def write_status(phase: str, experiment_id: int, best_score: float,
         "time_remaining_h": round(remaining, 2),
         "updated": datetime.datetime.now().isoformat(),
     }
+    if contract_checksum:
+        status["contract_checksum"] = str(contract_checksum)[:12]
     if last_exp:
         status["last_change"] = last_exp.get("change_summary", "")
         status["last_score"] = last_exp.get("score", last_exp.get("val_sharpe"))
         status["last_kept"] = last_exp.get("kept", False)
+        if "failure_type" in last_exp:
+            status["last_failure_type"] = last_exp.get("failure_type")
+        if "anomaly_flags" in last_exp:
+            status["last_anomaly_flags"] = list(last_exp.get("anomaly_flags", []))
     # Atomic write to avoid partial reads
     tmp = STATUS_JSON + ".tmp"
     with open(tmp, 'w') as f:
@@ -695,12 +1183,13 @@ def write_status(phase: str, experiment_id: int, best_score: float,
 # Main loop
 # ---------------------------------------------------------------------------
 
-def run_one_experiment(experiment_id: int, history: list, best_score: float,
-                       deadline: float, kept_count: int, failed_count: int,
-                       time_budget: int = 300) -> dict:
+def run_one_experiment(experiment_id: int, prompt_history: list, best_score: float,
+                       deadline: float, kept_count: int, failed_count: int, run_total: int,
+                       time_budget: int = 300, data_fingerprint: str | None = None) -> dict:
     """Run a single experiment iteration. Returns experiment dict."""
     log(f"=== Experiment #{experiment_id} ===")
-    total = len(history)
+    total = run_total
+    artifact_dir = _artifact_dir(experiment_id)
 
     # Read current state
     with open(PROGRAM_MD, 'r') as f:
@@ -708,19 +1197,78 @@ def run_one_experiment(experiment_id: int, history: list, best_score: float,
     with open(TRAIN_PY, 'r') as f:
         current_code = f.read()
 
-    # Call Claude
-    write_status("calling_claude", experiment_id, best_score,
-                 kept_count, failed_count, total, deadline)
+    program_md_fingerprint = _sha256_text(program_md)
+    train_py_before_hash = _sha256_text(current_code)
+    model_fingerprint_before = _sha256_file(BEST_MODEL_PT)
+
+    exp: dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION,
+        "experiment_id": experiment_id,
+        "timestamp": _now_iso(),
+        "program_md_fingerprint": program_md_fingerprint,
+        "train_py_before_hash": train_py_before_hash,
+        "train_py_after_hash": train_py_before_hash,
+        "data_fingerprint": data_fingerprint,
+        "model_fingerprint_before": model_fingerprint_before,
+        "model_fingerprint_after": model_fingerprint_before,
+        "failure_type": "none",
+        "anomaly_flags": [],
+        "kept": False,
+        "score": -999.0,
+    }
+
+    _save_artifact_text(artifact_dir, "program.md", program_md)
+    _save_artifact_text(artifact_dir, "train_before.py", current_code)
+
+    system = build_system_prompt(program_md)
+    user = build_user_prompt(current_code, prompt_history, experiment_id)
+    prompt_contract = prompt_contract_check(system, program_md)
+    prompt_fingerprint = _sha256_text(system + "\n\n### USER ###\n" + user)
+    exp["prompt_fingerprint"] = prompt_fingerprint
+    exp["contract_checksum"] = prompt_contract["checksum_short"]
+    _save_artifact_text(artifact_dir, "prompt_system.txt", system)
+    _save_artifact_text(artifact_dir, "prompt_user.txt", user)
+    _save_artifact_json(artifact_dir, "prompt_contract_check.json", prompt_contract)
+
+    if not prompt_contract["ok"]:
+        exp["failure_type"] = "drift_guard"
+        exp["error"] = "Prompt contract violations detected"
+        _save_artifact_json(
+            artifact_dir,
+            "decision.json",
+            {
+                "kept": False,
+                "failure_type": exp["failure_type"],
+                "reason": exp["error"],
+                "violations": prompt_contract["violations"],
+            },
+        )
+        _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+        return exp
+
+    write_status(
+        "calling_claude",
+        experiment_id,
+        best_score,
+        kept_count,
+        failed_count,
+        total,
+        deadline,
+        contract_checksum=prompt_contract["checksum_short"],
+    )
     log("Calling Claude for code modification...")
     t0 = time.time()
     try:
-        system = build_system_prompt(program_md)
-        user = build_user_prompt(current_code, history, experiment_id)
         raw_response = call_claude(system, user)
         reasoning = extract_reasoning(raw_response)
         new_code = extract_code(raw_response)
         new_code, stripped = _sanitize_code(new_code)
         api_time = time.time() - t0
+        exp["api_time"] = round(api_time, 1)
+        exp["reasoning"] = reasoning[:300] if reasoning else ""
+        _save_artifact_text(artifact_dir, "response_raw.txt", raw_response)
+        _save_artifact_text(artifact_dir, "reasoning.txt", reasoning or "")
+        _save_artifact_json(artifact_dir, "sanitize_actions.json", {"actions": stripped})
         log(f"  Claude responded in {api_time:.1f}s")
         if reasoning:
             log(f"  Reasoning: {reasoning[:200]}")
@@ -728,41 +1276,50 @@ def run_one_experiment(experiment_id: int, history: list, best_score: float,
             log(f"  Auto-fixed: {'; '.join(stripped)}")
     except Exception as e:
         log(f"  Claude API error: {e}")
-        return {
-            "experiment_id": experiment_id,
-            "error": f"API error: {e}",
-            "kept": False,
-            "score": -999,
-            "timestamp": datetime.datetime.now().isoformat(),
-        }
+        exp["failure_type"] = "api"
+        exp["error"] = f"API error: {e}"
+        _save_artifact_json(
+            artifact_dir,
+            "decision.json",
+            {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
+        )
+        _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+        return exp
+
+    exp["train_py_after_hash"] = _sha256_text(new_code)
+    _save_artifact_text(artifact_dir, "train_after_candidate.py", new_code)
+
+    change_summary = extract_change_summary(raw_response, current_code, new_code)
+    exp["change_summary"] = change_summary
+    log(f"  Change: {change_summary}")
 
     # Validate syntax
     syntax_err = validate_syntax(new_code)
     if syntax_err:
         log(f"  Syntax error: {syntax_err}")
-        return {
-            "experiment_id": experiment_id,
-            "error": syntax_err,
-            "kept": False,
-            "score": -999,
-            "change_summary": extract_change_summary(raw_response, current_code, new_code),
-            "reasoning": reasoning[:300] if reasoning else "",
-            "timestamp": datetime.datetime.now().isoformat(),
-        }
+        exp["failure_type"] = "syntax"
+        exp["error"] = syntax_err
+        _save_artifact_json(
+            artifact_dir,
+            "decision.json",
+            {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
+        )
+        _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+        return exp
 
     # Validate safety (torch.compile, huge batch sizes, etc.)
     safety_err = validate_safety(new_code)
     if safety_err:
         log(f"  {safety_err}")
-        return {
-            "experiment_id": experiment_id,
-            "error": safety_err,
-            "kept": False,
-            "score": -999,
-            "change_summary": extract_change_summary(raw_response, current_code, new_code),
-            "reasoning": reasoning[:300] if reasoning else "",
-            "timestamp": datetime.datetime.now().isoformat(),
-        }
+        exp["failure_type"] = "safety"
+        exp["error"] = safety_err
+        _save_artifact_json(
+            artifact_dir,
+            "decision.json",
+            {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
+        )
+        _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+        return exp
 
     # Backup current train.py and best_model.pt
     backup_path = TRAIN_PY + ".backup"
@@ -775,43 +1332,42 @@ def run_one_experiment(experiment_id: int, history: list, best_score: float,
     with open(TRAIN_PY, 'w') as f:
         f.write(new_code)
 
-    change_summary = extract_change_summary(raw_response, current_code, new_code)
-    log(f"  Change: {change_summary}")
-
     # Run training
-    write_status("training", experiment_id, best_score,
-                 kept_count, failed_count, total, deadline,
-                 {"change_summary": change_summary})
+    write_status(
+        "training",
+        experiment_id,
+        best_score,
+        kept_count,
+        failed_count,
+        total,
+        deadline,
+        {"change_summary": change_summary},
+        contract_checksum=prompt_contract["checksum_short"],
+    )
     log(f"  Training ({time_budget // 60} min budget)...")
     log_diagnostics(f"pre_train_{experiment_id}")
     t0 = time.time()
     timeout = time_budget + 120
     metrics = run_training(TRAIN_PY, timeout=timeout, time_budget=time_budget)
     train_wall_time = time.time() - t0
+    exp["train_wall_time"] = round(train_wall_time, 1)
     log(f"  Done in {train_wall_time:.0f}s")
     log_diagnostics(f"post_train_{experiment_id}")
-
-    exp = {
-        "experiment_id": experiment_id,
-        "timestamp": datetime.datetime.now().isoformat(),
-        "change_summary": change_summary,
-        "reasoning": reasoning[:300] if reasoning else "",
-        "api_time": round(api_time, 1),
-        "train_wall_time": round(train_wall_time, 1),
-    }
+    _save_artifact_text(artifact_dir, "train_output.log", str(metrics.get("output", "")))
+    if "parse_summary" in metrics:
+        _save_artifact_json(artifact_dir, "parse_summary.json", metrics["parse_summary"])
 
     if "error" in metrics:
         log(f"  FAILED: {metrics['error'][:200]}")
-        exp["error"] = metrics["error"][:500]
-        exp["score"] = -999
-        exp["kept"] = False
+        exp["error"] = metrics["error"][:1000]
+        exp["failure_type"] = str(metrics.get("error_type", "train_crash"))
         # Revert train.py and model weights
         shutil.copy2(backup_path, TRAIN_PY)
         if os.path.exists(model_backup_path):
             shutil.copy2(model_backup_path, BEST_MODEL_PT)
         log("  Reverted to previous train.py + model")
     else:
-        score = metrics["score"]
+        score = float(metrics["score"])
         exp["score"] = score
         exp["val_sharpe"] = metrics.get("val_sharpe", 0)
         exp["profit_factor"] = metrics.get("profit_factor", 0)
@@ -825,16 +1381,41 @@ def run_one_experiment(experiment_id: int, history: list, best_score: float,
         exp["model_exit_count"] = metrics.get("model_exit_count", 0)
         exp["num_steps"] = metrics.get("num_steps", 0)
         exp["num_params"] = metrics.get("num_params", 0)
+        exp["stop_loss_rate"] = metrics.get("stop_loss_rate", 0)
+        exp["worst_chunk_pf"] = metrics.get("worst_chunk_pf", 0)
+        exp["direction_collapse_pct"] = metrics.get("direction_collapse_pct", 1.0)
+        exp["parse_summary"] = metrics.get("parse_summary", {})
 
-        if score > best_score:
+        anomaly_flags = detect_anomaly_flags(exp)
+        exp["anomaly_flags"] = anomaly_flags
+        critical_flags = _critical_anomaly_flags(anomaly_flags)
+        improvement = score - float(best_score)
+        near_tie = score > best_score and improvement < float(OBSERVABILITY_CONFIG["near_tie_delta"])
+        near_tie_ok = True
+        near_tie_reasons: list[str] = []
+        if near_tie:
+            near_tie_ok, near_tie_reasons = _passes_near_tie_stability(exp)
+
+        keep_allowed = score > best_score and not critical_flags and near_tie_ok
+        if keep_allowed:
             log(f"  ✓ IMPROVED: {best_score:.4f} → {score:.4f} (pf={exp['profit_factor']:.2f} tpd={exp['trades_per_day']:.1f})")
             exp["kept"] = True
+            exp["failure_type"] = "none"
             # Save as best — keep new model weights, archive old backup
             shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)
             if os.path.exists(model_backup_path):
                 os.remove(model_backup_path)
         else:
-            log(f"  ✗ No improvement: {score:.4f} ≤ {best_score:.4f}")
+            exp["failure_type"] = "regression"
+            reasons = []
+            if score <= best_score:
+                reasons.append("score_not_improved")
+            if critical_flags:
+                reasons.append(f"critical_anomalies:{','.join(critical_flags)}")
+            if near_tie and not near_tie_ok:
+                reasons.append(f"near_tie_stability_failed:{','.join(near_tie_reasons)}")
+            exp["keep_block_reason"] = ";".join(reasons) if reasons else "regression_gate"
+            log(f"  ✗ No improvement gate: score={score:.4f}, reasons={exp['keep_block_reason']}")
             exp["kept"] = False
             # Revert train.py and model weights
             shutil.copy2(backup_path, TRAIN_PY)
@@ -846,6 +1427,22 @@ def run_one_experiment(experiment_id: int, history: list, best_score: float,
         if os.path.exists(bkp):
             os.remove(bkp)
 
+    exp["model_fingerprint_after"] = _sha256_file(BEST_MODEL_PT)
+    _save_artifact_json(
+        artifact_dir,
+        "decision.json",
+        {
+            "kept": exp.get("kept", False),
+            "failure_type": exp.get("failure_type"),
+            "reason": exp.get("error") or exp.get("keep_block_reason"),
+            "anomaly_flags": exp.get("anomaly_flags", []),
+        },
+    )
+    _save_artifact_json(
+        artifact_dir,
+        "experiment.v2.json",
+        exp,
+    )
     return exp
 
 
@@ -860,6 +1457,11 @@ def main():
                         help="Validate setup without running experiments")
     parser.add_argument("--time-budget", type=int, default=300,
                         help="Training time budget per experiment in seconds (default: 300)")
+    parser.add_argument(
+        "--allow-data-fingerprint-change",
+        action="store_true",
+        help="Allow run to proceed when data fingerprint changes from the cached baseline",
+    )
     args = parser.parse_args()
 
     # Validate environment
@@ -876,14 +1478,18 @@ def main():
         print(f"ERROR: {PROGRAM_MD} not found")
         sys.exit(1)
 
+    _initialize_run_layout()
+
     # -----------------------------------------------------------------------
     # Pre-flight checks — catch problems before consuming GPU time
     # -----------------------------------------------------------------------
     print("=== PRE-FLIGHT CHECKS ===")
+    data_fingerprint: str | None = None
 
     # 1. data.pt — load and validate contents
     try:
         sys.path.insert(0, SCRIPT_DIR)
+        from prepare import FEATURE_NAMES as _FEATURE_NAMES
         from prepare import load_data as _preflight_load
         import torch as _torch
         _data = _preflight_load()
@@ -901,6 +1507,20 @@ def main():
         print(f"  data.pt:   OK ({n_bars} bars, {n_features} features, {nan_pct:.1f}% NaN)")
         if nan_pct > 50:
             print("  WARNING: >50% NaN features — training quality will be poor")
+        data_quality = _compute_data_quality_report(_data, list(_FEATURE_NAMES))
+        cached_fp = _load_saved_data_fingerprint()
+        if cached_fp and cached_fp.get("fingerprint") != data_quality.get("fingerprint"):
+            print("ERROR: data fingerprint changed vs cached baseline.")
+            print(f"  cached:  {cached_fp.get('fingerprint')}")
+            print(f"  current: {data_quality.get('fingerprint')}")
+            print("  Use --allow-data-fingerprint-change to acknowledge and continue.")
+            if not args.allow_data_fingerprint_change:
+                raise ValueError("data_fingerprint_changed")
+            print("  Override enabled: accepting new fingerprint.")
+        _save_data_quality(data_quality)
+        _write_json(os.path.join(RUN_DIR, "data_quality_report.json"), data_quality)
+        data_fingerprint = data_quality.get("fingerprint")
+        print(f"  data fingerprint: {str(data_fingerprint)[:12]}")
         del _data
     except SystemExit:
         print("ERROR: data.pt not found. Upload it to the container first.")
@@ -908,6 +1528,8 @@ def main():
         print("  Or next to train.py")
         sys.exit(1)
     except Exception as e:
+        if str(e) == "data_fingerprint_changed":
+            sys.exit(2)
         print(f"ERROR: Could not load data.pt: {e}")
         sys.exit(1)
 
@@ -947,26 +1569,88 @@ def main():
         sys.exit(1)
 
     print("=== ALL CHECKS PASSED ===\n")
+    _save_run_metadata(
+        {
+            "created_at": _now_iso(),
+            "started_at": _now_iso(),
+            "run_name": RUN_NAME,
+            "run_dir": RUN_DIR,
+            "results_dir": RESULTS_DIR,
+            "mode": "dry_run" if args.dry_run else "loop",
+            "source": _runtime_source(),
+            "schema_version": SCHEMA_VERSION,
+            "observability_config": _json_safe(OBSERVABILITY_CONFIG),
+            "data_fingerprint": data_fingerprint,
+            "allow_data_fingerprint_change": bool(args.allow_data_fingerprint_change),
+            "claude_model": CLAUDE_MODEL,
+            "hours": args.hours,
+            "max_experiments": args.max_experiments,
+            "time_budget": args.time_budget,
+        }
+    )
 
-    # Load history
-    history = load_history()
+    # Histories:
+    # - run_history: current run's experiments (for status and run summary)
+    # - prompt_history: promoted-only history (for LLM context)
+    run_history = load_history()
+    prompt_history = load_promoted_history()
+
     # Warm-start baseline at -5.0 (not -999): a zero-trade model returns -10.0
-    # so it must actually trade profitably to beat baseline and get "kept"
+    # so it must actually trade profitably to beat baseline and get "kept".
     INITIAL_BASELINE = -5.0
-    best_score = max((e.get("score", e.get("val_sharpe", INITIAL_BASELINE)) for e in history), default=INITIAL_BASELINE)
-    start_id = max((e.get("experiment_id", 0) for e in history), default=0) + 1
+    promoted_scores = []
+    for rec in prompt_history:
+        try:
+            promoted_scores.append(float(rec.get("score")))
+        except Exception:
+            continue
+    checkpoint_score = _load_checkpoint_score(BEST_MODEL_PT)
+    if promoted_scores:
+        best_score = max(promoted_scores)
+        best_source = "promoted_history"
+    elif checkpoint_score is not None:
+        best_score = float(checkpoint_score)
+        best_source = "checkpoint_only"
+    else:
+        best_score = INITIAL_BASELINE
+        best_source = "baseline_default"
+
+    run_ids: list[int] = []
+    for e in run_history:
+        try:
+            run_ids.append(int(e.get("experiment_id", 0)))
+        except Exception:
+            continue
+    start_id = (max(run_ids) if run_ids else 0) + 1
 
     log(f"Autoresearch loop starting")
     log(f"  Runtime budget: {args.hours}h ({args.hours * 60:.0f} min)")
     log(f"  Training budget per experiment: {args.time_budget}s ({args.time_budget // 60} min)")
     log(f"  Max experiments: {args.max_experiments}")
-    log(f"  Previous experiments: {len(history)}")
-    log(f"  Best score so far: {best_score:.4f}" if best_score > INITIAL_BASELINE else "  No previous results (baseline: -5.0)")
+    log(f"  Current-run experiments: {len(run_history)}")
+    log(f"  Prompt history (promoted): {len(prompt_history)}")
+    if best_source == "promoted_history":
+        log(f"  Best score so far (promoted): {best_score:.4f}")
+    elif best_source == "checkpoint_only":
+        log(f"  Best score so far (checkpoint fallback): {best_score:.4f}")
+    else:
+        log("  No promoted/checkpoint score found (baseline: -5.0)")
     log(f"  Model: {CLAUDE_MODEL}")
-    log(f"  Log: {EXPERIMENTS_LOG}")
+    log(f"  Run: {RUN_NAME}")
+    log(f"  Log: {RUN_EXPERIMENTS_V2_LOG}")
     log("")
 
     if args.dry_run:
+        dry_deadline = time.time() + args.hours * 3600
+        write_status(
+            "dry_run",
+            start_id - 1 if start_id > 0 else 0,
+            best_score,
+            0,
+            0,
+            len(run_history),
+            dry_deadline,
+        )
         log("Dry run complete. All pre-flight checks passed.")
         return
 
@@ -978,6 +1662,7 @@ def main():
     # Save initial train.py as best if no best exists
     if not os.path.exists(BEST_TRAIN_PY):
         shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)
+    _snapshot_runtime_files_to_run_dir()
 
     deadline = time.time() + args.hours * 3600
     experiment_id = start_id
@@ -990,11 +1675,14 @@ def main():
         log(f"Time remaining: {remaining_h:.1f}h | Best score: {best_score:.4f} | "
             f"Kept: {kept_count} | Failed: {failed_count}")
 
-        exp = run_one_experiment(experiment_id, history, best_score,
+        exp = run_one_experiment(experiment_id, prompt_history, best_score,
                                 deadline, kept_count, failed_count,
-                                time_budget=args.time_budget)
-        history.append(exp)
-        append_experiment(exp)
+                                run_total=len(run_history),
+                                time_budget=args.time_budget,
+                                data_fingerprint=data_fingerprint)
+        run_history.append(exp)
+        append_experiment_v2(exp)
+        _snapshot_runtime_files_to_run_dir()
 
         # Reap zombies, GC, diagnostics after each experiment
         _reap_zombies()
@@ -1005,6 +1693,10 @@ def main():
             best_score = exp["score"]
             kept_count += 1
             consecutive_failures = 0
+            promoted_event = record_promotion_event(exp)
+            prompt_rec = _promoted_to_prompt_record(promoted_event)
+            if prompt_rec is not None:
+                prompt_history.append(prompt_rec)
         elif exp.get("error"):
             failed_count += 1
             consecutive_failures += 1
@@ -1013,7 +1705,8 @@ def main():
 
         # Update status after experiment
         write_status("between_experiments", experiment_id, best_score,
-                     kept_count, failed_count, len(history), deadline, exp)
+                     kept_count, failed_count, len(run_history), deadline, exp,
+                     contract_checksum=exp.get("contract_checksum"))
 
         # Safety: if 5 consecutive failures, restore best and continue
         if consecutive_failures >= 5:
@@ -1027,7 +1720,8 @@ def main():
 
     # Final summary
     write_status("completed", experiment_id - 1, best_score,
-                 kept_count, failed_count, len(history), deadline)
+                 kept_count, failed_count, len(run_history), deadline,
+                 contract_checksum=(run_history[-1].get("contract_checksum") if run_history else None))
     log("=" * 60)
     log("AUTORESEARCH COMPLETE")
     log(f"  Total experiments: {experiment_id - start_id}")
@@ -1036,16 +1730,16 @@ def main():
     log(f"  Best score: {best_score:.6f}")
     log("")
 
-    if history:
+    if run_history:
         log("Top 5 experiments by score:")
-        ranked = sorted(history, key=lambda e: e.get("score", e.get("val_sharpe", -999)), reverse=True)
+        ranked = sorted(run_history, key=lambda e: e.get("score", e.get("val_sharpe", -999)), reverse=True)
         for i, exp in enumerate(ranked[:5]):
             sc = exp.get('score', exp.get('val_sharpe', -999))
             log(f"  #{exp['experiment_id']}: score={sc:.4f} pf={exp.get('profit_factor', 0):.2f} "
                 f"tpd={exp.get('trades_per_day', 0):.1f} — {exp.get('change_summary', 'N/A')}")
 
     log(f"\nBest model saved at: {BEST_TRAIN_PY}")
-    log(f"Full log at: {EXPERIMENTS_LOG}")
+    log(f"Full log at: {RUN_EXPERIMENTS_V2_LOG}")
 
 
 if __name__ == "__main__":

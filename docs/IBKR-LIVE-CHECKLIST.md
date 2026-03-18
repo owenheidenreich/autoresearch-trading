@@ -2,6 +2,13 @@
 
 Use this checklist before running `tools/paper_live.py`.
 
+## Foundation Alignment (Current)
+
+- This checklist covers the live-paper subsystem only.
+- Core training foundation is locked to 60-feature two-head contract.
+- Canonical runtime outputs are under `results/` with active pointer `results/current_run.txt`.
+- Live subsystem docs/plans do not override `training/program.md` contract rules.
+
 ## 1) TWS / Gateway API Settings
 
 - Enable API connections.
@@ -44,4 +51,3 @@ The service probes these before trading and fails closed if unavailable:
 2. Dry-run sanity check (optional): `python3 tools/paper_live.py --dry-run --port 4002`
 3. Paper auto session: `python3 tools/paper_live.py --paper-auto --port 4002`
 4. Verify audit stream and entitlement probe events in `results/live/audit.jsonl`
-

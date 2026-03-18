@@ -3,6 +3,18 @@
 Date: 2026-03-17  
 Workspace: `/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading`
 
+## 0) Foundation Cutover Alignment (2026-03-18)
+
+This handoff remains useful for live-paper subsystem implementation details, but
+the project foundation is now hard-cut to these canonical rules:
+
+- Canonical training run root is `results/` (not `training/results/`).
+- Active run pointer is `results/current_run.txt`.
+- Canonical experiment log is run-folder `experiments.v2.jsonl` only.
+- Training foundation phase is locked to 60-feature, two-head contract.
+- `training/program.md` is strict contract-only.
+- Exploratory ideas moved to `docs/IDEAS-BACKLOG.md` (not injected into loop prompt).
+
 ## 1) What Was Requested
 
 Implement the new real-time IBKR paper-trading system with:
@@ -90,13 +102,14 @@ All pass.
   - Added live paper-trader section + run commands
 - `docs/IBKR-LIVE-CHECKLIST.md`
   - Added live-data prerequisites/runbook
-- `training/program.md`
-  - Added live contract and Greeks-driven execution guidance
+- `docs/IDEAS-BACKLOG.md`
+  - Human planning backlog for deferred feature ideas (not loop prompt input)
 
-### Training checkpoint contract tag
+### Training checkpoint contract handling
 
-- `training/train.py`
-  - Saved `feature_contract_version: ibkr_live_v1` in checkpoint config
+- `training/live/decision.py`
+  - Reads `feature_contract_version` from checkpoint config when present.
+  - Defaults to `ibkr_live_v1` if field is missing and enforces strict match.
 
 ## 3) Validation Run History
 
@@ -218,8 +231,8 @@ Latest audit entries currently show:
 
 ## 8) Repo State Notes
 
-The working tree is already dirty with unrelated pre-existing changes (not reverted).  
-`git status` currently includes unrelated modified/deleted files (for example `STATUS.md`, `docs/AKASH-SSH.md`, `infra/deploy.sh`, etc.) in addition to the new live subsystem work.
+The working tree may include unrelated in-progress foundation changes in addition to live-paper modules.
+Do not assume this handoff reflects the entire current diff; verify against current `README.md` and `training/program.md`.
 
 ## 9) Files Added/Changed For This Work
 
@@ -245,4 +258,3 @@ Modified:
 - `README.md`
 - `training/program.md`
 - `training/train.py`
-

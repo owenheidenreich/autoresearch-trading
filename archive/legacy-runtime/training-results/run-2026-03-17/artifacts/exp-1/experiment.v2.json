@@ -1,0 +1,22 @@
+{
+  "anomaly_flags": [],
+  "api_time": 160.2,
+  "change_summary": "print(f\"\\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {lookback}\"); with open(log_path, 'w', newline='') in f:",
+  "contract_checksum": "08d653f30605",
+  "data_fingerprint": "a6c593a78ea65172f69d0f58eee48f76210a4bcece38ff7c046c13921370b758",
+  "error": "Exit code 1:\nLoading data from: /Users/gduby/.cache/autoresearch-trading/features/data.pt\nLoaded 382920 1-min bars, 64 features, 8 actions\n  ~981 trading days\nTraining:   up to idx 268019\nValidation: idx 268020-382919\n  Option P&L coverage: 237094/382920 (62%)\nParameters: 821,793\nArchitecture: two-head (gate: NO_TRADE/TRADE, dir: 6-class ATM+OTM) + Greeks-adaptive loss\nWarm-start failed (architecture mismatch?): Error(s) in loading state_dict for TradingModel:\n\tsize mismatch for feature_gate.gate_net.0.weight: copying a param with shape torch.Size([26, 60]) from checkpoint, the shape in current model is torch.Size([26, 64]).\nTraining from scratch.\nTraining from scratch (no warm-start).\n/Users/gduby/Library/Python/3.9/lib/python/site-packages/torch/nn/modules/transformer.py:392: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True\n  warnings.warn(\nTraceback (most recent call last):\n  File \"/Users/gduby/Documents/Trinity",
+  "experiment_id": 1,
+  "failure_type": "train_crash",
+  "kept": false,
+  "model_fingerprint_after": "672af21426e98443f4391bf1e500652c1db330742ccea3509d5f88b3e289e3c2",
+  "model_fingerprint_before": "672af21426e98443f4391bf1e500652c1db330742ccea3509d5f88b3e289e3c2",
+  "program_md_fingerprint": "318edf3397be7390cd8859e9e2ac6f5edaa181cb1d944963a8990c80ad591ad7",
+  "prompt_fingerprint": "1f613f37c7233c3546bd7167d23d52b5927c8165163cb935f866d9d4a2bae24b",
+  "reasoning": "This is the first experiment, so I should run the baseline model as-is to establish a performance benchmark. The current model already has a sophisticated Greeks-adaptive loss system that dynamically adjusts loss weights based on market conditions (gamma_theta_ratio, theta acceleration, etc.). \n\nHow",
+  "schema_version": 2,
+  "score": -999.0,
+  "timestamp": "2026-03-17T16:21:36.926713",
+  "train_py_after_hash": "aacb2cfe4e0976d07bbc6aa3bd8e5c77c362c21d51a2f58a74fa06c946499b29",
+  "train_py_before_hash": "b4ba21d15df005925d898a49b768f64ca9d6837c59658c32ba134fae9e208eea",
+  "train_wall_time": 2.3
+}

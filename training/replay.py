@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os, sys, time, argparse, pickle, json
 import datetime as dt
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -24,21 +25,36 @@ import torch
 import torch.nn as nn
 
 # Import from prepare.py (safe — guarded by __main__)
-from prepare import (
-    compute_features, normalize_features, normalize_features_with_context,
-    _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
-    download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
-    is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
-    BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS, OPTION_SPREAD_BPS,
-    STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
-    THETA_DECAY_DAILY, ATM_DELTA,
-    ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
-    ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
-    ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
-)
+try:
+    from prepare import (
+        compute_features, normalize_features, normalize_features_with_context,
+        _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
+        download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
+        is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
+        BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS, OPTION_SPREAD_BPS,
+        STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
+        ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
+        ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
+        ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
+    )
+except ModuleNotFoundError as e:
+    if e.name != "prepare":
+        raise
+    from training.prepare import (
+        compute_features, normalize_features, normalize_features_with_context,
+        _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
+        download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
+        is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
+        BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS, OPTION_SPREAD_BPS,
+        STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
+        ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
+        ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
+        ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
+    )
 
 # Path to pre-computed features (matches training exactly)
 DATA_PT_PATH = os.path.join(CACHE_DIR, "features", "data.pt")
+ET_TZ = ZoneInfo("America/New_York")
 
 # ---------------------------------------------------------------------------
 # Feature groups (must match train.py)
@@ -178,28 +194,91 @@ def _load_model_class_from_train_py(train_py_path: str):
     with open(train_py_path, 'r') as f:
         source = f.read()
 
-    # Parse AST and extract only imports + class definitions
+    safe_names: set[str] = {
+        "NUM_FEATURES",
+        "BARS_PER_DAY",
+        "NUM_ACTIONS",
+        "ANNUAL_TRADING_BARS",
+        "FEATURE_NAMES",
+        "ACTION_DO_NOTHING",
+        "ACTION_BUY_CALL_ATM",
+        "ACTION_BUY_CALL_OTM5",
+        "ACTION_BUY_CALL_OTM10",
+        "ACTION_BUY_PUT_ATM",
+        "ACTION_BUY_PUT_OTM5",
+        "ACTION_BUY_PUT_OTM10",
+        "ACTION_EXIT",
+    }
+
+    def _is_safe_constant_expr(node: _ast.AST) -> bool:
+        if isinstance(node, _ast.Constant):
+            return True
+        if isinstance(node, _ast.Name):
+            return node.id in safe_names
+        if isinstance(node, (_ast.Tuple, _ast.List, _ast.Set)):
+            return all(_is_safe_constant_expr(x) for x in node.elts)
+        if isinstance(node, _ast.Dict):
+            return all(
+                (k is None or _is_safe_constant_expr(k)) and _is_safe_constant_expr(v)
+                for k, v in zip(node.keys, node.values)
+            )
+        if isinstance(node, _ast.UnaryOp):
+            return isinstance(node.op, (_ast.UAdd, _ast.USub, _ast.Not)) and _is_safe_constant_expr(node.operand)
+        if isinstance(node, _ast.BinOp):
+            return (
+                isinstance(node.op, (_ast.Add, _ast.Sub, _ast.Mult, _ast.Div, _ast.FloorDiv, _ast.Mod, _ast.Pow))
+                and _is_safe_constant_expr(node.left)
+                and _is_safe_constant_expr(node.right)
+            )
+        if isinstance(node, _ast.BoolOp):
+            return all(_is_safe_constant_expr(v) for v in node.values)
+        if isinstance(node, _ast.Compare):
+            return _is_safe_constant_expr(node.left) and all(
+                _is_safe_constant_expr(c) for c in node.comparators
+            )
+        if isinstance(node, _ast.IfExp):
+            return (
+                _is_safe_constant_expr(node.test)
+                and _is_safe_constant_expr(node.body)
+                and _is_safe_constant_expr(node.orelse)
+            )
+        return False
+
+    def _is_safe_top_level_assign(node: _ast.AST) -> bool:
+        if isinstance(node, _ast.Assign):
+            if not all(isinstance(t, _ast.Name) for t in node.targets):
+                return False
+            return _is_safe_constant_expr(node.value)
+        if isinstance(node, _ast.AnnAssign):
+            if not isinstance(node.target, _ast.Name):
+                return False
+            return node.value is None or _is_safe_constant_expr(node.value)
+        return False
+
+    # Parse AST and extract imports + classes/functions + safe constant assignments.
+    # We intentionally skip side-effect assignments such as os.environ[...] writes.
     tree = _ast.parse(source)
     class_lines = set()
-    for node in _ast.walk(tree):
-        if isinstance(node, (
-            _ast.ClassDef, _ast.Import, _ast.ImportFrom, _ast.FunctionDef
-        )):
-            if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
-                # Skip indented imports (inside if blocks, functions, etc.)
-                if isinstance(node, (_ast.Import, _ast.ImportFrom)) and node.col_offset > 0:
-                    continue
-                for ln in range(node.lineno, node.end_lineno + 1):
-                    class_lines.add(ln)
-
-    lines = source.split('\n')
-
-    # Also grab top-level assignments (constants like D_MODEL, FEATURE_GROUPS)
     for node in _ast.iter_child_nodes(tree):
-        if isinstance(node, (_ast.Assign, _ast.AugAssign)):
-            if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
-                for ln in range(node.lineno, node.end_lineno + 1):
-                    class_lines.add(ln)
+        include = False
+        if isinstance(node, (_ast.ClassDef, _ast.FunctionDef, _ast.Import, _ast.ImportFrom)):
+            include = True
+            # Skip indented imports (inside if blocks/functions/etc.)
+            if isinstance(node, (_ast.Import, _ast.ImportFrom)) and node.col_offset > 0:
+                include = False
+        elif _is_safe_top_level_assign(node):
+            include = True
+            if isinstance(node, _ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, _ast.Name):
+                        safe_names.add(target.id)
+            elif isinstance(node, _ast.AnnAssign) and isinstance(node.target, _ast.Name):
+                safe_names.add(node.target.id)
+        if include and hasattr(node, "lineno") and hasattr(node, "end_lineno"):
+            for ln in range(node.lineno, node.end_lineno + 1):
+                class_lines.add(ln)
+
+    lines = source.split("\n")
 
     # Build the extractable source (imports + constants + classes)
     extracted = []
@@ -231,7 +310,6 @@ def _load_model_class_from_train_py(train_py_path: str):
             ACTION_BUY_CALL_OTM5 as _a2, ACTION_BUY_CALL_OTM10 as _a3,
             ACTION_BUY_PUT_ATM as _a4, ACTION_BUY_PUT_OTM5 as _a5,
             ACTION_BUY_PUT_OTM10 as _a6, ACTION_EXIT as _a7,
-            ACTION_BUY_CALL as _ac, ACTION_BUY_PUT as _ap,
         )
         namespace.update({
             'FEATURE_NAMES': FEATURE_NAMES,
@@ -241,7 +319,6 @@ def _load_model_class_from_train_py(train_py_path: str):
             'ACTION_BUY_CALL_OTM5': _a2, 'ACTION_BUY_CALL_OTM10': _a3,
             'ACTION_BUY_PUT_ATM': _a4, 'ACTION_BUY_PUT_OTM5': _a5,
             'ACTION_BUY_PUT_OTM10': _a6, 'ACTION_EXIT': _a7,
-            'ACTION_BUY_CALL': _ac, 'ACTION_BUY_PUT': _ap,
         })
     except ImportError:
         pass
@@ -316,15 +393,22 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
         # Custom model may have different constructor args — try minimal
         model = model_cls()
 
-    model.load_state_dict(ckpt['model_state_dict'], strict=False)
+    try:
+        model.load_state_dict(ckpt['model_state_dict'], strict=True)
+    except RuntimeError as e:
+        raise RuntimeError(
+            "Checkpoint state does not match model architecture (strict load failed). "
+            "Use the matching checkpoint + best_train.py pair."
+        ) from e
     model.to(device)
     model.eval()
 
     lookback = config.get('lookback', 120)
     score = metrics.get('score', 'N/A')
+    num_features = _infer_model_num_features(model, config)
     print(f"Model loaded: {path}")
     print(f"  d_model={config.get('d_model')}, depth={config.get('depth')}, "
-          f"lookback={lookback}, score={score}")
+          f"lookback={lookback}, num_features={num_features}, score={score}")
 
     return model, lookback, config, metrics
 
@@ -477,7 +561,7 @@ def download_replay_data(replay_date: str, warmup_days: int = 5,
             download_spxw_ibkr(df, dates=[replay_date])
         except Exception as e:
             print(f"  IBKR option download failed: {e}")
-            print(f"  Replay will use delta-estimated P&L")
+            print("  Replay will require cached option bar data for strict contract mode.")
 
     options_data = load_spxw_caches(df)
     chain_data = load_spxw_chain_caches(df)
@@ -577,6 +661,36 @@ def _load_norm_context():
     return ctx_raw, ctx_valid
 
 
+def _infer_model_num_features(model, config):
+    cfg_features = config.get("num_features")
+    if cfg_features is not None:
+        try:
+            return int(cfg_features)
+        except Exception:
+            pass
+    try:
+        return int(model.feature_gate.gate_net[0].in_features)
+    except Exception:
+        return int(NUM_FEATURES)
+
+
+def _align_features_to_model_width(features: np.ndarray, expected_width: int, source_name: str) -> np.ndarray:
+    if features.ndim != 2:
+        raise RuntimeError(f"{source_name} features must be 2D, got shape={features.shape}")
+    width = int(features.shape[1])
+    if width < expected_width:
+        raise RuntimeError(
+            f"{source_name} feature width {width} is smaller than model width {expected_width}"
+        )
+    if width > expected_width:
+        print(
+            f"  NOTE: {source_name} feature width {width} > model width {expected_width}; "
+            f"truncating to first {expected_width} features"
+        )
+        return features[:, :expected_width]
+    return features
+
+
 # ---------------------------------------------------------------------------
 # Replay engine
 # ---------------------------------------------------------------------------
@@ -585,7 +699,7 @@ def _format_time(ts):
     """Format a timestamp (ms epoch or string) to HH:MM ET."""
     if isinstance(ts, (int, float, np.integer, np.floating)):
         bar_dt = dt.datetime.fromtimestamp(int(ts) / 1000, tz=dt.timezone.utc)
-        bar_dt = bar_dt.astimezone(dt.timezone(dt.timedelta(hours=-4)))
+        bar_dt = bar_dt.astimezone(ET_TZ)
         return bar_dt.strftime('%H:%M')
     return str(ts)[:5]
 
@@ -645,14 +759,28 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         print(f"  Open: {day_open:.2f}")
     print(f"{'='*60}\n")
 
-    # Price arrays for P&L computation
-    atm_call_px = option_prices.get('atm_call') if option_prices else None
-    atm_put_px = option_prices.get('atm_put') if option_prices else None
+    # Price arrays for P&L computation (strict contract: must exist)
+    required_price_keys = (
+        'atm_call',
+        'atm_put',
+        'otm5_call',
+        'otm5_put',
+        'otm10_call',
+        'otm10_put',
+    )
+    if option_prices is None:
+        raise ValueError("Replay requires option_prices from data.pt for strict contract mode.")
+    missing_px = [k for k in required_price_keys if option_prices.get(k) is None]
+    if missing_px:
+        raise KeyError(
+            "Replay missing required option price arrays: "
+            + ", ".join(missing_px)
+            + ". Rebuild data.pt and rerun replay."
+        )
+
     atm_strikes = option_prices.get('atm_strikes') if option_prices else None
 
     def get_px_array(action):
-        if option_prices is None:
-            return None
         mapping = {
             ACTION_BUY_CALL_ATM: option_prices.get('atm_call'),
             ACTION_BUY_CALL_OTM5: option_prices.get('otm5_call'),
@@ -686,6 +814,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     trade_entry_k = 0
     trade_action = 0
     trade_entry_price = 0.0
+    trade_last_price = 0.0
     trade_use_actual = False
     trade_px_array = None
     trade_entry_gate_prob = 0.0
@@ -763,28 +892,13 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             entry_global = valid_indices[trade_entry_k]
 
             # P&L computation
-            if trade_use_actual and trade_px_array is not None:
-                current_px = float(trade_px_array[global_idx]) if not np.isnan(float(trade_px_array[global_idx])) else np.nan
-                if not np.isnan(current_px) and trade_entry_price > 0:
-                    net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
-                else:
-                    direction = 1.0 if trade_action in _CALL_ACTIONS else -1.0
-                    cum_ret = sum(
-                        features[valid_indices[j], 0].item()
-                        for j in range(trade_entry_k + 1, k_pos + 1)
-                        if j < len(valid_indices) and features.dim() == 2
-                    )
-                    theta = THETA_DECAY_DAILY * BAR_SIZE_MINUTES / (BARS_PER_DAY * BAR_SIZE_MINUTES)
-                    net_pnl_pct = direction * cum_ret / ATM_DELTA - theta * bars_held
-            else:
-                direction = 1.0 if trade_action in _CALL_ACTIONS else -1.0
-                cum_ret = sum(
-                    features[valid_indices[j], 0].item()
-                    for j in range(trade_entry_k + 1, k_pos + 1)
-                    if j < len(valid_indices) and features.dim() == 2
-                )
-                theta = THETA_DECAY_DAILY * BAR_SIZE_MINUTES / (BARS_PER_DAY * BAR_SIZE_MINUTES)
-                net_pnl_pct = direction * cum_ret / ATM_DELTA - theta * bars_held
+            if not trade_use_actual or trade_px_array is None or trade_entry_price <= 0:
+                raise RuntimeError("Invalid trade state in replay: active trade without option pricing context.")
+            px_now = _safe_float(trade_px_array, global_idx)
+            if px_now is not None:
+                trade_last_price = float(px_now)
+            current_px = trade_last_price
+            net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
 
             hit_stop = net_pnl_pct <= -STOP_LOSS_PCT
             hit_max_hold = bars_held >= MAX_HOLD_BARS
@@ -837,9 +951,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     mae = trade_spx_high - spx_entry
 
                 # Option price at exit (if actual)
-                exit_option_px = None
-                if trade_use_actual and trade_px_array is not None:
-                    exit_option_px = _safe_float(trade_px_array, global_idx)
+                exit_option_px = trade_last_price
 
                 # Exit gate probability (model's confidence in exiting)
                 exit_gate_notrade_prob = float(gate_probs[0])
@@ -859,9 +971,9 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     'direction': ACTION_NAMES.get(trade_action, '?'),
                     'strike': entry_strike,
                     # Option prices
-                    'entry_option_px': trade_entry_price if trade_use_actual else None,
+                    'entry_option_px': trade_entry_price,
                     'exit_option_px': exit_option_px,
-                    'actual_px': trade_use_actual,
+                    'actual_px': True,
                     # P&L
                     'pnl_pct': round(final_pnl * 100, 2),
                     'cum_pnl_pct': round(cum_pnl * 100, 2),
@@ -905,8 +1017,6 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                       f"held={bars_held}min  cumP&L={cum_sign}{cum_pnl*100:.1f}%  [{result}]")
                 print(f"         SPX {spx_entry:.2f} -> {spx_exit:.2f} ({spx_move:+.2f}pts)  "
                       f"MFE={mfe:+.1f}  MAE={mae:.1f}")
-                if not trade_use_actual:
-                    print(f"         (delta-estimated P&L — no option prices available)")
 
                 if reason == 'STOP_LOSS':
                     last_stop_k = k_pos
@@ -926,12 +1036,24 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 if verbose:
                     print(f"  {time_str}  BLOCKED (pre-10am, bar {_bar_of_day.get(global_idx, 0)} < {NO_TRADE_BEFORE_BAR})")
                 continue
+            candidate_px_array = get_px_array(action)
+            if candidate_px_array is None:
+                if verbose:
+                    print(f"  {time_str}  BLOCKED (missing option price array for {ACTION_NAMES[action]})")
+                continue
+            entry_px_raw = _safe_float(candidate_px_array, global_idx)
+            if entry_px_raw is None or entry_px_raw <= 0:
+                if verbose:
+                    print(f"  {time_str}  BLOCKED (missing entry option price for {ACTION_NAMES[action]})")
+                continue
+
             in_trade = True
             trade_entry_k = k_pos
             trade_action = action
-            trade_use_actual = False
-            trade_entry_price = 0.0
-            trade_px_array = get_px_array(trade_action)
+            trade_use_actual = True
+            trade_entry_price = float(entry_px_raw)
+            trade_last_price = float(entry_px_raw)
+            trade_px_array = candidate_px_array
             trade_entry_gate_prob = float(gate_probs[1])
             trade_entry_dir_probs = dir_probs.copy()
             # Capture market regime at entry
@@ -941,14 +1063,8 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             trade_entry_ret_5 = round(ret_5, 6) if ret_5 is not None else None
             trade_entry_ret_30 = round(ret_30, 6) if ret_30 is not None else None
 
-            if trade_px_array is not None and not np.isnan(float(trade_px_array[global_idx])):
-                entry_px = float(trade_px_array[global_idx])
-                if entry_px > 0:
-                    trade_entry_price = entry_px
-                    trade_use_actual = True
-
             strike_info = f"strike={strike_now}" if strike_now else ""
-            px_info = f"premium=${trade_entry_price:.2f}" if trade_use_actual else "(no option px)"
+            px_info = f"premium=${trade_entry_price:.2f}"
             gate_info = f"conf={gate_probs[1]:.0%}"
             vix_info = f"VIX={vix_now:.1f}" if vix_now else ""
             print(f"  {time_str}  {ACTION_NAMES[action]:<16}  SPX={spx_now:.2f}  "
@@ -1071,15 +1187,12 @@ def print_summary(trades, bar_log, replay_date):
         print(f"    MFE: {t['mfe_points']:+.2f}pts  |  MAE: {t['mae_points']:.2f}pts  |  MFE/MAE: {t['mfe_points'] / max(t['mae_points'], 0.01):.2f}")
 
         # Option prices
-        if t.get('actual_px'):
-            print(f"\n  Option pricing:")
-            print(f"    Strike: {int(t['strike']) if t['strike'] else '?'}  |  Entry: ${t['entry_option_px']:.2f}", end='')
-            if t.get('exit_option_px'):
-                print(f"  |  Exit: ${t['exit_option_px']:.2f}")
-            else:
-                print()
+        print(f"\n  Option pricing:")
+        print(f"    Strike: {int(t['strike']) if t['strike'] else '?'}  |  Entry: ${t['entry_option_px']:.2f}", end='')
+        if t.get('exit_option_px'):
+            print(f"  |  Exit: ${t['exit_option_px']:.2f}")
         else:
-            print(f"\n  Option pricing: delta-estimated (no option bar data)")
+            print()
 
         # Volume
         print(f"\n  Volume:")
@@ -1200,6 +1313,7 @@ def main():
     device = 'cpu'
     model, lookback, config, metrics = load_model(model_path, device,
                                                    train_py_path=args.train_py)
+    model_num_features = _infer_model_num_features(model, config)
 
     # Try to load pre-computed features from data.pt (matches training exactly)
     training_data = load_training_features(replay_date)
@@ -1212,6 +1326,10 @@ def main():
     if training_data is not None:
         # Use data.pt features for model inference (identical to training)
         features_t, _, dates, valid, option_prices, timestamps = training_data
+        features_np = _align_features_to_model_width(
+            features_t.numpy(), model_num_features, source_name="data.pt"
+        )
+        features_t = torch.tensor(features_np, dtype=torch.float32)
         print(f"  Using data.pt features for model inference (normalization-matched)")
 
         # Still compute raw features for trade journal market context
@@ -1287,6 +1405,9 @@ def main():
             print(f"  (Regenerate data.pt with latest prepare.py to fix this)")
             features = normalize_features(features, valid)
 
+        features = _align_features_to_model_width(
+            features, model_num_features, source_name="replay-computed"
+        )
         features_t = torch.tensor(features, dtype=torch.float32)
         raw_df = df
 

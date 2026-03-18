@@ -4,12 +4,15 @@ import datetime as dt
 import math
 from dataclasses import dataclass
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
 
 from training.prepare import compute_features, normalize_features_with_context
 from training.live.contracts import LiveContextBundle
+
+ET_TZ = ZoneInfo("America/New_York")
 
 
 @dataclass
@@ -62,13 +65,14 @@ class FiveSecondMinuteAggregator:
 class LiveFeatureEngine:
     """Computes model-ready live features by appending only live minute bars."""
 
-    def __init__(self, context_bundle: LiveContextBundle) -> None:
+    def __init__(self, context_bundle: LiveContextBundle, target_num_features: int | None = None) -> None:
         self.bundle = context_bundle
+        self.target_num_features = int(target_num_features) if target_num_features is not None else None
         self.df = pd.DataFrame(context_bundle.market_rows).copy()
         if "datetime" in self.df.columns:
-            self.df["datetime"] = pd.to_datetime(self.df["datetime"], utc=True).dt.tz_convert("US/Eastern")
+            self.df["datetime"] = pd.to_datetime(self.df["datetime"], utc=True).dt.tz_convert(ET_TZ)
         else:
-            self.df["datetime"] = pd.to_datetime(self.df["timestamp"], unit="ms", utc=True).dt.tz_convert("US/Eastern")
+            self.df["datetime"] = pd.to_datetime(self.df["timestamp"], unit="ms", utc=True).dt.tz_convert(ET_TZ)
         self.df["date"] = self.df["datetime"].dt.date.astype(str)
         self.options_data = dict(context_bundle.options_data or {})
         self.chain_data = dict(context_bundle.chain_data or {})
@@ -90,7 +94,7 @@ class LiveFeatureEngine:
         if minute_ts.tzinfo is None:
             minute_ts = minute_ts.replace(tzinfo=dt.timezone.utc)
         ts_ms = int(minute_ts.timestamp() * 1000)
-        et = minute_ts.astimezone(dt.timezone(dt.timedelta(hours=-5)))
+        et = minute_ts.astimezone(ET_TZ)
         date_str = et.date().isoformat()
         row = {
             "timestamp": ts_ms,
@@ -173,12 +177,24 @@ class LiveFeatureEngine:
         self.valid_history = valid
         self.timestamps = [str(x) for x in timestamps]
 
+        view_features = features
+        view_norm = norm
+        if self.target_num_features is not None:
+            if features.shape[1] < self.target_num_features:
+                raise RuntimeError(
+                    f"Live feature width {features.shape[1]} is smaller than required "
+                    f"{self.target_num_features}"
+                )
+            if features.shape[1] > self.target_num_features:
+                view_features = features[:, : self.target_num_features]
+                view_norm = norm[:, : self.target_num_features]
+
         last_idx = len(norm) - 1
         if last_idx < lookback:
             return None
-        window = norm[last_idx - lookback:last_idx]
-        raw_last = features[last_idx]
-        norm_last = norm[last_idx]
+        window = view_norm[last_idx - lookback:last_idx]
+        raw_last = view_features[last_idx]
+        norm_last = view_norm[last_idx]
         completeness = float(np.mean(~np.isnan(raw_last)))
         ts = int(self.df.iloc[last_idx]["timestamp"])
         return LiveFeatureSnapshot(
@@ -207,4 +223,3 @@ def _finite(v: Any) -> bool:
         return v is not None and not math.isnan(float(v))
     except Exception:
         return False
-

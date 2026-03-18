@@ -47,6 +47,7 @@ class ModelDecisionEngine:
         device: str = "cpu",
         min_trade_prob: float = 0.55,
         max_qty: int = 1,
+        num_features: int = 60,
         feature_contract_version: str = FEATURE_CONTRACT_VERSION,
     ) -> None:
         self.model = model
@@ -54,6 +55,7 @@ class ModelDecisionEngine:
         self.device = device
         self.min_trade_prob = float(min_trade_prob)
         self.max_qty = max(1, int(max_qty))
+        self.num_features = int(num_features)
         self.feature_contract_version = feature_contract_version
 
     @classmethod
@@ -67,6 +69,7 @@ class ModelDecisionEngine:
     ) -> "ModelDecisionEngine":
         model, lookback, config, _ = load_model(model_path, device=device, train_py_path=train_py_path)
         ckpt_contract = str(config.get("feature_contract_version", FEATURE_CONTRACT_VERSION))
+        ckpt_num_features = int(config.get("num_features", _infer_model_num_features(model)))
         if ckpt_contract != FEATURE_CONTRACT_VERSION:
             raise RuntimeError(
                 f"Model feature_contract_version={ckpt_contract} "
@@ -78,10 +81,19 @@ class ModelDecisionEngine:
             device=device,
             min_trade_prob=min_trade_prob,
             max_qty=max_qty,
+            num_features=ckpt_num_features,
             feature_contract_version=ckpt_contract,
         )
 
     def infer(self, feature_window: np.ndarray) -> InferenceResult:
+        if feature_window.ndim != 2:
+            return InferenceResult(
+                action=ACTION_DO_NOTHING,
+                confidence=0.0,
+                gate_trade_prob=0.0,
+                direction_probs=[],
+                reason_codes=["invalid_feature_shape"],
+            )
         if feature_window.shape[0] < self.lookback:
             return InferenceResult(
                 action=ACTION_DO_NOTHING,
@@ -90,6 +102,19 @@ class ModelDecisionEngine:
                 direction_probs=[],
                 reason_codes=["insufficient_lookback"],
             )
+        if feature_window.shape[1] < self.num_features:
+            return InferenceResult(
+                action=ACTION_DO_NOTHING,
+                confidence=0.0,
+                gate_trade_prob=0.0,
+                direction_probs=[],
+                reason_codes=["feature_dim_too_small"],
+            )
+        reason_codes: list[str] = []
+        if feature_window.shape[1] > self.num_features:
+            feature_window = feature_window[:, : self.num_features]
+            reason_codes.append("feature_dim_truncated")
+
         x = torch.tensor(feature_window[-self.lookback:], dtype=torch.float32, device=self.device)
         x = x.unsqueeze(0)
         with torch.no_grad():
@@ -107,7 +132,7 @@ class ModelDecisionEngine:
                 confidence=confidence,
                 gate_trade_prob=gate_trade_prob,
                 direction_probs=[float(x) for x in dir_probs],
-                reason_codes=["gate_below_threshold"],
+                reason_codes=["gate_below_threshold", *reason_codes],
             )
         action = best_dir + 1
         return InferenceResult(
@@ -115,7 +140,7 @@ class ModelDecisionEngine:
             confidence=confidence,
             gate_trade_prob=gate_trade_prob,
             direction_probs=[float(x) for x in dir_probs],
-            reason_codes=["trade_signal"],
+            reason_codes=["trade_signal", *reason_codes],
         )
 
     def _position_size(self, confidence: float) -> int:
@@ -136,7 +161,7 @@ class ModelDecisionEngine:
         entry_mid = resolver.quote_mid(contract) or 1.0
 
         # Model-driven risk profile from confidence and Greeks context.
-        gamma_theta_ratio = _safe(latest_features[59], 1.0)
+        gamma_theta_ratio = _safe(_feat_at(latest_features, 59), 1.0)
         stop_pct = np.clip(0.30 - 0.14 * inference.confidence - 0.03 * (gamma_theta_ratio - 1.0), 0.08, 0.30)
         take_profit_pct = np.clip(0.30 + 0.45 * inference.confidence + 0.05 * max(gamma_theta_ratio - 1.0, 0.0), 0.20, 1.25)
 
@@ -171,7 +196,7 @@ class ModelDecisionEngine:
         if state.entry_price_reference is None or state.entry_price_reference <= 0:
             return None
         pnl = (current_option_mid / state.entry_price_reference) - 1.0
-        confidence = _safe(latest_features[59], 1.0)
+        confidence = _safe(_feat_at(latest_features, 59), 1.0)
 
         new_stop = state.current_stop
         if pnl >= 0.25:
@@ -202,3 +227,20 @@ def _safe(v: Any, default: float) -> float:
         return x
     except Exception:
         return default
+
+
+def _feat_at(arr: np.ndarray, idx: int) -> float:
+    try:
+        if idx < 0 or idx >= int(arr.shape[0]):
+            return float("nan")
+        return float(arr[idx])
+    except Exception:
+        return float("nan")
+
+
+def _infer_model_num_features(model: torch.nn.Module) -> int:
+    try:
+        gate_net = model.feature_gate.gate_net
+        return int(gate_net[0].in_features)
+    except Exception:
+        return 60

@@ -1,0 +1,1 @@
+{"count": 2, "first_seen": "2026-03-17T16:32:47.515205", "id": "ac178dd33a0362de", "last_seen": "2026-03-17T16:32:47.515205", "latest_ref": "/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/training/results/run-2026-03-17/experiments.v2.jsonl#L1", "severity": "critical", "signature": "exp.failure_type:timeout", "subsystem": "training_loop"}

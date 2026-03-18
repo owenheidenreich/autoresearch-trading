@@ -25,3 +25,13 @@ data/
 
 # Monitor backup files
 results/
+
+# Runtime sync/process noise
+.sync-pid
+
+# Non-canonical legacy runtime outputs (active runtime is results/run-*/)
+training/experiments.jsonl
+training/experiments.v2.jsonl
+training/status.json
+training/diagnostics.log
+training/results/

@@ -1,0 +1,12 @@
+[2026-03-17 16:21:36] Signal handlers installed
+[2026-03-17 16:21:36] Loop starting: hours=0.1, max_experiments=1
+[2026-03-17 16:21:36] phase=startup | rss_mb=605.7 | pids=0
+[2026-03-17 16:24:17] phase=pre_train_1 | rss_mb=605.7 | pids=0
+[2026-03-17 16:24:19] phase=post_train_1 | rss_mb=605.7 | pids=0
+[2026-03-17 16:24:19] phase=post_exp_1 | rss_mb=605.7 | pids=0
+[2026-03-17 16:32:47] Signal handlers installed
+[2026-03-17 16:32:47] Loop starting: hours=0.1, max_experiments=1
+[2026-03-17 16:32:47] phase=startup | rss_mb=606.2 | pids=0
+[2026-03-17 16:35:12] phase=pre_train_2 | rss_mb=606.2 | pids=0
+[2026-03-17 16:37:32] phase=post_train_2 | rss_mb=606.2 | pids=0
+[2026-03-17 16:37:32] phase=post_exp_2 | rss_mb=606.2 | pids=0

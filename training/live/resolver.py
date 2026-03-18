@@ -4,6 +4,7 @@ import datetime as dt
 import math
 from dataclasses import dataclass
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ib_insync import IB, Option
 
@@ -15,6 +16,8 @@ from training.prepare import (
     ACTION_BUY_PUT_OTM5,
     ACTION_BUY_PUT_OTM10,
 )
+
+ET_TZ = ZoneInfo("America/New_York")
 
 
 @dataclass(frozen=True)
@@ -41,7 +44,7 @@ class SPXWContractResolver:
 
     def _expiry(self, when: dt.datetime | None = None) -> str:
         if when is None:
-            when = dt.datetime.now(dt.timezone.utc).astimezone(dt.timezone(dt.timedelta(hours=-5)))
+            when = dt.datetime.now(dt.timezone.utc).astimezone(ET_TZ)
         return when.strftime("%Y%m%d")
 
     @staticmethod
@@ -90,4 +93,3 @@ def _finite(v: Any) -> bool:
         return v is not None and not math.isnan(float(v))
     except Exception:
         return False
-

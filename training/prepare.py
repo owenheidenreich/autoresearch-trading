@@ -16,9 +16,11 @@ Computes 60 trader-relevant features (VWAP bands, session structure,
 key levels, volume profile, trend, VIX/regime, OTM/skew, Greeks, etc.)
 and prepares tensors for train.py.
 
-The model outputs 4 discrete actions: DO_NOTHING, BUY_CALL, BUY_PUT, EXIT.
-Evaluation simulates actual 0DTE option trades with stops, targets,
-and model-driven exits.
+The model uses a two-head action contract:
+  - Gate head: NO_TRADE / TRADE
+  - Direction head: CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10
+This yields 8 effective actions (DO_NOTHING, 6 entries, EXIT). Evaluation
+simulates actual 0DTE option trades with stops, targets, and model-driven exits.
 
 Usage:
   python3 prepare.py --use-spx --ib-port 4002   # Full download
@@ -62,9 +64,7 @@ MAX_TRADE_RETURN     = 2.0     # cap individual trade P&L at 200% (eliminate fat
 STARTING_CAPITAL     = 5000.0  # starting account balance for equity curve simulation
 RISK_PER_TRADE       = 0.10   # fraction of capital risked per trade (10% = $500 from $5000)
 BAR_SIZE_MINUTES     = 1           # 1-minute bar resolution
-ATM_DELTA            = 0.50    # ATM delta approximation
 SPX_MULTIPLIER       = 100     # option multiplier
-THETA_DECAY_DAILY    = 0.04    # rough daily theta as fraction of ATM premium
 
 RTH_OPEN  = dt.time(9, 30)
 RTH_CLOSE = dt.time(16, 0)
@@ -86,7 +86,7 @@ DATA_DIR     = os.path.join(CACHE_DIR, "data")
 FEATURES_DIR = os.path.join(CACHE_DIR, "features")
 
 # ---------------------------------------------------------------------------
-# Feature names (64 features: 39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks + 4 GEX)
+# Feature names (60 features: 39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks)
 # ---------------------------------------------------------------------------
 
 FEATURE_NAMES = [
@@ -167,13 +167,6 @@ FEATURE_NAMES = [
     'atm_theta_per_bar',    # ATM theta per 1-min bar (time decay per bar)
     'atm_vega',             # ATM vega per 1% IV move (vol sensitivity)
     'gamma_theta_ratio',    # gamma / |theta_per_bar|: bang-for-buck (convexity vs decay)
-    # === GEX Proxy (4) ===
-    # Naive GEX: assumes dealers are net short all options (standard convention).
-    # Uses cumulative intraday volume as OI proxy (Polygon flat files lack OI).
-    'gex_net',              # net gamma exposure: call_gex - put_gex (>0 = stabilizing, <0 = amplifying)
-    'gex_flip_dist',        # distance to gamma flip level (where net GEX crosses 0), % of ATM
-    'gamma_wall_dist',      # distance to highest gamma*volume strike ("gamma magnet"), % of ATM
-    'gex_slope',            # 6-bar change in gex_net (momentum of dealer positioning shift)
 ]
 
 NUM_FEATURES = len(FEATURE_NAMES)
@@ -198,10 +191,6 @@ ACTION_BUY_PUT_OTM5  = 5
 ACTION_BUY_PUT_OTM10 = 6
 ACTION_EXIT          = 7
 NUM_ACTIONS          = 8
-
-# Legacy aliases for backward compatibility with train.py imports
-ACTION_BUY_CALL = ACTION_BUY_CALL_ATM
-ACTION_BUY_PUT  = ACTION_BUY_PUT_ATM
 
 # Option P&L target: round-trip spread cost as fraction of premium
 SPREAD_COST_PCT   = 2 * OPTION_SPREAD_BPS / 10000.0  # 1% round-trip
@@ -850,23 +839,20 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
 
     atm_cache_dir = os.path.join(DATA_DIR, "spxw")
     chain_cache_dir = os.path.join(DATA_DIR, "spxw_chain")
-    gex_cache_dir = os.path.join(DATA_DIR, "spxw_gex")
     os.makedirs(atm_cache_dir, exist_ok=True)
     os.makedirs(chain_cache_dir, exist_ok=True)
-    os.makedirs(gex_cache_dir, exist_ok=True)
 
     # spy_df should already be filtered to 0DTE days, but enforce it
     unique_days = sorted(d for d in spy_df['date'].unique() if is_0dte_day(d))
     if api_cutoff:
         unique_days = [d for d in unique_days if d < api_cutoff]
 
-    # Filter to days where any cache is missing
+    # Filter to days where BOTH caches are missing
     days_needed = []
     for day_str in unique_days:
         atm_exists = os.path.exists(os.path.join(atm_cache_dir, f"{day_str}.pkl"))
         chain_exists = os.path.exists(os.path.join(chain_cache_dir, f"{day_str}.pkl"))
-        gex_exists = os.path.exists(os.path.join(gex_cache_dir, f"{day_str}.pkl"))
-        if not atm_exists or not chain_exists or not gex_exists:
+        if not atm_exists or not chain_exists:
             days_needed.append(day_str)
 
     if not days_needed:
@@ -914,7 +900,7 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
             raw = gzip.decompress(obj['Body'].read())
         except Exception as e:
             # Day not available in flat files — cache empty
-            for cache_dir in [atm_cache_dir, chain_cache_dir, gex_cache_dir]:
+            for cache_dir in [atm_cache_dir, chain_cache_dir]:
                 cache_path = os.path.join(cache_dir, f"{day_str}.pkl")
                 if not os.path.exists(cache_path):
                     with open(cache_path, 'wb') as f:
@@ -992,79 +978,11 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
                 chain_day_data[key][f'{label}_volume'] = int(float(parts[1]))
                 chain_day_data[key][f'{label}_strike'] = strike
 
-        # Build GEX chain data: per-bar cumulative volume for all strikes within ATM ± 50
-        # We parse ALL SPXW tickers already in bars_by_ticker — just need to aggregate by strike
-        gex_day_data = {}
-        gex_cum_vol = defaultdict(lambda: {'call_cum': 0, 'put_cum': 0})  # strike → cumulative vol
-        gex_all_ts = set()
-
-        for ticker, bars_list in bars_by_ticker.items():
-            # Parse strike and call/put from ticker: O:SPXW260317C5700000
-            # Format: O:SPXW{YYMMDD}{C|P}{strike*1000:08d}
-            if len(ticker) < 20:
-                continue
-            # Find C or P after the date portion
-            cp_idx = 4 + 4 + 6  # "O:" + "SPXW" + "YYMMDD" = 16, but "O:" is 2
-            # Actually: O:SPXW260317C5700000 → O: (2) + SPXW (4) + 260317 (6) + C (1) + 5700000 (7) + 0 (1)
-            try:
-                # Find C or P after prefix
-                prefix_len = len("O:SPXW") + 6  # "O:SPXW" + "YYMMDD"
-                if ticker.startswith("O:SPX") and not ticker.startswith("O:SPXW"):
-                    prefix_len = len("O:SPX") + 6
-                cp = ticker[prefix_len]
-                if cp not in ('C', 'P'):
-                    continue
-                strike_raw = ticker[prefix_len + 1:]
-                strike = int(strike_raw) / 1000.0
-            except (IndexError, ValueError):
-                continue
-
-            # Filter to strikes within ATM ± 50 (10 strikes each side at $5 spacing)
-            if abs(strike - atm_strike) > 50:
-                continue
-
-            for parts in bars_list:
-                ts_ms = int(parts[6]) // 1_000_000
-                vol = int(float(parts[1]))
-                gex_all_ts.add(ts_ms)
-
-                if cp == 'C':
-                    gex_cum_vol[(strike, ts_ms)]['call_bar'] = vol
-                else:
-                    gex_cum_vol[(strike, ts_ms)]['put_bar'] = vol
-
-        # Build cumulative volumes per strike (sorted by timestamp)
-        # First, collect all strikes and timestamps
-        all_gex_strikes = sorted(set(k[0] for k in gex_cum_vol))
-        sorted_ts = sorted(gex_all_ts)
-
-        # Build cumulative volume per strike across the day
-        cum_tracker = {s: {'call': 0, 'put': 0} for s in all_gex_strikes}
-        for ts_ms in sorted_ts:
-            for strike in all_gex_strikes:
-                bar_data = gex_cum_vol.get((strike, ts_ms))
-                if bar_data:
-                    cum_tracker[strike]['call'] += bar_data.get('call_bar', 0)
-                    cum_tracker[strike]['put'] += bar_data.get('put_bar', 0)
-
-            # Build the chain snapshot for this timestamp
-            chain_snapshot = {}
-            for strike in all_gex_strikes:
-                if cum_tracker[strike]['call'] > 0 or cum_tracker[strike]['put'] > 0:
-                    chain_snapshot[strike] = {
-                        'call_cum_vol': cum_tracker[strike]['call'],
-                        'put_cum_vol': cum_tracker[strike]['put'],
-                    }
-            if chain_snapshot:
-                gex_day_data[(day_str, ts_ms)] = chain_snapshot
-
-        # Cache ATM, OTM, and GEX data
+        # Cache both ATM and OTM data
         with open(os.path.join(atm_cache_dir, f"{day_str}.pkl"), 'wb') as f:
             pickle.dump(atm_data, f)
         with open(os.path.join(chain_cache_dir, f"{day_str}.pkl"), 'wb') as f:
             pickle.dump(chain_day_data, f)
-        with open(os.path.join(gex_cache_dir, f"{day_str}.pkl"), 'wb') as f:
-            pickle.dump(gex_day_data, f)
 
         downloaded += 1
         if downloaded % 20 == 0:
@@ -1268,28 +1186,6 @@ def load_spxw_chain_caches(spy_df: pd.DataFrame) -> dict:
     return chain_data
 
 
-def load_spxw_gex_caches(spy_df: pd.DataFrame) -> dict:
-    """Load GEX chain data from per-day pickle caches (created by prefetch_spxw_from_flatfiles)."""
-    cache_dir = os.path.join(DATA_DIR, "spxw_gex")
-    unique_days = sorted(spy_df['date'].unique())
-    gex_data = {}
-    loaded = 0
-    missing = 0
-    for day_str in unique_days:
-        day_cache = os.path.join(cache_dir, f"{day_str}.pkl")
-        if os.path.exists(day_cache):
-            with open(day_cache, 'rb') as f:
-                day_data = pickle.load(f)
-            gex_data.update(day_data)
-            if day_data:
-                loaded += 1
-        else:
-            missing += 1
-    print(f"  GEX caches: {loaded} days with data, {missing} missing")
-    print(f"  GEX bar entries: {len(gex_data)}")
-    return gex_data
-
-
 # ---------------------------------------------------------------------------
 # Feature computation
 # ---------------------------------------------------------------------------
@@ -1327,84 +1223,9 @@ def _compute_session_vwap_bands(close, volume, day_mask_indices):
     return vwap_vals, upper1, lower1, upper2, lower2
 
 
-def _compute_gex_proxy(chain_bar: dict, spx_price: float, T: float,
-                       r: float, sigma_atm: float) -> tuple:
-    """Compute naive GEX proxy from volume-weighted gamma across the option chain.
-
-    Assumes dealers are net short all options (standard convention).
-    Uses cumulative intraday volume as OI proxy since Polygon flat files lack OI.
-
-    Args:
-        chain_bar: {strike: {'call_cum_vol': int, 'put_cum_vol': int}, ...}
-        spx_price: current SPX price
-        T: time to expiry in years
-        r: risk-free rate
-        sigma_atm: ATM implied volatility (annualized decimal)
-
-    Returns: (gex_net, gex_flip_dist, gamma_wall_dist)
-    """
-    if T <= 1e-10 or sigma_atm <= 0 or spx_price <= 0:
-        return np.nan, np.nan, np.nan
-
-    per_strike_gex = []  # [(strike, net_gex)]
-    max_abs_gex = 0.0
-    max_gex_strike = spx_price
-
-    for strike, data in chain_bar.items():
-        try:
-            delta, gamma, _, _ = _bs_greeks(spx_price, float(strike), T, r, sigma_atm)
-        except (ValueError, ZeroDivisionError):
-            continue
-        if np.isnan(gamma) or gamma <= 0:
-            continue
-
-        call_vol = data.get('call_cum_vol', 0)
-        put_vol = data.get('put_cum_vol', 0)
-
-        # Standard GEX convention:
-        # Call GEX positive (dealers short calls → buy dips to hedge → stabilizing)
-        # Put GEX negative (dealers short puts → sell rallies to hedge → amplifying)
-        scale = 100 * spx_price ** 2 * 0.01
-        call_gex = gamma * call_vol * scale
-        put_gex = gamma * put_vol * scale
-        net_gex = call_gex - put_gex
-
-        per_strike_gex.append((float(strike), net_gex))
-
-        abs_gex = call_gex + put_gex  # total gamma activity
-        if abs_gex > max_abs_gex:
-            max_abs_gex = abs_gex
-            max_gex_strike = float(strike)
-
-    if not per_strike_gex:
-        return np.nan, np.nan, np.nan
-
-    # Feature 1: gex_net — total net gamma exposure (positive = stabilizing)
-    gex_net = sum(ng for _, ng in per_strike_gex)
-
-    # Feature 2: gex_flip_dist — where does cumulative GEX cross zero?
-    # Walk from lowest strike upward, accumulate GEX, find sign change
-    sorted_gex = sorted(per_strike_gex, key=lambda x: x[0])
-    cumulative = 0.0
-    flip_strike = spx_price
-    for strike, ng in sorted_gex:
-        prev = cumulative
-        cumulative += ng
-        if prev != 0 and prev * cumulative < 0:  # sign change
-            flip_strike = strike
-            break
-    gex_flip_dist = (spx_price - flip_strike) / spx_price * 100
-
-    # Feature 3: gamma_wall_dist — distance to highest gamma×volume strike
-    gamma_wall_dist = (max_gex_strike - spx_price) / spx_price * 100
-
-    return gex_net, gex_flip_dist, gamma_wall_dist
-
-
 def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                      vix_data: dict | None = None,
-                     chain_data: dict | None = None,
-                     gex_data: dict | None = None) -> tuple:
+                     chain_data: dict | None = None) -> tuple:
     """Compute 55 trader-relevant features from SPX 1-min bars (+ SPY volume) + SPXW options.
 
     Returns: (features_array, targets_array, dates_list, valid_mask, option_prices)
@@ -1887,36 +1708,6 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         else:
             fi += 5  # skip all 5 Greeks features (no option data)
 
-        # === GEX Proxy (4) ===
-        gex_bar = gex_data.get((day, ts)) if gex_data else None
-        if gex_bar is not None and opt is not None and not np.isnan(opt.get('call_close', np.nan)):
-            spx_gex = c if c >= 1000 else c * 10.0
-            T_gex = minutes_remaining / (252.0 * 390.0)
-            sigma_gex = call_iv if not np.isnan(call_iv) else np.nan
-            if not np.isnan(sigma_gex) and T_gex > 1e-10:
-                gn, gfd, gwd = _compute_gex_proxy(gex_bar, spx_gex, T_gex, 0.05, sigma_gex)
-                # 60: gex_net
-                if not np.isnan(gn):
-                    feat[i, fi] = gn
-                fi += 1
-                # 61: gex_flip_dist
-                if not np.isnan(gfd):
-                    feat[i, fi] = gfd
-                fi += 1
-                # 62: gamma_wall_dist
-                if not np.isnan(gwd):
-                    feat[i, fi] = gwd
-                fi += 1
-                # 63: gex_slope — 6-bar change in gex_net
-                gex_net_idx = 60  # feature index of gex_net
-                if i >= 6 and not np.isnan(feat[i - 6, gex_net_idx]):
-                    feat[i, fi] = gn - feat[i - 6, gex_net_idx]
-                fi += 1
-            else:
-                fi += 4  # skip GEX features (no valid IV/time)
-        else:
-            fi += 4  # skip GEX features (no data)
-
         assert fi == NUM_FEATURES, f"Feature count mismatch: {fi} != {NUM_FEATURES}"
 
         # Target: forward FORWARD_BARS return (still needed for loss computation)
@@ -2046,13 +1837,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 # Normalization
 # ---------------------------------------------------------------------------
 
-def normalize_features(features: np.ndarray, valid: np.ndarray) -> np.ndarray:
-    """Adaptive rolling z-score. Features in _NO_NORMALIZE are skipped."""
+def _rolling_zscore(features: np.ndarray, valid: np.ndarray, window: int) -> np.ndarray:
     out = features.copy()
-    window = min(len(features) // 4, 500)
-    window = max(window, 50)
-
-    for j, name in enumerate(FEATURE_NAMES):
+    for j in range(out.shape[1]):
+        name = FEATURE_NAMES[j] if j < len(FEATURE_NAMES) else f"feature_{j}"
         if name in _NO_NORMALIZE:
             continue
         col = pd.Series(out[:, j], dtype=np.float64)
@@ -2066,24 +1854,51 @@ def normalize_features(features: np.ndarray, valid: np.ndarray) -> np.ndarray:
     return out
 
 
+def normalize_features(features: np.ndarray, valid: np.ndarray) -> np.ndarray:
+    """Adaptive rolling z-score. Features in _NO_NORMALIZE are skipped."""
+    if len(features) == 0:
+        return features.copy()
+    window = min(len(features) // 4, 500)
+    window = max(window, 50)
+    return _rolling_zscore(features, valid.astype(bool), int(window))
+
+
 def normalize_features_with_context(
     features: np.ndarray,
     valid: np.ndarray,
-    context_raw: np.ndarray,
-    context_valid: np.ndarray,
+    context_raw: np.ndarray | None,
+    context_valid: np.ndarray | None,
 ) -> np.ndarray:
-    """Normalize new features using raw context buffer from training.
+    """Normalize features with rolling history seeded by training-era context.
 
-    Prepends context_raw to features, runs rolling z-score on the
-    combined array, then returns only the new-feature portion.
-    This ensures the rolling window for the first new bars uses
-    training-period statistics, maintaining normalization continuity.
+    This preserves continuity of rolling statistics for replay/live bars that
+    come after the training date range.
     """
-    n_ctx = len(context_raw)
-    combined_feat = np.concatenate([context_raw, features], axis=0)
-    combined_valid = np.concatenate([context_valid, valid], axis=0)
-    normalized_combined = normalize_features(combined_feat, combined_valid)
-    return normalized_combined[n_ctx:]
+    if (
+        context_raw is None
+        or context_valid is None
+        or len(context_raw) == 0
+        or len(context_valid) == 0
+    ):
+        return normalize_features(features, valid)
+
+    if context_raw.ndim != 2 or features.ndim != 2:
+        return normalize_features(features, valid)
+    if context_raw.shape[1] != features.shape[1]:
+        return normalize_features(features, valid)
+    if len(context_valid) != len(context_raw):
+        return normalize_features(features, valid)
+
+    ctx_raw = np.asarray(context_raw, dtype=np.float64)
+    cur_raw = np.asarray(features, dtype=np.float64)
+    merged_raw = np.vstack([ctx_raw, cur_raw])
+    merged_valid = np.concatenate(
+        [np.asarray(context_valid, dtype=bool), np.asarray(valid, dtype=bool)]
+    )
+    window = min(len(merged_raw) // 4, 500)
+    window = max(window, 50)
+    merged_norm = _rolling_zscore(merged_raw, merged_valid, int(window))
+    return merged_norm[len(ctx_raw):]
 
 
 # ---------------------------------------------------------------------------
@@ -2094,7 +1909,8 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
                     dates: list, valid: np.ndarray,
                     option_prices: dict | None = None,
                     timestamps: list | None = None,
-                    raw_features: np.ndarray | None = None) -> dict:
+                    raw_features: np.ndarray | None = None,
+                    norm_window: int = 500) -> dict:
     """Build train/val split and save tensors."""
     os.makedirs(FEATURES_DIR, exist_ok=True)
 
@@ -2121,6 +1937,13 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
         'val_end_idx': val_end_idx,
     }
 
+    raw_source = raw_features if raw_features is not None else features
+    if len(raw_source):
+        ctx_window = max(1, min(int(norm_window), len(raw_source)))
+        data['norm_window'] = int(ctx_window)
+        data['norm_raw_buffer'] = torch.tensor(raw_source[-ctx_window:], dtype=torch.float32)
+        data['norm_valid_buffer'] = torch.tensor(valid[-ctx_window:], dtype=torch.bool)
+
     # Store option prices + P&L targets for trade simulation and training
     if option_prices is not None:
         data['atm_call_prices'] = torch.tensor(option_prices['atm_call'], dtype=torch.float32)
@@ -2139,17 +1962,6 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
         data['otm5_put_pnl'] = torch.tensor(option_prices['otm5_put_pnl'], dtype=torch.float32)
         data['otm10_call_pnl'] = torch.tensor(option_prices['otm10_call_pnl'], dtype=torch.float32)
         data['otm10_put_pnl'] = torch.tensor(option_prices['otm10_put_pnl'], dtype=torch.float32)
-
-    # Save raw feature buffer for normalization continuity in replay/live
-    if raw_features is not None:
-        norm_window = min(len(raw_features) // 4, 500)
-        norm_window = max(norm_window, 50)
-        data['norm_raw_buffer'] = torch.tensor(
-            raw_features[-norm_window:], dtype=torch.float32)
-        data['norm_valid_buffer'] = torch.tensor(
-            valid[-norm_window:], dtype=torch.bool)
-        data['norm_window'] = norm_window
-        print(f"  Normalization context: last {norm_window} bars of raw features saved")
 
     path = os.path.join(FEATURES_DIR, "data.pt")
     torch.save(data, path)
@@ -2195,30 +2007,32 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
     targets = data['targets'].to(device)
     valid_mask = data['valid_mask']
 
-    # Option P&L targets (may be absent in old data.pt files)
-    has_pnl = 'call_pnl' in data
-    n_total = len(targets)
-    if has_pnl:
-        call_pnl_all = data['call_pnl'].to(device)
-        put_pnl_all = data['put_pnl'].to(device)
-        exit_call_all = data['exit_call_label'].to(device)
-        exit_put_all = data['exit_put_label'].to(device)
-    else:
-        call_pnl_all = torch.full((n_total,), float('nan'), device=device)
-        put_pnl_all = torch.full((n_total,), float('nan'), device=device)
-        exit_call_all = torch.full((n_total,), float('nan'), device=device)
-        exit_put_all = torch.full((n_total,), float('nan'), device=device)
+    required_targets = (
+        'call_pnl',
+        'put_pnl',
+        'exit_call_label',
+        'exit_put_label',
+        'otm5_call_pnl',
+        'otm5_put_pnl',
+        'otm10_call_pnl',
+        'otm10_put_pnl',
+    )
+    missing = [k for k in required_targets if k not in data]
+    if missing:
+        raise KeyError(
+            "data.pt missing required two-head/OTM targets: "
+            + ", ".join(missing)
+            + ". Rebuild data.pt with the current prepare.py."
+        )
 
-    # OTM P&L targets (may be absent in old data.pt files)
-    def _get_or_nan(key):
-        if key in data:
-            return data[key].to(device)
-        return torch.full((n_total,), float('nan'), device=device)
-
-    otm5_call_pnl_all = _get_or_nan('otm5_call_pnl')
-    otm5_put_pnl_all = _get_or_nan('otm5_put_pnl')
-    otm10_call_pnl_all = _get_or_nan('otm10_call_pnl')
-    otm10_put_pnl_all = _get_or_nan('otm10_put_pnl')
+    call_pnl_all = data['call_pnl'].to(device)
+    put_pnl_all = data['put_pnl'].to(device)
+    exit_call_all = data['exit_call_label'].to(device)
+    exit_put_all = data['exit_put_label'].to(device)
+    otm5_call_pnl_all = data['otm5_call_pnl'].to(device)
+    otm5_put_pnl_all = data['otm5_put_pnl'].to(device)
+    otm10_call_pnl_all = data['otm10_call_pnl'].to(device)
+    otm10_put_pnl_all = data['otm10_put_pnl'].to(device)
 
     if split == "train":
         end = data['train_end_idx'] + 1
@@ -2274,11 +2088,11 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                     starting_capital=None, risk_per_trade=None):
     """Simulate 0DTE option trades on validation set.
 
-    Supports two model output formats:
+    Required model output format (strict foundation contract):
       - Two-head: model(x) returns (gate_logits, dir_logits)
         gate_logits: (batch, 2) [NO_TRADE, TRADE]
-        dir_logits:  (batch, 2) [CALL, PUT]
-      - Legacy single-head: model(x) returns (batch, 3 or 4) logits
+        dir_logits:  (batch, 6) [CALL_ATM, CALL_OTM5, CALL_OTM10,
+                                 PUT_ATM, PUT_OTM5, PUT_OTM10]
 
     Actions: DO_NOTHING=0, BUY_CALL=1, BUY_PUT=2, EXIT=3
     EXIT while in trade → close position (model-driven exit).
@@ -2329,39 +2143,29 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
         out = model(x)
+        if not (isinstance(out, tuple) and len(out) == 2):
+            raise ValueError(
+                "evaluate_trades requires two-head model output tuple "
+                "(gate_logits, dir_logits)."
+            )
+        gate_logits, dir_logits = out
+        if gate_logits.ndim != 2 or gate_logits.shape[-1] != 2:
+            raise ValueError(
+                f"Invalid gate head shape: expected (batch, 2), got {tuple(gate_logits.shape)}"
+            )
+        if dir_logits.ndim != 2 or dir_logits.shape[-1] != 6:
+            raise ValueError(
+                f"Invalid direction head shape: expected (batch, 6), got {tuple(dir_logits.shape)}"
+            )
 
-        if isinstance(out, tuple) and len(out) == 2:
-            # Two-head model: (gate_logits, dir_logits)
-            gate_logits, dir_logits = out
-            gate_action = torch.argmax(gate_logits, dim=-1)   # 0=no_trade, 1=trade
-            dir_action = torch.argmax(dir_logits, dim=-1)     # 0-5 for 6 dir classes
-            n_dir = dir_logits.shape[-1]
-
-            if n_dir == 6:
-                # 6-class direction: [CALL_ATM, CALL_OTM5, CALL_OTM10,
-                #                      PUT_ATM, PUT_OTM5, PUT_OTM10]
-                # Map dir_action (0-5) → action constants (1-6)
-                batch_actions = torch.where(
-                    gate_action == 1,
-                    dir_action + 1,  # ACTION_BUY_CALL_ATM=1 through ACTION_BUY_PUT_OTM10=6
-                    torch.full_like(gate_action, ACTION_EXIT),  # gate=no_trade → EXIT candidate
-                )
-            else:
-                # Legacy 2-class direction: [CALL, PUT]
-                batch_actions = torch.where(
-                    gate_action == 1,
-                    torch.where(dir_action == 0,
-                                torch.full_like(gate_action, ACTION_BUY_CALL_ATM),
-                                torch.full_like(gate_action, ACTION_BUY_PUT_ATM)),
-                    torch.full_like(gate_action, ACTION_EXIT),
-                )
-            all_actions.append(batch_actions.cpu())
-        else:
-            # Legacy single-head: (batch, NUM_ACTIONS) logits
-            logits = out
-            probs = torch.softmax(logits, dim=-1)
-            actions = torch.argmax(probs, dim=-1)
-            all_actions.append(actions.cpu())
+        gate_action = torch.argmax(gate_logits, dim=-1)   # 0=no_trade, 1=trade
+        dir_action = torch.argmax(dir_logits, dim=-1)     # 0-5 for 6 dir classes
+        batch_actions = torch.where(
+            gate_action == 1,
+            dir_action + 1,  # ACTION_BUY_CALL_ATM=1 through ACTION_BUY_PUT_OTM10=6
+            torch.full_like(gate_action, ACTION_EXIT),  # gate=no_trade -> EXIT candidate
+        )
+        all_actions.append(batch_actions.cpu())
 
     actions = torch.cat(all_actions).numpy()
 
@@ -2383,10 +2187,9 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         _bar_of_day[gi] = _bod
 
     # -------------------------------------------------------------------
-    # Simulate trades (actual option prices when available, delta fallback)
+    # Simulate trades (strict option-price-based P&L)
     # -------------------------------------------------------------------
     # Map action → price array for each strike/direction
-    _CALL_ACTIONS = {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10}
     _ENTRY_ACTIONS = {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
                       ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10}
 
@@ -2408,9 +2211,21 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         }
         return mapping.get(action)
 
-    atm_call_px = data.get('atm_call_prices')
-    atm_put_px = data.get('atm_put_prices')
-    has_option_prices = atm_call_px is not None and atm_put_px is not None
+    required_price_keys = (
+        'atm_call_prices',
+        'atm_put_prices',
+        'otm5_call_prices',
+        'otm5_put_prices',
+        'otm10_call_prices',
+        'otm10_put_prices',
+    )
+    missing_prices = [k for k in required_price_keys if k not in data or data.get(k) is None]
+    if missing_prices:
+        raise KeyError(
+            "data.pt missing required option price arrays: "
+            + ", ".join(missing_prices)
+            + ". Rebuild data.pt with the current prepare.py."
+        )
 
     trade_pnls = []
     trade_details = []
@@ -2419,6 +2234,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     trade_entry_bar = 0
     trade_action = 0
     trade_entry_price = 0.0
+    trade_last_price = 0.0
     trade_use_actual = False
     trade_px_array = None
     last_stop_bar = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
@@ -2431,31 +2247,14 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             entry_global = val_indices[trade_entry_bar]
 
             # --- P&L computation ---
-            if trade_use_actual and trade_px_array is not None:
-                current_px = float(trade_px_array[global_idx]) if not torch.isnan(trade_px_array[global_idx]) else np.nan
+            if not trade_use_actual or trade_px_array is None or trade_entry_price <= 0:
+                raise RuntimeError("Invalid trade state: active position without usable option prices.")
 
-                if not np.isnan(current_px) and trade_entry_price > 0:
-                    net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
-                else:
-                    direction = 1.0 if trade_action in _CALL_ACTIONS else -1.0
-                    cum_ret = 0.0
-                    for j in range(trade_entry_bar + 1, k + 1):
-                        if j < len(val_indices):
-                            gidx = val_indices[j]
-                            bar_ret = features[gidx, 0].item() if features.dim() == 2 else 0
-                            cum_ret += bar_ret
-                    theta_per_bar = THETA_DECAY_DAILY / BARS_PER_DAY
-                    net_pnl_pct = direction * cum_ret / ATM_DELTA - theta_per_bar * bars_held
-            else:
-                direction = 1.0 if trade_action in _CALL_ACTIONS else -1.0
-                cum_ret = 0.0
-                for j in range(trade_entry_bar + 1, k + 1):
-                    if j < len(val_indices):
-                        gidx = val_indices[j]
-                        bar_ret = features[gidx, 0].item() if features.dim() == 2 else 0
-                        cum_ret += bar_ret
-                theta_per_bar = THETA_DECAY_DAILY / BARS_PER_DAY
-                net_pnl_pct = direction * cum_ret / ATM_DELTA - theta_per_bar * bars_held
+            px_now = trade_px_array[global_idx]
+            if not torch.isnan(px_now):
+                trade_last_price = float(px_now)
+            current_px = trade_last_price
+            net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
 
             hit_stop = net_pnl_pct <= -_stop_loss
             hit_max_hold = bars_held >= _max_hold
@@ -2519,18 +2318,23 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             if _bar_of_day.get(global_idx, 999) < NO_TRADE_BEFORE_BAR:
                 pre_10am_blocked_count += 1
                 continue  # no entries before 10:00 AM
+            candidate_action = actions[k]
+            candidate_px_array = _get_px_array(candidate_action, data)
+            if candidate_px_array is None:
+                continue
+            if torch.isnan(candidate_px_array[global_idx]):
+                continue
+            entry_px = float(candidate_px_array[global_idx])
+            if entry_px <= 0:
+                continue
+
             in_trade = True
             trade_entry_bar = k
-            trade_action = actions[k]
-            trade_use_actual = False
-            trade_entry_price = 0.0
-            trade_px_array = _get_px_array(trade_action, data)
-
-            if trade_px_array is not None and not torch.isnan(trade_px_array[global_idx]):
-                entry_px = float(trade_px_array[global_idx])
-                if entry_px > 0:
-                    trade_entry_price = entry_px
-                    trade_use_actual = True
+            trade_action = candidate_action
+            trade_px_array = candidate_px_array
+            trade_entry_price = entry_px
+            trade_last_price = entry_px
+            trade_use_actual = True
 
     # -------------------------------------------------------------------
     # Compute metrics
@@ -2623,58 +2427,6 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             sl_penalty = max(0.5, 1.0 - (stop_loss_rate - 0.30))
             score *= sl_penalty
 
-    # Direction collapse penalty: penalize models that only trade one direction.
-    # A healthy sniper should take both calls and puts depending on market regime.
-    # >80% single-direction = 0.7x, >90% = 0.5x, 100% = 0.3x floor.
-    direction_collapse_pct = 0.0
-    if num_trades >= 5:
-        call_dirs = sum(1 for d in trade_details if 'CALL' in d.get('direction', ''))
-        put_dirs = num_trades - call_dirs
-        dominant_pct = max(call_dirs, put_dirs) / num_trades
-        direction_collapse_pct = dominant_pct
-        if dominant_pct > 0.80 and score > 0:
-            dir_penalty = max(0.3, 1.0 - (dominant_pct - 0.80) * 3.5)
-            score *= dir_penalty
-
-    # --- Walk-forward stability: per-chunk metrics ---
-    worst_chunk_pf = 1.0  # default: no penalty
-    chunk_details = []
-    if num_trades >= 8:
-        # Group trades by date, then split into chronological chunks
-        trade_dates_unique = sorted(set(d['date'] for d in trade_details))
-        n_chunks = min(4, len(trade_dates_unique) // 20)  # ~quarterly, min 20 days each
-        if n_chunks >= 2:
-            chunk_size = len(trade_dates_unique) // n_chunks
-            for c in range(n_chunks):
-                start_date = trade_dates_unique[c * chunk_size]
-                if c < n_chunks - 1:
-                    end_date = trade_dates_unique[(c + 1) * chunk_size - 1]
-                else:
-                    end_date = trade_dates_unique[-1]  # last chunk gets remainder
-                chunk_trades = [d for d in trade_details
-                                if start_date <= d['date'] <= end_date]
-                if len(chunk_trades) >= 3:
-                    c_pnls = np.array([d['pnl_pct'] / 100.0 for d in chunk_trades])
-                    c_wins = c_pnls[c_pnls > 0]
-                    c_losses = c_pnls[c_pnls <= 0]
-                    c_gp = float(np.sum(c_wins)) if len(c_wins) > 0 else 0.0
-                    c_gl = float(abs(np.sum(c_losses))) if len(c_losses) > 0 else 1e-10
-                    c_pf = c_gp / max(c_gl, 1e-10)
-                    c_wr = len(c_wins) / len(chunk_trades)
-                    chunk_details.append({
-                        'chunk': c + 1,
-                        'dates': f"{start_date}..{end_date}",
-                        'trades': len(chunk_trades),
-                        'profit_factor': round(c_pf, 2),
-                        'win_rate': round(c_wr, 3),
-                    })
-            if chunk_details:
-                worst_chunk_pf = min(cd['profit_factor'] for cd in chunk_details)
-
-    # Apply stability penalty: losing quarter = 0.8x score
-    if worst_chunk_pf < 1.0 and score > 0:
-        score *= 0.8
-
     total_bars = len(actions)
     do_nothing_pct = float(np.sum(actions == ACTION_DO_NOTHING)) / max(total_bars, 1)
     exit_pct = float(np.sum(actions == ACTION_EXIT)) / max(total_bars, 1)
@@ -2728,14 +2480,11 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         'pre_10am_blocked': int(pre_10am_blocked_count),
         'short_hold_pct': round(float(short_hold_pct), 3),
         'stop_loss_rate': round(float(stop_loss_rate), 3),
-        'direction_collapse_pct': round(float(direction_collapse_pct), 3),
         'final_capital': round(final_capital, 2),
         'equity_sharpe': round(float(equity_sharpe), 4),
         'max_equity_dd': round(float(max_equity_dd), 4),
         'total_dollar_return': round(float(total_dollar_return), 4),
         'trade_log': trade_details,
-        'worst_chunk_pf': round(float(worst_chunk_pf), 2),
-        'chunk_details': chunk_details,
     }
 
 
@@ -2756,18 +2505,17 @@ def _empty_metrics(num_val_bars=0, num_val_days=0, num_trades=0):
         'equity_sharpe': 0.0,
         'max_equity_dd': 0.0,
         'total_dollar_return': 0.0,
-        'direction_collapse_pct': 0.0,
     }
 
 
 # ---------------------------------------------------------------------------
-# Legacy: evaluate_sharpe (kept for quant comparison)
+# Secondary metric: evaluate_sharpe (strict two-head contract)
 # ---------------------------------------------------------------------------
 
 @torch.no_grad()
 def evaluate_sharpe(model, data, lookback, device, batch_size=256,
                     confidence_threshold=0.0):
-    """Walk-forward Sharpe on validation set (legacy continuous metric)."""
+    """Walk-forward Sharpe on validation set (secondary continuous metric)."""
     model.eval()
 
     features = data['features'].to(device)
@@ -2796,28 +2544,27 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=256,
         window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
         out = model(x)
-        # Handle multiple model output formats
-        if isinstance(out, tuple) and len(out) == 2:
-            # Two-head model: (gate_logits, dir_logits)
-            gate_logits, dir_logits = out
-            gate_probs = torch.softmax(gate_logits, dim=-1)   # [no_trade, trade]
-            dir_probs = torch.softmax(dir_logits, dim=-1)     # [call_atm..put_otm10]
-            trade_prob = gate_probs[:, 1]
-            # Sum call probs (first 3) vs put probs (last 3) for position sizing
-            n_dir = dir_probs.shape[-1]
-            if n_dir == 6:
-                call_prob = dir_probs[:, :3].sum(dim=-1)
-                put_prob = dir_probs[:, 3:].sum(dim=-1)
-            else:
-                call_prob = dir_probs[:, 0]
-                put_prob = dir_probs[:, 1]
-            pos = trade_prob * (call_prob - put_prob)
-        elif out.dim() == 1 or (out.dim() == 2 and out.shape[-1] == 1):
-            pos = out.squeeze(-1).clamp(-1.0, 1.0)
-        else:
-            # Single-head N-class model: map to position
-            probs = torch.softmax(out, dim=-1)
-            pos = probs[:, ACTION_BUY_CALL] - probs[:, ACTION_BUY_PUT]
+        if not (isinstance(out, tuple) and len(out) == 2):
+            raise ValueError(
+                "evaluate_sharpe requires two-head model output tuple "
+                "(gate_logits, dir_logits)."
+            )
+        gate_logits, dir_logits = out
+        if gate_logits.ndim != 2 or gate_logits.shape[-1] != 2:
+            raise ValueError(
+                f"Invalid gate head shape: expected (batch, 2), got {tuple(gate_logits.shape)}"
+            )
+        if dir_logits.ndim != 2 or dir_logits.shape[-1] != 6:
+            raise ValueError(
+                f"Invalid direction head shape: expected (batch, 6), got {tuple(dir_logits.shape)}"
+            )
+
+        gate_probs = torch.softmax(gate_logits, dim=-1)   # [no_trade, trade]
+        dir_probs = torch.softmax(dir_logits, dim=-1)     # [call_atm..put_otm10]
+        trade_prob = gate_probs[:, 1]
+        call_prob = dir_probs[:, :3].sum(dim=-1)
+        put_prob = dir_probs[:, 3:].sum(dim=-1)
+        pos = trade_prob * (call_prob - put_prob)
         if confidence_threshold > 0:
             pos = torch.where(pos.abs() < confidence_threshold,
                               torch.zeros_like(pos), pos)
@@ -2987,23 +2734,6 @@ if __name__ == "__main__":
             print(f"  OTM chain: {len(chain_data)} bar entries")
         print()
 
-    # --- GEX chain (from Polygon flat files) ---
-    gex_data = None
-    if not args.skip_options:
-        gex_cache = os.path.join(DATA_DIR, "spxw_gex_full.pkl")
-        if args.skip_download and os.path.exists(gex_cache):
-            print("Loading cached GEX chain data...")
-            with open(gex_cache, 'rb') as f:
-                gex_data = pickle.load(f)
-        else:
-            gex_data = load_spxw_gex_caches(df)
-            with open(gex_cache, 'wb') as f:
-                pickle.dump(gex_data, f)
-            print(f"  Cached {len(gex_data)} GEX bar entries to {gex_cache}")
-        if gex_data:
-            print(f"  GEX chain: {len(gex_data)} bar entries")
-        print()
-
     # --- VIX (via IBKR) ---
     vix_data = None
     if not args.skip_vix:
@@ -3112,16 +2842,14 @@ if __name__ == "__main__":
     if chain_data:
         ch = chain_data.get((sample_date, sample_ts))
         print(f"    OTM chain: {'FOUND' if ch else 'MISSING'}")
-    if gex_data:
-        gx = gex_data.get((sample_date, sample_ts))
-        print(f"    GEX chain: {'FOUND' if gx else 'MISSING'}" + (f" ({len(gx)} strikes)" if gx else ""))
 
     print("=== END ALIGNMENT REPORT ===\n")
 
     # --- Features ---
     print(f"Computing {NUM_FEATURES} features from {len(df)} bars...")
     t0 = time.time()
-    features, targets, dates, valid, option_prices, timestamps = compute_features(df, options_data, vix_data, chain_data, gex_data)
+    features, targets, dates, valid, option_prices, timestamps = compute_features(df, options_data, vix_data, chain_data)
+    raw_features = features.copy()
     valid_count = int(np.sum(valid))
     opt_count = int(np.sum(~np.isnan(option_prices['atm_call']))) if option_prices else 0
     pnl_count = int(np.sum(~np.isnan(option_prices['call_pnl']))) if option_prices else 0
@@ -3138,15 +2866,21 @@ if __name__ == "__main__":
     # --- Normalize ---
     print("Normalizing (adaptive rolling z-score)...")
     t0 = time.time()
-    raw_features = features.copy()  # save before normalization for replay/live context
     features = normalize_features(features, valid)
     print(f"  ({time.time() - t0:.1f}s)")
     print()
 
     # --- Tensors ---
     print("Preparing tensors...")
-    data = prepare_tensors(features, targets, dates, valid, option_prices, timestamps,
-                           raw_features=raw_features)
+    data = prepare_tensors(
+        features,
+        targets,
+        dates,
+        valid,
+        option_prices,
+        timestamps,
+        raw_features=raw_features,
+    )
     print()
 
     print(f"Done! Features: {NUM_FEATURES}, Actions: {NUM_ACTIONS}")

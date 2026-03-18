@@ -1,0 +1,549 @@
+# autoresearch-trading v3.3 (SPX 0DTE Sniper — Two-Head + OTM)
+
+Autonomous research: an AI agent iterates on a **SPX 0DTE options sniper
+model**, training for 5 minutes each run, keeping improvements and
+discarding failures.
+
+The model uses a **two-head architecture**:
+- **Gate head**: [NO_TRADE, TRADE] — decides if a trade opportunity exists
+- **Direction head**: [CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10] — decides which strike and direction
+
+This produces 8 effective actions: **DO_NOTHING**, **BUY_CALL_ATM**, **BUY_CALL_OTM5**,
+**BUY_CALL_OTM10**, **BUY_PUT_ATM**, **BUY_PUT_OTM5**, **BUY_PUT_OTM10**, **EXIT**.
+It is a sniper — it waits for A+ setups, takes few high-conviction trades, and
+can actively exit positions when the gate head says "no longer a good time to trade."
+OTM options are cheaper (lower premium), which is valuable for live testing.
+
+Adapted from [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
+
+## Autoresearch Loop Protocol (Source of Truth)
+
+This file is the control plane for the loop. If any other prompt text conflicts
+with this file, follow this file.
+
+Core loop philosophy:
+- One hypothesis per experiment.
+- One coherent code change set per experiment (avoid mixed, unrelated tweaks).
+- Keep warm-start compatibility unless explicitly running a reset phase.
+- Prioritize robust score improvements over single-run spikes.
+
+Experiment card (mental checklist before editing train.py):
+1. Hypothesis: what should improve, and why?
+2. Mechanism: exactly which part of the model/loss/training changes?
+3. Risk: what could regress (tpd collapse, over-trading, instability)?
+4. Success criteria: expected movement in score, PF, trade_sharpe, and trades/day.
+
+### Phase Lock: Feature Contract
+
+Current stabilization phase is locked to **60 features** (indices 0–59).
+- Do not assume 64-feature inputs in `train.py` experiments during this phase.
+- Any 64+Charm migration must be a separate coordinated phase:
+  data rebuild -> retrain -> replay/live contract update together.
+
+### Greeks-Driven Trade Management
+
+Greeks should influence not only classification loss but also live trade management behavior:
+
+- `gamma_theta_ratio` informs aggressiveness of take-profit extension.
+- `theta` acceleration near close should tighten protection / prefer exits.
+- `delta` and `gamma` should modulate confidence-aware sizing and stop ratcheting pace.
+- `vega` spikes should increase selectivity and reduce overtrading in unstable vol regimes.
+
+## Architecture
+
+The agent (Claude Sonnet 4 via API) runs on H100 alongside training.
+
+**Local repo**: `/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading`
+**Container**: `/workspace/` on H100 (NVIDIA H100 80GB HBM3)
+
+## Setup
+
+> **COST RULE: The H100 costs $$$. NEVER run prepare.py or data downloads on the H100.**
+> prepare.py runs LOCALLY. Only train.py and run_loop.py run on the GPU.
+
+### CRITICAL: Container Safety Rules
+
+The Akash container has **64Gi RAM** and **1x H100 80GB**. Violating these rules WILL crash the container and lose all progress:
+
+1. **NEVER use `torch.compile()`** — causes OOM on 64Gi containers. The model is <1M params; compile overhead >> benefit.
+2. **BATCH_SIZE ≤ 256** — do not exceed this. 128 is the sweet spot.
+3. **No `nn.DataParallel` or `DistributedDataParallel`** — there is one GPU.
+4. **No `torch.jit.trace` or `torch.jit.script`** — unnecessary overhead.
+5. **Do NOT clone/copy the full dataset** into new tensors. Use the existing `data` dict from `load_data()`.
+6. **Do NOT add data augmentation** that duplicates data in memory.
+7. **Keep model under 2M params** — D_MODEL ≤ 128, DEPTH ≤ 8.
+8. **Peak VRAM must stay under 40GB.**
+9. **ARCHITECTURE IS LOCKED — DO NOT CHANGE D_MODEL, DEPTH, or N_HEADS.**
+   Current locked values: **D_MODEL=96, DEPTH=6, N_HEADS=4**.
+   Changing these breaks warm-start weight compatibility (tensor shape mismatch),
+   forcing the model to train from scratch. With only 5 min per experiment, that's
+   not enough to converge. Focus on loss functions, regularization, learning rate,
+   feature gating, and other hyperparameters that don't change tensor shapes.
+
+```bash
+# STEP 1: Prepare data LOCALLY (requires IB Gateway running)
+python3 prepare.py --use-spx --ib-port 4002    # full dataset (~986 days, 1-min bars)
+
+# STEP 2: Upload to H100
+scp -P <PORT> ~/.cache/autoresearch-trading/features/data.pt train.py prepare.py \
+  root@<HOST>:/root/
+
+# STEP 3: Train on H100 (~5 min)
+ssh -p <PORT> root@<HOST> "/opt/conda/bin/python /root/train.py"
+```
+
+## Files
+
+- `prepare.py` — Downloads SPY 1-min bars + SPX prices + VIX from IBKR, SPXW 0DTE
+  option bars from Polygon flat files (S3) at ATM + OTM chain (±5/±10 strikes),
+  computes 60 features (39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks),
+  computes actual option P&L targets for ATM and OTM strikes + EXIT labels, stores in data.pt.
+  Provides `evaluate_trades()` (primary, two-head aware, 8 actions) and
+  `evaluate_sharpe()` (legacy). **Runs LOCALLY, never on GPU.**
+- `train.py` — Two-head model + option-P&L loss + training loop. **You modify this file. Runs on H100.**
+- `replay.py` — Paper trading validation: runs trained model bar-by-bar against an
+  unseen market day with full trade journal (SPX context, VIX, volume, MFE/MAE,
+  model confidence). **Runs LOCALLY.**
+- `run_loop.py` — Autoresearch orchestrator. **Runs on H100.**
+- `ib_probe.py` — IB Gateway connectivity test (ES, SPX, SPXW availability).
+- `program.md` — These instructions (you're reading this).
+
+## Data
+
+**Equity prices**: IBKR (real SPX cash index + SPY volume, 1-min bars via IB Gateway)
+**VIX**: IBKR (real CBOE VIX index, 1-min bars)
+**Options**: Polygon flat files / S3 (SPXW 0DTE bars, per-day cached)
+**Bars**: 390 per day (9:30–16:00 ET, 1-min intervals)
+**History**: ~986 trading days (March 14, 2022 → March 14, 2026)
+**0DTE filtering**: MWF only before May 11, 2022 (before daily SPXW 0DTE launched)
+**Option P&L targets**: Actual SPXW call/put P&L per bar for ATM + OTM strikes (stored in data.pt)
+**OTM chain**: ATM±5 and ATM±10 strikes (4 OTM contracts per day, cached in spxw_chain/)
+
+## Features (60)
+
+| Group | Features | Indices |
+|-------|----------|---------|
+| Returns | ret_5, ret_15, ret_30, ret_60, ret_120 (1-min bar lookback) | 0–4 |
+| Volume | volume_ratio, volume_zscore, volume_at_price_pctile | 5–7 |
+| Volatility | bar_range, realized_vol, range_ratio | 8–10 |
+| VWAP | vwap_dist, vwap_slope, vwap_upper1_dist, vwap_lower1_dist, vwap_upper2_dist, vwap_lower2_dist | 11–16 |
+| Session | ib_high_dist, ib_low_dist, ib_width, am_range_pct, session_range_pct | 17–21 |
+| Key Levels | onh_dist, onl_dist, prev_high_dist, prev_low_dist, prev_close_dist, prev_vwap_dist | 22–27 |
+| Trend | trend_hh_hl, ema_cross, close_position | 28–30 |
+| Microstructure | gap, inside_bar | 31–32 |
+| Time | minutes_to_close, time_sin, time_cos, day_of_week, half_hour_proximity, ib_complete | 33–38 |
+| Options | atm_iv, iv_skew, atm_premium_pct, put_call_vol_ratio, option_volume, theta_rate | 39–44 |
+| VIX/Regime | vix_level, vix_change, vix_regime, vrp | 45–48 |
+| OTM/Skew | otm_call_iv_5, otm_put_iv_5, iv_skew_5, iv_term_call, iv_term_put, otm_vol_ratio | 49–54 |
+| Greeks | atm_delta, atm_gamma, atm_theta_per_bar, atm_vega, gamma_theta_ratio | 55–59 |
+
+Feature groups for gating in train.py use these exact index ranges (13 groups).
+Options, VIX, OTM, and Greeks features are derived from actual SPXW 0DTE bar data (may be
+NaN where option data is unavailable — the model handles NaN gracefully via
+`FeatureGroupGating` which auto-adapts to feature count).
+
+## Greeks Features (indices 55–59)
+
+Black-Scholes Greeks computed from ATM option data. These encode the fundamental
+dynamics of option pricing that the model needs to learn:
+
+| Feature | Index | Description |
+|---------|-------|-------------|
+| `atm_delta` | 55 | ATM call delta (0–1). Directional sensitivity — how much option price moves per $1 SPX move. Near 0.5 for ATM, approaches 1.0 (ITM) or 0.0 (OTM) near expiry. |
+| `atm_gamma` | 56 | Rate of delta change per $1 SPX move. Highest for ATM near expiry — drives explosive 0DTE moves. |
+| `atm_theta_per_bar` | 57 | Time decay per 1-minute bar. Always negative for long options. Accelerates non-linearly near expiry (∝ 1/√T). |
+| `atm_vega` | 58 | Option price sensitivity per 1% IV move. Highest for ATM, decreases near expiry. |
+| `gamma_theta_ratio` | 59 | gamma / |theta_per_bar| — "bang for buck" ratio. High = option has explosive potential relative to decay cost. Low = theta is eating the position alive. |
+
+### How to use Greeks in experiments
+- **gamma_theta_ratio as entry filter**: High ratio = favorable risk/reward for directional bets.
+  Low ratio (afternoon, near expiry) = theta is winning, avoid new entries.
+- **Delta for position sizing intuition**: Near-expiry delta becomes binary (step function).
+  ATM delta ~0.5 means fair coin flip; deep ITM or OTM delta tells you the market's pricing.
+- **Gamma for regime detection**: High gamma = small SPX moves create large option P&L swings.
+  The model should be more selective when gamma is extreme (afternoon 0DTE).
+- **Theta awareness**: The model can learn when decay is accelerating and avoid holding
+  through the theta cliff (3:30+ PM). Use `atm_theta_per_bar` as a natural time-awareness signal.
+- **Greeks-conditioned gate**: Weight the gate head's TRADE probability by gamma_theta_ratio
+  to naturally avoid low-quality setups where theta dominates.
+
+## Targets
+
+**Primary**: Actual SPXW option P&L for ATM and OTM strikes (in data.pt)
+  - ATM: `call_pnl`, `put_pnl` — from real ATM SPXW prices
+  - OTM+5: `otm5_call_pnl`, `otm5_put_pnl` — from ATM+5/ATM-5 strike prices
+  - OTM+10: `otm10_call_pnl`, `otm10_put_pnl` — from ATM+10/ATM-10 strike prices
+  - Formula: `(exit_price - entry_price) / entry_price - spread_cost`
+  - Hold horizon: 30 bars (30 min), same day only
+  - Only computed where both entry and exit have actual option prices
+
+**Secondary**: Forward 6-bar SPY/ES return: `close[t+6]/close[t] - 1` (kept for fallback)
+
+**EXIT labels**: `exit_call_label`, `exit_put_label` — 1.0 when a position opened 1-60
+  bars ago has unrealized P&L > 20% of premium (profit target reached).
+  Now actively used in the loss function (EXIT_LOSS_WEIGHT = 0.3).
+
+## Model (two-head architecture)
+
+- `TradingModel`: FeatureGroupGating → TransformerEncoder → Gate head + Direction head
+- Input: `(batch, 120, 60)` — 2 hours of 1-min bars × 60 features
+- Output: `(gate_logits, dir_logits)` tuple
+  - `gate_logits`: `(batch, 2)` for `[NO_TRADE, TRADE]`
+  - `dir_logits`: `(batch, 6)` for `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]`
+- Effective actions (8):
+  - DO_NOTHING (0) — gate=NO_TRADE, no position open
+  - BUY_CALL_ATM (1), BUY_CALL_OTM5 (2), BUY_CALL_OTM10 (3) — call at ATM/±5/±10
+  - BUY_PUT_ATM (4), BUY_PUT_OTM5 (5), BUY_PUT_OTM10 (6) — put at ATM/±5/±10
+  - EXIT (7) — gate=NO_TRADE while in a position (contextual, not explicit output)
+- Parameters: ~250K
+- Loss: `sniper_loss` — multi-term cross-entropy on actual option P&L:
+  - **Gate target**: TRADE when any option P&L > 0 across all 6 strikes
+  - **Direction target** (only where gate=TRADE): argmax of 6 P&L values
+    (the strike/direction with the best actual P&L becomes the label)
+  - **EXIT loss** (EXIT_LOSS_WEIGHT = 0.3): when exit labels say "take profit",
+    gate should say NO_TRADE. Targets gate=0 on bars where exit labels > 0.5.
+  - Time-weighted: afternoon errors weighted 1.5x (theta acceleration)
+  - P&L alignment bonus: reward prob(trade) × prob(best_direction) × actual_pnl
+  - Backward compatible: handles both 6-class and legacy 2-class direction heads
+
+## Trading Rules
+
+The model is a **sniper, not a machine gun**: 3-5 trades/day, DO_NOTHING 90-95% of bars.
+
+- **5-bar cooldown after stop loss** — enforced in evaluate_trades. Consecutive stops signal wrong thesis.
+- **30% stop loss** — every trade has a fixed 30% max loss on premium. Non-negotiable.
+- **3-5 trades per day** — overtrading is the #1 enemy. The scoring formula penalizes it.
+- **Let winners run, cut losses early** — the model should EXIT losing trades before the stop when the thesis is clearly wrong.
+
+### Time-of-Day Windows (Critical for 0DTE)
+
+| Window | Priority | Notes |
+|--------|----------|-------|
+| 9:30-9:59 | **HARD NO TRADE** | Enforced in evaluate_trades (entries blocked). IB formation — observe the opening range, gather data. Model still sees these bars in lookback. |
+| 10:00-12:00 | **PRIME** | Magic Time through late morning. Best A+ setups of the day. `ib_complete=1` signals this window. |
+| 12:00-1:00 | **LOW** | Lunch hour. Low volume, chop. Be very selective — only highest-conviction setups. |
+| 1:00-3:30 | **PRIME** | Afternoon session. Trend continuation, reversals, and fresh setups. Often strong directional moves. |
+| 3:30-4:00 | **CAUTION** | Theta cliff + gamma spike. Premium decays rapidly. Only highest conviction with tight risk. |
+
+## Evaluation (Discrete Trade Simulation — 8 Actions)
+
+The model is evaluated by **simulating actual 0DTE option trades** across ATM and OTM strikes:
+
+1. Gate head outputs TRADE + Direction head outputs one of 6 strikes → enter that 0DTE option
+   - CALL_ATM/PUT_ATM → ATM strike (highest liquidity, moderate premium)
+   - CALL_OTM5/PUT_OTM5 → ATM ±5 strike (lower premium, higher gamma)
+   - CALL_OTM10/PUT_OTM10 → ATM ±10 strike (cheapest, most explosive gamma)
+2. Stop loss: 30% of premium (hard stop)
+3. Max hold: 60 bars (60 min)
+4. **Model-driven EXIT**: Gate head outputs NO_TRADE while in a position → close trade
+5. P&L: actual SPXW prices for the selected strike when available, delta approximation fallback
+6. Track trader + quant metrics (including exit_pct, model_exit_count)
+7. OTM prices map via `_get_px_array()`: action → correct OTM price array from data.pt
+
+### Composite Score (optimization target)
+
+```
+if tpd <= 6:  freq_mult = min(1, tpd/2)
+else:         freq_mult = max(0.1, (6/tpd)²)   # QUADRATIC decay
+score = profit_factor × trade_sharpe × freq_mult
+```
+
+The score uses a **bell-curve** trade frequency multiplier:
+- `min(1, tpd/2)` — penalizes under-trading (ramps 0→1 from tpd=0 to tpd=2)
+- `(6/tpd)²` — **QUADRATIC** penalty for over-trading above 6 tpd (tpd=10→0.36x, tpd=12→0.25x)
+- Sweet spot: **2-6 trades/day** gets full score. Over-trading is severely penalized.
+- Individual trade P&L is **capped at 200%** (default) to eliminate fat-tail lottery dependency.
+
+**Curriculum penalty for very low trade frequency:**
+- `trades_per_day < 0.5` → **score = -10.0** (hard penalty, below baseline)
+- `trades_per_day 0.5–1.5` → score ramps from -5.0 toward raw formula
+- `trades_per_day >= 1.5` → full formula applies (with over-trading decay)
+- **Baseline is -5.0.** The model must trade 1.5+ times/day AND be profitable to beat baseline.
+- Zero-trade models get score=-10.0, which is WORSE than baseline.
+
+**Additional score penalties** (applied after the base formula):
+- **Consecutive loss penalty**: if `max_consec_loss > 3`, score is multiplied by
+  `max(0.5, 1.0 - 0.05 × (consec_loss - 3))`. Scale: 4→0.95x, 8→0.75x, 13→0.50x.
+- **Short-hold penalty**: if `>30%` of trades are 1-bar holds, score is multiplied by
+  `max(0.7, 1.0 - (short_pct - 0.30))`. Scale: 40%→0.90x, 55%→0.75x, 60%→0.70x.
+- **Stop-loss rate penalty**: if `>30%` of trades hit stop loss, score is multiplied by
+  `max(0.5, 1.0 - (sl_rate - 0.30))`. Scale: 30%→1.0x, 50%→0.80x, 70%→0.60x, 80%→0.50x.
+  This penalizes poor entry selection — a good model should have <30% stop-loss rate.
+
+**Evaluation rules** (enforced in evaluate_trades, cannot be overridden):
+- No entries before 10:00 AM (first 30 bars blocked)
+- 5-bar cooldown after stop loss before re-entry
+- These rules reduce noise trading and consecutive losses structurally.
+
+**Priority order:**
+1. First: make the model actually trade (≥2 trades/day)
+2. Then: improve direction accuracy (profit_factor > 1)
+3. Then: improve risk-adjusted returns (trade_sharpe > 0)
+4. Then: reduce over-trading to 3-5 trades/day (selectivity)
+5. Do NOT increase SELECTIVITY_WEIGHT or add DO_NOTHING bias — this causes the DO_NOTHING trap.
+6. Do NOT add TRADE bias to gate head — this causes over-trading and noise trading.
+
+**Goal: maximize `score`.** The highest scores come from models that trade 3-5x/day
+with high profit factor and good sharpe. Over-trading destroys score even with good PF.
+
+### What "good" looks like
+
+| Score | Assessment |
+|-------|------------|
+| -10 | Zero trades — model is stuck in DO_NOTHING trap |
+| -5 to 0 | Too few trades or losing — increase trade frequency first |
+| 0.1 – 0.5 | Learning, trading but not profitable yet |
+| 0.5 – 1.0 | Marginal — direction is right but needs tuning |
+| 1.0 – 3.0 | Good — profitable, selective, paper-trade candidate |
+| 3.0 – 5.0 | Very good — prepare for live |
+| 5.0 – 8.0 | Excellent — validate on out-of-sample data |
+| > 8.0 | Exceptional — verify with out-of-sample and check stop_loss_rate |
+
+### Overfitting / Over-trading red flags
+
+- Score > 8 with < 50 val days
+- **DO_NOTHING < 85%** (overtrading — target 90-95%)
+- **trades_per_day > 10** (machine-gunning, not sniping)
+- **1-bar hold > 30%** of trades (noise trading)
+- **Max consecutive stop losses > 10** (stop loss cascade, no cooldown)
+- Win rate > 75% (too good to be true)
+- Trades only in one time window or one direction
+- Same action on all bars (always-call or always-put)
+- **direction_collapse_pct > 0.80** — model collapsed to single direction (all calls or all puts).
+  Penalized in scoring: >80% = 0.7x, >90% = 0.5x, 100% = 0.3x. A healthy sniper needs both calls and puts.
+- Gate head bias set explicitly (NO_TRADE/TRADE bias in initialization)
+
+## Prior Training Run Findings (146 experiments, March 2026)
+
+### What Worked
+- **Adversarial training** (GAN-style discriminator) — the single biggest breakthrough.
+  A discriminator network distinguishes "real profitable trades" from the model's predicted
+  trades, creating pressure to produce realistic trade patterns instead of collapsing to
+  DO_NOTHING. Score jumped 2.5x (4.70→11.88) in one experiment. **This is the current
+  best architecture foundation.**
+- **Greeks QualityGate module** — projects gamma_theta_ratio and time features into a
+  quality score (0-1) that multiplicatively conditions the TRADE logit. Hard gates penalize
+  trading 90% when gamma_theta_ratio < 0.15 or minutes_to_close < 45.
+- **Sinusoidal positional embeddings** — fixed sinusoidal outperformed learned embeddings.
+  With only 120 positions and 5 min training, there isn't enough signal to learn good
+  position embeddings.
+- **Low dropout (0.02–0.05)** consistently produced the best scores.
+- **D_MODEL=96, DEPTH=6, DROPOUT=0.03, N_HEADS=4** — sweet spot confirmed across 60 experiments.
+- **LOOKBACK 120** — full 2-hour context window.
+- **Tunable stop_loss_pct=0.20, max_hold_bars=45** — tighter risk management improved score.
+
+### What Didn't Work
+- **High dropout (0.1+)** — too much regularization kills signal.
+- **D_MODEL 128** — too large, overfits or trains poorly in the 5-min budget.
+- **DEPTH 7+** — diminishing returns, more failure-prone.
+- **Merging heads** — always worse than two-head architecture.
+- **Domain-inspired changes** (VIX gating modules, level proximity modules, PnL confidence
+  modules) — ALL failed in prior runs. Generic ML improvements (dropout, LR, architecture)
+  consistently outperformed domain-specific modules.
+- **Reducing trade frequency after adversarial training** — 38 experiments tried to lower
+  tpd from ~12 to 3-5 without success. The adversarial framework rewards volume.
+
+### Key Insight: Entry vs Exit Quality
+The model has **learned to exit well** (61.1% WR on model-driven exits) but **hasn't
+learned to enter well** (47% stop-loss rate). The next run should find architectures
+that improve entry quality. The P&L cap + stop-loss penalty will force this by making
+lottery tickets worthless and penalizing poor entries directly.
+
+## VIX / Regime Features (indices 45–48)
+
+| Feature | Index | Description |
+|---------|-------|-------------|
+| `vix_level` | 45 | ATM IV as VIX proxy, z-score normalized |
+| `vix_change` | 46 | 6-bar (30-min) change in ATM IV — vol momentum |
+| `vix_regime` | 47 | Regime bucket: -1=low(<15), -0.33=normal(15-20), 0.33=elevated(20-30), 1=crisis(>30) |
+| `vrp` | 48 | Variance risk premium: IV² - RV² (positive = options expensive vs realized) |
+
+## OTM / Skew Features (indices 49–54)
+
+| Feature | Index | Description |
+|---------|-------|-------------|
+| `otm_call_iv_5` | 49 | IV of ATM+5 call (1 strike OTM) |
+| `otm_put_iv_5` | 50 | IV of ATM-5 put (1 strike OTM) |
+| `iv_skew_5` | 51 | IV(ATM-5 put) - IV(ATM+5 call): near-term skew |
+| `iv_term_call` | 52 | IV(ATM+10 call) - IV(ATM+5 call): call wing steepness |
+| `iv_term_put` | 53 | IV(ATM-10 put) - IV(ATM-5 put): put wing steepness |
+| `otm_vol_ratio` | 54 | log(OTM volume / ATM volume): flow concentration |
+
+### OTM P&L arrays in data.pt
+- `otm5_call_pnl`, `otm5_put_pnl` — P&L for ATM±5 strikes
+- `otm10_call_pnl`, `otm10_put_pnl` — P&L for ATM±10 strikes
+- Coverage: Lower than ATM (OTM strikes less liquid, especially ATM±10 in afternoon).
+  Missing P&L → NaN → loss masked out for those bars.
+
+## Warm-Start
+
+Each experiment **warm-starts** from `best_model.pt` — the model loads the
+previous best weights before training. This means experiments build on each
+other instead of starting from scratch. The LR is reduced to 0.3× base when
+warm-starting to avoid destroying learned weights.
+
+- `WARM_START=1` (default): load best_model.pt weights, use 0.3× LR
+- `WARM_START=0`: train from scratch with full LR (for architecture resets)
+
+**What this means for experiments**: Since the model already has good weights,
+focus on incremental improvements — loss function tweaks, regularization,
+feature gating. Large structural changes are less likely to help since the
+model can't re-learn from scratch in the time budget.
+
+## Walk-Forward Stability
+
+The validation set is evaluated in **chronological chunks** (~quarterly).
+If any chunk has profit_factor < 1.0 (losing quarter), the score gets a 20%
+penalty. This prevents overfitting to one market regime.
+
+The `worst_chunk_pf` metric is printed in the output. A good model should
+have `worst_chunk_pf >= 1.0` across all quarters.
+
+## Experimentation
+
+Modify `train.py` only. Training budget is set by `TIME_BUDGET` env var
+(default 300s). Everything in train.py is fair game: architecture, optimizer,
+loss, lookback, etc.
+
+**Goal: maximize `score`.**
+
+### Tunable Evaluation Parameters
+
+`evaluate_trades()` accepts optional keyword arguments that let you override
+strategy parameters from train.py:
+
+```python
+# Example: tighter stop loss + shorter max hold + custom P&L cap
+metrics = evaluate_trades(model, data, LOOKBACK, device,
+                          stop_loss_pct=0.20,       # 20% stop (default 0.30)
+                          max_hold_bars=45,          # 45-bar max hold (default 60)
+                          max_trade_return=1.5)      # 150% cap (default 2.0 = 200%)
+```
+
+| Parameter | Default | Range | What it does |
+|-----------|---------|-------|--------------|
+| `stop_loss_pct` | 0.30 | 0.15–0.50 | Stop loss as fraction of premium. Tighter = less drawdown but more stops. |
+| `max_hold_bars` | 60 | 15–90 | Max bars to hold a position. Shorter = less theta decay risk. |
+| `max_trade_return` | 2.0 | 0.5–5.0 | Cap individual trade P&L (as fraction). Eliminates fat-tail lottery dependency. |
+| `starting_capital` | 5000.0 | 1000–50000 | Starting account balance for equity curve simulation. |
+| `risk_per_trade` | 0.10 | 0.02–0.25 | Fraction of capital risked per trade. |
+
+These are strategy-level choices the model can optimize alongside architecture/loss.
+
+### Ideas (prioritized)
+
+1. **Fix zero-trade safely (without bias hacks)**: If score is negative due to no trades,
+   improve gate calibration with data-driven loss weighting, threshold calibration, or
+   regime conditioning. Do not force trading via explicit TRADE bias terms.
+
+2. **Leverage Greeks features**: The Greeks (indices 55–59) encode option pricing dynamics.
+   Use gamma_theta_ratio as an entry quality filter, condition gate on theta awareness,
+   or use delta for directional confidence. The model should learn that high gamma_theta_ratio
+   = good risk/reward for directional bets.
+
+3. **Leverage VIX features**: The VIX/regime features (indices 45–48) give regime
+   context. Try regime-conditioned gate thresholds, VIX-aware loss weighting, or
+   using vix_change as an additional entry/exit signal.
+
+4. **Tune EXIT loss**: EXIT_LOSS_WEIGHT=0.3 is the starting point. Ideas:
+   - Increase/decrease EXIT_LOSS_WEIGHT to balance profit-taking vs hold duration
+   - Use vix_change spikes as EXIT triggers (vol spike = close positions)
+   - Condition EXIT aggressiveness on unrealized P&L magnitude
+
+5. **OTM strike selection**: The 6-class direction head is new. Ideas:
+   - **Regime-based strike preference**: In trending regimes (high `trend_hh_hl`),
+     OTM options have explosive gamma. In range-bound regimes, ATM is safer.
+   - **Time-based**: OTM has more gamma advantage in AM when theta hasn't crushed them.
+     In PM, ATM is safer. Use `minutes_to_close` to condition strike selection.
+
+6. **Optimal model size**: D_MODEL=96, DEPTH=6 was the sweet spot in the latest run.
+   Start there and explore small variations.
+
+7. **Confidence/sizing head**: Add a third output head that predicts position size
+   (0.05-1.0x of base allocation). The model would learn WHEN to size up (high conviction)
+   vs size down (marginal setup). This connects the model to capital management.
+   - Architecture: `self.size_head = nn.Sequential(LayerNorm, Linear, Sigmoid)`
+   - Output: scalar 0.05-1.0 (clamped), multiplied by risk_per_trade in evaluation
+   - Loss: weight by actual P&L magnitude (bigger winners = reward for sizing up)
+
+8. **P&L-weighted loss**: Weight cross-entropy by magnitude of actual P&L, so the model
+   learns that a 200% winner matters more than a 5% winner. Add as PNL_MAGNITUDE_WEIGHT.
+
+9. **Consistency loss term**: Add a term that penalizes high variance in per-trade returns.
+   Reward the model for finding consistently profitable entries, not lottery tickets.
+   Could implement as: -PNL_CONSISTENCY_WEIGHT * std(predicted_trade_pnls).
+
+### Anti-patterns (AVOID these)
+
+- **DO NOT merge gate_head and dir_head into a single head** — two-head is load-bearing
+- **DO NOT revert to forward-return percentile labels** — use option P&L from dataloader
+- **DO NOT increase NO_TRADE bias** on gate_head — this causes the DO_NOTHING trap
+- **DO NOT add extra DO_NOTHING rewards** in the loss function
+- **DO NOT add TRADE bias** to gate head (e.g., `gate_head[-1].bias[1] = 0.1`) — this causes
+  over-trading. The test run showed 22 trades/day and 0% DO_NOTHING when TRADE bias was set.
+  Let the model learn naturally from the data.
+- **DO NOT add TRADE_INCENTIVE_WEIGHT** or similar loss terms that reward trading unconditionally —
+  this collapses the gate head to always-TRADE. The scoring formula already penalizes zero-trade models.
+- If score is -10, the problem is ZERO TRADES, not bad direction
+- If trades_per_day > 10, the problem is OVER-TRADING — score is penalized above 6 tpd
+- **DO NOT use D_MODEL > 112 or DEPTH > 7** — they underperform in the 5-min budget
+- **DO NOT use DROPOUT > 0.08** — over-regularization kills signal
+- **DO NOT reduce direction head to < 6 outputs** — OTM selection is load-bearing for live trading
+- **DO NOT change action constants** (ACTION_BUY_CALL_ATM=1 through ACTION_EXIT=7) — must match prepare.py
+
+## Output Format
+
+```
+---
+score:              1.234567
+profit_factor:      1.856789
+win_rate:           0.583456
+avg_winner:         0.045678
+avg_loser:          -0.023456
+trades_per_day:     3.200000
+max_consec_loss:    3
+num_trades:         128
+trade_sharpe:       1.567890
+sortino:            2.123456
+max_drawdown:       -0.089012
+calmar:             1.345678
+ev_per_trade:       0.012345
+do_nothing_pct:     0.934567
+exit_pct:           0.023456
+model_exit_count:   12
+cooldown_blocked:   3
+pre_10am_blocked:   47
+short_hold_pct:     0.150000
+stop_loss_rate:     0.250000
+final_capital:      5847.23
+equity_sharpe:      1.234567
+max_equity_dd:      -0.089012
+total_dollar_return:0.169446
+val_sharpe:         0.789012
+total_return:       1.580000
+num_val_bars:       2400
+num_val_days:       40
+worst_chunk_pf:     1.23
+training_seconds:   300.0
+total_seconds:      339.2
+peak_vram_mb:       1234.5
+num_steps:          14523
+num_params:         250,323
+lookback:           120
+depth:              4
+d_model:            64
+```
+
+### Equity Curve Metrics (informational, not part of score)
+
+These metrics simulate trading with a real account ($5000 starting capital, 10% risk per trade):
+- `final_capital` — ending account balance
+- `equity_sharpe` — Sharpe ratio of the equity curve (annualized)
+- `max_equity_dd` — maximum drawdown of the equity curve (as fraction, e.g., -0.15 = 15% drawdown)
+- `total_dollar_return` — total return on starting capital (e.g., 0.20 = 20% gain)
+
+These are NOT part of the optimization score. They help evaluate whether a model
+would survive real capital deployment. A good model should show:
+- `final_capital` > starting_capital (growing the account)
+- `max_equity_dd` > -0.30 (no 30%+ drawdowns)
+- `equity_sharpe` > 1.0 (acceptable risk-adjusted returns)

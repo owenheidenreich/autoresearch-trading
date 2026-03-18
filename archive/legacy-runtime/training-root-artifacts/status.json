@@ -1,0 +1,11 @@
+{
+  "phase": "completed",
+  "experiment_id": 2,
+  "best_score": null,
+  "kept": 0,
+  "failed": 1,
+  "total": 2,
+  "time_remaining_h": 0.02,
+  "updated": "2026-03-17T16:37:32.292089",
+  "contract_checksum": "08d653f30605"
+}

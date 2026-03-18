@@ -4,8 +4,11 @@ import datetime as dt
 import math
 from dataclasses import dataclass, field
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ib_insync import IB, Index, Option, Stock
+
+ET_TZ = ZoneInfo("America/New_York")
 
 
 @dataclass
@@ -89,9 +92,7 @@ def probe_entitlements(
         ib.qualifyContracts(spx, vix, spy)
 
         spx_px = _sample_spx_price(ib, spx)
-        expiry = dt.datetime.now(dt.timezone.utc).astimezone(
-            dt.timezone(dt.timedelta(hours=-5))
-        ).strftime("%Y%m%d")
+        expiry = dt.datetime.now(dt.timezone.utc).astimezone(ET_TZ).strftime("%Y%m%d")
         atm = round(spx_px / 5.0) * 5.0
         spxw_call = Option(
             symbol="SPX",
@@ -168,4 +169,3 @@ def probe_entitlements(
     finally:
         if ib.isConnected():
             ib.disconnect()
-

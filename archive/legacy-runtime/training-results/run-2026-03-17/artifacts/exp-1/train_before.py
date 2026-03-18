@@ -48,6 +48,8 @@ from prepare import (
     ACTION_BUY_PUT_ATM,
     ACTION_BUY_PUT_OTM5,
     ACTION_BUY_PUT_OTM10,
+    ACTION_BUY_CALL,
+    ACTION_BUY_PUT,
     ACTION_EXIT,
     load_data,
     make_dataloader,
@@ -82,9 +84,6 @@ BASE_EXIT_LOSS_WEIGHT = 0.3      # base weight for EXIT signal
 
 # Greeks-adaptive loss parameters
 GREEKS_ADAPTATION_STRENGTH = 0.5  # how much to adjust weights based on Greeks (0.5 = 50% max adjustment)
-
-# Quality gate parameters
-QUALITY_GATE_STRENGTH = 0.8  # how much to scale TRADE logit based on gamma_theta_ratio
 
 # Feature groups for gating (60 features: 39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks)
 FEATURE_GROUPS = {
@@ -136,41 +135,8 @@ class FeatureGroupGating(nn.Module):
         return self.mix(torch.cat(projected, dim=-1))
 
 
-class QualityGate(nn.Module):
-    """Quality gate that conditions TRADE probability on gamma_theta_ratio."""
-    
-    def __init__(self):
-        super().__init__()
-        
-    def forward(self, gate_logits, gamma_theta_ratio):
-        """Apply quality scaling to TRADE logit based on gamma_theta_ratio.
-        
-        Args:
-            gate_logits: (batch, 2) - [NO_TRADE, TRADE]
-            gamma_theta_ratio: (batch,) - gamma/|theta| ratio from features
-            
-        Returns:
-            Adjusted gate_logits with TRADE logit scaled by quality
-        """
-        # Handle NaN values - replace with neutral value of 1.0
-        gtr = torch.nan_to_num(gamma_theta_ratio, nan=1.0)
-        
-        # Quality score: sigmoid(gamma_theta_ratio - 1.0) 
-        # >1 = good (approaches 1.0), <1 = bad (approaches 0.0)
-        quality_score = torch.sigmoid(gtr - 1.0)
-        
-        # Scale quality score: 0.2 to 1.0 range to avoid completely killing trades
-        quality_score = 0.2 + 0.8 * quality_score
-        
-        # Apply quality gate: multiply TRADE logit by quality score
-        adjusted_logits = gate_logits.clone()
-        adjusted_logits[:, 1] = gate_logits[:, 1] * (1.0 + QUALITY_GATE_STRENGTH * (quality_score - 1.0))
-        
-        return adjusted_logits
-
-
 class TradingModel(nn.Module):
-    """Two-head sniper model for SPX 0DTE options with quality gate.
+    """Two-head sniper model for SPX 0DTE options.
 
     Input:  (batch, lookback, NUM_FEATURES)
     Output: (gate_logits, dir_logits)
@@ -220,31 +186,19 @@ class TradingModel(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(d_model // 2, 6),
         )
-        
-        # Quality gate module
-        self.quality_gate = QualityGate()
 
         # Further reduced bias toward NO_TRADE to encourage trading
         with torch.no_grad():
             self.gate_head[-1].bias[0] = -0.1   # NO_TRADE bias (reduced from -0.2)
 
     def forward(self, x):
-        x_transformed = self.feature_gate(x)
-        x_transformed = self.input_norm(x_transformed)
-        x_transformed = x_transformed + self.pos_embed[:, :x_transformed.size(1), :]
-        x_transformed = self.transformer(x_transformed, mask=self.causal_mask[:x_transformed.size(1), :x_transformed.size(1)],
+        x = self.feature_gate(x)
+        x = self.input_norm(x)
+        x = x + self.pos_embed[:, :x.size(1), :]
+        x = self.transformer(x, mask=self.causal_mask[:x.size(1), :x.size(1)],
                               is_causal=True)
-        last = x_transformed[:, -1, :]  # (batch, d_model)
-        
-        # Get raw gate and direction logits
-        raw_gate_logits = self.gate_head(last)
-        dir_logits = self.dir_head(last)
-        
-        # Apply quality gate using gamma_theta_ratio from input features
-        gamma_theta_ratio = x[:, -1, 59]  # Feature index 59 is gamma_theta_ratio
-        gate_logits = self.quality_gate(raw_gate_logits, gamma_theta_ratio)
-        
-        return gate_logits, dir_logits
+        last = x[:, -1, :]  # (batch, d_model)
+        return self.gate_head(last), self.dir_head(last)
 
 
 # ---------------------------------------------------------------------------
@@ -335,10 +289,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     """
     B = gate_logits.shape[0]
     device = gate_logits.device
-    if dir_logits.shape[-1] != 6:
-        raise ValueError(
-            f"sniper_loss requires 6-direction head, got shape {tuple(dir_logits.shape)}"
-        )
+    n_dir = dir_logits.shape[-1]  # 6 for new model, 2 for legacy
 
     # Mask: only compute loss where we have ATM option P&L data
     valid = ~torch.isnan(call_pnl) & ~torch.isnan(put_pnl)
@@ -360,7 +311,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     EXIT_LOSS_WEIGHT = loss_weights['exit_weight']
 
     # Build 6-class P&L array: [call_atm, call_otm5, call_otm10, put_atm, put_otm5, put_otm10]
-    # Missing OTM values stay NaN and are excluded from argmax via nan_to_num(-999).
+    # Use ATM P&L as fallback for missing OTM P&L (NaN → ATM value)
     def _safe(arr):
         if arr is None:
             return torch.full_like(c_pnl, float('nan'))
@@ -397,10 +348,14 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     t_feat_trade = t_feat[trade_mask]
     trade_pnl = all_pnl[trade_mask]  # (trade, 6)
 
-    # 6-class: argmax of P&L across all strikes/directions.
-    # Replace NaN with -inf so they never win the argmax.
-    trade_pnl_safe = torch.nan_to_num(trade_pnl, nan=-999.0)
-    dir_targets = torch.argmax(trade_pnl_safe, dim=-1)
+    if n_dir == 6:
+        # 6-class: argmax of P&L across all strikes/directions
+        # Replace NaN with -inf so they never win the argmax
+        trade_pnl_safe = torch.nan_to_num(trade_pnl, nan=-999.0)
+        dir_targets = torch.argmax(trade_pnl_safe, dim=-1)
+    else:
+        # Legacy 2-class: CALL (0) when call_pnl > put_pnl, else PUT (1)
+        dir_targets = (trade_pnl[:, 3] > trade_pnl[:, 0]).long()
 
     dir_loss = F.cross_entropy(d_logits_trade, dir_targets, reduction='none')
     dir_time_weight = 1.0 + 0.5 * (1.0 - t_feat_trade)
@@ -411,7 +366,10 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     dir_probs = F.softmax(d_logits, dim=-1)
     trade_prob = gate_probs[:, 1]
     all_pnl_safe = torch.nan_to_num(all_pnl, nan=0.0)
-    pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
+    if n_dir == 6:
+        pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
+    else:
+        pnl_signal = trade_prob * (dir_probs[:, 0] * c_pnl + dir_probs[:, 1] * p_pnl)
     pnl_loss = -pnl_signal.mean()
 
     # EXIT loss
@@ -452,30 +410,17 @@ print(f"  ~{n_bars // BARS_PER_DAY} trading days")
 print(f"Training:   up to idx {data['train_end_idx']}")
 print(f"Validation: idx {data['val_start_idx']}-{data['val_end_idx']}")
 
-required_targets = (
-    'call_pnl',
-    'put_pnl',
-    'exit_call_label',
-    'exit_put_label',
-    'otm5_call_pnl',
-    'otm5_put_pnl',
-    'otm10_call_pnl',
-    'otm10_put_pnl',
-)
-missing_targets = [k for k in required_targets if k not in data]
-if missing_targets:
-    raise KeyError(
-        "data.pt missing required two-head/OTM targets: "
-        + ", ".join(missing_targets)
-        + ". Rebuild data.pt with current prepare.py."
-    )
-pnl_valid = (~torch.isnan(data['call_pnl'])).sum().item()
-print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%)")
+has_pnl = 'call_pnl' in data
+if has_pnl:
+    pnl_valid = (~torch.isnan(data['call_pnl'])).sum().item()
+    print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%)")
+else:
+    print("  WARNING: No option P&L in data.pt — falling back to forward-return labels")
 
 model = TradingModel().to(device)
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
-print(f"Architecture: two-head (gate: NO_TRADE/TRADE, dir: 6-class ATM+OTM) + Greeks-adaptive loss + Quality gate")
+print(f"Architecture: two-head (gate: NO_TRADE/TRADE, dir: 6-class ATM+OTM) + Greeks-adaptive loss")
 
 # Warm-start from previous best if architecture matches
 WARM_START = int(os.environ.get("WARM_START", "1"))
@@ -515,7 +460,6 @@ print(f"\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {LOOKBACK}")
 print(f"LR: {LR} (effective: {_effective_lr}) | Depth: {DEPTH} | d_model: {D_MODEL}")
 print(f"Warm-start: {'yes' if _warm_started else 'no'}")
 print(f"Greeks adaptation strength: {GREEKS_ADAPTATION_STRENGTH}")
-print(f"Quality gate strength: {QUALITY_GATE_STRENGTH}")
 print()
 
 # ---------------------------------------------------------------------------
@@ -600,15 +544,10 @@ while True:
             # Show current Greeks-adapted loss weights
             sample_weights = compute_greeks_loss_weights(batch_features)
             
-            # Show average quality gate effect
-            gtr_current = batch_features[:, 59]  # gamma_theta_ratio
-            gtr_clean = torch.nan_to_num(gtr_current, nan=1.0)
-            avg_quality = torch.sigmoid(gtr_clean - 1.0).mean().item()
-            
         print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
               f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
               f"| gate_w:{sample_weights['gate_weight']:.2f} pnl_w:{sample_weights['pnl_weight']:.2f} "
-              f"| quality:{avg_quality:.2f} | lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
+              f"| lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
 
     if step == 0:
         gc.collect(); gc.freeze(); gc.disable()
@@ -622,7 +561,7 @@ while True:
 print()
 
 # ---------------------------------------------------------------------------
-# Evaluate (primary: trade simulation; secondary: Sharpe)
+# Evaluate (primary: trade simulation; secondary: legacy Sharpe)
 # ---------------------------------------------------------------------------
 
 model.eval()
@@ -646,9 +585,9 @@ torch.save({
         'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
         'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
         'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
-        'architecture': 'two_head_greeks_adaptive_quality_gate',
+        'architecture': 'two_head_greeks_adaptive',
         'greeks_adaptation_strength': GREEKS_ADAPTATION_STRENGTH,
-        'quality_gate_strength': QUALITY_GATE_STRENGTH,
+        'feature_contract_version': 'ibkr_live_v1',
     },
     'step': step,
 }, model_path)

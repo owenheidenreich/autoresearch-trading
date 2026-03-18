@@ -6,6 +6,7 @@ import math
 import os
 from dataclasses import dataclass
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ib_insync import IB, Index, Stock
 
@@ -16,6 +17,8 @@ from training.live.entitlements import EntitlementReport, probe_entitlements
 from training.live.execution import OCOExecutionEngine
 from training.live.features import FiveSecondMinuteAggregator, LiveFeatureEngine
 from training.live.resolver import ACTION_TO_SPEC, SPXWContractResolver
+
+ET_TZ = ZoneInfo("America/New_York")
 
 
 @dataclass
@@ -213,6 +216,23 @@ class PaperTradingService:
                 "Feature contract mismatch: "
                 f"context={bundle.feature_contract_version}, model={decision.feature_contract_version}"
             )
+        context_features = int(bundle.raw_features.shape[1]) if bundle.raw_features.ndim == 2 else 0
+        if context_features < decision.num_features:
+            raise RuntimeError(
+                "Context feature width is too small for checkpoint: "
+                f"context={context_features}, model={decision.num_features}. "
+                "Refresh context with the matching feature contract."
+            )
+        if context_features > decision.num_features:
+            self._audit(
+                "feature_projection",
+                {
+                    "context_num_features": context_features,
+                    "model_num_features": decision.num_features,
+                    "mode": "truncate_context_to_model",
+                },
+            )
+
         ib = IB()
         ib.connect(self.cfg.host, self.cfg.port, clientId=self.cfg.client_id, timeout=20)
 
@@ -224,7 +244,7 @@ class PaperTradingService:
             kill_switch_path=self.cfg.kill_switch_path,
             audit_path=self.cfg.audit_path,
         )
-        feat_engine = LiveFeatureEngine(bundle)
+        feat_engine = LiveFeatureEngine(bundle, target_num_features=decision.num_features)
 
         seed_spx = float(bundle.market_rows[-1]["close"])
         stream = IBKRMarketStream(ib, resolver)
@@ -235,10 +255,18 @@ class PaperTradingService:
         processed = 0
         current_position_id: str | None = None
 
-        self._audit("session_start", {"seed_spx": seed_spx, "dry_run": exec_engine.dry_run})
+        self._audit(
+            "session_start",
+            {
+                "seed_spx": seed_spx,
+                "dry_run": exec_engine.dry_run,
+                "context_num_features": context_features,
+                "model_num_features": decision.num_features,
+            },
+        )
         try:
             while True:
-                now_et = dt.datetime.now(dt.timezone.utc).astimezone(dt.timezone(dt.timedelta(hours=-5)))
+                now_et = dt.datetime.now(dt.timezone.utc).astimezone(ET_TZ)
                 if (now_et.hour, now_et.minute) < (start_h, start_m):
                     ib.sleep(self.cfg.poll_sleep_seconds)
                     continue

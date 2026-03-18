@@ -6,11 +6,11 @@ Usage:
   # Remote (SSH into H100):
   python3 monitor.py --host provider.h100.ams.val.akash.pub --port 31116 --password autoresearch2026
 
-  # Local (watch a local experiments.jsonl):
-  python3 monitor.py --local /path/to/experiments.jsonl
+  # Local (watch canonical results root with current_run.txt):
+  python3 monitor.py --local /path/to/results
 
-  # Local (default — looks in current dir):
-  python3 monitor.py --local .
+  # Local (watch a specific run folder):
+  python3 monitor.py --local /path/to/results/run-YYYY-MM-DD-HHMMSS
 """
 from __future__ import annotations
 
@@ -22,17 +22,26 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from rich.console import Console
-from rich.live import Live
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
-from rich.text import Text
-from rich import box
+try:
+    from rich.console import Console
+    from rich.live import Live
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.layout import Layout
+    from rich.text import Text
+    from rich import box
+except ImportError:  # pragma: no cover - optional UI dependency
+    Console = None
+    Live = None
+    Table = None
+    Panel = None
+    Layout = None
+    Text = None
+    box = None
 
 
 def fetch_remote(host: str, port: int, password: str) -> tuple[list[dict], dict | None, str | None]:
-    """Fetch experiments.jsonl and status.json from remote H100 via SSH."""
+    """Fetch canonical run-folder experiments.v2.jsonl + status.json via SSH."""
     env = {**os.environ, "SSHPASS": password}
     ssh_opts = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 
@@ -40,11 +49,18 @@ def fetch_remote(host: str, port: int, password: str) -> tuple[list[dict], dict 
     status = None
     log_tail = None
 
-    # Single SSH call to fetch all 3 files
+    # Single SSH call to fetch active run artifacts.
     remote_cmd = (
-        "cat /root/experiments.jsonl 2>/dev/null; echo '---SEP---'; "
-        "cat /root/status.json 2>/dev/null; echo '---SEP---'; "
-        "tail -10 /root/loop.log 2>/dev/null"
+        "RUN=$(test -f /root/results/current_run.txt && tr -d '\\r\\n' < /root/results/current_run.txt); "
+        "if [ -z \"$RUN\" ]; then "
+        "echo ''; echo '---SEP---'; echo ''; echo '---SEP---'; "
+        "echo 'ERROR: missing /root/results/current_run.txt'; echo '---SEP---'; echo ''; exit 0; "
+        "fi; "
+        "RDIR=/root/results/$RUN; "
+        "cat \"$RDIR/experiments.v2.jsonl\" 2>/dev/null; echo '---SEP---'; "
+        "cat \"$RDIR/status.json\" 2>/dev/null; echo '---SEP---'; "
+        "tail -10 /root/loop.log 2>/dev/null; echo '---SEP---'; "
+        "echo \"$RUN\""
     )
     try:
         r = subprocess.run(
@@ -54,7 +70,7 @@ def fetch_remote(host: str, port: int, password: str) -> tuple[list[dict], dict 
         if r.returncode == 0 and r.stdout.strip():
             parts = r.stdout.split("---SEP---")
 
-            # Parse experiments.jsonl
+            # Parse experiments.v2.jsonl
             if len(parts) >= 1 and parts[0].strip():
                 for line in parts[0].strip().split("\n"):
                     try:
@@ -72,19 +88,62 @@ def fetch_remote(host: str, port: int, password: str) -> tuple[list[dict], dict 
             # Parse log tail
             if len(parts) >= 3 and parts[2].strip():
                 log_tail = parts[2].strip()
+            if len(parts) >= 4 and parts[3].strip():
+                if status is None:
+                    status = {}
+                status["_run_name"] = parts[3].strip()
+            if status is None and len(parts) >= 3 and parts[2].strip().startswith("ERROR:"):
+                status = {"phase": "error", "error": parts[2].strip()}
     except (subprocess.TimeoutExpired, Exception):
         pass
 
     return experiments, status, log_tail
 
 
+def _resolve_local_run_dir(path: str) -> str:
+    if os.path.isdir(path):
+        pointer = os.path.join(path, "current_run.txt")
+        if os.path.isfile(pointer):
+            with open(pointer) as f:
+                run_name = f.read().strip()
+            if not run_name:
+                raise RuntimeError(f"Empty run pointer: {pointer}")
+            run_dir = os.path.join(path, run_name)
+            if not os.path.isdir(run_dir):
+                raise RuntimeError(f"Pointer target missing: {run_dir}")
+            return run_dir
+        if os.path.isfile(os.path.join(path, "experiments.v2.jsonl")):
+            return path
+    elif os.path.isfile(path):
+        if os.path.basename(path) == "current_run.txt":
+            with open(path) as f:
+                run_name = f.read().strip()
+            if not run_name:
+                raise RuntimeError(f"Empty run pointer: {path}")
+            root = os.path.dirname(path)
+            run_dir = os.path.join(root, run_name)
+            if not os.path.isdir(run_dir):
+                raise RuntimeError(f"Pointer target missing: {run_dir}")
+            return run_dir
+        if os.path.basename(path) == "experiments.v2.jsonl":
+            return os.path.dirname(path)
+    raise RuntimeError(
+        f"Expected results root with current_run.txt or run folder with experiments.v2.jsonl, got: {path}"
+    )
+
+
 def fetch_local(path: str) -> tuple[list[dict], dict | None, str | None]:
-    """Read experiments.jsonl and status.json from local directory."""
+    """Read canonical experiments.v2.jsonl and status.json from local path."""
     experiments = []
     status = None
     log_tail = None
 
-    jsonl_path = os.path.join(path, "experiments.jsonl") if os.path.isdir(path) else path
+    try:
+        run_dir = _resolve_local_run_dir(path)
+    except Exception as e:
+        return experiments, {"phase": "error", "error": str(e)}, None
+
+    jsonl_path = os.path.join(run_dir, "experiments.v2.jsonl")
     if os.path.exists(jsonl_path):
         with open(jsonl_path) as f:
             for line in f:
@@ -93,7 +152,7 @@ def fetch_local(path: str) -> tuple[list[dict], dict | None, str | None]:
                 except json.JSONDecodeError:
                     pass
 
-    status_path = os.path.join(os.path.dirname(jsonl_path), "status.json")
+    status_path = os.path.join(run_dir, "status.json")
     if os.path.exists(status_path):
         with open(status_path) as f:
             try:
@@ -101,7 +160,11 @@ def fetch_local(path: str) -> tuple[list[dict], dict | None, str | None]:
             except json.JSONDecodeError:
                 pass
 
-    log_path = os.path.join(os.path.dirname(jsonl_path), "loop.log")
+    if status is None:
+        status = {"phase": "error", "error": f"Missing status file: {status_path}"}
+    status["_run_name"] = os.path.basename(run_dir)
+
+    log_path = os.path.join(os.path.dirname(run_dir), "loop.log")
     if os.path.exists(log_path):
         with open(log_path) as f:
             lines = f.readlines()
@@ -137,6 +200,8 @@ def build_dashboard(
     poll_count: int,
 ) -> Layout:
     """Build the rich dashboard layout."""
+    if Layout is None or Table is None or Panel is None or Text is None or box is None:
+        raise RuntimeError("monitor UI requires `rich` (pip install rich)")
 
     layout = Layout()
     layout.split_column(
@@ -161,12 +226,17 @@ def build_dashboard(
         phase = status.get("phase", "unknown")
         exp_num = status.get("experiment_id", "?")
         status_text = f"  |  Phase: {phase}  |  Exp: {exp_num}"
+        run_name = status.get("_run_name")
+        if run_name:
+            status_text += f"  |  Run: {run_name}"
 
     header = Text()
     header.append("AUTORESEARCH MONITOR", style="bold cyan")
     header.append(f"  |  {mode}: {target}  |  {now}  |  poll #{poll_count}", style="dim")
     header.append(f"\n  Experiments: {n_exp}  |  Kept: {n_kept}  |  Best Score: {best_score:.2f}" if n_exp > 0 else "\n  Waiting for experiments...", style="white")
     header.append(status_text, style="dim yellow")
+    if status and status.get("error"):
+        header.append(f"\n  {status.get('error')}", style="bold red")
 
     layout["header"].update(Panel(header, box=box.SIMPLE))
 
@@ -266,14 +336,17 @@ def main():
     parser.add_argument("--host", type=str, help="Remote H100 hostname")
     parser.add_argument("--port", type=int, default=31116, help="Remote SSH port")
     parser.add_argument("--password", type=str, default="autoresearch2026", help="SSH password")
-    parser.add_argument("--local", type=str, help="Path to local experiments.jsonl or directory")
+    parser.add_argument("--local", type=str, help="Path to local results root, run folder, or current_run.txt")
     parser.add_argument("--interval", type=int, default=15, help="Poll interval in seconds")
     parser.add_argument("--save-local", type=str, help="Directory to save periodic copies of results")
     args = parser.parse_args()
 
     if not args.host and not args.local:
         print("Usage: python3 monitor.py --host <H100_HOST> --port <SSH_PORT>")
-        print("   or: python3 monitor.py --local /path/to/experiments.jsonl")
+        print("   or: python3 monitor.py --local /path/to/results")
+        sys.exit(1)
+    if Console is None or Live is None:
+        print("ERROR: monitor UI requires `rich` (pip install rich)")
         sys.exit(1)
 
     mode = "LOCAL" if args.local else "SSH"
@@ -295,7 +368,7 @@ def main():
                 # Periodic local save (every 5 polls)
                 if args.save_local and experiments and poll_count % 5 == 0:
                     os.makedirs(args.save_local, exist_ok=True)
-                    save_path = os.path.join(args.save_local, "experiments.jsonl")
+                    save_path = os.path.join(args.save_local, "experiments.v2.jsonl")
                     with open(save_path, 'w') as f:
                         for exp in experiments:
                             f.write(json.dumps(exp) + '\n')
