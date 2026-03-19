@@ -1,130 +1,143 @@
 # autoresearch-trading
 
-## Overview
-This project builds an autoresearch-driven SPX options trader using a strict foundation-first loop:
+Autonomous SPX 0DTE options trader built with an autoresearch loop: an AI agent iteratively evolves a neural network trading model through hundreds of experiments on GPU, then deploys the best model to live paper trading on IBKR.
 
-`data -> training -> replay -> paper -> real`
+## How It Works
 
-The current objective is reliability and mechanical consistency, not feature expansion.
+```
+data (prepare.py) → training (run_loop.py on Akash GPU) → replay validation → IBKR paper trading
+```
 
-## Foundation Scope (Locked)
-- Feature contract: **60 features**.
-- Model contract: **two-head** output.
-  - Gate: `[NO_TRADE, TRADE]`
-  - Direction: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]`
-- Action semantics: **8 effective actions** (`DO_NOTHING`, 6 entries, `EXIT`).
-- Keep policy: score improvement + reliability gates.
-- 64+Charm migration is explicitly deferred to a separate coordinated phase.
+1. **Data pipeline** builds a feature tensor from SPY/SPX/VIX bars + SPXW option chains
+2. **Autoresearch loop** runs on an Akash H100 — Claude Sonnet proposes code mutations to `train.py`, each is trained and scored, improvements are kept
+3. **Replay engine** validates the trained model against historical data
+4. **Live paper trading** runs the model against real-time IBKR market data
 
-## Canonical Runtime Layout
-All active loop artifacts are run-folder scoped under `results/`.
+## Core Design Principles
 
-- Active run pointer:
-  - `results/current_run.txt`
-- Run folder naming:
-  - `results/run-YYYY-MM-DD-HHMMSS/`
-- Required run artifacts:
-  - `experiments.v2.jsonl`
-  - `status.json`
-  - `run_metadata.json`
-  - `data_quality_report.json`
-  - `artifacts/exp-<id>/...`
+- **The model IS a trader.** Training simulates minute-by-minute 0DTE options trading — the same game as live IBKR paper trading. No peeking at future prices, no batch classification.
+- **No hardcoded exits.** The model's gate head learns when to enter and exit. The 30% stop loss is an emergency backstop only.
+- **Data integrity first.** `data.pt` must always include option chain sidecar data. Building without it silently breaks all experiments.
+- **Train on GPU, not locally.** All training runs deploy to Akash H100s via `deploy.sh`.
 
-No root-level `experiments.jsonl` or `status.json` files are used.
+## Quick Start
 
-## Promotion Ledger
-Promotions are explicit and append-only.
+### Environment setup
+```bash
+cp .env.example .env  # Add ANTHROPIC_API_KEY, POLYGON_API_KEY, POLYGON_S3_KEY_ID, POLYGON_S3_SECRET
+set -a && source .env && set +a
+```
 
-- `results/promoted/current.txt` -> active promoted run name
-- `results/promoted/history.jsonl` -> promoted event stream
+### Deploy a training run
+```bash
+./infra/deploy.sh boot                              # Spin up H100 on Akash (~2 min)
+./infra/deploy.sh start --hours 8 --max-experiments 200  # Upload code + data, start loop
+./infra/deploy.sh logs                              # Tail experiment output
+./infra/deploy.sh status                            # GPU + experiment progress
+python3 tools/monitor.py                            # Rich terminal dashboard
+./infra/deploy.sh stop                              # Kill loop → download → close
+```
 
-`run_loop.py` uses **promoted history only** for LLM experiment context.
+### Run IBKR paper trading
+```bash
+python tools/paper_live.py --context-only           # Refresh market context bundle
+python tools/paper_live.py --dry-run --max-minutes 60  # Dry-run (no orders)
+python tools/paper_live.py --max-minutes 390        # Live paper session
+```
+
+### Replay validation
+```bash
+cd training
+python3 replay.py --date 2026-03-17 --output replay-trades.csv
+```
 
 ## Project Map
 
 ```text
 training/
-  prepare.py
-  train.py
-  best_train.py
-  best_model.pt
-  run_loop.py
-  replay.py
-  program.md
+  prepare.py            # Data pipeline: SPY/SPX/VIX bars + SPXW options → data.pt
+  train.py              # Model architecture + training loop (agent modifies THIS)
+  best_train.py         # Best-performing train.py snapshot (auto-synced from GPU)
+  best_model.pt         # Best model weights checkpoint (auto-synced from GPU)
+  run_loop.py           # Autoresearch orchestration: Claude → mutate → train → score → keep/revert
+  replay.py             # Replay simulation engine + model loading
+  program.md            # Strict contract for the autonomous loop (injected into system prompt)
+  lab_notebook.md       # Persistent experiment context: improvements + dead ends
   live/
+    service.py          # Live trading service: IBKR connection, order management
+    decision.py         # Model inference engine for live decisions
+    context.py          # Real-time feature construction from IBKR + Polygon data
 
 tools/
-  monitor.py
-  ingest_evidence.py
-  data_quality_report.py
-  ib_account_snapshot.py
-  run_ibkr_mock_training.py
-  live_feature_parity_report.py
-  live_order_parity_report.py
+  monitor.py            # Rich terminal dashboard (local + remote GPU monitoring)
+  paper_live.py         # IBKR paper trading CLI entry point
+  replay_battery.py     # Multi-day replay validation suite
+  live_order_parity_report.py   # Verify live orders match model signals
+  live_feature_parity_report.py # Verify live features match training features
+  ib_account_snapshot.py        # IBKR account status check
 
 infra/
-  deploy.sh
+  deploy.sh             # Akash GPU lifecycle: boot/start/sync/stop/ssh/logs/status
+  deploy-autoresearch.yaml  # Akash SDL (H100/A100, 64GB RAM, PyTorch 2.5.1)
+  start_loop.sh         # Remote loop launcher
+  watchdog.sh           # GPU health + process monitor
 
 docs/
-  IDEAS-BACKLOG.md
-  AFTER-HOURS-READINESS.md
-  IBKR-SUBSCRIPTION-SETUP-GUIDE.md
-  LIVE-MARKET-HOURS-TEST-STRATEGY.md
-  IBKR-MOCK-TRAINING-GUIDE.md
-  0dte-domain-knowledge.md
-  HANDOFF-LIVE-PAPER-TRADING-2026-03-17.md
+  CLAUDE.md             # Project guide for Claude (codebase navigation)
+  IDEAS-BACKLOG.md      # Human-only exploratory roadmap
+  0dte-domain-knowledge.md  # SPX 0DTE options trading domain primer
+```
+
+## Architecture
+
+### Model
+- Two-head output: **Gate** `[NO_TRADE, TRADE]` + **Direction** `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]`
+- 8 effective actions: `DO_NOTHING`, 6 entry types, `EXIT`
+- 70 features including SPY/SPX/VIX technicals + options greeks + time features
+- Position-aware inference: model sees current P&L, hold time, and bars held
+
+### Autoresearch Loop
+- Claude Sonnet proposes mutations to `train.py` (architecture, loss functions, hyperparameters)
+- Each experiment trains for ~4 min on H100, scored by profit factor + trades/day + secondary metrics
+- Multi-objective scoring with 9 tunable knobs (SCORE_* env vars)
+- Prefetch pipeline: speculative Claude API calls during training for throughput
+- Auto-sync downloads results to local machine every 30s
+
+### Scoring
+The score formula balances profitability and trading realism:
+- Primary: log profit factor × trade frequency bonus
+- Secondary gates: drawdown, consecutive losses, stop rate, hold time
+- All secondary knobs default neutral — the agent activates them as needed
+
+## Canonical Runtime Layout
+
+```text
+results/
+  current_run.txt                    # Active run pointer
+  promoted/                          # Cross-run best models
+  run-YYYY-MM-DD-HHMMSS/
+    experiments.v2.jsonl             # Structured experiment log
+    results.tsv                      # Human-readable experiment summary
+    status.json                      # Current loop state
+    run_metadata.json                # Run config snapshot
+    artifacts/exp-<id>/              # Per-experiment: reasoning, prompts, code, logs
 ```
 
 ## Prompt Control Plane
-- Strict autonomous contract source:
-  - `training/program.md`
-- Human-only exploratory roadmap:
-  - `docs/IDEAS-BACKLOG.md`
 
-Only `training/program.md` is injected into the autonomous loop prompt.
+- `training/program.md` — strict autonomous contract (what the agent can/cannot modify)
+- `training/lab_notebook.md` — persistent cross-run context (improvements + dead ends)
+- Both injected into Claude's system prompt with Anthropic prompt caching
 
-## Minimal Runbook
+## Known Issues
 
-### Local preflight
-```bash
-set -a && source .env && set +a
-cd training
-python3 -u run_loop.py --dry-run
-```
+- `deploy.sh stop` has reliability issues with SSH exit codes and interactive prompts
+- Context bundle must be refreshed before each live session (features evolve with training)
+- VIX data has occasional gaps from IBKR historical data API
 
-### One short local smoke run
-```bash
-python3 -u run_loop.py --hours 0.1 --max-experiments 1 --time-budget 20
-```
+## Safety
 
-### Inspect active run artifacts
-```bash
-RUN_ID=$(cat ../results/current_run.txt)
-ls -la ../results/$RUN_ID
-ls -la ../results/$RUN_ID/artifacts
-```
-
-### Local monitor
-```bash
-python3 ../tools/monitor.py --local ../results
-```
-
-### Replay check
-```bash
-python3 replay.py --date 2026-03-17 --output replay-trades.csv
-```
-
-### Live signal/execution parity check
-```bash
-python3 tools/live_order_parity_report.py --audit-path results/live/audit.jsonl
-```
-
-## Deployment / Sync Behavior
-`infra/deploy.sh` status/sync/download resolve the active run from `/root/results/current_run.txt` and mirror it to local `results/current_run.txt`.
-
-The script fails fast when the active run pointer is missing or invalid.
-
-## Safety Notes
-- Real-money trading is not enabled in this phase.
-- Live paper-trading remains under construction and validation.
-- Reliability evidence is mandatory before broadening strategy scope.
+- Real-money trading is not enabled
+- Live paper-trading is under active validation
+- All positions are 1 SPX contract, long calls/puts only
+- 30% hard stop loss on all positions

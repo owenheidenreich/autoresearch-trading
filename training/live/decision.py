@@ -12,6 +12,10 @@ import torch
 from training.prepare import (
     ACTION_DO_NOTHING,
     ACTION_EXIT,
+    BARS_PER_DAY,
+    NO_TRADE_BEFORE_BAR,
+    STOP_LOSS_PCT,
+    STOP_COOLDOWN_BARS,
 )
 from training.live.contracts import (
     FEATURE_CONTRACT_VERSION,
@@ -57,6 +61,18 @@ class ModelDecisionEngine:
         self.max_qty = max(1, int(max_qty))
         self.num_features = int(num_features)
         self.feature_contract_version = feature_contract_version
+        self._has_position_proj = hasattr(model, 'position_proj')
+        # Position tracking for gate head context
+        self._in_trade = False
+        self._bars_held = 0
+        self._unrealized_pnl = 0.0
+
+    def update_position_state(self, in_trade: bool, bars_held: int = 0,
+                               unrealized_pnl: float = 0.0) -> None:
+        """Called by service.py each bar to keep position state in sync."""
+        self._in_trade = in_trade
+        self._bars_held = bars_held
+        self._unrealized_pnl = unrealized_pnl
 
     @classmethod
     def from_checkpoint(
@@ -117,22 +133,33 @@ class ModelDecisionEngine:
 
         x = torch.tensor(feature_window[-self.lookback:], dtype=torch.float32, device=self.device)
         x = x.unsqueeze(0)
+        # Build position state tensor matching training's evaluate_trades()
+        pos_state = None
+        if self._has_position_proj:
+            pos_state = torch.zeros(1, 3, device=self.device)
+            if self._in_trade:
+                pos_state[0, 0] = 1.0
+                pos_state[0, 1] = min(self._bars_held / BARS_PER_DAY, 1.0)
+                pos_state[0, 2] = float(np.tanh(self._unrealized_pnl * 5.0))
         with torch.no_grad():
-            gate_logits, dir_logits = self.model(x)
+            gate_logits, dir_logits = self.model(x, position_state=pos_state)
             gate_probs = torch.softmax(gate_logits, dim=-1)[0].detach().cpu().numpy()
             dir_probs = torch.softmax(dir_logits, dim=-1)[0].detach().cpu().numpy()
 
         gate_trade_prob = float(gate_probs[1])
+        gate_action = int(torch.argmax(gate_logits, dim=-1).item())  # 0=NO_TRADE, 1=TRADE
         best_dir = int(np.argmax(dir_probs))
         best_dir_prob = float(dir_probs[best_dir])
         confidence = gate_trade_prob * best_dir_prob
-        if gate_trade_prob < self.min_trade_prob:
+
+        # Argmax gate — same as training evaluate_trades(). No hardcoded threshold.
+        if gate_action == 0:  # NO_TRADE
             return InferenceResult(
                 action=ACTION_DO_NOTHING,
                 confidence=confidence,
                 gate_trade_prob=gate_trade_prob,
                 direction_probs=[float(x) for x in dir_probs],
-                reason_codes=["gate_below_threshold", *reason_codes],
+                reason_codes=["gate_no_trade", *reason_codes],
             )
         action = best_dir + 1
         return InferenceResult(
@@ -154,19 +181,24 @@ class ModelDecisionEngine:
         resolver: SPXWContractResolver,
         spx_price: float,
         latest_features: np.ndarray,
+        bar_of_day: int = 999,
     ) -> DecisionIntent | None:
         if inference.action in (ACTION_DO_NOTHING, ACTION_EXIT):
+            return None
+        # Pre-10am block — matches training evaluate_trades()
+        if bar_of_day < NO_TRADE_BEFORE_BAR:
             return None
         contract = resolver.resolve(inference.action, spx_price)
         entry_mid = resolver.quote_mid(contract) or 1.0
 
-        # Model-driven risk profile from confidence and Greeks context.
-        gamma_theta_ratio = _safe(_feat_at(latest_features, 59), 1.0)
-        stop_pct = np.clip(0.30 - 0.14 * inference.confidence - 0.03 * (gamma_theta_ratio - 1.0), 0.08, 0.30)
-        take_profit_pct = np.clip(0.30 + 0.45 * inference.confidence + 0.05 * max(gamma_theta_ratio - 1.0, 0.0), 0.20, 1.25)
+        # Emergency stop loss only — no hardcoded profit target.
+        # Model's gate head (NO_TRADE while holding) is the primary exit.
+        stop_pct = STOP_LOSS_PCT           # 0.30
 
         stop_px = float(entry_mid * (1.0 - stop_pct))
-        take_profit_px = float(entry_mid * (1.0 + take_profit_pct))
+        # Set TP very wide (5x entry) — effectively no hardcoded TP.
+        # OCO bracket still needs a value, but model exit should fire first.
+        take_profit_px = float(entry_mid * 6.0)
         qty = self._position_size(inference.confidence)
         return DecisionIntent(
             action=inference.action,
@@ -181,7 +213,6 @@ class ModelDecisionEngine:
             metadata={
                 "gate_trade_prob": inference.gate_trade_prob,
                 "direction_probs": inference.direction_probs,
-                "gamma_theta_ratio": gamma_theta_ratio,
             },
         )
 
@@ -191,32 +222,9 @@ class ModelDecisionEngine:
         current_option_mid: float | None,
         latest_features: np.ndarray,
     ) -> RiskUpdateIntent | None:
-        if current_option_mid is None or current_option_mid <= 0:
-            return None
-        if state.entry_price_reference is None or state.entry_price_reference <= 0:
-            return None
-        pnl = (current_option_mid / state.entry_price_reference) - 1.0
-        confidence = _safe(_feat_at(latest_features, 59), 1.0)
-
-        new_stop = state.current_stop
-        if pnl >= 0.25:
-            new_stop = max(new_stop, state.entry_price_reference)
-        if pnl >= 0.40:
-            new_stop = max(new_stop, state.entry_price_reference * (1.0 + 0.10))
-        if pnl >= 0.60:
-            new_stop = max(new_stop, state.entry_price_reference * (1.0 + 0.20))
-
-        target_boost = 0.12 + 0.15 * min(confidence, 2.0)
-        new_tp = max(state.current_take_profit, current_option_mid * (1.0 + target_boost))
-
-        if new_stop <= state.current_stop and new_tp <= state.current_take_profit:
-            return None
-        return RiskUpdateIntent(
-            position_id=state.position_id,
-            new_stop_price=float(new_stop),
-            new_take_profit_price=float(new_tp),
-            reason_codes=["ratchet_up_only", f"pnl={pnl:.3f}"],
-        )
+        """Fixed risk management matching training — no modulation for now."""
+        # No risk updates — fixed stop/TP set at entry, matching training eval
+        return None
 
 
 def _safe(v: Any, default: float) -> float:

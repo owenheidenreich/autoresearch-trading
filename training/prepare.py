@@ -55,12 +55,12 @@ ANNUAL_TRADING_BARS = 252 * BARS_PER_DAY
 ANNUAL_TRADING_HOURS = ANNUAL_TRADING_BARS  # compat alias
 
 # 0DTE option trade simulation parameters
-OPTION_SPREAD_BPS    = 50      # bid-ask spread on 0DTE ATM in bps of premium
+OPTION_SPREAD_BPS    = 150     # bid-ask spread on 0DTE ATM in bps of premium (150 bps one-way = 3% round-trip; realistic for ATM SPX 0DTE)
 STOP_LOSS_PCT        = 0.30    # 30% stop loss on premium (from journals)
-MAX_HOLD_BARS        = 60      # max hold = 60 bars = 60 minutes
+MAX_HOLD_BARS        = BARS_PER_DAY  # hold until stop/profit/EOD (0DTE closes at EOD)
 STOP_COOLDOWN_BARS   = 5       # 5-bar (5-min) cooldown after stop loss before re-entry
 NO_TRADE_BEFORE_BAR  = 30      # first 30 bars (9:30-9:59) are hard no-trade
-MAX_TRADE_RETURN     = 2.0     # cap individual trade P&L at 200% (eliminate fat-tail lottery)
+MAX_TRADE_RETURN     = 5.0     # cap individual trade P&L at 500% (allow large winners with learned exits)
 STARTING_CAPITAL     = 5000.0  # starting account balance for equity curve simulation
 RISK_PER_TRADE       = 0.10   # fraction of capital risked per trade (10% = $500 from $5000)
 BAR_SIZE_MINUTES     = 1           # 1-minute bar resolution
@@ -115,11 +115,11 @@ FEATURES_DIR = os.path.join(CACHE_DIR, "features")
 
 FEATURE_NAMES = [
     # === Price returns (5) ===
-    'ret_1',                # 1-bar (5min) return
-    'ret_3',                # 3-bar (15min) return
-    'ret_6',                # 6-bar (30min) return
-    'ret_12',               # 12-bar (1hr) return
-    'ret_24',               # 24-bar (2hr) return
+    'ret_1',                # 5-bar (5min) return
+    'ret_3',                # 15-bar (15min) return
+    'ret_6',                # 30-bar (30min) return
+    'ret_12',               # 60-bar (1hr) return
+    'ret_24',               # 120-bar (2hr) return
     # === Volume (3) ===
     'volume_ratio',         # bar volume / 20-bar SMA
     'volume_zscore',        # (volume - mean) / std
@@ -191,6 +191,21 @@ FEATURE_NAMES = [
     'atm_theta_per_bar',    # ATM theta per 1-min bar (time decay per bar)
     'atm_vega',             # ATM vega per 1% IV move (vol sensitivity)
     'gamma_theta_ratio',    # gamma / |theta_per_bar|: bang-for-buck (convexity vs decay)
+    # === Extended Greeks (2) ===
+    'charm_estimate',       # estimated dDelta/dT: delta sensitivity to time decay
+    'vanna_estimate',       # estimated dDelta/dIV: delta sensitivity to vol changes
+    # === Bollinger Bands (2) ===
+    'bollinger_position',   # (close - BB_mid) / (BB_upper - BB_lower): position within bands
+    'bollinger_width',      # (BB_upper - BB_lower) / close: band width (volatility proxy)
+    # === Momentum extras (2) ===
+    'consec_direction',     # consecutive same-direction bars: +N for up, -N for down
+    'speed_estimate',       # |5-bar return| / realized_vol: normalized speed of move
+    # === VWAP extras (1) ===
+    'vwap_crosses',         # count of VWAP crosses in last 30 bars (mean-reversion signal)
+    # === Range/Structure extras (3) ===
+    'session_range_position',  # (close - session_low) / (session_high - session_low)
+    'rsi_14',               # 14-period RSI (0-1 scale)
+    'atr_ratio',            # current bar true range / 14-bar ATR
 ]
 
 NUM_FEATURES = len(FEATURE_NAMES)
@@ -201,6 +216,9 @@ _NO_NORMALIZE = {
     'minutes_to_close', 'half_hour_proximity', 'ib_complete',
     'inside_bar', 'trend_hh_hl',
     'vix_regime',  # categorical 0-3, already scaled
+    'bollinger_position',   # already normalized to [-1, 1]-ish range
+    'session_range_position',  # already 0-1
+    'rsi_14',               # already 0-1
 }
 
 # Action labels for the 8-class model
@@ -217,10 +235,46 @@ ACTION_EXIT          = 7
 NUM_ACTIONS          = 8
 
 # Option P&L target: round-trip spread cost as fraction of premium
-SPREAD_COST_PCT   = 2 * OPTION_SPREAD_BPS / 10000.0  # 1% round-trip
+SPREAD_COST_PCT   = 2 * OPTION_SPREAD_BPS / 10000.0  # 3% round-trip (at 150 bps one-way)
 
 # EXIT label: profit target threshold (fraction of premium)
 EXIT_PROFIT_TARGET = 0.20  # exit when unrealized P&L > 20% of premium
+
+
+def compute_dynamic_pnl(entry_bar, prices, dates, cost_pct,
+                        stop_loss=STOP_LOSS_PCT, profit_target=None,
+                        max_hold=BARS_PER_DAY):
+    """Simulate a trade from entry_bar using dynamic exits matching evaluation.
+
+    Returns (exit_bar, pnl_after_cost, exit_reason).
+    Exit reasons: 'stop_loss', 'profit_target', 'eod', 'max_hold'.
+    profit_target=None means no hardcoded TP (model decides when to exit).
+    """
+    N = len(prices)
+    entry_px = prices[entry_bar]
+    if np.isnan(entry_px) or entry_px <= 0:
+        return (entry_bar, np.nan, 'invalid')
+    day = dates[entry_bar]
+    last_valid_px = entry_px
+    for k in range(1, max_hold + 1):
+        check = entry_bar + k
+        if check >= N or dates[check] != day:
+            # End of day
+            pnl = (last_valid_px - entry_px) / entry_px - cost_pct
+            return (min(check - 1, N - 1), pnl, 'eod')
+        px = prices[check]
+        if np.isnan(px):
+            continue
+        last_valid_px = px
+        unrealized = (px - entry_px) / entry_px
+        if unrealized <= -stop_loss:
+            return (check, -stop_loss - cost_pct, 'stop_loss')
+        if profit_target is not None and unrealized >= profit_target:
+            return (check, unrealized - cost_pct, 'profit_target')
+    # Max hold
+    pnl = (last_valid_px - entry_px) / entry_px - cost_pct
+    return (entry_bar + max_hold, pnl, 'max_hold')
+
 
 # ---------------------------------------------------------------------------
 # Black-Scholes (European, for SPXW 0DTE IV)
@@ -1447,8 +1501,9 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
         # === Returns (5) ===
         for lag in [5, 15, 30, 60, 120]:
-            if i >= lag:
+            if i >= lag and dates[i - lag] == day:
                 feat[i, fi] = (c / close[i - lag]) - 1.0
+            # else: leave as 0.0 (cross-day or insufficient history — avoids overnight gap contamination)
             fi += 1
 
         # === Volume (3) ===
@@ -1922,6 +1977,131 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         else:
             fi += 5  # skip all 5 Greeks features (no option data)
 
+        # === Extended Greeks (2): charm, vanna ===
+        # Charm = -dDelta/dT (how delta changes as time passes)
+        # Vanna = dDelta/dIV (how delta changes as IV changes)
+        # We estimate from the BS Greeks already computed above.
+        if opt is not None and not np.isnan(opt.get('call_close', np.nan)):
+            spx_g2 = c if c >= 1000 else c * 10.0
+            K_g2 = opt['strike']
+            T_g2 = minutes_remaining / (252.0 * 390.0)
+            sigma_g2 = call_iv if not np.isnan(call_iv) else np.nan
+            if not np.isnan(sigma_g2) and T_g2 > 1e-10 and sigma_g2 > 0:
+                d1 = (math.log(spx_g2 / K_g2) + (0.05 + 0.5 * sigma_g2**2) * T_g2) / (sigma_g2 * math.sqrt(T_g2))
+                nd1_pdf = math.exp(-0.5 * d1**2) / math.sqrt(2.0 * math.pi)
+                # 60: charm_estimate = -gamma * (r - d1*sigma/(2*T))
+                # Simplified: charm ≈ -N'(d1) * (2*r*T - d1*sigma*sqrt(T)) / (2*T*sigma*sqrt(T))
+                charm_val = -nd1_pdf * (2.0 * 0.05 * T_g2 - d1 * sigma_g2 * math.sqrt(T_g2)) / (2.0 * T_g2 * sigma_g2 * math.sqrt(T_g2))
+                if abs(charm_val) < 100:
+                    feat[i, fi] = charm_val
+                fi += 1
+                # 61: vanna_estimate = dDelta/dSigma = N'(d1) * d2 / sigma
+                d2 = d1 - sigma_g2 * math.sqrt(T_g2)
+                vanna_val = nd1_pdf * d2 / sigma_g2
+                if abs(vanna_val) < 100:
+                    feat[i, fi] = vanna_val
+                fi += 1
+            else:
+                fi += 2
+        else:
+            fi += 2
+
+        # === Bollinger Bands (2) ===
+        if i >= 20:
+            bb_window = close[max(i - 20, 0):i + 1]
+            bb_mid = np.mean(bb_window)
+            bb_std = np.std(bb_window)
+            bb_upper = bb_mid + 2.0 * bb_std
+            bb_lower = bb_mid - 2.0 * bb_std
+            bb_width = bb_upper - bb_lower
+            # 62: bollinger_position
+            if bb_width > 1e-8:
+                feat[i, fi] = (c - bb_mid) / (bb_width / 2.0)  # ~[-2, 2] range
+            fi += 1
+            # 63: bollinger_width
+            feat[i, fi] = bb_width / max(c, 1.0)
+            fi += 1
+        else:
+            fi += 2
+
+        # === Momentum extras (2) ===
+        # 64: consec_direction — count of consecutive same-direction bars
+        if i > 0:
+            consec = 0
+            direction = 1 if close[i] >= close[i - 1] else -1
+            for j_c in range(i, max(i - 20, 0) - 1, -1):
+                if j_c == 0:
+                    break
+                bar_dir = 1 if close[j_c] >= close[j_c - 1] else -1
+                if bar_dir == direction:
+                    consec += 1
+                else:
+                    break
+            feat[i, fi] = direction * min(consec, 10) / 10.0  # normalize to [-1, 1]
+        fi += 1
+
+        # 65: speed_estimate — |5-bar return| / realized_vol
+        if i >= 5:
+            ret5 = abs((c / close[i - 5]) - 1.0)
+            rv = feat[i, 9]  # realized_vol (already computed)
+            if not np.isnan(rv) and rv > 1e-8:
+                feat[i, fi] = ret5 / rv
+        fi += 1
+
+        # === VWAP extras (1) ===
+        # 66: vwap_crosses — count of VWAP crosses in last 30 bars
+        vw_cur = vwap_cache.get(i)
+        if vw_cur is not None and i >= 30:
+            cross_count = 0
+            vw_price = vw_cur[0]
+            for j_v in range(max(0, i - 30), i):
+                vw_prev = vwap_cache.get(j_v)
+                vw_next = vwap_cache.get(j_v + 1)
+                if vw_prev is not None and vw_next is not None:
+                    if (close[j_v] - vw_prev[0]) * (close[j_v + 1] - vw_next[0]) < 0:
+                        cross_count += 1
+            feat[i, fi] = cross_count / 10.0  # normalize (10 crosses in 30 bars = max)
+        fi += 1
+
+        # === Range/Structure extras (3) ===
+        # 67: session_range_position — where close sits in today's range
+        if session_high > session_low:
+            feat[i, fi] = (c - session_low) / (session_high - session_low)
+        else:
+            feat[i, fi] = 0.5
+        fi += 1
+
+        # 68: rsi_14 — 14-period RSI
+        if i >= 14:
+            rsi_window = close[i - 14:i + 1]
+            rsi_changes = np.diff(rsi_window)
+            gains = np.maximum(rsi_changes, 0)
+            losses = np.maximum(-rsi_changes, 0)
+            avg_gain = np.mean(gains)
+            avg_loss = np.mean(losses)
+            if avg_loss > 1e-10:
+                rs = avg_gain / avg_loss
+                feat[i, fi] = rs / (1.0 + rs)  # RSI in [0, 1]
+            else:
+                feat[i, fi] = 1.0  # all gains
+        fi += 1
+
+        # 69: atr_ratio — current bar true range / 14-bar ATR
+        tr = max(high[i] - low[i],
+                 abs(high[i] - close[i - 1]) if i > 0 else 0,
+                 abs(low[i] - close[i - 1]) if i > 0 else 0)
+        if i >= 14:
+            tr_window = np.array([
+                max(high[j_a] - low[j_a],
+                    abs(high[j_a] - close[j_a - 1]) if j_a > 0 else 0,
+                    abs(low[j_a] - close[j_a - 1]) if j_a > 0 else 0)
+                for j_a in range(i - 14, i)
+            ])
+            atr = np.mean(tr_window)
+            if atr > 1e-10:
+                feat[i, fi] = tr / atr
+        fi += 1
+
         # Sidecar quality/risk masks for supervision weighting.
         row_quality = action_quality_score[i]
         row_cost = action_cost_bps[i]
@@ -1950,50 +2130,46 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
         assert fi == NUM_FEATURES, f"Feature count mismatch: {fi} != {NUM_FEATURES}"
 
-        # Target: forward FORWARD_BARS return (still needed for loss computation)
+        # Target: forward FORWARD_BARS return (still used for equity-level loss)
         if i + FORWARD_BARS < N and dates[i + FORWARD_BARS] == day:
             targets[i] = (close[i + FORWARD_BARS] / close[i]) - 1.0
 
     # -------------------------------------------------------------------
-    # Option P&L targets: actual SPXW option return per bar
+    # Option P&L targets: dynamic exits matching evaluation logic
     # -------------------------------------------------------------------
-    # For each bar i with option prices, compute the P&L of buying an ATM
-    # call or put and holding for FORWARD_BARS (6 bars = 30 min).
+    # For each bar i, simulate a trade using stop-loss/profit-target/EOD
+    # exits instead of fixed T+30, so training labels match evaluation.
     call_pnl = np.full(N, np.nan, dtype=np.float32)
     put_pnl = np.full(N, np.nan, dtype=np.float32)
     call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
     put_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
 
-    for i in range(N):
-        exit_bar = i + FORWARD_BARS
-        if exit_bar >= N:
-            continue
-        # Must be same trading day
-        if dates[i] != dates[exit_bar]:
-            continue
-        # Need actual option prices at both entry and exit
-        entry_call = atm_call_prices[i]
-        exit_call = atm_call_prices[exit_bar]
-        entry_put = atm_put_prices[i]
-        exit_put = atm_put_prices[exit_bar]
+    _price_arrays = {
+        'call_atm': atm_call_prices,
+        'put_atm': atm_put_prices,
+    }
 
-        if not np.isnan(entry_call) and not np.isnan(exit_call) and entry_call > 0:
-            raw_call = (exit_call - entry_call) / entry_call
-            call_pnl[i] = raw_call - SPREAD_COST_PCT
-            c_cost_bps = action_cost_bps[i, SIDE_ACTION_TO_IDX["call_atm"]]
-            if not np.isfinite(c_cost_bps):
-                c_cost_bps = 2.0 * OPTION_SPREAD_BPS
-            call_pnl_realistic[i] = raw_call - (c_cost_bps / 10000.0)
-        if not np.isnan(entry_put) and not np.isnan(exit_put) and entry_put > 0:
-            raw_put = (exit_put - entry_put) / entry_put
-            put_pnl[i] = raw_put - SPREAD_COST_PCT
-            p_cost_bps = action_cost_bps[i, SIDE_ACTION_TO_IDX["put_atm"]]
-            if not np.isfinite(p_cost_bps):
-                p_cost_bps = 2.0 * OPTION_SPREAD_BPS
-            put_pnl_realistic[i] = raw_put - (p_cost_bps / 10000.0)
+    for i in range(N):
+        for leg_name, pnl_arr, pnl_real_arr in [
+            ('call_atm', call_pnl, call_pnl_realistic),
+            ('put_atm', put_pnl, put_pnl_realistic),
+        ]:
+            px_arr = _price_arrays[leg_name]
+            if np.isnan(px_arr[i]) or px_arr[i] <= 0:
+                continue
+            cost_bps = action_cost_bps[i, SIDE_ACTION_TO_IDX[leg_name]]
+            if not np.isfinite(cost_bps):
+                cost_bps = 2.0 * OPTION_SPREAD_BPS
+            cost_pct = cost_bps / 10000.0
+            _, pnl_val, _ = compute_dynamic_pnl(i, px_arr, dates, SPREAD_COST_PCT)
+            if not np.isnan(pnl_val):
+                pnl_arr[i] = pnl_val
+            _, pnl_real_val, _ = compute_dynamic_pnl(i, px_arr, dates, cost_pct)
+            if not np.isnan(pnl_real_val):
+                pnl_real_arr[i] = pnl_real_val
 
     # -------------------------------------------------------------------
-    # OTM P&L targets: same as above but for OTM strikes (for 6-class dir head)
+    # OTM P&L targets: dynamic exits for OTM strikes (6-class dir head)
     # -------------------------------------------------------------------
     otm5_call_pnl = np.full(N, np.nan, dtype=np.float32)
     otm5_put_pnl = np.full(N, np.nan, dtype=np.float32)
@@ -2008,46 +2184,49 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     otm10_call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
     otm10_put_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
 
+    _otm_legs = [
+        (otm5_call_prices, otm5_call_pnl, otm5_call_pnl_realistic, "call_otm5"),
+        (otm5_put_prices, otm5_put_pnl, otm5_put_pnl_realistic, "put_otm5"),
+        (otm10_call_prices, otm10_call_pnl, otm10_call_pnl_realistic, "call_otm10"),
+        (otm10_put_prices, otm10_put_pnl, otm10_put_pnl_realistic, "put_otm10"),
+        (otm15_call_prices, otm15_call_pnl, None, "call_otm15"),
+        (otm15_put_prices, otm15_put_pnl, None, "put_otm15"),
+        (otm20_call_prices, otm20_call_pnl, None, "call_otm20"),
+        (otm20_put_prices, otm20_put_pnl, None, "put_otm20"),
+    ]
+
     for i in range(N):
-        exit_bar = i + FORWARD_BARS
-        if exit_bar >= N or dates[i] != dates[exit_bar]:
-            continue
-        for px_arr, pnl_arr, leg_name in [
-            (otm5_call_prices, otm5_call_pnl, "call_otm5"),
-            (otm5_put_prices, otm5_put_pnl, "put_otm5"),
-            (otm10_call_prices, otm10_call_pnl, "call_otm10"),
-            (otm10_put_prices, otm10_put_pnl, "put_otm10"),
-            (otm15_call_prices, otm15_call_pnl, "call_otm15"),
-            (otm15_put_prices, otm15_put_pnl, "put_otm15"),
-            (otm20_call_prices, otm20_call_pnl, "call_otm20"),
-            (otm20_put_prices, otm20_put_pnl, "put_otm20"),
-        ]:
-            entry_px = px_arr[i]
-            exit_px = px_arr[exit_bar]
-            if not np.isnan(entry_px) and not np.isnan(exit_px) and entry_px > 0:
-                raw_ret = (exit_px - entry_px) / entry_px
-                pnl_arr[i] = raw_ret - SPREAD_COST_PCT
-                if leg_name in SIDE_ACTION_TO_IDX:
-                    leg_idx = SIDE_ACTION_TO_IDX[leg_name]
-                    leg_cost_bps = action_cost_bps[i, leg_idx]
-                    if not np.isfinite(leg_cost_bps):
-                        leg_cost_bps = 2.0 * OPTION_SPREAD_BPS
-                    if leg_name == "call_otm5":
-                        otm5_call_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
-                    elif leg_name == "put_otm5":
-                        otm5_put_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
-                    elif leg_name == "call_otm10":
-                        otm10_call_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
-                    elif leg_name == "put_otm10":
-                        otm10_put_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
+        for px_arr, pnl_arr, pnl_real_arr, leg_name in _otm_legs:
+            if np.isnan(px_arr[i]) or px_arr[i] <= 0:
+                continue
+            _, pnl_val, _ = compute_dynamic_pnl(i, px_arr, dates, SPREAD_COST_PCT)
+            if not np.isnan(pnl_val):
+                pnl_arr[i] = pnl_val
+            if pnl_real_arr is not None and leg_name in SIDE_ACTION_TO_IDX:
+                leg_idx = SIDE_ACTION_TO_IDX[leg_name]
+                leg_cost_bps = action_cost_bps[i, leg_idx]
+                if not np.isfinite(leg_cost_bps):
+                    leg_cost_bps = 2.0 * OPTION_SPREAD_BPS
+                _, pnl_real_val, _ = compute_dynamic_pnl(i, px_arr, dates, leg_cost_bps / 10000.0)
+                if not np.isnan(pnl_real_val):
+                    pnl_real_arr[i] = pnl_real_val
 
     # -------------------------------------------------------------------
-    # EXIT labels: should an open position be closed at this bar?
-    # Fixed profit-target approach: EXIT=1 if unrealized P&L > 20% of premium
-    # for a position opened 1-12 bars ago.
+    # EXIT labels: hindsight-optimal exit timing.
+    # For each bar i, look at hypothetical entries from past N bars.
+    # EXIT=1 if current bar is at or near the peak P&L for any entry,
+    # or if P&L has dropped >50% from its peak (trailing-stop signal).
+    # This teaches the model WHEN to exit — cut losers, let winners run.
     # -------------------------------------------------------------------
     exit_call_label = np.full(N, np.nan, dtype=np.float32)
     exit_put_label = np.full(N, np.nan, dtype=np.float32)
+
+    # Max lookback for exit labels (limit to 120 bars for performance)
+    _exit_lookback = min(MAX_HOLD_BARS, 120)
+    # Forward window to check if current bar is near the P&L peak
+    _exit_forward = min(30, MAX_HOLD_BARS)
+    # Peak proximity: EXIT=1 if within this many bars of the peak
+    _peak_tolerance = 3
 
     for i in range(N):
         best_call_exit = 0.0
@@ -2055,29 +2234,82 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         has_call_data = False
         has_put_data = False
 
-        # Check if a position opened K bars ago should be exited here
-        for k in range(1, MAX_HOLD_BARS + 1):
+        for k in range(1, _exit_lookback + 1):
             entry = i - k
             if entry < 0 or dates[entry] != dates[i]:
                 continue
 
-            # Call position: opened at entry, check unrealized P&L at bar i
+            # --- Call: hindsight-optimal exit check ---
             ec = atm_call_prices[entry]
             cc = atm_call_prices[i]
             if not np.isnan(ec) and not np.isnan(cc) and ec > 0:
-                unrealized = (cc - ec) / ec - SPREAD_COST_PCT
+                unrealized_now = (cc - ec) / ec - SPREAD_COST_PCT
                 has_call_data = True
-                if unrealized > EXIT_PROFIT_TARGET:
-                    best_call_exit = 1.0
 
-            # Put position
+                # Look forward to find peak P&L from this entry
+                peak_pnl = unrealized_now
+                peak_bar = i
+                for fwd in range(1, _exit_forward + 1):
+                    future = i + fwd
+                    if future >= N or dates[future] != dates[i]:
+                        break
+                    fc = atm_call_prices[future]
+                    if not np.isnan(fc) and ec > 0:
+                        future_pnl = (fc - ec) / ec - SPREAD_COST_PCT
+                        if future_pnl > peak_pnl:
+                            peak_pnl = future_pnl
+                            peak_bar = future
+
+                # EXIT=1 if current bar is at/near the peak
+                if abs(i - peak_bar) <= _peak_tolerance and unrealized_now > 0:
+                    best_call_exit = 1.0
+                # EXIT=1 if P&L has dropped >50% from its high-water mark
+                elif unrealized_now > 0:
+                    # Check trailing: find max P&L from entry to current bar
+                    hwm = unrealized_now
+                    for back in range(1, k + 1):
+                        past = i - back
+                        if past < entry:
+                            break
+                        pc = atm_call_prices[past]
+                        if not np.isnan(pc) and ec > 0:
+                            hwm = max(hwm, (pc - ec) / ec - SPREAD_COST_PCT)
+                    if hwm > 0.05 and unrealized_now < hwm * 0.50:
+                        best_call_exit = 1.0
+
+            # --- Put: same hindsight-optimal logic ---
             ep = atm_put_prices[entry]
             cp = atm_put_prices[i]
             if not np.isnan(ep) and not np.isnan(cp) and ep > 0:
-                unrealized = (cp - ep) / ep - SPREAD_COST_PCT
+                unrealized_now = (cp - ep) / ep - SPREAD_COST_PCT
                 has_put_data = True
-                if unrealized > EXIT_PROFIT_TARGET:
+
+                peak_pnl = unrealized_now
+                peak_bar = i
+                for fwd in range(1, _exit_forward + 1):
+                    future = i + fwd
+                    if future >= N or dates[future] != dates[i]:
+                        break
+                    fp = atm_put_prices[future]
+                    if not np.isnan(fp) and ep > 0:
+                        future_pnl = (fp - ep) / ep - SPREAD_COST_PCT
+                        if future_pnl > peak_pnl:
+                            peak_pnl = future_pnl
+                            peak_bar = future
+
+                if abs(i - peak_bar) <= _peak_tolerance and unrealized_now > 0:
                     best_put_exit = 1.0
+                elif unrealized_now > 0:
+                    hwm = unrealized_now
+                    for back in range(1, k + 1):
+                        past = i - back
+                        if past < entry:
+                            break
+                        pp = atm_put_prices[past]
+                        if not np.isnan(pp) and ep > 0:
+                            hwm = max(hwm, (pp - ep) / ep - SPREAD_COST_PCT)
+                    if hwm > 0.05 and unrealized_now < hwm * 0.50:
+                        best_put_exit = 1.0
 
         if has_call_data:
             exit_call_label[i] = best_call_exit
@@ -2440,7 +2672,8 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
 def evaluate_trades(model, data, lookback, device, batch_size=256,
                     stop_loss_pct=None, max_hold_bars=None,
                     max_trade_return=None,
-                    starting_capital=None, risk_per_trade=None):
+                    starting_capital=None, risk_per_trade=None,
+                    score_config=None):
     """Simulate 0DTE option trades on validation set.
 
     Required model output format (strict foundation contract):
@@ -2456,10 +2689,20 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
 
     Optional overrides (defaults from module constants):
       stop_loss_pct: Stop loss as fraction of premium (default 0.30)
-      max_hold_bars: Max bars to hold a position (default 60)
-      max_trade_return: Cap individual trade P&L (default 2.0 = 200%)
+      max_hold_bars: Max bars to hold a position (default BARS_PER_DAY)
+      max_trade_return: Cap individual trade P&L (default 5.0 = 500%)
       starting_capital: Starting account balance for equity curve (default 5000.0)
       risk_per_trade: Fraction of capital risked per trade (default 0.10)
+      score_config: Dict of score tuning params (all default to neutral/0.0):
+        - win_rate_bonus: Reward high win rates (0.0-1.0)
+        - rr_bonus: Reward good R:R ratio (0.0-2.0)
+        - drawdown_penalty: Penalize deep drawdowns (0.0-1.0)
+        - hold_bonus: Reward appropriate hold times (0.0-1.0)
+        - freq_center: Ideal trades per day (1.0-8.0, default 3.0)
+        - freq_width: How tight the freq band is (1.0-6.0, default 3.0)
+        - consec_loss_threshold: Max consecutive losses before penalty (2-8, default 3)
+        - short_hold_threshold: Short hold % penalty trigger (0.10-0.60, default 0.30)
+        - stop_rate_threshold: Stop loss rate penalty trigger (0.10-0.60, default 0.30)
 
     Returns dict with trader + quant metrics and composite score.
     """
@@ -2469,6 +2712,19 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     _max_return = max_trade_return if max_trade_return is not None else MAX_TRADE_RETURN
     _starting_capital = starting_capital if starting_capital is not None else STARTING_CAPITAL
     _risk_per_trade = risk_per_trade if risk_per_trade is not None else RISK_PER_TRADE
+
+    # Score tuning config (all defaults produce neutral/unchanged score)
+    _sc = score_config or {}
+    _sc_wr_bonus = float(_sc.get('win_rate_bonus', 0.0))
+    _sc_rr_bonus = float(_sc.get('rr_bonus', 0.0))
+    _sc_dd_penalty = float(_sc.get('drawdown_penalty', 0.0))
+    _sc_hold_bonus = float(_sc.get('hold_bonus', 0.0))
+    _sc_freq_center = float(_sc.get('freq_center', 3.0))
+    _sc_freq_width = float(_sc.get('freq_width', 3.0))
+    _sc_consec_thresh = int(_sc.get('consec_loss_threshold', 3))
+    _sc_short_thresh = float(_sc.get('short_hold_threshold', 0.30))
+    _sc_stop_thresh = float(_sc.get('stop_rate_threshold', 0.30))
+
     model.eval()
 
     features = data['features'].to(device)
@@ -2505,14 +2761,15 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     val_idx_t = torch.tensor(val_indices, dtype=torch.long, device=device)
     offsets = torch.arange(-lookback, 0, device=device)
 
-    # Get model predictions for all val bars
-    all_actions = []
-    all_gate_no_trade = []
+    # Phase 1: Batch inference for direction logits (position-independent)
+    # Phase 2: Sequential inference for gate decisions with position state
+    all_dir_actions = []
+    all_dir_logits_list = []
     for i in range(0, len(val_idx_t), batch_size):
         idx = val_idx_t[i:i + batch_size]
         window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
-        out = model(x)
+        out = model(x)  # no position_state → gate_input = last (backward compat)
         if not (isinstance(out, tuple) and len(out) == 2):
             raise ValueError(
                 "evaluate_trades requires two-head model output tuple "
@@ -2527,23 +2784,16 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             raise ValueError(
                 f"Invalid direction head shape: expected (batch, 6), got {tuple(dir_logits.shape)}"
             )
+        dir_action = torch.argmax(dir_logits, dim=-1)
+        all_dir_actions.append(dir_action.cpu())
 
-        gate_action = torch.argmax(gate_logits, dim=-1)   # 0=no_trade, 1=trade
-        dir_action = torch.argmax(dir_logits, dim=-1)     # 0-5 for 6 dir classes
-        batch_actions = torch.where(
-            gate_action == 1,
-            dir_action + 1,  # ACTION_BUY_CALL_ATM=1 through ACTION_BUY_PUT_OTM10=6
-            torch.full_like(gate_action, ACTION_DO_NOTHING),
-        )
-        all_actions.append(batch_actions.cpu())
-        all_gate_no_trade.append((gate_action == 0).cpu())
+    dir_actions = torch.cat(all_dir_actions).numpy()
 
-    actions = torch.cat(all_actions).numpy()
-    gate_no_trade = torch.cat(all_gate_no_trade).numpy().astype(bool)
-
-    # Count unique val dates
-    val_dates_list = [dates[i] for i in val_indices]
-    num_val_days = len(set(val_dates_list))
+    # Phase 2: Position-aware sequential gate inference
+    # Build position state for each bar based on trade simulation state
+    _has_position_proj = hasattr(model, 'position_proj')
+    actions = np.empty(len(val_indices), dtype=np.int64)
+    gate_no_trade = np.empty(len(val_indices), dtype=bool)
 
     # Pre-compute bar_of_day for each validation index (0=9:30, 29=9:59, 30=10:00)
     _bar_of_day = {}
@@ -2558,6 +2808,86 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             _bod += 1
         _bar_of_day[gi] = _bod
 
+    # Helper: map action → option price array (needed by both position tracking and trade sim)
+    def _get_px_array(action, data_dict):
+        """Get the price array for a given action."""
+        mapping = {
+            ACTION_BUY_CALL_ATM:   data_dict.get('atm_call_prices'),
+            ACTION_BUY_CALL_OTM5:  data_dict.get('otm5_call_prices'),
+            ACTION_BUY_CALL_OTM10: data_dict.get('otm10_call_prices'),
+            ACTION_BUY_PUT_ATM:    data_dict.get('atm_put_prices'),
+            ACTION_BUY_PUT_OTM5:   data_dict.get('otm5_put_prices'),
+            ACTION_BUY_PUT_OTM10:  data_dict.get('otm10_put_prices'),
+        }
+        return mapping.get(action)
+
+    # Track position state for gate decisions
+    _pos_in_trade = False
+    _pos_bars_held = 0
+    _pos_unrealized_pnl = 0.0
+    _pos_entry_price = 0.0
+    _pos_px_array = None
+    _pos_last_stop_bar = -STOP_COOLDOWN_BARS
+
+    for k, global_idx in enumerate(val_indices):
+        # Build position state tensor
+        if _has_position_proj:
+            pos_state = torch.zeros(1, 3, device=device)
+            if _pos_in_trade:
+                pos_state[0, 0] = 1.0
+                pos_state[0, 1] = min(_pos_bars_held / BARS_PER_DAY, 1.0)
+                pos_state[0, 2] = float(np.tanh(_pos_unrealized_pnl * 5.0))
+        else:
+            pos_state = None
+
+        # Run gate inference with position state
+        idx_t = val_idx_t[k:k+1]
+        window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
+        x = features[window_idx]
+        gate_logits, _ = model(x, position_state=pos_state)
+        gate_action = int(torch.argmax(gate_logits, dim=-1).item())
+
+        gate_no_trade[k] = (gate_action == 0)
+        if gate_action == 1:
+            actions[k] = int(dir_actions[k]) + 1  # BUY_CALL_ATM=1 .. BUY_PUT_OTM10=6
+        else:
+            actions[k] = ACTION_DO_NOTHING
+
+        # Update position tracking for next bar's position state
+        if _pos_in_trade:
+            _pos_bars_held += 1
+            if _pos_px_array is not None:
+                px_now = _pos_px_array[global_idx]
+                if not torch.isnan(px_now) and _pos_entry_price > 0:
+                    _pos_unrealized_pnl = (float(px_now) - _pos_entry_price) / _pos_entry_price
+            # Check exit conditions (mirrors trade loop below)
+            hit_stop = _pos_unrealized_pnl <= -_stop_loss
+            hit_max_hold = _pos_bars_held >= _max_hold
+            entry_date = dates[val_indices[k - _pos_bars_held]] if k >= _pos_bars_held else None
+            eod = dates[global_idx] != entry_date if entry_date else False
+            model_exit = gate_no_trade[k]
+            if hit_stop or hit_max_hold or eod or model_exit:
+                _pos_in_trade = False
+                if hit_stop:
+                    _pos_last_stop_bar = k
+        elif actions[k] in {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+                            ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10}:
+            if (k - _pos_last_stop_bar) >= STOP_COOLDOWN_BARS:
+                if _bar_of_day.get(global_idx, 999) >= NO_TRADE_BEFORE_BAR:
+                    candidate_px_array = _get_px_array(actions[k], data)
+                    if candidate_px_array is not None and not torch.isnan(candidate_px_array[global_idx]):
+                        entry_px = float(candidate_px_array[global_idx])
+                        if entry_px > 0:
+                            _pos_in_trade = True
+                            _pos_bars_held = 0
+                            _pos_entry_price = entry_px
+                            _pos_px_array = candidate_px_array
+                            _pos_unrealized_pnl = 0.0
+
+    # Count unique val dates
+    val_dates_list = [dates[i] for i in val_indices]
+    num_val_days = len(set(val_dates_list))
+
     # -------------------------------------------------------------------
     # Simulate trades (strict option-price-based P&L)
     # -------------------------------------------------------------------
@@ -2570,18 +2900,6 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         ACTION_BUY_CALL_OTM10: 'CALL_OTM10', ACTION_BUY_PUT_ATM: 'PUT_ATM',
         ACTION_BUY_PUT_OTM5: 'PUT_OTM5', ACTION_BUY_PUT_OTM10: 'PUT_OTM10',
     }
-
-    def _get_px_array(action, data_dict):
-        """Get the price array for a given action."""
-        mapping = {
-            ACTION_BUY_CALL_ATM:   data_dict.get('atm_call_prices'),
-            ACTION_BUY_CALL_OTM5:  data_dict.get('otm5_call_prices'),
-            ACTION_BUY_CALL_OTM10: data_dict.get('otm10_call_prices'),
-            ACTION_BUY_PUT_ATM:    data_dict.get('atm_put_prices'),
-            ACTION_BUY_PUT_OTM5:   data_dict.get('otm5_put_prices'),
-            ACTION_BUY_PUT_OTM10:  data_dict.get('otm10_put_prices'),
-        }
-        return mapping.get(action)
 
     required_price_keys = (
         'atm_call_prices',
@@ -2803,51 +3121,81 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     total_return = float(cum_pnl[-1]) if len(cum_pnl) > 0 else 0.0
     calmar = total_return / max(abs(max_drawdown), 1e-10)
 
-    # Composite score with bell-curve trade frequency
-    # Sweet spot: 2-6 trades/day. Penalize both under- AND over-trading.
-    # Under-trading: ramps up from 0 at tpd=0.5 to 1.0 at tpd=2
-    # Over-trading: QUADRATIC decay above 6 tpd (tpd=10→0.36x, tpd=12→0.25x, tpd=15→0.16x)
-    MAX_TRADES_PER_DAY = 6.0  # above this, score decays quadratically
+    # --- Additional metrics for score tuning ---
+    avg_hold_bars = float(np.mean([d['bars_held'] for d in trade_details])) if trade_details else 0.0
+    rr_ratio = abs(avg_winner) / max(abs(avg_loser), 1e-10) if avg_loser != 0 else 10.0
+
+    # Composite score with configurable trade frequency band
+    # freq_center and freq_width define the sweet spot
+    _freq_hi = _sc_freq_center + _sc_freq_width   # upper bound of sweet spot
+    _freq_lo = max(0.5, _sc_freq_center - _sc_freq_width)  # lower bound
     if trades_per_day < 0.5:
         score = -10.0
-    elif trades_per_day < 1.5:
-        trade_freq_mult = min(1.0, trades_per_day / 2.0)
-        if trades_per_day <= MAX_TRADES_PER_DAY:
-            freq_mult = trade_freq_mult
+    elif trades_per_day < _freq_lo:
+        # Ramp from -5 to raw_score as tpd approaches sweet spot
+        if trades_per_day <= _freq_hi:
+            freq_mult = min(1.0, trades_per_day / max(_sc_freq_center, 1.0))
         else:
-            freq_mult = max(0.1, (MAX_TRADES_PER_DAY / trades_per_day) ** 2)
-        raw_score = profit_factor * max(trade_sharpe, 0.0) * freq_mult
-        ramp = (trades_per_day - 0.5) / 1.0
+            freq_mult = max(0.1, (_freq_hi / trades_per_day) ** 2)
+        raw_score = profit_factor * trade_sharpe * freq_mult
+        ramp = (trades_per_day - 0.5) / max(_freq_lo - 0.5, 0.5)
+        ramp = min(1.0, ramp)
         score = -5.0 * (1.0 - ramp) + raw_score * ramp
     else:
-        if trades_per_day <= MAX_TRADES_PER_DAY:
-            freq_mult = min(1.0, trades_per_day / 2.0)
+        if trades_per_day <= _freq_hi:
+            freq_mult = min(1.0, trades_per_day / max(_sc_freq_center, 1.0))
         else:
-            freq_mult = max(0.1, (MAX_TRADES_PER_DAY / trades_per_day) ** 2)
-        score = profit_factor * max(trade_sharpe, 0.0) * freq_mult
+            freq_mult = max(0.1, (_freq_hi / trades_per_day) ** 2)
+        score = profit_factor * trade_sharpe * freq_mult
 
-    # Consecutive loss penalty: incremental decay above 3 consecutive losses
-    if max_consec_loss > 3 and score > 0:
-        consec_penalty = max(0.5, 1.0 - 0.05 * (max_consec_loss - 3))
+    # --- Configurable penalties (thresholds tunable by agent) ---
+
+    # Consecutive loss penalty
+    if max_consec_loss > _sc_consec_thresh and score > 0:
+        consec_penalty = max(0.5, 1.0 - 0.05 * (max_consec_loss - _sc_consec_thresh))
         score *= consec_penalty
 
-    # Short-hold penalty: penalize excessive 1-bar noise scalping
+    # Short-hold penalty
     short_hold_pct = 0.0
     if num_trades > 10:
         short_holds = sum(1 for d in trade_details if d['bars_held'] <= 1)
         short_hold_pct = short_holds / num_trades
-        if short_hold_pct > 0.30 and score > 0:
-            noise_penalty = max(0.7, 1.0 - (short_hold_pct - 0.30))
+        if short_hold_pct > _sc_short_thresh and score > 0:
+            noise_penalty = max(0.7, 1.0 - (short_hold_pct - _sc_short_thresh))
             score *= noise_penalty
 
-    # Stop-loss rate penalty: penalize poor entry selection
-    # 30% stop rate = no penalty, 50% = 0.80x, 70% = 0.60x, 80% = 0.50x floor
+    # Stop-loss rate penalty
     stop_loss_rate = 0.0
     if num_trades > 10:
         stop_loss_rate = sum(1 for d in trade_details if d.get('exit_reason') == 'stop_loss') / num_trades
-        if stop_loss_rate > 0.30 and score > 0:
-            sl_penalty = max(0.5, 1.0 - (stop_loss_rate - 0.30))
+        if stop_loss_rate > _sc_stop_thresh and score > 0:
+            sl_penalty = max(0.5, 1.0 - (stop_loss_rate - _sc_stop_thresh))
             score *= sl_penalty
+
+    # --- New tunable bonuses/penalties (all default to neutral at 0.0) ---
+
+    # Win rate bonus: reward consistent winners
+    if _sc_wr_bonus > 0 and score > 0:
+        wr_mult = 1.0 + _sc_wr_bonus * max(0.0, (win_rate - 0.40)) / 0.60
+        score *= wr_mult
+
+    # R:R ratio bonus: reward strategies where avg_win > avg_loss
+    if _sc_rr_bonus > 0 and score > 0:
+        rr_mult = 1.0 + _sc_rr_bonus * max(0.0, (rr_ratio - 1.0)) / 2.0
+        score *= rr_mult
+
+    # Max drawdown penalty: punish deep cumulative drawdowns
+    if _sc_dd_penalty > 0 and score > 0:
+        dd_mult = max(0.3, 1.0 - _sc_dd_penalty * max(0.0, abs(max_drawdown) - 0.10))
+        score *= dd_mult
+
+    # Hold time quality bonus: reward avg hold in sweet spot (5-60 bars)
+    if _sc_hold_bonus > 0 and score > 0:
+        # Bell curve centered at 30 bars, width 25
+        hold_z = (avg_hold_bars - 30.0) / 25.0
+        hold_bell = math.exp(-0.5 * hold_z * hold_z)
+        hold_mult = 1.0 + _sc_hold_bonus * hold_bell
+        score *= hold_mult
 
     total_bars = len(actions)
     do_nothing_pct = float(do_nothing_count) / max(total_bars, 1)
@@ -2882,6 +3230,42 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         equity_sharpe = (eq_mean / max(eq_std, 1e-10)) * math.sqrt(max(trades_per_year, 1))
     else:
         equity_sharpe = 0.0
+
+    # --- worst_chunk_pf: split trades into 5 date-chunks, report min PF ---
+    worst_chunk_pf = 1.0  # default if not enough trades
+    if num_trades >= 5:
+        trade_dates = [d.get('date', '') for d in trade_details]
+        unique_dates = sorted(set(trade_dates))
+        n_chunks = min(5, len(unique_dates))
+        if n_chunks >= 2:
+            chunk_size = max(1, len(unique_dates) // n_chunks)
+            chunk_pfs = []
+            for ci in range(n_chunks):
+                start_i = ci * chunk_size
+                end_i = start_i + chunk_size if ci < n_chunks - 1 else len(unique_dates)
+                chunk_dates = set(unique_dates[start_i:end_i])
+                chunk_trades = [d for d in trade_details if d.get('date', '') in chunk_dates]
+                if not chunk_trades:
+                    continue
+                chunk_wins = sum(d['pnl_pct'] for d in chunk_trades if d['pnl_pct'] > 0)
+                chunk_losses = abs(sum(d['pnl_pct'] for d in chunk_trades if d['pnl_pct'] <= 0))
+                if chunk_losses > 0:
+                    chunk_pfs.append(chunk_wins / chunk_losses)
+                elif chunk_wins > 0:
+                    chunk_pfs.append(100.0)  # all winners
+                # else: 0 wins 0 losses in chunk, skip
+            if chunk_pfs:
+                worst_chunk_pf = min(chunk_pfs)
+
+    # --- direction_collapse_pct: fraction choosing single most common action ---
+    direction_collapse_pct = 0.0
+    if num_trades >= 1:
+        direction_counts: dict[str, int] = {}
+        for d in trade_details:
+            act = d.get('direction', 'UNKNOWN')
+            direction_counts[act] = direction_counts.get(act, 0) + 1
+        max_count = max(direction_counts.values())
+        direction_collapse_pct = float(max_count) / num_trades
 
     return {
         'score': float(score),
@@ -2918,6 +3302,11 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         'equity_sharpe': round(float(equity_sharpe), 4),
         'max_equity_dd': round(float(max_equity_dd), 4),
         'total_dollar_return': round(float(total_dollar_return), 4),
+        'worst_chunk_pf': round(float(worst_chunk_pf), 4),
+        'direction_collapse_pct': round(float(direction_collapse_pct), 4),
+        'rr_ratio': round(float(rr_ratio), 4),
+        'avg_hold_bars': round(float(avg_hold_bars), 2),
+        'model_exit_rate': round(float(model_exit_count) / max(num_trades, 1), 4),
         'trade_log': trade_details,
     }
 
@@ -2946,6 +3335,11 @@ def _empty_metrics(num_val_bars=0, num_val_days=0, num_trades=0):
         'equity_sharpe': 0.0,
         'max_equity_dd': 0.0,
         'total_dollar_return': 0.0,
+        'worst_chunk_pf': 1.0,
+        'direction_collapse_pct': 0.0,
+        'rr_ratio': 0.0,
+        'avg_hold_bars': 0.0,
+        'model_exit_rate': 0.0,
     }
 
 

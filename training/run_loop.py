@@ -33,6 +33,18 @@ import traceback
 import hashlib
 from typing import Any
 
+
+def _safe_score(exp: dict, default: float = -999.0) -> float:
+    """Get score from experiment dict, safely handling None values."""
+    v = exp.get("score")
+    if v is None:
+        return default
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -42,6 +54,9 @@ TRAIN_PY = os.path.join(SCRIPT_DIR, "train.py")
 PROGRAM_MD = os.path.join(SCRIPT_DIR, "program.md")
 BEST_TRAIN_PY = os.path.join(SCRIPT_DIR, "best_train.py")
 BEST_MODEL_PT = os.path.join(SCRIPT_DIR, "best_model.pt")
+LAB_NOTEBOOK_MD = os.path.join(SCRIPT_DIR, "lab_notebook.md")
+LAB_NOTEBOOK_MAX_ENTRIES = 10  # rolling window for Best Runs table
+LAB_NOTEBOOK_DEAD_ENDS_MAX = 10  # rolling window for Dead Ends
 PYTHON = sys.executable
 
 
@@ -74,6 +89,7 @@ RUN_DIR = os.path.join(RESULTS_DIR, RUN_NAME)
 ARTIFACTS_DIR = os.path.join(RUN_DIR, "artifacts")
 RUN_METADATA_JSON = os.path.join(RUN_DIR, "run_metadata.json")
 RUN_EXPERIMENTS_V2_LOG = os.path.join(RUN_DIR, "experiments.v2.jsonl")
+RUN_RESULTS_TSV = os.path.join(RUN_DIR, "results.tsv")
 STATUS_JSON = os.path.join(RUN_DIR, "status.json")
 CURRENT_RUN_TXT = os.path.join(RESULTS_DIR, "current_run.txt")
 RUN_BEST_TRAIN_PY = os.path.join(RUN_DIR, "best_train.py")
@@ -90,6 +106,7 @@ DATA_QUALITY_FINGERPRINT_JSON = os.path.join(FEATURE_CACHE_DIR, "data_quality_fi
 SCHEMA_VERSION = 2
 FAILURE_TYPE_ENUM = {
     "api",
+    "truncation",
     "syntax",
     "safety",
     "train_crash",
@@ -140,17 +157,22 @@ OBSERVABILITY_CONFIG = {
         "actionable_bar_rate_min": 0.03,
     },
 }
-FEATURE_LOCK_COUNT = 60
+FEATURE_LOCK_COUNT = 70
 
 # Claude model for code generation
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
-MAX_TOKENS = 12000  # enough for full train.py rewrite
+MAX_TOKENS = 32768  # train.py grows over time; 32k gives ample headroom for reasoning + full rewrite
 MAX_CODEGEN_ATTEMPTS = 3
-SMOKE_TIME_BUDGET = 60
-SMOKE_TIMEOUT_BUFFER = 120
+SMOKE_TIME_BUDGET = 60   # Full cold start on H100: torch import + CUDA init + 257MB data load + model init + few steps ≈ 50s
+SMOKE_TIMEOUT_BUFFER = 60
 
 # Reusable anthropic client (avoid httpx connection pool leak)
 _anthropic_client = None
+
+# Prefetch: pipeline Claude API calls during training
+import concurrent.futures
+_prefetch_executor: concurrent.futures.ThreadPoolExecutor | None = None
+_prefetched_responses: dict[int, dict[str, Any]] = {}  # exp_id -> {"response": str, "state_hash": str}
 
 
 def _get_anthropic_client():
@@ -436,6 +458,38 @@ def _promotion_event_from_exp(exp: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _exp_to_prompt_record(exp: dict[str, Any]) -> dict[str, Any] | None:
+    """Convert any experiment (kept or reverted) to a prompt history record."""
+    try:
+        score = _safe_score(exp)
+    except Exception:
+        return None
+    if score <= -999:
+        # Skip experiments that never produced a score (e.g. syntax errors)
+        if exp.get("error"):
+            return {
+                "experiment_id": exp.get("experiment_id"),
+                "kept": False,
+                "score": None,
+                "error": str(exp.get("error", ""))[:200],
+                "change_summary": exp.get("change_summary", "unknown"),
+                "failure_type": exp.get("failure_type", "error"),
+            }
+        return None
+    return {
+        "experiment_id": exp.get("experiment_id"),
+        "kept": bool(exp.get("kept")),
+        "score": score,
+        "profit_factor": exp.get("profit_factor"),
+        "trades_per_day": exp.get("trades_per_day"),
+        "trade_sharpe": exp.get("trade_sharpe"),
+        "change_summary": exp.get("change_summary", "unknown"),
+        "error": str(exp.get("error", ""))[:200] if exp.get("error") else "",
+        "failure_type": exp.get("failure_type", "none"),
+        "keep_block_reason": exp.get("keep_block_reason", ""),
+    }
+
+
 def _promoted_to_prompt_record(event: dict[str, Any]) -> dict[str, Any] | None:
     try:
         score = float(event.get("score"))
@@ -489,6 +543,164 @@ def record_promotion_event(exp: dict[str, Any]) -> dict[str, Any]:
     return event
 
 
+# --- Lab Notebook (persistent experiment context across runs) ---
+
+_LAB_NOTEBOOK_SKELETON = """\
+# Lab Notebook
+
+## System
+SPX 0DTE | 2-head gate+dir | 70 features + position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
+
+## Best Runs
+| Run | Score | PF | TPD | Key Change |
+|-----|-------|----|-----|------------|
+
+## Dead Ends
+| Change | Result | Why |
+|--------|--------|-----|
+"""
+
+
+def load_lab_notebook() -> str:
+    """Load lab notebook contents, or return empty string if not found."""
+    if not os.path.exists(LAB_NOTEBOOK_MD):
+        return ""
+    with open(LAB_NOTEBOOK_MD, "r") as f:
+        return f.read()
+
+
+def _parse_notebook_sections(content: str) -> dict[str, list[str]]:
+    """Parse notebook into {section_name: [lines]}."""
+    sections: dict[str, list[str]] = {}
+    current_section = None
+    for line in content.split("\n"):
+        if line.startswith("## "):
+            current_section = line[3:].strip()
+            sections[current_section] = []
+        elif current_section is not None:
+            stripped = line.strip()
+            if stripped:
+                sections[current_section].append(line)
+    return sections
+
+
+def _rebuild_notebook(sections: dict[str, list[str]]) -> str:
+    """Rebuild notebook markdown from parsed sections."""
+    parts = ["# Lab Notebook\n"]
+    # Core sections in fixed order
+    core_order = ["System", "Critical Change (2026-03-19)", "Backtest Analysis (old regime, 222 trades over 198 days)", "Best Runs", "Dead Ends"]
+    seen = set()
+    for header in core_order:
+        if header in sections:
+            parts.append(f"## {header}")
+            for line in sections[header]:
+                parts.append(line)
+            parts.append("")
+            seen.add(header)
+    # Any remaining sections
+    for header, lines in sections.items():
+        if header not in seen:
+            parts.append(f"## {header}")
+            for line in lines:
+                parts.append(line)
+            parts.append("")
+    return "\n".join(parts) + "\n"
+
+
+def update_lab_notebook(exp: dict[str, Any], reasoning: str) -> None:
+    """Append a kept experiment to the lab notebook's Best Runs table."""
+    exp_label = f"{RUN_NAME}#{exp.get('experiment_id', '?')}"
+    score = _safe_score(exp)
+    pf = exp.get("profit_factor", "?")
+    tpd = exp.get("trades_per_day", "?")
+    change = (reasoning or exp.get("change_summary", "unknown"))[:80]
+
+    score_str = f"{score:.2f}" if isinstance(score, (int, float)) else str(score)
+    pf_str = f"{pf:.2f}" if isinstance(pf, (int, float)) else str(pf)
+    tpd_str = f"{tpd:.1f}" if isinstance(tpd, (int, float)) else str(tpd)
+    new_row = f"| {exp_label} | {score_str} | {pf_str} | {tpd_str} | {change} |"
+
+    if os.path.exists(LAB_NOTEBOOK_MD):
+        with open(LAB_NOTEBOOK_MD, "r") as f:
+            content = f.read()
+    else:
+        content = _LAB_NOTEBOOK_SKELETON
+
+    sections = _parse_notebook_sections(content)
+
+    best_runs = sections.get("Best Runs", [])
+
+    # Deduplicate
+    if any(exp_label in line for line in best_runs):
+        return
+
+    # Keep table header rows, add new data row
+    header_rows = [r for r in best_runs if r.strip().startswith("|") and ("---" in r or "Run" in r)]
+    data_rows = [r for r in best_runs if r.strip().startswith("|") and "---" not in r and "Run" not in r]
+    data_rows.append(new_row)
+
+    # Keep only most recent entries
+    if len(data_rows) > LAB_NOTEBOOK_MAX_ENTRIES:
+        data_rows = data_rows[-LAB_NOTEBOOK_MAX_ENTRIES:]
+
+    sections["Best Runs"] = header_rows + data_rows
+
+    dead_ends = sections.get("Dead Ends", [])
+    de_header = [r for r in dead_ends if r.strip().startswith("|") and ("---" in r or "Change" in r)]
+    de_data = [r for r in dead_ends if r.strip().startswith("|") and "---" not in r and "Change" not in r]
+    if len(de_data) > LAB_NOTEBOOK_DEAD_ENDS_MAX:
+        de_data = de_data[-LAB_NOTEBOOK_DEAD_ENDS_MAX:]
+    sections["Dead Ends"] = de_header + de_data
+
+    rebuilt = _rebuild_notebook(sections)
+    _write_text_atomic(LAB_NOTEBOOK_MD, rebuilt)
+
+
+def update_lab_notebook_dead_end(exp: dict[str, Any]) -> None:
+    """Append a rejected/failed experiment to the lab notebook's Dead Ends table."""
+    change = (exp.get("change_summary") or exp.get("reasoning") or "unknown")[:60]
+    score = _safe_score(exp)
+    failure_type = exp.get("failure_type", "unknown")
+    keep_block = exp.get("keep_block_reason", "")
+    error = (exp.get("error") or "")[:80]
+
+    # Build concise result + reason
+    if score <= -999:
+        result_str = f"FAIL ({failure_type})"
+    else:
+        result_str = f"score={score:.2f}"
+    why = keep_block or error or failure_type
+    why = why[:80]
+
+    new_row = f"| {change} | {result_str} | {why} |"
+
+    if os.path.exists(LAB_NOTEBOOK_MD):
+        with open(LAB_NOTEBOOK_MD, "r") as f:
+            content = f.read()
+    else:
+        content = _LAB_NOTEBOOK_SKELETON
+
+    sections = _parse_notebook_sections(content)
+
+    dead_ends = sections.get("Dead Ends", [])
+
+    # Deduplicate by change summary
+    if any(change in line for line in dead_ends):
+        return
+
+    header_rows = [r for r in dead_ends if r.strip().startswith("|") and ("---" in r or "Change" in r)]
+    data_rows = [r for r in dead_ends if r.strip().startswith("|") and "---" not in r and "Change" not in r]
+    data_rows.append(new_row)
+
+    # Keep only most recent entries
+    if len(data_rows) > LAB_NOTEBOOK_DEAD_ENDS_MAX:
+        data_rows = data_rows[-LAB_NOTEBOOK_DEAD_ENDS_MAX:]
+
+    sections["Dead Ends"] = header_rows + data_rows
+    rebuilt = _rebuild_notebook(sections)
+    _write_text_atomic(LAB_NOTEBOOK_MD, rebuilt)
+
+
 def _json_safe(value: Any) -> Any:
     if isinstance(value, dict):
         return {k: _json_safe(v) for k, v in value.items()}
@@ -508,7 +720,7 @@ def prompt_contract_check(system_prompt: str, program_md: str) -> dict[str, Any]
             r"CALL_ATM.*CALL_OTM5.*CALL_OTM10.*PUT_ATM.*PUT_OTM5.*PUT_OTM10",
         ),
         ("eight_action_semantics", r"8 effective actions"),
-        ("feature_contract_phase_lock_60", r"60 features"),
+        ("feature_contract_phase_lock_70", r"70 features"),
     ]
     forbidden_checks = [
         ("stale_four_action_semantics", r"4 effective actions"),
@@ -649,6 +861,56 @@ def _passes_near_tie_stability(metrics: dict[str, Any]) -> tuple[bool, list[str]
     return len(reasons) == 0, reasons
 
 
+def detect_strategy_collapse(history: list[dict[str, Any]], window: int = 8) -> dict[str, Any]:
+    """Detect when the agent has collapsed to a fixed strategy or declining ambition.
+
+    Checks the last `window` experiments for:
+    1. Repetitive changes: >60% of summaries share the same leading keyword
+    2. Zero accept rate: no experiments kept in the window
+    3. Score plateau: all scored experiments within 0.01 of each other
+
+    Returns: {"collapsed": bool, "signals": [...], "message": str}
+    """
+    recent = history[-window:] if len(history) >= window else history
+    if len(recent) < 4:
+        return {"collapsed": False, "signals": [], "message": ""}
+
+    signals: list[str] = []
+
+    # 1. Repetitive change summaries (first word clustering)
+    summaries = [str(e.get("change_summary", "")).strip().lower() for e in recent if e.get("change_summary")]
+    if len(summaries) >= 4:
+        first_words = [s.split()[0] if s.split() else "" for s in summaries]
+        from collections import Counter
+        word_counts = Counter(first_words)
+        most_common_word, most_common_count = word_counts.most_common(1)[0]
+        if most_common_count / len(first_words) > 0.6:
+            signals.append(f"repetitive_changes ({most_common_count}/{len(first_words)} start with '{most_common_word}')")
+
+    # 2. Zero accept rate in window
+    scored = [e for e in recent if _safe_score(e) > -999]
+    kept_in_window = [e for e in recent if e.get("kept")]
+    if len(scored) >= 4 and not kept_in_window:
+        signals.append(f"zero_accept_rate (0/{len(scored)} kept in last {len(recent)})")
+
+    # 3. Score plateau
+    scores = [_safe_score(e) for e in scored if _safe_score(e) > -999]
+    if len(scores) >= 4:
+        score_range = max(scores) - min(scores)
+        if score_range < 0.01:
+            signals.append(f"score_plateau (range={score_range:.4f} in last {len(scores)})")
+
+    collapsed = len(signals) >= 2
+    message = ""
+    if signals:
+        message = (
+            f"Strategy collapse warning ({len(signals)} signals): "
+            + "; ".join(signals)
+        )
+
+    return {"collapsed": collapsed, "signals": signals, "message": message}
+
+
 # ---------------------------------------------------------------------------
 # Diagnostics — capture what kills the process and track resources
 # ---------------------------------------------------------------------------
@@ -757,20 +1019,99 @@ def log_diagnostics(phase: str = "check"):
 # LLM interaction
 # ---------------------------------------------------------------------------
 
-def call_claude(system_prompt: str, user_prompt: str) -> str:
-    """Call Claude API and return the text response."""
+class TruncatedResponseError(Exception):
+    """Raised when Claude's response was cut off by the max_tokens limit."""
+    pass
+
+
+def call_claude(system_prompt, user_prompt: str) -> str:
+    """Call Claude API with prompt caching and return the text response.
+
+    system_prompt can be:
+      - str: plain system prompt (no caching)
+      - list[dict]: structured content blocks with cache_control markers
+    """
     client = _get_anthropic_client()
-    response = client.messages.create(
+    # Use streaming to avoid 10-minute timeout on slow models (Opus)
+    collected_text = []
+    with client.messages.stream(
         model=CLAUDE_MODEL,
         max_tokens=MAX_TOKENS,
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
-    )
+        extra_headers={"anthropic-beta": "prompt-caching-2024-07-31,output-128k-2025-02-19"},
+    ) as stream:
+        for text in stream.text_stream:
+            collected_text.append(text)
+    response = stream.get_final_message()
+    if response.stop_reason == "max_tokens":
+        raise TruncatedResponseError(
+            f"Response truncated at {MAX_TOKENS} tokens. "
+            f"Code was cut off — increase MAX_TOKENS or reduce train.py size."
+        )
+    # Always log cache performance so we can confirm caching works
+    usage = response.usage
+    cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+    cache_create = getattr(usage, "cache_creation_input_tokens", 0) or 0
+    input_tokens = getattr(usage, "input_tokens", 0) or 0
+    log(f"  Tokens: input={input_tokens}, cache_read={cache_read}, cache_create={cache_create}")
     return response.content[0].text
 
 
-def build_system_prompt(program_md: str) -> str:
-    return f"""You are an expert ML researcher running inside an autonomous experiment loop.
+def _prefetch_state_hash(train_py_content: str, history_len: int) -> str:
+    """Hash for detecting whether a prefetched response is still valid."""
+    return _sha256_text(f"{train_py_content}:{history_len}")[:16]
+
+
+def submit_prefetch(experiment_id: int, system_blocks: list[dict],
+                    user_prompt: str, state_hash: str) -> None:
+    """Submit a speculative Claude API call for the next experiment in background."""
+    global _prefetched_responses
+    if _prefetch_executor is None:
+        return
+
+    def _do_prefetch():
+        try:
+            response_text = call_claude(system_blocks, user_prompt)
+            _prefetched_responses[experiment_id] = {
+                "response": response_text,
+                "state_hash": state_hash,
+            }
+            log(f"  [prefetch] Response ready for experiment #{experiment_id}")
+        except Exception as e:
+            log(f"  [prefetch] Failed for experiment #{experiment_id}: {e}")
+            # Silently fail — caller will fall back to synchronous call
+
+    # Cancel any stale prefetch for a different experiment
+    _prefetched_responses.pop(experiment_id, None)
+    try:
+        _prefetch_executor.submit(_do_prefetch)
+    except Exception:
+        pass  # Thread pool shutting down, etc.
+
+
+def consume_prefetch(experiment_id: int, current_state_hash: str) -> str | None:
+    """Check if a valid prefetched response exists for this experiment.
+
+    Returns the response text if valid, None if stale or missing.
+    """
+    entry = _prefetched_responses.pop(experiment_id, None)
+    if entry is None:
+        return None
+    log(f"  [prefetch] Using prefetched response for #{experiment_id}")
+    return entry["response"]
+
+
+def build_system_prompt(program_md: str, lab_notebook: str = "") -> list[dict]:
+    """Build structured system prompt with cache breakpoints.
+
+    Returns a list of content blocks for the Anthropic API.
+    The static instruction block and program.md are cached (they never change
+    within a run). The lab notebook is cached separately (it changes only
+    when an experiment is kept).
+    """
+    instructions = """\
+You are an expert ML researcher running inside an autonomous experiment loop.
 Your only editable target is `train.py`.
 
 Mission:
@@ -779,20 +1120,55 @@ Mission:
 - Keep changes robust under a fixed wall-clock budget.
 
 Output contract (strict):
-- First output a short hypothesis in <reasoning>...</reasoning>.
-- Then output the COMPLETE modified `train.py`.
+- First output a BRIEF hypothesis in <reasoning>...</reasoning> (max 2-3 sentences).
+- Then output the COMPLETE modified `train.py` — every line, top to bottom.
 - Output only reasoning tags + Python code (no markdown fences, no extra commentary).
+- CRITICAL: The file is ~800 lines. You MUST output the entire file without truncation.
+  Keep your reasoning SHORT to leave room for the full code.
 
 Execution constraints:
 - Do not change files other than `train.py`.
 - Preserve parseable metric output keys.
 - Prefer small, testable deltas if history shows instability.
+- Do NOT repeat experiments from the Lab Notebook — read the Improvements Log and Dead Ends carefully.
+
+## Evaluation Mechanics (from evaluate_trades)
+- Trades enter at the model's signal bar using actual option mid-prices
+- Stop-loss: -30% of premium (position closed immediately)
+- Max hold: 60 bars (60 minutes)
+- Cooldown: 5 bars after a stop-loss before next entry
+- No trading before bar 30 (first 30 minutes of session)
+- Transaction cost: deducted from P&L using per-bar sidecar cost data (avg ~200 bps round-trip)
+- P&L capped at +200% to prevent lottery-ticket dependency
+- Only one position at a time (no stacking)
 
 The authoritative domain and strategy guidance is below.
-If any instruction you infer conflicts with this guidance, follow this guidance.
+If any instruction you infer conflicts with this guidance, follow this guidance."""
 
-{program_md}
-"""
+    blocks = [
+        # Block 1: Static instructions + program.md (cached — identical every call in a run)
+        {
+            "type": "text",
+            "text": f"{instructions}\n\n{program_md}",
+            "cache_control": {"type": "ephemeral", "ttl": "1h"},
+        },
+    ]
+
+    # Block 2: Lab notebook (cached separately — changes only on kept experiments)
+    if lab_notebook:
+        blocks.append({
+            "type": "text",
+            "text": (
+                "\n\n## Lab Notebook (persistent learning across runs)\n"
+                "Use this to understand what has been tried, what worked, and what to avoid.\n"
+                "Do NOT re-try approaches listed in Dead Ends.\n"
+                "Build on approaches in the Improvements Log — extend what worked.\n\n"
+                + lab_notebook
+            ),
+            "cache_control": {"type": "ephemeral", "ttl": "1h"},
+        })
+
+    return blocks
 
 
 def build_user_prompt(current_train_py: str, history: list, experiment_id: int = 0) -> str:
@@ -802,11 +1178,36 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
         best = max(history, key=lambda e: e.get("score", e.get("val_sharpe", -999)))
         kept = [e for e in history if e.get("kept")]
         failed = [e for e in history if e.get("error")]
+        scored = [e for e in history if _safe_score(e) > -999]
+        accept_rate = len(kept) / len(scored) if scored else 0.0
         parts.append("## Experiment Summary")
         parts.append(
             f"Total={len(history)} | Kept={len(kept)} | Failed={len(failed)} | "
+            f"Accept rate={accept_rate:.0%} ({len(kept)}/{len(scored)}) | "
             f"Best score={best.get('score', best.get('val_sharpe', 'N/A'))} (#{best['experiment_id']})\n"
         )
+
+        # Strategy collapse detection
+        collapse = detect_strategy_collapse(history)
+        if collapse["signals"]:
+            parts.append("## STRATEGY COLLAPSE WARNING")
+            parts.append(collapse["message"])
+            if collapse["collapsed"]:
+                parts.append("The search has COLLAPSED. You MUST try a fundamentally different approach:")
+                parts.append("  - Change the loss function structure, not just weights")
+                parts.append("  - Add or remove a training technique (curriculum, augmentation)")
+                parts.append("  - Rethink which feature groups matter most")
+                parts.append("  - Try the OPPOSITE of what recent experiments attempted")
+            parts.append("")
+
+        # Low accept rate warning
+        if len(scored) >= 6 and accept_rate < 0.15:
+            parts.append("## LOW ACCEPT RATE WARNING")
+            parts.append(f"Only {accept_rate:.0%} of proposals are being accepted. This means")
+            parts.append("your proposals and the validation gate are misaligned.")
+            parts.append("  - Make SMALLER, more conservative changes")
+            parts.append("  - Focus on what the gate actually rewards (read the score formula)")
+            parts.append("  - Study the gap between best score and recent scores\n")
 
         top_kept = sorted(
             kept,
@@ -854,8 +1255,30 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
             parts.append("  - A different training strategy (curriculum, scheduling)")
             parts.append("  - Leveraging feature groups you haven't used yet (Greeks, OTM skew)")
             parts.append("Look at what has been tried in the history above and explore the OPPOSITE direction.\n")
+
+        # Search-space review every 10th experiment (article: "is the search space still right?")
+        if experiment_id > 0 and experiment_id % 10 == 0:
+            parts.append("## SEARCH-SPACE REVIEW (every 10th experiment)")
+            parts.append("Before proposing your next change, answer these questions:")
+            parts.append("  1. Is the agent still exploring, or has it collapsed to a fixed strategy?")
+            parts.append("  2. Are the constraints correct? Is score rewarding the right behavior?")
+            parts.append("  3. What's the BIGGEST gap between current performance and the goal?")
+            parts.append("  4. Which feature groups are undertested? Which loss components are undertested?")
+            parts.append("  5. Are recent proposals getting more conservative/smaller? If so, go bigger.")
+            parts.append("Write your analysis in <reasoning>, then propose a change that addresses the biggest gap.\n")
     else:
-        parts.append("## This is the FIRST experiment. Run baseline as-is or make one small improvement.\n")
+        # Check if the lab notebook has prior improvements (loaded into system prompt)
+        if os.path.exists(LAB_NOTEBOOK_MD):
+            nb = load_lab_notebook()
+            if "## Improvements Log" in nb and nb.split("## Improvements Log")[1].strip().split("##")[0].strip():
+                parts.append("## This is the first experiment of a NEW RUN, but you have prior context.")
+                parts.append("Review the Lab Notebook in the system prompt — it contains your history of")
+                parts.append("improvements and dead ends from previous runs. Do NOT run baseline as-is.")
+                parts.append("Instead, propose a meaningful improvement based on what you learned.\n")
+            else:
+                parts.append("## This is the FIRST experiment. Run baseline as-is or make one small improvement.\n")
+        else:
+            parts.append("## This is the FIRST experiment. Run baseline as-is or make one small improvement.\n")
 
     parts.append("## Current train.py:\n```python\n" + current_train_py + "\n```\n")
     parts.append("Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.")
@@ -876,7 +1299,7 @@ Failure excerpt:
 
 Requirements:
 - Return a COMPLETE corrected train.py file.
-- Keep the two-head/60-feature contract intact.
+- Keep the two-head/70-feature contract intact.
 - Fix the concrete failure first; make minimal additional edits.
 - No markdown fences, no prose outside <reasoning>...</reasoning>.
 
@@ -1085,7 +1508,7 @@ def validate_architecture_locked(code: str) -> str | None:
 
     Changing these tensor-shape-determining hyperparameters invalidates
     warm-start weights, forcing training from scratch. With only ~5 min
-    per experiment, that's not enough to converge on 60 features.
+    per experiment, that's not enough to converge on 70 features.
     """
     if not os.path.exists(BEST_TRAIN_PY):
         return None  # no best model yet, nothing to lock
@@ -1178,7 +1601,9 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
 
     Timeout: time_budget + 120s buffer for data loading/eval.
     Returns dict with metrics or {'error': 'message'}.
+    Always includes 'wall_time' (seconds) for early-crash detection.
     """
+    t_start = time.time()
     try:
         env = os.environ.copy()
         env["TIME_BUDGET"] = str(time_budget)
@@ -1190,6 +1615,7 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
             cwd=SCRIPT_DIR,
             env=env,
         )
+        wall_time = time.time() - t_start
 
         output = result.stdout + result.stderr
 
@@ -1201,6 +1627,7 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                 "error": f"Exit code {result.returncode}:\n{tail}",
                 "error_type": "train_crash",
                 "output": output,
+                "wall_time": wall_time,
             }
 
         # Parse metrics from the --- section
@@ -1244,6 +1671,7 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                 "error": f"Could not parse score from output:\n{output[-500:]}",
                 "error_type": "parse",
                 "output": output,
+                "wall_time": wall_time,
             }
 
         parsed = sorted(k for k in metrics.keys() if k != "output")
@@ -1252,6 +1680,7 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
             "parsed_metric_keys": parsed,
             "missing_required_metric_keys": missing_required,
         }
+        metrics["wall_time"] = wall_time
         if missing_required:
             return {
                 "error": (
@@ -1261,10 +1690,12 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                 "error_type": "parse",
                 "output": output,
                 "parse_summary": metrics["parse_summary"],
+                "wall_time": wall_time,
             }
         return metrics
 
     except subprocess.TimeoutExpired as e:
+        wall_time = time.time() - t_start
         stdout = e.stdout or ""
         stderr = e.stderr or ""
         merged = ""
@@ -1276,9 +1707,11 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
             "error": f"Training timed out after {timeout}s",
             "error_type": "timeout",
             "output": merged,
+            "wall_time": wall_time,
         }
     except Exception as e:
-        return {"error": f"Exception: {e}", "error_type": "train_crash"}
+        wall_time = time.time() - t_start
+        return {"error": f"Exception: {e}", "error_type": "train_crash", "wall_time": wall_time}
 
 
 def run_training_smoke(candidate_code: str, timeout: int, time_budget: int) -> dict[str, Any]:
@@ -1375,12 +1808,39 @@ def append_experiment_v2(exp: dict):
         f.write(line)
 
 
+def append_results_tsv(exp: dict):
+    """Append one experiment to human-readable results.tsv (Karpathy-style)."""
+    _ensure_dir(RUN_DIR)
+    write_header = not os.path.exists(RUN_RESULTS_TSV)
+    exp_id = exp.get("experiment_id", "?")
+    score = _safe_score(exp)
+    pf = exp.get("profit_factor", 0.0)
+    tpd = exp.get("trades_per_day", 0.0)
+    if exp.get("error"):
+        status = "crash"
+    elif exp.get("kept"):
+        status = "keep"
+    else:
+        status = "discard"
+    desc = (exp.get("change_summary") or "unknown")[:120].replace("\t", " ")
+    score_str = f"{score:.4f}" if isinstance(score, (int, float)) else str(score)
+    pf_str = f"{pf:.2f}" if isinstance(pf, (int, float)) else str(pf)
+    tpd_str = f"{tpd:.1f}" if isinstance(tpd, (int, float)) else str(tpd)
+    with open(RUN_RESULTS_TSV, "a") as f:
+        if write_header:
+            f.write("exp_id\tscore\tpf\ttpd\tstatus\tdescription\n")
+        f.write(f"{exp_id}\t{score_str}\t{pf_str}\t{tpd_str}\t{status}\t{desc}\n")
+
+
 def write_status(phase: str, experiment_id: int, best_score: float,
                  kept: int, failed: int, total: int, deadline: float,
                  last_exp: dict | None = None,
                  contract_checksum: str | None = None):
     """Write status.json for the monitor to read."""
     remaining = max(0, (deadline - time.time()) / 3600)
+    # Accept rate: fraction of scored (non-failed) experiments that were kept
+    scored = total - failed
+    accept_rate = kept / scored if scored > 0 else 0.0
     status = {
         "phase": phase,
         "experiment_id": experiment_id,
@@ -1388,6 +1848,7 @@ def write_status(phase: str, experiment_id: int, best_score: float,
         "kept": kept,
         "failed": failed,
         "total": total,
+        "accept_rate": round(accept_rate, 3),
         "time_remaining_h": round(remaining, 2),
         "updated": datetime.datetime.now().isoformat(),
     }
@@ -1414,7 +1875,8 @@ def write_status(phase: str, experiment_id: int, best_score: float,
 
 def run_one_experiment(experiment_id: int, prompt_history: list, best_score: float,
                        deadline: float, kept_count: int, failed_count: int, run_total: int,
-                       time_budget: int = 300, data_fingerprint: str | None = None) -> dict:
+                       time_budget: int = 300, data_fingerprint: str | None = None,
+                       best_metrics: dict[str, Any] | None = None) -> dict:
     """Run a single experiment iteration. Returns experiment dict."""
     log(f"=== Experiment #{experiment_id} ===")
     total = run_total
@@ -1449,13 +1911,16 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
     _save_artifact_text(artifact_dir, "program.md", program_md)
     _save_artifact_text(artifact_dir, "train_before.py", current_code)
 
-    system = build_system_prompt(program_md)
+    lab_notebook = load_lab_notebook()
+    system_blocks = build_system_prompt(program_md, lab_notebook=lab_notebook)
     user = build_user_prompt(current_code, prompt_history, experiment_id)
-    prompt_contract = prompt_contract_check(system, program_md)
-    prompt_fingerprint = _sha256_text(system + "\n\n### USER ###\n" + user)
+    # Flatten system blocks to text for contract checking and fingerprinting
+    system_text = "\n\n".join(b["text"] for b in system_blocks)
+    prompt_contract = prompt_contract_check(system_text, program_md)
+    prompt_fingerprint = _sha256_text(system_text + "\n\n### USER ###\n" + user)
     exp["prompt_fingerprint"] = prompt_fingerprint
     exp["contract_checksum"] = prompt_contract["checksum_short"]
-    _save_artifact_text(artifact_dir, "prompt_system.txt", system)
+    _save_artifact_text(artifact_dir, "prompt_system.txt", system_text)
     _save_artifact_text(artifact_dir, "prompt_user.txt", user)
     _save_artifact_json(artifact_dir, "prompt_contract_check.json", prompt_contract)
 
@@ -1488,13 +1953,9 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
     max_codegen_attempts = max(
         1, int(os.environ.get("AR_CODEGEN_MAX_ATTEMPTS", str(MAX_CODEGEN_ATTEMPTS)))
     )
-    smoke_time_budget = max(
-        20, int(os.environ.get("AR_SMOKE_TIME_BUDGET", str(SMOKE_TIME_BUDGET)))
-    )
-    smoke_timeout = max(
-        smoke_time_budget + 30,
-        int(os.environ.get("AR_SMOKE_TIMEOUT", str(smoke_time_budget + SMOKE_TIMEOUT_BUFFER))),
-    )
+    # Early-crash threshold: crashes within this wall time are retryable
+    # (equivalent to what the smoke test used to catch — import/CUDA/data errors)
+    EARLY_CRASH_THRESHOLD_S = 30
 
     attempt_prompt = user
     new_code = ""
@@ -1506,6 +1967,13 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
     attempts_used = 0
     last_failure_type = "api"
     last_error = "unknown_candidate_failure"
+
+    # Backup current train.py and best_model.pt (once, before retry loop)
+    backup_path = TRAIN_PY + ".backup"
+    shutil.copy2(TRAIN_PY, backup_path)
+    model_backup_path = BEST_MODEL_PT + ".backup"
+    if os.path.exists(BEST_MODEL_PT):
+        shutil.copy2(BEST_MODEL_PT, model_backup_path)
 
     for attempt in range(1, max_codegen_attempts + 1):
         write_status(
@@ -1519,9 +1987,18 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
             contract_checksum=prompt_contract["checksum_short"],
         )
         log(f"Calling Claude for code modification (attempt {attempt}/{max_codegen_attempts})...")
+        if attempt == 1:
+            code_token_est = len(current_code) // 4
+            if code_token_est > 10000:
+                log(f"  WARNING: train.py is ~{code_token_est} tokens — may need large output window")
         t0 = time.time()
         try:
-            raw_response = call_claude(system, attempt_prompt)
+            # Check for prefetched response (only on first attempt with original prompt)
+            prefetched = None
+            if attempt == 1:
+                state_hash = _prefetch_state_hash(current_code, len(prompt_history))
+                prefetched = consume_prefetch(experiment_id, state_hash)
+            raw_response = prefetched if prefetched else call_claude(system_blocks, attempt_prompt)
             api_time = time.time() - t0
             api_time_total += api_time
             reasoning = extract_reasoning(raw_response)
@@ -1535,6 +2012,18 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
                 log(f"  Reasoning: {reasoning[:200]}")
             if stripped:
                 log(f"  Auto-fixed: {'; '.join(stripped)}")
+        except TruncatedResponseError as e:
+            last_failure_type = "truncation"
+            last_error = f"Truncation error: {e}"
+            log(f"  {last_error}")
+            _save_artifact_json(
+                artifact_dir,
+                f"candidate_attempt{attempt}_error.json",
+                {"failure_type": last_failure_type, "error": last_error},
+            )
+            if attempt < max_codegen_attempts:
+                log("  Retrying with same prompt (repair won't help truncation)...")
+                continue
         except Exception as e:
             last_failure_type = "api"
             last_error = f"API error: {e}"
@@ -1609,23 +2098,56 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
             _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
             return exp
 
-        # Fast isolated smoke check to catch train crashes before touching live files.
-        log(f"  Running isolated smoke-check ({smoke_time_budget}s budget)...")
-        smoke = run_training_smoke(
-            new_code,
-            timeout=smoke_timeout,
-            time_budget=smoke_time_budget,
+        # Write candidate and run full training directly (no separate smoke test).
+        # Early crashes (<30s wall time) are retried like the old smoke failures.
+        with open(TRAIN_PY, 'w') as f:
+            f.write(new_code)
+
+        write_status(
+            "training",
+            experiment_id,
+            best_score,
+            kept_count,
+            failed_count,
+            total,
+            deadline,
+            {"change_summary": change_summary},
+            contract_checksum=prompt_contract["checksum_short"],
         )
-        _save_artifact_text(artifact_dir, f"smoke_attempt{attempt}.log", str(smoke.get("output", "")))
-        if not smoke.get("ok", False):
-            last_failure_type = str(smoke.get("error_type", "train_crash"))
-            last_error = str(smoke.get("error", "smoke failed"))
-            log(f"  Smoke failed: {last_error[:200]}")
+        log(f"  Training ({time_budget // 60} min budget)...")
+        log_diagnostics(f"pre_train_{experiment_id}")
+
+        # Pipeline: speculatively prefetch Claude response for the NEXT experiment
+        # while this one trains. Uses current (pre-candidate) code as baseline,
+        # since most experiments (~70%) are NOT kept.
+        if _prefetch_executor is not None:
+            next_id = experiment_id + 1
+            next_user_prompt = build_user_prompt(current_code, prompt_history, next_id)
+            next_state_hash = _prefetch_state_hash(current_code, len(prompt_history))
+            submit_prefetch(next_id, system_blocks, next_user_prompt, next_state_hash)
+
+        timeout = time_budget + 120
+        metrics = run_training(TRAIN_PY, timeout=timeout, time_budget=time_budget)
+        train_wall_time = metrics.get("wall_time", 999)
+        exp["train_wall_time"] = round(train_wall_time, 1)
+        log(f"  Done in {train_wall_time:.0f}s")
+        log_diagnostics(f"post_train_{experiment_id}")
+        _save_artifact_text(artifact_dir, "train_output.log", str(metrics.get("output", "")))
+        if "parse_summary" in metrics:
+            _save_artifact_json(artifact_dir, "parse_summary.json", metrics["parse_summary"])
+
+        if "error" in metrics and train_wall_time < EARLY_CRASH_THRESHOLD_S:
+            # Early crash — equivalent to old smoke failure. Retryable.
+            last_failure_type = str(metrics.get("error_type", "train_crash"))
+            last_error = str(metrics.get("error", "early crash"))
+            log(f"  Early crash ({train_wall_time:.0f}s < {EARLY_CRASH_THRESHOLD_S}s): {last_error[:200]}")
             _save_artifact_json(
                 artifact_dir,
                 f"candidate_attempt{attempt}_error.json",
-                {"failure_type": last_failure_type, "error": last_error},
+                {"failure_type": last_failure_type, "error": last_error, "early_crash": True},
             )
+            # Revert train.py for next attempt
+            shutil.copy2(backup_path, TRAIN_PY)
             if attempt < max_codegen_attempts:
                 attempt_prompt = build_repair_prompt(new_code, last_failure_type, last_error, attempt + 1)
                 log("  Requesting crash repair...")
@@ -1640,6 +2162,7 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
             _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
             return exp
 
+        # Training ran past the early-crash window — no retry, proceed to evaluation
         attempts_used = attempt
         break
 
@@ -1658,6 +2181,7 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
     exp["codegen_attempts"] = attempts_used
     exp["repair_attempts"] = max(0, attempts_used - 1)
     exp["reasoning"] = reasoning[:300] if reasoning else ""
+    exp["_full_reasoning"] = reasoning or ""
     exp["train_py_after_hash"] = _sha256_text(new_code)
     exp["change_summary"] = change_summary
     _save_artifact_text(artifact_dir, "response_raw.txt", raw_response)
@@ -1665,42 +2189,6 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
     _save_artifact_json(artifact_dir, "sanitize_actions.json", {"actions": stripped})
     _save_artifact_text(artifact_dir, "train_after_candidate.py", new_code)
     log(f"  Using candidate after {attempts_used} attempt(s)")
-
-    # Backup current train.py and best_model.pt
-    backup_path = TRAIN_PY + ".backup"
-    shutil.copy2(TRAIN_PY, backup_path)
-    model_backup_path = BEST_MODEL_PT + ".backup"
-    if os.path.exists(BEST_MODEL_PT):
-        shutil.copy2(BEST_MODEL_PT, model_backup_path)
-
-    # Write new train.py
-    with open(TRAIN_PY, 'w') as f:
-        f.write(new_code)
-
-    # Run training
-    write_status(
-        "training",
-        experiment_id,
-        best_score,
-        kept_count,
-        failed_count,
-        total,
-        deadline,
-        {"change_summary": change_summary},
-        contract_checksum=prompt_contract["checksum_short"],
-    )
-    log(f"  Training ({time_budget // 60} min budget)...")
-    log_diagnostics(f"pre_train_{experiment_id}")
-    t0 = time.time()
-    timeout = time_budget + 120
-    metrics = run_training(TRAIN_PY, timeout=timeout, time_budget=time_budget)
-    train_wall_time = time.time() - t0
-    exp["train_wall_time"] = round(train_wall_time, 1)
-    log(f"  Done in {train_wall_time:.0f}s")
-    log_diagnostics(f"post_train_{experiment_id}")
-    _save_artifact_text(artifact_dir, "train_output.log", str(metrics.get("output", "")))
-    if "parse_summary" in metrics:
-        _save_artifact_json(artifact_dir, "parse_summary.json", metrics["parse_summary"])
 
     if "error" in metrics:
         log(f"  FAILED: {metrics['error'][:200]}")
@@ -1748,7 +2236,35 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         if near_tie:
             near_tie_ok, near_tie_reasons = _passes_near_tie_stability(exp)
 
-        keep_allowed = score > best_score and not critical_flags and near_tie_ok
+        # Multi-objective gate: score must improve AND secondary metrics
+        # must not catastrophically regress vs the best experiment.
+        # This prevents the agent from gaming score while tanking real quality.
+        secondary_regression_reasons: list[str] = []
+        if score > best_score and best_metrics:
+            # Profit factor must not drop below 80% of best
+            best_pf = float(best_metrics.get("profit_factor", 0))
+            new_pf = float(exp.get("profit_factor", 0))
+            if best_pf > 1.0 and new_pf < best_pf * 0.80:
+                secondary_regression_reasons.append(
+                    f"profit_factor_regressed ({new_pf:.2f} < {best_pf:.2f}*0.80)")
+            # Trades per day must not drop below 50% of best
+            best_tpd = float(best_metrics.get("trades_per_day", 0))
+            new_tpd = float(exp.get("trades_per_day", 0))
+            if best_tpd > 0.5 and new_tpd < best_tpd * 0.50:
+                secondary_regression_reasons.append(
+                    f"trades_per_day_regressed ({new_tpd:.1f} < {best_tpd:.1f}*0.50)")
+            # Trade Sharpe must not go negative if it was positive
+            best_ts = float(best_metrics.get("trade_sharpe", 0))
+            new_ts = float(exp.get("trade_sharpe", 0))
+            if best_ts > 0.5 and new_ts < 0:
+                secondary_regression_reasons.append(
+                    f"trade_sharpe_regressed ({new_ts:.2f} was {best_ts:.2f})")
+        if secondary_regression_reasons:
+            exp["secondary_regression"] = secondary_regression_reasons
+            log(f"  ⚠ Secondary metric regression: {'; '.join(secondary_regression_reasons)}")
+
+        keep_allowed = (score > best_score and not critical_flags
+                        and near_tie_ok and not secondary_regression_reasons)
         if keep_allowed:
             log(f"  ✓ IMPROVED: {best_score:.4f} → {score:.4f} (pf={exp['profit_factor']:.2f} tpd={exp['trades_per_day']:.1f})")
             exp["kept"] = True
@@ -1766,12 +2282,30 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
                 reasons.append(f"critical_anomalies:{','.join(critical_flags)}")
             if near_tie and not near_tie_ok:
                 reasons.append(f"near_tie_stability_failed:{','.join(near_tie_reasons)}")
+            if secondary_regression_reasons:
+                reasons.append(f"secondary_regression:{','.join(secondary_regression_reasons)}")
             exp["keep_block_reason"] = ";".join(reasons) if reasons else "regression_gate"
             log(f"  ✗ No improvement gate: score={score:.4f}, reasons={exp['keep_block_reason']}")
             exp["kept"] = False
-            # Revert train.py and model weights
+            # Always revert train.py (undo LLM code changes)
             shutil.copy2(backup_path, TRAIN_PY)
-            if os.path.exists(model_backup_path):
+            # Selectively revert model weights: keep learned weights if the
+            # experiment improved over the PREVIOUS experiment's score (even if
+            # it didn't beat all-time best), unless there are critical anomalies
+            # or a score regression vs. the prior experiment.
+            prev_exp_score = None
+            for prev in reversed(prompt_history):
+                if prev.get("score") is not None:
+                    prev_exp_score = float(prev["score"])
+                    break
+            hard_revert_model = True
+            if prev_exp_score is not None and score > prev_exp_score and not critical_flags:
+                hard_revert_model = False
+                log(f"  Keeping model weights (score {score:.4f} > prev {prev_exp_score:.4f}, incremental improvement)")
+                exp["model_weight_action"] = "kept_incremental"
+            else:
+                exp["model_weight_action"] = "reverted"
+            if hard_revert_model and os.path.exists(model_backup_path):
                 shutil.copy2(model_backup_path, BEST_MODEL_PT)
 
     # Clean up backups
@@ -1807,8 +2341,8 @@ def main():
                         help="Max experiments to run (default: 200)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Validate setup without running experiments")
-    parser.add_argument("--time-budget", type=int, default=300,
-                        help="Training time budget per experiment in seconds (default: 300)")
+    parser.add_argument("--time-budget", type=int, default=240,
+                        help="Training time budget per experiment in seconds (default: 240)")
     parser.add_argument(
         "--allow-data-fingerprint-change",
         action="store_true",
@@ -1863,7 +2397,7 @@ def main():
                 f"data.pt has {n_features} features, expected {FEATURE_LOCK_COUNT}."
             )
             print(
-                "  Rebuild/restore 60-feature data before running the foundation loop."
+                "  Rebuild/restore 70-feature data before running the foundation loop."
             )
             sys.exit(1)
         if nan_pct > 50:
@@ -1929,6 +2463,11 @@ def main():
         print(f"ERROR: Claude API test failed: {e}")
         sys.exit(1)
 
+    if os.path.exists(LAB_NOTEBOOK_MD):
+        _nb_size = os.path.getsize(LAB_NOTEBOOK_MD)
+        print(f"  Notebook:  OK ({_nb_size} bytes)")
+    else:
+        print(f"  Notebook:  not found (will run without persistent context)")
     print("=== ALL CHECKS PASSED ===\n")
     _save_run_metadata(
         {
@@ -1952,9 +2491,14 @@ def main():
 
     # Histories:
     # - run_history: current run's experiments (for status and run summary)
-    # - prompt_history: promoted-only history (for LLM context)
+    # - prompt_history: ALL experiment history (promoted + current run) for LLM context
     run_history = load_history()
     prompt_history = load_promoted_history()
+    # Also include current run's experiments so Claude remembers prior attempts
+    for prev_exp in run_history:
+        rec = _exp_to_prompt_record(prev_exp)
+        if rec is not None:
+            prompt_history.append(rec)
 
     # Warm-start baseline at -5.0 (not -999): a zero-trade model returns -10.0
     # so it must actually trade profitably to beat baseline and get "kept".
@@ -1989,7 +2533,7 @@ def main():
     log(f"  Training budget per experiment: {args.time_budget}s ({args.time_budget // 60} min)")
     log(f"  Max experiments: {args.max_experiments}")
     log(f"  Current-run experiments: {len(run_history)}")
-    log(f"  Prompt history (promoted): {len(prompt_history)}")
+    log(f"  Prompt history (promoted + current run): {len(prompt_history)}")
     if best_source == "promoted_history":
         log(f"  Best score so far (promoted): {best_score:.4f}")
     elif best_source == "checkpoint_only":
@@ -2020,6 +2564,11 @@ def main():
     _diag(f"Loop starting: hours={args.hours}, max_experiments={args.max_experiments}")
     log_diagnostics("startup")
 
+    # Initialize prefetch executor for pipelining Claude API calls
+    global _prefetch_executor
+    _prefetch_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    log("  Prefetch executor initialized (pipelined API calls enabled)")
+
     # Save initial train.py as best if no best exists
     if not os.path.exists(BEST_TRAIN_PY):
         shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)
@@ -2030,19 +2579,38 @@ def main():
     kept_count = 0
     failed_count = 0
     consecutive_failures = 0
+    # Track best experiment's secondary metrics for multi-objective gate
+    best_metrics: dict[str, Any] = {}
+    # Seed from promoted history if available
+    for rec in reversed(prompt_history):
+        if rec.get("kept") and _safe_score(rec) > -999:
+            best_metrics = {k: rec[k] for k in ("profit_factor", "trades_per_day", "trade_sharpe") if k in rec}
+            break
 
     while time.time() < deadline and experiment_id < start_id + args.max_experiments:
         remaining_h = (deadline - time.time()) / 3600
+        scored_so_far = len(run_history) - failed_count
+        accept_rate = kept_count / scored_so_far if scored_so_far > 0 else 0.0
         log(f"Time remaining: {remaining_h:.1f}h | Best score: {best_score:.4f} | "
-            f"Kept: {kept_count} | Failed: {failed_count}")
+            f"Kept: {kept_count} | Failed: {failed_count} | "
+            f"Accept rate: {accept_rate:.0%} ({kept_count}/{scored_so_far})")
+
+        # Strategy collapse check
+        collapse = detect_strategy_collapse(prompt_history)
+        if collapse["collapsed"]:
+            log(f"  ⚠ {collapse['message']}")
+        elif collapse["signals"]:
+            log(f"  ⚡ Collapse signal: {'; '.join(collapse['signals'])}")
 
         exp = run_one_experiment(experiment_id, prompt_history, best_score,
                                 deadline, kept_count, failed_count,
                                 run_total=len(run_history),
                                 time_budget=args.time_budget,
-                                data_fingerprint=data_fingerprint)
+                                data_fingerprint=data_fingerprint,
+                                best_metrics=best_metrics)
         run_history.append(exp)
         append_experiment_v2(exp)
+        append_results_tsv(exp)
         _snapshot_runtime_files_to_run_dir()
 
         # Reap zombies, GC, diagnostics after each experiment
@@ -2050,19 +2618,35 @@ def main():
         gc.collect()
         log_diagnostics(f"post_exp_{experiment_id}")
 
+        # Add ALL experiments to prompt_history so Claude remembers prior attempts
+        prompt_rec = _exp_to_prompt_record(exp)
+        if prompt_rec is not None:
+            prompt_history.append(prompt_rec)
+
         if exp.get("kept"):
             best_score = exp["score"]
             kept_count += 1
             consecutive_failures = 0
-            promoted_event = record_promotion_event(exp)
-            prompt_rec = _promoted_to_prompt_record(promoted_event)
-            if prompt_rec is not None:
-                prompt_history.append(prompt_rec)
+            # Update best metrics for multi-objective gate
+            best_metrics = {
+                "profit_factor": exp.get("profit_factor", 0),
+                "trades_per_day": exp.get("trades_per_day", 0),
+                "trade_sharpe": exp.get("trade_sharpe", 0),
+            }
+            record_promotion_event(exp)
+            full_reasoning = exp.get("_full_reasoning", exp.get("reasoning", ""))
+            update_lab_notebook(exp, full_reasoning)
         elif exp.get("error"):
             failed_count += 1
             consecutive_failures += 1
+            # Auto-populate Dead Ends with failed experiments that had a change summary
+            if exp.get("change_summary"):
+                update_lab_notebook_dead_end(exp)
         else:
             consecutive_failures = 0
+            # Auto-populate Dead Ends with scored-but-rejected experiments
+            if exp.get("change_summary") and _safe_score(exp) > -999:
+                update_lab_notebook_dead_end(exp)
 
         # Update status after experiment
         write_status("between_experiments", experiment_id, best_score,
@@ -2078,6 +2662,10 @@ def main():
 
         experiment_id += 1
         log("")
+
+    # Shut down prefetch executor
+    if _prefetch_executor is not None:
+        _prefetch_executor.shutdown(wait=False)
 
     # Final summary
     write_status("completed", experiment_id - 1, best_score,

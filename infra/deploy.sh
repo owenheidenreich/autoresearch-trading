@@ -32,7 +32,10 @@ DATA_PT="$HOME/.cache/autoresearch-trading/features/data.pt"
 STATE_FILE="$PROJECT_ROOT/.deploy-state"
 
 SSH_PASS="autoresearch2026"
-# Only require API key for commands that need it (boot, start)
+# Auto-source .env if ANTHROPIC_API_KEY is not already set
+if [[ -z "${ANTHROPIC_API_KEY:-}" && -f "$PROJECT_ROOT/.env" ]]; then
+    set -a; source "$PROJECT_ROOT/.env"; set +a
+fi
 ANTHROPIC_KEY="${ANTHROPIC_API_KEY:-}"
 # Optional override to force a specific provider for bidding.
 AKASH_PROVIDER_OVERRIDE="${AKASH_PROVIDER_OVERRIDE:-}"
@@ -367,6 +370,7 @@ cmd_start() {
     source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
     log "Packaging local workspace snapshot..."
     tar -czf "$bundle" -C "$PROJECT_ROOT" \
+        --no-mac-metadata --no-xattrs \
         --exclude='.git' \
         --exclude='.venv' \
         --exclude='.pytest_cache' \
@@ -388,6 +392,7 @@ cmd_start() {
 ln -sfn /root/autoresearch-trading/training/train.py /root/train.py
 ln -sfn /root/autoresearch-trading/training/prepare.py /root/prepare.py
 ln -sfn /root/autoresearch-trading/training/program.md /root/program.md
+ln -sfn /root/autoresearch-trading/training/lab_notebook.md /root/lab_notebook.md
 ln -sfn /root/autoresearch-trading/training/run_loop.py /root/run_loop.py
 ln -sfn /root/autoresearch-trading/infra/start_loop.sh /root/start_loop.sh
 ln -sfn /root/autoresearch-trading/infra/watchdog.sh /root/watchdog.sh
@@ -718,13 +723,15 @@ _run_sync() {
         local run_name
         run_name=$(ssh_cmd "test -f /root/results/current_run.txt && tr -d '\\r\\n' < /root/results/current_run.txt" 2>/dev/null || true)
         if [[ -z "$run_name" ]]; then
-            log "ERROR: Active run pointer missing: /root/results/current_run.txt"
-            return 2
+            log "WARN: Active run pointer missing — retrying in ${poll_interval}s..."
+            sleep "$poll_interval"
+            continue
         fi
         local remote_run_dir="/root/results/$run_name"
         if ! ssh_cmd "test -d $remote_run_dir" &>/dev/null; then
-            log "ERROR: Active run pointer invalid: $remote_run_dir not found"
-            return 2
+            log "WARN: Run dir $remote_run_dir not found — retrying in ${poll_interval}s..."
+            sleep "$poll_interval"
+            continue
         fi
         local local_run_dir="$dest_root/$run_name"
         mkdir -p "$local_run_dir"
@@ -793,11 +800,17 @@ print(f'best_score={s.get(\"best_score\",0)}')
             last_total=$total
             log "  Synced. Best score: $best_score"
 
-        # --- Experiment finished but no improvement: sync canonical logs ---
+        # --- Experiment finished but no improvement: sync metadata + artifacts ---
         elif [[ "$total" -gt "$last_total" ]]; then
-            log "  Exp #$total done (not kept). Syncing run folder metadata..."
+            log "  Exp #$total done (not kept). Syncing metadata + artifacts..."
             for f in experiments.v2.jsonl status.json run_metadata.json data_quality_report.json; do
                 scp_cmd "root@$SSH_HOST:$remote_run_dir/$f" "$local_run_dir/$f" 2>/dev/null || true
+            done
+            # Sync full artifacts for new experiments (reasoning, prompts, candidate code)
+            mkdir -p "$local_run_dir/artifacts"
+            for exp_num in $(seq $((last_total + 1)) $total); do
+                scp_cmd -r "root@$SSH_HOST:$remote_run_dir/artifacts/exp-$exp_num" \
+                    "$local_run_dir/artifacts/" 2>/dev/null || true
             done
             if [[ -f "$PROJECT_ROOT/tools/ingest_evidence.py" ]]; then
                 python3 "$PROJECT_ROOT/tools/ingest_evidence.py" \
@@ -869,8 +882,14 @@ cmd_stop() {
     load_state
     echo ""
     echo "This will: kill loop → download results → close deployment"
-    read -p "Continue? [y/N] " confirm
-    [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
+
+    # Support -y flag for non-interactive usage
+    if [[ "${EXTRA_ARGS:-}" == *"-y"* ]]; then
+        log "Non-interactive mode (-y)"
+    else
+        read -p "Continue? [y/N] " confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
+    fi
 
     # Kill background sync if running
     if [[ -f "$PROJECT_ROOT/.sync-pid" ]]; then
@@ -882,25 +901,26 @@ cmd_stop() {
     fi
 
     log "Killing loop..."
-    ssh_cmd "pkill -f run_loop.py 2>/dev/null || true"
+    ssh_cmd "pkill -f run_loop.py 2>/dev/null || true" || true
 
-    # Wait for loop to actually die (up to 15s) — prevents partial file downloads
-    for _ in $(seq 1 15); do
+    # Wait for loop to actually die (up to 30s) — prevents partial file downloads
+    for _ in $(seq 1 30); do
         if ! ssh_cmd "pgrep -f run_loop.py" &>/dev/null; then
             break
         fi
         sleep 1
     done
     # Force kill if still alive
-    ssh_cmd "pkill -9 -f run_loop.py 2>/dev/null || true" 2>/dev/null
-    sleep 1
+    ssh_cmd "pkill -9 -f run_loop.py 2>/dev/null || true" 2>/dev/null || true
+    sleep 3  # let filesystem flush before downloading
 
     log "Downloading results before closing..."
-    cmd_download
+    cmd_download || log "WARNING: Download failed (container may be dead). Proceeding to close deployment."
 
     log "Closing Akash deployment DSEQ=$DSEQ..."
     provider-services tx deployment close \
-        --dseq "$DSEQ" --from "$AKASH_FROM" --yes 2>&1
+        --dseq "$DSEQ" --from "$AKASH_FROM" --yes 2>&1 \
+        || log "WARNING: Close TX failed (deployment may already be closed)"
     rm -f "$STATE_FILE"
     log "Deployment closed. Results saved."
 }

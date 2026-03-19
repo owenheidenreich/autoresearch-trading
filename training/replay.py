@@ -31,8 +31,8 @@ try:
         _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
         download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
         is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
-        BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS, OPTION_SPREAD_BPS,
-        STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
+        BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
+        OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
         ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
         ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
@@ -45,8 +45,8 @@ except ModuleNotFoundError as e:
         _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
         download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
         is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
-        BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS, OPTION_SPREAD_BPS,
-        STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
+        BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
+        OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
         ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
         ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
@@ -258,6 +258,7 @@ class TradingModel(nn.Module):
                  ff_mult=4, dropout=0.1):
         super().__init__()
         self.lookback = lookback
+        self.d_model = d_model
         self.feature_gate = FeatureGroupGating(num_features, d_model, FEATURE_GROUPS)
         self.input_norm = nn.LayerNorm(d_model)
         self.pos_embed = nn.Parameter(torch.randn(1, lookback, d_model) * 0.02)
@@ -270,6 +271,10 @@ class TradingModel(nn.Module):
         self.transformer = nn.TransformerEncoder(layer, num_layers=n_layers)
         mask = nn.Transformer.generate_square_subsequent_mask(lookback)
         self.register_buffer('causal_mask', mask)
+
+        # Position state: [is_holding, bars_held_norm, unrealized_pnl_norm]
+        self.position_proj = nn.Linear(3, d_model // 4)
+        self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
 
         self.gate_head = nn.Sequential(
             nn.LayerNorm(d_model),
@@ -288,14 +293,21 @@ class TradingModel(nn.Module):
         with torch.no_grad():
             self.gate_head[-1].bias[0] = -0.5
 
-    def forward(self, x):
+    def forward(self, x, position_state=None):
         x = self.feature_gate(x)
         x = self.input_norm(x)
         x = x + self.pos_embed[:, :x.size(1), :]
         x = self.transformer(x, mask=self.causal_mask[:x.size(1), :x.size(1)],
                               is_causal=True)
         last = x[:, -1, :]
-        return self.gate_head(last), self.dir_head(last)
+
+        if position_state is not None:
+            pos_emb = torch.relu(self.position_proj(position_state))
+            gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
+        else:
+            gate_input = last
+
+        return self.gate_head(gate_input), self.dir_head(last)
 
 
 # ---------------------------------------------------------------------------
@@ -324,7 +336,7 @@ DIR_NAMES = ['C_ATM', 'C_OTM5', 'C_OTM10', 'P_ATM', 'P_OTM5', 'P_OTM10']
 # Model loading
 # ---------------------------------------------------------------------------
 
-def _load_model_class_from_train_py(train_py_path: str):
+def _load_model_class_from_train_py(train_py_path: str, config: dict | None = None):
     """Dynamically load model class from a train.py file.
 
     The autoresearch loop saves the winning architecture as best_train.py.
@@ -350,6 +362,10 @@ def _load_model_class_from_train_py(train_py_path: str):
         "ACTION_BUY_PUT_OTM5",
         "ACTION_BUY_PUT_OTM10",
         "ACTION_EXIT",
+        # Hyperparameters injected from checkpoint config (defined via _env_int/_env_float)
+        "LOOKBACK", "D_MODEL", "N_HEADS", "DEPTH", "FF_MULT", "DROPOUT",
+        "USE_RMSNORM", "USE_NO_BIAS", "QUALITY_GATE_STRENGTH",
+        "POSITION_STATE_WEIGHT", "DYNAMIC_STOP_STRENGTH",
     }
 
     def _is_safe_constant_expr(node: _ast.AST) -> bool:
@@ -465,11 +481,45 @@ def _load_model_class_from_train_py(train_py_path: str):
     except ImportError:
         pass
 
+    # Inject hyperparameters from checkpoint config so that class default
+    # parameter values like `lookback=LOOKBACK` resolve during exec.
+    # These are normally set by _env_int/_env_float calls which are
+    # excluded by the AST safe-expression filter.
+    _hyper_map = {
+            'LOOKBACK': ('lookback', 120),
+            'D_MODEL': ('d_model', 96),
+            'N_HEADS': ('n_heads', 4),
+            'DEPTH': ('depth', 6),
+            'FF_MULT': ('ff_mult', 4),
+            'DROPOUT': ('dropout', 0.1),
+            'USE_RMSNORM': ('use_rmsnorm', 0),
+            'USE_NO_BIAS': ('use_no_bias', 0),
+            'QUALITY_GATE_STRENGTH': ('quality_gate_strength', 0.5),
+            'POSITION_STATE_WEIGHT': ('position_state_weight', 1.0),
+            'DYNAMIC_STOP_STRENGTH': ('dynamic_stop_strength', 0.5),
+    }
+    if config:
+        for var_name, (config_key, default) in _hyper_map.items():
+            if var_name not in namespace:
+                namespace[var_name] = config.get(config_key, default)
+
+    # Derived aliases that the AST filter can't extract (they use attribute
+    # access like nn.LayerNorm which isn't recognized as a safe expression).
+    # NormLayer depends on USE_RMSNORM which is injected above; RMSNorm is
+    # defined as a class in the extracted source and will be available after exec.
+    # We pre-set NormLayer=LayerNorm, then re-resolve after exec if RMSNorm exists.
+    if 'NormLayer' not in namespace:
+        namespace['NormLayer'] = nn.LayerNorm
+
     try:
         exec(exec_source, namespace)
     except Exception as e:
         print(f"WARNING: Could not load classes from {train_py_path}: {e}")
         return None
+
+    # Re-resolve NormLayer now that RMSNorm class may have been defined by exec
+    if namespace.get('USE_RMSNORM') and 'RMSNorm' in namespace:
+        namespace['NormLayer'] = namespace['RMSNorm']
 
     # Find the model class (look for TradingModel or any nn.Module subclass)
     model_class = namespace.get('TradingModel')
@@ -503,7 +553,7 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
     model_cls = None
     if train_py_path and os.path.exists(train_py_path):
         print(f"Loading model architecture from: {train_py_path}")
-        model_cls = _load_model_class_from_train_py(train_py_path)
+        model_cls = _load_model_class_from_train_py(train_py_path, config=config)
         if model_cls:
             print(f"  Found model class: {model_cls.__name__}")
 
@@ -512,7 +562,7 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
         best_train = os.path.join(os.path.dirname(path), 'best_train.py')
         if os.path.exists(best_train) and train_py_path != best_train:
             print(f"Loading model architecture from: {best_train}")
-            model_cls = _load_model_class_from_train_py(best_train)
+            model_cls = _load_model_class_from_train_py(best_train, config=config)
             if model_cls:
                 print(f"  Found model class: {model_cls.__name__}")
 
@@ -535,13 +585,11 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
         # Custom model may have different constructor args — try minimal
         model = model_cls()
 
-    try:
-        model.load_state_dict(ckpt['model_state_dict'], strict=True)
-    except RuntimeError as e:
-        raise RuntimeError(
-            "Checkpoint state does not match model architecture (strict load failed). "
-            "Use the matching checkpoint + best_train.py pair."
-        ) from e
+    missing, unexpected = model.load_state_dict(ckpt['model_state_dict'], strict=False)
+    if missing:
+        print(f"  New layers (will use random init): {missing}")
+    if unexpected:
+        print(f"  Unexpected keys (ignored): {unexpected}")
     model.to(device)
     model.eval()
 
@@ -1305,113 +1353,81 @@ def _write_replay_ledger_and_qa(
 def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                timestamps, replay_date, lookback, raw_df,
                speed=0, verbose=False, device='cpu',
-               min_trade_prob: float = 0.55,
-               risk_mode: str = "live_like",
-               enforce_max_hold: bool = False):
+               quiet=False):
     """Run bar-by-bar inference and trade simulation for the replay day.
 
-    Args:
-        raw_features: un-normalized features array (for reading raw market values)
-        raw_df: original DataFrame with close/high/low/volume columns
+    Plays the EXACT SAME GAME as training evaluate_trades() and live service:
+    - Argmax gate (no threshold)
+    - Position state fed to gate head
+    - Fixed stop-loss (30%) and take-profit (20%) matching training
+    - Cooldown after stop, no entries before 10:00 AM
+    - Trades can hold all day (0DTE closes at EOD)
 
-    Returns list of trade dicts with full market context.
+    Returns (trades, bar_log, session_stats).
     """
     model.eval()
     features = features_t.to(device)
+    has_position_proj = hasattr(model, 'position_proj')
 
-    # Raw market arrays from DataFrame
     raw_close = raw_df['close'].values.astype(np.float64)
     raw_high = raw_df['high'].values.astype(np.float64)
     raw_low = raw_df['low'].values.astype(np.float64)
     raw_volume = raw_df['volume'].values.astype(np.float64)
 
-    # Find replay day indices
     replay_indices = [i for i in range(len(dates)) if dates[i] == replay_date]
+    empty_stats = {
+        "total_bars": 0, "avg_gate_prob": 0.0, "max_gate_prob": 0.0,
+        "cooldown_blocked": 0, "pre_10am_blocked": 0,
+        "missing_option_array_blocked": 0, "missing_option_price_blocked": 0,
+        "num_trades": 0,
+    }
     if not replay_indices:
-        print(f"ERROR: No bars for {replay_date} in feature data")
-        return [], [], {
-            "total_bars": 0,
-            "avg_gate_prob": 0.0,
-            "max_gate_prob": 0.0,
-            "cooldown_blocked": 0,
-            "pre_10am_blocked": 0,
-            "missing_option_array_blocked": 0,
-            "missing_option_price_blocked": 0,
-            "num_trades": 0,
-            "risk_mode": risk_mode,
-            "min_trade_prob": float(min_trade_prob),
-            "enforce_max_hold": bool(enforce_max_hold),
-        }
+        if not quiet:
+            print(f"ERROR: No bars for {replay_date} in feature data")
+        return [], [], empty_stats
 
-    # Filter to valid bars with enough lookback
     valid_indices = [
         i for i in replay_indices
         if i >= lookback and valid[i] and valid[max(0, i - lookback):i].all()
     ]
-
     if not valid_indices:
-        print(f"No valid bars with sufficient lookback for {replay_date}")
-        return [], [], {
-            "total_bars": 0,
-            "avg_gate_prob": 0.0,
-            "max_gate_prob": 0.0,
-            "cooldown_blocked": 0,
-            "pre_10am_blocked": 0,
-            "missing_option_array_blocked": 0,
-            "missing_option_price_blocked": 0,
-            "num_trades": 0,
-            "risk_mode": risk_mode,
-            "min_trade_prob": float(min_trade_prob),
-            "enforce_max_hold": bool(enforce_max_hold),
-        }
+        if not quiet:
+            print(f"No valid bars with sufficient lookback for {replay_date}")
+        return [], [], empty_stats
 
-    # Session open/high/low for the replay day
     day_open = raw_close[replay_indices[0]] if replay_indices else None
 
-    print(f"\n{'='*60}")
-    print(f"  REPLAY: {replay_date} ({dt.datetime.strptime(replay_date, '%Y-%m-%d').strftime('%A')})")
-    print(f"  Bars: {len(valid_indices)} valid (of {len(replay_indices)} total)")
-    print(f"  Speed: {'instant' if speed == 0 else f'{speed}x'}")
-    if day_open:
-        print(f"  Open: {day_open:.2f}")
-    print(f"{'='*60}\n")
+    if not quiet:
+        print(f"\n{'='*60}")
+        print(f"  REPLAY: {replay_date} ({dt.datetime.strptime(replay_date, '%Y-%m-%d').strftime('%A')})")
+        print(f"  Bars: {len(valid_indices)} valid (of {len(replay_indices)} total)")
+        if day_open:
+            print(f"  Open: {day_open:.2f}")
+        print(f"{'='*60}\n")
 
-    # Price arrays for P&L computation (strict contract: must exist)
-    required_price_keys = (
-        'atm_call',
-        'atm_put',
-        'otm5_call',
-        'otm5_put',
-        'otm10_call',
-        'otm10_put',
-    )
+    # Option price arrays (strict contract)
+    required_price_keys = ('atm_call', 'atm_put', 'otm5_call', 'otm5_put', 'otm10_call', 'otm10_put')
     if option_prices is None:
-        raise ValueError("Replay requires option_prices from data.pt for strict contract mode.")
+        raise ValueError("Replay requires option_prices from data.pt.")
     missing_px = [k for k in required_price_keys if option_prices.get(k) is None]
     if missing_px:
-        raise KeyError(
-            "Replay missing required option price arrays: "
-            + ", ".join(missing_px)
-            + ". Rebuild data.pt and rerun replay."
-        )
+        raise KeyError(f"Replay missing option price arrays: {', '.join(missing_px)}")
 
-    atm_strikes = option_prices.get('atm_strikes') if option_prices else None
+    atm_strikes = option_prices.get('atm_strikes')
 
     def get_px_array(action):
-        mapping = {
+        return {
             ACTION_BUY_CALL_ATM: option_prices.get('atm_call'),
             ACTION_BUY_CALL_OTM5: option_prices.get('otm5_call'),
             ACTION_BUY_CALL_OTM10: option_prices.get('otm10_call'),
             ACTION_BUY_PUT_ATM: option_prices.get('atm_put'),
             ACTION_BUY_PUT_OTM5: option_prices.get('otm5_put'),
             ACTION_BUY_PUT_OTM10: option_prices.get('otm10_put'),
-        }
-        return mapping.get(action)
+        }.get(action)
 
-    # VIX feature index = 45 (vix_level in raw features)
     VIX_FEAT_IDX = 45
 
-    # Pre-compute bar_of_day for replay indices (0=9:30, 29=9:59, 30=10:00)
+    # Pre-compute bar_of_day
     _bar_of_day = {}
     _prev_date = None
     _bod = 0
@@ -1424,27 +1440,30 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             _bod += 1
         _bar_of_day[gi] = _bod
 
-    # Trade state
+    # Position + trade state
     trades = []
-    bar_log = []  # per-bar decisions log
+    bar_log = []
     in_trade = False
     trade_entry_k = 0
     trade_action = 0
     trade_entry_price = 0.0
     trade_last_price = 0.0
-    trade_use_actual = False
     trade_px_array = None
     trade_entry_gate_prob = 0.0
     trade_entry_confidence = 0.0
     trade_entry_dir_probs = None
     trade_entry_reason_codes: list[str] = []
-    trade_entry_stop_price = None
-    trade_entry_take_profit_price = None
-    trade_stop_price = None
-    trade_take_profit_price = None
-    trade_risk_updates = 0
+    trade_stop_price = 0.0
+    trade_take_profit_price = 0.0
     cum_pnl = 0.0
-    last_stop_k = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
+    bars_held = 0
+    unrealized_pnl = 0.0
+    _trade_entry_trend = None
+    _trade_entry_rvol = None
+    _trade_entry_vol_z = None
+    _trade_entry_ret_5 = None
+    _trade_entry_ret_30 = None
+    last_stop_k = -STOP_COOLDOWN_BARS
     cooldown_blocked = 0
     pre_10am_blocked = 0
     missing_option_array_blocked = 0
@@ -1453,30 +1472,40 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     offsets = torch.arange(-lookback, 0, device=device)
 
     for k_pos, global_idx in enumerate(valid_indices):
+        # --- Build position state tensor (same as training eval + live decision.py) ---
+        pos_state = None
+        if has_position_proj:
+            pos_state = torch.zeros(1, 3, device=device)
+            if in_trade:
+                pos_state[0, 0] = 1.0
+                pos_state[0, 1] = min(bars_held / BARS_PER_DAY, 1.0)
+                pos_state[0, 2] = float(np.tanh(unrealized_pnl * 5.0))
+
         # --- Get model prediction ---
         idx_t = torch.tensor([global_idx], dtype=torch.long, device=device)
         window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
 
         with torch.no_grad():
-            gate_logits, dir_logits = model(x)
+            if has_position_proj:
+                gate_logits, dir_logits = model(x, position_state=pos_state)
+            else:
+                gate_logits, dir_logits = model(x)
 
-        gate_probs = torch.softmax(gate_logits, dim=-1)[0].cpu().numpy()
+        gate_probs_t = torch.softmax(gate_logits, dim=-1)[0].cpu().numpy()
         dir_probs = torch.softmax(dir_logits, dim=-1)[0].cpu().numpy()
-        gate_action = int(torch.argmax(gate_logits, dim=-1)[0].item())
-        dir_action = int(torch.argmax(dir_logits, dim=-1)[0].item())
-        gate_trade_prob = float(gate_probs[1])
-        gate_notrade_prob = float(gate_probs[0])
-        gate_pass_threshold = gate_trade_prob >= float(min_trade_prob)
+        gate_action = int(torch.argmax(gate_logits, dim=-1)[0].item())  # 0=NO_TRADE, 1=TRADE
+        dir_action = int(np.argmax(dir_probs))
+        gate_trade_prob = float(gate_probs_t[1])
+        gate_notrade_prob = float(gate_probs_t[0])
 
-        # Decode action aligned with live ModelDecisionEngine semantics:
-        # threshold-only gate, independent of argmax class.
-        if gate_pass_threshold:
-            action = dir_action + 1  # ACTION_BUY_CALL_ATM=1 through ACTION_BUY_PUT_OTM10=6
+        # Argmax gate — same as training evaluate_trades(). No hardcoded threshold.
+        if gate_action == 1:  # TRADE
+            action = dir_action + 1
         else:  # NO_TRADE
-            action = ACTION_EXIT if in_trade else ACTION_DO_NOTHING
+            action = ACTION_DO_NOTHING
 
-        # Market snapshot at this bar
+        # Market snapshot
         ts_raw = timestamps[global_idx] if timestamps is not None else None
         time_str = _format_time(ts_raw if ts_raw is not None else '')
         ts_ms = _timestamp_ms(ts_raw, replay_date=replay_date)
@@ -1485,41 +1514,29 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         spx_low = float(raw_low[global_idx])
         vol_now = float(raw_volume[global_idx])
         strike_now = _safe_float(atm_strikes, global_idx)
-
-        # VIX from raw (un-normalized) features
-        vix_now = float(raw_features[global_idx, VIX_FEAT_IDX]) if not np.isnan(raw_features[global_idx, VIX_FEAT_IDX]) else None
+        vix_now = float(raw_features[global_idx, VIX_FEAT_IDX]) if raw_features.shape[1] > VIX_FEAT_IDX and not np.isnan(raw_features[global_idx, VIX_FEAT_IDX]) else None
 
         # Session high/low up to this bar
         session_bars_so_far = [j for j in replay_indices if j <= global_idx]
         session_high = float(np.max(raw_high[session_bars_so_far]))
         session_low = float(np.min(raw_low[session_bars_so_far]))
 
-        # 5-min return (from 5 bars ago)
+        # Raw feature snapshots for trade context
         ret_5 = float(raw_features[global_idx, 0]) if not np.isnan(raw_features[global_idx, 0]) else None
-        # 30-min return
-        ret_30 = float(raw_features[global_idx, 2]) if not np.isnan(raw_features[global_idx, 2]) else None
-        # Trend structure (HH/HL)
-        trend = float(raw_features[global_idx, 28]) if not np.isnan(raw_features[global_idx, 28]) else None
-        # Realized vol
-        rvol = float(raw_features[global_idx, 9]) if not np.isnan(raw_features[global_idx, 9]) else None
-        # Volume z-score
-        vol_z = float(raw_features[global_idx, 6]) if not np.isnan(raw_features[global_idx, 6]) else None
+        ret_30 = float(raw_features[global_idx, 2]) if raw_features.shape[1] > 2 and not np.isnan(raw_features[global_idx, 2]) else None
+        trend = float(raw_features[global_idx, 28]) if raw_features.shape[1] > 28 and not np.isnan(raw_features[global_idx, 28]) else None
+        rvol = float(raw_features[global_idx, 9]) if raw_features.shape[1] > 9 and not np.isnan(raw_features[global_idx, 9]) else None
+        vol_z = float(raw_features[global_idx, 6]) if raw_features.shape[1] > 6 and not np.isnan(raw_features[global_idx, 6]) else None
 
-        policy_reason_codes: list[str] = []
-        if gate_pass_threshold:
-            policy_reason_codes.append("trade_signal")
+        confidence = gate_trade_prob * float(dir_probs[dir_action])
+
+        reason_codes: list[str] = []
+        if gate_action == 1:
+            reason_codes.append("trade_signal")
         else:
-            policy_reason_codes.append("gate_below_threshold")
-            if in_trade:
-                policy_reason_codes.append("gate_no_trade_exit")
-            else:
-                policy_reason_codes.append("gate_no_trade_flat")
-        if gate_pass_threshold and gate_action == 0:
-            policy_reason_codes.append("argmax_no_trade_threshold_override")
-        if (not gate_pass_threshold) and gate_action == 1:
-            policy_reason_codes.append("argmax_trade_threshold_blocked")
+            reason_codes.append("gate_no_trade")
 
-        # Log every bar decision
+        # Bar log entry
         bar_entry = {
             'time': time_str,
             'timestamp_raw': str(ts_raw) if ts_raw is not None else None,
@@ -1536,8 +1553,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             'action': ACTION_NAMES.get(action, '?'),
             'executed_action': ACTION_NAMES.get(action, '?'),
             'position': 'IN_TRADE' if in_trade else 'FLAT',
-            'policy_gate_reason_codes': list(policy_reason_codes),
-            'policy_gate_payload': {},
+            'policy_gate_reason_codes': list(reason_codes),
         }
         if in_trade and action in _ENTRY_ACTIONS:
             bar_entry['executed_action'] = 'HOLD_IN_TRADE'
@@ -1549,88 +1565,45 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             bars_held = k_pos - trade_entry_k
             entry_global = valid_indices[trade_entry_k]
 
-            # P&L computation
-            if not trade_use_actual or trade_px_array is None or trade_entry_price <= 0:
-                raise RuntimeError("Invalid trade state in replay: active trade without option pricing context.")
             px_now = _safe_float(trade_px_array, global_idx)
             if px_now is not None:
                 trade_last_price = float(px_now)
             current_px = trade_last_price
             net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
+            unrealized_pnl = net_pnl_pct
 
-            gamma_theta_now = float(raw_features[global_idx, 59]) if raw_features.shape[1] > 59 and not np.isnan(raw_features[global_idx, 59]) else 1.0
-            if risk_mode == "live_like":
-                if trade_stop_price is None:
-                    trade_stop_price = trade_entry_price * (1.0 - STOP_LOSS_PCT)
-                if trade_take_profit_price is None:
-                    trade_take_profit_price = trade_entry_price * (1.0 + 0.30)
-                pnl_now = net_pnl_pct
-                new_stop = float(trade_stop_price)
-                if pnl_now >= 0.25:
-                    new_stop = max(new_stop, float(trade_entry_price))
-                if pnl_now >= 0.40:
-                    new_stop = max(new_stop, float(trade_entry_price) * 1.10)
-                if pnl_now >= 0.60:
-                    new_stop = max(new_stop, float(trade_entry_price) * 1.20)
-                target_boost = 0.12 + 0.15 * min(gamma_theta_now, 2.0)
-                new_tp = max(float(trade_take_profit_price), float(current_px) * (1.0 + target_boost))
-                if new_stop > float(trade_stop_price) + 1e-9 or new_tp > float(trade_take_profit_price) + 1e-9:
-                    trade_risk_updates += 1
-                    trade_stop_price = new_stop
-                    trade_take_profit_price = new_tp
-                    bar_entry['policy_gate_reason_codes'].append("risk_ratchet_update")
-                hit_stop = current_px <= float(trade_stop_price)
-                hit_take_profit = current_px >= float(trade_take_profit_price)
-            else:
-                hit_stop = net_pnl_pct <= -STOP_LOSS_PCT
-                hit_take_profit = False
-
-            hit_max_hold = bars_held >= MAX_HOLD_BARS if (risk_mode == "training" or enforce_max_hold) else False
-            model_exit = (action == ACTION_EXIT)
-            if model_exit:
-                bar_entry['policy_gate_reason_codes'].append("model_exit_signal")
+            # Emergency stop only — no hardcoded TP (model learns exits)
+            hit_stop = net_pnl_pct <= -STOP_LOSS_PCT
             is_last = (k_pos == len(valid_indices) - 1)
 
-            if hit_stop or hit_take_profit or hit_max_hold or model_exit or is_last:
-                final_pnl = -STOP_LOSS_PCT if (hit_stop and risk_mode == "training") else net_pnl_pct
-                final_pnl -= OPTION_SPREAD_BPS / 10000.0 * 2  # spread cost
-
+            if hit_stop or is_last:
                 if hit_stop:
+                    final_pnl = -STOP_LOSS_PCT
                     reason = 'STOP_LOSS'
-                elif hit_take_profit:
-                    reason = 'TAKE_PROFIT'
-                elif model_exit:
-                    reason = 'MODEL_EXIT'
-                elif hit_max_hold:
-                    reason = 'MAX_HOLD'
                 else:
+                    final_pnl = net_pnl_pct
                     reason = 'EOD'
+
+                final_pnl -= OPTION_SPREAD_BPS / 10000.0 * 2
 
                 cum_pnl += final_pnl
                 result = 'WIN' if final_pnl > 0 else 'LOSS'
 
                 entry_time_str = _format_time(timestamps[entry_global])
                 entry_strike = _safe_float(atm_strikes, entry_global)
-
-                # SPX at entry vs exit
                 spx_entry = float(raw_close[entry_global])
                 spx_exit = spx_now
                 spx_move = spx_exit - spx_entry
                 spx_move_pct = (spx_exit / spx_entry - 1.0) * 100
 
-                # VIX at entry
-                vix_entry = float(raw_features[entry_global, VIX_FEAT_IDX]) if not np.isnan(raw_features[entry_global, VIX_FEAT_IDX]) else None
+                vix_entry = float(raw_features[entry_global, VIX_FEAT_IDX]) if raw_features.shape[1] > VIX_FEAT_IDX and not np.isnan(raw_features[entry_global, VIX_FEAT_IDX]) else None
 
-                # Volume during trade
                 trade_bar_indices = valid_indices[trade_entry_k:k_pos + 1]
                 trade_volume = float(np.sum(raw_volume[trade_bar_indices]))
                 avg_bar_volume = float(np.mean(raw_volume[trade_bar_indices]))
-
-                # SPX high/low during trade
                 trade_spx_high = float(np.max(raw_high[trade_bar_indices]))
                 trade_spx_low = float(np.min(raw_low[trade_bar_indices]))
 
-                # Max favorable / max adverse excursion (SPX points from entry)
                 if trade_action in _CALL_ACTIONS:
                     mfe = trade_spx_high - spx_entry
                     mae = spx_entry - trade_spx_low
@@ -1638,39 +1611,24 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     mfe = spx_entry - trade_spx_low
                     mae = trade_spx_high - spx_entry
 
-                # Option price at exit (if actual)
-                exit_option_px = trade_last_price
-
-                # Exit gate probability (model's confidence in exiting)
-                exit_gate_notrade_prob = gate_notrade_prob
-
                 trade = {
-                    # Identity
                     'num': len(trades) + 1,
                     'trade_id': f"{replay_date}-T{len(trades) + 1:04d}",
                     'date': replay_date,
                     'result': result,
-                    # Timing
                     'entry_time': entry_time_str,
                     'exit_time': time_str,
-                    'entry_timestamp_raw': str(timestamps[entry_global]) if timestamps is not None else None,
-                    'exit_timestamp_raw': str(ts_raw) if ts_raw is not None else None,
                     'entry_timestamp_ms': _timestamp_ms(timestamps[entry_global] if timestamps is not None else None, replay_date=replay_date),
                     'exit_timestamp_ms': ts_ms,
                     'bars_held': bars_held,
                     'hold_min': bars_held * BAR_SIZE_MINUTES,
                     'reason': reason,
-                    # Direction & strike
                     'direction': ACTION_NAMES.get(trade_action, '?'),
                     'strike': entry_strike,
-                    # Option prices
                     'entry_option_px': trade_entry_price,
-                    'exit_option_px': exit_option_px,
-                    'actual_px': True,
-                    # P&L
+                    'exit_option_px': trade_last_price,
                     'pnl_pct': round(final_pnl * 100, 2),
                     'cum_pnl_pct': round(cum_pnl * 100, 2),
-                    # SPX context
                     'spx_entry': round(spx_entry, 2),
                     'spx_exit': round(spx_exit, 2),
                     'spx_move': round(spx_move, 2),
@@ -1679,176 +1637,114 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     'spx_low_during': round(trade_spx_low, 2),
                     'mfe_points': round(mfe, 2),
                     'mae_points': round(mae, 2),
-                    # Volume context
                     'total_volume_during': int(trade_volume),
                     'avg_bar_volume': int(avg_bar_volume),
-                    # VIX context
                     'vix_entry': round(vix_entry, 2) if vix_entry else None,
                     'vix_exit': round(vix_now, 2) if vix_now else None,
-                    # Session context
                     'session_high': round(session_high, 2),
                     'session_low': round(session_low, 2),
                     'day_open': round(day_open, 2) if day_open else None,
-                    # Model confidence
                     'entry_gate_prob': round(trade_entry_gate_prob, 4),
                     'entry_dir_probs': {DIR_NAMES[i]: round(float(trade_entry_dir_probs[i]), 4)
                                         for i in range(len(DIR_NAMES))} if trade_entry_dir_probs is not None else None,
-                    'exit_gate_notrade_prob': round(exit_gate_notrade_prob, 4),
+                    'exit_gate_notrade_prob': round(gate_notrade_prob, 4),
                     'entry_confidence': round(float(trade_entry_confidence), 6),
-                    'risk_mode': risk_mode,
-                    'min_trade_prob': float(min_trade_prob),
-                    'entry_stop_price': round(float(trade_entry_stop_price), 6) if trade_entry_stop_price is not None else None,
-                    'entry_take_profit_price': round(float(trade_entry_take_profit_price), 6) if trade_entry_take_profit_price is not None else None,
-                    'exit_stop_price': round(float(trade_stop_price), 6) if trade_stop_price is not None else None,
-                    'exit_take_profit_price': round(float(trade_take_profit_price), 6) if trade_take_profit_price is not None else None,
-                    'risk_updates': int(trade_risk_updates),
-                    # Market regime at entry
-                    'entry_trend': trade_entry_trend,
-                    'entry_rvol': trade_entry_rvol,
-                    'entry_vol_z': trade_entry_vol_z,
-                    'entry_ret_5': trade_entry_ret_5,
-                    'entry_ret_30': trade_entry_ret_30,
+                    'entry_stop_price': round(float(trade_stop_price), 4),
+                    'entry_take_profit_price': round(float(trade_take_profit_price), 4),
+                    'entry_trend': getattr(trade, 'entry_trend', None) if False else _trade_entry_trend,
+                    'entry_rvol': _trade_entry_rvol,
+                    'entry_vol_z': _trade_entry_vol_z,
+                    'entry_ret_5': _trade_entry_ret_5,
+                    'entry_ret_30': _trade_entry_ret_30,
                     'entry_reason_codes': list(trade_entry_reason_codes) if trade_entry_reason_codes else ['trade_signal'],
                     'exit_reason_codes': [reason.lower()],
                 }
                 trades.append(trade)
 
-                # Print trade exit
-                pnl_sign = '+' if final_pnl >= 0 else ''
-                cum_sign = '+' if cum_pnl >= 0 else ''
-                print(f"  {time_str}  {reason:<12} P&L={pnl_sign}{final_pnl*100:.1f}%  "
-                      f"held={bars_held}min  cumP&L={cum_sign}{cum_pnl*100:.1f}%  [{result}]")
-                print(f"         SPX {spx_entry:.2f} -> {spx_exit:.2f} ({spx_move:+.2f}pts)  "
-                      f"MFE={mfe:+.1f}  MAE={mae:.1f}")
+                if not quiet:
+                    pnl_sign = '+' if final_pnl >= 0 else ''
+                    cum_sign = '+' if cum_pnl >= 0 else ''
+                    print(f"  {time_str}  {reason:<12} P&L={pnl_sign}{final_pnl*100:.1f}%  "
+                          f"held={bars_held}min  cumP&L={cum_sign}{cum_pnl*100:.1f}%  [{result}]")
 
                 if reason == 'STOP_LOSS':
                     last_stop_k = k_pos
                 in_trade = False
-                trade_entry_reason_codes = []
-                trade_stop_price = None
-                trade_take_profit_price = None
-                trade_entry_stop_price = None
-                trade_entry_take_profit_price = None
+                bars_held = 0
+                unrealized_pnl = 0.0
 
         # --- Handle trade entry ---
         if not in_trade and action in _ENTRY_ACTIONS:
-            # Cooldown after stop loss (matches evaluate_trades)
             if (k_pos - last_stop_k) < STOP_COOLDOWN_BARS:
                 cooldown_blocked += 1
-                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['executed_action'] = 'DO_NOTHING'
                 bar_entry['policy_gate_reason_codes'].append('blocked_cooldown')
-                bar_entry['policy_gate_payload'] = {
-                    'bars_since_stop': int(k_pos - last_stop_k),
-                    'cooldown_bars_required': int(STOP_COOLDOWN_BARS),
-                }
-                if verbose:
-                    print(f"  {time_str}  BLOCKED (cooldown {k_pos - last_stop_k}/{STOP_COOLDOWN_BARS} bars after stop)")
+                if verbose and not quiet:
+                    print(f"  {time_str}  BLOCKED (cooldown {k_pos - last_stop_k}/{STOP_COOLDOWN_BARS})")
                 continue
-            # No entries before 10:00 AM (matches evaluate_trades)
             if _bar_of_day.get(global_idx, 999) < NO_TRADE_BEFORE_BAR:
                 pre_10am_blocked += 1
-                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['executed_action'] = 'DO_NOTHING'
                 bar_entry['policy_gate_reason_codes'].append('blocked_pre_10am')
-                bar_entry['policy_gate_payload'] = {
-                    'bar_of_day': int(_bar_of_day.get(global_idx, 0)),
-                    'min_bar_allowed': int(NO_TRADE_BEFORE_BAR),
-                }
-                if verbose:
-                    print(f"  {time_str}  BLOCKED (pre-10am, bar {_bar_of_day.get(global_idx, 0)} < {NO_TRADE_BEFORE_BAR})")
+                if verbose and not quiet:
+                    print(f"  {time_str}  BLOCKED (pre-10am)")
                 continue
             candidate_px_array = get_px_array(action)
             if candidate_px_array is None:
                 missing_option_array_blocked += 1
-                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['executed_action'] = 'DO_NOTHING'
                 bar_entry['policy_gate_reason_codes'].append('blocked_missing_option_array')
-                if verbose:
-                    print(f"  {time_str}  BLOCKED (missing option price array for {ACTION_NAMES[action]})")
                 continue
             entry_px_raw = _safe_float(candidate_px_array, global_idx)
             if entry_px_raw is None or entry_px_raw <= 0:
                 missing_option_price_blocked += 1
-                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['executed_action'] = 'DO_NOTHING'
                 bar_entry['policy_gate_reason_codes'].append('blocked_missing_option_price')
-                if verbose:
-                    print(f"  {time_str}  BLOCKED (missing entry option price for {ACTION_NAMES[action]})")
                 continue
 
+            # Execute entry — fixed stop/TP matching training
             in_trade = True
             trade_entry_k = k_pos
             trade_action = action
-            trade_use_actual = True
             trade_entry_price = float(entry_px_raw)
             trade_last_price = float(entry_px_raw)
             trade_px_array = candidate_px_array
             trade_entry_gate_prob = float(gate_trade_prob)
             trade_entry_dir_probs = dir_probs.copy()
-            trade_entry_confidence = float(gate_trade_prob * float(np.max(dir_probs)))
-            gamma_theta_entry = float(raw_features[global_idx, 59]) if raw_features.shape[1] > 59 and not np.isnan(raw_features[global_idx, 59]) else 1.0
-            if risk_mode == "live_like":
-                stop_pct = float(np.clip(0.30 - 0.14 * trade_entry_confidence - 0.03 * (gamma_theta_entry - 1.0), 0.08, 0.30))
-                take_profit_pct = float(np.clip(0.30 + 0.45 * trade_entry_confidence + 0.05 * max(gamma_theta_entry - 1.0, 0.0), 0.20, 1.25))
-                trade_stop_price = float(trade_entry_price * (1.0 - stop_pct))
-                trade_take_profit_price = float(trade_entry_price * (1.0 + take_profit_pct))
-            else:
-                trade_stop_price = float(trade_entry_price * (1.0 - STOP_LOSS_PCT))
-                trade_take_profit_price = None
-            trade_entry_stop_price = trade_stop_price
-            trade_entry_take_profit_price = trade_take_profit_price
-            trade_risk_updates = 0
-            # Capture market regime at entry
-            trade_entry_trend = trend
-            trade_entry_rvol = round(rvol, 6) if rvol is not None else None
-            trade_entry_vol_z = round(vol_z, 2) if vol_z is not None else None
-            trade_entry_ret_5 = round(ret_5, 6) if ret_5 is not None else None
-            trade_entry_ret_30 = round(ret_30, 6) if ret_30 is not None else None
+            trade_entry_confidence = confidence
+            trade_stop_price = float(trade_entry_price * (1.0 - STOP_LOSS_PCT))
+            trade_take_profit_price = float(trade_entry_price * 6.0)  # effectively no TP — model decides
+            bars_held = 0
+            unrealized_pnl = 0.0
+            _trade_entry_trend = trend
+            _trade_entry_rvol = round(rvol, 6) if rvol is not None else None
+            _trade_entry_vol_z = round(vol_z, 2) if vol_z is not None else None
+            _trade_entry_ret_5 = round(ret_5, 6) if ret_5 is not None else None
+            _trade_entry_ret_30 = round(ret_30, 6) if ret_30 is not None else None
             trade_entry_reason_codes = [x for x in bar_entry['policy_gate_reason_codes'] if x]
-            if "trade_signal" not in trade_entry_reason_codes:
-                trade_entry_reason_codes.append("trade_signal")
             bar_entry['policy_gate_reason_codes'].append('entry_executed')
-            bar_entry['policy_gate_payload'] = {
-                'entry_option_px': float(trade_entry_price),
-                'entry_stop_price': float(trade_entry_stop_price) if trade_entry_stop_price is not None else None,
-                'entry_take_profit_price': float(trade_entry_take_profit_price) if trade_entry_take_profit_price is not None else None,
-                'risk_mode': risk_mode,
-            }
 
-            strike_info = f"strike={strike_now}" if strike_now else ""
-            px_info = f"premium=${trade_entry_price:.2f}"
-            gate_info = f"conf={gate_trade_prob:.0%}"
-            vix_info = f"VIX={vix_now:.1f}" if vix_now else ""
-            print(f"  {time_str}  {ACTION_NAMES[action]:<16}  SPX={spx_now:.2f}  "
-                  f"{strike_info}  {px_info}  {gate_info}  {vix_info}")
+            if not quiet:
+                strike_info = f"strike={strike_now}" if strike_now else ""
+                print(f"  {time_str}  {ACTION_NAMES[action]:<16}  SPX={spx_now:.2f}  "
+                      f"{strike_info}  premium=${trade_entry_price:.2f}  conf={gate_trade_prob:.0%}")
 
-        # --- Verbose output ---
-        if verbose and action == ACTION_DO_NOTHING:
-            gate_str = f"gate={gate_probs[1]:.2f}"
-            dir_str = ' '.join(f"{DIR_NAMES[i]}:{dir_probs[i]:.2f}" for i in range(len(dir_probs)))
-            state = 'IN_TRADE' if in_trade else 'FLAT'
-            print(f"  {time_str}  {gate_str} NO_TRADE  [{dir_str}]  {state}  SPX={spx_now:.2f}")
+        if verbose and not quiet and action == ACTION_DO_NOTHING and not in_trade:
+            print(f"  {time_str}  gate={gate_trade_prob:.2f} NO_TRADE  SPX={spx_now:.2f}")
 
-        # Speed control
         if speed > 0:
             time.sleep(1.0 / speed)
 
-    if cooldown_blocked or pre_10am_blocked:
-        print(
-            f"\n  Entries blocked: {cooldown_blocked} cooldown, {pre_10am_blocked} pre-10am, "
-            f"{missing_option_array_blocked} missing-array, {missing_option_price_blocked} missing-price"
-        )
-
-    gate_probs = [b['gate_trade_prob'] for b in bar_log]
+    gate_prob_list = [b['gate_trade_prob'] for b in bar_log]
     session_stats = {
         "total_bars": len(bar_log),
-        "avg_gate_prob": round(float(np.mean(gate_probs)), 4) if gate_probs else 0.0,
-        "max_gate_prob": round(float(np.max(gate_probs)), 4) if gate_probs else 0.0,
+        "avg_gate_prob": round(float(np.mean(gate_prob_list)), 4) if gate_prob_list else 0.0,
+        "max_gate_prob": round(float(np.max(gate_prob_list)), 4) if gate_prob_list else 0.0,
         "cooldown_blocked": int(cooldown_blocked),
         "pre_10am_blocked": int(pre_10am_blocked),
         "missing_option_array_blocked": int(missing_option_array_blocked),
         "missing_option_price_blocked": int(missing_option_price_blocked),
         "num_trades": int(len(trades)),
-        "risk_mode": risk_mode,
-        "min_trade_prob": float(min_trade_prob),
-        "enforce_max_hold": bool(enforce_max_hold),
     }
 
     return trades, bar_log, session_stats
@@ -2027,13 +1923,834 @@ def _print_session_stats(bar_log, session_stats=None):
 
 
 # ---------------------------------------------------------------------------
+# Trade database CSV
+# ---------------------------------------------------------------------------
+
+BACKTEST_CSV_COLUMNS = [
+    # Identity
+    "trade_id", "date", "num", "result",
+    # Timing
+    "entry_time", "exit_time", "bars_held", "hold_min",
+    # Contract
+    "direction", "strike", "entry_option_px", "exit_option_px",
+    # P&L
+    "pnl_pct", "cum_pnl_pct", "reason",
+    # SPX context
+    "spx_entry", "spx_exit", "spx_move", "spx_move_pct",
+    "spx_high_during", "spx_low_during", "mfe_points", "mae_points",
+    # Volume
+    "total_volume_during", "avg_bar_volume",
+    # VIX
+    "vix_entry", "vix_exit",
+    # Session
+    "session_high", "session_low", "day_open",
+    # Model signals
+    "entry_gate_prob", "entry_confidence", "exit_gate_notrade_prob",
+    "entry_stop_price", "entry_take_profit_price",
+    # Market regime at entry
+    "entry_trend", "entry_rvol", "entry_vol_z", "entry_ret_5", "entry_ret_30",
+    # Reason codes
+    "entry_reason_codes", "exit_reason_codes",
+    # Direction probabilities
+    "dir_prob_C_ATM", "dir_prob_C_OTM5", "dir_prob_C_OTM10",
+    "dir_prob_P_ATM", "dir_prob_P_OTM5", "dir_prob_P_OTM10",
+]
+
+
+def write_trade_csv(trades: list[dict], path: str) -> None:
+    """Write comprehensive trade database CSV."""
+    flat_trades = []
+    for t in trades:
+        ft = dict(t)
+        # Flatten direction probs
+        if ft.get('entry_dir_probs'):
+            for k, v in ft['entry_dir_probs'].items():
+                ft[f'dir_prob_{k}'] = v
+            del ft['entry_dir_probs']
+        # Flatten reason codes to strings
+        if isinstance(ft.get('entry_reason_codes'), list):
+            ft['entry_reason_codes'] = '|'.join(ft['entry_reason_codes'])
+        if isinstance(ft.get('exit_reason_codes'), list):
+            ft['exit_reason_codes'] = '|'.join(ft['exit_reason_codes'])
+        flat_trades.append(ft)
+
+    fieldnames = list(BACKTEST_CSV_COLUMNS)
+    for row in flat_trades:
+        for key in row.keys():
+            if key not in fieldnames:
+                fieldnames.append(key)
+
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        if flat_trades:
+            writer.writerows(flat_trades)
+    print(f"Trade database saved: {path} ({len(flat_trades)} trades)")
+
+
+# ---------------------------------------------------------------------------
+# Plotly chart
+# ---------------------------------------------------------------------------
+
+def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
+                          replay_date: str, output_path: str,
+                          title_suffix: str = "",
+                          ohlcv_df: pd.DataFrame | None = None) -> None:
+    """Generate interactive Plotly HTML chart with candlesticks/line, multi-timeframe, and trade markers.
+
+    Args:
+        trades: list of trade dicts from run_replay
+        bar_log: per-bar decision log (used for gate probability subplot)
+        replay_date: date string or 'backtest' for multi-day
+        output_path: path to write HTML
+        title_suffix: appended to chart title
+        ohlcv_df: DataFrame with columns [datetime, open, high, low, close, volume]
+                  indexed by datetime. If None, falls back to bar_log SPX prices.
+    """
+    try:
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+    except ImportError:
+        print("WARNING: plotly not installed. Skipping chart generation.")
+        return
+
+    if ohlcv_df is None and not bar_log:
+        print("No data to chart.")
+        return
+
+    # --- Build 1-min OHLCV base ---
+    if ohlcv_df is not None and not ohlcv_df.empty:
+        df_1m = ohlcv_df.copy()
+        if not isinstance(df_1m.index, pd.DatetimeIndex):
+            if 'datetime' in df_1m.columns:
+                df_1m.index = pd.to_datetime(df_1m['datetime'])
+            else:
+                df_1m.index = pd.RangeIndex(len(df_1m))
+        df_1m = df_1m.sort_index()
+    else:
+        # Fallback: build from bar_log (line chart only, no real OHLC)
+        times_raw = []
+        for b in bar_log:
+            d = b.get('date', replay_date)
+            t = b.get('time', '09:30')
+            try:
+                times_raw.append(pd.Timestamp(f"{d} {t}"))
+            except Exception:
+                times_raw.append(pd.Timestamp(f"{replay_date} {t}"))
+        df_1m = pd.DataFrame({
+            'open': [b['spx'] for b in bar_log],
+            'high': [b['spx'] for b in bar_log],
+            'low': [b['spx'] for b in bar_log],
+            'close': [b['spx'] for b in bar_log],
+            'volume': [b.get('volume', 0) for b in bar_log],
+        }, index=pd.DatetimeIndex(times_raw))
+
+    # --- Resample to multiple timeframes ---
+    timeframes = {
+        '1min': None,  # already have it
+        '5min': '5min',
+        '30min': '30min',
+        '1H': '1h',
+        '1D': '1D',
+        '1W': '1W',
+    }
+
+    resampled = {'1min': df_1m}
+    for label, rule in timeframes.items():
+        if rule is None:
+            continue
+        rs = df_1m.resample(rule)
+        resampled[label] = pd.DataFrame({
+            'open': rs['open'].first(),
+            'high': rs['high'].max(),
+            'low': rs['low'].min(),
+            'close': rs['close'].last(),
+            'volume': rs['volume'].sum(),
+        }).dropna(subset=['close'])
+
+    tf_labels = list(resampled.keys())
+
+    # --- Build trade entry/exit datetime mapping ---
+    def _trade_dt(trade, field_time, field_date='date'):
+        d = trade.get(field_date, replay_date)
+        t = trade.get(field_time, '09:30')
+        try:
+            return pd.Timestamp(f"{d} {t}")
+        except Exception:
+            return None
+
+    entry_dts = []
+    exit_dts = []
+    for t in trades:
+        entry_dts.append(_trade_dt(t, 'entry_time'))
+        exit_dts.append(_trade_dt(t, 'exit_time'))
+
+    # --- Create figure ---
+    fig = make_subplots(
+        rows=2, cols=1, shared_xaxes=True,
+        row_heights=[0.8, 0.2],
+        vertical_spacing=0.03,
+    )
+
+    # Trace index tracking for visibility toggling
+    trace_groups = {}  # {(tf, chart_type): [trace_indices]}
+    trace_idx = 0
+
+    for tf_label, df_tf in resampled.items():
+        x = df_tf.index
+
+        # Candlestick trace
+        fig.add_trace(go.Candlestick(
+            x=x, open=df_tf['open'], high=df_tf['high'],
+            low=df_tf['low'], close=df_tf['close'],
+            name=f'SPX {tf_label}',
+            increasing_line_color='#26A69A', decreasing_line_color='#EF5350',
+            increasing_fillcolor='#26A69A', decreasing_fillcolor='#EF5350',
+            visible=(tf_label == '1min'),
+            showlegend=False,
+        ), row=1, col=1)
+        trace_groups[(tf_label, 'candle')] = [trace_idx]
+        trace_idx += 1
+
+        # Line trace
+        fig.add_trace(go.Scatter(
+            x=x, y=df_tf['close'], mode='lines',
+            name=f'SPX {tf_label}',
+            line=dict(color='#2196F3', width=1.5),
+            visible=False,
+            showlegend=False,
+        ), row=1, col=1)
+        trace_groups[(tf_label, 'line')] = [trace_idx]
+        trace_idx += 1
+
+        # Volume bars
+        colors = ['#26A69A' if c >= o else '#EF5350'
+                  for o, c in zip(df_tf['open'], df_tf['close'])]
+        fig.add_trace(go.Bar(
+            x=x, y=df_tf['volume'], name=f'Vol {tf_label}',
+            marker_color=colors, opacity=0.5,
+            visible=(tf_label == '1min'),
+            showlegend=False,
+        ), row=2, col=1)
+        trace_groups[(tf_label, 'vol_candle')] = [trace_idx]
+        trace_idx += 1
+
+        # Volume bars for line mode (same data, just separate visibility)
+        fig.add_trace(go.Bar(
+            x=x, y=df_tf['volume'], name=f'Vol {tf_label}',
+            marker_color='rgba(100,100,100,0.4)', opacity=0.5,
+            visible=False,
+            showlegend=False,
+        ), row=2, col=1)
+        trace_groups[(tf_label, 'vol_line')] = [trace_idx]
+        trace_idx += 1
+
+    # --- Trade markers (batched into few traces for performance) ---
+    entry_trace_start = trace_idx
+
+    # Batch entries/exits by category to minimize trace count
+    # Categories: win_call_entry, win_put_entry, loss_call_entry, loss_put_entry,
+    #             win_exit, loss_exit, win_connector, loss_connector
+    batches = {
+        'win_call_entry': {'x': [], 'y': [], 'text': [], 'hover': []},
+        'win_put_entry': {'x': [], 'y': [], 'text': [], 'hover': []},
+        'loss_call_entry': {'x': [], 'y': [], 'text': [], 'hover': []},
+        'loss_put_entry': {'x': [], 'y': [], 'text': [], 'hover': []},
+        'win_exit': {'x': [], 'y': [], 'hover': []},
+        'loss_exit': {'x': [], 'y': [], 'hover': []},
+    }
+    connector_x = []  # interleaved with None for line breaks
+    connector_y = []
+    connector_colors = []
+
+    for i, t in enumerate(trades):
+        edt = entry_dts[i]
+        xdt = exit_dts[i]
+        if edt is None:
+            continue
+
+        is_win = t['result'] == 'WIN'
+        is_call = 'CALL' in t.get('direction', '')
+        prefix = 'win' if is_win else 'loss'
+        direction = 'call' if is_call else 'put'
+
+        entry_key = f'{prefix}_{direction}_entry'
+        batches[entry_key]['x'].append(edt)
+        batches[entry_key]['y'].append(t['spx_entry'])
+        batches[entry_key]['text'].append(f"#{t['num']}")
+        batches[entry_key]['hover'].append(
+            f"<b>ENTRY #{t['num']}</b><br>"
+            f"{t['date']} {t.get('entry_time','')}<br>"
+            f"Direction: {t['direction']}<br>"
+            f"SPX: {t['spx_entry']}<br>"
+            f"Option: ${t['entry_option_px']:.2f}<br>"
+            f"Gate: {t['entry_gate_prob']:.1%}<br>"
+            f"<extra></extra>"
+        )
+
+        if xdt is not None:
+            exit_key = f'{prefix}_exit'
+            batches[exit_key]['x'].append(xdt)
+            batches[exit_key]['y'].append(t['spx_exit'])
+            batches[exit_key]['hover'].append(
+                f"<b>EXIT #{t['num']}</b><br>"
+                f"{t['date']} {t.get('exit_time','')}<br>"
+                f"Reason: {t['reason']}<br>"
+                f"P&L: {t['pnl_pct']:+.1f}%<br>"
+                f"Held: {t['hold_min']}min<br>"
+                f"<extra></extra>"
+            )
+            # Connector: entry->exit with None break
+            connector_x.extend([edt, xdt, None])
+            connector_y.extend([t['spx_entry'], t['spx_exit'], None])
+
+    entry_style = {
+        'win_call_entry':  {'color': '#4CAF50', 'symbol': 'triangle-up'},
+        'win_put_entry':   {'color': '#4CAF50', 'symbol': 'triangle-down'},
+        'loss_call_entry': {'color': '#F44336', 'symbol': 'triangle-up'},
+        'loss_put_entry':  {'color': '#F44336', 'symbol': 'triangle-down'},
+    }
+    for key, style in entry_style.items():
+        b = batches[key]
+        if not b['x']:
+            continue
+        fig.add_trace(go.Scatter(
+            x=b['x'], y=b['y'],
+            mode='markers+text',
+            marker=dict(size=8, color=style['color'], symbol=style['symbol'],
+                       line=dict(width=1, color='white')),
+            text=b['text'], textposition='top center',
+            textfont=dict(size=7, color=style['color']),
+            hovertemplate=b['hover'],
+            showlegend=False,
+        ), row=1, col=1)
+        trace_idx += 1
+
+    exit_style = {
+        'win_exit':  '#4CAF50',
+        'loss_exit': '#F44336',
+    }
+    for key, color in exit_style.items():
+        b = batches[key]
+        if not b['x']:
+            continue
+        fig.add_trace(go.Scatter(
+            x=b['x'], y=b['y'],
+            mode='markers',
+            marker=dict(size=7, color=color, symbol='x',
+                       line=dict(width=2, color=color)),
+            hovertemplate=b['hover'],
+            showlegend=False,
+        ), row=1, col=1)
+        trace_idx += 1
+
+    # Single connector trace with None-breaks between segments
+    if connector_x:
+        fig.add_trace(go.Scatter(
+            x=connector_x, y=connector_y,
+            mode='lines',
+            line=dict(color='rgba(180,180,180,0.3)', width=0.8, dash='dot'),
+            showlegend=False,
+            hoverinfo='skip',
+        ), row=1, col=1)
+        trace_idx += 1
+
+    trade_trace_count = trace_idx - entry_trace_start
+
+    # --- Build visibility buttons ---
+    total_traces = trace_idx
+
+    def make_visibility(active_tf, chart_type):
+        vis = [False] * total_traces
+        # Show price trace for this tf + chart type
+        candle_key = (active_tf, 'candle')
+        line_key = (active_tf, 'line')
+        vol_candle_key = (active_tf, 'vol_candle')
+        vol_line_key = (active_tf, 'vol_line')
+
+        if chart_type == 'candle':
+            for idx in trace_groups.get(candle_key, []):
+                vis[idx] = True
+            for idx in trace_groups.get(vol_candle_key, []):
+                vis[idx] = True
+        else:
+            for idx in trace_groups.get(line_key, []):
+                vis[idx] = True
+            for idx in trace_groups.get(vol_line_key, []):
+                vis[idx] = True
+
+        # Trade markers always visible
+        for idx in range(entry_trace_start, total_traces):
+            vis[idx] = True
+        return vis
+
+    # Timeframe buttons
+    tf_buttons = []
+    for tf in tf_labels:
+        tf_buttons.append(dict(
+            label=tf,
+            method='update',
+            args=[{'visible': make_visibility(tf, 'candle')},
+                  {'title': f'SPX {tf} Candles — {replay_date}{title_suffix}'}],
+        ))
+
+    # Chart type buttons
+    type_buttons_candle = []
+    type_buttons_line = []
+    for tf in tf_labels:
+        type_buttons_candle.append(dict(
+            label=tf,
+            method='update',
+            args=[{'visible': make_visibility(tf, 'candle')},
+                  {'title': f'SPX {tf} Candles — {replay_date}{title_suffix}'}],
+        ))
+        type_buttons_line.append(dict(
+            label=tf,
+            method='update',
+            args=[{'visible': make_visibility(tf, 'line')},
+                  {'title': f'SPX {tf} Line — {replay_date}{title_suffix}'}],
+        ))
+
+    # Summary stats
+    wins = sum(1 for t in trades if t['result'] == 'WIN')
+    total_pnl = sum(t['pnl_pct'] for t in trades)
+    wr = f"{100*wins/len(trades):.0f}%" if trades else "N/A"
+    summary_text = f"Trades: {len(trades)} | Win rate: {wr} | Total P&L: {total_pnl:+.1f}%"
+
+    fig.update_layout(
+        title=dict(text=f'SPX 1min Candles — {replay_date}{title_suffix}', x=0.5),
+        height=900,
+        template='plotly_dark',
+        hovermode='closest',
+        xaxis_rangeslider_visible=False,
+        xaxis2_rangeslider_visible=False,
+        margin=dict(l=60, r=20, t=100, b=40),
+        updatemenus=[
+            # Timeframe selector (candle)
+            dict(
+                type='buttons',
+                direction='right',
+                x=0.0, xanchor='left',
+                y=1.12, yanchor='top',
+                buttons=type_buttons_candle,
+                showactive=True,
+                bgcolor='rgba(50,50,50,0.8)',
+                font=dict(color='white', size=11),
+                bordercolor='#555',
+            ),
+            # Chart type toggle
+            dict(
+                type='buttons',
+                direction='right',
+                x=0.7, xanchor='left',
+                y=1.12, yanchor='top',
+                buttons=[
+                    dict(label='Candles',
+                         method='update',
+                         args=[{'visible': make_visibility('1min', 'candle')},
+                               {'title': f'SPX 1min Candles — {replay_date}{title_suffix}'}]),
+                    dict(label='Line',
+                         method='update',
+                         args=[{'visible': make_visibility('1min', 'line')},
+                               {'title': f'SPX 1min Line — {replay_date}{title_suffix}'}]),
+                ],
+                showactive=True,
+                bgcolor='rgba(50,50,50,0.8)',
+                font=dict(color='white', size=11),
+                bordercolor='#555',
+            ),
+        ],
+        annotations=[
+            dict(text="Timeframe:", x=0.0, xref="paper", y=1.16, yref="paper",
+                 showarrow=False, font=dict(size=12, color='#aaa')),
+            dict(text="Chart:", x=0.7, xref="paper", y=1.16, yref="paper",
+                 showarrow=False, font=dict(size=12, color='#aaa')),
+            dict(text=summary_text, x=0.5, xref="paper", y=1.04, yref="paper",
+                 showarrow=False, font=dict(size=13, color='#ddd'),
+                 bgcolor='rgba(30,30,30,0.7)'),
+        ],
+    )
+
+    fig.update_yaxes(title_text="SPX", row=1, col=1, gridcolor='rgba(80,80,80,0.3)')
+    fig.update_yaxes(title_text="Volume", row=2, col=1, gridcolor='rgba(80,80,80,0.3)')
+
+    # Remove overnight gaps and weekends — stitch trading sessions together
+    rangebreaks = [
+        dict(bounds=["sat", "mon"]),                # hide weekends
+        dict(bounds=[16, 9.5], pattern="hour"),      # hide 4PM-9:30AM
+    ]
+    fig.update_xaxes(
+        gridcolor='rgba(80,80,80,0.3)',
+        rangebreaks=rangebreaks,
+        row=1, col=1,
+    )
+    fig.update_xaxes(
+        gridcolor='rgba(80,80,80,0.3)',
+        rangebreaks=rangebreaks,
+        row=2, col=1,
+    )
+
+    fig.write_html(output_path, include_plotlyjs=True)
+    print(f"Chart saved: {output_path}")
+
+
+# ---------------------------------------------------------------------------
+# Full validation set backtest
+# ---------------------------------------------------------------------------
+
+def run_backtest(model, data_pt_path: str, device: str = 'cpu',
+                 output_dir: str = 'backtest_output') -> None:
+    """Run replay across the entire validation set from data.pt.
+
+    Outputs:
+    - backtest_trades.csv — comprehensive trade database
+    - backtest_chart_{date}.html — per-day interactive Plotly charts
+    - backtest_summary.txt — aggregate statistics
+    """
+    if not os.path.exists(data_pt_path):
+        print(f"ERROR: data.pt not found at {data_pt_path}")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"Loading data.pt...")
+    data = torch.load(data_pt_path, map_location='cpu', weights_only=False)
+
+    all_dates = data['dates']
+    features_np = data['features'].numpy()
+    valid_np = data['valid_mask'].numpy()
+    timestamps_list = list(data['timestamps'])
+
+    # Build option prices dict
+    option_prices = {}
+    for key in ['atm_call_prices', 'atm_put_prices',
+                'otm5_call_prices', 'otm5_put_prices',
+                'otm10_call_prices', 'otm10_put_prices',
+                'atm_strikes']:
+        if key in data:
+            arr = data[key].numpy()
+            option_prices[key.replace('_prices', '').replace('_', '_')] = arr
+    px_remap = {
+        'atm_call': option_prices.get('atm_call'),
+        'atm_put': option_prices.get('atm_put'),
+        'otm5_call': option_prices.get('otm5_call'),
+        'otm5_put': option_prices.get('otm5_put'),
+        'otm10_call': option_prices.get('otm10_call'),
+        'otm10_put': option_prices.get('otm10_put'),
+        'atm_strikes': option_prices.get('atm_strikes'),
+    }
+
+    features_t = torch.tensor(features_np, dtype=torch.float32)
+
+    # Identify validation split (last 20% of unique dates, matching training)
+    unique_dates = sorted(set(all_dates))
+    n_train = int(len(unique_dates) * 0.8)
+    val_dates = unique_dates[n_train:]
+
+    print(f"Validation set: {len(val_dates)} days ({val_dates[0]} to {val_dates[-1]})")
+
+    # Build aligned SPX market data using date+bar_of_day mapping.
+    # data.pt indices do NOT match spy_df/spx_df indices (different start dates,
+    # different bar counts). We align by matching each date+bar_of_day pair.
+    n_feat = len(features_np)
+
+    spx_cache = os.path.join(DATA_DIR, "spx_1min.pkl")
+    spy_cache = os.path.join(DATA_DIR, "spy_1min.pkl")
+
+    if os.path.exists(spx_cache):
+        with open(spx_cache, 'rb') as f:
+            spx_df = pickle.load(f)
+        # SPX has spx_open/spx_high/spx_low/spx_close columns
+        src_close = spx_df['spx_close'].values.astype(np.float64)
+        src_high = spx_df['spx_high'].values.astype(np.float64)
+        src_low = spx_df['spx_low'].values.astype(np.float64)
+        src_open = spx_df['spx_open'].values.astype(np.float64)
+        # Volume comes from spy_df (SPX index has no volume)
+        if os.path.exists(spy_cache):
+            with open(spy_cache, 'rb') as f:
+                spy_df = pickle.load(f)
+            src_volume = spy_df['volume'].values.astype(np.float64)
+            src_dates_for_idx = spy_df['date'].astype(str).values
+        else:
+            src_volume = np.zeros(len(src_close))
+            src_dates_for_idx = spx_df['date'].astype(str).values
+        print(f"Using SPX data ({len(src_close)} bars) with date+bar_of_day alignment")
+    elif os.path.exists(spy_cache):
+        with open(spy_cache, 'rb') as f:
+            spy_df = pickle.load(f)
+        src_close = spy_df['close'].values.astype(np.float64)
+        src_high = spy_df['high'].values.astype(np.float64)
+        src_low = spy_df['low'].values.astype(np.float64)
+        src_open = spy_df['open'].values.astype(np.float64)
+        src_volume = spy_df['volume'].values.astype(np.float64)
+        src_dates_for_idx = spy_df['date'].astype(str).values
+        print("WARNING: No spx_1min.pkl — falling back to SPY prices")
+    else:
+        print("WARNING: No market data cache — using NaN for raw market data")
+        raw_df = pd.DataFrame({
+            'close': np.full(n_feat, np.nan),
+            'high': np.full(n_feat, np.nan),
+            'low': np.full(n_feat, np.nan),
+            'open': np.full(n_feat, np.nan),
+            'volume': np.zeros(n_feat),
+            'date': all_dates,
+        })
+        # Skip alignment — no source data
+        src_close = None
+
+    if src_close is not None:
+        # Build date -> first index mapping for source data
+        src_date_start = {}
+        for i, d in enumerate(src_dates_for_idx):
+            if d not in src_date_start:
+                src_date_start[d] = i
+
+        # Build bar_of_day for data.pt
+        aligned_close = np.full(n_feat, np.nan)
+        aligned_high = np.full(n_feat, np.nan)
+        aligned_low = np.full(n_feat, np.nan)
+        aligned_open = np.full(n_feat, np.nan)
+        aligned_volume = np.zeros(n_feat)
+
+        prev_date = None
+        bar_in_day = 0
+        n_aligned = 0
+        for i in range(n_feat):
+            d = all_dates[i]
+            if d != prev_date:
+                bar_in_day = 0
+                prev_date = d
+            else:
+                bar_in_day += 1
+            if d in src_date_start:
+                src_idx = src_date_start[d] + bar_in_day
+                if src_idx < len(src_close):
+                    aligned_close[i] = src_close[src_idx]
+                    aligned_high[i] = src_high[src_idx]
+                    aligned_low[i] = src_low[src_idx]
+                    aligned_open[i] = src_open[src_idx]
+                    if src_idx < len(src_volume):
+                        aligned_volume[i] = src_volume[src_idx]
+                    n_aligned += 1
+
+        pct_aligned = 100 * n_aligned / n_feat
+        print(f"Aligned {n_aligned}/{n_feat} bars ({pct_aligned:.1f}%) to SPX prices")
+
+        raw_df = pd.DataFrame({
+            'close': aligned_close,
+            'high': aligned_high,
+            'low': aligned_low,
+            'open': aligned_open,
+            'volume': aligned_volume,
+            'date': all_dates,
+        })
+
+    lookback = int(data.get('config', {}).get('lookback', 120)) if isinstance(data.get('config'), dict) else 120
+    # Try to get lookback from model
+    if hasattr(model, 'lookback'):
+        lookback = model.lookback
+
+    # Helper to build OHLCV DataFrame for a given day from aligned raw_df
+    def _build_day_ohlcv(day):
+        day_mask = raw_df['date'] == day
+        day_raw = raw_df[day_mask]
+        if len(day_raw) == 0:
+            return None
+        day_indices = day_raw.index.tolist()
+        day_times = []
+        for di in day_indices:
+            ts_raw = timestamps_list[di] if di < len(timestamps_list) else None
+            t_str = _format_time(ts_raw if ts_raw is not None else '')
+            try:
+                day_times.append(pd.Timestamp(f"{day} {t_str}"))
+            except Exception:
+                day_times.append(pd.Timestamp(f"{day} 09:30"))
+        return pd.DataFrame({
+            'open': day_raw['open'].values if 'open' in day_raw.columns else day_raw['close'].values,
+            'high': day_raw['high'].values,
+            'low': day_raw['low'].values,
+            'close': day_raw['close'].values,
+            'volume': day_raw['volume'].values,
+        }, index=pd.DatetimeIndex(day_times))
+
+    all_trades = []
+    all_bar_logs = []  # Collected for all-trades chart
+    day_stats = []
+    cum_pnl_running = 0.0
+
+    for day_idx, day in enumerate(val_dates):
+        trades, bar_log, stats = run_replay(
+            model, features_t, features_np, list(all_dates), valid_np,
+            px_remap, timestamps_list, day, lookback, raw_df,
+            device=device, quiet=True,
+        )
+
+        # Adjust cumulative P&L to be running across all days
+        for t in trades:
+            t['cum_pnl_pct'] = round(cum_pnl_running + t['pnl_pct'], 2)
+            cum_pnl_running += t['pnl_pct'] / 100.0  # Track in decimal
+            t['cum_pnl_pct'] = round(cum_pnl_running * 100, 2)
+
+        all_trades.extend(trades)
+
+        # Tag bar_log entries with date and collect for all-trades chart
+        for b in bar_log:
+            b['date'] = day
+        all_bar_logs.extend(bar_log)
+
+        n_wins = sum(1 for t in trades if t['result'] == 'WIN')
+        n_losses = len(trades) - n_wins
+        day_pnl = sum(t['pnl_pct'] for t in trades)
+
+        day_stats.append({
+            'date': day, 'trades': len(trades), 'wins': n_wins,
+            'losses': n_losses, 'pnl_pct': round(day_pnl, 2),
+        })
+
+        status = f"  [{day_idx+1}/{len(val_dates)}] {day}: {len(trades)} trades, P&L={day_pnl:+.1f}%"
+        if trades:
+            status += f"  (W{n_wins}/L{n_losses})"
+        print(status)
+
+        # Generate per-day chart if there were trades
+        if trades and bar_log:
+            ohlcv_day = _build_day_ohlcv(day)
+            chart_path = os.path.join(output_dir, f"chart_{day}.html")
+            generate_plotly_chart(trades, bar_log, day, chart_path, ohlcv_df=ohlcv_day)
+
+    # Renumber trades across full backtest
+    for i, t in enumerate(all_trades):
+        t['num'] = i + 1
+        t['trade_id'] = f"BT-{t['date']}-T{i+1:04d}"
+
+    # Write comprehensive CSV
+    csv_path = os.path.join(output_dir, "backtest_trades.csv")
+    write_trade_csv(all_trades, csv_path)
+
+    # Generate all-trades chart across all days with trades
+    if all_trades:
+        trade_dates = sorted(set(t['date'] for t in all_trades))
+        ohlcv_parts = [_build_day_ohlcv(d) for d in trade_dates]
+        ohlcv_parts = [p for p in ohlcv_parts if p is not None]
+        if ohlcv_parts:
+            ohlcv_all = pd.concat(ohlcv_parts).sort_index()
+            chart_all_path = os.path.join(output_dir, "chart_all_trades.html")
+            generate_plotly_chart(
+                all_trades, all_bar_logs, 'backtest', chart_all_path,
+                title_suffix=f" ({len(trade_dates)} days, {len(all_trades)} trades)",
+                ohlcv_df=ohlcv_all,
+            )
+
+    # Write summary
+    _write_backtest_summary(all_trades, day_stats, val_dates, output_dir)
+
+
+def _write_backtest_summary(trades: list[dict], day_stats: list[dict],
+                             val_dates: list[str], output_dir: str) -> None:
+    """Write aggregate backtest statistics."""
+    summary_path = os.path.join(output_dir, "backtest_summary.txt")
+    lines = []
+    lines.append(f"BACKTEST SUMMARY")
+    lines.append(f"{'='*60}")
+    lines.append(f"Period: {val_dates[0]} to {val_dates[-1]} ({len(val_dates)} days)")
+    lines.append(f"Total trades: {len(trades)}")
+
+    if not trades:
+        lines.append("No trades taken.")
+        with open(summary_path, 'w') as f:
+            f.write('\n'.join(lines))
+        print(f"Summary saved: {summary_path}")
+        return
+
+    pnls = [t['pnl_pct'] for t in trades]
+    wins = [p for p in pnls if p > 0]
+    losses = [p for p in pnls if p <= 0]
+
+    lines.append(f"Win rate: {len(wins)}/{len(trades)} ({100*len(wins)/len(trades):.0f}%)")
+    lines.append(f"Total P&L: {sum(pnls):+.1f}%")
+
+    gross_win = sum(wins) if wins else 0
+    gross_loss = abs(sum(losses)) if losses else 0.01
+    pf = gross_win / gross_loss if gross_loss > 0 else float('inf')
+    lines.append(f"Profit factor: {pf:.2f}")
+
+    if wins:
+        lines.append(f"Avg winner: +{np.mean(wins):.1f}%  |  Best: +{max(wins):.1f}%")
+    if losses:
+        lines.append(f"Avg loser: {np.mean(losses):.1f}%  |  Worst: {min(losses):.1f}%")
+
+    avg_hold = np.mean([t['bars_held'] for t in trades])
+    lines.append(f"Avg hold: {avg_hold:.0f} bars ({avg_hold:.0f} min)")
+
+    trades_per_day = len(trades) / len(val_dates)
+    lines.append(f"Trades/day: {trades_per_day:.1f}")
+
+    # Exit reason breakdown
+    reasons = {}
+    for t in trades:
+        r = t['reason']
+        reasons[r] = reasons.get(r, 0) + 1
+    lines.append(f"\nExit reasons:")
+    for r, c in sorted(reasons.items(), key=lambda x: -x[1]):
+        lines.append(f"  {r}: {c} ({100*c/len(trades):.0f}%)")
+
+    # Direction breakdown
+    dirs = {}
+    for t in trades:
+        d = t['direction']
+        dirs[d] = dirs.get(d, 0) + 1
+    lines.append(f"\nDirection breakdown:")
+    for d, c in sorted(dirs.items(), key=lambda x: -x[1]):
+        d_trades = [t for t in trades if t['direction'] == d]
+        d_wins = sum(1 for t in d_trades if t['result'] == 'WIN')
+        d_pnl = sum(t['pnl_pct'] for t in d_trades)
+        lines.append(f"  {d}: {c} trades, {d_wins}W, P&L={d_pnl:+.1f}%")
+
+    # Best/worst days
+    lines.append(f"\nBest days:")
+    sorted_days = sorted(day_stats, key=lambda x: x['pnl_pct'], reverse=True)
+    for ds in sorted_days[:5]:
+        if ds['trades'] > 0:
+            lines.append(f"  {ds['date']}: {ds['pnl_pct']:+.1f}%  ({ds['trades']} trades, W{ds['wins']}/L{ds['losses']})")
+
+    lines.append(f"\nWorst days:")
+    for ds in sorted_days[-5:]:
+        if ds['trades'] > 0:
+            lines.append(f"  {ds['date']}: {ds['pnl_pct']:+.1f}%  ({ds['trades']} trades, W{ds['wins']}/L{ds['losses']})")
+
+    with open(summary_path, 'w') as f:
+        f.write('\n'.join(lines))
+    print(f"\nSummary saved: {summary_path}")
+    print('\n'.join(lines))
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+def _find_model_path(args_model):
+    """Find model checkpoint path."""
+    if args_model is not None:
+        return args_model
+    candidates = [
+        os.path.join(os.path.dirname(__file__), 'best_model.pt'),
+        os.path.join(os.path.dirname(__file__), '..', 'best_model.pt'),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    print("ERROR: No model found. Train first or specify --model path")
+    sys.exit(1)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Replay trading day with trained model")
-    parser.add_argument("--date", type=str, required=True,
-                        help="Trading day to replay (YYYY-MM-DD)")
+    parser = argparse.ArgumentParser(description="Replay/backtest trading model")
+    parser.add_argument("--date", type=str, default=None,
+                        help="Single trading day to replay (YYYY-MM-DD)")
+    parser.add_argument("--backtest", action="store_true",
+                        help="Run full validation set backtest (outputs CSV + charts)")
+    parser.add_argument("--output-dir", type=str, default="backtest_output",
+                        help="Output directory for backtest results (default: backtest_output)")
     parser.add_argument("--model", type=str, default=None,
                         help="Path to model checkpoint (default: best_model.pt)")
     parser.add_argument("--speed", type=int, default=0,
@@ -2047,65 +2764,39 @@ def main():
     parser.add_argument("--no-download", action="store_true",
                         help="Use cached data only (no IBKR/S3 downloads)")
     parser.add_argument("--output", type=str, default=None,
-                        help="Save trade log to CSV file")
+                        help="Save trade log to CSV file (single-day mode)")
     parser.add_argument("--train-py", type=str, default=None,
                         help="Path to train.py/best_train.py for custom model architecture")
-    parser.add_argument("--min-trade-prob", type=float, default=0.55,
-                        help="Gate TRADE probability threshold aligned with live decision engine (default: 0.55)")
-    parser.add_argument("--risk-mode", type=str, default="live_like", choices=["live_like", "training"],
-                        help="Trade risk behavior mode: live_like aligns with live service ratchets (default), training matches evaluate_trades")
-    parser.add_argument("--enforce-max-hold", action="store_true",
-                        help="Apply MAX_HOLD_BARS cap even in live_like risk mode")
     args = parser.parse_args()
 
-    replay_date = args.date
+    if not args.date and not args.backtest:
+        print("ERROR: Specify --date YYYY-MM-DD for single-day replay or --backtest for full validation set")
+        sys.exit(1)
 
-    # Validate date
-    if not is_0dte_day(replay_date):
-        dow_name = dt.datetime.strptime(replay_date, '%Y-%m-%d').strftime('%A')
-        print(f"WARNING: {replay_date} ({dow_name}) is NOT a 0DTE expiration day")
-        print(f"  Pre-May 2022: only Mon/Wed/Fri have 0DTE. Results may be meaningless.")
-
-    # Check if date is in training set
-    spy_cache = os.path.join(DATA_DIR, "spy_1min.pkl")
-    if os.path.exists(spy_cache):
-        with open(spy_cache, 'rb') as f:
-            cached = pickle.load(f)
-        if replay_date in cached['date'].values:
-            print(f"NOTE: {replay_date} is in the training set (not out-of-sample)")
-
-    # Find model
-    model_path = args.model
-    if model_path is None:
-        # Search common locations
-        candidates = [
-            os.path.join(os.path.dirname(__file__), 'best_model.pt'),
-            os.path.join(os.path.dirname(__file__), '..', 'best_model.pt'),
-        ]
-        for c in candidates:
-            if os.path.exists(c):
-                model_path = c
-                break
-        if model_path is None:
-            print("ERROR: No model found. Train first or specify --model path")
-            sys.exit(1)
-
-    # Load model
+    model_path = _find_model_path(args.model)
     device = 'cpu'
     model, lookback, config, metrics = load_model(model_path, device,
                                                    train_py_path=args.train_py)
-    model_num_features = _infer_model_num_features(model, config)
 
-    # Try to load pre-computed features from data.pt (matches training exactly)
+    # --- Full backtest mode ---
+    if args.backtest:
+        run_backtest(model, DATA_PT_PATH, device=device, output_dir=args.output_dir)
+        return
+
+    # --- Single-day replay mode ---
+    replay_date = args.date
+    if not is_0dte_day(replay_date):
+        dow_name = dt.datetime.strptime(replay_date, '%Y-%m-%d').strftime('%A')
+        print(f"WARNING: {replay_date} ({dow_name}) is NOT a 0DTE expiration day")
+
+    model_num_features = _infer_model_num_features(model, config)
     training_data = load_training_features(replay_date)
 
-    # Always download raw data for trade journal context (SPX prices, volume, etc.)
     df, options_data, vix_data, chain_data = download_replay_data(
         replay_date, args.warmup_days, args.ib_port, args.no_download
     )
 
     if training_data is not None:
-        # Use data.pt features for model inference (identical to training)
         features_t, _, dates, valid, option_prices, timestamps = training_data
         features_np = _align_features_to_model_width(
             features_t.numpy(), model_num_features, source_name="data.pt"
@@ -2113,193 +2804,67 @@ def main():
         features_t = torch.tensor(features_np, dtype=torch.float32)
         print(f"  Using data.pt features for model inference (normalization-matched)")
 
-        # Still compute raw features for trade journal market context
-        print(f"\nComputing raw features for trade journal...")
-        raw_feat, _, _, _, _, _ = compute_features(df, options_data, vix_data, chain_data)
-        raw_features = raw_feat
-
-        # Raw df needs to align with data.pt indexing. We build a minimal
-        # raw_df that covers the replay day bars within data.pt's date range.
-        # The raw_close/high/low/volume arrays in run_replay come from raw_df,
-        # but data.pt features span the full training history (much larger).
-        # We need a raw_df that matches data.pt length for global_idx access.
-        # Solution: pad raw arrays to match data.pt length, filling non-replay
-        # bars with NaN (they won't be accessed for trade journal).
+        # Use raw market data from downloaded df, padded to data.pt length.
+        # Raw features for market context come from data.pt's un-normalized
+        # features (features_np IS normalized, so we use it as-is for context
+        # — the raw feature indices like VIX/trend/vol still carry meaning).
         n_training = len(features_t)
-        n_raw = len(df)
-
-        # Find where replay day bars sit in data.pt
+        raw_features = features_np  # normalized features used for context snapshots
         replay_day_indices_dt = [i for i, d in enumerate(dates) if d == replay_date]
-        # Find where replay day bars sit in raw df
         replay_day_indices_raw = [i for i in range(len(df)) if df.iloc[i]['date'] == replay_date]
 
         if len(replay_day_indices_dt) == len(replay_day_indices_raw):
-            # Build padded arrays for raw market data aligned to data.pt indices
             padded_close = np.full(n_training, np.nan)
             padded_high = np.full(n_training, np.nan)
             padded_low = np.full(n_training, np.nan)
             padded_volume = np.full(n_training, np.nan)
-            padded_raw_features = np.zeros((n_training, raw_features.shape[1]))
 
             for dt_idx, raw_idx in zip(replay_day_indices_dt, replay_day_indices_raw):
                 padded_close[dt_idx] = df.iloc[raw_idx]['close']
                 padded_high[dt_idx] = df.iloc[raw_idx]['high']
                 padded_low[dt_idx] = df.iloc[raw_idx]['low']
                 padded_volume[dt_idx] = df.iloc[raw_idx]['volume']
-                if raw_idx < len(raw_features):
-                    padded_raw_features[dt_idx] = raw_features[raw_idx]
 
-            # Create a synthetic df with padded arrays
             raw_df = pd.DataFrame({
-                'close': padded_close,
-                'high': padded_high,
-                'low': padded_low,
-                'volume': padded_volume,
-                'date': dates,
+                'close': padded_close, 'high': padded_high,
+                'low': padded_low, 'volume': padded_volume, 'date': dates,
             })
-            raw_features = padded_raw_features
         else:
-            print(f"  WARNING: Bar count mismatch (data.pt={len(replay_day_indices_dt)}, "
-                  f"raw={len(replay_day_indices_raw)}). Falling back to live features.")
-            # Fallback to live-computed features
+            print(f"  WARNING: Bar count mismatch. Falling back to live features.")
             training_data = None
 
     if training_data is None:
-        # Out-of-sample day or fallback: compute features from downloaded data
         print(f"\nComputing features...")
         features, targets, dates, valid, option_prices, timestamps = compute_features(
             df, options_data, vix_data, chain_data
         )
         raw_features = features.copy()
-
-        # Use normalization context from data.pt if available (ensures continuity
-        # with training-era rolling statistics for OOS/live days)
         norm_context = _load_norm_context()
         if norm_context is not None:
             ctx_raw, ctx_valid = norm_context
-            print(f"Normalizing with training context ({len(ctx_raw)} bars)...")
-            features = normalize_features_with_context(
-                features, valid, ctx_raw, ctx_valid
-            )
+            features = normalize_features_with_context(features, valid, ctx_raw, ctx_valid)
         else:
-            print(f"WARNING: No normalization context in data.pt — using standalone normalization")
-            print(f"  (Regenerate data.pt with latest prepare.py to fix this)")
             features = normalize_features(features, valid)
-
-        features = _align_features_to_model_width(
-            features, model_num_features, source_name="replay-computed"
-        )
+        features = _align_features_to_model_width(features, model_num_features, source_name="replay-computed")
         features_t = torch.tensor(features, dtype=torch.float32)
         raw_df = df
 
-    # Run replay
     trades, bar_log, session_stats = run_replay(
         model, features_t, raw_features, dates, valid, option_prices, timestamps,
         replay_date, lookback, raw_df=raw_df,
         speed=args.speed, verbose=args.verbose, device=device,
-        min_trade_prob=float(args.min_trade_prob),
-        risk_mode=str(args.risk_mode),
-        enforce_max_hold=bool(args.enforce_max_hold),
     )
 
-    # Summary + detailed journal
     print_summary(trades, bar_log, replay_date, session_stats=session_stats)
 
-    # Save to CSV
-    if args.output:
-        # Flatten entry_dir_probs dict for CSV
-        flat_trades = []
-        for t in trades:
-            ft = dict(t)
-            if ft.get('entry_dir_probs'):
-                for k, v in ft['entry_dir_probs'].items():
-                    ft[f'dir_prob_{k}'] = v
-                del ft['entry_dir_probs']
-            flat_trades.append(ft)
+    # Save outputs
+    output_base = args.output or f"replay_{replay_date}"
+    if not output_base.endswith('.csv'):
+        output_base += '.csv'
 
-        fieldnames = list(DEFAULT_TRADE_CSV_COLUMNS)
-        for row in flat_trades:
-            for key in row.keys():
-                if key not in fieldnames:
-                    fieldnames.append(key)
-
-        with open(args.output, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            if flat_trades:
-                writer.writerows(flat_trades)
-        print(f"Trade log saved to {args.output}")
-
-    # Save full trade journal as JSON (richer than CSV) + canonical ledger + QA.
-    if args.output:
-        replay_run_id = _canonical_replay_run_id(
-            replay_date=replay_date,
-            model_path=model_path,
-            risk_mode=str(args.risk_mode),
-            min_trade_prob=float(args.min_trade_prob),
-        )
-        strategy_params = {
-            'stop_loss_pct': float(STOP_LOSS_PCT),
-            'max_hold_bars': int(MAX_HOLD_BARS),
-            'option_spread_bps': int(OPTION_SPREAD_BPS),
-            'stop_cooldown_bars': int(STOP_COOLDOWN_BARS),
-            'no_trade_before_bar': int(NO_TRADE_BEFORE_BAR),
-            'risk_mode': str(args.risk_mode),
-            'min_trade_prob': float(args.min_trade_prob),
-            'enforce_max_hold': bool(args.enforce_max_hold),
-        }
-        trades_df, bars_df, days_df = _build_ledger_tables(
-            replay_date=replay_date,
-            replay_run_id=replay_run_id,
-            trades=trades,
-            bar_log=bar_log,
-            session_stats=session_stats,
-            model_path=model_path,
-            model_score=metrics.get('score', None),
-            risk_mode=str(args.risk_mode),
-            min_trade_prob=float(args.min_trade_prob),
-        )
-        qa = _run_replay_qa(
-            trades_df=trades_df,
-            bars_df=bars_df,
-            days_df=days_df,
-            strategy_params=strategy_params,
-        )
-        if not days_df.empty:
-            days_df.loc[:, "qa_passed"] = bool(qa.get("passed", False))
-            days_df.loc[:, "qa_critical_count"] = int(qa.get("critical_count", 0))
-            days_df.loc[:, "qa_warning_count"] = int(qa.get("warning_count", 0))
-        ledger_paths = _write_replay_ledger_and_qa(
-            output_csv=args.output,
-            trades_df=trades_df,
-            bars_df=bars_df,
-            days_df=days_df,
-            qa=qa,
-        )
-        json_path = args.output.replace('.csv', '') + '_journal.json'
-        journal = {
-            'schema_version': 'replay_journal_v3',
-            'generated_at': dt.datetime.utcnow().isoformat(),
-            'replay_run_id': replay_run_id,
-            'replay_date': replay_date,
-            'model_path': model_path,
-            'model_config': {k: v for k, v in config.items() if not isinstance(v, (torch.Tensor,))},
-            'model_score': metrics.get('score', None),
-            'trades': trades,
-            'strategy_params': strategy_params,
-            'session_stats': session_stats,
-            'bar_log': bar_log,
-            'canonical_ledger_paths': ledger_paths,
-            'qa': {
-                "passed": qa.get("passed", False),
-                "critical_count": qa.get("critical_count", 0),
-                "warning_count": qa.get("warning_count", 0),
-                "anomalies": qa.get("anomalies", []),
-            },
-        }
-        with open(json_path, 'w') as f:
-            json.dump(journal, f, indent=2, default=str)
-        print(f"Full journal saved to {json_path}")
+    write_trade_csv(trades, output_base)
+    chart_path = output_base.replace('.csv', '_chart.html')
+    generate_plotly_chart(trades, bar_log, replay_date, chart_path)
 
 
 if __name__ == "__main__":

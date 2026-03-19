@@ -16,7 +16,17 @@ Combined into 8 actions:
   - Gate=NO_TRADE while flat → DO_NOTHING
 
 Loss: trained on actual SPXW option P&L (ATM + OTM at ±5 and ±10 strikes).
-Optimizes composite score = ProfitFactor * TradeSharpe * min(1, trades_per_day/2)
+Optimizes composite score = ProfitFactor * TradeSharpe * freq_mult, where:
+  - freq_mult uses a bell-curve over trades_per_day (tpd):
+    - tpd < 0.5: hard floor score = -10
+    - 0.5 <= tpd < 1.5: linear ramp from -5 to raw_score
+    - 1.5 <= tpd <= 6.0: min(1, tpd/2)
+    - tpd > 6.0: quadratic decay max(0.1, (6/tpd)^2)
+  - Three multiplicative penalties (applied only when score > 0):
+    - Consecutive loss penalty: -5% per loss beyond 3 (floor 0.5x)
+    - Short-hold penalty: penalizes >30% 1-bar trades (floor 0.7x)
+    - Stop-loss rate penalty: penalizes >30% stop-outs (floor 0.5x)
+  - Negative scores ARE possible and informative (PF<1 yields negative Sharpe)
 
 Usage: uv run train.py  (or: python3 train.py)
 """
@@ -116,7 +126,10 @@ BASE_EXIT_LOSS_WEIGHT = _env_float("TRAIN_BASE_EXIT_W", 0.3, lo=0.0, hi=2.0)
 GREEKS_ADAPTATION_STRENGTH = _env_float("TRAIN_GREEKS_ADAPT", 0.5, lo=0.0, hi=1.5)
 
 # Quality gate parameters
-QUALITY_GATE_STRENGTH = _env_float("TRAIN_QUALITY_GATE", 0.8, lo=0.0, hi=2.0)
+QUALITY_GATE_STRENGTH = _env_float("TRAIN_QUALITY_GATE", 0.6, lo=0.0, hi=2.0)
+
+# Position state parameters
+POSITION_STATE_WEIGHT = _env_float("TRAIN_POSITION_STATE_WEIGHT", 1.0, lo=0.0, hi=3.0)
 
 # Extra loop controls (foundation-safe; defaults preserve current behavior)
 GATE_LABEL_SMOOTHING = _env_float("TRAIN_GATE_LABEL_SMOOTHING", 0.0, lo=0.0, hi=0.2)
@@ -124,7 +137,23 @@ DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.0, lo=0.0, hi=0.
 TRADE_RATE_REG_WEIGHT = _env_float("TRAIN_TRADE_RATE_REG_WEIGHT", 0.0, lo=0.0, hi=2.0)
 TARGET_TRADE_RATE = _env_float("TRAIN_TARGET_TRADE_RATE", 0.40, lo=0.05, hi=0.95)
 
-# Feature groups for gating (60 features: 39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks)
+# Score formula tuning (all defaults = neutral/unchanged; agent activates as needed)
+SCORE_WIN_RATE_BONUS = _env_float("SCORE_WIN_RATE_BONUS", 0.0, lo=0.0, hi=1.0)
+SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.0, lo=0.0, hi=2.0)
+SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.0, lo=0.0, hi=1.0)
+SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.0, lo=0.0, hi=1.0)
+SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 3.0, lo=1.0, hi=8.0)
+SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 3.0, lo=1.0, hi=6.0)
+SCORE_CONSEC_LOSS_THRESHOLD = _env_int("SCORE_CONSEC_LOSS_THRESHOLD", 3, lo=2, hi=8)
+SCORE_SHORT_HOLD_THRESHOLD = _env_float("SCORE_SHORT_HOLD_THRESHOLD", 0.30, lo=0.10, hi=0.60)
+SCORE_STOP_RATE_THRESHOLD = _env_float("SCORE_STOP_RATE_THRESHOLD", 0.30, lo=0.10, hi=0.60)
+
+# microgpt-inspired architecture options (all default to current behavior)
+USE_RMSNORM = _env_int("TRAIN_USE_RMSNORM", 0, lo=0, hi=1)    # 1 = RMSNorm instead of LayerNorm
+USE_NO_BIAS = _env_int("TRAIN_NO_BIAS", 0, lo=0, hi=1)        # 1 = no biases in linear layers
+LR_SCHEDULE = os.environ.get("TRAIN_LR_SCHEDULE", "cosine")    # "cosine" or "linear"
+
+# Feature groups for gating (70 features: 39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks + 10 extended)
 FEATURE_GROUPS = {
     'returns':   (0, 5),     # ret_1..ret_24
     'volume':    (5, 8),     # volume_ratio, volume_zscore, vol_at_price
@@ -139,7 +168,33 @@ FEATURE_GROUPS = {
     'vix':       (45, 49),   # vix_level, vix_change, vix_regime, vrp (regime awareness)
     'otm':       (49, 55),   # otm_call_iv, otm_put_iv, iv_skew_5, iv_term_call, iv_term_put, otm_vol_ratio
     'greeks':    (55, 60),   # delta, gamma, theta, vega, gamma_theta_ratio
+    'ext_greeks': (60, 62),  # charm_estimate, vanna_estimate
+    'bollinger': (62, 64),   # bollinger_position, bollinger_width
+    'momentum':  (64, 66),   # consec_direction, speed_estimate
+    'vwap_ext':  (66, 67),   # vwap_crosses
+    'range_ext': (67, 70),   # session_range_position, rsi_14, atr_ratio
 }
+
+# Named feature indices (derived from FEATURE_GROUPS, avoids magic numbers)
+IDX_MINUTES_TO_CLOSE = 33   # time group: minutes_to_close
+IDX_GAMMA_THETA_RATIO = 59  # greeks group: gamma/|theta| ratio
+
+
+class RMSNorm(nn.Module):
+    """RMSNorm (from microgpt/LLaMA) — cheaper than LayerNorm, no mean centering."""
+    def __init__(self, dim, eps=1e-5):
+        super().__init__()
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(dim))
+
+    def forward(self, x):
+        ms = x.pow(2).mean(-1, keepdim=True)
+        x = x * torch.rsqrt(ms + self.eps)
+        return self.weight * x
+
+
+# Choose normalization based on config
+NormLayer = RMSNorm if USE_RMSNORM else nn.LayerNorm
 
 # ---------------------------------------------------------------------------
 # Model
@@ -207,8 +262,38 @@ class QualityGate(nn.Module):
         return adjusted_logits
 
 
+class PositionStateGenerator(nn.Module):
+    """Generate synthetic position state for training."""
+    
+    def __init__(self):
+        super().__init__()
+        # Random position probabilities for training
+        self.register_buffer('_dummy', torch.tensor(0.0))  # For device tracking
+        
+    def forward(self, batch_size, device):
+        """Generate random position states for training.
+        
+        Returns:
+            position_state: (batch, 3) - [is_holding, bars_held_norm, unrealized_pnl_norm]
+        """
+        # Sample random position states
+        is_holding = torch.randint(0, 2, (batch_size,), device=device, dtype=torch.float32)
+        
+        # Only generate hold time and PnL for positions that are holding
+        bars_held_raw = torch.randint(1, 61, (batch_size,), device=device, dtype=torch.float32)  # 1-60 bars
+        bars_held_norm = bars_held_raw / 60.0  # Normalize to [0, 1]
+        bars_held_norm = bars_held_norm * is_holding  # Zero out when not holding
+        
+        # Realistic PnL distribution: biased negative (most options lose money)
+        unrealized_pnl_raw = torch.randn(batch_size, device=device) * 0.5 - 0.1  # Mean -10%, std 50%
+        unrealized_pnl_norm = torch.tanh(unrealized_pnl_raw)  # Clamp to [-1, 1]
+        unrealized_pnl_norm = unrealized_pnl_norm * is_holding  # Zero out when not holding
+        
+        return torch.stack([is_holding, bars_held_norm, unrealized_pnl_norm], dim=1)
+
+
 class TradingModel(nn.Module):
-    """Two-head sniper model for SPX 0DTE options with quality gate.
+    """Two-head sniper model for SPX 0DTE options with position state awareness.
 
     Input:  (batch, lookback, NUM_FEATURES)
     Output: (gate_logits, dir_logits)
@@ -219,6 +304,10 @@ class TradingModel(nn.Module):
     The gate head decides "should I be in a trade right now?"
     The direction head decides "which strike and direction?"
     At inference, gate=NO_TRADE while in a position → EXIT signal.
+
+    Position state tensor (batch, 3):
+        [is_holding, bars_held_norm, unrealized_pnl_norm]
+    The gate head sees position context for smarter entry/exit decisions.
     """
 
     def __init__(self, num_features=NUM_FEATURES, lookback=LOOKBACK,
@@ -226,9 +315,11 @@ class TradingModel(nn.Module):
                  ff_mult=FF_MULT, dropout=DROPOUT):
         super().__init__()
         self.lookback = lookback
+        self.d_model = d_model
 
+        _bias = not bool(USE_NO_BIAS)  # microgpt-inspired: no biases option
         self.feature_gate = FeatureGroupGating(num_features, d_model, FEATURE_GROUPS)
-        self.input_norm = nn.LayerNorm(d_model)
+        self.input_norm = NormLayer(d_model)
         self.pos_embed = nn.Parameter(torch.randn(1, lookback, d_model) * 0.02)
 
         layer = nn.TransformerEncoderLayer(
@@ -236,9 +327,19 @@ class TradingModel(nn.Module):
             dim_feedforward=d_model * ff_mult, dropout=dropout,
             batch_first=True, activation='gelu', norm_first=True,
         )
+        # Apply no-bias option to transformer sublayers
+        if not _bias:
+            for name, module in layer.named_modules():
+                if isinstance(module, nn.Linear) and module.bias is not None:
+                    module.bias = None
         self.transformer = nn.TransformerEncoder(layer, num_layers=n_layers)
         mask = nn.Transformer.generate_square_subsequent_mask(lookback)
         self.register_buffer('causal_mask', mask)
+
+        # Position state injection for gate head
+        self.position_proj = nn.Linear(3, d_model // 4)
+        self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
+        self.position_state_gen = PositionStateGenerator()
 
         # Gate head: "should I trade?" → [NO_TRADE, TRADE]
         self.gate_head = nn.Sequential(
@@ -258,7 +359,7 @@ class TradingModel(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(d_model // 2, 6),
         )
-        
+
         # Quality gate module
         self.quality_gate = QualityGate()
 
@@ -266,22 +367,36 @@ class TradingModel(nn.Module):
         with torch.no_grad():
             self.gate_head[-1].bias[0] = -0.1   # NO_TRADE bias (reduced from -0.2)
 
-    def forward(self, x):
+    def forward(self, x, position_state=None):
+        batch_size = x.shape[0]
+        device = x.device
+        
+        # Generate synthetic position state for training if not provided
+        if position_state is None and self.training:
+            position_state = self.position_state_gen(batch_size, device)
+        
         x_transformed = self.feature_gate(x)
         x_transformed = self.input_norm(x_transformed)
         x_transformed = x_transformed + self.pos_embed[:, :x_transformed.size(1), :]
         x_transformed = self.transformer(x_transformed, mask=self.causal_mask[:x_transformed.size(1), :x_transformed.size(1)],
                               is_causal=True)
         last = x_transformed[:, -1, :]  # (batch, d_model)
-        
+
+        # Inject position state into gate head input
+        if position_state is not None:
+            pos_emb = torch.relu(self.position_proj(position_state))
+            gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
+        else:
+            gate_input = last
+
         # Get raw gate and direction logits
-        raw_gate_logits = self.gate_head(last)
-        dir_logits = self.dir_head(last)
-        
+        raw_gate_logits = self.gate_head(gate_input)
+        dir_logits = self.dir_head(last)  # direction is position-independent
+
         # Apply quality gate using gamma_theta_ratio from input features
-        gamma_theta_ratio = x[:, -1, 59]  # Feature index 59 is gamma_theta_ratio
+        gamma_theta_ratio = x[:, -1, IDX_GAMMA_THETA_RATIO]  # gamma/|theta| ratio
         gate_logits = self.quality_gate(raw_gate_logits, gamma_theta_ratio)
-        
+
         return gate_logits, dir_logits
 
 
@@ -306,7 +421,7 @@ def compute_greeks_loss_weights(features):
     atm_gamma = features[:, 56]          # 56: ATM gamma  
     atm_theta_per_bar = features[:, 57]  # 57: theta per 1-min bar (negative)
     atm_vega = features[:, 58]           # 58: vega sensitivity
-    gamma_theta_ratio = features[:, 59]  # 59: gamma/|theta| ratio
+    gamma_theta_ratio = features[:, IDX_GAMMA_THETA_RATIO]  # gamma/|theta| ratio
     
     # Extract time feature for theta acceleration awareness
     minutes_to_close = features[:, 33]   # 33: minutes to close
@@ -558,7 +673,7 @@ print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%
 model = TradingModel().to(device)
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
-print(f"Architecture: two-head (gate: NO_TRADE/TRADE, dir: 6-class ATM+OTM) + Greeks-adaptive loss + Quality gate")
+print(f"Architecture: two-head (gate: NO_TRADE/TRADE, dir: 6-class ATM+OTM) + Greeks-adaptive loss + Quality gate + Position state")
 
 # Warm-start from previous best if architecture matches
 WARM_START = int(os.environ.get("WARM_START", "1"))
@@ -568,7 +683,9 @@ if WARM_START:
     if os.path.exists(_best_path):
         try:
             ckpt = torch.load(_best_path, map_location=device, weights_only=False)
-            model.load_state_dict(ckpt['model_state_dict'])
+            missing, unexpected = model.load_state_dict(ckpt['model_state_dict'], strict=False)
+            if missing:
+                print(f"  New layers (will train from scratch): {missing}")
             _warm_started = True
             print(f"Warm-start: loaded weights from best_model.pt (step {ckpt.get('step', '?')})")
             del ckpt
@@ -599,6 +716,7 @@ print(f"LR: {LR} (effective: {_effective_lr}) | Depth: {DEPTH} | d_model: {D_MOD
 print(f"Warm-start: {'yes' if _warm_started else 'no'}")
 print(f"Greeks adaptation strength: {GREEKS_ADAPTATION_STRENGTH}")
 print(f"Quality gate strength: {QUALITY_GATE_STRENGTH}")
+print(f"Position state weight: {POSITION_STATE_WEIGHT}")
 print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
 print(f"Trade-rate regularizer: weight={TRADE_RATE_REG_WEIGHT} target={TARGET_TRADE_RATE}")
 print()
@@ -610,7 +728,11 @@ print()
 def get_lr_mult(progress):
     if progress < WARMUP_RATIO:
         return progress / max(WARMUP_RATIO, 1e-8)
-    elif progress < 1.0 - COOLDOWN_RATIO:
+    if LR_SCHEDULE == "linear":
+        # Linear decay from 1.0 to 0.0 after warmup (microgpt-style)
+        return max(0.0, 1.0 - (progress - WARMUP_RATIO) / max(1.0 - WARMUP_RATIO, 1e-8))
+    # Cosine cooldown (default)
+    if progress < 1.0 - COOLDOWN_RATIO:
         return 1.0
     else:
         t = (1.0 - progress) / max(COOLDOWN_RATIO, 1e-8)
@@ -639,7 +761,7 @@ while True:
      supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch) = y_batch
 
     # Extract time feature (minutes_to_close) from last bar in lookback window
-    time_feat = x_batch[:, -1, 33]  # feature index 33 = minutes_to_close
+    time_feat = x_batch[:, -1, IDX_MINUTES_TO_CLOSE]  # minutes_to_close
     
     # Extract full features for Greeks adaptation
     batch_features = x_batch[:, -1, :]  # (batch, NUM_FEATURES)
@@ -691,7 +813,7 @@ while True:
             sample_weights = compute_greeks_loss_weights(batch_features)
             
             # Show average quality gate effect
-            gtr_current = batch_features[:, 59]  # gamma_theta_ratio
+            gtr_current = batch_features[:, IDX_GAMMA_THETA_RATIO]  # gamma_theta_ratio
             gtr_clean = torch.nan_to_num(gtr_current, nan=1.0)
             avg_quality = torch.sigmoid(gtr_clean - 1.0).mean().item()
             
@@ -716,7 +838,18 @@ print()
 # ---------------------------------------------------------------------------
 
 model.eval()
-trade_metrics = evaluate_trades(model, data, LOOKBACK, device)
+_score_config = {
+    'win_rate_bonus': SCORE_WIN_RATE_BONUS,
+    'rr_bonus': SCORE_RR_BONUS,
+    'drawdown_penalty': SCORE_DRAWDOWN_PENALTY,
+    'hold_bonus': SCORE_HOLD_BONUS,
+    'freq_center': SCORE_FREQ_CENTER,
+    'freq_width': SCORE_FREQ_WIDTH,
+    'consec_loss_threshold': SCORE_CONSEC_LOSS_THRESHOLD,
+    'short_hold_threshold': SCORE_SHORT_HOLD_THRESHOLD,
+    'stop_rate_threshold': SCORE_STOP_RATE_THRESHOLD,
+}
+trade_metrics = evaluate_trades(model, data, LOOKBACK, device, score_config=_score_config)
 sharpe_metrics = evaluate_sharpe(model, data, LOOKBACK, device)
 
 # Merge — trade_metrics is primary, sharpe_metrics only adds val_sharpe
@@ -736,9 +869,10 @@ torch.save({
         'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
         'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
         'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
-        'architecture': 'two_head_greeks_adaptive_quality_gate',
+        'architecture': 'two_head_greeks_adaptive_quality_gate_position_state',
         'greeks_adaptation_strength': GREEKS_ADAPTATION_STRENGTH,
         'quality_gate_strength': QUALITY_GATE_STRENGTH,
+        'position_state_weight': POSITION_STATE_WEIGHT,
     },
     'step': step,
 }, model_path)
@@ -809,6 +943,9 @@ print(f"total_return:       {metrics['total_return']:.6f}")
 print(f"num_val_bars:       {metrics['num_val_bars']}")
 print(f"num_val_days:       {metrics['num_val_days']}")
 print(f"worst_chunk_pf:     {metrics.get('worst_chunk_pf', 1.0):.2f}")
+print(f"rr_ratio:           {metrics.get('rr_ratio', 0.0):.4f}")
+print(f"avg_hold_bars:      {metrics.get('avg_hold_bars', 0.0):.2f}")
+print(f"model_exit_rate:    {metrics.get('model_exit_rate', 0.0):.4f}")
 # Walk-forward chunk breakdown
 for cd in metrics.get('chunk_details', []):
     print(f"  Chunk {cd['chunk']}: {cd['dates']} | {cd['trades']} trades | PF={cd['profit_factor']:.2f} | WR={cd['win_rate']:.1%}")

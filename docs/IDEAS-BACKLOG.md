@@ -31,3 +31,10 @@ Run as one coordinated migration only:
 ## Rule
 Nothing in this file is an execution instruction for `run_loop.py`.
 Only `training/program.md` is injected into autonomous prompt context.
+
+
+
+## new idea
+
+
+Instead of the trading bot having full authority to place trades immediately without checks, it flags setups with high confidence, but we Implement an expert style large language model layer over the top. This LLM is fine tuned / trained on all of the necessary literature about options and trading (the 0dte library, pickles personality text, pickles strategies, and possibly internet checks). All rapidly occurring in superhuman time. This LLM instantly analyzes the flagged setup and reads the “confidence data” output. then it determines if the trade is worth entering or not. This LLM could be ran on an h100 in tandem with the trained model. The length of time from ML algo flagging, and LLM observing and double checking before giving the go ahead- or stopping, should be about 1 second. (As fast as we possibly can). Then we test 50 trading days chosen at random with this expert layer over the top. 

@@ -258,6 +258,8 @@ class PaperTradingService:
         current_position_id: str | None = None
         decision_seq = 0
         intent_seq = 0
+        position_entry_bar = 0
+        position_entry_price = 0.0
         counters = {
             "signals_generated": 0,
             "entry_intents": 0,
@@ -331,6 +333,22 @@ class PaperTradingService:
                         break
                     continue
 
+                # Update position state for gate head context
+                if current_position_id is not None:
+                    bars_held = processed - position_entry_bar
+                    option_mid = None
+                    state = exec_engine.positions.get(current_position_id)
+                    if state and state.entry_price_reference and state.entry_price_reference > 0:
+                        unrealized = 0.0  # default if no current price
+                        # Try to get current option mid from execution state
+                        if hasattr(state, 'last_price') and state.last_price:
+                            unrealized = (state.last_price / state.entry_price_reference) - 1.0
+                        decision.update_position_state(True, bars_held, unrealized)
+                    else:
+                        decision.update_position_state(True, bars_held, 0.0)
+                else:
+                    decision.update_position_state(False)
+
                 inference = decision.infer(snap.normalized_window)
                 counters["signals_generated"] += 1
                 decision_seq += 1
@@ -351,7 +369,8 @@ class PaperTradingService:
                 )
 
                 if current_position_id is None:
-                    intent = decision.build_entry_intent(inference, resolver, latest_spx, snap.latest_raw_row)
+                    intent = decision.build_entry_intent(inference, resolver, latest_spx, snap.latest_raw_row,
+                                                         bar_of_day=processed)
                     if intent is not None:
                         intent_seq += 1
                         intent.decision_id = decision_id
@@ -376,6 +395,8 @@ class PaperTradingService:
                         state = exec_engine.place_entry(intent)
                         counters["entries_applied"] += 1
                         current_position_id = state.position_id
+                        position_entry_bar = processed
+                        position_entry_price = intent.reference_price or 0.0
                         self._audit(
                             "entry_intent_applied",
                             {
