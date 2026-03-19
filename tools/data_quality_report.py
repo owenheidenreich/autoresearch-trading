@@ -95,6 +95,21 @@ def _compute_data_quality_report(data: dict[str, Any], feature_names: list[str])
         "otm5_put_prices": _coverage_for("otm5_put_prices"),
         "otm10_call_prices": _coverage_for("otm10_call_prices"),
         "otm10_put_prices": _coverage_for("otm10_put_prices"),
+        "otm15_call_prices": _coverage_for("otm15_call_prices"),
+        "otm15_put_prices": _coverage_for("otm15_put_prices"),
+        "otm20_call_prices": _coverage_for("otm20_call_prices"),
+        "otm20_put_prices": _coverage_for("otm20_put_prices"),
+    }
+    sidecar_coverage = {
+        "action_spread_bps": _coverage_for("action_spread_bps"),
+        "action_quote_age_s": _coverage_for("action_quote_age_s"),
+        "action_size": _coverage_for("action_size"),
+        "action_quality_score": _coverage_for("action_quality_score"),
+        "action_slippage_bps": _coverage_for("action_slippage_bps"),
+        "action_cost_bps": _coverage_for("action_cost_bps"),
+        "actionable_mask": _coverage_for("actionable_mask"),
+        "risk_state_mask": _coverage_for("risk_state_mask"),
+        "supervision_weight": _coverage_for("supervision_weight"),
     }
 
     date_start = min(dates) if dates else None
@@ -110,6 +125,10 @@ def _compute_data_quality_report(data: dict[str, Any], feature_names: list[str])
         "option_coverage": {
             k: (None if v is None else round(v, 6))
             for k, v in option_coverage.items()
+        },
+        "sidecar_coverage": {
+            k: (None if v is None else round(v, 6))
+            for k, v in sidecar_coverage.items()
         },
     }
     fingerprint = _sha256_text(json.dumps(summary, sort_keys=True))

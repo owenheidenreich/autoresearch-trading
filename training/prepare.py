@@ -66,6 +66,30 @@ RISK_PER_TRADE       = 0.10   # fraction of capital risked per trade (10% = $500
 BAR_SIZE_MINUTES     = 1           # 1-minute bar resolution
 SPX_MULTIPLIER       = 100     # option multiplier
 
+# Keep core model actions on ±5/±10, but expand historical sidecar ladders to ±15/±20.
+OTM_STRIKE_STEPS      = (5, 10, 15, 20)
+SIDE_ACTION_ORDER     = (
+    "call_atm",
+    "call_otm5",
+    "call_otm10",
+    "put_atm",
+    "put_otm5",
+    "put_otm10",
+)
+SIDE_ACTION_TO_CHAIN_KEY = {
+    "call_otm5": "otm5_call",
+    "call_otm10": "otm10_call",
+    "put_otm5": "otm5_put",
+    "put_otm10": "otm10_put",
+}
+SIDE_ACTION_TO_IDX = {name: i for i, name in enumerate(SIDE_ACTION_ORDER)}
+SIDE_ALL_LEGS = SIDE_ACTION_ORDER + (
+    "call_otm15",
+    "call_otm20",
+    "put_otm15",
+    "put_otm20",
+)
+
 RTH_OPEN  = dt.time(9, 30)
 RTH_CLOSE = dt.time(16, 0)
 
@@ -253,6 +277,71 @@ def _bs_greeks(S, K, T, r, sigma):
     vega = S * npdf_d1 * sqrt_T / 100.0  # per 1% IV move
 
     return delta, gamma, theta_per_bar, vega
+
+
+def _otm_chain_specs(atm_strike: float) -> list[tuple[str, str, float]]:
+    specs: list[tuple[str, str, float]] = []
+    for step in OTM_STRIKE_STEPS:
+        specs.append((f"otm{step}_call", "C", float(atm_strike + step)))
+    for step in OTM_STRIKE_STEPS:
+        specs.append((f"otm{step}_put", "P", float(atm_strike - step)))
+    return specs
+
+
+def _safe_float(v, default: float = float("nan")) -> float:
+    try:
+        x = float(v)
+        if math.isnan(x) or math.isinf(x):
+            return default
+        return x
+    except Exception:
+        return default
+
+
+def _spread_bps_proxy(mid_px: float, high_px: float, low_px: float) -> float:
+    """Historical spread proxy from minute bars (no historical NBBO in base prep path)."""
+    mid = _safe_float(mid_px)
+    if not np.isfinite(mid) or mid <= 0:
+        return float("nan")
+    h = _safe_float(high_px)
+    l = _safe_float(low_px)
+    if not np.isfinite(h) or not np.isfinite(l) or h < l:
+        return float(OPTION_SPREAD_BPS)
+    bar_range_bps = ((h - l) / max(mid, 1e-6)) * 10000.0
+    # Minute range overstates true spread; shrink and floor.
+    return float(np.clip(0.35 * bar_range_bps + 0.5, 1.0, 1500.0))
+
+
+def _quote_age_proxy_seconds(volume: float) -> float:
+    vol = _safe_float(volume, default=float("nan"))
+    if not np.isfinite(vol):
+        return float("nan")
+    if vol > 0:
+        return 0.0
+    return 60.0
+
+
+def _quality_score_proxy(spread_bps: float, quote_age_s: float, size: float) -> float:
+    s = _safe_float(spread_bps)
+    a = _safe_float(quote_age_s)
+    q = _safe_float(size, default=0.0)
+    if not np.isfinite(s):
+        return float("nan")
+    spread_score = math.exp(-max(s, 0.0) / 200.0)
+    age_score = math.exp(-max(a, 0.0) / 45.0) if np.isfinite(a) else 0.0
+    size_score = min(math.log1p(max(q, 0.0)) / 4.0, 1.0)
+    return float(np.clip(0.60 * spread_score + 0.25 * size_score + 0.15 * age_score, 0.0, 1.0))
+
+
+def _slippage_bps_proxy(spread_bps: float, quote_age_s: float, size: float) -> float:
+    s = _safe_float(spread_bps)
+    a = _safe_float(quote_age_s, default=60.0)
+    q = _safe_float(size, default=0.0)
+    if not np.isfinite(s):
+        return float("nan")
+    vol_penalty = 30.0 if q <= 0 else min(30.0, 12.0 / math.sqrt(q + 1.0))
+    age_penalty = min(30.0, max(a, 0.0) / 2.0)
+    return float(np.clip(0.35 * s + vol_penalty + age_penalty, 2.0, 600.0))
 
 # ---------------------------------------------------------------------------
 # Download (unchanged)
@@ -719,10 +808,9 @@ def download_spxw_full(spy_df: pd.DataFrame) -> dict:
 
 
 def download_spxw_chain(spy_df: pd.DataFrame) -> dict:
-    """Download SPXW 0DTE OTM option bars at ATM±5 and ATM±10 strikes.
+    """Download SPXW 0DTE OTM option bars at ATM±5/±10/±15/±20 strikes.
 
-    Downloads 4 contracts per day (ATM+5 call, ATM+10 call, ATM-5 put, ATM-10 put).
-    These provide OTM IV features and raw prices for OTM tradeable actions.
+    Core model features still use ±5/±10. ±15/±20 are stored as sidecar labels/data.
     Caches per-day pickles in DATA_DIR/spxw_chain/ to avoid re-downloading.
 
     Returns dict keyed by (date_str, timestamp) with OTM bar data.
@@ -737,7 +825,7 @@ def download_spxw_chain(spy_df: pd.DataFrame) -> dict:
     cached = 0
     failed = 0
 
-    print(f"Downloading SPXW OTM chain (ATM±5, ±10) for {len(unique_days)} trading days...")
+    print(f"Downloading SPXW OTM chain (ATM±5, ±10, ±15, ±20) for {len(unique_days)} trading days...")
 
     for day_str in unique_days:
         day_cache = os.path.join(cache_dir, f"{day_str}.pkl")
@@ -761,13 +849,7 @@ def download_spxw_chain(spy_df: pd.DataFrame) -> dict:
         day_dt = dt.datetime.strptime(day_str, '%Y-%m-%d')
         yymmdd = day_dt.strftime('%y%m%d')
 
-        # 4 OTM contracts: ATM+5 call, ATM+10 call, ATM-5 put, ATM-10 put
-        otm_specs = [
-            ('otm5_call',  'C', atm_strike + 5),
-            ('otm10_call', 'C', atm_strike + 10),
-            ('otm5_put',   'P', atm_strike - 5),
-            ('otm10_put',  'P', atm_strike - 10),
-        ]
+        otm_specs = _otm_chain_specs(atm_strike)
 
         day_bars_data = {}
         any_data = False
@@ -795,7 +877,10 @@ def download_spxw_chain(spy_df: pd.DataFrame) -> dict:
                     key = (day_str, b.timestamp)
                     if key not in day_bars_data:
                         day_bars_data[key] = {'atm_strike': atm_strike}
+                    day_bars_data[key][f'{label}_open'] = b.open
                     day_bars_data[key][f'{label}_close'] = b.close
+                    day_bars_data[key][f'{label}_high'] = b.high
+                    day_bars_data[key][f'{label}_low'] = b.low
                     day_bars_data[key][f'{label}_volume'] = b.volume
                     day_bars_data[key][f'{label}_strike'] = strike
 
@@ -886,8 +971,12 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
             'atm_put': ('P', atm_strike),
             'otm5_call': ('C', atm_strike + 5),
             'otm10_call': ('C', atm_strike + 10),
+            'otm15_call': ('C', atm_strike + 15),
+            'otm20_call': ('C', atm_strike + 20),
             'otm5_put': ('P', atm_strike - 5),
             'otm10_put': ('P', atm_strike - 10),
+            'otm15_put': ('P', atm_strike - 15),
+            'otm20_put': ('P', atm_strike - 20),
         }
         target_tickers = {}
         for label, (cp, strike) in strikes.items():
@@ -966,7 +1055,10 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
 
         # Build OTM chain data dict (same format as download_spxw_chain)
         chain_day_data = {}
-        for label in ['otm5_call', 'otm10_call', 'otm5_put', 'otm10_put']:
+        for label in [
+            'otm5_call', 'otm10_call', 'otm15_call', 'otm20_call',
+            'otm5_put', 'otm10_put', 'otm15_put', 'otm20_put',
+        ]:
             tk_w, tk_spx, strike = target_tickers[label]
             raw_bars = bars_by_ticker.get(tk_w, []) or bars_by_ticker.get(tk_spx, [])
             for parts in raw_bars:
@@ -974,7 +1066,10 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
                 key = (day_str, ts_ms)
                 if key not in chain_day_data:
                     chain_day_data[key] = {'atm_strike': atm_strike}
+                chain_day_data[key][f'{label}_open'] = float(parts[2])
                 chain_day_data[key][f'{label}_close'] = float(parts[3])
+                chain_day_data[key][f'{label}_high'] = float(parts[4])
+                chain_day_data[key][f'{label}_low'] = float(parts[5])
                 chain_day_data[key][f'{label}_volume'] = int(float(parts[1]))
                 chain_day_data[key][f'{label}_strike'] = strike
 
@@ -996,7 +1091,7 @@ def download_spxw_ibkr(spy_df: pd.DataFrame, dates: list = None):
     """Download SPXW 0DTE option bars via IBKR for dates missing from cache.
 
     Fallback when Polygon S3 flat files aren't available (new/recent days).
-    Downloads ATM call/put + OTM chain (6 contracts) via reqHistoricalData.
+    Downloads ATM call/put + OTM chain (10 contracts) via reqHistoricalData.
     Saves to same per-day pickle caches as prefetch_spxw_from_flatfiles.
     """
     from ib_insync import Option as IBOption
@@ -1041,14 +1136,18 @@ def download_spxw_ibkr(spy_df: pd.DataFrame, dates: list = None):
         # Expiry for 0DTE = same day
         expiry = day_str.replace('-', '')  # YYYYMMDD
 
-        # Define the 6 target contracts
+        # Define the 10 target contracts (core ±5/±10 plus sidecar ±15/±20)
         targets = {
             'atm_call':   ('C', atm_strike),
             'atm_put':    ('P', atm_strike),
             'otm5_call':  ('C', atm_strike + 5),
             'otm10_call': ('C', atm_strike + 10),
+            'otm15_call': ('C', atm_strike + 15),
+            'otm20_call': ('C', atm_strike + 20),
             'otm5_put':   ('P', atm_strike - 5),
             'otm10_put':  ('P', atm_strike - 10),
+            'otm15_put':  ('P', atm_strike - 15),
+            'otm20_put':  ('P', atm_strike - 20),
         }
 
         # Download 1-min bars for each contract
@@ -1113,13 +1212,19 @@ def download_spxw_ibkr(spy_df: pd.DataFrame, dates: list = None):
 
         # Build OTM chain cache (same format as flat files)
         chain_data = {}
-        for label in ['otm5_call', 'otm10_call', 'otm5_put', 'otm10_put']:
+        for label in [
+            'otm5_call', 'otm10_call', 'otm15_call', 'otm20_call',
+            'otm5_put', 'otm10_put', 'otm15_put', 'otm20_put',
+        ]:
             _, strike = targets[label]
             for ts, bar in bars_by_label.get(label, {}).items():
                 key = (day_str, ts)
                 if key not in chain_data:
                     chain_data[key] = {'atm_strike': atm_strike}
+                chain_data[key][f'{label}_open'] = bar['open']
                 chain_data[key][f'{label}_close'] = bar['close']
+                chain_data[key][f'{label}_high'] = bar['high']
+                chain_data[key][f'{label}_low'] = bar['low']
                 chain_data[key][f'{label}_volume'] = bar['volume']
                 chain_data[key][f'{label}_strike'] = strike
 
@@ -1244,6 +1349,29 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     otm5_put_prices = np.full(N, np.nan, dtype=np.float32)
     otm10_call_prices = np.full(N, np.nan, dtype=np.float32)
     otm10_put_prices = np.full(N, np.nan, dtype=np.float32)
+    # Deeper sidecar ladders (kept out of the 60-feature model contract).
+    otm15_call_prices = np.full(N, np.nan, dtype=np.float32)
+    otm15_put_prices = np.full(N, np.nan, dtype=np.float32)
+    otm20_call_prices = np.full(N, np.nan, dtype=np.float32)
+    otm20_put_prices = np.full(N, np.nan, dtype=np.float32)
+    # Dynamic remap sidecar labels (per-bar ATM and remapped strike ladders).
+    dynamic_atm_strikes = np.full(N, np.nan, dtype=np.float32)
+    remap_call_strikes = np.full((N, len(OTM_STRIKE_STEPS)), np.nan, dtype=np.float32)
+    remap_put_strikes = np.full((N, len(OTM_STRIKE_STEPS)), np.nan, dtype=np.float32)
+    static_call_strikes = np.full((N, len(OTM_STRIKE_STEPS)), np.nan, dtype=np.float32)
+    static_put_strikes = np.full((N, len(OTM_STRIKE_STEPS)), np.nan, dtype=np.float32)
+    call_strike_drift = np.full((N, len(OTM_STRIKE_STEPS)), np.nan, dtype=np.float32)
+    put_strike_drift = np.full((N, len(OTM_STRIKE_STEPS)), np.nan, dtype=np.float32)
+    # Sidecar quote-quality + cost realism labels for 6 tradeable legs.
+    action_spread_bps = np.full((N, len(SIDE_ACTION_ORDER)), np.nan, dtype=np.float32)
+    action_quote_age_s = np.full((N, len(SIDE_ACTION_ORDER)), np.nan, dtype=np.float32)
+    action_size = np.full((N, len(SIDE_ACTION_ORDER)), np.nan, dtype=np.float32)
+    action_quality_score = np.full((N, len(SIDE_ACTION_ORDER)), np.nan, dtype=np.float32)
+    action_slippage_bps = np.full((N, len(SIDE_ACTION_ORDER)), np.nan, dtype=np.float32)
+    action_cost_bps = np.full((N, len(SIDE_ACTION_ORDER)), np.nan, dtype=np.float32)
+    actionable_mask = np.zeros(N, dtype=np.float32)
+    risk_state_mask = np.ones(N, dtype=np.float32)
+    supervision_weight = np.full(N, np.nan, dtype=np.float32)
     dates = df['date'].values
     timestamps = df['datetime'].dt.strftime('%Y-%m-%d %H:%M').values if 'datetime' in df.columns else dates
 
@@ -1475,6 +1603,12 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         total_session = 390
         minutes_remaining = max(total_session - minutes_into, 0)
         session_progress = minutes_into / total_session
+        spx_for_remap = c if c >= 1000 else c * 10.0
+        dyn_atm = round(spx_for_remap / 5.0) * 5.0
+        dynamic_atm_strikes[i] = dyn_atm
+        for j, step in enumerate(OTM_STRIKE_STEPS):
+            remap_call_strikes[i, j] = dyn_atm + step
+            remap_put_strikes[i, j] = dyn_atm - step
 
         feat[i, fi] = np.log1p(minutes_remaining) / np.log1p(total_session)
         fi += 1
@@ -1510,11 +1644,37 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             atm_call_prices[i] = opt['call_close']
             atm_put_prices[i] = opt.get('put_close', np.nan)
             atm_strikes[i] = K
+            call_close = _safe_float(opt.get('call_close', np.nan))
+            call_high = _safe_float(opt.get('call_high', np.nan))
+            call_low = _safe_float(opt.get('call_low', np.nan))
+            call_vol = _safe_float(opt.get('call_volume', 0.0), default=0.0)
+            put_close = _safe_float(opt.get('put_close', np.nan))
+            put_high = _safe_float(opt.get('put_high', np.nan))
+            put_low = _safe_float(opt.get('put_low', np.nan))
+            put_vol = _safe_float(opt.get('put_volume', 0.0), default=0.0)
+
+            # Sidecar quote-quality + cost labels for ATM legs.
+            for leg_name, px, hi, lo, vol in [
+                ("call_atm", call_close, call_high, call_low, call_vol),
+                ("put_atm", put_close, put_high, put_low, put_vol),
+            ]:
+                leg_idx = SIDE_ACTION_TO_IDX.get(leg_name)
+                if leg_idx is None or not np.isfinite(px) or px <= 0:
+                    continue
+                spread_bps = _spread_bps_proxy(px, hi, lo)
+                age_s = _quote_age_proxy_seconds(vol)
+                quality = _quality_score_proxy(spread_bps, age_s, vol)
+                slip_bps = _slippage_bps_proxy(spread_bps, age_s, vol)
+                action_spread_bps[i, leg_idx] = spread_bps
+                action_quote_age_s[i, leg_idx] = age_s
+                action_size[i, leg_idx] = vol
+                action_quality_score[i, leg_idx] = quality
+                action_slippage_bps[i, leg_idx] = slip_bps
+                action_cost_bps[i, leg_idx] = spread_bps + 2.0 * slip_bps
 
             # 39: atm_iv (average of call + put IV)
             call_iv = _bs_iv(opt['call_close'], spx, K, T, r, is_call=True)
             put_iv = np.nan
-            put_close = opt.get('put_close', np.nan)
             if not np.isnan(put_close):
                 put_iv = _bs_iv(put_close, spx, K, T, r, is_call=False)
             if not np.isnan(call_iv) and not np.isnan(put_iv):
@@ -1609,18 +1769,42 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             spx_for_iv = c if c >= 1000 else c * 10.0
             T_iv = minutes_remaining / (252.0 * 390.0)
             r_iv = 0.05
+            chain_close: dict[str, float] = {}
+            chain_high: dict[str, float] = {}
+            chain_low: dict[str, float] = {}
+            chain_volume: dict[str, float] = {}
+            chain_strike: dict[str, float] = {}
+            for j, step in enumerate(OTM_STRIKE_STEPS):
+                for side in ("call", "put"):
+                    k = f"otm{step}_{side}"
+                    chain_close[k] = _safe_float(chain_bar.get(f"{k}_close", np.nan))
+                    chain_high[k] = _safe_float(chain_bar.get(f"{k}_high", chain_close[k]))
+                    chain_low[k] = _safe_float(chain_bar.get(f"{k}_low", chain_close[k]))
+                    chain_volume[k] = _safe_float(chain_bar.get(f"{k}_volume", 0.0), default=0.0)
+                    chain_strike[k] = _safe_float(chain_bar.get(f"{k}_strike", np.nan))
+                    if side == "call":
+                        static_call_strikes[i, j] = chain_strike[k]
+                        if np.isfinite(chain_strike[k]):
+                            call_strike_drift[i, j] = chain_strike[k] - remap_call_strikes[i, j]
+                    else:
+                        static_put_strikes[i, j] = chain_strike[k]
+                        if np.isfinite(chain_strike[k]):
+                            put_strike_drift[i, j] = chain_strike[k] - remap_put_strikes[i, j]
 
-            # Extract OTM close prices and store for tradeable actions
-            otm5c = chain_bar.get('otm5_call_close', np.nan)
-            otm5p = chain_bar.get('otm5_put_close', np.nan)
-            otm10c = chain_bar.get('otm10_call_close', np.nan)
-            otm10p = chain_bar.get('otm10_put_close', np.nan)
-            otm5c_strike = chain_bar.get('otm5_call_strike', np.nan)
-            otm5p_strike = chain_bar.get('otm5_put_strike', np.nan)
-            otm10c_strike = chain_bar.get('otm10_call_strike', np.nan)
-            otm10p_strike = chain_bar.get('otm10_put_strike', np.nan)
+            # Store raw OTM prices for trade simulation + deeper sidecar ladders.
+            otm5c = chain_close.get("otm5_call", np.nan)
+            otm5p = chain_close.get("otm5_put", np.nan)
+            otm10c = chain_close.get("otm10_call", np.nan)
+            otm10p = chain_close.get("otm10_put", np.nan)
+            otm15c = chain_close.get("otm15_call", np.nan)
+            otm15p = chain_close.get("otm15_put", np.nan)
+            otm20c = chain_close.get("otm20_call", np.nan)
+            otm20p = chain_close.get("otm20_put", np.nan)
+            otm5c_strike = chain_strike.get("otm5_call", np.nan)
+            otm5p_strike = chain_strike.get("otm5_put", np.nan)
+            otm10c_strike = chain_strike.get("otm10_call", np.nan)
+            otm10p_strike = chain_strike.get("otm10_put", np.nan)
 
-            # Store raw OTM prices for Phase 5B-v2 trade simulation
             if not np.isnan(otm5c):
                 otm5_call_prices[i] = otm5c
             if not np.isnan(otm5p):
@@ -1629,8 +1813,38 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 otm10_call_prices[i] = otm10c
             if not np.isnan(otm10p):
                 otm10_put_prices[i] = otm10p
+            if not np.isnan(otm15c):
+                otm15_call_prices[i] = otm15c
+            if not np.isnan(otm15p):
+                otm15_put_prices[i] = otm15p
+            if not np.isnan(otm20c):
+                otm20_call_prices[i] = otm20c
+            if not np.isnan(otm20p):
+                otm20_put_prices[i] = otm20p
 
-            # Compute IVs for OTM strikes
+            # Sidecar quote-quality + cost labels for tradeable OTM legs (±5, ±10).
+            for leg_name, chain_key in SIDE_ACTION_TO_CHAIN_KEY.items():
+                leg_idx = SIDE_ACTION_TO_IDX[leg_name]
+                px = chain_close.get(chain_key, np.nan)
+                if not np.isfinite(px) or px <= 0:
+                    continue
+                spread_bps = _spread_bps_proxy(
+                    px,
+                    chain_high.get(chain_key, px),
+                    chain_low.get(chain_key, px),
+                )
+                age_s = _quote_age_proxy_seconds(chain_volume.get(chain_key, 0.0))
+                qsize = chain_volume.get(chain_key, 0.0)
+                quality = _quality_score_proxy(spread_bps, age_s, qsize)
+                slip_bps = _slippage_bps_proxy(spread_bps, age_s, qsize)
+                action_spread_bps[i, leg_idx] = spread_bps
+                action_quote_age_s[i, leg_idx] = age_s
+                action_size[i, leg_idx] = qsize
+                action_quality_score[i, leg_idx] = quality
+                action_slippage_bps[i, leg_idx] = slip_bps
+                action_cost_bps[i, leg_idx] = spread_bps + 2.0 * slip_bps
+
+            # Compute IVs for OTM strikes used by the 60-feature contract.
             iv_otm5c = _bs_iv(otm5c, spx_for_iv, otm5c_strike, T_iv, r_iv, is_call=True) if not np.isnan(otm5c) and not np.isnan(otm5c_strike) else np.nan
             iv_otm5p = _bs_iv(otm5p, spx_for_iv, otm5p_strike, T_iv, r_iv, is_call=False) if not np.isnan(otm5p) and not np.isnan(otm5p_strike) else np.nan
             iv_otm10c = _bs_iv(otm10c, spx_for_iv, otm10c_strike, T_iv, r_iv, is_call=True) if not np.isnan(otm10c) and not np.isnan(otm10c_strike) else np.nan
@@ -1708,6 +1922,32 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         else:
             fi += 5  # skip all 5 Greeks features (no option data)
 
+        # Sidecar quality/risk masks for supervision weighting.
+        row_quality = action_quality_score[i]
+        row_cost = action_cost_bps[i]
+        valid_q = np.isfinite(row_quality) & np.isfinite(row_cost)
+        vix_reg = feat[i, 47] if 47 < NUM_FEATURES else np.nan
+        risk_off = (
+            minutes_remaining <= 5
+            or (np.isfinite(vix_reg) and vix_reg >= 1.0)
+        )
+        risk_state_mask[i] = 0.0 if risk_off else 1.0
+        if np.any(valid_q):
+            q_mean = float(np.nanmean(row_quality[valid_q]))
+            c_mean = float(np.nanmean(row_cost[valid_q]))
+            leg_coverage = float(np.mean(valid_q.astype(np.float32)))
+            is_actionable = (q_mean >= 0.30) and (c_mean <= 350.0) and (leg_coverage >= 0.34)
+            actionable_mask[i] = 1.0 if is_actionable else 0.0
+            base_w = float(np.clip(q_mean * (1.0 - min(c_mean, 700.0) / 700.0), 0.0, 1.0))
+            if risk_off:
+                base_w *= 0.50
+            if not is_actionable:
+                base_w *= 0.20
+            supervision_weight[i] = max(base_w, 0.0)
+        else:
+            actionable_mask[i] = 0.0
+            supervision_weight[i] = 0.0
+
         assert fi == NUM_FEATURES, f"Feature count mismatch: {fi} != {NUM_FEATURES}"
 
         # Target: forward FORWARD_BARS return (still needed for loss computation)
@@ -1721,6 +1961,8 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     # call or put and holding for FORWARD_BARS (6 bars = 30 min).
     call_pnl = np.full(N, np.nan, dtype=np.float32)
     put_pnl = np.full(N, np.nan, dtype=np.float32)
+    call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
+    put_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
 
     for i in range(N):
         exit_bar = i + FORWARD_BARS
@@ -1736,9 +1978,19 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         exit_put = atm_put_prices[exit_bar]
 
         if not np.isnan(entry_call) and not np.isnan(exit_call) and entry_call > 0:
-            call_pnl[i] = (exit_call - entry_call) / entry_call - SPREAD_COST_PCT
+            raw_call = (exit_call - entry_call) / entry_call
+            call_pnl[i] = raw_call - SPREAD_COST_PCT
+            c_cost_bps = action_cost_bps[i, SIDE_ACTION_TO_IDX["call_atm"]]
+            if not np.isfinite(c_cost_bps):
+                c_cost_bps = 2.0 * OPTION_SPREAD_BPS
+            call_pnl_realistic[i] = raw_call - (c_cost_bps / 10000.0)
         if not np.isnan(entry_put) and not np.isnan(exit_put) and entry_put > 0:
-            put_pnl[i] = (exit_put - entry_put) / entry_put - SPREAD_COST_PCT
+            raw_put = (exit_put - entry_put) / entry_put
+            put_pnl[i] = raw_put - SPREAD_COST_PCT
+            p_cost_bps = action_cost_bps[i, SIDE_ACTION_TO_IDX["put_atm"]]
+            if not np.isfinite(p_cost_bps):
+                p_cost_bps = 2.0 * OPTION_SPREAD_BPS
+            put_pnl_realistic[i] = raw_put - (p_cost_bps / 10000.0)
 
     # -------------------------------------------------------------------
     # OTM P&L targets: same as above but for OTM strikes (for 6-class dir head)
@@ -1747,21 +1999,47 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     otm5_put_pnl = np.full(N, np.nan, dtype=np.float32)
     otm10_call_pnl = np.full(N, np.nan, dtype=np.float32)
     otm10_put_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm15_call_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm15_put_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm20_call_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm20_put_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm5_call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
+    otm5_put_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
+    otm10_call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
+    otm10_put_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
 
     for i in range(N):
         exit_bar = i + FORWARD_BARS
         if exit_bar >= N or dates[i] != dates[exit_bar]:
             continue
-        for px_arr, pnl_arr in [
-            (otm5_call_prices, otm5_call_pnl),
-            (otm5_put_prices, otm5_put_pnl),
-            (otm10_call_prices, otm10_call_pnl),
-            (otm10_put_prices, otm10_put_pnl),
+        for px_arr, pnl_arr, leg_name in [
+            (otm5_call_prices, otm5_call_pnl, "call_otm5"),
+            (otm5_put_prices, otm5_put_pnl, "put_otm5"),
+            (otm10_call_prices, otm10_call_pnl, "call_otm10"),
+            (otm10_put_prices, otm10_put_pnl, "put_otm10"),
+            (otm15_call_prices, otm15_call_pnl, "call_otm15"),
+            (otm15_put_prices, otm15_put_pnl, "put_otm15"),
+            (otm20_call_prices, otm20_call_pnl, "call_otm20"),
+            (otm20_put_prices, otm20_put_pnl, "put_otm20"),
         ]:
             entry_px = px_arr[i]
             exit_px = px_arr[exit_bar]
             if not np.isnan(entry_px) and not np.isnan(exit_px) and entry_px > 0:
-                pnl_arr[i] = (exit_px - entry_px) / entry_px - SPREAD_COST_PCT
+                raw_ret = (exit_px - entry_px) / entry_px
+                pnl_arr[i] = raw_ret - SPREAD_COST_PCT
+                if leg_name in SIDE_ACTION_TO_IDX:
+                    leg_idx = SIDE_ACTION_TO_IDX[leg_name]
+                    leg_cost_bps = action_cost_bps[i, leg_idx]
+                    if not np.isfinite(leg_cost_bps):
+                        leg_cost_bps = 2.0 * OPTION_SPREAD_BPS
+                    if leg_name == "call_otm5":
+                        otm5_call_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
+                    elif leg_name == "put_otm5":
+                        otm5_put_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
+                    elif leg_name == "call_otm10":
+                        otm10_call_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
+                    elif leg_name == "put_otm10":
+                        otm10_put_pnl_realistic[i] = raw_ret - (leg_cost_bps / 10000.0)
 
     # -------------------------------------------------------------------
     # EXIT labels: should an open position be closed at this bar?
@@ -1816,18 +2094,49 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         'atm_call': atm_call_prices,
         'atm_put': atm_put_prices,
         'strike': atm_strikes,
+        'dynamic_atm_strike': dynamic_atm_strikes,
+        'remap_call_strikes': remap_call_strikes,
+        'remap_put_strikes': remap_put_strikes,
+        'static_call_strikes': static_call_strikes,
+        'static_put_strikes': static_put_strikes,
+        'call_strike_drift': call_strike_drift,
+        'put_strike_drift': put_strike_drift,
         'call_pnl': call_pnl,
         'put_pnl': put_pnl,
+        'call_pnl_realistic': call_pnl_realistic,
+        'put_pnl_realistic': put_pnl_realistic,
         'exit_call_label': exit_call_label,
         'exit_put_label': exit_put_label,
         'otm5_call': otm5_call_prices,
         'otm5_put': otm5_put_prices,
         'otm10_call': otm10_call_prices,
         'otm10_put': otm10_put_prices,
+        'otm15_call': otm15_call_prices,
+        'otm15_put': otm15_put_prices,
+        'otm20_call': otm20_call_prices,
+        'otm20_put': otm20_put_prices,
         'otm5_call_pnl': otm5_call_pnl,
         'otm5_put_pnl': otm5_put_pnl,
         'otm10_call_pnl': otm10_call_pnl,
         'otm10_put_pnl': otm10_put_pnl,
+        'otm15_call_pnl': otm15_call_pnl,
+        'otm15_put_pnl': otm15_put_pnl,
+        'otm20_call_pnl': otm20_call_pnl,
+        'otm20_put_pnl': otm20_put_pnl,
+        'otm5_call_pnl_realistic': otm5_call_pnl_realistic,
+        'otm5_put_pnl_realistic': otm5_put_pnl_realistic,
+        'otm10_call_pnl_realistic': otm10_call_pnl_realistic,
+        'otm10_put_pnl_realistic': otm10_put_pnl_realistic,
+        'action_leg_names': list(SIDE_ACTION_ORDER),
+        'action_spread_bps': action_spread_bps,
+        'action_quote_age_s': action_quote_age_s,
+        'action_size': action_size,
+        'action_quality_score': action_quality_score,
+        'action_slippage_bps': action_slippage_bps,
+        'action_cost_bps': action_cost_bps,
+        'actionable_mask': actionable_mask,
+        'risk_state_mask': risk_state_mask,
+        'supervision_weight': supervision_weight,
     }
 
     return feat, targets, dates.tolist(), valid, option_prices, timestamps.tolist()
@@ -1949,8 +2258,18 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
         data['atm_call_prices'] = torch.tensor(option_prices['atm_call'], dtype=torch.float32)
         data['atm_put_prices'] = torch.tensor(option_prices['atm_put'], dtype=torch.float32)
         data['atm_strikes'] = torch.tensor(option_prices['strike'], dtype=torch.float32)
+        if 'dynamic_atm_strike' in option_prices:
+            data['dynamic_atm_strike'] = torch.tensor(option_prices['dynamic_atm_strike'], dtype=torch.float32)
+        for k in ('remap_call_strikes', 'remap_put_strikes', 'static_call_strikes', 'static_put_strikes',
+                  'call_strike_drift', 'put_strike_drift'):
+            if k in option_prices:
+                data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
         data['call_pnl'] = torch.tensor(option_prices['call_pnl'], dtype=torch.float32)
         data['put_pnl'] = torch.tensor(option_prices['put_pnl'], dtype=torch.float32)
+        if 'call_pnl_realistic' in option_prices:
+            data['call_pnl_realistic'] = torch.tensor(option_prices['call_pnl_realistic'], dtype=torch.float32)
+        if 'put_pnl_realistic' in option_prices:
+            data['put_pnl_realistic'] = torch.tensor(option_prices['put_pnl_realistic'], dtype=torch.float32)
         data['exit_call_label'] = torch.tensor(option_prices['exit_call_label'], dtype=torch.float32)
         data['exit_put_label'] = torch.tensor(option_prices['exit_put_label'], dtype=torch.float32)
         # OTM prices and P&L for tradeable OTM actions
@@ -1958,10 +2277,29 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
         data['otm5_put_prices'] = torch.tensor(option_prices['otm5_put'], dtype=torch.float32)
         data['otm10_call_prices'] = torch.tensor(option_prices['otm10_call'], dtype=torch.float32)
         data['otm10_put_prices'] = torch.tensor(option_prices['otm10_put'], dtype=torch.float32)
+        for k in ('otm15_call', 'otm15_put', 'otm20_call', 'otm20_put'):
+            if k in option_prices:
+                data[f'{k}_prices'] = torch.tensor(option_prices[k], dtype=torch.float32)
         data['otm5_call_pnl'] = torch.tensor(option_prices['otm5_call_pnl'], dtype=torch.float32)
         data['otm5_put_pnl'] = torch.tensor(option_prices['otm5_put_pnl'], dtype=torch.float32)
         data['otm10_call_pnl'] = torch.tensor(option_prices['otm10_call_pnl'], dtype=torch.float32)
         data['otm10_put_pnl'] = torch.tensor(option_prices['otm10_put_pnl'], dtype=torch.float32)
+        for k in (
+            'otm15_call_pnl', 'otm15_put_pnl', 'otm20_call_pnl', 'otm20_put_pnl',
+            'otm5_call_pnl_realistic', 'otm5_put_pnl_realistic',
+            'otm10_call_pnl_realistic', 'otm10_put_pnl_realistic',
+        ):
+            if k in option_prices:
+                data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
+        for k in (
+            'action_spread_bps', 'action_quote_age_s', 'action_size',
+            'action_quality_score', 'action_slippage_bps', 'action_cost_bps',
+            'actionable_mask', 'risk_state_mask', 'supervision_weight',
+        ):
+            if k in option_prices:
+                data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
+        if 'action_leg_names' in option_prices:
+            data['action_leg_names'] = list(option_prices['action_leg_names'])
 
     path = os.path.join(FEATURES_DIR, "data.pt")
     torch.save(data, path)
@@ -2000,7 +2338,8 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
     Yields (x, y):
         x: (batch, lookback, NUM_FEATURES)
         y: tuple of (fwd_ret, call_pnl, put_pnl, exit_call, exit_put,
-                     otm5_call_pnl, otm5_put_pnl, otm10_call_pnl, otm10_put_pnl)
+                     otm5_call_pnl, otm5_put_pnl, otm10_call_pnl, otm10_put_pnl,
+                     supervision_weight, actionable_mask, risk_state_mask)
            each (batch,). NaN where option data is unavailable.
     """
     features = data['features'].to(device)
@@ -2033,6 +2372,18 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
     otm5_put_pnl_all = data['otm5_put_pnl'].to(device)
     otm10_call_pnl_all = data['otm10_call_pnl'].to(device)
     otm10_put_pnl_all = data['otm10_put_pnl'].to(device)
+    supervision_weight_all = data.get('supervision_weight')
+    if supervision_weight_all is None:
+        supervision_weight_all = torch.ones_like(call_pnl_all)
+    supervision_weight_all = supervision_weight_all.to(device)
+    actionable_mask_all = data.get('actionable_mask')
+    if actionable_mask_all is None:
+        actionable_mask_all = torch.ones_like(call_pnl_all)
+    actionable_mask_all = actionable_mask_all.to(device)
+    risk_state_mask_all = data.get('risk_state_mask')
+    if risk_state_mask_all is None:
+        risk_state_mask_all = torch.ones_like(call_pnl_all)
+    risk_state_mask_all = risk_state_mask_all.to(device)
 
     if split == "train":
         end = data['train_end_idx'] + 1
@@ -2062,7 +2413,9 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
                 y = (targets[idx], call_pnl_all[idx], put_pnl_all[idx],
                      exit_call_all[idx], exit_put_all[idx],
                      otm5_call_pnl_all[idx], otm5_put_pnl_all[idx],
-                     otm10_call_pnl_all[idx], otm10_put_pnl_all[idx])
+                     otm10_call_pnl_all[idx], otm10_put_pnl_all[idx],
+                     supervision_weight_all[idx], actionable_mask_all[idx],
+                     risk_state_mask_all[idx])
                 yield x, y
     else:
         for i in range(0, n, batch_size):
@@ -2073,7 +2426,9 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
             y = (targets[idx], call_pnl_all[idx], put_pnl_all[idx],
                  exit_call_all[idx], exit_put_all[idx],
                  otm5_call_pnl_all[idx], otm5_put_pnl_all[idx],
-                 otm10_call_pnl_all[idx], otm10_put_pnl_all[idx])
+                 otm10_call_pnl_all[idx], otm10_put_pnl_all[idx],
+                 supervision_weight_all[idx], actionable_mask_all[idx],
+                 risk_state_mask_all[idx])
             yield x, y
 
 
@@ -2094,9 +2449,10 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         dir_logits:  (batch, 6) [CALL_ATM, CALL_OTM5, CALL_OTM10,
                                  PUT_ATM, PUT_OTM5, PUT_OTM10]
 
-    Actions: DO_NOTHING=0, BUY_CALL=1, BUY_PUT=2, EXIT=3
-    EXIT while in trade → close position (model-driven exit).
-    EXIT while not in trade → treated as DO_NOTHING.
+    Effective semantics:
+      - Gate=TRADE + direction head -> one of 6 BUY actions.
+      - Gate=NO_TRADE while in position -> model EXIT.
+      - Gate=NO_TRADE while flat -> DO_NOTHING.
 
     Optional overrides (defaults from module constants):
       stop_loss_pct: Stop loss as fraction of premium (default 0.30)
@@ -2121,6 +2477,10 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     dates = data['dates']
     timestamps = data.get('timestamps', dates)
     atm_strikes = data.get('atm_strikes')
+    action_cost_matrix = data.get('action_cost_bps')
+    action_quality_matrix = data.get('action_quality_score')
+    actionable_series = data.get('actionable_mask')
+    risk_state_series = data.get('risk_state_mask')
 
     val_start = max(lookback, data['val_start_idx'])
     val_end = data['val_end_idx'] + 1
@@ -2133,11 +2493,21 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     if len(val_indices) < 10:
         return _empty_metrics(len(val_indices))
 
+    actionable_bar_rate = 0.0
+    risk_off_bar_rate = 0.0
+    if actionable_series is not None:
+        actionable_vals = np.array([float(actionable_series[i]) for i in val_indices], dtype=np.float64)
+        actionable_bar_rate = float(np.mean(actionable_vals))
+    if risk_state_series is not None:
+        risk_vals = np.array([float(risk_state_series[i]) for i in val_indices], dtype=np.float64)
+        risk_off_bar_rate = float(np.mean(1.0 - risk_vals))
+
     val_idx_t = torch.tensor(val_indices, dtype=torch.long, device=device)
     offsets = torch.arange(-lookback, 0, device=device)
 
     # Get model predictions for all val bars
     all_actions = []
+    all_gate_no_trade = []
     for i in range(0, len(val_idx_t), batch_size):
         idx = val_idx_t[i:i + batch_size]
         window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
@@ -2163,11 +2533,13 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         batch_actions = torch.where(
             gate_action == 1,
             dir_action + 1,  # ACTION_BUY_CALL_ATM=1 through ACTION_BUY_PUT_OTM10=6
-            torch.full_like(gate_action, ACTION_EXIT),  # gate=no_trade -> EXIT candidate
+            torch.full_like(gate_action, ACTION_DO_NOTHING),
         )
         all_actions.append(batch_actions.cpu())
+        all_gate_no_trade.append((gate_action == 0).cpu())
 
     actions = torch.cat(all_actions).numpy()
+    gate_no_trade = torch.cat(all_gate_no_trade).numpy().astype(bool)
 
     # Count unique val dates
     val_dates_list = [dates[i] for i in val_indices]
@@ -2229,19 +2601,30 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
 
     trade_pnls = []
     trade_details = []
+    entry_cost_bps_samples = []
+    entry_quality_samples = []
+    entry_cost_known_count = 0
+    high_cost_entries = 0
+    low_quality_entries = 0
     model_exit_count = 0
     in_trade = False
     trade_entry_bar = 0
     trade_action = 0
     trade_entry_price = 0.0
+    trade_entry_cost_bps = 2.0 * OPTION_SPREAD_BPS
+    trade_entry_quality = float("nan")
+    trade_entry_actionable = 0.0
     trade_last_price = 0.0
     trade_use_actual = False
     trade_px_array = None
     last_stop_bar = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
     cooldown_blocked_count = 0
     pre_10am_blocked_count = 0
+    do_nothing_count = 0
+    exit_signal_count = 0
 
     for k, global_idx in enumerate(val_indices):
+        gate_flat_signal = bool(gate_no_trade[k])
         if in_trade:
             bars_held = k - trade_entry_bar
             entry_global = val_indices[trade_entry_bar]
@@ -2259,7 +2642,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             hit_stop = net_pnl_pct <= -_stop_loss
             hit_max_hold = bars_held >= _max_hold
             eod = dates[global_idx] != dates[entry_global]
-            model_exit = (actions[k] == ACTION_EXIT)
+            model_exit = gate_flat_signal
 
             if hit_stop or hit_max_hold or eod or model_exit or k == len(val_indices) - 1:
                 if hit_stop:
@@ -2268,14 +2651,14 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 else:
                     final_pnl = net_pnl_pct
 
-                spread_cost = OPTION_SPREAD_BPS / 10000.0 * 2
-                final_pnl -= spread_cost
+                final_pnl -= float(trade_entry_cost_bps) / 10000.0
 
                 # Cap individual trade P&L to eliminate fat-tail lottery dependency
                 final_pnl = max(-_stop_loss, min(final_pnl, _max_return))
 
                 if model_exit:
                     model_exit_count += 1
+                    exit_signal_count += 1
 
                 # Exit reason
                 if hit_stop:
@@ -2303,6 +2686,9 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                     'entry_price': trade_entry_price if trade_use_actual else None,
                     'bars_held': bars_held,
                     'hold_minutes': bars_held * BAR_SIZE_MINUTES,
+                    'entry_cost_bps': round(float(trade_entry_cost_bps), 4),
+                    'entry_quality': None if np.isnan(trade_entry_quality) else round(float(trade_entry_quality), 4),
+                    'entry_actionable': int(trade_entry_actionable > 0.5),
                     'pnl_pct': round(final_pnl * 100, 4),
                     'exit_reason': exit_reason,
                     'actual_prices': trade_use_actual,
@@ -2327,14 +2713,50 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             entry_px = float(candidate_px_array[global_idx])
             if entry_px <= 0:
                 continue
+            action_idx = int(candidate_action - 1)
+            entry_cost_bps = 2.0 * OPTION_SPREAD_BPS
+            entry_quality = float("nan")
+            if action_cost_matrix is not None and action_idx >= 0:
+                try:
+                    c_bps = float(action_cost_matrix[global_idx, action_idx])
+                    if np.isfinite(c_bps):
+                        entry_cost_bps = c_bps
+                        entry_cost_known_count += 1
+                except Exception:
+                    pass
+            if action_quality_matrix is not None and action_idx >= 0:
+                try:
+                    q_val = float(action_quality_matrix[global_idx, action_idx])
+                    if np.isfinite(q_val):
+                        entry_quality = q_val
+                except Exception:
+                    pass
+            entry_actionable = 0.0
+            if actionable_series is not None:
+                try:
+                    entry_actionable = float(actionable_series[global_idx])
+                except Exception:
+                    entry_actionable = 0.0
+            entry_cost_bps_samples.append(float(entry_cost_bps))
+            if np.isfinite(entry_quality):
+                entry_quality_samples.append(float(entry_quality))
+            if entry_cost_bps > 250.0:
+                high_cost_entries += 1
+            if np.isfinite(entry_quality) and entry_quality < 0.30:
+                low_quality_entries += 1
 
             in_trade = True
             trade_entry_bar = k
             trade_action = candidate_action
             trade_px_array = candidate_px_array
             trade_entry_price = entry_px
+            trade_entry_cost_bps = float(entry_cost_bps)
+            trade_entry_quality = float(entry_quality)
+            trade_entry_actionable = float(entry_actionable)
             trade_last_price = entry_px
             trade_use_actual = True
+        elif gate_flat_signal:
+            do_nothing_count += 1
 
     # -------------------------------------------------------------------
     # Compute metrics
@@ -2428,8 +2850,13 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             score *= sl_penalty
 
     total_bars = len(actions)
-    do_nothing_pct = float(np.sum(actions == ACTION_DO_NOTHING)) / max(total_bars, 1)
-    exit_pct = float(np.sum(actions == ACTION_EXIT)) / max(total_bars, 1)
+    do_nothing_pct = float(do_nothing_count) / max(total_bars, 1)
+    exit_pct = float(exit_signal_count) / max(total_bars, 1)
+    avg_entry_cost_bps = float(np.mean(entry_cost_bps_samples)) if entry_cost_bps_samples else float(2.0 * OPTION_SPREAD_BPS)
+    avg_entry_quality = float(np.mean(entry_quality_samples)) if entry_quality_samples else 0.0
+    cost_realism_coverage = float(entry_cost_known_count) / max(num_trades, 1)
+    high_cost_entry_rate = float(high_cost_entries) / max(num_trades, 1)
+    low_quality_entry_rate = float(low_quality_entries) / max(num_trades, 1)
 
     # --- Equity curve (dollar-denominated, informational) ---
     capital = _starting_capital
@@ -2473,6 +2900,13 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         'do_nothing_pct': float(do_nothing_pct),
         'exit_pct': float(exit_pct),
         'model_exit_count': int(model_exit_count),
+        'avg_entry_cost_bps': round(float(avg_entry_cost_bps), 4),
+        'avg_entry_quality': round(float(avg_entry_quality), 4),
+        'cost_realism_coverage': round(float(cost_realism_coverage), 4),
+        'high_cost_entry_rate': round(float(high_cost_entry_rate), 4),
+        'low_quality_entry_rate': round(float(low_quality_entry_rate), 4),
+        'actionable_bar_rate': round(float(actionable_bar_rate), 4),
+        'risk_off_bar_rate': round(float(risk_off_bar_rate), 4),
         'num_val_bars': len(val_indices),
         'num_val_days': int(num_val_days),
         'total_return': float(total_return),
@@ -2499,6 +2933,13 @@ def _empty_metrics(num_val_bars=0, num_val_days=0, num_trades=0):
         'max_drawdown': 0.0, 'calmar': 0.0,
         'ev_per_trade': 0.0, 'do_nothing_pct': 1.0,
         'exit_pct': 0.0, 'model_exit_count': 0,
+        'avg_entry_cost_bps': float(2.0 * OPTION_SPREAD_BPS),
+        'avg_entry_quality': 0.0,
+        'cost_realism_coverage': 0.0,
+        'high_cost_entry_rate': 1.0,
+        'low_quality_entry_rate': 1.0,
+        'actionable_bar_rate': 0.0,
+        'risk_off_bar_rate': 0.0,
         'num_val_bars': num_val_bars, 'num_val_days': num_val_days,
         'total_return': 0.0,
         'final_capital': STARTING_CAPITAL,
@@ -2855,10 +3296,14 @@ if __name__ == "__main__":
     pnl_count = int(np.sum(~np.isnan(option_prices['call_pnl']))) if option_prices else 0
     exit_count = int(np.sum(option_prices['exit_call_label'] == 1.0)) if option_prices else 0
     otm_count = int(np.sum(~np.isnan(option_prices['otm5_call']))) if option_prices else 0
+    otm_deep_count = int(np.sum(~np.isnan(option_prices.get('otm20_call', np.array([]))))) if option_prices else 0
+    actionable_count = int(np.sum(option_prices.get('actionable_mask', np.zeros(len(df))) > 0.5)) if option_prices else 0
     print(f"  Valid bars: {valid_count}/{len(df)} ({100*valid_count/len(df):.0f}%)")
     print(f"  Bars with option prices: {opt_count}/{len(df)} ({100*opt_count/len(df):.0f}%)")
     print(f"  Bars with OTM prices: {otm_count}/{len(df)} ({100*otm_count/len(df):.0f}%)")
+    print(f"  Bars with deep OTM (+/-20) prices: {otm_deep_count}/{len(df)} ({100*otm_deep_count/len(df):.0f}%)")
     print(f"  Bars with option P&L: {pnl_count}/{len(df)} ({100*pnl_count/len(df):.0f}%)")
+    print(f"  Bars flagged actionable (quality/risk mask): {actionable_count}/{len(df)} ({100*actionable_count/len(df):.0f}%)")
     print(f"  Bars with EXIT=1 (call): {exit_count}")
     print(f"  ({time.time() - t0:.1f}s)")
     print()

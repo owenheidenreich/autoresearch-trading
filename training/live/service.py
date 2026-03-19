@@ -196,6 +196,7 @@ class PaperTradingService:
         return report
 
     def run_session(self) -> None:
+        session_id = f"session-{dt.datetime.utcnow().strftime('%Y%m%dT%H%M%S')}"
         bundle = self._load_or_refresh_context()
         report = self._probe_entitlements()
         if not report.passed:
@@ -243,6 +244,7 @@ class PaperTradingService:
             max_position_size=self.cfg.max_position_size,
             kill_switch_path=self.cfg.kill_switch_path,
             audit_path=self.cfg.audit_path,
+            session_id=session_id,
         )
         feat_engine = LiveFeatureEngine(bundle, target_num_features=decision.num_features)
 
@@ -254,14 +256,28 @@ class PaperTradingService:
         end_h, end_m = [int(x) for x in self.cfg.end_time_et.split(":")]
         processed = 0
         current_position_id: str | None = None
+        decision_seq = 0
+        intent_seq = 0
+        counters = {
+            "signals_generated": 0,
+            "entry_intents": 0,
+            "entries_applied": 0,
+            "risk_update_intents": 0,
+            "risk_updates_applied": 0,
+            "exit_intents": 0,
+            "exits_applied": 0,
+            "bars_skipped_incomplete": 0,
+        }
 
         self._audit(
             "session_start",
             {
+                "session_id": session_id,
                 "seed_spx": seed_spx,
                 "dry_run": exec_engine.dry_run,
                 "context_num_features": context_features,
                 "model_num_features": decision.num_features,
+                "account": report.account,
             },
         )
         try:
@@ -309,27 +325,90 @@ class PaperTradingService:
                     },
                 )
                 if snap.completeness < 0.65:
+                    counters["bars_skipped_incomplete"] += 1
                     self._audit("bar_skipped_incomplete", {"timestamp_ms": ts_ms, "completeness": snap.completeness})
                     if self.cfg.max_minutes and processed >= self.cfg.max_minutes:
                         break
                     continue
 
                 inference = decision.infer(snap.normalized_window)
+                counters["signals_generated"] += 1
+                decision_seq += 1
+                decision_id = f"{session_id}-d{decision_seq:05d}"
                 latest_spx = float(pkt["spx_bar"]["close"])
+                self._audit(
+                    "model_inference",
+                    {
+                        "session_id": session_id,
+                        "decision_id": decision_id,
+                        "timestamp_ms": ts_ms,
+                        "action": int(inference.action),
+                        "confidence": float(inference.confidence),
+                        "gate_trade_prob": float(inference.gate_trade_prob),
+                        "direction_probs": [float(x) for x in inference.direction_probs],
+                        "reason_codes": list(inference.reason_codes),
+                    },
+                )
 
                 if current_position_id is None:
                     intent = decision.build_entry_intent(inference, resolver, latest_spx, snap.latest_raw_row)
                     if intent is not None:
+                        intent_seq += 1
+                        intent.decision_id = decision_id
+                        intent.intent_id = f"{session_id}-i{intent_seq:05d}"
+                        counters["entry_intents"] += 1
+                        self._audit(
+                            "entry_intent",
+                            {
+                                "session_id": session_id,
+                                "decision_id": intent.decision_id,
+                                "intent_id": intent.intent_id,
+                                "action": int(intent.action),
+                                "qty": int(intent.qty),
+                                "confidence": float(intent.confidence),
+                                "stop_price": float(intent.stop_price),
+                                "take_profit_price": float(intent.take_profit_price),
+                                "reference_price": intent.reference_price,
+                                "reason_codes": list(intent.reason_codes),
+                                "contract": _contract_payload(intent.contract),
+                            },
+                        )
                         state = exec_engine.place_entry(intent)
+                        counters["entries_applied"] += 1
                         current_position_id = state.position_id
                         self._audit(
                             "entry_intent_applied",
-                            {"position_id": state.position_id, "action": intent.action, "confidence": intent.confidence},
+                            {
+                                "session_id": session_id,
+                                "decision_id": intent.decision_id,
+                                "intent_id": intent.intent_id,
+                                "position_id": state.position_id,
+                                "action": intent.action,
+                                "confidence": intent.confidence,
+                            },
                         )
                 else:
                     if inference.action == ACTION_DO_NOTHING:
+                        counters["exit_intents"] += 1
+                        self._audit(
+                            "exit_intent",
+                            {
+                                "session_id": session_id,
+                                "decision_id": decision_id,
+                                "position_id": current_position_id,
+                                "reason_codes": list(inference.reason_codes),
+                            },
+                        )
                         if exec_engine.flatten_position(current_position_id, reason="model_exit"):
-                            self._audit("model_exit", {"position_id": current_position_id})
+                            counters["exits_applied"] += 1
+                            self._audit(
+                                "model_exit",
+                                {
+                                    "session_id": session_id,
+                                    "decision_id": decision_id,
+                                    "position_id": current_position_id,
+                                },
+                            )
                             current_position_id = None
                     else:
                         state = exec_engine.positions.get(current_position_id)
@@ -337,10 +416,31 @@ class PaperTradingService:
                             mid = resolver.quote_mid(state.contract, timeout_s=0.2)
                             update = decision.build_risk_update_intent(state, mid, snap.latest_raw_row)
                             if update is not None:
+                                intent_seq += 1
+                                update.decision_id = decision_id
+                                update.intent_id = f"{session_id}-i{intent_seq:05d}"
+                                counters["risk_update_intents"] += 1
+                                self._audit(
+                                    "risk_update_intent",
+                                    {
+                                        "session_id": session_id,
+                                        "decision_id": update.decision_id,
+                                        "intent_id": update.intent_id,
+                                        "position_id": update.position_id,
+                                        "new_stop": update.new_stop_price,
+                                        "new_take_profit": update.new_take_profit_price,
+                                        "reason_codes": list(update.reason_codes),
+                                    },
+                                )
                                 applied = exec_engine.apply_risk_update(update)
+                                if applied:
+                                    counters["risk_updates_applied"] += 1
                                 self._audit(
                                     "risk_update",
                                     {
+                                        "session_id": session_id,
+                                        "decision_id": update.decision_id,
+                                        "intent_id": update.intent_id,
                                         "position_id": current_position_id,
                                         "applied": applied,
                                         "new_stop": update.new_stop_price,
@@ -360,7 +460,24 @@ class PaperTradingService:
             stream.close()
             if ib.isConnected():
                 ib.disconnect()
-            self._audit("session_end", {"processed_minutes": processed})
+            self._audit(
+                "session_end",
+                {
+                    "session_id": session_id,
+                    "processed_minutes": processed,
+                    "signals_generated": counters["signals_generated"],
+                    "entry_intents": counters["entry_intents"],
+                    "entries_applied": counters["entries_applied"],
+                    "risk_update_intents": counters["risk_update_intents"],
+                    "risk_updates_applied": counters["risk_updates_applied"],
+                    "exit_intents": counters["exit_intents"],
+                    "exits_applied": counters["exits_applied"],
+                    "bars_skipped_incomplete": counters["bars_skipped_incomplete"],
+                    "open_positions_final": len(
+                        [p for p in exec_engine.positions.values() if p.status == "OPEN"]
+                    ),
+                },
+            )
 
 
 def _f(v: Any, default: float = float("nan")) -> float:
@@ -385,3 +502,17 @@ def _greek(ticker: Any, key: str) -> float:
         except Exception:
             continue
     return float("nan")
+
+
+def _contract_payload(contract: Any) -> dict[str, Any]:
+    return {
+        "symbol": getattr(contract, "symbol", None),
+        "secType": getattr(contract, "secType", None),
+        "exchange": getattr(contract, "exchange", None),
+        "currency": getattr(contract, "currency", None),
+        "tradingClass": getattr(contract, "tradingClass", None),
+        "lastTradeDateOrContractMonth": getattr(contract, "lastTradeDateOrContractMonth", None),
+        "strike": getattr(contract, "strike", None),
+        "right": getattr(contract, "right", None),
+        "conId": getattr(contract, "conId", None),
+    }

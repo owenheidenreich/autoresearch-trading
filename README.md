@@ -60,6 +60,7 @@ tools/
   ib_account_snapshot.py
   run_ibkr_mock_training.py
   live_feature_parity_report.py
+  live_order_parity_report.py
 
 infra/
   deploy.sh
@@ -111,6 +112,11 @@ python3 ../tools/monitor.py --local ../results
 ### Replay check
 ```bash
 python3 replay.py --date 2026-03-17 --output replay-trades.csv
+```
+
+### Live signal/execution parity check
+```bash
+python3 tools/live_order_parity_report.py --audit-path results/live/audit.jsonl
 ```
 
 ## Deployment / Sync Behavior

@@ -66,6 +66,8 @@ class DecisionIntent:
     reason_codes: list[str]
     entry_limit_price: float | None = None
     reference_price: float | None = None
+    decision_id: str | None = None
+    intent_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -75,6 +77,8 @@ class RiskUpdateIntent:
     new_stop_price: float | None = None
     new_take_profit_price: float | None = None
     reason_codes: list[str] = field(default_factory=list)
+    decision_id: str | None = None
+    intent_id: str | None = None
 
 
 @dataclass
@@ -91,6 +95,15 @@ class ExecutionState:
     created_at: str
     updated_at: str
     entry_price_reference: float | None = None
+    fill_status: str = "PENDING"
+    fill_price: float | None = None
+    fill_time: str | None = None
+    slippage_bps: float | None = None
+    session_id: str | None = None
+    decision_id: str | None = None
+    intent_id: str | None = None
+    ib_perm_id_entry: int | None = None
+    last_exec_id: str | None = None
     notes: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -108,4 +121,3 @@ def save_bundle(path: str, bundle: LiveContextBundle) -> None:
 def load_bundle(path: str) -> LiveContextBundle:
     payload = torch.load(path, map_location="cpu", weights_only=False)
     return LiveContextBundle(**payload)
-

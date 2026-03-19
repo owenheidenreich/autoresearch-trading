@@ -46,15 +46,16 @@ profiles:
           attributes:
             vendor:
               nvidia:
+                # Foundation policy: prefer H100, fallback to A100.
                 - model: h100
-                  ram: 80Gi
+                - model: a100
 
   placement:
     akash:
       pricing:
         trainer:
           denom: uakt
-          amount: 200000
+          amount: 2000000
 
 deployment:
   trainer:

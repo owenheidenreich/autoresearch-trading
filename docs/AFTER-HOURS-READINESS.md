@@ -47,6 +47,19 @@ python3 replay.py --date 2026-03-13 --no-download --model best_model.pt --train-
 Outputs:
 - CSV trade logs in `results/analysis/nightly-replay/`
 - JSON journals (`*_journal.json`) with session/trade details
+- Canonical replay ledger files (`*_ledger_trades.*`, `*_ledger_bars.*`, `*_ledger_days.*`)
+- Replay QA artifacts (`*_qa.json`, `*_qa_anomalies.jsonl`)
+
+Optional release-gate battery:
+
+```bash
+python3 tools/replay_battery.py \
+  --dates 2026-03-11,2026-03-12,2026-03-13 \
+  --no-download \
+  --model training/best_model.pt \
+  --train-py training/best_train.py \
+  --output-root results/analysis/replay-battery/nightly
+```
 
 ## 4) Evidence Ingestion (Inner + Outer Loop)
 

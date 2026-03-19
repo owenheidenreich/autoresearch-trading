@@ -15,7 +15,7 @@ Usage:
 """
 from __future__ import annotations
 
-import os, sys, time, argparse, pickle, json
+import os, sys, time, argparse, pickle, json, csv, re, hashlib
 import datetime as dt
 from zoneinfo import ZoneInfo
 
@@ -55,6 +55,148 @@ except ModuleNotFoundError as e:
 # Path to pre-computed features (matches training exactly)
 DATA_PT_PATH = os.path.join(CACHE_DIR, "features", "data.pt")
 ET_TZ = ZoneInfo("America/New_York")
+
+DEFAULT_TRADE_CSV_COLUMNS = [
+    "num",
+    "date",
+    "result",
+    "entry_time",
+    "exit_time",
+    "bars_held",
+    "hold_min",
+    "reason",
+    "direction",
+    "strike",
+    "entry_option_px",
+    "exit_option_px",
+    "actual_px",
+    "pnl_pct",
+    "cum_pnl_pct",
+    "spx_entry",
+    "spx_exit",
+    "spx_move",
+    "spx_move_pct",
+    "spx_high_during",
+    "spx_low_during",
+    "mfe_points",
+    "mae_points",
+    "total_volume_during",
+    "avg_bar_volume",
+    "vix_entry",
+    "vix_exit",
+    "session_high",
+    "session_low",
+    "day_open",
+    "entry_gate_prob",
+    "exit_gate_notrade_prob",
+    "entry_trend",
+    "entry_rvol",
+    "entry_vol_z",
+    "entry_ret_5",
+    "entry_ret_30",
+    "entry_reason_codes",
+    "exit_reason_codes",
+]
+
+LEDGER_TRADE_COLUMNS = [
+    "ledger_version",
+    "replay_run_id",
+    "replay_date",
+    "trade_id",
+    "trade_num",
+    "entry_time",
+    "exit_time",
+    "entry_timestamp_ms",
+    "exit_timestamp_ms",
+    "entry_timestamp_utc",
+    "exit_timestamp_utc",
+    "bars_held",
+    "hold_min",
+    "direction",
+    "strike",
+    "entry_option_px",
+    "exit_option_px",
+    "actual_px",
+    "pnl_pct",
+    "cum_pnl_pct",
+    "reason",
+    "entry_reason_codes_json",
+    "exit_reason_codes_json",
+    "entry_gate_prob",
+    "exit_gate_notrade_prob",
+    "entry_confidence",
+    "risk_mode",
+    "min_trade_prob",
+    "entry_stop_price",
+    "entry_take_profit_price",
+    "exit_stop_price",
+    "exit_take_profit_price",
+    "risk_updates",
+    "spx_entry",
+    "spx_exit",
+    "spx_move",
+    "spx_move_pct",
+    "mfe_points",
+    "mae_points",
+]
+
+LEDGER_BAR_COLUMNS = [
+    "ledger_version",
+    "replay_run_id",
+    "replay_date",
+    "bar_seq",
+    "global_idx",
+    "bar_of_day",
+    "time",
+    "timestamp_raw",
+    "timestamp_ms",
+    "timestamp_utc",
+    "position",
+    "proposed_action",
+    "executed_action",
+    "gate_trade_prob",
+    "gate_notrade_prob",
+    "top_direction",
+    "top_dir_prob",
+    "dir_prob_C_ATM",
+    "dir_prob_C_OTM5",
+    "dir_prob_C_OTM10",
+    "dir_prob_P_ATM",
+    "dir_prob_P_OTM5",
+    "dir_prob_P_OTM10",
+    "spx",
+    "volume",
+    "policy_gate_reason_codes_json",
+    "policy_gate_payload_json",
+]
+
+LEDGER_DAY_COLUMNS = [
+    "ledger_version",
+    "replay_run_id",
+    "replay_date",
+    "model_path",
+    "model_score",
+    "risk_mode",
+    "min_trade_prob",
+    "total_bars",
+    "num_trades",
+    "wins",
+    "losses",
+    "win_rate",
+    "total_pnl_pct",
+    "profit_factor",
+    "avg_gate_prob",
+    "max_gate_prob",
+    "cooldown_blocked",
+    "pre_10am_blocked",
+    "missing_option_array_blocked",
+    "missing_option_price_blocked",
+    "exit_reason_counts_json",
+    "entry_reason_counts_json",
+    "qa_passed",
+    "qa_critical_count",
+    "qa_warning_count",
+]
 
 # ---------------------------------------------------------------------------
 # Feature groups (must match train.py)
@@ -701,7 +843,25 @@ def _format_time(ts):
         bar_dt = dt.datetime.fromtimestamp(int(ts) / 1000, tz=dt.timezone.utc)
         bar_dt = bar_dt.astimezone(ET_TZ)
         return bar_dt.strftime('%H:%M')
-    return str(ts)[:5]
+    s = str(ts).strip()
+    if not s:
+        return ""
+    if s.isdigit():
+        raw = int(s)
+        if raw > 10_000_000_000:  # likely ms epoch
+            bar_dt = dt.datetime.fromtimestamp(raw / 1000, tz=dt.timezone.utc)
+            return bar_dt.astimezone(ET_TZ).strftime("%H:%M")
+    try:
+        parsed = dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt.timezone.utc)
+        return parsed.astimezone(ET_TZ).strftime("%H:%M")
+    except Exception:
+        pass
+    m = re.search(r"(\d{2}):(\d{2})", s)
+    if m:
+        return f"{m.group(1)}:{m.group(2)}"
+    return s[:5]
 
 
 def _safe_float(arr, idx):
@@ -712,9 +872,442 @@ def _safe_float(arr, idx):
     return val if not np.isnan(val) else None
 
 
+def _timestamp_ms(ts, replay_date: str | None = None) -> int | None:
+    if ts is None:
+        return None
+    if isinstance(ts, (int, float, np.integer, np.floating)):
+        raw = int(ts)
+        if raw > 10_000_000_000:
+            return raw
+        if raw > 1_000_000_000:
+            return raw * 1000
+    s = str(ts).strip()
+    if not s:
+        return None
+    if s.isdigit():
+        raw = int(s)
+        if raw > 10_000_000_000:
+            return raw
+        if raw > 1_000_000_000:
+            return raw * 1000
+    try:
+        parsed = dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=ET_TZ)
+        return int(parsed.astimezone(dt.timezone.utc).timestamp() * 1000)
+    except Exception:
+        pass
+    try:
+        if replay_date and re.fullmatch(r"\d{2}:\d{2}", s):
+            parsed = dt.datetime.strptime(f"{replay_date} {s}", "%Y-%m-%d %H:%M").replace(tzinfo=ET_TZ)
+            return int(parsed.astimezone(dt.timezone.utc).timestamp() * 1000)
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}", s):
+            parsed = dt.datetime.strptime(s, "%Y-%m-%d %H:%M").replace(tzinfo=ET_TZ)
+            return int(parsed.astimezone(dt.timezone.utc).timestamp() * 1000)
+    except Exception:
+        return None
+    return None
+
+
+def _timestamp_iso_utc(ts_ms: int | None) -> str | None:
+    if ts_ms is None:
+        return None
+    try:
+        return dt.datetime.fromtimestamp(ts_ms / 1000, tz=dt.timezone.utc).isoformat()
+    except Exception:
+        return None
+
+
+def _canonical_replay_run_id(*, replay_date: str, model_path: str, risk_mode: str, min_trade_prob: float) -> str:
+    payload = f"{replay_date}|{os.path.abspath(model_path)}|{risk_mode}|{min_trade_prob:.4f}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def _json_dump(obj: object) -> str:
+    return json.dumps(obj, sort_keys=True)
+
+
+def _build_ledger_tables(
+    *,
+    replay_date: str,
+    replay_run_id: str,
+    trades: list[dict[str, object]],
+    bar_log: list[dict[str, object]],
+    session_stats: dict[str, object],
+    model_path: str,
+    model_score: float | None,
+    risk_mode: str,
+    min_trade_prob: float,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    trade_rows: list[dict[str, object]] = []
+    for t in trades:
+        entry_ts_ms = _timestamp_ms(t.get("entry_timestamp_ms") or t.get("entry_time"), replay_date=replay_date)
+        exit_ts_ms = _timestamp_ms(t.get("exit_timestamp_ms") or t.get("exit_time"), replay_date=replay_date)
+        row = {
+            "ledger_version": "replay_ledger_v1",
+            "replay_run_id": replay_run_id,
+            "replay_date": replay_date,
+            "trade_id": str(t.get("trade_id") or f"{replay_run_id}-T{int(t.get('num', 0)):04d}"),
+            "trade_num": int(t.get("num", 0)),
+            "entry_time": t.get("entry_time"),
+            "exit_time": t.get("exit_time"),
+            "entry_timestamp_ms": entry_ts_ms,
+            "exit_timestamp_ms": exit_ts_ms,
+            "entry_timestamp_utc": _timestamp_iso_utc(entry_ts_ms),
+            "exit_timestamp_utc": _timestamp_iso_utc(exit_ts_ms),
+            "bars_held": int(t.get("bars_held", 0)),
+            "hold_min": int(t.get("hold_min", 0)),
+            "direction": t.get("direction"),
+            "strike": t.get("strike"),
+            "entry_option_px": t.get("entry_option_px"),
+            "exit_option_px": t.get("exit_option_px"),
+            "actual_px": bool(t.get("actual_px", False)),
+            "pnl_pct": t.get("pnl_pct"),
+            "cum_pnl_pct": t.get("cum_pnl_pct"),
+            "reason": t.get("reason"),
+            "entry_reason_codes_json": _json_dump(t.get("entry_reason_codes", [])),
+            "exit_reason_codes_json": _json_dump(t.get("exit_reason_codes", [])),
+            "entry_gate_prob": t.get("entry_gate_prob"),
+            "exit_gate_notrade_prob": t.get("exit_gate_notrade_prob"),
+            "entry_confidence": t.get("entry_confidence"),
+            "risk_mode": t.get("risk_mode", risk_mode),
+            "min_trade_prob": t.get("min_trade_prob", min_trade_prob),
+            "entry_stop_price": t.get("entry_stop_price"),
+            "entry_take_profit_price": t.get("entry_take_profit_price"),
+            "exit_stop_price": t.get("exit_stop_price"),
+            "exit_take_profit_price": t.get("exit_take_profit_price"),
+            "risk_updates": int(t.get("risk_updates", 0)),
+            "spx_entry": t.get("spx_entry"),
+            "spx_exit": t.get("spx_exit"),
+            "spx_move": t.get("spx_move"),
+            "spx_move_pct": t.get("spx_move_pct"),
+            "mfe_points": t.get("mfe_points"),
+            "mae_points": t.get("mae_points"),
+        }
+        trade_rows.append(row)
+
+    bar_rows: list[dict[str, object]] = []
+    for i, b in enumerate(bar_log, start=1):
+        ts_ms = _timestamp_ms(b.get("timestamp_ms") or b.get("timestamp_raw"), replay_date=replay_date)
+        dir_probs = b.get("dir_probs")
+        dir_map = dict(dir_probs) if isinstance(dir_probs, dict) else {}
+        row = {
+            "ledger_version": "replay_ledger_v1",
+            "replay_run_id": replay_run_id,
+            "replay_date": replay_date,
+            "bar_seq": i,
+            "global_idx": b.get("global_idx"),
+            "bar_of_day": b.get("bar_of_day"),
+            "time": b.get("time"),
+            "timestamp_raw": b.get("timestamp_raw"),
+            "timestamp_ms": ts_ms,
+            "timestamp_utc": _timestamp_iso_utc(ts_ms),
+            "position": b.get("position"),
+            "proposed_action": b.get("action"),
+            "executed_action": b.get("executed_action"),
+            "gate_trade_prob": b.get("gate_trade_prob"),
+            "gate_notrade_prob": b.get("gate_notrade_prob"),
+            "top_direction": b.get("top_direction"),
+            "top_dir_prob": b.get("top_dir_prob"),
+            "dir_prob_C_ATM": dir_map.get("C_ATM"),
+            "dir_prob_C_OTM5": dir_map.get("C_OTM5"),
+            "dir_prob_C_OTM10": dir_map.get("C_OTM10"),
+            "dir_prob_P_ATM": dir_map.get("P_ATM"),
+            "dir_prob_P_OTM5": dir_map.get("P_OTM5"),
+            "dir_prob_P_OTM10": dir_map.get("P_OTM10"),
+            "spx": b.get("spx"),
+            "volume": b.get("volume"),
+            "policy_gate_reason_codes_json": _json_dump(b.get("policy_gate_reason_codes", [])),
+            "policy_gate_payload_json": _json_dump(b.get("policy_gate_payload", {})),
+        }
+        bar_rows.append(row)
+
+    trades_df = pd.DataFrame(trade_rows, columns=LEDGER_TRADE_COLUMNS)
+    bars_df = pd.DataFrame(bar_rows, columns=LEDGER_BAR_COLUMNS)
+
+    wins = int((trades_df["pnl_pct"] > 0).sum()) if not trades_df.empty else 0
+    losses = int((trades_df["pnl_pct"] <= 0).sum()) if not trades_df.empty else 0
+    total_pnl = float(trades_df["pnl_pct"].sum()) if not trades_df.empty else 0.0
+    gross_win = float(trades_df.loc[trades_df["pnl_pct"] > 0, "pnl_pct"].sum()) if not trades_df.empty else 0.0
+    gross_loss = abs(float(trades_df.loc[trades_df["pnl_pct"] <= 0, "pnl_pct"].sum())) if not trades_df.empty else 0.0
+    profit_factor = gross_win / gross_loss if gross_loss > 0 else (float("inf") if gross_win > 0 else 0.0)
+
+    exit_counts: dict[str, int] = {}
+    for reason in trades_df["reason"].dropna().astype(str).tolist() if not trades_df.empty else []:
+        exit_counts[reason] = exit_counts.get(reason, 0) + 1
+    entry_counts: dict[str, int] = {}
+    for payload in trades_df["entry_reason_codes_json"].dropna().astype(str).tolist() if not trades_df.empty else []:
+        try:
+            codes = json.loads(payload)
+        except Exception:
+            codes = []
+        if isinstance(codes, list):
+            for c in codes:
+                key = str(c)
+                entry_counts[key] = entry_counts.get(key, 0) + 1
+
+    day_row = {
+        "ledger_version": "replay_ledger_v1",
+        "replay_run_id": replay_run_id,
+        "replay_date": replay_date,
+        "model_path": os.path.abspath(model_path),
+        "model_score": model_score,
+        "risk_mode": risk_mode,
+        "min_trade_prob": min_trade_prob,
+        "total_bars": int(session_stats.get("total_bars", len(bars_df))),
+        "num_trades": int(len(trades_df)),
+        "wins": wins,
+        "losses": losses,
+        "win_rate": (wins / max(len(trades_df), 1)) if len(trades_df) else 0.0,
+        "total_pnl_pct": total_pnl,
+        "profit_factor": profit_factor,
+        "avg_gate_prob": session_stats.get("avg_gate_prob"),
+        "max_gate_prob": session_stats.get("max_gate_prob"),
+        "cooldown_blocked": int(session_stats.get("cooldown_blocked", 0)),
+        "pre_10am_blocked": int(session_stats.get("pre_10am_blocked", 0)),
+        "missing_option_array_blocked": int(session_stats.get("missing_option_array_blocked", 0)),
+        "missing_option_price_blocked": int(session_stats.get("missing_option_price_blocked", 0)),
+        "exit_reason_counts_json": _json_dump(exit_counts),
+        "entry_reason_counts_json": _json_dump(entry_counts),
+        "qa_passed": True,
+        "qa_critical_count": 0,
+        "qa_warning_count": 0,
+    }
+    days_df = pd.DataFrame([day_row], columns=LEDGER_DAY_COLUMNS)
+    return trades_df, bars_df, days_df
+
+
+def _run_replay_qa(
+    *,
+    trades_df: pd.DataFrame,
+    bars_df: pd.DataFrame,
+    days_df: pd.DataFrame,
+    strategy_params: dict[str, object],
+) -> dict[str, object]:
+    anomalies: list[dict[str, object]] = []
+
+    def add(severity: str, code: str, message: str, details: dict[str, object] | None = None) -> None:
+        anomalies.append(
+            {
+                "severity": severity,
+                "code": code,
+                "message": message,
+                "details": details or {},
+            }
+        )
+
+    day = days_df.iloc[0].to_dict() if not days_df.empty else {}
+    if int(day.get("num_trades", 0)) != int(len(trades_df)):
+        add(
+            "critical",
+            "day_trade_count_mismatch",
+            "Day-level trade count does not match trades ledger rows.",
+            {"day_num_trades": int(day.get("num_trades", 0)), "trade_rows": int(len(trades_df))},
+        )
+    if int(day.get("total_bars", 0)) != int(len(bars_df)):
+        add(
+            "critical",
+            "day_bar_count_mismatch",
+            "Day-level bar count does not match bars ledger rows.",
+            {"day_total_bars": int(day.get("total_bars", 0)), "bar_rows": int(len(bars_df))},
+        )
+
+    if not trades_df.empty:
+        if trades_df["trade_id"].duplicated().any():
+            add("critical", "duplicate_trade_id", "Duplicate trade_id detected in ledger.")
+        nums = trades_df["trade_num"].tolist()
+        if nums != sorted(nums):
+            add("warning", "non_monotonic_trade_num", "Trade numbers are not monotonic ascending.")
+        bad_times = trades_df[
+            ~trades_df["entry_time"].astype(str).str.match(r"^\d{2}:\d{2}$")
+            | ~trades_df["exit_time"].astype(str).str.match(r"^\d{2}:\d{2}$")
+        ]
+        if not bad_times.empty:
+            add(
+                "critical",
+                "bad_trade_time_format",
+                "Trade rows contain non-HH:MM entry/exit time values.",
+                {"rows": bad_times["trade_id"].tolist()},
+            )
+        bad_ts = trades_df[trades_df["entry_timestamp_ms"].isna() | trades_df["exit_timestamp_ms"].isna()]
+        if not bad_ts.empty:
+            add(
+                "critical",
+                "missing_trade_timestamp_ms",
+                "Trade rows missing timestamp_ms fields.",
+                {"rows": bad_ts["trade_id"].tolist()},
+            )
+        order_bad = trades_df[trades_df["exit_timestamp_ms"] < trades_df["entry_timestamp_ms"]]
+        if not order_bad.empty:
+            add(
+                "critical",
+                "trade_exit_before_entry",
+                "One or more trades have exit before entry.",
+                {"rows": order_bad["trade_id"].tolist()},
+            )
+
+        spread_cost_pct = float(strategy_params.get("option_spread_bps", OPTION_SPREAD_BPS)) / 10000.0 * 2 * 100.0
+        stop_loss_pct = float(strategy_params.get("stop_loss_pct", STOP_LOSS_PCT)) * 100.0
+        for _, row in trades_df.iterrows():
+            entry_px = row.get("entry_option_px")
+            exit_px = row.get("exit_option_px")
+            if not isinstance(entry_px, (float, int)) or not isinstance(exit_px, (float, int)):
+                continue
+            if float(entry_px) <= 0:
+                continue
+            reason = str(row.get("reason") or "")
+            risk_mode = str(row.get("risk_mode") or "training")
+            if reason == "STOP_LOSS" and risk_mode == "training":
+                expected = -(stop_loss_pct + spread_cost_pct)
+            else:
+                expected = ((float(exit_px) - float(entry_px)) / float(entry_px)) * 100.0 - spread_cost_pct
+            actual = float(row.get("pnl_pct", 0.0))
+            if abs(expected - actual) > 0.75:
+                add(
+                    "warning",
+                    "trade_pnl_mismatch",
+                    "Trade pnl_pct does not match recomputed value within tolerance.",
+                    {"trade_id": row.get("trade_id"), "expected": round(expected, 4), "actual": round(actual, 4)},
+                )
+            hold_min = row.get("hold_min")
+            bars_held = row.get("bars_held")
+            if isinstance(hold_min, (float, int)) and isinstance(bars_held, (float, int)):
+                expected_hold = int(round(float(bars_held) * BAR_SIZE_MINUTES))
+                if abs(float(hold_min) - expected_hold) >= 1.0:
+                    add(
+                        "warning",
+                        "trade_hold_duration_mismatch",
+                        "hold_min is inconsistent with bars_held * bar_size_minutes.",
+                        {
+                            "trade_id": row.get("trade_id"),
+                            "bars_held": int(float(bars_held)),
+                            "hold_min": float(hold_min),
+                            "expected_hold_min": expected_hold,
+                        },
+                    )
+
+        cum = 0.0
+        for _, row in trades_df.sort_values("trade_num").iterrows():
+            cum += float(row.get("pnl_pct", 0.0))
+            actual_cum = float(row.get("cum_pnl_pct", 0.0))
+            if abs(cum - actual_cum) > 0.75:
+                add(
+                    "warning",
+                    "cum_pnl_mismatch",
+                    "cum_pnl_pct is inconsistent with running sum of pnl_pct.",
+                    {"trade_id": row.get("trade_id"), "expected_cum": round(cum, 4), "actual_cum": round(actual_cum, 4)},
+                )
+        if "total_pnl_pct" in day:
+            try:
+                expected_total = float(trades_df["pnl_pct"].sum())
+                actual_total = float(day.get("total_pnl_pct", 0.0))
+                if abs(expected_total - actual_total) > 0.75:
+                    add(
+                        "warning",
+                        "day_total_pnl_mismatch",
+                        "Day total_pnl_pct does not match sum of trade pnl_pct.",
+                        {"expected_total": round(expected_total, 4), "actual_total": round(actual_total, 4)},
+                    )
+            except Exception:
+                pass
+
+    if not bars_df.empty:
+        missing_ts = bars_df[bars_df["timestamp_ms"].isna()]
+        if not missing_ts.empty:
+            add(
+                "critical",
+                "missing_bar_timestamp_ms",
+                "Bar ledger contains rows without timestamp_ms.",
+                {"bar_seq": missing_ts["bar_seq"].tolist()[:20]},
+            )
+        bad_times = bars_df[~bars_df["time"].astype(str).str.match(r"^\d{2}:\d{2}$")]
+        if not bad_times.empty:
+            add(
+                "critical",
+                "bad_bar_time_format",
+                "Bar ledger contains non-HH:MM time values.",
+                {"bar_seq": bad_times["bar_seq"].tolist()[:20]},
+            )
+        if bars_df["bar_seq"].duplicated().any():
+            add("critical", "duplicate_bar_seq", "Bar ledger contains duplicate bar_seq values.")
+        expected_seq = np.arange(1, len(bars_df) + 1)
+        got_seq = bars_df["bar_seq"].fillna(-1).astype(int).to_numpy()
+        if got_seq.shape[0] == expected_seq.shape[0] and not np.array_equal(got_seq, expected_seq):
+            add("warning", "bar_seq_not_contiguous", "bar_seq is not contiguous 1..N.")
+        ts_values = bars_df["timestamp_ms"].dropna().astype("int64").to_numpy()
+        if ts_values.size >= 2 and np.any(np.diff(ts_values) < 0):
+            add("critical", "bar_timestamp_non_monotonic", "Bar timestamps are not monotonic non-decreasing.")
+        if bars_df["global_idx"].notna().any() and bars_df["global_idx"].duplicated().any():
+            add("warning", "duplicate_global_idx", "Bar ledger contains duplicate global_idx values.")
+        for col in ("gate_trade_prob", "gate_notrade_prob"):
+            bad_prob = bars_df[(bars_df[col].notna()) & ((bars_df[col] < -1e-6) | (bars_df[col] > 1 + 1e-6))]
+            if not bad_prob.empty:
+                add(
+                    "critical",
+                    f"{col}_out_of_range",
+                    f"{col} must be within [0, 1].",
+                    {"bar_seq": bad_prob["bar_seq"].tolist()[:20]},
+                )
+
+    critical_count = sum(1 for a in anomalies if a["severity"] == "critical")
+    warning_count = sum(1 for a in anomalies if a["severity"] == "warning")
+    passed = critical_count == 0
+    return {
+        "schema_version": "replay_qa_v1",
+        "passed": bool(passed),
+        "critical_count": int(critical_count),
+        "warning_count": int(warning_count),
+        "anomalies": anomalies,
+    }
+
+
+def _write_dataframe_csv_parquet(df: pd.DataFrame, csv_path: str, parquet_path: str) -> None:
+    df.to_csv(csv_path, index=False)
+    try:
+        df.to_parquet(parquet_path, index=False)
+    except Exception as e:
+        print(f"WARNING: Could not write parquet {parquet_path}: {e}")
+
+
+def _write_replay_ledger_and_qa(
+    *,
+    output_csv: str,
+    trades_df: pd.DataFrame,
+    bars_df: pd.DataFrame,
+    days_df: pd.DataFrame,
+    qa: dict[str, object],
+) -> dict[str, str]:
+    base = output_csv[:-4] if output_csv.lower().endswith(".csv") else output_csv
+    paths = {
+        "ledger_trades_csv": f"{base}_ledger_trades.csv",
+        "ledger_trades_parquet": f"{base}_ledger_trades.parquet",
+        "ledger_bars_csv": f"{base}_ledger_bars.csv",
+        "ledger_bars_parquet": f"{base}_ledger_bars.parquet",
+        "ledger_days_csv": f"{base}_ledger_days.csv",
+        "ledger_days_parquet": f"{base}_ledger_days.parquet",
+        "qa_json": f"{base}_qa.json",
+        "qa_anomalies_jsonl": f"{base}_qa_anomalies.jsonl",
+    }
+    _write_dataframe_csv_parquet(trades_df, paths["ledger_trades_csv"], paths["ledger_trades_parquet"])
+    _write_dataframe_csv_parquet(bars_df, paths["ledger_bars_csv"], paths["ledger_bars_parquet"])
+    _write_dataframe_csv_parquet(days_df, paths["ledger_days_csv"], paths["ledger_days_parquet"])
+    with open(paths["qa_json"], "w") as f:
+        json.dump(qa, f, indent=2, sort_keys=True)
+        f.write("\n")
+    with open(paths["qa_anomalies_jsonl"], "w") as f:
+        for row in qa.get("anomalies", []):
+            f.write(json.dumps(row, sort_keys=True) + "\n")
+    print(f"Replay ledger saved: {paths['ledger_trades_csv']}, {paths['ledger_bars_csv']}, {paths['ledger_days_csv']}")
+    print(f"Replay QA saved: {paths['qa_json']}")
+    return paths
+
+
 def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                timestamps, replay_date, lookback, raw_df,
-               speed=0, verbose=False, device='cpu'):
+               speed=0, verbose=False, device='cpu',
+               min_trade_prob: float = 0.55,
+               risk_mode: str = "live_like",
+               enforce_max_hold: bool = False):
     """Run bar-by-bar inference and trade simulation for the replay day.
 
     Args:
@@ -736,7 +1329,19 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     replay_indices = [i for i in range(len(dates)) if dates[i] == replay_date]
     if not replay_indices:
         print(f"ERROR: No bars for {replay_date} in feature data")
-        return []
+        return [], [], {
+            "total_bars": 0,
+            "avg_gate_prob": 0.0,
+            "max_gate_prob": 0.0,
+            "cooldown_blocked": 0,
+            "pre_10am_blocked": 0,
+            "missing_option_array_blocked": 0,
+            "missing_option_price_blocked": 0,
+            "num_trades": 0,
+            "risk_mode": risk_mode,
+            "min_trade_prob": float(min_trade_prob),
+            "enforce_max_hold": bool(enforce_max_hold),
+        }
 
     # Filter to valid bars with enough lookback
     valid_indices = [
@@ -746,7 +1351,19 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
 
     if not valid_indices:
         print(f"No valid bars with sufficient lookback for {replay_date}")
-        return []
+        return [], [], {
+            "total_bars": 0,
+            "avg_gate_prob": 0.0,
+            "max_gate_prob": 0.0,
+            "cooldown_blocked": 0,
+            "pre_10am_blocked": 0,
+            "missing_option_array_blocked": 0,
+            "missing_option_price_blocked": 0,
+            "num_trades": 0,
+            "risk_mode": risk_mode,
+            "min_trade_prob": float(min_trade_prob),
+            "enforce_max_hold": bool(enforce_max_hold),
+        }
 
     # Session open/high/low for the replay day
     day_open = raw_close[replay_indices[0]] if replay_indices else None
@@ -818,11 +1435,20 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     trade_use_actual = False
     trade_px_array = None
     trade_entry_gate_prob = 0.0
+    trade_entry_confidence = 0.0
     trade_entry_dir_probs = None
+    trade_entry_reason_codes: list[str] = []
+    trade_entry_stop_price = None
+    trade_entry_take_profit_price = None
+    trade_stop_price = None
+    trade_take_profit_price = None
+    trade_risk_updates = 0
     cum_pnl = 0.0
     last_stop_k = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
     cooldown_blocked = 0
     pre_10am_blocked = 0
+    missing_option_array_blocked = 0
+    missing_option_price_blocked = 0
 
     offsets = torch.arange(-lookback, 0, device=device)
 
@@ -839,15 +1465,21 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         dir_probs = torch.softmax(dir_logits, dim=-1)[0].cpu().numpy()
         gate_action = int(torch.argmax(gate_logits, dim=-1)[0].item())
         dir_action = int(torch.argmax(dir_logits, dim=-1)[0].item())
+        gate_trade_prob = float(gate_probs[1])
+        gate_notrade_prob = float(gate_probs[0])
+        gate_pass_threshold = gate_trade_prob >= float(min_trade_prob)
 
-        # Decode action
-        if gate_action == 1:  # TRADE
+        # Decode action aligned with live ModelDecisionEngine semantics:
+        # threshold-only gate, independent of argmax class.
+        if gate_pass_threshold:
             action = dir_action + 1  # ACTION_BUY_CALL_ATM=1 through ACTION_BUY_PUT_OTM10=6
         else:  # NO_TRADE
             action = ACTION_EXIT if in_trade else ACTION_DO_NOTHING
 
         # Market snapshot at this bar
-        time_str = _format_time(timestamps[global_idx] if timestamps is not None else '')
+        ts_raw = timestamps[global_idx] if timestamps is not None else None
+        time_str = _format_time(ts_raw if ts_raw is not None else '')
+        ts_ms = _timestamp_ms(ts_raw, replay_date=replay_date)
         spx_now = float(raw_close[global_idx])
         spx_high = float(raw_high[global_idx])
         spx_low = float(raw_low[global_idx])
@@ -873,17 +1505,43 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         # Volume z-score
         vol_z = float(raw_features[global_idx, 6]) if not np.isnan(raw_features[global_idx, 6]) else None
 
+        policy_reason_codes: list[str] = []
+        if gate_pass_threshold:
+            policy_reason_codes.append("trade_signal")
+        else:
+            policy_reason_codes.append("gate_below_threshold")
+            if in_trade:
+                policy_reason_codes.append("gate_no_trade_exit")
+            else:
+                policy_reason_codes.append("gate_no_trade_flat")
+        if gate_pass_threshold and gate_action == 0:
+            policy_reason_codes.append("argmax_no_trade_threshold_override")
+        if (not gate_pass_threshold) and gate_action == 1:
+            policy_reason_codes.append("argmax_trade_threshold_blocked")
+
         # Log every bar decision
         bar_entry = {
             'time': time_str,
+            'timestamp_raw': str(ts_raw) if ts_raw is not None else None,
+            'timestamp_ms': ts_ms,
+            'global_idx': int(global_idx),
+            'bar_of_day': int(_bar_of_day.get(global_idx, -1)),
             'spx': spx_now,
             'volume': vol_now,
-            'gate_trade_prob': float(gate_probs[1]),
+            'gate_trade_prob': gate_trade_prob,
+            'gate_notrade_prob': gate_notrade_prob,
             'top_direction': DIR_NAMES[dir_action],
             'top_dir_prob': float(dir_probs[dir_action]),
+            'dir_probs': {DIR_NAMES[i]: float(dir_probs[i]) for i in range(len(dir_probs))},
             'action': ACTION_NAMES.get(action, '?'),
+            'executed_action': ACTION_NAMES.get(action, '?'),
             'position': 'IN_TRADE' if in_trade else 'FLAT',
+            'policy_gate_reason_codes': list(policy_reason_codes),
+            'policy_gate_payload': {},
         }
+        if in_trade and action in _ENTRY_ACTIONS:
+            bar_entry['executed_action'] = 'HOLD_IN_TRADE'
+            bar_entry['policy_gate_reason_codes'].append('entry_signal_ignored_in_trade')
         bar_log.append(bar_entry)
 
         # --- Handle trade exit ---
@@ -900,17 +1558,47 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             current_px = trade_last_price
             net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
 
-            hit_stop = net_pnl_pct <= -STOP_LOSS_PCT
-            hit_max_hold = bars_held >= MAX_HOLD_BARS
+            gamma_theta_now = float(raw_features[global_idx, 59]) if raw_features.shape[1] > 59 and not np.isnan(raw_features[global_idx, 59]) else 1.0
+            if risk_mode == "live_like":
+                if trade_stop_price is None:
+                    trade_stop_price = trade_entry_price * (1.0 - STOP_LOSS_PCT)
+                if trade_take_profit_price is None:
+                    trade_take_profit_price = trade_entry_price * (1.0 + 0.30)
+                pnl_now = net_pnl_pct
+                new_stop = float(trade_stop_price)
+                if pnl_now >= 0.25:
+                    new_stop = max(new_stop, float(trade_entry_price))
+                if pnl_now >= 0.40:
+                    new_stop = max(new_stop, float(trade_entry_price) * 1.10)
+                if pnl_now >= 0.60:
+                    new_stop = max(new_stop, float(trade_entry_price) * 1.20)
+                target_boost = 0.12 + 0.15 * min(gamma_theta_now, 2.0)
+                new_tp = max(float(trade_take_profit_price), float(current_px) * (1.0 + target_boost))
+                if new_stop > float(trade_stop_price) + 1e-9 or new_tp > float(trade_take_profit_price) + 1e-9:
+                    trade_risk_updates += 1
+                    trade_stop_price = new_stop
+                    trade_take_profit_price = new_tp
+                    bar_entry['policy_gate_reason_codes'].append("risk_ratchet_update")
+                hit_stop = current_px <= float(trade_stop_price)
+                hit_take_profit = current_px >= float(trade_take_profit_price)
+            else:
+                hit_stop = net_pnl_pct <= -STOP_LOSS_PCT
+                hit_take_profit = False
+
+            hit_max_hold = bars_held >= MAX_HOLD_BARS if (risk_mode == "training" or enforce_max_hold) else False
             model_exit = (action == ACTION_EXIT)
+            if model_exit:
+                bar_entry['policy_gate_reason_codes'].append("model_exit_signal")
             is_last = (k_pos == len(valid_indices) - 1)
 
-            if hit_stop or hit_max_hold or model_exit or is_last:
-                final_pnl = -STOP_LOSS_PCT if hit_stop else net_pnl_pct
+            if hit_stop or hit_take_profit or hit_max_hold or model_exit or is_last:
+                final_pnl = -STOP_LOSS_PCT if (hit_stop and risk_mode == "training") else net_pnl_pct
                 final_pnl -= OPTION_SPREAD_BPS / 10000.0 * 2  # spread cost
 
                 if hit_stop:
                     reason = 'STOP_LOSS'
+                elif hit_take_profit:
+                    reason = 'TAKE_PROFIT'
                 elif model_exit:
                     reason = 'MODEL_EXIT'
                 elif hit_max_hold:
@@ -954,16 +1642,21 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 exit_option_px = trade_last_price
 
                 # Exit gate probability (model's confidence in exiting)
-                exit_gate_notrade_prob = float(gate_probs[0])
+                exit_gate_notrade_prob = gate_notrade_prob
 
                 trade = {
                     # Identity
                     'num': len(trades) + 1,
+                    'trade_id': f"{replay_date}-T{len(trades) + 1:04d}",
                     'date': replay_date,
                     'result': result,
                     # Timing
                     'entry_time': entry_time_str,
                     'exit_time': time_str,
+                    'entry_timestamp_raw': str(timestamps[entry_global]) if timestamps is not None else None,
+                    'exit_timestamp_raw': str(ts_raw) if ts_raw is not None else None,
+                    'entry_timestamp_ms': _timestamp_ms(timestamps[entry_global] if timestamps is not None else None, replay_date=replay_date),
+                    'exit_timestamp_ms': ts_ms,
                     'bars_held': bars_held,
                     'hold_min': bars_held * BAR_SIZE_MINUTES,
                     'reason': reason,
@@ -1001,12 +1694,22 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     'entry_dir_probs': {DIR_NAMES[i]: round(float(trade_entry_dir_probs[i]), 4)
                                         for i in range(len(DIR_NAMES))} if trade_entry_dir_probs is not None else None,
                     'exit_gate_notrade_prob': round(exit_gate_notrade_prob, 4),
+                    'entry_confidence': round(float(trade_entry_confidence), 6),
+                    'risk_mode': risk_mode,
+                    'min_trade_prob': float(min_trade_prob),
+                    'entry_stop_price': round(float(trade_entry_stop_price), 6) if trade_entry_stop_price is not None else None,
+                    'entry_take_profit_price': round(float(trade_entry_take_profit_price), 6) if trade_entry_take_profit_price is not None else None,
+                    'exit_stop_price': round(float(trade_stop_price), 6) if trade_stop_price is not None else None,
+                    'exit_take_profit_price': round(float(trade_take_profit_price), 6) if trade_take_profit_price is not None else None,
+                    'risk_updates': int(trade_risk_updates),
                     # Market regime at entry
                     'entry_trend': trade_entry_trend,
                     'entry_rvol': trade_entry_rvol,
                     'entry_vol_z': trade_entry_vol_z,
                     'entry_ret_5': trade_entry_ret_5,
                     'entry_ret_30': trade_entry_ret_30,
+                    'entry_reason_codes': list(trade_entry_reason_codes) if trade_entry_reason_codes else ['trade_signal'],
+                    'exit_reason_codes': [reason.lower()],
                 }
                 trades.append(trade)
 
@@ -1021,28 +1724,51 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 if reason == 'STOP_LOSS':
                     last_stop_k = k_pos
                 in_trade = False
+                trade_entry_reason_codes = []
+                trade_stop_price = None
+                trade_take_profit_price = None
+                trade_entry_stop_price = None
+                trade_entry_take_profit_price = None
 
         # --- Handle trade entry ---
         if not in_trade and action in _ENTRY_ACTIONS:
             # Cooldown after stop loss (matches evaluate_trades)
             if (k_pos - last_stop_k) < STOP_COOLDOWN_BARS:
                 cooldown_blocked += 1
+                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['policy_gate_reason_codes'].append('blocked_cooldown')
+                bar_entry['policy_gate_payload'] = {
+                    'bars_since_stop': int(k_pos - last_stop_k),
+                    'cooldown_bars_required': int(STOP_COOLDOWN_BARS),
+                }
                 if verbose:
                     print(f"  {time_str}  BLOCKED (cooldown {k_pos - last_stop_k}/{STOP_COOLDOWN_BARS} bars after stop)")
                 continue
             # No entries before 10:00 AM (matches evaluate_trades)
             if _bar_of_day.get(global_idx, 999) < NO_TRADE_BEFORE_BAR:
                 pre_10am_blocked += 1
+                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['policy_gate_reason_codes'].append('blocked_pre_10am')
+                bar_entry['policy_gate_payload'] = {
+                    'bar_of_day': int(_bar_of_day.get(global_idx, 0)),
+                    'min_bar_allowed': int(NO_TRADE_BEFORE_BAR),
+                }
                 if verbose:
                     print(f"  {time_str}  BLOCKED (pre-10am, bar {_bar_of_day.get(global_idx, 0)} < {NO_TRADE_BEFORE_BAR})")
                 continue
             candidate_px_array = get_px_array(action)
             if candidate_px_array is None:
+                missing_option_array_blocked += 1
+                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['policy_gate_reason_codes'].append('blocked_missing_option_array')
                 if verbose:
                     print(f"  {time_str}  BLOCKED (missing option price array for {ACTION_NAMES[action]})")
                 continue
             entry_px_raw = _safe_float(candidate_px_array, global_idx)
             if entry_px_raw is None or entry_px_raw <= 0:
+                missing_option_price_blocked += 1
+                bar_entry['executed_action'] = ACTION_NAMES.get(ACTION_DO_NOTHING, 'DO_NOTHING')
+                bar_entry['policy_gate_reason_codes'].append('blocked_missing_option_price')
                 if verbose:
                     print(f"  {time_str}  BLOCKED (missing entry option price for {ACTION_NAMES[action]})")
                 continue
@@ -1054,18 +1780,41 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             trade_entry_price = float(entry_px_raw)
             trade_last_price = float(entry_px_raw)
             trade_px_array = candidate_px_array
-            trade_entry_gate_prob = float(gate_probs[1])
+            trade_entry_gate_prob = float(gate_trade_prob)
             trade_entry_dir_probs = dir_probs.copy()
+            trade_entry_confidence = float(gate_trade_prob * float(np.max(dir_probs)))
+            gamma_theta_entry = float(raw_features[global_idx, 59]) if raw_features.shape[1] > 59 and not np.isnan(raw_features[global_idx, 59]) else 1.0
+            if risk_mode == "live_like":
+                stop_pct = float(np.clip(0.30 - 0.14 * trade_entry_confidence - 0.03 * (gamma_theta_entry - 1.0), 0.08, 0.30))
+                take_profit_pct = float(np.clip(0.30 + 0.45 * trade_entry_confidence + 0.05 * max(gamma_theta_entry - 1.0, 0.0), 0.20, 1.25))
+                trade_stop_price = float(trade_entry_price * (1.0 - stop_pct))
+                trade_take_profit_price = float(trade_entry_price * (1.0 + take_profit_pct))
+            else:
+                trade_stop_price = float(trade_entry_price * (1.0 - STOP_LOSS_PCT))
+                trade_take_profit_price = None
+            trade_entry_stop_price = trade_stop_price
+            trade_entry_take_profit_price = trade_take_profit_price
+            trade_risk_updates = 0
             # Capture market regime at entry
             trade_entry_trend = trend
             trade_entry_rvol = round(rvol, 6) if rvol is not None else None
             trade_entry_vol_z = round(vol_z, 2) if vol_z is not None else None
             trade_entry_ret_5 = round(ret_5, 6) if ret_5 is not None else None
             trade_entry_ret_30 = round(ret_30, 6) if ret_30 is not None else None
+            trade_entry_reason_codes = [x for x in bar_entry['policy_gate_reason_codes'] if x]
+            if "trade_signal" not in trade_entry_reason_codes:
+                trade_entry_reason_codes.append("trade_signal")
+            bar_entry['policy_gate_reason_codes'].append('entry_executed')
+            bar_entry['policy_gate_payload'] = {
+                'entry_option_px': float(trade_entry_price),
+                'entry_stop_price': float(trade_entry_stop_price) if trade_entry_stop_price is not None else None,
+                'entry_take_profit_price': float(trade_entry_take_profit_price) if trade_entry_take_profit_price is not None else None,
+                'risk_mode': risk_mode,
+            }
 
             strike_info = f"strike={strike_now}" if strike_now else ""
             px_info = f"premium=${trade_entry_price:.2f}"
-            gate_info = f"conf={gate_probs[1]:.0%}"
+            gate_info = f"conf={gate_trade_prob:.0%}"
             vix_info = f"VIX={vix_now:.1f}" if vix_now else ""
             print(f"  {time_str}  {ACTION_NAMES[action]:<16}  SPX={spx_now:.2f}  "
                   f"{strike_info}  {px_info}  {gate_info}  {vix_info}")
@@ -1082,16 +1831,34 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             time.sleep(1.0 / speed)
 
     if cooldown_blocked or pre_10am_blocked:
-        print(f"\n  Entries blocked: {cooldown_blocked} cooldown, {pre_10am_blocked} pre-10am")
+        print(
+            f"\n  Entries blocked: {cooldown_blocked} cooldown, {pre_10am_blocked} pre-10am, "
+            f"{missing_option_array_blocked} missing-array, {missing_option_price_blocked} missing-price"
+        )
 
-    return trades, bar_log
+    gate_probs = [b['gate_trade_prob'] for b in bar_log]
+    session_stats = {
+        "total_bars": len(bar_log),
+        "avg_gate_prob": round(float(np.mean(gate_probs)), 4) if gate_probs else 0.0,
+        "max_gate_prob": round(float(np.max(gate_probs)), 4) if gate_probs else 0.0,
+        "cooldown_blocked": int(cooldown_blocked),
+        "pre_10am_blocked": int(pre_10am_blocked),
+        "missing_option_array_blocked": int(missing_option_array_blocked),
+        "missing_option_price_blocked": int(missing_option_price_blocked),
+        "num_trades": int(len(trades)),
+        "risk_mode": risk_mode,
+        "min_trade_prob": float(min_trade_prob),
+        "enforce_max_hold": bool(enforce_max_hold),
+    }
+
+    return trades, bar_log, session_stats
 
 
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 
-def print_summary(trades, bar_log, replay_date):
+def print_summary(trades, bar_log, replay_date, session_stats=None):
     """Print formatted trade summary with full analysis."""
     print(f"\n{'='*70}")
     print(f"  TRADE SUMMARY — {replay_date}")
@@ -1099,7 +1866,7 @@ def print_summary(trades, bar_log, replay_date):
 
     if not trades:
         print("  No trades taken.")
-        _print_session_stats(bar_log)
+        _print_session_stats(bar_log, session_stats=session_stats)
         return
 
     pnls = [t['pnl_pct'] for t in trades]
@@ -1213,10 +1980,10 @@ def print_summary(trades, bar_log, replay_date):
         print(f"    Session high: {t['session_high']:.2f}  |  Session low: {t['session_low']:.2f}")
 
     # --- Session activity stats ---
-    _print_session_stats(bar_log)
+    _print_session_stats(bar_log, session_stats=session_stats)
 
 
-def _print_session_stats(bar_log):
+def _print_session_stats(bar_log, session_stats=None):
     """Print stats about the model's behavior across the full session."""
     if not bar_log:
         return
@@ -1229,10 +1996,18 @@ def _print_session_stats(bar_log):
     print(f"  Total bars evaluated: {len(bar_log)}")
     print(f"  Gate (TRADE) probability: avg={np.mean(gate_probs):.1%}  "
           f"max={np.max(gate_probs):.1%}  min={np.min(gate_probs):.1%}")
+    if isinstance(session_stats, dict):
+        print(
+            "  Entry blocks: "
+            f"cooldown={session_stats.get('cooldown_blocked', 0)}, "
+            f"pre_10am={session_stats.get('pre_10am_blocked', 0)}, "
+            f"missing_array={session_stats.get('missing_option_array_blocked', 0)}, "
+            f"missing_price={session_stats.get('missing_option_price_blocked', 0)}"
+        )
 
     # When was the model most tempted to trade but didn't?
     flat_bars = [(b['time'], b['gate_trade_prob'], b['top_direction'], b['spx'])
-                 for b in bar_log if b['action'] == 'DO_NOTHING']
+                 for b in bar_log if b.get('executed_action', b.get('action')) == 'DO_NOTHING']
     if flat_bars:
         top_near_misses = sorted(flat_bars, key=lambda x: x[1], reverse=True)[:5]
         print(f"\n  Near-misses (highest TRADE prob without acting):")
@@ -1275,6 +2050,12 @@ def main():
                         help="Save trade log to CSV file")
     parser.add_argument("--train-py", type=str, default=None,
                         help="Path to train.py/best_train.py for custom model architecture")
+    parser.add_argument("--min-trade-prob", type=float, default=0.55,
+                        help="Gate TRADE probability threshold aligned with live decision engine (default: 0.55)")
+    parser.add_argument("--risk-mode", type=str, default="live_like", choices=["live_like", "training"],
+                        help="Trade risk behavior mode: live_like aligns with live service ratchets (default), training matches evaluate_trades")
+    parser.add_argument("--enforce-max-hold", action="store_true",
+                        help="Apply MAX_HOLD_BARS cap even in live_like risk mode")
     args = parser.parse_args()
 
     replay_date = args.date
@@ -1412,18 +2193,20 @@ def main():
         raw_df = df
 
     # Run replay
-    trades, bar_log = run_replay(
+    trades, bar_log, session_stats = run_replay(
         model, features_t, raw_features, dates, valid, option_prices, timestamps,
         replay_date, lookback, raw_df=raw_df,
-        speed=args.speed, verbose=args.verbose, device=device
+        speed=args.speed, verbose=args.verbose, device=device,
+        min_trade_prob=float(args.min_trade_prob),
+        risk_mode=str(args.risk_mode),
+        enforce_max_hold=bool(args.enforce_max_hold),
     )
 
     # Summary + detailed journal
-    print_summary(trades, bar_log, replay_date)
+    print_summary(trades, bar_log, replay_date, session_stats=session_stats)
 
     # Save to CSV
-    if args.output and trades:
-        import csv, json
+    if args.output:
         # Flatten entry_dir_probs dict for CSV
         flat_trades = []
         for t in trades:
@@ -1434,27 +2217,85 @@ def main():
                 del ft['entry_dir_probs']
             flat_trades.append(ft)
 
+        fieldnames = list(DEFAULT_TRADE_CSV_COLUMNS)
+        for row in flat_trades:
+            for key in row.keys():
+                if key not in fieldnames:
+                    fieldnames.append(key)
+
         with open(args.output, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=flat_trades[0].keys())
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(flat_trades)
+            if flat_trades:
+                writer.writerows(flat_trades)
         print(f"Trade log saved to {args.output}")
 
-    # Save full trade journal as JSON (richer than CSV)
-    if args.output and trades:
+    # Save full trade journal as JSON (richer than CSV) + canonical ledger + QA.
+    if args.output:
+        replay_run_id = _canonical_replay_run_id(
+            replay_date=replay_date,
+            model_path=model_path,
+            risk_mode=str(args.risk_mode),
+            min_trade_prob=float(args.min_trade_prob),
+        )
+        strategy_params = {
+            'stop_loss_pct': float(STOP_LOSS_PCT),
+            'max_hold_bars': int(MAX_HOLD_BARS),
+            'option_spread_bps': int(OPTION_SPREAD_BPS),
+            'stop_cooldown_bars': int(STOP_COOLDOWN_BARS),
+            'no_trade_before_bar': int(NO_TRADE_BEFORE_BAR),
+            'risk_mode': str(args.risk_mode),
+            'min_trade_prob': float(args.min_trade_prob),
+            'enforce_max_hold': bool(args.enforce_max_hold),
+        }
+        trades_df, bars_df, days_df = _build_ledger_tables(
+            replay_date=replay_date,
+            replay_run_id=replay_run_id,
+            trades=trades,
+            bar_log=bar_log,
+            session_stats=session_stats,
+            model_path=model_path,
+            model_score=metrics.get('score', None),
+            risk_mode=str(args.risk_mode),
+            min_trade_prob=float(args.min_trade_prob),
+        )
+        qa = _run_replay_qa(
+            trades_df=trades_df,
+            bars_df=bars_df,
+            days_df=days_df,
+            strategy_params=strategy_params,
+        )
+        if not days_df.empty:
+            days_df.loc[:, "qa_passed"] = bool(qa.get("passed", False))
+            days_df.loc[:, "qa_critical_count"] = int(qa.get("critical_count", 0))
+            days_df.loc[:, "qa_warning_count"] = int(qa.get("warning_count", 0))
+        ledger_paths = _write_replay_ledger_and_qa(
+            output_csv=args.output,
+            trades_df=trades_df,
+            bars_df=bars_df,
+            days_df=days_df,
+            qa=qa,
+        )
         json_path = args.output.replace('.csv', '') + '_journal.json'
         journal = {
+            'schema_version': 'replay_journal_v3',
+            'generated_at': dt.datetime.utcnow().isoformat(),
+            'replay_run_id': replay_run_id,
             'replay_date': replay_date,
             'model_path': model_path,
             'model_config': {k: v for k, v in config.items() if not isinstance(v, (torch.Tensor,))},
             'model_score': metrics.get('score', None),
             'trades': trades,
-            'session_stats': {
-                'total_bars': len(bar_log),
-                'avg_gate_prob': round(float(np.mean([b['gate_trade_prob'] for b in bar_log])), 4),
-                'max_gate_prob': round(float(np.max([b['gate_trade_prob'] for b in bar_log])), 4),
-            },
+            'strategy_params': strategy_params,
+            'session_stats': session_stats,
             'bar_log': bar_log,
+            'canonical_ledger_paths': ledger_paths,
+            'qa': {
+                "passed": qa.get("passed", False),
+                "critical_count": qa.get("critical_count", 0),
+                "warning_count": qa.get("warning_count", 0),
+                "anomalies": qa.get("anomalies", []),
+            },
         }
         with open(json_path, 'w') as f:
             json.dump(journal, f, indent=2, default=str)

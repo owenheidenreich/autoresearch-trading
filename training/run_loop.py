@@ -110,24 +110,44 @@ REQUIRED_OUTPUT_METRIC_KEYS = (
 
 OBSERVABILITY_CONFIG = {
     "schema_version": SCHEMA_VERSION,
-    "critical_anomaly_flags": {"metric_inconsistent", "trades_per_day_extreme"},
+    "critical_anomaly_flags": {
+        "metric_inconsistent",
+        "trades_per_day_extreme",
+        "cost_realism_low_coverage",
+        "entry_quality_too_low",
+        "high_cost_entry_rate_high",
+        "low_quality_entry_rate_high",
+    },
     "near_tie_delta": 0.05,
     "near_tie_stability": {
         "worst_chunk_pf_min": 1.0,
         "stop_loss_rate_max": 0.35,
         "direction_collapse_pct_max": 0.85,
+        "cost_realism_coverage_min": 0.30,
+        "avg_entry_quality_min": 0.25,
+        "high_cost_entry_rate_max": 0.50,
+        "low_quality_entry_rate_max": 0.50,
     },
     "anomaly_thresholds": {
         "do_nothing_zero_max": 1e-6,
         "exit_pct_extreme_min": 0.98,
         "trades_per_day_extreme_min": 0.25,
         "trades_per_day_extreme_max": 20.0,
+        "cost_realism_coverage_min": 0.20,
+        "avg_entry_quality_min": 0.15,
+        "high_cost_entry_rate_max": 0.65,
+        "low_quality_entry_rate_max": 0.65,
+        "actionable_bar_rate_min": 0.03,
     },
 }
+FEATURE_LOCK_COUNT = 60
 
 # Claude model for code generation
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 12000  # enough for full train.py rewrite
+MAX_CODEGEN_ATTEMPTS = 3
+SMOKE_TIME_BUDGET = 60
+SMOKE_TIMEOUT_BUFFER = 120
 
 # Reusable anthropic client (avoid httpx connection pool leak)
 _anthropic_client = None
@@ -291,6 +311,21 @@ def _compute_data_quality_report(data: dict[str, Any], feature_names: list[str])
         "otm5_put_prices": _coverage_for("otm5_put_prices"),
         "otm10_call_prices": _coverage_for("otm10_call_prices"),
         "otm10_put_prices": _coverage_for("otm10_put_prices"),
+        "otm15_call_prices": _coverage_for("otm15_call_prices"),
+        "otm15_put_prices": _coverage_for("otm15_put_prices"),
+        "otm20_call_prices": _coverage_for("otm20_call_prices"),
+        "otm20_put_prices": _coverage_for("otm20_put_prices"),
+    }
+    sidecar_coverage = {
+        "action_spread_bps": _coverage_for("action_spread_bps"),
+        "action_quote_age_s": _coverage_for("action_quote_age_s"),
+        "action_size": _coverage_for("action_size"),
+        "action_quality_score": _coverage_for("action_quality_score"),
+        "action_slippage_bps": _coverage_for("action_slippage_bps"),
+        "action_cost_bps": _coverage_for("action_cost_bps"),
+        "actionable_mask": _coverage_for("actionable_mask"),
+        "risk_state_mask": _coverage_for("risk_state_mask"),
+        "supervision_weight": _coverage_for("supervision_weight"),
     }
 
     date_start = min(dates) if dates else None
@@ -304,6 +339,7 @@ def _compute_data_quality_report(data: dict[str, Any], feature_names: list[str])
         "num_days": num_days,
         "overall_nan_pct": round(overall_nan_pct, 6),
         "option_coverage": {k: (None if v is None else round(v, 6)) for k, v in option_coverage.items()},
+        "sidecar_coverage": {k: (None if v is None else round(v, 6)) for k, v in sidecar_coverage.items()},
     }
     fingerprint = _sha256_text(json.dumps(payload_for_hash, sort_keys=True))
 
@@ -390,6 +426,13 @@ def _promotion_event_from_exp(exp: dict[str, Any]) -> dict[str, Any]:
         "program_md_fingerprint": exp.get("program_md_fingerprint"),
         "data_fingerprint": exp.get("data_fingerprint"),
         "change_summary": exp.get("change_summary"),
+        "avg_entry_cost_bps": exp.get("avg_entry_cost_bps"),
+        "avg_entry_quality": exp.get("avg_entry_quality"),
+        "cost_realism_coverage": exp.get("cost_realism_coverage"),
+        "high_cost_entry_rate": exp.get("high_cost_entry_rate"),
+        "low_quality_entry_rate": exp.get("low_quality_entry_rate"),
+        "actionable_bar_rate": exp.get("actionable_bar_rate"),
+        "risk_off_bar_rate": exp.get("risk_off_bar_rate"),
     }
 
 
@@ -507,6 +550,11 @@ def detect_anomaly_flags(metrics: dict[str, Any]) -> list[str]:
     num_trades = int(metrics.get("num_trades", 0))
     win_rate = float(metrics.get("win_rate", 0.0))
     profit_factor = float(metrics.get("profit_factor", 0.0))
+    cost_coverage = float(metrics.get("cost_realism_coverage", 0.0))
+    avg_entry_quality = float(metrics.get("avg_entry_quality", 0.0))
+    high_cost_entry_rate = float(metrics.get("high_cost_entry_rate", 0.0))
+    low_quality_entry_rate = float(metrics.get("low_quality_entry_rate", 0.0))
+    actionable_bar_rate = float(metrics.get("actionable_bar_rate", 0.0))
 
     if do_nothing <= float(t["do_nothing_zero_max"]):
         flags.append("do_nothing_zero")
@@ -514,6 +562,21 @@ def detect_anomaly_flags(metrics: dict[str, Any]) -> list[str]:
         flags.append("exit_pct_extreme")
     if num_trades > 0 and (trades_per_day < float(t["trades_per_day_extreme_min"]) or trades_per_day > float(t["trades_per_day_extreme_max"])):
         flags.append("trades_per_day_extreme")
+    if num_trades > 0 and "cost_realism_coverage" in metrics:
+        if cost_coverage < float(t["cost_realism_coverage_min"]):
+            flags.append("cost_realism_low_coverage")
+    if num_trades > 0 and "avg_entry_quality" in metrics:
+        if avg_entry_quality < float(t["avg_entry_quality_min"]):
+            flags.append("entry_quality_too_low")
+    if num_trades > 0 and "high_cost_entry_rate" in metrics:
+        if high_cost_entry_rate > float(t["high_cost_entry_rate_max"]):
+            flags.append("high_cost_entry_rate_high")
+    if num_trades > 0 and "low_quality_entry_rate" in metrics:
+        if low_quality_entry_rate > float(t["low_quality_entry_rate_max"]):
+            flags.append("low_quality_entry_rate_high")
+    if num_trades > 0 and "actionable_bar_rate" in metrics:
+        if actionable_bar_rate < float(t["actionable_bar_rate_min"]):
+            flags.append("actionable_bar_rate_low")
 
     inconsistent = False
     if num_trades > 0 and trades_per_day <= 0:
@@ -575,6 +638,14 @@ def _passes_near_tie_stability(metrics: dict[str, Any]) -> tuple[bool, list[str]
         reasons.append("stop_loss_rate_above_threshold")
     if float(metrics.get("direction_collapse_pct", 1.0)) > float(cfg["direction_collapse_pct_max"]):
         reasons.append("direction_collapse_above_threshold")
+    if "cost_realism_coverage" in metrics and float(metrics.get("cost_realism_coverage", 0.0)) < float(cfg["cost_realism_coverage_min"]):
+        reasons.append("cost_realism_coverage_below_threshold")
+    if "avg_entry_quality" in metrics and float(metrics.get("avg_entry_quality", 0.0)) < float(cfg["avg_entry_quality_min"]):
+        reasons.append("avg_entry_quality_below_threshold")
+    if "high_cost_entry_rate" in metrics and float(metrics.get("high_cost_entry_rate", 1.0)) > float(cfg["high_cost_entry_rate_max"]):
+        reasons.append("high_cost_entry_rate_above_threshold")
+    if "low_quality_entry_rate" in metrics and float(metrics.get("low_quality_entry_rate", 1.0)) > float(cfg["low_quality_entry_rate_max"]):
+        reasons.append("low_quality_entry_rate_above_threshold")
     return len(reasons) == 0, reasons
 
 
@@ -792,6 +863,34 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
     return "\n".join(parts)
 
 
+def build_repair_prompt(failed_candidate: str, failure_type: str, failure_error: str, attempt: int) -> str:
+    err = (failure_error or "").strip()
+    if len(err) > 1600:
+        err = err[:1600] + "\n...[truncated]..."
+    return f"""The previous candidate train.py failed and must be repaired.
+
+Repair attempt: {attempt}
+Failure type: {failure_type}
+Failure excerpt:
+{err}
+
+Requirements:
+- Return a COMPLETE corrected train.py file.
+- Keep the two-head/60-feature contract intact.
+- Fix the concrete failure first; make minimal additional edits.
+- No markdown fences, no prose outside <reasoning>...</reasoning>.
+
+Failed candidate train.py:
+```python
+{failed_candidate}
+```
+
+Output format:
+<reasoning>short fix plan</reasoning>
+<full python file>
+"""
+
+
 import re as _re
 
 
@@ -965,6 +1064,19 @@ def validate_safety(code: str) -> str | None:
     if arch_err:
         return arch_err
 
+    # Foundation lock: FEATURE_GROUPS must remain aligned to 60 features.
+    feature_total = _extract_feature_groups_width(code)
+    if feature_total is None:
+        return (
+            "SAFETY: Could not parse FEATURE_GROUPS as explicit literal ranges. "
+            f"Keep FEATURE_GROUPS as a literal dict with max end index = {FEATURE_LOCK_COUNT}."
+        )
+    if feature_total != FEATURE_LOCK_COUNT:
+        return (
+            f"SAFETY: FEATURE_GROUPS covers {feature_total} features, expected {FEATURE_LOCK_COUNT}. "
+            "Feature-count changes are blocked in this stabilization phase."
+        )
+
     return None
 
 
@@ -1002,6 +1114,45 @@ def validate_architecture_locked(code: str) -> str | None:
                         f"(best_train.py). Changing {param} breaks warm-start weight "
                         f"compatibility. Keep {param}={expected}.")
 
+    return None
+
+
+def _extract_feature_groups_width(code: str) -> int | None:
+    """Return max FEATURE_GROUPS end index if parseable, otherwise None.
+
+    This enforces the phase-locked 60-feature contract and catches 60/64 drift
+    before training starts.
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return None
+
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(isinstance(t, ast.Name) and t.id == "FEATURE_GROUPS" for t in node.targets):
+            continue
+        try:
+            groups = ast.literal_eval(node.value)
+        except Exception:
+            return None
+        if not isinstance(groups, dict) or not groups:
+            return None
+
+        max_end: int | None = None
+        for _, rng in groups.items():
+            if not isinstance(rng, (list, tuple)) or len(rng) != 2:
+                return None
+            try:
+                start = int(rng[0])
+                end = int(rng[1])
+            except Exception:
+                return None
+            if start < 0 or end <= start:
+                return None
+            max_end = end if max_end is None else max(max_end, end)
+        return max_end
     return None
 
 
@@ -1068,7 +1219,11 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                            'short_hold_pct', 'stop_loss_rate',
                            'final_capital', 'equity_sharpe',
                            'max_equity_dd', 'total_dollar_return',
-                           'worst_chunk_pf', 'direction_collapse_pct'):
+                           'worst_chunk_pf', 'direction_collapse_pct',
+                           'avg_entry_cost_bps', 'avg_entry_quality',
+                           'cost_realism_coverage', 'high_cost_entry_rate',
+                           'low_quality_entry_rate', 'actionable_bar_rate',
+                           'risk_off_bar_rate'):
                     try:
                         metrics[key] = float(val)
                     except ValueError:
@@ -1092,10 +1247,21 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
             }
 
         parsed = sorted(k for k in metrics.keys() if k != "output")
+        missing_required = [k for k in REQUIRED_OUTPUT_METRIC_KEYS if k not in metrics]
         metrics["parse_summary"] = {
             "parsed_metric_keys": parsed,
-            "missing_required_metric_keys": [k for k in REQUIRED_OUTPUT_METRIC_KEYS if k not in metrics],
+            "missing_required_metric_keys": missing_required,
         }
+        if missing_required:
+            return {
+                "error": (
+                    "Missing required metric keys in train.py output: "
+                    + ", ".join(missing_required)
+                ),
+                "error_type": "parse",
+                "output": output,
+                "parse_summary": metrics["parse_summary"],
+            }
         return metrics
 
     except subprocess.TimeoutExpired as e:
@@ -1113,6 +1279,69 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
         }
     except Exception as e:
         return {"error": f"Exception: {e}", "error_type": "train_crash"}
+
+
+def run_training_smoke(candidate_code: str, timeout: int, time_budget: int) -> dict[str, Any]:
+    """Run a candidate in an isolated sandbox to catch obvious runtime crashes.
+
+    This avoids corrupting the active workspace files while validating that
+    the candidate can at least start and run briefly.
+    """
+    import tempfile
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="autoresearch-smoke-") as td:
+            smoke_train = os.path.join(td, "train.py")
+            smoke_prepare = os.path.join(td, "prepare.py")
+            smoke_best_model = os.path.join(td, "best_model.pt")
+            smoke_best_train = os.path.join(td, "best_train.py")
+
+            with open(smoke_train, "w") as f:
+                f.write(candidate_code)
+            shutil.copy2(os.path.join(SCRIPT_DIR, "prepare.py"), smoke_prepare)
+            if os.path.exists(BEST_MODEL_PT):
+                shutil.copy2(BEST_MODEL_PT, smoke_best_model)
+            if os.path.exists(BEST_TRAIN_PY):
+                shutil.copy2(BEST_TRAIN_PY, smoke_best_train)
+
+            env = os.environ.copy()
+            env["TIME_BUDGET"] = str(time_budget)
+            result = subprocess.run(
+                [PYTHON, "-u", smoke_train],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=td,
+                env=env,
+            )
+            output = (result.stdout or "") + (result.stderr or "")
+            if result.returncode != 0:
+                lines = output.strip().split("\n")
+                tail = "\n".join(lines[-50:])
+                return {
+                    "ok": False,
+                    "error_type": "train_crash",
+                    "error": f"Smoke crash (exit {result.returncode}):\n{tail}",
+                    "output": output,
+                }
+            return {"ok": True, "output": output}
+    except subprocess.TimeoutExpired as e:
+        stdout = e.stdout or ""
+        stderr = e.stderr or ""
+        output = (str(stdout) if stdout else "") + (("\n" + str(stderr)) if stderr else "")
+        return {
+            "ok": False,
+            "error_type": "timeout",
+            "error": f"Smoke timed out after {timeout}s",
+            "output": output,
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error_type": "train_crash",
+            "error": f"Smoke exception: {e}",
+            "output": "",
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -1256,28 +1485,167 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         deadline,
         contract_checksum=prompt_contract["checksum_short"],
     )
-    log("Calling Claude for code modification...")
-    t0 = time.time()
-    try:
-        raw_response = call_claude(system, user)
-        reasoning = extract_reasoning(raw_response)
-        new_code = extract_code(raw_response)
-        new_code, stripped = _sanitize_code(new_code)
-        api_time = time.time() - t0
-        exp["api_time"] = round(api_time, 1)
-        exp["reasoning"] = reasoning[:300] if reasoning else ""
-        _save_artifact_text(artifact_dir, "response_raw.txt", raw_response)
-        _save_artifact_text(artifact_dir, "reasoning.txt", reasoning or "")
-        _save_artifact_json(artifact_dir, "sanitize_actions.json", {"actions": stripped})
-        log(f"  Claude responded in {api_time:.1f}s")
-        if reasoning:
-            log(f"  Reasoning: {reasoning[:200]}")
-        if stripped:
-            log(f"  Auto-fixed: {'; '.join(stripped)}")
-    except Exception as e:
-        log(f"  Claude API error: {e}")
-        exp["failure_type"] = "api"
-        exp["error"] = f"API error: {e}"
+    max_codegen_attempts = max(
+        1, int(os.environ.get("AR_CODEGEN_MAX_ATTEMPTS", str(MAX_CODEGEN_ATTEMPTS)))
+    )
+    smoke_time_budget = max(
+        20, int(os.environ.get("AR_SMOKE_TIME_BUDGET", str(SMOKE_TIME_BUDGET)))
+    )
+    smoke_timeout = max(
+        smoke_time_budget + 30,
+        int(os.environ.get("AR_SMOKE_TIMEOUT", str(smoke_time_budget + SMOKE_TIMEOUT_BUFFER))),
+    )
+
+    attempt_prompt = user
+    new_code = ""
+    raw_response = ""
+    reasoning = ""
+    change_summary = ""
+    stripped: list[str] = []
+    api_time_total = 0.0
+    attempts_used = 0
+    last_failure_type = "api"
+    last_error = "unknown_candidate_failure"
+
+    for attempt in range(1, max_codegen_attempts + 1):
+        write_status(
+            "calling_claude",
+            experiment_id,
+            best_score,
+            kept_count,
+            failed_count,
+            total,
+            deadline,
+            contract_checksum=prompt_contract["checksum_short"],
+        )
+        log(f"Calling Claude for code modification (attempt {attempt}/{max_codegen_attempts})...")
+        t0 = time.time()
+        try:
+            raw_response = call_claude(system, attempt_prompt)
+            api_time = time.time() - t0
+            api_time_total += api_time
+            reasoning = extract_reasoning(raw_response)
+            new_code = extract_code(raw_response)
+            new_code, stripped = _sanitize_code(new_code)
+            _save_artifact_text(artifact_dir, f"response_raw_attempt{attempt}.txt", raw_response)
+            _save_artifact_text(artifact_dir, f"reasoning_attempt{attempt}.txt", reasoning or "")
+            _save_artifact_json(artifact_dir, f"sanitize_actions_attempt{attempt}.json", {"actions": stripped})
+            log(f"  Claude responded in {api_time:.1f}s")
+            if reasoning:
+                log(f"  Reasoning: {reasoning[:200]}")
+            if stripped:
+                log(f"  Auto-fixed: {'; '.join(stripped)}")
+        except Exception as e:
+            last_failure_type = "api"
+            last_error = f"API error: {e}"
+            log(f"  {last_error}")
+            _save_artifact_json(
+                artifact_dir,
+                f"candidate_attempt{attempt}_error.json",
+                {"failure_type": last_failure_type, "error": last_error},
+            )
+            if attempt < max_codegen_attempts:
+                attempt_prompt = build_repair_prompt(new_code or current_code, last_failure_type, last_error, attempt + 1)
+                log("  Retrying with targeted repair prompt...")
+                continue
+            exp["failure_type"] = last_failure_type
+            exp["error"] = last_error
+            _save_artifact_json(
+                artifact_dir,
+                "decision.json",
+                {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
+            )
+            _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+            return exp
+
+        change_summary = extract_change_summary(raw_response, current_code, new_code)
+        log(f"  Candidate change: {change_summary}")
+
+        syntax_err = validate_syntax(new_code)
+        if syntax_err:
+            last_failure_type = "syntax"
+            last_error = syntax_err
+            log(f"  Syntax error: {syntax_err}")
+            _save_artifact_json(
+                artifact_dir,
+                f"candidate_attempt{attempt}_error.json",
+                {"failure_type": last_failure_type, "error": last_error},
+            )
+            if attempt < max_codegen_attempts:
+                attempt_prompt = build_repair_prompt(new_code, last_failure_type, last_error, attempt + 1)
+                log("  Requesting syntax repair...")
+                continue
+            exp["failure_type"] = last_failure_type
+            exp["error"] = last_error
+            _save_artifact_json(
+                artifact_dir,
+                "decision.json",
+                {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
+            )
+            _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+            return exp
+
+        safety_err = validate_safety(new_code)
+        if safety_err:
+            last_failure_type = "safety"
+            last_error = safety_err
+            log(f"  {safety_err}")
+            _save_artifact_json(
+                artifact_dir,
+                f"candidate_attempt{attempt}_error.json",
+                {"failure_type": last_failure_type, "error": last_error},
+            )
+            if attempt < max_codegen_attempts:
+                attempt_prompt = build_repair_prompt(new_code, last_failure_type, last_error, attempt + 1)
+                log("  Requesting safety repair...")
+                continue
+            exp["failure_type"] = last_failure_type
+            exp["error"] = last_error
+            _save_artifact_json(
+                artifact_dir,
+                "decision.json",
+                {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
+            )
+            _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+            return exp
+
+        # Fast isolated smoke check to catch train crashes before touching live files.
+        log(f"  Running isolated smoke-check ({smoke_time_budget}s budget)...")
+        smoke = run_training_smoke(
+            new_code,
+            timeout=smoke_timeout,
+            time_budget=smoke_time_budget,
+        )
+        _save_artifact_text(artifact_dir, f"smoke_attempt{attempt}.log", str(smoke.get("output", "")))
+        if not smoke.get("ok", False):
+            last_failure_type = str(smoke.get("error_type", "train_crash"))
+            last_error = str(smoke.get("error", "smoke failed"))
+            log(f"  Smoke failed: {last_error[:200]}")
+            _save_artifact_json(
+                artifact_dir,
+                f"candidate_attempt{attempt}_error.json",
+                {"failure_type": last_failure_type, "error": last_error},
+            )
+            if attempt < max_codegen_attempts:
+                attempt_prompt = build_repair_prompt(new_code, last_failure_type, last_error, attempt + 1)
+                log("  Requesting crash repair...")
+                continue
+            exp["failure_type"] = last_failure_type
+            exp["error"] = last_error[:1000]
+            _save_artifact_json(
+                artifact_dir,
+                "decision.json",
+                {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
+            )
+            _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
+            return exp
+
+        attempts_used = attempt
+        break
+
+    if attempts_used <= 0:
+        exp["failure_type"] = last_failure_type
+        exp["error"] = last_error[:1000]
         _save_artifact_json(
             artifact_dir,
             "decision.json",
@@ -1286,40 +1654,17 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
         return exp
 
+    exp["api_time"] = round(api_time_total, 1)
+    exp["codegen_attempts"] = attempts_used
+    exp["repair_attempts"] = max(0, attempts_used - 1)
+    exp["reasoning"] = reasoning[:300] if reasoning else ""
     exp["train_py_after_hash"] = _sha256_text(new_code)
-    _save_artifact_text(artifact_dir, "train_after_candidate.py", new_code)
-
-    change_summary = extract_change_summary(raw_response, current_code, new_code)
     exp["change_summary"] = change_summary
-    log(f"  Change: {change_summary}")
-
-    # Validate syntax
-    syntax_err = validate_syntax(new_code)
-    if syntax_err:
-        log(f"  Syntax error: {syntax_err}")
-        exp["failure_type"] = "syntax"
-        exp["error"] = syntax_err
-        _save_artifact_json(
-            artifact_dir,
-            "decision.json",
-            {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
-        )
-        _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
-        return exp
-
-    # Validate safety (torch.compile, huge batch sizes, etc.)
-    safety_err = validate_safety(new_code)
-    if safety_err:
-        log(f"  {safety_err}")
-        exp["failure_type"] = "safety"
-        exp["error"] = safety_err
-        _save_artifact_json(
-            artifact_dir,
-            "decision.json",
-            {"kept": False, "failure_type": exp["failure_type"], "reason": exp["error"]},
-        )
-        _save_artifact_json(artifact_dir, "experiment.v2.json", exp)
-        return exp
+    _save_artifact_text(artifact_dir, "response_raw.txt", raw_response)
+    _save_artifact_text(artifact_dir, "reasoning.txt", reasoning or "")
+    _save_artifact_json(artifact_dir, "sanitize_actions.json", {"actions": stripped})
+    _save_artifact_text(artifact_dir, "train_after_candidate.py", new_code)
+    log(f"  Using candidate after {attempts_used} attempt(s)")
 
     # Backup current train.py and best_model.pt
     backup_path = TRAIN_PY + ".backup"
@@ -1384,6 +1729,13 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         exp["stop_loss_rate"] = metrics.get("stop_loss_rate", 0)
         exp["worst_chunk_pf"] = metrics.get("worst_chunk_pf", 0)
         exp["direction_collapse_pct"] = metrics.get("direction_collapse_pct", 1.0)
+        exp["avg_entry_cost_bps"] = metrics.get("avg_entry_cost_bps", 0.0)
+        exp["avg_entry_quality"] = metrics.get("avg_entry_quality", 0.0)
+        exp["cost_realism_coverage"] = metrics.get("cost_realism_coverage", 0.0)
+        exp["high_cost_entry_rate"] = metrics.get("high_cost_entry_rate", 0.0)
+        exp["low_quality_entry_rate"] = metrics.get("low_quality_entry_rate", 0.0)
+        exp["actionable_bar_rate"] = metrics.get("actionable_bar_rate", 0.0)
+        exp["risk_off_bar_rate"] = metrics.get("risk_off_bar_rate", 0.0)
         exp["parse_summary"] = metrics.get("parse_summary", {})
 
         anomaly_flags = detect_anomaly_flags(exp)
@@ -1505,6 +1857,15 @@ def main():
         n_features = _data['features'].shape[-1]
         nan_pct = _torch.isnan(_data['features']).float().mean().item() * 100
         print(f"  data.pt:   OK ({n_bars} bars, {n_features} features, {nan_pct:.1f}% NaN)")
+        if n_features != FEATURE_LOCK_COUNT:
+            print(
+                "ERROR: Feature-contract violation. "
+                f"data.pt has {n_features} features, expected {FEATURE_LOCK_COUNT}."
+            )
+            print(
+                "  Rebuild/restore 60-feature data before running the foundation loop."
+            )
+            sys.exit(1)
         if nan_pct > 50:
             print("  WARNING: >50% NaN features — training quality will be poor")
         data_quality = _compute_data_quality_report(_data, list(_FEATURE_NAMES))

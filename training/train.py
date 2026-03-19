@@ -28,6 +28,7 @@ os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "4")
 import gc
 import math
 import time
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -55,36 +56,73 @@ from prepare import (
     evaluate_sharpe,
 )
 
+
+def _env_float(name: str, default: float, lo: Optional[float] = None, hi: Optional[float] = None) -> float:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        val = float(raw)
+    except Exception:
+        return default
+    if lo is not None:
+        val = max(lo, val)
+    if hi is not None:
+        val = min(hi, val)
+    return val
+
+
+def _env_int(name: str, default: int, lo: Optional[int] = None, hi: Optional[int] = None) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        val = int(raw)
+    except Exception:
+        return default
+    if lo is not None:
+        val = max(lo, val)
+    if hi is not None:
+        val = min(hi, val)
+    return val
+
+
 # ---------------------------------------------------------------------------
 # Hyperparameters
 # ---------------------------------------------------------------------------
 
-LOOKBACK = 120           # 1-min bars of context (120 = 2 hours)
+LOOKBACK = _env_int("TRAIN_LOOKBACK", 120, lo=60, hi=240)  # 1-min bars of context
 D_MODEL = 96             # embedding dim — LOCKED (must match best_model.pt)
 N_HEADS = 4              # attention heads — LOCKED
 DEPTH = 6                # transformer layers — LOCKED
-FF_MULT = 4              # feedforward expansion
-DROPOUT = 0.03
+FF_MULT = _env_int("TRAIN_FF_MULT", 4, lo=2, hi=8)
+DROPOUT = _env_float("TRAIN_DROPOUT", 0.03, lo=0.0, hi=0.2)
 
-BATCH_SIZE = 128
-LR = 3e-4
-WEIGHT_DECAY = 0.01
+BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 128, lo=32, hi=256)
+LR = _env_float("TRAIN_LR", 3e-4, lo=1e-5, hi=5e-3)
+WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.01, lo=0.0, hi=0.2)
 ADAM_BETAS = (0.9, 0.98)
-GRAD_CLIP = 1.0
-WARMUP_RATIO = 0.1
-COOLDOWN_RATIO = 0.3
+GRAD_CLIP = _env_float("TRAIN_GRAD_CLIP", 1.0, lo=0.0, hi=5.0)
+WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.1, lo=0.0, hi=0.5)
+COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.3, lo=0.0, hi=0.8)
 
 # Base loss mixing (will be dynamically adjusted by Greeks)
-BASE_GATE_LOSS_WEIGHT = 1.0      # base weight for gate head loss
-BASE_DIR_LOSS_WEIGHT = 1.0       # base weight for direction head loss
-BASE_PNL_ALIGNMENT_WEIGHT = 0.1  # base reward aligning predictions with option P&L
-BASE_EXIT_LOSS_WEIGHT = 0.3      # base weight for EXIT signal
+BASE_GATE_LOSS_WEIGHT = _env_float("TRAIN_BASE_GATE_W", 1.0, lo=0.1, hi=5.0)
+BASE_DIR_LOSS_WEIGHT = _env_float("TRAIN_BASE_DIR_W", 1.0, lo=0.1, hi=5.0)
+BASE_PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_BASE_PNL_W", 0.1, lo=0.0, hi=2.0)
+BASE_EXIT_LOSS_WEIGHT = _env_float("TRAIN_BASE_EXIT_W", 0.3, lo=0.0, hi=2.0)
 
 # Greeks-adaptive loss parameters
-GREEKS_ADAPTATION_STRENGTH = 0.5  # how much to adjust weights based on Greeks (0.5 = 50% max adjustment)
+GREEKS_ADAPTATION_STRENGTH = _env_float("TRAIN_GREEKS_ADAPT", 0.5, lo=0.0, hi=1.5)
 
 # Quality gate parameters
-QUALITY_GATE_STRENGTH = 0.8  # how much to scale TRADE logit based on gamma_theta_ratio
+QUALITY_GATE_STRENGTH = _env_float("TRAIN_QUALITY_GATE", 0.8, lo=0.0, hi=2.0)
+
+# Extra loop controls (foundation-safe; defaults preserve current behavior)
+GATE_LABEL_SMOOTHING = _env_float("TRAIN_GATE_LABEL_SMOOTHING", 0.0, lo=0.0, hi=0.2)
+DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.0, lo=0.0, hi=0.2)
+TRADE_RATE_REG_WEIGHT = _env_float("TRAIN_TRADE_RATE_REG_WEIGHT", 0.0, lo=0.0, hi=2.0)
+TARGET_TRADE_RATE = _env_float("TRAIN_TARGET_TRADE_RATE", 0.40, lo=0.05, hi=0.95)
 
 # Feature groups for gating (60 features: 39 equity + 6 options + 4 VIX/regime + 6 OTM/skew + 5 Greeks)
 FEATURE_GROUPS = {
@@ -312,7 +350,8 @@ def compute_greeks_loss_weights(features):
 def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, features,
                 exit_call_labels=None, exit_put_labels=None,
                 otm5_call_pnl=None, otm5_put_pnl=None,
-                otm10_call_pnl=None, otm10_put_pnl=None):
+                otm10_call_pnl=None, otm10_put_pnl=None,
+                supervision_weight=None, actionable_mask=None, risk_state_mask=None):
     """Two-head loss trained on actual SPXW option P&L with Greeks-adaptive weights.
 
     gate_logits: (batch, 2) — [NO_TRADE, TRADE]
@@ -351,6 +390,29 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     p_pnl = put_pnl[valid]
     t_feat = time_features[valid]
     valid_features = features[valid]
+    sample_weight = torch.ones_like(c_pnl)
+    if supervision_weight is not None:
+        sw = torch.nan_to_num(supervision_weight[valid], nan=0.0).clamp(min=0.0)
+        if sw.sum() > 0:
+            sample_weight = sw
+    if actionable_mask is not None:
+        act = torch.nan_to_num(actionable_mask[valid], nan=0.0).clamp(0.0, 1.0)
+        sample_weight = sample_weight * torch.where(
+            act > 0.5,
+            torch.ones_like(act),
+            torch.full_like(act, 0.20),
+        )
+    if risk_state_mask is not None:
+        risk = torch.nan_to_num(risk_state_mask[valid], nan=1.0).clamp(0.0, 1.0)
+        sample_weight = sample_weight * torch.where(
+            risk > 0.5,
+            torch.ones_like(risk),
+            torch.full_like(risk, 0.50),
+        )
+    if sample_weight.sum() <= 0:
+        sample_weight = torch.ones_like(sample_weight)
+    # Keep average weight near 1 to avoid LR retuning.
+    sample_weight = sample_weight / sample_weight.mean().clamp(min=1e-6)
 
     # Compute Greeks-adaptive loss weights
     loss_weights = compute_greeks_loss_weights(valid_features)
@@ -385,8 +447,14 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     gate_weights = torch.tensor([1.0, (n_no_trade / n_trade).clamp(max=10.0)], device=device)
 
     time_weight = 1.0 + 0.5 * (1.0 - t_feat)
-    gate_loss = F.cross_entropy(g_logits, gate_targets, weight=gate_weights, reduction='none')
-    gate_loss = (gate_loss * time_weight).mean()
+    gate_loss = F.cross_entropy(
+        g_logits,
+        gate_targets,
+        weight=gate_weights,
+        reduction='none',
+        label_smoothing=GATE_LABEL_SMOOTHING,
+    )
+    gate_loss = (gate_loss * time_weight * sample_weight).mean()
 
     # Direction targets: only where gate_target = TRADE
     trade_mask = gate_targets == 1
@@ -402,9 +470,16 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     trade_pnl_safe = torch.nan_to_num(trade_pnl, nan=-999.0)
     dir_targets = torch.argmax(trade_pnl_safe, dim=-1)
 
-    dir_loss = F.cross_entropy(d_logits_trade, dir_targets, reduction='none')
+    dir_loss = F.cross_entropy(
+        d_logits_trade,
+        dir_targets,
+        reduction='none',
+        label_smoothing=DIR_LABEL_SMOOTHING,
+    )
     dir_time_weight = 1.0 + 0.5 * (1.0 - t_feat_trade)
-    dir_loss = (dir_loss * dir_time_weight).mean()
+    dir_w = sample_weight[trade_mask]
+    dir_w = dir_w / dir_w.mean().clamp(min=1e-6)
+    dir_loss = (dir_loss * dir_time_weight * dir_w).mean()
 
     # P&L alignment bonus: weighted sum of dir_probs × actual P&L
     gate_probs = F.softmax(g_logits, dim=-1)
@@ -412,7 +487,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     trade_prob = gate_probs[:, 1]
     all_pnl_safe = torch.nan_to_num(all_pnl, nan=0.0)
     pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
-    pnl_loss = -pnl_signal.mean()
+    pnl_loss = -(pnl_signal * sample_weight).sum() / sample_weight.sum().clamp(min=1e-6)
 
     # EXIT loss
     exit_loss = torch.tensor(0.0, device=device)
@@ -423,10 +498,18 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         if exit_mask.sum() > 1:
             exit_g = g_logits[exit_mask]
             exit_targets = torch.zeros(exit_mask.sum().item(), dtype=torch.long, device=device)
-            exit_loss = F.cross_entropy(exit_g, exit_targets)
+            exit_loss_vec = F.cross_entropy(exit_g, exit_targets, reduction='none')
+            exit_w = sample_weight[exit_mask]
+            exit_loss = (exit_loss_vec * exit_w).sum() / exit_w.sum().clamp(min=1e-6)
+
+    trade_rate_loss = torch.tensor(0.0, device=device)
+    if TRADE_RATE_REG_WEIGHT > 0:
+        pred_trade_rate = trade_prob.mean()
+        trade_rate_loss = (pred_trade_rate - TARGET_TRADE_RATE) ** 2
 
     total = (GATE_LOSS_WEIGHT * gate_loss + DIR_LOSS_WEIGHT * dir_loss
-             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss)
+             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss
+             + TRADE_RATE_REG_WEIGHT * trade_rate_loss)
     return total
 
 
@@ -516,6 +599,8 @@ print(f"LR: {LR} (effective: {_effective_lr}) | Depth: {DEPTH} | d_model: {D_MOD
 print(f"Warm-start: {'yes' if _warm_started else 'no'}")
 print(f"Greeks adaptation strength: {GREEKS_ADAPTATION_STRENGTH}")
 print(f"Quality gate strength: {QUALITY_GATE_STRENGTH}")
+print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
+print(f"Trade-rate regularizer: weight={TRADE_RATE_REG_WEIGHT} target={TARGET_TRADE_RATE}")
 print()
 
 # ---------------------------------------------------------------------------
@@ -547,9 +632,11 @@ while True:
     gate_logits, dir_logits = model(x_batch)
 
     # Unpack multi-target: (fwd_ret, call_pnl, put_pnl, exit_call, exit_put,
-    #   otm5_call_pnl, otm5_put_pnl, otm10_call_pnl, otm10_put_pnl)
+    #   otm5_call_pnl, otm5_put_pnl, otm10_call_pnl, otm10_put_pnl,
+    #   supervision_weight, actionable_mask, risk_state_mask)
     (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
-     otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl) = y_batch
+     otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+     supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch) = y_batch
 
     # Extract time feature (minutes_to_close) from last bar in lookback window
     time_feat = x_batch[:, -1, 33]  # feature index 33 = minutes_to_close
@@ -559,7 +646,10 @@ while True:
 
     loss = sniper_loss(gate_logits, dir_logits, call_pnl_batch, put_pnl_batch, time_feat, batch_features,
                        exit_call_batch, exit_put_batch,
-                       otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl)
+                       otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+                       supervision_weight=supervision_weight_batch,
+                       actionable_mask=actionable_mask_batch,
+                       risk_state_mask=risk_state_mask_batch)
 
     loss.backward()
     if GRAD_CLIP > 0:
@@ -567,7 +657,7 @@ while True:
 
     progress = min(total_time / TIME_BUDGET, 1.0)
     for pg in optimizer.param_groups:
-        pg['lr'] = LR * get_lr_mult(progress)
+        pg['lr'] = _effective_lr * get_lr_mult(progress)
 
     optimizer.step()
     optimizer.zero_grad(set_to_none=True)
@@ -608,7 +698,7 @@ while True:
         print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
               f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
               f"| gate_w:{sample_weights['gate_weight']:.2f} pnl_w:{sample_weights['pnl_weight']:.2f} "
-              f"| quality:{avg_quality:.2f} | lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
+              f"| quality:{avg_quality:.2f} | lr: {_effective_lr * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
 
     if step == 0:
         gc.collect(); gc.freeze(); gc.disable()
@@ -661,6 +751,7 @@ if trade_log:
     log_path = os.path.join(os.path.dirname(__file__), "trade_log.csv")
     fieldnames = ['trade_num', 'date', 'entry_time', 'exit_time', 'direction',
                   'strike', 'entry_price', 'bars_held', 'hold_minutes',
+                  'entry_cost_bps', 'entry_quality', 'entry_actionable',
                   'pnl_pct', 'exit_reason', 'actual_prices', 'result']
     with open(log_path, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
@@ -699,6 +790,13 @@ print(f"pre_10am_blocked:   {metrics.get('pre_10am_blocked', 0)}")
 print(f"short_hold_pct:     {metrics.get('short_hold_pct', 0.0):.6f}")
 print(f"stop_loss_rate:     {metrics.get('stop_loss_rate', 0.0):.6f}")
 print(f"direction_collapse_pct: {metrics.get('direction_collapse_pct', 0.0):.6f}")
+print(f"avg_entry_cost_bps: {metrics.get('avg_entry_cost_bps', 0.0):.6f}")
+print(f"avg_entry_quality:  {metrics.get('avg_entry_quality', 0.0):.6f}")
+print(f"cost_realism_coverage: {metrics.get('cost_realism_coverage', 0.0):.6f}")
+print(f"high_cost_entry_rate: {metrics.get('high_cost_entry_rate', 0.0):.6f}")
+print(f"low_quality_entry_rate: {metrics.get('low_quality_entry_rate', 0.0):.6f}")
+print(f"actionable_bar_rate: {metrics.get('actionable_bar_rate', 0.0):.6f}")
+print(f"risk_off_bar_rate:  {metrics.get('risk_off_bar_rate', 0.0):.6f}")
 # Equity curve (informational)
 print(f"final_capital:      {metrics.get('final_capital', 0.0):.2f}")
 print(f"equity_sharpe:      {metrics.get('equity_sharpe', 0.0):.6f}")
@@ -722,3 +820,8 @@ print(f"num_params:         {num_params:,}")
 print(f"lookback:           {LOOKBACK}")
 print(f"depth:              {DEPTH}")
 print(f"d_model:            {D_MODEL}")
+print(f"effective_lr:       {_effective_lr:.6g}")
+print(f"gate_label_smoothing:{GATE_LABEL_SMOOTHING:.6f}")
+print(f"dir_label_smoothing:{DIR_LABEL_SMOOTHING:.6f}")
+print(f"trade_rate_reg_weight:{TRADE_RATE_REG_WEIGHT:.6f}")
+print(f"target_trade_rate:  {TARGET_TRADE_RATE:.6f}")

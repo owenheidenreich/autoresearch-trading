@@ -21,6 +21,8 @@ from training.run_loop import (
     load_promoted_history,
     prompt_contract_check,
     record_promotion_event,
+    run_training,
+    validate_safety,
     validate_experiment_v2_schema,
     write_status,
 )
@@ -68,6 +70,46 @@ def test_prompt_contract_check_catches_missing_two_head_and_metrics() -> None:
     assert "missing_metric_key_worst_chunk_pf" in rules
 
 
+def test_validate_safety_rejects_feature_group_width_drift(tmp_path, monkeypatch) -> None:
+    import training.run_loop as rl
+
+    monkeypatch.setattr(rl, "BEST_TRAIN_PY", str(tmp_path / "missing_best_train.py"))
+    code = """
+BATCH_SIZE = 128
+D_MODEL = 96
+N_HEADS = 4
+DEPTH = 6
+FEATURE_GROUPS = {
+    "all": (0, 64),
+}
+"""
+    err = validate_safety(code)
+    assert err is not None
+    assert "covers 64 features" in err
+
+
+def test_run_training_parse_fails_when_required_metric_missing(tmp_path) -> None:
+    script = tmp_path / "train_missing_metric.py"
+    script.write_text(
+        "\n".join(
+            [
+                "print('score: 1.0')",
+                "print('profit_factor: 1.2')",
+                "print('trades_per_day: 2.3')",
+                "print('trade_sharpe: 0.4')",
+                "print('stop_loss_rate: 0.1')",
+                # missing required key: worst_chunk_pf
+            ]
+        )
+        + "\n"
+    )
+    out = run_training(str(script), timeout=5, time_budget=1)
+    assert out.get("error_type") == "parse"
+    parse_summary = out.get("parse_summary", {})
+    missing = parse_summary.get("missing_required_metric_keys", [])
+    assert "worst_chunk_pf" in missing
+
+
 def test_experiment_v2_schema_validation() -> None:
     valid = {
         "schema_version": SCHEMA_VERSION,
@@ -113,6 +155,59 @@ def test_anomaly_detector_flags_expected_conditions() -> None:
     assert "exit_pct_extreme" in flags
     assert "trades_per_day_extreme" in flags
     assert "metric_inconsistent" in flags
+
+
+def test_anomaly_detector_flags_realism_conditions() -> None:
+    flags = detect_anomaly_flags(
+        {
+            "trades_per_day": 2.0,
+            "num_trades": 20,
+            "win_rate": 0.55,
+            "profit_factor": 1.4,
+            "stop_loss_rate": 0.2,
+            "cost_realism_coverage": 0.10,
+            "avg_entry_quality": 0.10,
+            "high_cost_entry_rate": 0.80,
+            "low_quality_entry_rate": 0.90,
+            "actionable_bar_rate": 0.01,
+        }
+    )
+    assert "cost_realism_low_coverage" in flags
+    assert "entry_quality_too_low" in flags
+    assert "high_cost_entry_rate_high" in flags
+    assert "low_quality_entry_rate_high" in flags
+    assert "actionable_bar_rate_low" in flags
+
+
+def test_run_training_parses_realism_metrics(tmp_path) -> None:
+    script = tmp_path / "train_realism_metrics.py"
+    script.write_text(
+        "\n".join(
+            [
+                "print('score: 1.0')",
+                "print('profit_factor: 1.2')",
+                "print('trades_per_day: 2.3')",
+                "print('trade_sharpe: 0.4')",
+                "print('stop_loss_rate: 0.1')",
+                "print('worst_chunk_pf: 1.1')",
+                "print('avg_entry_cost_bps: 150.0')",
+                "print('avg_entry_quality: 0.6')",
+                "print('cost_realism_coverage: 0.8')",
+                "print('high_cost_entry_rate: 0.2')",
+                "print('low_quality_entry_rate: 0.1')",
+                "print('actionable_bar_rate: 0.4')",
+                "print('risk_off_bar_rate: 0.05')",
+            ]
+        )
+        + "\n"
+    )
+    out = run_training(str(script), timeout=5, time_budget=1)
+    assert out.get("error") is None
+    assert out.get("avg_entry_cost_bps") == pytest.approx(150.0)
+    assert out.get("avg_entry_quality") == pytest.approx(0.6)
+    assert out.get("cost_realism_coverage") == pytest.approx(0.8)
+    assert out.get("actionable_bar_rate") == pytest.approx(0.4)
+    assert out.get("risk_off_bar_rate") == pytest.approx(0.05)
 
 
 def test_write_status_backward_compatible_with_new_reliability_fields(tmp_path, monkeypatch) -> None:
@@ -327,6 +422,58 @@ def test_ingest_ignores_legacy_experiments_jsonl(tmp_path) -> None:
     out = results_root / "analysis"
     summary = ingest(results_root=results_root, output_root=out)
     assert summary["events"] == 0
+
+
+def test_ingest_replay_csv_filter_ignores_training_trade_log(tmp_path) -> None:
+    results_root = tmp_path / "results"
+    replay_dir = results_root / "analysis" / "nightly-replay"
+    run_dir = results_root / "run-2026-03-17-111111"
+    replay_dir.mkdir(parents=True, exist_ok=True)
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    (replay_dir / "replay-2026-03-17.csv").write_text("a,b\n1,2\n")
+    (run_dir / "trade_log.csv").write_text("a,b\n3,4\n")
+
+    out = results_root / "analysis-out"
+    summary = ingest(results_root=results_root, output_root=out)
+    evidence = pd.read_parquet(summary["evidence_path"])
+    replay_rows = evidence[evidence["event_type"] == "replay_trade_log"]
+    assert len(replay_rows) == 1
+    assert "nightly-replay" in replay_rows.iloc[0]["ref_path"]
+
+
+def test_ingest_replay_qa_artifacts(tmp_path) -> None:
+    results_root = tmp_path / "results"
+    replay_dir = results_root / "analysis" / "nightly-replay"
+    replay_dir.mkdir(parents=True, exist_ok=True)
+
+    (replay_dir / "replay-2026-03-17_qa.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "replay_qa_v1",
+                "passed": False,
+                "critical_count": 1,
+                "warning_count": 0,
+                "anomalies": [{"severity": "critical", "code": "bad_trade_time_format"}],
+            }
+        )
+    )
+    (replay_dir / "replay-2026-03-17_ledger_days.csv").write_text(
+        "replay_date,num_trades,total_bars,total_pnl_pct,qa_passed,qa_critical_count,qa_warning_count\n"
+        "2026-03-17,2,390,1.2,false,1,0\n"
+    )
+
+    out = results_root / "analysis-out"
+    summary = ingest(results_root=results_root, output_root=out)
+    evidence = pd.read_parquet(summary["evidence_path"])
+    qa_rows = evidence[evidence["event_type"] == "replay_qa"]
+    assert len(qa_rows) == 1
+
+    incidents = [json.loads(line) for line in Path(summary["incidents_path"]).read_text().splitlines() if line.strip()]
+    sigs = {row["signature"] for row in incidents}
+    assert "replay.qa_failed" in sigs
+    assert "replay.qa.bad_trade_time_format" in sigs
+    assert "replay.day_qa_failed" in sigs
 
 
 def test_monitor_resolves_run_dir_from_current_run_pointer(tmp_path) -> None:

@@ -39,6 +39,21 @@ def _safe_iso(ts: Any) -> str:
         return dt.datetime.now().isoformat()
 
 
+def _as_bool(v: Any, default: bool = False) -> bool:
+    if isinstance(v, bool):
+        return v
+    if v is None:
+        return default
+    if isinstance(v, (int, float)):
+        return bool(v)
+    s = str(v).strip().lower()
+    if s in {"1", "true", "t", "yes", "y", "on"}:
+        return True
+    if s in {"0", "false", "f", "no", "n", "off", ""}:
+        return False
+    return default
+
+
 def _incident_id(subsystem: str, severity: str, signature: str) -> str:
     payload = f"{subsystem}|{severity}|{signature}"
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
@@ -224,9 +239,10 @@ def _collect_replay(results_root: Path) -> tuple[list[dict[str, Any]], list[dict
         trades = rec.get("trades") or []
         bar_log = rec.get("bar_log") or []
         session_stats = rec.get("session_stats") or {}
+        journal_ts = rec.get("generated_at") or rec.get("created_at") or dt.datetime.now().isoformat()
         events.append(
             _event(
-                ts=dt.datetime.now().isoformat(),
+                ts=journal_ts,
                 source="outer_loop",
                 subsystem="replay",
                 severity="info",
@@ -238,13 +254,15 @@ def _collect_replay(results_root: Path) -> tuple[list[dict[str, Any]], list[dict
                     "num_trades": len(trades),
                     "total_bars": session_stats.get("total_bars", len(bar_log)),
                     "avg_gate_prob": session_stats.get("avg_gate_prob"),
+                    "cooldown_blocked": session_stats.get("cooldown_blocked"),
+                    "pre_10am_blocked": session_stats.get("pre_10am_blocked"),
                 },
             )
         )
         if len(trades) == 0:
             incidents.append(
                 _incident_candidate(
-                    ts=dt.datetime.now().isoformat(),
+                    ts=journal_ts,
                     subsystem="replay",
                     severity="warning",
                     signature="replay.no_trades",
@@ -252,8 +270,116 @@ def _collect_replay(results_root: Path) -> tuple[list[dict[str, Any]], list[dict
                 )
             )
 
-    # Also ingest CSV trade logs from replay/test runs.
-    for csv_path in sorted(results_root.rglob("*trade*.csv")):
+    for qa_path in sorted(results_root.rglob("*_qa.json")):
+        try:
+            qa = json.loads(qa_path.read_text())
+        except Exception:
+            continue
+        ts = dt.datetime.now().isoformat()
+        passed = bool(qa.get("passed", False))
+        critical_count = int(qa.get("critical_count", 0) or 0)
+        warning_count = int(qa.get("warning_count", 0) or 0)
+        severity = "info"
+        if not passed or critical_count > 0:
+            severity = "critical"
+        elif warning_count > 0:
+            severity = "warning"
+        events.append(
+            _event(
+                ts=ts,
+                source="outer_loop",
+                subsystem="replay",
+                severity=severity,
+                event_type="replay_qa",
+                signature="replay.qa",
+                ref_path=str(qa_path),
+                payload={
+                    "passed": passed,
+                    "critical_count": critical_count,
+                    "warning_count": warning_count,
+                    "anomalies": qa.get("anomalies", []),
+                },
+            )
+        )
+        if not passed:
+            incidents.append(
+                _incident_candidate(
+                    ts=ts,
+                    subsystem="replay",
+                    severity="critical",
+                    signature="replay.qa_failed",
+                    ref_path=str(qa_path),
+                )
+            )
+        for anomaly in qa.get("anomalies", []) if isinstance(qa.get("anomalies"), list) else []:
+            if not isinstance(anomaly, dict):
+                continue
+            code = str(anomaly.get("code", "unknown"))
+            sev = str(anomaly.get("severity", "warning")).lower()
+            sev_norm = "critical" if sev == "critical" else "warning"
+            incidents.append(
+                _incident_candidate(
+                    ts=ts,
+                    subsystem="replay",
+                    severity=sev_norm,
+                    signature=f"replay.qa.{code}",
+                    ref_path=str(qa_path),
+                )
+            )
+
+    for day_csv in sorted(results_root.rglob("*_ledger_days.csv")):
+        try:
+            df_day = pd.read_csv(day_csv)
+        except Exception:
+            continue
+        if df_day.empty:
+            continue
+        row = df_day.iloc[0].to_dict()
+        ts = dt.datetime.now().isoformat()
+        qa_passed = _as_bool(row.get("qa_passed"), default=True)
+        sev = "info" if qa_passed else "warning"
+        events.append(
+            _event(
+                ts=ts,
+                source="outer_loop",
+                subsystem="replay",
+                severity=sev,
+                event_type="replay_day_ledger",
+                signature="replay.day_ledger",
+                ref_path=str(day_csv),
+                payload={
+                    "replay_date": row.get("replay_date"),
+                    "num_trades": int(row.get("num_trades", 0) or 0),
+                    "total_bars": int(row.get("total_bars", 0) or 0),
+                    "total_pnl_pct": float(row.get("total_pnl_pct", 0.0) or 0.0),
+                    "qa_passed": qa_passed,
+                    "qa_critical_count": int(row.get("qa_critical_count", 0) or 0),
+                    "qa_warning_count": int(row.get("qa_warning_count", 0) or 0),
+                },
+            )
+        )
+        if not qa_passed:
+            incidents.append(
+                _incident_candidate(
+                    ts=ts,
+                    subsystem="replay",
+                    severity="warning",
+                    signature="replay.day_qa_failed",
+                    ref_path=str(day_csv),
+                )
+            )
+
+    # Also ingest canonical replay CSV trade logs (avoid training trade_log.csv files).
+    for csv_path in sorted(results_root.rglob("*.csv")):
+        name = csv_path.name.lower()
+        parent = csv_path.parent.name.lower()
+        if not (
+            name.startswith("replay-")
+            or name.endswith("_replay.csv")
+            or parent.startswith("nightly-replay")
+            or "replay" in parent
+        ):
+            continue
         try:
             df = pd.read_csv(csv_path)
         except Exception:

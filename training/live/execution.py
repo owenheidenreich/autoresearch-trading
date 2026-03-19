@@ -22,6 +22,7 @@ class OCOExecutionEngine:
         daily_loss_limit_pct: float = 0.05,
         kill_switch_path: str | None = None,
         audit_path: str | None = None,
+        session_id: str | None = None,
     ) -> None:
         self.ib = ib
         self.dry_run = dry_run
@@ -29,9 +30,12 @@ class OCOExecutionEngine:
         self.daily_loss_limit_pct = float(daily_loss_limit_pct)
         self.kill_switch_path = kill_switch_path
         self.audit_path = audit_path
+        self.session_id = session_id
         self.positions: dict[str, ExecutionState] = {}
         self._next_local_id = 1_000_000
         self._live_orders: dict[str, dict[str, Any]] = {}
+        self._trade_by_order_id: dict[int, dict[str, Any]] = {}
+        self._ib_callbacks_installed = False
         self.realized_pnl_pct: float = 0.0
 
     def _ts(self) -> str:
@@ -55,10 +59,171 @@ class OCOExecutionEngine:
         row = {
             "ts": self._ts(),
             "event": event,
+            "session_id": self.session_id,
             "payload": payload,
         }
         with open(self.audit_path, "a") as f:
             f.write(json.dumps(row, default=str) + "\n")
+
+    def _contract_payload(self, contract: Any) -> dict[str, Any]:
+        return {
+            "symbol": getattr(contract, "symbol", None),
+            "secType": getattr(contract, "secType", None),
+            "exchange": getattr(contract, "exchange", None),
+            "currency": getattr(contract, "currency", None),
+            "tradingClass": getattr(contract, "tradingClass", None),
+            "lastTradeDateOrContractMonth": getattr(contract, "lastTradeDateOrContractMonth", None),
+            "strike": getattr(contract, "strike", None),
+            "right": getattr(contract, "right", None),
+            "conId": getattr(contract, "conId", None),
+        }
+
+    def _order_payload(self, order: Order) -> dict[str, Any]:
+        return {
+            "orderId": int(getattr(order, "orderId", 0)),
+            "parentId": int(getattr(order, "parentId", 0)),
+            "action": getattr(order, "action", None),
+            "orderType": getattr(order, "orderType", None),
+            "totalQuantity": int(getattr(order, "totalQuantity", 0)),
+            "lmtPrice": getattr(order, "lmtPrice", None),
+            "auxPrice": getattr(order, "auxPrice", None),
+            "ocaGroup": getattr(order, "ocaGroup", None),
+        }
+
+    def _ensure_ib_callbacks(self) -> None:
+        if self.dry_run or not self.ib or self._ib_callbacks_installed:
+            return
+
+        def _on_error(req_id: int, error_code: int, error_string: str, contract: Any) -> None:
+            self._audit(
+                "ib_error_event",
+                {
+                    "req_id": int(req_id),
+                    "error_code": int(error_code),
+                    "error_string": str(error_string),
+                    "contract": self._contract_payload(contract),
+                },
+            )
+
+        self.ib.errorEvent += _on_error
+        self._ib_callbacks_installed = True
+
+    def _track_trade(self, *, position_id: str, role: str, intent: DecisionIntent, trade: Any) -> None:
+        order = getattr(trade, "order", None)
+        if order is None:
+            return
+        order_id = int(getattr(order, "orderId", 0))
+        self._trade_by_order_id[order_id] = {
+            "position_id": position_id,
+            "role": role,
+            "intent_id": intent.intent_id,
+            "decision_id": intent.decision_id,
+        }
+
+        def _status_handler(trade_obj: Any) -> None:
+            state = self.positions.get(position_id)
+            status_obj = getattr(trade_obj, "orderStatus", None)
+            status = str(getattr(status_obj, "status", "")) if status_obj is not None else ""
+            avg_fill = getattr(status_obj, "avgFillPrice", None) if status_obj is not None else None
+            filled = getattr(status_obj, "filled", None) if status_obj is not None else None
+            remaining = getattr(status_obj, "remaining", None) if status_obj is not None else None
+            perm_id = None
+            if status_obj is not None:
+                try:
+                    perm_id = int(getattr(status_obj, "permId", 0) or 0) or None
+                except Exception:
+                    perm_id = None
+
+            payload = {
+                "position_id": position_id,
+                "order_role": role,
+                "intent_id": intent.intent_id,
+                "decision_id": intent.decision_id,
+                "order_id": order_id,
+                "status": status,
+                "filled": filled,
+                "remaining": remaining,
+                "avg_fill_price": avg_fill,
+                "perm_id": perm_id,
+            }
+            self._audit("ib_order_status", payload)
+            if state is None:
+                return
+            state.updated_at = self._ts()
+            if role == "parent" and status.lower() in {"filled", "partiallyfilled"}:
+                state.fill_status = status.upper()
+                try:
+                    fill_px = float(avg_fill) if avg_fill is not None else None
+                except Exception:
+                    fill_px = None
+                if fill_px is not None and fill_px > 0:
+                    state.fill_price = fill_px
+                    state.fill_time = self._ts()
+                    if state.entry_price_reference and state.entry_price_reference > 0:
+                        state.slippage_bps = (
+                            (fill_px - state.entry_price_reference)
+                            / state.entry_price_reference
+                            * 10000.0
+                        )
+                if perm_id is not None:
+                    state.ib_perm_id_entry = perm_id
+
+        def _fill_handler(trade_obj: Any, fill_obj: Any) -> None:
+            state = self.positions.get(position_id)
+            execution = getattr(fill_obj, "execution", None)
+            exec_id = getattr(execution, "execId", None) if execution is not None else None
+            price = getattr(execution, "price", None) if execution is not None else None
+            shares = getattr(execution, "shares", None) if execution is not None else None
+            exec_time = getattr(execution, "time", None) if execution is not None else None
+            self._audit(
+                "ib_exec_details",
+                {
+                    "position_id": position_id,
+                    "order_role": role,
+                    "intent_id": intent.intent_id,
+                    "decision_id": intent.decision_id,
+                    "order_id": order_id,
+                    "exec_id": exec_id,
+                    "price": price,
+                    "shares": shares,
+                    "time": str(exec_time) if exec_time is not None else None,
+                },
+            )
+            if state is not None and role == "parent":
+                state.last_exec_id = str(exec_id) if exec_id else state.last_exec_id
+                state.fill_status = "FILLED"
+                try:
+                    fill_px = float(price) if price is not None else None
+                except Exception:
+                    fill_px = None
+                if fill_px is not None and fill_px > 0:
+                    state.fill_price = fill_px
+                    state.fill_time = self._ts()
+                    if state.entry_price_reference and state.entry_price_reference > 0:
+                        state.slippage_bps = (
+                            (fill_px - state.entry_price_reference)
+                            / state.entry_price_reference
+                            * 10000.0
+                        )
+
+        def _cancel_handler(trade_obj: Any) -> None:
+            self._audit(
+                "ib_order_cancelled",
+                {
+                    "position_id": position_id,
+                    "order_role": role,
+                    "intent_id": intent.intent_id,
+                    "decision_id": intent.decision_id,
+                    "order_id": order_id,
+                },
+            )
+
+        if hasattr(trade, "statusEvent"):
+            trade.statusEvent += _status_handler
+        if hasattr(trade, "fillEvent"):
+            trade.fillEvent += _fill_handler
+        if hasattr(trade, "cancelledEvent"):
+            trade.cancelledEvent += _cancel_handler
 
     def _next_order_id(self) -> int:
         if self.ib and self.ib.isConnected() and not self.dry_run:
@@ -98,14 +263,37 @@ class OCOExecutionEngine:
                 created_at=now,
                 updated_at=now,
                 entry_price_reference=intent.reference_price,
-                metadata={"dry_run": True, "entry_order": intent.entry_order},
+                fill_status="FILLED",
+                fill_price=float(intent.reference_price) if intent.reference_price else None,
+                fill_time=now,
+                slippage_bps=0.0 if intent.reference_price else None,
+                session_id=self.session_id,
+                decision_id=intent.decision_id,
+                intent_id=intent.intent_id,
+                metadata={
+                    "dry_run": True,
+                    "entry_order": intent.entry_order,
+                    "reason_codes": list(intent.reason_codes),
+                    **(intent.metadata or {}),
+                },
             )
             self.positions[position_id] = state
-            self._audit("entry_dry_run", {"intent": asdict(intent), "state": asdict(state)})
+            self._audit(
+                "entry_dry_run",
+                {
+                    "position_id": position_id,
+                    "decision_id": intent.decision_id,
+                    "intent_id": intent.intent_id,
+                    "intent": asdict(intent),
+                    "state": asdict(state),
+                    "contract": self._contract_payload(intent.contract),
+                },
+            )
             return state
 
         if not self.ib or not self.ib.isConnected():
             raise RuntimeError("IB is not connected for live order placement")
+        self._ensure_ib_callbacks()
 
         contract = intent.contract
         if not isinstance(contract, Contract):
@@ -147,9 +335,9 @@ class OCOExecutionEngine:
             ocaType=1,
         )
 
-        self.ib.placeOrder(contract, parent)
-        self.ib.placeOrder(contract, stop)
-        self.ib.placeOrder(contract, take_profit)
+        parent_trade = self.ib.placeOrder(contract, parent)
+        stop_trade = self.ib.placeOrder(contract, stop)
+        tp_trade = self.ib.placeOrder(contract, take_profit)
 
         state = ExecutionState(
             position_id=position_id,
@@ -164,7 +352,14 @@ class OCOExecutionEngine:
             created_at=now,
             updated_at=now,
             entry_price_reference=intent.reference_price,
-            metadata={"entry_order": intent.entry_order},
+            session_id=self.session_id,
+            decision_id=intent.decision_id,
+            intent_id=intent.intent_id,
+            metadata={
+                "entry_order": intent.entry_order,
+                "reason_codes": list(intent.reason_codes),
+                **(intent.metadata or {}),
+            },
         )
         self.positions[position_id] = state
         self._live_orders[position_id] = {
@@ -172,8 +367,30 @@ class OCOExecutionEngine:
             "parent": parent,
             "stop": stop,
             "take_profit": take_profit,
+            "parent_trade": parent_trade,
+            "stop_trade": stop_trade,
+            "take_profit_trade": tp_trade,
         }
-        self._audit("entry_live", {"intent": asdict(intent), "state": asdict(state)})
+        self._track_trade(position_id=position_id, role="parent", intent=intent, trade=parent_trade)
+        self._track_trade(position_id=position_id, role="stop", intent=intent, trade=stop_trade)
+        self._track_trade(position_id=position_id, role="take_profit", intent=intent, trade=tp_trade)
+
+        self._audit(
+            "entry_live",
+            {
+                "position_id": position_id,
+                "decision_id": intent.decision_id,
+                "intent_id": intent.intent_id,
+                "intent": asdict(intent),
+                "state": asdict(state),
+                "contract": self._contract_payload(contract),
+                "orders": {
+                    "parent": self._order_payload(parent),
+                    "stop": self._order_payload(stop),
+                    "take_profit": self._order_payload(take_profit),
+                },
+            },
+        )
         return state
 
     def apply_risk_update(self, update: RiskUpdateIntent) -> bool:
@@ -219,7 +436,16 @@ class OCOExecutionEngine:
 
         state.updated_at = self._ts()
         if self.dry_run:
-            self._audit("risk_update_dry_run", {"update": asdict(update), "state": asdict(state)})
+            self._audit(
+                "risk_update_dry_run",
+                {
+                    "position_id": update.position_id,
+                    "decision_id": update.decision_id,
+                    "intent_id": update.intent_id,
+                    "update": asdict(update),
+                    "state": asdict(state),
+                },
+            )
             return True
 
         if not self.ib or not self.ib.isConnected():
@@ -235,7 +461,20 @@ class OCOExecutionEngine:
         contract: Contract = live["contract"]
         self.ib.placeOrder(contract, stop)
         self.ib.placeOrder(contract, tp)
-        self._audit("risk_update_live", {"update": asdict(update), "state": asdict(state)})
+        self._audit(
+            "risk_update_live",
+            {
+                "position_id": update.position_id,
+                "decision_id": update.decision_id,
+                "intent_id": update.intent_id,
+                "update": asdict(update),
+                "state": asdict(state),
+                "orders": {
+                    "stop": self._order_payload(stop),
+                    "take_profit": self._order_payload(tp),
+                },
+            },
+        )
         return True
 
     def flatten_position(self, position_id: str, reason: str = "model_exit") -> bool:
@@ -247,7 +486,15 @@ class OCOExecutionEngine:
         state.notes.append(reason)
 
         if self.dry_run:
-            self._audit("flatten_dry_run", {"position_id": position_id, "reason": reason})
+            self._audit(
+                "flatten_dry_run",
+                {
+                    "position_id": position_id,
+                    "reason": reason,
+                    "decision_id": state.decision_id,
+                    "intent_id": state.intent_id,
+                },
+            )
             return True
 
         if not self.ib or not self.ib.isConnected():
@@ -261,7 +508,19 @@ class OCOExecutionEngine:
         contract: Contract = live["contract"]
         self.ib.cancelOrder(stop)
         self.ib.cancelOrder(tp)
-        self.ib.placeOrder(contract, MarketOrder("SELL", state.qty))
-        self._audit("flatten_live", {"position_id": position_id, "reason": reason})
+        flatten_order = MarketOrder("SELL", state.qty)
+        flatten_trade = self.ib.placeOrder(contract, flatten_order)
+        self._audit(
+            "flatten_live",
+            {
+                "position_id": position_id,
+                "reason": reason,
+                "decision_id": state.decision_id,
+                "intent_id": state.intent_id,
+                "contract": self._contract_payload(contract),
+                "flatten_order": self._order_payload(flatten_order),
+                "flatten_order_id": int(getattr(flatten_order, "orderId", 0)),
+                "flatten_trade_status": str(getattr(getattr(flatten_trade, "orderStatus", None), "status", "")),
+            },
+        )
         return True
-

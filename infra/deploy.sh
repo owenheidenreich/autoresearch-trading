@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ===========================================================================
-# Akash H100 — Two Commands
+# Akash GPU — Two Commands
 # ===========================================================================
-#   ./deploy.sh boot    → Deploy H100 container on Akash, wait for SSH
+#   ./deploy.sh boot    → Deploy GPU container on Akash, wait for SSH
 #   ./deploy.sh start   → Upload code + data, start autoresearch loop
 #
 # Optional:
@@ -34,6 +34,11 @@ STATE_FILE="$PROJECT_ROOT/.deploy-state"
 SSH_PASS="autoresearch2026"
 # Only require API key for commands that need it (boot, start)
 ANTHROPIC_KEY="${ANTHROPIC_API_KEY:-}"
+# Optional override to force a specific provider for bidding.
+AKASH_PROVIDER_OVERRIDE="${AKASH_PROVIDER_OVERRIDE:-}"
+# Preferred GPU model order (comma separated) for provider selection.
+# Default policy: H100 first, A100 fallback.
+AKASH_GPU_PRIORITY="${AKASH_GPU_PRIORITY:-h100,a100}"
 
 export AKASH_NODE AKASH_CHAIN_ID AKASH_KEYRING_BACKEND AKASH_FROM
 export AKASH_GAS AKASH_GAS_ADJUSTMENT AKASH_GAS_PRICES AKASH_SIGN_MODE
@@ -121,7 +126,7 @@ wait_for_ssh() {
 # ===================================================================
 cmd_boot() {
     [[ -n "$ANTHROPIC_KEY" ]] || die "Set ANTHROPIC_API_KEY environment variable before deploying"
-    log "=== BOOT: Creating Akash H100 Deployment ==="
+    log "=== BOOT: Creating Akash GPU Deployment ==="
     [[ -f "$SDL_FILE" ]] || die "SDL not found: $SDL_FILE"
 
     # 1. Submit deployment TX
@@ -157,22 +162,118 @@ cmd_boot() {
     log "DSEQ: $DSEQ"
 
     # 4. Wait for bids
-    log "Waiting 45s for H100 bids..."
+    log "Waiting 45s for provider bids (GPU priority: $AKASH_GPU_PRIORITY)..."
     sleep 45
 
     BIDS_JSON=$(provider-services query market bid list \
         --owner "$AKASH_OWNER" --dseq "$DSEQ" \
         --node "$AKASH_NODE" --output json 2>&1)
 
-    PROVIDER=$(echo "$BIDS_JSON" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-bids = [b for b in data.get('bids', []) if b['bid']['state'] == 'open']
-if not bids: bids = data.get('bids', [])
-if not bids: print(''); sys.exit(0)
-bids.sort(key=lambda b: float(b['bid']['price']['amount']))
-print(bids[0]['bid']['id']['provider'])
-" 2>/dev/null)
+    PROVIDER=$(BIDS_JSON="$BIDS_JSON" python3 - "$AKASH_PROVIDER_OVERRIDE" "$AKASH_GPU_PRIORITY" "$AKASH_NODE" <<'PY'
+import json
+import os
+import subprocess
+import sys
+
+override = (sys.argv[1] or "").strip()
+priority = [p.strip().lower() for p in (sys.argv[2] or "").split(",") if p.strip()]
+node = sys.argv[3]
+
+blocked = {
+    # Known unreliable for this workflow (stuck startup / no provisioning).
+    "akash1kqzpqqhm39umt06wu8m4hx63v5hefhrfmjf9dj",
+    "akash1ggfvyhr9sar4uxjs4hth3p4kzrwk7lysnenj3g",
+    "akash1sevd2ymtty3dpq9ycxgkhuzzk4fe6mchqdwd4e",
+}
+
+raw = os.environ.get("BIDS_JSON", "")
+try:
+    data = json.loads(raw)
+except Exception:
+    print("")
+    sys.exit(0)
+
+bids = [b for b in data.get("bids", []) if b.get("bid", {}).get("state") == "open"]
+if not bids:
+    bids = data.get("bids", [])
+if not bids:
+    print("")
+    sys.exit(0)
+
+bids.sort(key=lambda b: float(b.get("bid", {}).get("price", {}).get("amount", "9e18")))
+
+if override:
+    for b in bids:
+        if b.get("bid", {}).get("id", {}).get("provider") == override:
+            print(override)
+            sys.exit(0)
+
+
+def get_provider_models(provider: str) -> set[str]:
+    try:
+        out = subprocess.check_output(
+            [
+                "provider-services",
+                "query",
+                "provider",
+                "get",
+                provider,
+                "--node",
+                node,
+                "-o",
+                "json",
+            ],
+            stderr=subprocess.DEVNULL,
+            timeout=12,
+            text=True,
+        )
+        payload = json.loads(out)
+        attrs = payload.get("attributes", []) or payload.get("provider", {}).get("attributes", [])
+        models = set()
+        for attr in attrs:
+            key = str(attr.get("key", "")).lower()
+            if "/model/" in key:
+                model = key.split("/model/", 1)[1].split("/")[0]
+                if model:
+                    models.add(model)
+        return models
+    except Exception:
+        return set()
+
+
+ranked = []
+for b in bids:
+    provider = b.get("bid", {}).get("id", {}).get("provider", "")
+    if not provider:
+        continue
+    price = float(b.get("bid", {}).get("price", {}).get("amount", "9e18"))
+    models = get_provider_models(provider)
+
+    # Lower is better.
+    blocked_rank = 1 if provider in blocked else 0
+    gpu_rank = len(priority) + 1
+    for i, wanted in enumerate(priority):
+        if wanted in models:
+            gpu_rank = i
+            break
+    if models and gpu_rank == len(priority) + 1:
+        gpu_rank = len(priority)
+    ranked.append((blocked_rank, gpu_rank, price, provider))
+
+if not ranked:
+    print("")
+    sys.exit(0)
+
+ranked.sort()
+for blocked_rank, _gpu_rank, _price, provider in ranked:
+    if blocked_rank == 0:
+        print(provider)
+        sys.exit(0)
+
+# Last resort: all candidates were blocked.
+print(ranked[0][3])
+PY
+)
     [[ -n "$PROVIDER" ]] || { echo "$BIDS_JSON" | head -30; die "No bids received"; }
     log "Provider: $PROVIDER"
 
@@ -238,7 +339,7 @@ print('')
     wait_for_ssh
     GPU=$(ssh_cmd "nvidia-smi --query-gpu=name,memory.total --format=csv,noheader" 2>/dev/null || echo "unknown")
     log ""
-    log "=== H100 READY ==="
+    log "=== GPU READY ==="
     log "GPU:  $GPU"
     log "SSH:  ssh -p $SSH_PORT root@$SSH_HOST  (pass: $SSH_PASS)"
     log ""
@@ -259,32 +360,64 @@ cmd_start() {
 
     wait_for_ssh
 
+    # Upload exact local workspace snapshot (no git/network pulls on remote).
+    local bundle source_git_sha source_dirty_count bundle_sha
+    bundle="$(mktemp /tmp/autoresearch-workspace.XXXXXX.tgz)"
+    source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
+    source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    log "Packaging local workspace snapshot..."
+    tar -czf "$bundle" -C "$PROJECT_ROOT" \
+        --exclude='.git' \
+        --exclude='.venv' \
+        --exclude='.pytest_cache' \
+        --exclude='results' \
+        --exclude='archive' \
+        --exclude='training/best_model.pt' \
+        --exclude='training/trade_log.csv' \
+        training infra pyproject.toml README.md
+    bundle_sha=$(shasum -a 256 "$bundle" | awk '{print $1}')
+    log "Uploading workspace snapshot ($(du -h "$bundle" | cut -f1), sha256=$bundle_sha)..."
+    ssh_cmd "rm -rf /root/autoresearch-trading && mkdir -p /root/autoresearch-trading"
+    scp_cmd "$bundle" "root@$SSH_HOST:/root/autoresearch-trading.tgz"
+    rm -f "$bundle"
+    ssh_cmd "tar -xzf /root/autoresearch-trading.tgz -C /root/autoresearch-trading && rm -f /root/autoresearch-trading.tgz"
+
+    # Link runtime entrypoints from the uploaded snapshot into /root.
+    log "Linking runtime files from snapshot..."
+    ssh_cmd "set -e
+ln -sfn /root/autoresearch-trading/training/train.py /root/train.py
+ln -sfn /root/autoresearch-trading/training/prepare.py /root/prepare.py
+ln -sfn /root/autoresearch-trading/training/program.md /root/program.md
+ln -sfn /root/autoresearch-trading/training/run_loop.py /root/run_loop.py
+ln -sfn /root/autoresearch-trading/infra/start_loop.sh /root/start_loop.sh
+ln -sfn /root/autoresearch-trading/infra/watchdog.sh /root/watchdog.sh
+if [ -f /root/autoresearch-trading/training/best_train.py ]; then
+  ln -sfn /root/autoresearch-trading/training/best_train.py /root/best_train.py
+else
+  rm -f /root/best_train.py
+fi"
+
+    # Integrity check: confirm remote run_loop.py matches local snapshot.
+    local local_runloop_sha remote_runloop_sha
+    local_runloop_sha=$(shasum -a 256 "$PROJECT_ROOT/training/run_loop.py" | awk '{print $1}')
+    remote_runloop_sha=$(ssh_cmd "sha256sum /root/run_loop.py | awk '{print \$1}'" 2>/dev/null || true)
+    [[ "$remote_runloop_sha" == "$local_runloop_sha" ]] || die "Snapshot integrity check failed (run_loop.py hash mismatch)"
+
+    # Record deploy source metadata on remote for auditability.
+    local deployed_at
+    deployed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    ssh_cmd "printf '%s\n' '{\"bundle_sha256\":\"$bundle_sha\",\"git_sha\":\"$source_git_sha\",\"dirty_files\":$source_dirty_count,\"deployed_at\":\"$deployed_at\",\"source\":\"local_workspace_snapshot\"}' > /root/deploy_source.json"
+
     # Upload data.pt to the path prepare.py expects: ~/.cache/autoresearch-trading/features/
     [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
     log "Uploading data.pt ($(du -h "$DATA_PT" | cut -f1))..."
     ssh_cmd "mkdir -p /root/.cache/autoresearch-trading/features"
     scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/.cache/autoresearch-trading/features/data.pt"
 
-    # Upload code + launcher + watchdog
-    log "Uploading train.py, prepare.py, program.md, run_loop.py, start_loop.sh, watchdog.sh..."
-    scp_cmd \
-        "$PROJECT_ROOT/training/train.py" \
-        "$PROJECT_ROOT/training/prepare.py" \
-        "$PROJECT_ROOT/training/program.md" \
-        "$PROJECT_ROOT/training/run_loop.py" \
-        "$SCRIPT_DIR/start_loop.sh" \
-        "$SCRIPT_DIR/watchdog.sh" \
-        "root@$SSH_HOST:/root/"
-
-    # Upload best_train.py if it exists — architecture lock reference
-    if [[ -f "$PROJECT_ROOT/training/best_train.py" ]]; then
-        log "Uploading best_train.py (architecture lock reference)..."
-        scp_cmd "$PROJECT_ROOT/training/best_train.py" "root@$SSH_HOST:/root/best_train.py"
-    fi
-
     # Upload best_model.pt if it exists — warm-start from previous training run
     if [[ -f "$PROJECT_ROOT/training/best_model.pt" ]]; then
         log "Uploading best_model.pt ($(du -h "$PROJECT_ROOT/training/best_model.pt" | cut -f1)) for warm-start..."
+        ssh_cmd "rm -f /root/best_model.pt"
         scp_cmd "$PROJECT_ROOT/training/best_model.pt" "root@$SSH_HOST:/root/best_model.pt"
     else
         log "No best_model.pt found — starting from scratch"
@@ -301,13 +434,13 @@ cmd_start() {
     fi
 
     # Verify
-    log "Files on H100:"
-    ssh_cmd "ls -lh /root/*.py /root/*.sh /root/.cache/autoresearch-trading/features/data.pt"
+    log "Files on remote GPU node:"
+    ssh_cmd "ls -lh /root/*.py /root/*.sh /root/deploy_source.json /root/.cache/autoresearch-trading/features/data.pt"
 
-    # Pre-flight dry-run on H100 — verify data, GPU, API before consuming time
-    log "Running pre-flight checks on H100..."
+    # Pre-flight dry-run on GPU node — verify data, GPU, API before consuming time
+    log "Running pre-flight checks on remote GPU node..."
     if ! ssh_cmd "cd /root && ANTHROPIC_API_KEY='$ANTHROPIC_KEY' /opt/conda/bin/python -u run_loop.py --dry-run"; then
-        die "Pre-flight failed on H100. Fix issues before running."
+        die "Pre-flight failed on remote GPU node. Fix issues before running."
     fi
     log "Pre-flight passed!"
 
@@ -396,7 +529,7 @@ if gpu:
 else:
     print("  GPU:  unavailable")
 
-pid = run("pgrep -f run_loop.py")
+pid = run("pgrep -f '[r]un_loop.py'")
 if pid:
     pid_line = pid.split("\n")[0]
     uptime = run(f"ps -o etime= -p {pid_line}").strip()
