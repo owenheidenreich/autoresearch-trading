@@ -27,6 +27,8 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 - [training/live/decision.py](../training/live/decision.py) — Model inference engine: loads checkpoint, runs forward pass, produces trading decisions
 - [training/live/context.py](../training/live/context.py) — Real-time feature construction from IBKR + Polygon data → context bundle
 
+**Verification status (2026-03-20):** End-to-end feature parity confirmed — all three stages (training via `prepare.py`, replay via `replay.py`, live via `live/features.py`) call the same `compute_features()` and `normalize_features_with_context()` from `prepare.py`, use the same 32 `FEATURE_NAMES`, and the same data sources. IBKR paper trading confirmed working: LMT order fills (OCO bracket), live type-1 market data, option Greeks <1s staleness, and correct model inference.
+
 ### Infrastructure
 - [infra/deploy.sh](../infra/deploy.sh) — Akash GPU deployment lifecycle (boot/start/sync/stop/ssh/logs/status). Main entry point for all remote operations.
 - [infra/deploy-autoresearch.yaml](../infra/deploy-autoresearch.yaml) — Akash SDL manifest (H100/A100, 64GB RAM, PyTorch 2.5.1)
@@ -38,6 +40,8 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 - [tools/replay_battery.py](../tools/replay_battery.py) — Multi-day replay validation suite
 - [tools/live_order_parity_report.py](../tools/live_order_parity_report.py) — Verify live IBKR orders match model signals
 - [tools/live_feature_parity_report.py](../tools/live_feature_parity_report.py) — Verify live features match training features
+- [tools/ib_probe.py](../tools/ib_probe.py) — IBKR connectivity probe: tests SPX/SPY/VIX bars + SPXW option chain availability
+- [tools/ib_entitlements.py](../tools/ib_entitlements.py) — IBKR data entitlement checker: verifies live (non-delayed) market data per instrument
 
 ## Critical Design Rules
 
@@ -46,6 +50,7 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 3. **data.pt must include options.** Never build without option chain sidecar data — causes silent total failure.
 4. **Train on Akash, not locally.** User's laptop can't handle training. Always use `deploy.sh`.
 5. **Model architecture evolves.** `train.py` may define custom modules (PositionStateGenerator, etc.) that differ from the default TradingModel in replay.py. The `load_model()` function handles this via dynamic class loading.
+6. **Feature parity is verified.** Training, replay, and live all call `compute_features()` + `normalize_features_with_context()` from `prepare.py`. Confirmed end-to-end on 2026-03-20 with IBKR paper trading. Do not introduce separate feature computation paths.
 
 ## Environment Variables
 

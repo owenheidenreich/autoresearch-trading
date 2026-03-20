@@ -306,7 +306,7 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │  │                                                               │      │
 │  │  ┌──────────────────────────────────────────────────────┐    │      │
 │  │  │  execution.py — OCOExecutionEngine                   │    │      │
-│  │  │  ─ Translates DecisionIntent → IBKR MarketOrder     │    │      │
+│  │  │  ─ Translates DecisionIntent → IBKR LimitOrder      │    │      │
 │  │  │  ─ Max 1 SPX contract position                       │    │      │
 │  │  │  ─ 30% hard stop loss (emergency backstop)          │    │      │
 │  │  │  ─ Kill switch file support                          │    │      │
@@ -398,7 +398,49 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 7. Results & Artifacts Layout
+## 7. Feature Parity Verification (confirmed 2026-03-20)
+
+```
+              DATA FLOW PARITY: TRAINING = REPLAY = LIVE
+┌──────────────────────────────────────────────────────────────────┐
+│                                                                    │
+│  All three stages use the SAME feature pipeline from prepare.py:   │
+│  ─ compute_features()                  → 32 FEATURE_NAMES          │
+│  ─ normalize_features_with_context()   → rolling z-score           │
+│                                                                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐    │
+│  │  TRAINING    │  │  REPLAY      │  │  LIVE IBKR            │    │
+│  │  prepare.py  │  │  replay.py   │  │  live/features.py     │    │
+│  │  → data.pt   │  │  → csv       │  │  → real-time bars     │    │
+│  ├──────────────┤  ├──────────────┤  ├───────────────────────┤    │
+│  │ compute_     │  │ compute_     │  │ compute_              │    │
+│  │  features()  │  │  features()  │  │  features()           │    │
+│  │ normalize_   │  │ normalize_   │  │ normalize_            │    │
+│  │  features_   │  │  features_   │  │  features_            │    │
+│  │  with_       │  │  with_       │  │  with_                │    │
+│  │  context()   │  │  context()   │  │  context()            │    │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬────────────┘    │
+│         └──────────────────┴─────────────────────┘                 │
+│                              │                                      │
+│              Same 32 features, same normalization                   │
+│                                                                    │
+│  LIVE VERIFICATION RESULTS (paper account DUP440540):              │
+│  ─ 29/32 features present at session start                         │
+│  ─ ret_6, ret_12, volume_at_price_pctile fill after ~30 min       │
+│  ─ Option data staleness: <1 second                                │
+│  ─ All 6 SPXW 0DTE contracts resolved with conIds                 │
+│  ─ Order fill: SPXW 6510C bought @ $7.30 LMT, sold @ $4.50 MKT   │
+│  ─ Model inference: 6 runs, gate_prob 3.5-4.6%, correct NO_TRADE  │
+│                                                                    │
+│  BUGS FIXED:                                                       │
+│  ─ service.py:85   b.open → b.open_ (ib_insync keyword conflict)  │
+│  ─ decision.py:215 MKT → LMT entry (IBKR rejects MKT on SPXW)    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Results & Artifacts Layout
 
 ```
                CANONICAL RESULTS STRUCTURE
@@ -444,7 +486,7 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 8. End-to-End Data & Signal Flow
+## 9. End-to-End Data & Signal Flow
 
 ```
 ┌─────────┐   ┌──────────┐   ┌───────────┐   ┌──────────┐   ┌───────────┐
@@ -494,7 +536,7 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 9. Tooling Overview
+## 10. Tooling Overview
 
 ```
                          TOOLS ECOSYSTEM
@@ -547,7 +589,7 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 10. Complete Project File Map
+## 11. Complete Project File Map
 
 ```
 autoresearch-trading/

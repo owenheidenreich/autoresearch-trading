@@ -82,7 +82,7 @@ class IBKRMarketStream:
                 self.agg.update(
                     sym,
                     b.time,
-                    float(b.open),
+                    float(b.open_),
                     float(b.high),
                     float(b.low),
                     float(b.close),

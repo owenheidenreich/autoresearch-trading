@@ -40,9 +40,12 @@ python3 tools/monitor.py                            # Web dashboard → http://l
 
 ### Run IBKR paper trading
 ```bash
-python tools/paper_live.py --context-only           # Refresh market context bundle
-python tools/paper_live.py --dry-run --max-minutes 60  # Dry-run (no orders)
-python tools/paper_live.py --max-minutes 390        # Live paper session
+python tools/paper_live.py --context-only                        # Refresh market context bundle
+python tools/paper_live.py --dry-run --max-minutes 60            # Dry-run (no orders)
+python tools/paper_live.py --paper-auto \
+    --model results/run-YYYY-MM-DD-HHMMSS/best_model.pt \
+    --train-py results/run-YYYY-MM-DD-HHMMSS/best_train.py \
+    --max-minutes 390                                            # Full paper-auto session
 ```
 
 ### Replay validation
@@ -73,6 +76,8 @@ tools/
   live_order_parity_report.py   # Verify live orders match model signals
   live_feature_parity_report.py # Verify live features match training features
   ib_account_snapshot.py        # IBKR account status check
+  ib_probe.py                  # IBKR connectivity + market data probe
+  ib_entitlements.py           # IBKR live/delayed data entitlement checker
 
 infra/
   deploy.sh             # Akash GPU lifecycle: boot/start/sync/stop/ssh/logs/status
@@ -131,10 +136,11 @@ results/
 - `deploy.sh stop` has reliability issues with SSH exit codes and interactive prompts
 - Context bundle must be refreshed before each live session (features evolve with training)
 - VIX data has occasional gaps from IBKR historical data API
+- 3 features (`ret_6`, `ret_12`, `volume_at_price_pctile`) are NaN for the first ~30 min of a live session while history accumulates; completeness is 29/32 at start
 
 ## Safety
 
 - Real-money trading is not enabled
-- Live paper-trading is under active validation
+- Live paper-trading verified end-to-end (2026-03-20): feature parity confirmed, LMT order fills working, OCO brackets operational
 - All positions are 1 SPX contract, long calls/puts only
 - 30% hard stop loss on all positions

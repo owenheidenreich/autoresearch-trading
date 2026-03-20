@@ -208,11 +208,15 @@ class ModelDecisionEngine:
         # OCO bracket still needs a value, but model exit should fire first.
         take_profit_px = float(entry_mid * 6.0)
         qty = self._position_size(inference.confidence)
+        # Use LMT at ask (mid + small buffer) — IBKR rejects MKT orders on
+        # SPXW due to worst-case margin calculation.
+        entry_limit = round(entry_mid * 1.05, 2)  # 5% above mid
         return DecisionIntent(
             action=inference.action,
             contract=contract,
             qty=qty,
-            entry_order="MKT",
+            entry_order="LMT",
+            entry_limit_price=entry_limit,
             stop_price=stop_px,
             take_profit_price=take_profit_px,
             confidence=float(inference.confidence),
@@ -221,6 +225,7 @@ class ModelDecisionEngine:
             metadata={
                 "gate_trade_prob": inference.gate_trade_prob,
                 "direction_probs": inference.direction_probs,
+                "entry_limit_price": entry_limit,
             },
         )
 
