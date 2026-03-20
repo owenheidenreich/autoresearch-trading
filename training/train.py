@@ -101,7 +101,7 @@ FF_MULT = _env_int("TRAIN_FF_MULT", 3, lo=2, hi=6)
 DROPOUT = _env_float("TRAIN_DROPOUT", 0.15, lo=0.05, hi=0.40)
 
 BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 128, lo=32, hi=256)
-LR = _env_float("TRAIN_LR", 3e-4, lo=1e-5, hi=5e-3)
+LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
 WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.05, lo=0.0, hi=0.3)
 ADAM_BETAS = (0.9, 0.98)
 GRAD_CLIP = _env_float("TRAIN_GRAD_CLIP", 1.0, lo=0.0, hi=5.0)
@@ -192,6 +192,42 @@ class PositionStateGenerator(nn.Module):
                            account_health, loss_streak_frac], dim=1)
 
 
+class BalancedStrikeGate(nn.Module):
+    """Balanced strike biasing - softer bias toward OTM when account stressed."""
+    
+    def __init__(self, d_model):
+        super().__init__()
+        self.health_proj = nn.Linear(1, d_model // 8)
+        self.gate_mod = nn.Sequential(
+            nn.Linear(d_model + d_model // 8, d_model // 4),
+            nn.Tanh(),
+            nn.Linear(d_model // 4, 1),
+            nn.Sigmoid()
+        )
+        
+    def forward(self, gate_input, dir_input, account_health):
+        """
+        Args:
+            gate_input: (batch, d_model) - input to gate head
+            dir_input: (batch, d_model) - input to direction head  
+            account_health: (batch, 1) - account health fraction
+        
+        Returns:
+            modified_gate_input: (batch, d_model) - gate input with health modulation
+            modified_dir_input: (batch, d_model) - direction input with strike bias
+        """
+        health_emb = F.relu(self.health_proj(account_health))
+        combined = torch.cat([gate_input, health_emb], dim=-1)
+        
+        # Health gate: closer to 0 when account is stressed (health < 0.6)
+        health_gate = self.gate_mod(combined)
+        
+        # When health is low, reduce the trading signal strength
+        health_multiplier = 0.5 + 0.5 * health_gate  # Range: [0.5, 1.0]
+        
+        return gate_input * health_multiplier, dir_input
+
+
 class TradingModel(nn.Module):
     """Simplified two-head model for SPX 0DTE options.
 
@@ -201,6 +237,7 @@ class TradingModel(nn.Module):
     - Dropout 0.15 throughout
     - Position state injection for gate head (kept — this is real signal)
     - No DynamicStopModule, no QualityGate, no Greeks-adaptive anything
+    - NEW: Balanced strike gating for capital preservation
 
     Input:  (batch, lookback, NUM_FEATURES)
     Output: (gate_logits, dir_logits)
@@ -239,6 +276,9 @@ class TradingModel(nn.Module):
         self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
         self.position_state_gen = PositionStateGenerator()
 
+        # Balanced strike gate
+        self.balanced_gate = BalancedStrikeGate(d_model)
+
         # Gate head: "should I trade?" → [NO_TRADE, TRADE]
         self.gate_head = nn.Sequential(
             nn.LayerNorm(d_model),
@@ -257,20 +297,15 @@ class TradingModel(nn.Module):
             nn.Linear(d_model // 2, 6),
         )
 
-        # EVEN STRONGER bias toward cheaper OTM contracts for capital preservation
+        # Apply biases from successful experiment #3
         with torch.no_grad():
-            # Keep conservative gate bias - favor NO_TRADE by default
             self.gate_head[-1].bias[0] += 0.5   # NO_TRADE
             self.gate_head[-1].bias[1] -= 0.5   # TRADE
             
-            # STRONGER OTM bias for capital preservation - increase from previous values
-            self.dir_head[-1].bias[1] += 0.35   # CALL_OTM5 (was 0.25)
-            self.dir_head[-1].bias[2] += 0.30   # CALL_OTM10 (was 0.20)  
-            self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
-            self.dir_head[-1].bias[5] += 0.30   # PUT_OTM10 (was 0.20)
-            # Stronger penalty to expensive ATM contracts
+            # Apply exact biases from experiment #3
             self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15)
             self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15)
+            self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
 
     def forward(self, x, position_state=None):
         batch_size = x.shape[0]
@@ -292,11 +327,35 @@ class TradingModel(nn.Module):
             pos_emb = torch.relu(self.position_proj(position_state))
             # Scale down position influence to prevent overriding conservative gate bias
             gate_input = self.position_gate_proj(torch.cat([last, pos_emb * 0.7], dim=-1))
+            
+            # Apply balanced strike gating using account health
+            account_health = position_state[:, 3:4]  # Extract account_health (dim 3)
+            gate_input, dir_input = self.balanced_gate(gate_input, last, account_health)
+            
+            # Apply softer dynamic strike bias when account health < 0.7 (higher threshold)
+            health_val = account_health.squeeze(-1)  # (batch,)
+            stressed_mask = health_val < 0.7
+            
         else:
             gate_input = last
+            dir_input = last
+            stressed_mask = torch.zeros(batch_size, dtype=torch.bool, device=device)
 
         gate_logits = self.gate_head(gate_input)
-        dir_logits = self.dir_head(last)  # direction is position-independent
+        dir_logits = self.dir_head(dir_input)
+        
+        # Apply softer strike bias when account is stressed - gentle nudge toward cheaper options
+        if stressed_mask.any():
+            bias_adjustment = torch.zeros_like(dir_logits)
+            # Softer bias: less aggressive penalties and bonuses to maintain ATM viability
+            bias_adjustment[stressed_mask, 0] -= 0.15  # CALL_ATM - mild penalty (was -0.4)
+            bias_adjustment[stressed_mask, 3] -= 0.15  # PUT_ATM - mild penalty (was -0.4)
+            bias_adjustment[stressed_mask, 1] += 0.10  # CALL_OTM5 - small bonus (was +0.2)
+            bias_adjustment[stressed_mask, 2] += 0.15  # CALL_OTM10 - modest bonus (was +0.3)
+            bias_adjustment[stressed_mask, 4] += 0.10  # PUT_OTM5 - small bonus (was +0.2)
+            bias_adjustment[stressed_mask, 5] += 0.15  # PUT_OTM10 - modest bonus (was +0.3)
+            
+            dir_logits = dir_logits + bias_adjustment
 
         return gate_logits, dir_logits
 
@@ -468,7 +527,7 @@ print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%
 model = TradingModel().to(device)
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
-print(f"Architecture: v4 simplified two-head (gate+dir) + position state")
+print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating")
 print("Training from scratch (v4: no warm-start).")
 
 optimizer = torch.optim.AdamW(
@@ -629,7 +688,7 @@ torch.save({
         'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
         'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
         'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
-        'architecture': 'v4_simplified_two_head_position_state',
+        'architecture': 'v4_simplified_two_head_balanced_strike_gating',
         'false_entry_penalty': FALSE_ENTRY_PENALTY,
     },
     'step': step,

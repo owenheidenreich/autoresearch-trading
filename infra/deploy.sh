@@ -67,6 +67,8 @@ ssh_cmd() {
     SSHPASS="$SSH_PASS" sshpass -e ssh \
         -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
         -o ConnectTimeout=15 -o LogLevel=ERROR \
+        -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+        -o PubkeyAuthentication=no \
         -p "$SSH_PORT" "root@$SSH_HOST" "$@"
 }
 
@@ -74,6 +76,8 @@ scp_cmd() {
     SSHPASS="$SSH_PASS" sshpass -e scp \
         -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
         -o ConnectTimeout=15 -o LogLevel=ERROR \
+        -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+        -o PubkeyAuthentication=no \
         -P "$SSH_PORT" "$@"
 }
 
@@ -88,23 +92,29 @@ get_remote_run_name() {
 
 write_local_current_run_pointer() {
     local run_name="$1"
-    local dest_root="${2:-$PROJECT_ROOT/results}"
+    local dest_root
+    dest_root="$(cd "${2:-$PROJECT_ROOT/results}" 2>/dev/null && pwd || echo "${2:-$PROJECT_ROOT/results}")"
     mkdir -p "$dest_root"
     printf '%s\n' "$run_name" > "$dest_root/current_run.txt"
     # Keep canonical project pointer mirrored even when sync/download uses custom destination.
-    if [[ "$dest_root" != "$PROJECT_ROOT/results" ]]; then
+    local canon_results
+    canon_results="$(cd "$PROJECT_ROOT/results" 2>/dev/null && pwd)"
+    if [[ "$dest_root" != "$canon_results" ]]; then
         mkdir -p "$PROJECT_ROOT/results"
         printf '%s\n' "$run_name" > "$PROJECT_ROOT/results/current_run.txt"
     fi
 }
 
 sync_promoted_ledger_local() {
-    local dest_root="${1:-$PROJECT_ROOT/results}"
+    local dest_root
+    dest_root="$(cd "${1:-$PROJECT_ROOT/results}" 2>/dev/null && pwd || echo "${1:-$PROJECT_ROOT/results}")"
     local dest_promoted="$dest_root/promoted"
     mkdir -p "$dest_promoted"
     scp_cmd "root@$SSH_HOST:/root/results/promoted/history.jsonl" "$dest_promoted/history.jsonl" 2>/dev/null || true
     scp_cmd "root@$SSH_HOST:/root/results/promoted/current.txt" "$dest_promoted/current.txt" 2>/dev/null || true
-    if [[ "$dest_root" != "$PROJECT_ROOT/results" ]]; then
+    local canon_results
+    canon_results="$(cd "$PROJECT_ROOT/results" 2>/dev/null && pwd)"
+    if [[ "$dest_root" != "$canon_results" ]]; then
         mkdir -p "$PROJECT_ROOT/results/promoted"
         [[ -f "$dest_promoted/history.jsonl" ]] && cp "$dest_promoted/history.jsonl" "$PROJECT_ROOT/results/promoted/history.jsonl"
         [[ -f "$dest_promoted/current.txt" ]] && cp "$dest_promoted/current.txt" "$PROJECT_ROOT/results/promoted/current.txt"
@@ -453,13 +463,46 @@ fi"
     log "Starting autoresearch loop... $LOOP_ARGS"
     ssh_cmd "chmod +x /root/start_loop.sh && ANTHROPIC_API_KEY='$ANTHROPIC_KEY' /root/start_loop.sh $LOOP_ARGS"
 
-    # Auto-launch sync in background — no more forgetting to run sync in 2nd terminal
+    # Auto-launch sync in background — survives terminal close via nohup+disown
     local sync_dest="$PROJECT_ROOT/results"
     mkdir -p "$sync_dest"
+    # Kill any stale sync processes from previous runs
+    if [[ -f "$PROJECT_ROOT/.sync-pid" ]]; then
+        local old_pid
+        old_pid=$(cat "$PROJECT_ROOT/.sync-pid")
+        kill "$old_pid" 2>/dev/null && log "Killed stale sync (PID $old_pid)"
+        rm -f "$PROJECT_ROOT/.sync-pid"
+    fi
     log "Starting auto-sync to $sync_dest ..."
-    _run_sync "$sync_dest" > "$sync_dest/sync.log" 2>&1 &
+    nohup bash "$PROJECT_ROOT/infra/deploy.sh" sync "$sync_dest" \
+        > "$sync_dest/sync.log" 2>&1 &
     local sync_pid=$!
+    disown "$sync_pid" 2>/dev/null
     echo "$sync_pid" > "$PROJECT_ROOT/.sync-pid"
+
+    # Dry-run: wait up to 90s for sync to connect and find the run pointer
+    log "Verifying auto-sync connectivity (up to 90s)..."
+    local waited=0
+    local sync_ok=false
+    while [[ $waited -lt 90 ]]; do
+        if grep -q "Baseline:" "$sync_dest/sync.log" 2>/dev/null; then
+            sync_ok=true
+            break
+        fi
+        if ! kill -0 "$sync_pid" 2>/dev/null; then
+            log "ERROR: Auto-sync process died. Check $sync_dest/sync.log"
+            break
+        fi
+        sleep 5
+        waited=$((waited + 5))
+    done
+    if $sync_ok; then
+        log "Auto-sync verified — connected and tracking run."
+    else
+        log "WARNING: Auto-sync did not confirm within 90s."
+        log "  The training loop may still be starting. Sync will retry automatically."
+        log "  Check: tail -f $sync_dest/sync.log"
+    fi
 
     log ""
     log "=== LOOP RUNNING ==="
@@ -712,6 +755,8 @@ _run_sync() {
     local last_total=-1
     local last_run=""
     local poll_interval=30
+    local ssh_failures=0
+    local max_ssh_failures=20  # ~10 min of failures before giving up
 
     log "=== AUTO-SYNC ==="
     log "  Remote:   $SSH_HOST:$SSH_PORT"
@@ -723,10 +768,17 @@ _run_sync() {
         local run_name
         run_name=$(ssh_cmd "test -f /root/results/current_run.txt && tr -d '\\r\\n' < /root/results/current_run.txt" 2>/dev/null || true)
         if [[ -z "$run_name" ]]; then
-            log "WARN: Active run pointer missing — retrying in ${poll_interval}s..."
+            ssh_failures=$((ssh_failures + 1))
+            if [[ $ssh_failures -ge $max_ssh_failures ]]; then
+                log "ERROR: $max_ssh_failures consecutive SSH failures — sync giving up."
+                rm -f "$PROJECT_ROOT/.sync-pid"
+                return 1
+            fi
+            log "WARN: Active run pointer missing (attempt $ssh_failures/$max_ssh_failures) — retrying in ${poll_interval}s..."
             sleep "$poll_interval"
             continue
         fi
+        ssh_failures=0  # Reset on successful connection
         local remote_run_dir="/root/results/$run_name"
         if ! ssh_cmd "test -d $remote_run_dir" &>/dev/null; then
             log "WARN: Run dir $remote_run_dir not found — retrying in ${poll_interval}s..."
@@ -860,21 +912,21 @@ print(f'best_score={s.get(\"best_score\",0)}')
 cmd_sync() {
     load_state
 
-    # Guard against duplicate sync — check if background sync is already running
+    # Guard against duplicate sync — skip if we ARE the background sync (our PID matches)
     if [[ -f "$PROJECT_ROOT/.sync-pid" ]]; then
         local spid
         spid=$(cat "$PROJECT_ROOT/.sync-pid")
-        if kill -0 "$spid" 2>/dev/null; then
+        if [[ "$$" != "$spid" ]] && kill -0 "$spid" 2>/dev/null; then
             log "Auto-sync already running (PID $spid)."
             log "Kill it first with: kill $spid && rm '$PROJECT_ROOT/.sync-pid'"
             exit 0
-        else
+        elif [[ "$$" != "$spid" ]]; then
             rm -f "$PROJECT_ROOT/.sync-pid"
         fi
     fi
 
     local dest="${EXTRA_ARGS:-$PROJECT_ROOT/results}"
-    log "Running foreground sync (Ctrl-C to stop)..."
+    log "Running sync (PID $$)..."
     _run_sync "$dest"
 }
 

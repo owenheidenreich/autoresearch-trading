@@ -613,7 +613,7 @@ def update_lab_notebook(exp: dict[str, Any], reasoning: str) -> None:
     score = _safe_score(exp)
     pf = exp.get("profit_factor", "?")
     tpd = exp.get("trades_per_day", "?")
-    change = (reasoning or exp.get("change_summary", "unknown"))[:80]
+    change = (exp.get("change_summary") or reasoning or "unknown")[:80]
 
     score_str = f"{score:.2f}" if isinstance(score, (int, float)) else str(score)
     pf_str = f"{pf:.2f}" if isinstance(pf, (int, float)) else str(pf)
@@ -1279,6 +1279,18 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
                 parts.append("## This is the FIRST experiment. Run baseline as-is or make one small improvement.\n")
         else:
             parts.append("## This is the FIRST experiment. Run baseline as-is or make one small improvement.\n")
+
+    # Reinforce current best right before the code — prevents hallucination
+    # about which experiment is best (observed in exp-17 where Claude referenced
+    # #12 as best despite #16 being promoted).
+    if history:
+        best = max(history, key=lambda e: _safe_score(e))
+        parts.append(
+            f"## CURRENT BEST: Experiment #{best['experiment_id']} "
+            f"(score={_safe_score(best):.4f}, pf={best.get('profit_factor', '?')})\n"
+            f"The code below IS experiment #{best['experiment_id']}. "
+            f"Build on THIS code — it is the current best.\n"
+        )
 
     parts.append("## Current train.py:\n```python\n" + current_train_py + "\n```\n")
     parts.append("Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.")
@@ -2589,6 +2601,8 @@ def main():
     kept_count = 0
     failed_count = 0
     consecutive_failures = 0
+    consecutive_api_credit_failures = 0
+    MAX_API_CREDIT_FAILURES = 3  # Auto-shutdown after 3 consecutive credit failures
     # Track best experiment's secondary metrics for multi-objective gate
     best_metrics: dict[str, Any] = {}
     # Seed from promoted history if available
@@ -2632,6 +2646,26 @@ def main():
         prompt_rec = _exp_to_prompt_record(exp)
         if prompt_rec is not None:
             prompt_history.append(prompt_rec)
+
+        # Detect API credit exhaustion — auto-shutdown to stop wasting compute
+        exp_error = exp.get("error", "")
+        is_credit_failure = "credit balance" in exp_error.lower() or "billing" in exp_error.lower()
+        if is_credit_failure:
+            consecutive_api_credit_failures += 1
+            log(f"  ⚠ API CREDIT FAILURE ({consecutive_api_credit_failures}/{MAX_API_CREDIT_FAILURES})")
+            if consecutive_api_credit_failures >= MAX_API_CREDIT_FAILURES:
+                log("=" * 60)
+                log("AUTORESEARCH HALTED: API credits exhausted")
+                log(f"  {MAX_API_CREDIT_FAILURES} consecutive credit failures detected.")
+                log(f"  Best score: {best_score:.4f} | Kept: {kept_count} | Total: {len(run_history)}")
+                log("  Top up credits and redeploy.")
+                log("=" * 60)
+                write_status("completed", experiment_id, best_score,
+                             kept_count, failed_count, len(run_history), deadline,
+                             contract_checksum=exp.get("contract_checksum"))
+                break
+        else:
+            consecutive_api_credit_failures = 0
 
         if exp.get("kept"):
             best_score = exp["score"]
