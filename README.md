@@ -34,7 +34,7 @@ set -a && source .env && set +a
 ./infra/deploy.sh start --hours 8 --max-experiments 200  # Upload code + data, start loop
 ./infra/deploy.sh logs                              # Tail experiment output
 ./infra/deploy.sh status                            # GPU + experiment progress
-python3 tools/monitor.py                            # Rich terminal dashboard
+python3 tools/monitor.py                            # Web dashboard → http://localhost:8420
 ./infra/deploy.sh stop                              # Kill loop → download → close
 ```
 
@@ -67,7 +67,7 @@ training/
     context.py          # Real-time feature construction from IBKR + Polygon data
 
 tools/
-  monitor.py            # Rich terminal dashboard (local + remote GPU monitoring)
+  monitor.py            # Web dashboard: GPU, experiments, Claude reasoning, train.py viewer
   paper_live.py         # IBKR paper trading CLI entry point
   replay_battery.py     # Multi-day replay validation suite
   live_order_parity_report.py   # Verify live orders match model signals

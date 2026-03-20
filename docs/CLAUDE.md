@@ -34,7 +34,7 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 - [infra/watchdog.sh](../infra/watchdog.sh) — GPU health + process monitoring daemon
 
 ### Monitoring & Tools
-- [tools/monitor.py](../tools/monitor.py) — Rich terminal dashboard: GPU health, experiment progress, metric trends, live log tail
+- [tools/monitor.py](../tools/monitor.py) — Web dashboard (http://localhost:8420): GPU gauges, experiment table, metric charts, Claude reasoning stream, live train.py viewer, log tail. Auto-detects remote from `.deploy-state`.
 - [tools/replay_battery.py](../tools/replay_battery.py) — Multi-day replay validation suite
 - [tools/live_order_parity_report.py](../tools/live_order_parity_report.py) — Verify live IBKR orders match model signals
 - [tools/live_feature_parity_report.py](../tools/live_feature_parity_report.py) — Verify live features match training features

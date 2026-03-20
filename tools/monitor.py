@@ -1,103 +1,71 @@
 #!/usr/bin/env python3
 """
-Autoresearch training dashboard — rich terminal UI with live auto-refresh.
+Autoresearch web dashboard — full browser-based training monitor.
 
 Usage:
-  # Auto-detect: reads .deploy-state for remote, falls back to local results
-  python3 tools/monitor.py
+  python3 tools/monitor.py                  # Auto-detect remote from .deploy-state
+  python3 tools/monitor.py --port 8080      # Custom port
+  python3 tools/monitor.py --local results  # Local only (no SSH)
 
-  # Remote (SSH into H100):
-  python3 tools/monitor.py --host provider.h100.ams.val.akash.pub --port 31116
-
-  # Local only (watch synced results root):
-  python3 tools/monitor.py --local results
-
-  # Faster polling:
-  python3 tools/monitor.py --interval 5
+Opens a browser dashboard with live-updating panels:
+  - GPU health gauges
+  - Experiment history table with all metrics
+  - Score/PF/TPD charts over time
+  - Full Claude reasoning stream (stream of consciousness)
+  - Current best train.py source code
+  - Live log tail
+  - Session run overview
 """
 from __future__ import annotations
 
 import argparse
 import json
+import html
 import os
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-
-try:
-    from rich.console import Console
-    from rich.live import Live
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.layout import Layout
-    from rich.text import Text
-    from rich.columns import Columns
-    from rich.progress_bar import ProgressBar
-    from rich import box
-except ImportError:
-    print("ERROR: dashboard requires `rich` (pip install rich)")
-    sys.exit(1)
-
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_ROOT = PROJECT_ROOT / "results"
 DEPLOY_STATE = PROJECT_ROOT / ".deploy-state"
 SSH_PASS = "autoresearch2026"
 
+# -- Shared state (updated by background poller) --------------------------
 
-# -- Phase labels ----------------------------------------------------------
-
-PHASE_LABELS = {
-    "calling_claude": ("Generating code", "bold yellow"),
-    "training": ("Training model", "bold green"),
-    "evaluating": ("Evaluating results", "bold cyan"),
-    "saving": ("Saving artifacts", "bold blue"),
-    "dry_run": ("Dry run", "dim"),
-    "completed": ("Completed", "bold white"),
-    "error": ("Error", "bold red"),
-    "startup": ("Starting up", "bold yellow"),
-    "smoke_check": ("Smoke check", "bold magenta"),
-    "between_experiments": ("Between experiments", "bold blue"),
+_state_lock = threading.Lock()
+_state: dict = {
+    "experiments": [],
+    "status": None,
+    "log_tail": None,
+    "gpu": None,
+    "train_py": None,
+    "mode": "initializing",
+    "runs": [],
+    "active_run": None,
+    "last_fetch": 0,
+    "fetch_time": 0,
+    "poll_count": 0,
 }
 
 
-# -- GPU health color thresholds -------------------------------------------
-
-def gpu_util_style(pct: float) -> str:
-    if pct >= 80:
-        return "bold green"
-    elif pct >= 40:
-        return "yellow"
-    elif pct > 0:
-        return "bold red"
-    return "dim"
+def get_state() -> dict:
+    with _state_lock:
+        return dict(_state)
 
 
-def gpu_mem_style(used_mb: float, total_mb: float) -> str:
-    if total_mb <= 0:
-        return "dim"
-    ratio = used_mb / total_mb
-    if ratio >= 0.8:
-        return "bold red"
-    elif ratio >= 0.5:
-        return "yellow"
-    return "green"
-
-
-def gpu_temp_style(temp_c: float) -> str:
-    if temp_c >= 85:
-        return "bold red"
-    elif temp_c >= 70:
-        return "yellow"
-    return "green"
+def set_state(**kwargs):
+    with _state_lock:
+        _state.update(kwargs)
 
 
 # -- Data fetching ---------------------------------------------------------
 
 def load_deploy_state() -> dict | None:
-    """Load .deploy-state if it exists."""
     if not DEPLOY_STATE.exists():
         return None
     state = {}
@@ -108,74 +76,64 @@ def load_deploy_state() -> dict | None:
     return state if state.get("SSH_HOST") else None
 
 
-def fetch_remote(host: str, port: int) -> tuple[list[dict], dict | None, str | None, str | None, dict | None]:
-    """Fetch experiments + status + log tail + results.tsv + GPU info from remote H100 via SSH."""
+def _ssh_cmd(host: str, port: int, cmd: str, timeout: int = 20) -> str | None:
     env = {**os.environ, "SSHPASS": SSH_PASS}
     ssh_opts = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-
-    remote_script = (
-        'RUN=$(cat /root/results/current_run.txt 2>/dev/null | tr -d "\\r\\n"); '
-        'if [ -z "$RUN" ]; then echo "---SEP---"; echo "---SEP---"; echo "---SEP---"; echo "---SEP---"; echo "---SEP---"; exit 0; fi; '
-        'cat /root/results/"$RUN"/experiments.v2.jsonl 2>/dev/null; echo "---SEP---"; '
-        'cat /root/results/"$RUN"/status.json 2>/dev/null; echo "---SEP---"; '
-        'tail -40 /root/loop.log 2>/dev/null; echo "---SEP---"; '
-        'cat /root/results/"$RUN"/results.tsv 2>/dev/null; echo "---SEP---"; '
-        'nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw,power.limit --format=csv,noheader,nounits 2>/dev/null; echo "---SEP---"; '
-        'echo "$RUN"'
-    )
     try:
         r = subprocess.run(
             ["sshpass", "-e", "ssh"] + ssh_opts.split() + [
-                "-p", str(port), f"root@{host}", f"bash -c {remote_script!r}",
+                "-p", str(port), f"root@{host}", f"bash -c {cmd!r}",
             ],
-            capture_output=True, text=True, timeout=15, env=env,
+            capture_output=True, text=True, timeout=timeout, env=env,
         )
-        if r.returncode != 0 or not r.stdout.strip():
-            return [], None, None, None, None
-        parts = r.stdout.split("---SEP---")
-        experiments = _parse_jsonl(parts[0] if len(parts) > 0 else "")
-        status = _parse_json(parts[1] if len(parts) > 1 else "")
-        log_tail = parts[2].strip() if len(parts) > 2 and parts[2].strip() else None
-        results_tsv = parts[3].strip() if len(parts) > 3 and parts[3].strip() else None
-        gpu_info = _parse_gpu_csv(parts[4].strip() if len(parts) > 4 else "")
-        if status and len(parts) > 5 and parts[5].strip():
-            status["_run_name"] = parts[5].strip()
-        return experiments, status, log_tail, results_tsv, gpu_info
+        return r.stdout if r.returncode == 0 else None
     except Exception:
-        return [], None, None, None, None
-
-
-def _parse_gpu_csv(text: str) -> dict | None:
-    """Parse nvidia-smi CSV output into a dict."""
-    text = text.strip()
-    if not text:
-        return None
-    try:
-        parts = [p.strip() for p in text.split(",")]
-        return {
-            "name": parts[0] if len(parts) > 0 else "unknown",
-            "mem_used_mb": float(parts[1]) if len(parts) > 1 else 0,
-            "mem_total_mb": float(parts[2]) if len(parts) > 2 else 0,
-            "util_pct": float(parts[3]) if len(parts) > 3 else 0,
-            "temp_c": float(parts[4]) if len(parts) > 4 else 0,
-            "power_w": float(parts[5]) if len(parts) > 5 else 0,
-            "power_limit_w": float(parts[6]) if len(parts) > 6 else 0,
-        }
-    except (ValueError, IndexError):
         return None
 
 
-def fetch_local_run(run_dir: Path) -> tuple[list[dict], dict | None]:
-    """Load experiments + status from a local run directory."""
+def fetch_remote(host: str, port: int):
+    """Fetch all dashboard data from remote H100 in a single SSH call."""
+    remote_script = (
+        'RUN=$(cat /root/results/current_run.txt 2>/dev/null | tr -d "\\r\\n"); '
+        'if [ -z "$RUN" ]; then echo "---SEP---"; echo "---SEP---"; echo "---SEP---"; echo "---SEP---"; echo "---SEP---"; echo "---SEP---"; exit 0; fi; '
+        'cat /root/results/"$RUN"/experiments.v2.jsonl 2>/dev/null; echo "---SEP---"; '
+        'cat /root/results/"$RUN"/status.json 2>/dev/null; echo "---SEP---"; '
+        'tail -80 /root/loop.log 2>/dev/null; echo "---SEP---"; '
+        'nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw,power.limit --format=csv,noheader,nounits 2>/dev/null; echo "---SEP---"; '
+        'cat /root/train.py 2>/dev/null; echo "---SEP---"; '
+        'echo "$RUN"'
+    )
+    raw = _ssh_cmd(host, port, remote_script, timeout=25)
+    if not raw:
+        return {}, None, None, None, None, None
+
+    parts = raw.split("---SEP---")
+    experiments = _parse_jsonl(parts[0] if len(parts) > 0 else "")
+    status = _parse_json(parts[1] if len(parts) > 1 else "")
+    log_tail = parts[2].strip() if len(parts) > 2 and parts[2].strip() else None
+    gpu = _parse_gpu_csv(parts[3].strip() if len(parts) > 3 else "")
+    train_py = parts[4].strip() if len(parts) > 4 and parts[4].strip() else None
+    run_name = parts[5].strip() if len(parts) > 5 else None
+    if status and run_name:
+        status["_run_name"] = run_name
+    return experiments, status, log_tail, gpu, train_py, run_name
+
+
+def fetch_local_run(run_dir: Path):
     experiments = _parse_jsonl_file(run_dir / "experiments.v2.jsonl")
     status = _parse_json_file(run_dir / "status.json")
     if status:
         status["_run_name"] = run_dir.name
-    return experiments, status
+    log_tail = None
+    for log_candidate in [run_dir / "loop.log", run_dir.parent / "loop.log"]:
+        if log_candidate.exists():
+            lines = log_candidate.read_text().split("\n")
+            log_tail = "\n".join(lines[-80:])
+            break
+    return experiments, status, log_tail
 
 
 def fetch_all_local_runs() -> list[dict]:
-    """Scan results/ for all run directories and return summary info."""
     runs = []
     if not RESULTS_ROOT.exists():
         return runs
@@ -184,19 +142,11 @@ def fetch_all_local_runs() -> list[dict]:
             continue
         status = _parse_json_file(d / "status.json")
         experiments = _parse_jsonl_file(d / "experiments.v2.jsonl")
-        meta = _parse_json_file(d / "run_metadata.json")
-        runs.append({
-            "name": d.name,
-            "path": d,
-            "status": status,
-            "experiments": experiments,
-            "metadata": meta,
-        })
+        runs.append({"name": d.name, "status": status, "experiments": experiments})
     return runs
 
 
 def get_active_run_name() -> str | None:
-    """Read current_run.txt pointer."""
     pointer = RESULTS_ROOT / "current_run.txt"
     if pointer.exists():
         name = pointer.read_text().strip()
@@ -240,634 +190,971 @@ def _parse_json_file(path: Path) -> dict | None:
     return _parse_json(path.read_text())
 
 
-# -- Sparkline -------------------------------------------------------------
-
-def sparkline(values: list[float], width: int = 30) -> str:
-    if not values:
-        return ""
-    blocks = " \u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588"
-    mn, mx = min(values), max(values)
-    rng = mx - mn if mx != mn else 1.0
-    if len(values) > width:
-        step = len(values) / width
-        sampled = [values[int(i * step)] for i in range(width)]
-    else:
-        sampled = values
-    return "".join(blocks[min(8, int((v - mn) / rng * 8))] for v in sampled)
-
-
-def fmt_duration(seconds: float) -> str:
-    """Format seconds into human-readable duration."""
-    if seconds < 60:
-        return f"{seconds:.0f}s"
-    elif seconds < 3600:
-        return f"{seconds / 60:.0f}m"
-    else:
-        h = int(seconds // 3600)
-        m = int((seconds % 3600) // 60)
-        return f"{h}h{m:02d}m"
+def _parse_gpu_csv(text: str) -> dict | None:
+    text = text.strip()
+    if not text:
+        return None
+    try:
+        parts = [p.strip() for p in text.split(",")]
+        return {
+            "name": parts[0] if len(parts) > 0 else "unknown",
+            "mem_used_mb": float(parts[1]) if len(parts) > 1 else 0,
+            "mem_total_mb": float(parts[2]) if len(parts) > 2 else 0,
+            "util_pct": float(parts[3]) if len(parts) > 3 else 0,
+            "temp_c": float(parts[4]) if len(parts) > 4 else 0,
+            "power_w": float(parts[5]) if len(parts) > 5 else 0,
+            "power_limit_w": float(parts[6]) if len(parts) > 6 else 0,
+        }
+    except (ValueError, IndexError):
+        return None
 
 
-def fmt_score(score: float) -> Text:
-    """Color-code a score value."""
-    if score <= -999:
-        return Text("  FAIL", style="dim red")
-    elif score <= 0:
-        return Text(f"{score:6.2f}", style="red")
-    elif score < 2:
-        return Text(f"{score:6.2f}", style="yellow")
-    else:
-        return Text(f"{score:6.2f}", style="green")
+# -- Background poller -----------------------------------------------------
 
+def poller_loop(host: str | None, port: int, local_path: str | None, interval: int):
+    """Background thread that polls remote/local and updates shared state."""
+    mode = f"Remote: {host}:{port}" if host else f"Local: {local_path or 'results/'}"
+    set_state(mode=mode)
 
-def phase_text(phase: str) -> Text:
-    """Render phase with appropriate color."""
-    label, style = PHASE_LABELS.get(phase, (phase, "white"))
-    return Text(label, style=style)
-
-
-# -- Dashboard panels ------------------------------------------------------
-
-def build_gpu_panel(gpu: dict | None) -> Panel:
-    """GPU health panel with color-coded metrics."""
-    if not gpu:
-        return Panel(
-            Text("  GPU data unavailable (SSH fetch failed)", style="dim red"),
-            title="[bold cyan]GPU Health[/]",
-            border_style="red",
-        )
-
-    name = gpu["name"]
-    mem_used = gpu["mem_used_mb"]
-    mem_total = gpu["mem_total_mb"]
-    util = gpu["util_pct"]
-    temp = gpu["temp_c"]
-    power = gpu["power_w"]
-    power_limit = gpu["power_limit_w"]
-
-    mem_pct = (mem_used / mem_total * 100) if mem_total > 0 else 0
-    power_pct = (power / power_limit * 100) if power_limit > 0 else 0
-
-    # Build bar visualizations
-    def bar(pct: float, width: int = 20) -> str:
-        filled = int(pct / 100 * width)
-        return "\u2588" * filled + "\u2591" * (width - filled)
-
-    lines = Text()
-    lines.append(f"  {name}\n\n", style="bold white")
-
-    # GPU Utilization
-    lines.append("  Util:  ", style="bold")
-    lines.append(f"{bar(util)} ", style=gpu_util_style(util))
-    lines.append(f"{util:.0f}%\n", style=gpu_util_style(util))
-
-    # VRAM
-    lines.append("  VRAM:  ", style="bold")
-    lines.append(f"{bar(mem_pct)} ", style=gpu_mem_style(mem_used, mem_total))
-    lines.append(f"{mem_used:.0f}/{mem_total:.0f} MB ({mem_pct:.0f}%)\n", style=gpu_mem_style(mem_used, mem_total))
-
-    # Temperature
-    lines.append("  Temp:  ", style="bold")
-    lines.append(f"{bar(min(temp, 100))} ", style=gpu_temp_style(temp))
-    lines.append(f"{temp:.0f}C\n", style=gpu_temp_style(temp))
-
-    # Power
-    power_style = "bold red" if power_pct > 95 else ("yellow" if power_pct > 80 else "green")
-    lines.append("  Power: ", style="bold")
-    lines.append(f"{bar(power_pct)} ", style=power_style)
-    lines.append(f"{power:.0f}/{power_limit:.0f}W ({power_pct:.0f}%)", style=power_style)
-
-    border = "green"
-    if util < 10 and mem_used < 100:
-        border = "yellow"  # idle
-    elif temp >= 85 or mem_pct >= 95:
-        border = "red"  # overloaded
-
-    return Panel(lines, title="[bold cyan]GPU Health[/]", border_style=border)
-
-
-def build_session_runs_table(runs: list[dict], active_run: str | None) -> Table:
-    """Table showing all runs from today's session."""
-    table = Table(
-        box=box.SIMPLE_HEAD, show_edge=False, pad_edge=False,
-        title="Session Runs", title_style="bold cyan",
-    )
-    table.add_column("Run", style="dim", max_width=28)
-    table.add_column("Status", width=12)
-    table.add_column("Exp", justify="right", width=4)
-    table.add_column("Kept", justify="right", width=4)
-    table.add_column("Best", justify="right", width=8)
-    table.add_column("Failures", justify="right", width=8)
-    table.add_column("Duration", justify="right", width=8)
-
-    for run in runs:
-        name = run["name"]
-        st = run.get("status") or {}
-        exps = run.get("experiments", [])
-
-        is_active = name == active_run
-        name_style = "bold white" if is_active else "dim"
-        marker = "\u25b6 " if is_active else "  "
-
-        phase = st.get("phase", "unknown")
-        n_total = len(exps)
-        n_kept = sum(1 for e in exps if e.get("kept"))
-        n_failed = sum(1 for e in exps if e.get("error"))
-        best = max((e.get("score", -999) for e in exps), default=-999)
-        best_str = f"{best:.2f}" if best > -999 else "\u2014"
-
-        duration_str = "\u2014"
-        if exps:
-            try:
-                t0 = datetime.fromisoformat(exps[0]["timestamp"])
-                t1 = datetime.fromisoformat(exps[-1]["timestamp"])
-                duration_str = fmt_duration((t1 - t0).total_seconds())
-            except (KeyError, ValueError):
-                pass
-
-        table.add_row(
-            Text(f"{marker}{name}", style=name_style),
-            phase_text(phase) if is_active else Text(phase, style="dim"),
-            str(n_total),
-            str(n_kept) if n_kept > 0 else Text("0", style="dim"),
-            best_str,
-            str(n_failed) if n_failed > 0 else Text("0", style="dim"),
-            duration_str,
-        )
-    return table
-
-
-def build_active_header(status: dict | None, experiments: list[dict], mode: str) -> Panel:
-    """Build the active run header panel with progress info."""
-    if not status:
-        return Panel(Text("No active run detected", style="dim"), title="Active Run")
-
-    run_name = status.get("_run_name", "unknown")
-    phase = status.get("phase", "unknown")
-    exp_id = status.get("experiment_id", 0)
-    best_score = status.get("best_score", -999)
-    kept = status.get("kept", 0)
-    failed = status.get("failed", 0)
-    total = status.get("total", 0)
-    time_left = status.get("time_remaining_h", 0)
-    updated = status.get("updated", "")
-    contract = status.get("contract_checksum", "?")
-
-    # Time since last update
-    staleness = ""
-    if updated:
+    while True:
         try:
-            last = datetime.fromisoformat(updated)
-            if last.tzinfo is None:
-                last = last.replace(tzinfo=timezone.utc)
-            ago = (datetime.now(timezone.utc) - last).total_seconds()
-            if ago > 120:
-                staleness = f"  [bold red](stale: {fmt_duration(ago)} ago)[/]"
-            elif ago > 30:
-                staleness = f"  [yellow](updated {fmt_duration(ago)} ago)[/]"
-        except ValueError:
-            pass
+            t0 = time.time()
+            runs = fetch_all_local_runs()
+            active_run = get_active_run_name()
 
-    # Experiment rate
-    rate_str = ""
-    if len(experiments) >= 2:
-        try:
-            t0 = datetime.fromisoformat(experiments[0]["timestamp"])
-            t1 = datetime.fromisoformat(experiments[-1]["timestamp"])
-            elapsed_h = (t1 - t0).total_seconds() / 3600
-            if elapsed_h > 0:
-                rate = len(experiments) / elapsed_h
-                rate_str = f"  [dim]{rate:.1f} exp/hr[/]"
-        except (KeyError, ValueError):
-            pass
+            experiments = []
+            status = None
+            log_tail = None
+            gpu = None
+            train_py = None
 
-    lines = []
-    lines.append(f"[bold]{run_name}[/]  |  Mode: [cyan]{mode}[/]  |  Contract: [dim]{contract}[/]{rate_str}{staleness}")
-    lines.append("")
+            if host:
+                experiments, status, log_tail, gpu, train_py, _ = fetch_remote(host, port)
 
-    # Phase + progress
-    phase_label, phase_style = PHASE_LABELS.get(phase, (phase, "white"))
-    lines.append(f"  Phase:     [{phase_style}]* {phase_label}[/]  --  Experiment #{exp_id}")
+            # Fallback to local
+            if not experiments and not status:
+                lp = Path(local_path) if local_path else RESULTS_ROOT
+                if active_run and (lp / active_run).is_dir():
+                    run_dir = lp / active_run
+                elif lp.is_dir() and (lp / "current_run.txt").exists():
+                    rn = (lp / "current_run.txt").read_text().strip()
+                    run_dir = lp / rn if rn else lp
+                else:
+                    run_dir = lp
+                if run_dir.is_dir():
+                    experiments, status, log_tail = fetch_local_run(run_dir)
 
-    # Time left with progress bar
-    if time_left > 0:
-        total_h = 8.0  # default budget
-        elapsed_h = total_h - time_left
-        pct = min(100, elapsed_h / total_h * 100) if total_h > 0 else 0
-        bar_w = 20
-        filled = int(pct / 100 * bar_w)
-        bar_str = "\u2588" * filled + "\u2591" * (bar_w - filled)
-        lines.append(f"  Time:      [{bar_str}] [bold]{time_left:.1f}h left[/] ({pct:.0f}% elapsed)")
-    elif phase == "completed":
-        lines.append(f"  Time:      [dim]Completed[/]")
+            fetch_time = time.time() - t0
+            poll_count = get_state()["poll_count"] + 1
 
-    lines.append(f"  Progress:  [green]{kept} kept[/]  |  [red]{failed} failed[/]  |  {total} total")
-    lines.append(f"  Best:      [bold green]{best_score:.4f}[/]" if best_score > -999 else "  Best:      [dim]none[/]")
+            set_state(
+                experiments=experiments,
+                status=status,
+                log_tail=log_tail,
+                gpu=gpu,
+                train_py=train_py,
+                runs=runs,
+                active_run=active_run,
+                last_fetch=time.time(),
+                fetch_time=fetch_time,
+                poll_count=poll_count,
+            )
+        except Exception as e:
+            print(f"[poller] Error: {e}", file=sys.stderr)
 
-    # Current experiment detail from status
-    last_change = status.get("last_change")
-    last_failure = status.get("last_failure_type")
-    last_anomalies = status.get("last_anomaly_flags", [])
-    if last_change:
-        lines.append(f"  Last D:    {last_change[:100]}")
-    if last_failure and last_failure != "none":
-        lines.append(f"  Last Fail: [red]{last_failure}[/]")
-    if last_anomalies:
-        flags = ", ".join(last_anomalies[:4])
-        lines.append(f"  Anomalies: [yellow]{flags}[/]")
-
-    return Panel("\n".join(lines), title="[bold cyan]Active Run[/]", border_style="cyan")
+        time.sleep(interval)
 
 
-def build_experiment_table(experiments: list[dict], max_rows: int = 25) -> Table:
-    """Detailed experiment history table."""
-    table = Table(
-        box=box.SIMPLE_HEAD, show_edge=False, pad_edge=False,
-        title="Experiment History", title_style="bold cyan",
-    )
-    table.add_column("#", style="dim", width=4)
-    table.add_column("Result", width=10)
-    table.add_column("Score", justify="right", width=8)
-    table.add_column("PF", justify="right", width=6)
-    table.add_column("TPD", justify="right", width=5)
-    table.add_column("Sharpe", justify="right", width=7)
-    table.add_column("WR", justify="right", width=5)
-    table.add_column("R:R", justify="right", width=5)
-    table.add_column("SL%", justify="right", width=5)
-    table.add_column("Hold", justify="right", width=5)
-    table.add_column("Exit%", justify="right", width=5)
-    table.add_column("API", justify="right", width=5)
-    table.add_column("Train", justify="right", width=5)
-    table.add_column("Change", no_wrap=False, max_width=40)
+# -- HTML Dashboard --------------------------------------------------------
 
-    for e in experiments[-max_rows:]:
-        idx = e.get("experiment_id", "?")
+DASHBOARD_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Autoresearch Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --cyan: #58a6ff;
+    --orange: #d18616;
+    --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Menlo', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-size: 16px;
+    color: var(--cyan);
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  header .meta {
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 12px;
+    padding: 12px;
+    min-height: calc(100vh - 60px);
+  }
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-header {
+    background: var(--bg3);
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--cyan);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-body {
+    padding: 12px 14px;
+    flex: 1;
+    overflow: auto;
+  }
+  /* GPU + Status row */
+  .gpu-status { grid-column: 1 / 2; }
+  .active-run { grid-column: 2 / 4; }
+  /* Charts row */
+  .charts { grid-column: 1 / 4; min-height: 180px; }
+  /* Main content row */
+  .experiments { grid-column: 1 / 2; min-height: 400px; }
+  .reasoning { grid-column: 2 / 3; min-height: 400px; }
+  .right-stack { grid-column: 3 / 4; display: flex; flex-direction: column; gap: 12px; }
 
-        # Result column
-        if e.get("kept"):
-            result = Text("+ KEPT", style="bold green")
-        elif e.get("error"):
-            ft = e.get("failure_type", "error")
-            result = Text(f"x {ft[:7]}", style="red")
+  /* GPU gauges */
+  .gauge-row { display: flex; gap: 16px; margin-bottom: 8px; align-items: center; }
+  .gauge-label { width: 50px; font-size: 11px; color: var(--text-dim); }
+  .gauge-bar { flex: 1; height: 18px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .gauge-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .gauge-value { width: 80px; text-align: right; font-size: 12px; font-weight: 600; }
+  .fill-green { background: var(--green); }
+  .fill-yellow { background: var(--yellow); }
+  .fill-red { background: var(--red); }
+  .fill-cyan { background: var(--cyan); }
+
+  /* Stat cards */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .stat-card {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .stat-value { font-size: 20px; font-weight: 700; }
+  .stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-green { color: var(--green); }
+  .stat-red { color: var(--red); }
+  .stat-yellow { color: var(--yellow); }
+  .stat-cyan { color: var(--cyan); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    text-align: left;
+    padding: 6px 8px;
+    color: var(--text-dim);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg2);
+  }
+  td { padding: 5px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; }
+  tr:hover { background: var(--bg3); }
+  tr.kept td { color: var(--green); }
+  tr.failed td { color: var(--red); }
+  tr.reverted td { color: var(--text-dim); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.change { white-space: normal; max-width: 200px; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); font-size: 11px; }
+
+  /* Reasoning / stream of consciousness */
+  .reasoning-entry {
+    border-bottom: 1px solid var(--bg3);
+    padding: 10px 0;
+  }
+  .reasoning-entry:last-child { border-bottom: none; }
+  .reasoning-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .reasoning-id { font-weight: 700; font-size: 13px; }
+  .reasoning-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .badge-kept { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-failed { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-reverted { background: rgba(139,148,158,0.15); color: var(--text-dim); }
+  .reasoning-text {
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+  .reasoning-change {
+    color: var(--cyan);
+    font-size: 11px;
+    font-style: italic;
+  }
+  .reasoning-metrics {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  /* Code viewer */
+  .code-view {
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow: auto;
+    white-space: pre;
+    max-height: 100%;
+    tab-size: 4;
+  }
+  .code-view .ln { color: var(--text-dim); user-select: none; display: inline-block; width: 40px; text-align: right; margin-right: 12px; }
+
+  /* Log viewer */
+  .log-view {
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.6;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .log-error { color: var(--red); }
+  .log-success { color: var(--green); }
+  .log-warn { color: var(--yellow); }
+  .log-info { color: var(--cyan); }
+  .log-dim { color: var(--text-dim); }
+
+  /* Charts */
+  .chart-container { display: flex; gap: 16px; height: 150px; }
+  .chart-box { flex: 1; position: relative; }
+  .chart-title { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  canvas { width: 100% !important; height: 130px !important; }
+
+  /* Progress bar */
+  .progress-outer {
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 6px 0;
+  }
+  .progress-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--green));
+    border-radius: 4px;
+    transition: width 0.5s;
+  }
+
+  /* Phase indicator */
+  .phase-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .phase-training { background: var(--green); }
+  .phase-calling_claude { background: var(--yellow); }
+  .phase-evaluating { background: var(--cyan); }
+  .phase-error { background: var(--red); animation: none; }
+  .phase-completed { background: var(--text-dim); animation: none; }
+  .phase-saving { background: var(--purple); }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 6px 14px;
+    font-size: 11px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .active-run { grid-column: 2 / 3; }
+    .charts { grid-column: 1 / 3; }
+    .experiments { grid-column: 1 / 3; }
+    .reasoning { grid-column: 1 / 2; }
+    .right-stack { grid-column: 2 / 3; }
+  }
+
+  .stale-warning {
+    background: rgba(248,81,73,0.15);
+    color: var(--red);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AUTORESEARCH DASHBOARD</h1>
+  <div class="meta">
+    <span id="header-mode"></span> &nbsp;|&nbsp;
+    <span id="header-time"></span> &nbsp;|&nbsp;
+    <span id="header-poll"></span> &nbsp;|&nbsp;
+    <span id="header-fetch"></span>
+    <span id="header-stale"></span>
+  </div>
+</header>
+
+<div class="grid">
+  <!-- GPU Health -->
+  <div class="panel gpu-status">
+    <div class="panel-header">GPU Health <span id="gpu-name"></span></div>
+    <div class="panel-body">
+      <div id="gpu-content">
+        <div class="gauge-row">
+          <span class="gauge-label">Util</span>
+          <div class="gauge-bar"><div class="gauge-fill fill-green" id="gpu-util-bar" style="width:0%"></div></div>
+          <span class="gauge-value" id="gpu-util-val">--</span>
+        </div>
+        <div class="gauge-row">
+          <span class="gauge-label">VRAM</span>
+          <div class="gauge-bar"><div class="gauge-fill fill-cyan" id="gpu-mem-bar" style="width:0%"></div></div>
+          <span class="gauge-value" id="gpu-mem-val">--</span>
+        </div>
+        <div class="gauge-row">
+          <span class="gauge-label">Temp</span>
+          <div class="gauge-bar"><div class="gauge-fill fill-yellow" id="gpu-temp-bar" style="width:0%"></div></div>
+          <span class="gauge-value" id="gpu-temp-val">--</span>
+        </div>
+        <div class="gauge-row">
+          <span class="gauge-label">Power</span>
+          <div class="gauge-bar"><div class="gauge-fill fill-green" id="gpu-power-bar" style="width:0%"></div></div>
+          <span class="gauge-value" id="gpu-power-val">--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Run Status -->
+  <div class="panel active-run">
+    <div class="panel-header">Active Run <span id="run-name" style="font-weight:400;color:var(--text)"></span></div>
+    <div class="panel-body">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="phase-dot" id="phase-dot"></span>
+        <span id="phase-label" style="font-weight:600"></span>
+        <span id="exp-id" style="color:var(--text-dim);margin-left:auto"></span>
+      </div>
+      <div class="progress-outer">
+        <div class="progress-inner" id="time-progress" style="width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim);font-size:11px;margin-bottom:10px;">
+        <span id="time-elapsed"></span>
+        <span id="time-remaining"></span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value stat-green" id="stat-kept">--</div><div class="stat-label">Kept</div></div>
+        <div class="stat-card"><div class="stat-value stat-red" id="stat-failed">--</div><div class="stat-label">Failed</div></div>
+        <div class="stat-card"><div class="stat-value stat-cyan" id="stat-total">--</div><div class="stat-label">Total</div></div>
+        <div class="stat-card"><div class="stat-value stat-green" id="stat-best">--</div><div class="stat-label">Best Score</div></div>
+        <div class="stat-card"><div class="stat-value stat-yellow" id="stat-rate">--</div><div class="stat-label">Exp/hr</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-contract" style="font-size:11px;color:var(--text-dim)">--</div><div class="stat-label">Contract</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="panel charts">
+    <div class="panel-header">Metric Trends</div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <div class="chart-box">
+          <div class="chart-title">Score</div>
+          <canvas id="chart-score"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Profit Factor</div>
+          <canvas id="chart-pf"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Trades/Day</div>
+          <canvas id="chart-tpd"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Win Rate</div>
+          <canvas id="chart-wr"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Experiments Table -->
+  <div class="panel experiments">
+    <div class="panel-header">Experiments <span id="exp-count" style="font-weight:400;color:var(--text-dim)"></span></div>
+    <div class="panel-body" style="padding:0">
+      <div style="overflow:auto;max-height:500px;">
+        <table id="exp-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Result</th>
+              <th>Score</th>
+              <th>PF</th>
+              <th>TPD</th>
+              <th>Sharpe</th>
+              <th>WR</th>
+              <th>SL%</th>
+              <th>Hold</th>
+              <th>Ruin</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="exp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stream of Consciousness (Claude Reasoning) -->
+  <div class="panel reasoning">
+    <div class="panel-header">Stream of Consciousness</div>
+    <div class="panel-body" id="reasoning-body" style="padding:8px 14px"></div>
+  </div>
+
+  <!-- Right stack: train.py + log -->
+  <div class="right-stack">
+    <div class="panel" style="flex:1">
+      <div class="panel-header">
+        <div class="tab-bar" style="border-bottom:none">
+          <div class="tab active" data-tab="code">Best train.py</div>
+          <div class="tab" data-tab="log">Live Log</div>
+          <div class="tab" data-tab="runs">Runs</div>
+        </div>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div class="tab-content active" id="tab-code">
+          <div class="code-view" id="code-content" style="max-height:500px">Loading...</div>
+        </div>
+        <div class="tab-content" id="tab-log">
+          <div class="log-view" id="log-content" style="max-height:500px">Waiting for log data...</div>
+        </div>
+        <div class="tab-content" id="tab-runs">
+          <div style="padding:14px;overflow:auto;max-height:500px;">
+            <table id="runs-table">
+              <thead><tr><th>Run</th><th>Phase</th><th>Exp</th><th>Kept</th><th>Best</th></tr></thead>
+              <tbody id="runs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// -- Mini chart library (no dependencies) --
+function drawChart(canvasId, data, color, opts = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !data.length) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const mn = opts.min !== undefined ? opts.min : Math.min(...data);
+  const mx = opts.max !== undefined ? opts.max : Math.max(...data);
+  const range = mx - mn || 1;
+  const pad = 4;
+
+  // Grid lines
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i++) {
+    const y = pad + (h - 2*pad) * i / 3;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(pad, h - pad);
+  for (let i = 0; i < data.length; i++) {
+    const x = pad + (w - 2*pad) * i / (data.length - 1 || 1);
+    const y = h - pad - (data[i] - mn) / range * (h - 2*pad);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(w - pad, h - pad);
+  ctx.closePath();
+  ctx.fillStyle = color + '15';
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const x = pad + (w - 2*pad) * i / (data.length - 1 || 1);
+    const y = h - pad - (data[i] - mn) / range * (h - 2*pad);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Current value label
+  const lastVal = data[data.length - 1];
+  ctx.fillStyle = color;
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(lastVal.toFixed(opts.decimals !== undefined ? opts.decimals : 2), w - 6, 14);
+
+  // Min/max
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '9px monospace';
+  ctx.fillText(mn.toFixed(opts.decimals !== undefined ? opts.decimals : 2), w - 6, h - 2);
+}
+
+// -- Tab switching --
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.panel');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// -- PST time --
+function nowPST() {
+  return new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles', hour12: false});
+}
+
+function fmtDuration(s) {
+  if (s < 60) return s.toFixed(0) + 's';
+  if (s < 3600) return (s/60).toFixed(0) + 'm';
+  return Math.floor(s/3600) + 'h' + String(Math.floor((s%3600)/60)).padStart(2,'0') + 'm';
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// -- Highlight train.py --
+function highlightPython(code) {
+  const lines = code.split('\n');
+  return lines.map((line, i) => {
+    const ln = `<span class="ln">${String(i+1).padStart(4)}</span>`;
+    let hl = escapeHtml(line);
+    // Comments first (so they don't get re-highlighted)
+    hl = hl.replace(/(#.*)$/g, '<span style="color:#8b949e">$1</span>');
+    // Keywords
+    hl = hl.replace(/\b(def|class|import|from|return|if|else|elif|for|while|with|as|try|except|finally|raise|yield|lambda|and|or|not|in|is|None|True|False|self|pass|break|continue)\b/g,
+      '<span style="color:#ff7b72">$1</span>');
+    // Strings (double and single quoted only - avoiding triple quotes in regex)
+    hl = hl.replace(/("[^"]*"|'[^']*')/g, '<span style="color:#a5d6ff">$1</span>');
+    // Numbers
+    hl = hl.replace(/\b(\d+\.?\d*(?:e[+-]?\d+)?)\b/g, '<span style="color:#79c0ff">$1</span>');
+    // Decorators
+    hl = hl.replace(/^(\s*@\w+)/g, '<span style="color:#d2a8ff">$1</span>');
+    return ln + hl;
+  }).join('\n');
+}
+
+// -- Colorize log --
+function colorizeLine(line) {
+  if (line.includes('ERROR') || line.includes('FAILED')) return `<span class="log-error">${escapeHtml(line)}</span>`;
+  if (line.includes('KEPT') || line.includes('kept') || line.includes('IMPROVED')) return `<span class="log-success">${escapeHtml(line)}</span>`;
+  if (line.includes('WARNING')) return `<span class="log-warn">${escapeHtml(line)}</span>`;
+  if (line.includes('=== Experiment') || line.includes('score:')) return `<span class="log-info">${escapeHtml(line)}</span>`;
+  return `<span class="log-dim">${escapeHtml(line)}</span>`;
+}
+
+// -- Main update loop --
+let lastExpCount = 0;
+let lastTrainHash = '';
+
+async function update() {
+  try {
+    const resp = await fetch('/api/state');
+    const data = await resp.json();
+
+    // Header
+    document.getElementById('header-mode').textContent = data.mode;
+    document.getElementById('header-time').textContent = nowPST();
+    document.getElementById('header-poll').textContent = `poll #${data.poll_count}`;
+    document.getElementById('header-fetch').textContent = `fetch: ${data.fetch_time.toFixed(1)}s`;
+
+    // Stale check
+    const staleEl = document.getElementById('header-stale');
+    if (data.status && data.status.updated) {
+      const lastUpdate = new Date(data.status.updated + 'Z');
+      const ago = (Date.now() - lastUpdate.getTime()) / 1000;
+      if (ago > 120) {
+        staleEl.innerHTML = `&nbsp;|&nbsp;<span class="stale-warning">STALE: ${fmtDuration(ago)} ago</span>`;
+      } else {
+        staleEl.textContent = '';
+      }
+    } else {
+      staleEl.textContent = '';
+    }
+
+    // GPU
+    if (data.gpu) {
+      const g = data.gpu;
+      document.getElementById('gpu-name').textContent = g.name;
+      const memPct = g.mem_total_mb > 0 ? (g.mem_used_mb / g.mem_total_mb * 100) : 0;
+      const powerPct = g.power_limit_w > 0 ? (g.power_w / g.power_limit_w * 100) : 0;
+
+      setGauge('gpu-util', g.util_pct, g.util_pct.toFixed(0) + '%');
+      setGauge('gpu-mem', memPct, `${(g.mem_used_mb/1024).toFixed(1)}/${(g.mem_total_mb/1024).toFixed(0)}GB`);
+      setGauge('gpu-temp', Math.min(g.temp_c, 100), g.temp_c.toFixed(0) + 'C');
+      setGauge('gpu-power', powerPct, `${g.power_w.toFixed(0)}/${g.power_limit_w.toFixed(0)}W`);
+    }
+
+    // Active run
+    const st = data.status || {};
+    document.getElementById('run-name').textContent = st._run_name || 'none';
+    const phase = st.phase || 'unknown';
+    const phaseDot = document.getElementById('phase-dot');
+    phaseDot.className = 'phase-dot phase-' + phase;
+    const phaseLabels = {
+      training: 'Training Model', calling_claude: 'Generating Code',
+      evaluating: 'Evaluating Results', saving: 'Saving Artifacts',
+      completed: 'Completed', error: 'Error', startup: 'Starting Up',
+      between_experiments: 'Between Experiments', smoke_check: 'Smoke Check'
+    };
+    document.getElementById('phase-label').textContent = phaseLabels[phase] || phase;
+    document.getElementById('exp-id').textContent = `Experiment #${st.experiment_id || 0}`;
+
+    // Progress
+    const timeLeft = st.time_remaining_h || 0;
+    const totalH = 8.0;
+    const elapsedH = totalH - timeLeft;
+    const pct = Math.min(100, Math.max(0, elapsedH / totalH * 100));
+    document.getElementById('time-progress').style.width = pct + '%';
+    document.getElementById('time-elapsed').textContent = pct.toFixed(0) + '% elapsed';
+    document.getElementById('time-remaining').textContent = timeLeft > 0 ? timeLeft.toFixed(1) + 'h left' : 'done';
+
+    // Stats
+    document.getElementById('stat-kept').textContent = st.kept || 0;
+    document.getElementById('stat-failed').textContent = st.failed || 0;
+    document.getElementById('stat-total').textContent = st.total || 0;
+    document.getElementById('stat-best').textContent = st.best_score > -999 ? st.best_score.toFixed(4) : '--';
+    document.getElementById('stat-contract').textContent = st.contract_checksum || '--';
+
+    // Exp rate
+    const exps = data.experiments || [];
+    if (exps.length >= 2) {
+      const t0 = new Date(exps[0].timestamp);
+      const t1 = new Date(exps[exps.length-1].timestamp);
+      const hrs = (t1 - t0) / 3600000;
+      if (hrs > 0) document.getElementById('stat-rate').textContent = (exps.length / hrs).toFixed(1);
+    }
+
+    // Charts
+    const scored = exps.filter(e => (e.score || -999) > -999);
+    if (scored.length > 1) {
+      drawChart('chart-score', scored.map(e => e.score || 0), '#3fb950', {decimals: 3});
+      drawChart('chart-pf', scored.map(e => e.profit_factor || 0), '#58a6ff', {min: 0, decimals: 2});
+      drawChart('chart-tpd', scored.map(e => e.trades_per_day || 0), '#d29922', {min: 0, decimals: 1});
+      drawChart('chart-wr', scored.map(e => (e.win_rate || 0) * 100), '#bc8cff', {min: 0, max: 100, decimals: 0});
+    }
+
+    // Experiments table
+    if (exps.length !== lastExpCount) {
+      lastExpCount = exps.length;
+      document.getElementById('exp-count').textContent = `(${exps.length})`;
+      const tbody = document.getElementById('exp-tbody');
+      tbody.innerHTML = '';
+      // Show newest first
+      for (let i = exps.length - 1; i >= 0; i--) {
+        const e = exps[i];
+        const tr = document.createElement('tr');
+        let result, cls;
+        if (e.kept) { result = '+ KEPT'; cls = 'kept'; }
+        else if (e.error) { result = 'x ' + (e.failure_type || 'err').slice(0,8); cls = 'failed'; }
+        else { result = '~ revert'; cls = 'reverted'; }
+        tr.className = cls;
+
+        const score = (e.score || -999) > -999 ? (e.score || 0).toFixed(3) : 'FAIL';
+        const pf = e.profit_factor ? e.profit_factor.toFixed(2) : '--';
+        const tpd = e.trades_per_day ? e.trades_per_day.toFixed(1) : '--';
+        const sharpe = e.trade_sharpe ? e.trade_sharpe.toFixed(2) : '--';
+        const wr = e.win_rate ? (e.win_rate * 100).toFixed(0) + '%' : '--';
+        const sl = e.stop_loss_rate ? (e.stop_loss_rate * 100).toFixed(0) + '%' : '--';
+        const hold = e.avg_hold_bars ? e.avg_hold_bars.toFixed(0) : '--';
+        const ruin = e.hit_ruin !== undefined ? (e.hit_ruin ? 'YES' : 'no') : '--';
+        const trainTime = e.train_wall_time ? fmtDuration(e.train_wall_time) : '--';
+
+        tr.innerHTML = `
+          <td class="num">${e.experiment_id || '?'}</td>
+          <td>${result}</td>
+          <td class="num">${score}</td>
+          <td class="num">${pf}</td>
+          <td class="num">${tpd}</td>
+          <td class="num">${sharpe}</td>
+          <td class="num">${wr}</td>
+          <td class="num">${sl}</td>
+          <td class="num">${hold}</td>
+          <td class="num">${ruin === 'YES' ? '<span style="color:var(--red)">YES</span>' : ruin}</td>
+          <td class="num">${trainTime}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // Stream of Consciousness (reasoning from all experiments, newest first)
+    const reasoningBody = document.getElementById('reasoning-body');
+    if (exps.length !== parseInt(reasoningBody.dataset.count || '0')) {
+      reasoningBody.dataset.count = exps.length;
+      let html = '';
+      for (let i = exps.length - 1; i >= 0; i--) {
+        const e = exps[i];
+        const reasoning = e._full_reasoning || e.reasoning || '';
+        const change = e.change_summary || '';
+        const err = e.error || '';
+        if (!reasoning && !err) continue;
+
+        let badgeCls, badgeText;
+        if (e.kept) { badgeCls = 'badge-kept'; badgeText = 'KEPT'; }
+        else if (e.error) { badgeCls = 'badge-failed'; badgeText = e.failure_type || 'FAILED'; }
+        else { badgeCls = 'badge-reverted'; badgeText = 'REVERTED'; }
+
+        const score = (e.score || -999) > -999 ? (e.score || 0).toFixed(4) : 'FAIL';
+        const metrics = (e.score || -999) > -999
+          ? `Score: ${score} | PF: ${(e.profit_factor||0).toFixed(2)} | TPD: ${(e.trades_per_day||0).toFixed(1)} | WR: ${((e.win_rate||0)*100).toFixed(0)}% | Sharpe: ${(e.trade_sharpe||0).toFixed(2)}`
+          : '';
+
+        html += `<div class="reasoning-entry">
+          <div class="reasoning-header">
+            <span class="reasoning-id">#${e.experiment_id || '?'}</span>
+            <span class="reasoning-badge ${badgeCls}">${badgeText}</span>
+          </div>
+          <div class="reasoning-text">${escapeHtml(reasoning || err)}</div>
+          ${change ? `<div class="reasoning-change">${escapeHtml(change)}</div>` : ''}
+          ${metrics ? `<div class="reasoning-metrics">${metrics}</div>` : ''}
+        </div>`;
+      }
+      reasoningBody.innerHTML = html || '<div style="color:var(--text-dim)">Waiting for experiments...</div>';
+    }
+
+    // train.py code
+    if (data.train_py) {
+      const hash = data.train_py.length + data.train_py.slice(0,100);
+      if (hash !== lastTrainHash) {
+        lastTrainHash = hash;
+        document.getElementById('code-content').innerHTML = highlightPython(data.train_py);
+      }
+    }
+
+    // Log
+    if (data.log_tail) {
+      const logEl = document.getElementById('log-content');
+      const lines = data.log_tail.split('\n');
+      logEl.innerHTML = lines.map(colorizeLine).join('\n');
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Runs table
+    const runs = data.runs || [];
+    if (runs.length) {
+      const rtbody = document.getElementById('runs-tbody');
+      rtbody.innerHTML = '';
+      for (const r of runs.reverse()) {
+        const s = r.status || {};
+        const re = r.experiments || [];
+        const nKept = re.filter(e => e.kept).length;
+        const best = re.reduce((m, e) => Math.max(m, e.score || -999), -999);
+        const isActive = r.name === data.active_run;
+        const tr = document.createElement('tr');
+        if (isActive) tr.style.color = 'var(--cyan)';
+        tr.innerHTML = `
+          <td>${isActive ? '> ' : ''}${r.name}</td>
+          <td>${s.phase || '--'}</td>
+          <td class="num">${re.length}</td>
+          <td class="num">${nKept}</td>
+          <td class="num">${best > -999 ? best.toFixed(3) : '--'}</td>
+        `;
+        rtbody.appendChild(tr);
+      }
+    }
+
+  } catch(e) {
+    console.error('Update error:', e);
+  }
+}
+
+function setGauge(prefix, pct, text) {
+  const bar = document.getElementById(prefix + '-bar');
+  const val = document.getElementById(prefix + '-val');
+  bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+  val.textContent = text;
+  // Color based on value
+  bar.className = 'gauge-fill ' + (pct > 80 ? 'fill-red' : pct > 50 ? 'fill-yellow' : 'fill-green');
+}
+
+// Poll every 5 seconds
+setInterval(update, 5000);
+update();
+
+// Redraw charts on resize
+window.addEventListener('resize', update);
+</script>
+</body>
+</html>"""
+
+
+# -- HTTP Server -----------------------------------------------------------
+
+class DashboardHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/" or self.path == "/index.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(DASHBOARD_HTML.encode())
+        elif self.path == "/api/state":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            state = get_state()
+            # Don't send the full train_py on every poll if it hasn't changed
+            self.wfile.write(json.dumps(state, default=str).encode())
         else:
-            result = Text("~ revert", style="yellow")
+            self.send_response(404)
+            self.end_headers()
 
-        score = e.get("score", -999)
-        pf = e.get("profit_factor", 0)
-        tpd = e.get("trades_per_day", 0)
-        sharpe = e.get("trade_sharpe", 0)
-        wr = e.get("win_rate", 0)
-        rr = e.get("rr_ratio", 0)
-        sl = e.get("stop_loss_rate", 0)
-        avg_hold = e.get("avg_hold_bars", 0)
-        model_exit = e.get("model_exit_rate", 0)
-        api_time = e.get("api_time", 0)
-        train_time = e.get("train_wall_time", 0)
-        change = e.get("change_summary", e.get("error", ""))[:40]
-
-        # Color score
-        if score <= -999:
-            score_text = Text("  FAIL", style="dim red")
-        elif score <= 0:
-            score_text = Text(f"{score:6.2f}", style="red")
-        else:
-            score_text = Text(f"{score:6.2f}", style="green" if e.get("kept") else "yellow")
-
-        table.add_row(
-            str(idx),
-            result,
-            score_text,
-            f"{pf:.2f}" if pf else "\u2014",
-            f"{tpd:.1f}" if tpd else "\u2014",
-            f"{sharpe:.2f}" if sharpe else "\u2014",
-            f"{wr:.0%}" if wr else "\u2014",
-            f"{rr:.2f}" if rr else "\u2014",
-            f"{sl:.0%}" if sl else "\u2014",
-            f"{avg_hold:.0f}" if avg_hold else "\u2014",
-            f"{model_exit:.0%}" if model_exit else "\u2014",
-            fmt_duration(api_time) if api_time else "\u2014",
-            fmt_duration(train_time) if train_time else "\u2014",
-            Text(change, style="dim"),
-        )
-
-    return table
-
-
-def build_metrics_panel(experiments: list[dict]) -> Panel:
-    """Sparkline charts for key metrics over time."""
-    lines = []
-
-    scored = [e for e in experiments if e.get("score", -999) > -999]
-    if not scored:
-        return Panel("No completed experiments yet...", title="Metrics", border_style="cyan")
-
-    scores = [e.get("score", 0) for e in scored]
-    lines.append(f"  Score  {sparkline(scores)}  [{min(scores):.1f} .. {max(scores):.1f}]")
-
-    pfs = [e.get("profit_factor", 0) for e in scored]
-    if any(pfs):
-        lines.append(f"  PF     {sparkline(pfs)}  [{min(pfs):.2f} .. {max(pfs):.2f}]")
-
-    tpds = [e.get("trades_per_day", 0) for e in scored]
-    if any(tpds):
-        lines.append(f"  TPD    {sparkline(tpds)}  [{min(tpds):.1f} .. {max(tpds):.1f}]")
-
-    wrs = [e.get("win_rate", 0) for e in scored]
-    if any(wrs):
-        lines.append(f"  WinR   {sparkline(wrs)}  [{min(wrs):.0%} .. {max(wrs):.0%}]")
-
-    sharpes = [e.get("trade_sharpe", 0) for e in scored]
-    if any(sharpes):
-        lines.append(f"  Sharpe {sparkline(sharpes)}  [{min(sharpes):.2f} .. {max(sharpes):.2f}]")
-
-    rrs = [e.get("rr_ratio", 0) for e in scored if e.get("rr_ratio")]
-    if rrs:
-        lines.append(f"  R:R    {sparkline(rrs)}  [{min(rrs):.2f} .. {max(rrs):.2f}]")
-
-    return Panel("\n".join(lines), title="[bold cyan]Metric Trends[/]", border_style="cyan")
-
-
-def build_log_panel(log_tail: str | None) -> Panel:
-    """Show recent log output — wider text, more lines, no truncation from borders."""
-    if not log_tail:
-        return Panel("[dim]No log output yet...[/]", title="Live Log", border_style="dim")
-
-    lines = log_tail.strip().split("\n")[-20:]
-    formatted = []
-    PST = timezone(timedelta(hours=-7))
-    for line in lines:
-        # Convert UTC timestamps [HH:MM:SS] to PST
-        if line and line[0] == "[" and len(line) > 9 and line[9] == "]":
-            try:
-                utc_time = datetime.strptime(line[1:9], "%H:%M:%S").replace(
-                    tzinfo=timezone.utc
-                )
-                pst_time = utc_time.astimezone(PST)
-                line = f"[{pst_time.strftime('%H:%M:%S')}]{line[10:]}"
-            except ValueError:
-                pass
-        if "ERROR" in line or "FAILED" in line:
-            formatted.append(f"[red]{line}[/]")
-        elif "KEPT" in line or "kept" in line or "PASSED" in line or "IMPROVED" in line:
-            formatted.append(f"[green]{line}[/]")
-        elif "cache_read=" in line or "Tokens:" in line:
-            formatted.append(f"[cyan]{line}[/]")
-        elif "WARNING" in line:
-            formatted.append(f"[yellow]{line}[/]")
-        elif "=== Experiment" in line:
-            formatted.append(f"[bold white]{line}[/]")
-        elif "score:" in line or "profit_factor:" in line:
-            formatted.append(f"[bold]{line}[/]")
-        else:
-            formatted.append(f"[dim]{line}[/]")
-
-    return Panel("\n".join(formatted), title="[bold cyan]Live Log (last 20 lines)[/]", border_style="dim", padding=(0, 1))
-
-
-def build_latest_experiment(experiments: list[dict]) -> Panel:
-    """Detailed view of the most recent experiment — full reasoning and change text."""
-    if not experiments:
-        return Panel("[dim]No experiments yet[/]", title="Latest Experiment")
-
-    e = experiments[-1]
-    idx = e.get("experiment_id", "?")
-    lines = []
-
-    # Status
-    if e.get("kept"):
-        lines.append(f"  [bold green]+ Experiment #{idx} -- KEPT[/]")
-    elif e.get("error"):
-        ft = e.get("failure_type", "error")
-        lines.append(f"  [bold red]x Experiment #{idx} -- {ft}[/]")
-    else:
-        lines.append(f"  [yellow]~ Experiment #{idx} -- reverted (regression)[/]")
-
-    # Scores — full detail with new metrics
-    score = e.get("score", -999)
-    if score > -999:
-        pf = e.get("profit_factor", 0)
-        tpd = e.get("trades_per_day", 0)
-        sharpe = e.get("trade_sharpe", 0)
-        wr = e.get("win_rate", 0)
-        rr = e.get("rr_ratio", 0)
-        avg_hold = e.get("avg_hold_bars", 0)
-        model_exit = e.get("model_exit_rate", 0)
-        sl = e.get("stop_loss_rate", 0)
-        lines.append(
-            f"  Score: {score:.4f}  |  PF: {pf:.2f}  |  TPD: {tpd:.1f}  |  "
-            f"Sharpe: {sharpe:.2f}  |  WR: {wr:.0%}"
-        )
-        lines.append(
-            f"  R:R: {rr:.2f}  |  Hold: {avg_hold:.0f} bars  |  "
-            f"Exit: {model_exit:.0%}  |  SL: {sl:.0%}"
-        )
-
-    # Reasoning — show full text, wrapped naturally by Rich
-    reasoning = e.get("reasoning", "")
-    if reasoning:
-        lines.append("")
-        lines.append(f"  [bold]Reasoning:[/]")
-        # Show full reasoning, let panel handle wrapping
-        for r_line in reasoning.split("\n"):
-            lines.append(f"    {r_line}")
-
-    # Change — show full text
-    change = e.get("change_summary", "")
-    if change:
-        lines.append("")
-        lines.append(f"  [bold]Changes:[/]")
-        for part in change.split(";"):
-            part = part.strip()
-            if part:
-                lines.append(f"    {part}")
-
-    # Error — show full text
-    error = e.get("error", "")
-    if error:
-        lines.append("")
-        lines.append(f"  [bold red]Error:[/]")
-        for e_line in error[:500].split("\n"):
-            lines.append(f"    [red]{e_line}[/]")
-
-    # Anomalies
-    anomalies = e.get("anomaly_flags", [])
-    if anomalies:
-        lines.append(f"  [yellow]Anomalies:[/] {', '.join(anomalies)}")
-
-    # Timing
-    api_time = e.get("api_time", 0)
-    train_time = e.get("train_wall_time", 0)
-    if api_time or train_time:
-        lines.append(f"  [dim]API: {fmt_duration(api_time)}  |  Train: {fmt_duration(train_time)}[/]")
-
-    return Panel("\n".join(lines), title="[bold cyan]Latest Experiment[/]", border_style="cyan", padding=(0, 1))
-
-
-# -- Main dashboard --------------------------------------------------------
-
-def build_dashboard(
-    runs: list[dict],
-    active_run: str | None,
-    experiments: list[dict],
-    status: dict | None,
-    log_tail: str | None,
-    gpu_info: dict | None,
-    mode: str,
-    poll_count: int,
-    fetch_time: float = 0,
-) -> Layout:
-    """Assemble the full dashboard layout."""
-    layout = Layout()
-
-    # Top: timestamp + mode (PST)
-    PST = timezone(timedelta(hours=-7))
-    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S PST")
-    title = Text()
-    title.append("  AUTORESEARCH DASHBOARD", style="bold cyan")
-    title.append(f"  |  {now}  |  {mode}  |  poll #{poll_count}", style="dim")
-    if fetch_time > 0:
-        title.append(f"  |  fetch: {fetch_time:.1f}s", style="dim")
-
-    layout.split_column(
-        Layout(name="title", size=3),
-        Layout(name="top_row", size=10),
-        Layout(name="main"),
-        Layout(name="bottom", size=18),
-    )
-    layout["title"].update(Panel(title, box=box.HEAVY))
-
-    # Top row: GPU health + active header side by side
-    layout["top_row"].split_row(
-        Layout(name="gpu", ratio=2),
-        Layout(name="active", ratio=3),
-    )
-    layout["top_row"]["gpu"].update(build_gpu_panel(gpu_info))
-    layout["top_row"]["active"].update(build_active_header(status, experiments, mode))
-
-    # Main area: left (metrics + runs) | right (experiment history)
-    layout["main"].split_row(
-        Layout(name="left", ratio=2),
-        Layout(name="right", ratio=3),
-    )
-
-    # Left: metrics + session runs
-    layout["left"].split_column(
-        Layout(name="metrics", size=10),
-        Layout(name="runs"),
-    )
-    layout["left"]["metrics"].update(build_metrics_panel(experiments))
-    layout["left"]["runs"].update(
-        Panel(build_session_runs_table(runs, active_run), border_style="dim")
-    )
-
-    # Right: experiment table
-    layout["right"].update(
-        Panel(build_experiment_table(experiments, max_rows=25), border_style="cyan")
-    )
-
-    # Bottom: latest experiment (wider) + log
-    layout["bottom"].split_row(
-        Layout(name="latest", ratio=3),
-        Layout(name="log", ratio=2),
-    )
-    layout["bottom"]["latest"].update(build_latest_experiment(experiments))
-    layout["bottom"]["log"].update(build_log_panel(log_tail))
-
-    return layout
+    def log_message(self, format, *args):
+        pass  # Suppress HTTP logs
 
 
 # -- Entry point -----------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Autoresearch training dashboard")
+    parser = argparse.ArgumentParser(description="Autoresearch web dashboard")
     parser.add_argument("--host", type=str, help="Remote H100 hostname (overrides .deploy-state)")
-    parser.add_argument("--port", type=int, help="Remote SSH port (overrides .deploy-state)")
+    parser.add_argument("--ssh-port", type=int, help="Remote SSH port (overrides .deploy-state)")
     parser.add_argument("--local", type=str, help="Local results path (skip remote)")
+    parser.add_argument("--port", type=int, default=8420, help="Web server port (default: 8420)")
     parser.add_argument("--interval", type=int, default=10, help="Poll interval in seconds (default: 10)")
+    parser.add_argument("--no-open", action="store_true", help="Don't auto-open browser")
     args = parser.parse_args()
 
-    # Resolve mode
+    # Resolve remote
     remote_host = args.host
-    remote_port = args.port
-    local_only = args.local is not None
-
-    if not local_only and not remote_host:
+    remote_port = args.ssh_port
+    if not args.local and not remote_host:
         state = load_deploy_state()
         if state:
             remote_host = state.get("SSH_HOST")
             remote_port = int(state.get("SSH_PORT", 22))
 
-    if remote_host:
-        mode = f"SSH -> {remote_host}:{remote_port}"
-    elif local_only:
-        mode = f"Local -> {args.local}"
-    else:
-        mode = "Local -> results/"
+    # Start background poller
+    poller = threading.Thread(
+        target=poller_loop,
+        args=(remote_host, remote_port or 22, args.local, args.interval),
+        daemon=True,
+    )
+    poller.start()
 
-    console = Console()
-    console.clear()
-    poll_count = 0
+    # Start HTTP server
+    server = HTTPServer(("0.0.0.0", args.port), DashboardHandler)
+    url = f"http://localhost:{args.port}"
+    print(f"Dashboard running at {url}")
+    print(f"  Mode: {'Remote ' + str(remote_host) + ':' + str(remote_port) if remote_host else 'Local'}")
+    print(f"  Poll interval: {args.interval}s")
+    print(f"  Press Ctrl+C to stop")
 
-    with Live(console=console, refresh_per_second=2, screen=True) as live:
-        while True:
-            poll_count += 1
-            try:
-                fetch_start = time.time()
+    if not args.no_open:
+        import webbrowser
+        webbrowser.open(url)
 
-                # Always load local runs for the session overview
-                all_runs = fetch_all_local_runs()
-                active_run = get_active_run_name()
-
-                # Fetch active run data (remote preferred, local fallback)
-                experiments = []
-                status = None
-                log_tail = None
-                gpu_info = None
-
-                if remote_host and not local_only:
-                    experiments, status, log_tail, _, gpu_info = fetch_remote(remote_host, remote_port)
-
-                # Fallback to local if remote returned nothing
-                if not experiments and not status:
-                    if args.local:
-                        local_path = Path(args.local)
-                    else:
-                        local_path = RESULTS_ROOT
-
-                    if active_run and (local_path / active_run).is_dir():
-                        run_dir = local_path / active_run
-                    elif local_path.is_dir() and (local_path / "current_run.txt").exists():
-                        rn = (local_path / "current_run.txt").read_text().strip()
-                        run_dir = local_path / rn if rn else local_path
-                    else:
-                        run_dir = local_path
-
-                    if run_dir.is_dir():
-                        experiments, status = fetch_local_run(run_dir)
-                        for log_candidate in [run_dir / "loop.log", run_dir.parent / "loop.log"]:
-                            if log_candidate.exists():
-                                lines = log_candidate.read_text().split("\n")
-                                log_tail = "\n".join(lines[-20:])
-                                break
-
-                fetch_time = time.time() - fetch_start
-
-                dashboard = build_dashboard(
-                    all_runs, active_run, experiments, status, log_tail, gpu_info, mode, poll_count, fetch_time,
-                )
-                live.update(dashboard)
-
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                live.update(Panel(f"Error: {e}", border_style="red"))
-
-            try:
-                time.sleep(args.interval)
-            except KeyboardInterrupt:
-                break
-
-    console.print("\n[dim]Dashboard stopped.[/]")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nDashboard stopped.")
+        server.shutdown()
 
 
 if __name__ == "__main__":
