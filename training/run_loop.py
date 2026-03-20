@@ -157,7 +157,7 @@ OBSERVABILITY_CONFIG = {
         "actionable_bar_rate_min": 0.03,
     },
 }
-FEATURE_LOCK_COUNT = 70
+FEATURE_LOCK_COUNT = 32
 
 # Claude model for code generation
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
@@ -549,7 +549,7 @@ _LAB_NOTEBOOK_SKELETON = """\
 # Lab Notebook
 
 ## System
-SPX 0DTE | 2-head gate+dir | 70 features + position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
+SPX 0DTE | 2-head gate+dir | 32 features + position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
 
 ## Best Runs
 | Run | Score | PF | TPD | Key Change |
@@ -720,7 +720,7 @@ def prompt_contract_check(system_prompt: str, program_md: str) -> dict[str, Any]
             r"CALL_ATM.*CALL_OTM5.*CALL_OTM10.*PUT_ATM.*PUT_OTM5.*PUT_OTM10",
         ),
         ("eight_action_semantics", r"8 effective actions"),
-        ("feature_contract_phase_lock_70", r"70 features"),
+        ("feature_contract_phase_lock_32", r"32 features"),
     ]
     forbidden_checks = [
         ("stale_four_action_semantics", r"4 effective actions"),
@@ -1175,7 +1175,7 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
     parts = []
 
     if history:
-        best = max(history, key=lambda e: e.get("score", e.get("val_sharpe", -999)))
+        best = max(history, key=lambda e: _safe_score(e))
         kept = [e for e in history if e.get("kept")]
         failed = [e for e in history if e.get("error")]
         scored = [e for e in history if _safe_score(e) > -999]
@@ -1184,7 +1184,7 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
         parts.append(
             f"Total={len(history)} | Kept={len(kept)} | Failed={len(failed)} | "
             f"Accept rate={accept_rate:.0%} ({len(kept)}/{len(scored)}) | "
-            f"Best score={best.get('score', best.get('val_sharpe', 'N/A'))} (#{best['experiment_id']})\n"
+            f"Best score={_safe_score(best)} (#{best['experiment_id']})\n"
         )
 
         # Strategy collapse detection
@@ -1211,13 +1211,13 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
 
         top_kept = sorted(
             kept,
-            key=lambda e: e.get("score", e.get("val_sharpe", -999)),
+            key=lambda e: _safe_score(e),
             reverse=True,
         )[:8]
         if top_kept:
             parts.append("## Top Kept Experiments")
             for exp in top_kept:
-                score = exp.get("score", exp.get("val_sharpe", "N/A"))
+                score = _safe_score(exp)
                 pf = exp.get("profit_factor", "?")
                 tpd = exp.get("trades_per_day", "?")
                 reason = exp.get("change_summary", "unknown")
@@ -1299,7 +1299,7 @@ Failure excerpt:
 
 Requirements:
 - Return a COMPLETE corrected train.py file.
-- Keep the two-head/70-feature contract intact.
+- Keep the two-head/32-feature contract intact.
 - Fix the concrete failure first; make minimal additional edits.
 - No markdown fences, no prose outside <reasoning>...</reasoning>.
 
@@ -1508,7 +1508,7 @@ def validate_architecture_locked(code: str) -> str | None:
 
     Changing these tensor-shape-determining hyperparameters invalidates
     warm-start weights, forcing training from scratch. With only ~5 min
-    per experiment, that's not enough to converge on 70 features.
+    per experiment, that's not enough to converge on 32 features.
     """
     if not os.path.exists(BEST_TRAIN_PY):
         return None  # no best model yet, nothing to lock
@@ -1650,7 +1650,9 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                            'avg_entry_cost_bps', 'avg_entry_quality',
                            'cost_realism_coverage', 'high_cost_entry_rate',
                            'low_quality_entry_rate', 'actionable_bar_rate',
-                           'risk_off_bar_rate'):
+                           'risk_off_bar_rate',
+                           'min_equity_frac', 'avg_risk_fraction',
+                           'max_risk_fraction'):
                     try:
                         metrics[key] = float(val)
                     except ValueError:
@@ -1658,13 +1660,16 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                 elif key in ('num_trades', 'num_val_bars', 'num_val_days',
                              'num_steps', 'num_params', 'max_consec_loss',
                              'model_exit_count', 'cooldown_blocked',
-                             'pre_10am_blocked'):
+                             'pre_10am_blocked',
+                             'trades_blocked_by_balance'):
                     try:
                         metrics[key] = int(val.replace(',', ''))
                     except ValueError:
                         pass
                 elif key in ('lookback', 'depth', 'd_model'):
                     metrics[key] = val
+                elif key == 'hit_ruin':
+                    metrics[key] = val.strip().lower() == 'true'
 
         if 'score' not in metrics:
             return {
@@ -1989,8 +1994,8 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         log(f"Calling Claude for code modification (attempt {attempt}/{max_codegen_attempts})...")
         if attempt == 1:
             code_token_est = len(current_code) // 4
-            if code_token_est > 10000:
-                log(f"  WARNING: train.py is ~{code_token_est} tokens — may need large output window")
+            if code_token_est > MAX_TOKENS * 0.6:
+                log(f"  WARNING: train.py is ~{code_token_est} tokens (max_tokens={MAX_TOKENS}) — risk of truncation")
         t0 = time.time()
         try:
             # Check for prefetched response (only on first attempt with original prompt)
@@ -2126,7 +2131,7 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
             next_state_hash = _prefetch_state_hash(current_code, len(prompt_history))
             submit_prefetch(next_id, system_blocks, next_user_prompt, next_state_hash)
 
-        timeout = time_budget + 120
+        timeout = time_budget + 240  # 240s buffer: ~150s eval + ~15s data load + ~75s headroom
         metrics = run_training(TRAIN_PY, timeout=timeout, time_budget=time_budget)
         train_wall_time = metrics.get("wall_time", 999)
         exp["train_wall_time"] = round(train_wall_time, 1)
@@ -2224,6 +2229,11 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         exp["low_quality_entry_rate"] = metrics.get("low_quality_entry_rate", 0.0)
         exp["actionable_bar_rate"] = metrics.get("actionable_bar_rate", 0.0)
         exp["risk_off_bar_rate"] = metrics.get("risk_off_bar_rate", 0.0)
+        exp["hit_ruin"] = metrics.get("hit_ruin", False)
+        exp["min_equity_frac"] = metrics.get("min_equity_frac", 1.0)
+        exp["avg_risk_fraction"] = metrics.get("avg_risk_fraction", 0.0)
+        exp["max_risk_fraction"] = metrics.get("max_risk_fraction", 0.0)
+        exp["trades_blocked_by_balance"] = metrics.get("trades_blocked_by_balance", 0)
         exp["parse_summary"] = metrics.get("parse_summary", {})
 
         anomaly_flags = detect_anomaly_flags(exp)
@@ -2397,7 +2407,7 @@ def main():
                 f"data.pt has {n_features} features, expected {FEATURE_LOCK_COUNT}."
             )
             print(
-                "  Rebuild/restore 70-feature data before running the foundation loop."
+                "  Rebuild/restore 32-feature data before running the training loop."
             )
             sys.exit(1)
         if nan_pct > 50:
@@ -2681,9 +2691,9 @@ def main():
 
     if run_history:
         log("Top 5 experiments by score:")
-        ranked = sorted(run_history, key=lambda e: e.get("score", e.get("val_sharpe", -999)), reverse=True)
+        ranked = sorted(run_history, key=lambda e: _safe_score(e), reverse=True)
         for i, exp in enumerate(ranked[:5]):
-            sc = exp.get('score', exp.get('val_sharpe', -999))
+            sc = _safe_score(exp)
             log(f"  #{exp['experiment_id']}: score={sc:.4f} pf={exp.get('profit_factor', 0):.2f} "
                 f"tpd={exp.get('trades_per_day', 0):.1f} — {exp.get('change_summary', 'N/A')}")
 

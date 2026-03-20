@@ -915,7 +915,7 @@ cmd_stop() {
     sleep 3  # let filesystem flush before downloading
 
     log "Downloading results before closing..."
-    cmd_download || log "WARNING: Download failed (container may be dead). Proceeding to close deployment."
+    EXTRA_ARGS="" cmd_download || log "WARNING: Download failed (container may be dead). Proceeding to close deployment."
 
     log "Closing Akash deployment DSEQ=$DSEQ..."
     provider-services tx deployment close \

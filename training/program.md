@@ -1,4 +1,4 @@
-# Autoresearch Trading Contract (Foundation Phase)
+# Autoresearch Trading Contract (v2 Phase)
 
 This file is the strict operating contract for autonomous loop experiments.
 If anything else conflicts with this file, this file wins.
@@ -7,7 +7,7 @@ If anything else conflicts with this file, this file wins.
 Improve the training objective in `train.py` for SPX 0DTE option trading while preserving mechanical reliability.
 
 ## Scope Lock
-- Foundation phase is locked to **70 features** (60 core + 10 extended: charm, vanna, Bollinger, momentum, VWAP crosses, RSI, ATR ratio).
+- Feature set: **32 features** (reduced from 70 in v2 phase transition for signal density and training speed).
 - Model contract is locked to **two-head** outputs.
 - Active trading semantics are locked to 6-direction entries + contextual exit.
 
@@ -43,7 +43,7 @@ Do not change tensor-shape-defining architecture values during this phase:
 - `DEPTH`
 - `N_HEADS`
 
-Reason: warm-start compatibility with `best_model.pt` must be preserved.
+Note: Input dimension changed from 70 to 32 features in v2 phase. Warm-start from prior `best_model.pt` is incompatible; fresh training required. D_MODEL/DEPTH/N_HEADS remain locked for future warm-start compatibility.
 
 ## Safety + Runtime Constraints
 - No `torch.compile`.
@@ -86,13 +86,37 @@ These control the score formula and can be set per experiment:
 |----------|---------|-------|--------|
 | SCORE_WIN_RATE_BONUS | 0.0 | 0.0-1.0 | Multiplier bonus for win rates above 40% |
 | SCORE_RR_BONUS | 0.0 | 0.0-2.0 | Multiplier bonus for avg_win/avg_loss > 1 |
-| SCORE_DRAWDOWN_PENALTY | 0.0 | 0.0-1.0 | Multiplier penalty for deep drawdowns |
+| SCORE_DRAWDOWN_PENALTY | 0.5 | 0.0-1.0 | Multiplier penalty for deep drawdowns (ACTIVE by default) |
 | SCORE_HOLD_BONUS | 0.0 | 0.0-1.0 | Multiplier bonus for hold times near 30 bars |
 | SCORE_FREQ_CENTER | 3.0 | 1.0-8.0 | Center of trade frequency sweet spot |
 | SCORE_FREQ_WIDTH | 3.0 | 1.0-6.0 | Width of frequency sweet spot band |
-| SCORE_CONSEC_LOSS_THRESHOLD | 3 | 2-8 | Consecutive losses before penalty kicks in |
+| SCORE_CONSEC_LOSS_THRESHOLD | 3 | 2-8 | Consecutive losses before penalty kicks in (15%/loss beyond threshold) |
 | SCORE_SHORT_HOLD_THRESHOLD | 0.30 | 0.10-0.60 | Short hold % that triggers penalty |
 | SCORE_STOP_RATE_THRESHOLD | 0.30 | 0.10-0.60 | Stop loss rate that triggers penalty |
+| SCORE_RUIN_PENALTY | 1.0 | 0.0-1.0 | Severity of account ruin penalty (ACTIVE by default) |
+| SCORE_RUIN_THRESHOLD | 0.25 | 0.05-0.50 | Equity fraction triggering ruin (0.25 = 75% loss from peak) |
+| SCORE_RISK_FRACTION_PENALTY | 0.5 | 0.0-1.0 | Penalizes avg risk per trade > 30% of account (ACTIVE by default) |
+
+## Position State Contract
+The model receives a 5-dimensional position state tensor at inference time:
+- `[0]` is_holding: 1.0 if in a trade, 0.0 if flat
+- `[1]` bars_held_norm: bars held / BARS_PER_DAY, clamped to [0, 1]
+- `[2]` unrealized_pnl_norm: tanh(unrealized_pnl * 5.0), clamped to [-1, 1]
+- `[3]` account_health: account_balance / starting_capital (1.0 = full, 0.0 = wiped)
+- `[4]` loss_streak_frac: consecutive_losses / consec_loss_threshold, clamped to [0, 1]
+
+During training, `PositionStateGenerator` produces correlated synthetic states:
+- account_health and loss_streak_frac are correlated (low health → higher streak)
+- This teaches the model that account state is informative, not noise
+
+During evaluation/replay, dims 3-4 use real tracked account state.
+
+## Account-Aware Simulation
+- Starting capital: $10,000 (STARTING_CAPITAL constant)
+- Contract multiplier: $100 (SPX_MULTIPLIER constant)
+- Affordability check: entries blocked if contract cost > account balance
+- Inline equity tracking: account balance updated at each trade exit
+- Risk fraction penalty: penalizes models that consistently risk >30% of account per trade
 
 ## Output Metrics Contract (Required Keys)
 The training script output must include these parseable metric keys:
@@ -105,6 +129,10 @@ The training script output must include these parseable metric keys:
 - `rr_ratio:`
 - `avg_hold_bars:`
 - `model_exit_rate:`
+- `hit_ruin:`
+- `min_equity_frac:`
+- `avg_risk_fraction:`
+- `trades_blocked_by_balance:`
 
 ## Domain Knowledge (0DTE SPX Options)
 

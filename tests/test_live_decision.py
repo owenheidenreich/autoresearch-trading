@@ -12,7 +12,7 @@ class _DummyModel(torch.nn.Module):
         super().__init__()
         self.last_input_shape: tuple[int, ...] | None = None
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor, position_state=None) -> tuple[torch.Tensor, torch.Tensor]:
         self.last_input_shape = tuple(int(v) for v in x.shape)
         batch = x.shape[0]
         gate_logits = torch.tensor([[0.0, 4.0]], dtype=torch.float32, device=x.device).repeat(batch, 1)

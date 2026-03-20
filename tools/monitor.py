@@ -23,7 +23,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 try:
@@ -418,7 +418,9 @@ def build_active_header(status: dict | None, experiments: list[dict], mode: str)
     if updated:
         try:
             last = datetime.fromisoformat(updated)
-            ago = (datetime.now() - last).total_seconds()
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            ago = (datetime.now(timezone.utc) - last).total_seconds()
             if ago > 120:
                 staleness = f"  [bold red](stale: {fmt_duration(ago)} ago)[/]"
             elif ago > 30:
@@ -592,7 +594,18 @@ def build_log_panel(log_tail: str | None) -> Panel:
 
     lines = log_tail.strip().split("\n")[-20:]
     formatted = []
+    PST = timezone(timedelta(hours=-7))
     for line in lines:
+        # Convert UTC timestamps [HH:MM:SS] to PST
+        if line and line[0] == "[" and len(line) > 9 and line[9] == "]":
+            try:
+                utc_time = datetime.strptime(line[1:9], "%H:%M:%S").replace(
+                    tzinfo=timezone.utc
+                )
+                pst_time = utc_time.astimezone(PST)
+                line = f"[{pst_time.strftime('%H:%M:%S')}]{line[10:]}"
+            except ValueError:
+                pass
         if "ERROR" in line or "FAILED" in line:
             formatted.append(f"[red]{line}[/]")
         elif "KEPT" in line or "kept" in line or "PASSED" in line or "IMPROVED" in line:
@@ -706,8 +719,9 @@ def build_dashboard(
     """Assemble the full dashboard layout."""
     layout = Layout()
 
-    # Top: timestamp + mode
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Top: timestamp + mode (PST)
+    PST = timezone(timedelta(hours=-7))
+    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S PST")
     title = Text()
     title.append("  AUTORESEARCH DASHBOARD", style="bold cyan")
     title.append(f"  |  {now}  |  {mode}  |  poll #{poll_count}", style="dim")

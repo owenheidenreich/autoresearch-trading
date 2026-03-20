@@ -57,8 +57,6 @@ python3 replay.py --date 2026-03-17 --output replay-trades.csv
 training/
   prepare.py            # Data pipeline: SPY/SPX/VIX bars + SPXW options → data.pt
   train.py              # Model architecture + training loop (agent modifies THIS)
-  best_train.py         # Best-performing train.py snapshot (auto-synced from GPU)
-  best_model.pt         # Best model weights checkpoint (auto-synced from GPU)
   run_loop.py           # Autoresearch orchestration: Claude → mutate → train → score → keep/revert
   replay.py             # Replay simulation engine + model loading
   program.md            # Strict contract for the autonomous loop (injected into system prompt)
@@ -84,7 +82,6 @@ infra/
 
 docs/
   CLAUDE.md             # Project guide for Claude (codebase navigation)
-  IDEAS-BACKLOG.md      # Human-only exploratory roadmap
   0dte-domain-knowledge.md  # SPX 0DTE options trading domain primer
 ```
 
@@ -93,7 +90,7 @@ docs/
 ### Model
 - Two-head output: **Gate** `[NO_TRADE, TRADE]` + **Direction** `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]`
 - 8 effective actions: `DO_NOTHING`, 6 entry types, `EXIT`
-- 70 features including SPY/SPX/VIX technicals + options greeks + time features
+- 32 features (v2): SPY/SPX/VIX technicals + options greeks + time features (reduced from 70 for signal density)
 - Position-aware inference: model sees current P&L, hold time, and bars held
 
 ### Autoresearch Loop

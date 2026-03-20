@@ -9,19 +9,17 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 ## Key Files by Category
 
 ### Data Pipeline
-- [training/prepare.py](../training/prepare.py) — Builds `data.pt` from SPY/SPX/VIX bars + SPXW option chains. Defines feature contract (70 features), action space (8 actions), and scoring formula. **Read-only by the autoresearch agent.**
-- `~/.cache/autoresearch-trading/features/data.pt` — The training tensor (257MB, ~383k bars)
+- [training/prepare.py](../training/prepare.py) — Builds `data.pt` from SPY/SPX/VIX bars + SPXW option chains. Defines feature contract (32 features, v2 reduced from 70), action space (8 actions), and scoring formula. **Read-only by the autoresearch agent.**
+- `~/.cache/autoresearch-trading/features/data.pt` — The training tensor (~201MB, ~383k bars)
 
 ### Autoresearch Loop
 - [training/run_loop.py](../training/run_loop.py) — Main orchestration: calls Claude → validates mutation → trains → scores → keeps or reverts. Contains prefetch pipeline, retry/repair logic, anomaly detection, and auto-sync.
 - [training/program.md](../training/program.md) — The strict contract injected into Claude's system prompt. Defines what the agent can/cannot modify.
 - [training/lab_notebook.md](../training/lab_notebook.md) — Persistent cross-run memory: improvements log + dead ends. Also injected into system prompt.
 - [training/train.py](../training/train.py) — The file the autoresearch agent mutates. Contains model architecture, loss functions, training loop.
-- [training/best_train.py](../training/best_train.py) — Snapshot of the best-performing train.py (auto-saved).
 
 ### Model & Replay
 - [training/replay.py](../training/replay.py) — Replay simulation engine + model loading. The `evaluate_trades()` function IS the trading simulation. Also contains `load_model()` and `_load_model_class_from_train_py()` for loading evolved architectures.
-- `training/best_model.pt` — Best model checkpoint (weights + config + metrics)
 
 ### Live Paper Trading
 - [tools/paper_live.py](../tools/paper_live.py) — CLI entry point for IBKR paper trading
@@ -47,7 +45,7 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 2. **No hardcoded take-profit.** The model's gate head learns exits. 30% SL is emergency backstop only.
 3. **data.pt must include options.** Never build without option chain sidecar data — causes silent total failure.
 4. **Train on Akash, not locally.** User's laptop can't handle training. Always use `deploy.sh`.
-5. **Model architecture evolves.** `best_train.py` may define custom modules (PositionStateGenerator, DynamicStopModule, etc.) that differ from the default TradingModel in replay.py. The `load_model()` function handles this via dynamic class loading.
+5. **Model architecture evolves.** `train.py` may define custom modules (PositionStateGenerator, etc.) that differ from the default TradingModel in replay.py. The `load_model()` function handles this via dynamic class loading.
 
 ## Environment Variables
 

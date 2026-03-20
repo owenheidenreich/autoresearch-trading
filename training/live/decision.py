@@ -66,13 +66,19 @@ class ModelDecisionEngine:
         self._in_trade = False
         self._bars_held = 0
         self._unrealized_pnl = 0.0
+        self._account_health = 1.0  # account_balance / starting_capital
+        self._loss_streak_frac = 0.0  # consecutive_losses / threshold
 
     def update_position_state(self, in_trade: bool, bars_held: int = 0,
-                               unrealized_pnl: float = 0.0) -> None:
+                               unrealized_pnl: float = 0.0,
+                               account_health: float = 1.0,
+                               loss_streak_frac: float = 0.0) -> None:
         """Called by service.py each bar to keep position state in sync."""
         self._in_trade = in_trade
         self._bars_held = bars_held
         self._unrealized_pnl = unrealized_pnl
+        self._account_health = account_health
+        self._loss_streak_frac = loss_streak_frac
 
     @classmethod
     def from_checkpoint(
@@ -136,11 +142,13 @@ class ModelDecisionEngine:
         # Build position state tensor matching training's evaluate_trades()
         pos_state = None
         if self._has_position_proj:
-            pos_state = torch.zeros(1, 3, device=self.device)
+            pos_state = torch.zeros(1, 5, device=self.device)
             if self._in_trade:
                 pos_state[0, 0] = 1.0
                 pos_state[0, 1] = min(self._bars_held / BARS_PER_DAY, 1.0)
                 pos_state[0, 2] = float(np.tanh(self._unrealized_pnl * 5.0))
+            pos_state[0, 3] = self._account_health
+            pos_state[0, 4] = self._loss_streak_frac
         with torch.no_grad():
             gate_logits, dir_logits = self.model(x, position_state=pos_state)
             gate_probs = torch.softmax(gate_logits, dim=-1)[0].detach().cpu().numpy()
