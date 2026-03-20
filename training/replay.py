@@ -2548,11 +2548,25 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
                   {'title': f'SPX {tf} Line — {replay_date}{title_suffix}'}],
         ))
 
-    # Summary stats
+    # Summary stats — use dollar-compounded return, not naive sum of percentages
     wins = sum(1 for t in trades if t['result'] == 'WIN')
-    total_pnl = sum(t['pnl_pct'] for t in trades)
     wr = f"{100*wins/len(trades):.0f}%" if trades else "N/A"
-    summary_text = f"Trades: {len(trades)} | Win rate: {wr} | Total P&L: {total_pnl:+.1f}%"
+    # Compute real compounded return using dollar P&L (same logic as equity curve)
+    _cash = 10_000.0
+    for t in trades:
+        _pnl_pct = t['pnl_pct'] / 100.0
+        _entry_px = t.get('entry_option_px', 0)
+        if _entry_px and _entry_px > 0:
+            _cost = _entry_px * SPX_MULTIPLIER
+            if _cost > _cash:
+                continue
+            _dollar_pnl = _pnl_pct * _entry_px * SPX_MULTIPLIER
+        else:
+            _dollar_pnl = _cash * _pnl_pct
+        _cash += _dollar_pnl
+        _cash = max(_cash, 0.0)
+    total_return_pct = (_cash / 10_000.0 - 1) * 100
+    summary_text = f"Trades: {len(trades)} | Win rate: {wr} | Return: {total_return_pct:+.1f}%"
 
     fig.update_layout(
         title=dict(text=f'SPX 1min Candles — {replay_date}{title_suffix}', x=0.5),

@@ -878,6 +878,10 @@ print(f'best_score={s.get(\"best_score\",0)}')
             log "  ♻ Polling... run=$run_name exp=$total kept=$kept best=$best_score remaining=$remaining"
         fi
 
+        # --- Always sync lab_notebook.md (tiny file, keeps local copy current) ---
+        scp_cmd "root@$SSH_HOST:/root/lab_notebook.md" \
+            "$PROJECT_ROOT/training/lab_notebook.md" 2>/dev/null || true
+
         # --- Loop completed: final full canonical run-folder sync + exit ---
         if [[ "$phase" == "completed" ]]; then
             log ""

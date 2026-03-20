@@ -549,7 +549,7 @@ _LAB_NOTEBOOK_SKELETON = """\
 # Lab Notebook
 
 ## System
-SPX 0DTE | 2-head gate+dir | 32 features + position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
+SPX 0DTE | 2-head gate+dir | 32 features (v2) | 5-dim position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
 
 ## Best Runs
 | Run | Score | PF | TPD | Key Change |
@@ -588,7 +588,11 @@ def _rebuild_notebook(sections: dict[str, list[str]]) -> str:
     """Rebuild notebook markdown from parsed sections."""
     parts = ["# Lab Notebook\n"]
     # Core sections in fixed order
-    core_order = ["System", "Critical Change (2026-03-19)", "Backtest Analysis (old regime, 222 trades over 198 days)", "Best Runs", "Dead Ends"]
+    core_order = [
+        "System", "Causal Exit Labels", "Account-Aware Scoring",
+        "What Works (proven across 95 experiments)", "What Fails (do NOT retry)",
+        "Current Best Model (exp-52)", "Best Runs", "Dead Ends", "Next Priorities",
+    ]
     seen = set()
     for header in core_order:
         if header in sections:
