@@ -166,6 +166,18 @@ MAX_CODEGEN_ATTEMPTS = 3
 SMOKE_TIME_BUDGET = 60   # Full cold start on H100: torch import + CUDA init + 257MB data load + model init + few steps ≈ 50s
 SMOKE_TIMEOUT_BUFFER = 60
 
+# API cost tracking (Sonnet 4 pricing)
+_COST_PER_MTOK = {
+    "input": 3.0,          # uncached input
+    "cache_write": 6.0,    # 1h cache write (2x base)
+    "cache_read": 0.30,    # cache read (0.1x base)
+    "output": 15.0,        # output tokens
+}
+_cumulative_tokens: dict[str, int] = {
+    "input": 0, "output": 0, "cache_read": 0, "cache_write": 0,
+    "calls": 0, "prefetch_discards": 0,
+}
+
 # Reusable anthropic client (avoid httpx connection pool leak)
 _anthropic_client = None
 
@@ -1043,7 +1055,7 @@ def call_claude(system_prompt, user_prompt: str) -> str:
         max_tokens=MAX_TOKENS,
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
-        extra_headers={"anthropic-beta": "prompt-caching-2024-07-31,output-128k-2025-02-19"},
+        extra_headers={"anthropic-beta": "output-128k-2025-02-19"},
     ) as stream:
         for text in stream.text_stream:
             collected_text.append(text)
@@ -1058,7 +1070,14 @@ def call_claude(system_prompt, user_prompt: str) -> str:
     cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
     cache_create = getattr(usage, "cache_creation_input_tokens", 0) or 0
     input_tokens = getattr(usage, "input_tokens", 0) or 0
-    log(f"  Tokens: input={input_tokens}, cache_read={cache_read}, cache_create={cache_create}")
+    output_tokens = getattr(usage, "output_tokens", 0) or 0
+    log(f"  Tokens: input={input_tokens}, cache_read={cache_read}, cache_create={cache_create}, output={output_tokens}")
+    # Accumulate for cost tracking
+    _cumulative_tokens["input"] += input_tokens
+    _cumulative_tokens["output"] += output_tokens
+    _cumulative_tokens["cache_read"] += cache_read
+    _cumulative_tokens["cache_write"] += cache_create
+    _cumulative_tokens["calls"] += 1
     return response.content[0].text
 
 
@@ -1098,21 +1117,31 @@ def consume_prefetch(experiment_id: int, current_state_hash: str) -> str | None:
     """Check if a valid prefetched response exists for this experiment.
 
     Returns the response text if valid, None if stale or missing.
+    Compares state_hash to detect when a kept experiment changed the baseline
+    (code or prompt_history length changed since prefetch was submitted).
     """
     entry = _prefetched_responses.pop(experiment_id, None)
     if entry is None:
+        return None
+    if entry["state_hash"] != current_state_hash:
+        log(f"  [prefetch] Discarding stale prefetch for #{experiment_id} "
+            f"(hash {entry['state_hash'][:8]} != {current_state_hash[:8]}, "
+            f"likely a new best was found)")
+        _cumulative_tokens["prefetch_discards"] += 1
         return None
     log(f"  [prefetch] Using prefetched response for #{experiment_id}")
     return entry["response"]
 
 
-def build_system_prompt(program_md: str, lab_notebook: str = "") -> list[dict]:
+def build_system_prompt(program_md: str, lab_notebook: str = "",
+                        current_train_py: str = "") -> list[dict]:
     """Build structured system prompt with cache breakpoints.
 
     Returns a list of content blocks for the Anthropic API.
-    The static instruction block and program.md are cached (they never change
-    within a run). The lab notebook is cached separately (it changes only
-    when an experiment is kept).
+    Block 1: Static instructions + program.md (never changes within a run)
+    Block 2: Lab notebook (changes only when an experiment is kept)
+    Block 3: Current train.py (changes only when an experiment is kept)
+    All three are cached — consecutive failed experiments reuse the cache.
     """
     instructions = """\
 You are an expert ML researcher running inside an autonomous experiment loop.
@@ -1134,11 +1163,14 @@ Execution constraints:
 - Do not change files other than `train.py`.
 - Preserve parseable metric output keys.
 - Prefer small, testable deltas if history shows instability.
+- You can tune the score formula via `score_config` dict in train.py (see Score Tuning Environment Variables in the contract).
+- You can tune training signal weighting, sample selection, and loss structure — not just model architecture.
+- Check per-chunk metrics to ensure performance is consistent across time periods, not just good in aggregate.
 - Do NOT repeat experiments from the Lab Notebook — read the Improvements Log and Dead Ends carefully.
 
 ## Evaluation Mechanics (from evaluate_trades)
 - Trades enter at the model's signal bar using actual option mid-prices
-- Stop-loss: -30% of premium (position closed immediately)
+- Stop-loss: dynamic per-trade (15-60%, based on gate confidence + IV + VIX)
 - Max hold: 60 bars (60 minutes)
 - Cooldown: 5 bars after a stop-loss before next entry
 - No trading before bar 30 (first 30 minutes of session)
@@ -1158,7 +1190,24 @@ If any instruction you infer conflicts with this guidance, follow this guidance.
         },
     ]
 
-    # Block 2: Lab notebook (cached separately — changes only on kept experiments)
+    # Block 2: Current train.py (cached — changes only when experiment is kept)
+    # IMPORTANT: train.py MUST come before lab notebook for cache efficiency.
+    # Prompt caching uses prefix matching: if a later block changes, all subsequent
+    # blocks are invalidated. Lab notebook changes every experiment (dead-end entries),
+    # but train.py only changes on kept experiments. Putting the larger, more stable
+    # block (train.py ~8k tokens) before the volatile block (notebook ~1.5k tokens)
+    # keeps ~11.5k tokens cached instead of only ~3k.
+    if current_train_py:
+        blocks.append({
+            "type": "text",
+            "text": (
+                "\n\n## Current train.py (this is the code you must modify):\n"
+                "```python\n" + current_train_py + "\n```\n"
+            ),
+            "cache_control": {"type": "ephemeral", "ttl": "1h"},
+        })
+
+    # Block 3: Lab notebook (changes every experiment — dead-end entries appended)
     if lab_notebook:
         blocks.append({
             "type": "text",
@@ -1197,11 +1246,11 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
             parts.append("## STRATEGY COLLAPSE WARNING")
             parts.append(collapse["message"])
             if collapse["collapsed"]:
-                parts.append("The search has COLLAPSED. You MUST try a fundamentally different approach:")
-                parts.append("  - Change the loss function structure, not just weights")
-                parts.append("  - Add or remove a training technique (curriculum, augmentation)")
-                parts.append("  - Rethink which feature groups matter most")
-                parts.append("  - Try the OPPOSITE of what recent experiments attempted")
+                parts.append("The search has COLLAPSED — recent experiments are repetitive and none succeeded.")
+                parts.append("Before proposing anything, re-read Dead Ends and What Fails in the Lab Notebook.")
+                parts.append("What assumption are ALL recent failed experiments sharing? Challenge that assumption.")
+                parts.append("Consider changes to the TRAINING SIGNAL (loss weighting, sample selection, score_config),")
+                parts.append("not just the model architecture.")
             parts.append("")
 
         # Low accept rate warning
@@ -1252,23 +1301,20 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
         # Diversity nudge every 5th experiment
         if experiment_id > 0 and experiment_id % 5 == 0:
             parts.append("## DIVERSITY NUDGE")
-            parts.append("This is every 5th experiment — try something FUNDAMENTALLY DIFFERENT.")
-            parts.append("Don't make incremental tweaks. Instead, try a completely new approach:")
-            parts.append("  - A different loss function structure")
-            parts.append("  - A novel architectural component")
-            parts.append("  - A different training strategy (curriculum, scheduling)")
-            parts.append("  - Leveraging feature groups you haven't used yet (Greeks, OTM skew)")
-            parts.append("Look at what has been tried in the history above and explore the OPPOSITE direction.\n")
+            parts.append("This is every 5th experiment — step back and think differently.")
+            parts.append("Look at what hasn't worked and why. Consider whether the PROBLEM FRAMING")
+            parts.append("is right, not just the solution. What assumption might be wrong?")
+            parts.append("Check per-chunk PF in recent outputs — is performance consistent across time periods?\n")
 
         # Search-space review every 10th experiment (article: "is the search space still right?")
         if experiment_id > 0 and experiment_id % 10 == 0:
             parts.append("## SEARCH-SPACE REVIEW (every 10th experiment)")
             parts.append("Before proposing your next change, answer these questions:")
             parts.append("  1. Is the agent still exploring, or has it collapsed to a fixed strategy?")
-            parts.append("  2. Are the constraints correct? Is score rewarding the right behavior?")
-            parts.append("  3. What's the BIGGEST gap between current performance and the goal?")
-            parts.append("  4. Which feature groups are undertested? Which loss components are undertested?")
-            parts.append("  5. Are recent proposals getting more conservative/smaller? If so, go bigger.")
+            parts.append("  2. Look at per-chunk PF — is performance consistent across time periods, or regime-dependent?")
+            parts.append("  3. Are you tuning something that matters, or polishing something fundamentally limited?")
+            parts.append("  4. What would you change about the TRAINING SIGNAL (loss, weighting, scoring), not just the model?")
+            parts.append("  5. What's the simplest change that could have the biggest impact?")
             parts.append("Write your analysis in <reasoning>, then propose a change that addresses the biggest gap.\n")
     else:
         # Check if the lab notebook has prior improvements (loaded into system prompt)
@@ -1296,8 +1342,8 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
             f"Build on THIS code — it is the current best.\n"
         )
 
-    parts.append("## Current train.py:\n```python\n" + current_train_py + "\n```\n")
     parts.append("Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.")
+    parts.append("The current train.py is in the system prompt above — modify THAT code.")
 
     return "\n".join(parts)
 
@@ -1471,6 +1517,41 @@ def validate_safety(code: str) -> str | None:
         m = _re.search(pattern, code)
         if m:
             return f"SAFETY: {msg}"
+
+    # Score config lock: prevent agent from gaming the evaluation metric.
+    # _score_config values only affect post-training scoring, not model behavior.
+    # Changing them inflates scores without improving trading.
+    _score_gaming_keys = [
+        'drawdown_penalty', 'rr_bonus', 'hold_bonus', 'win_rate_bonus',
+        'freq_center', 'freq_width', 'ruin_penalty', 'risk_fraction_penalty',
+        'consec_loss_threshold', 'short_hold_threshold', 'stop_rate_threshold',
+        'ruin_threshold',
+    ]
+    if '_score_config' in code:
+        # Check if any score_config values differ from the locked defaults
+        _locked_defaults = {
+            'win_rate_bonus': '0.0', 'rr_bonus': '0.3', 'drawdown_penalty': '0.5',
+            'hold_bonus': '0.0', 'freq_center': '2.5', 'freq_width': '2.5',
+            'consec_loss_threshold': '3', 'short_hold_threshold': '0.30',
+            'stop_rate_threshold': '0.30', 'ruin_penalty': '1.0',
+            'ruin_threshold': '0.25', 'risk_fraction_penalty': '0.5',
+        }
+        for key, default_val in _locked_defaults.items():
+            # Match 'key': <value> patterns and check if value changed
+            m = _re.search(rf"'{key}':\s*([0-9.]+)", code)
+            if m and m.group(1) != default_val:
+                return (
+                    f"SAFETY: _score_config['{key}'] changed to {m.group(1)} "
+                    f"(locked at {default_val}). Modifying score_config games the "
+                    f"evaluation metric without improving the model. "
+                    f"Improve TRADING BEHAVIOR (PF, win rate, drawdown) instead."
+                )
+    # Also reject any new SCORE_* env var readers
+    if _re.search(r'_env_float\(\s*["\']SCORE_', code):
+        return (
+            "SAFETY: SCORE_* env vars are forbidden. The score formula is locked "
+            "to prevent gaming. Improve the model, not the scorer."
+        )
 
     # Check BATCH_SIZE
     m = _re.search(r'BATCH_SIZE\s*=\s*(\d+)', code)
@@ -1853,6 +1934,42 @@ def append_results_tsv(exp: dict):
         f.write(f"{exp_id}\t{score_str}\t{pf_str}\t{tpd_str}\t{status}\t{desc}\n")
 
 
+def _compute_api_cost() -> dict:
+    """Compute cumulative API cost from token counters."""
+    t = _cumulative_tokens
+    cost_input = t["input"] * _COST_PER_MTOK["input"] / 1_000_000
+    cost_write = t["cache_write"] * _COST_PER_MTOK["cache_write"] / 1_000_000
+    cost_read = t["cache_read"] * _COST_PER_MTOK["cache_read"] / 1_000_000
+    cost_output = t["output"] * _COST_PER_MTOK["output"] / 1_000_000
+    total = cost_input + cost_write + cost_read + cost_output
+    total_input = t["input"] + t["cache_write"] + t["cache_read"]
+    cache_hit_pct = (t["cache_read"] / total_input * 100) if total_input > 0 else 0.0
+    return {
+        "total_cost": round(total, 2),
+        "cost_input": round(cost_input, 2),
+        "cost_cache_write": round(cost_write, 2),
+        "cost_cache_read": round(cost_read, 2),
+        "cost_output": round(cost_output, 2),
+        "tokens_input": t["input"],
+        "tokens_output": t["output"],
+        "tokens_cache_read": t["cache_read"],
+        "tokens_cache_write": t["cache_write"],
+        "api_calls": t["calls"],
+        "prefetch_discards": t["prefetch_discards"],
+        "cache_hit_pct": round(cache_hit_pct, 1),
+    }
+
+
+def _log_cost_summary():
+    """Log cumulative API cost to stdout."""
+    c = _compute_api_cost()
+    log(f"  [cost] ${c['total_cost']:.2f} total | "
+        f"{c['api_calls']} calls | "
+        f"cache_hit={c['cache_hit_pct']:.0f}% | "
+        f"output={c['tokens_output']/1000:.0f}k tok=${c['cost_output']:.2f} | "
+        f"prefetch_discards={c['prefetch_discards']}")
+
+
 def write_status(phase: str, experiment_id: int, best_score: float,
                  kept: int, failed: int, total: int, deadline: float,
                  last_exp: dict | None = None,
@@ -1883,6 +2000,8 @@ def write_status(phase: str, experiment_id: int, best_score: float,
             status["last_failure_type"] = last_exp.get("failure_type")
         if "anomaly_flags" in last_exp:
             status["last_anomaly_flags"] = list(last_exp.get("anomaly_flags", []))
+    # Include API cost tracking for monitor dashboard
+    status["api_cost"] = _compute_api_cost()
     # Atomic write to avoid partial reads
     tmp = STATUS_JSON + ".tmp"
     with open(tmp, 'w') as f:
@@ -1933,7 +2052,8 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
     _save_artifact_text(artifact_dir, "train_before.py", current_code)
 
     lab_notebook = load_lab_notebook()
-    system_blocks = build_system_prompt(program_md, lab_notebook=lab_notebook)
+    system_blocks = build_system_prompt(program_md, lab_notebook=lab_notebook,
+                                        current_train_py=current_code)
     user = build_user_prompt(current_code, prompt_history, experiment_id)
     # Flatten system blocks to text for contract checking and fingerprinting
     system_text = "\n\n".join(b["text"] for b in system_blocks)
@@ -2141,10 +2261,14 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         # Pipeline: speculatively prefetch Claude response for the NEXT experiment
         # while this one trains. Uses current (pre-candidate) code as baseline,
         # since most experiments (~70%) are NOT kept.
+        # NOTE: prompt_history will gain 1 entry (this experiment) before consumption,
+        # so use len+1 to match the state_hash at consumption time.
+        # If this experiment is KEPT, current_code will also change, causing a hash
+        # mismatch that correctly invalidates the prefetch.
         if _prefetch_executor is not None:
             next_id = experiment_id + 1
             next_user_prompt = build_user_prompt(current_code, prompt_history, next_id)
-            next_state_hash = _prefetch_state_hash(current_code, len(prompt_history))
+            next_state_hash = _prefetch_state_hash(current_code, len(prompt_history) + 1)
             submit_prefetch(next_id, system_blocks, next_user_prompt, next_state_hash)
 
         timeout = time_budget + 240  # 240s buffer: ~150s eval + ~15s data load + ~75s headroom
@@ -2285,6 +2409,17 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
             if best_ts > 0.5 and new_ts < 0:
                 secondary_regression_reasons.append(
                     f"trade_sharpe_regressed ({new_ts:.2f} was {best_ts:.2f})")
+        # Score inflation detector: if score improved significantly but
+        # raw metrics (PF, TPD) didn't improve proportionally, block it.
+        # This catches gaming where the scorer changed but the model didn't.
+        if score > best_score * 1.10 and best_metrics:  # >10% score jump
+            pf_change = (new_pf - best_pf) / max(best_pf, 0.01)
+            tpd_change = (new_tpd - best_tpd) / max(best_tpd, 0.01)
+            if pf_change < 0.02 and tpd_change < 0.02:
+                secondary_regression_reasons.append(
+                    f"score_inflation_suspected (score +{improvement:.2f} but "
+                    f"PF {pf_change:+.1%}, TPD {tpd_change:+.1%})")
+
         if secondary_regression_reasons:
             exp["secondary_regression"] = secondary_regression_reasons
             log(f"  ⚠ Secondary metric regression: {'; '.join(secondary_regression_reasons)}")
@@ -2355,6 +2490,7 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         "experiment.v2.json",
         exp,
     )
+    _log_cost_summary()
     return exp
 
 
@@ -2734,6 +2870,16 @@ def main():
             sc = _safe_score(exp)
             log(f"  #{exp['experiment_id']}: score={sc:.4f} pf={exp.get('profit_factor', 0):.2f} "
                 f"tpd={exp.get('trades_per_day', 0):.1f} — {exp.get('change_summary', 'N/A')}")
+
+    # Final API cost report
+    c = _compute_api_cost()
+    log(f"\n  API Cost Summary:")
+    log(f"    Total: ${c['total_cost']:.2f} ({c['api_calls']} calls)")
+    log(f"    Input:  ${c['cost_input']:.2f} (uncached) + ${c['cost_cache_write']:.2f} (cache write) + ${c['cost_cache_read']:.2f} (cache read)")
+    log(f"    Output: ${c['cost_output']:.2f} ({c['tokens_output']/1000:.0f}k tokens)")
+    log(f"    Cache hit rate: {c['cache_hit_pct']:.0f}%")
+    log(f"    Prefetch discards: {c['prefetch_discards']}")
+    log(f"    Cost per experiment: ${c['total_cost'] / max(1, experiment_id - start_id):.3f}")
 
     log(f"\nBest model saved at: {BEST_TRAIN_PY}")
     log(f"Full log at: {RUN_EXPERIMENTS_V2_LOG}")

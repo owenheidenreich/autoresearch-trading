@@ -111,7 +111,7 @@ COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.3, lo=0.0, hi=0.8)
 # Loss weights
 GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 1.0, lo=0.1, hi=5.0)
 DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.0, lo=0.1, hi=5.0)
-PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.1, lo=0.0, hi=2.0)
+PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
 EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.5, lo=0.0, hi=2.0)
 
 # Asymmetric gate penalty: how much more to penalize false entries vs missed entries
@@ -124,11 +124,11 @@ DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0
 
 # Score formula tuning (passed to evaluate_trades)
 SCORE_WIN_RATE_BONUS = _env_float("SCORE_WIN_RATE_BONUS", 0.0, lo=0.0, hi=1.0)
-SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.0, lo=0.0, hi=2.0)
-SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.5, lo=0.0, hi=1.0)
-SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.0, lo=0.0, hi=1.0)
-SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 3.0, lo=1.0, hi=8.0)
-SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 3.0, lo=1.0, hi=6.0)
+SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13
+SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # NEW: Reduced from 0.1 to 0.05
+SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18
+SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
+SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # From exp #13
 SCORE_CONSEC_LOSS_THRESHOLD = _env_int("SCORE_CONSEC_LOSS_THRESHOLD", 3, lo=2, hi=8)
 SCORE_SHORT_HOLD_THRESHOLD = _env_float("SCORE_SHORT_HOLD_THRESHOLD", 0.30, lo=0.10, hi=0.60)
 SCORE_STOP_RATE_THRESHOLD = _env_float("SCORE_STOP_RATE_THRESHOLD", 0.30, lo=0.10, hi=0.60)
@@ -527,7 +527,7 @@ print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%
 model = TradingModel().to(device)
 num_params = sum(p.numel() for p in model.parameters())
 print(f"Parameters: {num_params:,}")
-print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating")
+print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating with enhanced PnL alignment and minimized drawdown penalty")
 print("Training from scratch (v4: no warm-start).")
 
 optimizer = torch.optim.AdamW(
@@ -543,6 +543,8 @@ print(f"LR: {LR} | Depth: {DEPTH} | d_model: {D_MODEL} | ff_mult: {FF_MULT}")
 print(f"Dropout: {DROPOUT} | Weight decay: {WEIGHT_DECAY}")
 print(f"False entry penalty: {FALSE_ENTRY_PENALTY}x")
 print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
+print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}, exit={EXIT_LOSS_WEIGHT}")
+print(f"Score tuning: R:R bonus={SCORE_RR_BONUS}, hold bonus={SCORE_HOLD_BONUS}, freq center={SCORE_FREQ_CENTER}, drawdown penalty={SCORE_DRAWDOWN_PENALTY}")
 print()
 
 # ---------------------------------------------------------------------------
@@ -688,7 +690,7 @@ torch.save({
         'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
         'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
         'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
-        'architecture': 'v4_simplified_two_head_balanced_strike_gating',
+        'architecture': 'v4_simplified_two_head_balanced_strike_gating_enhanced_pnl_alignment_minimized_drawdown_penalty',
         'false_entry_penalty': FALSE_ENTRY_PENALTY,
     },
     'step': step,

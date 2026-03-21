@@ -479,3 +479,44 @@ The 8 experiments above 1.0 suggest there is still signal in this architecture, 
 3. **Try warmup/cooldown on the gate module**: Instead of the gate immediately responding to stress, add temporal smoothing to prevent oscillation.
 4. **Increase training budget**: The 4.25-minute window limits curriculum approaches and larger architectures. A 10-minute budget could unlock new strategies.
 5. **Don't abandon BalancedStrikeGate**: Despite 43 failed refinements, 12 of them scored >1.0. The architecture has variance that a longer search could exploit with different random seeds or LR schedules.
+
+## Backtest P&L Deceleration Analysis
+
+### Observation
+The equity curve shows rapid acceleration from Nov 2022 to Oct 2023 ($10k → $28.4k, +184%), then levels off from Nov 2023 onward ($28.4k → $37.6k, +32% over 2.3 more years). The model remains profitable but the growth rate drops dramatically.
+
+### Root Cause: Fixed 1-Contract Position Sizing
+
+The system always trades exactly 1 SPX option contract (`RISK_PER_TRADE = 1.0` in prepare.py). There is no multi-contract scaling. As the account grows, each trade's risk fraction shrinks:
+
+| Trades | Period | Growth | Win Rate | Avg Risk/Trade |
+|--------|--------|--------|----------|----------------|
+| 1-50 | Nov 2022 → Jul 2023 | **+77.8%** | 66% | 4.7% |
+| 51-100 | Aug 2023 → Nov 2023 | **+60.0%** | 68% | 3.7% |
+| 101-150 | Nov 2023 → Dec 2024 | **+25.1%** | 78% | 2.2% |
+| 151-200 | Dec 2024 → Jul 2025 | **+0.8%** | 38% | 2.3% |
+| 201-250 | Jul 2025 → Nov 2025 | **+7.1%** | 46% | 1.8% |
+| 251-289 | Nov 2025 → Mar 2026 | **-2.0%** | 36% | 3.9% |
+
+**The structural effect dominates.** Trades 101-150 have the _highest_ win rate (78%) but only 25% growth — because a $200 win on a $30k account is 0.67% vs 2% on a $10k account.
+
+First 100 trades: avg +1.07% account return per trade. Last 100 trades: avg +0.04%.
+
+### Two Compounding Factors
+
+1. **Structural (primary):** Fixed 1-contract sizing → risk fraction shrinks from 4.7% to 1.8% as account triples → same dollar wins produce diminishing % returns. A $200 winner on $10k = 2%; on $37k = 0.54%.
+2. **Signal degradation (secondary):** Win rate drops from 66-78% (first 150 trades) to 36-46% (last 139 trades). This may reflect regime shift, overfitting to earlier market conditions, or reduced alpha in the model's signal.
+
+### The Model Can Handle More Risk
+
+- Max drawdown across the entire 986-day backtest: only **-10.2%**
+- The BalancedStrikeGate architecture routes to cheaper OTM instruments under stress — a natural risk governor
+- Even at peak leverage (early trades, 4.7% risk), the account never came close to ruin
+- A hypothetical 5% fixed-fraction sizing would have grown to ~$113k by trade 100 (vs $28k actual)
+
+### Implication for Next Training Run
+
+Position sizing is outside the model's control (hardcoded at 1 contract). This is a **simulation design decision**, not a model failure. Options for the next phase:
+- Allow the autoresearch agent to evolve a `size_logits` head (previously failed as 3rd head — but could work as a multiplier on the existing gate)
+- Implement Kelly-based contract scaling in the evaluation loop (e.g., risk = f(account_health, gate_prob)), always whole contracts
+- Simply increase the evaluation starting capital to better match live account sizing

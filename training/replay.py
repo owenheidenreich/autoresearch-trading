@@ -28,12 +28,13 @@ import torch.nn as nn
 try:
     from prepare import (
         compute_features, normalize_features, normalize_features_with_context,
+        compute_dynamic_stop, _FEAT_IDX,
         _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
         download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
         is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
         BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
         OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
-        STARTING_CAPITAL, SPX_MULTIPLIER,
+        STARTING_CAPITAL, SPX_MULTIPLIER, POSITION_RISK_TARGET,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
         ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
         ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
@@ -43,12 +44,13 @@ except ModuleNotFoundError as e:
         raise
     from training.prepare import (
         compute_features, normalize_features, normalize_features_with_context,
+        compute_dynamic_stop, _FEAT_IDX,
         _ib_client, _download_ibkr_index, download_spy_bars_ibkr, download_vix_bars,
         download_spxw_ibkr, load_spxw_caches, load_spxw_chain_caches,
         is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
         BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
         OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
-        STARTING_CAPITAL, SPX_MULTIPLIER,
+        STARTING_CAPITAL, SPX_MULTIPLIER, POSITION_RISK_TARGET,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
         ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
         ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
@@ -1357,7 +1359,7 @@ def _write_replay_ledger_and_qa(
 def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                timestamps, replay_date, lookback, raw_df,
                speed=0, verbose=False, device='cpu',
-               quiet=False):
+               quiet=False, initial_balance=None):
     """Run bar-by-bar inference and trade simulation for the replay day.
 
     Plays the EXACT SAME GAME as training evaluate_trades() and live service:
@@ -1459,6 +1461,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     trade_entry_reason_codes: list[str] = []
     trade_stop_price = 0.0
     trade_take_profit_price = 0.0
+    trade_dynamic_stop_pct = 0.35  # per-trade dynamic stop (set at entry)
     cum_pnl = 0.0
     bars_held = 0
     unrealized_pnl = 0.0
@@ -1473,9 +1476,10 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     missing_option_array_blocked = 0
     missing_option_price_blocked = 0
     # Account state tracking for position_state + affordability
-    account_balance = STARTING_CAPITAL
+    account_balance = initial_balance if initial_balance is not None else STARTING_CAPITAL
     consecutive_losses = 0
     trades_blocked_by_balance = 0
+    trade_n_contracts = 1
 
     offsets = torch.arange(-lookback, 0, device=device)
 
@@ -1498,9 +1502,10 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
 
         with torch.no_grad():
             if has_position_proj:
-                gate_logits, dir_logits = model(x, position_state=pos_state)
+                _out = model(x, position_state=pos_state)
             else:
-                gate_logits, dir_logits = model(x)
+                _out = model(x)
+            gate_logits, dir_logits = _out[0], _out[1]
 
         gate_probs_t = torch.softmax(gate_logits, dim=-1)[0].cpu().numpy()
         dir_probs = torch.softmax(dir_logits, dim=-1)[0].cpu().numpy()
@@ -1583,14 +1588,14 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             unrealized_pnl = net_pnl_pct
 
             # Exit conditions — matching prepare.py evaluate_trades()
-            hit_stop = net_pnl_pct <= -STOP_LOSS_PCT
+            hit_stop = net_pnl_pct <= -trade_dynamic_stop_pct
             hit_max_hold = bars_held >= MAX_HOLD_BARS
             model_exit = (action == ACTION_DO_NOTHING)  # gate=NO_TRADE while holding
             is_last = (k_pos == len(valid_indices) - 1)
 
             if hit_stop or hit_max_hold or model_exit or is_last:
                 if hit_stop:
-                    final_pnl = -STOP_LOSS_PCT
+                    final_pnl = -trade_dynamic_stop_pct
                     reason = 'STOP_LOSS'
                 elif model_exit:
                     final_pnl = net_pnl_pct
@@ -1605,7 +1610,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 final_pnl -= OPTION_SPREAD_BPS / 10000.0 * 2
 
                 # Update account balance (dollar P&L)
-                dollar_pnl = final_pnl * trade_entry_price * SPX_MULTIPLIER
+                dollar_pnl = final_pnl * trade_entry_price * SPX_MULTIPLIER * trade_n_contracts
                 account_balance += dollar_pnl
                 account_balance = max(account_balance, 0.0)
                 if final_pnl <= 0:
@@ -1655,6 +1660,8 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     'entry_option_px': trade_entry_price,
                     'exit_option_px': trade_last_price,
                     'pnl_pct': round(final_pnl * 100, 2),
+                    'dollar_pnl': round(dollar_pnl, 2),
+                    'n_contracts': trade_n_contracts,
                     'cum_pnl_pct': round(cum_pnl * 100, 2),
                     'spx_entry': round(spx_entry, 2),
                     'spx_exit': round(spx_exit, 2),
@@ -1737,6 +1744,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 if verbose and not quiet:
                     print(f"  {time_str}  BLOCKED (insufficient balance: ${account_balance:.0f} < ${contract_cost:.0f})")
                 continue
+            trade_n_contracts = max(1, int(account_balance * POSITION_RISK_TARGET / contract_cost))
 
             # Execute entry — fixed stop/TP matching training
             in_trade = True
@@ -1748,7 +1756,11 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             trade_entry_gate_prob = float(gate_trade_prob)
             trade_entry_dir_probs = dir_probs.copy()
             trade_entry_confidence = confidence
-            trade_stop_price = float(trade_entry_price * (1.0 - STOP_LOSS_PCT))
+            # Compute dynamic stop from gate confidence + market features
+            _iv_feat = float(features[global_idx, _FEAT_IDX['atm_iv']]) if global_idx < features.shape[0] else 0.0
+            _vix_feat = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.0
+            trade_dynamic_stop_pct = compute_dynamic_stop(gate_trade_prob, _iv_feat, _vix_feat)
+            trade_stop_price = float(trade_entry_price * (1.0 - trade_dynamic_stop_pct))
             trade_take_profit_price = float(trade_entry_price * 6.0)  # effectively no TP — model decides
             bars_held = 0
             unrealized_pnl = 0.0
@@ -2032,7 +2044,8 @@ def write_trade_csv(trades: list[dict], path: str) -> None:
 
 def generate_equity_curve(trades: list[dict], output_path: str,
                           starting_cash: float = 10_000.0,
-                          title_suffix: str = "") -> None:
+                          title_suffix: str = "",
+                          spx_daily_close: dict | None = None) -> None:
     """Generate an interactive Plotly HTML equity curve (portfolio value over time).
 
     Args:
@@ -2040,6 +2053,7 @@ def generate_equity_curve(trades: list[dict], output_path: str,
         output_path: path to write HTML
         starting_cash: initial portfolio value in dollars
         title_suffix: appended to chart title
+        spx_daily_close: optional {date_str: close_price} for SPX background overlay
     """
     try:
         import plotly.graph_objects as go
@@ -2073,16 +2087,19 @@ def generate_equity_curve(trades: list[dict], output_path: str,
     hover_texts.append(f"Starting balance: ${cash:,.0f}")
 
     for t in trades:
-        pnl_pct = t['pnl_pct'] / 100.0  # convert from percent to decimal
-        entry_px = t.get('entry_option_px', 0)
-        if entry_px and entry_px > 0:
-            # Realistic: 1 contract, dollar P&L from option premium change
-            contract_cost = entry_px * SPX_MULTIPLIER
-            if contract_cost > cash:
-                continue  # couldn't have afforded this trade
-            pnl_dollar = pnl_pct * entry_px * SPX_MULTIPLIER
+        # Use pre-computed dollar_pnl (accounts for n_contracts) if available
+        if 'dollar_pnl' in t:
+            pnl_dollar = t['dollar_pnl']
         else:
-            pnl_dollar = cash * pnl_pct
+            pnl_pct = t['pnl_pct'] / 100.0
+            entry_px = t.get('entry_option_px', 0)
+            if entry_px and entry_px > 0:
+                contract_cost = entry_px * SPX_MULTIPLIER
+                if contract_cost > cash:
+                    continue
+                pnl_dollar = pnl_pct * entry_px * SPX_MULTIPLIER
+            else:
+                pnl_dollar = cash * pnl_pct
         cash += pnl_dollar
         cash = max(cash, 0.0)
         label = f"{t['date']} {t.get('exit_time', '')}"
@@ -2153,11 +2170,35 @@ def generate_equity_curve(trades: list[dict], output_path: str,
         hoverinfo='skip',
     ))
 
+    # SPX background overlay on secondary y-axis
+    has_spx = False
+    if spx_daily_close:
+        # Get SPX prices at each trade's date (use last close of day)
+        spx_times = []
+        spx_vals = []
+        for t_time, t in zip(times[1:], trades):  # skip starting point
+            day = t.get('date', '')
+            if day in spx_daily_close:
+                spx_times.append(t_time)
+                spx_vals.append(spx_daily_close[day])
+        if spx_vals:
+            has_spx = True
+            spx_return = (spx_vals[-1] / spx_vals[0] - 1) * 100
+            fig.add_trace(go.Scatter(
+                x=spx_times,
+                y=spx_vals,
+                mode='lines',
+                name=f'SPX ({spx_return:+.1f}%)',
+                line=dict(color='rgba(255, 165, 0, 0.25)', width=2),
+                yaxis='y2',
+                hovertemplate='SPX: %{y:,.0f}<extra></extra>',
+            ))
+
     title = f"Equity Curve — ${starting_cash:,.0f} → ${ending_cash:,.0f} ({total_return:+.1f}%)"
     if title_suffix:
         title += title_suffix
 
-    fig.update_layout(
+    layout_kwargs = dict(
         title=dict(text=title, font=dict(size=18)),
         xaxis=dict(
             title="Date",
@@ -2185,6 +2226,18 @@ def generate_equity_curve(trades: list[dict], output_path: str,
             ),
         ],
     )
+
+    if has_spx:
+        layout_kwargs['yaxis2'] = dict(
+            title=dict(text="SPX", font=dict(color='rgba(255, 165, 0, 0.5)')),
+            overlaying='y',
+            side='right',
+            showgrid=False,
+            tickformat=",.0f",
+            tickfont=dict(color='rgba(255, 165, 0, 0.5)'),
+        )
+
+    fig.update_layout(**layout_kwargs)
 
     fig.write_html(output_path, include_plotlyjs=True)
     print(f"Equity curve saved: {output_path}")
@@ -2282,6 +2335,44 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
             'volume': [b.get('volume', 0) for b in bar_log],
         }, index=pd.DatetimeIndex(times_raw))
 
+    # --- Detect multi-day mode and build sequential index if needed ---
+    _is_multiday = len(set(df_1m.index.date)) > 1 if hasattr(df_1m.index, 'date') else False
+    _dt_to_seq = {}  # datetime → sequential int (only used in multi-day)
+    _seq_tick_vals = []
+    _seq_tick_text = []
+    if _is_multiday:
+        # Build datetime→int mapping for gap-free rendering
+        sorted_dts = df_1m.index.sort_values()
+        for i, dt in enumerate(sorted_dts):
+            _dt_to_seq[dt] = i
+        # Tick labels at start of each day
+        prev_date = None
+        for i, dt in enumerate(sorted_dts):
+            d = dt.date()
+            if d != prev_date:
+                _seq_tick_vals.append(i)
+                _seq_tick_text.append(str(d))
+                prev_date = d
+
+    def _map_x(x_series):
+        """Convert x values: sequential ints for multi-day, passthrough for single-day."""
+        if not _is_multiday:
+            return x_series
+        if hasattr(x_series, '__iter__') and not isinstance(x_series, str):
+            return [_dt_to_seq.get(dt, None) for dt in x_series]
+        return _dt_to_seq.get(x_series, None)
+
+    def _map_dt(dt):
+        """Map a single datetime to sequential int (multi-day) or passthrough."""
+        if not _is_multiday or dt is None:
+            return dt
+        # Find nearest match if exact match not found
+        if dt in _dt_to_seq:
+            return _dt_to_seq[dt]
+        # Snap to nearest known datetime
+        closest = min(_dt_to_seq.keys(), key=lambda k: abs((k - dt).total_seconds()))
+        return _dt_to_seq[closest]
+
     # --- Resample to multiple timeframes ---
     timeframes = {
         '1min': None,  # already have it
@@ -2334,7 +2425,7 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
     trace_idx = 0
 
     for tf_label, df_tf in resampled.items():
-        x = df_tf.index
+        x = _map_x(df_tf.index)
 
         # Candlestick trace
         fig.add_trace(go.Candlestick(
@@ -2412,7 +2503,7 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
         direction = 'call' if is_call else 'put'
 
         entry_key = f'{prefix}_{direction}_entry'
-        batches[entry_key]['x'].append(edt)
+        batches[entry_key]['x'].append(_map_dt(edt))
         batches[entry_key]['y'].append(t['spx_entry'])
         batches[entry_key]['text'].append(f"#{t['num']}")
         batches[entry_key]['hover'].append(
@@ -2427,7 +2518,7 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
 
         if xdt is not None:
             exit_key = f'{prefix}_exit'
-            batches[exit_key]['x'].append(xdt)
+            batches[exit_key]['x'].append(_map_dt(xdt))
             batches[exit_key]['y'].append(t['spx_exit'])
             batches[exit_key]['hover'].append(
                 f"<b>EXIT #{t['num']}</b><br>"
@@ -2438,7 +2529,7 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
                 f"<extra></extra>"
             )
             # Connector: entry->exit with None break
-            connector_x.extend([edt, xdt, None])
+            connector_x.extend([_map_dt(edt), _map_dt(xdt), None])
             connector_y.extend([t['spx_entry'], t['spx_exit'], None])
 
     entry_style = {
@@ -2551,18 +2642,21 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
     # Summary stats — use dollar-compounded return, not naive sum of percentages
     wins = sum(1 for t in trades if t['result'] == 'WIN')
     wr = f"{100*wins/len(trades):.0f}%" if trades else "N/A"
-    # Compute real compounded return using dollar P&L (same logic as equity curve)
+    # Compute real compounded return using pre-computed dollar P&L (accounts for n_contracts)
     _cash = 10_000.0
     for t in trades:
-        _pnl_pct = t['pnl_pct'] / 100.0
-        _entry_px = t.get('entry_option_px', 0)
-        if _entry_px and _entry_px > 0:
-            _cost = _entry_px * SPX_MULTIPLIER
-            if _cost > _cash:
-                continue
-            _dollar_pnl = _pnl_pct * _entry_px * SPX_MULTIPLIER
+        if 'dollar_pnl' in t:
+            _dollar_pnl = t['dollar_pnl']
         else:
-            _dollar_pnl = _cash * _pnl_pct
+            _pnl_pct = t['pnl_pct'] / 100.0
+            _entry_px = t.get('entry_option_px', 0)
+            if _entry_px and _entry_px > 0:
+                _cost = _entry_px * SPX_MULTIPLIER
+                if _cost > _cash:
+                    continue
+                _dollar_pnl = _pnl_pct * _entry_px * SPX_MULTIPLIER
+            else:
+                _dollar_pnl = _cash * _pnl_pct
         _cash += _dollar_pnl
         _cash = max(_cash, 0.0)
     total_return_pct = (_cash / 10_000.0 - 1) * 100
@@ -2625,21 +2719,39 @@ def generate_plotly_chart(trades: list[dict], bar_log: list[dict],
     fig.update_yaxes(title_text="SPX", row=1, col=1, gridcolor='rgba(80,80,80,0.3)')
     fig.update_yaxes(title_text="Volume", row=2, col=1, gridcolor='rgba(80,80,80,0.3)')
 
-    # Remove overnight gaps and weekends — stitch trading sessions together
-    rangebreaks = [
-        dict(bounds=["sat", "mon"]),                # hide weekends
-        dict(bounds=[16, 9.5], pattern="hour"),      # hide 4PM-9:30AM
-    ]
-    fig.update_xaxes(
-        gridcolor='rgba(80,80,80,0.3)',
-        rangebreaks=rangebreaks,
-        row=1, col=1,
-    )
-    fig.update_xaxes(
-        gridcolor='rgba(80,80,80,0.3)',
-        rangebreaks=rangebreaks,
-        row=2, col=1,
-    )
+    # Remove gaps — stitch trading sessions together
+    if _is_multiday:
+        # Multi-day: sequential int x-axis has no gaps, just set tick labels
+        fig.update_xaxes(
+            gridcolor='rgba(80,80,80,0.3)',
+            tickvals=_seq_tick_vals,
+            ticktext=_seq_tick_text,
+            tickangle=-45,
+            row=1, col=1,
+        )
+        fig.update_xaxes(
+            gridcolor='rgba(80,80,80,0.3)',
+            tickvals=_seq_tick_vals,
+            ticktext=_seq_tick_text,
+            tickangle=-45,
+            row=2, col=1,
+        )
+    else:
+        # Single-day: datetime x-axis with overnight/weekend rangebreaks
+        rangebreaks = [
+            dict(bounds=["sat", "mon"]),
+            dict(bounds=[16, 9.5], pattern="hour"),
+        ]
+        fig.update_xaxes(
+            gridcolor='rgba(80,80,80,0.3)',
+            rangebreaks=rangebreaks,
+            row=1, col=1,
+        )
+        fig.update_xaxes(
+            gridcolor='rgba(80,80,80,0.3)',
+            rangebreaks=rangebreaks,
+            row=2, col=1,
+        )
 
     fig.write_html(output_path, include_plotlyjs=True)
     print(f"Chart saved: {output_path}")
@@ -2837,25 +2949,16 @@ def run_backtest(model, data_pt_path: str, device: str = 'cpu',
         trades, bar_log, stats = run_replay(
             model, features_t, features_np, list(all_dates), valid_np,
             px_remap, timestamps_list, day, lookback, raw_df,
-            device=device, quiet=True,
+            device=device, quiet=True, initial_balance=account_balance_running,
         )
 
-        # Track cross-day equity (dollar-based, matches generate_equity_curve)
+        # Track cross-day equity using dollar_pnl already computed by run_replay
         day_dollar_pnl = 0.0
         for t in trades:
-            entry_px = t.get('entry_option_px', 0)
-            pnl_pct = t['pnl_pct'] / 100.0
-            if entry_px and entry_px > 0:
-                contract_cost = entry_px * SPX_MULTIPLIER
-                if contract_cost > account_balance_running:
-                    t['cum_pnl_pct'] = round((account_balance_running / STARTING_CAPITAL - 1) * 100, 2)
-                    continue  # blocked by affordability
-                dollar_pnl = pnl_pct * entry_px * SPX_MULTIPLIER
-            else:
-                dollar_pnl = account_balance_running * pnl_pct
-            account_balance_running += dollar_pnl
+            dpnl = t.get('dollar_pnl', 0.0)
+            account_balance_running += dpnl
             account_balance_running = max(account_balance_running, 0.0)
-            day_dollar_pnl += dollar_pnl
+            day_dollar_pnl += dpnl
             t['cum_pnl_pct'] = round((account_balance_running / STARTING_CAPITAL - 1) * 100, 2)
 
         all_trades.extend(trades)
@@ -2912,12 +3015,24 @@ def run_backtest(model, data_pt_path: str, device: str = 'cpu',
                 ohlcv_df=ohlcv_all,
             )
 
+    # Build SPX daily close dict from raw_df for equity curve overlay
+    spx_daily = {}
+    if raw_df is not None and 'close' in raw_df.columns and 'date' in raw_df.columns:
+        for day in val_dates:
+            day_mask = raw_df['date'] == day
+            day_closes = raw_df.loc[day_mask, 'close']
+            if len(day_closes) > 0:
+                last_close = day_closes.iloc[-1]
+                if not np.isnan(last_close):
+                    spx_daily[day] = float(last_close)
+
     # Generate equity curve
     if all_trades:
         equity_path = os.path.join(output_dir, "equity_curve.html")
         generate_equity_curve(
             all_trades, equity_path,
             title_suffix=f" ({len(val_dates)} days, {len(all_trades)} trades)",
+            spx_daily_close=spx_daily if spx_daily else None,
         )
 
     # Write summary
@@ -2949,15 +3064,18 @@ def _write_backtest_summary(trades: list[dict], day_stats: list[dict],
     cash = STARTING_CAPITAL
     peak_cash = cash
     for t in trades:
-        pnl_pct = t['pnl_pct'] / 100.0
-        entry_px = t.get('entry_option_px', 0)
-        if entry_px and entry_px > 0:
-            contract_cost = entry_px * SPX_MULTIPLIER
-            if contract_cost > cash:
-                continue
-            pnl_dollar = pnl_pct * entry_px * SPX_MULTIPLIER
+        if 'dollar_pnl' in t:
+            pnl_dollar = t['dollar_pnl']
         else:
-            pnl_dollar = cash * pnl_pct
+            pnl_pct = t['pnl_pct'] / 100.0
+            entry_px = t.get('entry_option_px', 0)
+            if entry_px and entry_px > 0:
+                contract_cost = entry_px * SPX_MULTIPLIER
+                if contract_cost > cash:
+                    continue
+                pnl_dollar = pnl_pct * entry_px * SPX_MULTIPLIER
+            else:
+                pnl_dollar = cash * pnl_pct
         cash += pnl_dollar
         cash = max(cash, 0.0)
         peak_cash = max(peak_cash, cash)
@@ -2968,14 +3086,18 @@ def _write_backtest_summary(trades: list[dict], day_stats: list[dict],
     _eq_peak = _eq_cash
     _eq_max_dd = 0.0
     for t in trades:
-        pnl_pct = t['pnl_pct'] / 100.0
-        entry_px = t.get('entry_option_px', 0)
-        if entry_px and entry_px > 0:
-            if entry_px * SPX_MULTIPLIER > _eq_cash:
-                continue
-            _eq_cash += pnl_pct * entry_px * SPX_MULTIPLIER
+        if 'dollar_pnl' in t:
+            _eq_pnl = t['dollar_pnl']
         else:
-            _eq_cash += _eq_cash * pnl_pct
+            pnl_pct = t['pnl_pct'] / 100.0
+            entry_px = t.get('entry_option_px', 0)
+            if entry_px and entry_px > 0:
+                if entry_px * SPX_MULTIPLIER > _eq_cash:
+                    continue
+                _eq_pnl = pnl_pct * entry_px * SPX_MULTIPLIER
+            else:
+                _eq_pnl = _eq_cash * pnl_pct
+        _eq_cash += _eq_pnl
         _eq_cash = max(_eq_cash, 0.0)
         _eq_peak = max(_eq_peak, _eq_cash)
         dd = (_eq_cash - _eq_peak) / _eq_peak * 100 if _eq_peak > 0 else 0.0

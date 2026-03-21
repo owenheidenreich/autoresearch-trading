@@ -12,28 +12,35 @@ Improve the training objective in `train.py` for SPX 0DTE option trading while p
 - Active trading semantics are locked to 6-direction entries + contextual exit.
 
 ## Model Contract (Required)
-- Two-head architecture:
-  - Gate head: `[NO_TRADE, TRADE]`
-  - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]`
+- Three-output architecture (v5):
+  - Gate head: `[NO_TRADE, TRADE]` (2 logits)
+  - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` (6 logits)
+  - ETV head: scalar expected trade value (regression, 1 value)
 - 8 effective actions:
   - `DO_NOTHING`
   - `BUY_CALL_ATM`, `BUY_CALL_OTM5`, `BUY_CALL_OTM10`
   - `BUY_PUT_ATM`, `BUY_PUT_OTM5`, `BUY_PUT_OTM10`
   - `EXIT` (gate=NO_TRADE while holding a position)
 
-**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism — it must learn when to take profits and cut losses. A 30% stop loss exists as an emergency backstop only. Exits are: stop_loss (30%), model_exit (gate=NO_TRADE), end_of_day, max_hold.
+**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism — it must learn when to take profits and cut losses. A **dynamic stop-loss** adapts per-trade based on gate confidence + market conditions (IV, VIX). Exits are: dynamic_stop (15%-60%), model_exit (gate=NO_TRADE), end_of_day, max_hold.
 
 ## Data Contract (Required)
-`data.pt` must include the two-head/OTM target fields and option price arrays required by training and replay:
-- Targets:
+`data.pt` must include the target fields and option price arrays required by training and replay:
+- Targets (unstopped P&L — entry to EOD, no stops):
   - `call_pnl`, `put_pnl`
   - `exit_call_label`, `exit_put_label` (hindsight-optimal exit timing signals)
   - `otm5_call_pnl`, `otm5_put_pnl`
   - `otm10_call_pnl`, `otm10_put_pnl`
+- Targets (stopped P&L — with DYNAMIC_STOP_BASE applied, v5):
+  - `call_stopped_pnl`, `put_stopped_pnl`
+  - `otm5_call_stopped_pnl`, `otm5_put_stopped_pnl`
+  - `otm10_call_stopped_pnl`, `otm10_put_stopped_pnl`
 - Prices:
   - `atm_call_prices`, `atm_put_prices`
   - `otm5_call_prices`, `otm5_put_prices`
   - `otm10_call_prices`, `otm10_put_prices`
+- Metadata:
+  - `day_boundaries` — tensor of indices where trading days start (for sequential batching)
 
 Missing required fields must fail fast. No silent fallback behavior.
 
@@ -79,23 +86,28 @@ score = ProfitFactor * TradeSharpe * freq_mult * penalties * bonuses
 
 **Negative scores are possible and informative.** When PF < 1.0, TradeSharpe is typically negative, yielding a negative score. A score of -0.5 is clearly closer to profitability than -10.0, giving the agent useful gradient signal.
 
-### Score Tuning Environment Variables
-These control the score formula and can be set per experiment:
+### Score Formula is LOCKED — Do Not Modify
+The `_score_config` dictionary in train.py is **read-only**. You MUST NOT change its values, add new SCORE_* env var readers, or modify how the score is computed.
+
+**Why:** The score formula defines what "good trading" means. Changing it inflates scores without improving the model — the model trains on loss functions (gate_loss, dir_loss, pnl_alignment), NOT on the score. Modifying score_config only changes the post-training evaluation, making scores incomparable across experiments. This was exploited in a prior run where SCORE_DRAWDOWN_PENALTY was reduced from 0.5→0.05, inflating the score from 1.77→10.29 while PF and TPD barely changed.
+
+**What to do instead:** Improve the model's actual TRADING BEHAVIOR by modifying loss weights (GATE_W, DIR_W, PNL_W, EXIT_W), model architecture biases, or training dynamics. Improvements should be visible in raw metrics: profit factor, win rate, trades per day, drawdown.
+
+`worst_chunk_pf` and `chunk_details` are reported for analysis — the agent may use these to evaluate temporal consistency.
+
+### Dynamic Stop Environment Variables
+These control the per-trade stop-loss computed from gate confidence + market conditions:
 
 | Variable | Default | Range | Effect |
 |----------|---------|-------|--------|
-| SCORE_WIN_RATE_BONUS | 0.0 | 0.0-1.0 | Multiplier bonus for win rates above 40% |
-| SCORE_RR_BONUS | 0.0 | 0.0-2.0 | Multiplier bonus for avg_win/avg_loss > 1 |
-| SCORE_DRAWDOWN_PENALTY | 0.5 | 0.0-1.0 | Multiplier penalty for deep drawdowns (ACTIVE by default) |
-| SCORE_HOLD_BONUS | 0.0 | 0.0-1.0 | Multiplier bonus for hold times near 30 bars |
-| SCORE_FREQ_CENTER | 3.0 | 1.0-8.0 | Center of trade frequency sweet spot |
-| SCORE_FREQ_WIDTH | 3.0 | 1.0-6.0 | Width of frequency sweet spot band |
-| SCORE_CONSEC_LOSS_THRESHOLD | 3 | 2-8 | Consecutive losses before penalty kicks in (15%/loss beyond threshold) |
-| SCORE_SHORT_HOLD_THRESHOLD | 0.30 | 0.10-0.60 | Short hold % that triggers penalty |
-| SCORE_STOP_RATE_THRESHOLD | 0.30 | 0.10-0.60 | Stop loss rate that triggers penalty |
-| SCORE_RUIN_PENALTY | 1.0 | 0.0-1.0 | Severity of account ruin penalty (ACTIVE by default) |
-| SCORE_RUIN_THRESHOLD | 0.25 | 0.05-0.50 | Equity fraction triggering ruin (0.25 = 75% loss from peak) |
-| SCORE_RISK_FRACTION_PENALTY | 0.5 | 0.0-1.0 | Penalizes avg risk per trade > 30% of account (ACTIVE by default) |
+| DYNAMIC_STOP_BASE | 0.35 | 0.20-0.50 | Base stop percentage before adjustments |
+
+The dynamic stop formula: `stop = BASE * confidence_factor * iv_factor * vix_factor`, clamped to [15%, 60%].
+- **confidence_factor**: `1.0 - (gate_confidence - 0.5) * 0.8` — tighter stops for high-confidence trades
+- **iv_factor**: `1.0 + max(0, iv_feature) * 0.15` — wider stops in high-IV environments
+- **vix_factor**: `1.0 + max(0, vix_feature) * 0.10` — wider stops in elevated-VIX regimes
+
+Training P&L labels do NOT include stop truncation — the model sees the full trade trajectory and learns exits through the gate head. The ruin penalty is the safety net.
 
 ## Position State Contract
 The model receives a 5-dimensional position state tensor at inference time:
@@ -115,7 +127,8 @@ During evaluation/replay, dims 3-4 use real tracked account state.
 - Starting capital: $10,000 (STARTING_CAPITAL constant)
 - Contract multiplier: $100 (SPX_MULTIPLIER constant)
 - Affordability check: entries blocked if contract cost > account balance
-- Inline equity tracking: account balance updated at each trade exit
+- **Scaled position sizing**: `n_contracts = max(1, floor(balance * POSITION_RISK_TARGET / contract_cost))` where POSITION_RISK_TARGET = 0.05 (5%). Always whole contracts. Scales with account growth — at $10k with a $500 contract: 1 contract; at $30k: 3 contracts.
+- Inline equity tracking: account balance updated at each trade exit (dollar_pnl *= n_contracts)
 - Risk fraction penalty: penalizes models that consistently risk >30% of account per trade
 
 ## Output Metrics Contract (Required Keys)
@@ -139,7 +152,7 @@ The training script output must include these parseable metric keys:
 ### Exit Mechanics
 - There is NO hardcoded profit target. The model must learn when to exit.
 - The gate head predicting NO_TRADE while holding a position triggers an exit.
-- 30% stop loss is an emergency backstop — the model should learn to cut losers BEFORE hitting the stop.
+- **Dynamic stop-loss** adapts per-trade: high-confidence calm-market trades get tighter stops (~20%), uncertain volatile trades get wider stops (~50%). The model should learn to cut losers BEFORE hitting even the dynamic stop.
 - EXIT labels in training data use hindsight-optimal timing: EXIT=1 at the bar nearest to peak P&L, or when P&L has dropped >50% from its high-water mark.
 - The edge comes from exit TIMING, not just entry selection.
 
@@ -179,6 +192,12 @@ The training script output must include these parseable metric keys:
 - Time-based: If thesis hasn't played out by 2pm, take what's left.
 - Trailing: If P&L drops >50% from peak, exit (momentum lost).
 - Regime awareness: Tighter exits during power hour, wider during morning trends.
+
+### Regime Risk and Temporal Robustness
+- 0DTE dynamics change across VIX regimes. A model trained on elevated-VIX data (large moves, big OTM payoffs) may degrade when VIX normalizes (smaller moves, theta-dominated).
+- The 70/30 temporal train/val split means the model trains on earlier data and validates on later data. If market character changes, validation performance degrades from early to late dates.
+- `worst_chunk_pf` reports the minimum PF across 5 date chunks. Per-chunk details (PF, WR, date range) are printed in training output. Robust models should have consistent per-chunk PF.
+- The score formula evaluates validation trades with equal weight. A model with PF=7 on chunk 1 and PF=0.5 on chunk 5 has a regime problem even if aggregate score is high.
 
 ## Reliability Policy
 A candidate can be kept only if:

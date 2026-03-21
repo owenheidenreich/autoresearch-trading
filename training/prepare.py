@@ -56,13 +56,16 @@ ANNUAL_TRADING_HOURS = ANNUAL_TRADING_BARS  # compat alias
 
 # 0DTE option trade simulation parameters
 OPTION_SPREAD_BPS    = 150     # bid-ask spread on 0DTE ATM in bps of premium (150 bps one-way = 3% round-trip; realistic for ATM SPX 0DTE)
-STOP_LOSS_PCT        = 0.30    # 30% stop loss on premium (from journals)
+STOP_LOSS_PCT        = 0.30    # legacy constant — kept for backward compat; active code uses compute_dynamic_stop()
+DYNAMIC_STOP_BASE    = float(os.environ.get("DYNAMIC_STOP_BASE", 0.35))
+DYNAMIC_STOP_MIN     = 0.15    # minimum stop-loss (floor)
+DYNAMIC_STOP_MAX     = 0.60    # maximum stop-loss (ceiling)
 MAX_HOLD_BARS        = BARS_PER_DAY  # hold until stop/profit/EOD (0DTE closes at EOD)
 STOP_COOLDOWN_BARS   = 5       # 5-bar (5-min) cooldown after stop loss before re-entry
 NO_TRADE_BEFORE_BAR  = 30      # first 30 bars (9:30-9:59) are hard no-trade
 MAX_TRADE_RETURN     = 5.0     # cap individual trade P&L at 500% (allow large winners with learned exits)
 STARTING_CAPITAL     = 10_000.0  # starting account balance ($10k paper trading account)
-RISK_PER_TRADE       = 1.0      # 1 full contract per trade (legacy compat; inline tracking replaces this)
+POSITION_RISK_TARGET = 0.05     # target 5% of account per trade; scales whole contracts with account growth
 SPX_MULTIPLIER       = 100      # SPX option contract multiplier (premium * 100 = cost)
 BAR_SIZE_MINUTES     = 1           # 1-minute bar resolution
 SPX_MULTIPLIER       = 100     # option multiplier
@@ -232,6 +235,27 @@ def compute_dynamic_pnl(entry_bar, prices, dates, cost_pct,
     # Max hold
     pnl = (last_valid_px - entry_px) / entry_px - cost_pct
     return (entry_bar + max_hold, pnl, 'max_hold')
+
+
+def compute_dynamic_stop(gate_confidence, iv_feature, vix_feature):
+    """Dynamic stop-loss: wider for uncertain/volatile, tighter for confident/calm.
+
+    Args:
+        gate_confidence: softmax probability of TRADE action (0.5-1.0)
+        iv_feature: atm_iv feature value (z-scored or raw)
+        vix_feature: vix_regime feature value (-1 to 1)
+
+    Returns:
+        stop_pct: stop-loss as fraction of premium, clamped to [DYNAMIC_STOP_MIN, DYNAMIC_STOP_MAX]
+    """
+    # Higher confidence → tighter stop (if the model is sure, cut fast if wrong)
+    confidence_factor = 1.0 - (gate_confidence - 0.5) * 0.8  # 1.0 at 0.5, 0.6 at 1.0
+    # Higher IV → wider stop (options swing more)
+    iv_factor = 1.0 + max(0.0, float(iv_feature)) * 0.15
+    # Higher VIX → wider stop (crisis regime)
+    vix_factor = 1.0 + max(0.0, float(vix_feature)) * 0.10
+    stop = DYNAMIC_STOP_BASE * confidence_factor * iv_factor * vix_factor
+    return max(DYNAMIC_STOP_MIN, min(DYNAMIC_STOP_MAX, stop))
 
 
 # ---------------------------------------------------------------------------
@@ -1870,10 +1894,11 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             targets[i] = (close[i + FORWARD_BARS] / close[i]) - 1.0
 
     # -------------------------------------------------------------------
-    # Option P&L targets: dynamic exits matching evaluation logic
+    # Option P&L targets: EOD/max-hold exits (no hardcoded stop)
     # -------------------------------------------------------------------
-    # For each bar i, simulate a trade using stop-loss/profit-target/EOD
-    # exits instead of fixed T+30, so training labels match evaluation.
+    # For each bar i, simulate a trade to EOD or max_hold.
+    # No stop-loss in training labels — the model learns exits via gate head,
+    # and dynamic stops are applied only during evaluation.
     call_pnl = np.full(N, np.nan, dtype=np.float32)
     put_pnl = np.full(N, np.nan, dtype=np.float32)
     call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
@@ -1896,15 +1921,15 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             if not np.isfinite(cost_bps):
                 cost_bps = 2.0 * OPTION_SPREAD_BPS
             cost_pct = cost_bps / 10000.0
-            _, pnl_val, _ = compute_dynamic_pnl(i, px_arr, dates, SPREAD_COST_PCT)
+            _, pnl_val, _ = compute_dynamic_pnl(i, px_arr, dates, SPREAD_COST_PCT, stop_loss=1.0)
             if not np.isnan(pnl_val):
                 pnl_arr[i] = pnl_val
-            _, pnl_real_val, _ = compute_dynamic_pnl(i, px_arr, dates, cost_pct)
+            _, pnl_real_val, _ = compute_dynamic_pnl(i, px_arr, dates, cost_pct, stop_loss=1.0)
             if not np.isnan(pnl_real_val):
                 pnl_real_arr[i] = pnl_real_val
 
     # -------------------------------------------------------------------
-    # OTM P&L targets: dynamic exits for OTM strikes (6-class dir head)
+    # OTM P&L targets: EOD/max-hold exits for OTM strikes (6-class dir head)
     # -------------------------------------------------------------------
     otm5_call_pnl = np.full(N, np.nan, dtype=np.float32)
     otm5_put_pnl = np.full(N, np.nan, dtype=np.float32)
@@ -1934,7 +1959,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         for px_arr, pnl_arr, pnl_real_arr, leg_name in _otm_legs:
             if np.isnan(px_arr[i]) or px_arr[i] <= 0:
                 continue
-            _, pnl_val, _ = compute_dynamic_pnl(i, px_arr, dates, SPREAD_COST_PCT)
+            _, pnl_val, _ = compute_dynamic_pnl(i, px_arr, dates, SPREAD_COST_PCT, stop_loss=1.0)
             if not np.isnan(pnl_val):
                 pnl_arr[i] = pnl_val
             if pnl_real_arr is not None and leg_name in SIDE_ACTION_TO_IDX:
@@ -1942,9 +1967,54 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 leg_cost_bps = action_cost_bps[i, leg_idx]
                 if not np.isfinite(leg_cost_bps):
                     leg_cost_bps = 2.0 * OPTION_SPREAD_BPS
-                _, pnl_real_val, _ = compute_dynamic_pnl(i, px_arr, dates, leg_cost_bps / 10000.0)
+                _, pnl_real_val, _ = compute_dynamic_pnl(i, px_arr, dates, leg_cost_bps / 10000.0, stop_loss=1.0)
                 if not np.isnan(pnl_real_val):
                     pnl_real_arr[i] = pnl_real_val
+
+    # -------------------------------------------------------------------
+    # Stopped P&L targets: same as above but WITH dynamic stop applied.
+    # These match evaluation reality (evaluate_trades uses dynamic stops).
+    # Uses DYNAMIC_STOP_BASE (0.35) as default stop — no gate confidence
+    # adjustment since we don't have model predictions at data-build time.
+    # -------------------------------------------------------------------
+    call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+
+    for i in range(N):
+        for leg_name, pnl_arr in [
+            ('call_atm', call_stopped_pnl),
+            ('put_atm', put_stopped_pnl),
+        ]:
+            px_arr = _price_arrays[leg_name]
+            if np.isnan(px_arr[i]) or px_arr[i] <= 0:
+                continue
+            _, pnl_val, _ = compute_dynamic_pnl(
+                i, px_arr, dates, SPREAD_COST_PCT,
+                stop_loss=DYNAMIC_STOP_BASE, max_hold=MAX_HOLD_BARS)
+            if not np.isnan(pnl_val):
+                pnl_arr[i] = pnl_val
+
+    otm5_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm5_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm10_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm10_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+
+    _otm_stopped_legs = [
+        (otm5_call_prices, otm5_call_stopped_pnl, "call_otm5"),
+        (otm5_put_prices, otm5_put_stopped_pnl, "put_otm5"),
+        (otm10_call_prices, otm10_call_stopped_pnl, "call_otm10"),
+        (otm10_put_prices, otm10_put_stopped_pnl, "put_otm10"),
+    ]
+
+    for i in range(N):
+        for px_arr, pnl_arr, leg_name in _otm_stopped_legs:
+            if np.isnan(px_arr[i]) or px_arr[i] <= 0:
+                continue
+            _, pnl_val, _ = compute_dynamic_pnl(
+                i, px_arr, dates, SPREAD_COST_PCT,
+                stop_loss=DYNAMIC_STOP_BASE, max_hold=MAX_HOLD_BARS)
+            if not np.isnan(pnl_val):
+                pnl_arr[i] = pnl_val
 
     # -------------------------------------------------------------------
     # EXIT labels: hindsight-optimal exit timing.
@@ -2085,6 +2155,12 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         'otm5_put_pnl_realistic': otm5_put_pnl_realistic,
         'otm10_call_pnl_realistic': otm10_call_pnl_realistic,
         'otm10_put_pnl_realistic': otm10_put_pnl_realistic,
+        'call_stopped_pnl': call_stopped_pnl,
+        'put_stopped_pnl': put_stopped_pnl,
+        'otm5_call_stopped_pnl': otm5_call_stopped_pnl,
+        'otm5_put_stopped_pnl': otm5_put_stopped_pnl,
+        'otm10_call_stopped_pnl': otm10_call_stopped_pnl,
+        'otm10_put_stopped_pnl': otm10_put_stopped_pnl,
         'action_leg_names': list(SIDE_ACTION_ORDER),
         'action_spread_bps': action_spread_bps,
         'action_quote_age_s': action_quote_age_s,
@@ -2246,6 +2322,9 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
             'otm15_call_pnl', 'otm15_put_pnl', 'otm20_call_pnl', 'otm20_put_pnl',
             'otm5_call_pnl_realistic', 'otm5_put_pnl_realistic',
             'otm10_call_pnl_realistic', 'otm10_put_pnl_realistic',
+            'call_stopped_pnl', 'put_stopped_pnl',
+            'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
+            'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl',
         ):
             if k in option_prices:
                 data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
@@ -2258,6 +2337,11 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
                 data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
         if 'action_leg_names' in option_prices:
             data['action_leg_names'] = list(option_prices['action_leg_names'])
+
+    # Day boundaries for sequential batching (Phase 3)
+    date_list = data['dates'].tolist() if isinstance(data['dates'], torch.Tensor) else list(data['dates'])
+    day_boundaries = [0] + [i for i in range(1, len(date_list)) if date_list[i] != date_list[i - 1]]
+    data['day_boundaries'] = torch.tensor(day_boundaries, dtype=torch.long)
 
     path = os.path.join(FEATURES_DIR, "data.pt")
     torch.save(data, path)
@@ -2290,6 +2374,70 @@ def load_data():
     sys.exit(1)
 
 
+def _load_dataloader_arrays(data, device):
+    """Load all target arrays needed by dataloaders. Returns a dict of tensors."""
+    required_targets = (
+        'call_pnl', 'put_pnl', 'exit_call_label', 'exit_put_label',
+        'otm5_call_pnl', 'otm5_put_pnl', 'otm10_call_pnl', 'otm10_put_pnl',
+    )
+    missing = [k for k in required_targets if k not in data]
+    if missing:
+        raise KeyError(
+            "data.pt missing required targets: " + ", ".join(missing)
+            + ". Rebuild data.pt with the current prepare.py."
+        )
+
+    call_pnl_all = data['call_pnl'].to(device)
+    arrays = {
+        'features': data['features'].to(device),
+        'targets': data['targets'].to(device),
+        'call_pnl': call_pnl_all,
+        'put_pnl': data['put_pnl'].to(device),
+        'exit_call': data['exit_call_label'].to(device),
+        'exit_put': data['exit_put_label'].to(device),
+        'otm5_call_pnl': data['otm5_call_pnl'].to(device),
+        'otm5_put_pnl': data['otm5_put_pnl'].to(device),
+        'otm10_call_pnl': data['otm10_call_pnl'].to(device),
+        'otm10_put_pnl': data['otm10_put_pnl'].to(device),
+    }
+    for k in ('supervision_weight', 'actionable_mask', 'risk_state_mask'):
+        v = data.get(k)
+        arrays[k] = v.to(device) if v is not None else torch.ones_like(call_pnl_all)
+
+    # Stopped P&L arrays (v5) — fall back to unstopped if not present
+    for k in ('call_stopped_pnl', 'put_stopped_pnl',
+              'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
+              'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl'):
+        v = data.get(k)
+        if v is not None:
+            arrays[k] = v.to(device)
+        else:
+            # Fall back to unstopped P&L for backward compat with old data.pt
+            fallback_key = k.replace('_stopped_pnl', '_pnl').replace('call_pnl', 'call_pnl').replace('put_pnl', 'put_pnl')
+            if k == 'call_stopped_pnl':
+                fallback_key = 'call_pnl'
+            elif k == 'put_stopped_pnl':
+                fallback_key = 'put_pnl'
+            arrays[k] = arrays.get(fallback_key, torch.full_like(call_pnl_all, float('nan')))
+
+    return arrays
+
+
+def _build_y_tuple(arrays, idx):
+    """Build the y tuple for a batch of indices."""
+    return (arrays['targets'][idx],
+            arrays['call_pnl'][idx], arrays['put_pnl'][idx],
+            arrays['exit_call'][idx], arrays['exit_put'][idx],
+            arrays['otm5_call_pnl'][idx], arrays['otm5_put_pnl'][idx],
+            arrays['otm10_call_pnl'][idx], arrays['otm10_put_pnl'][idx],
+            arrays['supervision_weight'][idx], arrays['actionable_mask'][idx],
+            arrays['risk_state_mask'][idx],
+            # v5: stopped P&L (positions 12-17)
+            arrays['call_stopped_pnl'][idx], arrays['put_stopped_pnl'][idx],
+            arrays['otm5_call_stopped_pnl'][idx], arrays['otm5_put_stopped_pnl'][idx],
+            arrays['otm10_call_stopped_pnl'][idx], arrays['otm10_put_stopped_pnl'][idx])
+
+
 def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
     """Infinite (train) or single-pass (val) dataloader.
 
@@ -2297,51 +2445,15 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
         x: (batch, lookback, NUM_FEATURES)
         y: tuple of (fwd_ret, call_pnl, put_pnl, exit_call, exit_put,
                      otm5_call_pnl, otm5_put_pnl, otm10_call_pnl, otm10_put_pnl,
-                     supervision_weight, actionable_mask, risk_state_mask)
+                     supervision_weight, actionable_mask, risk_state_mask,
+                     call_stopped_pnl, put_stopped_pnl,
+                     otm5_call_stopped_pnl, otm5_put_stopped_pnl,
+                     otm10_call_stopped_pnl, otm10_put_stopped_pnl)
            each (batch,). NaN where option data is unavailable.
     """
-    features = data['features'].to(device)
-    targets = data['targets'].to(device)
+    arrays = _load_dataloader_arrays(data, device)
+    features = arrays['features']
     valid_mask = data['valid_mask']
-
-    required_targets = (
-        'call_pnl',
-        'put_pnl',
-        'exit_call_label',
-        'exit_put_label',
-        'otm5_call_pnl',
-        'otm5_put_pnl',
-        'otm10_call_pnl',
-        'otm10_put_pnl',
-    )
-    missing = [k for k in required_targets if k not in data]
-    if missing:
-        raise KeyError(
-            "data.pt missing required two-head/OTM targets: "
-            + ", ".join(missing)
-            + ". Rebuild data.pt with the current prepare.py."
-        )
-
-    call_pnl_all = data['call_pnl'].to(device)
-    put_pnl_all = data['put_pnl'].to(device)
-    exit_call_all = data['exit_call_label'].to(device)
-    exit_put_all = data['exit_put_label'].to(device)
-    otm5_call_pnl_all = data['otm5_call_pnl'].to(device)
-    otm5_put_pnl_all = data['otm5_put_pnl'].to(device)
-    otm10_call_pnl_all = data['otm10_call_pnl'].to(device)
-    otm10_put_pnl_all = data['otm10_put_pnl'].to(device)
-    supervision_weight_all = data.get('supervision_weight')
-    if supervision_weight_all is None:
-        supervision_weight_all = torch.ones_like(call_pnl_all)
-    supervision_weight_all = supervision_weight_all.to(device)
-    actionable_mask_all = data.get('actionable_mask')
-    if actionable_mask_all is None:
-        actionable_mask_all = torch.ones_like(call_pnl_all)
-    actionable_mask_all = actionable_mask_all.to(device)
-    risk_state_mask_all = data.get('risk_state_mask')
-    if risk_state_mask_all is None:
-        risk_state_mask_all = torch.ones_like(call_pnl_all)
-    risk_state_mask_all = risk_state_mask_all.to(device)
 
     if split == "train":
         end = data['train_end_idx'] + 1
@@ -2368,26 +2480,85 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
                 idx = valid_indices[perm[i:i + batch_size]]
                 window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
                 x = features[window_idx]
-                y = (targets[idx], call_pnl_all[idx], put_pnl_all[idx],
-                     exit_call_all[idx], exit_put_all[idx],
-                     otm5_call_pnl_all[idx], otm5_put_pnl_all[idx],
-                     otm10_call_pnl_all[idx], otm10_put_pnl_all[idx],
-                     supervision_weight_all[idx], actionable_mask_all[idx],
-                     risk_state_mask_all[idx])
-                yield x, y
+                yield x, _build_y_tuple(arrays, idx)
     else:
         for i in range(0, n, batch_size):
             end_i = min(i + batch_size, n)
             idx = valid_indices[i:end_i]
             window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
             x = features[window_idx]
-            y = (targets[idx], call_pnl_all[idx], put_pnl_all[idx],
-                 exit_call_all[idx], exit_put_all[idx],
-                 otm5_call_pnl_all[idx], otm5_put_pnl_all[idx],
-                 otm10_call_pnl_all[idx], otm10_put_pnl_all[idx],
-                 supervision_weight_all[idx], actionable_mask_all[idx],
-                 risk_state_mask_all[idx])
-            yield x, y
+            yield x, _build_y_tuple(arrays, idx)
+
+
+def make_day_sequential_loader(data, lookback, batch_size, device="cuda", split="train"):
+    """Day-sequential dataloader: yields bars sequentially within sampled days.
+
+    For each epoch, samples `batch_size` random days from the split, then
+    iterates through bars of each day sequentially. This allows carrying
+    position state forward across bars within a day.
+
+    Yields (x, y, bar_in_day):
+        x: (actual_batch, lookback, NUM_FEATURES)
+        y: same tuple as make_dataloader
+        bar_in_day: int, position within the trading day (0 = first bar)
+    """
+    arrays = _load_dataloader_arrays(data, device)
+    features = arrays['features']
+    valid_mask = data['valid_mask']
+
+    if split == "train":
+        end = data['train_end_idx'] + 1
+    else:
+        end = data['val_end_idx'] + 1
+    start = max(lookback, data['val_start_idx'] if split != "train" else lookback)
+
+    # Build day boundaries within the split
+    day_boundaries = data.get('day_boundaries')
+    if day_boundaries is None:
+        raise KeyError("data.pt missing 'day_boundaries'. Rebuild with current prepare.py.")
+    day_boundaries = day_boundaries.tolist()
+
+    # Find days that fall within the split range
+    split_days = []  # list of (day_start, day_end) tuples
+    for d in range(len(day_boundaries)):
+        day_start = day_boundaries[d]
+        day_end = day_boundaries[d + 1] if d + 1 < len(day_boundaries) else len(valid_mask)
+        # Day must overlap with split range
+        if day_end <= start or day_start >= end:
+            continue
+        effective_start = max(day_start, start)
+        effective_end = min(day_end, end)
+        if effective_end - effective_start >= lookback + 1:
+            split_days.append((effective_start, effective_end))
+
+    assert len(split_days) > 0, f"No valid days for split={split}"
+
+    offsets = torch.arange(-lookback, 0, device=device)
+
+    while True:
+        # Sample batch_size random days
+        day_indices = torch.randint(0, len(split_days), (min(batch_size, len(split_days)),))
+        selected_days = [split_days[di] for di in day_indices]
+
+        # Find the max number of bars across selected days
+        max_bars = max(de - ds for ds, de in selected_days)
+
+        for bar_offset in range(lookback, max_bars):
+            # For each bar position, gather indices from all days that have this bar
+            batch_indices = []
+            for ds, de in selected_days:
+                bar_idx = ds + bar_offset
+                if bar_idx < de and bar_idx >= start:
+                    if valid_mask[bar_idx] and valid_mask[max(0, bar_idx - lookback):bar_idx].all():
+                        batch_indices.append(bar_idx)
+
+            if len(batch_indices) == 0:
+                continue
+
+            idx = torch.tensor(batch_indices, dtype=torch.long, device=device)
+            window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
+            x = features[window_idx]
+            yield x, _build_y_tuple(arrays, idx), bar_offset - lookback
 
 
 # ---------------------------------------------------------------------------
@@ -2398,7 +2569,7 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
 def evaluate_trades(model, data, lookback, device, batch_size=256,
                     stop_loss_pct=None, max_hold_bars=None,
                     max_trade_return=None,
-                    starting_capital=None, risk_per_trade=None,
+                    starting_capital=None, position_risk_target=None,
                     score_config=None):
     """Simulate 0DTE option trades on validation set.
 
@@ -2417,8 +2588,9 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
       stop_loss_pct: Stop loss as fraction of premium (default 0.30)
       max_hold_bars: Max bars to hold a position (default BARS_PER_DAY)
       max_trade_return: Cap individual trade P&L (default 5.0 = 500%)
-      starting_capital: Starting account balance for equity curve (default 5000.0)
-      risk_per_trade: Fraction of capital risked per trade (default 0.10)
+      starting_capital: Starting account balance for equity curve (default 10000.0)
+      position_risk_target: Target risk per trade as fraction of account (default 0.05 = 5%).
+          Determines whole contract count: n = max(1, floor(balance * target / cost)).
       score_config: Dict of score tuning params (all default to neutral/0.0):
         - win_rate_bonus: Reward high win rates (0.0-1.0)
         - rr_bonus: Reward good R:R ratio (0.0-2.0)
@@ -2435,11 +2607,11 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     Returns dict with trader + quant metrics and composite score.
     """
     # Allow train.py to override strategy parameters
-    _stop_loss = stop_loss_pct if stop_loss_pct is not None else STOP_LOSS_PCT
+    _stop_loss = stop_loss_pct if stop_loss_pct is not None else STOP_LOSS_PCT  # legacy; dynamic stop used instead
     _max_hold = max_hold_bars if max_hold_bars is not None else MAX_HOLD_BARS
     _max_return = max_trade_return if max_trade_return is not None else MAX_TRADE_RETURN
     _starting_capital = starting_capital if starting_capital is not None else STARTING_CAPITAL
-    _risk_per_trade = risk_per_trade if risk_per_trade is not None else RISK_PER_TRADE
+    _position_risk_target = position_risk_target if position_risk_target is not None else POSITION_RISK_TARGET
 
     # Score tuning config (all defaults produce neutral/unchanged score)
     _sc = score_config or {}
@@ -2501,12 +2673,12 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
         out = model(x)  # no position_state → gate_input = last (backward compat)
-        if not (isinstance(out, tuple) and len(out) == 2):
+        if not isinstance(out, tuple) or len(out) < 2:
             raise ValueError(
-                "evaluate_trades requires two-head model output tuple "
-                "(gate_logits, dir_logits)."
+                "evaluate_trades requires model output tuple with at least "
+                "(gate_logits, dir_logits). Got: " + str(type(out))
             )
-        gate_logits, dir_logits = out
+        gate_logits, dir_logits = out[0], out[1]
         if gate_logits.ndim != 2 or gate_logits.shape[-1] != 2:
             raise ValueError(
                 f"Invalid gate head shape: expected (batch, 2), got {tuple(gate_logits.shape)}"
@@ -2525,6 +2697,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     _has_position_proj = hasattr(model, 'position_proj')
     actions = np.empty(len(val_indices), dtype=np.int64)
     gate_no_trade = np.empty(len(val_indices), dtype=bool)
+    gate_confidence = np.empty(len(val_indices), dtype=np.float64)
 
     # Pre-compute bar_of_day for each validation index (0=9:30, 29=9:59, 30=10:00)
     _bar_of_day = {}
@@ -2552,6 +2725,10 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         }
         return mapping.get(action)
 
+    # Feature indices for dynamic stop computation
+    _idx_atm_iv = _FEAT_IDX['atm_iv']
+    _idx_vix_regime = _FEAT_IDX['vix_regime']
+
     # Track position state for gate decisions
     _pos_in_trade = False
     _pos_bars_held = 0
@@ -2559,9 +2736,11 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     _pos_entry_price = 0.0
     _pos_px_array = None
     _pos_last_stop_bar = -STOP_COOLDOWN_BARS
+    _pos_dynamic_stop = DYNAMIC_STOP_BASE  # per-trade dynamic stop (set at entry)
     # Account state tracking (shadow simulation for position_state input)
     _pos_account_balance = _starting_capital
     _pos_consecutive_losses = 0
+    _pos_n_contracts = 1
 
     for k, global_idx in enumerate(val_indices):
         # Build position state tensor (5 dims: holding, bars_held, unrealized_pnl, account_health, loss_streak)
@@ -2580,10 +2759,13 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         idx_t = val_idx_t[k:k+1]
         window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
-        gate_logits, _ = model(x, position_state=pos_state)
+        _out = model(x, position_state=pos_state)
+        gate_logits = _out[0]
         gate_action = int(torch.argmax(gate_logits, dim=-1).item())
+        gate_conf = float(torch.softmax(gate_logits, dim=-1)[0, 1].item())  # P(TRADE)
 
         gate_no_trade[k] = (gate_action == 0)
+        gate_confidence[k] = gate_conf
         if gate_action == 1:
             actions[k] = int(dir_actions[k]) + 1  # BUY_CALL_ATM=1 .. BUY_PUT_OTM10=6
         else:
@@ -2597,15 +2779,15 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 if not torch.isnan(px_now) and _pos_entry_price > 0:
                     _pos_unrealized_pnl = (float(px_now) - _pos_entry_price) / _pos_entry_price
             # Check exit conditions (mirrors trade loop below)
-            hit_stop = _pos_unrealized_pnl <= -_stop_loss
+            hit_stop = _pos_unrealized_pnl <= -_pos_dynamic_stop
             hit_max_hold = _pos_bars_held >= _max_hold
             entry_date = dates[val_indices[k - _pos_bars_held]] if k >= _pos_bars_held else None
             eod = dates[global_idx] != entry_date if entry_date else False
             model_exit = gate_no_trade[k]
             if hit_stop or hit_max_hold or eod or model_exit:
                 # Approximate dollar P&L for account tracking
-                _exit_pnl = -_stop_loss if hit_stop else _pos_unrealized_pnl
-                _dollar_pnl = _exit_pnl * _pos_entry_price * SPX_MULTIPLIER
+                _exit_pnl = -_pos_dynamic_stop if hit_stop else _pos_unrealized_pnl
+                _dollar_pnl = _exit_pnl * _pos_entry_price * SPX_MULTIPLIER * _pos_n_contracts
                 _pos_account_balance += _dollar_pnl
                 _pos_account_balance = max(_pos_account_balance, 0.0)
                 if _exit_pnl <= 0:
@@ -2628,11 +2810,18 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                             if contract_cost > _pos_account_balance:
                                 actions[k] = ACTION_DO_NOTHING
                             else:
+                                _pos_n_contracts = max(1, int(_pos_account_balance * _position_risk_target / contract_cost))
                                 _pos_in_trade = True
                                 _pos_bars_held = 0
                                 _pos_entry_price = entry_px
                                 _pos_px_array = candidate_px_array
                                 _pos_unrealized_pnl = 0.0
+                                # Compute dynamic stop at entry from confidence + market state
+                                _pos_dynamic_stop = compute_dynamic_stop(
+                                    gate_conf,
+                                    float(features[global_idx, _idx_atm_iv]),
+                                    float(features[global_idx, _idx_vix_regime]),
+                                )
 
     # Count unique val dates
     val_dates_list = [dates[i] for i in val_indices]
@@ -2685,6 +2874,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     trade_last_price = 0.0
     trade_use_actual = False
     trade_px_array = None
+    trade_dynamic_stop = DYNAMIC_STOP_BASE  # per-trade dynamic stop (set at entry)
     last_stop_bar = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
     cooldown_blocked_count = 0
     pre_10am_blocked_count = 0
@@ -2695,6 +2885,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     equity_history = [_starting_capital]
     trade_risk_fractions = []
     trades_blocked_by_balance = 0
+    trade_n_contracts = 1
 
     for k, global_idx in enumerate(val_indices):
         gate_flat_signal = bool(gate_no_trade[k])
@@ -2712,14 +2903,14 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             current_px = trade_last_price
             net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
 
-            hit_stop = net_pnl_pct <= -_stop_loss
+            hit_stop = net_pnl_pct <= -trade_dynamic_stop
             hit_max_hold = bars_held >= _max_hold
             eod = dates[global_idx] != dates[entry_global]
             model_exit = gate_flat_signal
 
             if hit_stop or hit_max_hold or eod or model_exit or k == len(val_indices) - 1:
                 if hit_stop:
-                    final_pnl = -_stop_loss
+                    final_pnl = -trade_dynamic_stop
                     last_stop_bar = k
                 else:
                     final_pnl = net_pnl_pct
@@ -2727,7 +2918,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 final_pnl -= float(trade_entry_cost_bps) / 10000.0
 
                 # Cap individual trade P&L to eliminate fat-tail lottery dependency
-                final_pnl = max(-_stop_loss, min(final_pnl, _max_return))
+                final_pnl = max(-trade_dynamic_stop, min(final_pnl, _max_return))
 
                 if model_exit:
                     model_exit_count += 1
@@ -2749,7 +2940,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 strike_val = float(atm_strikes[entry_global]) if atm_strikes is not None and not torch.isnan(atm_strikes[entry_global]) else None
 
                 # Inline account tracking: compute dollar P&L and update balance
-                dollar_pnl = final_pnl * trade_entry_price * SPX_MULTIPLIER
+                dollar_pnl = final_pnl * trade_entry_price * SPX_MULTIPLIER * trade_n_contracts
                 account_balance += dollar_pnl
                 account_balance = max(account_balance, 0.0)
                 equity_history.append(account_balance)
@@ -2769,7 +2960,10 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                     'entry_quality': None if np.isnan(trade_entry_quality) else round(float(trade_entry_quality), 4),
                     'entry_actionable': int(trade_entry_actionable > 0.5),
                     'pnl_pct': round(final_pnl * 100, 4),
+                    'dollar_pnl': round(dollar_pnl, 2),
+                    'n_contracts': trade_n_contracts,
                     'exit_reason': exit_reason,
+                    'dynamic_stop_pct': round(trade_dynamic_stop * 100, 2),
                     'actual_prices': trade_use_actual,
                     'result': 'WIN' if final_pnl > 0 else 'LOSS',
                 })
@@ -2797,7 +2991,9 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             if contract_cost > account_balance:
                 trades_blocked_by_balance += 1
                 continue
-            trade_risk_fractions.append(contract_cost / max(account_balance, 1e-10))
+            trade_n_contracts = max(1, int(account_balance * _position_risk_target / contract_cost))
+            total_position_cost = contract_cost * trade_n_contracts
+            trade_risk_fractions.append(total_position_cost / max(account_balance, 1e-10))
             action_idx = int(candidate_action - 1)
             entry_cost_bps = 2.0 * OPTION_SPREAD_BPS
             entry_quality = float("nan")
@@ -2840,6 +3036,12 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             trade_entry_actionable = float(entry_actionable)
             trade_last_price = entry_px
             trade_use_actual = True
+            # Compute dynamic stop at entry from gate confidence + market state
+            trade_dynamic_stop = compute_dynamic_stop(
+                gate_confidence[k],
+                float(features[global_idx, _idx_atm_iv]),
+                float(features[global_idx, _idx_vix_regime]),
+            )
         elif gate_flat_signal:
             do_nothing_count += 1
 
@@ -3021,6 +3223,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
 
     # --- worst_chunk_pf: split trades into 5 date-chunks, report min PF ---
     worst_chunk_pf = 1.0  # default if not enough trades
+    chunk_details = []
     if num_trades >= 5:
         trade_dates = [d.get('date', '') for d in trade_details]
         unique_dates = sorted(set(trade_dates))
@@ -3044,6 +3247,26 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 # else: 0 wins 0 losses in chunk, skip
             if chunk_pfs:
                 worst_chunk_pf = min(chunk_pfs)
+            # Build per-chunk detail for regime analysis
+            chunk_details = []
+            for ci in range(n_chunks):
+                start_i = ci * chunk_size
+                end_i = start_i + chunk_size if ci < n_chunks - 1 else len(unique_dates)
+                chunk_dates_set = set(unique_dates[start_i:end_i])
+                chunk_trades_ci = [d for d in trade_details if d.get('date', '') in chunk_dates_set]
+                if not chunk_trades_ci:
+                    continue
+                c_wins = sum(d['pnl_pct'] for d in chunk_trades_ci if d['pnl_pct'] > 0)
+                c_losses = abs(sum(d['pnl_pct'] for d in chunk_trades_ci if d['pnl_pct'] <= 0))
+                c_pf = c_wins / c_losses if c_losses > 0 else (100.0 if c_wins > 0 else 0.0)
+                c_wr = sum(1 for d in chunk_trades_ci if d['pnl_pct'] > 0) / len(chunk_trades_ci)
+                chunk_details.append({
+                    'chunk': ci + 1,
+                    'dates': f"{unique_dates[start_i]}..{unique_dates[min(end_i - 1, len(unique_dates) - 1)]}",
+                    'trades': len(chunk_trades_ci),
+                    'profit_factor': round(c_pf, 2),
+                    'win_rate': round(c_wr, 3),
+                })
 
     # --- direction_collapse_pct: fraction choosing single most common action ---
     direction_collapse_pct = 0.0
@@ -3100,6 +3323,8 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
         'avg_risk_fraction': round(float(avg_risk_fraction), 4),
         'max_risk_fraction': round(float(max_risk_fraction), 4),
         'trades_blocked_by_balance': int(trades_blocked_by_balance),
+        'avg_n_contracts': round(float(np.mean([t['n_contracts'] for t in trade_details])) if trade_details else 1.0, 2),
+        'chunk_details': chunk_details if num_trades >= 5 else [],
         'trade_log': trade_details,
     }
 
@@ -3138,6 +3363,7 @@ def _empty_metrics(num_val_bars=0, num_val_days=0, num_trades=0):
         'avg_risk_fraction': 0.0,
         'max_risk_fraction': 0.0,
         'trades_blocked_by_balance': 0,
+        'chunk_details': [],
     }
 
 
@@ -3177,12 +3403,12 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=256,
         window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
         out = model(x)
-        if not (isinstance(out, tuple) and len(out) == 2):
+        if not isinstance(out, tuple) or len(out) < 2:
             raise ValueError(
-                "evaluate_sharpe requires two-head model output tuple "
-                "(gate_logits, dir_logits)."
+                "evaluate_sharpe requires model output tuple with at least "
+                "(gate_logits, dir_logits). Got: " + str(type(out))
             )
-        gate_logits, dir_logits = out
+        gate_logits, dir_logits = out[0], out[1]
         if gate_logits.ndim != 2 or gate_logits.shape[-1] != 2:
             raise ValueError(
                 f"Invalid gate head shape: expected (batch, 2), got {tuple(gate_logits.shape)}"

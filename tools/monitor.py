@@ -50,6 +50,7 @@ _state: dict = {
     "last_fetch": 0,
     "fetch_time": 0,
     "poll_count": 0,
+    "ssh_ok": False,
 }
 
 
@@ -211,6 +212,18 @@ def _parse_gpu_csv(text: str) -> dict | None:
 
 # -- Background poller -----------------------------------------------------
 
+def _resolve_local_run_dir(local_path: str | None, active_run: str | None) -> Path | None:
+    """Find the best local run directory from pointer or active run name."""
+    lp = Path(local_path) if local_path else RESULTS_ROOT
+    if active_run and (lp / active_run).is_dir():
+        return lp / active_run
+    if lp.is_dir() and (lp / "current_run.txt").exists():
+        rn = (lp / "current_run.txt").read_text().strip()
+        if rn and (lp / rn).is_dir():
+            return lp / rn
+    return lp if lp.is_dir() else None
+
+
 def poller_loop(host: str | None, port: int, local_path: str | None, interval: int):
     """Background thread that polls remote/local and updates shared state."""
     mode = f"Remote: {host}:{port}" if host else f"Local: {local_path or 'results/'}"
@@ -227,22 +240,38 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
             log_tail = None
             gpu = None
             train_py = None
+            ssh_ok = False
 
+            # Try remote first
             if host:
                 experiments, status, log_tail, gpu, train_py, _ = fetch_remote(host, port)
+                ssh_ok = bool(experiments or status or gpu)
 
-            # Fallback to local
-            if not experiments and not status:
-                lp = Path(local_path) if local_path else RESULTS_ROOT
-                if active_run and (lp / active_run).is_dir():
-                    run_dir = lp / active_run
-                elif lp.is_dir() and (lp / "current_run.txt").exists():
-                    rn = (lp / "current_run.txt").read_text().strip()
-                    run_dir = lp / rn if rn else lp
-                else:
-                    run_dir = lp
-                if run_dir.is_dir():
-                    experiments, status, log_tail = fetch_local_run(run_dir)
+            # Per-component local fallback — fill in anything remote didn't provide
+            run_dir = _resolve_local_run_dir(local_path, active_run)
+            if run_dir:
+                if not experiments:
+                    experiments = _parse_jsonl_file(run_dir / "experiments.v2.jsonl")
+                if not status:
+                    status = _parse_json_file(run_dir / "status.json")
+                    if status:
+                        status["_run_name"] = run_dir.name
+                if not log_tail:
+                    for log_candidate in [run_dir / "loop.log", run_dir.parent / "loop.log"]:
+                        if log_candidate.exists():
+                            lines = log_candidate.read_text().split("\n")
+                            log_tail = "\n".join(lines[-80:])
+                            break
+                if not train_py:
+                    # Try synced best_train.py or train.py from local workspace
+                    for tp_candidate in [
+                        run_dir / "best_train.py",
+                        RESULTS_ROOT.parent / "training" / "best_train.py",
+                        RESULTS_ROOT.parent / "training" / "train.py",
+                    ]:
+                        if tp_candidate.exists():
+                            train_py = tp_candidate.read_text()
+                            break
 
             fetch_time = time.time() - t0
             poll_count = get_state()["poll_count"] + 1
@@ -258,6 +287,7 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
                 last_fetch=time.time(),
                 fetch_time=fetch_time,
                 poll_count=poll_count,
+                ssh_ok=ssh_ok,
             )
         except Exception as e:
             print(f"[poller] Error: {e}", file=sys.stderr)
@@ -636,6 +666,11 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         <div class="stat-card"><div class="stat-value stat-yellow" id="stat-rate">--</div><div class="stat-label">Exp/hr</div></div>
         <div class="stat-card"><div class="stat-value" id="stat-contract" style="font-size:11px;color:var(--text-dim)">--</div><div class="stat-label">Contract</div></div>
       </div>
+      <div class="stats-grid" style="margin-top:4px;">
+        <div class="stat-card"><div class="stat-value stat-yellow" id="stat-cost" style="font-size:16px">--</div><div class="stat-label">API Cost</div></div>
+        <div class="stat-card"><div class="stat-value stat-cyan" id="stat-cache-hit" style="font-size:16px">--</div><div class="stat-label">Cache Hit %</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-cost-per-exp" style="font-size:16px;color:var(--text-dim)">--</div><div class="stat-label">$/Experiment</div></div>
+      </div>
     </div>
   </div>
 
@@ -859,7 +894,8 @@ async function update() {
     const data = await resp.json();
 
     // Header
-    document.getElementById('header-mode').textContent = data.mode;
+    const sshTag = data.mode.startsWith('Remote') ? (data.ssh_ok ? ' [SSH OK]' : ' [SSH FAIL — using local]') : '';
+    document.getElementById('header-mode').textContent = data.mode + sshTag;
     document.getElementById('header-time').textContent = nowPST();
     document.getElementById('header-poll').textContent = `poll #${data.poll_count}`;
     document.getElementById('header-fetch').textContent = `fetch: ${data.fetch_time.toFixed(1)}s`;
@@ -882,6 +918,7 @@ async function update() {
     if (data.gpu) {
       const g = data.gpu;
       document.getElementById('gpu-name').textContent = g.name;
+      document.getElementById('gpu-content').style.opacity = '1';
       const memPct = g.mem_total_mb > 0 ? (g.mem_used_mb / g.mem_total_mb * 100) : 0;
       const powerPct = g.power_limit_w > 0 ? (g.power_w / g.power_limit_w * 100) : 0;
 
@@ -889,6 +926,9 @@ async function update() {
       setGauge('gpu-mem', memPct, `${(g.mem_used_mb/1024).toFixed(1)}/${(g.mem_total_mb/1024).toFixed(0)}GB`);
       setGauge('gpu-temp', Math.min(g.temp_c, 100), g.temp_c.toFixed(0) + 'C');
       setGauge('gpu-power', powerPct, `${g.power_w.toFixed(0)}/${g.power_limit_w.toFixed(0)}W`);
+    } else {
+      document.getElementById('gpu-name').textContent = data.ssh_ok ? 'waiting...' : 'no SSH';
+      document.getElementById('gpu-content').style.opacity = '0.3';
     }
 
     // Active run
@@ -921,6 +961,15 @@ async function update() {
     document.getElementById('stat-total').textContent = st.total || 0;
     document.getElementById('stat-best').textContent = st.best_score > -999 ? st.best_score.toFixed(4) : '--';
     document.getElementById('stat-contract').textContent = st.contract_checksum || '--';
+
+    // API cost tracking
+    const ac = st.api_cost;
+    if (ac) {
+      document.getElementById('stat-cost').textContent = '$' + (ac.total_cost || 0).toFixed(2);
+      document.getElementById('stat-cache-hit').textContent = (ac.cache_hit_pct || 0).toFixed(0) + '%';
+      const perExp = st.total > 0 ? (ac.total_cost / st.total).toFixed(3) : '--';
+      document.getElementById('stat-cost-per-exp').textContent = perExp !== '--' ? '$' + perExp : '--';
+    }
 
     // Exp rate
     const exps = data.experiments || [];
@@ -1025,6 +1074,10 @@ async function update() {
         lastTrainHash = hash;
         document.getElementById('code-content').innerHTML = highlightPython(data.train_py);
       }
+    } else if (data.poll_count > 2) {
+      document.getElementById('code-content').textContent = data.ssh_ok
+        ? 'Waiting for train.py on remote...'
+        : 'No SSH connection — no local train.py found in results/';
     }
 
     // Log
@@ -1033,6 +1086,10 @@ async function update() {
       const lines = data.log_tail.split('\n');
       logEl.innerHTML = lines.map(colorizeLine).join('\n');
       logEl.scrollTop = logEl.scrollHeight;
+    } else if (data.poll_count > 2) {
+      document.getElementById('log-content').textContent = data.ssh_ok
+        ? 'Waiting for loop.log on remote...'
+        : 'No SSH connection — check sync.log in results/ for log data';
     }
 
     // Runs table

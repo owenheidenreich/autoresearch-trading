@@ -16,6 +16,7 @@ from training.prepare import (
     NO_TRADE_BEFORE_BAR,
     STOP_LOSS_PCT,
     STOP_COOLDOWN_BARS,
+    compute_dynamic_stop,
 )
 from training.live.contracts import (
     FEATURE_CONTRACT_VERSION,
@@ -150,7 +151,8 @@ class ModelDecisionEngine:
             pos_state[0, 3] = self._account_health
             pos_state[0, 4] = self._loss_streak_frac
         with torch.no_grad():
-            gate_logits, dir_logits = self.model(x, position_state=pos_state)
+            _out = self.model(x, position_state=pos_state)
+            gate_logits, dir_logits = _out[0], _out[1]
             gate_probs = torch.softmax(gate_logits, dim=-1)[0].detach().cpu().numpy()
             dir_probs = torch.softmax(dir_logits, dim=-1)[0].detach().cpu().numpy()
 
@@ -199,9 +201,12 @@ class ModelDecisionEngine:
         contract = resolver.resolve(inference.action, spx_price)
         entry_mid = resolver.quote_mid(contract) or 1.0
 
-        # Emergency stop loss only — no hardcoded profit target.
+        # Dynamic stop from gate confidence + market features.
         # Model's gate head (NO_TRADE while holding) is the primary exit.
-        stop_pct = STOP_LOSS_PCT           # 0.30
+        from training.prepare import _FEAT_IDX
+        _iv_val = float(latest_features[-1, _FEAT_IDX['atm_iv']]) if latest_features.shape[0] > 0 else 0.0
+        _vix_val = float(latest_features[-1, _FEAT_IDX['vix_regime']]) if latest_features.shape[0] > 0 else 0.0
+        stop_pct = compute_dynamic_stop(inference.gate_trade_prob, _iv_val, _vix_val)
 
         stop_px = float(entry_mid * (1.0 - stop_pct))
         # Set TP very wide (5x entry) — effectively no hardcoded TP.
