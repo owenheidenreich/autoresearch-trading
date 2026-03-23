@@ -470,6 +470,13 @@ def _promotion_event_from_exp(exp: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _format_chunk_summary(chunk_details: list[dict]) -> str:
+    """Compact chunk summary like 'C1:0.22 C2:3.1 C3:8.4'."""
+    if not chunk_details:
+        return ""
+    return " ".join(f"C{cd['chunk']}:{cd['profit_factor']:.2f}" for cd in chunk_details)
+
+
 def _exp_to_prompt_record(exp: dict[str, Any]) -> dict[str, Any] | None:
     """Convert any experiment (kept or reverted) to a prompt history record."""
     try:
@@ -499,6 +506,8 @@ def _exp_to_prompt_record(exp: dict[str, Any]) -> dict[str, Any] | None:
         "error": str(exp.get("error", ""))[:200] if exp.get("error") else "",
         "failure_type": exp.get("failure_type", "none"),
         "keep_block_reason": exp.get("keep_block_reason", ""),
+        "worst_chunk_pf": exp.get("worst_chunk_pf"),
+        "chunk_summary": _format_chunk_summary(exp.get("chunk_details", [])),
     }
 
 
@@ -561,7 +570,12 @@ _LAB_NOTEBOOK_SKELETON = """\
 # Lab Notebook
 
 ## System
-SPX 0DTE | 2-head gate+dir | 32 features (v2) | 5-dim position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
+SPX 0DTE | 2-head gate+dir (v4) | 32 features (v2) | 5-dim position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
+- **Score config LOCKED**: _score_config is hardcoded, mutation-guarded in run_loop.py.
+
+## What Fails (do NOT retry)
+| Pattern | Attempts | Result |
+|---------|----------|--------|
 
 ## Best Runs
 | Run | Score | PF | TPD | Key Change |
@@ -570,6 +584,9 @@ SPX 0DTE | 2-head gate+dir | 32 features (v2) | 5-dim position state | 8 actions
 ## Dead Ends
 | Change | Result | Why |
 |--------|--------|-----|
+
+## Next Priorities
+- Beat the current best score. Explore any approach NOT listed in "What Fails".
 """
 
 
@@ -601,9 +618,8 @@ def _rebuild_notebook(sections: dict[str, list[str]]) -> str:
     parts = ["# Lab Notebook\n"]
     # Core sections in fixed order
     core_order = [
-        "System", "Causal Exit Labels", "Account-Aware Scoring",
-        "What Works (proven across 95 experiments)", "What Fails (do NOT retry)",
-        "Current Best Model (exp-52)", "Best Runs", "Dead Ends", "Next Priorities",
+        "System", "What Fails (do NOT retry)",
+        "Best Runs", "Dead Ends", "Next Priorities",
     ]
     seen = set()
     for header in core_order:
@@ -1148,14 +1164,21 @@ You are an expert ML researcher running inside an autonomous experiment loop.
 Your only editable target is `train.py`.
 
 Mission:
-- Improve the scalar training objective reported by the script (higher score is better).
+- Build a model that makes money trading SPX 0DTE options on IBKR paper trading.
+- The score is a proxy, not the goal. A model with score=2.0 that only works on
+  high-VIX days is WORSE than score=1.5 that works consistently across regimes.
+- Before proposing changes, state what TRADING BEHAVIOR you're trying to improve
+  and how you'd verify it worked (which metric, which regime, which time period).
+- After seeing results, diagnose: did the model actually trade better, or did the
+  score just happen to go up? Use the trade-level diagnostics to answer this.
 - Propose one coherent hypothesis per iteration, not an unfocused rewrite.
 - Keep changes robust under a fixed wall-clock budget.
 
 Output contract (strict):
-- First output a BRIEF hypothesis in <reasoning>...</reasoning> (max 2-3 sentences).
+- First output a BRIEF diagnosis in <diagnosis>...</diagnosis> (2-3 sentences: which chunks, regimes, or strike types are weakest and why, based on the diagnostic summary below).
+- Then output your hypothesis in <reasoning>...</reasoning> (max 2-3 sentences: what you'll change to address the diagnosis).
 - Then output the COMPLETE modified `train.py` — every line, top to bottom.
-- Output only reasoning tags + Python code (no markdown fences, no extra commentary).
+- Output only diagnosis + reasoning tags + Python code (no markdown fences, no extra commentary).
 - CRITICAL: The file is ~800 lines. You MUST output the entire file without truncation.
   Keep your reasoning SHORT to leave room for the full code.
 
@@ -1166,7 +1189,27 @@ Execution constraints:
 - You can tune the score formula via `score_config` dict in train.py (see Score Tuning Environment Variables in the contract).
 - You can tune training signal weighting, sample selection, and loss structure — not just model architecture.
 - Check per-chunk metrics to ensure performance is consistent across time periods, not just good in aggregate.
+- Check the TRADE DIAGNOSTICS section: best/worst trades, time-of-day splits, VIX regime splits, and action breakdowns. Use these to identify specific weaknesses.
 - Do NOT repeat experiments from the Lab Notebook — read the Improvements Log and Dead Ends carefully.
+
+## Expanded Action Space (safe to modify)
+Beyond hyperparameter tuning, you can explore these directions:
+1. **Data augmentation**: Feature dropout (randomly zero features during training),
+   time-warping (stretch/compress temporal features), synthetic regime injection
+2. **Learning rate schedules**: Warmup/cooldown ratios, cosine annealing,
+   cyclical LR, OneCycle policy — currently flat LR after warmup
+3. **Bias initialization**: Gate head bias (NO_TRADE vs TRADE) and direction
+   head bias — safe range: gate [-2.0, +2.0], dir [-0.5, +0.5]
+4. **Sample weighting strategies**: Time-of-day weighting, regime-adaptive
+   weighting, loss-based hard example mining
+5. **Regularization**: Dropout rates, weight decay, label smoothing values,
+   feature noise injection std
+
+DO NOT modify: architecture (layer count, d_model, attention heads),
+loss function TERMS (no new losses in the total summation), score formula,
+evaluation mechanics, or forward() method signature.
+You MAY add: loss weight scheduling, sample weighting, LR schedules,
+bias initialization changes, feature noise patterns, batch construction changes.
 
 ## Evaluation Mechanics (from evaluate_trades)
 - Trades enter at the model's signal bar using actual option mid-prices
@@ -1228,8 +1271,9 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
     parts = []
 
     if history:
-        best = max(history, key=lambda e: _safe_score(e))
         kept = [e for e in history if e.get("kept")]
+        # Best score = highest KEPT experiment (not reverted ones)
+        best = max(kept, key=lambda e: _safe_score(e)) if kept else max(history, key=lambda e: _safe_score(e))
         failed = [e for e in history if e.get("error")]
         scored = [e for e in history if _safe_score(e) > -999]
         accept_rate = len(kept) / len(scored) if scored else 0.0
@@ -1289,22 +1333,77 @@ def build_user_prompt(current_train_py: str, history: list, experiment_id: int =
             if err and err.startswith("SAFETY:"):
                 parts.append(f"  #{exp['experiment_id']}: REJECTED — {err}")
             elif err:
-                parts.append(f"  #{exp['experiment_id']}: FAILED — {err[:150]}")
+                parts.append(f"  #{exp['experiment_id']}: FAILED — {err[:500]}")
             else:
-                parts.append(f"  #{exp['experiment_id']}: score={score} pf={pf} tpd={trades} [{status}] — {reason}")
+                line = f"  #{exp['experiment_id']}: score={score} pf={pf} tpd={trades} [{status}]"
+                block_reason = exp.get("keep_block_reason", "")
+                if block_reason and not exp.get("kept"):
+                    line += f" BLOCKED:{block_reason}"
+                line += f" — {reason}"
+                parts.append(line)
         parts.append("")
 
         if history[-1].get("error"):
             parts.append(f"## LAST EXPERIMENT FAILED:\n{history[-1]['error']}\n")
             parts.append("Fix the error and try a different approach.\n")
 
+        # Diagnostic summary — gives Claude concrete data about model weaknesses
+        last_scored = None
+        for e in reversed(history):
+            if _safe_score(e) > -999:
+                last_scored = e
+                break
+        if last_scored:
+            parts.append("## DIAGNOSTIC SUMMARY (last scored experiment)")
+            dc = last_scored.get("direction_collapse_pct", "?")
+            parts.append(f"- Direction collapse: {dc}")
+            slr = last_scored.get("stop_loss_rate", "?")
+            parts.append(f"- Stop-loss rate: {slr}")
+            eq = last_scored.get("avg_entry_quality", "?")
+            parts.append(f"- Avg entry quality: {eq}")
+            wr = last_scored.get("win_rate", "?")
+            parts.append(f"- Win rate: {wr}")
+            # Include per-chunk details
+            chunks = last_scored.get("chunk_details", [])
+            if chunks:
+                parts.append("- Per-chunk performance:")
+                for cd in chunks:
+                    parts.append(f"    Chunk {cd['chunk']}: {cd['dates']} | {cd['trades']} trades | PF={cd['profit_factor']:.2f} | WR={cd['win_rate']:.1%}")
+            # Include trade diagnostics from train.py output
+            trade_diag = last_scored.get("trade_diagnostics", "")
+            if trade_diag:
+                parts.append(f"\n{trade_diag}")
+            parts.append("")
+
+        # Self-questioning protocol — anchored to diagnostic data
+        parts.append("## Before proposing changes, write your <diagnosis> answering:")
+        parts.append("1. What is the single biggest weakness in the current model's trading behavior?")
+        parts.append("2. What approach have you NOT tried yet?")
+        parts.append("3. Why do you believe your proposed change will improve the score?\n")
+
+        # Consecutive error pattern detection
+        consecutive_errors = 0
+        for exp in reversed(history):
+            if exp.get("error") and not exp.get("error", "").startswith("SAFETY:"):
+                consecutive_errors += 1
+            else:
+                break
+        if consecutive_errors >= 3:
+            parts.append("## SYNTAX/RUNTIME ERROR PATTERN")
+            parts.append(f"You've had {consecutive_errors} consecutive errors.")
+            parts.append("Common causes: unmatched parentheses, incorrect indentation, missing imports.")
+            parts.append("Double-check your code CAREFULLY before submitting. Make MINIMAL changes.\n")
+
         # Diversity nudge every 5th experiment
         if experiment_id > 0 and experiment_id % 5 == 0:
-            parts.append("## DIVERSITY NUDGE")
-            parts.append("This is every 5th experiment — step back and think differently.")
-            parts.append("Look at what hasn't worked and why. Consider whether the PROBLEM FRAMING")
-            parts.append("is right, not just the solution. What assumption might be wrong?")
-            parts.append("Check per-chunk PF in recent outputs — is performance consistent across time periods?\n")
+            parts.append("## CREATIVE EXPLORATION (every 5th experiment)")
+            parts.append("Step back from incremental tuning. Consider these unexplored directions:")
+            parts.append("- What if the model learned different strategies for different VIX regimes?")
+            parts.append("- What if the loss function weighted morning trades differently from afternoon?")
+            parts.append("- What if the model's gate was more selective (fewer but better trades)?")
+            parts.append("- What if you changed HOW the model exits, not just when?")
+            parts.append("- Look at the worst trades in the diagnostics — what pattern do they share?")
+            parts.append("- Is the model better at calls or puts? Should it specialize?\n")
 
         # Search-space review every 10th experiment (article: "is the search space still right?")
         if experiment_id > 0 and experiment_id % 10 == 0:
@@ -1387,9 +1486,19 @@ def extract_reasoning(response: str) -> str:
     return ""
 
 
+def extract_diagnosis(response: str) -> str:
+    """Extract diagnosis from <diagnosis>...</diagnosis> tags."""
+    m = _re.search(r'<diagnosis>(.*?)</diagnosis>', response, _re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return ""
+
+
 def extract_code(response: str) -> str:
-    """Extract Python code from LLM response, handling reasoning tags and markdown fences."""
+    """Extract Python code from LLM response, handling reasoning/diagnosis tags and markdown fences."""
     code = response.strip()
+    # Remove <diagnosis>...</diagnosis> block if present
+    code = _re.sub(r'<diagnosis>.*?</diagnosis>', '', code, flags=_re.DOTALL).strip()
     # Remove <reasoning>...</reasoning> block if present
     code = _re.sub(r'<reasoning>.*?</reasoning>', '', code, flags=_re.DOTALL).strip()
     # Strip markdown code fences if present
@@ -1552,6 +1661,35 @@ def validate_safety(code: str) -> str | None:
             "SAFETY: SCORE_* env vars are forbidden. The score formula is locked "
             "to prevent gaming. Improve the model, not the scorer."
         )
+
+    # Loss function freeze: reject new _env_float declarations or new def *loss/*penalty functions
+    # The best model's loss composition is mature — adding terms never improves score.
+    if os.path.exists(BEST_TRAIN_PY):
+        try:
+            with open(BEST_TRAIN_PY, 'r') as _f:
+                _best_code = _f.read()
+            best_env_count = len(_re.findall(r'_env_float\(', _best_code))
+            new_env_count = len(_re.findall(r'_env_float\(', code))
+            if new_env_count > best_env_count:
+                return (
+                    f"SAFETY: New _env_float declarations added ({new_env_count} vs "
+                    f"baseline {best_env_count}). The loss function is FROZEN per "
+                    f"program.md — tune existing hyperparameter VALUES only, do not "
+                    f"add new ones."
+                )
+            # Also block new loss/penalty function definitions
+            _loss_fn_pattern = r'def\s+\w*(?:loss|penalty|consistency|confidence|quality)\w*\s*\('
+            best_loss_fns = set(_re.findall(_loss_fn_pattern, _best_code))
+            new_loss_fns = set(_re.findall(_loss_fn_pattern, code))
+            added_fns = new_loss_fns - best_loss_fns
+            if added_fns:
+                return (
+                    f"SAFETY: New loss function(s) added: {added_fns}. "
+                    f"The loss function is FROZEN per program.md — tune existing "
+                    f"hyperparameter values only."
+                )
+        except Exception:
+            pass
 
     # Check BATCH_SIZE
     m = _re.search(r'BATCH_SIZE\s*=\s*(\d+)', code)
@@ -1767,6 +1905,28 @@ def run_training(train_py_path: str, timeout: int = 420, time_budget: int = 300)
                     metrics[key] = val
                 elif key == 'hit_ruin':
                     metrics[key] = val.strip().lower() == 'true'
+
+        # Parse per-chunk details from output (e.g. "  Chunk 1: 2025-02..2025-05 | 42 trades | PF=0.22 | WR=33.3%")
+        chunk_details = []
+        chunk_re = _re.compile(r'Chunk (\d+): (.+?) \| (\d+) trades \| PF=([\d.]+) \| WR=([\d.]+)%')
+        for line in output.split('\n'):
+            m = chunk_re.search(line)
+            if m:
+                chunk_details.append({
+                    "chunk": int(m.group(1)),
+                    "dates": m.group(2).strip(),
+                    "trades": int(m.group(3)),
+                    "profit_factor": float(m.group(4)),
+                    "win_rate": float(m.group(5)) / 100.0,
+                })
+        if chunk_details:
+            metrics["chunk_details"] = chunk_details
+
+        # Extract trade diagnostics section from output (between markers)
+        diag_start = output.find("=== TRADE DIAGNOSTICS ===")
+        diag_end = output.find("=== END DIAGNOSTICS ===")
+        if diag_start >= 0 and diag_end >= 0:
+            metrics["trade_diagnostics"] = output[diag_start:diag_end + len("=== END DIAGNOSTICS ===")].strip()
 
         if 'score' not in metrics:
             return {
@@ -2142,10 +2302,12 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
             raw_response = prefetched if prefetched else call_claude(system_blocks, attempt_prompt)
             api_time = time.time() - t0
             api_time_total += api_time
+            diagnosis = extract_diagnosis(raw_response)
             reasoning = extract_reasoning(raw_response)
             new_code = extract_code(raw_response)
             new_code, stripped = _sanitize_code(new_code)
             _save_artifact_text(artifact_dir, f"response_raw_attempt{attempt}.txt", raw_response)
+            _save_artifact_text(artifact_dir, f"diagnosis_attempt{attempt}.txt", diagnosis or "")
             _save_artifact_text(artifact_dir, f"reasoning_attempt{attempt}.txt", reasoning or "")
             _save_artifact_json(artifact_dir, f"sanitize_actions_attempt{attempt}.json", {"actions": stripped})
             log(f"  Claude responded in {api_time:.1f}s")
@@ -2325,11 +2487,13 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
     exp["api_time"] = round(api_time_total, 1)
     exp["codegen_attempts"] = attempts_used
     exp["repair_attempts"] = max(0, attempts_used - 1)
+    exp["diagnosis"] = diagnosis[:300] if diagnosis else ""
     exp["reasoning"] = reasoning[:300] if reasoning else ""
     exp["_full_reasoning"] = reasoning or ""
     exp["train_py_after_hash"] = _sha256_text(new_code)
     exp["change_summary"] = change_summary
     _save_artifact_text(artifact_dir, "response_raw.txt", raw_response)
+    _save_artifact_text(artifact_dir, "diagnosis.txt", diagnosis or "")
     _save_artifact_text(artifact_dir, "reasoning.txt", reasoning or "")
     _save_artifact_json(artifact_dir, "sanitize_actions.json", {"actions": stripped})
     _save_artifact_text(artifact_dir, "train_after_candidate.py", new_code)
@@ -2361,6 +2525,7 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
         exp["num_params"] = metrics.get("num_params", 0)
         exp["stop_loss_rate"] = metrics.get("stop_loss_rate", 0)
         exp["worst_chunk_pf"] = metrics.get("worst_chunk_pf", 0)
+        exp["chunk_details"] = metrics.get("chunk_details", [])
         exp["direction_collapse_pct"] = metrics.get("direction_collapse_pct", 1.0)
         exp["avg_entry_cost_bps"] = metrics.get("avg_entry_cost_bps", 0.0)
         exp["avg_entry_quality"] = metrics.get("avg_entry_quality", 0.0)
@@ -2424,14 +2589,41 @@ def run_one_experiment(experiment_id: int, prompt_history: list, best_score: flo
             exp["secondary_regression"] = secondary_regression_reasons
             log(f"  ⚠ Secondary metric regression: {'; '.join(secondary_regression_reasons)}")
 
+        # Hard floor: worst chunk must have PF > 0.5 (prevents overfitting to one regime)
+        worst_chunk = float(exp.get("worst_chunk_pf", 0))
+        if worst_chunk < 0.5 and score > best_score:
+            secondary_regression_reasons.append(
+                f"worst_chunk_pf_floor ({worst_chunk:.2f} < 0.50)")
+
         keep_allowed = (score > best_score and not critical_flags
                         and near_tie_ok and not secondary_regression_reasons)
         if keep_allowed:
             log(f"  ✓ IMPROVED: {best_score:.4f} → {score:.4f} (pf={exp['profit_factor']:.2f} tpd={exp['trades_per_day']:.1f})")
             exp["kept"] = True
             exp["failure_type"] = "none"
+
+            # Paper-trading compatibility check
+            try:
+                import torch as _torch
+                from replay import load_model as _lm_check
+                from prepare import NUM_FEATURES as _nf
+                _m, _lb, _cfg, _ = _lm_check(str(BEST_MODEL_PT))
+                _dummy = _torch.randn(1, _lb, _nf)
+                _out = _m(_dummy)
+                assert len(_out) >= 2, f"Model outputs {len(_out)} values, expected >=2"
+                log(f"  Paper-trading compatibility: OK (lookback={_lb})")
+            except Exception as _e:
+                log(f"  ⚠ Paper-trading compatibility: FAILED — {_e}")
+                exp.setdefault("anomaly_flags", []).append("not_paper_ready")
+
             # Save as best — keep new model weights, archive old backup
             shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)
+            # Snapshot best_model.pt so incremental weight retention on later
+            # reverted experiments can't overwrite the actual best checkpoint.
+            best_snapshot = str(BEST_MODEL_PT) + ".best_snapshot"
+            if os.path.exists(str(BEST_MODEL_PT)):
+                shutil.copy2(str(BEST_MODEL_PT), best_snapshot)
+                log(f"  Saved best model snapshot: {best_snapshot}")
             if os.path.exists(model_backup_path):
                 os.remove(model_backup_path)
         else:

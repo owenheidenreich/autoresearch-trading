@@ -16,12 +16,13 @@ The solution: **trade daily with a stable model** (fresh data/normalization), **
 
 ### Daily Mode (weekdays, default)
 ```
-5:30 AM ET   Stage 1: Data rebuild
-             - Deletes stale SPY/SPX/VIX/SPXW aggregate caches
-             - Downloads yesterday's data (IBKR historical + Polygon S3 options)
-             - Full rebuild of data.pt with rolling z-score normalization
+5:30 AM ET   Stage 1: Data rebuild (incremental)
+             - SPY/SPX/VIX: appends new bars to existing caches (1 week of IBKR data)
+             - SPXW: downloads yesterday's option chain (Polygon S3, per-day cache)
+             - Rebuilds aggregate option caches from per-day files
+             - Full recompute of features + rolling z-score normalization
              - Refreshes norm_raw_buffer (500 bars) for live inference
-             - ~10-15 minutes
+             - ~2-3 minutes (vs ~30-45 min for cold start)
 
 5:45 AM ET   Stage 3: Paper trading
              - Launches paper_live.py as background process
@@ -107,9 +108,9 @@ IB Gateway must be running before the pipeline starts. It requires 2FA login so 
 
 ## Design Decisions
 
-**Why full rebuild instead of append?** `prepare.py` uses rolling z-score normalization across the entire dataset. Appending new bars would corrupt the normalization of earlier bars. Full rebuild from cached per-day files takes only 10-20 seconds for feature computation (the download is the slow part).
+**Why full feature recompute instead of append?** `prepare.py` uses rolling z-score normalization across the entire dataset. Appending new bars would corrupt the normalization of earlier bars. Full recompute from cached raw data takes only ~60 seconds — the download used to be the slow part.
 
-**Why delete caches?** The SPY/SPX/VIX caches are monolithic files covering the full date range. `prepare.py` loads from cache if it exists, never re-downloading. Deleting forces a fresh download that includes yesterday. Per-day SPXW option caches (`~/.cache/.../spxw/YYYY-MM-DD.pkl`) are fine — the prefetch skips existing days.
+**Why incremental downloads?** SPY/SPX/VIX caches are monolithic pkl files. Previously, the pipeline deleted them to force re-download including yesterday's data — triggering a 30-45 minute full re-download from IBKR. Now `_incremental_update()` in prepare.py loads the existing cache, finds the last date, downloads only new bars (1 week at most), appends, and saves. Per-day SPXW option caches (`~/.cache/.../spxw/YYYY-MM-DD.pkl`) were always incremental.
 
 **Why not retrain daily?** Z-score normalization makes features regime-invariant — model weights don't need daily updates to handle market changes. Daily autoresearch sessions are too short (7-10 experiments) for meaningful improvement and risk architectural instability. Weekly sessions (20-30+ experiments) give the agent room to explore properly.
 

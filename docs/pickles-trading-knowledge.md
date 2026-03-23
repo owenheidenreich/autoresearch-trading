@@ -5,6 +5,10 @@
 > **Primary instruments:** SPX/SPXW 0DTE options, ES/NQ/RTY futures, VIX, CL (crude oil)
 
 ---
+/Users/gduby/Documents/picklesGPT/pickles
+[this document requires all related documents. related meaning, related to SPX options.]
+this must be used in ART^2
+
 
 ## 1. Entry Rules
 

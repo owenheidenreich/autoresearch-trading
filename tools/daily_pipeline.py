@@ -40,12 +40,10 @@ PIPELINE_DIR = PROJECT_ROOT / "results" / "pipeline"
 
 ET = ZoneInfo("America/New_York")
 
-# Stale caches that must be deleted before data rebuild
-# (monolithic caches that don't auto-include new days)
-STALE_CACHES = [
-    DATA_DIR / "spy_1min.pkl",
-    DATA_DIR / "spx_1min.pkl",
-    DATA_DIR / "vix_1min.pkl",
+# Aggregate option caches rebuilt from per-day caches each run.
+# SPY/SPX/VIX monolithic caches are now handled by prepare.py's
+# _incremental_update() — they append new bars instead of re-downloading.
+AGGREGATE_CACHES = [
     DATA_DIR / "spxw_full.pkl",
     DATA_DIR / "spxw_chain_full.pkl",
 ]
@@ -152,17 +150,18 @@ def stage_data_rebuild(log_dir: Path, yesterday: str, dry_run: bool = False) -> 
     log(f"=== STAGE 1: Data Rebuild (through {yesterday}) ===")
 
     if dry_run:
-        log("  [dry-run] Would delete stale caches and rebuild data.pt")
-        for c in STALE_CACHES:
+        log("  [dry-run] Would delete aggregate caches and rebuild data.pt (incremental)")
+        for c in AGGREGATE_CACHES:
             log(f"  [dry-run] rm {c}")
         log(f"  [dry-run] python3 training/prepare.py --use-spx --ib-port 4002 --start 2022-03-14 --end {yesterday}")
         return True
 
-    # Delete stale monolithic caches to force re-download
-    for cache_path in STALE_CACHES:
+    # Delete aggregate option caches (rebuilt from per-day caches).
+    # SPY/SPX/VIX caches are updated incrementally by prepare.py.
+    for cache_path in AGGREGATE_CACHES:
         if cache_path.exists():
             cache_path.unlink()
-            log(f"  Deleted stale cache: {cache_path.name}")
+            log(f"  Deleted aggregate cache: {cache_path.name}")
 
     # Run prepare.py
     rc, output = run_cmd(

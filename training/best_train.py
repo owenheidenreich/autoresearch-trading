@@ -101,17 +101,17 @@ FF_MULT = _env_int("TRAIN_FF_MULT", 3, lo=2, hi=6)
 DROPOUT = _env_float("TRAIN_DROPOUT", 0.15, lo=0.05, hi=0.40)
 
 BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 128, lo=32, hi=256)
-LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR
 WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.05, lo=0.0, hi=0.3)
 ADAM_BETAS = (0.9, 0.98)
 GRAD_CLIP = _env_float("TRAIN_GRAD_CLIP", 1.0, lo=0.0, hi=5.0)
-WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.1, lo=0.0, hi=0.5)
+WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
 COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.3, lo=0.0, hi=0.8)
 
 # Loss weights
-GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 1.0, lo=0.1, hi=5.0)
+GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 2.0, lo=0.1, hi=5.0)  # Stronger gate signal
 DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.0, lo=0.1, hi=5.0)
-PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
+PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)
 EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.5, lo=0.0, hi=2.0)
 
 # Asymmetric gate penalty: how much more to penalize false entries vs missed entries
@@ -122,22 +122,13 @@ FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 2.0, lo=1.0, hi=5.
 GATE_LABEL_SMOOTHING = _env_float("TRAIN_GATE_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0.2)
 DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0.2)
 
-# Score formula tuning (passed to evaluate_trades)
-SCORE_WIN_RATE_BONUS = _env_float("SCORE_WIN_RATE_BONUS", 0.0, lo=0.0, hi=1.0)
-SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13
-SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # NEW: Reduced from 0.1 to 0.05
-SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18
-SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
-SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # From exp #13
-SCORE_CONSEC_LOSS_THRESHOLD = _env_int("SCORE_CONSEC_LOSS_THRESHOLD", 3, lo=2, hi=8)
-SCORE_SHORT_HOLD_THRESHOLD = _env_float("SCORE_SHORT_HOLD_THRESHOLD", 0.30, lo=0.10, hi=0.60)
-SCORE_STOP_RATE_THRESHOLD = _env_float("SCORE_STOP_RATE_THRESHOLD", 0.30, lo=0.10, hi=0.60)
-SCORE_RUIN_PENALTY = _env_float("SCORE_RUIN_PENALTY", 1.0, lo=0.0, hi=1.0)
-SCORE_RUIN_THRESHOLD = _env_float("SCORE_RUIN_THRESHOLD", 0.25, lo=0.05, hi=0.50)
-SCORE_RISK_FRACTION_PENALTY = _env_float("SCORE_RISK_FRACTION_PENALTY", 0.5, lo=0.0, hi=1.0)
+# Score formula — LOCKED. Do NOT modify these values.
+# Changing these games the evaluation metric without improving trading.
+# See program.md "Score Formula is LOCKED" for details.
 
 # Named feature indices
 IDX_MINUTES_TO_CLOSE = 19
+IDX_ATM_IV = 22
 
 # Feature groups (32 features — v2 reduced set)
 FEATURE_GROUPS = {
@@ -297,10 +288,13 @@ class TradingModel(nn.Module):
             nn.Linear(d_model // 2, 6),
         )
 
-        # Apply biases from successful experiment #3
+        # ETV (Expected Trade Value) regression head — predicts return magnitude
+        self.etv_proj = nn.Linear(d_model, 1)
+
+        # Less conservative gate bias to encourage trading
         with torch.no_grad():
-            self.gate_head[-1].bias[0] += 0.5   # NO_TRADE
-            self.gate_head[-1].bias[1] -= 0.5   # TRADE
+            self.gate_head[-1].bias[0] += 0.1   # NO_TRADE (reduced from 0.5)
+            self.gate_head[-1].bias[1] -= 0.1   # TRADE (reduced from -0.5)
             
             # Apply exact biases from experiment #3
             self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15)
@@ -357,23 +351,60 @@ class TradingModel(nn.Module):
             
             dir_logits = dir_logits + bias_adjustment
 
-        return gate_logits, dir_logits
+        # ETV: expected trade value regression
+        etv = self.etv_proj(last).squeeze(-1)  # (batch,)
+
+        return gate_logits, dir_logits, etv
 
 
 # ---------------------------------------------------------------------------
-# Loss — v4: simplified, asymmetric gate penalty
+# Loss — v5: EV-weighted, magnitude-aware
 # ---------------------------------------------------------------------------
+
+# ETV loss weight
+ETV_LOSS_WEIGHT = _env_float("TRAIN_ETV_W", 0.1, lo=0.0, hi=1.0)
+
+# Scale for sigmoid soft target (controls sharpness of trade/no-trade boundary)
+EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 10.0, lo=1.0, hi=50.0)
+
+
+def _select_stop_level_pnl(tight, med, wide, iv_feat, vix_feat):
+    """Select stopped P&L level per-bar based on market conditions (IV, VIX).
+
+    Mirrors the dynamic stop formula: stop = BASE * iv_factor * vix_factor.
+    Selects tight/med/wide stopped P&L to match what the dynamic stop would use.
+    """
+    if tight is None or wide is None:
+        return med
+    iv_factor = 1.0 + torch.clamp(iv_feat, min=0.0) * 0.15
+    vix_factor = 1.0 + torch.clamp(vix_feat, min=0.0) * 0.10
+    effective_stop = 0.35 * iv_factor * vix_factor
+    use_tight = effective_stop <= 0.275
+    use_wide = effective_stop >= 0.425
+    result = med.clone()
+    result[use_tight] = tight[use_tight]
+    result[use_wide] = wide[use_wide]
+    return result
+
 
 def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, features,
                 exit_call_labels=None, exit_put_labels=None,
                 otm5_call_pnl=None, otm5_put_pnl=None,
                 otm10_call_pnl=None, otm10_put_pnl=None,
-                supervision_weight=None, actionable_mask=None, risk_state_mask=None):
-    """Two-head loss with asymmetric gate penalty.
+                supervision_weight=None, actionable_mask=None, risk_state_mask=None,
+                call_stopped_pnl=None, put_stopped_pnl=None,
+                otm5_call_stopped_pnl=None, otm5_put_stopped_pnl=None,
+                otm10_call_stopped_pnl=None, otm10_put_stopped_pnl=None,
+                call_stopped_tight=None, call_stopped_wide=None,
+                put_stopped_tight=None, put_stopped_wide=None,
+                etv_pred=None):
+    """v5 EV-weighted loss: magnitude-aware gate + return-weighted direction.
 
-    Key v4 change: false entries (predicting TRADE when no option is profitable)
-    are penalized more heavily than missed entries. This teaches the model to be
-    selective — better to miss a trade than to take a bad one.
+    Key changes from v4:
+    - Gate: soft continuous target from sigmoid(best_stopped_pnl * scale) instead of binary
+    - Direction: return-weighted soft targets instead of argmax classification
+    - ETV: MSE regression on expected trade value
+    - Uses stopped P&L (with dynamic stops) when available, falls back to unstopped
     """
     B = gate_logits.shape[0]
     device = gate_logits.device
@@ -406,7 +437,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         sample_weight = torch.ones_like(sample_weight)
     sample_weight = sample_weight / sample_weight.mean().clamp(min=1e-6)
 
-    # Build 6-class P&L array
+    # Build 6-class P&L arrays (unstopped for backward compat, stopped for v5 targets)
     def _safe(arr):
         if arr is None:
             return torch.full_like(c_pnl, float('nan'))
@@ -421,56 +452,93 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         _safe(otm10_put_pnl),
     ], dim=-1)  # (valid, 6)
 
-    # Gate targets: TRADE (1) when ANY option is profitable
-    any_profitable = torch.any(torch.nan_to_num(all_pnl, nan=-999.0) > 0, dim=-1)
-    gate_targets = any_profitable.long()
+    # Stopped P&L — multi-level selection based on IV/VIX when available
+    cs_med = _safe(call_stopped_pnl) if call_stopped_pnl is not None else c_pnl
+    ps_med = _safe(put_stopped_pnl) if put_stopped_pnl is not None else p_pnl
 
-    # Asymmetric gate weights: penalize false entries more than missed entries
-    # gate_weights[0] = weight for NO_TRADE class (missed trades when should have traded)
-    # gate_weights[1] = weight for TRADE class (false entries when should not have traded)
-    n_trade = gate_targets.sum().float().clamp(min=1)
-    n_no_trade = (gate_targets == 0).sum().float().clamp(min=1)
-    base_balance = (n_no_trade / n_trade).clamp(max=10.0)
-    # FALSE_ENTRY_PENALTY > 1 makes bad trades cost more
-    gate_weights = torch.tensor([1.0 / FALSE_ENTRY_PENALTY, base_balance], device=device)
+    # Select appropriate stop level per-bar using market conditions
+    iv_feat = features[valid, IDX_ATM_IV] if features.shape[-1] > IDX_ATM_IV else torch.zeros_like(c_pnl)
+    vix_feat = features[valid, 5] if features.shape[-1] > 5 else torch.zeros_like(c_pnl)  # idx 5 = vix in feature set
+
+    cs_pnl = _select_stop_level_pnl(
+        _safe(call_stopped_tight) if call_stopped_tight is not None else None,
+        cs_med,
+        _safe(call_stopped_wide) if call_stopped_wide is not None else None,
+        iv_feat, vix_feat)
+    ps_pnl = _select_stop_level_pnl(
+        _safe(put_stopped_tight) if put_stopped_tight is not None else None,
+        ps_med,
+        _safe(put_stopped_wide) if put_stopped_wide is not None else None,
+        iv_feat, vix_feat)
+
+    all_stopped_pnl = torch.stack([
+        cs_pnl,
+        _safe(otm5_call_stopped_pnl) if otm5_call_stopped_pnl is not None else _safe(otm5_call_pnl),
+        _safe(otm10_call_stopped_pnl) if otm10_call_stopped_pnl is not None else _safe(otm10_call_pnl),
+        ps_pnl,
+        _safe(otm5_put_stopped_pnl) if otm5_put_stopped_pnl is not None else _safe(otm5_put_pnl),
+        _safe(otm10_put_stopped_pnl) if otm10_put_stopped_pnl is not None else _safe(otm10_put_pnl),
+    ], dim=-1)  # (valid, 6)
+
+    all_stopped_safe = torch.nan_to_num(all_stopped_pnl, nan=-999.0)
+
+    # ---- Gate loss: EV-weighted continuous signal ----
+    # Best available return across all 6 option types (after stops)
+    best_pnl = all_stopped_safe.max(dim=-1).values  # (valid,)
+
+    # Soft target: sigmoid maps P&L to [0, 1] probability of trading
+    gate_soft_target = torch.sigmoid(best_pnl * EV_GATE_SCALE)
+
+    # Trade logit = g_logits[:, 1] - g_logits[:, 0]
+    trade_logit = g_logits[:, 1] - g_logits[:, 0]
+
+    # Magnitude weighting: big winners/losers get stronger gradients
+    magnitude_weight = torch.abs(best_pnl).clamp(min=0.01)
 
     time_weight = 1.0 + 0.5 * (1.0 - t_feat)
-    gate_loss = F.cross_entropy(
-        g_logits, gate_targets, weight=gate_weights,
-        reduction='none', label_smoothing=GATE_LABEL_SMOOTHING,
+    gate_loss = F.binary_cross_entropy_with_logits(
+        trade_logit, gate_soft_target,
+        weight=magnitude_weight,
+        reduction='none',
     )
     gate_loss = (gate_loss * time_weight * sample_weight).mean()
 
-    # Direction targets: only where gate_target = TRADE
-    trade_mask = gate_targets == 1
+    # ---- Direction loss: return-weighted soft targets ----
+    # Only train direction where best option is profitable (gate_soft_target > 0.5)
+    trade_mask = best_pnl > 0.0
     if trade_mask.sum() < 2:
-        return GATE_LOSS_WEIGHT * gate_loss
+        total = GATE_LOSS_WEIGHT * gate_loss
+        if etv_pred is not None:
+            etv_v = etv_pred[valid]
+            etv_loss = F.mse_loss(etv_v, best_pnl.detach())
+            total = total + ETV_LOSS_WEIGHT * etv_loss
+        return total
 
     d_logits_trade = d_logits[trade_mask]
     t_feat_trade = t_feat[trade_mask]
-    trade_pnl = all_pnl[trade_mask]
+    trade_pnl = all_stopped_safe[trade_mask]
 
-    trade_pnl_safe = torch.nan_to_num(trade_pnl, nan=-999.0)
-    dir_targets = torch.argmax(trade_pnl_safe, dim=-1)
+    # Soft direction targets: shift to positive, normalize to distribution
+    trade_pnl_shifted = trade_pnl - trade_pnl.min(dim=-1, keepdim=True).values + 0.01
+    dir_soft_targets = trade_pnl_shifted / trade_pnl_shifted.sum(dim=-1, keepdim=True).clamp(min=1e-6)
 
-    dir_loss = F.cross_entropy(
-        d_logits_trade, dir_targets,
-        reduction='none', label_smoothing=DIR_LABEL_SMOOTHING,
-    )
+    # KL-divergence style loss: cross-entropy with soft targets
+    dir_loss = -(dir_soft_targets * F.log_softmax(d_logits_trade, dim=-1)).sum(dim=-1)
+
     dir_time_weight = 1.0 + 0.5 * (1.0 - t_feat_trade)
     dir_w = sample_weight[trade_mask]
     dir_w = dir_w / dir_w.mean().clamp(min=1e-6)
     dir_loss = (dir_loss * dir_time_weight * dir_w).mean()
 
-    # P&L alignment bonus
+    # ---- P&L alignment bonus (kept from v4) ----
     gate_probs = F.softmax(g_logits, dim=-1)
     dir_probs = F.softmax(d_logits, dim=-1)
     trade_prob = gate_probs[:, 1]
-    all_pnl_safe = torch.nan_to_num(all_pnl, nan=0.0)
+    all_pnl_safe = torch.nan_to_num(all_stopped_pnl, nan=0.0)
     pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
     pnl_loss = -(pnl_signal * sample_weight).sum() / sample_weight.sum().clamp(min=1e-6)
 
-    # EXIT loss: train gate to predict NO_TRADE on exit signal bars
+    # ---- EXIT loss: train gate to predict NO_TRADE on exit signal bars ----
     exit_loss = torch.tensor(0.0, device=device)
     if exit_call_labels is not None and exit_put_labels is not None:
         ec = exit_call_labels[valid]
@@ -483,296 +551,565 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
             exit_w = sample_weight[exit_mask]
             exit_loss = (exit_loss_vec * exit_w).sum() / exit_w.sum().clamp(min=1e-6)
 
+    # ---- ETV regression loss ----
+    etv_loss = torch.tensor(0.0, device=device)
+    if etv_pred is not None:
+        etv_v = etv_pred[valid]
+        etv_loss = F.mse_loss(etv_v, best_pnl.detach())
+
     total = (GATE_LOSS_WEIGHT * gate_loss + DIR_LOSS_WEIGHT * dir_loss
-             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss)
+             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss
+             + ETV_LOSS_WEIGHT * etv_loss)
     return total
 
 
-# ---------------------------------------------------------------------------
-# Setup
-# ---------------------------------------------------------------------------
+if __name__ == "__main__":
 
-t_start = time.time()
-torch.manual_seed(42)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed(42)
-torch.set_float32_matmul_precision("high")
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # ---------------------------------------------------------------------------
+    # Setup
+    # ---------------------------------------------------------------------------
 
-data = load_data()
-n_bars = len(data['dates'])
+    t_start = time.time()
+    torch.manual_seed(42)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(42)
+    torch.set_float32_matmul_precision("high")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Replace NaN features with 0
-data['features'] = torch.nan_to_num(data['features'], nan=0.0)
+    data = load_data()
+    n_bars = len(data['dates'])
 
-print(f"Loaded {n_bars} 1-min bars, {NUM_FEATURES} features, {NUM_ACTIONS} actions")
-print(f"  ~{n_bars // BARS_PER_DAY} trading days")
-print(f"Training:   up to idx {data['train_end_idx']}")
-print(f"Validation: idx {data['val_start_idx']}-{data['val_end_idx']}")
+    # Replace NaN features with 0
+    data['features'] = torch.nan_to_num(data['features'], nan=0.0)
 
-required_targets = (
-    'call_pnl', 'put_pnl', 'exit_call_label', 'exit_put_label',
-    'otm5_call_pnl', 'otm5_put_pnl', 'otm10_call_pnl', 'otm10_put_pnl',
-)
-missing_targets = [k for k in required_targets if k not in data]
-if missing_targets:
-    raise KeyError(
-        "data.pt missing required targets: " + ", ".join(missing_targets)
-        + ". Rebuild data.pt with current prepare.py."
+    print(f"Loaded {n_bars} 1-min bars, {NUM_FEATURES} features, {NUM_ACTIONS} actions")
+    print(f"  ~{n_bars // BARS_PER_DAY} trading days")
+    print(f"Training:   up to idx {data['train_end_idx']}")
+    print(f"Validation: idx {data['val_start_idx']}-{data['val_end_idx']}")
+
+    required_targets = (
+        'call_pnl', 'put_pnl', 'exit_call_label', 'exit_put_label',
+        'otm5_call_pnl', 'otm5_put_pnl', 'otm10_call_pnl', 'otm10_put_pnl',
     )
-pnl_valid = (~torch.isnan(data['call_pnl'])).sum().item()
-print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%)")
+    missing_targets = [k for k in required_targets if k not in data]
+    if missing_targets:
+        raise KeyError(
+            "data.pt missing required targets: " + ", ".join(missing_targets)
+            + ". Rebuild data.pt with current prepare.py."
+        )
+    pnl_valid = (~torch.isnan(data['call_pnl'])).sum().item()
+    print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%)")
 
-# v4: ALWAYS train from scratch — no warm start from oracle-contaminated weights
-model = TradingModel().to(device)
-num_params = sum(p.numel() for p in model.parameters())
-print(f"Parameters: {num_params:,}")
-print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating with enhanced PnL alignment and minimized drawdown penalty")
-print("Training from scratch (v4: no warm-start).")
+    # v4: ALWAYS train from scratch — no warm start from oracle-contaminated weights
+    model = TradingModel().to(device)
+    num_params = sum(p.numel() for p in model.parameters())
+    print(f"Parameters: {num_params:,}")
+    print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating with enhanced PnL alignment and minimized drawdown penalty")
+    print("Training from scratch (v4: no warm-start).")
 
-optimizer = torch.optim.AdamW(
-    model.parameters(), lr=LR,
-    weight_decay=WEIGHT_DECAY, betas=ADAM_BETAS,
-)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=LR,
+        weight_decay=WEIGHT_DECAY, betas=ADAM_BETAS,
+    )
 
-train_loader = make_dataloader(data, LOOKBACK, BATCH_SIZE, "train", device)
-x_batch, y_batch = next(train_loader)
+    from prepare import make_day_sequential_loader
 
-print(f"\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {LOOKBACK}")
-print(f"LR: {LR} | Depth: {DEPTH} | d_model: {D_MODEL} | ff_mult: {FF_MULT}")
-print(f"Dropout: {DROPOUT} | Weight decay: {WEIGHT_DECAY}")
-print(f"False entry penalty: {FALSE_ENTRY_PENALTY}x")
-print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
-print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}, exit={EXIT_LOSS_WEIGHT}")
-print(f"Score tuning: R:R bonus={SCORE_RR_BONUS}, hold bonus={SCORE_HOLD_BONUS}, freq center={SCORE_FREQ_CENTER}, drawdown penalty={SCORE_DRAWDOWN_PENALTY}")
-print()
-
-# ---------------------------------------------------------------------------
-# LR schedule
-# ---------------------------------------------------------------------------
-
-def get_lr_mult(progress):
-    if progress < WARMUP_RATIO:
-        return progress / max(WARMUP_RATIO, 1e-8)
-    if progress < 1.0 - COOLDOWN_RATIO:
-        return 1.0
-    else:
-        t = (1.0 - progress) / max(COOLDOWN_RATIO, 1e-8)
-        return 0.5 * (1.0 + math.cos(math.pi * (1.0 - t)))
-
-# ---------------------------------------------------------------------------
-# Score config (passed to evaluate_trades)
-# ---------------------------------------------------------------------------
-
-_score_config = {
-    'win_rate_bonus': SCORE_WIN_RATE_BONUS,
-    'rr_bonus': SCORE_RR_BONUS,
-    'drawdown_penalty': SCORE_DRAWDOWN_PENALTY,
-    'hold_bonus': SCORE_HOLD_BONUS,
-    'freq_center': SCORE_FREQ_CENTER,
-    'freq_width': SCORE_FREQ_WIDTH,
-    'consec_loss_threshold': SCORE_CONSEC_LOSS_THRESHOLD,
-    'short_hold_threshold': SCORE_SHORT_HOLD_THRESHOLD,
-    'stop_rate_threshold': SCORE_STOP_RATE_THRESHOLD,
-    'ruin_penalty': SCORE_RUIN_PENALTY,
-    'ruin_threshold': SCORE_RUIN_THRESHOLD,
-    'risk_fraction_penalty': SCORE_RISK_FRACTION_PENALTY,
-}
-
-# ---------------------------------------------------------------------------
-# Training loop
-# ---------------------------------------------------------------------------
-
-total_time = 0.0
-_wall_start = time.time()
-step = 0
-smooth_loss = 0.0
-
-while True:
-    model.train()
-    if torch.cuda.is_available(): torch.cuda.synchronize()
-    t0 = time.time()
-
-    gate_logits, dir_logits = model(x_batch)
-
-    (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
-     otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
-     supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch) = y_batch
-
-    time_feat = x_batch[:, -1, IDX_MINUTES_TO_CLOSE]
-    batch_features = x_batch[:, -1, :]
-
-    loss = sniper_loss(gate_logits, dir_logits, call_pnl_batch, put_pnl_batch, time_feat, batch_features,
-                       exit_call_batch, exit_put_batch,
-                       otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
-                       supervision_weight=supervision_weight_batch,
-                       actionable_mask=actionable_mask_batch,
-                       risk_state_mask=risk_state_mask_batch)
-
-    loss.backward()
-    if GRAD_CLIP > 0:
-        torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
-
-    progress = min(total_time / TIME_BUDGET, 1.0)
-    for pg in optimizer.param_groups:
-        pg['lr'] = LR * get_lr_mult(progress)
-
-    optimizer.step()
-    optimizer.zero_grad(set_to_none=True)
+    train_loader = make_dataloader(data, LOOKBACK, BATCH_SIZE, "train", device)
     x_batch, y_batch = next(train_loader)
 
-    if torch.cuda.is_available(): torch.cuda.synchronize()
-    dt_step = time.time() - t0
-    if step > 5:
-        total_time += dt_step
+    # Day-sequential loader for Phase 3
+    DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.7, lo=0.0, hi=1.0)
+    DAY_SEQ_BATCH = _env_int("TRAIN_DAY_SEQ_BATCH", 16, lo=4, hi=64)
+    _use_day_seq = DAY_SEQ_RATIO > 0
+    if _use_day_seq:
+        try:
+            day_seq_loader = make_day_sequential_loader(data, LOOKBACK, DAY_SEQ_BATCH, device, "train")
+            _day_seq_available = True
+            print(f"Day-sequential batching: {DAY_SEQ_RATIO*100:.0f}% sequential, {(1-DAY_SEQ_RATIO)*100:.0f}% random (batch={DAY_SEQ_BATCH})")
+        except (KeyError, AssertionError) as e:
+            print(f"Day-sequential loader unavailable ({e}), using random only")
+            _day_seq_available = False
+    else:
+        _day_seq_available = False
 
-    loss_val = loss.item()
-    if math.isnan(loss_val) or loss_val > 100:
-        print(f"\nFAIL: loss={loss_val} at step {step}")
-        exit(1)
+    print(f"\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {LOOKBACK}")
+    print(f"LR: {LR} | Depth: {DEPTH} | d_model: {D_MODEL} | ff_mult: {FF_MULT}")
+    print(f"Dropout: {DROPOUT} | Weight decay: {WEIGHT_DECAY}")
+    print(f"False entry penalty: {FALSE_ENTRY_PENALTY}x")
+    print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
+    print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}, exit={EXIT_LOSS_WEIGHT}, etv={ETV_LOSS_WEIGHT}")
+    print(f"EV gate scale: {EV_GATE_SCALE}")
+    print()
 
-    ema = 0.95
-    smooth_loss = ema * smooth_loss + (1 - ema) * loss_val
-    debiased = smooth_loss / (1 - ema ** (step + 1))
+    # ---------------------------------------------------------------------------
+    # LR schedule
+    # ---------------------------------------------------------------------------
 
-    if step % 50 == 0:
-        remaining = max(0, TIME_BUDGET - total_time)
+    def get_lr_mult(progress):
+        if progress < WARMUP_RATIO:
+            return progress / max(WARMUP_RATIO, 1e-8)
+        if progress < 1.0 - COOLDOWN_RATIO:
+            return 1.0
+        else:
+            t = (1.0 - progress) / max(COOLDOWN_RATIO, 1e-8)
+            return 0.5 * (1.0 + math.cos(math.pi * (1.0 - t)))
+
+    # ---------------------------------------------------------------------------
+    # Score config (passed to evaluate_trades)
+    # ---------------------------------------------------------------------------
+
+    _score_config = {
+        'win_rate_bonus': 0.0,
+        'rr_bonus': 0.3,
+        'drawdown_penalty': 0.5,
+        'hold_bonus': 0.0,
+        'freq_center': 2.5,
+        'freq_width': 2.5,
+        'consec_loss_threshold': 3,
+        'short_hold_threshold': 0.30,
+        'stop_rate_threshold': 0.30,
+        'ruin_penalty': 1.0,
+        'ruin_threshold': 0.25,
+        'risk_fraction_penalty': 0.5,
+    }
+
+    # ---------------------------------------------------------------------------
+    # Training loop — v5: hybrid day-sequential + random batching
+    # ---------------------------------------------------------------------------
+
+    def _unpack_y(y_batch):
+        """Unpack the y tuple from both random and day-sequential loaders.
+
+        Supports both 18-element (v5) and 22-element (v6 multi-level) tuples.
+        """
+        if len(y_batch) >= 22:
+            (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
+             otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+             supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
+             call_stopped_batch, put_stopped_batch,
+             otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped,
+             call_stopped_tight, call_stopped_wide,
+             put_stopped_tight, put_stopped_wide) = y_batch
+        else:
+            (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
+             otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+             supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
+             call_stopped_batch, put_stopped_batch,
+             otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped) = y_batch
+            call_stopped_tight = call_stopped_wide = None
+            put_stopped_tight = put_stopped_wide = None
+        return {
+            'call_pnl': call_pnl_batch, 'put_pnl': put_pnl_batch,
+            'exit_call': exit_call_batch, 'exit_put': exit_put_batch,
+            'otm5c': otm5c_pnl, 'otm5p': otm5p_pnl,
+            'otm10c': otm10c_pnl, 'otm10p': otm10p_pnl,
+            'sw': supervision_weight_batch, 'am': actionable_mask_batch,
+            'rsm': risk_state_mask_batch,
+            'call_stopped': call_stopped_batch, 'put_stopped': put_stopped_batch,
+            'otm5c_stopped': otm5c_stopped, 'otm5p_stopped': otm5p_stopped,
+            'otm10c_stopped': otm10c_stopped, 'otm10p_stopped': otm10p_stopped,
+            'call_stopped_tight': call_stopped_tight, 'call_stopped_wide': call_stopped_wide,
+            'put_stopped_tight': put_stopped_tight, 'put_stopped_wide': put_stopped_wide,
+        }
+
+
+    def _update_position_state(position_state, gate_logits, dir_logits, y_dict):
+        """Update position state based on model predictions (no grad).
+
+        Tracks: is_holding, bars_held, unrealized_pnl, account_health, loss_streak.
+        """
         with torch.no_grad():
-            gate_probs = F.softmax(gate_logits, dim=-1).mean(dim=0)
-            dir_probs = F.softmax(dir_logits, dim=-1).mean(dim=0)
-            p_trade = gate_probs[1].item()
-            p_call = dir_probs[:3].sum().item()
-            p_put = dir_probs[3:].sum().item()
-            p_atm = dir_probs[0].item() + dir_probs[3].item()
-            p_otm = 1.0 - p_atm
+            B = gate_logits.shape[0]
+            gate_pred = gate_logits.argmax(dim=-1)  # 0=NO_TRADE, 1=TRADE
 
-        print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
-              f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
-              f"| ATM:{p_atm:.2f} OTM:{p_otm:.2f} "
-              f"| lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
+            is_holding = position_state[:, 0]
+            bars_held = position_state[:, 1]
+            unrealized_pnl = position_state[:, 2]
+            account_health = position_state[:, 3]
+            loss_streak = position_state[:, 4]
 
-    if step == 0:
-        gc.collect(); gc.freeze(); gc.disable()
-    elif (step + 1) % 5000 == 0:
-        gc.collect()
+            # Entry: model says TRADE when not holding
+            entering = (gate_pred == 1) & (is_holding < 0.5)
+            # Exit: model says NO_TRADE when holding
+            exiting = (gate_pred == 0) & (is_holding > 0.5)
 
-    step += 1
-    if step > 5 and total_time >= TIME_BUDGET:
-        break
+            # For entering trades: look up the best stopped P&L as proxy for unrealized
+            all_stopped = torch.stack([
+                y_dict['call_stopped'], y_dict['put_stopped'],
+                y_dict['otm5c_stopped'], y_dict['otm5p_stopped'],
+                y_dict['otm10c_stopped'], y_dict['otm10p_stopped'],
+            ], dim=-1)
+            best_pnl = torch.nan_to_num(all_stopped, nan=-999.0).max(dim=-1).values
 
-print()
+            # Update state
+            new_holding = is_holding.clone()
+            new_bars = bars_held.clone()
+            new_pnl = unrealized_pnl.clone()
+            new_health = account_health.clone()
+            new_streak = loss_streak.clone()
 
-# ---------------------------------------------------------------------------
-# Final evaluation
-# ---------------------------------------------------------------------------
+            # Entries
+            new_holding[entering] = 1.0
+            new_bars[entering] = 0.0
+            new_pnl[entering] = 0.0
 
-model.eval()
-_eval_start = time.time()
-print(f"Training done at {time.time() - _wall_start:.0f}s. Starting evaluation...")
+            # Increment bars for holding positions
+            still_holding = (new_holding > 0.5) & ~entering
+            new_bars[still_holding] = (bars_held[still_holding] + 1.0 / BARS_PER_DAY).clamp(max=1.0)
 
-trade_metrics = evaluate_trades(model, data, LOOKBACK, device, score_config=_score_config)
-sharpe_metrics = evaluate_sharpe(model, data, LOOKBACK, device)
-print(f"Evaluation done in {time.time() - _eval_start:.0f}s (total wall: {time.time() - _wall_start:.0f}s)")
+            # Update unrealized P&L for holding positions (use stopped P&L as proxy)
+            new_pnl[new_holding > 0.5] = torch.tanh(best_pnl[new_holding > 0.5] * 5.0)
 
-metrics = {**trade_metrics}
-metrics['val_sharpe'] = sharpe_metrics.get('val_sharpe', 0.0)
+            # Exits: update account health and loss streak
+            exit_pnl = unrealized_pnl[exiting]
+            losing_exit = exit_pnl < 0
+            new_health[exiting] = (account_health[exiting] +
+                                   torch.where(exit_pnl > 0,
+                                              exit_pnl * 0.1,
+                                              exit_pnl * 0.2)).clamp(0.1, 1.5)
+            # Loss streak: increment on loss, reset on win
+            new_streak[exiting] = torch.where(
+                losing_exit,
+                (loss_streak[exiting] + 0.33).clamp(max=1.0),
+                torch.zeros_like(loss_streak[exiting])
+            )
 
-# ---------------------------------------------------------------------------
-# Save & report
-# ---------------------------------------------------------------------------
+            new_holding[exiting] = 0.0
+            new_bars[exiting] = 0.0
+            new_pnl[exiting] = 0.0
 
-model_path = os.path.join(os.path.dirname(__file__), "best_model.pt")
-state = model.state_dict()
-torch.save({
-    'model_state_dict': state,
-    'metrics': metrics,
-    'config': {
-        'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
-        'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
-        'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
-        'architecture': 'v4_simplified_two_head_balanced_strike_gating_enhanced_pnl_alignment_minimized_drawdown_penalty',
-        'false_entry_penalty': FALSE_ENTRY_PENALTY,
-    },
-    'step': step,
-}, model_path)
-print(f"Model saved to {model_path}")
+            return torch.stack([new_holding, new_bars, new_pnl, new_health, new_streak], dim=1)
 
-# --- Export trade log CSV ---
-trade_log = metrics.get('trade_log', [])
-if trade_log:
-    import csv
-    log_path = os.path.join(os.path.dirname(__file__), "trade_log.csv")
-    fieldnames = ['trade_num', 'date', 'entry_time', 'exit_time', 'direction',
-                  'strike', 'entry_price', 'bars_held', 'hold_minutes',
-                  'entry_cost_bps', 'entry_quality', 'entry_actionable',
-                  'pnl_pct', 'exit_reason', 'actual_prices', 'result']
-    with open(log_path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
-        writer.writeheader()
-        writer.writerows(trade_log)
-    print(f"Trade log: {len(trade_log)} trades -> {log_path}")
 
-t_end = time.time()
-peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else 0.0
+    total_time = 0.0
+    _wall_start = time.time()
+    step = 0
+    smooth_loss = 0.0
+    _day_seq_position_state = None  # carried across bars within a day
+    _day_seq_step_count = 0  # bars processed in current day sequence
 
-# --- Output section (parsed by run_loop.py) ---
-print("\n---")
-print(f"score:              {metrics['score']:.6f}")
-print(f"profit_factor:      {metrics['profit_factor']:.6f}")
-print(f"win_rate:           {metrics['win_rate']:.6f}")
-print(f"avg_winner:         {metrics['avg_winner']:.6f}")
-print(f"avg_loser:          {metrics['avg_loser']:.6f}")
-print(f"trades_per_day:     {metrics['trades_per_day']:.6f}")
-print(f"max_consec_loss:    {metrics['max_consec_loss']}")
-print(f"num_trades:         {metrics['num_trades']}")
-print(f"trade_sharpe:       {metrics['trade_sharpe']:.6f}")
-print(f"sortino:            {metrics['sortino']:.6f}")
-print(f"max_drawdown:       {metrics['max_drawdown']:.6f}")
-print(f"calmar:             {metrics['calmar']:.6f}")
-print(f"ev_per_trade:       {metrics['ev_per_trade']:.6f}")
-print(f"do_nothing_pct:     {metrics['do_nothing_pct']:.6f}")
-print(f"exit_pct:           {metrics.get('exit_pct', 0.0):.6f}")
-print(f"model_exit_count:   {metrics.get('model_exit_count', 0)}")
-print(f"cooldown_blocked:   {metrics.get('cooldown_blocked', 0)}")
-print(f"pre_10am_blocked:   {metrics.get('pre_10am_blocked', 0)}")
-print(f"short_hold_pct:     {metrics.get('short_hold_pct', 0.0):.6f}")
-print(f"stop_loss_rate:     {metrics.get('stop_loss_rate', 0.0):.6f}")
-print(f"direction_collapse_pct: {metrics.get('direction_collapse_pct', 0.0):.6f}")
-print(f"avg_entry_cost_bps: {metrics.get('avg_entry_cost_bps', 0.0):.6f}")
-print(f"avg_entry_quality:  {metrics.get('avg_entry_quality', 0.0):.6f}")
-print(f"cost_realism_coverage: {metrics.get('cost_realism_coverage', 0.0):.6f}")
-print(f"high_cost_entry_rate: {metrics.get('high_cost_entry_rate', 0.0):.6f}")
-print(f"low_quality_entry_rate: {metrics.get('low_quality_entry_rate', 0.0):.6f}")
-print(f"actionable_bar_rate: {metrics.get('actionable_bar_rate', 0.0):.6f}")
-print(f"risk_off_bar_rate:  {metrics.get('risk_off_bar_rate', 0.0):.6f}")
-print(f"final_capital:      {metrics.get('final_capital', 0.0):.2f}")
-print(f"equity_sharpe:      {metrics.get('equity_sharpe', 0.0):.6f}")
-print(f"max_equity_dd:      {metrics.get('max_equity_dd', 0.0):.6f}")
-print(f"total_dollar_return:{metrics.get('total_dollar_return', 0.0):.6f}")
-print(f"val_sharpe:         {metrics['val_sharpe']:.6f}")
-print(f"total_return:       {metrics['total_return']:.6f}")
-print(f"num_val_bars:       {metrics['num_val_bars']}")
-print(f"num_val_days:       {metrics['num_val_days']}")
-print(f"worst_chunk_pf:     {metrics.get('worst_chunk_pf', 1.0):.2f}")
-print(f"rr_ratio:           {metrics.get('rr_ratio', 0.0):.4f}")
-print(f"avg_hold_bars:      {metrics.get('avg_hold_bars', 0.0):.2f}")
-print(f"model_exit_rate:    {metrics.get('model_exit_rate', 0.0):.4f}")
-print(f"hit_ruin:           {metrics.get('hit_ruin', False)}")
-print(f"min_equity_frac:    {metrics.get('min_equity_frac', 1.0):.4f}")
-print(f"avg_risk_fraction:  {metrics.get('avg_risk_fraction', 0.0):.4f}")
-print(f"max_risk_fraction:  {metrics.get('max_risk_fraction', 0.0):.4f}")
-print(f"trades_blocked_by_balance: {metrics.get('trades_blocked_by_balance', 0)}")
-for cd in metrics.get('chunk_details', []):
-    print(f"  Chunk {cd['chunk']}: {cd['dates']} | {cd['trades']} trades | PF={cd['profit_factor']:.2f} | WR={cd['win_rate']:.1%}")
-print(f"training_seconds:   {total_time:.1f}")
-print(f"total_seconds:      {t_end - t_start:.1f}")
-print(f"peak_vram_mb:       {peak_mb:.1f}")
-print(f"num_steps:          {step}")
-print(f"num_params:         {num_params:,}")
-print(f"lookback:           {LOOKBACK}")
-print(f"depth:              {DEPTH}")
-print(f"d_model:            {D_MODEL}")
-print(f"effective_lr:       {LR:.6g}")
-print(f"gate_label_smoothing:{GATE_LABEL_SMOOTHING:.6f}")
-print(f"dir_label_smoothing:{DIR_LABEL_SMOOTHING:.6f}")
-print(f"false_entry_penalty:{FALSE_ENTRY_PENALTY:.6f}")
+    while True:
+        model.train()
+        if torch.cuda.is_available(): torch.cuda.synchronize()
+        t0 = time.time()
+
+        # Hybrid sampling: alternate between day-sequential and random
+        use_seq_this_step = (_day_seq_available and
+                             torch.rand(1).item() < DAY_SEQ_RATIO)
+
+        if use_seq_this_step:
+            # Day-sequential step with real position state
+            x_seq, y_seq, bar_in_day = next(day_seq_loader)
+            y_dict = _unpack_y(y_seq)
+
+            if bar_in_day == 0 or _day_seq_position_state is None or _day_seq_position_state.shape[0] != x_seq.shape[0]:
+                # Start of new day — reset position state
+                _day_seq_position_state = torch.zeros(x_seq.shape[0], 5, device=device)
+                _day_seq_position_state[:, 3] = 1.0  # account_health = 1.0
+
+            gate_logits, dir_logits, etv = model(x_seq, position_state=_day_seq_position_state)
+
+            time_feat = x_seq[:, -1, IDX_MINUTES_TO_CLOSE]
+            batch_features = x_seq[:, -1, :]
+
+            loss = sniper_loss(
+                gate_logits, dir_logits,
+                y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
+                y_dict['exit_call'], y_dict['exit_put'],
+                y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                supervision_weight=y_dict['sw'],
+                actionable_mask=y_dict['am'],
+                risk_state_mask=y_dict['rsm'],
+                call_stopped_pnl=y_dict['call_stopped'],
+                put_stopped_pnl=y_dict['put_stopped'],
+                otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+                otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
+                otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
+                otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                call_stopped_tight=y_dict.get('call_stopped_tight'),
+                call_stopped_wide=y_dict.get('call_stopped_wide'),
+                put_stopped_tight=y_dict.get('put_stopped_tight'),
+                put_stopped_wide=y_dict.get('put_stopped_wide'),
+                etv_pred=etv,
+            )
+
+            # Update position state for next bar
+            _day_seq_position_state = _update_position_state(
+                _day_seq_position_state, gate_logits, dir_logits, y_dict)
+        else:
+            # Random batch step (original behavior, but with stopped P&L)
+            y_dict = _unpack_y(y_batch)
+            gate_logits, dir_logits, etv = model(x_batch)
+
+            time_feat = x_batch[:, -1, IDX_MINUTES_TO_CLOSE]
+            batch_features = x_batch[:, -1, :]
+
+            loss = sniper_loss(
+                gate_logits, dir_logits,
+                y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
+                y_dict['exit_call'], y_dict['exit_put'],
+                y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                supervision_weight=y_dict['sw'],
+                actionable_mask=y_dict['am'],
+                risk_state_mask=y_dict['rsm'],
+                call_stopped_pnl=y_dict['call_stopped'],
+                put_stopped_pnl=y_dict['put_stopped'],
+                otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+                otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
+                otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
+                otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                call_stopped_tight=y_dict.get('call_stopped_tight'),
+                call_stopped_wide=y_dict.get('call_stopped_wide'),
+                put_stopped_tight=y_dict.get('put_stopped_tight'),
+                put_stopped_wide=y_dict.get('put_stopped_wide'),
+                etv_pred=etv,
+            )
+
+        loss.backward()
+        if GRAD_CLIP > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+
+        progress = min(total_time / TIME_BUDGET, 1.0)
+        for pg in optimizer.param_groups:
+            pg['lr'] = LR * get_lr_mult(progress)
+
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+
+        if not use_seq_this_step:
+            x_batch, y_batch = next(train_loader)
+
+        if torch.cuda.is_available(): torch.cuda.synchronize()
+        dt_step = time.time() - t0
+        if step > 5:
+            total_time += dt_step
+
+        loss_val = loss.item()
+        if math.isnan(loss_val) or loss_val > 100:
+            print(f"\nFAIL: loss={loss_val} at step {step}")
+            exit(1)
+
+        ema = 0.95
+        smooth_loss = ema * smooth_loss + (1 - ema) * loss_val
+        debiased = smooth_loss / (1 - ema ** (step + 1))
+
+        if step % 50 == 0:
+            remaining = max(0, TIME_BUDGET - total_time)
+            with torch.no_grad():
+                gate_probs = F.softmax(gate_logits, dim=-1).mean(dim=0)
+                dir_probs = F.softmax(dir_logits, dim=-1).mean(dim=0)
+                p_trade = gate_probs[1].item()
+                p_call = dir_probs[:3].sum().item()
+                p_put = dir_probs[3:].sum().item()
+                p_atm = dir_probs[0].item() + dir_probs[3].item()
+                p_otm = 1.0 - p_atm
+                avg_etv = etv.mean().item() if etv is not None else 0.0
+
+            mode = "seq" if use_seq_this_step else "rnd"
+            print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
+                  f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
+                  f"| ATM:{p_atm:.2f} OTM:{p_otm:.2f} "
+                  f"| etv:{avg_etv:+.3f} [{mode}] "
+                  f"| lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
+
+        if step == 0:
+            gc.collect(); gc.freeze(); gc.disable()
+        elif (step + 1) % 5000 == 0:
+            gc.collect()
+
+        step += 1
+        if step > 5 and total_time >= TIME_BUDGET:
+            break
+
+    print()
+
+    # ---------------------------------------------------------------------------
+    # Final evaluation
+    # ---------------------------------------------------------------------------
+
+    model.eval()
+    _eval_start = time.time()
+    print(f"Training done at {time.time() - _wall_start:.0f}s. Starting evaluation...")
+
+    trade_metrics = evaluate_trades(model, data, LOOKBACK, device, score_config=_score_config)
+    sharpe_metrics = evaluate_sharpe(model, data, LOOKBACK, device)
+    print(f"Evaluation done in {time.time() - _eval_start:.0f}s (total wall: {time.time() - _wall_start:.0f}s)")
+
+    metrics = {**trade_metrics}
+    metrics['val_sharpe'] = sharpe_metrics.get('val_sharpe', 0.0)
+
+    # ---------------------------------------------------------------------------
+    # Save & report
+    # ---------------------------------------------------------------------------
+
+    model_path = os.path.join(os.path.dirname(__file__), "best_model.pt")
+    state = model.state_dict()
+    torch.save({
+        'model_state_dict': state,
+        'metrics': metrics,
+        'config': {
+            'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
+            'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
+            'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
+            'architecture': 'v4_simplified_two_head_balanced_strike_gating_enhanced_pnl_alignment_minimized_drawdown_penalty',
+            'false_entry_penalty': FALSE_ENTRY_PENALTY,
+        },
+        'step': step,
+    }, model_path)
+    print(f"Model saved to {model_path}")
+
+    # --- Export trade log CSV ---
+    trade_log = metrics.get('trade_log', [])
+    if trade_log:
+        import csv
+        log_path = os.path.join(os.path.dirname(__file__), "trade_log.csv")
+        fieldnames = ['trade_num', 'date', 'entry_time', 'exit_time', 'direction',
+                      'strike', 'entry_price', 'bars_held', 'hold_minutes',
+                      'entry_cost_bps', 'entry_quality', 'entry_actionable',
+                      'pnl_pct', 'exit_reason', 'actual_prices', 'result']
+        with open(log_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+            writer.writeheader()
+            writer.writerows(trade_log)
+        print(f"Trade log: {len(trade_log)} trades -> {log_path}")
+
+    # --- Trade diagnostics (parsed by run_loop.py for agent feedback) ---
+    if trade_log:
+        print("\n=== TRADE DIAGNOSTICS ===")
+
+        # Top 5 best/worst trades
+        sorted_trades = sorted(trade_log, key=lambda t: t.get('pnl_pct', 0))
+        print("\nWorst 5 trades:")
+        for t in sorted_trades[:5]:
+            print(f"  {t.get('date','')} {t.get('entry_time','')} {t.get('direction','')} "
+                  f"{t.get('strike','')} PnL={t.get('pnl_pct',0):+.2%} "
+                  f"hold={t.get('bars_held',0)}bars exit={t.get('exit_reason','')}")
+        print("Best 5 trades:")
+        for t in sorted_trades[-5:]:
+            print(f"  {t.get('date','')} {t.get('entry_time','')} {t.get('direction','')} "
+                  f"{t.get('strike','')} PnL={t.get('pnl_pct',0):+.2%} "
+                  f"hold={t.get('bars_held',0)}bars exit={t.get('exit_reason','')}")
+
+        # Time-of-day breakdown
+        time_buckets = {'Morning(9:30-11:30)': [], 'Lunch(11:30-13:30)': [],
+                        'Afternoon(13:30-15:30)': [], 'PowerHour(15:30-16:00)': []}
+        for t in trade_log:
+            hm = t.get('entry_time', '12:00')
+            try:
+                h, m = int(hm.split(':')[0]), int(hm.split(':')[1])
+                mins = h * 60 + m
+            except (ValueError, IndexError):
+                mins = 720
+            if mins < 690:  # 11:30
+                bucket = 'Morning(9:30-11:30)'
+            elif mins < 810:  # 13:30
+                bucket = 'Lunch(11:30-13:30)'
+            elif mins < 930:  # 15:30
+                bucket = 'Afternoon(13:30-15:30)'
+            else:
+                bucket = 'PowerHour(15:30-16:00)'
+            time_buckets[bucket].append(t.get('pnl_pct', 0))
+
+        print("\nTime-of-day breakdown:")
+        for bucket, pnls in time_buckets.items():
+            if pnls:
+                wins = sum(1 for p in pnls if p > 0)
+                avg = sum(pnls) / len(pnls)
+                print(f"  {bucket}: {len(pnls)} trades, WR={wins/len(pnls):.1%}, avg={avg:+.2%}")
+
+        # Call vs Put breakdown
+        call_pnls = [t.get('pnl_pct', 0) for t in trade_log if 'CALL' in t.get('direction', '')]
+        put_pnls = [t.get('pnl_pct', 0) for t in trade_log if 'PUT' in t.get('direction', '')]
+        print("\nDirection breakdown:")
+        if call_pnls:
+            cw = sum(1 for p in call_pnls if p > 0)
+            print(f"  CALL: {len(call_pnls)} trades, WR={cw/len(call_pnls):.1%}, avg={sum(call_pnls)/len(call_pnls):+.2%}")
+        if put_pnls:
+            pw = sum(1 for p in put_pnls if p > 0)
+            print(f"  PUT:  {len(put_pnls)} trades, WR={pw/len(put_pnls):.1%}, avg={sum(put_pnls)/len(put_pnls):+.2%}")
+
+        # Exit reason breakdown
+        exit_counts = {}
+        for t in trade_log:
+            reason = t.get('exit_reason', 'unknown')
+            exit_counts[reason] = exit_counts.get(reason, 0) + 1
+        print("\nExit reasons:")
+        for reason, count in sorted(exit_counts.items(), key=lambda x: -x[1]):
+            print(f"  {reason}: {count} ({count/len(trade_log):.1%})")
+
+        # Multi-level stop info
+        has_multilevel = any(
+            y_batch[18] is not None if len(y_batch) >= 22 else False
+            for _ in [0]  # dummy loop
+        )
+        if has_multilevel:
+            print("\nStop-loss alignment: MULTI-LEVEL (tight/med/wide selected by IV+VIX)")
+        else:
+            print("\nStop-loss alignment: SINGLE-LEVEL (med only)")
+
+        print("=== END DIAGNOSTICS ===")
+
+    t_end = time.time()
+    peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else 0.0
+
+    # --- Output section (parsed by run_loop.py) ---
+    print("\n---")
+    print(f"score:              {metrics['score']:.6f}")
+    print(f"profit_factor:      {metrics['profit_factor']:.6f}")
+    print(f"win_rate:           {metrics['win_rate']:.6f}")
+    print(f"avg_winner:         {metrics['avg_winner']:.6f}")
+    print(f"avg_loser:          {metrics['avg_loser']:.6f}")
+    print(f"trades_per_day:     {metrics['trades_per_day']:.6f}")
+    print(f"max_consec_loss:    {metrics['max_consec_loss']}")
+    print(f"num_trades:         {metrics['num_trades']}")
+    print(f"trade_sharpe:       {metrics['trade_sharpe']:.6f}")
+    print(f"sortino:            {metrics['sortino']:.6f}")
+    print(f"max_drawdown:       {metrics['max_drawdown']:.6f}")
+    print(f"calmar:             {metrics['calmar']:.6f}")
+    print(f"ev_per_trade:       {metrics['ev_per_trade']:.6f}")
+    print(f"do_nothing_pct:     {metrics['do_nothing_pct']:.6f}")
+    print(f"exit_pct:           {metrics.get('exit_pct', 0.0):.6f}")
+    print(f"model_exit_count:   {metrics.get('model_exit_count', 0)}")
+    print(f"cooldown_blocked:   {metrics.get('cooldown_blocked', 0)}")
+    print(f"pre_10am_blocked:   {metrics.get('pre_10am_blocked', 0)}")
+    print(f"short_hold_pct:     {metrics.get('short_hold_pct', 0.0):.6f}")
+    print(f"stop_loss_rate:     {metrics.get('stop_loss_rate', 0.0):.6f}")
+    print(f"direction_collapse_pct: {metrics.get('direction_collapse_pct', 0.0):.6f}")
+    print(f"avg_entry_cost_bps: {metrics.get('avg_entry_cost_bps', 0.0):.6f}")
+    print(f"avg_entry_quality:  {metrics.get('avg_entry_quality', 0.0):.6f}")
+    print(f"cost_realism_coverage: {metrics.get('cost_realism_coverage', 0.0):.6f}")
+    print(f"high_cost_entry_rate: {metrics.get('high_cost_entry_rate', 0.0):.6f}")
+    print(f"low_quality_entry_rate: {metrics.get('low_quality_entry_rate', 0.0):.6f}")
+    print(f"actionable_bar_rate: {metrics.get('actionable_bar_rate', 0.0):.6f}")
+    print(f"risk_off_bar_rate:  {metrics.get('risk_off_bar_rate', 0.0):.6f}")
+    print(f"final_capital:      {metrics.get('final_capital', 0.0):.2f}")
+    print(f"equity_sharpe:      {metrics.get('equity_sharpe', 0.0):.6f}")
+    print(f"max_equity_dd:      {metrics.get('max_equity_dd', 0.0):.6f}")
+    print(f"total_dollar_return:{metrics.get('total_dollar_return', 0.0):.6f}")
+    print(f"val_sharpe:         {metrics['val_sharpe']:.6f}")
+    print(f"total_return:       {metrics['total_return']:.6f}")
+    print(f"num_val_bars:       {metrics['num_val_bars']}")
+    print(f"num_val_days:       {metrics['num_val_days']}")
+    print(f"worst_chunk_pf:     {metrics.get('worst_chunk_pf', 1.0):.2f}")
+    print(f"rr_ratio:           {metrics.get('rr_ratio', 0.0):.4f}")
+    print(f"avg_hold_bars:      {metrics.get('avg_hold_bars', 0.0):.2f}")
+    print(f"model_exit_rate:    {metrics.get('model_exit_rate', 0.0):.4f}")
+    print(f"hit_ruin:           {metrics.get('hit_ruin', False)}")
+    print(f"min_equity_frac:    {metrics.get('min_equity_frac', 1.0):.4f}")
+    print(f"avg_risk_fraction:  {metrics.get('avg_risk_fraction', 0.0):.4f}")
+    print(f"max_risk_fraction:  {metrics.get('max_risk_fraction', 0.0):.4f}")
+    print(f"trades_blocked_by_balance: {metrics.get('trades_blocked_by_balance', 0)}")
+    for cd in metrics.get('chunk_details', []):
+        print(f"  Chunk {cd['chunk']}: {cd['dates']} | {cd['trades']} trades | PF={cd['profit_factor']:.2f} | WR={cd['win_rate']:.1%}")
+    print(f"training_seconds:   {total_time:.1f}")
+    print(f"total_seconds:      {t_end - t_start:.1f}")
+    print(f"peak_vram_mb:       {peak_mb:.1f}")
+    print(f"num_steps:          {step}")
+    print(f"num_params:         {num_params:,}")
+    print(f"lookback:           {LOOKBACK}")
+    print(f"depth:              {DEPTH}")
+    print(f"d_model:            {D_MODEL}")
+    print(f"effective_lr:       {LR:.6g}")
+    print(f"gate_label_smoothing:{GATE_LABEL_SMOOTHING:.6f}")
+    print(f"dir_label_smoothing:{DIR_LABEL_SMOOTHING:.6f}")
+    print(f"false_entry_penalty:{FALSE_ENTRY_PENALTY:.6f}")

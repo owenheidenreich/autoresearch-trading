@@ -37,6 +37,9 @@ class OCOExecutionEngine:
         self._trade_by_order_id: dict[int, dict[str, Any]] = {}
         self._ib_callbacks_installed = False
         self.realized_pnl_pct: float = 0.0
+        self.starting_capital: float = 10_000.0  # Must match STARTING_CAPITAL in train.py
+        self.session_pnl_dollars: float = 0.0
+        self.trades_closed: int = 0
 
     def _ts(self) -> str:
         return dt.datetime.utcnow().isoformat()
@@ -167,6 +170,16 @@ class OCOExecutionEngine:
                         )
                 if perm_id is not None:
                     state.ib_perm_id_entry = perm_id
+            # Stop or TP filled — position is closed, update P&L
+            if role in ("stop", "take_profit") and status.lower() == "filled":
+                try:
+                    exit_px = float(avg_fill) if avg_fill is not None else None
+                except Exception:
+                    exit_px = None
+                if state.status == "OPEN":
+                    state.status = "CLOSED"
+                    state.notes.append(f"{role}_filled")
+                    self._update_realized_pnl(state, exit_px, reason=f"{role}_filled")
 
         def _fill_handler(trade_obj: Any, fill_obj: Any) -> None:
             state = self.positions.get(position_id)
@@ -477,13 +490,55 @@ class OCOExecutionEngine:
         )
         return True
 
-    def flatten_position(self, position_id: str, reason: str = "model_exit") -> bool:
+    def _update_realized_pnl(self, state: ExecutionState, exit_price: float | None, reason: str) -> None:
+        """Update session P&L tracking after a trade closes."""
+        entry = state.fill_price or state.entry_price_reference
+        if entry is None or entry <= 0:
+            return
+        if exit_price is None or exit_price <= 0:
+            # No exit price available (e.g. stop filled but price unknown yet)
+            # Use stop price as estimate for stop exits, entry for unknown
+            if "stop" in reason.lower():
+                exit_price = state.current_stop
+            else:
+                return
+        trade_pnl_pct = (exit_price - entry) / entry
+        trade_pnl_dollars = trade_pnl_pct * entry * state.qty * 100  # SPX multiplier
+        self.session_pnl_dollars += trade_pnl_dollars
+        self.realized_pnl_pct = self.session_pnl_dollars / self.starting_capital
+        self.trades_closed += 1
+        self._audit("pnl_update", {
+            "position_id": state.position_id,
+            "entry_price": entry,
+            "exit_price": exit_price,
+            "trade_pnl_pct": round(trade_pnl_pct, 4),
+            "trade_pnl_dollars": round(trade_pnl_dollars, 2),
+            "session_pnl_dollars": round(self.session_pnl_dollars, 2),
+            "realized_pnl_pct": round(self.realized_pnl_pct, 4),
+            "reason": reason,
+        })
+        # Hard kill: if session loss exceeds 10%, activate kill switch
+        if self.realized_pnl_pct <= -0.10:
+            if self.kill_switch_path:
+                with open(self.kill_switch_path, "w") as f:
+                    f.write("kill")
+            self._audit("hard_kill_triggered", {
+                "realized_pnl_pct": round(self.realized_pnl_pct, 4),
+                "session_pnl_dollars": round(self.session_pnl_dollars, 2),
+                "trades_closed": self.trades_closed,
+            })
+
+    def flatten_position(self, position_id: str, reason: str = "model_exit",
+                         exit_price: float | None = None) -> bool:
         state = self.positions.get(position_id)
         if state is None or state.status != "OPEN":
             return False
         state.status = "CLOSED"
         state.updated_at = self._ts()
         state.notes.append(reason)
+
+        # Update realized P&L for circuit breaker
+        self._update_realized_pnl(state, exit_price, reason)
 
         if self.dry_run:
             self._audit(
@@ -493,6 +548,8 @@ class OCOExecutionEngine:
                     "reason": reason,
                     "decision_id": state.decision_id,
                     "intent_id": state.intent_id,
+                    "realized_pnl_pct": round(self.realized_pnl_pct, 4),
+                    "session_pnl_dollars": round(self.session_pnl_dollars, 2),
                 },
             )
             return True
@@ -521,6 +578,8 @@ class OCOExecutionEngine:
                 "flatten_order": self._order_payload(flatten_order),
                 "flatten_order_id": int(getattr(flatten_order, "orderId", 0)),
                 "flatten_trade_status": str(getattr(getattr(flatten_trade, "orderStatus", None), "status", "")),
+                "realized_pnl_pct": round(self.realized_pnl_pct, 4),
+                "session_pnl_dollars": round(self.session_pnl_dollars, 2),
             },
         )
         return True

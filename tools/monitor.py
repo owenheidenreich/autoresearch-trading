@@ -30,10 +30,26 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+import hashlib
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_ROOT = PROJECT_ROOT / "results"
 DEPLOY_STATE = PROJECT_ROOT / ".deploy-state"
 SSH_PASS = "autoresearch2026"
+_SELF_PATH = Path(__file__).resolve()
+_SELF_HASH_AT_START = hashlib.md5(_SELF_PATH.read_bytes()).hexdigest()
+_restart_flag = threading.Event()
+
+
+def _check_self_restart():
+    """If monitor.py source changed on disk, signal main thread to re-exec."""
+    try:
+        current_hash = hashlib.md5(_SELF_PATH.read_bytes()).hexdigest()
+        if current_hash != _SELF_HASH_AT_START:
+            print(f"[monitor] Source changed on disk — signaling restart...", flush=True)
+            _restart_flag.set()
+    except Exception:
+        pass  # non-fatal
 
 # -- Shared state (updated by background poller) --------------------------
 
@@ -224,14 +240,37 @@ def _resolve_local_run_dir(local_path: str | None, active_run: str | None) -> Pa
     return lp if lp.is_dir() else None
 
 
-def poller_loop(host: str | None, port: int, local_path: str | None, interval: int):
+def poller_loop(host: str | None, port: int, local_path: str | None, interval: int, host_pinned: bool = False):
     """Background thread that polls remote/local and updates shared state."""
+    # If host_pinned, the user explicitly passed --host so we never reload.
+    # Otherwise, re-read .deploy-state each cycle to auto-discover new deployments.
+
     mode = f"Remote: {host}:{port}" if host else f"Local: {local_path or 'results/'}"
     set_state(mode=mode)
 
     while True:
+        # Auto-restart if our source file changed (picks up code edits without manual kill/restart)
+        _check_self_restart()
+
         try:
             t0 = time.time()
+
+            # Reload .deploy-state each poll to pick up new deployments
+            if not host_pinned:
+                ds = load_deploy_state()
+                if ds:
+                    new_host = ds.get("SSH_HOST")
+                    new_port = int(ds.get("SSH_PORT", 22))
+                else:
+                    new_host, new_port = None, 22
+                if new_host != host or new_port != port:
+                    print(f"[monitor] Deployment changed: {host}:{port} → {new_host}:{new_port}", flush=True)
+                    host, port = new_host, new_port
+                new_mode = f"Remote: {host}:{port}" if host else f"Local: {local_path or 'results/'}"
+                if new_mode != mode:
+                    mode = new_mode
+                    set_state(mode=mode)
+
             runs = fetch_all_local_runs()
             active_run = get_active_run_name()
 
@@ -1002,7 +1041,11 @@ async function update() {
         let result, cls;
         if (e.kept) { result = '+ KEPT'; cls = 'kept'; }
         else if (e.error) { result = 'x ' + (e.failure_type || 'err').slice(0,8); cls = 'failed'; }
-        else { result = '~ revert'; cls = 'reverted'; }
+        else if (e.keep_block_reason && e.keep_block_reason.includes('secondary_regression')) {
+          result = '⚠ blocked'; cls = 'failed';
+        } else if (e.keep_block_reason && e.keep_block_reason.includes('near_tie')) {
+          result = '≈ near-tie'; cls = 'reverted';
+        } else { result = '~ revert'; cls = 'reverted'; }
         tr.className = cls;
 
         const score = (e.score || -999) > -999 ? (e.score || 0).toFixed(3) : 'FAIL';
@@ -1015,9 +1058,10 @@ async function update() {
         const ruin = e.hit_ruin !== undefined ? (e.hit_ruin ? 'YES' : 'no') : '--';
         const trainTime = e.train_wall_time ? fmtDuration(e.train_wall_time) : '--';
 
+        const blockTip = e.keep_block_reason ? ` title="${escapeHtml(e.keep_block_reason)}"` : '';
         tr.innerHTML = `
           <td class="num">${e.experiment_id || '?'}</td>
-          <td>${result}</td>
+          <td${blockTip}>${result}</td>
           <td class="num">${score}</td>
           <td class="num">${pf}</td>
           <td class="num">${tpd}</td>
@@ -1181,6 +1225,7 @@ def main():
     # Resolve remote
     remote_host = args.host
     remote_port = args.ssh_port
+    host_pinned = args.host is not None  # True only when user explicitly passes --host
     if not args.local and not remote_host:
         state = load_deploy_state()
         if state:
@@ -1191,6 +1236,7 @@ def main():
     poller = threading.Thread(
         target=poller_loop,
         args=(remote_host, remote_port or 22, args.local, args.interval),
+        kwargs={"host_pinned": host_pinned},
         daemon=True,
     )
     poller.start()
@@ -1207,11 +1253,17 @@ def main():
         import webbrowser
         webbrowser.open(url)
 
+    server.timeout = 0.5  # handle_request returns promptly so we can check restart flag
     try:
-        server.serve_forever()
+        while not _restart_flag.is_set():
+            server.handle_request()
+        # Source changed — restart from main thread (safe, unlike os.execv from daemon)
+        print("[monitor] Restarting...", flush=True)
+        server.server_close()
+        os.execv(sys.executable, [sys.executable] + sys.argv)
     except KeyboardInterrupt:
         print("\nDashboard stopped.")
-        server.shutdown()
+        server.server_close()
 
 
 if __name__ == "__main__":

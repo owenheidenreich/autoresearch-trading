@@ -9,8 +9,9 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 ## Key Files by Category
 
 ### Data Pipeline
-- [training/prepare.py](../training/prepare.py) — Builds `data.pt` from SPY/SPX/VIX bars + SPXW option chains. Defines feature contract (32 features, v2 reduced from 70), action space (8 actions), and scoring formula. **Read-only by the autoresearch agent.**
+- [training/prepare.py](../training/prepare.py) — Builds `data.pt` from SPY/SPX/VIX bars + SPXW option chains. Defines feature contract (32 features, v2 reduced from 70), action space (8 actions), and scoring formula. **Read-only by the autoresearch agent.** Uses incremental cache updates (`_incremental_update()`) to append new bars to existing caches instead of re-downloading full history.
 - `~/.cache/autoresearch-trading/features/data.pt` — The training tensor (~201MB, ~383k bars)
+- `~/.cache/autoresearch-trading/data/` — Raw data caches: `spy_1min.pkl`, `spx_1min.pkl`, `vix_1min.pkl` (append-only monolithic), `spxw/` and `spxw_chain/` (per-day incremental)
 
 ### Autoresearch Loop
 - [training/run_loop.py](../training/run_loop.py) — Main orchestration: calls Claude → validates mutation → trains → scores → keeps or reverts. Contains prefetch pipeline, retry/repair logic, anomaly detection, and auto-sync.
@@ -35,6 +36,20 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 - [infra/start_loop.sh](../infra/start_loop.sh) — Remote loop launcher (run by deploy.sh start)
 - [infra/watchdog.sh](../infra/watchdog.sh) — GPU health + process monitoring daemon
 
+### ART² Meta-Loop (Outer Loop Orchestrator)
+- **9-phase lifecycle:** SETUP → TRAIN → TEARDOWN → ANALYZE → RESEARCH → IMPROVE → DOCUMENT → REVIEW → REPEAT
+- **Operating Manual:** [.claude/rules/art2-operating-manual.md](../.claude/rules/art2-operating-manual.md) (auto-loaded every session)
+- **Outer Loop Prompt:** [docs/art2-opus-system-prompt.md](art2-opus-system-prompt.md) (injected into programmatic Opus calls with domain knowledge)
+- **Subcommand Reference:** [docs/art2.md](art2.md)
+- **Project Chronicle:** [docs/project-chronicle.md](project-chronicle.md) — human-readable, reverse-chronological narrative log for the project owner
+- **Strategic Notebook:** [docs/art2-notebook.md](art2-notebook.md) — machine documentation: outer loop memory (changes tried, paper P&L, dead ends)
+- [tools/art2.py](../tools/art2.py) — Mechanical orchestrator: subprocess management, data collection, IBKR checks. Fully autonomous — Opus can edit any whitelisted file via JSON `file_edits`.
+- **State:** persisted in `results/art2/state.json`
+
+### Daily Pipeline
+- [tools/daily_pipeline.py](../tools/daily_pipeline.py) — Pre-market data refresh + weekly retraining automation
+- See [docs/daily-pipeline.md](daily-pipeline.md) for full reference
+
 ### Monitoring & Tools
 - [tools/monitor.py](../tools/monitor.py) — Web dashboard (http://localhost:8420): GPU gauges, experiment table, metric charts, Claude reasoning stream, live train.py viewer, log tail. Auto-detects remote from `.deploy-state`.
 - [tools/replay_battery.py](../tools/replay_battery.py) — Multi-day replay validation suite
@@ -46,11 +61,15 @@ Autonomous SPX 0DTE options trading system. An AI agent (Claude Sonnet) iterativ
 ## Critical Design Rules
 
 1. **Training = live trading.** The `evaluate_trades()` simulation must be the exact same game as IBKR paper trading. No future peeking, no batch classification.
-2. **No hardcoded take-profit.** The model's gate head learns exits. 30% SL is emergency backstop only.
+2. **No hardcoded take-profit.** The model's gate head learns exits. Dynamic stop-loss (15%-60%) adapts per-trade based on gate confidence + IV + VIX.
 3. **data.pt must include options.** Never build without option chain sidecar data — causes silent total failure.
 4. **Train on Akash, not locally.** User's laptop can't handle training. Always use `deploy.sh`.
 5. **Model architecture evolves.** `train.py` may define custom modules (PositionStateGenerator, etc.) that differ from the default TradingModel in replay.py. The `load_model()` function handles this via dynamic class loading.
 6. **Feature parity is verified.** Training, replay, and live all call `compute_features()` + `normalize_features_with_context()` from `prepare.py`. Confirmed end-to-end on 2026-03-20 with IBKR paper trading. Do not introduce separate feature computation paths.
+7. **Incremental cache updates.** SPY/SPX/VIX caches use `_incremental_update()` to append new bars — never delete these caches to force re-download. SPXW per-day caches are already incremental. Only the aggregate `spxw_full.pkl`/`spxw_chain_full.pkl` are rebuilt each run (from per-day caches, ~1 sec). This is load-bearing for the daily pipeline's 2-3 minute rebuild target.
+8. **ART² is mechanical, Claude Code (Opus) is strategic.** art2.py handles subprocess management, data collection, and mechanical checks. Strategic decisions (what to change in program.md, lab_notebook, training signal) are made by Claude Code reading the briefing.
+9. **API budget: Tier 3 = $1,000/month.** Each experiment costs ~$0.15-0.30 (Sonnet 4). Track cumulative spend via `art2.py status`. Budget check runs automatically before each training session.
+10. **Human review before every training run.** The REVIEW phase (Phase 7) pauses the daemon after each decision. The human reads `review.md`, optionally edits files, then removes `results/art2/REVIEW` to approve. Both human (`project-chronicle.md`) and machine (`art2-notebook.md`) documentation are updated every cycle.
 
 ## Warm-Start vs Fresh-Start Rules
 
@@ -92,6 +111,9 @@ The deploy script skips warm-start upload when the file doesn't exist.
 - **The model overfit to 2022-2024.** Full backtest shows PF degrades from 7.5 → 2.3 → 0.78 across three time phases. Winners shrink from 121% to 27%. The model compensates by trading MORE, which makes it worse. This is a training signal problem, not an architecture problem.
 - **Position sizing matters for backtest realism.** Fixed 1-contract sizing caused P&L deceleration as the account grew. Scaled sizing (`n_contracts = max(1, floor(balance * 0.05 / cost))`) produces more realistic equity curves.
 - **The agent will game its own scoring metric.** Score_config knobs (SCORE_DRAWDOWN_PENALTY, SCORE_HOLD_BONUS, etc.) only affect post-training evaluation, NOT model training. The agent tuned these to inflate scores 6x without improving PF or TPD. Score config is now locked in train.py with a validation guard in run_loop.py.
+- **Rigid lab notebook constraints cause tunnel vision.** When the notebook mandated "EXACTLY 2 _env_float values per experiment", 100% of experiments were HYPERPARAM with 0% accept rate. Open-ended priorities ("beat the score by improving trading behavior") let the agent explore creatively.
+- **Opus needs domain knowledge injected, not referenced.** `claude -p` mode cannot read files. Telling Opus to "consult domain knowledge files" does nothing — the files must be injected directly into the prompt (~25K tokens).
+- **Train/eval mismatch is the #1 priority.** Training PF=4.23 vs replay PF=0.65 means the model learned non-generalizable patterns. Nothing else matters until this is fixed.
 
 ### Common Issues
 - **SSH "Permission denied" during deploy** — usually transient. Retry. If persistent, check that `.deploy-state` has correct `SSH_PORT` and that sshpass is installed.

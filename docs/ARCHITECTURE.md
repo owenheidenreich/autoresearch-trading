@@ -58,13 +58,37 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │         │                 │                        │                │
 │         ▼                 ▼                        ▼                │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │              ~/.cache/autoresearch-trading/                  │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────┐  │   │
-│  │  │ spy_bars │  │ spx_bars │  │  vix_bars  │  │ spxw_*   │  │   │
-│  │  │ .parquet │  │ .parquet │  │  .parquet  │  │ .parquet │  │   │
-│  │  └────┬─────┘  └────┬─────┘  └─────┬──────┘  └────┬─────┘  │   │
-│  └───────┼──────────────┼──────────────┼──────────────┼────────┘   │
-│          └──────────────┴──────┬───────┴──────────────┘            │
+│  │      INCREMENTAL CACHE LAYER                                │   │
+│  │      ~/.cache/autoresearch-trading/data/                    │   │
+│  │                                                              │   │
+│  │  ┌──── APPEND-ONLY (monolithic pkl) ────────────────────┐   │   │
+│  │  │  spy_1min.pkl  │ spx_1min.pkl  │ vix_1min.pkl       │   │   │
+│  │  │                                                       │   │   │
+│  │  │  _incremental_update():                               │   │   │
+│  │  │  1. Load existing cache                               │   │   │
+│  │  │  2. Find max date in cache                            │   │   │
+│  │  │  3. Download only (max_date - 1d)..end (IBKR)        │   │   │
+│  │  │  4. Concat + deduplicate + save                       │   │   │
+│  │  │                                                       │   │   │
+│  │  │  Cold start: ~30 min (full 3yr IBKR download)        │   │   │
+│  │  │  Daily update: ~30 sec (1 week of new bars)           │   │   │
+│  │  └───────────────────────────────────────────────────────┘   │   │
+│  │                                                              │   │
+│  │  ┌──── PER-DAY (already incremental) ───────────────────┐   │   │
+│  │  │  spxw/{date}.pkl      │ spxw_chain/{date}.pkl        │   │   │
+│  │  │  ~989 files each      │ per-day option bars           │   │   │
+│  │  │                       │                               │   │   │
+│  │  │  prefetch_spxw_from_flatfiles():                      │   │   │
+│  │  │  Skips days that already have caches. Only downloads  │   │   │
+│  │  │  missing days from Polygon S3 flat files.             │   │   │
+│  │  └───────────────────────────────────────────────────────┘   │   │
+│  │                                                              │   │
+│  │  ┌──── AGGREGATE (rebuilt each run) ────────────────────┐   │   │
+│  │  │  spxw_full.pkl        │ spxw_chain_full.pkl          │   │   │
+│  │  │  Built from per-day caches by load_spxw_caches().    │   │   │
+│  │  │  Deleted + rebuilt each prepare.py run (~1 sec).     │   │   │
+│  │  └───────────────────────────────────────────────────────┘   │   │
+│  └──────────────────────────────────────────────────────────────┘   │
 │                                ▼                                    │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │                  FEATURE ENGINEERING                         │   │
@@ -87,9 +111,9 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │                      data.pt (PyTorch tensor)               │   │
 │  │  features:  (N_bars, 32) float32                            │   │
-│  │  targets:   call_pnl, put_pnl, exit labels                 │   │
+│  │  targets:   call_pnl, put_pnl, exit labels, stopped P&L    │   │
 │  │  prices:    atm/otm5/otm10 call/put price arrays           │   │
-│  │  metadata:  dates, timestamps, day boundaries               │   │
+│  │  metadata:  dates, timestamps, day_boundaries               │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -308,7 +332,7 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │  │  │  execution.py — OCOExecutionEngine                   │    │      │
 │  │  │  ─ Translates DecisionIntent → IBKR LimitOrder      │    │      │
 │  │  │  ─ Max 1 SPX contract position                       │    │      │
-│  │  │  ─ 30% hard stop loss (emergency backstop)          │    │      │
+│  │  │  ─ Dynamic stop loss (15-60%, confidence+IV+VIX)    │    │      │
 │  │  │  ─ Kill switch file support                          │    │      │
 │  │  │  ─ Daily loss limit check                            │    │      │
 │  │  │  ─ Audit trail → results/live/audit.jsonl            │    │      │
@@ -536,7 +560,132 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 10. Tooling Overview
+## 10. ART² Meta-Loop (`tools/art2.py`)
+
+ART² is a two-loop autonomous system. The **outer loop** (Opus) makes strategic decisions grounded in domain knowledge. The **inner loop** (Sonnet) optimizes train.py within the constraints set by the outer loop. ART² has full authority over every file in the project.
+
+```
+                    ART² TWO-LOOP ARCHITECTURE
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│   OUTER LOOP (Claude Opus — strategic brain)                         │
+│   ════════════════════════════════════════                            │
+│                                                                      │
+│   ┌────────────┐  ┌──────────────────┐  ┌─────────────────────────┐ │
+│   │ Domain     │  │ Research Phase   │  │ Strategic Decision      │ │
+│   │ Knowledge  │  │ (trade-level     │  │ (1 change per cycle)    │ │
+│   │ 0DTE mech. │──▶  analysis vs    │──▶                         │ │
+│   │ Pickles    │  │  domain rules)   │  │ Actions A-G:            │ │
+│   └────────────┘  └──────────────────┘  │ A) Let it cook          │ │
+│                                          │ B) Steer inner loop     │ │
+│   Owns: ALL files in project             │ C) Change constraints   │ │
+│   Decides: what to change, when to       │ D) Change features      │ │
+│   rebuild data, when to fresh-start      │ E) Rebuild data         │ │
+│   Prohibited: score_config,              │ F) Fix infrastructure   │ │
+│   run_loop.py safety checks              │ G) Modify train.py      │ │
+│                                          └───────────┬─────────────┘ │
+│                                                      │               │
+│   7-PHASE LIFECYCLE                                  │               │
+│   ┌──────┬───────┬──────────┬─────────┬──────────┬───┴────┬───────┐ │
+│   │SETUP │TRAIN│TEARDOWN│ANALYZE│RESEARCH│IMPROVE│DOCUMENT│REPEAT│ │
+│   └──────┴───────┴──────────┴─────────┴──────────┴────────┴───────┘ │
+│                                                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   INNER LOOP (Claude Sonnet — tactical optimizer)                    │
+│   ═══════════════════════════════════════════════                     │
+│                                                                      │
+│   Runs on Akash H100 via run_loop.py                                 │
+│   Owns: train.py hyperparameters + training dynamics                 │
+│   May: tune _env_float values, loss weight scheduling,               │
+│        sample weighting, LR schedules, bias init, feature noise      │
+│   Prohibited: new nn.Module subclasses, new loss terms,              │
+│              architecture changes, score formula                     │
+│                                                                      │
+│   Each experiment: Claude proposes mutation → validate → train       │
+│   (~4 min) → score → keep/revert. ~6 min per experiment.            │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Pipeline Flow
+
+```
+  art2.py cycle (or daemon --max-cycles N)
+       │
+       ├── SETUP: preflight, IBKR gate, duration sizing
+       │
+       ├── TRAIN ───► Akash H100 ───► run_loop.py (Sonnet)
+       │                                  │
+       ├── TEARDOWN: deploy.sh stop ◄─────┘
+       │
+       ├── ANALYZE: parse experiments.v2.jsonl → analysis.json
+       │
+       ├── REPLAY: backtest best_model.pt on val dates
+       │
+       ├── DIAGNOSE: compare training vs replay metrics
+       │
+       ├── RESEARCH: trade-level analysis vs domain knowledge
+       │              → time-of-day, exits, strikes, direction bias
+       │              → hypotheses grounded in 0DTE mechanics
+       │
+       ├── REPORT: briefing.md with research findings
+       │
+       └── IMPROVE: Opus reads briefing, makes 1 strategic change
+                    via file_edits JSON (whitelisted paths)
+```
+
+### Full Autonomy (Daemon Mode)
+
+The daemon runs continuously. Opus outputs file edits in JSON that are applied with safety checks against a whitelisted path set. Opus can return `needs_human: true` to pause if genuinely uncertain.
+
+```
+  ┌─────────────────────────────────────────────────────┐
+  │ High-confidence A     → auto-decide (no Opus call)  │
+  │ All other actions     → invoke Opus for decision     │
+  │ Opus returns edits    → apply to whitelisted files   │
+  │ rebuild_data: true    → runs prepare.py              │
+  │ fresh_start: true     → moves best_model.pt to .bak  │
+  │ needs_human: true     → pauses for human review      │
+  └─────────────────────────────────────────────────────┘
+```
+
+### Domain Knowledge Injection
+
+Opus receives both domain knowledge files (~25K tokens) injected directly into its prompt, since `claude -p` mode cannot read files. This enables domain-grounded reasoning about theta decay, gamma dynamics, time-of-day patterns, VIX regimes, and exit timing.
+
+### IBKR Compatibility Gate (4 checks)
+
+Runs before and after every training cycle:
+1. **model_exists** — `best_model.pt` present + hash
+2. **model_checkpoint** — Gate head outputs=2, Direction head outputs=6
+3. **feature_parity** — data.pt has 32 features + `val_start_idx`
+4. **ibkr_probe** — IBKR TWS connectivity and market data availability
+
+### Decision Tree (Automated Recommendations)
+
+| Priority | Condition | Action |
+|----------|-----------|--------|
+| 1 | Train/eval mismatch (PF diverges >20%) | Fix mismatch |
+| 2 | Accept rate ≥33% | A) Let it cook |
+| 3 | Gaming detected (score up, PF down) | F) Fix infrastructure |
+| 4 | >80% safety-blocked | F) Fix infrastructure |
+| 5 | Paper trading divergence >30% | E) Rebuild data |
+| 6 | Stall (<5% accept, scores flat) | B) Steer inner loop |
+| 7 | Accept rate 15%+ | A) Let it cook |
+| 8 | Default | B) Steer inner loop |
+
+### API Budget Tracking
+
+- Tier 3: $1,000/month limit
+- Inner loop: ~$0.20/experiment (Sonnet 4), ~6 min/experiment on H100
+- Outer loop: ~$0.38/Opus call (with domain knowledge injection)
+- Pre-flight budget check before each training session
+- Spend tracked in `~/.cache/autoresearch-trading/api_spend_tracker.json`
+
+---
+
+## 11. Tooling Overview (see also [art2.md](art2.md))
 
 ```
                          TOOLS ECOSYSTEM
@@ -589,7 +738,7 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 11. Complete Project File Map
+## 12. Complete Project File Map
 
 ```
 autoresearch-trading/
@@ -613,6 +762,8 @@ autoresearch-trading/
 │       └── __init__.py
 │
 ├── tools/                             ═══ TOOLING ═══
+│   ├── art2.py                        ART² outer loop orchestrator (meta-loop)
+│   ├── daily_pipeline.py              Pre-market data refresh + weekly retrain
 │   ├── paper_live.py                  CLI entry for paper trading
 │   ├── monitor.py                     Rich terminal dashboard
 │   ├── replay_battery.py              Multi-day replay suite
@@ -647,8 +798,15 @@ autoresearch-trading/
 ├── docs/                              ═══ DOCUMENTATION ═══
 │   ├── CLAUDE.md                      Codebase guide for Claude
 │   ├── ARCHITECTURE.md                System architecture diagrams (this file)
+│   ├── art2.md                        ART² subcommand reference
+│   ├── art2-notebook.md               ART² outer loop strategic memory
+│   ├── art2-opus-system-prompt.md     Prompt injected into Opus calls
+│   ├── daily-pipeline.md              Daily automation pipeline docs
 │   ├── 0dte-domain-knowledge.md       SPX 0DTE trading primer
 │   └── pickles-trading-knowledge.md   Trading domain knowledge
+│
+├── .claude/rules/                     ═══ AUTO-LOADED RULES ═══
+│   └── art2-operating-manual.md       ART² lifecycle, roles, policies
 │
 ├── results/                           ═══ RUNTIME OUTPUT ═══
 │   ├── current_run.txt

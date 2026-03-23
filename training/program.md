@@ -4,7 +4,7 @@ This file is the strict operating contract for autonomous loop experiments.
 If anything else conflicts with this file, this file wins.
 
 ## Mission
-Improve the training objective in `train.py` for SPX 0DTE option trading while preserving mechanical reliability.
+Build a model that makes money trading SPX 0DTE options on IBKR paper trading. The score is a proxy — focus on improving actual TRADING BEHAVIOR (profit factor, win rate, regime consistency, drawdown) rather than optimizing the score metric itself. Use the trade-level diagnostics (best/worst trades, time-of-day splits, VIX regime breakdowns) to diagnose specific weaknesses and propose targeted fixes.
 
 ## Scope Lock
 - Feature set: **32 features** (reduced from 70 in v2 phase transition for signal density and training speed).
@@ -12,10 +12,9 @@ Improve the training objective in `train.py` for SPX 0DTE option trading while p
 - Active trading semantics are locked to 6-direction entries + contextual exit.
 
 ## Model Contract (Required)
-- Three-output architecture (v5):
+- Two-head architecture (v4):
   - Gate head: `[NO_TRADE, TRADE]` (2 logits)
   - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` (6 logits)
-  - ETV head: scalar expected trade value (regression, 1 value)
 - 8 effective actions:
   - `DO_NOTHING`
   - `BUY_CALL_ATM`, `BUY_CALL_OTM5`, `BUY_CALL_OTM10`
@@ -26,15 +25,20 @@ Improve the training objective in `train.py` for SPX 0DTE option trading while p
 
 ## Data Contract (Required)
 `data.pt` must include the target fields and option price arrays required by training and replay:
-- Targets (unstopped P&L — entry to EOD, no stops):
+- Targets (unstopped P&L — entry to EOD, no stops; kept for reference only):
   - `call_pnl`, `put_pnl`
   - `exit_call_label`, `exit_put_label` (hindsight-optimal exit timing signals)
   - `otm5_call_pnl`, `otm5_put_pnl`
   - `otm10_call_pnl`, `otm10_put_pnl`
-- Targets (stopped P&L — with DYNAMIC_STOP_BASE applied, v5):
-  - `call_stopped_pnl`, `put_stopped_pnl`
+- Targets (stopped P&L — with DYNAMIC_STOP_BASE applied; **used by sniper_loss**):
+  - `call_stopped_pnl`, `put_stopped_pnl` (med-level, at DYNAMIC_STOP_BASE=0.35)
   - `otm5_call_stopped_pnl`, `otm5_put_stopped_pnl`
   - `otm10_call_stopped_pnl`, `otm10_put_stopped_pnl`
+- Multi-level stopped P&L (for ATM strikes, selected by IV+VIX per bar):
+  - `call_stopped_pnl_tight`, `put_stopped_pnl_tight` (stop=0.20)
+  - `call_stopped_pnl_wide`, `put_stopped_pnl_wide` (stop=0.50)
+
+**CRITICAL**: `sniper_loss` selects tight/med/wide stopped P&L per bar based on market conditions (IV, VIX) to align training with the dynamic stop-loss used in replay/live. Do NOT add raw P&L as an additional loss signal — this creates conflicting gradients and was tried 9 times without success.
 - Prices:
   - `atm_call_prices`, `atm_put_prices`
   - `otm5_call_prices`, `otm5_put_prices`
@@ -92,6 +96,24 @@ The `_score_config` dictionary in train.py is **read-only**. You MUST NOT change
 **Why:** The score formula defines what "good trading" means. Changing it inflates scores without improving the model — the model trains on loss functions (gate_loss, dir_loss, pnl_alignment), NOT on the score. Modifying score_config only changes the post-training evaluation, making scores incomparable across experiments. This was exploited in a prior run where SCORE_DRAWDOWN_PENALTY was reduced from 0.5→0.05, inflating the score from 1.77→10.29 while PF and TPD barely changed.
 
 **What to do instead:** Improve the model's actual TRADING BEHAVIOR by modifying loss weights (GATE_W, DIR_W, PNL_W, EXIT_W), model architecture biases, or training dynamics. Improvements should be visible in raw metrics: profit factor, win rate, trades per day, drawdown.
+
+### Loss Function Policy
+The loss function STRUCTURE is locked — `total = gate + dir + pnl + exit` must not change.
+
+You MUST NOT:
+- Add new loss terms to the total summation
+- Modify the `forward()` method signature of TradingModel
+- Add new `_env_float()` declarations
+
+You MAY:
+- Tune existing `_env_float` values (DIR_W, GATE_W, PNL_W, EXIT_W, DROPOUT, WEIGHT_DECAY, LR, FEATURE_NOISE_STD, etc.)
+- Implement loss weight SCHEDULING (e.g., ramp gate_w from 0.5→1.0 over epochs using existing env values)
+- Add sample weighting within existing loss computations (harder examples, time-of-day weights, VIX regime weights)
+- Change learning rate schedules (warmup, cosine, OneCycle, cyclical — use existing LR value as base)
+- Modify bias initialization for gate and direction heads
+- Adjust feature noise patterns (targeted noise on specific feature groups)
+- Change batch construction strategy (DAY_SEQ_RATIO, hard example mining)
+- Add gradient accumulation steps
 
 `worst_chunk_pf` and `chunk_details` are reported for analysis — the agent may use these to evaluate temporal consistency.
 

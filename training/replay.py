@@ -60,6 +60,50 @@ except ModuleNotFoundError as e:
 DATA_PT_PATH = os.path.join(CACHE_DIR, "features", "data.pt")
 ET_TZ = ZoneInfo("America/New_York")
 
+
+def compute_adaptive_spread_bps(
+    minutes_remaining: float,
+    vix_regime: float,
+    is_otm: bool = False,
+) -> float:
+    """Compute realistic bid-ask spread based on time-of-day and VIX.
+
+    Real 0DTE spreads vary significantly:
+    - Morning (9:30-11:00): tightest (high volume, active market-making)
+    - Lunch (11:30-13:30): widest intraday (low volume)
+    - Afternoon (13:30-15:30): moderate
+    - Power hour (15:30-16:00): wide (extreme gamma, market-makers widen)
+
+    OTM options have wider spreads than ATM.
+    High VIX widens all spreads.
+    """
+    # Time-of-day base spread (ATM, normal VIX)
+    # minutes_remaining: 390 = open, 0 = close
+    if minutes_remaining > 330:      # 9:30-10:00 (first 60 min)
+        base = 40.0
+    elif minutes_remaining > 270:    # 10:00-11:00
+        base = 30.0
+    elif minutes_remaining > 210:    # 11:00-12:00
+        base = 50.0
+    elif minutes_remaining > 150:    # 12:00-13:00 (lunch)
+        base = 80.0
+    elif minutes_remaining > 90:     # 13:00-14:30
+        base = 50.0
+    elif minutes_remaining > 30:     # 14:30-15:30
+        base = 60.0
+    else:                            # 15:30-16:00 (power hour)
+        base = 150.0
+
+    # OTM multiplier
+    if is_otm:
+        base *= 2.0
+
+    # VIX multiplier (vix_regime is normalized; 0 = low, 0.5 = normal, 1.0 = crisis)
+    vix_mult = 1.0 + max(0.0, vix_regime - 0.3) * 2.0  # up to 2.4x in crisis
+
+    return min(base * vix_mult, 500.0)  # cap at 500 BPS
+
+
 DEFAULT_TRADE_CSV_COLUMNS = [
     "num",
     "date",
@@ -371,6 +415,8 @@ def _load_model_class_from_train_py(train_py_path: str, config: dict | None = No
         "LOOKBACK", "D_MODEL", "N_HEADS", "DEPTH", "FF_MULT", "DROPOUT",
         "USE_RMSNORM", "USE_NO_BIAS", "QUALITY_GATE_STRENGTH",
         "POSITION_STATE_WEIGHT", "DYNAMIC_STOP_STRENGTH",
+        "FEATURE_NOISE_STD", "STOP_PREVENTION_WEIGHT",
+        "TEMPORAL_CHUNK_WEIGHT", "VIX_CONSISTENCY_WEIGHT",
     }
 
     def _is_safe_constant_expr(node: _ast.AST) -> bool:
@@ -503,6 +549,10 @@ def _load_model_class_from_train_py(train_py_path: str, config: dict | None = No
             'POSITION_STATE_WEIGHT': ('position_state_weight', 1.0),
             'DYNAMIC_STOP_STRENGTH': ('dynamic_stop_strength', 0.5),
             'CHARM_FLOW_STRENGTH': ('charm_flow_strength', 0.3),
+            'FEATURE_NOISE_STD': ('feature_noise_std', 0.0),
+            'STOP_PREVENTION_WEIGHT': ('stop_prevention_weight', 0.0),
+            'TEMPORAL_CHUNK_WEIGHT': ('temporal_chunk_weight', 0.0),
+            'VIX_CONSISTENCY_WEIGHT': ('vix_consistency_weight', 0.0),
     }
     if config:
         for var_name, (config_key, default) in _hyper_map.items():
@@ -1607,7 +1657,17 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     final_pnl = net_pnl_pct
                     reason = 'EOD'
 
-                final_pnl -= OPTION_SPREAD_BPS / 10000.0 * 2
+                # Adaptive spread: time-of-day + VIX + strike type
+                _mtc_entry = BARS_PER_DAY - _bar_of_day.get(entry_global, 200)
+                _mtc_exit = BARS_PER_DAY - _bar_of_day.get(global_idx, 200)
+                _vr_entry = float(features[entry_global, _FEAT_IDX['vix_regime']]) if entry_global < features.shape[0] else 0.3
+                _vr_exit = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.3
+                _is_otm = trade_action in (ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+                                           ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10)
+                _entry_spread = compute_adaptive_spread_bps(_mtc_entry, _vr_entry, _is_otm)
+                _exit_spread = compute_adaptive_spread_bps(_mtc_exit, _vr_exit, _is_otm)
+                _round_trip_spread = (_entry_spread + _exit_spread) / 10000.0
+                final_pnl -= _round_trip_spread
 
                 # Update account balance (dollar P&L)
                 dollar_pnl = final_pnl * trade_entry_price * SPX_MULTIPLIER * trade_n_contracts
@@ -2806,15 +2866,24 @@ def run_backtest(model, data_pt_path: str, device: str = 'cpu',
 
     features_t = torch.tensor(features_np, dtype=torch.float32)
 
-    # Date selection: --all-dates runs the entire dataset, otherwise validation only
+    # Date selection: --all-dates runs the entire dataset, otherwise validation only.
+    # Use val_start_idx from data.pt to match prepare.py's 70/30 temporal split
+    # (NOT an arbitrary 80/20 by date count, which creates a different val set).
     unique_dates = sorted(set(all_dates))
     if all_dates_mode:
         val_dates = unique_dates
         print(f"Full dataset: {len(val_dates)} days ({val_dates[0]} to {val_dates[-1]})")
     else:
-        n_train = int(len(unique_dates) * 0.8)
-        val_dates = unique_dates[n_train:]
-        print(f"Validation set: {len(val_dates)} days ({val_dates[0]} to {val_dates[-1]})")
+        val_start_idx = int(data.get('val_start_idx', 0))
+        if val_start_idx > 0:
+            val_start_date = all_dates[val_start_idx]
+            val_dates = [d for d in unique_dates if d >= val_start_date]
+            print(f"Validation set (from data.pt split): {len(val_dates)} days ({val_dates[0]} to {val_dates[-1]})")
+        else:
+            # Fallback: 70/30 by date count to approximate prepare.py's bar-based split
+            n_train = int(len(unique_dates) * 0.70)
+            val_dates = unique_dates[n_train:]
+            print(f"Validation set (70/30 fallback): {len(val_dates)} days ({val_dates[0]} to {val_dates[-1]})")
 
     # Build aligned SPX market data using date+bar_of_day mapping.
     # data.pt indices do NOT match spy_df/spx_df indices (different start dates,

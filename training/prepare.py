@@ -507,6 +507,92 @@ def download_es_bars(start: str, end: str) -> pd.DataFrame:
     return df
 
 
+def _incremental_update(cache_path: str, download_fn, start: str, end: str,
+                        date_col: str = 'date') -> pd.DataFrame:
+    """Load existing cache, download only new data, merge and save.
+
+    This is the core incremental rebuild mechanism. Instead of nuking the
+    entire cache and re-downloading 3+ years of history, we:
+    1. Load the existing pkl cache (if any)
+    2. Find the last date already cached
+    3. Download only from (last_date - 1 day overlap) to end
+    4. Concat, deduplicate, filter to [start, end], save
+
+    The 1-day overlap ensures we don't miss partial days at the boundary.
+    Deduplication by timestamp handles the overlap cleanly.
+
+    Args:
+        cache_path: Path to the monolithic pkl file
+        download_fn: Callable(start, end) -> DataFrame
+        start: Requested start date (YYYY-MM-DD)
+        end: Requested end date (YYYY-MM-DD)
+        date_col: Column name containing date strings
+    """
+    if os.path.exists(cache_path):
+        with open(cache_path, 'rb') as f:
+            cached_df = pickle.load(f)
+
+        if date_col not in cached_df.columns:
+            print(f"  Cache {os.path.basename(cache_path)}: missing '{date_col}' column, full re-download")
+            cached_df = None
+        else:
+            cache_max = cached_df[date_col].max()
+            cache_min = cached_df[date_col].min()
+            cache_days = cached_df[date_col].nunique()
+
+            # Check if cache already covers the full range
+            if cache_max >= end and cache_min <= start:
+                print(f"  Cache {os.path.basename(cache_path)}: already covers {start}..{end} "
+                      f"({cache_days} days, {len(cached_df)} bars)")
+                return cached_df
+
+            # Check if we need significantly earlier data (start moved backward)
+            # Tolerate up to 7 days gap — the requested start may be a weekend
+            # or holiday where no trading data exists anyway.
+            start_gap_days = (dt.datetime.strptime(cache_min, '%Y-%m-%d')
+                              - dt.datetime.strptime(start, '%Y-%m-%d')).days
+            if start_gap_days > 7:
+                print(f"  Cache starts at {cache_min} but need {start} "
+                      f"({start_gap_days} days gap) — full re-download")
+                cached_df = None
+            elif cache_max >= end:
+                # Cache covers everything we need
+                print(f"  Cache {os.path.basename(cache_path)}: covers through {cache_max} "
+                      f"({cache_days} days, {len(cached_df)} bars)")
+                return cached_df
+            else:
+                # Incremental: download from (cache_max - 1 day) for overlap safety
+                overlap_start = (dt.datetime.strptime(cache_max, '%Y-%m-%d')
+                                 - dt.timedelta(days=1)).strftime('%Y-%m-%d')
+                print(f"  Cache {os.path.basename(cache_path)}: has {start}..{cache_max} "
+                      f"({cache_days} days). Fetching {overlap_start}..{end}...")
+                new_df = download_fn(overlap_start, end)
+                if new_df is not None and len(new_df) > 0:
+                    merged = pd.concat([cached_df, new_df], ignore_index=True)
+                    merged = merged.drop_duplicates(subset='timestamp').sort_values('timestamp')
+                    merged = merged.reset_index(drop=True)
+                    new_days = merged[date_col].nunique() - cache_days
+                    print(f"  Incremental: +{new_days} days, {len(merged)} total bars")
+                    with open(cache_path, 'wb') as f:
+                        pickle.dump(merged, f)
+                    print(f"  Updated cache: {os.path.basename(cache_path)}")
+                    return merged
+                else:
+                    print(f"  No new data fetched — using existing cache")
+                    return cached_df
+    else:
+        cached_df = None
+
+    # Full download (no cache or cache invalidated)
+    print(f"  Full download: {start}..{end}")
+    df = download_fn(start, end)
+    if df is not None and len(df) > 0:
+        with open(cache_path, 'wb') as f:
+            pickle.dump(df, f)
+        print(f"  Saved cache: {os.path.basename(cache_path)}")
+    return df
+
+
 def _download_ibkr_index(symbol: str, start: str, end: str,
                           col_prefix: str = "") -> pd.DataFrame | None:
     """Download CBOE index 1-min bars via IBKR using weekly batches.
@@ -590,6 +676,19 @@ def download_vix_bars(start: str, end: str) -> pd.DataFrame | None:
     feed in live trading, so features trained on this transfer directly.
     """
     return _download_ibkr_index("VIX", start, end, col_prefix="vix")
+
+
+def _vix_df_to_dict(vix_df: pd.DataFrame) -> dict:
+    """Convert VIX DataFrame to timestamp→OHLC lookup dict."""
+    vix_data = {}
+    for _, row in vix_df.iterrows():
+        vix_data[row['timestamp']] = {
+            'vix_open': row['vix_open'],
+            'vix_high': row['vix_high'],
+            'vix_low': row['vix_low'],
+            'vix_close': row['vix_close'],
+        }
+    return vix_data
 
 
 def download_spx_bars(start: str, end: str) -> pd.DataFrame | None:
@@ -1973,27 +2072,39 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
     # -------------------------------------------------------------------
     # Stopped P&L targets: same as above but WITH dynamic stop applied.
-    # These match evaluation reality (evaluate_trades uses dynamic stops).
-    # Uses DYNAMIC_STOP_BASE (0.35) as default stop — no gate confidence
-    # adjustment since we don't have model predictions at data-build time.
+    # Computed at 3 stop levels (tight/medium/wide) to align with dynamic
+    # stops at eval time. Train.py selects the closest level based on
+    # predicted gate confidence.
     # -------------------------------------------------------------------
+    STOP_LEVELS = [0.20, 0.35, 0.50]  # tight, medium, wide
+    STOP_LEVEL_NAMES = ['tight', 'med', 'wide']
+
+    # ATM stopped P&L at default level (backward compat)
     call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
     put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
 
+    # Multi-level stopped P&L for ATM
+    call_stopped_pnl_tight = np.full(N, np.nan, dtype=np.float32)
+    call_stopped_pnl_wide = np.full(N, np.nan, dtype=np.float32)
+    put_stopped_pnl_tight = np.full(N, np.nan, dtype=np.float32)
+    put_stopped_pnl_wide = np.full(N, np.nan, dtype=np.float32)
+
     for i in range(N):
-        for leg_name, pnl_arr in [
-            ('call_atm', call_stopped_pnl),
-            ('put_atm', put_stopped_pnl),
+        for leg_name, pnl_med, pnl_tight, pnl_wide in [
+            ('call_atm', call_stopped_pnl, call_stopped_pnl_tight, call_stopped_pnl_wide),
+            ('put_atm', put_stopped_pnl, put_stopped_pnl_tight, put_stopped_pnl_wide),
         ]:
             px_arr = _price_arrays[leg_name]
             if np.isnan(px_arr[i]) or px_arr[i] <= 0:
                 continue
-            _, pnl_val, _ = compute_dynamic_pnl(
-                i, px_arr, dates, SPREAD_COST_PCT,
-                stop_loss=DYNAMIC_STOP_BASE, max_hold=MAX_HOLD_BARS)
-            if not np.isnan(pnl_val):
-                pnl_arr[i] = pnl_val
+            for stop_level, pnl_arr in zip(STOP_LEVELS, [pnl_tight, pnl_med, pnl_wide]):
+                _, pnl_val, _ = compute_dynamic_pnl(
+                    i, px_arr, dates, SPREAD_COST_PCT,
+                    stop_loss=stop_level, max_hold=MAX_HOLD_BARS)
+                if not np.isnan(pnl_val):
+                    pnl_arr[i] = pnl_val
 
+    # OTM stopped P&L (default level only — less critical for OTM)
     otm5_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
     otm5_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
     otm10_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
@@ -2157,6 +2268,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         'otm10_put_pnl_realistic': otm10_put_pnl_realistic,
         'call_stopped_pnl': call_stopped_pnl,
         'put_stopped_pnl': put_stopped_pnl,
+        'call_stopped_pnl_tight': call_stopped_pnl_tight,
+        'call_stopped_pnl_wide': call_stopped_pnl_wide,
+        'put_stopped_pnl_tight': put_stopped_pnl_tight,
+        'put_stopped_pnl_wide': put_stopped_pnl_wide,
         'otm5_call_stopped_pnl': otm5_call_stopped_pnl,
         'otm5_put_stopped_pnl': otm5_put_stopped_pnl,
         'otm10_call_stopped_pnl': otm10_call_stopped_pnl,
@@ -2323,6 +2438,8 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
             'otm5_call_pnl_realistic', 'otm5_put_pnl_realistic',
             'otm10_call_pnl_realistic', 'otm10_put_pnl_realistic',
             'call_stopped_pnl', 'put_stopped_pnl',
+            'call_stopped_pnl_tight', 'call_stopped_pnl_wide',
+            'put_stopped_pnl_tight', 'put_stopped_pnl_wide',
             'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
             'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl',
         ):
@@ -2420,6 +2537,17 @@ def _load_dataloader_arrays(data, device):
                 fallback_key = 'put_pnl'
             arrays[k] = arrays.get(fallback_key, torch.full_like(call_pnl_all, float('nan')))
 
+    # Multi-level stopped P&L (tight=0.20, wide=0.50) — fall back to med-level if absent
+    for k in ('call_stopped_pnl_tight', 'call_stopped_pnl_wide',
+              'put_stopped_pnl_tight', 'put_stopped_pnl_wide'):
+        v = data.get(k)
+        if v is not None:
+            arrays[k] = v.to(device)
+        else:
+            # Fall back to the med-level stopped P&L
+            med_key = k.replace('_tight', '').replace('_wide', '')
+            arrays[k] = arrays.get(med_key, torch.full_like(call_pnl_all, float('nan')))
+
     return arrays
 
 
@@ -2432,10 +2560,13 @@ def _build_y_tuple(arrays, idx):
             arrays['otm10_call_pnl'][idx], arrays['otm10_put_pnl'][idx],
             arrays['supervision_weight'][idx], arrays['actionable_mask'][idx],
             arrays['risk_state_mask'][idx],
-            # v5: stopped P&L (positions 12-17)
+            # v5: stopped P&L at med level (positions 12-17)
             arrays['call_stopped_pnl'][idx], arrays['put_stopped_pnl'][idx],
             arrays['otm5_call_stopped_pnl'][idx], arrays['otm5_put_stopped_pnl'][idx],
-            arrays['otm10_call_stopped_pnl'][idx], arrays['otm10_put_stopped_pnl'][idx])
+            arrays['otm10_call_stopped_pnl'][idx], arrays['otm10_put_stopped_pnl'][idx],
+            # v6: multi-level stopped P&L tight/wide (positions 18-21)
+            arrays['call_stopped_pnl_tight'][idx], arrays['call_stopped_pnl_wide'][idx],
+            arrays['put_stopped_pnl_tight'][idx], arrays['put_stopped_pnl_wide'][idx])
 
 
 def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
@@ -2448,7 +2579,9 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
                      supervision_weight, actionable_mask, risk_state_mask,
                      call_stopped_pnl, put_stopped_pnl,
                      otm5_call_stopped_pnl, otm5_put_stopped_pnl,
-                     otm10_call_stopped_pnl, otm10_put_stopped_pnl)
+                     otm10_call_stopped_pnl, otm10_put_stopped_pnl,
+                     call_stopped_pnl_tight, call_stopped_pnl_wide,
+                     put_stopped_pnl_tight, put_stopped_pnl_wide)
            each (batch,). NaN where option data is unavailable.
     """
     arrays = _load_dataloader_arrays(data, device)
@@ -2946,6 +3079,11 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 equity_history.append(account_balance)
 
                 trade_pnls.append(final_pnl)
+                # Extract diagnostic context for trade-level analysis
+                _entry_bod = _bar_of_day.get(entry_global, -1)
+                _vix_idx = _FEAT_IDX.get('vix_regime')
+                _entry_vix = float(features[entry_global, _vix_idx].cpu()) if _vix_idx is not None else 0.0
+
                 trade_details.append({
                     'trade_num': len(trade_details) + 1,
                     'date': dates[entry_global],
@@ -2966,6 +3104,8 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                     'dynamic_stop_pct': round(trade_dynamic_stop * 100, 2),
                     'actual_prices': trade_use_actual,
                     'result': 'WIN' if final_pnl > 0 else 'LOSS',
+                    'bar_of_day': _entry_bod,
+                    'vix_regime': round(_entry_vix, 2),
                 })
                 in_trade = False
 
@@ -3521,9 +3661,9 @@ if __name__ == "__main__":
     print(f"Cache: {CACHE_DIR}")
     print()
 
-    # --- Download SPY (volume source) ---
+    # --- Download SPY (volume source) — incremental ---
     cache_path = os.path.join(DATA_DIR, "spy_1min.pkl")
-    if args.skip_download or os.path.exists(cache_path):
+    if args.skip_download:
         if not os.path.exists(cache_path):
             old_cache = os.path.join(DATA_DIR, "spy_5min.pkl")
             if os.path.exists(old_cache):
@@ -3532,18 +3672,16 @@ if __name__ == "__main__":
             else:
                 print(f"ERROR: Cache not found: {cache_path}")
                 sys.exit(1)
-        print(f"Loading cached SPY data...")
+        print(f"Loading cached SPY data (--skip-download)...")
         with open(cache_path, 'rb') as f:
             df = pickle.load(f)
         print(f"  {len(df)} bars, {df['date'].nunique()} days")
     else:
-        if args.spy_source == "ibkr":
-            df = download_spy_bars_ibkr(args.start, args.end)
-        else:
-            df = download_spy_bars(args.start, args.end)
-        with open(cache_path, 'wb') as f:
-            pickle.dump(df, f)
-        print(f"  Cached to {cache_path}")
+        spy_download_fn = download_spy_bars_ibkr if args.spy_source == "ibkr" else download_spy_bars
+        df = _incremental_update(cache_path, spy_download_fn, args.start, args.end)
+        if df is None or len(df) == 0:
+            print("ERROR: No SPY bars available")
+            sys.exit(1)
     print()
 
     # --- Filter to 0DTE days only ---
@@ -3593,48 +3731,49 @@ if __name__ == "__main__":
             print(f"  OTM chain: {len(chain_data)} bar entries")
         print()
 
-    # --- VIX (via IBKR) ---
+    # --- VIX (via IBKR) — incremental ---
     vix_data = None
     if not args.skip_vix:
         vix_cache = os.path.join(DATA_DIR, "vix_1min.pkl")
-        if os.path.exists(vix_cache):
-            print("Loading cached VIX data...")
-            with open(vix_cache, 'rb') as f:
-                vix_data = pickle.load(f)
-        elif not args.skip_download:
-            vix_df = download_vix_bars(args.start, args.end)
+        if args.skip_download:
+            if os.path.exists(vix_cache):
+                print("Loading cached VIX data (--skip-download)...")
+                with open(vix_cache, 'rb') as f:
+                    _vix_raw = pickle.load(f)
+                # Migrate: old caches stored as dict, new ones as DataFrame
+                if isinstance(_vix_raw, dict):
+                    vix_data = _vix_raw
+                else:
+                    vix_data = _vix_df_to_dict(_vix_raw)
+        else:
+            # Migrate legacy dict cache → DataFrame for incremental support
+            if os.path.exists(vix_cache):
+                with open(vix_cache, 'rb') as f:
+                    _check = pickle.load(f)
+                if isinstance(_check, dict):
+                    print("  VIX cache is legacy dict format — re-downloading for incremental support")
+                    os.remove(vix_cache)
+            vix_df = _incremental_update(vix_cache, download_vix_bars, args.start, args.end)
             if vix_df is not None and len(vix_df) > 0:
-                # Build lookup: timestamp (ms) → vix_close
-                vix_data = {}
-                for _, row in vix_df.iterrows():
-                    vix_data[row['timestamp']] = {
-                        'vix_open': row['vix_open'],
-                        'vix_high': row['vix_high'],
-                        'vix_low': row['vix_low'],
-                        'vix_close': row['vix_close'],
-                    }
-                with open(vix_cache, 'wb') as f:
-                    pickle.dump(vix_data, f)
-                print(f"  Cached {len(vix_data)} VIX bars to {vix_cache}")
+                vix_data = _vix_df_to_dict(vix_df)
             else:
-                print("  VIX download returned no data — will fall back to ATM IV proxy")
+                print("  VIX: no data — will fall back to ATM IV proxy")
         if vix_data:
             print(f"  VIX data: {len(vix_data)} bars")
         print()
 
-    # --- SPX price replacement (optional) ---
+    # --- SPX price replacement (optional) — incremental ---
     if args.use_spx:
         spx_cache = os.path.join(DATA_DIR, "spx_1min.pkl")
-        if os.path.exists(spx_cache):
-            print("Loading cached SPX data...")
-            with open(spx_cache, 'rb') as f:
-                spx_df = pickle.load(f)
-        elif not args.skip_download:
-            spx_df = download_spx_bars(args.start, args.end)
-            if spx_df is not None:
-                with open(spx_cache, 'wb') as f:
-                    pickle.dump(spx_df, f)
-                print(f"  Cached SPX data to {spx_cache}")
+        if args.skip_download:
+            if os.path.exists(spx_cache):
+                print("Loading cached SPX data (--skip-download)...")
+                with open(spx_cache, 'rb') as f:
+                    spx_df = pickle.load(f)
+            else:
+                spx_df = None
+        else:
+            spx_df = _incremental_update(spx_cache, download_spx_bars, args.start, args.end)
 
         if spx_df is not None and len(spx_df) > 0:
             pre_count = len(df)

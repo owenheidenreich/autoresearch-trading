@@ -143,12 +143,12 @@ cmd_boot() {
     [[ -f "$SDL_FILE" ]] || die "SDL not found: $SDL_FILE"
 
     # 1. Submit deployment TX
-    # NOTE: Default escrow deposit is 0.5 AKT which drains in ~2 minutes
-    # at H100 pricing.  Deposit enough for the planned run duration.
-    # For short tests: 5 AKT (~1 hour).  For full runs: 50 AKT (~8 hours).
-    DEPOSIT_AKT="${DEPOSIT_AKT:-15}"
+    # Boot with minimal deposit (0.5 AKT) — just enough to create the lease.
+    # Use `deploy.sh fund <AKT>` to add funds before starting experiments.
+    # This separates container provisioning from experiment budgeting.
+    DEPOSIT_AKT="${DEPOSIT_AKT:-1}"
     DEPOSIT_UAKT=$((DEPOSIT_AKT * 1000000))
-    log "Submitting deployment TX (deposit=${DEPOSIT_AKT} AKT)..."
+    log "Submitting deployment TX (deposit=${DEPOSIT_AKT} AKT — use 'fund' to add more)..."
     TX_OUTPUT=$(provider-services tx deployment create "$SDL_FILE" \
         --deposit "${DEPOSIT_UAKT}uakt" \
         --from "$AKASH_FROM" --yes --output json 2>&1)
@@ -517,6 +517,28 @@ fi"
 # ===================================================================
 # Convenience commands
 # ===================================================================
+cmd_fund() {
+    load_state
+    local amount_akt="${EXTRA_ARGS:-5}"
+    [[ "$amount_akt" =~ ^[0-9]+$ ]] || die "Usage: deploy.sh fund <AKT amount>"
+    local amount_uakt=$((amount_akt * 1000000))
+    log "Adding ${amount_akt} AKT to deployment DSEQ=${DSEQ}..."
+    local tx_out
+    tx_out=$(provider-services tx escrow deposit \
+        deployment "${amount_uakt}uakt" \
+        --dseq "$DSEQ" --from "$AKASH_FROM" \
+        --gas auto --gas-adjustment 1.5 --gas-prices 0.025uakt \
+        --yes --output json 2>&1)
+    local txhash
+    txhash=$(echo "$tx_out" | grep -o '"txhash":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$txhash" ]]; then
+        log "Deposited ${amount_akt} AKT (TX: $txhash)"
+    else
+        echo "$tx_out"
+        die "Escrow deposit failed"
+    fi
+}
+
 cmd_ssh() {
     load_state
     log "Connecting to H100..."
@@ -728,16 +750,25 @@ cmd_download() {
             log "  ⚠ evidence ingest failed (non-blocking)"
     fi
 
-    # Preserve artifacts in training/ for next deployment
-    if [[ -f "$local_run_dir/best_model.pt" ]]; then
+    # Preserve artifacts in training/ for next deployment.
+    # Prefer .best_snapshot (saved when experiment was KEPT) over best_model.pt
+    # which may have drifted due to incremental weight retention on reverted experiments.
+    if [[ -f "$local_run_dir/best_model.pt.best_snapshot" ]]; then
+        cp "$local_run_dir/best_model.pt.best_snapshot" "$PROJECT_ROOT/training/best_model.pt"
+        log "  ↳ Copied best_model.pt.best_snapshot → training/ (true best, undrifted)"
+    elif [[ -f "$local_run_dir/best_model.pt" ]]; then
         cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
         log "  ↳ Copied best_model.pt → training/ (warm-start for next run)"
     fi
     if [[ -f "$local_run_dir/best_train.py" ]]; then
         cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/best_train.py"
-        # best_train.py IS the best code — use it as train.py for next run
-        cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/train.py"
-        log "  ↳ Copied best_train.py → training/train.py + best_train.py"
+        # Only overwrite train.py if it has no uncommitted local changes
+        if cd "$PROJECT_ROOT" && git diff --quiet training/train.py 2>/dev/null; then
+            cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/train.py"
+            log "  ↳ Copied best_train.py → training/train.py + best_train.py"
+        else
+            log "  ↳ Copied best_train.py → training/best_train.py (train.py has local changes, NOT overwritten)"
+        fi
     fi
 
     log "Done! Results in: $local_run_dir"
@@ -839,7 +870,10 @@ print(f'best_score={s.get(\"best_score\",0)}')
                     --output-root "$PROJECT_ROOT/results/analysis" >/dev/null 2>&1 || true
             fi
             # Copy best model + code to training/ for warm-start continuity
-            if [[ -f "$local_run_dir/best_model.pt" ]]; then
+            if [[ -f "$local_run_dir/best_model.pt.best_snapshot" ]]; then
+                cp "$local_run_dir/best_model.pt.best_snapshot" "$PROJECT_ROOT/training/best_model.pt"
+                log "  ↳ Updated training/best_model.pt (from best_snapshot)"
+            elif [[ -f "$local_run_dir/best_model.pt" ]]; then
                 cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
                 log "  ↳ Updated training/best_model.pt"
             fi
@@ -971,12 +1005,21 @@ cmd_stop() {
     sleep 3  # let filesystem flush before downloading
 
     log "Downloading results before closing..."
-    EXTRA_ARGS="" cmd_download || log "WARNING: Download failed (container may be dead). Proceeding to close deployment."
+    # Run in subshell so die()/exit inside cmd_download doesn't kill the stop flow
+    ( EXTRA_ARGS="" cmd_download ) || log "WARNING: Download failed (container may be dead). Proceeding to close deployment."
 
     log "Closing Akash deployment DSEQ=$DSEQ..."
-    provider-services tx deployment close \
-        --dseq "$DSEQ" --from "$AKASH_FROM" --yes 2>&1 \
+    local close_out
+    close_out=$(provider-services tx deployment close \
+        --dseq "$DSEQ" --from "$AKASH_FROM" \
+        --gas auto --gas-adjustment 1.5 --gas-prices 0.025uakt \
+        --yes --output json 2>&1) \
         || log "WARNING: Close TX failed (deployment may already be closed)"
+    if echo "$close_out" | jq -e '.txhash' &>/dev/null; then
+        local txhash
+        txhash=$(echo "$close_out" | jq -r '.txhash')
+        log "Close TX: $txhash"
+    fi
     rm -f "$STATE_FILE"
     log "Deployment closed. Results saved."
 }
@@ -992,6 +1035,7 @@ export EXTRA_ARGS
 case "$CMD" in
     boot)     cmd_boot     ;;
     start)    cmd_start    ;;
+    fund)     cmd_fund     ;;
     ssh)      cmd_ssh      ;;
     logs)     cmd_logs     ;;
     status)   cmd_status   ;;

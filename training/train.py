@@ -101,17 +101,17 @@ FF_MULT = _env_int("TRAIN_FF_MULT", 3, lo=2, hi=6)
 DROPOUT = _env_float("TRAIN_DROPOUT", 0.15, lo=0.05, hi=0.40)
 
 BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 128, lo=32, hi=256)
-LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR
 WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.05, lo=0.0, hi=0.3)
 ADAM_BETAS = (0.9, 0.98)
 GRAD_CLIP = _env_float("TRAIN_GRAD_CLIP", 1.0, lo=0.0, hi=5.0)
-WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.1, lo=0.0, hi=0.5)
+WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
 COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.3, lo=0.0, hi=0.8)
 
 # Loss weights
-GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 1.0, lo=0.1, hi=5.0)
+GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 2.0, lo=0.1, hi=5.0)  # Stronger gate signal
 DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.0, lo=0.1, hi=5.0)
-PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
+PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)
 EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.5, lo=0.0, hi=2.0)
 
 # Asymmetric gate penalty: how much more to penalize false entries vs missed entries
@@ -128,6 +128,7 @@ DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0
 
 # Named feature indices
 IDX_MINUTES_TO_CLOSE = 19
+IDX_ATM_IV = 22
 
 # Feature groups (32 features — v2 reduced set)
 FEATURE_GROUPS = {
@@ -182,42 +183,6 @@ class PositionStateGenerator(nn.Module):
                            account_health, loss_streak_frac], dim=1)
 
 
-class BalancedStrikeGate(nn.Module):
-    """Balanced strike biasing - softer bias toward OTM when account stressed."""
-    
-    def __init__(self, d_model):
-        super().__init__()
-        self.health_proj = nn.Linear(1, d_model // 8)
-        self.gate_mod = nn.Sequential(
-            nn.Linear(d_model + d_model // 8, d_model // 4),
-            nn.Tanh(),
-            nn.Linear(d_model // 4, 1),
-            nn.Sigmoid()
-        )
-        
-    def forward(self, gate_input, dir_input, account_health):
-        """
-        Args:
-            gate_input: (batch, d_model) - input to gate head
-            dir_input: (batch, d_model) - input to direction head  
-            account_health: (batch, 1) - account health fraction
-        
-        Returns:
-            modified_gate_input: (batch, d_model) - gate input with health modulation
-            modified_dir_input: (batch, d_model) - direction input with strike bias
-        """
-        health_emb = F.relu(self.health_proj(account_health))
-        combined = torch.cat([gate_input, health_emb], dim=-1)
-        
-        # Health gate: closer to 0 when account is stressed (health < 0.6)
-        health_gate = self.gate_mod(combined)
-        
-        # When health is low, reduce the trading signal strength
-        health_multiplier = 0.5 + 0.5 * health_gate  # Range: [0.5, 1.0]
-        
-        return gate_input * health_multiplier, dir_input
-
-
 class TradingModel(nn.Module):
     """Simplified two-head model for SPX 0DTE options.
 
@@ -227,7 +192,6 @@ class TradingModel(nn.Module):
     - Dropout 0.15 throughout
     - Position state injection for gate head (kept — this is real signal)
     - No DynamicStopModule, no QualityGate, no Greeks-adaptive anything
-    - NEW: Balanced strike gating for capital preservation
 
     Input:  (batch, lookback, NUM_FEATURES)
     Output: (gate_logits, dir_logits)
@@ -266,9 +230,6 @@ class TradingModel(nn.Module):
         self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
         self.position_state_gen = PositionStateGenerator()
 
-        # Balanced strike gate
-        self.balanced_gate = BalancedStrikeGate(d_model)
-
         # Gate head: "should I trade?" → [NO_TRADE, TRADE]
         self.gate_head = nn.Sequential(
             nn.LayerNorm(d_model),
@@ -287,18 +248,17 @@ class TradingModel(nn.Module):
             nn.Linear(d_model // 2, 6),
         )
 
-        # ETV (Expected Trade Value) regression head — predicts return magnitude
-        self.etv_proj = nn.Linear(d_model, 1)
-
-        # Apply biases from successful experiment #3
+        # Gate bias: slightly conservative to start, inner loop can tune
         with torch.no_grad():
-            self.gate_head[-1].bias[0] += 0.5   # NO_TRADE
-            self.gate_head[-1].bias[1] -= 0.5   # TRADE
-            
-            # Apply exact biases from experiment #3
-            self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15)
-            self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15)
-            self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
+            self.gate_head[-1].bias[0] += 0.1   # NO_TRADE — slight conservative prior
+            self.gate_head[-1].bias[1] -= 0.1   # TRADE
+
+            # ATM-favoring direction bias (domain knowledge: ATM has highest gamma,
+            # OTM backtest cumulative -601%). Mild bias, inner loop can adjust.
+            self.dir_head[-1].bias[0] += 0.15   # CALL_ATM bonus
+            self.dir_head[-1].bias[3] += 0.15   # PUT_ATM bonus
+            self.dir_head[-1].bias[1] -= 0.10   # CALL_OTM5 mild penalty
+            self.dir_head[-1].bias[4] -= 0.10   # PUT_OTM5 mild penalty
 
     def forward(self, x, position_state=None):
         batch_size = x.shape[0]
@@ -315,56 +275,44 @@ class TradingModel(nn.Module):
                                   is_causal=True)
         last = x_proj[:, -1, :]  # (batch, d_model)
 
-        # Inject position state into gate head with conservative scaling
+        # Inject position state into gate head
         if position_state is not None:
             pos_emb = torch.relu(self.position_proj(position_state))
-            # Scale down position influence to prevent overriding conservative gate bias
-            gate_input = self.position_gate_proj(torch.cat([last, pos_emb * 0.7], dim=-1))
-            
-            # Apply balanced strike gating using account health
-            account_health = position_state[:, 3:4]  # Extract account_health (dim 3)
-            gate_input, dir_input = self.balanced_gate(gate_input, last, account_health)
-            
-            # Apply softer dynamic strike bias when account health < 0.7 (higher threshold)
-            health_val = account_health.squeeze(-1)  # (batch,)
-            stressed_mask = health_val < 0.7
-            
+            gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
         else:
             gate_input = last
-            dir_input = last
-            stressed_mask = torch.zeros(batch_size, dtype=torch.bool, device=device)
 
         gate_logits = self.gate_head(gate_input)
-        dir_logits = self.dir_head(dir_input)
-        
-        # Apply softer strike bias when account is stressed - gentle nudge toward cheaper options
-        if stressed_mask.any():
-            bias_adjustment = torch.zeros_like(dir_logits)
-            # Softer bias: less aggressive penalties and bonuses to maintain ATM viability
-            bias_adjustment[stressed_mask, 0] -= 0.15  # CALL_ATM - mild penalty (was -0.4)
-            bias_adjustment[stressed_mask, 3] -= 0.15  # PUT_ATM - mild penalty (was -0.4)
-            bias_adjustment[stressed_mask, 1] += 0.10  # CALL_OTM5 - small bonus (was +0.2)
-            bias_adjustment[stressed_mask, 2] += 0.15  # CALL_OTM10 - modest bonus (was +0.3)
-            bias_adjustment[stressed_mask, 4] += 0.10  # PUT_OTM5 - small bonus (was +0.2)
-            bias_adjustment[stressed_mask, 5] += 0.15  # PUT_OTM10 - modest bonus (was +0.3)
-            
-            dir_logits = dir_logits + bias_adjustment
+        dir_logits = self.dir_head(last)
 
-        # ETV: expected trade value regression
-        etv = self.etv_proj(last).squeeze(-1)  # (batch,)
-
-        return gate_logits, dir_logits, etv
+        return gate_logits, dir_logits
 
 
 # ---------------------------------------------------------------------------
 # Loss — v5: EV-weighted, magnitude-aware
 # ---------------------------------------------------------------------------
 
-# ETV loss weight
-ETV_LOSS_WEIGHT = _env_float("TRAIN_ETV_W", 0.1, lo=0.0, hi=1.0)
-
 # Scale for sigmoid soft target (controls sharpness of trade/no-trade boundary)
 EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 10.0, lo=1.0, hi=50.0)
+
+
+def _select_stop_level_pnl(tight, med, wide, iv_feat, vix_feat):
+    """Select stopped P&L level per-bar based on market conditions (IV, VIX).
+
+    Mirrors the dynamic stop formula: stop = BASE * iv_factor * vix_factor.
+    Selects tight/med/wide stopped P&L to match what the dynamic stop would use.
+    """
+    if tight is None or wide is None:
+        return med
+    iv_factor = 1.0 + torch.clamp(iv_feat, min=0.0) * 0.15
+    vix_factor = 1.0 + torch.clamp(vix_feat, min=0.0) * 0.10
+    effective_stop = 0.35 * iv_factor * vix_factor
+    use_tight = effective_stop <= 0.275
+    use_wide = effective_stop >= 0.425
+    result = med.clone()
+    result[use_tight] = tight[use_tight]
+    result[use_wide] = wide[use_wide]
+    return result
 
 
 def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, features,
@@ -375,13 +323,14 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
                 call_stopped_pnl=None, put_stopped_pnl=None,
                 otm5_call_stopped_pnl=None, otm5_put_stopped_pnl=None,
                 otm10_call_stopped_pnl=None, otm10_put_stopped_pnl=None,
-                etv_pred=None):
+                call_stopped_tight=None, call_stopped_wide=None,
+                put_stopped_tight=None, put_stopped_wide=None,
+                ):
     """v5 EV-weighted loss: magnitude-aware gate + return-weighted direction.
 
     Key changes from v4:
     - Gate: soft continuous target from sigmoid(best_stopped_pnl * scale) instead of binary
     - Direction: return-weighted soft targets instead of argmax classification
-    - ETV: MSE regression on expected trade value
     - Uses stopped P&L (with dynamic stops) when available, falls back to unstopped
     """
     B = gate_logits.shape[0]
@@ -430,9 +379,24 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         _safe(otm10_put_pnl),
     ], dim=-1)  # (valid, 6)
 
-    # Stopped P&L — use for targets if available, fall back to unstopped
-    cs_pnl = _safe(call_stopped_pnl) if call_stopped_pnl is not None else c_pnl
-    ps_pnl = _safe(put_stopped_pnl) if put_stopped_pnl is not None else p_pnl
+    # Stopped P&L — multi-level selection based on IV/VIX when available
+    cs_med = _safe(call_stopped_pnl) if call_stopped_pnl is not None else c_pnl
+    ps_med = _safe(put_stopped_pnl) if put_stopped_pnl is not None else p_pnl
+
+    # Select appropriate stop level per-bar using market conditions
+    iv_feat = features[valid, IDX_ATM_IV] if features.shape[-1] > IDX_ATM_IV else torch.zeros_like(c_pnl)
+    vix_feat = features[valid, 5] if features.shape[-1] > 5 else torch.zeros_like(c_pnl)  # idx 5 = vix in feature set
+
+    cs_pnl = _select_stop_level_pnl(
+        _safe(call_stopped_tight) if call_stopped_tight is not None else None,
+        cs_med,
+        _safe(call_stopped_wide) if call_stopped_wide is not None else None,
+        iv_feat, vix_feat)
+    ps_pnl = _select_stop_level_pnl(
+        _safe(put_stopped_tight) if put_stopped_tight is not None else None,
+        ps_med,
+        _safe(put_stopped_wide) if put_stopped_wide is not None else None,
+        iv_feat, vix_feat)
 
     all_stopped_pnl = torch.stack([
         cs_pnl,
@@ -470,12 +434,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     # Only train direction where best option is profitable (gate_soft_target > 0.5)
     trade_mask = best_pnl > 0.0
     if trade_mask.sum() < 2:
-        total = GATE_LOSS_WEIGHT * gate_loss
-        if etv_pred is not None:
-            etv_v = etv_pred[valid]
-            etv_loss = F.mse_loss(etv_v, best_pnl.detach())
-            total = total + ETV_LOSS_WEIGHT * etv_loss
-        return total
+        return GATE_LOSS_WEIGHT * gate_loss
 
     d_logits_trade = d_logits[trade_mask]
     t_feat_trade = t_feat[trade_mask]
@@ -514,15 +473,8 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
             exit_w = sample_weight[exit_mask]
             exit_loss = (exit_loss_vec * exit_w).sum() / exit_w.sum().clamp(min=1e-6)
 
-    # ---- ETV regression loss ----
-    etv_loss = torch.tensor(0.0, device=device)
-    if etv_pred is not None:
-        etv_v = etv_pred[valid]
-        etv_loss = F.mse_loss(etv_v, best_pnl.detach())
-
     total = (GATE_LOSS_WEIGHT * gate_loss + DIR_LOSS_WEIGHT * dir_loss
-             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss
-             + ETV_LOSS_WEIGHT * etv_loss)
+             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss)
     return total
 
 
@@ -600,7 +552,7 @@ if __name__ == "__main__":
     print(f"Dropout: {DROPOUT} | Weight decay: {WEIGHT_DECAY}")
     print(f"False entry penalty: {FALSE_ENTRY_PENALTY}x")
     print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
-    print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}, exit={EXIT_LOSS_WEIGHT}, etv={ETV_LOSS_WEIGHT}")
+    print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}, exit={EXIT_LOSS_WEIGHT}")
     print(f"EV gate scale: {EV_GATE_SCALE}")
     print()
 
@@ -641,12 +593,26 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------
 
     def _unpack_y(y_batch):
-        """Unpack the y tuple from both random and day-sequential loaders."""
-        (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
-         otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
-         supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
-         call_stopped_batch, put_stopped_batch,
-         otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped) = y_batch
+        """Unpack the y tuple from both random and day-sequential loaders.
+
+        Supports both 18-element (v5) and 22-element (v6 multi-level) tuples.
+        """
+        if len(y_batch) >= 22:
+            (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
+             otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+             supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
+             call_stopped_batch, put_stopped_batch,
+             otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped,
+             call_stopped_tight, call_stopped_wide,
+             put_stopped_tight, put_stopped_wide) = y_batch
+        else:
+            (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
+             otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+             supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
+             call_stopped_batch, put_stopped_batch,
+             otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped) = y_batch
+            call_stopped_tight = call_stopped_wide = None
+            put_stopped_tight = put_stopped_wide = None
         return {
             'call_pnl': call_pnl_batch, 'put_pnl': put_pnl_batch,
             'exit_call': exit_call_batch, 'exit_put': exit_put_batch,
@@ -657,33 +623,9 @@ if __name__ == "__main__":
             'call_stopped': call_stopped_batch, 'put_stopped': put_stopped_batch,
             'otm5c_stopped': otm5c_stopped, 'otm5p_stopped': otm5p_stopped,
             'otm10c_stopped': otm10c_stopped, 'otm10p_stopped': otm10p_stopped,
+            'call_stopped_tight': call_stopped_tight, 'call_stopped_wide': call_stopped_wide,
+            'put_stopped_tight': put_stopped_tight, 'put_stopped_wide': put_stopped_wide,
         }
-
-
-    def _compute_loss(model, x, y_dict, position_state=None):
-        """Forward pass + loss computation. Returns (loss, gate_logits, dir_logits, etv)."""
-        gate_logits, dir_logits, etv = model(x, position_state=position_state)
-
-        time_feat = x[:, -1, IDX_MINUTES_TO_CLOSE]
-        batch_features = x[:, -1, :]
-
-        loss = sniper_loss(
-            gate_logits, dir_logits,
-            y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
-            y_dict['exit_call'], y_dict['exit_put'],
-            y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
-            supervision_weight=y_dict['sw'],
-            actionable_mask=y_dict['am'],
-            risk_state_mask=y_dict['rsm'],
-            call_stopped_pnl=y_dict['call_stopped'],
-            put_stopped_pnl=y_dict['put_stopped'],
-            otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
-            otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
-            otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
-            otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
-            etv_pred=etv,
-        )
-        return loss, gate_logits, dir_logits, etv
 
 
     def _update_position_state(position_state, gate_logits, dir_logits, y_dict):
@@ -780,8 +722,30 @@ if __name__ == "__main__":
                 _day_seq_position_state = torch.zeros(x_seq.shape[0], 5, device=device)
                 _day_seq_position_state[:, 3] = 1.0  # account_health = 1.0
 
-            loss, gate_logits, dir_logits, etv = _compute_loss(
-                model, x_seq, y_dict, position_state=_day_seq_position_state)
+            gate_logits, dir_logits = model(x_seq, position_state=_day_seq_position_state)
+
+            time_feat = x_seq[:, -1, IDX_MINUTES_TO_CLOSE]
+            batch_features = x_seq[:, -1, :]
+
+            loss = sniper_loss(
+                gate_logits, dir_logits,
+                y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
+                y_dict['exit_call'], y_dict['exit_put'],
+                y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                supervision_weight=y_dict['sw'],
+                actionable_mask=y_dict['am'],
+                risk_state_mask=y_dict['rsm'],
+                call_stopped_pnl=y_dict['call_stopped'],
+                put_stopped_pnl=y_dict['put_stopped'],
+                otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+                otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
+                otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
+                otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                call_stopped_tight=y_dict.get('call_stopped_tight'),
+                call_stopped_wide=y_dict.get('call_stopped_wide'),
+                put_stopped_tight=y_dict.get('put_stopped_tight'),
+                put_stopped_wide=y_dict.get('put_stopped_wide'),
+            )
 
             # Update position state for next bar
             _day_seq_position_state = _update_position_state(
@@ -789,7 +753,30 @@ if __name__ == "__main__":
         else:
             # Random batch step (original behavior, but with stopped P&L)
             y_dict = _unpack_y(y_batch)
-            loss, gate_logits, dir_logits, etv = _compute_loss(model, x_batch, y_dict)
+            gate_logits, dir_logits = model(x_batch)
+
+            time_feat = x_batch[:, -1, IDX_MINUTES_TO_CLOSE]
+            batch_features = x_batch[:, -1, :]
+
+            loss = sniper_loss(
+                gate_logits, dir_logits,
+                y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
+                y_dict['exit_call'], y_dict['exit_put'],
+                y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                supervision_weight=y_dict['sw'],
+                actionable_mask=y_dict['am'],
+                risk_state_mask=y_dict['rsm'],
+                call_stopped_pnl=y_dict['call_stopped'],
+                put_stopped_pnl=y_dict['put_stopped'],
+                otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+                otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
+                otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
+                otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                call_stopped_tight=y_dict.get('call_stopped_tight'),
+                call_stopped_wide=y_dict.get('call_stopped_wide'),
+                put_stopped_tight=y_dict.get('put_stopped_tight'),
+                put_stopped_wide=y_dict.get('put_stopped_wide'),
+            )
 
         loss.backward()
         if GRAD_CLIP > 0:
@@ -829,13 +816,11 @@ if __name__ == "__main__":
                 p_put = dir_probs[3:].sum().item()
                 p_atm = dir_probs[0].item() + dir_probs[3].item()
                 p_otm = 1.0 - p_atm
-                avg_etv = etv.mean().item() if etv is not None else 0.0
 
             mode = "seq" if use_seq_this_step else "rnd"
             print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
                   f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
-                  f"| ATM:{p_atm:.2f} OTM:{p_otm:.2f} "
-                  f"| etv:{avg_etv:+.3f} [{mode}] "
+                  f"| ATM:{p_atm:.2f} OTM:{p_otm:.2f} [{mode}] "
                   f"| lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
 
         if step == 0:
@@ -898,6 +883,82 @@ if __name__ == "__main__":
             writer.writeheader()
             writer.writerows(trade_log)
         print(f"Trade log: {len(trade_log)} trades -> {log_path}")
+
+    # --- Trade diagnostics (parsed by run_loop.py for agent feedback) ---
+    if trade_log:
+        print("\n=== TRADE DIAGNOSTICS ===")
+
+        # Top 5 best/worst trades
+        sorted_trades = sorted(trade_log, key=lambda t: t.get('pnl_pct', 0))
+        print("\nWorst 5 trades:")
+        for t in sorted_trades[:5]:
+            print(f"  {t.get('date','')} {t.get('entry_time','')} {t.get('direction','')} "
+                  f"{t.get('strike','')} PnL={t.get('pnl_pct',0):+.2%} "
+                  f"hold={t.get('bars_held',0)}bars exit={t.get('exit_reason','')}")
+        print("Best 5 trades:")
+        for t in sorted_trades[-5:]:
+            print(f"  {t.get('date','')} {t.get('entry_time','')} {t.get('direction','')} "
+                  f"{t.get('strike','')} PnL={t.get('pnl_pct',0):+.2%} "
+                  f"hold={t.get('bars_held',0)}bars exit={t.get('exit_reason','')}")
+
+        # Time-of-day breakdown
+        time_buckets = {'Morning(9:30-11:30)': [], 'Lunch(11:30-13:30)': [],
+                        'Afternoon(13:30-15:30)': [], 'PowerHour(15:30-16:00)': []}
+        for t in trade_log:
+            hm = t.get('entry_time', '12:00')
+            try:
+                h, m = int(hm.split(':')[0]), int(hm.split(':')[1])
+                mins = h * 60 + m
+            except (ValueError, IndexError):
+                mins = 720
+            if mins < 690:  # 11:30
+                bucket = 'Morning(9:30-11:30)'
+            elif mins < 810:  # 13:30
+                bucket = 'Lunch(11:30-13:30)'
+            elif mins < 930:  # 15:30
+                bucket = 'Afternoon(13:30-15:30)'
+            else:
+                bucket = 'PowerHour(15:30-16:00)'
+            time_buckets[bucket].append(t.get('pnl_pct', 0))
+
+        print("\nTime-of-day breakdown:")
+        for bucket, pnls in time_buckets.items():
+            if pnls:
+                wins = sum(1 for p in pnls if p > 0)
+                avg = sum(pnls) / len(pnls)
+                print(f"  {bucket}: {len(pnls)} trades, WR={wins/len(pnls):.1%}, avg={avg:+.2%}")
+
+        # Call vs Put breakdown
+        call_pnls = [t.get('pnl_pct', 0) for t in trade_log if 'CALL' in t.get('direction', '')]
+        put_pnls = [t.get('pnl_pct', 0) for t in trade_log if 'PUT' in t.get('direction', '')]
+        print("\nDirection breakdown:")
+        if call_pnls:
+            cw = sum(1 for p in call_pnls if p > 0)
+            print(f"  CALL: {len(call_pnls)} trades, WR={cw/len(call_pnls):.1%}, avg={sum(call_pnls)/len(call_pnls):+.2%}")
+        if put_pnls:
+            pw = sum(1 for p in put_pnls if p > 0)
+            print(f"  PUT:  {len(put_pnls)} trades, WR={pw/len(put_pnls):.1%}, avg={sum(put_pnls)/len(put_pnls):+.2%}")
+
+        # Exit reason breakdown
+        exit_counts = {}
+        for t in trade_log:
+            reason = t.get('exit_reason', 'unknown')
+            exit_counts[reason] = exit_counts.get(reason, 0) + 1
+        print("\nExit reasons:")
+        for reason, count in sorted(exit_counts.items(), key=lambda x: -x[1]):
+            print(f"  {reason}: {count} ({count/len(trade_log):.1%})")
+
+        # Multi-level stop info
+        has_multilevel = any(
+            y_batch[18] is not None if len(y_batch) >= 22 else False
+            for _ in [0]  # dummy loop
+        )
+        if has_multilevel:
+            print("\nStop-loss alignment: MULTI-LEVEL (tight/med/wide selected by IV+VIX)")
+        else:
+            print("\nStop-loss alignment: SINGLE-LEVEL (med only)")
+
+        print("=== END DIAGNOSTICS ===")
 
     t_end = time.time()
     peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else 0.0

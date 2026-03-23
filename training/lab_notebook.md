@@ -1,26 +1,8 @@
 # Lab Notebook
 
 ## System
-SPX 0DTE | 3-output gate+dir+etv (v5) | 32 features (v2) | 5-dim position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
-
-### v5 Architecture Changes (from v4)
-- **EV-weighted loss**: Gate uses sigmoid(best_stopped_pnl * scale) instead of binary classification. Direction uses return-weighted soft targets instead of argmax.
-- **ETV head**: Expected Trade Value regression head (1 linear layer, 65 params). Predicts P&L magnitude.
-- **Stopped P&L labels**: Training labels now include dynamic stop (DYNAMIC_STOP_BASE=0.35) matching evaluation reality.
-- **Day-sequential batching**: 70% sequential bars within days (carrying real position state), 30% random.
+SPX 0DTE | 2-head gate+dir (v4) | 32 features (v2) | 5-dim position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
 - **Score config LOCKED**: _score_config is hardcoded, mutation-guarded in run_loop.py.
-
-## Causal Exit Labels
-Exit labels use backward-only signals only (no future peek):
-- **Trailing stop**: exit when P&L drops >50% from high-water mark (HWM must be >5%)
-- **Momentum stall**: exit when P&L is positive but hasn't improved in 10 bars
-
-## Account-Aware Scoring
-$10,000 starting account with affordability checks and ruin detection.
-- **Scaled position sizing**: n_contracts = max(1, floor(balance * 0.05 / contract_cost)). Always whole contracts, scales with account growth.
-- Ruin = equity below 25% of starting capital → score floor -5.0
-- Risk fraction penalty: avg trade cost > 30% of account → multiplicative penalty
-- Position state dims 3-4: account_health, loss_streak_frac
 
 ## What Fails (do NOT retry)
 | Pattern | Attempts | Result |
@@ -36,26 +18,38 @@ $10,000 starting account with affordability checks and ruin detection.
 | Explicit temporal/recency weighting in loss | 0/10 | TEMPORAL_CONSISTENCY_WEIGHT, TEMPORAL_ROBUSTNESS_WEIGHT, TEMPORAL_RECENCY_WEIGHT all failed to beat baseline |
 | Rewriting exit label computation | 0/3 | Changing trailing/stall thresholds destabilized training; scores went negative |
 | Tuning _score_config values (drawdown_penalty, hold_bonus, rr_bonus, etc.) | 0/7 | Games the evaluation metric without improving model — score inflates while PF/TPD stay flat. Score config is now LOCKED. |
+| STOPPED_PNL_WEIGHT as additional loss term | 0/9 | Adding stopped P&L as extra loss creates conflicting gradients with raw P&L. All 9 attempts degraded PF from 3.42 to 1.2-1.8. The correct fix (now applied) is to REPLACE raw P&L with stopped P&L, not add it alongside. |
 
 ## Best Runs
 | Run | Score | PF | TPD | Key Change |
 |-----|-------|----|-----|------------|
-| v4 #52 | 1.77 | 3.42 | 1.3 | BalancedStrikeGate module (v4 baseline) |
+| (fresh start — architecture cleaned: removed BalancedStrikeGate, ETV head, OTM bias. ATM-favoring init.) | — | — | — | — |
 
 ## Dead Ends
 | Change | Result | Why |
 |--------|--------|-----|
+| WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.08, lo=0.0 | score=6.09 | score_not_improved |
+| print(f"Architecture: v4 simplified two-head (gate+dir) + ba | score=5.96 | score_not_improved |
+| minor change | score=-1.56 | score_not_improved |
+| PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.4, lo=0.0 | score=-10.00 | score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_to |
+| actionable_mask=y_dict['am'],; otm10_call_stopped_pnl=y_dict | score=-10.00 | score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_to |
+| PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.1, lo=0.0 | score=-10.00 | score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_to |
+| PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0 | score=-10.00 | score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_to |
+| PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.2, lo=0.0 | score=-2.32 | score_not_improved |
+| self.gate_head[-1].bias[0] -= 0.2   # NO_TRADE (reduced from | score=-0.33 | score_not_improved |
+| COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.4, lo= | score=-10.00 | score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_to |
 
 ## Next Priorities
-- Beat the current best score (1.77). The agent is free to explore any approach.
-- v5 has EV-weighted loss, stopped P&L labels, ETV head, and day-sequential batching. Focus on tuning loss weights and training dynamics.
-- Per-chunk PF and win rate are now visible in training output — use them to evaluate temporal consistency.
-- The score formula is locked — improve TRADING BEHAVIOR (PF, win rate, drawdown), not the scorer.
+Beat the current best score by improving TRADING BEHAVIOR (PF, win rate, drawdown).
+Explore these directions (pick ONE coherent hypothesis per experiment):
+- Loss weight scheduling (ramp gate_w, dir_w, pnl_w across training epochs)
+- Sample weighting (weight morning trades higher, or weight by VIX regime)
+- Learning rate schedule (cosine decay, OneCycle, warmup/cooldown ratio changes)
+- Gate head bias initialization (tune the NO_TRADE vs TRADE prior)
+- Feature noise strategies (targeted noise on volatile features vs stable ones)
+- Batch construction (change DAY_SEQ_RATIO, mine hard examples)
+- Creative _env_float combinations not yet tried (check Dead Ends first)
+Use the trade diagnostics printed at the end of training to identify the
+WEAKEST area, then target that specific weakness.
+Do NOT repeat approaches from Dead Ends or What Fails.
 
-## What Works (proven across 95+ experiments)
-1. **BalancedStrikeGate module** — best architecture so far. Modulates dir_logits based on account_health, biasing toward cheaper OTM when stressed. Score 1.77, PF 3.42.
-2. **Symmetric ATM penalty** — penalize BOTH CALL_ATM and PUT_ATM equally (-0.25 each). Foundation since exp-3.
-3. **OTM5 bias > OTM10** — OTM5 hits sweet spot of affordability and payoff. OTM10 too cheap (low delta).
-4. **NO_TRADE gate bias +0.5** — selectivity is the foundation. Every kept model uses this.
-5. **Lower learning rate (1.5e-4)** — halved from 3e-4, improved convergence. Score jumped 21%.
-6. **Bias tuning on existing heads** — consistently outperforms adding new modules.

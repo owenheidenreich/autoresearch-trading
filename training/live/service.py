@@ -420,7 +420,9 @@ class PaperTradingService:
                                 "reason_codes": list(inference.reason_codes),
                             },
                         )
-                        if exec_engine.flatten_position(current_position_id, reason="model_exit"):
+                        exit_state = exec_engine.positions.get(current_position_id)
+                        exit_mid = resolver.quote_mid(exit_state.contract, timeout_s=0.2) if exit_state else None
+                        if exec_engine.flatten_position(current_position_id, reason="model_exit", exit_price=exit_mid):
                             counters["exits_applied"] += 1
                             self._audit(
                                 "model_exit",
@@ -428,6 +430,8 @@ class PaperTradingService:
                                     "session_id": session_id,
                                     "decision_id": decision_id,
                                     "position_id": current_position_id,
+                                    "exit_price": exit_mid,
+                                    "realized_pnl_pct": round(exec_engine.realized_pnl_pct, 4),
                                 },
                             )
                             current_position_id = None
@@ -476,8 +480,19 @@ class PaperTradingService:
                 ib.sleep(self.cfg.poll_sleep_seconds)
         finally:
             if current_position_id is not None:
-                exec_engine.flatten_position(current_position_id, reason="eod_flatten")
-                self._audit("eod_flatten", {"position_id": current_position_id})
+                eod_state = exec_engine.positions.get(current_position_id)
+                eod_mid = None
+                try:
+                    if eod_state and ib.isConnected():
+                        eod_mid = resolver.quote_mid(eod_state.contract, timeout_s=0.5)
+                except Exception:
+                    pass
+                exec_engine.flatten_position(current_position_id, reason="eod_flatten", exit_price=eod_mid)
+                self._audit("eod_flatten", {
+                    "position_id": current_position_id,
+                    "exit_price": eod_mid,
+                    "realized_pnl_pct": round(exec_engine.realized_pnl_pct, 4),
+                })
             stream.close()
             if ib.isConnected():
                 ib.disconnect()
