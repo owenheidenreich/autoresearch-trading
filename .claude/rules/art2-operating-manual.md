@@ -2,6 +2,15 @@
 
 This is the single authoritative reference for ART². If anything conflicts with this file, this file wins.
 
+## 0. Time Awareness (MANDATORY)
+
+**Before any ART² operation**, run `python3 tools/art2.py time` to establish correct time context. Never trust metadata dates — always check the real clock.
+
+- The **user is in Pacific Time (PT)**. All communication should reference PT.
+- The **market runs on Eastern Time (ET)**. All market logic uses ET internally.
+- Market hours: **9:30 AM - 4:00 PM ET** (6:30 AM - 1:00 PM PT).
+- Do NOT assume the date from system metadata. The `time` subcommand is the source of truth.
+
 ## 1. Mission
 
 Build a profitable SPX 0DTE **long options** trading bot. Paper trading P&L on IBKR is ground truth — not training score, not backtest PF. Every decision must trace back to improving live paper trading results.
@@ -16,28 +25,54 @@ SETUP → TRAIN → TEARDOWN → ANALYZE → RESEARCH → IMPROVE → DOCUMENT �
 
 ### Phase 1: SETUP
 - Preflight: syntax check train.py, validate data.pt contract, check API budget
-- IBKR compatibility gate: model exists, checkpoint shapes (gate=2, dir=6), 32 features, IBKR probe
+- IBKR compatibility gate: model exists, checkpoint shapes (gate=2, dir=6, value=1), 37 features (v3), 7-dim position state, IBKR probe
 - Duration sizing: improving (90 min) / stable (65 min) / stuck (40 min) / after fix (65 min fresh)
-- Fresh-start vs warm-start decision (see docs/CLAUDE.md "Warm-Start vs Fresh-Start Rules")
+- Fresh-start vs warm-start decision (see docs/reference.md "Warm-Start vs Fresh-Start")
 - Verify `.best_score` and promoted history are clean (no inflated baselines)
 
 ### Phase 2: TRAIN
-- Deploy to Akash H100 via `python3 tools/art2.py train --minutes M`
-- Inner loop (Sonnet) mutates train.py → trains → scores → keeps or reverts
-- Monitor via `./infra/deploy.sh status` or `tools/monitor.py` (localhost:8420)
-- Auto-sync downloads results as experiments complete
+Opus IS the loop. No API costs — uses Max subscription Sonnet agents.
+
+**Architecture:** Opus (strategist) → Sonnet agent (code writer) → inner_loop.py (mechanical)
+
+**Flow per experiment:**
+1. Opus reads history.jsonl + metrics, diagnoses trading behavior
+2. Opus calls Sonnet agent with: program.md, current train.py, last N results, specific hypothesis
+3. Sonnet proposes targeted edits to train.py (not full rewrites)
+4. `inner_loop.py experiment --mutation FILE --summary "hypothesis"` — atomic:
+   - Validates (syntax + safety)
+   - Backs up train.py, applies mutation (--mutation optional; omit for baseline)
+   - Uploads train.py + best_model.pt to Akash (ensures warm start uses correct weights)
+   - Runs training, downloads model to temp file
+   - Parses METRICS_JSON + trade diagnostics
+   - Scores (anomaly detection + score comparison)
+   - **KEEP:** promotes model_candidate.pt → best_model.pt, train.py → best_train.py, updates .best_score (all three always in sync)
+   - **REVERT:** restores train.py from backup, best_model.pt unchanged
+   - Writes status.json + experiments.v2.jsonl (monitor.py compatible)
+5. Opus reads result JSON, reasons about trading behavior, loops to step 1
+
+**Setup:**
+- Deploy Akash GPU: `./infra/deploy.sh boot && ./infra/deploy.sh start` (compute only)
+- Initialize run: `python3 tools/inner_loop.py init`
+- Monitor: `python3 tools/monitor.py` (localhost:8420)
+
+**Key files:**
+- `tools/inner_loop.py` — mechanical layer (SSH, validation, scoring)
+- `training/run_loop.py` — utility library (validation functions, anomaly detection)
+- `training/program.md` — contract (injected into Sonnet's prompt by Opus)
 
 ### Phase 3: TEARDOWN
 - `./infra/deploy.sh stop -y` — downloads results, stops Akash lease
 - **CRITICAL:** deploy.sh stop will NOT overwrite train.py if it has uncommitted local changes
 - Record API spend to cycle artifacts
-- Verify best_model.pt was downloaded (if not, restore from backup)
+- Verify best_model.pt exists and matches best_train.py (both updated only on KEEP)
 
 ### Phase 4: ANALYZE
 - `python3 tools/art2.py analyze` — parse experiments.v2.jsonl, collect metrics
 - `python3 tools/art2.py replay` — backtest best_model.pt, get trade-level output
 - `python3 tools/art2.py diagnose` — compare training vs replay metrics
-- **Red flags:** PF diverges >20%, stop rate diverges >10%, tunnel vision (>80% same approach)
+- `python3 tools/art2.py ibkr-analyze` — parse IBKR paper trading audit, produce metrics for briefing
+- **Red flags:** PF diverges >20%, stop rate diverges >10%, tunnel vision (>80% same approach), IBKR-vs-replay divergence
 
 ### Phase 4.5: RESEARCH
 - `python3 tools/art2.py research` — deep analysis of replay trade data against domain knowledge
@@ -46,12 +81,25 @@ SETUP → TRAIN → TEARDOWN → ANALYZE → RESEARCH → IMPROVE → DOCUMENT �
 - Output: `research.json` + `research.md` in cycle directory
 - **Deep research is REQUIRED before every strategic change.** Every hypothesis must cite specific domain knowledge.
 
+### Phase 4.7: VIABILITY
+- `python3 tools/art2.py viability` — structured profitability assessment ("Can this model make money?")
+- Runs validation-only AND full-period backtests, then computes:
+  - Train/val split comparison (overfit detection, PF divergence)
+  - Survivorship concentration (top-N trades as % of total profit)
+  - Direction & strike diversity (one-dimensional trading detection)
+  - Statistical significance (t-test on trade P&Ls, 95% CI)
+  - Exit quality breakdown (model_exit vs stop_loss vs max_hold)
+  - Time-of-day P&L decomposition
+- Output: `viability.json` + `viability.md` in cycle directory
+- Verdict: VIABLE / PROMISING / INCONCLUSIVE / NOT VIABLE (with confidence level)
+- Included in the briefing (Section 2.7) so Opus sees the verdict when making strategic decisions
+
 ### Phase 5: IMPROVE
 - Read the briefing (`results/art2/cycle-NNN/briefing.md`) which now includes research findings
-- Make **ONE** strategic change per cycle. No compounding changes.
-- The change must be grounded in research findings and domain knowledge
+- **Multiple strategic changes are allowed per cycle** when they address independent concerns (e.g., fixing exit loss + adding position state to random batches). Use judgment: if changes interact or compound risk, split them across cycles. Log the rationale for bundling.
+- Each change must be grounded in research findings and domain knowledge
 - Apply the Repair-Over-Workaround Policy (see Section 6)
-- Log decision + rationale to `cycle-NNN/decision.md`
+- Log all decisions + rationale to `cycle-NNN/decision.md`
 
 ### Phase 6: DOCUMENT
 - **REQUIRED after every cycle.** Two types of documentation are maintained:
@@ -60,12 +108,10 @@ SETUP → TRAIN → TEARDOWN → ANALYZE → RESEARCH → IMPROVE → DOCUMENT �
 - Update project-level docs that were affected by this cycle's changes:
   - `docs/project-chronicle.md` — **always** update with narrative chronicle entry (auto-handled by art2.py)
   - `docs/ARCHITECTURE.md` — if architecture, pipeline, or data flow changed
-  - `docs/art2.md` — if subcommands, decision tree, or state management changed
-  - `docs/CLAUDE.md` — if key files, constants, design rules, or lessons learned changed
+  - `docs/reference.md` — if key files, constants, subcommands, design rules, or daily pipeline changed
   - `docs/art2-notebook.md` — always update with cycle decision + outcome
   - `training/lab_notebook.md` — always update dead ends + best runs
   - `training/program.md` — if model contract, loss policy, or constraints changed
-  - `docs/daily-pipeline.md` — if daily automation was modified
 - Documentation must be accurate to the current codebase. Stale docs are worse than no docs.
 - Keep docs concise. Update what changed, don't rewrite what didn't.
 
@@ -91,9 +137,10 @@ SETUP → TRAIN → TEARDOWN → ANALYZE → RESEARCH → IMPROVE → DOCUMENT �
 **Consults:** Domain knowledge files when diagnosing model behavior or proposing changes
 **Prohibited:** Modifying run_loop.py safety checks, score formula (_score_config)
 
-### Inner Loop — Sonnet via run_loop.py
+### Inner Loop — Sonnet via Claude Code Agent
 **Owns:** train.py hyperparameters and training dynamics only (within the guardrails set by program.md)
-**Decides:** _env_float values (LR, DROPOUT, WEIGHT_DECAY, etc.), bias tuning, sample weighting
+**Role:** Code writer, not strategist. Receives specific hypothesis from Opus, outputs targeted edits.
+**Decides:** How to implement Opus's hypothesis in train.py (_env_float values, bias tuning, sample weighting)
 **Prohibited:** New nn.Module subclasses, new loss terms, architecture changes, score formula changes
 
 ### Mechanical Layer — art2.py
@@ -111,7 +158,7 @@ When diagnosing model behavior, evaluating feature gaps, or proposing strategic 
 - **Gamma:** ATM 0.02-0.04 morning, spikes to 0.10-0.20 by 3pm. The 0DTE opportunity AND risk.
 - **Time-of-day:** 9:35-10:30 strongest trends. 11:30-13:30 lunch chop (avoid). 15:30+ extreme gamma.
 - **VIX regimes:** <15 tight ranges, 15-20 normal, 20-30 wide stops, >30 crisis. TRANSITIONS most dangerous.
-- **Exits > Entries:** The edge is in exit timing. Gate head must learn when to take profits.
+- **Exits > Entries:** The edge is in exit timing. Gate head + value head cooperate on exits.
 - **ATM preferred:** OTM backtest cumulative -601%. ATM has highest gamma, most responsive.
 - **"Always take profits off the table"** — Pickles' Holy Gospel. The model must learn this.
 - **Charm flows (afternoon):** Delta decays via time, dealers unwind hedges. Creates predictable PM flows.
@@ -152,17 +199,16 @@ Project docs must always reflect the current state of the codebase. Stale docume
 |-----|---------------|------|
 | `docs/project-chronicle.md` | Human-readable narrative chronicle entry | **Every cycle** (auto via art2.py) |
 | `docs/ARCHITECTURE.md` | System diagrams, data flow, component descriptions | Architecture/pipeline changes |
-| `docs/art2.md` | Subcommands, decision tree, state management | ART² tooling changes |
-| `docs/CLAUDE.md` | Key files, constants, design rules, lessons learned | Any significant change |
+| `docs/reference.md` | Key files, constants, subcommands, design rules, daily pipeline | Any significant change |
 | `docs/art2-notebook.md` | Strategic changes tried, paper P&L, dead ends | Every cycle |
 | `training/lab_notebook.md` | Best runs, dead ends, next priorities | Every cycle |
 | `training/program.md` | Model contract, loss policy, constraints | Inner loop constraint changes |
-| `docs/daily-pipeline.md` | Daily automation stages, schedules | Pipeline changes |
 | `.claude/rules/art2-operating-manual.md` | Lifecycle, roles, policies | Process changes |
 
 ### Per-Cycle Artifacts (in `results/art2/cycle-NNN/`)
 - `analysis.json` — structured metrics from the training run
 - `research.json` + `research.md` — trade-level analysis vs domain knowledge
+- `viability/viability.json` + `viability.md` — profitability assessment with verdict
 - `briefing.md` — generated report for strategic decision
 - `decision.md` — the strategic decision with rationale
 - `review.md` — human-readable review summary (generated during REVIEW phase)
@@ -175,7 +221,7 @@ Project docs must always reflect the current state of the codebase. Stale docume
 
 ### Rules
 - No silent changes. Every modification has a written rationale.
-- One strategic change per cycle. No compounding (impossible to attribute improvement).
+- Multiple strategic changes per cycle allowed when addressing independent concerns. Log rationale for bundling.
 - Full audit trail. Every experiment preserved in `results/`.
 - **Documentation is not optional.** Phase 6 (DOCUMENT) runs after every IMPROVE phase.
 - **Human review is not optional.** Phase 7 (REVIEW) pauses the daemon for human approval before every training run.
@@ -195,6 +241,11 @@ Project docs must always reflect the current state of the codebase. Stale docume
 | Check deployment | `./infra/deploy.sh status` |
 | Monitor dashboard | `python3 tools/monitor.py` (localhost:8420) |
 | Replay backtest | `python3 training/replay.py --backtest --model training/best_model.pt` |
+| Viability check | `python3 tools/art2.py viability` |
+| IBKR session analysis | `python3 tools/art2.py ibkr-analyze --report` |
 | Rebuild data.pt | `python3 training/prepare.py` |
-| Subcommand reference | `docs/art2.md` |
+| Subcommand reference | `docs/reference.md` |
 | Domain knowledge | `docs/0dte-domain-knowledge.md`, `docs/pickles-trading-knowledge.md` |
+| Init experiment run | `python3 tools/inner_loop.py init` |
+| Run experiment | `python3 tools/inner_loop.py experiment --summary "hypothesis"` (--mutation FILE optional) |
+| Check run status | `python3 tools/inner_loop.py status` |

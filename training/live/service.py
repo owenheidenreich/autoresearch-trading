@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import logging
 import math
 import os
+import time
 from dataclasses import dataclass
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from ib_insync import IB, Index, Stock
+
+_log = logging.getLogger(__name__)
 
 from training.prepare import ACTION_DO_NOTHING, FEATURE_NAMES
 from training.live.context import LIVE_CONTEXT_DIR, load_latest_context_bundle, refresh_context_bundle
@@ -43,6 +47,9 @@ class PaperLiveConfig:
     max_minutes: int | None = None
 
 
+STALE_BAR_TIMEOUT_S = 120  # seconds without new 5s bars before reconnecting
+
+
 class IBKRMarketStream:
     """IBKR real-time stream using 5-second bars + option top-of-book/Greeks."""
 
@@ -54,8 +61,14 @@ class IBKRMarketStream:
         self.rt_index: dict[str, int] = {}
         self.option_contracts: dict[str, Any] = {}
         self.option_tickers: dict[str, Any] = {}
+        self._last_bar_wall_time: float = time.monotonic()
+        self._spx_seed_price: float = 0.0
 
     def subscribe(self, spx_seed_price: float) -> None:
+        self._spx_seed_price = spx_seed_price
+        self._subscribe_inner(spx_seed_price)
+
+    def _subscribe_inner(self, spx_seed_price: float) -> None:
         spx = Index("SPX", "CBOE", "USD")
         spy = Stock("SPY", "ARCA", "USD")
         vix = Index("VIX", "CBOE", "USD")
@@ -70,12 +83,42 @@ class IBKRMarketStream:
             label = ACTION_TO_SPEC[action].label
             self.option_contracts[label] = contract
             self.option_tickers[label] = self.ib.reqMktData(contract, "100,101,104,106", False, False)
+        self._last_bar_wall_time = time.monotonic()
+
+    def resubscribe(self) -> None:
+        """Cancel all existing subscriptions and re-subscribe."""
+        _log.warning("Resubscribing realtime bars (stale connection detected)")
+        # Cancel existing realtime bar subscriptions
+        for sym, bar_list in self.rt_lists.items():
+            try:
+                self.ib.cancelRealTimeBars(bar_list)
+            except Exception:
+                pass
+        # Cancel existing market data subscriptions
+        for label, ticker in self.option_tickers.items():
+            try:
+                self.ib.cancelMktData(ticker.contract)
+            except Exception:
+                pass
+        self.rt_lists.clear()
+        self.rt_index.clear()
+        self.option_contracts.clear()
+        self.option_tickers.clear()
+        self.agg = FiveSecondMinuteAggregator()
+        self._subscribe_inner(self._spx_seed_price)
+
+    @property
+    def is_stale(self) -> bool:
+        """True if no new 5-second bars have arrived within the timeout."""
+        return (time.monotonic() - self._last_bar_wall_time) > STALE_BAR_TIMEOUT_S
 
     def poll(self) -> dict[str, Any] | None:
+        got_new = False
         for sym, bar_list in self.rt_lists.items():
             start = self.rt_index[sym]
             if len(bar_list) <= start:
                 continue
+            got_new = True
             new_bars = bar_list[start:]
             self.rt_index[sym] = len(bar_list)
             for b in new_bars:
@@ -88,6 +131,9 @@ class IBKRMarketStream:
                     float(b.close),
                     float(b.volume),
                 )
+
+        if got_new:
+            self._last_bar_wall_time = time.monotonic()
 
         completed = self.agg.pop_completed()
         if not completed:
@@ -218,20 +264,11 @@ class PaperTradingService:
                 f"context={bundle.feature_contract_version}, model={decision.feature_contract_version}"
             )
         context_features = int(bundle.raw_features.shape[1]) if bundle.raw_features.ndim == 2 else 0
-        if context_features < decision.num_features:
+        if context_features != decision.num_features:
             raise RuntimeError(
-                "Context feature width is too small for checkpoint: "
-                f"context={context_features}, model={decision.num_features}. "
-                "Refresh context with the matching feature contract."
-            )
-        if context_features > decision.num_features:
-            self._audit(
-                "feature_projection",
-                {
-                    "context_num_features": context_features,
-                    "model_num_features": decision.num_features,
-                    "mode": "truncate_context_to_model",
-                },
+                f"Context bundle feature width ({context_features}) does not match "
+                f"model ({decision.num_features}). The context bundle is stale and must "
+                f"be refreshed: python3 tools/paper_live.py --context-only"
             )
 
         ib = IB()
@@ -293,6 +330,16 @@ class PaperTradingService:
 
                 pkt = stream.poll()
                 if pkt is None:
+                    if stream.is_stale:
+                        self._audit("stream_reconnect", {
+                            "reason": "stale_bars",
+                            "seconds_since_last_bar": round(time.monotonic() - stream._last_bar_wall_time, 1),
+                        })
+                        _log.warning("No bars for %ds — reconnecting", STALE_BAR_TIMEOUT_S)
+                        if not ib.isConnected():
+                            ib.disconnect()
+                            ib.connect(self.cfg.host, self.cfg.port, clientId=self.cfg.client_id, timeout=20)
+                        stream.resubscribe()
                     ib.sleep(self.cfg.poll_sleep_seconds)
                     continue
 
@@ -369,8 +416,11 @@ class PaperTradingService:
                 )
 
                 if current_position_id is None:
+                    # bar_of_day = minutes since 9:30 AM ET (market open), not since session start
+                    market_open_et = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+                    real_bar_of_day = max(0, int((now_et - market_open_et).total_seconds() // 60))
                     intent = decision.build_entry_intent(inference, resolver, latest_spx, snap.latest_raw_row,
-                                                         bar_of_day=processed)
+                                                         bar_of_day=real_bar_of_day)
                     if intent is not None:
                         intent_seq += 1
                         intent.decision_id = decision_id
@@ -439,7 +489,7 @@ class PaperTradingService:
                         state = exec_engine.positions.get(current_position_id)
                         if state and state.status == "OPEN":
                             mid = resolver.quote_mid(state.contract, timeout_s=0.2)
-                            update = decision.build_risk_update_intent(state, mid, snap.latest_raw_row)
+                            update = decision.build_risk_update_intent(state, mid, snap.latest_raw_row, feature_window=snap.normalized_window)
                             if update is not None:
                                 intent_seq += 1
                                 update.decision_id = decision_id

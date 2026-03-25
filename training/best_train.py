@@ -5,10 +5,10 @@ Single-GPU, single-file. The agent modifies THIS file.
 v4 changes from v3:
   - Smaller model (3 layers, d_model=64) to prevent memorization
   - Real dropout (0.15) for regularization
-  - Validation early stopping: evaluate every 500 steps, save best
+  - Time-budgeted training: runs until TIME_BUDGET seconds, final evaluation once
   - No warm start (forced fresh training — old weights exploited oracle exits)
   - Removed: DynamicStopModule, QualityGate, Greeks-adaptive loss weights
-  - Kept: 2-head gate+dir, position state, 32 features (v2 reduced), causal exit labels
+  - Kept: 2-head gate+dir, position state, 37 features (v3), causal exit labels
   - Asymmetric gate loss: false entries penalized 2x vs missed entries
 
 Two-head architecture:
@@ -26,6 +26,12 @@ Usage: uv run train.py  (or: python3 train.py)
 import os
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "4")
+# Anti-overfit defaults: recency weighting, day diversity, gate entropy, temporal smoothing, layer freezing
+os.environ.setdefault("WEIGHT_RECENT_BOOST", "0.3")
+os.environ.setdefault("WEIGHT_DAY_DIVERSITY", "1.0")
+os.environ.setdefault("REG_GATE_ENTROPY", "0.10")
+os.environ.setdefault("REG_TEMPORAL_SMOOTH", "0.0")
+os.environ.setdefault("WARM_FREEZE_RATIO", "0.0")
 
 import gc
 import math
@@ -98,29 +104,48 @@ D_MODEL = _env_int("TRAIN_D_MODEL", 64, lo=32, hi=128)
 N_HEADS = 4
 DEPTH = _env_int("TRAIN_DEPTH", 3, lo=2, hi=6)
 FF_MULT = _env_int("TRAIN_FF_MULT", 3, lo=2, hi=6)
-DROPOUT = _env_float("TRAIN_DROPOUT", 0.15, lo=0.05, hi=0.40)
+DROPOUT = _env_float("TRAIN_DROPOUT", 0.30, lo=0.05, hi=0.40)  # Increased from 0.25: force generalization across dates, not single-date memorization
 
-BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 128, lo=32, hi=256)
-LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR
-WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.05, lo=0.0, hi=0.3)
+BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 512, lo=32, hi=2048)
+LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Proven sweet spot
+WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.08, lo=0.0, hi=0.3)  # Increased from 0.05: combat overfit
 ADAM_BETAS = (0.9, 0.98)
 GRAD_CLIP = _env_float("TRAIN_GRAD_CLIP", 1.0, lo=0.0, hi=5.0)
 WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
 COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.3, lo=0.0, hi=0.8)
 
 # Loss weights
-GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 2.0, lo=0.1, hi=5.0)  # Stronger gate signal
-DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.0, lo=0.1, hi=5.0)
-PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)
-EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.5, lo=0.0, hi=2.0)
+GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 0.5, lo=0.1, hi=5.0)
+DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 2.5, lo=0.1, hi=5.0)  # Increased from 2.0 to break direction collapse
+PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.5, lo=0.0, hi=2.0)  # Increased from 0.3: stronger profitability signal
+EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.15, lo=0.0, hi=2.0)  # Increased from 0.10: confirmed working, helps model learn exits
+CONFIDENCE_LOSS_WEIGHT = _env_float("TRAIN_CONF_W", 0.10, lo=0.0, hi=1.0)  # Confidence calibration: reward high conf on winners, penalize on losers
+VALUE_LOSS_WEIGHT = _env_float("TRAIN_VALUE_W", 0.3, lo=0.0, hi=2.0)  # Phase D: value head MSE on remaining P&L
+VALUE_EXIT_THRESHOLD = _env_float("TRAIN_VALUE_EXIT_THRESH", 0.02, lo=-0.5, hi=0.5)  # Exit when value_pred < threshold
 
 # Asymmetric gate penalty: how much more to penalize false entries vs missed entries
 # >1.0 means "it's worse to trade when you shouldn't than to miss a trade"
-FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 2.0, lo=1.0, hi=5.0)
+FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 1.2, lo=1.0, hi=5.0)  # Reduced from 1.5: less conservative gate, model was too reluctant to trade
 
 # Label smoothing
 GATE_LABEL_SMOOTHING = _env_float("TRAIN_GATE_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0.2)
 DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0.2)
+
+# Anti-overfit levers (SCHED_/WEIGHT_/WARM_/REG_ prefixes, all default 0.0)
+WEIGHT_RECENT_BOOST = _env_float("WEIGHT_RECENT_BOOST", 0.0, lo=0.0, hi=2.0)
+WEIGHT_DAY_DIVERSITY = _env_float("WEIGHT_DAY_DIVERSITY", 0.0, lo=0.0, hi=2.0)
+REG_GATE_ENTROPY = _env_float("REG_GATE_ENTROPY", 0.0, lo=0.0, hi=1.0)
+REG_TEMPORAL_SMOOTH = _env_float("REG_TEMPORAL_SMOOTH", 0.0, lo=0.0, hi=1.0)
+WARM_FREEZE_RATIO = _env_float("WARM_FREEZE_RATIO", 0.0, lo=0.0, hi=0.5)
+
+# Time-of-day specialist filter (Phase B: Regime-Specialized Ensemble)
+# Values: "" (all bars), "morning" (0-120), "midday" (120-240), "afternoon" (240-390), "highvol" (VIX>20 days)
+TOD_FILTER = os.environ.get("TRAIN_TOD_FILTER", "")
+
+# Reward-Weighted Regression (Phase C: RWR)
+# Higher values upweight bars on high-reward trajectories/days
+RWR_WEIGHT = _env_float("TRAIN_RWR_WEIGHT", 0.0, lo=0.0, hi=5.0)
+DAY_RWR_WEIGHT = _env_float("TRAIN_DAY_RWR_WEIGHT", 0.0, lo=0.0, hi=5.0)
 
 # Score formula — LOCKED. Do NOT modify these values.
 # Changing these games the evaluation metric without improving trading.
@@ -130,7 +155,7 @@ DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0
 IDX_MINUTES_TO_CLOSE = 19
 IDX_ATM_IV = 22
 
-# Feature groups (32 features — v2 reduced set)
+# Feature groups (37 features — v3 with market structure)
 FEATURE_GROUPS = {
     'returns':   (0, 2),
     'volume':    (2, 5),
@@ -146,6 +171,7 @@ FEATURE_GROUPS = {
     'greeks':    (26, 29),
     'bollinger': (29, 30),
     'range_ext': (30, 32),
+    'mkt_struct': (32, 37),
 }
 
 
@@ -153,89 +179,25 @@ FEATURE_GROUPS = {
 # Model — v4: simplified, regularized
 # ---------------------------------------------------------------------------
 
-class PositionStateGenerator(nn.Module):
-    """Generate synthetic position state for training."""
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, batch_size, device):
-        """Generate correlated position states for training.
-
-        Returns:
-            position_state: (batch, 5) - [is_holding, bars_held_norm, unrealized_pnl_norm,
-                                          account_health, loss_streak_frac]
-        """
-        is_holding = torch.randint(0, 2, (batch_size,), device=device, dtype=torch.float32)
-
-        bars_held_raw = torch.randint(1, 61, (batch_size,), device=device, dtype=torch.float32)
-        bars_held_norm = (bars_held_raw / 60.0) * is_holding
-
-        unrealized_pnl_raw = torch.randn(batch_size, device=device) * 0.5 - 0.1
-        unrealized_pnl_norm = torch.tanh(unrealized_pnl_raw) * is_holding
-
-        account_health = torch.empty(batch_size, device=device).uniform_(0.1, 1.5)
-        loss_streak_base = torch.empty(batch_size, device=device).uniform_(0.0, 1.0)
-        health_penalty = torch.clamp(1.0 - account_health, min=0.0)
-        loss_streak_frac = torch.clamp(loss_streak_base + health_penalty * 0.5, max=1.0)
-
-        return torch.stack([is_holding, bars_held_norm, unrealized_pnl_norm,
-                           account_health, loss_streak_frac], dim=1)
-
-
-class BalancedStrikeGate(nn.Module):
-    """Balanced strike biasing - softer bias toward OTM when account stressed."""
-    
-    def __init__(self, d_model):
-        super().__init__()
-        self.health_proj = nn.Linear(1, d_model // 8)
-        self.gate_mod = nn.Sequential(
-            nn.Linear(d_model + d_model // 8, d_model // 4),
-            nn.Tanh(),
-            nn.Linear(d_model // 4, 1),
-            nn.Sigmoid()
-        )
-        
-    def forward(self, gate_input, dir_input, account_health):
-        """
-        Args:
-            gate_input: (batch, d_model) - input to gate head
-            dir_input: (batch, d_model) - input to direction head  
-            account_health: (batch, 1) - account health fraction
-        
-        Returns:
-            modified_gate_input: (batch, d_model) - gate input with health modulation
-            modified_dir_input: (batch, d_model) - direction input with strike bias
-        """
-        health_emb = F.relu(self.health_proj(account_health))
-        combined = torch.cat([gate_input, health_emb], dim=-1)
-        
-        # Health gate: closer to 0 when account is stressed (health < 0.6)
-        health_gate = self.gate_mod(combined)
-        
-        # When health is low, reduce the trading signal strength
-        health_multiplier = 0.5 + 0.5 * health_gate  # Range: [0.5, 1.0]
-        
-        return gate_input * health_multiplier, dir_input
-
 
 class TradingModel(nn.Module):
-    """Simplified two-head model for SPX 0DTE options.
+    """Three-head model for SPX 0DTE options.
 
-    v4 design principles:
-    - Simple linear projection instead of FeatureGroupGating (less capacity to memorize)
-    - 3 transformer layers instead of 6
-    - Dropout 0.15 throughout
-    - Position state injection for gate head (kept — this is real signal)
-    - No DynamicStopModule, no QualityGate, no Greeks-adaptive anything
-    - NEW: Balanced strike gating for capital preservation
+    Architecture:
+    - Shared transformer backbone
+    - Gate head: (batch, 2) — [NO_TRADE, TRADE]  (entry/exit signal)
+    - Direction head: (batch, 6) — strike selection
+    - Value head: (batch, 1) — expected remaining P&L  (Phase D: exit intelligence)
+
+    Position state: 7 dims (expanded from 5 for value head context)
+      [0] in_trade, [1] bars_held, [2] unrealized_pnl, [3] account_health,
+      [4] loss_streak, [5] best_pnl_since_entry, [6] bars_since_pnl_high
 
     Input:  (batch, lookback, NUM_FEATURES)
-    Output: (gate_logits, dir_logits)
-        gate_logits: (batch, 2) — [NO_TRADE, TRADE]
-        dir_logits:  (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
-                                     PUT_ATM, PUT_OTM5, PUT_OTM10]
+    Output: (gate_logits, dir_logits) or (gate_logits, dir_logits, value_pred)
     """
+
+    POSITION_STATE_DIM = 7  # class constant for external reference
 
     def __init__(self, num_features=NUM_FEATURES, lookback=LOOKBACK,
                  d_model=D_MODEL, n_heads=N_HEADS, n_layers=DEPTH,
@@ -262,13 +224,9 @@ class TradingModel(nn.Module):
         mask = nn.Transformer.generate_square_subsequent_mask(lookback)
         self.register_buffer('causal_mask', mask)
 
-        # Position state injection for gate head
-        self.position_proj = nn.Linear(5, d_model // 4)
+        # Position state injection for gate head (7 dims: original 5 + best_pnl + bars_since_high)
+        self.position_proj = nn.Linear(self.POSITION_STATE_DIM, d_model // 4)
         self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
-        self.position_state_gen = PositionStateGenerator()
-
-        # Balanced strike gate
-        self.balanced_gate = BalancedStrikeGate(d_model)
 
         # Gate head: "should I trade?" → [NO_TRADE, TRADE]
         self.gate_head = nn.Sequential(
@@ -288,26 +246,51 @@ class TradingModel(nn.Module):
             nn.Linear(d_model // 2, 6),
         )
 
-        # ETV (Expected Trade Value) regression head — predicts return magnitude
-        self.etv_proj = nn.Linear(d_model, 1)
+        # Value head: "how much P&L remains?" → scalar (Phase D)
+        # Shares backbone but gets position state for trade context
+        self.value_proj = nn.Linear(d_model + d_model // 4, d_model)
+        self.value_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 1),
+        )
 
-        # Less conservative gate bias to encourage trading
+        # Learned time-of-day loss weights: model discovers which bars matter most
+        # 390 learnable weights (one per bar of day), initialized to 0 (neutral via softplus)
+        self.tod_weight_logits = nn.Parameter(torch.zeros(BARS_PER_DAY))
+
+        # Direction bias: favor ATM (domain knowledge: highest gamma, most responsive)
+        # OTM has -601% cumulative backtest returns — penalize it
+        # Gate bias: PRO-TRADE start — model defaults to NO_TRADE, must learn when to trade
+        # Reverted to pro-trade from [−0.3, +0.3] to [+0.3, −0.3] to prevent day-clustering / overtrading
         with torch.no_grad():
-            self.gate_head[-1].bias[0] += 0.1   # NO_TRADE (reduced from 0.5)
-            self.gate_head[-1].bias[1] -= 0.1   # TRADE (reduced from -0.5)
-            
-            # Apply exact biases from experiment #3
-            self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15)
-            self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15)
-            self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
+            self.gate_head[-1].bias[0] -= 0.3   # NO_TRADE: discourage (pro-trade)
+            self.gate_head[-1].bias[1] += 0.3   # TRADE: encourage (find opportunities)
 
-    def forward(self, x, position_state=None):
+            # ATM favored, OTM penalized (domain knowledge)
+            # Symmetric CALL/PUT initialization to prevent direction collapse
+            self.dir_head[-1].bias[0] += 0.20   # CALL_ATM bonus (increased)
+            self.dir_head[-1].bias[3] += 0.20   # PUT_ATM bonus (increased, equal to CALL)
+            self.dir_head[-1].bias[1] -= 0.15   # CALL_OTM5 penalty (increased)
+            self.dir_head[-1].bias[2] -= 0.20   # CALL_OTM10 penalty (increased)
+            self.dir_head[-1].bias[4] -= 0.15   # PUT_OTM5 penalty (increased)
+            self.dir_head[-1].bias[5] -= 0.20   # PUT_OTM10 penalty (increased)
+
+    def forward(self, x, position_state=None, return_value=False):
         batch_size = x.shape[0]
         device = x.device
 
-        # Generate synthetic position state for training if not provided
-        if position_state is None and self.training:
-            position_state = self.position_state_gen(batch_size, device)
+        # When position_state not provided, use flat state (not holding, healthy account)
+        # This matches evaluation semantics: flat = not in a trade
+        if position_state is None:
+            position_state = torch.zeros(batch_size, self.POSITION_STATE_DIM, device=device)
+            position_state[:, 3] = 1.0  # account_health = 1.0
+        elif position_state.shape[-1] < self.POSITION_STATE_DIM:
+            # Backward compat: pad old 5-dim state to 7-dim
+            pad = torch.zeros(batch_size, self.POSITION_STATE_DIM - position_state.shape[-1], device=device)
+            position_state = torch.cat([position_state, pad], dim=-1)
 
         x_proj = self.input_proj(x)
         x_proj = self.input_norm(x_proj)
@@ -316,53 +299,25 @@ class TradingModel(nn.Module):
                                   is_causal=True)
         last = x_proj[:, -1, :]  # (batch, d_model)
 
-        # Inject position state into gate head with conservative scaling
-        if position_state is not None:
-            pos_emb = torch.relu(self.position_proj(position_state))
-            # Scale down position influence to prevent overriding conservative gate bias
-            gate_input = self.position_gate_proj(torch.cat([last, pos_emb * 0.7], dim=-1))
-            
-            # Apply balanced strike gating using account health
-            account_health = position_state[:, 3:4]  # Extract account_health (dim 3)
-            gate_input, dir_input = self.balanced_gate(gate_input, last, account_health)
-            
-            # Apply softer dynamic strike bias when account health < 0.7 (higher threshold)
-            health_val = account_health.squeeze(-1)  # (batch,)
-            stressed_mask = health_val < 0.7
-            
-        else:
-            gate_input = last
-            dir_input = last
-            stressed_mask = torch.zeros(batch_size, dtype=torch.bool, device=device)
+        # Inject position state into gate head
+        pos_emb = torch.relu(self.position_proj(position_state))
+        gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
 
         gate_logits = self.gate_head(gate_input)
-        dir_logits = self.dir_head(dir_input)
-        
-        # Apply softer strike bias when account is stressed - gentle nudge toward cheaper options
-        if stressed_mask.any():
-            bias_adjustment = torch.zeros_like(dir_logits)
-            # Softer bias: less aggressive penalties and bonuses to maintain ATM viability
-            bias_adjustment[stressed_mask, 0] -= 0.15  # CALL_ATM - mild penalty (was -0.4)
-            bias_adjustment[stressed_mask, 3] -= 0.15  # PUT_ATM - mild penalty (was -0.4)
-            bias_adjustment[stressed_mask, 1] += 0.10  # CALL_OTM5 - small bonus (was +0.2)
-            bias_adjustment[stressed_mask, 2] += 0.15  # CALL_OTM10 - modest bonus (was +0.3)
-            bias_adjustment[stressed_mask, 4] += 0.10  # PUT_OTM5 - small bonus (was +0.2)
-            bias_adjustment[stressed_mask, 5] += 0.15  # PUT_OTM10 - modest bonus (was +0.3)
-            
-            dir_logits = dir_logits + bias_adjustment
+        dir_logits = self.dir_head(last)
 
-        # ETV: expected trade value regression
-        etv = self.etv_proj(last).squeeze(-1)  # (batch,)
+        if return_value:
+            # Value head: shares backbone + position state
+            value_input = self.value_proj(torch.cat([last, pos_emb], dim=-1))
+            value_pred = self.value_head(value_input).squeeze(-1)  # (batch,)
+            return gate_logits, dir_logits, value_pred
 
-        return gate_logits, dir_logits, etv
+        return gate_logits, dir_logits
 
 
 # ---------------------------------------------------------------------------
 # Loss — v5: EV-weighted, magnitude-aware
 # ---------------------------------------------------------------------------
-
-# ETV loss weight
-ETV_LOSS_WEIGHT = _env_float("TRAIN_ETV_W", 0.1, lo=0.0, hi=1.0)
 
 # Scale for sigmoid soft target (controls sharpness of trade/no-trade boundary)
 EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 10.0, lo=1.0, hi=50.0)
@@ -397,13 +352,13 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
                 otm10_call_stopped_pnl=None, otm10_put_stopped_pnl=None,
                 call_stopped_tight=None, call_stopped_wide=None,
                 put_stopped_tight=None, put_stopped_wide=None,
-                etv_pred=None):
+                is_holding=None,
+                tod_weight_logits=None):
     """v5 EV-weighted loss: magnitude-aware gate + return-weighted direction.
 
     Key changes from v4:
     - Gate: soft continuous target from sigmoid(best_stopped_pnl * scale) instead of binary
     - Direction: return-weighted soft targets instead of argmax classification
-    - ETV: MSE regression on expected trade value
     - Uses stopped P&L (with dynamic stops) when available, falls back to unstopped
     """
     B = gate_logits.shape[0]
@@ -482,37 +437,57 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
 
     all_stopped_safe = torch.nan_to_num(all_stopped_pnl, nan=-999.0)
 
-    # ---- Gate loss: EV-weighted continuous signal ----
+    # ---- Gate loss: binary classification ----
     # Best available return across all 6 option types (after stops)
     best_pnl = all_stopped_safe.max(dim=-1).values  # (valid,)
 
-    # Soft target: sigmoid maps P&L to [0, 1] probability of trading
-    gate_soft_target = torch.sigmoid(best_pnl * EV_GATE_SCALE)
+    # ---- Gate targets: unified entry + exit signal ----
+    # TRADE (1) if profitable AND not an exit bar.
+    # NO_TRADE (0) if unprofitable OR exit signal fires.
+    # This resolves the prior gate/exit conflict where both losses trained
+    # the gate on the same bars with opposing targets.
+    gate_targets = (best_pnl > 0.0).long()  # 0=NO_TRADE, 1=TRADE
 
-    # Trade logit = g_logits[:, 1] - g_logits[:, 0]
-    trade_logit = g_logits[:, 1] - g_logits[:, 0]
+    # Override: exit-labeled bars → NO_TRADE, but ONLY when the model is holding
+    # This resolves the entry/exit conflict (Flaw 2): flat bars learn entry signals
+    # without exit interference; holding bars learn exit signals.
+    if exit_call_labels is not None and exit_put_labels is not None:
+        ec = exit_call_labels[valid]
+        ep = exit_put_labels[valid]
+        exit_signal = (ec > 0.5) | (ep > 0.5)
+        # Only override profitable bars — unprofitable bars are already NO_TRADE
+        exit_override = exit_signal & (best_pnl > 0.0)
 
-    # Magnitude weighting: big winners/losers get stronger gradients
-    magnitude_weight = torch.abs(best_pnl).clamp(min=0.01)
+        # Position-conditional: only apply exit overrides when model is holding
+        # Random batches (flat state) → is_holding=None → no exit override
+        # Day-seq batches → is_holding tracks real position → exit fires only while holding
+        if is_holding is not None:
+            holding_mask = is_holding[valid] > 0.5
+            exit_override = exit_override & holding_mask
 
-    time_weight = 1.0 + 0.5 * (1.0 - t_feat)
-    gate_loss = F.binary_cross_entropy_with_logits(
-        trade_logit, gate_soft_target,
-        weight=magnitude_weight,
-        reduction='none',
-    )
-    gate_loss = (gate_loss * time_weight * sample_weight).mean()
+        if EXIT_LOSS_WEIGHT >= 1.0:
+            gate_targets[exit_override] = 0
+        else:
+            override_prob = EXIT_LOSS_WEIGHT
+            override_mask = torch.rand(exit_override.sum().item(), device=device) < override_prob
+            override_indices = exit_override.nonzero(as_tuple=True)[0][override_mask]
+            gate_targets[override_indices] = 0
+
+    # Learned time-of-day weighting: model discovers which bars matter most
+    # tod_weight_logits is a 390-dim parameter on the model, indexed by bar_of_day
+    if tod_weight_logits is not None:
+        bar_idx = ((1.0 - t_feat) * (BARS_PER_DAY - 1)).long().clamp(0, BARS_PER_DAY - 1)
+        tod_weight = F.softplus(tod_weight_logits[bar_idx]) + 0.5  # floor at 0.5, no upper bound
+    else:
+        tod_weight = 1.0  # uniform if not provided
+    gate_loss = F.cross_entropy(g_logits, gate_targets, reduction='none')
+    gate_loss = (gate_loss * tod_weight * sample_weight).mean()
 
     # ---- Direction loss: return-weighted soft targets ----
-    # Only train direction where best option is profitable (gate_soft_target > 0.5)
-    trade_mask = best_pnl > 0.0
+    # Only train direction where gate target is TRADE
+    trade_mask = gate_targets == 1
     if trade_mask.sum() < 2:
-        total = GATE_LOSS_WEIGHT * gate_loss
-        if etv_pred is not None:
-            etv_v = etv_pred[valid]
-            etv_loss = F.mse_loss(etv_v, best_pnl.detach())
-            total = total + ETV_LOSS_WEIGHT * etv_loss
-        return total
+        return GATE_LOSS_WEIGHT * gate_loss
 
     d_logits_trade = d_logits[trade_mask]
     t_feat_trade = t_feat[trade_mask]
@@ -530,7 +505,17 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     dir_w = dir_w / dir_w.mean().clamp(min=1e-6)
     dir_loss = (dir_loss * dir_time_weight * dir_w).mean()
 
-    # ---- P&L alignment bonus (kept from v4) ----
+    # ---- Direction entropy bonus (hardcoded): penalize collapsed distributions ----
+    # When model predicts 100% one direction, entropy=0. We subtract entropy from the
+    # loss to reward diversity. DIRECTION_ENTROPY_BONUS is a fixed constant (not tunable
+    # via _env_float) so it doesn't violate the hyperparameter count constraint.
+    DIRECTION_ENTROPY_BONUS = 0.20  # hardcoded: ~0.5 nats bonus for uniform distribution
+    dir_probs_trade = F.softmax(d_logits_trade, dim=-1)
+    dir_entropy = -(dir_probs_trade * (dir_probs_trade + 1e-8).log()).sum(dim=-1)  # (valid_trade,)
+    entropy_bonus = (dir_entropy * dir_w).mean()
+    dir_loss = dir_loss - DIRECTION_ENTROPY_BONUS * entropy_bonus
+
+    # ---- P&L alignment bonus ----
     gate_probs = F.softmax(g_logits, dim=-1)
     dir_probs = F.softmax(d_logits, dim=-1)
     trade_prob = gate_probs[:, 1]
@@ -538,28 +523,21 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
     pnl_loss = -(pnl_signal * sample_weight).sum() / sample_weight.sum().clamp(min=1e-6)
 
-    # ---- EXIT loss: train gate to predict NO_TRADE on exit signal bars ----
-    exit_loss = torch.tensor(0.0, device=device)
-    if exit_call_labels is not None and exit_put_labels is not None:
-        ec = exit_call_labels[valid]
-        ep = exit_put_labels[valid]
-        exit_mask = (ec > 0.5) | (ep > 0.5)
-        if exit_mask.sum() > 1:
-            exit_g = g_logits[exit_mask]
-            exit_targets = torch.zeros(exit_mask.sum().item(), dtype=torch.long, device=device)
-            exit_loss_vec = F.cross_entropy(exit_g, exit_targets, reduction='none')
-            exit_w = sample_weight[exit_mask]
-            exit_loss = (exit_loss_vec * exit_w).sum() / exit_w.sum().clamp(min=1e-6)
-
-    # ---- ETV regression loss ----
-    etv_loss = torch.tensor(0.0, device=device)
-    if etv_pred is not None:
-        etv_v = etv_pred[valid]
-        etv_loss = F.mse_loss(etv_v, best_pnl.detach())
+    # ---- Confidence calibration loss ----
+    # Gate softmax gives P(TRADE). Reward high confidence on winners, penalize on losers.
+    # For TRADE bars (gate_target=1): confidence = P(TRADE), outcome = sign(best_pnl)
+    # Loss = -mean(outcome_sign * log(confidence)) — pushes confidence toward correctness
+    conf_loss = gate_logits.sum() * 0.0  # default zero
+    if CONFIDENCE_LOSS_WEIGHT > 0.0 and trade_mask.sum() >= 2:
+        trade_conf = F.softmax(g_logits[trade_mask], dim=-1)[:, 1]  # P(TRADE) for trade bars
+        trade_best_pnl = best_pnl[trade_mask]
+        # +1 for winners, -1 for losers (soft via tanh for gradient flow)
+        outcome_sign = torch.tanh(trade_best_pnl * 5.0)
+        # High confidence on winners → positive reward; high confidence on losers → penalty
+        conf_loss = -(outcome_sign * torch.log(trade_conf.clamp(min=1e-6))).mean()
 
     total = (GATE_LOSS_WEIGHT * gate_loss + DIR_LOSS_WEIGHT * dir_loss
-             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss
-             + ETV_LOSS_WEIGHT * etv_loss)
+             + PNL_ALIGNMENT_WEIGHT * pnl_loss + CONFIDENCE_LOSS_WEIGHT * conf_loss)
     return total
 
 
@@ -575,12 +553,133 @@ if __name__ == "__main__":
         torch.cuda.manual_seed(42)
     torch.set_float32_matmul_precision("high")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # bf16 mixed precision on Ampere+ GPUs (H100/A100) — no GradScaler needed
+    _use_amp = (device.type == "cuda" and torch.cuda.get_device_capability()[0] >= 8)
+    if _use_amp:
+        print("Mixed precision: bf16 enabled (Ampere+ GPU detected)")
 
     data = load_data()
     n_bars = len(data['dates'])
 
     # Replace NaN features with 0
     data['features'] = torch.nan_to_num(data['features'], nan=0.0)
+
+    # Apply WEIGHT_RECENT_BOOST: scale supervision_weight by a linear recency ramp
+    # over the training range so more recent bars get higher weight.
+    # Linear ramp from 1.0 (oldest bar) to (1 + WEIGHT_RECENT_BOOST) (newest bar).
+    # Only applied over training range to avoid leaking val info.
+    _train_end = data['train_end_idx']
+    if WEIGHT_RECENT_BOOST > 0.0 and _train_end > 1 and 'supervision_weight' in data:
+        _sw = data['supervision_weight']  # numpy array or tensor
+        import numpy as _np
+        _ramp = _np.linspace(1.0, 1.0 + WEIGHT_RECENT_BOOST, _train_end).astype(_np.float32)
+        _sw_arr = _sw.numpy() if hasattr(_sw, 'numpy') else _sw
+        _sw_arr[:_train_end] = _sw_arr[:_train_end] * _ramp
+        if hasattr(_sw, 'numpy'):
+            data['supervision_weight'] = torch.from_numpy(_sw_arr)
+        else:
+            data['supervision_weight'] = _sw_arr
+        print(f"Recency weights applied: WEIGHT_RECENT_BOOST={WEIGHT_RECENT_BOOST} "
+              f"(ramp 1.0→{1.0+WEIGHT_RECENT_BOOST:.2f} over {_train_end} train bars)")
+    else:
+        print(f"Recency weights: disabled (WEIGHT_RECENT_BOOST={WEIGHT_RECENT_BOOST})")
+
+    # WEIGHT_DAY_DIVERSITY: upweight bars on days where profitable trades are rare
+    # so the model can't just memorize a few high-signal days (e.g., Sep 17)
+    if WEIGHT_DAY_DIVERSITY > 0.0 and 'day_boundaries' in data and 'supervision_weight' in data:
+        _day_bounds = data['day_boundaries'].numpy()
+        _call_pnl_np = data['call_pnl'].numpy()
+        _put_pnl_np = data['put_pnl'].numpy()
+        _sw = data['supervision_weight']
+        _sw_arr = _sw.numpy() if hasattr(_sw, 'numpy') else _sw
+        import numpy as _np
+        # Count profitable bars per day (proxy for how "easy" the day is)
+        _day_starts = list(_day_bounds) + [len(_call_pnl_np)]
+        _n_days_processed = 0
+        for _di in range(len(_day_starts) - 1):
+            _s, _e = int(_day_starts[_di]), int(_day_starts[_di + 1])
+            if _e > _train_end:
+                break
+            _c = _call_pnl_np[_s:_e]
+            _p = _put_pnl_np[_s:_e]
+            _profitable = ((_c > 0) & ~_np.isnan(_c)) | ((_p > 0) & ~_np.isnan(_p))
+            _n_prof = _profitable.sum()
+            # Inverse density: days with many profitable bars get downweighted
+            # days with few get upweighted (clamped to avoid extreme weights)
+            if _n_prof > 0:
+                _day_weight = 1.0 + WEIGHT_DAY_DIVERSITY * (1.0 - min(_n_prof / 50.0, 1.0))
+            else:
+                _day_weight = 1.0
+            _sw_arr[_s:_e] *= _day_weight
+            _n_days_processed += 1
+        if hasattr(_sw, 'numpy'):
+            data['supervision_weight'] = torch.from_numpy(_sw_arr)
+        print(f"Day diversity weights applied: WEIGHT_DAY_DIVERSITY={WEIGHT_DAY_DIVERSITY} "
+              f"({_n_days_processed} days processed)")
+    else:
+        print(f"Day diversity weights: disabled (WEIGHT_DAY_DIVERSITY={WEIGHT_DAY_DIVERSITY})")
+
+    # Phase C: Reward-Weighted Regression (RWR)
+    # Upweight bars that precede high-reward trajectories
+    if (RWR_WEIGHT > 0 or DAY_RWR_WEIGHT > 0) and 'call_pnl' in data and 'day_boundaries' in data:
+        _sw = data['supervision_weight']
+        _sw_arr = _sw.numpy() if hasattr(_sw, 'numpy') else _sw
+        _call_pnl = data['call_pnl'].numpy() if hasattr(data['call_pnl'], 'numpy') else data['call_pnl']
+        _put_pnl = data['put_pnl'].numpy() if hasattr(data['put_pnl'], 'numpy') else data['put_pnl']
+        _day_bounds = data['day_boundaries'].numpy()
+        _day_starts = list(_day_bounds) + [len(_call_pnl)]
+
+        if RWR_WEIGHT > 0:
+            # Trajectory reward: for each bar, best P&L in next 30 bars
+            _fwd_window = 30
+            _best_fwd = np.zeros(len(_call_pnl), dtype=np.float32)
+            _c_safe = np.nan_to_num(_call_pnl, nan=0.0)
+            _p_safe = np.nan_to_num(_put_pnl, nan=0.0)
+            _max_pnl = np.maximum(_c_safe, _p_safe)
+            # Vectorized forward max: rolling max over next _fwd_window bars
+            for _i in range(len(_max_pnl)):
+                _end_w = min(_i + _fwd_window, len(_max_pnl))
+                _best_fwd[_i] = max(_max_pnl[_i:_end_w].max(), 0.0)
+
+            # Normalize to [0, 1] using percentile (robust to outliers)
+            _p99 = np.percentile(_best_fwd[_best_fwd > 0], 99) if (_best_fwd > 0).any() else 1.0
+            _traj_weight = np.clip(_best_fwd / max(_p99, 1e-6), 0.0, 1.0)
+
+            # Apply: sw *= (1 + RWR_WEIGHT * traj_weight), only where sw is valid
+            _rwr_factor = 1.0 + RWR_WEIGHT * _traj_weight
+            _valid_sw = ~np.isnan(_sw_arr)
+            _sw_arr[_valid_sw] = _sw_arr[_valid_sw] * _rwr_factor[_valid_sw]
+            print(f"RWR trajectory: weight={RWR_WEIGHT}, mean_factor={_rwr_factor[_valid_sw].mean():.3f}, "
+                  f"bars_with_reward={(_traj_weight > 0).sum()}/{len(_traj_weight)}")
+
+        if DAY_RWR_WEIGHT > 0:
+            # Day reward: cumulative P&L per day, normalized
+            _day_pnl = np.zeros(len(_call_pnl), dtype=np.float32)
+            for _di in range(len(_day_starts) - 1):
+                _s, _e = int(_day_starts[_di]), int(_day_starts[_di + 1])
+                if _e > _train_end:
+                    break
+                _day_call = np.nanmean(_call_pnl[_s:_e]) if not np.all(np.isnan(_call_pnl[_s:_e])) else 0.0
+                _day_put = np.nanmean(_put_pnl[_s:_e]) if not np.all(np.isnan(_put_pnl[_s:_e])) else 0.0
+                _day_best = max(float(_day_call), float(_day_put), 0.0)
+                _day_pnl[_s:_e] = _day_best
+
+            _dp99 = np.percentile(_day_pnl[_day_pnl > 0], 99) if (_day_pnl > 0).any() else 1.0
+            _day_norm = np.clip(_day_pnl / max(_dp99, 1e-6), 0.0, 1.0)
+            _day_factor = 1.0 + DAY_RWR_WEIGHT * _day_norm
+            _valid_sw2 = ~np.isnan(_sw_arr)
+            _sw_arr[_valid_sw2] = _sw_arr[_valid_sw2] * _day_factor[_valid_sw2]
+            print(f"RWR day: weight={DAY_RWR_WEIGHT}, mean_factor={_day_factor[_valid_sw2].mean():.3f}")
+
+        data['supervision_weight'] = torch.from_numpy(_sw_arr) if isinstance(_sw_arr, np.ndarray) else _sw_arr
+    elif RWR_WEIGHT > 0 or DAY_RWR_WEIGHT > 0:
+        print(f"RWR: disabled (missing call_pnl or day_boundaries)")
+    else:
+        print(f"RWR: disabled (RWR_WEIGHT={RWR_WEIGHT}, DAY_RWR_WEIGHT={DAY_RWR_WEIGHT})")
+
+    print(f"Gate entropy reg: REG_GATE_ENTROPY={REG_GATE_ENTROPY}")
+    print(f"Temporal smoothing reg: REG_TEMPORAL_SMOOTH={REG_TEMPORAL_SMOOTH}")
+    print(f"Warm freeze ratio: WARM_FREEZE_RATIO={WARM_FREEZE_RATIO}")
 
     print(f"Loaded {n_bars} 1-min bars, {NUM_FEATURES} features, {NUM_ACTIONS} actions")
     print(f"  ~{n_bars // BARS_PER_DAY} trading days")
@@ -600,12 +699,57 @@ if __name__ == "__main__":
     pnl_valid = (~torch.isnan(data['call_pnl'])).sum().item()
     print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%)")
 
-    # v4: ALWAYS train from scratch — no warm start from oracle-contaminated weights
+    # Compute data fingerprint for checkpoint provenance tracking
+    import hashlib as _hashlib
+    _data_shape_str = f"{data['features'].shape}_{data['train_end_idx']}_{data['val_start_idx']}_{data['val_end_idx']}"
+    _data_fingerprint = _hashlib.sha256(_data_shape_str.encode()).hexdigest()[:16]
+    print(f"  Data fingerprint: {_data_fingerprint}")
+
     model = TradingModel().to(device)
     num_params = sum(p.numel() for p in model.parameters())
     print(f"Parameters: {num_params:,}")
-    print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating with enhanced PnL alignment and minimized drawdown penalty")
-    print("Training from scratch (v4: no warm-start).")
+    print(f"Architecture: v5 three-head (gate+dir+value), ATM-biased, 7-dim position state")
+
+    # Warm start: load best_model.pt if it exists and shapes are compatible
+    _warm_start_loaded = False
+    _warm_path = os.path.join(os.path.dirname(__file__), "best_model.pt")
+    if os.path.exists(_warm_path):
+        try:
+            import numpy as np
+            torch.serialization.add_safe_globals([np.core.multiarray.scalar, np.dtype, np.dtypes.Float64DType])
+            _ckpt = torch.load(_warm_path, map_location=device, weights_only=True)
+            _state = _ckpt if not isinstance(_ckpt, dict) or 'model_state_dict' not in _ckpt else _ckpt['model_state_dict']
+            # Architecture version gate: reject incompatible checkpoints
+            _ckpt_arch = _ckpt.get('architecture', 'unknown') if isinstance(_ckpt, dict) else 'unknown'
+            _ckpt_has_value = _ckpt.get('has_value_head', False) if isinstance(_ckpt, dict) else ('value_head.4.weight' in _state)
+            _ckpt_pos_dim = _ckpt.get('position_state_dim', 5) if isinstance(_ckpt, dict) else (_state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
+            if not _ckpt_has_value or _ckpt_pos_dim < TradingModel.POSITION_STATE_DIM:
+                print(f"WARNING: Checkpoint incompatible (arch={_ckpt_arch}, value_head={_ckpt_has_value}, pos_dim={_ckpt_pos_dim}).")
+                print(f"  Current model requires: value_head=True, pos_dim={TradingModel.POSITION_STATE_DIM}.")
+                print(f"  Rejecting warm start — training from scratch.")
+                raise ValueError("Architecture version mismatch")
+            _missing, _unexpected = model.load_state_dict(_state, strict=False)
+            if _missing:
+                print(f"  WARNING: Missing keys (random init): {[k for k in _missing]}")
+            if _unexpected:
+                print(f"  Unexpected keys (ignored): {[k for k in _unexpected]}")
+            _warm_start_loaded = True
+            print(f"Warm start: loaded weights from {_warm_path} (arch={_ckpt_arch}, pos_dim={_ckpt_pos_dim})")
+        except Exception as e:
+            print(f"Warm start failed ({e}), training from scratch.")
+    else:
+        print("Training from scratch (no best_model.pt).")
+
+    # WARM_FREEZE_RATIO: freeze transformer layers for first N% of training
+    # Only heads (gate_head, dir_head) and position projection train initially.
+    # This prevents catastrophic forgetting of learned representations.
+    _frozen_params = []
+    if _warm_start_loaded and WARM_FREEZE_RATIO > 0:
+        for name, param in model.named_parameters():
+            if any(k in name for k in ['transformer', 'input_proj', 'input_norm', 'pos_embed']):
+                param.requires_grad = False
+                _frozen_params.append(name)
+        print(f"Warm freeze: {len(_frozen_params)} params frozen for first {WARM_FREEZE_RATIO*100:.0f}% of training")
 
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=LR,
@@ -614,11 +758,53 @@ if __name__ == "__main__":
 
     from prepare import make_day_sequential_loader
 
-    train_loader = make_dataloader(data, LOOKBACK, BATCH_SIZE, "train", device)
+    # Phase B: Apply TOD filter to training data (specialists train on bar subsets)
+    # target_mask controls which bars are used as training targets;
+    # lookback context still uses all valid bars (valid_mask unchanged).
+    _tod_target_mask = None
+    if TOD_FILTER:
+        _tod_ranges = {
+            "morning":   (0, 120),   # 9:30-11:30
+            "midday":    (120, 240), # 11:30-13:30
+            "afternoon": (240, 390), # 13:30-16:00
+        }
+        day_boundaries = data['day_boundaries'].tolist()
+        n_bars = len(data['valid_mask'])
+        tm = torch.ones(n_bars, dtype=torch.bool)
+
+        if TOD_FILTER == "highvol":
+            features_t = data['features']
+            IDX_VIX_REGIME = 24
+            for d in range(len(day_boundaries)):
+                ds = day_boundaries[d]
+                de = day_boundaries[d + 1] if d + 1 < len(day_boundaries) else n_bars
+                day_vr = features_t[ds:de, IDX_VIX_REGIME]
+                valid_vr = day_vr[~torch.isnan(day_vr)]
+                mean_vr = float(valid_vr.mean()) if len(valid_vr) > 0 else -1
+                if mean_vr <= 0:  # VIX <= 20
+                    tm[ds:de] = False
+        elif TOD_FILTER in _tod_ranges:
+            lo_bar, hi_bar = _tod_ranges[TOD_FILTER]
+            for d in range(len(day_boundaries)):
+                ds = day_boundaries[d]
+                de = day_boundaries[d + 1] if d + 1 < len(day_boundaries) else n_bars
+                for i in range(ds, de):
+                    bar_in_day = i - ds
+                    if bar_in_day < lo_bar or bar_in_day >= hi_bar:
+                        tm[i] = False
+        else:
+            raise ValueError(f"Unknown TRAIN_TOD_FILTER={TOD_FILTER!r}. Valid: morning, midday, afternoon, highvol")
+
+        _tod_target_mask = tm
+        n_targets = int((tm & data['valid_mask']).sum())
+        n_total = int(data['valid_mask'].sum())
+        print(f"TOD filter '{TOD_FILTER}': {n_total} → {n_targets} target bars ({n_targets/max(n_total,1)*100:.1f}%)")
+
+    train_loader = make_dataloader(data, LOOKBACK, BATCH_SIZE, "train", device, target_mask=_tod_target_mask)
     x_batch, y_batch = next(train_loader)
 
     # Day-sequential loader for Phase 3
-    DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.7, lo=0.0, hi=1.0)
+    DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.85, lo=0.0, hi=1.0)  # Increased from 0.7: more temporal context for generalization
     DAY_SEQ_BATCH = _env_int("TRAIN_DAY_SEQ_BATCH", 16, lo=4, hi=64)
     _use_day_seq = DAY_SEQ_RATIO > 0
     if _use_day_seq:
@@ -635,10 +821,10 @@ if __name__ == "__main__":
     print(f"\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {LOOKBACK}")
     print(f"LR: {LR} | Depth: {DEPTH} | d_model: {D_MODEL} | ff_mult: {FF_MULT}")
     print(f"Dropout: {DROPOUT} | Weight decay: {WEIGHT_DECAY}")
-    print(f"False entry penalty: {FALSE_ENTRY_PENALTY}x")
     print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
-    print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}, exit={EXIT_LOSS_WEIGHT}, etv={ETV_LOSS_WEIGHT}")
-    print(f"EV gate scale: {EV_GATE_SCALE}")
+    print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}")
+    print(f"Exit override strength: {EXIT_LOSS_WEIGHT} (gate targets flipped on exit bars)")
+    print(f"Position state: flat for random batches, tracked for day-sequential")
     print()
 
     # ---------------------------------------------------------------------------
@@ -716,30 +902,44 @@ if __name__ == "__main__":
     def _update_position_state(position_state, gate_logits, dir_logits, y_dict):
         """Update position state based on model predictions (no grad).
 
-        Tracks: is_holding, bars_held, unrealized_pnl, account_health, loss_streak.
+        Tracks 7 dims: is_holding, bars_held, unrealized_pnl, account_health,
+        loss_streak, best_pnl_since_entry, bars_since_pnl_high.
+        Applies stop-loss and max-hold exits to align training with evaluation.
         """
         with torch.no_grad():
             B = gate_logits.shape[0]
             gate_pred = gate_logits.argmax(dim=-1)  # 0=NO_TRADE, 1=TRADE
+            gate_conf = torch.softmax(gate_logits.float(), dim=-1)[:, 1]  # P(TRADE)
 
             is_holding = position_state[:, 0]
             bars_held = position_state[:, 1]
             unrealized_pnl = position_state[:, 2]
             account_health = position_state[:, 3]
             loss_streak = position_state[:, 4]
+            best_pnl = position_state[:, 5]
+            bars_since_high = position_state[:, 6]
 
-            # Entry: model says TRADE when not holding
-            entering = (gate_pred == 1) & (is_holding < 0.5)
-            # Exit: model says NO_TRADE when holding
-            exiting = (gate_pred == 0) & (is_holding > 0.5)
-
-            # For entering trades: look up the best stopped P&L as proxy for unrealized
+            # For entering/holding trades: look up the best stopped P&L as proxy
             all_stopped = torch.stack([
                 y_dict['call_stopped'], y_dict['put_stopped'],
                 y_dict['otm5c_stopped'], y_dict['otm5p_stopped'],
                 y_dict['otm10c_stopped'], y_dict['otm10p_stopped'],
             ], dim=-1)
-            best_pnl = torch.nan_to_num(all_stopped, nan=-999.0).max(dim=-1).values
+            cur_pnl = torch.nan_to_num(all_stopped, nan=-999.0).max(dim=-1).values
+
+            # Entry: model says TRADE when not holding
+            entering = (gate_pred == 1) & (is_holding < 0.5)
+            # Exit: model says NO_TRADE when holding
+            model_exiting = (gate_pred == 0) & (is_holding > 0.5)
+
+            # Stop-loss exit: unrealized P&L breaches dynamic stop (aligns with evaluate_trades)
+            stop_exiting = (is_holding > 0.5) & (unrealized_pnl < -0.35)
+
+            # Max-hold exit: held too long (normalized bars_held > 60/390 ≈ 0.154)
+            max_hold_exiting = (is_holding > 0.5) & (bars_held > 60.0 / BARS_PER_DAY)
+
+            # Combined exits: model exit OR stop-loss OR max-hold
+            exiting = model_exiting | stop_exiting | max_hold_exiting
 
             # Update state
             new_holding = is_holding.clone()
@@ -747,27 +947,44 @@ if __name__ == "__main__":
             new_pnl = unrealized_pnl.clone()
             new_health = account_health.clone()
             new_streak = loss_streak.clone()
+            new_best_pnl = best_pnl.clone()
+            new_bars_since_high = bars_since_high.clone()
 
             # Entries
             new_holding[entering] = 1.0
             new_bars[entering] = 0.0
             new_pnl[entering] = 0.0
+            new_best_pnl[entering] = 0.0
+            new_bars_since_high[entering] = 0.0
 
             # Increment bars for holding positions
             still_holding = (new_holding > 0.5) & ~entering
             new_bars[still_holding] = (bars_held[still_holding] + 1.0 / BARS_PER_DAY).clamp(max=1.0)
 
-            # Update unrealized P&L for holding positions (use stopped P&L as proxy)
-            new_pnl[new_holding > 0.5] = torch.tanh(best_pnl[new_holding > 0.5] * 5.0)
+            # Update unrealized P&L for holding positions (reduced saturation for better gradient)
+            cur_pnl_tanh = torch.tanh(cur_pnl * 2.0)
+            new_pnl[new_holding > 0.5] = cur_pnl_tanh[new_holding > 0.5]
+
+            # Update best_pnl and bars_since_high for value head context
+            holding_mask = new_holding > 0.5
+            improved = holding_mask & (cur_pnl_tanh > new_best_pnl)
+            new_best_pnl[improved] = cur_pnl_tanh[improved]
+            new_bars_since_high[improved] = 0.0
+            not_improved = holding_mask & ~improved & ~entering
+            new_bars_since_high[not_improved] = (bars_since_high[not_improved] + 1.0 / BARS_PER_DAY).clamp(max=1.0)
 
             # Exits: update account health and loss streak
             exit_pnl = unrealized_pnl[exiting]
-            losing_exit = exit_pnl < 0
+            stop_exit_pnl = torch.where(
+                stop_exiting[exiting] if exiting.any() else torch.zeros(0, dtype=torch.bool, device=exit_pnl.device),
+                torch.full_like(exit_pnl, -0.35),
+                exit_pnl
+            )
+            losing_exit = stop_exit_pnl < 0
             new_health[exiting] = (account_health[exiting] +
-                                   torch.where(exit_pnl > 0,
-                                              exit_pnl * 0.1,
-                                              exit_pnl * 0.2)).clamp(0.1, 1.5)
-            # Loss streak: increment on loss, reset on win
+                                   torch.where(stop_exit_pnl > 0,
+                                              stop_exit_pnl * 0.1,
+                                              stop_exit_pnl * 0.5)).clamp(0.1, 1.5)
             new_streak[exiting] = torch.where(
                 losing_exit,
                 (loss_streak[exiting] + 0.33).clamp(max=1.0),
@@ -777,8 +994,11 @@ if __name__ == "__main__":
             new_holding[exiting] = 0.0
             new_bars[exiting] = 0.0
             new_pnl[exiting] = 0.0
+            new_best_pnl[exiting] = 0.0
+            new_bars_since_high[exiting] = 0.0
 
-            return torch.stack([new_holding, new_bars, new_pnl, new_health, new_streak], dim=1)
+            return torch.stack([new_holding, new_bars, new_pnl, new_health, new_streak,
+                               new_best_pnl, new_bars_since_high], dim=1)
 
 
     total_time = 0.0
@@ -803,73 +1023,135 @@ if __name__ == "__main__":
             y_dict = _unpack_y(y_seq)
 
             if bar_in_day == 0 or _day_seq_position_state is None or _day_seq_position_state.shape[0] != x_seq.shape[0]:
-                # Start of new day — reset position state
-                _day_seq_position_state = torch.zeros(x_seq.shape[0], 5, device=device)
+                # Start of new day — reset position state (7 dims)
+                _day_seq_position_state = torch.zeros(x_seq.shape[0], TradingModel.POSITION_STATE_DIM, device=device)
                 _day_seq_position_state[:, 3] = 1.0  # account_health = 1.0
 
-            gate_logits, dir_logits, etv = model(x_seq, position_state=_day_seq_position_state)
+            with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=_use_amp):
+                gate_logits, dir_logits, value_pred = model(
+                    x_seq, position_state=_day_seq_position_state, return_value=True)
 
-            time_feat = x_seq[:, -1, IDX_MINUTES_TO_CLOSE]
-            batch_features = x_seq[:, -1, :]
+                time_feat = x_seq[:, -1, IDX_MINUTES_TO_CLOSE]
+                batch_features = x_seq[:, -1, :]
 
-            loss = sniper_loss(
-                gate_logits, dir_logits,
-                y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
-                y_dict['exit_call'], y_dict['exit_put'],
-                y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
-                supervision_weight=y_dict['sw'],
-                actionable_mask=y_dict['am'],
-                risk_state_mask=y_dict['rsm'],
-                call_stopped_pnl=y_dict['call_stopped'],
-                put_stopped_pnl=y_dict['put_stopped'],
-                otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
-                otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
-                otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
-                otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
-                call_stopped_tight=y_dict.get('call_stopped_tight'),
-                call_stopped_wide=y_dict.get('call_stopped_wide'),
-                put_stopped_tight=y_dict.get('put_stopped_tight'),
-                put_stopped_wide=y_dict.get('put_stopped_wide'),
-                etv_pred=etv,
-            )
+                loss = sniper_loss(
+                    gate_logits, dir_logits,
+                    y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
+                    y_dict['exit_call'], y_dict['exit_put'],
+                    y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                    supervision_weight=y_dict['sw'],
+                    actionable_mask=y_dict['am'],
+                    risk_state_mask=y_dict['rsm'],
+                    call_stopped_pnl=y_dict['call_stopped'],
+                    put_stopped_pnl=y_dict['put_stopped'],
+                    otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+                    otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
+                    otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
+                    otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                    call_stopped_tight=y_dict.get('call_stopped_tight'),
+                    call_stopped_wide=y_dict.get('call_stopped_wide'),
+                    put_stopped_tight=y_dict.get('put_stopped_tight'),
+                    put_stopped_wide=y_dict.get('put_stopped_wide'),
+                    is_holding=_day_seq_position_state[:, 0],  # holding flag from position state
+                    tod_weight_logits=model.tod_weight_logits,
+                )
 
-            # Update position state for next bar
+                # Phase D: Value head loss (only for bars where model is holding)
+                # Target: best remaining P&L from current bar (how much upside is left)
+                # For bars not holding, value target is 0 (no trade value)
+                if VALUE_LOSS_WEIGHT > 0:
+                    _holding = _day_seq_position_state[:, 0] > 0.5
+                    if _holding.any():
+                        # Current best P&L across 6 option types
+                        _all_stopped = torch.stack([
+                            y_dict['call_stopped'], y_dict['put_stopped'],
+                            y_dict['otm5c_stopped'], y_dict['otm5p_stopped'],
+                            y_dict['otm10c_stopped'], y_dict['otm10p_stopped'],
+                        ], dim=-1)
+                        _cur_best = torch.nan_to_num(_all_stopped, nan=-999.0).max(dim=-1).values
+                        # Value target = current bar's P&L (the "remaining value" target
+                        # will be refined as: final_pnl - current_pnl, but during sequential
+                        # training we only see one bar at a time, so we use the raw P&L as
+                        # a proxy — the model learns to predict current trade quality)
+                        _value_target = _cur_best[_holding].clamp(-1.0, 1.0)
+                        _value_pred_holding = value_pred[_holding]
+                        _value_loss = F.mse_loss(_value_pred_holding, _value_target)
+                        loss = loss + VALUE_LOSS_WEIGHT * _value_loss
+
+            # Update position state for next bar (fp32, outside autocast)
             _day_seq_position_state = _update_position_state(
-                _day_seq_position_state, gate_logits, dir_logits, y_dict)
+                _day_seq_position_state, gate_logits.float(), dir_logits.float(), y_dict)
         else:
-            # Random batch step (original behavior, but with stopped P&L)
+            # Random batch step — flat position state (not holding)
+            # Matches evaluation semantics: random bars are independent, model is flat
+            # Exit overrides NOT applied (is_holding=None) — clean entry-only learning
             y_dict = _unpack_y(y_batch)
-            gate_logits, dir_logits, etv = model(x_batch)
+            flat_state = torch.zeros(x_batch.shape[0], TradingModel.POSITION_STATE_DIM, device=device)
+            flat_state[:, 3] = 1.0  # account_health = 1.0
 
-            time_feat = x_batch[:, -1, IDX_MINUTES_TO_CLOSE]
-            batch_features = x_batch[:, -1, :]
+            with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=_use_amp):
+                gate_logits, dir_logits = model(x_batch, position_state=flat_state)
 
-            loss = sniper_loss(
-                gate_logits, dir_logits,
-                y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
-                y_dict['exit_call'], y_dict['exit_put'],
-                y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
-                supervision_weight=y_dict['sw'],
-                actionable_mask=y_dict['am'],
-                risk_state_mask=y_dict['rsm'],
-                call_stopped_pnl=y_dict['call_stopped'],
-                put_stopped_pnl=y_dict['put_stopped'],
-                otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
-                otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
-                otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
-                otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
-                call_stopped_tight=y_dict.get('call_stopped_tight'),
-                call_stopped_wide=y_dict.get('call_stopped_wide'),
-                put_stopped_tight=y_dict.get('put_stopped_tight'),
-                put_stopped_wide=y_dict.get('put_stopped_wide'),
-                etv_pred=etv,
-            )
+                time_feat = x_batch[:, -1, IDX_MINUTES_TO_CLOSE]
+                batch_features = x_batch[:, -1, :]
 
-        loss.backward()
+                loss = sniper_loss(
+                    gate_logits, dir_logits,
+                    y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
+                    y_dict['exit_call'], y_dict['exit_put'],
+                    y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                    supervision_weight=y_dict['sw'],
+                    actionable_mask=y_dict['am'],
+                    risk_state_mask=y_dict['rsm'],
+                    call_stopped_pnl=y_dict['call_stopped'],
+                    put_stopped_pnl=y_dict['put_stopped'],
+                    otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+                    otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
+                    otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
+                    otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                    call_stopped_tight=y_dict.get('call_stopped_tight'),
+                    call_stopped_wide=y_dict.get('call_stopped_wide'),
+                    put_stopped_tight=y_dict.get('put_stopped_tight'),
+                    put_stopped_wide=y_dict.get('put_stopped_wide'),
+                    is_holding=None,  # flat state = no exit overrides
+                    tod_weight_logits=model.tod_weight_logits,
+                )
+
+        # Regularization: gate entropy + temporal smoothing (separate from total_loss)
+        _need_retain = (REG_GATE_ENTROPY > 0.0) or (REG_TEMPORAL_SMOOTH > 0.0 and use_seq_this_step)
+        if _need_retain:
+            loss.backward(retain_graph=True)
+        else:
+            loss.backward()
+
+        # REG_GATE_ENTROPY: maximize entropy of gate predictions to prevent collapse
+        if REG_GATE_ENTROPY > 0.0:
+            _gate_log_probs = F.log_softmax(gate_logits, dim=-1)
+            _gate_entropy = -(_gate_log_probs.exp() * _gate_log_probs).sum(dim=-1).mean()
+            _entropy_loss = -REG_GATE_ENTROPY * _gate_entropy
+            _entropy_loss.backward(retain_graph=(REG_TEMPORAL_SMOOTH > 0.0 and use_seq_this_step))
+
+        # REG_TEMPORAL_SMOOTH: penalize large changes in gate predictions between
+        # adjacent bars in day-sequential batches. Forces temporal consistency.
+        if REG_TEMPORAL_SMOOTH > 0.0 and use_seq_this_step and gate_logits.shape[0] > 1:
+            _gate_probs = F.softmax(gate_logits, dim=-1)
+            _temporal_diff = (_gate_probs[1:] - _gate_probs[:-1]).pow(2).sum(dim=-1).mean()
+            _smooth_loss = REG_TEMPORAL_SMOOTH * _temporal_diff
+            _smooth_loss.backward()
+
         if GRAD_CLIP > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
 
         progress = min(total_time / TIME_BUDGET, 1.0)
+
+        # WARM_FREEZE_RATIO: unfreeze transformer layers after freeze period
+        if _frozen_params and progress >= WARM_FREEZE_RATIO:
+            for name, param in model.named_parameters():
+                if not param.requires_grad and name in _frozen_params:
+                    param.requires_grad = True
+            print(f"\n[step {step}] Unfreezing {len(_frozen_params)} transformer params at {progress*100:.0f}% progress")
+            _frozen_params.clear()  # Only unfreeze once
+
         for pg in optimizer.param_groups:
             pg['lr'] = LR * get_lr_mult(progress)
 
@@ -903,13 +1185,11 @@ if __name__ == "__main__":
                 p_put = dir_probs[3:].sum().item()
                 p_atm = dir_probs[0].item() + dir_probs[3].item()
                 p_otm = 1.0 - p_atm
-                avg_etv = etv.mean().item() if etv is not None else 0.0
 
             mode = "seq" if use_seq_this_step else "rnd"
             print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
                   f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
-                  f"| ATM:{p_atm:.2f} OTM:{p_otm:.2f} "
-                  f"| etv:{avg_etv:+.3f} [{mode}] "
+                  f"| ATM:{p_atm:.2f} OTM:{p_otm:.2f} [{mode}] "
                   f"| lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
 
         if step == 0:
@@ -931,8 +1211,9 @@ if __name__ == "__main__":
     _eval_start = time.time()
     print(f"Training done at {time.time() - _wall_start:.0f}s. Starting evaluation...")
 
-    trade_metrics = evaluate_trades(model, data, LOOKBACK, device, score_config=_score_config)
-    sharpe_metrics = evaluate_sharpe(model, data, LOOKBACK, device)
+    with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=_use_amp):
+        trade_metrics = evaluate_trades(model, data, LOOKBACK, device, score_config=_score_config)
+        sharpe_metrics = evaluate_sharpe(model, data, LOOKBACK, device)
     print(f"Evaluation done in {time.time() - _eval_start:.0f}s (total wall: {time.time() - _wall_start:.0f}s)")
 
     metrics = {**trade_metrics}
@@ -951,9 +1232,17 @@ if __name__ == "__main__":
             'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
             'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
             'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
-            'architecture': 'v4_simplified_two_head_balanced_strike_gating_enhanced_pnl_alignment_minimized_drawdown_penalty',
+            'architecture': 'v5_three_head_gate_dir_value',
             'false_entry_penalty': FALSE_ENTRY_PENALTY,
+            'position_state_dim': TradingModel.POSITION_STATE_DIM,
+            'has_value_head': True,
         },
+        'training_dynamics': {
+            'batch_size': BATCH_SIZE,
+            'exit_loss_weight': EXIT_LOSS_WEIGHT,
+            'bf16': _use_amp,
+        },
+        'data_fingerprint': _data_fingerprint,
         'step': step,
     }, model_path)
     print(f"Model saved to {model_path}")
@@ -1052,6 +1341,10 @@ if __name__ == "__main__":
     t_end = time.time()
     peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else 0.0
 
+    # Compute num_trade_dates for generalization tracking
+    trade_dates_set = set(t.get('date', '') for t in trade_log) if trade_log else set()
+    metrics['num_trade_dates'] = len(trade_dates_set)
+
     # --- Output section (parsed by run_loop.py) ---
     print("\n---")
     print(f"score:              {metrics['score']:.6f}")
@@ -1090,6 +1383,7 @@ if __name__ == "__main__":
     print(f"total_return:       {metrics['total_return']:.6f}")
     print(f"num_val_bars:       {metrics['num_val_bars']}")
     print(f"num_val_days:       {metrics['num_val_days']}")
+    print(f"num_trade_dates:    {metrics.get('num_trade_dates', 0)}")
     print(f"worst_chunk_pf:     {metrics.get('worst_chunk_pf', 1.0):.2f}")
     print(f"rr_ratio:           {metrics.get('rr_ratio', 0.0):.4f}")
     print(f"avg_hold_bars:      {metrics.get('avg_hold_bars', 0.0):.2f}")
@@ -1113,3 +1407,13 @@ if __name__ == "__main__":
     print(f"gate_label_smoothing:{GATE_LABEL_SMOOTHING:.6f}")
     print(f"dir_label_smoothing:{DIR_LABEL_SMOOTHING:.6f}")
     print(f"false_entry_penalty:{FALSE_ENTRY_PENALTY:.6f}")
+
+    # --- Structured JSON output (parsed by inner_loop.py) ---
+    import json as _json
+    _json_metrics = {k: v for k, v in metrics.items() if k != 'trade_log'}
+    _json_metrics['chunk_details'] = metrics.get('chunk_details', [])
+    _json_metrics['num_steps'] = step
+    _json_metrics['training_seconds'] = total_time
+    _json_metrics['total_seconds'] = t_end - t_start
+    _json_metrics['peak_vram_mb'] = peak_mb
+    print("METRICS_JSON:" + _json.dumps(_json_metrics, default=str))

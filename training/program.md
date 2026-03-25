@@ -6,22 +6,18 @@ If anything else conflicts with this file, this file wins.
 ## Mission
 Build a model that makes money trading SPX 0DTE options on IBKR paper trading. The score is a proxy — focus on improving actual TRADING BEHAVIOR (profit factor, win rate, regime consistency, drawdown) rather than optimizing the score metric itself. Use the trade-level diagnostics (best/worst trades, time-of-day splits, VIX regime breakdowns) to diagnose specific weaknesses and propose targeted fixes.
 
-## Scope Lock
-- Feature set: **32 features** (reduced from 70 in v2 phase transition for signal density and training speed).
-- Model contract is locked to **two-head** outputs.
-- Active trading semantics are locked to 6-direction entries + contextual exit.
-
 ## Model Contract (Required)
-- Two-head architecture (v4):
+- Three-head architecture (v5):
   - Gate head: `[NO_TRADE, TRADE]` (2 logits)
   - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` (6 logits)
+  - Value head: scalar prediction of remaining P&L (MSE regression)
 - 8 effective actions:
   - `DO_NOTHING`
   - `BUY_CALL_ATM`, `BUY_CALL_OTM5`, `BUY_CALL_OTM10`
   - `BUY_PUT_ATM`, `BUY_PUT_OTM5`, `BUY_PUT_OTM10`
   - `EXIT` (gate=NO_TRADE while holding a position)
 
-**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism — it must learn when to take profits and cut losses. A **dynamic stop-loss** adapts per-trade based on gate confidence + market conditions (IV, VIX). Exits are: dynamic_stop (15%-60%), model_exit (gate=NO_TRADE), end_of_day, max_hold.
+**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism — it must learn when to take profits and cut losses. The **value head** provides a secondary exit signal: when predicted remaining P&L drops below `VALUE_EXIT_THRESHOLD`, it triggers a value exit (requires ≥2 bars held). A **dynamic stop-loss** adapts per-trade based on gate confidence + market conditions (IV, VIX). Exit priority: stop_loss > model_exit > value_exit > max_hold > end_of_day.
 
 ## Data Contract (Required)
 `data.pt` must include the target fields and option price arrays required by training and replay:
@@ -54,13 +50,13 @@ Do not change tensor-shape-defining architecture values during this phase:
 - `DEPTH`
 - `N_HEADS`
 
-Note: Input dimension changed from 70 to 32 features in v2 phase. Warm-start from prior `best_model.pt` is incompatible; fresh training required. D_MODEL/DEPTH/N_HEADS remain locked for future warm-start compatibility.
+Warm start loads existing weights when shapes are compatible. Changing these values requires a fresh start.
 
 ## Safety + Runtime Constraints
 - No `torch.compile`.
 - No `DataParallel` / `DistributedDataParallel`.
 - No `torch.jit.trace` / `torch.jit.script`.
-- Keep memory/runtime within the configured budget.
+- Keep memory/runtime within the configured budget. BATCH_SIZE ≤ 1024.
 - Keep changes focused: one coherent hypothesis per experiment.
 
 ## Score Formula
@@ -98,14 +94,31 @@ The `_score_config` dictionary in train.py is **read-only**. You MUST NOT change
 **What to do instead:** Improve the model's actual TRADING BEHAVIOR by modifying loss weights (GATE_W, DIR_W, PNL_W, EXIT_W), model architecture biases, or training dynamics. Improvements should be visible in raw metrics: profit factor, win rate, trades per day, drawdown.
 
 ### Loss Function Policy
-The loss function STRUCTURE is locked — `total = gate + dir + pnl + exit` must not change.
+The loss function STRUCTURE is locked — `total = gate + dir + pnl` must not change. Exit behavior is integrated into gate targets (exit-labeled bars override gate targets to NO_TRADE), not a separate loss term.
 
-You MUST NOT:
-- Add new loss terms to the total summation
+### What You MUST NOT Do
 - Modify the `forward()` method signature of TradingModel
-- Add new `_env_float()` declarations
+- Add new loss terms to the `total = gate + dir + pnl` summation
+- Add `_env_float()` declarations outside of the allowed prefixes below
 
-You MAY:
+### New `_env_float` Rules
+You MAY add up to 3 new `_env_float()` declarations per experiment, but ONLY with these prefixes:
+- `SCHED_*` — loss weight scheduling parameters (e.g., SCHED_GATE_RAMP_EPOCHS)
+- `WEIGHT_*` — sample weighting parameters (e.g., WEIGHT_HARD_EXAMPLE_RATIO)
+- `WARM_*` — warm start controls (e.g., WARM_FREEZE_EPOCHS, WARM_LR_MULT)
+- `REG_*` — regularization parameters (e.g., REG_L1_LAMBDA, REG_GRAD_PENALTY)
+
+All new `_env_float` declarations MUST default to 0.0 (no-op when absent). This ensures baseline behavior is preserved if the experiment is reverted.
+
+### Regularization Exception
+You MAY add ONE regularization penalty term to the training loop (not to `total_loss` directly, but as a separate `optimizer` gradient source or weight penalty), controlled by a `REG_*` _env_float defaulting to 0.0. Examples:
+- L1 sparsity on gate logits
+- Gradient penalty for temporal smoothness
+- Weight decay scheduling (varying across layers)
+
+This does NOT change the loss structure (`total = gate + dir + pnl`). The regularization is applied separately.
+
+### What You MAY Do
 - Tune existing `_env_float` values (DIR_W, GATE_W, PNL_W, EXIT_W, DROPOUT, WEIGHT_DECAY, LR, FEATURE_NOISE_STD, etc.)
 - Implement loss weight SCHEDULING (e.g., ramp gate_w from 0.5→1.0 over epochs using existing env values)
 - Add sample weighting within existing loss computations (harder examples, time-of-day weights, VIX regime weights)
@@ -114,6 +127,9 @@ You MAY:
 - Adjust feature noise patterns (targeted noise on specific feature groups)
 - Change batch construction strategy (DAY_SEQ_RATIO, hard example mining)
 - Add gradient accumulation steps
+- Freeze early transformer layers during warm start (first N epochs)
+- Use a lower learning rate multiplier for warm-started weights vs new/reset parameters
+- Add early stopping based on validation metrics (must save best checkpoint)
 
 `worst_chunk_pf` and `chunk_details` are reported for analysis — the agent may use these to evaluate temporal consistency.
 
@@ -129,7 +145,7 @@ The dynamic stop formula: `stop = BASE * confidence_factor * iv_factor * vix_fac
 - **iv_factor**: `1.0 + max(0, iv_feature) * 0.15` — wider stops in high-IV environments
 - **vix_factor**: `1.0 + max(0, vix_feature) * 0.10` — wider stops in elevated-VIX regimes
 
-Training P&L labels do NOT include stop truncation — the model sees the full trade trajectory and learns exits through the gate head. The ruin penalty is the safety net.
+Training uses stopped P&L labels (tight/med/wide selected by IV+VIX). The dynamic stop is the safety net; the gate head must learn to exit BEFORE hitting it.
 
 ## Position State Contract
 The model receives a 5-dimensional position state tensor at inference time:
@@ -139,9 +155,10 @@ The model receives a 5-dimensional position state tensor at inference time:
 - `[3]` account_health: account_balance / starting_capital (1.0 = full, 0.0 = wiped)
 - `[4]` loss_streak_frac: consecutive_losses / consec_loss_threshold, clamped to [0, 1]
 
-During training, `PositionStateGenerator` produces correlated synthetic states:
-- account_health and loss_streak_frac are correlated (low health → higher streak)
-- This teaches the model that account state is informative, not noise
+During training:
+- **Random batches** (30% of training via `1 - DAY_SEQ_RATIO`) receive **flat position state**: not_holding, account_health=1.0. This matches the starting state in evaluate_trades().
+- **Day-sequential batches** (70%) track real position state through each simulated trading day.
+- PositionStateGenerator was **removed** — it injected random noise uncorrelated with market data, causing train/eval mismatch.
 
 During evaluation/replay, dims 3-4 use real tracked account state.
 
@@ -170,13 +187,6 @@ The training script output must include these parseable metric keys:
 - `trades_blocked_by_balance:`
 
 ## Domain Knowledge (0DTE SPX Options)
-
-### Exit Mechanics
-- There is NO hardcoded profit target. The model must learn when to exit.
-- The gate head predicting NO_TRADE while holding a position triggers an exit.
-- **Dynamic stop-loss** adapts per-trade: high-confidence calm-market trades get tighter stops (~20%), uncertain volatile trades get wider stops (~50%). The model should learn to cut losers BEFORE hitting even the dynamic stop.
-- EXIT labels in training data use hindsight-optimal timing: EXIT=1 at the bar nearest to peak P&L, or when P&L has dropped >50% from its high-water mark.
-- The edge comes from exit TIMING, not just entry selection.
 
 ### Theta Decay (Critical for 0DTE)
 - Theta is NOT linear — follows 1/sqrt(T). Approximately doubles when remaining time quarters.

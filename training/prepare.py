@@ -12,8 +12,8 @@ Date range: March 14, 2022 → present (~4 years, flat file limit).
 0DTE schedule: Mon/Wed/Fri only before May 11, 2022; daily after.
 Bar resolution: 1-minute (390 bars/day RTH).
 
-Computes 32 trader-relevant features (returns, volume, VWAP, session,
-options, VIX/regime, Greeks, Bollinger, etc.) — reduced from 70 for
+Computes 37 trader-relevant features (v3: returns, volume, VWAP, session,
+options, VIX/regime, Greeks, Bollinger, market structure) — reduced from 70 for
 signal density and training speed — and prepares tensors for train.py.
 
 The model uses a two-head action contract:
@@ -114,7 +114,7 @@ DATA_DIR     = os.path.join(CACHE_DIR, "data")
 FEATURES_DIR = os.path.join(CACHE_DIR, "features")
 
 # ---------------------------------------------------------------------------
-# Feature names (32 features: reduced from 70 for signal density and training speed)
+# Feature names (37 features: 32 core + 5 market structure from first-principles review)
 # ---------------------------------------------------------------------------
 
 FEATURE_NAMES = [
@@ -164,6 +164,12 @@ FEATURE_NAMES = [
     # === Range extras (2) ===
     'rsi_14',               # 14-period RSI (0-1 scale)
     'session_range_position',  # (close - session_low) / (session_high - session_low)
+    # === Market structure (5) ===
+    'poc_dist',             # (close - session POC) / close: distance to Point of Control
+    'va_position',          # position within Value Area: 0=VAL, 1=VAH, <0/>1 = outside
+    'vwap_band_sigma',      # distance from VWAP in σ units (±1σ, ±2σ bands)
+    'ib_break',             # IB break state: -1=below IB low, 0=inside, +1=above IB high
+    'theta_pressure',       # afternoon theta pressure: ramps 0→1 from bar 120 (11:30am) to close
 ]
 
 NUM_FEATURES = len(FEATURE_NAMES)
@@ -180,6 +186,9 @@ _NO_NORMALIZE = {
     'bollinger_position',   # already normalized to [-1, 1]-ish range
     'session_range_position',  # already 0-1
     'rsi_14',               # already 0-1
+    'va_position',          # already ~0-1 (can exceed but bounded)
+    'ib_break',             # categorical: -1, 0, +1
+    'theta_pressure',       # already 0-1
 }
 
 # Action labels for the 8-class model
@@ -335,17 +344,30 @@ def _safe_float(v, default: float = float("nan")) -> float:
 
 
 def _spread_bps_proxy(mid_px: float, high_px: float, low_px: float) -> float:
-    """Historical spread proxy from minute bars (no historical NBBO in base prep path)."""
+    """Spread estimate from option premium level (not bar range).
+
+    Bar high-low conflates bid-ask spread with directional price movement —
+    a $5 ATM option routinely moves $0.50 in a minute (1000 bps range) even
+    though the actual spread is ~$0.15. Use premium-tier lookup based on
+    known SPX 0DTE market microstructure instead.
+    """
     mid = _safe_float(mid_px)
     if not np.isfinite(mid) or mid <= 0:
         return float("nan")
-    h = _safe_float(high_px)
-    l = _safe_float(low_px)
-    if not np.isfinite(h) or not np.isfinite(l) or h < l:
-        return float(OPTION_SPREAD_BPS)
-    bar_range_bps = ((h - l) / max(mid, 1e-6)) * 10000.0
-    # Minute range overstates true spread; shrink and floor.
-    return float(np.clip(0.35 * bar_range_bps + 0.5, 1.0, 1500.0))
+    # SPX 0DTE typical bid-ask spreads by premium tier:
+    #   Premium >= $5:  ~$0.15 spread (liquid ATM)
+    #   Premium $2-5:   ~$0.10 spread
+    #   Premium $0.50-2:~$0.10 spread (still liquid near-money)
+    #   Premium < $0.50:~$0.05 spread (wide relative to premium)
+    if mid >= 5.0:
+        spread_dollar = 0.15
+    elif mid >= 2.0:
+        spread_dollar = 0.10
+    elif mid >= 0.50:
+        spread_dollar = 0.10
+    else:
+        spread_dollar = 0.05
+    return float(np.clip((spread_dollar / mid) * 10000.0, 1.0, 1500.0))
 
 
 def _quote_age_proxy_seconds(volume: float) -> float:
@@ -391,10 +413,16 @@ def _polygon_client():
     from polygon import RESTClient
     return RESTClient(key)
 
-def _ib_client(host: str = "127.0.0.1", port: int = None, client_id: int = 10):
-    """Connect to IB Gateway. Returns IB client or exits."""
+_ib_next_client_id = 10
+
+def _ib_client(host: str = "127.0.0.1", port: int = None, client_id: int = None):
+    """Connect to IB Gateway with unique client ID. Returns IB client or exits."""
+    global _ib_next_client_id
     if port is None:
         port = int(os.environ.get("IB_PORT", "4001"))
+    if client_id is None:
+        client_id = _ib_next_client_id
+        _ib_next_client_id += 1
     try:
         from ib_insync import IB
     except ImportError:
@@ -402,9 +430,9 @@ def _ib_client(host: str = "127.0.0.1", port: int = None, client_id: int = 10):
         sys.exit(1)
     ib = IB()
     try:
-        ib.connect(host, port, clientId=client_id, timeout=15)
+        ib.connect(host, port, clientId=client_id, timeout=30)
     except Exception as e:
-        print(f"ERROR: Cannot connect to IB Gateway at {host}:{port}: {e}")
+        print(f"ERROR: Cannot connect to IB Gateway at {host}:{port} (clientId={client_id}): {e}")
         print("  Run ib_probe.py to diagnose.")
         sys.exit(1)
     return ib
@@ -624,30 +652,40 @@ def _download_ibkr_index(symbol: str, start: str, end: str,
     while current < end_dt:
         week_end = min(current + dt.timedelta(days=7), end_dt)
         end_str = week_end.strftime('%Y%m%d 16:00:00')
-        try:
-            bars = ib.reqHistoricalData(
-                contract,
-                endDateTime=end_str,
-                durationStr="1 W",
-                barSizeSetting="1 min",
-                whatToShow="TRADES",
-                useRTH=True,
-                timeout=30,
-            )
-            if bars:
-                for b in bars:
-                    all_bars.append({
-                        'timestamp': int(b.date.timestamp() * 1000),
-                        f'{prefix}open': b.open, f'{prefix}high': b.high,
-                        f'{prefix}low': b.low, f'{prefix}close': b.close,
-                    })
-                print(f"  {current.strftime('%Y-%m-%d')}: {len(bars)} bars (total {len(all_bars)})")
-            else:
-                print(f"  {current.strftime('%Y-%m-%d')}: 0 bars")
-        except Exception as e:
-            print(f"  {current.strftime('%Y-%m-%d')}: FAIL {e}")
+        bars = None
+        for attempt, backoff in enumerate([10, 30, 60], 1):
+            try:
+                bars = ib.reqHistoricalData(
+                    contract,
+                    endDateTime=end_str,
+                    durationStr="1 W",
+                    barSizeSetting="1 min",
+                    whatToShow="TRADES",
+                    useRTH=True,
+                    timeout=60,
+                )
+                if bars is not None and len(bars) > 0:
+                    break  # success — got actual data
+                elif bars is not None and len(bars) == 0:
+                    # Empty list often means timeout/rate-limit, not truly empty
+                    print(f"  {current.strftime('%Y-%m-%d')}: attempt {attempt}/3 got 0 bars, retry in {backoff}s")
+                    ib.sleep(backoff)
+                    bars = None  # reset so we retry
+            except Exception as e:
+                print(f"  {current.strftime('%Y-%m-%d')}: attempt {attempt}/3 FAIL ({e}), retry in {backoff}s")
+                ib.sleep(backoff)
+        if bars:
+            for b in bars:
+                all_bars.append({
+                    'timestamp': int(b.date.timestamp() * 1000),
+                    f'{prefix}open': b.open, f'{prefix}high': b.high,
+                    f'{prefix}low': b.low, f'{prefix}close': b.close,
+                })
+            print(f"  {current.strftime('%Y-%m-%d')}: {len(bars)} bars (total {len(all_bars)})")
+        else:
+            print(f"  {current.strftime('%Y-%m-%d')}: 0 bars after 3 attempts")
         current = week_end
-        ib.sleep(2)  # rate limit — prevent IBKR output buffer overflow
+        ib.sleep(5)  # rate limit — prevent IBKR pacing violations
 
     ib.disconnect()
 
@@ -799,7 +837,7 @@ def download_spy_bars_ibkr(start: str, end: str) -> pd.DataFrame:
         except Exception as e:
             print(f"  {current.strftime('%Y-%m-%d')}: FAIL {e}")
         current = week_end
-        ib.sleep(2)  # rate limit — prevent IBKR output buffer overflow
+        ib.sleep(5)  # rate limit — prevent IBKR pacing violations
 
     ib.disconnect()
 
@@ -858,8 +896,9 @@ def download_spxw_full(spy_df: pd.DataFrame) -> dict:
             continue
 
         day_open = float(day_bars.iloc[0]['open'])
-        # If prices are SPY-scale (<1000), multiply by 10 to get SPX-scale
-        spx_est = day_open * 10.0 if day_open < 1000 else day_open
+        if day_open < 1000:
+            raise RuntimeError(f"SPY-scale prices detected ({day_open:.2f}) — use --use-spx for real SPX prices")
+        spx_est = day_open
         atm_strike = round(spx_est / 5) * 5
 
         # Build SPXW 0DTE tickers
@@ -978,7 +1017,9 @@ def download_spxw_chain(spy_df: pd.DataFrame) -> dict:
             continue
 
         day_open = float(day_bars.iloc[0]['open'])
-        spx_est = day_open * 10.0 if day_open < 1000 else day_open
+        if day_open < 1000:
+            raise RuntimeError(f"SPY-scale prices detected ({day_open:.2f}) — use --use-spx for real SPX prices")
+        spx_est = day_open
         atm_strike = round(spx_est / 5) * 5
 
         day_dt = dt.datetime.strptime(day_str, '%Y-%m-%d')
@@ -1093,7 +1134,9 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
         if day_bars.empty:
             continue
         day_open = float(day_bars.iloc[0]['open'])
-        spx_est = day_open * 10.0 if day_open < 1000 else day_open
+        if day_open < 1000:
+            raise RuntimeError(f"SPY-scale prices detected ({day_open:.2f}) — use --use-spx for real SPX prices")
+        spx_est = day_open
         atm_strike = round(spx_est / 5) * 5
 
         # Target ticker prefixes (0DTE = expires today)
@@ -1265,7 +1308,9 @@ def download_spxw_ibkr(spy_df: pd.DataFrame, dates: list = None):
         if day_bars.empty:
             continue
         day_open = float(day_bars.iloc[0]['open'])
-        spx_est = day_open if day_open >= 1000 else day_open * 10.0
+        if day_open < 1000:
+            raise RuntimeError(f"SPY-scale prices detected ({day_open:.2f}) — use --use-spx for real SPX prices")
+        spx_est = day_open
         atm_strike = round(spx_est / 5) * 5
 
         # Expiry for 0DTE = same day
@@ -1466,7 +1511,7 @@ def _compute_session_vwap_bands(close, volume, day_mask_indices):
 def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                      vix_data: dict | None = None,
                      chain_data: dict | None = None) -> tuple:
-    """Compute 32 trader-relevant features from SPX 1-min bars (+ SPY volume) + SPXW options.
+    """Compute 37 trader-relevant features from SPX 1-min bars (+ SPY volume) + SPXW options.
 
     Returns: (features_array, targets_array, dates_list, valid_mask, option_prices)
     option_prices is a dict with 'atm_call', 'atm_put', 'strike', 'call_pnl',
@@ -1572,8 +1617,53 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         for k, i in enumerate(idx):
             vwap_cache[i] = (vw[k], u1[k], l1[k], u2[k], l2[k])
 
+    # Pre-compute rolling volume profile (POC, VAH, VAL) per bar
+    # POC = price level with highest traded volume in session so far
+    # Value Area = range containing 70% of session volume
+    # Uses 50-bin histogram of close prices weighted by volume
+    vp_cache = {}  # i -> (poc, vah, val)
+    for day in unique_dates:
+        idx = day_indices[day]
+        for k, bar_i in enumerate(idx):
+            if k < 5:  # need at least 5 bars for meaningful VP
+                continue
+            session_bars = idx[:k + 1]
+            sc = close[session_bars]
+            sv = np.maximum(volume[session_bars], 1.0)
+            price_min, price_max = sc.min(), sc.max()
+            if price_max - price_min < 0.01:
+                continue
+            n_bins = min(50, max(10, k))
+            bin_edges = np.linspace(price_min, price_max, n_bins + 1)
+            bin_vol = np.zeros(n_bins)
+            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+            for j_vp in range(len(sc)):
+                b = min(int((sc[j_vp] - price_min) / (price_max - price_min) * n_bins), n_bins - 1)
+                bin_vol[b] += sv[j_vp]
+            poc_idx = np.argmax(bin_vol)
+            poc = bin_centers[poc_idx]
+            # Value Area: expand from POC until 70% of volume captured
+            total_vol = bin_vol.sum()
+            va_vol = bin_vol[poc_idx]
+            lo_b, hi_b = poc_idx, poc_idx
+            while va_vol / total_vol < 0.70 and (lo_b > 0 or hi_b < n_bins - 1):
+                expand_lo = bin_vol[lo_b - 1] if lo_b > 0 else 0
+                expand_hi = bin_vol[hi_b + 1] if hi_b < n_bins - 1 else 0
+                if expand_lo >= expand_hi and lo_b > 0:
+                    lo_b -= 1
+                    va_vol += bin_vol[lo_b]
+                elif hi_b < n_bins - 1:
+                    hi_b += 1
+                    va_vol += bin_vol[hi_b]
+                else:
+                    lo_b -= 1
+                    va_vol += bin_vol[lo_b]
+            val_price = bin_edges[lo_b]
+            vah_price = bin_edges[hi_b + 1]
+            vp_cache[bar_i] = (poc, vah_price, val_price)
+
     # -----------------------------------------------------------------------
-    # Main feature loop (32 features — v2 reduced set)
+    # Main feature loop (37 features — v2 core + 5 market structure)
     # -----------------------------------------------------------------------
     for i in range(N):
         fi = 0
@@ -1708,7 +1798,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         total_session = 390
         minutes_remaining = max(total_session - minutes_into, 0)
         session_progress = minutes_into / total_session
-        spx_for_remap = c if c >= 1000 else c * 10.0
+        spx_for_remap = c  # SPX-scale required (--use-spx default)
         dyn_atm = round(spx_for_remap / 5.0) * 5.0
         dynamic_atm_strikes[i] = dyn_atm
         for j, step in enumerate(OTM_STRIKE_STEPS):
@@ -1727,7 +1817,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         opt = options_data.get(opt_key) if options_data else None
         call_iv = np.nan  # initialize for use in Greeks/VIX sections
         if opt is not None and not np.isnan(opt.get('call_close', np.nan)):
-            spx = c if c >= 1000 else c * 10.0
+            spx = c  # SPX-scale required (--use-spx default)
             K = opt['strike']
             T = minutes_remaining / (252.0 * 390.0)
             r = 0.05
@@ -1790,14 +1880,12 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         cur_iv = feat[i, _FEAT_IDX['atm_iv']]
         cur_rv = feat[i, _FEAT_IDX['realized_vol']]
 
-        # Determine VIX value: real CBOE VIX or ATM IV fallback
+        # Determine VIX value: real CBOE VIX ONLY (no fallback)
         if vix_bar is not None:
             vix_val = vix_bar['vix_close']
             vix_annualized = vix_val / 100.0
-        elif not np.isnan(cur_iv):
-            vix_val = cur_iv * 100.0
-            vix_annualized = cur_iv
         else:
+            # VIX data missing for this bar — leave as NaN (validated at end)
             vix_val = np.nan
             vix_annualized = np.nan
 
@@ -1823,7 +1911,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         # === OTM chain data (prices for trade simulation only, no features) ===
         chain_bar = chain_data.get(opt_key) if chain_data else None
         if chain_bar is not None and opt is not None:
-            spx_for_iv = c if c >= 1000 else c * 10.0
+            spx_for_iv = c  # SPX-scale required (--use-spx default)
             T_iv = minutes_remaining / (252.0 * 390.0)
             r_iv = 0.05
             chain_close_map: dict[str, float] = {}
@@ -1899,7 +1987,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
         # === Greeks (3): atm_gamma, atm_theta_per_bar, charm_estimate ===
         if opt is not None and not np.isnan(opt.get('call_close', np.nan)):
-            spx_g = c if c >= 1000 else c * 10.0
+            spx_g = c  # SPX-scale required (--use-spx default)
             K_g = opt['strike']
             T_g = minutes_remaining / (252.0 * 390.0)
             r_g = 0.05
@@ -1960,6 +2048,51 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             feat[i, fi] = 0.5
         fi += 1
 
+        # === Market structure (5): poc_dist, va_position, vwap_band_sigma, ib_break, theta_pressure ===
+
+        # poc_dist: (close - POC) / close
+        vp_data = vp_cache.get(i)
+        if vp_data is not None:
+            poc, vah, val = vp_data
+            feat[i, fi] = (c - poc) / max(c, 1.0)
+        fi += 1
+
+        # va_position: where price sits in Value Area (0=VAL, 1=VAH)
+        if vp_data is not None:
+            poc, vah, val = vp_data
+            va_range = vah - val
+            if va_range > 0.01:
+                feat[i, fi] = (c - val) / va_range
+            else:
+                feat[i, fi] = 0.5
+        fi += 1
+
+        # vwap_band_sigma: distance from VWAP in σ units
+        vw_data_ms = vwap_cache.get(i)
+        if vw_data_ms is not None:
+            vw_ms, u1_ms, l1_ms, u2_ms, l2_ms = vw_data_ms
+            if np.isfinite(u1_ms) and np.isfinite(l1_ms):
+                sigma = (u1_ms - vw_ms)  # 1σ distance
+                if sigma > 1e-8:
+                    feat[i, fi] = (c - vw_ms) / sigma
+        fi += 1
+
+        # ib_break: -1 if below IB low, 0 if inside, +1 if above IB high
+        ib_h_ms = ib_high_map.get(day, c)
+        ib_l_ms = ib_low_map.get(day, c)
+        if c > ib_h_ms:
+            feat[i, fi] = 1.0
+        elif c < ib_l_ms:
+            feat[i, fi] = -1.0
+        else:
+            feat[i, fi] = 0.0
+        fi += 1
+
+        # theta_pressure: ramps 0→1 from bar 120 (11:30am) to close (bar 390)
+        bar_in_day = day_pos  # 0-indexed position in session
+        feat[i, fi] = max(0.0, (bar_in_day - 120) / 270.0) if bar_in_day > 120 else 0.0
+        fi += 1
+
         # Sidecar quality/risk masks for supervision weighting.
         row_quality = action_quality_score[i]
         row_cost = action_cost_bps[i]
@@ -1974,7 +2107,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             q_mean = float(np.nanmean(row_quality[valid_q]))
             c_mean = float(np.nanmean(row_cost[valid_q]))
             leg_coverage = float(np.mean(valid_q.astype(np.float32)))
-            is_actionable = (q_mean >= 0.30) and (c_mean <= 350.0) and (leg_coverage >= 0.34)
+            is_actionable = (q_mean >= 0.30) and (c_mean <= 500.0) and (leg_coverage >= 0.34)
             actionable_mask[i] = 1.0 if is_actionable else 0.0
             base_w = float(np.clip(q_mean * (1.0 - min(c_mean, 700.0) / 700.0), 0.0, 1.0))
             if risk_off:
@@ -2312,10 +2445,63 @@ def _rolling_zscore(features: np.ndarray, valid: np.ndarray, window: int) -> np.
     return out
 
 
-def normalize_features(features: np.ndarray, valid: np.ndarray) -> np.ndarray:
-    """Adaptive rolling z-score. Features in _NO_NORMALIZE are skipped."""
+def _per_day_zscore(features: np.ndarray, valid: np.ndarray, dates: list) -> np.ndarray:
+    """Per-day mean, global std normalization.
+
+    Removes day-specific feature fingerprints that cause the model to memorize
+    individual dates (e.g. the Sep 17 attractor) while preserving cross-day
+    regime information via the global standard deviation.
+    """
+    out = features.copy().astype(np.float64)
+
+    # Build day boundaries from dates
+    day_starts = [0] + [i for i in range(1, len(dates)) if dates[i] != dates[i - 1]]
+    day_ends = day_starts[1:] + [len(dates)]
+
+    for j in range(out.shape[1]):
+        name = FEATURE_NAMES[j] if j < len(FEATURE_NAMES) else f"feature_{j}"
+        if name in _NO_NORMALIZE:
+            continue
+
+        # Global std across all valid bars (preserves regime-level differences)
+        all_vals = out[:, j][valid]
+        if len(all_vals) < 10:
+            out[:, j] = 0.0
+            continue
+        global_std = np.std(all_vals)
+        if global_std < 1e-10:
+            out[:, j] = 0.0
+            continue
+
+        # Per-day mean subtraction (removes day-specific fingerprints)
+        for ds, de in zip(day_starts, day_ends):
+            chunk = out[ds:de, j]
+            mask = valid[ds:de]
+            day_vals = chunk[mask]
+            if len(day_vals) < 3:
+                out[ds:de, j] = 0.0
+            else:
+                day_mean = np.mean(day_vals)
+                out[ds:de, j] = (chunk - day_mean) / global_std
+
+    out = np.clip(out, -5.0, 5.0)
+    out = np.nan_to_num(out, nan=0.0)
+    return out
+
+
+def normalize_features(features: np.ndarray, valid: np.ndarray,
+                        dates: list | None = None) -> np.ndarray:
+    """Per-day z-score normalization (if dates provided) or rolling z-score fallback.
+
+    Per-day mode uses per-day mean + global std to prevent cross-day fingerprinting
+    while preserving regime-level information. Falls back to rolling z-score for
+    replay/live (no dates available).
+    """
     if len(features) == 0:
         return features.copy()
+    if dates is not None and len(dates) == len(features):
+        return _per_day_zscore(features, valid.astype(bool), dates)
+    # Fallback: rolling z-score (for replay/live where dates aren't available)
     window = min(len(features) // 4, 500)
     window = max(window, 50)
     return _rolling_zscore(features, valid.astype(bool), int(window))
@@ -2460,6 +2646,61 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
     day_boundaries = [0] + [i for i in range(1, len(date_list)) if date_list[i] != date_list[i - 1]]
     data['day_boundaries'] = torch.tensor(day_boundaries, dtype=torch.long)
 
+    # --- Data quality guardrails (HARD FAIL) ---
+    if 'actionable_mask' in data:
+        am = data['actionable_mask'].numpy() if isinstance(data['actionable_mask'], torch.Tensor) else data['actionable_mask']
+        dt_arr = data['dates'].numpy() if isinstance(data['dates'], torch.Tensor) else data['dates']
+        from collections import Counter
+        date_act_counts = Counter()
+        total_act = 0
+        for idx_g in range(len(am)):
+            if am[idx_g] > 0.5:
+                date_act_counts[str(dt_arr[idx_g])] += 1
+                total_act += 1
+        n_act_dates = len(date_act_counts)
+        print(f"  Actionable bars: {total_act}/{len(am)} ({100*total_act/max(len(am),1):.1f}%)")
+        print(f"  Actionable dates: {n_act_dates}")
+        for d_g, cnt_g in date_act_counts.most_common(5):
+            print(f"    Date {d_g}: {cnt_g} bars ({100*cnt_g/max(total_act,1):.1f}%)")
+        if n_act_dates < 5:
+            raise RuntimeError(
+                f"HARD FAIL: Only {n_act_dates} dates have actionable bars (need >=5). "
+                f"Check _spread_bps_proxy calibration and actionable_mask threshold."
+            )
+        if total_act > 0:
+            max_d, max_cnt = date_act_counts.most_common(1)[0]
+            if max_cnt / total_act > 0.30:
+                raise RuntimeError(
+                    f"HARD FAIL: Date {max_d} has {max_cnt}/{total_act} "
+                    f"({100*max_cnt/total_act:.0f}%) of actionable bars — data quality inconsistency."
+                )
+
+    # --- Data completeness validation (HARD FAIL) ---
+    feat_tensor = data['features']
+    n_bars = feat_tensor.shape[0]
+    n_feat = feat_tensor.shape[-1]
+    assert n_feat == NUM_FEATURES, f"Feature count mismatch: {n_feat} != {NUM_FEATURES}"
+
+    # Check per-feature NaN rate
+    feat_np = feat_tensor.numpy() if isinstance(feat_tensor, torch.Tensor) else feat_tensor
+    for fi_check in range(n_feat):
+        nan_rate = np.isnan(feat_np[:, fi_check]).mean() if feat_np.ndim == 2 else np.isnan(feat_np[:, :, fi_check]).mean()
+        if nan_rate > 0.05:
+            fname = FEATURE_NAMES[fi_check] if fi_check < len(FEATURE_NAMES) else f"feature_{fi_check}"
+            raise RuntimeError(
+                f"HARD FAIL: Feature '{fname}' (idx {fi_check}) has {nan_rate*100:.1f}% NaN rate (max 5%)")
+
+    # Check required stopped P&L fields exist
+    for req_key in ('call_stopped_pnl', 'put_stopped_pnl',
+                    'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
+                    'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl',
+                    'call_stopped_pnl_tight', 'call_stopped_pnl_wide',
+                    'put_stopped_pnl_tight', 'put_stopped_pnl_wide'):
+        if req_key not in data:
+            raise RuntimeError(f"HARD FAIL: Missing required field '{req_key}' in data.pt")
+
+    print(f"  Data completeness: PASSED ({n_bars} bars, {n_feat} features, all NaN rates <5%)")
+
     path = os.path.join(FEATURES_DIR, "data.pt")
     torch.save(data, path)
     size_mb = os.path.getsize(path) / (1024 * 1024)
@@ -2521,7 +2762,7 @@ def _load_dataloader_arrays(data, device):
         v = data.get(k)
         arrays[k] = v.to(device) if v is not None else torch.ones_like(call_pnl_all)
 
-    # Stopped P&L arrays (v5) — fall back to unstopped if not present
+    # Stopped P&L arrays (v5) — REQUIRED (no fallback)
     for k in ('call_stopped_pnl', 'put_stopped_pnl',
               'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
               'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl'):
@@ -2529,24 +2770,16 @@ def _load_dataloader_arrays(data, device):
         if v is not None:
             arrays[k] = v.to(device)
         else:
-            # Fall back to unstopped P&L for backward compat with old data.pt
-            fallback_key = k.replace('_stopped_pnl', '_pnl').replace('call_pnl', 'call_pnl').replace('put_pnl', 'put_pnl')
-            if k == 'call_stopped_pnl':
-                fallback_key = 'call_pnl'
-            elif k == 'put_stopped_pnl':
-                fallback_key = 'put_pnl'
-            arrays[k] = arrays.get(fallback_key, torch.full_like(call_pnl_all, float('nan')))
+            raise RuntimeError(f"Missing required field in data.pt: {k} — rebuild data.pt")
 
-    # Multi-level stopped P&L (tight=0.20, wide=0.50) — fall back to med-level if absent
+    # Multi-level stopped P&L (tight=0.20, wide=0.50) — REQUIRED (no fallback)
     for k in ('call_stopped_pnl_tight', 'call_stopped_pnl_wide',
               'put_stopped_pnl_tight', 'put_stopped_pnl_wide'):
         v = data.get(k)
         if v is not None:
             arrays[k] = v.to(device)
         else:
-            # Fall back to the med-level stopped P&L
-            med_key = k.replace('_tight', '').replace('_wide', '')
-            arrays[k] = arrays.get(med_key, torch.full_like(call_pnl_all, float('nan')))
+            raise RuntimeError(f"Missing required field in data.pt: {k} — rebuild data.pt")
 
     return arrays
 
@@ -2569,7 +2802,7 @@ def _build_y_tuple(arrays, idx):
             arrays['put_stopped_pnl_tight'][idx], arrays['put_stopped_pnl_wide'][idx])
 
 
-def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
+def make_dataloader(data, lookback, batch_size, split="train", device="cuda", target_mask=None):
     """Infinite (train) or single-pass (val) dataloader.
 
     Yields (x, y):
@@ -2583,6 +2816,11 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
                      call_stopped_pnl_tight, call_stopped_pnl_wide,
                      put_stopped_pnl_tight, put_stopped_pnl_wide)
            each (batch,). NaN where option data is unavailable.
+
+    Args:
+        target_mask: optional bool tensor/array same length as features. When provided,
+                     only indices where target_mask[i] is True are used as training targets.
+                     Lookback context still uses the original valid_mask.
     """
     arrays = _load_dataloader_arrays(data, device)
     features = arrays['features']
@@ -2597,8 +2835,17 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda"):
 
     valid_indices = []
     for i in range(start, end):
-        if valid_mask[i] and valid_mask[max(0, i - lookback):i].all():
-            valid_indices.append(i)
+        if not valid_mask[i]:
+            continue
+        if target_mask is not None:
+            # Specialist mode: target_mask selects which bars to train on.
+            # Lookback validity relaxed — invalid lookback bars are zero-filled.
+            if target_mask[i]:
+                valid_indices.append(i)
+        else:
+            # Standard mode: require full lookback validity
+            if valid_mask[max(0, i - lookback):i].all():
+                valid_indices.append(i)
 
     valid_indices = torch.tensor(valid_indices, dtype=torch.long, device=device)
     n = len(valid_indices)
@@ -2673,11 +2920,12 @@ def make_day_sequential_loader(data, lookback, batch_size, device="cuda", split=
         day_indices = torch.randint(0, len(split_days), (min(batch_size, len(split_days)),))
         selected_days = [split_days[di] for di in day_indices]
 
-        # Find the max number of bars across selected days
-        max_bars = max(de - ds for ds, de in selected_days)
+        # Truncate to shortest selected day so all days contribute equally
+        # to every bar position. Prevents long days from dominating late offsets.
+        min_bars = min(de - ds for ds, de in selected_days)
 
-        for bar_offset in range(lookback, max_bars):
-            # For each bar position, gather indices from all days that have this bar
+        for bar_offset in range(lookback, min_bars):
+            # Every selected day contributes to every bar position
             batch_indices = []
             for ds, de in selected_days:
                 bar_idx = ds + bar_offset
@@ -2699,7 +2947,7 @@ def make_day_sequential_loader(data, lookback, batch_size, device="cuda", split=
 # ---------------------------------------------------------------------------
 
 @torch.no_grad()
-def evaluate_trades(model, data, lookback, device, batch_size=256,
+def evaluate_trades(model, data, lookback, device, batch_size=1024,
                     stop_loss_pct=None, max_hold_bars=None,
                     max_trade_return=None,
                     starting_capital=None, position_risk_target=None,
@@ -2875,14 +3123,22 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
     _pos_consecutive_losses = 0
     _pos_n_contracts = 1
 
+    _pos_best_pnl = 0.0           # Phase D: best P&L since entry
+    _pos_bars_since_high = 0       # Phase D: bars since P&L peak
+
     for k, global_idx in enumerate(val_indices):
-        # Build position state tensor (5 dims: holding, bars_held, unrealized_pnl, account_health, loss_streak)
+        # Build position state tensor (7 dims: holding, bars_held, unrealized_pnl,
+        #   account_health, loss_streak, best_pnl, bars_since_high)
         if _has_position_proj:
-            pos_state = torch.zeros(1, 5, device=device)
+            _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
+            pos_state = torch.zeros(1, _ps_dim, device=device)
             if _pos_in_trade:
                 pos_state[0, 0] = 1.0
                 pos_state[0, 1] = min(_pos_bars_held / BARS_PER_DAY, 1.0)
                 pos_state[0, 2] = float(np.tanh(_pos_unrealized_pnl * 5.0))
+                if _ps_dim >= 7:
+                    pos_state[0, 5] = float(np.tanh(_pos_best_pnl * 2.0))
+                    pos_state[0, 6] = min(_pos_bars_since_high / BARS_PER_DAY, 1.0)
             pos_state[0, 3] = _pos_account_balance / _starting_capital  # account_health
             pos_state[0, 4] = min(_pos_consecutive_losses / max(_sc_consec_thresh, 1), 1.0)  # loss_streak_frac
         else:
@@ -2911,13 +3167,30 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 px_now = _pos_px_array[global_idx]
                 if not torch.isnan(px_now) and _pos_entry_price > 0:
                     _pos_unrealized_pnl = (float(px_now) - _pos_entry_price) / _pos_entry_price
+            # Phase D: track best P&L for value head context
+            if _pos_unrealized_pnl > _pos_best_pnl:
+                _pos_best_pnl = _pos_unrealized_pnl
+                _pos_bars_since_high = 0
+            else:
+                _pos_bars_since_high += 1
+
+            # Phase D: value-based exit
+            _value_exit = False
+            _has_value_head = hasattr(model, 'value_head')
+            if _has_value_head and _pos_bars_held >= 2:
+                with torch.no_grad():
+                    _vout = model(x, position_state=pos_state, return_value=True)
+                    _vp = float(_vout[2][0].item())
+                if _vp < 0.02:  # VALUE_EXIT_THRESHOLD
+                    _value_exit = True
+
             # Check exit conditions (mirrors trade loop below)
             hit_stop = _pos_unrealized_pnl <= -_pos_dynamic_stop
             hit_max_hold = _pos_bars_held >= _max_hold
             entry_date = dates[val_indices[k - _pos_bars_held]] if k >= _pos_bars_held else None
             eod = dates[global_idx] != entry_date if entry_date else False
             model_exit = gate_no_trade[k]
-            if hit_stop or hit_max_hold or eod or model_exit:
+            if hit_stop or hit_max_hold or eod or model_exit or _value_exit:
                 # Approximate dollar P&L for account tracking
                 _exit_pnl = -_pos_dynamic_stop if hit_stop else _pos_unrealized_pnl
                 _dollar_pnl = _exit_pnl * _pos_entry_price * SPX_MULTIPLIER * _pos_n_contracts
@@ -2928,6 +3201,8 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                 else:
                     _pos_consecutive_losses = 0
                 _pos_in_trade = False
+                _pos_best_pnl = 0.0
+                _pos_bars_since_high = 0
                 if hit_stop:
                     _pos_last_stop_bar = k
         elif actions[k] in {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
@@ -2949,6 +3224,8 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                                 _pos_entry_price = entry_px
                                 _pos_px_array = candidate_px_array
                                 _pos_unrealized_pnl = 0.0
+                                _pos_best_pnl = 0.0
+                                _pos_bars_since_high = 0
                                 # Compute dynamic stop at entry from confidence + market state
                                 _pos_dynamic_stop = compute_dynamic_stop(
                                     gate_conf,
@@ -3041,7 +3318,17 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
             eod = dates[global_idx] != dates[entry_global]
             model_exit = gate_flat_signal
 
-            if hit_stop or hit_max_hold or eod or model_exit or k == len(val_indices) - 1:
+            # Phase D: value-based exit
+            _trade_value_exit = False
+            _has_value_head = hasattr(model, 'value_head')
+            if _has_value_head and bars_held >= 2 and not hit_stop:
+                with torch.no_grad():
+                    _vout = model(x, position_state=pos_state, return_value=True)
+                    _vp = float(_vout[2][0].item())
+                if _vp < 0.02:  # VALUE_EXIT_THRESHOLD
+                    _trade_value_exit = True
+
+            if hit_stop or hit_max_hold or eod or model_exit or _trade_value_exit or k == len(val_indices) - 1:
                 if hit_stop:
                     final_pnl = -trade_dynamic_stop
                     last_stop_bar = k
@@ -3057,11 +3344,13 @@ def evaluate_trades(model, data, lookback, device, batch_size=256,
                     model_exit_count += 1
                     exit_signal_count += 1
 
-                # Exit reason
+                # Exit reason (priority: stop > model > value > max_hold > eod)
                 if hit_stop:
                     exit_reason = 'stop_loss'
                 elif model_exit:
                     exit_reason = 'model_exit'
+                elif _trade_value_exit:
+                    exit_reason = 'value_exit'
                 elif eod:
                     exit_reason = 'end_of_day'
                 elif hit_max_hold:
@@ -3512,7 +3801,7 @@ def _empty_metrics(num_val_bars=0, num_val_days=0, num_trades=0):
 # ---------------------------------------------------------------------------
 
 @torch.no_grad()
-def evaluate_sharpe(model, data, lookback, device, batch_size=256,
+def evaluate_sharpe(model, data, lookback, device, batch_size=1024,
                     confidence_threshold=0.0):
     """Walk-forward Sharpe on validation set (secondary continuous metric)."""
     model.eval()
@@ -3623,14 +3912,10 @@ if __name__ == "__main__":
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--quick", action="store_true",
                         help="~40 trading days for fast dry run")
-    parser.add_argument("--skip-options", action="store_true",
-                        help="Skip SPXW options download (use cached or no options)")
-    parser.add_argument("--skip-chain", action="store_true",
-                        help="Skip SPXW OTM chain download (use cached or no OTM data)")
-    parser.add_argument("--skip-vix", action="store_true",
-                        help="Skip VIX download via IBKR (use cached or ATM IV fallback)")
-    parser.add_argument("--use-spx", action="store_true",
-                        help="Use real SPX index prices from IBKR (volume still from SPY ETF)")
+    # REMOVED: --skip-options, --skip-chain, --skip-vix
+    # Hard-fail policy: all data sources are REQUIRED. No fallbacks.
+    parser.add_argument("--use-spx", action="store_true", default=True,
+                        help="Use real SPX index prices from IBKR (default: True, volume still from SPY ETF)")
     parser.add_argument("--spy-source", type=str, default="ibkr",
                         choices=["ibkr", "polygon"],
                         help="SPY data source: ibkr (full history) or polygon (2yr limit)")
@@ -3693,71 +3978,76 @@ if __name__ == "__main__":
     print(f"0DTE filter: {df['date'].nunique()} valid days ({skipped} non-0DTE days removed)")
     print()
 
-    # --- Options (ATM + OTM) from Polygon flat files (S3) ---
+    # --- Options (ATM + OTM) from Polygon flat files (S3) --- REQUIRED (no fallback)
     options_data = None
     chain_data = None
-    if not args.skip_options and not args.skip_download:
+    if not args.skip_download:
         print(f"Downloading SPXW options from flat files (all {df['date'].nunique()} days)...")
         prefetch_spxw_from_flatfiles(df, api_cutoff=None)  # no cutoff — flat files for ALL days
         print()
 
-    # Load ATM option caches
-    if not args.skip_options:
-        opt_cache = os.path.join(DATA_DIR, "spxw_full.pkl")
-        if args.skip_download and os.path.exists(opt_cache):
-            print("Loading cached options data...")
-            with open(opt_cache, 'rb') as f:
-                options_data = pickle.load(f)
-        else:
-            options_data = load_spxw_caches(df)
-            with open(opt_cache, 'wb') as f:
-                pickle.dump(options_data, f)
-            print(f"  Cached {len(options_data)} ATM bar-pairs to {opt_cache}")
+    # Load ATM option caches — REQUIRED
+    opt_cache = os.path.join(DATA_DIR, "spxw_full.pkl")
+    if args.skip_download and os.path.exists(opt_cache):
+        print("Loading cached options data...")
+        with open(opt_cache, 'rb') as f:
+            options_data = pickle.load(f)
+    else:
+        options_data = load_spxw_caches(df)
+        with open(opt_cache, 'wb') as f:
+            pickle.dump(options_data, f)
+        print(f"  Cached {len(options_data)} ATM bar-pairs to {opt_cache}")
+    if not options_data:
+        raise RuntimeError("Options data is REQUIRED — no ATM option data loaded")
+    print()
+
+    # Load OTM chain caches — REQUIRED
+    chain_cache = os.path.join(DATA_DIR, "spxw_chain_full.pkl")
+    if args.skip_download and os.path.exists(chain_cache):
+        print("Loading cached OTM chain data...")
+        with open(chain_cache, 'rb') as f:
+            chain_data = pickle.load(f)
+    else:
+        chain_data = load_spxw_chain_caches(df)
+        with open(chain_cache, 'wb') as f:
+            pickle.dump(chain_data, f)
+        print(f"  Cached {len(chain_data)} OTM bar entries to {chain_cache}")
+    if not chain_data:
+        raise RuntimeError("OTM chain data is REQUIRED — no chain data loaded")
+    if chain_data:
+        print(f"  OTM chain: {len(chain_data)} bar entries")
         print()
 
-    # Load OTM chain caches
-    if not args.skip_chain:
-        chain_cache = os.path.join(DATA_DIR, "spxw_chain_full.pkl")
-        if args.skip_download and os.path.exists(chain_cache):
-            print("Loading cached OTM chain data...")
-            with open(chain_cache, 'rb') as f:
-                chain_data = pickle.load(f)
-        else:
-            chain_data = load_spxw_chain_caches(df)
-            with open(chain_cache, 'wb') as f:
-                pickle.dump(chain_data, f)
-            print(f"  Cached {len(chain_data)} OTM bar entries to {chain_cache}")
-        if chain_data:
-            print(f"  OTM chain: {len(chain_data)} bar entries")
-        print()
-
-    # --- VIX (via IBKR) — incremental ---
+    # --- VIX (via IBKR) — incremental --- REQUIRED (no fallback)
+    if not args.skip_download:
+        print("Cooldown before VIX download (IBKR rate limiting — 60s)...")
+        time.sleep(60)
     vix_data = None
-    if not args.skip_vix:
-        vix_cache = os.path.join(DATA_DIR, "vix_1min.pkl")
-        if args.skip_download:
-            if os.path.exists(vix_cache):
-                print("Loading cached VIX data (--skip-download)...")
-                with open(vix_cache, 'rb') as f:
-                    _vix_raw = pickle.load(f)
-                # Migrate: old caches stored as dict, new ones as DataFrame
-                if isinstance(_vix_raw, dict):
-                    vix_data = _vix_raw
-                else:
-                    vix_data = _vix_df_to_dict(_vix_raw)
-        else:
-            # Migrate legacy dict cache → DataFrame for incremental support
-            if os.path.exists(vix_cache):
-                with open(vix_cache, 'rb') as f:
-                    _check = pickle.load(f)
-                if isinstance(_check, dict):
-                    print("  VIX cache is legacy dict format — re-downloading for incremental support")
-                    os.remove(vix_cache)
-            vix_df = _incremental_update(vix_cache, download_vix_bars, args.start, args.end)
-            if vix_df is not None and len(vix_df) > 0:
-                vix_data = _vix_df_to_dict(vix_df)
+    vix_cache = os.path.join(DATA_DIR, "vix_1min.pkl")
+    if args.skip_download:
+        if os.path.exists(vix_cache):
+            print("Loading cached VIX data (--skip-download)...")
+            with open(vix_cache, 'rb') as f:
+                _vix_raw = pickle.load(f)
+            if isinstance(_vix_raw, dict):
+                vix_data = _vix_raw
             else:
-                print("  VIX: no data — will fall back to ATM IV proxy")
+                vix_data = _vix_df_to_dict(_vix_raw)
+        else:
+            raise RuntimeError(f"VIX cache not found: {vix_cache} — VIX data is REQUIRED (no fallback)")
+    else:
+        # Migrate legacy dict cache → DataFrame for incremental support
+        if os.path.exists(vix_cache):
+            with open(vix_cache, 'rb') as f:
+                _check = pickle.load(f)
+            if isinstance(_check, dict):
+                print("  VIX cache is legacy dict format — re-downloading for incremental support")
+                os.remove(vix_cache)
+        vix_df = _incremental_update(vix_cache, download_vix_bars, args.start, args.end)
+        if vix_df is not None and len(vix_df) > 0:
+            vix_data = _vix_df_to_dict(vix_df)
+        else:
+            raise RuntimeError("VIX download failed — VIX data is REQUIRED (no fallback)")
         if vix_data:
             print(f"  VIX data: {len(vix_data)} bars")
         print()
@@ -3866,9 +4156,9 @@ if __name__ == "__main__":
     print()
 
     # --- Normalize ---
-    print("Normalizing (adaptive rolling z-score)...")
+    print("Normalizing (per-day mean, global std — anti-fingerprint)...")
     t0 = time.time()
-    features = normalize_features(features, valid)
+    features = normalize_features(features, valid, dates=dates)
     print(f"  ({time.time() - t0:.1f}s)")
     print()
 

@@ -2,37 +2,61 @@
 
 ## System
 ART² meta-loop wrapping autoresearch inner loop.
-Outer loop (Opus) makes strategic changes; inner loop (Sonnet) optimizes train.py.
+Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner_loop.py) optimizes train.py.
+**v3 era (2026-03-24):** 37 features, fresh start, all pre-v3 cycles archived.
 
 ## Strategic Changes Tried
 | Cycle | Change | OOS PF Before | OOS PF After | Verdict |
 |-------|--------|---------------|--------------|---------|
-| 004 | Purged 7 gamed entries from promoted history (SCORE_DRAWDOWN_PENALTY exploit). Reset baseline 10.29→1.77 | N/A | N/A | CRITICAL FIX |
-| 020 | Fresh start + relaxed inner loop constraints. program.md: scheduling/weighting/LR schedules unlocked. lab_notebook: rigid 2-param grid → open exploration. Model .bak'd (54.5% train/eval mismatch) | PF=0.65 | PF=1.11 | STRUCTURAL REFORM |
-| 022 | Action G: Removed BalancedStrikeGate (dead weight, 0/16+ pattern), fixed direction bias to favor ATM (+0.15) over OTM (-0.10), removed stressed-account OTM push, removed ETV head. Fresh start. | PF=1.11 | TBD | ARCHITECTURE FIX |
+*No v3 cycles yet — fresh start.*
 
 ## Paper Trading P&L Tracking
 | Date | Trades | P&L % | Backtest Expected | Divergence |
 |------|--------|-------|-------------------|------------|
+*No v3 paper trading sessions yet.*
 
 ## Dead Ends (Strategic Level)
 | Change | Cycles | Result |
 |--------|--------|--------|
+*No v3 dead ends yet — clean slate.*
 
-## Dead Ends (Strategic Level)
-| Change | Cycles | Result |
-|--------|--------|--------|
-| Rigid 2-param _env_float grid in lab_notebook | 017-020 | 100% tunnel vision, 0% accept rate. Inner loop has no creative freedom. |
+## Lessons From Pre-v3 (230 cycles archived)
+- **Score gaming:** Agent tuned SCORE_DRAWDOWN_PENALTY to inflate scores 6x without PF improvement. Score config now LOCKED.
+- **Rigid lab notebook = tunnel vision:** "EXACTLY 2 _env_float values per experiment" caused 100% tunnel vision, 0% accept rate. Keep priorities open-ended.
+- **Regularization without fixing architecture = wasted cycles.** Fix structural bugs first, then tune.
+- **More GPU steps ≠ better model.** 6.6x more steps (bf16 + batch=512) didn't help. Problem was training signal, not capacity.
+- **Inner loop agent mode saves API costs.** Opus IS the loop, Sonnet agents write code. No Anthropic API calls.
+- **Warm start compounding requires warm start to actually work.** Previous 230 cycles had silently broken warm start (always random init).
+- **EXIT_W trap:** 97.7% of profitable bars have exit labels. EXIT_W=0.5 leaves only 12.3% TRADE targets. Keep EXIT_W ≤ 0.15.
+- **Spread proxy was miscalibrated:** Bar range ≠ bid-ask spread. Killed 85-98% of bars. Fixed with premium-tier lookup + hard-fail guardrails.
 
 ## Current Hypothesis
-- Cycle 022 achieved replay PF=1.11 (9 trades, 55.6% WR) — first profitable replay since fresh start.
-- But the model is still one-dimensional: morning calls only, ATM only, no puts.
-- Root cause identified: BalancedStrikeGate added random noise (0/16+ new module pattern), direction bias init pushed toward OTM (-601% cumulative), stressed-account bias pushed ATM → OTM during drawdowns.
-- Fix: removed all three anti-patterns, reversed direction bias to favor ATM (+0.15), removed ETV head complexity.
-- With a cleaner architecture and domain-knowledge-aligned initialization, the inner loop should find broader trading patterns (puts, afternoon trades) with higher PF.
+**Three-head architecture (v5) with value head for intelligent exits.** Phase D replaces the failed RL exit policy (REINFORCE collapsed to 100% EXIT) with a value head — a third output on the transformer that predicts remaining P&L via MSE regression. The value head shares the transformer backbone (rich 37-feature context), uses stable training (MSE, not policy gradient), and provides continuous exit signal. PBT evolves `TRAIN_VALUE_W` (loss weight) and `TRAIN_VALUE_EXIT_THRESH` (exit threshold). Position state expanded from 5→7 dims (`best_pnl_since_entry`, `bars_since_pnl_high`). Exit priority: stop_loss > model_exit > value_exit > max_hold > EOD — consistent across train/replay/IBKR.
 
 ## What Works (Outer Loop)
-- ART² correctly identified the gamed baseline as the root cause of 0% accept rate (cycle 004).
+- ART² correctly identified gamed baselines, structural bugs, and architecture dead weight across 230 cycles.
 - Promoted history audit trail makes gaming visible and reversible.
-- Research phase successfully identified model bias patterns (call-only, morning-only, ATM-only).
+- Research phase identifies model bias patterns (call-only, morning-only, ATM-only).
 - Deploy.sh no longer overwrites train.py when local changes exist.
+- Agent mode (Opus + Sonnet agents) eliminates API costs.
+- REVIEW gate ensures human approval before every training run.
+
+## Roadmap
+
+### High Priority
+- **GEX (Gamma Exposure):** Dealer positioning — positive GEX = mean-reverting, negative = trending. Would condition direction bias. Requires options flow data (Squeezemetrics/SpotGamma).
+- **Market Internals (TICK, $ADD, Breadth):** Pickles' primary confirmation signal. Divergences between price and internals. Available via IBKR/Polygon.
+- **Walk-Forward Validation:** Rolling N-day train, M-day validate. Catches regime-specific overfitting that static 70/30 split misses.
+
+### Medium Priority
+- **VIX Regime Stratification:** Ensure train/val splits match VIX regime distributions. Report per-regime PF.
+- **Charm Flow Rate:** Rate of delta decay for predictable PM dealer unwind flows (1:30-3:30 PM).
+- **IV Skew (25-delta put vs call):** Downside fear premium, early warning for directional bias changes.
+- **Sub-Minute Bars (5s/15s):** Finer resolution for gamma dynamics. Major data pipeline rework (12-60x data volume).
+
+### Lower Priority
+- Credit spread / premium-selling strategy (different paradigm entirely)
+- Ensemble models (morning vs afternoon vs power hour specialists)
+- Event calendar integration (CPI/FOMC IV crush prediction)
+- Order flow indicators (L2 book imbalance, block trades)
+- DIX (dark pool index, leads by 1-3 days but less useful for intraday 0DTE)

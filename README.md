@@ -1,146 +1,48 @@
-# autoresearch-trading
+# Auto Research Trader (ART)
 
-Autonomous SPX 0DTE options trader built with an autoresearch loop: an AI agent iteratively evolves a neural network trading model through hundreds of experiments on GPU, then deploys the best model to live paper trading on IBKR.
+Autonomous SPX 0DTE long options trading bot. An AI agent (Claude Sonnet) iteratively evolves a neural network trading model through hundreds of experiments on GPU, then deploys the best model to live paper trading on IBKR.
 
-## How It Works
+**ART²** (ART squared) is the meta-loop: an outer loop (Claude Opus) makes strategic decisions — architecture changes, loss function design, feature engineering — while the inner loop (Claude Sonnet) optimizes hyperparameters and training dynamics within those constraints.
 
-```
-data (prepare.py) → training (run_loop.py on Akash GPU) → replay validation → IBKR paper trading
-```
-
-1. **Data pipeline** builds a feature tensor from SPY/SPX/VIX bars + SPXW option chains
-2. **Autoresearch loop** runs on an Akash H100 — Claude Sonnet proposes code mutations to `train.py`, each is trained and scored, improvements are kept
-3. **Replay engine** validates the trained model against historical data
-4. **Live paper trading** runs the model against real-time IBKR market data
+**Model:** Three-head transformer (v5) — gate head (enter/exit), direction head (strike + call/put), value head (predicted remaining P&L). 37 features, 7-dim position state, dynamic stop-loss. Exit priority: stop > gate > value > max_hold > EOD.
 
 ## Core Design Principles
 
-- **The model IS a trader.** Training simulates minute-by-minute 0DTE options trading — the same game as live IBKR paper trading. No peeking at future prices, no batch classification.
-- **No hardcoded exits.** The model's gate head learns when to enter and exit. The 30% stop loss is an emergency backstop only.
-- **Data integrity first.** `data.pt` must always include option chain sidecar data. Building without it silently breaks all experiments.
+- **The model IS a trader.** Training simulates minute-by-minute 0DTE options trading — the same game as live IBKR paper trading.
+- **No hardcoded exits.** The model's gate head learns when to enter and exit. A value head predicts remaining P&L and exits when upside is gone. Dynamic stop-loss (15%-60%) is the emergency backstop.
+- **Data integrity first.** `data.pt` must always include option chain sidecar data.
 - **Train on GPU, not locally.** All training runs deploy to Akash H100s via `deploy.sh`.
 
 ## Quick Start
 
-### Environment setup
 ```bash
-cp .env.example .env  # Add ANTHROPIC_API_KEY, POLYGON_API_KEY, POLYGON_S3_KEY_ID, POLYGON_S3_SECRET
+# Environment
+cp .env.example .env  # Add POLYGON_API_KEY, POLYGON_S3_KEY_ID, POLYGON_S3_SECRET
 set -a && source .env && set +a
+
+# Training
+./infra/deploy.sh boot                                    # Spin up H100 on Akash
+./infra/deploy.sh start --hours 8 --max-experiments 200   # Upload + start
+python3 tools/monitor.py                                  # Dashboard → localhost:8420
+./infra/deploy.sh stop                                    # Download + close
+
+# Paper trading
+python tools/paper_live.py --context-only                 # Refresh context
+python tools/paper_live.py --paper-auto --max-minutes 390 # Full session
+
+# Replay
+python3 training/replay.py --date 2026-03-17 --output replay-trades.csv
 ```
 
-### Deploy a training run
-```bash
-./infra/deploy.sh boot                              # Spin up H100 on Akash (~2 min)
-./infra/deploy.sh start --hours 8 --max-experiments 200  # Upload code + data, start loop
-./infra/deploy.sh logs                              # Tail experiment output
-./infra/deploy.sh status                            # GPU + experiment progress
-python3 tools/monitor.py                            # Web dashboard → http://localhost:8420
-./infra/deploy.sh stop                              # Kill loop → download → close
-```
+## Documentation
 
-### Run IBKR paper trading
-```bash
-python tools/paper_live.py --context-only                        # Refresh market context bundle
-python tools/paper_live.py --dry-run --max-minutes 60            # Dry-run (no orders)
-python tools/paper_live.py --paper-auto \
-    --model results/run-YYYY-MM-DD-HHMMSS/best_model.pt \
-    --train-py results/run-YYYY-MM-DD-HHMMSS/best_train.py \
-    --max-minutes 390                                            # Full paper-auto session
-```
-
-### Replay validation
-```bash
-cd training
-python3 replay.py --date 2026-03-17 --output replay-trades.csv
-```
-
-## Project Map
-
-```text
-training/
-  prepare.py            # Data pipeline: SPY/SPX/VIX bars + SPXW options → data.pt
-  train.py              # Model architecture + training loop (agent modifies THIS)
-  run_loop.py           # Autoresearch orchestration: Claude → mutate → train → score → keep/revert
-  replay.py             # Replay simulation engine + model loading
-  program.md            # Strict contract for the autonomous loop (injected into system prompt)
-  lab_notebook.md       # Persistent experiment context: improvements + dead ends
-  live/
-    service.py          # Live trading service: IBKR connection, order management
-    decision.py         # Model inference engine for live decisions
-    context.py          # Real-time feature construction from IBKR + Polygon data
-
-tools/
-  monitor.py            # Web dashboard: GPU, experiments, Claude reasoning, train.py viewer
-  paper_live.py         # IBKR paper trading CLI entry point
-  replay_battery.py     # Multi-day replay validation suite
-  live_order_parity_report.py   # Verify live orders match model signals
-  live_feature_parity_report.py # Verify live features match training features
-  ib_account_snapshot.py        # IBKR account status check
-  ib_probe.py                  # IBKR connectivity + market data probe
-  ib_entitlements.py           # IBKR live/delayed data entitlement checker
-
-infra/
-  deploy.sh             # Akash GPU lifecycle: boot/start/sync/stop/ssh/logs/status
-  deploy-autoresearch.yaml  # Akash SDL (H100/A100, 64GB RAM, PyTorch 2.5.1)
-  start_loop.sh         # Remote loop launcher
-  watchdog.sh           # GPU health + process monitor
-
-docs/
-  CLAUDE.md             # Project guide for Claude (codebase navigation)
-  0dte-domain-knowledge.md  # SPX 0DTE options trading domain primer
-```
-
-## Architecture
-
-### Model
-- Two-head output: **Gate** `[NO_TRADE, TRADE]` + **Direction** `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]`
-- 8 effective actions: `DO_NOTHING`, 6 entry types, `EXIT`
-- 32 features (v2): SPY/SPX/VIX technicals + options greeks + time features (reduced from 70 for signal density)
-- Position-aware inference: model sees current P&L, hold time, and bars held
-
-### Autoresearch Loop
-- Claude Sonnet proposes mutations to `train.py` (architecture, loss functions, hyperparameters)
-- Each experiment trains for ~4 min on H100, scored by profit factor + trades/day + secondary metrics
-- Multi-objective scoring with 9 tunable knobs (SCORE_* env vars)
-- Prefetch pipeline: speculative Claude API calls during training for throughput
-- Auto-sync downloads results to local machine every 30s
-
-### Scoring
-The score formula balances profitability and trading realism:
-- Primary: log profit factor × trade frequency bonus
-- Secondary gates: drawdown, consecutive losses, stop rate, hold time
-- All secondary knobs default neutral — the agent activates them as needed
-
-## Canonical Runtime Layout
-
-```text
-results/
-  current_run.txt                    # Active run pointer
-  promoted/                          # Cross-run best models
-  run-YYYY-MM-DD-HHMMSS/
-    experiments.v2.jsonl             # Structured experiment log
-    results.tsv                      # Human-readable experiment summary
-    status.json                      # Current loop state
-    run_metadata.json                # Run config snapshot
-    artifacts/exp-<id>/              # Per-experiment: reasoning, prompts, code, logs
-```
-
-## Prompt Control Plane
-
-- `training/program.md` — strict autonomous contract (what the agent can/cannot modify)
-- `training/lab_notebook.md` — persistent cross-run context (improvements + dead ends)
-- Both injected into Claude's system prompt with Anthropic prompt caching
-
-## Known Issues
-
-- `deploy.sh stop` has reliability issues with SSH exit codes and interactive prompts
-- Context bundle must be refreshed before each live session (features evolve with training)
-- VIX data has occasional gaps from IBKR historical data API
-- 3 features (`ret_6`, `ret_12`, `volume_at_price_pctile`) are NaN for the first ~30 min of a live session while history accumulates; completeness is 29/32 at start
+- [docs/reference.md](docs/reference.md) — Full project reference (key files, subcommands, constants, pipeline)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — System architecture diagrams
+- [.claude/rules/art2-operating-manual.md](.claude/rules/art2-operating-manual.md) — ART² lifecycle and process authority
 
 ## Safety
 
 - Real-money trading is not enabled
-- Live paper-trading verified end-to-end (2026-03-20): feature parity confirmed, LMT order fills working, OCO brackets operational
+- Paper trading verified end-to-end (2026-03-24): all 37 features (v3), LMT fills, OCO brackets
 - All positions are 1 SPX contract, long calls/puts only
-- 30% hard stop loss on all positions
+- Dynamic stop loss (15%-60%) on all positions

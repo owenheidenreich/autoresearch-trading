@@ -300,7 +300,9 @@ class FeatureGroupGating(nn.Module):
 
 
 class TradingModel(nn.Module):
-    """Two-head sniper model for SPX 0DTE options."""
+    """Three-head sniper model for SPX 0DTE options (gate + direction + value)."""
+
+    POSITION_STATE_DIM = 7  # matches train.py
 
     def __init__(self, num_features=NUM_FEATURES, lookback=120,
                  d_model=64, n_heads=4, n_layers=4,
@@ -321,8 +323,8 @@ class TradingModel(nn.Module):
         mask = nn.Transformer.generate_square_subsequent_mask(lookback)
         self.register_buffer('causal_mask', mask)
 
-        # Position state: [is_holding, bars_held_norm, unrealized_pnl_norm, account_health, loss_streak_frac]
-        self.position_proj = nn.Linear(5, d_model // 4)
+        # Position state: 7 dims (expanded for value head)
+        self.position_proj = nn.Linear(self.POSITION_STATE_DIM, d_model // 4)
         self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
 
         self.gate_head = nn.Sequential(
@@ -339,10 +341,31 @@ class TradingModel(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(d_model // 2, 6),
         )
+
+        # Value head: predicts remaining P&L (Phase D)
+        self.value_proj = nn.Linear(d_model + d_model // 4, d_model)
+        self.value_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 1),
+        )
+
         with torch.no_grad():
             self.gate_head[-1].bias[0] = -0.5
 
-    def forward(self, x, position_state=None):
+    def forward(self, x, position_state=None, return_value=False):
+        batch_size = x.shape[0]
+        device = x.device
+
+        if position_state is None:
+            position_state = torch.zeros(batch_size, self.POSITION_STATE_DIM, device=device)
+            position_state[:, 3] = 1.0
+        elif position_state.shape[-1] < self.POSITION_STATE_DIM:
+            pad = torch.zeros(batch_size, self.POSITION_STATE_DIM - position_state.shape[-1], device=device)
+            position_state = torch.cat([position_state, pad], dim=-1)
+
         x = self.feature_gate(x)
         x = self.input_norm(x)
         x = x + self.pos_embed[:, :x.size(1), :]
@@ -350,13 +373,18 @@ class TradingModel(nn.Module):
                               is_causal=True)
         last = x[:, -1, :]
 
-        if position_state is not None:
-            pos_emb = torch.relu(self.position_proj(position_state))
-            gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
-        else:
-            gate_input = last
+        pos_emb = torch.relu(self.position_proj(position_state))
+        gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
 
-        return self.gate_head(gate_input), self.dir_head(last)
+        gate_logits = self.gate_head(gate_input)
+        dir_logits = self.dir_head(last)
+
+        if return_value:
+            value_input = self.value_proj(torch.cat([last, pos_emb], dim=-1))
+            value_pred = self.value_head(value_input).squeeze(-1)
+            return gate_logits, dir_logits, value_pred
+
+        return gate_logits, dir_logits
 
 
 # ---------------------------------------------------------------------------
@@ -641,9 +669,21 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
         # Custom model may have different constructor args — try minimal
         model = model_cls()
 
-    missing, unexpected = model.load_state_dict(ckpt['model_state_dict'], strict=False)
+    _state = ckpt['model_state_dict']
+    # Architecture version gate: reject incompatible checkpoints
+    _ckpt_arch = ckpt.get('architecture', 'unknown')
+    _ckpt_has_value = ckpt.get('has_value_head', False) or ('value_head.4.weight' in _state)
+    _ckpt_pos_dim = ckpt.get('position_state_dim', _state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
+    _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
+    if not _ckpt_has_value or _ckpt_pos_dim < _ps_dim:
+        raise ValueError(
+            f"Checkpoint incompatible: arch={_ckpt_arch}, value_head={_ckpt_has_value}, "
+            f"pos_dim={_ckpt_pos_dim}. Model requires value_head=True, pos_dim={_ps_dim}. "
+            f"A fresh-start checkpoint is needed."
+        )
+    missing, unexpected = model.load_state_dict(_state, strict=False)
     if missing:
-        print(f"  New layers (will use random init): {missing}")
+        print(f"  WARNING: Missing keys (random init): {missing}")
     if unexpected:
         print(f"  Unexpected keys (ignored): {unexpected}")
     model.to(device)
@@ -1409,7 +1449,8 @@ def _write_replay_ledger_and_qa(
 def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                timestamps, replay_date, lookback, raw_df,
                speed=0, verbose=False, device='cpu',
-               quiet=False, initial_balance=None):
+               quiet=False, initial_balance=None,
+               action_cost_bps=None):
     """Run bar-by-bar inference and trade simulation for the replay day.
 
     Plays the EXACT SAME GAME as training evaluate_trades() and live service:
@@ -1515,6 +1556,8 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     cum_pnl = 0.0
     bars_held = 0
     unrealized_pnl = 0.0
+    _trade_best_pnl = 0.0       # Phase D: best P&L since entry (for value head)
+    _trade_bars_since_high = 0   # Phase D: bars since P&L peak
     _trade_entry_trend = None
     _trade_entry_rvol = None
     _trade_entry_vol_z = None
@@ -1537,11 +1580,15 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         # --- Build position state tensor (same as training eval + live decision.py) ---
         pos_state = None
         if has_position_proj:
-            pos_state = torch.zeros(1, 5, device=device)
+            _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
+            pos_state = torch.zeros(1, _ps_dim, device=device)
             if in_trade:
                 pos_state[0, 0] = 1.0
                 pos_state[0, 1] = min(bars_held / BARS_PER_DAY, 1.0)
                 pos_state[0, 2] = float(np.tanh(unrealized_pnl * 5.0))
+                if _ps_dim >= 7:
+                    pos_state[0, 5] = float(np.tanh(_trade_best_pnl * 2.0))  # best_pnl
+                    pos_state[0, 6] = min(_trade_bars_since_high / BARS_PER_DAY, 1.0)
             pos_state[0, 3] = account_balance / STARTING_CAPITAL  # account_health
             pos_state[0, 4] = min(consecutive_losses / 3.0, 1.0)  # loss_streak_frac
 
@@ -1637,19 +1684,44 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
             unrealized_pnl = net_pnl_pct
 
+            # Phase D: track best P&L and bars since high for value head
+            if net_pnl_pct > _trade_best_pnl:
+                _trade_best_pnl = net_pnl_pct
+                _trade_bars_since_high = 0
+            else:
+                _trade_bars_since_high += 1
+
+            # Phase D: value head exit — query value prediction for exit intelligence
+            _value_exit = False
+            _value_pred_float = None
+            _has_value_head = hasattr(model, 'value_head')
+            if _has_value_head and in_trade and bars_held >= 2:
+                # Get value prediction from last forward pass
+                with torch.no_grad():
+                    _, _, _vp = model(x, position_state=pos_state, return_value=True)
+                    _value_pred_float = float(_vp[0].item())
+                # Exit when value head predicts low remaining upside
+                _vthresh = 0.02  # VALUE_EXIT_THRESHOLD
+                if _value_pred_float < _vthresh:
+                    _value_exit = True
+                bar_entry['value_pred'] = _value_pred_float
+
             # Exit conditions — matching prepare.py evaluate_trades()
             hit_stop = net_pnl_pct <= -trade_dynamic_stop_pct
             hit_max_hold = bars_held >= MAX_HOLD_BARS
             model_exit = (action == ACTION_DO_NOTHING)  # gate=NO_TRADE while holding
             is_last = (k_pos == len(valid_indices) - 1)
 
-            if hit_stop or hit_max_hold or model_exit or is_last:
+            if hit_stop or hit_max_hold or model_exit or _value_exit or is_last:
                 if hit_stop:
                     final_pnl = -trade_dynamic_stop_pct
                     reason = 'STOP_LOSS'
                 elif model_exit:
                     final_pnl = net_pnl_pct
                     reason = 'MODEL_EXIT'
+                elif _value_exit:
+                    final_pnl = net_pnl_pct
+                    reason = 'VALUE_EXIT'
                 elif hit_max_hold:
                     final_pnl = net_pnl_pct
                     reason = 'MAX_HOLD'
@@ -1657,16 +1729,31 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     final_pnl = net_pnl_pct
                     reason = 'EOD'
 
-                # Adaptive spread: time-of-day + VIX + strike type
-                _mtc_entry = BARS_PER_DAY - _bar_of_day.get(entry_global, 200)
-                _mtc_exit = BARS_PER_DAY - _bar_of_day.get(global_idx, 200)
-                _vr_entry = float(features[entry_global, _FEAT_IDX['vix_regime']]) if entry_global < features.shape[0] else 0.3
-                _vr_exit = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.3
-                _is_otm = trade_action in (ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
-                                           ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10)
-                _entry_spread = compute_adaptive_spread_bps(_mtc_entry, _vr_entry, _is_otm)
-                _exit_spread = compute_adaptive_spread_bps(_mtc_exit, _vr_exit, _is_otm)
-                _round_trip_spread = (_entry_spread + _exit_spread) / 10000.0
+                # Cost model: use action_cost_bps from data.pt when available,
+                # fall back to adaptive spread model otherwise.
+                # action_cost_bps already includes spread + slippage (round-trip).
+                _ACTION_TO_COST_IDX = {
+                    ACTION_BUY_CALL_ATM: 0, ACTION_BUY_CALL_OTM5: 1,
+                    ACTION_BUY_CALL_OTM10: 2, ACTION_BUY_PUT_ATM: 3,
+                    ACTION_BUY_PUT_OTM5: 4, ACTION_BUY_PUT_OTM10: 5,
+                }
+                _cost_idx = _ACTION_TO_COST_IDX.get(trade_action)
+                _used_data_pt_cost = False
+                if action_cost_bps is not None and _cost_idx is not None:
+                    _entry_cost = action_cost_bps[entry_global, _cost_idx] if entry_global < action_cost_bps.shape[0] else float('nan')
+                    if np.isfinite(_entry_cost):
+                        _round_trip_spread = float(_entry_cost) / 10000.0
+                        _used_data_pt_cost = True
+                if not _used_data_pt_cost:
+                    _mtc_entry = BARS_PER_DAY - _bar_of_day.get(entry_global, 200)
+                    _mtc_exit = BARS_PER_DAY - _bar_of_day.get(global_idx, 200)
+                    _vr_entry = float(features[entry_global, _FEAT_IDX['vix_regime']]) if entry_global < features.shape[0] else 0.3
+                    _vr_exit = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.3
+                    _is_otm = trade_action in (ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+                                               ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10)
+                    _entry_spread = compute_adaptive_spread_bps(_mtc_entry, _vr_entry, _is_otm)
+                    _exit_spread = compute_adaptive_spread_bps(_mtc_exit, _vr_exit, _is_otm)
+                    _round_trip_spread = (_entry_spread + _exit_spread) / 10000.0
                 final_pnl -= _round_trip_spread
 
                 # Update account balance (dollar P&L)
@@ -1752,6 +1839,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     'entry_ret_30': _trade_entry_ret_30,
                     'entry_reason_codes': list(trade_entry_reason_codes) if trade_entry_reason_codes else ['trade_signal'],
                     'exit_reason_codes': [reason.lower()],
+                    'exit_value_pred': round(_value_pred_float, 4) if _value_pred_float is not None else None,
                 }
                 trades.append(trade)
 
@@ -1766,6 +1854,8 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 in_trade = False
                 bars_held = 0
                 unrealized_pnl = 0.0
+                _trade_best_pnl = 0.0
+                _trade_bars_since_high = 0
 
         # --- Handle trade entry ---
         if not in_trade and action in _ENTRY_ACTIONS:
@@ -1824,6 +1914,8 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             trade_take_profit_price = float(trade_entry_price * 6.0)  # effectively no TP — model decides
             bars_held = 0
             unrealized_pnl = 0.0
+            _trade_best_pnl = 0.0
+            _trade_bars_since_high = 0
             _trade_entry_trend = trend
             _trade_entry_rvol = round(rvol, 6) if rvol is not None else None
             _trade_entry_vol_z = round(vol_z, 2) if vol_z is not None else None
@@ -2864,6 +2956,12 @@ def run_backtest(model, data_pt_path: str, device: str = 'cpu',
         'atm_strikes': option_prices.get('atm_strikes'),
     }
 
+    # Extract action_cost_bps for unified cost model (matches prepare.py's per-bar costs)
+    _action_cost_bps_np = None
+    if 'action_cost_bps' in data:
+        _action_cost_bps_np = data['action_cost_bps'].numpy() if hasattr(data['action_cost_bps'], 'numpy') else np.array(data['action_cost_bps'])
+        print(f"  Using action_cost_bps from data.pt for cost model alignment")
+
     features_t = torch.tensor(features_np, dtype=torch.float32)
 
     # Date selection: --all-dates runs the entire dataset, otherwise validation only.
@@ -3019,6 +3117,7 @@ def run_backtest(model, data_pt_path: str, device: str = 'cpu',
             model, features_t, features_np, list(all_dates), valid_np,
             px_remap, timestamps_list, day, lookback, raw_df,
             device=device, quiet=True, initial_balance=account_balance_running,
+            action_cost_bps=_action_cost_bps_np,
         )
 
         # Track cross-day equity using dollar_pnl already computed by run_replay
