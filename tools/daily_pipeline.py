@@ -468,6 +468,7 @@ def write_pipeline_summary(log_dir: Path, stages: dict) -> None:
         f"Stage 2 (Training): {'OK' if stages.get('training') else 'FAILED/SKIPPED'}",
         f"Stage 3 (Trading):  PID={stages.get('trading_pid', 'N/A')}",
         f"Stage 4 (CSV):      {stages.get('csv_path') or 'N/A'}",
+        f"Stage 5 (IBKR):     {'OK' if stages.get('ibkr_analyze') else 'SKIPPED' if stages.get('ibkr_analyze') is None else 'FAILED'}",
         "",
         f"Model: {stages.get('model_path', 'N/A')}",
     ]
@@ -590,6 +591,31 @@ def main() -> None:
         log("Paper trading still running — CSV export deferred to post-market")
         log(f"  Run: python3 tools/export_trades.py results/live/audit-{today_str}.jsonl")
         stages["csv_path"] = None
+
+    # Stage 5: IBKR Session Analysis (feedback loop)
+    # Analyze yesterday's paper trading session (if audit exists)
+    yesterday_audit = PROJECT_ROOT / "results" / "live" / f"audit-{yesterday_str}.jsonl"
+    default_audit = PROJECT_ROOT / "results" / "live" / "audit.jsonl"
+    audit_to_analyze = yesterday_audit if yesterday_audit.exists() else default_audit
+    if audit_to_analyze.exists():
+        log(f"Stage 5: Analyzing IBKR session from {audit_to_analyze.name}")
+        if not args.dry_run:
+            rc, output = run_cmd(
+                [sys.executable, str(PROJECT_ROOT / "tools" / "ibkr_analyze.py"),
+                 "--audit", str(audit_to_analyze)],
+                log_path=log_dir / "stage5_ibkr_analyze.log",
+                timeout=60,
+            )
+            stages["ibkr_analyze"] = rc == 0
+            if rc == 0:
+                log("  IBKR session analysis complete")
+            else:
+                log(f"  IBKR analysis failed (rc={rc})")
+        else:
+            log("  [DRY RUN] Would run ibkr_analyze.py")
+    else:
+        log("Stage 5: No audit.jsonl to analyze (skipped)")
+        stages["ibkr_analyze"] = None
 
     write_pipeline_summary(log_dir, stages)
     log("=== Pipeline complete ===")

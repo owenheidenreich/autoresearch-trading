@@ -11,6 +11,15 @@ from ib_insync import IB, Contract, MarketOrder, Order
 from training.live.contracts import DecisionIntent, ExecutionState, RiskUpdateIntent
 
 
+def _round_spxw_price(price: float) -> float:
+    """Round price to valid SPXW tick increment: $0.05 below $3, $0.10 at/above $3."""
+    if price < 0:
+        return 0.05
+    if price < 3.0:
+        return round(round(price / 0.05) * 0.05, 2)
+    return round(round(price / 0.10) * 0.10, 2)
+
+
 class OCOExecutionEngine:
     """Execution layer that mirrors decision intents and enforces hard invariants."""
 
@@ -107,6 +116,14 @@ class OCOExecutionEngine:
                     "contract": self._contract_payload(contract),
                 },
             )
+            # Error 201 = order rejected (e.g. PDT, permissions). Mark position CLOSED.
+            if error_code == 201:
+                info = self._trade_by_order_id.get(int(req_id))
+                if info and info.get("role") == "parent":
+                    state = self.positions.get(info["position_id"])
+                    if state is not None and state.fill_price is None:
+                        state.status = "CLOSED"
+                        state.fill_status = "REJECTED"
 
         self.ib.errorEvent += _on_error
         self._ib_callbacks_installed = True
@@ -153,6 +170,8 @@ class OCOExecutionEngine:
             if state is None:
                 return
             state.updated_at = self._ts()
+            # NOTE: Do NOT mark CLOSED on parent Cancelled — IBKR bracket lifecycle
+            # sends Cancelled → PreSubmitted → Filled as normal flow.
             if role == "parent" and status.lower() in {"filled", "partiallyfilled"}:
                 state.fill_status = status.upper()
                 try:
@@ -202,22 +221,38 @@ class OCOExecutionEngine:
                     "time": str(exec_time) if exec_time is not None else None,
                 },
             )
-            if state is not None and role == "parent":
+            if state is not None:
                 state.last_exec_id = str(exec_id) if exec_id else state.last_exec_id
-                state.fill_status = "FILLED"
                 try:
                     fill_px = float(price) if price is not None else None
                 except Exception:
                     fill_px = None
-                if fill_px is not None and fill_px > 0:
-                    state.fill_price = fill_px
-                    state.fill_time = self._ts()
-                    if state.entry_price_reference and state.entry_price_reference > 0:
-                        state.slippage_bps = (
-                            (fill_px - state.entry_price_reference)
-                            / state.entry_price_reference
-                            * 10000.0
-                        )
+                if role == "parent":
+                    state.fill_status = "FILLED"
+                    if fill_px is not None and fill_px > 0:
+                        state.fill_price = fill_px
+                        state.fill_time = self._ts()
+                        if state.entry_price_reference and state.entry_price_reference > 0:
+                            state.slippage_bps = (
+                                (fill_px - state.entry_price_reference)
+                                / state.entry_price_reference
+                                * 10000.0
+                            )
+                        # Check for deferred stop/TP P&L that arrived before entry fill
+                        _deferred = getattr(state, '_deferred_exit', None)
+                        if _deferred is not None:
+                            self._update_realized_pnl(state, _deferred['exit_price'], _deferred['reason'])
+                            del state._deferred_exit
+                elif role in ("stop", "take_profit") and fill_px is not None and fill_px > 0:
+                    # Stop or TP filled — close position and update P&L
+                    if state.status == "OPEN":
+                        state.status = "CLOSED"
+                        state.notes.append(f"{role}_fill_event")
+                        if state.fill_price is not None and state.fill_price > 0:
+                            self._update_realized_pnl(state, fill_px, reason=f"{role}_filled")
+                        else:
+                            # Entry fill hasn't arrived yet — defer P&L calc
+                            state._deferred_exit = {'exit_price': fill_px, 'reason': f"{role}_filled"}
 
         def _cancel_handler(trade_obj: Any) -> None:
             self._audit(
@@ -230,6 +265,9 @@ class OCOExecutionEngine:
                     "order_id": order_id,
                 },
             )
+            # NOTE: Do NOT mark position CLOSED on parent cancel here.
+            # IBKR bracket orders go Cancelled → PreSubmitted → Filled as normal lifecycle.
+            # Position close is handled by: stop/TP fill, flatten_position, or error rejection.
 
         if hasattr(trade, "statusEvent"):
             trade.statusEvent += _status_handler
@@ -323,7 +361,7 @@ class OCOExecutionEngine:
         if parent.orderType == "LMT":
             if intent.entry_limit_price is None:
                 raise ValueError("LMT entry requires entry_limit_price")
-            parent.lmtPrice = float(intent.entry_limit_price)
+            parent.lmtPrice = _round_spxw_price(float(intent.entry_limit_price))
 
         stop = Order(
             orderId=stop_id,
@@ -331,7 +369,7 @@ class OCOExecutionEngine:
             action="SELL",
             totalQuantity=intent.qty,
             orderType="STP",
-            auxPrice=float(intent.stop_price),
+            auxPrice=_round_spxw_price(float(intent.stop_price)),
             transmit=False,
             ocaGroup=group,
             ocaType=1,
@@ -342,7 +380,7 @@ class OCOExecutionEngine:
             action="SELL",
             totalQuantity=intent.qty,
             orderType="LMT",
-            lmtPrice=float(intent.take_profit_price),
+            lmtPrice=_round_spxw_price(float(intent.take_profit_price)),
             transmit=True,
             ocaGroup=group,
             ocaType=1,
@@ -469,8 +507,8 @@ class OCOExecutionEngine:
 
         stop: Order = live["stop"]
         tp: Order = live["take_profit"]
-        stop.auxPrice = float(state.current_stop)
-        tp.lmtPrice = float(state.current_take_profit)
+        stop.auxPrice = _round_spxw_price(float(state.current_stop))
+        tp.lmtPrice = _round_spxw_price(float(state.current_take_profit))
         contract: Contract = live["contract"]
         self.ib.placeOrder(contract, stop)
         self.ib.placeOrder(contract, tp)
@@ -494,13 +532,26 @@ class OCOExecutionEngine:
         """Update session P&L tracking after a trade closes."""
         entry = state.fill_price or state.entry_price_reference
         if entry is None or entry <= 0:
+            self._audit("pnl_update_skipped", {
+                "position_id": state.position_id,
+                "reason": reason,
+                "fill_price": state.fill_price,
+                "entry_price_reference": state.entry_price_reference,
+                "exit_price": exit_price,
+                "why": "no_entry_price",
+            })
             return
         if exit_price is None or exit_price <= 0:
-            # No exit price available (e.g. stop filled but price unknown yet)
-            # Use stop price as estimate for stop exits, entry for unknown
             if "stop" in reason.lower():
                 exit_price = state.current_stop
             else:
+                self._audit("pnl_update_skipped", {
+                    "position_id": state.position_id,
+                    "reason": reason,
+                    "entry_price": entry,
+                    "exit_price": exit_price,
+                    "why": "no_exit_price",
+                })
                 return
         trade_pnl_pct = (exit_price - entry) / entry
         trade_pnl_dollars = trade_pnl_pct * entry * state.qty * 100  # SPX multiplier
@@ -527,6 +578,53 @@ class OCOExecutionEngine:
                 "session_pnl_dollars": round(self.session_pnl_dollars, 2),
                 "trades_closed": self.trades_closed,
             })
+
+    def cancel_all_open_orders(self) -> int:
+        """Cancel all open orders at session startup. Returns count of orders cancelled."""
+        if self.dry_run or not self.ib:
+            return 0
+        cancelled = 0
+        try:
+            for trade in self.ib.openTrades():
+                order = getattr(trade, "order", None)
+                if order is None:
+                    continue
+                try:
+                    self.ib.cancelOrder(order)
+                    cancelled += 1
+                    self._audit("startup_cancel_order", {
+                        "order_id": int(getattr(order, "orderId", 0)),
+                        "action": getattr(order, "action", None),
+                        "order_type": getattr(order, "orderType", None),
+                    })
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return cancelled
+
+    def cancel_orphaned_orders(self, position_id: str) -> None:
+        """Cancel any remaining stop/TP orders for a closed position."""
+        if self.dry_run or not self.ib:
+            return
+        state = self.positions.get(position_id)
+        if state is None:
+            return
+        for order_id in (state.stop_order_id, state.take_profit_order_id):
+            if order_id is None:
+                continue
+            try:
+                # Find the order in IB's open orders
+                for trade in self.ib.openTrades():
+                    if getattr(trade.order, 'orderId', None) == order_id:
+                        self.ib.cancelOrder(trade.order)
+                        self._audit("cancel_orphaned_order", {
+                            "position_id": position_id,
+                            "order_id": order_id,
+                        })
+                        break
+            except Exception:
+                pass
 
     def flatten_position(self, position_id: str, reason: str = "model_exit",
                          exit_price: float | None = None) -> bool:

@@ -71,6 +71,13 @@ class LiveFeatureEngine:
     def __init__(self, context_bundle: LiveContextBundle, target_num_features: int | None = None) -> None:
         self.bundle = context_bundle
         self.target_num_features = int(target_num_features) if target_num_features is not None else None
+        if self.target_num_features is not None:
+            buf_width = context_bundle.norm_raw_buffer.shape[1] if context_bundle.norm_raw_buffer.ndim == 2 else 0
+            if buf_width != self.target_num_features:
+                raise RuntimeError(
+                    f"Context norm buffer width ({buf_width}) != model feature count "
+                    f"({self.target_num_features}). Refresh context bundle."
+                )
         self.df = pd.DataFrame(context_bundle.market_rows).copy()
         if "datetime" in self.df.columns:
             self.df["datetime"] = pd.to_datetime(self.df["datetime"], utc=True).dt.tz_convert(ET_TZ)
@@ -182,15 +189,12 @@ class LiveFeatureEngine:
 
         view_features = features
         view_norm = norm
-        if self.target_num_features is not None:
-            if features.shape[1] < self.target_num_features:
-                raise RuntimeError(
-                    f"Live feature width {features.shape[1]} is smaller than required "
-                    f"{self.target_num_features}"
-                )
-            if features.shape[1] > self.target_num_features:
-                view_features = features[:, : self.target_num_features]
-                view_norm = norm[:, : self.target_num_features]
+        if self.target_num_features is not None and features.shape[1] != self.target_num_features:
+            raise RuntimeError(
+                f"Live compute_features() produced {features.shape[1]} features but model "
+                f"expects {self.target_num_features}. Context bundle and FEATURE_NAMES are "
+                f"out of sync — refresh the context bundle."
+            )
 
         last_idx = len(norm) - 1
         if last_idx < lookback:

@@ -8,17 +8,20 @@ Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner
 ## Strategic Changes Tried
 | Cycle | Change | OOS PF Before | OOS PF After | Verdict |
 |-------|--------|---------------|--------------|---------|
-*No v3 cycles yet — fresh start.*
+| 003 | PBT sweep: Tier 1 loss weights, pop=6, gen=5 | 3.28 | 3.28 (unchanged) | FAILED — 30/30 reverted, best=25.99, stagnation=5 |
+| 002 | EXIT_W tuning (0.20-0.35), VALUE_W boost (0.4-0.5), DAY_SEQ=0.90, LR/WD | 3.28 | 3.28 (unchanged) | FAILED — 10/10 reverted, tunnel vision on EXIT_W |
+| 001 | v6 four-head + BATCH_SIZE=1024 breakthrough | N/A (fresh) | 3.28 | VIABLE (p=0.0020, 208 trades, 63 val days) |
 
 ## Paper Trading P&L Tracking
 | Date | Trades | P&L % | Backtest Expected | Divergence |
 |------|--------|-------|-------------------|------------|
-*No v3 paper trading sessions yet.*
+*requires update with v6 paper trading sessions.*
 
 ## Dead Ends (Strategic Level)
 | Change | Cycles | Result |
 |--------|--------|--------|
-*No v3 dead ends yet — clean slate.*
+| Manual EXIT_W tuning (0.20-0.35) | 1 (cycle 002) | 10/10 reverted. Score penalty terms (consec loss, drawdown) are fragile — changing exit timing cascades through penalties. |
+| PBT sweep on Tier 1 loss weights | 1 (cycle 003) | 30/30 reverted (5 gens × 6 members). Best=25.99 vs 41.92 baseline. Stagnation=5. Multi-param exploration didn't help — the 41.92 is a stochastic outlier, not an achievable optimum. |
 
 ## Lessons From Pre-v3 (230 cycles archived)
 - **Score gaming:** Agent tuned SCORE_DRAWDOWN_PENALTY to inflate scores 6x without PF improvement. Score config now LOCKED.
@@ -27,11 +30,14 @@ Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner
 - **More GPU steps ≠ better model.** 6.6x more steps (bf16 + batch=512) didn't help. Problem was training signal, not capacity.
 - **Inner loop agent mode saves API costs.** Opus IS the loop, Sonnet agents write code. No Anthropic API calls.
 - **Warm start compounding requires warm start to actually work.** Previous 230 cycles had silently broken warm start (always random init).
-- **EXIT_W trap:** 97.7% of profitable bars have exit labels. EXIT_W=0.5 leaves only 12.3% TRADE targets. Keep EXIT_W ≤ 0.15.
+- **EXIT_W trap:** 97.7% of profitable bars have exit labels. EXIT_W=0.5 leaves only 12.3% TRADE targets. Keep EXIT_W ≤ 0.35.
+- **Value exit is value-destructive at VALUE_W=0.3:** 35 value exits at avg -2.82% P&L. Value head needs stronger training signal (VALUE_W ≥ 0.4).
+- **IBKR live pipeline worked but model didn't exit:** Position state was all zeros (unrealized P&L never fed). Fixed. Gate stays TRADE 90%+ even with fix → training issue (EXIT_W too low).
+- **STOP_COOLDOWN_BARS not enforced live:** Training eval blocks entries for 5 bars after stop. Live had zero cooldown → 2.7s reentry. Fixed.
 - **Spread proxy was miscalibrated:** Bar range ≠ bid-ask spread. Killed 85-98% of bars. Fixed with premium-tier lookup + hard-fail guardrails.
 
 ## Current Hypothesis
-**Three-head architecture (v5) with value head for intelligent exits.** Phase D replaces the failed RL exit policy (REINFORCE collapsed to 100% EXIT) with a value head — a third output on the transformer that predicts remaining P&L via MSE regression. The value head shares the transformer backbone (rich 37-feature context), uses stable training (MSE, not policy gradient), and provides continuous exit signal. PBT evolves `TRAIN_VALUE_W` (loss weight) and `TRAIN_VALUE_EXIT_THRESH` (exit threshold). Position state expanded from 5→7 dims (`best_pnl_since_entry`, `bars_since_pnl_high`). Exit priority: stop_loss > model_exit > value_exit > max_hold > EOD — consistent across train/replay/IBKR.
+**Paper trading validation.** 40 experiments (10 manual + 30 PBT) couldn't improve the 41.92 score — it's a stochastic outlier, not an optimizable target. Model is VIABLE (val PF=3.28, p=0.0020). Per ground truth hierarchy (paper P&L > backtest > score), next step is IBKR paper trading validation: 3-5 sessions, measure live P&L vs backtest expectation. If they match, model is validated. If not, divergence reveals what to fix. Feature additions (GEX, market internals, walk-forward) are higher leverage than more hyperparameter tuning.
 
 ## What Works (Outer Loop)
 - ART² correctly identified gamed baselines, structural bugs, and architecture dead weight across 230 cycles.

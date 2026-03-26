@@ -14,13 +14,28 @@ from ib_insync import IB, Index, Stock
 
 _log = logging.getLogger(__name__)
 
-from training.prepare import ACTION_DO_NOTHING, FEATURE_NAMES
+from pathlib import Path
+
+from training.prepare import ACTION_DO_NOTHING, FEATURE_NAMES, STOP_COOLDOWN_BARS
 from training.live.context import LIVE_CONTEXT_DIR, load_latest_context_bundle, refresh_context_bundle
 from training.live.decision import ModelDecisionEngine
 from training.live.entitlements import EntitlementReport, probe_entitlements
 from training.live.execution import OCOExecutionEngine
 from training.live.features import FiveSecondMinuteAggregator, LiveFeatureEngine
 from training.live.resolver import ACTION_TO_SPEC, SPXWContractResolver
+
+ACTION_NAMES = {
+    0: "DO_NOTHING",
+    1: "BUY_CALL_ATM",
+    2: "BUY_CALL_OTM5",
+    3: "BUY_CALL_OTM10",
+    4: "BUY_PUT_ATM",
+    5: "BUY_PUT_OTM5",
+    6: "BUY_PUT_OTM10",
+    7: "EXIT",
+}
+
+TRADES_PATH = Path(os.path.join("results", "live", "trades.jsonl"))
 
 ET_TZ = ZoneInfo("America/New_York")
 
@@ -179,9 +194,15 @@ class IBKRMarketStream:
 
     def close(self) -> None:
         for _, bl in self.rt_lists.items():
-            self.ib.cancelRealTimeBars(bl)
+            try:
+                self.ib.cancelRealTimeBars(bl)
+            except Exception:
+                pass
         for _, contract in self.option_contracts.items():
-            self.ib.cancelMktData(contract)
+            try:
+                self.ib.cancelMktData(contract)
+            except Exception:
+                pass
 
 
 class PaperTradingService:
@@ -197,6 +218,126 @@ class PaperTradingService:
         }
         with open(self.cfg.audit_path, "a") as f:
             f.write(json.dumps(row, default=str) + "\n")
+
+    def _write_trade_record(self, record: dict[str, Any]) -> None:
+        """Write a complete trade record to trades.jsonl for post-market analysis."""
+        os.makedirs(TRADES_PATH.parent, exist_ok=True)
+        with open(TRADES_PATH, "a") as f:
+            f.write(json.dumps(record, default=str) + "\n")
+
+    def _emit_position_closed(
+        self,
+        *,
+        session_id: str,
+        position_id: str,
+        exec_engine: "OCOExecutionEngine",
+        exit_price: float | None,
+        exit_reason: str,
+        bars_held: int,
+        entry_meta: dict[str, Any],
+        latest_spx: float = 0.0,
+        session_trades: list[dict[str, Any]] | None = None,
+    ) -> None:
+        """Emit a complete position_closed audit event and write trade record."""
+        state = exec_engine.positions.get(position_id)
+        entry_price = 0.0
+        qty = 1
+        contract_info: dict[str, Any] = {}
+        if state:
+            entry_price = state.fill_price or state.entry_price_reference or 0.0
+            qty = state.qty
+            contract_info = _contract_payload(state.contract) if state.contract else {}
+
+        # Compute P&L
+        pnl_pct = 0.0
+        pnl_dollar = 0.0
+        if entry_price > 0 and exit_price is not None and exit_price > 0:
+            pnl_pct = (exit_price - entry_price) / entry_price
+            pnl_dollar = pnl_pct * entry_price * qty * 100  # SPX multiplier
+
+        action_id = entry_meta.get("action", 0)
+        record = {
+            "position_id": position_id,
+            "intent_id": entry_meta.get("intent_id", ""),
+            "session_id": session_id,
+            "direction": ACTION_NAMES.get(action_id, f"ACTION_{action_id}"),
+            "strike": entry_meta.get("strike", contract_info.get("strike", "")),
+            "right": entry_meta.get("right", contract_info.get("right", "")),
+            "contract": contract_info.get("tradingClass", ""),
+            "qty": qty,
+            "entry_price": entry_price,
+            "exit_price": exit_price,
+            "entry_ts": entry_meta.get("entry_ts", ""),
+            "pnl_pct": round(pnl_pct, 6),
+            "pnl_dollar": round(pnl_dollar, 2),
+            "bars_held": bars_held,
+            "exit_reason": exit_reason,
+            "gate_confidence": entry_meta.get("gate_confidence", 0),
+            "direction_probs": entry_meta.get("direction_probs", []),
+            "spx_at_entry": entry_meta.get("spx_at_entry", 0),
+            "spx_at_exit": latest_spx,
+            "stop_price": entry_meta.get("stop_price", 0),
+            "tp_price": entry_meta.get("tp_price", 0),
+        }
+
+        self._audit("position_closed", record)
+
+        # Also write to trades.jsonl for post-market analysis
+        trade_record = {
+            **record,
+            "date": dt.datetime.utcnow().strftime("%Y-%m-%d"),
+            "exit_ts": dt.datetime.utcnow().isoformat(),
+            "session_cumulative_pnl": round(exec_engine.realized_pnl_pct, 6),
+        }
+        self._write_trade_record(trade_record)
+        if session_trades is not None:
+            session_trades.append(trade_record)
+
+    def _write_daily_summary(
+        self,
+        *,
+        session_id: str,
+        session_trades: list[dict[str, Any]],
+        counters: dict[str, int],
+        processed: int,
+        exec_engine: "OCOExecutionEngine",
+    ) -> None:
+        """Write a daily summary JSON for post-market analysis."""
+        today = dt.datetime.utcnow().strftime("%Y-%m-%d")
+        daily_dir = Path("results") / "live" / "daily"
+        daily_dir.mkdir(parents=True, exist_ok=True)
+
+        pnls = [t.get("pnl_pct", 0) for t in session_trades]
+        winners = sum(1 for p in pnls if p > 0)
+        losers = sum(1 for p in pnls if p <= 0)
+        gross_win = sum(p for p in pnls if p > 0)
+        gross_loss = abs(sum(p for p in pnls if p <= 0))
+        pf = gross_win / gross_loss if gross_loss > 0 else (float("inf") if gross_win > 0 else 0)
+        total_pnl_dollars = sum(t.get("pnl_dollar", 0) for t in session_trades)
+
+        summary = {
+            "date": today,
+            "session_id": session_id,
+            "total_pnl_dollars": round(total_pnl_dollars, 2),
+            "total_pnl_pct": round(exec_engine.realized_pnl_pct, 6),
+            "num_trades": len(session_trades),
+            "winners": winners,
+            "losers": losers,
+            "win_rate": round(winners / max(len(session_trades), 1), 4),
+            "profit_factor": round(pf, 4) if pf != float("inf") else "Infinity",
+            "trades": session_trades,
+            "model_stats": {
+                "total_bars": processed,
+                "trade_signals": counters.get("signals_generated", 0),
+                "entries_applied": counters.get("entries_applied", 0),
+                "exits_applied": counters.get("exits_applied", 0),
+            },
+        }
+
+        summary_path = daily_dir / f"{today}.json"
+        with open(summary_path, "w") as f:
+            json.dump(summary, f, indent=2, default=str)
+        _log.info("Daily summary written to %s", summary_path)
 
     def run_context_refresh(self, as_of_date: str | None = None) -> str:
         bundle, path = refresh_context_bundle(
@@ -275,6 +416,15 @@ class PaperTradingService:
         ib.connect(self.cfg.host, self.cfg.port, clientId=self.cfg.client_id, timeout=20)
 
         resolver = SPXWContractResolver(ib=ib, auto_qualify=True)
+
+        # Session startup cleanup: cancel any orphaned orders from previous sessions
+        _startup_engine = OCOExecutionEngine(ib=ib, dry_run=self.cfg.dry_run)
+        _cancelled = _startup_engine.cancel_all_open_orders()
+        if _cancelled > 0:
+            self._audit("startup_cleanup", {"orders_cancelled": _cancelled})
+            _log.info("Cancelled %d orphaned orders from previous sessions", _cancelled)
+            ib.sleep(1.0)  # Let cancels propagate
+
         exec_engine = OCOExecutionEngine(
             ib=ib,
             dry_run=self.cfg.dry_run or (not self.cfg.paper_auto),
@@ -297,6 +447,11 @@ class PaperTradingService:
         intent_seq = 0
         position_entry_bar = 0
         position_entry_price = 0.0
+        entry_meta: dict[str, Any] = {}  # metadata captured at entry for position_closed
+        latest_spx: float = seed_spx
+        session_trades: list[dict[str, Any]] = []  # all closed trade records for daily summary
+        _last_known_mid: float = 0.0  # cached option mid for value exit fallback
+        _last_stop_bar: int = -STOP_COOLDOWN_BARS  # bar index of last stop-loss exit (cooldown)
         counters = {
             "signals_generated": 0,
             "entry_intents": 0,
@@ -306,6 +461,7 @@ class PaperTradingService:
             "exit_intents": 0,
             "exits_applied": 0,
             "bars_skipped_incomplete": 0,
+            "cooldown_blocked": 0,
         }
 
         self._audit(
@@ -382,19 +538,62 @@ class PaperTradingService:
 
                 # Update position state for gate head context
                 if current_position_id is not None:
+                    state = exec_engine.positions.get(current_position_id)
+                    if state is not None and state.status == "CLOSED":
+                        # Position closed (stop/TP filled, rejected, or cancelled)
+                        _reason = "stop_or_tp" if state.fill_price is not None else "unfilled"
+                        _exit_price = state.fill_price or state.current_stop
+                        self._emit_position_closed(
+                            session_id=session_id,
+                            position_id=current_position_id,
+                            exec_engine=exec_engine,
+                            exit_price=_exit_price,
+                            exit_reason=_reason,
+                            bars_held=processed - position_entry_bar,
+                            entry_meta=entry_meta,
+                            latest_spx=latest_spx,
+                            session_trades=session_trades,
+                        )
+                        # Cancel orphaned stop/TP orders before allowing new entries
+                        exec_engine.cancel_orphaned_orders(current_position_id)
+                        if not exec_engine.dry_run:
+                            ib.sleep(0.5)  # Let cancel propagate before new entry
+                        # Track stop-loss for cooldown (matches prepare.py:3446)
+                        _was_stop = any("stop" in n for n in getattr(state, "notes", []))
+                        current_position_id = None
+                        entry_meta = {}
+                        if _was_stop:
+                            _last_stop_bar = processed
+                        state = None
+                if current_position_id is not None:
                     bars_held = processed - position_entry_bar
-                    option_mid = None
                     state = exec_engine.positions.get(current_position_id)
                     if state and state.entry_price_reference and state.entry_price_reference > 0:
-                        unrealized = 0.0  # default if no current price
-                        # Try to get current option mid from execution state
-                        if hasattr(state, 'last_price') and state.last_price:
-                            unrealized = (state.last_price / state.entry_price_reference) - 1.0
+                        # Get real-time option mid for unrealized P&L
+                        _pos_mid = resolver.quote_mid(state.contract, timeout_s=1.0) if state.contract else None
+                        if _pos_mid is not None:
+                            _last_known_mid = _pos_mid
+                        elif _last_known_mid > 0:
+                            _pos_mid = _last_known_mid
+                        if _pos_mid is not None and _pos_mid > 0:
+                            unrealized = (_pos_mid - state.entry_price_reference) / state.entry_price_reference
+                        else:
+                            unrealized = 0.0
                         decision.update_position_state(True, bars_held, unrealized)
                     else:
                         decision.update_position_state(True, bars_held, 0.0)
                 else:
                     decision.update_position_state(False)
+
+                # Feed real account state to risk head
+                _win_rate = exec_engine.trades_closed and (
+                    sum(1 for t in session_trades if t.get("pnl_pct", 0) > 0) / max(exec_engine.trades_closed, 1)
+                ) or 0.0
+                decision.set_account_state(
+                    balance=exec_engine.starting_capital + exec_engine.session_pnl_dollars,
+                    daily_pnl_frac=exec_engine.realized_pnl_pct,
+                    win_rate_20=_win_rate,
+                )
 
                 inference = decision.infer(snap.normalized_window)
                 counters["signals_generated"] += 1
@@ -415,12 +614,20 @@ class PaperTradingService:
                     },
                 )
 
-                if current_position_id is None:
+                if current_position_id is None and (processed - _last_stop_bar) < STOP_COOLDOWN_BARS:
+                    counters["cooldown_blocked"] += 1
+                    self._audit("entry_blocked_cooldown", {
+                        "session_id": session_id,
+                        "bars_since_stop": processed - _last_stop_bar,
+                        "cooldown_bars": STOP_COOLDOWN_BARS,
+                    })
+                elif current_position_id is None:
                     # bar_of_day = minutes since 9:30 AM ET (market open), not since session start
                     market_open_et = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
                     real_bar_of_day = max(0, int((now_et - market_open_et).total_seconds() // 60))
                     intent = decision.build_entry_intent(inference, resolver, latest_spx, snap.latest_raw_row,
-                                                         bar_of_day=real_bar_of_day)
+                                                         bar_of_day=real_bar_of_day,
+                                                         feature_window=snap.normalized_window)
                     if intent is not None:
                         intent_seq += 1
                         intent.decision_id = decision_id
@@ -447,6 +654,18 @@ class PaperTradingService:
                         current_position_id = state.position_id
                         position_entry_bar = processed
                         position_entry_price = intent.reference_price or 0.0
+                        entry_meta = {
+                            "action": int(intent.action),
+                            "intent_id": intent.intent_id,
+                            "entry_ts": dt.datetime.utcnow().isoformat(),
+                            "gate_confidence": float(intent.confidence),
+                            "direction_probs": [float(x) for x in inference.direction_probs],
+                            "strike": getattr(intent.contract, "strike", ""),
+                            "right": getattr(intent.contract, "right", ""),
+                            "stop_price": float(intent.stop_price),
+                            "tp_price": float(intent.take_profit_price),
+                            "spx_at_entry": latest_spx,
+                        }
                         self._audit(
                             "entry_intent_applied",
                             {
@@ -459,7 +678,85 @@ class PaperTradingService:
                             },
                         )
                 else:
-                    if inference.action == ACTION_DO_NOTHING:
+                    state = exec_engine.positions.get(current_position_id)
+                    # Get option mid (with cache fallback for reliability)
+                    _cur_mid = None
+                    if state and state.status == "OPEN":
+                        _cur_mid = resolver.quote_mid(state.contract, timeout_s=1.0)
+                        if _cur_mid is not None:
+                            _last_known_mid = _cur_mid
+                        elif _last_known_mid > 0:
+                            _cur_mid = _last_known_mid  # use cached
+
+                    # Always check value head first (regardless of gate)
+                    _value_exit = False
+                    if state and state.status == "OPEN":
+                        update = decision.build_risk_update_intent(state, _cur_mid, snap.latest_raw_row, feature_window=snap.normalized_window)
+                        if update is not None and "value_exit" in update.reason_codes:
+                            # Value head says exit
+                            _value_exit = True
+                            counters["exit_intents"] += 1
+                            if exec_engine.flatten_position(current_position_id, reason="value_exit", exit_price=_cur_mid):
+                                counters["exits_applied"] += 1
+                                self._audit("value_exit", {
+                                    "session_id": session_id,
+                                    "decision_id": decision_id,
+                                    "position_id": current_position_id,
+                                    "exit_price": _cur_mid,
+                                    "reason_codes": list(update.reason_codes),
+                                    "realized_pnl_pct": round(exec_engine.realized_pnl_pct, 4),
+                                })
+                                self._emit_position_closed(
+                                    session_id=session_id,
+                                    position_id=current_position_id,
+                                    exec_engine=exec_engine,
+                                    exit_price=_cur_mid,
+                                    exit_reason="value_exit",
+                                    bars_held=processed - position_entry_bar,
+                                    entry_meta=entry_meta,
+                                    latest_spx=latest_spx,
+                                    session_trades=session_trades,
+                                )
+                                current_position_id = None
+                                entry_meta = {}
+                        elif update is not None:
+                            # Risk update (stop/TP adjustment), not exit
+                            intent_seq += 1
+                            update.decision_id = decision_id
+                            update.intent_id = f"{session_id}-i{intent_seq:05d}"
+                            counters["risk_update_intents"] += 1
+                            self._audit(
+                                "risk_update_intent",
+                                {
+                                    "session_id": session_id,
+                                    "decision_id": update.decision_id,
+                                    "intent_id": update.intent_id,
+                                    "position_id": update.position_id,
+                                    "new_stop": update.new_stop_price,
+                                    "new_take_profit": update.new_take_profit_price,
+                                    "reason_codes": list(update.reason_codes),
+                                },
+                            )
+                            applied = exec_engine.apply_risk_update(update)
+                            if applied:
+                                counters["risk_updates_applied"] += 1
+                            self._audit(
+                                "risk_update",
+                                {
+                                    "session_id": session_id,
+                                    "decision_id": update.decision_id,
+                                    "intent_id": update.intent_id,
+                                    "position_id": current_position_id,
+                                    "applied": applied,
+                                    "new_stop": update.new_stop_price,
+                                    "new_take_profit": update.new_take_profit_price,
+                                    },
+                                )
+                            if state.status != "OPEN":
+                                current_position_id = None
+
+                    # Gate exit: if value head didn't exit and gate says NO_TRADE
+                    if not _value_exit and current_position_id is not None and inference.action == ACTION_DO_NOTHING:
                         counters["exit_intents"] += 1
                         self._audit(
                             "exit_intent",
@@ -470,9 +767,7 @@ class PaperTradingService:
                                 "reason_codes": list(inference.reason_codes),
                             },
                         )
-                        exit_state = exec_engine.positions.get(current_position_id)
-                        exit_mid = resolver.quote_mid(exit_state.contract, timeout_s=0.2) if exit_state else None
-                        if exec_engine.flatten_position(current_position_id, reason="model_exit", exit_price=exit_mid):
+                        if exec_engine.flatten_position(current_position_id, reason="model_exit", exit_price=_cur_mid):
                             counters["exits_applied"] += 1
                             self._audit(
                                 "model_exit",
@@ -480,50 +775,23 @@ class PaperTradingService:
                                     "session_id": session_id,
                                     "decision_id": decision_id,
                                     "position_id": current_position_id,
-                                    "exit_price": exit_mid,
+                                    "exit_price": _cur_mid,
                                     "realized_pnl_pct": round(exec_engine.realized_pnl_pct, 4),
                                 },
                             )
+                            self._emit_position_closed(
+                                session_id=session_id,
+                                position_id=current_position_id,
+                                exec_engine=exec_engine,
+                                exit_price=_cur_mid,
+                                exit_reason="model_exit",
+                                bars_held=processed - position_entry_bar,
+                                entry_meta=entry_meta,
+                                latest_spx=latest_spx,
+                                session_trades=session_trades,
+                            )
                             current_position_id = None
-                    else:
-                        state = exec_engine.positions.get(current_position_id)
-                        if state and state.status == "OPEN":
-                            mid = resolver.quote_mid(state.contract, timeout_s=0.2)
-                            update = decision.build_risk_update_intent(state, mid, snap.latest_raw_row, feature_window=snap.normalized_window)
-                            if update is not None:
-                                intent_seq += 1
-                                update.decision_id = decision_id
-                                update.intent_id = f"{session_id}-i{intent_seq:05d}"
-                                counters["risk_update_intents"] += 1
-                                self._audit(
-                                    "risk_update_intent",
-                                    {
-                                        "session_id": session_id,
-                                        "decision_id": update.decision_id,
-                                        "intent_id": update.intent_id,
-                                        "position_id": update.position_id,
-                                        "new_stop": update.new_stop_price,
-                                        "new_take_profit": update.new_take_profit_price,
-                                        "reason_codes": list(update.reason_codes),
-                                    },
-                                )
-                                applied = exec_engine.apply_risk_update(update)
-                                if applied:
-                                    counters["risk_updates_applied"] += 1
-                                self._audit(
-                                    "risk_update",
-                                    {
-                                        "session_id": session_id,
-                                        "decision_id": update.decision_id,
-                                        "intent_id": update.intent_id,
-                                        "position_id": current_position_id,
-                                        "applied": applied,
-                                        "new_stop": update.new_stop_price,
-                                        "new_take_profit": update.new_take_profit_price,
-                                    },
-                                )
-                            if state.status != "OPEN":
-                                current_position_id = None
+                            entry_meta = {}
 
                 if self.cfg.max_minutes and processed >= self.cfg.max_minutes:
                     break
@@ -543,6 +811,17 @@ class PaperTradingService:
                     "exit_price": eod_mid,
                     "realized_pnl_pct": round(exec_engine.realized_pnl_pct, 4),
                 })
+                self._emit_position_closed(
+                    session_id=session_id,
+                    position_id=current_position_id,
+                    exec_engine=exec_engine,
+                    exit_price=eod_mid,
+                    exit_reason="eod_flatten",
+                    bars_held=processed - position_entry_bar,
+                    entry_meta=entry_meta,
+                    latest_spx=latest_spx,
+                    session_trades=session_trades,
+                )
             stream.close()
             if ib.isConnected():
                 ib.disconnect()
@@ -563,6 +842,15 @@ class PaperTradingService:
                         [p for p in exec_engine.positions.values() if p.status == "OPEN"]
                     ),
                 },
+            )
+
+            # Write daily summary JSON for post-market analysis
+            self._write_daily_summary(
+                session_id=session_id,
+                session_trades=session_trades,
+                counters=counters,
+                processed=processed,
+                exec_engine=exec_engine,
             )
 
 
@@ -593,6 +881,7 @@ def _greek(ticker: Any, key: str) -> float:
 def _contract_payload(contract: Any) -> dict[str, Any]:
     return {
         "symbol": getattr(contract, "symbol", None),
+        "localSymbol": getattr(contract, "localSymbol", None),
         "secType": getattr(contract, "secType", None),
         "exchange": getattr(contract, "exchange", None),
         "currency": getattr(contract, "currency", None),

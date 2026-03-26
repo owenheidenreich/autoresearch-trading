@@ -12,6 +12,7 @@ Subcommands:
     python3 tools/art2.py analyze                  # Collect metrics into analysis.json
     python3 tools/art2.py report                   # Generate markdown briefing for Claude Code
     python3 tools/art2.py verify --dates 3         # OOS replay battery + IBKR probe
+    python3 tools/art2.py viability                  # Profitability assessment
     python3 tools/art2.py status                   # Current cycle state
     python3 tools/art2.py cycle --minutes 60       # Full: train → analyze → report → await
     python3 tools/art2.py autonomous               # Market-aware loop: train when closed, monitor when open
@@ -52,6 +53,7 @@ CACHE_DIR = Path.home() / ".cache" / "autoresearch-trading"
 FEATURES_DIR = CACHE_DIR / "features"
 DEPLOY_SH = str(PROJECT_ROOT / "infra" / "deploy.sh")
 ET = ZoneInfo("America/New_York")
+PT = ZoneInfo("America/Los_Angeles")
 
 # US equity market holidays 2025-2027 (NYSE/NASDAQ closed)
 US_MARKET_HOLIDAYS = {
@@ -84,6 +86,50 @@ US_EARLY_CLOSE = {
 def log(msg: str) -> None:
     ts = datetime.now(ET).strftime("%H:%M:%S ET")
     print(f"[ART²] [{ts}] {msg}", flush=True)
+
+
+def time_check() -> dict:
+    """Print current time in both PT and ET, market status, and day of week.
+
+    Always call this at the start of any ART² operation to establish
+    correct time context. The user is in Pacific Time; the market runs
+    on Eastern Time.
+
+    Returns the same dict as is_market_open() with added time fields.
+    """
+    now_et = datetime.now(ET)
+    now_pt = datetime.now(PT)
+
+    day_name = now_et.strftime("%A")
+    date_str = now_et.strftime("%Y-%m-%d")
+    et_str = now_et.strftime("%I:%M %p ET")
+    pt_str = now_pt.strftime("%I:%M %p PT")
+
+    market = is_market_open()
+
+    status = market["reason"]
+    lines = [
+        f"[ART² TIME CHECK]",
+        f"  Date:   {day_name}, {date_str}",
+        f"  Local:  {pt_str} (user)",
+        f"  Market: {et_str}",
+        f"  Status: {status}",
+    ]
+    if market["open"]:
+        mins = market.get("minutes_to_close", 0)
+        lines.append(f"  Close in: {mins} min ({mins // 60}h {mins % 60}m)")
+    elif "minutes_to_open" in market:
+        mins = market["minutes_to_open"]
+        if mins > 0:
+            lines.append(f"  Opens in: {mins} min ({mins // 60}h {mins % 60}m)")
+
+    print("\n".join(lines), flush=True)
+
+    market["now_et"] = now_et.isoformat()
+    market["now_pt"] = now_pt.isoformat()
+    market["day_of_week"] = day_name
+    market["date"] = date_str
+    return market
 
 
 def run_cmd(cmd: list[str], log_path: Path | None = None,
@@ -205,6 +251,161 @@ def _project_session_cost(minutes: int) -> float:
     """Estimate API cost for a session of given duration."""
     est_experiments = minutes / AVG_MINUTES_PER_EXPERIMENT
     return round(est_experiments * AVG_COST_PER_EXPERIMENT, 2)
+
+
+def _fetch_akt_price(fallback: float = 0.50) -> float:
+    """Fetch real-time AKT/USD price from CoinGecko. Returns USD price per AKT."""
+    import urllib.request
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=akash-network&vs_currencies=usd"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            data = json.loads(resp.read())
+            price = data["akash-network"]["usd"]
+            log(f"AKT price: ${price:.4f} (live from CoinGecko)")
+            return float(price)
+    except Exception as e:
+        log(f"WARNING: Could not fetch AKT price ({e}), using fallback ${fallback:.2f}")
+        return fallback
+
+
+# Akash chain constants
+AKASH_BLOCK_TIME_SECONDS = 6.17  # Average Akash block time
+AKASH_BLOCKS_PER_HOUR = 3600 / AKASH_BLOCK_TIME_SECONDS  # ~583.5
+AKASH_OWNER = "akash155hphg6qyy3vtr584p38wlngtqxzdr0l6jutmp"
+AKASH_RPC = "https://akash-rpc.polkachu.com:443"
+
+
+def _query_akash_deployment(dseq: str | None = None) -> dict[str, Any] | None:
+    """Query the Akash chain for active deployment escrow and lease data.
+
+    Returns dict with: balance_uakt, price_per_block_uakt, lease_created_block,
+    current_block, akt_per_hour, minutes_remaining, or None if query fails.
+    """
+    import urllib.request
+
+    # Read DSEQ from .deploy-state if not provided
+    if not dseq:
+        state_file = PROJECT_ROOT / ".deploy-state"
+        if not state_file.exists():
+            return None
+        for line in state_file.read_text().splitlines():
+            if line.startswith("DSEQ="):
+                dseq = line.split("=", 1)[1].strip()
+                break
+    if not dseq:
+        return None
+
+    try:
+        # 1. Query deployment for escrow balance
+        dep_cmd = [
+            "provider-services", "query", "deployment", "list",
+            "--owner", AKASH_OWNER, "--dseq", dseq,
+            "--node", AKASH_RPC, "-o", "json",
+        ]
+        dep_result = subprocess.run(dep_cmd, capture_output=True, text=True, timeout=15)
+        if dep_result.returncode != 0:
+            return None
+        dep_data = json.loads(dep_result.stdout)
+        deployments = dep_data.get("deployments", [])
+        if not deployments:
+            return None
+
+        escrow_state = deployments[0].get("escrow_account", {}).get("state", {})
+        funds = escrow_state.get("funds", [])
+        balance_uakt = 0.0
+        for f in funds:
+            if f.get("denom") == "uakt":
+                balance_uakt = float(f.get("amount", 0))
+        settled_at = int(escrow_state.get("settled_at", 0))
+
+        # 2. Query lease for price per block
+        lease_cmd = [
+            "provider-services", "query", "market", "lease", "list",
+            "--owner", AKASH_OWNER, "--dseq", dseq,
+            "--node", AKASH_RPC, "-o", "json",
+        ]
+        lease_result = subprocess.run(lease_cmd, capture_output=True, text=True, timeout=15)
+        if lease_result.returncode != 0:
+            return None
+        lease_data = json.loads(lease_result.stdout)
+        leases = lease_data.get("leases", [])
+        if not leases:
+            return None
+
+        lease = leases[0].get("lease", {})
+        price_per_block_uakt = float(lease.get("price", {}).get("amount", 0))
+        lease_created_block = int(lease.get("created_at", 0))
+
+        # 3. Get current block height via RPC
+        rpc_base = AKASH_RPC.replace(":443", "")
+        req = urllib.request.Request(
+            f"{rpc_base}/status",
+            headers={"User-Agent": "ART2/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            rpc_data = json.loads(resp.read())
+        current_block = int(rpc_data["result"]["sync_info"]["latest_block_height"])
+
+        # 4. Calculate
+        blocks_elapsed = current_block - max(lease_created_block, settled_at)
+        uakt_spent = blocks_elapsed * price_per_block_uakt
+        uakt_remaining = max(0, balance_uakt - uakt_spent)
+        blocks_remaining = uakt_remaining / max(price_per_block_uakt, 1e-6)
+        minutes_remaining = (blocks_remaining * AKASH_BLOCK_TIME_SECONDS) / 60
+        akt_per_hour = (price_per_block_uakt * AKASH_BLOCKS_PER_HOUR) / 1_000_000
+
+        return {
+            "dseq": dseq,
+            "balance_uakt": balance_uakt,
+            "balance_akt": balance_uakt / 1_000_000,
+            "price_per_block_uakt": price_per_block_uakt,
+            "akt_per_hour": round(akt_per_hour, 4),
+            "lease_created_block": lease_created_block,
+            "current_block": current_block,
+            "blocks_elapsed": blocks_elapsed,
+            "akt_spent": round(uakt_spent / 1_000_000, 4),
+            "akt_remaining": round(uakt_remaining / 1_000_000, 4),
+            "minutes_remaining": round(minutes_remaining, 1),
+            "hours_remaining": round(minutes_remaining / 60, 2),
+        }
+    except Exception as e:
+        log(f"WARNING: Akash chain query failed: {e}")
+        return None
+
+
+def _calculate_deposit_akt(minutes: int, fallback_akt_per_hour: float = 2.5) -> int:
+    """Calculate AKT deposit for a training session.
+
+    Tries to use the actual lease rate from the most recent deployment.
+    Falls back to AKT price + conservative USD estimate if no deployment data.
+
+    Args:
+        minutes: Training session duration
+        fallback_akt_per_hour: Fallback rate if no chain data (default 2.5 AKT/hr)
+
+    Returns:
+        AKT amount to deposit (integer, includes 25% buffer)
+    """
+    import math
+    hours = minutes / 60
+
+    # Try to get actual rate from the Akash chain (most recent deployment)
+    chain = _query_akash_deployment()
+    if chain and chain.get("akt_per_hour", 0) > 0:
+        akt_per_hour = chain["akt_per_hour"]
+        akt_needed = math.ceil(hours * akt_per_hour * 1.25)  # 25% buffer
+        log(f"Deposit calc (chain data): {minutes}min x {akt_per_hour:.4f} AKT/hr "
+            f"x 1.25 buffer = {akt_needed} AKT")
+        return max(5, akt_needed)
+
+    # Fallback: use AKT price from CoinGecko + conservative USD rate
+    akt_price = _fetch_akt_price()
+    usd_per_hour = 1.50  # Conservative based on observed ~$1.17/hr
+    usd_needed = hours * usd_per_hour * 1.25
+    akt_needed = math.ceil(usd_needed / akt_price)
+    log(f"Deposit calc (fallback): {minutes}min x ${usd_per_hour}/hr x 1.25 buffer = "
+        f"${usd_needed:.2f} / ${akt_price:.4f}/AKT = {akt_needed} AKT")
+    return max(5, akt_needed)
 
 
 def load_state() -> dict[str, Any]:
@@ -357,7 +558,12 @@ for k, v in state.items():
             dir_out = v.shape[0]
 assert gate_out == 2, f"No gate head with 2 outputs found"
 assert dir_out == 6, f"No direction head with 6 outputs found"
-print(f"Checkpoint OK: {{n_params}} params, gate={{gate_out}}, dir={{dir_out}}")
+# Check risk head (3 outputs) exists
+risk_out = None
+for k, v in state.items():
+    if v.dim() >= 2 and v.shape[0] == 3 and 'risk' in k:
+        risk_out = v.shape[0]
+print(f"Checkpoint OK: {{n_params}} params, gate={{gate_out}}, dir={{dir_out}}, risk={{risk_out}}")
 """],
         timeout=30,
     )
@@ -386,7 +592,7 @@ if feat is None:
     raise SystemExit(1)
 n_features = feat.shape[-1]
 print(f"data.pt features: {{n_features}}, samples: {{feat.shape[0]}}")
-assert n_features == 32, f"Expected 32 features, got {{n_features}}"
+assert n_features == 37, f"Expected 37 features (v3), got {{n_features}}"
 # Check val_start_idx exists (needed for train/eval split)
 assert 'val_start_idx' in data, "Missing val_start_idx"
 print("Feature parity OK")
@@ -395,7 +601,7 @@ print("Feature parity OK")
     )
     if rc == 0:
         check3["passed"] = True
-        check3["detail"] = "32 features confirmed"
+        check3["detail"] = "37 features confirmed"
     else:
         check3["detail"] = output.strip()[-200:]
         gate["passed"] = False
@@ -562,9 +768,8 @@ def cmd_train(args: argparse.Namespace) -> bool:
     pre = _snapshot_metrics()
     write_json(cdir / "pre_metrics.json", pre)
 
-    # Calculate AKT needed for the full session upfront.
-    # H100 pricing: ~7-8 AKT/hour. Deploy with full amount to avoid underfunded leases.
-    deposit_akt = getattr(args, 'deposit_akt', None) or max(5, int(minutes / 60 * 8) + 2)
+    # Calculate AKT needed based on real-time AKT price and GPU hourly rate.
+    deposit_akt = getattr(args, 'deposit_akt', None) or _calculate_deposit_akt(minutes)
     log(f"=== TRAIN: Booting Akash ({minutes} min budget, {deposit_akt} AKT) ===")
     rc, output = run_cmd(
         [DEPLOY_SH, "boot"],
@@ -1211,9 +1416,9 @@ def cmd_diagnose(args: argparse.Namespace) -> bool:
     train_metrics = {}
     if exps:
         # Use best non-crash experiment
-        valid_exps = [e for e in exps if e.get("score", -999) > -999]
+        valid_exps = [e for e in exps if (e.get("score") or -999) > -999]
         if valid_exps:
-            best = max(valid_exps, key=lambda e: e.get("score", -999))
+            best = max(valid_exps, key=lambda e: e.get("score") or -999)
             train_metrics = {
                 "profit_factor": best.get("profit_factor"),
                 "trades_per_day": best.get("trades_per_day"),
@@ -1295,7 +1500,7 @@ def cmd_diagnose(args: argparse.Namespace) -> bool:
                 })
 
         # Score trend
-        scores = [e.get("score", -999) for e in exps if e.get("score", -999) > -999]
+        scores = [e.get("score", -999) for e in exps if (e.get("score") or -999) > -999]
         if len(scores) >= 3:
             first_half = scores[:len(scores)//2]
             second_half = scores[len(scores)//2:]
@@ -1696,6 +1901,457 @@ def cmd_research(args: argparse.Namespace) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# VIABILITY — "Can this model make money?" structured assessment
+# ---------------------------------------------------------------------------
+
+def cmd_viability(args: argparse.Namespace) -> bool:
+    """Run a structured profitability assessment on the current best model.
+
+    Answers the question: "Can this model make money?" with data.
+    Runs validation-only and full-period backtests, then computes:
+    - Train/val split comparison (overfit detection)
+    - Survivorship concentration (fragility)
+    - Direction & strike diversity
+    - Trade frequency & statistical significance
+    - Exit quality breakdown
+    - Time-of-day P&L decomposition
+    - Overall verdict with confidence level
+
+    Output: viability.json + viability.md in the cycle directory.
+    """
+    import math
+
+    state = load_state()
+    cycle_num = state.get("cycle", 0) or 1
+    cdir = cycle_dir(cycle_num)
+    cdir.mkdir(parents=True, exist_ok=True)
+
+    model_path = PROJECT_ROOT / "training" / "best_model.pt"
+    if not model_path.exists():
+        log("No best_model.pt found — skipping viability assessment")
+        return False
+
+    log("=== VIABILITY: Profitability assessment ===")
+
+    replay_py = str(PROJECT_ROOT / "training" / "replay.py")
+    viability_dir = cdir / "viability"
+    viability_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- Run two backtests: validation-only and full-period ---
+    val_dir = viability_dir / "val"
+    full_dir = viability_dir / "full"
+
+    def _run_backtest(output_dir: Path, all_dates: bool = False) -> tuple[int, str]:
+        cmd = ["python3", replay_py, "--backtest",
+               "--model", str(model_path),
+               "--output-dir", str(output_dir)]
+        if all_dates:
+            cmd.append("--all-dates")
+        return run_cmd(cmd, log_path=viability_dir / "logs" / f"{'full' if all_dates else 'val'}.log",
+                       timeout=600)
+
+    log("Running validation-only backtest...")
+    rc_val, _ = _run_backtest(val_dir, all_dates=False)
+    log("Running full-period backtest...")
+    rc_full, _ = _run_backtest(full_dir, all_dates=True)
+
+    if rc_val != 0 and rc_full != 0:
+        log("Both backtests failed — cannot assess viability")
+        return False
+
+    # --- Parse trade CSVs ---
+    def _parse_trades(directory: Path) -> list[dict]:
+        csv_path = directory / "backtest_trades.csv"
+        if not csv_path.exists():
+            csv_path = directory / "trade_log.csv"
+        if not csv_path.exists():
+            return []
+        trades = []
+        with open(csv_path) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                trades.append(row)
+        return trades
+
+    def _f(row, key, default=0.0):
+        try:
+            return float(row.get(key, default))
+        except (ValueError, TypeError):
+            return default
+
+    val_trades = _parse_trades(val_dir)
+    full_trades = _parse_trades(full_dir)
+
+    # Derive train-only trades (full minus val dates)
+    val_dates = set()
+    for t in val_trades:
+        val_dates.add(t.get("date", ""))
+    train_trades = [t for t in full_trades if t.get("date", "") not in val_dates]
+
+    log(f"Trades: {len(full_trades)} total, {len(train_trades)} train, {len(val_trades)} val")
+
+    # --- Compute metrics for a trade set ---
+    def _compute_metrics(trades: list[dict]) -> dict:
+        if not trades:
+            return {"num_trades": 0, "profit_factor": 0, "win_rate": 0,
+                    "avg_pnl": 0, "total_pnl": 0, "trades_per_day": 0}
+
+        pnls = [_f(t, "pnl_pct") for t in trades]
+        winners = [p for p in pnls if p > 0]
+        losers = [p for p in pnls if p <= 0]
+        total_won = sum(winners) if winners else 0
+        total_lost = abs(sum(losers)) if losers else 0
+        pf = total_won / max(total_lost, 1e-6)
+
+        dates = set(t.get("date", "") for t in trades)
+        num_days = max(len(dates), 1)
+
+        return {
+            "num_trades": len(trades),
+            "num_days": num_days,
+            "profit_factor": round(pf, 3),
+            "win_rate": round(len(winners) / max(len(pnls), 1), 3),
+            "avg_pnl": round(sum(pnls) / len(pnls), 4),
+            "total_pnl": round(sum(pnls), 2),
+            "trades_per_day": round(len(trades) / num_days, 3),
+            "avg_winner": round(sum(winners) / len(winners), 4) if winners else 0,
+            "avg_loser": round(sum(losers) / len(losers), 4) if losers else 0,
+            "num_winners": len(winners),
+            "num_losers": len(losers),
+        }
+
+    m_full = _compute_metrics(full_trades)
+    m_train = _compute_metrics(train_trades)
+    m_val = _compute_metrics(val_trades)
+
+    # --- 1. Train/Val Split Comparison (overfit detection) ---
+    split = {
+        "train": m_train,
+        "val": m_val,
+        "full": m_full,
+    }
+    pf_divergence = 0.0
+    if m_train["profit_factor"] > 0 and m_val["profit_factor"] > 0:
+        pf_divergence = abs(m_train["profit_factor"] - m_val["profit_factor"]) / max(m_train["profit_factor"], 1e-6)
+    split["pf_divergence_pct"] = round(pf_divergence * 100, 1)
+    split["overfit_flag"] = pf_divergence > 0.50  # >50% PF divergence = likely overfit
+
+    # --- 2. Survivorship Concentration (fragility) ---
+    def _survivorship(trades: list[dict]) -> dict:
+        pnls = sorted([_f(t, "pnl_pct") for t in trades], reverse=True)
+        total = sum(pnls)
+        if abs(total) < 1e-6 or len(pnls) < 3:
+            return {"top3_pct": 0, "top5_pct": 0, "top10_pct": 0, "fragile": True}
+        top3 = sum(pnls[:3]) / abs(total) * 100 if total > 0 else 0
+        top5 = sum(pnls[:5]) / abs(total) * 100 if total > 0 else 0
+        top10 = sum(pnls[:10]) / abs(total) * 100 if total > 0 else 0
+        return {
+            "top3_pct": round(top3, 1),
+            "top5_pct": round(top5, 1),
+            "top10_pct": round(top10, 1),
+            "fragile": top5 > 80,  # >80% of profit from top 5 trades = fragile
+        }
+
+    survivorship_val = _survivorship(val_trades)
+    survivorship_full = _survivorship(full_trades)
+
+    # --- 3. Direction & Strike Diversity ---
+    def _diversity(trades: list[dict]) -> dict:
+        directions = {}
+        strikes = {}
+        for t in trades:
+            d = t.get("direction", "unknown")
+            s = t.get("strike", "unknown")
+            directions[d] = directions.get(d, 0) + 1
+            strikes[s] = strikes.get(s, 0) + 1
+        n = max(len(trades), 1)
+        return {
+            "directions": {k: {"count": v, "pct": round(v / n * 100, 1)} for k, v in directions.items()},
+            "strikes": {k: {"count": v, "pct": round(v / n * 100, 1)} for k, v in strikes.items()},
+            "direction_count": len(directions),
+            "strike_count": len(strikes),
+            "one_dimensional": len(directions) <= 1 and len(strikes) <= 1,
+        }
+
+    diversity_val = _diversity(val_trades)
+    diversity_full = _diversity(full_trades)
+
+    # --- 4. Statistical Significance ---
+    def _stat_significance(trades: list[dict]) -> dict:
+        pnls = [_f(t, "pnl_pct") for t in trades]
+        n = len(pnls)
+        if n < 5:
+            return {"n": n, "significant": False, "reason": "too_few_trades",
+                    "mean": 0, "std": 0, "t_stat": 0, "p_value": 1.0}
+        mean = sum(pnls) / n
+        variance = sum((p - mean) ** 2 for p in pnls) / (n - 1)
+        std = math.sqrt(variance) if variance > 0 else 1e-6
+        se = std / math.sqrt(n)
+        t_stat = mean / se if se > 0 else 0
+
+        # Approximate p-value using normal distribution (good for n > 30)
+        # For smaller n, this is conservative
+        z = abs(t_stat)
+        if z > 6:
+            p_value = 0.0001
+        else:
+            # Rough approximation of two-tailed p-value
+            p_value = 2 * math.exp(-0.5 * z * z) / (z * math.sqrt(2 * math.pi) + 1e-10)
+            p_value = min(p_value, 1.0)
+
+        return {
+            "n": n,
+            "mean_pnl": round(mean, 4),
+            "std_pnl": round(std, 4),
+            "t_stat": round(t_stat, 3),
+            "p_value": round(p_value, 4),
+            "significant": p_value < 0.05 and mean > 0,
+            "confidence_95_lo": round(mean - 1.96 * se, 4),
+            "confidence_95_hi": round(mean + 1.96 * se, 4),
+        }
+
+    stat_val = _stat_significance(val_trades)
+    stat_full = _stat_significance(full_trades)
+
+    # --- 5. Exit Quality ---
+    def _exit_quality(trades: list[dict]) -> dict:
+        reasons = {}
+        for t in trades:
+            r = t.get("reason", "unknown").lower()
+            if "stop" in r:
+                bucket = "stop_loss"
+            elif "max_hold" in r or "eod" in r or "end" in r:
+                bucket = "max_hold_eod"
+            elif "exit" in r or "model" in r:
+                bucket = "model_exit"
+            else:
+                bucket = "other"
+            reasons[bucket] = reasons.get(bucket, 0) + 1
+        n = max(len(trades), 1)
+        return {k: {"count": v, "pct": round(v / n * 100, 1)} for k, v in reasons.items()}
+
+    exit_val = _exit_quality(val_trades)
+    exit_full = _exit_quality(full_trades)
+
+    # --- 6. Time-of-Day Decomposition ---
+    def _tod_analysis(trades: list[dict]) -> list[dict]:
+        buckets = {"morning": [], "midday": [], "afternoon": [], "power_hour": []}
+        for t in trades:
+            entry = t.get("entry_time", "")
+            parts = entry.split(":")
+            try:
+                h = int(parts[0][-2:])
+                m = int(parts[1]) if len(parts) > 1 else 0
+            except (ValueError, IndexError):
+                continue
+            time_min = h * 60 + m
+            pnl = _f(t, "pnl_pct")
+            if time_min < 630:
+                buckets["morning"].append(pnl)
+            elif time_min < 810:
+                buckets["midday"].append(pnl)
+            elif time_min < 930:
+                buckets["afternoon"].append(pnl)
+            else:
+                buckets["power_hour"].append(pnl)
+
+        result = []
+        for period, pnls in buckets.items():
+            if pnls:
+                w = [p for p in pnls if p > 0]
+                l = [p for p in pnls if p <= 0]
+                pf = sum(w) / max(abs(sum(l)), 1e-6) if l else float("inf")
+                result.append({
+                    "period": period, "trades": len(pnls),
+                    "pf": round(pf, 2), "total_pnl": round(sum(pnls), 2),
+                    "win_rate": round(len(w) / len(pnls) * 100, 1),
+                })
+        return result
+
+    tod_val = _tod_analysis(val_trades)
+    tod_full = _tod_analysis(full_trades)
+
+    # --- 7. Overall Verdict ---
+    red_flags = []
+    green_flags = []
+
+    if split["overfit_flag"]:
+        red_flags.append(f"Train/val PF divergence {split['pf_divergence_pct']:.0f}% (>{50}%)")
+    elif m_val["profit_factor"] > 1.0 and m_train["profit_factor"] > 1.0:
+        green_flags.append(f"PF consistent across splits (train={m_train['profit_factor']}, val={m_val['profit_factor']})")
+
+    if survivorship_val.get("fragile"):
+        red_flags.append(f"Fragile: top 5 trades = {survivorship_val['top5_pct']:.0f}% of val profit")
+    elif m_val["num_trades"] >= 20:
+        green_flags.append(f"Profit distributed across trades (top5 = {survivorship_val['top5_pct']:.0f}%)")
+
+    if not stat_val.get("significant"):
+        red_flags.append(f"Not statistically significant (p={stat_val['p_value']:.3f}, n={stat_val['n']})")
+    else:
+        green_flags.append(f"Statistically significant (p={stat_val['p_value']:.4f}, n={stat_val['n']})")
+
+    if diversity_val.get("one_dimensional"):
+        red_flags.append("One-dimensional: single direction + single strike type")
+
+    if m_val["profit_factor"] < 1.0:
+        red_flags.append(f"Validation PF < 1.0 ({m_val['profit_factor']})")
+    elif m_val["profit_factor"] > 1.2:
+        green_flags.append(f"Validation PF > 1.2 ({m_val['profit_factor']})")
+
+    if m_val["trades_per_day"] < 0.1:
+        red_flags.append(f"Very low trade frequency ({m_val['trades_per_day']}/day)")
+
+    if m_val["num_trades"] < 30:
+        red_flags.append(f"Insufficient sample size ({m_val['num_trades']} val trades, need 30+)")
+
+    # Verdict
+    if len(red_flags) == 0 and len(green_flags) >= 3:
+        verdict = "VIABLE"
+        confidence = "high"
+        summary = "Model shows consistent profitability with statistical significance."
+    elif m_val["profit_factor"] > 1.0 and not split["overfit_flag"] and len(red_flags) <= 2:
+        verdict = "PROMISING"
+        confidence = "medium"
+        summary = "Model is profitable on validation data but has concerns that need addressing."
+    elif m_val["profit_factor"] > 1.0 and len(red_flags) <= 3:
+        verdict = "INCONCLUSIVE"
+        confidence = "low"
+        summary = "Model shows some profitability but sample size or other issues prevent a confident assessment."
+    else:
+        verdict = "NOT VIABLE"
+        confidence = "low"
+        summary = "Model cannot reliably make money based on current evidence."
+
+    verdict_data = {
+        "verdict": verdict,
+        "confidence": confidence,
+        "summary": summary,
+        "red_flags": red_flags,
+        "green_flags": green_flags,
+    }
+
+    # --- Assemble viability.json ---
+    viability = {
+        "timestamp": datetime.now(ET).isoformat(),
+        "cycle": cycle_num,
+        "model_hash": hash_file(model_path),
+        "verdict": verdict_data,
+        "split_comparison": split,
+        "survivorship": {"val": survivorship_val, "full": survivorship_full},
+        "diversity": {"val": diversity_val, "full": diversity_full},
+        "statistical_significance": {"val": stat_val, "full": stat_full},
+        "exit_quality": {"val": exit_val, "full": exit_full},
+        "time_of_day": {"val": tod_val, "full": tod_full},
+    }
+
+    write_json(viability_dir / "viability.json", viability)
+
+    # --- Generate viability.md ---
+    lines = []
+    lines.append(f"# Viability Assessment — Cycle {cycle_num:03d}")
+    lines.append(f"*Generated: {datetime.now(ET).strftime('%Y-%m-%d %H:%M ET')}*")
+    lines.append("")
+    lines.append(f"## Verdict: **{verdict}** (confidence: {confidence})")
+    lines.append(f"> {summary}")
+    lines.append("")
+
+    if green_flags:
+        lines.append("### Green Flags")
+        for f in green_flags:
+            lines.append(f"- {f}")
+        lines.append("")
+
+    if red_flags:
+        lines.append("### Red Flags")
+        for f in red_flags:
+            lines.append(f"- {f}")
+        lines.append("")
+
+    lines.append("---")
+    lines.append("")
+    lines.append("## Train/Val Split Comparison")
+    lines.append("| Split | Trades | Days | PF | Win Rate | Avg P&L | TPD |")
+    lines.append("|-------|--------|------|----|----------|---------|-----|")
+    for label, m in [("Train", m_train), ("Val", m_val), ("Full", m_full)]:
+        lines.append(
+            f"| {label} | {m['num_trades']} | {m.get('num_days', '?')} "
+            f"| {m['profit_factor']:.2f} | {m['win_rate']:.1%} "
+            f"| {m['avg_pnl']:+.3f}% | {m['trades_per_day']:.3f} |"
+        )
+    lines.append(f"\nPF divergence: {split['pf_divergence_pct']:.1f}% "
+                 f"{'(OVERFIT WARNING)' if split['overfit_flag'] else '(acceptable)'}")
+    lines.append("")
+
+    lines.append("## Survivorship Concentration")
+    lines.append("| Set | Top 3 | Top 5 | Top 10 | Fragile? |")
+    lines.append("|-----|-------|-------|--------|----------|")
+    for label, s in [("Val", survivorship_val), ("Full", survivorship_full)]:
+        lines.append(
+            f"| {label} | {s['top3_pct']:.0f}% | {s['top5_pct']:.0f}% "
+            f"| {s['top10_pct']:.0f}% | {'YES' if s['fragile'] else 'No'} |"
+        )
+    lines.append("")
+
+    lines.append("## Direction & Strike Diversity")
+    for label, d in [("Val", diversity_val), ("Full", diversity_full)]:
+        lines.append(f"**{label}:** {d['direction_count']} direction(s), {d['strike_count']} strike type(s)")
+        for dir_name, info in d["directions"].items():
+            lines.append(f"  - {dir_name}: {info['count']} ({info['pct']}%)")
+    lines.append("")
+
+    lines.append("## Statistical Significance")
+    lines.append("| Set | N | Mean P&L | Std | t-stat | p-value | 95% CI | Sig? |")
+    lines.append("|-----|---|----------|-----|--------|---------|--------|------|")
+    for label, s in [("Val", stat_val), ("Full", stat_full)]:
+        sig = "YES" if s.get("significant") else "No"
+        lines.append(
+            f"| {label} | {s['n']} | {s['mean_pnl']:+.4f}% | {s['std_pnl']:.4f} "
+            f"| {s['t_stat']:.2f} | {s['p_value']:.4f} "
+            f"| [{s.get('confidence_95_lo', 0):+.4f}, {s.get('confidence_95_hi', 0):+.4f}] | {sig} |"
+        )
+    lines.append("")
+
+    lines.append("## Exit Quality")
+    lines.append("| Set | Model Exit | Stop Loss | Max Hold/EOD | Other |")
+    lines.append("|-----|------------|-----------|--------------|-------|")
+    for label, e in [("Val", exit_val), ("Full", exit_full)]:
+        me = e.get("model_exit", {}).get("pct", 0)
+        sl = e.get("stop_loss", {}).get("pct", 0)
+        mh = e.get("max_hold_eod", {}).get("pct", 0)
+        ot = e.get("other", {}).get("pct", 0)
+        lines.append(f"| {label} | {me:.0f}% | {sl:.0f}% | {mh:.0f}% | {ot:.0f}% |")
+    lines.append("")
+
+    if tod_val:
+        lines.append("## Time-of-Day (Validation)")
+        lines.append("| Period | Trades | PF | Total P&L | Win Rate |")
+        lines.append("|--------|--------|----|-----------|----------|")
+        for entry in tod_val:
+            lines.append(
+                f"| {entry['period']} | {entry['trades']} "
+                f"| {entry['pf']:.2f} | {entry['total_pnl']:+.2f}% | {entry['win_rate']:.0f}% |"
+            )
+        lines.append("")
+
+    report_text = "\n".join(lines)
+    report_path = viability_dir / "viability.md"
+    report_path.write_text(report_text)
+
+    # Also save a copy at cycle level for easy access
+    (cdir / "viability.md").write_text(report_text)
+
+    log(f"Viability assessment: {verdict} ({confidence} confidence)")
+    log(f"  Val: PF={m_val['profit_factor']}, {m_val['num_trades']} trades, "
+        f"p={stat_val['p_value']:.4f}")
+    log(f"  Red flags: {len(red_flags)}, Green flags: {len(green_flags)}")
+    log(f"  Written to {report_path}")
+
+    state["phase"] = "viability_assessed"
+    save_state(state)
+    return True
+
+
+# ---------------------------------------------------------------------------
 # REPORT — single markdown briefing for Claude Code (Pro-optimized)
 # ---------------------------------------------------------------------------
 
@@ -1720,8 +2376,8 @@ def cmd_report(args: argparse.Namespace) -> bool:
         log("No analysis data — run analyze first")
         return False
 
-    # Read art2_notebook (canonical location: docs/art2-notebook.md)
-    notebook_path = PROJECT_ROOT / "docs" / "art2-notebook.md"
+    # Read art2_notebook (canonical location: docs/journal/art2-notebook.md)
+    notebook_path = PROJECT_ROOT / "docs" / "journal" / "art2-notebook.md"
     if not notebook_path.exists():
         notebook_path = ART2_DIR / "art2_notebook.md"  # fallback to legacy location
     notebook = notebook_path.read_text() if notebook_path.exists() else "(no notebook yet)"
@@ -1771,7 +2427,7 @@ def cmd_report(args: argparse.Namespace) -> bool:
             for e in kept_exps[:5]:
                 lines.append(
                     f"| {e.get('experiment_id', '?')} "
-                    f"| {e.get('score', 0):.3f} "
+                    f"| {(e.get('score') or 0):.3f} "
                     f"| {e.get('profit_factor', 0):.2f} "
                     f"| {e.get('trades_per_day', 0):.2f} "
                     f"| {e.get('trade_sharpe', 0):.2f} "
@@ -1790,7 +2446,7 @@ def cmd_report(args: argparse.Namespace) -> bool:
                 reason = e.get("failure_type", "regression")
                 lines.append(
                     f"| {e.get('experiment_id', '?')} "
-                    f"| {e.get('score', 0):.3f} "
+                    f"| {(e.get('score') or 0):.3f} "
                     f"| {reason} "
                     f"| {(e.get('change_summary', '') or '')[:60]} |"
                 )
@@ -1821,6 +2477,55 @@ def cmd_report(args: argparse.Namespace) -> bool:
         lines.append("## 2.5 Research Findings (Domain Knowledge Cross-Reference)")
         lines.append(research_path.read_text())
         lines.append("")
+
+    # --- Section 2.7: Viability Assessment ---
+    viability_md = cdir / "viability.md"
+    if viability_md.exists():
+        lines.append("## 2.7 Viability Assessment (Can This Model Make Money?)")
+        lines.append(viability_md.read_text())
+        lines.append("")
+    else:
+        viability_json = cdir / "viability" / "viability.json"
+        if viability_json.exists():
+            vdata = read_json(viability_json)
+            if vdata and vdata.get("verdict"):
+                v = vdata["verdict"]
+                lines.append("## 2.7 Viability Assessment")
+                lines.append(f"**Verdict: {v['verdict']}** (confidence: {v['confidence']})")
+                lines.append(f"> {v['summary']}")
+                if v.get("red_flags"):
+                    lines.append("\nRed flags: " + "; ".join(v["red_flags"]))
+                if v.get("green_flags"):
+                    lines.append("Green flags: " + "; ".join(v["green_flags"]))
+                lines.append("")
+
+    # --- Section 2.9: IBKR Session Analysis ---
+    ibkr_sessions_dir = PROJECT_ROOT / "results" / "ibkr_sessions"
+    if ibkr_sessions_dir.exists():
+        session_files = sorted(ibkr_sessions_dir.glob("*.json"), reverse=True)
+        if session_files:
+            lines.append("## 2.9 IBKR Paper Trading (Live Feedback)")
+            latest = read_json(session_files[0])
+            if latest:
+                ts = latest.get("trade_summary", {})
+                ss = latest.get("session_summary", {})
+                verdict = latest.get("verdict", "UNKNOWN")
+                lines.append(f"**Latest session:** {', '.join(ss.get('dates', ['?']))}")
+                lines.append(f"**Verdict: {verdict}** — {latest.get('verdict_reason', '')}")
+                if ts.get("num_closed", 0) > 0:
+                    lines.append(f"- Trades: {ts['num_closed']} closed, {ts.get('num_open', 0)} open")
+                    lines.append(f"- PF: {ts.get('pf', 0):.2f} | Win rate: {ts.get('win_rate', 0):.0%}")
+                    lines.append(f"- Stop rate: {ts.get('stop_rate', 0):.0%}")
+                    lines.append(f"- Total P&L: {ts.get('total_pnl_pct', 0):.2%}")
+                    if ts.get("exit_breakdown"):
+                        lines.append(f"- Exit breakdown: {ts['exit_breakdown']}")
+                else:
+                    lines.append(f"- {ts.get('num_open', 0)} open positions, no closed trades yet")
+                inf = latest.get("inference_summary", {})
+                if inf.get("total_bars"):
+                    lines.append(f"- Signal rate: {inf.get('trade_signals', 0)}/{inf['total_bars']} bars "
+                                f"({inf.get('signal_rate', 0):.0%})")
+            lines.append("")
 
     # --- Section 3: Paper Trading (Ground Truth) ---
     lines.append("## 3. Paper Trading (Ground Truth)")
@@ -1972,8 +2677,8 @@ def cmd_init(args: argparse.Namespace) -> None:
     """Initialize the ART² directory structure."""
     ART2_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Create art2_notebook.md if it doesn't exist (canonical: docs/art2-notebook.md)
-    notebook_path = PROJECT_ROOT / "docs" / "art2-notebook.md"
+    # Create art2_notebook.md if it doesn't exist (canonical: docs/journal/art2-notebook.md)
+    notebook_path = PROJECT_ROOT / "docs" / "journal" / "art2-notebook.md"
     if not notebook_path.exists():
         notebook_path.write_text("""\
 # ART² Lab Notebook — Outer Loop Memory
@@ -2028,6 +2733,7 @@ def cmd_cycle(args: argparse.Namespace) -> bool:
     that feeds the next. After this completes, Claude Code (Opus) reads the
     diagnosis and report to make ONE strategic decision (fix + next session).
     """
+    time_check()
     log("=== ART² CYCLE START ===")
 
     # Phase 1: Train
@@ -2061,6 +2767,10 @@ def cmd_cycle(args: argparse.Namespace) -> bool:
     if replay_ok:
         cmd_research(args)
 
+    # Phase 4.7: Viability (structured profitability assessment)
+    if replay_ok:
+        cmd_viability(args)
+
     # Phase 5: Report (generate briefing for Claude Code)
     cmd_report(args)
 
@@ -2083,6 +2793,7 @@ def cmd_autonomous(args: argparse.Namespace) -> None:
 
     This is the top-level command for hands-off ART² operation.
     """
+    time_check()
     max_cycles = getattr(args, "max_cycles", 0) or 999
     minutes = getattr(args, "minutes", 130)
     cycles_run = 0
@@ -2363,7 +3074,7 @@ def _daily_spend() -> float:
     )
 
 
-# NOTE: The strategist prompt is now loaded from docs/art2-opus-system-prompt.md
+# NOTE: The strategist prompt is now loaded from docs/ai/art2-opus-system-prompt.md
 # by _invoke_opus(). See that function for the full prompt construction.
 
 
@@ -2377,7 +3088,7 @@ def _invoke_opus(briefing_path: Path, cycle_dir_path: Path,
     briefing = briefing_path.read_text()
 
     # Load persistent system prompt for Opus strategic decisions
-    system_prompt_path = PROJECT_ROOT / "docs" / "art2-opus-system-prompt.md"
+    system_prompt_path = PROJECT_ROOT / "docs" / "ai" / "art2-opus-system-prompt.md"
     system_prompt = ""
     if system_prompt_path.exists():
         system_prompt = system_prompt_path.read_text() + "\n\n"
@@ -2387,7 +3098,7 @@ def _invoke_opus(briefing_path: Path, cycle_dir_path: Path,
     # Load domain knowledge files so Opus can make informed decisions
     domain_knowledge = ""
     for dk_file in ["0dte-domain-knowledge.md", "pickles-trading-knowledge.md"]:
-        dk_path = PROJECT_ROOT / "docs" / dk_file
+        dk_path = PROJECT_ROOT / "docs" / "domain" / dk_file
         if dk_path.exists():
             domain_knowledge += f"\n\n--- {dk_file} ---\n{dk_path.read_text()}\n"
         else:
@@ -2464,8 +3175,8 @@ def _invoke_opus(briefing_path: Path, cycle_dir_path: Path,
 
 
 def _write_chronicle_entry(cycle_num: int, entry_text: str, action: str) -> None:
-    """Prepend a dated chronicle entry to docs/project-chronicle.md."""
-    chronicle_path = PROJECT_ROOT / "docs" / "project-chronicle.md"
+    """Prepend a dated chronicle entry to docs/journal/project-chronicle.md."""
+    chronicle_path = PROJECT_ROOT / "docs" / "journal" / "project-chronicle.md"
     today = datetime.now(ET).strftime("%Y-%m-%d")
     action_labels = {
         "A": "Let It Cook", "B": "Steering the Inner Loop",
@@ -2647,9 +3358,9 @@ def _apply_opus_decision(decision: dict, cycle_num: int) -> int:
         "training/program.md", "training/lab_notebook.md",
         "training/train.py", "training/prepare.py",
         "training/replay.py", "training/run_loop.py",
-        "docs/art2-opus-system-prompt.md", "docs/art2-notebook.md",
-        "docs/ARCHITECTURE.md", "docs/art2.md", "docs/CLAUDE.md",
-        "docs/daily-pipeline.md", ".claude/rules/art2-operating-manual.md",
+        "docs/ai/art2-opus-system-prompt.md", "docs/journal/art2-notebook.md",
+        "docs/architecture/ARCHITECTURE.md", "docs/operations/reference.md",
+        ".claude/rules/art2-operating-manual.md",
         "tools/art2.py",
     }
 
@@ -2777,6 +3488,7 @@ def cmd_daemon(args: argparse.Namespace) -> None:
     """
     global _shutdown_requested
 
+    time_check()
     _check_pid_lock()
     signal.signal(signal.SIGTERM, _sigterm_handler)
 
@@ -3058,7 +3770,7 @@ def _snapshot_metrics() -> dict:
     latest = _find_latest_run()
     if latest:
         experiments = _parse_experiments(latest / "experiments.v2.jsonl")
-        kept = [e for e in experiments if e.get("score", -999) > 0]
+        kept = [e for e in experiments if (e.get("score") or -999) > 0]
         if kept:
             best = max(kept, key=lambda e: e.get("score", 0))
             snapshot["latest_best_score"] = best.get("score")
@@ -3091,7 +3803,7 @@ def _check_for_gaming(analysis: dict) -> list[str]:
         return alerts
 
     experiments = lr["experiments"]
-    kept = [e for e in experiments if e.get("score", -999) > 0]
+    kept = [e for e in experiments if (e.get("score") or -999) > 0]
 
     if len(experiments) > 10 and len(kept) == 0:
         alerts.append("STALL: 0 experiments kept in latest run — inner loop may be stuck")
@@ -3256,6 +3968,10 @@ def main() -> None:
     p_research = sub.add_parser("research", help="Deep analysis of trade data against domain knowledge")
     p_research.add_argument("--dry-run", action="store_true")
 
+    # viability
+    p_viability = sub.add_parser("viability", help="Structured profitability assessment: can this model make money?")
+    p_viability.add_argument("--dry-run", action="store_true")
+
     # cycle
     p_cycle = sub.add_parser("cycle", help="Full cycle: train → analyze (then await strategy → verify)")
     p_cycle.add_argument("--minutes", type=int, default=130, help="Training time budget (default: 130 = ~20 experiments)")
@@ -3279,8 +3995,16 @@ def main() -> None:
     p_daemon.add_argument("--auto-only", action="store_true", help="Skip Opus, only auto-decide action A")
     p_daemon.add_argument("--dry-run", action="store_true")
 
-    # market — check market status
+    # time — quick time check (PT + ET + market status)
+    sub.add_parser("time", help="Show current time in PT/ET and market status")
+
+    # market — check market status + IBKR gate
     sub.add_parser("market", help="Check market open/closed status and IBKR compatibility")
+
+    # ibkr-analyze — parse IBKR audit.jsonl and produce metrics
+    p_ibkr = sub.add_parser("ibkr-analyze", help="Analyze IBKR paper trading session from audit.jsonl")
+    p_ibkr.add_argument("--audit", type=str, default=None, help="Path to audit.jsonl")
+    p_ibkr.add_argument("--report", action="store_true", help="Print markdown report")
 
     args = parser.parse_args()
 
@@ -3315,21 +4039,43 @@ def main() -> None:
         cmd_diagnose(args)
     elif args.command == "research":
         cmd_research(args)
+    elif args.command == "viability":
+        cmd_viability(args)
     elif args.command == "cycle":
         cmd_cycle(args)
     elif args.command == "autonomous":
         cmd_autonomous(args)
     elif args.command == "daemon":
         cmd_daemon(args)
+    elif args.command == "time":
+        time_check()
     elif args.command == "market":
-        market = is_market_open()
-        print(json.dumps(market, indent=2))
+        time_check()
         print()
         gate = ibkr_compatibility_gate()
         for check in gate["checks"]:
             status = "PASS" if check["passed"] else "FAIL"
             print(f"  [{status}] {check['name']}: {check.get('detail', '')}")
         print(f"\nIBKR Gate: {'PASSED' if gate['passed'] else 'FAILED'}")
+    elif args.command == "ibkr-analyze":
+        sys.path.insert(0, str(PROJECT_ROOT))
+        from tools.ibkr_analyze import parse_audit, compute_metrics, format_report as ibkr_report
+        audit_path = Path(args.audit) if args.audit else PROJECT_ROOT / "results" / "live" / "audit.jsonl"
+        parsed = parse_audit(audit_path)
+        if "error" in parsed:
+            log(f"Error: {parsed['error']}")
+            sys.exit(1)
+        metrics = compute_metrics(parsed)
+        sessions_dir = PROJECT_ROOT / "results" / "ibkr_sessions"
+        sessions_dir.mkdir(parents=True, exist_ok=True)
+        dates = metrics["session_summary"].get("dates", [])
+        date_str = dates[-1] if dates else datetime.now().strftime("%Y-%m-%d")
+        out_path = sessions_dir / f"{date_str}.json"
+        with open(out_path, "w") as f:
+            json.dump(metrics, f, indent=2, default=str)
+        log(f"IBKR session metrics → {out_path}")
+        if args.report:
+            print(ibkr_report(metrics))
 
 
 if __name__ == "__main__":

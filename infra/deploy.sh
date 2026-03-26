@@ -143,14 +143,14 @@ cmd_boot() {
     [[ -f "$SDL_FILE" ]] || die "SDL not found: $SDL_FILE"
 
     # 1. Submit deployment TX
-    # Boot with minimal deposit (0.5 AKT) — just enough to create the lease.
-    # Use `deploy.sh fund <AKT>` to add funds before starting experiments.
-    # This separates container provisioning from experiment budgeting.
-    DEPOSIT_AKT="${DEPOSIT_AKT:-1}"
-    DEPOSIT_UAKT=$((DEPOSIT_AKT * 1000000))
-    log "Submitting deployment TX (deposit=${DEPOSIT_AKT} AKT — use 'fund' to add more)..."
+    # BME (Mainnet 17): deposits are now in ACT (USD-pegged compute credit), not AKT.
+    # Mint ACT first: provider-services tx bme mint-act <amount>uakt
+    # Use `deploy.sh fund <ACT>` to add funds before starting experiments.
+    DEPOSIT_ACT="${DEPOSIT_ACT:-5}"
+    DEPOSIT_UACT=$((DEPOSIT_ACT * 1000000))
+    log "Submitting deployment TX (deposit=${DEPOSIT_ACT} ACT ~\$${DEPOSIT_ACT} — use 'fund' to add more)..."
     TX_OUTPUT=$(provider-services tx deployment create "$SDL_FILE" \
-        --deposit "${DEPOSIT_UAKT}uakt" \
+        --deposit "${DEPOSIT_UACT}uact" \
         --from "$AKASH_FROM" --yes --output json 2>&1)
 
     TXHASH=$(echo "$TX_OUTPUT" | grep -o '"txhash":"[^"]*"' | head -1 | cut -d'"' -f4)
@@ -519,20 +519,20 @@ fi"
 # ===================================================================
 cmd_fund() {
     load_state
-    local amount_akt="${EXTRA_ARGS:-5}"
-    [[ "$amount_akt" =~ ^[0-9]+$ ]] || die "Usage: deploy.sh fund <AKT amount>"
-    local amount_uakt=$((amount_akt * 1000000))
-    log "Adding ${amount_akt} AKT to deployment DSEQ=${DSEQ}..."
+    local amount_act="${EXTRA_ARGS:-5}"
+    [[ "$amount_act" =~ ^[0-9]+$ ]] || die "Usage: deploy.sh fund <ACT amount>"
+    local amount_uact=$((amount_act * 1000000))
+    log "Adding ${amount_act} ACT (~\$${amount_act}) to deployment DSEQ=${DSEQ}..."
     local tx_out
     tx_out=$(provider-services tx escrow deposit \
-        deployment "${amount_uakt}uakt" \
+        deployment "${amount_uact}uact" \
         --dseq "$DSEQ" --from "$AKASH_FROM" \
         --gas auto --gas-adjustment 1.5 --gas-prices 0.025uakt \
         --yes --output json 2>&1)
     local txhash
     txhash=$(echo "$tx_out" | grep -o '"txhash":"[^"]*"' | head -1 | cut -d'"' -f4)
     if [[ -n "$txhash" ]]; then
-        log "Deposited ${amount_akt} AKT (TX: $txhash)"
+        log "Deposited ${amount_act} ACT (TX: $txhash)"
     else
         echo "$tx_out"
         die "Escrow deposit failed"
@@ -751,14 +751,23 @@ cmd_download() {
     fi
 
     # Preserve artifacts in training/ for next deployment.
-    # Prefer .best_snapshot (saved when experiment was KEPT) over best_model.pt
-    # which may have drifted due to incremental weight retention on reverted experiments.
+    # ONLY copy best_snapshot (saved when experiment was KEPT).
+    # Never copy bare best_model.pt — it drifts to the last experiment's output
+    # regardless of whether it was kept. If 0 experiments were kept, the local
+    # training/best_model.pt is already the correct baseline.
+    local _stop_kept=0
+    if [[ -f "$local_run_dir/status.json" ]]; then
+        _stop_kept=$(python3 -c "import json; s=json.load(open('$local_run_dir/status.json')); print(s.get('kept_count', 0))" 2>/dev/null || echo 0)
+    fi
     if [[ -f "$local_run_dir/best_model.pt.best_snapshot" ]]; then
         cp "$local_run_dir/best_model.pt.best_snapshot" "$PROJECT_ROOT/training/best_model.pt"
         log "  ↳ Copied best_model.pt.best_snapshot → training/ (true best, undrifted)"
-    elif [[ -f "$local_run_dir/best_model.pt" ]]; then
-        cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
-        log "  ↳ Copied best_model.pt → training/ (warm-start for next run)"
+    elif [[ "$_stop_kept" -gt 0 ]]; then
+        log "FATAL: $_stop_kept experiments kept but best_model.pt.best_snapshot is MISSING."
+        log "  Refusing to update training/best_model.pt — model integrity compromised."
+        log "  Investigate: $local_run_dir"
+    else
+        log "  ↳ No experiments kept — training/best_model.pt unchanged"
     fi
     if [[ -f "$local_run_dir/best_train.py" ]]; then
         cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/best_train.py"
@@ -870,12 +879,16 @@ print(f'best_score={s.get(\"best_score\",0)}')
                     --output-root "$PROJECT_ROOT/results/analysis" >/dev/null 2>&1 || true
             fi
             # Copy best model + code to training/ for warm-start continuity
+            # Only use best_snapshot (guaranteed to be from a KEPT experiment)
             if [[ -f "$local_run_dir/best_model.pt.best_snapshot" ]]; then
                 cp "$local_run_dir/best_model.pt.best_snapshot" "$PROJECT_ROOT/training/best_model.pt"
                 log "  ↳ Updated training/best_model.pt (from best_snapshot)"
-            elif [[ -f "$local_run_dir/best_model.pt" ]]; then
-                cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
-                log "  ↳ Updated training/best_model.pt"
+            else
+                log "FATAL: kept=$kept but best_model.pt.best_snapshot is MISSING."
+                log "  This means the kept experiment's model was never saved."
+                log "  Refusing to update training/best_model.pt to prevent stale model reuse."
+                log "  Run dir: $local_run_dir"
+                return 1
             fi
             if [[ -f "$local_run_dir/best_train.py" ]]; then
                 cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/best_train.py"
@@ -927,10 +940,16 @@ print(f'best_score={s.get(\"best_score\",0)}')
                     --results-root "$PROJECT_ROOT/results" \
                     --output-root "$PROJECT_ROOT/results/analysis" >/dev/null 2>&1 || true
             fi
-            # Final warm-start copy
-            if [[ -f "$local_run_dir/best_model.pt" ]]; then
-                cp "$local_run_dir/best_model.pt" "$PROJECT_ROOT/training/best_model.pt"
-                log "  ↳ Updated training/best_model.pt"
+            # Final warm-start copy — only from best_snapshot (kept experiments)
+            if [[ -f "$local_run_dir/best_model.pt.best_snapshot" ]]; then
+                cp "$local_run_dir/best_model.pt.best_snapshot" "$PROJECT_ROOT/training/best_model.pt"
+                log "  ↳ Updated training/best_model.pt (from best_snapshot)"
+            elif [[ "$kept" -gt 0 ]]; then
+                log "FATAL: kept=$kept but best_model.pt.best_snapshot is MISSING."
+                log "  Refusing to update training/best_model.pt — model integrity compromised."
+                log "  Investigate: $local_run_dir"
+            else
+                log "  ↳ No experiments kept — training/best_model.pt unchanged"
             fi
             if [[ -f "$local_run_dir/best_train.py" ]]; then
                 cp "$local_run_dir/best_train.py" "$PROJECT_ROOT/training/best_train.py"

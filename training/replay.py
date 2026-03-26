@@ -15,7 +15,7 @@ Usage:
 """
 from __future__ import annotations
 
-import os, sys, time, argparse, pickle, json, csv, re, hashlib
+import os, sys, time, argparse, pickle, json, csv, re, hashlib, math
 import datetime as dt
 from zoneinfo import ZoneInfo
 
@@ -38,6 +38,7 @@ try:
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
         ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
         ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
+        PNL_TANH_SCALE, BEST_PNL_TANH_SCALE,
     )
 except ModuleNotFoundError as e:
     if e.name != "prepare":
@@ -54,6 +55,7 @@ except ModuleNotFoundError as e:
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
         ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
         ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
+        PNL_TANH_SCALE, BEST_PNL_TANH_SCALE,
     )
 
 # Path to pre-computed features (matches training exactly)
@@ -673,12 +675,14 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
     # Architecture version gate: reject incompatible checkpoints
     _ckpt_arch = ckpt.get('architecture', 'unknown')
     _ckpt_has_value = ckpt.get('has_value_head', False) or ('value_head.4.weight' in _state)
+    _ckpt_has_risk = ckpt.get('has_risk_head', False) or ('risk_head.4.weight' in _state)
     _ckpt_pos_dim = ckpt.get('position_state_dim', _state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
     _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
-    if not _ckpt_has_value or _ckpt_pos_dim < _ps_dim:
+    if not _ckpt_has_value or not _ckpt_has_risk or _ckpt_pos_dim < _ps_dim:
         raise ValueError(
             f"Checkpoint incompatible: arch={_ckpt_arch}, value_head={_ckpt_has_value}, "
-            f"pos_dim={_ckpt_pos_dim}. Model requires value_head=True, pos_dim={_ps_dim}. "
+            f"risk_head={_ckpt_has_risk}, pos_dim={_ckpt_pos_dim}. "
+            f"Model requires value_head=True, risk_head=True, pos_dim={_ps_dim}. "
             f"A fresh-start checkpoint is needed."
         )
     missing, unexpected = model.load_state_dict(_state, strict=False)
@@ -1558,6 +1562,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     unrealized_pnl = 0.0
     _trade_best_pnl = 0.0       # Phase D: best P&L since entry (for value head)
     _trade_bars_since_high = 0   # Phase D: bars since P&L peak
+    _trade_conviction = 0.0      # Phase E: risk head conviction for exit modulation
     _trade_entry_trend = None
     _trade_entry_rvol = None
     _trade_entry_vol_z = None
@@ -1585,12 +1590,24 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             if in_trade:
                 pos_state[0, 0] = 1.0
                 pos_state[0, 1] = min(bars_held / BARS_PER_DAY, 1.0)
-                pos_state[0, 2] = float(np.tanh(unrealized_pnl * 5.0))
+                pos_state[0, 2] = float(np.tanh(unrealized_pnl * PNL_TANH_SCALE))
                 if _ps_dim >= 7:
-                    pos_state[0, 5] = float(np.tanh(_trade_best_pnl * 2.0))  # best_pnl
+                    pos_state[0, 5] = float(np.tanh(_trade_best_pnl * BEST_PNL_TANH_SCALE))  # best_pnl
                     pos_state[0, 6] = min(_trade_bars_since_high / BARS_PER_DAY, 1.0)
             pos_state[0, 3] = account_balance / STARTING_CAPITAL  # account_health
             pos_state[0, 4] = min(consecutive_losses / 3.0, 1.0)  # loss_streak_frac
+
+        # --- Build account state for risk head ---
+        _acct_state = None
+        _has_risk_head = hasattr(model, 'risk_head')
+        if _has_risk_head:
+            _as_dim = getattr(model, 'ACCOUNT_STATE_DIM', 4)
+            _acct_state = torch.zeros(1, _as_dim, device=device)
+            _acct_state[0, 0] = account_balance / STARTING_CAPITAL  # growth ratio
+            _acct_state[0, 1] = min(np.log10(max(account_balance, 1000) / 1000) / 3.0, 1.0)
+            _acct_state[0, 2] = cum_pnl / max(account_balance, 1.0)  # daily P&L frac
+            _win_rate_20 = sum(1 for t in trades[-20:] if t.get('pnl_pct', 0) > 0) / max(len(trades[-20:]), 1) if trades else 0.0
+            _acct_state[0, 3] = _win_rate_20
 
         # --- Get model prediction ---
         idx_t = torch.tensor([global_idx], dtype=torch.long, device=device)
@@ -1598,11 +1615,12 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         x = features[window_idx]
 
         with torch.no_grad():
-            if has_position_proj:
-                _out = model(x, position_state=pos_state)
-            else:
-                _out = model(x)
+            _out = model(x, position_state=pos_state, account_state=_acct_state,
+                         return_risk=_has_risk_head)
             gate_logits, dir_logits = _out[0], _out[1]
+            _risk_output = None
+            if _has_risk_head:
+                _risk_output = _out[-1]  # (1, 3): stop_pct, size_frac, conviction
 
         gate_probs_t = torch.softmax(gate_logits, dim=-1)[0].cpu().numpy()
         dir_probs = torch.softmax(dir_logits, dim=-1)[0].cpu().numpy()
@@ -1691,20 +1709,24 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             else:
                 _trade_bars_since_high += 1
 
-            # Phase D: value head exit — query value prediction for exit intelligence
+            # Phase D: value head exit — v7: binary exit classifier
+            # Value head now outputs logits for "should exit now?"
+            # Exit when sigmoid(logit) > threshold (conviction-adjusted)
             _value_exit = False
             _value_pred_float = None
             _has_value_head = hasattr(model, 'value_head')
             if _has_value_head and in_trade and bars_held >= 2:
-                # Get value prediction from last forward pass
                 with torch.no_grad():
-                    _, _, _vp = model(x, position_state=pos_state, return_value=True)
-                    _value_pred_float = float(_vp[0].item())
-                # Exit when value head predicts low remaining upside
-                _vthresh = 0.02  # VALUE_EXIT_THRESHOLD
-                if _value_pred_float < _vthresh:
+                    _vout = model(x, position_state=pos_state, return_value=True)
+                    _value_pred_float = float(_vout[2].item())
+                # Sigmoid converts logit to exit probability
+                _exit_prob = 1.0 / (1.0 + math.exp(-_value_pred_float))
+                # Conviction-adjusted threshold: high conviction → harder to exit (0.7), low → easier (0.5)
+                _vthresh = 0.50 + _trade_conviction * 0.20
+                if _exit_prob > _vthresh:
                     _value_exit = True
-                bar_entry['value_pred'] = _value_pred_float
+                bar_entry['value_pred'] = _exit_prob
+                bar_entry['conviction'] = _trade_conviction
 
             # Exit conditions — matching prepare.py evaluate_trades()
             hit_stop = net_pnl_pct <= -trade_dynamic_stop_pct
@@ -1896,7 +1918,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 continue
             trade_n_contracts = max(1, int(account_balance * POSITION_RISK_TARGET / contract_cost))
 
-            # Execute entry — fixed stop/TP matching training
+            # Execute entry
             in_trade = True
             trade_entry_k = k_pos
             trade_action = action
@@ -1906,10 +1928,19 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             trade_entry_gate_prob = float(gate_trade_prob)
             trade_entry_dir_probs = dir_probs.copy()
             trade_entry_confidence = confidence
-            # Compute dynamic stop from gate confidence + market features
-            _iv_feat = float(features[global_idx, _FEAT_IDX['atm_iv']]) if global_idx < features.shape[0] else 0.0
-            _vix_feat = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.0
-            trade_dynamic_stop_pct = compute_dynamic_stop(gate_trade_prob, _iv_feat, _vix_feat)
+            # Risk head: use learned stop and sizing; fall back to formula
+            if _risk_output is not None:
+                trade_dynamic_stop_pct = float(_risk_output[0, 0].item())  # learned stop [0.15, 0.60]
+                _size_frac = float(_risk_output[0, 1].item())
+                _trade_conviction = float(_risk_output[0, 2].item())
+                # Position sizing from risk head
+                max_affordable = max(1, int(account_balance * POSITION_RISK_TARGET / contract_cost))
+                trade_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
+            else:
+                _iv_feat = float(features[global_idx, _FEAT_IDX['atm_iv']]) if global_idx < features.shape[0] else 0.0
+                _vix_feat = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.0
+                trade_dynamic_stop_pct = compute_dynamic_stop(gate_trade_prob, _iv_feat, _vix_feat)
+                _trade_conviction = 0.0
             trade_stop_price = float(trade_entry_price * (1.0 - trade_dynamic_stop_pct))
             trade_take_profit_price = float(trade_entry_price * 6.0)  # effectively no TP — model decides
             bars_held = 0

@@ -61,12 +61,16 @@ _state: dict = {
     "gpu": None,
     "train_py": None,
     "mode": "initializing",
+    "training_mode": "unknown",  # "opus" or "pbt"
+    "run_state": "unknown",  # active, completed, idle, waiting
     "runs": [],
     "active_run": None,
+    "prev_run": None,
     "last_fetch": 0,
     "fetch_time": 0,
     "poll_count": 0,
     "ssh_ok": False,
+    "pbt": None,  # PBT state when in PBT mode
 }
 
 
@@ -95,7 +99,7 @@ def load_deploy_state() -> dict | None:
 
 def _ssh_cmd(host: str, port: int, cmd: str, timeout: int = 20) -> str | None:
     env = {**os.environ, "SSHPASS": SSH_PASS}
-    ssh_opts = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+    ssh_opts = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
     try:
         r = subprocess.run(
             ["sshpass", "-e", "ssh"] + ssh_opts.split() + [
@@ -117,7 +121,7 @@ def fetch_remote(host: str, port: int):
         'cat /root/results/"$RUN"/status.json 2>/dev/null; echo "---SEP---"; '
         'tail -80 /root/loop.log 2>/dev/null; echo "---SEP---"; '
         'nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw,power.limit --format=csv,noheader,nounits 2>/dev/null; echo "---SEP---"; '
-        'cat /root/train.py 2>/dev/null; echo "---SEP---"; '
+        'cat /root/autoresearch-trading/training/best_train.py 2>/dev/null || cat /root/autoresearch-trading/training/train.py 2>/dev/null; echo "---SEP---"; '
         'echo "$RUN"'
     )
     raw = _ssh_cmd(host, port, remote_script, timeout=25)
@@ -134,6 +138,14 @@ def fetch_remote(host: str, port: int):
     if status and run_name:
         status["_run_name"] = run_name
     return experiments, status, log_tail, gpu, train_py, run_name
+
+
+def fetch_remote_gpu(host: str, port: int) -> dict | None:
+    """Lightweight independent GPU fetch — fallback when compound SSH times out."""
+    raw = _ssh_cmd(host, port,
+        'nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw,power.limit --format=csv,noheader,nounits 2>/dev/null',
+        timeout=8)
+    return _parse_gpu_csv(raw.strip()) if raw else None
 
 
 def fetch_local_run(run_dir: Path):
@@ -167,8 +179,113 @@ def get_active_run_name() -> str | None:
     pointer = RESULTS_ROOT / "current_run.txt"
     if pointer.exists():
         name = pointer.read_text().strip()
-        return name if name else None
+        # Validate: must look like a run name, not an error message
+        if name and name.startswith("run-"):
+            return name
+    # Fallback: find the most recent run- directory
+    if RESULTS_ROOT.exists():
+        run_dirs = sorted(
+            [d for d in RESULTS_ROOT.iterdir() if d.is_dir() and d.name.startswith("run-")],
+            key=lambda d: d.stat().st_mtime,
+            reverse=True,
+        )
+        if run_dirs:
+            return run_dirs[0].name
     return None
+
+
+# -- PBT state loading -----------------------------------------------------
+
+PBT_STATE_PATH = PROJECT_ROOT / "training" / ".pbt_state.json"
+
+
+def load_pbt_state() -> dict | None:
+    """Load PBT state from .pbt_state.json and build a summary for the dashboard."""
+    if not PBT_STATE_PATH.exists():
+        return None
+    try:
+        raw = json.loads(PBT_STATE_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    generations = raw.get("generations", [])
+    summary = {
+        "run_id": raw.get("pbt_run_id", ""),
+        "generation": raw.get("generation", 0),
+        "max_generations": raw.get("max_generations", 0),
+        "population_size": raw.get("population_size", 0),
+        "focus": raw.get("focus", "all"),
+        "current_member": raw.get("current_member", 0),
+        "stagnation_count": raw.get("stagnation_count", 0),
+        "base_score": raw.get("base_score", 0),
+        "best_pbt_score": raw.get("best_pbt_score", 0),
+        "time_budget_per_member": raw.get("time_budget_per_member", 300),
+        "generations": [],
+    }
+
+    for g in generations:
+        gen_summary = {
+            "generation": g["generation"],
+            "members": [],
+        }
+        scores = []
+        for m in g.get("members", []):
+            member = {
+                "member_id": m["member_id"],
+                "score": m.get("score"),
+                "role": m.get("role", "baseline" if m["member_id"] == 0 and g["generation"] == 0 else "perturbed"),
+                "parent": m.get("parent", ""),
+                "anomaly_flags": m.get("anomaly_flags", []),
+                "config_summary": _summarize_config(m.get("config", {})),
+                "wall_time": m.get("wall_time"),
+            }
+            # Extract key metrics if available
+            metrics = m.get("metrics", {})
+            if metrics:
+                member["pf"] = metrics.get("profit_factor")
+                member["tpd"] = metrics.get("trades_per_day")
+                member["wr"] = metrics.get("win_rate")
+                member["sharpe"] = metrics.get("trade_sharpe")
+                member["stop_rate"] = metrics.get("stop_loss_rate")
+            gen_summary["members"].append(member)
+            if m.get("score") is not None:
+                scores.append(m["score"])
+
+        if scores:
+            gen_summary["best_score"] = max(scores)
+            gen_summary["worst_score"] = min(scores)
+            gen_summary["avg_score"] = sum(scores) / len(scores)
+        gen_summary["completed"] = len(scores)
+        summary["generations"].append(gen_summary)
+
+    return summary
+
+
+def _summarize_config(config: dict) -> str:
+    """Create a short string summarizing non-default PBT config values."""
+    # Show the most important deviations from defaults
+    defaults = {
+        "TRAIN_GATE_W": 0.5, "TRAIN_DIR_W": 2.5, "TRAIN_PNL_W": 0.5,
+        "TRAIN_VALUE_W": 0.3, "TRAIN_RISK_W": 0.2, "TRAIN_CONF_W": 0.1,
+    }
+    diffs = []
+    for k, default in defaults.items():
+        v = config.get(k)
+        if v is not None and abs(v - default) > 0.001:
+            short_name = k.replace("TRAIN_", "").replace("_W", "")
+            diffs.append(f"{short_name}={v:.2f}")
+    return ", ".join(diffs[:4]) or "defaults"
+
+
+def detect_training_mode(experiments: list[dict]) -> str:
+    """Detect whether experiments are from PBT or Opus-driven mode."""
+    if not experiments:
+        return "unknown"
+    # Check recent experiments for pbt_generation field
+    recent = experiments[-3:] if len(experiments) >= 3 else experiments
+    if any(e.get("pbt_generation") is not None for e in recent):
+        return "pbt"
+    return "opus"
 
 
 # -- Parse helpers ---------------------------------------------------------
@@ -207,6 +324,21 @@ def _parse_json_file(path: Path) -> dict | None:
     return _parse_json(path.read_text())
 
 
+def fetch_local_gpu() -> dict | None:
+    """Try to get GPU info from local nvidia-smi (for local training mode)."""
+    try:
+        r = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw,power.limit",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return _parse_gpu_csv(r.stdout.strip())
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
 def _parse_gpu_csv(text: str) -> dict | None:
     text = text.strip()
     if not text:
@@ -231,13 +363,55 @@ def _parse_gpu_csv(text: str) -> dict | None:
 def _resolve_local_run_dir(local_path: str | None, active_run: str | None) -> Path | None:
     """Find the best local run directory from pointer or active run name."""
     lp = Path(local_path) if local_path else RESULTS_ROOT
+    # Try the active run name first
     if active_run and (lp / active_run).is_dir():
         return lp / active_run
+    # Try current_run.txt inside the local path
     if lp.is_dir() and (lp / "current_run.txt").exists():
         rn = (lp / "current_run.txt").read_text().strip()
-        if rn and (lp / rn).is_dir():
+        if rn and rn.startswith("run-") and (lp / rn).is_dir():
             return lp / rn
-    return lp if lp.is_dir() else None
+    # Fallback: most recent run- directory (NOT lp itself — that's the parent)
+    if lp.is_dir():
+        run_dirs = sorted(
+            [d for d in lp.iterdir() if d.is_dir() and d.name.startswith("run-")],
+            key=lambda d: d.stat().st_mtime,
+            reverse=True,
+        )
+        if run_dirs:
+            return run_dirs[0]
+    return None
+
+
+def _classify_run_state(status: dict | None, ssh_ok: bool, host: str | None) -> str:
+    """Determine the lifecycle state of the current run.
+
+    Returns: 'active', 'completed', 'idle', or 'waiting'.
+    """
+    if not status:
+        # No status at all — either no run exists or SSH failed before any data
+        return "waiting" if host else "idle"
+
+    phase = status.get("phase", "")
+    time_left = status.get("time_remaining_h", 0)
+
+    # Actively training
+    if phase in ("training", "calling_claude", "evaluating", "saving",
+                 "startup", "between_experiments", "smoke_check"):
+        return "active"
+
+    # Explicitly finished
+    if phase in ("completed", "idle"):
+        return "completed"
+
+    if phase == "error":
+        return "completed"
+
+    # Has time remaining → probably still going
+    if time_left and time_left > 0:
+        return "active"
+
+    return "completed"
 
 
 def poller_loop(host: str | None, port: int, local_path: str | None, interval: int, host_pinned: bool = False):
@@ -247,6 +421,7 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
 
     mode = f"Remote: {host}:{port}" if host else f"Local: {local_path or 'results/'}"
     set_state(mode=mode)
+    prev_run = None
 
     while True:
         # Auto-restart if our source file changed (picks up code edits without manual kill/restart)
@@ -274,17 +449,39 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
             runs = fetch_all_local_runs()
             active_run = get_active_run_name()
 
+            # Detect run transition — log and track
+            if active_run != prev_run and prev_run is not None:
+                print(f"[monitor] Run changed: {prev_run} → {active_run}", flush=True)
+            prev_run = active_run
+
             experiments = []
             status = None
             log_tail = None
             gpu = None
             train_py = None
+            train_py_source = ""
             ssh_ok = False
+            prev_gpu = get_state().get("gpu")
 
             # Try remote first
             if host:
                 experiments, status, log_tail, gpu, train_py, _ = fetch_remote(host, port)
                 ssh_ok = bool(experiments or status or gpu)
+                if train_py:
+                    train_py_source = "remote: best_train.py"
+                # Independent GPU retry if compound fetch missed it
+                if not gpu:
+                    gpu = fetch_remote_gpu(host, port)
+
+            # Local GPU fallback — if no GPU from SSH, try local nvidia-smi
+            if not gpu:
+                gpu = fetch_local_gpu()
+
+            # Preserve last-known GPU data if all fetches failed
+            if not gpu and prev_gpu:
+                gpu = {**prev_gpu, "_stale": True}
+            elif gpu and "_stale" in gpu:
+                del gpu["_stale"]
 
             # Per-component local fallback — fill in anything remote didn't provide
             run_dir = _resolve_local_run_dir(local_path, active_run)
@@ -302,16 +499,20 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
                             log_tail = "\n".join(lines[-80:])
                             break
                 if not train_py:
-                    # Try synced best_train.py or train.py from local workspace
+                    # Try best_train.py first (the promoted best), then active train.py
                     for tp_candidate in [
-                        run_dir / "best_train.py",
                         RESULTS_ROOT.parent / "training" / "best_train.py",
+                        run_dir / "best_train.py",
                         RESULTS_ROOT.parent / "training" / "train.py",
                     ]:
                         if tp_candidate.exists():
                             train_py = tp_candidate.read_text()
+                            train_py_source = str(tp_candidate.relative_to(PROJECT_ROOT))
                             break
 
+            run_state = _classify_run_state(status, ssh_ok, host)
+            training_mode = detect_training_mode(experiments)
+            pbt = load_pbt_state() if training_mode == "pbt" else None
             fetch_time = time.time() - t0
             poll_count = get_state()["poll_count"] + 1
 
@@ -321,12 +522,17 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
                 log_tail=log_tail,
                 gpu=gpu,
                 train_py=train_py,
+                train_py_source=train_py_source,
+                training_mode=training_mode,
+                run_state=run_state,
                 runs=runs,
                 active_run=active_run,
+                prev_run=prev_run,
                 last_fetch=time.time(),
                 fetch_time=fetch_time,
                 poll_count=poll_count,
                 ssh_ok=ssh_ok,
+                pbt=pbt,
             )
         except Exception as e:
             print(f"[poller] Error: {e}", file=sys.stderr)
@@ -340,7 +546,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Autoresearch Dashboard</title>
+<title>ART² Training Monitor</title>
 <style>
   :root {
     --bg: #0d1117;
@@ -367,7 +573,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   header {
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
-    padding: 12px 20px;
+    padding: 6px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -376,36 +582,38 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     z-index: 100;
   }
   header h1 {
-    font-size: 16px;
+    font-size: 14px;
     color: var(--cyan);
     font-weight: 700;
     letter-spacing: 1px;
   }
   header .meta {
     color: var(--text-dim);
-    font-size: 12px;
+    font-size: 11px;
   }
   .grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto auto 1fr;
-    gap: 12px;
-    padding: 12px;
-    min-height: calc(100vh - 60px);
+    grid-template-columns: 1fr 2fr;
+    gap: 8px;
+    padding: 8px;
+    max-width: 100vw;
+    overflow: hidden;
   }
+  .full-row { grid-column: 1 / 3; min-width: 0; }
   .panel {
     background: var(--bg2);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .panel-header {
     background: var(--bg3);
-    padding: 8px 14px;
+    padding: 5px 10px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--cyan);
@@ -415,45 +623,51 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     align-items: center;
   }
   .panel-body {
-    padding: 12px 14px;
+    padding: 8px 10px;
     flex: 1;
     overflow: auto;
   }
-  /* GPU + Status row */
-  .gpu-status { grid-column: 1 / 2; }
-  .active-run { grid-column: 2 / 4; }
-  /* Charts row */
-  .charts { grid-column: 1 / 4; min-height: 180px; }
-  /* Main content row */
-  .experiments { grid-column: 1 / 2; min-height: 400px; }
-  .reasoning { grid-column: 2 / 3; min-height: 400px; }
-  .right-stack { grid-column: 3 / 4; display: flex; flex-direction: column; gap: 12px; }
+  /* Row 1: GPU (narrow) + Active Run (wide) — use flex row */
+  .top-row {
+    grid-column: 1 / 3;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+  }
+  .top-row .gpu-status { flex: 0 0 240px; min-width: 0; }
+  .top-row .active-run { flex: 1; min-width: 0; }
+  /* Full-width panels */
+  .charts-panel { grid-column: 1 / 3; }
+  /* Bottom: left stack + reasoning */
+  .left-stack { grid-column: 1 / 2; display: flex; flex-direction: column; gap: 8px; min-width: 0; overflow: hidden; }
+  .reasoning { grid-column: 2 / 3; }
 
   /* GPU gauges */
-  .gauge-row { display: flex; gap: 16px; margin-bottom: 8px; align-items: center; }
-  .gauge-label { width: 50px; font-size: 11px; color: var(--text-dim); }
-  .gauge-bar { flex: 1; height: 18px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .gauge-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: center; }
+  .gauge-label { width: 36px; font-size: 10px; color: var(--text-dim); }
+  .gauge-bar { flex: 1; height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; }
   .gauge-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-  .gauge-value { width: 80px; text-align: right; font-size: 12px; font-weight: 600; }
+  .gauge-value { width: 70px; text-align: right; font-size: 11px; font-weight: 600; }
   .fill-green { background: var(--green); }
   .fill-yellow { background: var(--yellow); }
   .fill-red { background: var(--red); }
   .fill-cyan { background: var(--cyan); }
 
   /* Stat cards */
-  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 4px; }
   .stat-card {
     background: var(--bg);
-    border-radius: 6px;
-    padding: 8px 10px;
+    border-radius: 4px;
+    padding: 4px 6px;
     text-align: center;
   }
-  .stat-value { font-size: 20px; font-weight: 700; }
-  .stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 15px; font-weight: 700; }
+  .stat-label { font-size: 8px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-green { color: var(--green); }
   .stat-red { color: var(--red); }
   .stat-yellow { color: var(--yellow); }
   .stat-cyan { color: var(--cyan); }
+  .stat-purple { color: var(--purple); }
 
   /* Table */
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -521,12 +735,14 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     background: var(--bg);
     border-radius: 4px;
     padding: 10px;
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 11px;
+    line-height: 1.4;
     overflow: auto;
     white-space: pre;
-    max-height: 100%;
     tab-size: 4;
+    max-width: 100%;
+    width: 0;
+    min-width: 100%;
   }
   .code-view .ln { color: var(--text-dim); user-select: none; display: inline-block; width: 40px; text-align: right; margin-right: 12px; }
 
@@ -540,6 +756,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     overflow: auto;
     white-space: pre-wrap;
     word-break: break-all;
+    max-width: 100%;
+    width: 0;
+    min-width: 100%;
   }
   .log-error { color: var(--red); }
   .log-success { color: var(--green); }
@@ -548,10 +767,12 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .log-dim { color: var(--text-dim); }
 
   /* Charts */
-  .chart-container { display: flex; gap: 16px; height: 150px; }
-  .chart-box { flex: 1; position: relative; }
-  .chart-title { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-  canvas { width: 100% !important; height: 130px !important; }
+  .chart-rows { display: flex; flex-direction: column; gap: 6px; }
+  .chart-container { display: flex; gap: 8px; height: 80px; }
+  .chart-box { flex: 1; position: relative; min-width: 0; }
+  .chart-title { font-size: 9px; color: var(--text-dim); margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
+  canvas { width: 100% !important; height: 66px !important; }
+  .chart-row-label { font-size: 9px; color: var(--cyan); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
 
   /* Progress bar */
   .progress-outer {
@@ -587,7 +808,21 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .phase-evaluating { background: var(--cyan); }
   .phase-error { background: var(--red); animation: none; }
   .phase-completed { background: var(--text-dim); animation: none; }
+  .phase-idle { background: var(--text-dim); animation: none; }
   .phase-saving { background: var(--purple); }
+  .run-state-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+  .run-state-active { background: rgba(63,185,80,0.2); color: var(--green); }
+  .run-state-completed { background: rgba(139,148,158,0.2); color: var(--text-dim); }
+  .run-state-idle { background: rgba(139,148,158,0.15); color: var(--text-dim); }
+  .run-state-waiting { background: rgba(210,169,34,0.2); color: var(--yellow); animation: pulse 2s ease-in-out infinite; }
 
   /* Tabs */
   .tab-bar {
@@ -610,16 +845,12 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* Responsive */
-  @media (max-width: 1200px) {
-    .grid {
-      grid-template-columns: 1fr 1fr;
-    }
-    .active-run { grid-column: 2 / 3; }
-    .charts { grid-column: 1 / 3; }
-    .experiments { grid-column: 1 / 3; }
-    .reasoning { grid-column: 1 / 2; }
-    .right-stack { grid-column: 2 / 3; }
+  /* Responsive — single column for narrow windows */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .top-row { flex-direction: column; }
+    .top-row .gpu-status { flex: none; }
+    .full-row, .charts-panel, .left-stack, .reasoning { grid-column: 1 / 2; }
   }
 
   .stale-warning {
@@ -629,6 +860,87 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     border-radius: 4px;
     font-size: 11px;
     animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Training mode badge */
+  .training-mode-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .training-mode-opus { background: rgba(88,166,255,0.2); color: var(--cyan); }
+  .training-mode-pbt { background: rgba(188,140,255,0.2); color: var(--purple); }
+  .training-mode-unknown { background: rgba(139,148,158,0.15); color: var(--text-dim); }
+
+  /* PBT Population Grid */
+  .pbt-panel { min-width: 0; overflow: hidden; }
+  .pbt-grid-container { display: flex; gap: 16px; }
+  .pbt-overview { flex: 0 0 180px; }
+  .pbt-overview .stat-card { margin-bottom: 6px; }
+  .pbt-gens { flex: 1; overflow-x: auto; }
+
+  /* Compact PBT table */
+  .pbt-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: auto; }
+  .pbt-table th {
+    text-align: left; padding: 4px 8px; color: var(--text-dim);
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border); background: var(--bg2);
+    position: sticky; top: 0;
+  }
+  .pbt-table td { padding: 4px 8px; border-bottom: 1px solid var(--bg3); }
+  .pbt-table tr:hover { background: var(--bg3); }
+  .pbt-table .gen-row td {
+    background: var(--bg3); font-weight: 700; color: var(--cyan);
+    font-size: 11px; padding: 5px 8px; letter-spacing: 0.5px;
+    cursor: pointer; user-select: none;
+  }
+  .pbt-table .gen-row:hover td { background: #2d333b; }
+  .pbt-table .gen-row td .arrow { display: inline-block; width: 12px; font-size: 10px; transition: transform 0.15s; }
+  .pbt-table .gen-row td .arrow.collapsed { transform: rotate(-90deg); }
+  .pbt-table .best-row td { color: var(--green); }
+  .pbt-table .running-row td { color: var(--cyan); }
+  .pbt-table .pending-row td { opacity: 0.4; }
+  .pbt-role {
+    font-size: 9px; padding: 1px 5px; border-radius: 3px;
+    display: inline-block; font-weight: 600;
+  }
+  .role-baseline { background: rgba(139,148,158,0.2); color: var(--text-dim); }
+  .role-elite { background: rgba(210,169,34,0.2); color: var(--yellow); }
+  .role-exploit { background: rgba(63,185,80,0.2); color: var(--green); }
+  .role-explore { background: rgba(188,140,255,0.2); color: var(--purple); }
+  .role-perturbed { background: rgba(88,166,255,0.15); color: var(--cyan); }
+  .role-random { background: rgba(248,81,73,0.15); color: var(--red); }
+  .pbt-table td.num, .pbt-table th { white-space: nowrap; }
+  .pbt-table .cfg-cell { font-size: 10px; color: var(--text-dim); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Anomaly flags in experiment table */
+  .anomaly-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block; margin-left: 4px;
+  }
+  .anomaly-critical { background: var(--red); }
+  .anomaly-warn { background: var(--orange); }
+  .anomaly-tooltip {
+    position: relative;
+    cursor: help;
+  }
+  .anomaly-tooltip:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    z-index: 10;
+    color: var(--text);
   }
 
   /* Scrollbar styling */
@@ -641,7 +953,10 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <body>
 
 <header>
-  <h1>AUTORESEARCH DASHBOARD</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <h1>ART² TRAINING MONITOR</h1>
+    <span id="training-mode-badge" class="training-mode-badge"></span>
+  </div>
   <div class="meta">
     <span id="header-mode"></span> &nbsp;|&nbsp;
     <span id="header-time"></span> &nbsp;|&nbsp;
@@ -652,144 +967,136 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 </header>
 
 <div class="grid">
-  <!-- GPU Health -->
-  <div class="panel gpu-status">
-    <div class="panel-header">GPU Health <span id="gpu-name"></span></div>
-    <div class="panel-body">
-      <div id="gpu-content">
-        <div class="gauge-row">
-          <span class="gauge-label">Util</span>
-          <div class="gauge-bar"><div class="gauge-fill fill-green" id="gpu-util-bar" style="width:0%"></div></div>
-          <span class="gauge-value" id="gpu-util-val">--</span>
+  <!-- Row 1: GPU (compact) + Active Run -->
+  <div class="top-row">
+    <div class="panel gpu-status">
+      <div class="panel-header">GPU <span id="gpu-name" style="font-weight:400"></span></div>
+      <div class="panel-body" style="padding:6px 8px">
+        <div id="gpu-content">
+          <div class="gauge-row">
+            <span class="gauge-label">Util</span>
+            <div class="gauge-bar"><div class="gauge-fill fill-green" id="gpu-util-bar" style="width:0%"></div></div>
+            <span class="gauge-value" id="gpu-util-val">--</span>
+          </div>
+          <div class="gauge-row">
+            <span class="gauge-label">VRAM</span>
+            <div class="gauge-bar"><div class="gauge-fill fill-cyan" id="gpu-mem-bar" style="width:0%"></div></div>
+            <span class="gauge-value" id="gpu-mem-val">--</span>
+          </div>
+          <div class="gauge-row">
+            <span class="gauge-label">Temp</span>
+            <div class="gauge-bar"><div class="gauge-fill fill-yellow" id="gpu-temp-bar" style="width:0%"></div></div>
+            <span class="gauge-value" id="gpu-temp-val">--</span>
+          </div>
+          <div class="gauge-row">
+            <span class="gauge-label">Power</span>
+            <div class="gauge-bar"><div class="gauge-fill fill-green" id="gpu-power-bar" style="width:0%"></div></div>
+            <span class="gauge-value" id="gpu-power-val">--</span>
+          </div>
         </div>
-        <div class="gauge-row">
-          <span class="gauge-label">VRAM</span>
-          <div class="gauge-bar"><div class="gauge-fill fill-cyan" id="gpu-mem-bar" style="width:0%"></div></div>
-          <span class="gauge-value" id="gpu-mem-val">--</span>
+      </div>
+    </div>
+    <div class="panel active-run">
+      <div class="panel-header">Active Run <span id="run-name" style="font-weight:400;color:var(--text)"></span><span id="run-state-badge" class="run-state-badge"></span></div>
+      <div class="panel-body" style="padding:6px 10px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span class="phase-dot" id="phase-dot"></span>
+          <span id="phase-label" style="font-weight:600;font-size:12px"></span>
+          <span id="exp-id" style="color:var(--text-dim);margin-left:auto;font-size:11px"></span>
         </div>
-        <div class="gauge-row">
-          <span class="gauge-label">Temp</span>
-          <div class="gauge-bar"><div class="gauge-fill fill-yellow" id="gpu-temp-bar" style="width:0%"></div></div>
-          <span class="gauge-value" id="gpu-temp-val">--</span>
+        <div class="progress-outer">
+          <div class="progress-inner" id="time-progress" style="width:0%"></div>
         </div>
-        <div class="gauge-row">
-          <span class="gauge-label">Power</span>
-          <div class="gauge-bar"><div class="gauge-fill fill-green" id="gpu-power-bar" style="width:0%"></div></div>
-          <span class="gauge-value" id="gpu-power-val">--</span>
+        <div style="display:flex;justify-content:space-between;color:var(--text-dim);font-size:10px;margin-bottom:6px;">
+          <span id="time-elapsed"></span>
+          <span id="time-remaining"></span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-value stat-green" id="stat-kept">--</div><div class="stat-label">Kept</div></div>
+          <div class="stat-card"><div class="stat-value stat-red" id="stat-failed">--</div><div class="stat-label">Failed</div></div>
+          <div class="stat-card"><div class="stat-value stat-cyan" id="stat-total">--</div><div class="stat-label">Total</div></div>
+          <div class="stat-card"><div class="stat-value stat-green" id="stat-best">--</div><div class="stat-label">Best Score</div></div>
+          <div class="stat-card"><div class="stat-value stat-yellow" id="stat-rate">--</div><div class="stat-label">Exp/hr</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-contract" style="font-size:10px;color:var(--text-dim)">--</div><div class="stat-label">Contract</div></div>
+        </div>
+        <div class="stats-grid" style="margin-top:3px;">
+          <div class="stat-card"><div class="stat-value stat-yellow" id="stat-cost" style="font-size:13px">--</div><div class="stat-label">API Cost</div></div>
+          <div class="stat-card"><div class="stat-value stat-cyan" id="stat-cache-hit" style="font-size:13px">--</div><div class="stat-label">Cache Hit %</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-cost-per-exp" style="font-size:13px;color:var(--text-dim)">--</div><div class="stat-label">$/Experiment</div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Active Run Status -->
-  <div class="panel active-run">
-    <div class="panel-header">Active Run <span id="run-name" style="font-weight:400;color:var(--text)"></span></div>
-    <div class="panel-body">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span class="phase-dot" id="phase-dot"></span>
-        <span id="phase-label" style="font-weight:600"></span>
-        <span id="exp-id" style="color:var(--text-dim);margin-left:auto"></span>
-      </div>
-      <div class="progress-outer">
-        <div class="progress-inner" id="time-progress" style="width:0%"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;color:var(--text-dim);font-size:11px;margin-bottom:10px;">
-        <span id="time-elapsed"></span>
-        <span id="time-remaining"></span>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-value stat-green" id="stat-kept">--</div><div class="stat-label">Kept</div></div>
-        <div class="stat-card"><div class="stat-value stat-red" id="stat-failed">--</div><div class="stat-label">Failed</div></div>
-        <div class="stat-card"><div class="stat-value stat-cyan" id="stat-total">--</div><div class="stat-label">Total</div></div>
-        <div class="stat-card"><div class="stat-value stat-green" id="stat-best">--</div><div class="stat-label">Best Score</div></div>
-        <div class="stat-card"><div class="stat-value stat-yellow" id="stat-rate">--</div><div class="stat-label">Exp/hr</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-contract" style="font-size:11px;color:var(--text-dim)">--</div><div class="stat-label">Contract</div></div>
-      </div>
-      <div class="stats-grid" style="margin-top:4px;">
-        <div class="stat-card"><div class="stat-value stat-yellow" id="stat-cost" style="font-size:16px">--</div><div class="stat-label">API Cost</div></div>
-        <div class="stat-card"><div class="stat-value stat-cyan" id="stat-cache-hit" style="font-size:16px">--</div><div class="stat-label">Cache Hit %</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-cost-per-exp" style="font-size:16px;color:var(--text-dim)">--</div><div class="stat-label">$/Experiment</div></div>
-      </div>
+  <!-- Row 2: PBT Population (shown only in PBT mode) -->
+  <div class="panel full-row pbt-panel" id="pbt-panel" style="display:none">
+    <div class="panel-header">
+      PBT Population
+      <span id="pbt-header-info" style="font-weight:400;color:var(--text-dim);font-size:9px"></span>
     </div>
-  </div>
-
-  <!-- Charts -->
-  <div class="panel charts">
-    <div class="panel-header">Metric Trends</div>
-    <div class="panel-body">
-      <div class="chart-container">
-        <div class="chart-box">
-          <div class="chart-title">Score</div>
-          <canvas id="chart-score"></canvas>
-        </div>
-        <div class="chart-box">
-          <div class="chart-title">Profit Factor</div>
-          <canvas id="chart-pf"></canvas>
-        </div>
-        <div class="chart-box">
-          <div class="chart-title">Trades/Day</div>
-          <canvas id="chart-tpd"></canvas>
-        </div>
-        <div class="chart-box">
-          <div class="chart-title">Win Rate</div>
-          <canvas id="chart-wr"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Experiments Table -->
-  <div class="panel experiments">
-    <div class="panel-header">Experiments <span id="exp-count" style="font-weight:400;color:var(--text-dim)"></span></div>
     <div class="panel-body" style="padding:0">
-      <div style="overflow:auto;max-height:500px;">
-        <table id="exp-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Result</th>
-              <th>Score</th>
-              <th>PF</th>
-              <th>TPD</th>
-              <th>Sharpe</th>
-              <th>WR</th>
-              <th>SL%</th>
-              <th>Hold</th>
-              <th>Ruin</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody id="exp-tbody"></tbody>
-        </table>
+      <div style="overflow:auto;max-height:180px;" id="pbt-gens-container"></div>
+    </div>
+  </div>
+
+  <!-- Row 3: All 8 charts in one panel, 2 rows of 4 -->
+  <div class="panel full-row charts-panel">
+    <div class="panel-header">Charts</div>
+    <div class="panel-body" style="padding:6px 10px">
+      <div class="chart-rows">
+        <div class="chart-row-label">Performance</div>
+        <div class="chart-container">
+          <div class="chart-box"><div class="chart-title">Score</div><canvas id="chart-score"></canvas></div>
+          <div class="chart-box"><div class="chart-title">Profit Factor</div><canvas id="chart-pf"></canvas></div>
+          <div class="chart-box"><div class="chart-title">Trades/Day</div><canvas id="chart-tpd"></canvas></div>
+          <div class="chart-box"><div class="chart-title">Win Rate</div><canvas id="chart-wr"></canvas></div>
+        </div>
+        <div class="chart-row-label" style="margin-top:4px">Risk &amp; Quality</div>
+        <div class="chart-container">
+          <div class="chart-box"><div class="chart-title">Sharpe</div><canvas id="chart-sharpe"></canvas></div>
+          <div class="chart-box"><div class="chart-title">Stop Loss %</div><canvas id="chart-sl"></canvas></div>
+          <div class="chart-box"><div class="chart-title">R:R Ratio</div><canvas id="chart-rr"></canvas></div>
+          <div class="chart-box"><div class="chart-title">EV / Trade</div><canvas id="chart-ev"></canvas></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Stream of Consciousness (Claude Reasoning) -->
-  <div class="panel reasoning">
-    <div class="panel-header">Stream of Consciousness</div>
-    <div class="panel-body" id="reasoning-body" style="padding:8px 14px"></div>
-  </div>
-
-  <!-- Right stack: train.py + log -->
-  <div class="right-stack">
-    <div class="panel" style="flex:1">
+  <!-- Row 4 Left: Experiments + Code/Log stacked -->
+  <div class="left-stack">
+    <div class="panel">
+      <div class="panel-header">Experiments <span id="exp-count" style="font-weight:400;color:var(--text-dim)"></span></div>
+      <div class="panel-body" style="padding:0">
+        <div style="overflow:auto;max-height:240px;">
+          <table id="exp-table">
+            <thead>
+              <tr id="exp-thead-row">
+                <th>#</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th>
+                <th>Sharpe</th><th>WR</th><th>SL%</th><th>Hold</th><th>Flags</th><th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="exp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
       <div class="panel-header">
         <div class="tab-bar" style="border-bottom:none">
-          <div class="tab active" data-tab="code">Best train.py</div>
-          <div class="tab" data-tab="log">Live Log</div>
+          <div class="tab active" data-tab="code" id="code-tab-label">train.py</div>
+          <div class="tab" data-tab="log">Log</div>
           <div class="tab" data-tab="runs">Runs</div>
         </div>
       </div>
       <div class="panel-body" style="padding:0">
         <div class="tab-content active" id="tab-code">
-          <div class="code-view" id="code-content" style="max-height:500px">Loading...</div>
+          <div class="code-view" id="code-content" style="max-height:200px">Loading...</div>
         </div>
         <div class="tab-content" id="tab-log">
-          <div class="log-view" id="log-content" style="max-height:500px">Waiting for log data...</div>
+          <div class="log-view" id="log-content" style="max-height:200px">Waiting for log data...</div>
         </div>
         <div class="tab-content" id="tab-runs">
-          <div style="padding:14px;overflow:auto;max-height:500px;">
+          <div style="padding:8px;overflow:auto;max-height:200px;">
             <table id="runs-table">
               <thead><tr><th>Run</th><th>Phase</th><th>Exp</th><th>Kept</th><th>Best</th></tr></thead>
               <tbody id="runs-tbody"></tbody>
@@ -798,6 +1105,12 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Row 4 Right: Reasoning -->
+  <div class="panel reasoning">
+    <div class="panel-header">Stream of Consciousness</div>
+    <div class="panel-body" id="reasoning-body" style="padding:6px 10px"></div>
   </div>
 </div>
 
@@ -923,9 +1236,43 @@ function colorizeLine(line) {
   return `<span class="log-dim">${escapeHtml(line)}</span>`;
 }
 
+// -- Anomaly classification --
+const CRITICAL_ANOMALIES = new Set([
+  'metric_inconsistent', 'trades_per_day_extreme', 'cost_realism_low',
+  'entry_quality_too_low', 'low_quality_rate_high', 'single_date_specialist'
+]);
+
+function classifyAnomaly(flag) {
+  // Strip trailing suffixes like _high, _low for matching
+  const base = flag.replace(/_(high|low|extreme)$/, '');
+  return CRITICAL_ANOMALIES.has(base) ? 'critical' : 'warn';
+}
+
+function renderAnomalyFlags(flags) {
+  if (!flags || !flags.length) return '';
+  const dots = flags.map(f => {
+    const cls = classifyAnomaly(f);
+    return `<span class="anomaly-tooltip" data-tip="${escapeHtml(f)}"><span class="anomaly-dot anomaly-${cls}"></span></span>`;
+  }).join('');
+  return dots;
+}
+
+// -- PBT generation toggle --
+function toggleGen(headerRow) {
+  const gen = headerRow.dataset.gen;
+  const arrow = headerRow.querySelector('.arrow');
+  const table = headerRow.closest('table');
+  const members = table.querySelectorAll(`tr[data-gen-member="${gen}"]`);
+  const isCollapsed = arrow.classList.toggle('collapsed');
+  for (const row of members) {
+    row.style.display = isCollapsed ? 'none' : '';
+  }
+}
+
 // -- Main update loop --
 let lastExpCount = 0;
 let lastTrainHash = '';
+let lastPbtHash = '';
 
 async function update() {
   try {
@@ -938,6 +1285,13 @@ async function update() {
     document.getElementById('header-time').textContent = nowPST();
     document.getElementById('header-poll').textContent = `poll #${data.poll_count}`;
     document.getElementById('header-fetch').textContent = `fetch: ${data.fetch_time.toFixed(1)}s`;
+
+    // Training mode badge
+    const modeBadge = document.getElementById('training-mode-badge');
+    const tm = data.training_mode || 'unknown';
+    const modeLabels = {opus: 'OPUS-DRIVEN', pbt: 'PBT SWEEP', unknown: 'UNKNOWN'};
+    modeBadge.textContent = modeLabels[tm] || tm;
+    modeBadge.className = 'training-mode-badge training-mode-' + tm;
 
     // Stale check
     const staleEl = document.getElementById('header-stale');
@@ -966,39 +1320,61 @@ async function update() {
       setGauge('gpu-temp', Math.min(g.temp_c, 100), g.temp_c.toFixed(0) + 'C');
       setGauge('gpu-power', powerPct, `${g.power_w.toFixed(0)}/${g.power_limit_w.toFixed(0)}W`);
     } else {
-      document.getElementById('gpu-name').textContent = data.ssh_ok ? 'waiting...' : 'no SSH';
+      const isLocal = !data.mode.startsWith('Remote');
+      document.getElementById('gpu-name').textContent = isLocal ? '(local — no GPU)' : (data.ssh_ok ? 'waiting...' : 'no SSH');
       document.getElementById('gpu-content').style.opacity = '0.3';
     }
 
     // Active run
     const st = data.status || {};
-    document.getElementById('run-name').textContent = st._run_name || 'none';
-    const phase = st.phase || 'unknown';
+    const runState = data.run_state || 'unknown';
+    document.getElementById('run-name').textContent = st._run_name || data.active_run || 'none';
+    const badge = document.getElementById('run-state-badge');
+    const badgeLabels = {active: 'LIVE', completed: 'DONE', idle: 'IDLE', waiting: 'WAITING'};
+    badge.textContent = badgeLabels[runState] || runState;
+    badge.className = 'run-state-badge run-state-' + runState;
+
+    const phase = st.phase || (runState === 'waiting' ? 'waiting' : 'unknown');
     const phaseDot = document.getElementById('phase-dot');
     phaseDot.className = 'phase-dot phase-' + phase;
     const phaseLabels = {
       training: 'Training Model', calling_claude: 'Generating Code',
       evaluating: 'Evaluating Results', saving: 'Saving Artifacts',
       completed: 'Completed', error: 'Error', startup: 'Starting Up',
-      between_experiments: 'Between Experiments', smoke_check: 'Smoke Check'
+      between_experiments: 'Between Experiments', smoke_check: 'Smoke Check',
+      idle: 'Run Finished', waiting: 'Waiting for Deployment', unknown: 'No Data'
     };
     document.getElementById('phase-label').textContent = phaseLabels[phase] || phase;
-    document.getElementById('exp-id').textContent = `Experiment #${st.experiment_id || 0}`;
+    document.getElementById('exp-id').textContent = st.experiment_id ? `Experiment #${st.experiment_id}` : '';
 
     // Progress
     const timeLeft = st.time_remaining_h || 0;
     const totalH = 8.0;
     const elapsedH = totalH - timeLeft;
     const pct = Math.min(100, Math.max(0, elapsedH / totalH * 100));
-    document.getElementById('time-progress').style.width = pct + '%';
-    document.getElementById('time-elapsed').textContent = pct.toFixed(0) + '% elapsed';
-    document.getElementById('time-remaining').textContent = timeLeft > 0 ? timeLeft.toFixed(1) + 'h left' : 'done';
+    const progressBar = document.getElementById('time-progress');
+    if (runState === 'completed' || runState === 'idle') {
+      progressBar.style.width = '100%';
+      progressBar.style.background = 'var(--text-dim)';
+      document.getElementById('time-elapsed').textContent = 'run finished';
+      document.getElementById('time-remaining').textContent = `${st.total || 0} experiments`;
+    } else if (runState === 'waiting') {
+      progressBar.style.width = '0%';
+      progressBar.style.background = '';
+      document.getElementById('time-elapsed').textContent = 'waiting for deployment...';
+      document.getElementById('time-remaining').textContent = '';
+    } else {
+      progressBar.style.width = pct + '%';
+      progressBar.style.background = '';
+      document.getElementById('time-elapsed').textContent = pct.toFixed(0) + '% elapsed';
+      document.getElementById('time-remaining').textContent = timeLeft > 0 ? timeLeft.toFixed(1) + 'h left' : 'done';
+    }
 
     // Stats
     document.getElementById('stat-kept').textContent = st.kept || 0;
     document.getElementById('stat-failed').textContent = st.failed || 0;
     document.getElementById('stat-total').textContent = st.total || 0;
-    document.getElementById('stat-best').textContent = st.best_score > -999 ? st.best_score.toFixed(4) : '--';
+    document.getElementById('stat-best').textContent = (st.best_score != null && st.best_score > -999) ? st.best_score.toFixed(4) : '--';
     document.getElementById('stat-contract').textContent = st.contract_checksum || '--';
 
     // API cost tracking
@@ -1020,15 +1396,105 @@ async function update() {
     }
 
     // Charts
-    const scored = exps.filter(e => (e.score || -999) > -999);
-    if (scored.length > 1) {
+    const scored = exps.filter(e => e.score != null && e.score > -999);
+    if (scored.length >= 1) {
       drawChart('chart-score', scored.map(e => e.score || 0), '#3fb950', {decimals: 3});
       drawChart('chart-pf', scored.map(e => e.profit_factor || 0), '#58a6ff', {min: 0, decimals: 2});
       drawChart('chart-tpd', scored.map(e => e.trades_per_day || 0), '#d29922', {min: 0, decimals: 1});
       drawChart('chart-wr', scored.map(e => (e.win_rate || 0) * 100), '#bc8cff', {min: 0, max: 100, decimals: 0});
+      // Row 2: Risk & Quality
+      drawChart('chart-sharpe', scored.map(e => e.trade_sharpe || 0), '#f0883e', {decimals: 2});
+      drawChart('chart-sl', scored.map(e => (e.stop_loss_rate || 0) * 100), '#f85149', {min: 0, max: 100, decimals: 0});
+      drawChart('chart-rr', scored.map(e => e.rr_ratio || 0), '#a371f7', {min: 0, decimals: 2});
+      drawChart('chart-ev', scored.map(e => e.ev_per_trade || 0), '#56d364', {decimals: 3});
     }
 
-    // Experiments table
+    // PBT Population Grid
+    const pbtPanel = document.getElementById('pbt-panel');
+    const isPbt = tm === 'pbt';
+    pbtPanel.style.display = isPbt ? '' : 'none';
+
+    if (isPbt && data.pbt) {
+      const pbt = data.pbt;
+      const pbtHash = JSON.stringify(pbt).length + '_' + (pbt.current_member || 0);
+      if (pbtHash !== lastPbtHash) {
+        lastPbtHash = pbtHash;
+        document.getElementById('pbt-header-info').textContent =
+          `Gen ${pbt.generation}/${pbt.max_generations} | Pop ${pbt.population_size} | Focus: ${pbt.focus} | Best: ${pbt.best_pbt_score > 0 ? pbt.best_pbt_score.toFixed(2) : '--'} | Base: ${pbt.base_score > 0 ? pbt.base_score.toFixed(2) : '--'}${pbt.stagnation_count > 0 ? ' | Stag: ' + pbt.stagnation_count : ''}`;
+
+        const container = document.getElementById('pbt-gens-container');
+        const allScores = pbt.generations.flatMap(g =>
+          g.members.filter(m => m.score != null).map(m => m.score));
+        const maxScore = allScores.length ? Math.max(...allScores) : 1;
+        const globalBest = maxScore;
+
+        let html = '<table class="pbt-table"><thead><tr>';
+        html += '<th>Gen</th><th>#</th><th>Role</th><th>Score</th><th>PF</th><th>TPD</th><th>WR</th><th>SL%</th><th>Config</th><th>Flags</th>';
+        html += '</tr></thead><tbody>';
+
+        for (const gen of [...pbt.generations].reverse()) {
+          // Generation separator row
+          const genStats = gen.best_score != null
+            ? `best ${gen.best_score.toFixed(2)} / avg ${gen.avg_score.toFixed(2)} / ${gen.completed}/${pbt.population_size} done`
+            : `${gen.completed}/${pbt.population_size} done`;
+          html += `<tr class="gen-row" data-gen="${gen.generation}" onclick="toggleGen(this)"><td colspan="10"><span class="arrow">&#9660;</span> Generation ${gen.generation} &mdash; ${genStats}</td></tr>`;
+
+          for (const m of [...gen.members].reverse()) {
+            const isRunning = gen.generation === pbt.generation &&
+              m.member_id === pbt.current_member && m.score == null;
+            const isBest = m.score != null && m.score === globalBest && allScores.length > 1;
+            const isPending = m.score == null && !isRunning;
+            const role = m.role || 'perturbed';
+
+            let rowCls = '';
+            if (isRunning) rowCls = 'running-row';
+            else if (isPending) rowCls = 'pending-row';
+            else if (isBest) rowCls = 'best-row';
+
+            const scoreColor = m.score != null
+              ? (m.score >= (gen.avg_score || 0) ? 'var(--green)' : 'var(--text-dim)')
+              : 'var(--text-dim)';
+            const scoreText = m.score != null ? m.score.toFixed(2) : (isRunning ? '...' : '--');
+            const pfText = m.pf != null ? m.pf.toFixed(1) : '--';
+            const tpdText = m.tpd != null ? m.tpd.toFixed(1) : '--';
+            const wrText = m.wr != null ? (m.wr * 100).toFixed(0) + '%' : '--';
+            const slText = m.stop_rate != null ? (m.stop_rate * 100).toFixed(0) + '%' : '--';
+            const config = m.config_summary || 'defaults';
+            const flags = (m.anomaly_flags || []).length
+              ? m.anomaly_flags.map(f => `<span class="anomaly-tooltip" data-tip="${escapeHtml(f)}"><span class="anomaly-dot anomaly-${classifyAnomaly(f)}"></span></span>`).join('')
+              : '';
+
+            html += `<tr class="${rowCls}" data-gen-member="${gen.generation}">`;
+            html += `<td class="num">${gen.generation}</td>`;
+            html += `<td class="num">${m.member_id}</td>`;
+            html += `<td><span class="pbt-role role-${role}">${role}</span></td>`;
+            html += `<td class="num" style="font-weight:600;color:${scoreColor}">${scoreText}</td>`;
+            html += `<td class="num">${pfText}</td>`;
+            html += `<td class="num">${tpdText}</td>`;
+            html += `<td class="num">${wrText}</td>`;
+            html += `<td class="num">${slText}</td>`;
+            html += `<td class="cfg-cell" title="${escapeHtml(config)}">${escapeHtml(config)}</td>`;
+            html += `<td>${flags}</td>`;
+            html += `</tr>`;
+          }
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }
+    }
+
+    // Experiments table — adapt columns for PBT mode
+    const theadRow = document.getElementById('exp-thead-row');
+    if (isPbt && !theadRow.dataset.pbt) {
+      theadRow.dataset.pbt = '1';
+      theadRow.innerHTML = '<th>#</th><th>Gen</th><th>Mem</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th><th>WR</th><th>SL%</th><th>Flags</th><th>Time</th>';
+      lastExpCount = -1; // Force rebuild
+    } else if (!isPbt && theadRow.dataset.pbt) {
+      delete theadRow.dataset.pbt;
+      theadRow.innerHTML = '<th>#</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th><th>Sharpe</th><th>WR</th><th>SL%</th><th>Hold</th><th>Flags</th><th>Time</th>';
+      lastExpCount = -1;
+    }
+
     if (exps.length !== lastExpCount) {
       lastExpCount = exps.length;
       document.getElementById('exp-count').textContent = `(${exps.length})`;
@@ -1042,36 +1508,55 @@ async function update() {
         if (e.kept) { result = '+ KEPT'; cls = 'kept'; }
         else if (e.error) { result = 'x ' + (e.failure_type || 'err').slice(0,8); cls = 'failed'; }
         else if (e.keep_block_reason && e.keep_block_reason.includes('secondary_regression')) {
-          result = '⚠ blocked'; cls = 'failed';
+          result = '&#9888; blocked'; cls = 'failed';
         } else if (e.keep_block_reason && e.keep_block_reason.includes('near_tie')) {
-          result = '≈ near-tie'; cls = 'reverted';
+          result = '&#8776; near-tie'; cls = 'reverted';
         } else { result = '~ revert'; cls = 'reverted'; }
         tr.className = cls;
 
         const score = (e.score || -999) > -999 ? (e.score || 0).toFixed(3) : 'FAIL';
-        const pf = e.profit_factor ? e.profit_factor.toFixed(2) : '--';
-        const tpd = e.trades_per_day ? e.trades_per_day.toFixed(1) : '--';
-        const sharpe = e.trade_sharpe ? e.trade_sharpe.toFixed(2) : '--';
-        const wr = e.win_rate ? (e.win_rate * 100).toFixed(0) + '%' : '--';
-        const sl = e.stop_loss_rate ? (e.stop_loss_rate * 100).toFixed(0) + '%' : '--';
-        const hold = e.avg_hold_bars ? e.avg_hold_bars.toFixed(0) : '--';
-        const ruin = e.hit_ruin !== undefined ? (e.hit_ruin ? 'YES' : 'no') : '--';
-        const trainTime = e.train_wall_time ? fmtDuration(e.train_wall_time) : '--';
+        const pf = e.profit_factor != null ? e.profit_factor.toFixed(2) : '--';
+        const tpd = e.trades_per_day != null ? e.trades_per_day.toFixed(1) : '--';
+        const wr = e.win_rate != null ? (e.win_rate * 100).toFixed(0) + '%' : '--';
+        const sl = e.stop_loss_rate != null ? (e.stop_loss_rate * 100).toFixed(0) + '%' : '--';
+        const trainTime = e.wall_time ? fmtDuration(e.wall_time) : '--';
+        const flags = renderAnomalyFlags(e.anomaly_flags);
 
         const blockTip = e.keep_block_reason ? ` title="${escapeHtml(e.keep_block_reason)}"` : '';
-        tr.innerHTML = `
-          <td class="num">${e.experiment_id || '?'}</td>
-          <td${blockTip}>${result}</td>
-          <td class="num">${score}</td>
-          <td class="num">${pf}</td>
-          <td class="num">${tpd}</td>
-          <td class="num">${sharpe}</td>
-          <td class="num">${wr}</td>
-          <td class="num">${sl}</td>
-          <td class="num">${hold}</td>
-          <td class="num">${ruin === 'YES' ? '<span style="color:var(--red)">YES</span>' : ruin}</td>
-          <td class="num">${trainTime}</td>
-        `;
+
+        if (isPbt) {
+          const gen = e.pbt_generation != null ? e.pbt_generation : '--';
+          const mem = e.pbt_member != null ? e.pbt_member : '--';
+          tr.innerHTML = `
+            <td class="num">${e.experiment_id || '?'}</td>
+            <td class="num">${gen}</td>
+            <td class="num">${mem}</td>
+            <td${blockTip}>${result}</td>
+            <td class="num">${score}</td>
+            <td class="num">${pf}</td>
+            <td class="num">${tpd}</td>
+            <td class="num">${wr}</td>
+            <td class="num">${sl}</td>
+            <td>${flags}</td>
+            <td class="num">${trainTime}</td>
+          `;
+        } else {
+          const sharpe = e.trade_sharpe != null ? e.trade_sharpe.toFixed(2) : '--';
+          const hold = e.avg_hold_bars != null ? e.avg_hold_bars.toFixed(0) + 'b' : '--';
+          tr.innerHTML = `
+            <td class="num">${e.experiment_id || '?'}</td>
+            <td${blockTip}>${result}</td>
+            <td class="num">${score}</td>
+            <td class="num">${pf}</td>
+            <td class="num">${tpd}</td>
+            <td class="num">${sharpe}</td>
+            <td class="num">${wr}</td>
+            <td class="num">${sl}</td>
+            <td class="num">${hold}</td>
+            <td>${flags}</td>
+            <td class="num">${trainTime}</td>
+          `;
+        }
         tbody.appendChild(tr);
       }
     }
@@ -1118,10 +1603,12 @@ async function update() {
         lastTrainHash = hash;
         document.getElementById('code-content').innerHTML = highlightPython(data.train_py);
       }
+      const src = data.train_py_source || '';
+      document.getElementById('code-tab-label').textContent = src ? src : 'train.py';
     } else if (data.poll_count > 2) {
       document.getElementById('code-content').textContent = data.ssh_ok
-        ? 'Waiting for train.py on remote...'
-        : 'No SSH connection — no local train.py found in results/';
+        ? 'Waiting for best_train.py on remote...'
+        : 'No SSH — no local best_train.py found';
     }
 
     // Log

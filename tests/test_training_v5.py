@@ -561,7 +561,7 @@ class TestDaySequential:
         x, y, bar_in_day = next(loader)
         assert x.ndim == 3, f"x should be 3D, got {x.ndim}D"
         assert x.shape[1] == 10, f"lookback dim should be 10, got {x.shape[1]}"
-        assert x.shape[2] == 32, f"feature dim should be 32, got {x.shape[2]}"
+        assert x.shape[2] == 37, f"feature dim should be 37, got {x.shape[2]}"
         assert len(y) == 18, f"y tuple should have 18 fields, got {len(y)}"
         assert isinstance(bar_in_day, int), f"bar_in_day should be int, got {type(bar_in_day)}"
 
@@ -705,9 +705,9 @@ class TestIntegration:
 
 class TestRegression:
     def test_feature_count_unchanged(self):
-        """NUM_FEATURES should still be 32."""
+        """NUM_FEATURES should still be 37 (v3)."""
         from prepare import NUM_FEATURES
-        assert NUM_FEATURES == 32
+        assert NUM_FEATURES == 37
 
     def test_action_space_unchanged(self):
         """NUM_ACTIONS should still be 8."""

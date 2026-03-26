@@ -17,15 +17,34 @@ from training.prepare import FEATURE_NAMES  # noqa: E402
 
 
 def _source_bucket(feature_idx: int) -> str:
-    if feature_idx < 39:
-        return "core_spx_spy_time"
-    if feature_idx < 45:
-        return "atm_option_snapshot"
-    if feature_idx < 49:
-        return "vix_regime"
-    if feature_idx < 55:
-        return "otm_option_snapshot"
-    return "atm_option_derived_greeks"
+    # Aligned to 32-feature FEATURE_NAMES in prepare.py
+    if feature_idx < 2:
+        return "price_returns"        # ret_6, ret_12
+    if feature_idx < 5:
+        return "volume"               # volume_ratio, volume_zscore, volume_at_price_pctile
+    if feature_idx < 8:
+        return "volatility"           # bar_range, realized_vol, range_ratio
+    if feature_idx < 10:
+        return "vwap"                 # vwap_dist, vwap_slope
+    if feature_idx < 12:
+        return "session_structure"    # ib_width, session_range_pct
+    if feature_idx < 14:
+        return "key_levels"           # prev_high_dist, prev_low_dist
+    if feature_idx < 17:
+        return "trend"                # ema_cross, consec_direction, speed_estimate
+    if feature_idx < 19:
+        return "microstructure"       # gap, inside_bar
+    if feature_idx < 22:
+        return "time"                 # minutes_to_close, time_sin, time_cos
+    if feature_idx < 24:
+        return "options"              # atm_iv, iv_skew
+    if feature_idx < 26:
+        return "vix_regime"           # vix_regime, vrp
+    if feature_idx < 29:
+        return "greeks"               # atm_gamma, atm_theta_per_bar, charm_estimate
+    if feature_idx < 30:
+        return "bollinger"            # bollinger_position
+    return "range_extras"             # rsi_14, session_range_position
 
 
 def _status(pct: float) -> str:
@@ -150,7 +169,7 @@ def _to_markdown(report: dict[str, Any]) -> str:
     for row in report["bucket_summary"]:
         lines.append(f"| {row['source_bucket']} | {row['present_pct']:.2%} | {row['status']} |")
     lines.append("")
-    lines.append("## Features (60)")
+    lines.append(f"## Features ({len(report['features'])})")
     lines.append("")
     lines.append("| idx | feature | source | present_pct | status |")
     lines.append("|---:|---|---|---:|---|")
@@ -163,7 +182,7 @@ def _to_markdown(report: dict[str, Any]) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Summarize live IBKR per-feature availability (60-feature contract).")
+    parser = argparse.ArgumentParser(description="Summarize live IBKR per-feature availability.")
     parser.add_argument("--audit-path", default=os.path.join("results", "live", "audit.jsonl"))
     parser.add_argument("--out-json", default=os.path.join("results", "live", "feature_parity_report.json"))
     parser.add_argument("--out-md", default=os.path.join("results", "live", "feature_parity_report.md"))

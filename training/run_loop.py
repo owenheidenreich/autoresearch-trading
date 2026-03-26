@@ -324,7 +324,7 @@ def validate_safety(code: str) -> str | None:
         return "SAFETY: SCORE_* env vars are forbidden. The score formula is locked."
 
     # _env_float validation: allow up to 3 new declarations with approved prefixes
-    _ALLOWED_ENV_PREFIXES = ('SCHED_', 'WEIGHT_', 'WARM_', 'REG_')
+    _ALLOWED_ENV_PREFIXES = ('SCHED_', 'WEIGHT_', 'WARM_', 'REG_', 'TRAIN_')
     if os.path.exists(BEST_TRAIN_PY):
         try:
             with open(BEST_TRAIN_PY, 'r') as _f:

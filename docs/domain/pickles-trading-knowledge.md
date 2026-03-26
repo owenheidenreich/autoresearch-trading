@@ -7,7 +7,7 @@
 ---
 /Users/gduby/Documents/picklesGPT/pickles
 [this document requires all related documents. related meaning, related to SPX options.]
-this must be used in ART^2
+this must be used in ART²
 
 
 ## 1. Entry Rules

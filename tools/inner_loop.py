@@ -712,6 +712,8 @@ _PARAM_SPACE = {
     # Tier 1 (Phase D: Value Head) — exit intelligence
     "TRAIN_VALUE_W":             {"default": 0.3,  "lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
     "TRAIN_VALUE_EXIT_THRESH":   {"default": 0.02, "lo": -0.5, "hi": 0.5,  "scale": "linear", "tier": 1},
+    # Tier 1 (Phase E: Risk Head) — account-aware risk management
+    "TRAIN_RISK_W":              {"default": 0.2,  "lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
 }
 
 

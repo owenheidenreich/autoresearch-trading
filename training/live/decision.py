@@ -17,6 +17,8 @@ from training.prepare import (
     STOP_LOSS_PCT,
     STOP_COOLDOWN_BARS,
     compute_dynamic_stop,
+    PNL_TANH_SCALE,
+    BEST_PNL_TANH_SCALE,
 )
 from training.live.contracts import (
     FEATURE_CONTRACT_VERSION,
@@ -229,9 +231,9 @@ class ModelDecisionEngine:
         if self._in_trade:
             pos_state[0, 0] = 1.0
             pos_state[0, 1] = min(self._bars_held / BARS_PER_DAY, 1.0)
-            pos_state[0, 2] = float(np.tanh(self._unrealized_pnl * 5.0))
+            pos_state[0, 2] = float(np.tanh(self._unrealized_pnl * PNL_TANH_SCALE))
             if _ps_dim >= 7:
-                pos_state[0, 5] = float(np.tanh(self._best_pnl * 2.0))
+                pos_state[0, 5] = float(np.tanh(self._best_pnl * BEST_PNL_TANH_SCALE))
                 pos_state[0, 6] = min(self._bars_since_high / BARS_PER_DAY, 1.0)
         pos_state[0, 3] = self._account_health
         pos_state[0, 4] = self._loss_streak_frac
@@ -318,6 +320,7 @@ class ModelDecisionEngine:
         spx_price: float,
         latest_features: np.ndarray,
         bar_of_day: int = 999,
+        feature_window: np.ndarray | None = None,
     ) -> DecisionIntent | None:
         if inference.action in (ACTION_DO_NOTHING, ACTION_EXIT):
             return None
@@ -330,19 +333,38 @@ class ModelDecisionEngine:
         contract = resolver.resolve(inference.action, spx_price)
         entry_mid = resolver.quote_mid(contract) or 1.0
 
-        # Dynamic stop from gate confidence + market features.
-        # Model's gate head (NO_TRADE while holding) is the primary exit.
-        from training.prepare import _FEAT_IDX
-        # latest_features is 1D (single row from LiveFeatureSnapshot.latest_raw_row)
-        _iv_val = float(latest_features[_FEAT_IDX['atm_iv']]) if len(latest_features) > _FEAT_IDX['atm_iv'] else 0.0
-        _vix_val = float(latest_features[_FEAT_IDX['vix_regime']]) if len(latest_features) > _FEAT_IDX['vix_regime'] else 0.0
-        stop_pct = compute_dynamic_stop(inference.gate_trade_prob, _iv_val, _vix_val)
+        # Risk head: use learned stop + sizing if available
+        _has_risk_head = hasattr(self.model, 'risk_head')
+        _risk_stop = None
+        _risk_size_frac = None
+        _risk_conviction = 0.0
+        if _has_risk_head and feature_window is not None and len(feature_window) >= self.lookback:
+            x = torch.tensor(
+                feature_window[-self.lookback:, :self.num_features],
+                dtype=torch.float32, device=self.device
+            ).unsqueeze(0)
+            pos_state = self._build_position_state()
+            acct_state = self._build_account_state()
+            with torch.no_grad():
+                _out = self.model(x, position_state=pos_state, account_state=acct_state,
+                                  return_risk=True)
+                _ro = _out[-1]  # (1, 3)
+                _risk_stop = float(_ro[0, 0].item())
+                _risk_size_frac = float(_ro[0, 1].item())
+                _risk_conviction = float(_ro[0, 2].item())
+
+        if _risk_stop is not None:
+            stop_pct = _risk_stop
+        else:
+            from training.prepare import _FEAT_IDX
+            _iv_val = float(latest_features[_FEAT_IDX['atm_iv']]) if len(latest_features) > _FEAT_IDX['atm_iv'] else 0.0
+            _vix_val = float(latest_features[_FEAT_IDX['vix_regime']]) if len(latest_features) > _FEAT_IDX['vix_regime'] else 0.0
+            stop_pct = compute_dynamic_stop(inference.gate_trade_prob, _iv_val, _vix_val)
 
         stop_px = float(entry_mid * (1.0 - stop_pct))
-        # Set TP very wide (5x entry) — effectively no hardcoded TP.
-        # OCO bracket still needs a value, but model exit should fire first.
         take_profit_px = float(entry_mid * 6.0)
         qty = self._position_size(inference.confidence)
+        self._entry_conviction = _risk_conviction
         # Use LMT at ask (mid + small buffer) — IBKR rejects MKT orders on
         # SPXW due to worst-case margin calculation.
         entry_limit = round(entry_mid * 1.05, 2)  # 5% above mid
@@ -371,17 +393,53 @@ class ModelDecisionEngine:
         latest_features: np.ndarray,
         feature_window: np.ndarray | None = None,
     ) -> RiskUpdateIntent | None:
-        """Phase D: Value head provides exit intelligence.
+        """Risk management: trailing stop to lock profits + value head exit.
 
-        Queries the model's value head to predict remaining P&L.
-        Returns RiskUpdateIntent to exit when value drops below threshold.
+        Trailing stop tiers (based on unrealized P&L):
+          +30% → move stop to entry (breakeven)
+          +50% → move stop to +25%
+          +80% → move stop to +50%
+          +120% → move stop to +80%
+
+        Value head exit: if model predicts remaining P&L < threshold, exit.
         """
         if not self._in_trade or current_option_mid is None:
             return None
+
+        entry_px = state.fill_price or state.entry_price_reference
+        if entry_px is None or entry_px <= 0:
+            return None
+
+        unrealized_pct = (current_option_mid - entry_px) / entry_px
+        reason_codes: list[str] = []
+        new_stop = None
+
+        # === Trailing stop: lock in profits at tiers ===
+        _tiers = [
+            (1.20, 0.80),  # +120% unrealized → lock +80%
+            (0.80, 0.50),  # +80% → lock +50%
+            (0.50, 0.25),  # +50% → lock +25%
+            (0.30, 0.00),  # +30% → lock breakeven
+        ]
+        for trigger_pct, lock_pct in _tiers:
+            if unrealized_pct >= trigger_pct:
+                locked_stop = entry_px * (1.0 + lock_pct)
+                if locked_stop > state.current_stop:
+                    new_stop = locked_stop
+                    reason_codes.append(f"trailing_stop_lock_{int(lock_pct*100)}pct")
+                break
+
+        if new_stop is not None:
+            return RiskUpdateIntent(
+                position_id=state.position_id,
+                new_stop_price=new_stop,
+                reason_codes=reason_codes + [f"unrealized={unrealized_pct:.2%}"],
+            )
+
+        # === Value head exit (requires 2+ bars held) ===
         if self._bars_held < 2:
             return None
 
-        # Value head exit: requires feature_window for model forward pass
         _has_value_head = hasattr(self.model, 'value_head')
         if not _has_value_head or feature_window is None:
             return None
@@ -395,24 +453,47 @@ class ModelDecisionEngine:
         pos_state = self._build_position_state()
 
         with torch.no_grad():
-            _, _, value_pred = self.model(x, position_state=pos_state, return_value=True)
-            value = float(value_pred[0].item())
+            _vout = self.model(x, position_state=pos_state, return_value=True)
+            value = float(_vout[2][0].item())
 
-        # Exit when value head predicts low remaining upside
-        _threshold = 0.02  # VALUE_EXIT_THRESHOLD
-        if value < _threshold:
+        # v7: Value head is now a binary exit classifier (logits → sigmoid → probability)
+        import math
+        _exit_prob = 1.0 / (1.0 + math.exp(-value))
+        _conviction = getattr(self, '_entry_conviction', 0.0)
+        # High conviction → harder to exit (0.7), low conviction → easier to exit (0.5)
+        _threshold = 0.50 + _conviction * 0.20
+        if _exit_prob > _threshold:
             return RiskUpdateIntent(
                 position_id=state.position_id,
                 new_stop_price=current_option_mid * 1.01,  # above current → triggers flatten
-                reason_codes=["value_exit", f"value_pred={value:.4f}"],
+                reason_codes=["value_exit", f"exit_prob={_exit_prob:.4f}"],
             )
 
         return None
+
+    def _build_account_state(self) -> torch.Tensor | None:
+        """Build 4-dim account state tensor for risk head."""
+        _as_dim = getattr(self.model, 'ACCOUNT_STATE_DIM', 4)
+        acct = torch.zeros(1, _as_dim, device=self.device)
+        _balance = getattr(self, '_account_balance', 10000.0)
+        acct[0, 0] = _balance / 10000.0  # growth ratio
+        acct[0, 1] = min(math.log10(max(_balance, 1000) / 1000) / 3.0, 1.0)
+        acct[0, 2] = getattr(self, '_daily_pnl_frac', 0.0)
+        acct[0, 3] = getattr(self, '_win_rate_20', 0.0)
+        return acct
+
+    def set_account_state(self, balance: float, daily_pnl_frac: float = 0.0,
+                          win_rate_20: float = 0.0) -> None:
+        """Update account state from service (real IBKR balance)."""
+        self._account_balance = balance
+        self._daily_pnl_frac = daily_pnl_frac
+        self._win_rate_20 = win_rate_20
 
     def set_entry_context(self, confidence: float, stop_distance: float) -> None:
         """Called at entry time to record context for exit policy."""
         self._entry_confidence = confidence
         self._entry_stop_distance = stop_distance
+        self._entry_conviction = getattr(self, '_entry_conviction', 0.0)
         self._best_pnl = 0.0
         self._bars_since_high = 0
 

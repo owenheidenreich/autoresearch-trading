@@ -136,15 +136,16 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │  │          ▼                                                    │        │
 │  │   ┌──────────────┐                                            │        │
 │  │   │  VALIDATION  │  ─ AST syntax check                       │        │
-│  │   │  GATES       │  ─ Contract compliance (3-head, 37 feat)  │        │
+│  │   │  GATES       │  ─ Contract compliance (4-head, 37 feat)  │        │
 │  │   │              │  ─ Safety: no torch.compile/DDP            │        │
 │  │   └──────┬───────┘                                            │        │
 │  │          │ Pass                                                │        │
 │  │          ▼                                                    │        │
 │  │   ┌──────────────────────────────────────────┐                │        │
-│  │   │  TRAINING (subprocess, ~4 min budget)     │                │        │
+│  │   │  TRAINING (subprocess, ~6 min budget)     │                │        │
 │  │   │  train.py on H100 + data.pt               │                │        │
-│  │   │  ─ Three-head transformer (gate + direction + value) │     │        │
+│  │   │  ─ Four-head transformer                  │                │        │
+│  │   │    (gate + direction + value + risk)       │                │        │
 │  │   │  ─ Position-aware simulation               │                │        │
 │  │   │  ─ Validation early stopping               │                │        │
 │  │   └──────┬───────────────────────────────────┘                │        │
@@ -159,6 +160,14 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │                          │ Loop continues                                 │
 │                          ▼                                                │
 │  ARTIFACTS: experiments.v2.jsonl, status.json, artifacts/exp-*/          │
+│                                                                          │
+│  ══════ PBT MODE (Population-Based Training) ══════                      │
+│                                                                          │
+│  pbt-init → N members (generalists + specialists)                        │
+│  pbt-run  → each member trains with env-var overrides                    │
+│  Selection: elite carry-forward, exploit top-25%, explore top-50%        │
+│  Anti-stagnation: 2 random members after 2 stalled generations           │
+│  State: training/.pbt_state.json (resumable)                             │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -189,9 +198,9 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │  │                                                               │      │
 │  │  context.py    — 30-day historical context + normalization    │      │
 │  │  features.py   — 5s bars → 1m bars, same 37 features         │      │
-│  │  decision.py   — Model inference → gate + direction + value    │      │
+│  │  decision.py   — Model inference → gate + dir + value + risk  │      │
 │  │  resolver.py   — SPXW 0DTE contract resolution (ATM/OTM)     │      │
-│  │  execution.py  — LMT orders, dynamic stop (15-60%), audit    │      │
+│  │  execution.py  — LMT orders, dynamic stop, OCO brackets      │      │
 │  │  contracts.py  — Typed data contracts between components      │      │
 │  └───────────────────────────────────────────────────────────────┘      │
 │                                                                          │
@@ -201,6 +210,12 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │   │  ─ Option top-of-book + Greeks for 6 SPXW contracts         │      │
 │   │  ─ Aggregates to 1-min bars via FiveSecondMinuteAggregator  │      │
 │   └──────────────────────────────────────────────────────────────┘      │
+│                                                                          │
+│   Session Lifecycle:                                                     │
+│   1. Startup cleanup: cancel all orphaned orders                         │
+│   2. Bar loop: aggregate → features → inference → entry/exit             │
+│   3. Cooldown: 5-bar (5 min) block after stop-loss exits                 │
+│   4. Shutdown: flatten open positions, session summary                   │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -233,7 +248,7 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 6. Feature Parity Verification (confirmed 2026-03-24)
+## 6. Feature Parity Verification
 
 ```
               DATA FLOW PARITY: TRAINING = REPLAY = LIVE
@@ -263,17 +278,19 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 
 ---
 
-## 7. Model Architecture (v5 Three-Head)
+## 7. Model Architecture (v6 Four-Head)
 
 ```
-                    TradingModel — v5 Three-Head Architecture
+                    TradingModel — v6 Four-Head Architecture
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                                                                          │
 │  INPUT: (batch, lookback=120, 37 features)                               │
 │         │                                                                │
 │         ▼                                                                │
 │  ┌──────────────┐                                                        │
-│  │  input_proj   │  Linear(37 → d_model=64)                              │
+│  │  input_proj   │  Linear(37 → d_model=64) + GELU + Dropout            │
+│  │  input_norm   │  LayerNorm(64)                                        │
+│  │  pos_embed    │  Learned positional embedding (1, 120, 64)            │
 │  └──────┬───────┘                                                        │
 │         │                                                                │
 │         ▼                                                                │
@@ -283,84 +300,117 @@ Detailed ASCII architecture diagrams for the autonomous SPX 0DTE options trading
 │  │  ─ n_heads=4                                  │                        │
 │  │  ─ ff_mult=3 (feedforward = 192)              │                        │
 │  │  ─ norm_first=True (Pre-LN)                   │                        │
-│  │  ─ dropout=0.3                                │                        │
+│  │  ─ dropout=0.3, causal masking                │                        │
 │  │  Output: (batch, 120, 64) → last bar → (64,)  │                        │
 │  └──────┬───────────────────────────────────────┘                        │
 │         │                                                                │
-│         │ ┌─────────────────────────────────────────┐                    │
-│         │ │  POSITION STATE (7 dims, runtime-built)  │                    │
-│         │ │  [0] in_trade       (0 or 1)             │                    │
-│         │ │  [1] bars_held      (normalized /60)     │                    │
-│         │ │  [2] unrealized_pnl (raw %)              │                    │
-│         │ │  [3] entry_gate_confidence               │                    │
-│         │ │  [4] dynamic_stop   (current stop level) │                    │
-│         │ │  [5] best_pnl_since_entry                │                    │
-│         │ │  [6] bars_since_pnl_high (/60)           │                    │
-│         │ └──────────┬──────────────────────────────┘                    │
+│         │ ┌─────────────────────────────────────────────┐                │
+│         │ │  POSITION STATE (7 dims, runtime-built)      │                │
+│         │ │  [0] in_trade       (0 or 1)                 │                │
+│         │ │  [1] bars_held      (normalized /390)        │                │
+│         │ │  [2] unrealized_pnl (tanh-scaled)            │                │
+│         │ │  [3] account_health (balance / capital)      │                │
+│         │ │  [4] loss_streak    (consecutive / 3.0)      │                │
+│         │ │  [5] best_pnl_since_entry (tanh-scaled)      │                │
+│         │ │  [6] bars_since_pnl_high (/390)              │                │
+│         │ └──────────┬──────────────────────────────────┘                │
 │         │            │                                                    │
 │         │     ┌──────┴──────┐                                            │
 │         │     │ position_proj│  Linear(7 → d_model//4=16)                │
 │         │     └──────┬──────┘                                            │
 │         │            │                                                    │
-│         └────────────┤  concat → (64 + 16 = 80)                         │
-│                      │                                                    │
-│         ┌────────────┼────────────────────────────────────────┐          │
-│         │            │                                        │          │
-│    ┌────┴────┐  ┌────┴────┐                             ┌────┴────┐    │
-│    │ PHASE A │  │ PHASE B │                             │ PHASE D │    │
-│    │ Gate    │  │Direction│                             │ Value   │    │
-│    │ Head    │  │ Head    │                             │ Head    │    │
-│    ├─────────┤  ├─────────┤                             ├─────────┤    │
-│    │ LN(80)  │  │ LN(80)  │                             │ Lin→64  │    │
-│    │ Lin→40  │  │ Lin→40  │                             │ LN(64)  │    │
-│    │ GELU    │  │ GELU    │                             │ Lin→32  │    │
-│    │ Drop    │  │ Drop    │                             │ GELU    │    │
-│    │ Lin→2   │  │ Lin→6   │                             │ Drop    │    │
-│    ├─────────┤  ├─────────┤                             │ Lin→1   │    │
-│    │NO_TRADE │  │CALL_ATM │                             ├─────────┤    │
-│    │TRADE    │  │CALL_OTM5│                             │ Scalar: │    │
-│    │         │  │CALL_OTM10                             │ predicted│    │
-│    │ softmax │  │PUT_ATM  │                             │ remaining│    │
-│    │ → prob  │  │PUT_OTM5 │                             │ P&L     │    │
-│    │         │  │PUT_OTM10│                             │ (MSE)   │    │
-│    └────┬────┘  └────┬────┘                             └────┬────┘    │
-│         │            │                                        │          │
-│    Entry/Exit   Strike+Dir                              Exit Signal     │
-│    Decision     Selection                               (value < θ)    │
+│         │            │  pos_emb (16)                                     │
+│         │            │                                                    │
+│    ┌────┼────────────┼────────────────────────────────────────┐          │
+│    │    │            │                                        │          │
+│    │    └────┬───────┤                                        │          │
+│    │         │       │                                        │          │
+│    │  ┌──────┴────┐  │                                        │          │
+│    │  │gate_proj  │  │  Linear(64+16=80 → 64)                │          │
+│    │  └──────┬────┘  │                                        │          │
+│    │         │       │                                        │          │
+│    ▼         ▼       ▼                                        ▼          │
+│  ┌─────┐ ┌─────┐ ┌─────┐ ┌──────────────────────────────┐ ┌─────┐     │
+│  │  A  │ │  B  │ │  D  │ │           E                   │ │ ToD │     │
+│  │Gate │ │ Dir │ │Value│ │         Risk                  │ │Weight│     │
+│  │Head │ │Head │ │Head │ │         Head                  │ │Logit│     │
+│  ├─────┤ ├─────┤ ├─────┤ ├──────────────────────────────┤ ├─────┤     │
+│  │LN   │ │LN   │ │value│ │                              │ │390  │     │
+│  │→32  │ │→32  │ │_proj│ │ ┌────────────────────────┐   │ │learn│     │
+│  │GELU │ │GELU │ │(80→ │ │ │ ACCOUNT STATE (4 dims) │   │ │able │     │
+│  │Drop │ │Drop │ │ 64) │ │ │ [0] growth_ratio       │   │ │     │     │
+│  │→2   │ │→6   │ │LN   │ │ │ [1] log_account_size   │   │ │     │     │
+│  ├─────┤ ├─────┤ │→32  │ │ │ [2] daily_pnl_frac     │   │ │     │     │
+│  │NO_  │ │CALL │ │GELU │ │ │ [3] win_rate_20        │   │ │     │     │
+│  │TRADE│ │_ATM │ │Drop │ │ └──────────┬─────────────┘   │ │     │     │
+│  │TRADE│ │CALL │ │→1   │ │            │                  │ │     │     │
+│  │     │ │_OTM5│ ├─────┤ │  risk_account_proj (4→16)    │ │     │     │
+│  │soft │ │CALL │ │MSE  │ │  risk_proj (64+16+16=96→64)  │ │     │     │
+│  │max  │ │_OTM │ │on   │ │  risk_head: LN→32→GELU→3     │ │     │     │
+│  │→prob│ │ 10  │ │rem  │ ├──────────────────────────────┤ │     │     │
+│  │     │ │PUT_ │ │P&L  │ │ stop_pct:  sigmoid [0.15-0.6]│ │     │     │
+│  │     │ │ATM  │ │     │ │ size_frac: sigmoid [0-1]     │ │     │     │
+│  │     │ │PUT_ │ │     │ │ conviction: tanh [-1, +1]    │ │     │     │
+│  │     │ │OTM5 │ │     │ │                              │ │     │     │
+│  │     │ │PUT_ │ │     │ │ Account-aware: sees balance, │ │     │     │
+│  │     │ │OTM10│ │     │ │ daily P&L, win rate          │ │     │     │
+│  └──┬──┘ └──┬──┘ └──┬──┘ └──────────────┬───────────────┘ └──┬──┘     │
+│     │       │       │                    │                     │        │
+│  Entry/  Strike   Exit                Learned              Time-of-    │
+│  Exit    +Dir    Signal              Stop+Size             Day Loss    │
+│  Decis.  Select  (val<θ)            +Conviction           Weights     │
 │                                                                          │
-│  Phase C: Dynamic stop-loss computed from gate confidence + IV + VIX    │
-│           (not a neural network head — formula-based, 15%-60% range)    │
+│  Phase C: Dynamic stop-loss from risk head OR formula fallback          │
+│           stop = risk_head[0] mapped to [0.15, 0.60]                    │
+│           Fallback: BASE * confidence * iv_factor * vix_factor          │
 └──────────────────────────────────────────────────────────────────────────┘
 
 EXIT PRIORITY (identical across train/replay/IBKR):
-  1. STOP_LOSS    — price hits dynamic stop level
-  2. MODEL_EXIT   — gate head says NO_TRADE while holding
+  1. STOP_LOSS    — price hits dynamic stop level (risk head or formula)
+  2. MODEL_EXIT   — gate head says NO_TRADE while holding (bars_held ≥ 2)
   3. VALUE_EXIT   — value head predicts remaining P&L < threshold (0.02)
-  4. MAX_HOLD     — held for 60 bars (1 hour)
+  4. MAX_HOLD     — held for 390 bars (EOD)
   5. EOD          — end of trading day
+
+TRAILING STOP TIERS (live only):
+  +120% unrealized → lock +80%
+  +80%  unrealized → lock +50%
+  +50%  unrealized → lock +25%
+  +30%  unrealized → lock breakeven
 ```
 
-### How the Phases Work Together ("Swarm Intelligence")
+### How the Phases Work Together
 
 | Phase | Head/Module | What It Decides | Training Signal |
 |-------|-------------|-----------------|-----------------|
-| **A** | Gate head | Enter trade? Exit trade? | Cross-entropy vs optimal entry/exit labels |
+| **A** | Gate head | Enter trade? Exit trade? | Cross-entropy vs EV-weighted soft labels |
 | **B** | Direction head | Which strike + direction? | Cross-entropy vs best-performing option |
-| **C** | Dynamic stop (formula) | Where to place stop-loss? | Not learned — derived from gate confidence + market regime |
+| **C** | Dynamic stop (formula/risk) | Where to place stop-loss? | Risk head: MSE on optimal stop; Formula: gate confidence + IV + VIX |
 | **D** | Value head | Is remaining upside worth holding? | MSE regression vs actual remaining P&L (clamped [-1, 1]) |
+| **E** | Risk head | How much to risk? How confident? | MSE on stop distance + size fraction + conviction signal |
 
-All four phases share the **same transformer backbone** — they see the same 120 bars of 37 features. The position state (7 dims) gives them trade context. During a single forward pass, the model produces all three outputs simultaneously. The phases cooperate:
+All four heads share the **same transformer backbone** — they see the same 120 bars of 37 features. The position state (7 dims) gives them trade context. The risk head additionally receives account state (4 dims). During a single forward pass, the model produces all outputs simultaneously:
 
 - Gate (A) opens positions. Value (D) can close them early if upside is gone.
-- Direction (B) picks the strike. The stop (C) adapts based on how confident gate was at entry.
-- Value (D) learns from realized P&L, creating a feedback loop with the stop (C) — trades that get stopped teach the value head what "bad remaining P&L" looks like.
+- Direction (B) picks the strike. Risk (E) sets the stop distance based on account health.
+- Value (D) learns from realized P&L, creating a feedback loop with stops — trades that get stopped teach the value head what "bad remaining P&L" looks like.
+- Risk (E) learns position sizing and conviction, adapting to account drawdowns.
 
-### PBT-Evolvable Parameters (Value Head)
+### Loss Weights
 
-| Env Var | Default | Range | What It Controls |
-|---------|---------|-------|------------------|
-| `TRAIN_VALUE_W` | 0.3 | 0.0 - 2.0 | How much value loss contributes to total loss |
-| `TRAIN_VALUE_EXIT_THRESH` | 0.02 | -0.5 - 0.5 | Below this predicted P&L → exit trade |
+| Weight | Default | Env Var | What It Controls |
+|--------|---------|---------|------------------|
+| Gate loss | 0.5 | `TRAIN_GATE_W` | Entry/exit signal quality |
+| Direction loss | 2.5 | `TRAIN_DIR_W` | Strike selection accuracy |
+| PnL alignment | 0.5 | `TRAIN_PNL_W` | P&L-weighted supervision |
+| Exit loss | 0.15 | `TRAIN_EXIT_W` | Exit timing quality |
+| Confidence loss | 0.10 | `TRAIN_CONF_W` | Calibration of gate probability |
+| Value loss | 0.3 | `TRAIN_VALUE_W` | Remaining P&L prediction |
+| Risk loss | 0.2 | `TRAIN_RISK_W` | Stop + size + conviction |
+
+### PBT-Evolvable Parameters
+
+All hyperparameters are readable via `_env_float`/`_env_int` and can be overridden by PBT env vars. Three tiers: loss weights, optimizer params, regularization/sampling. See `tools/inner_loop.py` PBT section for full parameter space.
 
 ---
 
@@ -396,15 +446,15 @@ All four phases share the **same transformer backbone** — they see the same 12
 ┌──────────────────────┐   ┌───────────────┐   ┌──────────────────────┐
 │  live/context.py     │──▶│ live/         │──▶│  live/execution.py   │
 │  30-day feature      │   │ decision.py   │   │  OCO orders → IBKR  │
-│  context bundle      │   │ Model infer   │   │  Paper account       │
+│  context bundle      │   │ 4-head infer  │   │  Paper account       │
 └──────────────────────┘   └───────────────┘   └──────────────────────┘
 ```
 
 ---
 
-## 8. ART² Meta-Loop (`tools/art2.py`)
+## 9. ART² Meta-Loop (`tools/art2.py`)
 
-ART² is a two-loop autonomous system. The **outer loop** (Opus) makes strategic decisions grounded in domain knowledge. The **inner loop** (Sonnet agents) optimizes train.py within constraints. See the [operating manual](../.claude/rules/art2-operating-manual.md) for full lifecycle details.
+ART² is a two-loop autonomous system. The **outer loop** (Opus) makes strategic decisions grounded in domain knowledge. The **inner loop** (Sonnet agents) optimizes train.py within constraints. See the [operating manual](../../.claude/rules/art2-operating-manual.md) for full lifecycle details.
 
 ```
                     ART² TWO-LOOP ARCHITECTURE
@@ -429,6 +479,11 @@ ART² is a two-loop autonomous system. The **outer loop** (Opus) makes strategic
 │              score formula, new loss terms                           │
 │   Each experiment: ~6 min (propose → validate → train → score)       │
 │                                                                      │
+│   PBT MODE: Population of N members competing per generation         │
+│   ─ pbt-init: create population (generalists + specialists)          │
+│   ─ pbt-run: train all members, select winners, mutate losers        │
+│   ─ pbt-status: inspect current PBT state                            │
+│                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -441,7 +496,8 @@ ART² is a two-loop autonomous system. The **outer loop** (Opus) makes strategic
        ├── ANALYZE: experiments.v2.jsonl → analysis.json
        ├── REPLAY: backtest best_model.pt on val dates
        ├── RESEARCH: trade-level analysis vs domain knowledge
-       ├── REPORT: briefing.md with research findings
+       ├── VIABILITY: profitability assessment → verdict
+       ├── REPORT: briefing.md with research + viability findings
        ├── IMPROVE: Opus reads briefing, applies strategic changes
        ├── DOCUMENT: Update chronicle, notebooks
        └── REVIEW: Human approval gate (REVIEW sentinel file)

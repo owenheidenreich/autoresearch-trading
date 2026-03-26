@@ -1,20 +1,13 @@
 """
-Autoresearch-trading v4: simplified two-head model for SPX 0DTE options.
+Autoresearch-trading v6: four-head model for SPX 0DTE options.
 Single-GPU, single-file. The agent modifies THIS file.
 
-v4 changes from v3:
-  - Smaller model (3 layers, d_model=64) to prevent memorization
-  - Real dropout (0.15) for regularization
-  - Time-budgeted training: runs until TIME_BUDGET seconds, final evaluation once
-  - No warm start (forced fresh training — old weights exploited oracle exits)
-  - Removed: DynamicStopModule, QualityGate, Greeks-adaptive loss weights
-  - Kept: 2-head gate+dir, position state, 37 features (v3), causal exit labels
-  - Asymmetric gate loss: false entries penalized 2x vs missed entries
-
-Two-head architecture:
-  Gate head: (batch, 2) — [NO_TRADE, TRADE]
+Four-head architecture:
+  Gate head:      (batch, 2) — [NO_TRADE, TRADE]
   Direction head: (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
-                                  PUT_ATM, PUT_OTM5, PUT_OTM10]
+                                 PUT_ATM, PUT_OTM5, PUT_OTM10]
+  Value head:     (batch, 1) — remaining P&L prediction (exit intelligence)
+  Risk head:      (batch, 3) — [stop_pct, size_frac, conviction] (account-aware risk)
 
 Combined into 8 actions:
   DO_NOTHING (0), BUY_CALL_ATM (1), BUY_CALL_OTM5 (2), BUY_CALL_OTM10 (3),
@@ -122,6 +115,7 @@ EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.15, lo=0.0, hi=2.0)  # Increased
 CONFIDENCE_LOSS_WEIGHT = _env_float("TRAIN_CONF_W", 0.10, lo=0.0, hi=1.0)  # Confidence calibration: reward high conf on winners, penalize on losers
 VALUE_LOSS_WEIGHT = _env_float("TRAIN_VALUE_W", 0.3, lo=0.0, hi=2.0)  # Phase D: value head MSE on remaining P&L
 VALUE_EXIT_THRESHOLD = _env_float("TRAIN_VALUE_EXIT_THRESH", 0.02, lo=-0.5, hi=0.5)  # Exit when value_pred < threshold
+RISK_LOSS_WEIGHT = _env_float("TRAIN_RISK_W", 0.2, lo=0.0, hi=2.0)  # Phase E: risk head (stop + size + conviction)
 
 # Asymmetric gate penalty: how much more to penalize false entries vs missed entries
 # >1.0 means "it's worse to trade when you shouldn't than to miss a trade"
@@ -176,28 +170,34 @@ FEATURE_GROUPS = {
 
 
 # ---------------------------------------------------------------------------
-# Model — v4: simplified, regularized
+# Model — v6: four-head (gate + direction + value + risk)
 # ---------------------------------------------------------------------------
 
 
 class TradingModel(nn.Module):
-    """Three-head model for SPX 0DTE options.
+    """Four-head model for SPX 0DTE options (v6).
 
     Architecture:
     - Shared transformer backbone
     - Gate head: (batch, 2) — [NO_TRADE, TRADE]  (entry/exit signal)
     - Direction head: (batch, 6) — strike selection
-    - Value head: (batch, 1) — expected remaining P&L  (Phase D: exit intelligence)
+    - Value head: (batch, 1) — expected remaining P&L  (exit intelligence)
+    - Risk head: (batch, 3) — [stop_pct, size_frac, conviction]  (account-aware risk)
 
-    Position state: 7 dims (expanded from 5 for value head context)
+    Position state: 7 dims
       [0] in_trade, [1] bars_held, [2] unrealized_pnl, [3] account_health,
       [4] loss_streak, [5] best_pnl_since_entry, [6] bars_since_pnl_high
 
+    Account state: 4 dims (separate input, risk head only)
+      [0] account_growth_ratio, [1] log_account_size,
+      [2] daily_pnl_fraction, [3] win_rate_20
+
     Input:  (batch, lookback, NUM_FEATURES)
-    Output: (gate_logits, dir_logits) or (gate_logits, dir_logits, value_pred)
+    Output: (gate_logits, dir_logits) or with return_value/return_risk flags
     """
 
     POSITION_STATE_DIM = 7  # class constant for external reference
+    ACCOUNT_STATE_DIM = 4   # separate from position state for backward compat
 
     def __init__(self, num_features=NUM_FEATURES, lookback=LOOKBACK,
                  d_model=D_MODEL, n_heads=N_HEADS, n_layers=DEPTH,
@@ -257,6 +257,18 @@ class TradingModel(nn.Module):
             nn.Linear(d_model // 2, 1),
         )
 
+        # Risk head: account-aware risk management (v6)
+        # Separate account state input — only risk head uses it
+        self.risk_account_proj = nn.Linear(self.ACCOUNT_STATE_DIM, d_model // 4)  # 4 → 16
+        self.risk_proj = nn.Linear(d_model + d_model // 4 + d_model // 4, d_model)  # 64+16+16 → 64
+        self.risk_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),  # 64 → 32
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 3),        # 32 → 3: stop_pct, size_frac, conviction
+        )
+
         # Learned time-of-day loss weights: model discovers which bars matter most
         # 390 learnable weights (one per bar of day), initialized to 0 (neutral via softplus)
         self.tod_weight_logits = nn.Parameter(torch.zeros(BARS_PER_DAY))
@@ -278,19 +290,19 @@ class TradingModel(nn.Module):
             self.dir_head[-1].bias[4] -= 0.15   # PUT_OTM5 penalty (increased)
             self.dir_head[-1].bias[5] -= 0.20   # PUT_OTM10 penalty (increased)
 
-    def forward(self, x, position_state=None, return_value=False):
+            # Risk head bias init (domain knowledge priors)
+            self.risk_head[-1].bias[0] = 0.0   # sigmoid(0)=0.5 → mid-range stop (~0.35)
+            self.risk_head[-1].bias[1] = -1.0  # sigmoid(-1)≈0.27 → conservative sizing
+            self.risk_head[-1].bias[2] = 0.0   # tanh(0)=0 → neutral conviction
+
+    def forward(self, x, position_state=None, account_state=None,
+                return_value=False, return_risk=False):
         batch_size = x.shape[0]
         device = x.device
 
-        # When position_state not provided, use flat state (not holding, healthy account)
-        # This matches evaluation semantics: flat = not in a trade
         if position_state is None:
             position_state = torch.zeros(batch_size, self.POSITION_STATE_DIM, device=device)
             position_state[:, 3] = 1.0  # account_health = 1.0
-        elif position_state.shape[-1] < self.POSITION_STATE_DIM:
-            # Backward compat: pad old 5-dim state to 7-dim
-            pad = torch.zeros(batch_size, self.POSITION_STATE_DIM - position_state.shape[-1], device=device)
-            position_state = torch.cat([position_state, pad], dim=-1)
 
         x_proj = self.input_proj(x)
         x_proj = self.input_norm(x_proj)
@@ -306,13 +318,27 @@ class TradingModel(nn.Module):
         gate_logits = self.gate_head(gate_input)
         dir_logits = self.dir_head(last)
 
+        outputs = (gate_logits, dir_logits)
+
         if return_value:
-            # Value head: shares backbone + position state
             value_input = self.value_proj(torch.cat([last, pos_emb], dim=-1))
             value_pred = self.value_head(value_input).squeeze(-1)  # (batch,)
-            return gate_logits, dir_logits, value_pred
+            outputs = outputs + (value_pred,)
 
-        return gate_logits, dir_logits
+        if return_risk:
+            if account_state is None:
+                account_state = torch.zeros(batch_size, self.ACCOUNT_STATE_DIM, device=device)
+                account_state[:, 0] = 1.0  # neutral growth ratio
+            acct_emb = torch.relu(self.risk_account_proj(account_state))
+            risk_input = self.risk_proj(torch.cat([last, pos_emb, acct_emb], dim=-1))
+            risk_raw = self.risk_head(risk_input)
+            stop_pct = 0.15 + 0.45 * torch.sigmoid(risk_raw[:, 0])   # [0.15, 0.60]
+            size_frac = torch.sigmoid(risk_raw[:, 1])                  # [0, 1]
+            conviction = torch.tanh(risk_raw[:, 2])                    # [-1, +1]
+            risk_output = torch.stack([stop_pct, size_frac, conviction], dim=-1)
+            outputs = outputs + (risk_output,)
+
+        return outputs if len(outputs) > 2 else outputs
 
 
 # ---------------------------------------------------------------------------
@@ -708,7 +734,7 @@ if __name__ == "__main__":
     model = TradingModel().to(device)
     num_params = sum(p.numel() for p in model.parameters())
     print(f"Parameters: {num_params:,}")
-    print(f"Architecture: v5 three-head (gate+dir+value), ATM-biased, 7-dim position state")
+    print(f"Architecture: v6 four-head (gate+dir+value+risk), ATM-biased, 7-dim position + 4-dim account state")
 
     # Warm start: load best_model.pt if it exists and shapes are compatible
     _warm_start_loaded = False
@@ -722,10 +748,11 @@ if __name__ == "__main__":
             # Architecture version gate: reject incompatible checkpoints
             _ckpt_arch = _ckpt.get('architecture', 'unknown') if isinstance(_ckpt, dict) else 'unknown'
             _ckpt_has_value = _ckpt.get('has_value_head', False) if isinstance(_ckpt, dict) else ('value_head.4.weight' in _state)
+            _ckpt_has_risk = _ckpt.get('has_risk_head', False) if isinstance(_ckpt, dict) else ('risk_head.4.weight' in _state)
             _ckpt_pos_dim = _ckpt.get('position_state_dim', 5) if isinstance(_ckpt, dict) else (_state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
-            if not _ckpt_has_value or _ckpt_pos_dim < TradingModel.POSITION_STATE_DIM:
-                print(f"WARNING: Checkpoint incompatible (arch={_ckpt_arch}, value_head={_ckpt_has_value}, pos_dim={_ckpt_pos_dim}).")
-                print(f"  Current model requires: value_head=True, pos_dim={TradingModel.POSITION_STATE_DIM}.")
+            if not _ckpt_has_value or not _ckpt_has_risk or _ckpt_pos_dim < TradingModel.POSITION_STATE_DIM:
+                print(f"WARNING: Checkpoint incompatible (arch={_ckpt_arch}, value_head={_ckpt_has_value}, risk_head={_ckpt_has_risk}, pos_dim={_ckpt_pos_dim}).")
+                print(f"  Current model requires: value_head=True, risk_head=True, pos_dim={TradingModel.POSITION_STATE_DIM}.")
                 print(f"  Rejecting warm start — training from scratch.")
                 raise ValueError("Architecture version mismatch")
             _missing, _unexpected = model.load_state_dict(_state, strict=False)
@@ -824,6 +851,7 @@ if __name__ == "__main__":
     print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
     print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}")
     print(f"Exit override strength: {EXIT_LOSS_WEIGHT} (gate targets flipped on exit bars)")
+    print(f"Risk loss weight: {RISK_LOSS_WEIGHT} (stop + size + conviction)")
     print(f"Position state: flat for random batches, tracked for day-sequential")
     print()
 
@@ -1006,7 +1034,12 @@ if __name__ == "__main__":
     step = 0
     smooth_loss = 0.0
     _day_seq_position_state = None  # carried across bars within a day
+    _day_seq_account_state = None   # account state for risk head
     _day_seq_step_count = 0  # bars processed in current day sequence
+    _day_seq_win_count = 0   # rolling win count for account state
+    _day_seq_trade_count = 0 # rolling trade count for account state
+    _day_seq_daily_pnl = 0.0 # accumulated P&L for current day
+    _day_seq_account_balance = 10000.0  # simulated account balance
 
     while True:
         model.train()
@@ -1026,10 +1059,21 @@ if __name__ == "__main__":
                 # Start of new day — reset position state (7 dims)
                 _day_seq_position_state = torch.zeros(x_seq.shape[0], TradingModel.POSITION_STATE_DIM, device=device)
                 _day_seq_position_state[:, 3] = 1.0  # account_health = 1.0
+                # Reset daily P&L, build account state
+                _day_seq_daily_pnl = 0.0
+                _win_rate = _day_seq_win_count / max(_day_seq_trade_count, 1)
+                _day_seq_account_state = torch.zeros(x_seq.shape[0], TradingModel.ACCOUNT_STATE_DIM, device=device)
+                _day_seq_account_state[:, 0] = _day_seq_account_balance / 10000.0  # growth ratio
+                _day_seq_account_state[:, 1] = min(math.log10(max(_day_seq_account_balance, 1000) / 1000) / 3.0, 1.0)  # log scale
+                _day_seq_account_state[:, 2] = 0.0  # daily P&L resets
+                _day_seq_account_state[:, 3] = _win_rate  # rolling win rate
 
             with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=_use_amp):
-                gate_logits, dir_logits, value_pred = model(
-                    x_seq, position_state=_day_seq_position_state, return_value=True)
+                _fwd_out = model(
+                    x_seq, position_state=_day_seq_position_state,
+                    account_state=_day_seq_account_state,
+                    return_value=True, return_risk=True)
+                gate_logits, dir_logits, value_pred, risk_output = _fwd_out
 
                 time_feat = x_seq[:, -1, IDX_MINUTES_TO_CLOSE]
                 batch_features = x_seq[:, -1, :]
@@ -1052,31 +1096,52 @@ if __name__ == "__main__":
                     call_stopped_wide=y_dict.get('call_stopped_wide'),
                     put_stopped_tight=y_dict.get('put_stopped_tight'),
                     put_stopped_wide=y_dict.get('put_stopped_wide'),
-                    is_holding=_day_seq_position_state[:, 0],  # holding flag from position state
+                    is_holding=_day_seq_position_state[:, 0],
                     tod_weight_logits=model.tod_weight_logits,
                 )
 
-                # Phase D: Value head loss (only for bars where model is holding)
-                # Target: best remaining P&L from current bar (how much upside is left)
-                # For bars not holding, value target is 0 (no trade value)
-                if VALUE_LOSS_WEIGHT > 0:
-                    _holding = _day_seq_position_state[:, 0] > 0.5
-                    if _holding.any():
-                        # Current best P&L across 6 option types
-                        _all_stopped = torch.stack([
-                            y_dict['call_stopped'], y_dict['put_stopped'],
-                            y_dict['otm5c_stopped'], y_dict['otm5p_stopped'],
-                            y_dict['otm10c_stopped'], y_dict['otm10p_stopped'],
-                        ], dim=-1)
-                        _cur_best = torch.nan_to_num(_all_stopped, nan=-999.0).max(dim=-1).values
-                        # Value target = current bar's P&L (the "remaining value" target
-                        # will be refined as: final_pnl - current_pnl, but during sequential
-                        # training we only see one bar at a time, so we use the raw P&L as
-                        # a proxy — the model learns to predict current trade quality)
-                        _value_target = _cur_best[_holding].clamp(-1.0, 1.0)
-                        _value_pred_holding = value_pred[_holding]
-                        _value_loss = F.mse_loss(_value_pred_holding, _value_target)
-                        loss = loss + VALUE_LOSS_WEIGHT * _value_loss
+                # Current best P&L across 6 option types (shared by value + risk heads)
+                _all_stopped = torch.stack([
+                    y_dict['call_stopped'], y_dict['put_stopped'],
+                    y_dict['otm5c_stopped'], y_dict['otm5p_stopped'],
+                    y_dict['otm10c_stopped'], y_dict['otm10p_stopped'],
+                ], dim=-1)
+                _cur_best = torch.nan_to_num(_all_stopped, nan=-999.0).max(dim=-1).values
+
+                # Phase D: Value head loss (only while holding)
+                _holding = _day_seq_position_state[:, 0] > 0.5
+                if VALUE_LOSS_WEIGHT > 0 and _holding.any():
+                    _value_target = _cur_best[_holding].clamp(-1.0, 1.0)
+                    _value_pred_holding = value_pred[_holding]
+                    _value_loss = F.mse_loss(_value_pred_holding, _value_target)
+                    loss = loss + VALUE_LOSS_WEIGHT * _value_loss
+
+                # Phase E: Risk head loss (only while holding)
+                if RISK_LOSS_WEIGHT > 0 and _holding.any():
+                    _risk_holding = risk_output[_holding]  # (n_holding, 3)
+                    _pred_stop = _risk_holding[:, 0]
+                    _pred_size = _risk_holding[:, 1]
+                    _pred_conv = _risk_holding[:, 2]
+                    _pnl_holding = _cur_best[_holding]
+
+                    # 1. Stop distance hindsight (weight 0.5)
+                    # Optimal stop = just wider than max adverse excursion
+                    # Proxy: for winners, stop should be tight; for losers, wider
+                    _mae_proxy = (-_day_seq_position_state[_holding, 2]).clamp(0.0)  # unrealized drawdown
+                    _optimal_stop = (0.15 + _mae_proxy * 0.45 * 1.1).clamp(0.15, 0.60)
+                    _stop_loss_risk = F.mse_loss(_pred_stop, _optimal_stop)
+
+                    # 2. Position size reward (weight 0.3)
+                    _acct_growth = _day_seq_account_state[_holding, 0].clamp(0.5, 1.0) if _day_seq_account_state is not None else torch.ones_like(_pred_size)
+                    _size_target = torch.sigmoid(_pnl_holding * 5.0) * _acct_growth
+                    _size_loss = F.mse_loss(_pred_size, _size_target)
+
+                    # 3. Conviction-exit interaction (weight 0.2)
+                    _conv_target = torch.tanh(_pnl_holding * 3.0)
+                    _conv_loss = F.mse_loss(_pred_conv, _conv_target)
+
+                    _risk_loss = 0.5 * _stop_loss_risk + 0.3 * _size_loss + 0.2 * _conv_loss
+                    loss = loss + RISK_LOSS_WEIGHT * _risk_loss
 
             # Update position state for next bar (fp32, outside autocast)
             _day_seq_position_state = _update_position_state(
@@ -1232,10 +1297,12 @@ if __name__ == "__main__":
             'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
             'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
             'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
-            'architecture': 'v5_three_head_gate_dir_value',
+            'architecture': 'v6_four_head_gate_dir_value_risk',
             'false_entry_penalty': FALSE_ENTRY_PENALTY,
             'position_state_dim': TradingModel.POSITION_STATE_DIM,
+            'account_state_dim': TradingModel.ACCOUNT_STATE_DIM,
             'has_value_head': True,
+            'has_risk_head': True,
         },
         'training_dynamics': {
             'batch_size': BATCH_SIZE,

@@ -62,6 +62,11 @@ DYNAMIC_STOP_MIN     = 0.15    # minimum stop-loss (floor)
 DYNAMIC_STOP_MAX     = 0.60    # maximum stop-loss (ceiling)
 MAX_HOLD_BARS        = BARS_PER_DAY  # hold until stop/profit/EOD (0DTE closes at EOD)
 STOP_COOLDOWN_BARS   = 5       # 5-bar (5-min) cooldown after stop loss before re-entry
+
+# Position state tanh scaling — shared across train.py, prepare.py, decision.py, replay.py
+# Agents can tune via env var (e.g. PNL_TANH_SCALE=3.0). All files import from here.
+PNL_TANH_SCALE       = float(os.environ.get("PNL_TANH_SCALE", 5.0))
+BEST_PNL_TANH_SCALE  = float(os.environ.get("BEST_PNL_TANH_SCALE", 2.0))
 NO_TRADE_BEFORE_BAR  = 30      # first 30 bars (9:30-9:59) are hard no-trade
 MAX_TRADE_RETURN     = 5.0     # cap individual trade P&L at 500% (allow large winners with learned exits)
 STARTING_CAPITAL     = 10_000.0  # starting account balance ($10k paper trading account)
@@ -2270,16 +2275,16 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     exit_call_label = np.full(N, np.nan, dtype=np.float32)
     exit_put_label = np.full(N, np.nan, dtype=np.float32)
 
-    # Max lookback for exit labels (limit to 120 bars for performance)
-    _exit_lookback = min(MAX_HOLD_BARS, 120)
-    # Trailing stop threshold: exit if P&L drops this fraction from high-water mark
-    _trail_drop_frac = 0.50
-    # Minimum HWM before trailing stop activates (avoid noisy exits on tiny gains)
-    _trail_min_hwm = 0.05
-    # Momentum stall: exit if P&L hasn't improved in this many bars
-    _stall_bars = 10
-    # Minimum P&L to trigger stall-based exit (don't exit stalls on losing trades)
-    _stall_min_pnl = 0.02
+    # Exit label parameters (v7: hindsight peak detection for profitable entries only)
+    _exit_lookback = int(os.environ.get("EXIT_LOOKBACK", 15))
+    _trail_drop_frac = float(os.environ.get("EXIT_TRAIL_DROP", 0.40))
+    _trail_min_hwm = float(os.environ.get("EXIT_TRAIL_MIN_HWM", 0.03))
+    _stall_bars = int(os.environ.get("EXIT_STALL_BARS", 6))
+    _stall_min_pnl = float(os.environ.get("EXIT_STALL_MIN_PNL", 0.02))
+    _tp_threshold = float(os.environ.get("EXIT_TP_THRESHOLD", 0.20))
+    # Minimum entry P&L to generate exit labels (skip deeply underwater entries)
+    # -0.05 means skip entries that are >5% underwater — these are stop-loss territory, not exit signals
+    _min_entry_pnl = float(os.environ.get("EXIT_MIN_ENTRY_PNL", -0.05))
 
     for i in range(N):
         best_call_exit = 0.0
@@ -2299,6 +2304,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 unrealized_now = (cc - ec) / ec - SPREAD_COST_PCT
                 has_call_data = True
 
+                # v7: Skip underwater entries — only generate exit labels for profitable trades
+                if unrealized_now < _min_entry_pnl:
+                    continue
+
                 # Find high-water mark from entry to current bar (backward only)
                 hwm = unrealized_now
                 for back in range(1, k + 1):
@@ -2309,7 +2318,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                     if not np.isnan(pc) and ec > 0:
                         hwm = max(hwm, (pc - ec) / ec - SPREAD_COST_PCT)
 
-                # Signal 1: Trailing stop — P&L dropped >50% from HWM
+                # Signal 1: Trailing stop — P&L dropped significantly from HWM
                 if hwm > _trail_min_hwm and unrealized_now < hwm * (1.0 - _trail_drop_frac):
                     best_call_exit = 1.0
 
@@ -2323,12 +2332,20 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                             if unrealized_now <= pnl_at_stall:
                                 best_call_exit = 1.0
 
+                # Signal 3: Take profit — P&L exceeds threshold
+                if unrealized_now >= _tp_threshold:
+                    best_call_exit = 1.0
+
             # --- Put: same causal logic ---
             ep = atm_put_prices[entry]
             cp = atm_put_prices[i]
             if not np.isnan(ep) and not np.isnan(cp) and ep > 0:
                 unrealized_now = (cp - ep) / ep - SPREAD_COST_PCT
                 has_put_data = True
+
+                # v7: Skip underwater entries
+                if unrealized_now < _min_entry_pnl:
+                    continue
 
                 hwm = unrealized_now
                 for back in range(1, k + 1):
@@ -2350,6 +2367,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                             pnl_at_stall = (sp - ep) / ep - SPREAD_COST_PCT
                             if unrealized_now <= pnl_at_stall:
                                 best_put_exit = 1.0
+
+                # Signal 3: Take profit
+                if unrealized_now >= _tp_threshold:
+                    best_put_exit = 1.0
 
         if has_call_data:
             exit_call_label[i] = best_call_exit
@@ -3079,6 +3100,8 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
     actions = np.empty(len(val_indices), dtype=np.int64)
     gate_no_trade = np.empty(len(val_indices), dtype=bool)
     gate_confidence = np.empty(len(val_indices), dtype=np.float64)
+    # Store risk head outputs per-bar for use in trade loop
+    _risk_outputs = np.full((len(val_indices), 3), np.nan, dtype=np.float32)  # stop_pct, size_frac, conviction
 
     # Pre-compute bar_of_day for each validation index (0=9:30, 29=9:59, 30=10:00)
     _bar_of_day = {}
@@ -3125,6 +3148,10 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
 
     _pos_best_pnl = 0.0           # Phase D: best P&L since entry
     _pos_bars_since_high = 0       # Phase D: bars since P&L peak
+    _pos_conviction = 0.0          # Phase E: risk head conviction for exit modulation
+    _pos_win_rate_20 = 0.0         # Rolling win rate for account state
+    _pos_recent_wins = 0           # Win count in last 20 trades
+    _pos_recent_total = 0          # Total count in last 20 trades
 
     for k, global_idx in enumerate(val_indices):
         # Build position state tensor (7 dims: holding, bars_held, unrealized_pnl,
@@ -3135,23 +3162,38 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
             if _pos_in_trade:
                 pos_state[0, 0] = 1.0
                 pos_state[0, 1] = min(_pos_bars_held / BARS_PER_DAY, 1.0)
-                pos_state[0, 2] = float(np.tanh(_pos_unrealized_pnl * 5.0))
+                pos_state[0, 2] = float(np.tanh(_pos_unrealized_pnl * PNL_TANH_SCALE))
                 if _ps_dim >= 7:
-                    pos_state[0, 5] = float(np.tanh(_pos_best_pnl * 2.0))
+                    pos_state[0, 5] = float(np.tanh(_pos_best_pnl * BEST_PNL_TANH_SCALE))
                     pos_state[0, 6] = min(_pos_bars_since_high / BARS_PER_DAY, 1.0)
             pos_state[0, 3] = _pos_account_balance / _starting_capital  # account_health
             pos_state[0, 4] = min(_pos_consecutive_losses / max(_sc_consec_thresh, 1), 1.0)  # loss_streak_frac
         else:
             pos_state = None
 
+        # Build account state for risk head
+        _has_risk_head = hasattr(model, 'risk_head')
+        _acct_state = None
+        if _has_risk_head:
+            _as_dim = getattr(model, 'ACCOUNT_STATE_DIM', 4)
+            _acct_state = torch.zeros(1, _as_dim, device=device)
+            _acct_state[0, 0] = _pos_account_balance / _starting_capital
+            import math as _math
+            _acct_state[0, 1] = min(_math.log10(max(_pos_account_balance, 1000) / 1000) / 3.0, 1.0)
+            _acct_state[0, 3] = _pos_win_rate_20
+
         # Run gate inference with position state
         idx_t = val_idx_t[k:k+1]
         window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
-        _out = model(x, position_state=pos_state)
+        _out = model(x, position_state=pos_state, account_state=_acct_state,
+                     return_risk=_has_risk_head)
         gate_logits = _out[0]
         gate_action = int(torch.argmax(gate_logits, dim=-1).item())
         gate_conf = float(torch.softmax(gate_logits, dim=-1)[0, 1].item())  # P(TRADE)
+        _risk_out = _out[-1] if _has_risk_head else None
+        if _risk_out is not None:
+            _risk_outputs[k] = _risk_out[0].float().cpu().numpy()
 
         gate_no_trade[k] = (gate_action == 0)
         gate_confidence[k] = gate_conf
@@ -3181,7 +3223,8 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
                 with torch.no_grad():
                     _vout = model(x, position_state=pos_state, return_value=True)
                     _vp = float(_vout[2][0].item())
-                if _vp < 0.02:  # VALUE_EXIT_THRESHOLD
+                _vthresh = 0.02 * (1.0 - _pos_conviction * 0.5)
+                if _vp < _vthresh:
                     _value_exit = True
 
             # Check exit conditions (mirrors trade loop below)
@@ -3200,9 +3243,15 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
                     _pos_consecutive_losses += 1
                 else:
                     _pos_consecutive_losses = 0
+                # Update rolling win rate
+                _pos_recent_total += 1
+                if _exit_pnl > 0:
+                    _pos_recent_wins += 1
+                _pos_win_rate_20 = _pos_recent_wins / max(_pos_recent_total, 1)
                 _pos_in_trade = False
                 _pos_best_pnl = 0.0
                 _pos_bars_since_high = 0
+                _pos_conviction = 0.0
                 if hit_stop:
                     _pos_last_stop_bar = k
         elif actions[k] in {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
@@ -3226,12 +3275,20 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
                                 _pos_unrealized_pnl = 0.0
                                 _pos_best_pnl = 0.0
                                 _pos_bars_since_high = 0
-                                # Compute dynamic stop at entry from confidence + market state
-                                _pos_dynamic_stop = compute_dynamic_stop(
-                                    gate_conf,
-                                    float(features[global_idx, _idx_atm_iv]),
-                                    float(features[global_idx, _idx_vix_regime]),
-                                )
+                                # Risk head: use learned stop + sizing + conviction
+                                if _risk_out is not None:
+                                    _pos_dynamic_stop = float(_risk_out[0, 0].item())
+                                    _size_frac = float(_risk_out[0, 1].item())
+                                    _pos_conviction = float(_risk_out[0, 2].item())
+                                    max_affordable = max(1, int(_pos_account_balance * _position_risk_target / contract_cost))
+                                    _pos_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
+                                else:
+                                    _pos_dynamic_stop = compute_dynamic_stop(
+                                        gate_conf,
+                                        float(features[global_idx, _idx_atm_iv]),
+                                        float(features[global_idx, _idx_vix_regime]),
+                                    )
+                                    _pos_conviction = 0.0
 
     # Count unique val dates
     val_dates_list = [dates[i] for i in val_indices]
@@ -3285,6 +3342,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
     trade_use_actual = False
     trade_px_array = None
     trade_dynamic_stop = DYNAMIC_STOP_BASE  # per-trade dynamic stop (set at entry)
+    _trade_conviction = 0.0  # Phase E: risk head conviction
     last_stop_bar = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
     cooldown_blocked_count = 0
     pre_10am_blocked_count = 0
@@ -3318,14 +3376,15 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
             eod = dates[global_idx] != dates[entry_global]
             model_exit = gate_flat_signal
 
-            # Phase D: value-based exit
+            # Phase D: value-based exit (conviction-adjusted threshold)
             _trade_value_exit = False
             _has_value_head = hasattr(model, 'value_head')
             if _has_value_head and bars_held >= 2 and not hit_stop:
                 with torch.no_grad():
                     _vout = model(x, position_state=pos_state, return_value=True)
                     _vp = float(_vout[2][0].item())
-                if _vp < 0.02:  # VALUE_EXIT_THRESHOLD
+                _vthresh = 0.02 * (1.0 - _trade_conviction * 0.5)
+                if _vp < _vthresh:
                     _trade_value_exit = True
 
             if hit_stop or hit_max_hold or eod or model_exit or _trade_value_exit or k == len(val_indices) - 1:
@@ -3465,12 +3524,20 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
             trade_entry_actionable = float(entry_actionable)
             trade_last_price = entry_px
             trade_use_actual = True
-            # Compute dynamic stop at entry from gate confidence + market state
-            trade_dynamic_stop = compute_dynamic_stop(
-                gate_confidence[k],
-                float(features[global_idx, _idx_atm_iv]),
-                float(features[global_idx, _idx_vix_regime]),
-            )
+            # Risk head: use learned stop + sizing + conviction
+            if not np.isnan(_risk_outputs[k, 0]):
+                trade_dynamic_stop = float(_risk_outputs[k, 0])
+                _size_frac = float(_risk_outputs[k, 1])
+                _trade_conviction = float(_risk_outputs[k, 2])
+                max_affordable = max(1, int(account_balance * _position_risk_target / contract_cost))
+                trade_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
+            else:
+                trade_dynamic_stop = compute_dynamic_stop(
+                    gate_confidence[k],
+                    float(features[global_idx, _idx_atm_iv]),
+                    float(features[global_idx, _idx_vix_regime]),
+                )
+                _trade_conviction = 0.0
         elif gate_flat_signal:
             do_nothing_count += 1
 

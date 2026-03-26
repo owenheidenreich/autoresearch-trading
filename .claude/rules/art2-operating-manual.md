@@ -25,9 +25,9 @@ SETUP → TRAIN → TEARDOWN → ANALYZE → RESEARCH → IMPROVE → DOCUMENT �
 
 ### Phase 1: SETUP
 - Preflight: syntax check train.py, validate data.pt contract, check API budget
-- IBKR compatibility gate: model exists, checkpoint shapes (gate=2, dir=6, value=1), 37 features (v3), 7-dim position state, IBKR probe
+- IBKR compatibility gate: model exists, checkpoint shapes (gate=2, dir=6, value=1, risk=3), 37 features (v3), 7-dim position state, 4-dim account state, IBKR probe
 - Duration sizing: improving (90 min) / stable (65 min) / stuck (40 min) / after fix (65 min fresh)
-- Fresh-start vs warm-start decision (see docs/reference.md "Warm-Start vs Fresh-Start")
+- Fresh-start vs warm-start decision (see docs/operations/reference.md "Warm-Start vs Fresh-Start")
 - Verify `.best_score` and promoted history are clean (no inflated baselines)
 
 ### Phase 2: TRAIN
@@ -51,15 +51,51 @@ Opus IS the loop. No API costs — uses Max subscription Sonnet agents.
    - Writes status.json + experiments.v2.jsonl (monitor.py compatible)
 5. Opus reads result JSON, reasons about trading behavior, loops to step 1
 
+**PBT mode** (`pbt-init` / `pbt-run` / `pbt-status`):
+- Population of N members competing per generation with env-var overrides
+- Selection: elite carry-forward, exploit top-25%, explore top-50%
+- Anti-stagnation: inject random members after 2 stalled generations
+- State: `training/.pbt_state.json` (resumable mid-generation)
+
+**Key invariant:** `best_model.pt`, `best_train.py`, and `.best_score` are always in sync.
+- Model downloads to temp file (`artifacts/exp-N/model_candidate.pt`), only promoted on KEEP
+- On REVERT, `best_model.pt` unchanged — still matches `best_train.py`
+- Any experiment can crash/timeout without corrupting state
+
+**SSH transport:** All Akash communication via sshpass SCP/SSH.
+- Connection from `.deploy-state` (SSH_HOST, SSH_PORT), written by `deploy.sh boot`
+- Password: `SSH_PASS` env var (default: `autoresearch2026`)
+- 3 retries on SCP failure, SSH timeout = TIME_BUDGET + 240s
+
+**Validation pipeline** (runs locally before upload):
+- `run_loop.validate_syntax()` — ast.parse() catches syntax errors
+- `run_loop.validate_safety()` — blocks os.system/subprocess/exec/eval, score config mutations
+
+**Scoring:** `score = PF × trade_sharpe × freq_mult × penalties × bonuses`
+- Penalties: consecutive loss (15% per beyond 3), drawdown (0.5 × |DD| above 0.10), stop rate (above 0.30)
+- Score config is LOCKED — mutation-guarded in run_loop.py
+
+**Loop detection:** Tracks consecutive identical revert reasons. Logs warning after 3+ repeats.
+
 **Setup:**
 - Deploy Akash GPU: `./infra/deploy.sh boot && ./infra/deploy.sh start` (compute only)
 - Initialize run: `python3 tools/inner_loop.py init`
 - Monitor: `python3 tools/monitor.py` (localhost:8420)
+- **Note:** `start_loop.sh` runs run_loop.py (a library, not executable). For Opus-driven experiments, ignore loop failure — drive via inner_loop.py from local machine.
 
 **Key files:**
-- `tools/inner_loop.py` — mechanical layer (SSH, validation, scoring)
-- `training/run_loop.py` — utility library (validation functions, anomaly detection)
+- `tools/inner_loop.py` — mechanical layer (SSH, validation, scoring, PBT)
+- `training/run_loop.py` — utility library (validation functions, anomaly detection, metric parsing)
 - `training/program.md` — contract (injected into Sonnet's prompt by Opus)
+
+**Artifact layout** (per experiment):
+- `artifacts/exp-N/train_before.py` — backup before mutation
+- `artifacts/exp-N/train_candidate.py` — proposed mutation
+- `artifacts/exp-N/model_candidate.pt` — downloaded model (promoted on KEEP)
+- `artifacts/exp-N/metrics.json` — parsed training metrics
+- `artifacts/exp-N/train_output.log` — full Akash stdout/stderr
+
+**Full architecture reference:** `docs/architecture/INNER-LOOP-ARCHITECTURE.md`
 
 ### Phase 3: TEARDOWN
 - `./infra/deploy.sh stop -y` — downloads results, stops Akash lease
@@ -103,13 +139,13 @@ Opus IS the loop. No API costs — uses Max subscription Sonnet agents.
 
 ### Phase 6: DOCUMENT
 - **REQUIRED after every cycle.** Two types of documentation are maintained:
-- **Human documentation** (`docs/project-chronicle.md`): Narrative, reverse-chronological project log. Written for the project owner. Updated via `chronicle_entry` in every Opus decision (including action A). Auto-formatted with dated headers.
+- **Human documentation** (`docs/journal/project-chronicle.md`): Narrative, reverse-chronological project log. Written for the project owner. Updated via `chronicle_entry` in every Opus decision (including action A). Auto-formatted with dated headers.
 - **Machine documentation** (all other docs below): Technical reference for AI agents. Updated via `doc_edits` in Opus decisions.
 - Update project-level docs that were affected by this cycle's changes:
-  - `docs/project-chronicle.md` — **always** update with narrative chronicle entry (auto-handled by art2.py)
-  - `docs/ARCHITECTURE.md` — if architecture, pipeline, or data flow changed
-  - `docs/reference.md` — if key files, constants, subcommands, design rules, or daily pipeline changed
-  - `docs/art2-notebook.md` — always update with cycle decision + outcome
+  - `docs/journal/project-chronicle.md` — **always** update with narrative chronicle entry (auto-handled by art2.py)
+  - `docs/architecture/ARCHITECTURE.md` — if architecture, pipeline, or data flow changed
+  - `docs/operations/reference.md` — if key files, constants, subcommands, design rules, or daily pipeline changed
+  - `docs/journal/art2-notebook.md` — always update with cycle decision + outcome
   - `training/lab_notebook.md` — always update dead ends + best runs
   - `training/program.md` — if model contract, loss policy, or constraints changed
 - Documentation must be accurate to the current codebase. Stale docs are worse than no docs.
@@ -150,8 +186,8 @@ Opus IS the loop. No API costs — uses Max subscription Sonnet agents.
 ## 4. Domain Knowledge Integration
 
 When diagnosing model behavior, evaluating feature gaps, or proposing strategic changes, **ALWAYS read:**
-- `docs/0dte-domain-knowledge.md` — Greeks behavior, theta decay, gamma dynamics, dealer mechanics, volatility regimes, formulas
-- `docs/pickles-trading-knowledge.md` — Practical entry/exit rules, VWAP framework, time-of-day patterns, risk management, anti-patterns
+- `docs/domain/0dte-domain-knowledge.md` — Greeks behavior, theta decay, gamma dynamics, dealer mechanics, volatility regimes, formulas
+- `docs/domain/pickles-trading-knowledge.md` — Practical entry/exit rules, VWAP framework, time-of-day patterns, risk management, anti-patterns
 
 ### Condensed Quick Reference (always in context)
 - **Theta:** ~1/sqrt(T). Doubles when remaining time quarters. Long options bleed past noon.
@@ -197,10 +233,10 @@ Project docs must always reflect the current state of the codebase. Stale docume
 
 | Doc | What to update | When |
 |-----|---------------|------|
-| `docs/project-chronicle.md` | Human-readable narrative chronicle entry | **Every cycle** (auto via art2.py) |
-| `docs/ARCHITECTURE.md` | System diagrams, data flow, component descriptions | Architecture/pipeline changes |
-| `docs/reference.md` | Key files, constants, subcommands, design rules, daily pipeline | Any significant change |
-| `docs/art2-notebook.md` | Strategic changes tried, paper P&L, dead ends | Every cycle |
+| `docs/journal/project-chronicle.md` | Human-readable narrative chronicle entry | **Every cycle** (auto via art2.py) |
+| `docs/architecture/ARCHITECTURE.md` | System diagrams, data flow, component descriptions | Architecture/pipeline changes |
+| `docs/operations/reference.md` | Key files, constants, subcommands, design rules, daily pipeline, IBKR ops | Any significant change |
+| `docs/journal/art2-notebook.md` | Strategic changes tried, paper P&L, dead ends | Every cycle |
 | `training/lab_notebook.md` | Best runs, dead ends, next priorities | Every cycle |
 | `training/program.md` | Model contract, loss policy, constraints | Inner loop constraint changes |
 | `.claude/rules/art2-operating-manual.md` | Lifecycle, roles, policies | Process changes |
@@ -215,8 +251,8 @@ Project docs must always reflect the current state of the codebase. Stale docume
 - `replay/` — backtest results, trade log, equity curve
 
 ### Persistent Memory
-- `docs/project-chronicle.md` — **Human documentation:** narrative project log, reverse-chronological, for the project owner
-- `docs/art2-notebook.md` — **Machine documentation:** outer loop memory (strategic changes, paper P&L, dead ends)
+- `docs/journal/project-chronicle.md` — **Human documentation:** narrative project log, reverse-chronological, for the project owner
+- `docs/journal/art2-notebook.md` — **Machine documentation:** outer loop memory (strategic changes, paper P&L, dead ends)
 - `training/lab_notebook.md` — **Machine documentation:** inner loop memory (improvements, dead ends, priorities — injected into Sonnet prompt)
 
 ### Rules
@@ -244,8 +280,9 @@ Project docs must always reflect the current state of the codebase. Stale docume
 | Viability check | `python3 tools/art2.py viability` |
 | IBKR session analysis | `python3 tools/art2.py ibkr-analyze --report` |
 | Rebuild data.pt | `python3 training/prepare.py` |
-| Subcommand reference | `docs/reference.md` |
-| Domain knowledge | `docs/0dte-domain-knowledge.md`, `docs/pickles-trading-knowledge.md` |
+| Subcommand reference | `docs/operations/reference.md` |
+| Domain knowledge | `docs/domain/0dte-domain-knowledge.md`, `docs/domain/pickles-trading-knowledge.md` |
 | Init experiment run | `python3 tools/inner_loop.py init` |
 | Run experiment | `python3 tools/inner_loop.py experiment --summary "hypothesis"` (--mutation FILE optional) |
+| PBT sweep | `python3 tools/inner_loop.py pbt-init --population 6 && python3 tools/inner_loop.py pbt-run` |
 | Check run status | `python3 tools/inner_loop.py status` |

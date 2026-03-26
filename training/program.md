@@ -7,17 +7,20 @@ If anything else conflicts with this file, this file wins.
 Build a model that makes money trading SPX 0DTE options on IBKR paper trading. The score is a proxy — focus on improving actual TRADING BEHAVIOR (profit factor, win rate, regime consistency, drawdown) rather than optimizing the score metric itself. Use the trade-level diagnostics (best/worst trades, time-of-day splits, VIX regime breakdowns) to diagnose specific weaknesses and propose targeted fixes.
 
 ## Model Contract (Required)
-- Three-head architecture (v5):
+- Four-head architecture (v6):
   - Gate head: `[NO_TRADE, TRADE]` (2 logits)
   - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` (6 logits)
   - Value head: scalar prediction of remaining P&L (MSE regression)
+  - Risk head: `[stop_pct, size_frac, conviction]` (3 outputs, account-aware risk management)
+- Position state: 7 dims (in_trade, bars_held, unrealized_pnl, account_health, loss_streak, best_pnl, bars_since_high)
+- Account state: 4 dims (growth_ratio, log_size, daily_pnl_frac, win_rate_20) — risk head only
 - 8 effective actions:
   - `DO_NOTHING`
   - `BUY_CALL_ATM`, `BUY_CALL_OTM5`, `BUY_CALL_OTM10`
   - `BUY_PUT_ATM`, `BUY_PUT_OTM5`, `BUY_PUT_OTM10`
   - `EXIT` (gate=NO_TRADE while holding a position)
 
-**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism — it must learn when to take profits and cut losses. The **value head** provides a secondary exit signal: when predicted remaining P&L drops below `VALUE_EXIT_THRESHOLD`, it triggers a value exit (requires ≥2 bars held). A **dynamic stop-loss** adapts per-trade based on gate confidence + market conditions (IV, VIX). Exit priority: stop_loss > model_exit > value_exit > max_hold > end_of_day.
+**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism. The **value head** provides a secondary exit with conviction-adjusted threshold: `VALUE_EXIT_THRESHOLD × (1 - conviction × 0.5)`. High conviction (from risk head) widens the exit threshold, letting winners run. The **risk head** provides learned stop-loss distance (replaces formula), position sizing, and conviction. Exit priority: stop_loss > model_exit > value_exit > max_hold > end_of_day.
 
 ## Data Contract (Required)
 `data.pt` must include the target fields and option price arrays required by training and replay:

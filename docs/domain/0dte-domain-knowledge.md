@@ -8,7 +8,7 @@
 
 '/Users/gduby/Documents/The Library'
 [this document requires a recap of all relevant books from this library. relevant meaning related to trading spx options. ]
-this must be used in ART^2
+this must be used in ART²
 
 ## 1. Library Inventory
 
