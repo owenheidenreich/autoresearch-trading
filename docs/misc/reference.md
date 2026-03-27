@@ -16,9 +16,9 @@ Autonomous SPX 0DTE options trading system. Opus (strategist) directs Sonnet age
 ### Training Loop
 - [tools/inner_loop.py](../../tools/inner_loop.py) — Agent mode: `experiment --mutation FILE --summary "hypothesis"`. Atomic (validate → backup → upload → train → score → keep/revert). Also provides PBT mode (`pbt-init` / `pbt-run` / `pbt-status`).
 - [training/run_loop.py](../../training/run_loop.py) — Utility library: validation, anomaly detection, scoring helpers. Imported by inner_loop.py.
-- [training/train.py](../../training/train.py) — v6 four-head model architecture + training loop. The file Sonnet agents mutate.
-- [training/program.md](../../training/program.md) — Agent contract. Injected into Sonnet prompts.
-- [training/lab_notebook.md](../../training/lab_notebook.md) — Cross-run memory: dead ends + priorities. Injected into Sonnet prompts.
+- [training/train.py](../../training/train.py) — v7 four-head model architecture + training loop. The file Sonnet agents mutate.
+- [training/program.md](../../training/program.md) — Agent contract. Injected into Sonnet prompts (sequential mode only; PBT does not use it).
+- [training/lab_notebook.md](../../training/lab_notebook.md) — Cross-run memory: dead ends + priorities. Read by Opus (strategist) and injected into Sonnet prompts (sequential mode only). PBT mode is purely mechanical and does not read this file.
 - [training/exit_policy.py](../../training/exit_policy.py) — RL exit agent (standalone, 11-dim obs → 3-action MLP). Not yet integrated into live decision.py.
 
 ### Replay & Live Trading
@@ -34,7 +34,7 @@ Autonomous SPX 0DTE options trading system. Opus (strategist) directs Sonnet age
 
 **Feature parity:** All 37 features (v3) confirmed across training/replay/live — shared `compute_features()` + `normalize_features_with_context()`.
 
-**Architecture parity:** Four-head model (v6: gate + direction + value + risk) with 7-dim position state + 4-dim account state. Risk head provides learned stop distance, position sizing, and conviction. Value head exit uses conviction-adjusted threshold. Exit priority: stop_loss > model_exit > value_exit > max_hold > EOD.
+**Architecture parity:** Four-head model (v7: gate + direction + value + risk) with 7-dim position state + 4-dim account state. Risk head provides learned stop distance, position sizing, and conviction. Value head (v7) is a binary exit classifier: logit → sigmoid → exit probability, compared against conviction-adjusted threshold (0.5 + conviction × 0.2). Exit priority: stop_loss > model_exit > value_exit > max_hold > EOD.
 
 ### Infrastructure & Tools
 - [infra/deploy.sh](../../infra/deploy.sh) — Akash GPU lifecycle (boot/start/sync/stop/ssh/logs/status)
@@ -59,13 +59,13 @@ Autonomous SPX 0DTE options trading system. Opus (strategist) directs Sonnet age
 9. **No API cost.** Inner loop uses Max subscription Sonnet agents. Only Akash GPU compute costs.
 10. **Human review before every training run.** REVIEW phase pauses daemon for approval.
 
-## Model Architecture (v6 Four-Head)
+## Model Architecture (v7 Four-Head)
 
 | Head | Output | Activation | Range | Purpose |
 |------|--------|-----------|-------|---------|
 | Gate | (batch, 2) | softmax | [0,1] probability | Enter/exit decision |
 | Direction | (batch, 6) | softmax | 6 actions | Strike + direction selection |
-| Value | (batch, 1) | raw | scalar | Remaining P&L prediction (exit intelligence) |
+| Value | (batch, 1) | raw logit | scalar | Binary exit classifier (v7: BCE on sparse exit labels) |
 | Risk | (batch, 3) | sigmoid/tanh | see below | Account-aware risk management |
 
 **Risk head outputs:**
@@ -139,9 +139,9 @@ Autonomous SPX 0DTE options trading system. Opus (strategist) directs Sonnet age
 | Gate loss | 0.5 | TRAIN_GATE_W |
 | Direction loss | 2.5 | TRAIN_DIR_W |
 | PnL alignment | 0.5 | TRAIN_PNL_W |
-| Exit loss | 0.15 | TRAIN_EXIT_W |
+| Exit loss | 0.40 | TRAIN_EXIT_W |
 | Confidence loss | 0.10 | TRAIN_CONF_W |
-| Value loss | 0.3 | TRAIN_VALUE_W |
+| Value loss | 0.5 | TRAIN_VALUE_W |
 | Risk loss | 0.2 | TRAIN_RISK_W |
 
 ## Warm-Start vs Fresh-Start
@@ -187,6 +187,27 @@ mv training/best_model.pt training/best_model.pt.bak
 | `ibkr-analyze` | Parse IBKR paper trading audit, produce metrics |
 
 **Control files:** `results/art2/REVIEW` (remove to approve), `results/art2/STOP` (create to exit), `results/art2/PAUSED` (remove to resume).
+
+## Training Modes
+
+Two distinct modes for running experiments. Choose based on model maturity:
+
+**Sequential Warm-Start** — `inner_loop.py experiment --summary "hypothesis"`
+- Each experiment builds on the last kept model. One at a time, score-gated.
+- Use for: fresh starts, architecture changes, early convergence, debugging training signals.
+- Opus or Sonnet proposes targeted train.py edits per experiment.
+
+**PBT (Population-Based Training)** — `inner_loop.py pbt-init && inner_loop.py pbt-run`
+- Population of N members competing per generation with env-var overrides.
+- Evolutionary: elite carry-forward, exploit top-25%, explore top-50%.
+- Use for: multi-parameter optimization once model has a stable baseline.
+- Don't use PBT on a fresh start — the model needs to learn basic behavior first.
+- Anti-stagnation: injects random members after 2 stalled generations.
+
+**Decision guide:**
+- Model just had architecture/label changes → Sequential (let it converge)
+- Score stuck after 5+ sequential experiments → Switch to PBT
+- PBT stagnation (all members converge) → Back to sequential with structural changes
 
 ## Inner Loop Subcommands
 

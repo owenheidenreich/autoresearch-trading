@@ -10,7 +10,7 @@ Build a model that makes money trading SPX 0DTE options on IBKR paper trading. T
 - Four-head architecture (v6):
   - Gate head: `[NO_TRADE, TRADE]` (2 logits)
   - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` (6 logits)
-  - Value head: scalar prediction of remaining P&L (MSE regression)
+  - Value head: binary exit classifier (BCE loss on sparse exit labels)
   - Risk head: `[stop_pct, size_frac, conviction]` (3 outputs, account-aware risk management)
 - Position state: 7 dims (in_trade, bars_held, unrealized_pnl, account_health, loss_streak, best_pnl, bars_since_high)
 - Account state: 4 dims (growth_ratio, log_size, daily_pnl_frac, win_rate_20) — risk head only
@@ -122,8 +122,9 @@ You MAY add ONE regularization penalty term to the training loop (not to `total_
 This does NOT change the loss structure (`total = gate + dir + pnl`). The regularization is applied separately.
 
 ### What You MAY Do
-- Tune existing `_env_float` values (DIR_W, GATE_W, PNL_W, EXIT_W, DROPOUT, WEIGHT_DECAY, LR, FEATURE_NOISE_STD, etc.)
-- Implement loss weight SCHEDULING (e.g., ramp gate_w from 0.5→1.0 over epochs using existing env values)
+- Tune existing `_env_float` values (DIR_W, GATE_W, PNL_W, EXIT_W, VALUE_W, DROPOUT, WEIGHT_DECAY, LR, FEATURE_NOISE_STD, etc.)
+- Set `TRAIN_VALUE_LOSS_TYPE` env var: `mse` (default, MSE on remaining P&L), `bce` (binary exit classifier), `none` (disable value loss)
+- Implement loss weight SCHEDULING (e.g., ramp gate_w from 0.95→1.5 over epochs using existing env values)
 - Add sample weighting within existing loss computations (harder examples, time-of-day weights, VIX regime weights)
 - Change learning rate schedules (warmup, cosine, OneCycle, cyclical — use existing LR value as base)
 - Modify bias initialization for gate and direction heads
@@ -151,19 +152,21 @@ The dynamic stop formula: `stop = BASE * confidence_factor * iv_factor * vix_fac
 Training uses stopped P&L labels (tight/med/wide selected by IV+VIX). The dynamic stop is the safety net; the gate head must learn to exit BEFORE hitting it.
 
 ## Position State Contract
-The model receives a 5-dimensional position state tensor at inference time:
-- `[0]` is_holding: 1.0 if in a trade, 0.0 if flat
-- `[1]` bars_held_norm: bars held / BARS_PER_DAY, clamped to [0, 1]
-- `[2]` unrealized_pnl_norm: tanh(unrealized_pnl * 5.0), clamped to [-1, 1]
+The model receives a 7-dimensional position state tensor at inference time:
+- `[0]` in_trade: 1.0 if in a trade, 0.0 if flat
+- `[1]` bars_held: bars held / BARS_PER_DAY, clamped to [0, 1]
+- `[2]` unrealized_pnl: tanh(unrealized_pnl * 5.0), clamped to [-1, 1]
 - `[3]` account_health: account_balance / starting_capital (1.0 = full, 0.0 = wiped)
-- `[4]` loss_streak_frac: consecutive_losses / consec_loss_threshold, clamped to [0, 1]
+- `[4]` loss_streak: consecutive_losses / consec_loss_threshold, clamped to [0, 1]
+- `[5]` best_pnl_since_entry: best unrealized P&L seen during current trade (0.0 if flat)
+- `[6]` bars_since_pnl_high: bars since best_pnl was set / BARS_PER_DAY (0.0 if flat)
 
 During training:
-- **Random batches** (30% of training via `1 - DAY_SEQ_RATIO`) receive **flat position state**: not_holding, account_health=1.0. This matches the starting state in evaluate_trades().
-- **Day-sequential batches** (70%) track real position state through each simulated trading day.
+- **Random batches** (8% of training via `1 - DAY_SEQ_RATIO`) receive **flat position state**: not_holding, account_health=1.0. This matches the starting state in evaluate_trades().
+- **Day-sequential batches** (92%) track real position state through each simulated trading day.
 - PositionStateGenerator was **removed** — it injected random noise uncorrelated with market data, causing train/eval mismatch.
 
-During evaluation/replay, dims 3-4 use real tracked account state.
+During evaluation/replay, dims 3-6 use real tracked account/trade state.
 
 ## Account-Aware Simulation
 - Starting capital: $10,000 (STARTING_CAPITAL constant)

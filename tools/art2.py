@@ -162,7 +162,8 @@ def read_json(path: Path) -> dict[str, Any] | None:
         return None
     try:
         return json.loads(path.read_text())
-    except Exception:
+    except Exception as e:
+        log(f"WARNING: Failed to parse JSON from {path}: {e}")
         return None
 
 
@@ -206,8 +207,8 @@ def _load_spend_tracker(budget: float = DEFAULT_TIER_BUDGET) -> dict[str, Any]:
     if SPEND_TRACKER_PATH.exists():
         try:
             tracker = json.loads(SPEND_TRACKER_PATH.read_text())
-        except Exception:
-            pass
+        except Exception as e:
+            log(f"WARNING: Corrupted spend tracker at {SPEND_TRACKER_PATH}: {e} — reinitializing")
     if not tracker or tracker.get("month") != current_month:
         tracker = {
             "month": current_month,
@@ -693,8 +694,8 @@ def _preflight_validate() -> bool:
                 issues.append(f"data.pt missing fields: {', '.join(missing)}")
             else:
                 n_feat = data['features'].shape[1] if len(data['features'].shape) > 1 else 0
-                if n_feat != 32:
-                    issues.append(f"data.pt has {n_feat} features, expected 32")
+                if n_feat != 37:
+                    issues.append(f"data.pt has {n_feat} features, expected 37 (v3)")
                 log(f"  data.pt: {data['features'].shape[0]} bars, {n_feat} features ✓")
         except Exception as e:
             issues.append(f"Failed to load data.pt: {e}")
@@ -2946,6 +2947,7 @@ def _pre_market_readiness_check() -> None:
 # ---------------------------------------------------------------------------
 
 _shutdown_requested = False
+_skip_review = False
 
 
 def _sigterm_handler(signum, frame):
@@ -2953,6 +2955,101 @@ def _sigterm_handler(signum, frame):
     global _shutdown_requested
     _shutdown_requested = True
     log("SIGTERM received — will exit after current phase completes")
+
+
+def _snapshot_pipeline(cycle_num: int) -> Path:
+    """Snapshot current pipeline state before strategic change. Returns snapshot dir."""
+    snap_dir = cycle_dir(cycle_num) / "snapshot"
+    snap_dir.mkdir(parents=True, exist_ok=True)
+
+    # Code state
+    for fname in ["train.py", "best_train.py"]:
+        src = PROJECT_ROOT / "training" / fname
+        if src.exists():
+            shutil.copy2(src, snap_dir / fname)
+
+    # Model state
+    model = PROJECT_ROOT / "training" / "best_model.pt"
+    if model.exists():
+        shutil.copy2(model, snap_dir / "best_model.pt")
+
+    # Score
+    score_file = PROJECT_ROOT / "training" / ".best_score"
+    if score_file.exists():
+        shutil.copy2(score_file, snap_dir / ".best_score")
+
+    # Replay PF from previous cycle (ground truth metric for outer loop)
+    prev_cycle = cycle_dir(cycle_num) / "replay_metrics.json"
+    if prev_cycle.exists():
+        shutil.copy2(prev_cycle, snap_dir / "replay_metrics.json")
+    else:
+        # Try the most recent cycle with replay metrics
+        for i in range(cycle_num - 1, -1, -1):
+            prev = cycle_dir(i) / "replay_metrics.json"
+            if prev.exists():
+                shutil.copy2(prev, snap_dir / "replay_metrics.json")
+                break
+
+    log(f"Pipeline snapshot saved to {snap_dir}")
+    return snap_dir
+
+
+def _compare_pipeline(cycle_num: int, snap_dir: Path) -> bool:
+    """Compare current pipeline against snapshot. Returns True if KEEP.
+
+    Uses replay PF as ground truth. KEEP if replay PF didn't regress >10%.
+    """
+    cdir = cycle_dir(cycle_num)
+
+    # Load current replay metrics (from the cycle that just completed)
+    current_replay = read_json(cdir / "replay_metrics.json")
+    snapshot_replay = read_json(snap_dir / "replay_metrics.json")
+
+    if not current_replay or not snapshot_replay:
+        log("Cannot compare — missing replay metrics. Defaulting to KEEP.")
+        return True
+
+    current_pf = current_replay.get("profit_factor", 0)
+    snapshot_pf = snapshot_replay.get("profit_factor", 0)
+
+    # KEEP if replay PF improved or didn't regress >10%
+    if snapshot_pf <= 0:
+        # Baseline was already bad — any positive is an improvement
+        improved = current_pf > snapshot_pf
+    else:
+        improved = current_pf >= snapshot_pf * 0.9
+
+    result = "KEEP" if improved else "REVERT"
+    log(f"OUTER LOOP {result}: replay PF {snapshot_pf:.2f} → {current_pf:.2f}")
+
+    if not improved:
+        _revert_pipeline(snap_dir)
+
+    # Record in state
+    state = load_state()
+    history = state.get("outer_loop_history", [])
+    history.append({
+        "cycle": cycle_num,
+        "replay_pf_before": round(snapshot_pf, 4),
+        "replay_pf_after": round(current_pf, 4),
+        "result": result,
+        "timestamp": datetime.now(ET).isoformat(),
+    })
+    state["outer_loop_history"] = history
+    save_state(state)
+
+    return improved
+
+
+def _revert_pipeline(snap_dir: Path) -> None:
+    """Restore pipeline from snapshot."""
+    for filename in ["train.py", "best_train.py", "best_model.pt", ".best_score"]:
+        src = snap_dir / filename
+        dst = PROJECT_ROOT / "training" / filename
+        if src.exists():
+            shutil.copy2(src, dst)
+            log(f"  Restored {filename} from snapshot")
+    log(f"Pipeline REVERTED from {snap_dir}")
 
 
 def _check_pid_lock() -> None:
@@ -3088,7 +3185,7 @@ def _invoke_opus(briefing_path: Path, cycle_dir_path: Path,
     briefing = briefing_path.read_text()
 
     # Load persistent system prompt for Opus strategic decisions
-    system_prompt_path = PROJECT_ROOT / "docs" / "ai" / "art2-opus-system-prompt.md"
+    system_prompt_path = PROJECT_ROOT / "tools" / "opus-prompt.md"
     system_prompt = ""
     if system_prompt_path.exists():
         system_prompt = system_prompt_path.read_text() + "\n\n"
@@ -3252,10 +3349,13 @@ def _write_review(cycle_num: int, decision: dict, chronicle_entry: str) -> None:
     )
 
     (cdir / "review.md").write_text(review_text)
-    REVIEW_SENTINEL.parent.mkdir(parents=True, exist_ok=True)
-    REVIEW_SENTINEL.write_text(f"cycle_{cycle_num}\n{datetime.now(ET).isoformat()}\n")
-    _alert("Review Ready", f"Cycle {cycle_num} decision ready for review", critical=False)
-    log(f"REVIEW gate: waiting for human to remove {REVIEW_SENTINEL}")
+    if _skip_review:
+        log(f"REVIEW gate skipped (--no-review): cycle {cycle_num} auto-approved")
+    else:
+        REVIEW_SENTINEL.parent.mkdir(parents=True, exist_ok=True)
+        REVIEW_SENTINEL.write_text(f"cycle_{cycle_num}\n{datetime.now(ET).isoformat()}\n")
+        _alert("Review Ready", f"Cycle {cycle_num} decision ready for review", critical=False)
+        log(f"REVIEW gate: waiting for human to remove {REVIEW_SENTINEL}")
 
 
 def _auto_decide(cycle_num: int, rec: dict, analysis: dict) -> int:
@@ -3358,8 +3458,7 @@ def _apply_opus_decision(decision: dict, cycle_num: int) -> int:
         "training/program.md", "training/lab_notebook.md",
         "training/train.py", "training/prepare.py",
         "training/replay.py", "training/run_loop.py",
-        "docs/ai/art2-opus-system-prompt.md", "docs/journal/art2-notebook.md",
-        "docs/architecture/ARCHITECTURE.md", "docs/operations/reference.md",
+        "tools/opus-prompt.md", "docs/journal/art2-notebook.md",
         ".claude/rules/art2-operating-manual.md",
         "tools/art2.py",
     }
@@ -3446,11 +3545,18 @@ def _apply_opus_decision(decision: dict, cycle_num: int) -> int:
     if decision.get("fresh_start"):
         model_path = PROJECT_ROOT / "training" / "best_model.pt"
         if model_path.exists():
-            import shutil
             bak = str(model_path) + ".bak"
             shutil.move(str(model_path), bak)
             log(f"Fresh start: moved best_model.pt to {bak}")
             decision_text += "\n**Fresh start: best_model.pt moved to .bak**\n"
+        # Reset .best_score and inner loop state for clean fresh start
+        score_file = PROJECT_ROOT / "training" / ".best_score"
+        score_file.write_text("-5.0\n")
+        log("Fresh start: .best_score reset to -5.0")
+        inner_loop_state = PROJECT_ROOT / "training" / ".inner_loop_state.json"
+        if inner_loop_state.exists():
+            inner_loop_state.unlink()
+            log("Fresh start: inner loop state cleared (will re-init on next experiment)")
 
     (cdir / "decision.md").write_text(decision_text)
 
@@ -3486,11 +3592,13 @@ def cmd_daemon(args: argparse.Namespace) -> None:
         rm results/art2/PAUSED       # resume after pause
         rm results/art2/REVIEW       # approve decision and continue to next training run
     """
-    global _shutdown_requested
+    global _shutdown_requested, _skip_review
 
     time_check()
     _check_pid_lock()
     signal.signal(signal.SIGTERM, _sigterm_handler)
+
+    _skip_review = getattr(args, "no_review", False)
 
     claude_bin = None
     if not getattr(args, "auto_only", False):
@@ -3502,6 +3610,8 @@ def cmd_daemon(args: argparse.Namespace) -> None:
     dry_run = getattr(args, "dry_run", False)
     consecutive_failures = 0
     cycles_completed = 0
+    pending_snapshot = None  # Path to snapshot dir awaiting comparison after next cycle
+    pending_snapshot_action = None  # Action that triggered the snapshot
 
     log("=== ART² DAEMON START ===")
     log(f"  Minutes/cycle: {minutes}")
@@ -3509,6 +3619,8 @@ def cmd_daemon(args: argparse.Namespace) -> None:
     log(f"  Budget: ${budget:.0f}/month")
     log(f"  Claude CLI: {'available' if claude_bin else 'NOT FOUND (auto-only mode)'}")
     log(f"  Dry run: {dry_run}")
+    log(f"  No review: {_skip_review}")
+    log(f"  Outer loop keep/revert: enabled")
 
     try:
         while not _shutdown_requested and cycles_completed < max_cycles:
@@ -3605,10 +3717,28 @@ def cmd_daemon(args: argparse.Namespace) -> None:
 
             consecutive_failures = 0
 
-            # 5. Make strategic decision
+            # 4b. Outer loop comparison — if a snapshot is pending from
+            #     a previous cycle's strategic change, compare now.
             state = load_state()
             cycle_num = state.get("cycle", 0)
             cdir = cycle_dir(cycle_num)
+
+            if pending_snapshot is not None:
+                log(f"Outer loop comparison: evaluating action {pending_snapshot_action} results")
+                kept = _compare_pipeline(cycle_num, pending_snapshot)
+                if not kept:
+                    log(f"Strategic change (action {pending_snapshot_action}) REVERTED — "
+                        f"pipeline restored to pre-change state")
+                    _alert("Outer Loop Revert",
+                           f"Action {pending_snapshot_action} reverted — replay PF regressed",
+                           critical=False)
+                else:
+                    log(f"Strategic change (action {pending_snapshot_action}) KEPT — "
+                        f"replay PF maintained or improved")
+                pending_snapshot = None
+                pending_snapshot_action = None
+
+            # 5. Make strategic decision
             analysis = read_json(cdir / "analysis.json")
 
             if not analysis:
@@ -3621,8 +3751,12 @@ def cmd_daemon(args: argparse.Namespace) -> None:
                 f"confidence={rec['confidence']}")
             log(f"  Path: {' → '.join(rec.get('path', []))}")
 
+            # Determine the action that will be taken
+            decided_action = None
+
             if rec["action"] == "A" and rec["confidence"] == "high":
                 _auto_decide(cycle_num, rec, analysis)
+                decided_action = "A"
             elif claude_bin:
                 # ALL actions go through Opus — full autonomy
                 decision = _invoke_opus(cdir / "briefing.md", cdir, claude_bin)
@@ -3630,6 +3764,7 @@ def cmd_daemon(args: argparse.Namespace) -> None:
                     if rec["action"] == "A":
                         log("Opus failed — falling back to auto-decide for action A")
                         _auto_decide(cycle_num, rec, analysis)
+                        decided_action = "A"
                     else:
                         _alert("Opus Failed", f"Could not get strategic decision for action {rec['action']}",
                                critical=False)
@@ -3642,9 +3777,16 @@ def cmd_daemon(args: argparse.Namespace) -> None:
                     _pause("opus_defers")
                     continue
                 else:
+                    decided_action = decision.get("action", "A")
+                    # Snapshot BEFORE applying strategic changes (Actions B-F)
+                    if decided_action != "A":
+                        pending_snapshot = _snapshot_pipeline(cycle_num)
+                        pending_snapshot_action = decided_action
+                        log(f"Outer loop snapshot taken before action {decided_action}")
                     effective_minutes = _apply_opus_decision(decision, cycle_num)
             elif rec["action"] == "A":
                 _auto_decide(cycle_num, rec, analysis)
+                decided_action = "A"
             else:
                 # No claude CLI available for non-A actions
                 _alert(f"Action {rec['action']}: {rec['label']}",
@@ -3993,6 +4135,7 @@ def main() -> None:
     p_daemon.add_argument("--deposit-akt", type=int, default=None, help="AKT deposit override (default: auto)")
     p_daemon.add_argument("--budget", type=float, default=DEFAULT_TIER_BUDGET, help=f"Monthly API budget (default: ${DEFAULT_TIER_BUDGET:.0f})")
     p_daemon.add_argument("--auto-only", action="store_true", help="Skip Opus, only auto-decide action A")
+    p_daemon.add_argument("--no-review", action="store_true", help="Skip REVIEW sentinel — daemon runs fully autonomous without pausing for human approval")
     p_daemon.add_argument("--dry-run", action="store_true")
 
     # time — quick time check (PT + ET + market status)

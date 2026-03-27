@@ -12,7 +12,7 @@ Four-head transformer for SPX 0DTE options trading:
 |------|--------|---------|
 | **Gate** | (batch, 2) → [NO_TRADE, TRADE] | Entry/exit signal |
 | **Direction** | (batch, 6) → 3 call + 3 put strikes | Strike + direction selection |
-| **Value** | (batch, 1) → remaining P&L prediction | Exit intelligence (MSE) |
+| **Value** | (batch, 1) → binary exit classifier | Exit intelligence (BCE) |
 | **Risk** | (batch, 3) → [stop_pct, size_frac, conviction] | Account-aware risk management |
 
 - **37 features** (v3): price/volume, session/time, options/Greeks, market structure
@@ -66,12 +66,12 @@ python3 training/replay.py --date 2026-03-17 --output replay-trades.csv
 
 | Doc | Purpose |
 |-----|---------|
-| [docs/](docs/README.md) | Documentation index — see `docs/README.md` for full map |
-| [docs/operations/reference.md](docs/operations/reference.md) | Full project reference: key files, constants, subcommands, IBKR ops, daily pipeline |
-| [docs/architecture/](docs/architecture/) | System architecture diagrams (data flow, model heads, live stack, inner loop) |
+| [docs/misc/old-docs-readme.md](docs/misc/old-docs-readme.md) | Documentation index |
+| [docs/misc/reference.md](docs/misc/reference.md) | Full project reference: key files, constants, subcommands, IBKR ops, daily pipeline |
+| [docs/misc/ARCHITECTURE.md](docs/misc/ARCHITECTURE.md) | System architecture diagrams (data flow, model heads, live stack, inner loop) |
 | [.claude/rules/art2-operating-manual.md](.claude/rules/art2-operating-manual.md) | ART² lifecycle, roles, policies (auto-loaded) |
 | [docs/domain/](docs/domain/) | 0DTE options + practical trading domain knowledge |
-| [docs/operations/ibkr-trade-analysis-guide.md](docs/operations/ibkr-trade-analysis-guide.md) | Guide for analyzing IBKR paper trading sessions |
+| [docs/misc/ibkr-trade-analysis-guide.md](docs/misc/ibkr-trade-analysis-guide.md) | Guide for analyzing IBKR paper trading sessions |
 
 ## Safety
 

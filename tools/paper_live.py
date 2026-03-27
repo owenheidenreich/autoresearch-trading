@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import sys
+
+# Force unbuffered stdout so print() from prepare.py shows immediately
+os.environ["PYTHONUNBUFFERED"] = "1"
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -23,6 +27,11 @@ from training.live.service import PaperLiveConfig, PaperTradingService
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-8s %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+    )
     parser = argparse.ArgumentParser(description="Real-time IBKR paper trader with Polygon context bootstrap")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=4002, help="IBKR paper port default=4002")
@@ -61,6 +70,16 @@ def main() -> None:
         end_time_et=args.end_time_et,
         max_minutes=args.max_minutes,
     )
+    log = logging.getLogger("paper_live")
+    log.info("=" * 60)
+    log.info("PAPER TRADING SERVICE")
+    log.info("  Model:    %s", args.model)
+    log.info("  Port:     %s", args.port)
+    log.info("  Dry-run:  %s", args.dry_run)
+    log.info("  Auto:     %s", args.paper_auto)
+    log.info("  Window:   %s - %s ET", args.start_time_et, args.end_time_et)
+    log.info("=" * 60)
+
     svc = PaperTradingService(cfg)
     if args.context_only:
         path = svc.run_context_refresh()

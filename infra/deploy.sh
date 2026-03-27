@@ -148,6 +148,49 @@ cmd_boot() {
     # Use `deploy.sh fund <ACT>` to add funds before starting experiments.
     DEPOSIT_ACT="${DEPOSIT_ACT:-5}"
     DEPOSIT_UACT=$((DEPOSIT_ACT * 1000000))
+
+    # Auto-mint ACT if balance insufficient.
+    # BME min_mint = 10 ACT. Exchange rate ~7 AKT per 1 ACT (varies).
+    # Query on-chain balance and mint if needed.
+    local _act_bal
+    _act_bal=$(provider-services query bank balances "$AKASH_OWNER" \
+        --node "$AKASH_NODE" --output json 2>/dev/null | \
+        python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for b in d.get('balances', []):
+    if b['denom'] == 'uact':
+        print(b['amount'])
+        sys.exit(0)
+print('0')
+" 2>/dev/null || echo "0")
+    if [[ "$_act_bal" -lt "$DEPOSIT_UACT" ]]; then
+        local _deficit_act=$(( (DEPOSIT_UACT - _act_bal + 999999) / 1000000 ))
+        # BME minimum mint is 10 ACT. Mint at least 15 ACT to have buffer.
+        local _mint_act=$(( _deficit_act > 15 ? _deficit_act : 15 ))
+        # Exchange rate ~7 AKT per ACT (query vault for precision)
+        local _akt_per_act
+        _akt_per_act=$(provider-services query bme vault-state --node "$AKASH_NODE" --output json 2>/dev/null | \
+            python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+vs = d.get('vault_state', d)
+uakt = int([b['amount'] for b in vs['balances'] if b['denom']=='uakt'][0])
+uact = int([b['amount'] for b in vs['balances'] if b['denom']=='uact'][0])
+print(int(uakt / uact) + 2)  # +2 for spread/rounding safety
+" 2>/dev/null || echo "8")
+        local _mint_uakt=$(( _mint_act * _akt_per_act * 1000000 ))
+        log "ACT balance insufficient ($((_act_bal/1000000)) ACT < ${DEPOSIT_ACT} ACT). Minting ${_mint_act} ACT from $((_mint_uakt/1000000)) AKT..."
+        local _mint_out
+        _mint_out=$(provider-services tx bme mint-act "${_mint_uakt}uakt" \
+            --from "$AKASH_FROM" --yes --output json 2>&1)
+        local _mint_code
+        _mint_code=$(echo "$_mint_out" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',1))" 2>/dev/null || echo "1")
+        [[ "$_mint_code" == "0" ]] || { echo "$_mint_out"; die "ACT mint failed (code=$_mint_code)"; }
+        log "Minted ${_mint_act} ACT ✓ — waiting 10s for chain confirmation..."
+        sleep 10
+    fi
+
     log "Submitting deployment TX (deposit=${DEPOSIT_ACT} ACT ~\$${DEPOSIT_ACT} — use 'fund' to add more)..."
     TX_OUTPUT=$(provider-services tx deployment create "$SDL_FILE" \
         --deposit "${DEPOSIT_UACT}uact" \
@@ -375,7 +418,8 @@ cmd_start() {
 
     # Upload exact local workspace snapshot (no git/network pulls on remote).
     local bundle source_git_sha source_dirty_count bundle_sha
-    bundle="$(mktemp /tmp/autoresearch-workspace.XXXXXX.tgz)"
+    bundle="/tmp/autoresearch-workspace-$$.tgz"
+    rm -f "$bundle"  # Clean up any stale file from previous run
     source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
     source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
     log "Packaging local workspace snapshot..."
@@ -452,64 +496,25 @@ fi"
     log "Files on remote GPU node:"
     ssh_cmd "ls -lh /root/*.py /root/*.sh /root/deploy_source.json /root/.cache/autoresearch-trading/features/data.pt"
 
-    # Pre-flight dry-run on GPU node — verify data, GPU, API before consuming time
+    # Pre-flight: verify GPU, Python, PyTorch, and data on remote node
+    # Uses a separate script file to avoid shell→SSH→Python quoting issues.
     log "Running pre-flight checks on remote GPU node..."
-    if ! ssh_cmd "cd /root && ANTHROPIC_API_KEY='$ANTHROPIC_KEY' /opt/conda/bin/python -u run_loop.py --dry-run"; then
+    if ! ssh_cmd "/opt/conda/bin/python /root/autoresearch-trading/infra/preflight.py"; then
         die "Pre-flight failed on remote GPU node. Fix issues before running."
     fi
     log "Pre-flight passed!"
 
-    # Launch loop via start_loop.sh — pass API key as env var (not sed)
-    log "Starting autoresearch loop... $LOOP_ARGS"
-    ssh_cmd "chmod +x /root/start_loop.sh && ANTHROPIC_API_KEY='$ANTHROPIC_KEY' /root/start_loop.sh $LOOP_ARGS"
-
-    # Auto-launch sync in background — survives terminal close via nohup+disown
-    local sync_dest="$PROJECT_ROOT/results"
-    mkdir -p "$sync_dest"
-    # Kill any stale sync processes from previous runs
-    if [[ -f "$PROJECT_ROOT/.sync-pid" ]]; then
-        local old_pid
-        old_pid=$(cat "$PROJECT_ROOT/.sync-pid")
-        kill "$old_pid" 2>/dev/null && log "Killed stale sync (PID $old_pid)"
-        rm -f "$PROJECT_ROOT/.sync-pid"
-    fi
-    log "Starting auto-sync to $sync_dest ..."
-    nohup bash "$PROJECT_ROOT/infra/deploy.sh" sync "$sync_dest" \
-        > "$sync_dest/sync.log" 2>&1 &
-    local sync_pid=$!
-    disown "$sync_pid" 2>/dev/null
-    echo "$sync_pid" > "$PROJECT_ROOT/.sync-pid"
-
-    # Dry-run: wait up to 90s for sync to connect and find the run pointer
-    log "Verifying auto-sync connectivity (up to 90s)..."
-    local waited=0
-    local sync_ok=false
-    while [[ $waited -lt 90 ]]; do
-        if grep -q "Baseline:" "$sync_dest/sync.log" 2>/dev/null; then
-            sync_ok=true
-            break
-        fi
-        if ! kill -0 "$sync_pid" 2>/dev/null; then
-            log "ERROR: Auto-sync process died. Check $sync_dest/sync.log"
-            break
-        fi
-        sleep 5
-        waited=$((waited + 5))
-    done
-    if $sync_ok; then
-        log "Auto-sync verified — connected and tracking run."
-    else
-        log "WARNING: Auto-sync did not confirm within 90s."
-        log "  The training loop may still be starting. Sync will retry automatically."
-        log "  Check: tail -f $sync_dest/sync.log"
-    fi
-
+    # Training is driven locally by inner_loop.py (SSHes into GPU for each experiment).
+    # No remote loop process needed.
     log ""
-    log "=== LOOP RUNNING ==="
+    log "=== GPU READY FOR TRAINING ==="
+    log ""
+    log "Next steps (run locally):"
+    log "  Sequential: python3 tools/inner_loop.py experiment --summary 'hypothesis'"
+    log "  PBT:        python3 tools/inner_loop.py pbt-init --population 6 && python3 tools/inner_loop.py pbt-run"
+    log "  Full cycle:  python3 tools/art2.py daemon --max-cycles 5 --minutes 100"
+    log ""
     log "Dashboard: python3 tools/monitor.py    → http://localhost:8420"
-    log "Auto-sync: PID $sync_pid → $sync_dest"
-    log "  Sync log: tail -f $sync_dest/sync.log"
-    log "Logs:   ./deploy.sh logs"
     log "Status: ./deploy.sh status"
     log "SSH:    ./deploy.sh ssh"
 }

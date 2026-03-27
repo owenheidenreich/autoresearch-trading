@@ -4,6 +4,150 @@
 
 ---
 
+
+## 2026-03-26 (evening) — V8 Best Model Ever: Replay PF 1.43 (+120% return)
+
+**V8 is our best model by ground truth.** Head-to-head replay backtest over 298 validation days:
+
+| Metric | v6 | v8 | Winner |
+|--------|-----|-----|--------|
+| Replay PF | 1.03 | **1.43** | v8 |
+| Total Return | +45% | **+120%** | v8 |
+| Max Drawdown | -20.5% | **-17.7%** | v8 |
+| Stop Loss Rate | 13% | **8%** | v8 |
+| Avg Hold | 3 bars | **6 bars** | v8 |
+| Avg Winner | +16% | **+27%** | v8 |
+
+v6 had a higher training score (41.92 vs 13.78) but was a scalp-and-lose model — overtrading with 3-bar holds and 67% value exits. v8 holds trades longer, captures larger winners, and has fewer stop-outs. The lower training score reflects v8's tighter loss weights (VALUE_W=0, EXIT_W=0.15), not worse performance.
+
+**Current v8 model:** Score 13.78, training PF 5.45, 133 trades, 44% WR, worst chunk PF 3.86. Fresh start after only 9 experiments (2 kept). Significant room for improvement.
+
+---
+
+
+## 2026-03-26 — V8 Pipeline Overhaul
+
+**The problem:** v6 was the only VIABLE model (score 41.92, val PF 3.28). v7 changed 5 things at once (exit labels, value head BCE, tanh scale, loss weights, DAY_SEQ_RATIO) and score dropped to 8.09. No pipeline version control meant we couldn't attribute the regression or cleanly revert.
+
+**The fix — outer loop keep/revert:** Applied the inner loop's keep/revert discipline to the ART² outer loop. When Opus makes strategic changes (Actions B-F), the daemon now snapshots the pipeline (train.py, best_train.py, best_model.pt, .best_score, replay_metrics). After the next training cycle, it compares replay PF. If PF regressed >10%, pipeline auto-reverts. History tracked in state.json.
+
+**V8 defaults:** Reverted v7's counterproductive changes. VALUE_W=0.0 (disabled), EXIT_W=0.15 (reduced), VALUE_LOSS_TYPE=mse (reverted from BCE), COOLDOWN_RATIO=0.4, BATCH_SIZE=1024. Added training_config to checkpoints with warm-start validation. P2 fp32 precision casts in loss computation.
+
+**Fresh start:** v6 model archived. best_model.pt removed, .best_score reset to -5.0. Ready for v8 training.
+
+---
+
+
+## 2026-03-26 — Cycle 005: Let It Cook
+
+Cycle 005: v7.2 fresh start reached score 7.642 after 10 experiments (2 kept). Research identified three clear problems — value exit destroying 70.8% of trades, scalp-and-lose pattern (90% held ≤3 bars), and OTM hemorrhaging (-1025% total). Lab notebook updated with strict experimental sequence targeting each issue. Letting the inner loop execute the plan before intervening further.
+
+---
+
+
+## 2026-03-26 — Cycle 004: Let It Cook
+
+Cycle 004 completed the v7.2 fresh start, reaching score 7.642 with 2/10 experiments kept. Research identified four key issues: value exit destroying value (70.8% of exits at -0.82% avg), scalp-and-lose pattern (90% trades held ≤3 bars), OTM hemorrhaging (-1025% total), and call-side losses. Lab notebook updated with strict experimental sequence targeting each issue. Letting the inner loop execute before intervening.
+
+---
+
+
+## 2026-03-26 — Cycle 003: Steering the Inner Loop
+
+Cycle 003 completed v7.2 fresh start with 2/10 experiments kept, reaching score 7.642. Research revealed value_exit fires on 70.8% of trades at negative average P&L — the single biggest source of losses. Steered inner loop to strict 3-experiment sequence: kill value exit (VALUE_W=0.0), fix scalp-and-lose hold times (COOLDOWN=0.5), then strengthen ATM bias (DIR_W=4.0). Model is NOT VIABLE at val PF 0.74 but the path forward is clear.
+
+---
+
+
+## 2026-03-26 — Cycle 002: Steering the Inner Loop
+
+Cycle 002 completed with score 7.642 (2/10 kept) but model is NOT VIABLE — validation PF 0.74, losing money across 812 trades. Research analysis revealed three structural issues: value_exit fires on 70.8% of trades and destroys value, OTM strikes hemorrhage (total -1025% P&L vs ATM -362%), and the model scalps-and-loses with 90% of trades held ≤3 bars. Steering inner loop to suppress value head (VALUE_W→0), enforce longer holds, and bias toward ATM strikes — all supported by domain knowledge that exits matter more than entries and ATM has the best gamma response.
+
+---
+
+## 2026-03-26 (afternoon) — IBKR Paper Trading Verified End-to-End
+
+**Full pipeline confirmed working.** IB Gateway port 4002, paper account DUP440540. Context refresh downloaded 61 days of SPX/SPY/VIX bars + SPXW options from IBKR and Polygon. Model (v7, score 7.642) loaded with value head active.
+
+**Live test:** Bracket order placed — BUY 1x SPXW 260326C06500000 (CALL OTM5, strike 6500) at $7.30 LMT, with STP at $5.20 and TP at $43.50. Filled on CBOE in <1 second. Position tracked through 4 bars (+$108 unrealized). EOD flatten executed via market SELL at $8.50. Final P&L: +$120 (+16.4%).
+
+**Infrastructure verified:** audit.jsonl logging, trades.jsonl records, CSV export, daily summary JSON, live dashboard (localhost:8421), launchd plist for automated daily runs. Kill switch and circuit breakers tested. Operating manual Section 13 updated with VERIFIED status.
+
+**Codebase audit (10 items) — all resolved.** Integrity check blocks promotion, atomic promotion with sentinel, README links fixed, loss weights synced, position state docs corrected.
+
+---
+
+## 2026-03-26 (morning) — Critical Bug: PBT Promotion Saved Wrong Model
+
+**The overnight PBT results were INVALID.** The `.best_score` file said 16.34 but `best_model.pt` contained weights from a 0.90-score run. We were replaying a random-init garbage model, not the actual PBT winner.
+
+**Root cause:** PBT promotion re-trains the winning member to save its weights, but called `_train_on_akash(upload_model=False)`. This meant the re-training started from RANDOM INIT instead of the warm-started baseline. Each PBT member trains from a shared baseline on Akash, but after all 6 members run, the last member's weights overwrite the baseline. When a non-last member wins, the re-training can't recover the correct starting point.
+
+**Fix (3 changes to inner_loop.py):**
+1. Promotion re-training now uses `upload_model=True` — re-uploads the local baseline before re-training
+2. Post-promotion validation checks that downloaded model's embedded score matches expected score (±50%)
+3. Baseline model re-uploaded at start of each PBT generation (handles mid-sweep promotions)
+
+**Immediate recovery:** Reset `.best_score` from 16.34 → 0.90 to match actual model. The PBT sweep needs to be re-run with the fix to get a real winner.
+
+> *Critical sync bug: PBT promotion saved random-init model (score 0.90) but recorded score 16.34. Fixed upload_model=False→True. All previous PBT promotions were affected.*
+
+---
+
+## 2026-03-26 (overnight) — v7.1 PBT Sweep Complete: Score 8.83→16.34, But Replay PF=0.99
+
+**8-generation PBT sweep completed overnight.** 48 experiments (6 members × 8 generations). Only 1 promotion: gen 3 member 1 scored 16.34 (nearly 2x the 8.83 baseline). Gens 4-7 couldn't beat it (stagnation=4).
+
+**The winning config is radical and surprising:**
+- EXIT_W=0.019 (essentially zero, down from 0.70) — exit labels actually hurt
+- VALUE_W≈0 (down from 0.85) — value head is useless
+- PNL_W=1.70 (up from 0.50) — PnL alignment is the real training signal
+- GATE_W=0.97 (up from 0.75) — strong gate handles both entry AND exit
+- LR=0.0037 (15x higher) — much more aggressive learning
+- FALSE_ENTRY_PENALTY=2.61 (up from 1.0) — punish bad entries hard
+- RWR_WEIGHT=4.71 — heavy reward-weighted regression
+
+**Key insight:** The v7 exit labels we carefully designed (sparse 66.5%, take-profit, etc.) may actually be counterproductive. The model learns exit timing better from gate head NO_TRADE predictions + PnL alignment alone.
+
+**However: replay backtest shows PF=0.99** (barely break-even). Training PF was 3.62 on 100 trades/70 val days, but full-period replay (298 days, 227 trades) = break-even. Problems: VALUE_EXIT still 35% of exits (old weights still active despite VALUE_W=0), OTM10 calls hemorrhaging (-$1,296), puts the only profitable direction (+$4,333), overtrading on bad days (8-12 trades).
+
+**Verdict: NOT VIABLE for paper trading.** Model overfits to validation window. Next steps: need to either (a) run sequential warm-start experiments to improve the 16.34 model, or (b) consider whether v7 exit architecture fundamentally needs rethinking given the PBT's EXIT_W≈0 finding.
+
+> *v7.1 PBT: 48 experiments, best score 16.34 (EXIT_W≈0, VALUE_W≈0 — exit labels are counterproductive). But replay PF=0.99. Not viable yet.*
+
+---
+
+## 2026-03-26 (late PM) — PBT Defaults Sync Bug Fixed, v7 PBT Training Restart
+
+**Found a silent data integrity bug in PBT.** `_PARAM_SPACE` in `inner_loop.py` hardcoded its own copy of hyperparameter defaults — separate from train.py's actual defaults. Five params had drifted: EXIT_W (0.15 vs actual 0.40), VALUE_W (0.3 vs 0.5), DAY_SEQ_RATIO (0.85 vs 0.92), WEIGHT_RECENT_BOOST (0.3 vs 0.0), WEIGHT_DAY_DIVERSITY (1.0 vs 0.0). PBT member 0 (baseline) was using stale values, and all perturbations centered on the wrong point.
+
+**Root cause:** Two sources of truth for the same values. In a project where train.py evolves every cycle, manual copies always drift.
+
+**Fix:** Eliminated `"default"` from `_PARAM_SPACE` entirely. Added `_parse_train_defaults()` which reads defaults from train.py via regex at PBT init time. `_PARAM_SPACE` now only defines search bounds (lo/hi/scale/tier). train.py is the single source of truth — forever.
+
+**v7 status going into PBT:** Score 8.83 after ~9 manual experiments. Validation backtest shows PF 0.74 (losing money) — value head exiting too aggressively (76% value exits, 2 bar avg hold). Model needs more training steps to learn when to hold vs exit. Kicking off PBT sweep overnight with corrected defaults.
+
+> *PBT defaults sync bug: 5 params drifted silently. Fixed by eliminating duplicate defaults — train.py is now the only source of truth. v7 PBT training restarted.*
+
+---
+
+## 2026-03-26 (early AM) — v7: Exit Label Overhaul, Binary Value Head, Fresh Start
+
+**The model couldn't learn exits because exit labels were useless.** 98% of bars had exit=1, meaning the model learned "always exit" — which is the same as learning nothing. Root cause: the old 120-bar lookback checked ALL hypothetical past entries on every bar. Since most entries are underwater (3% spread cost), the trailing stop or stall signal fires for at least one of them on virtually every bar.
+
+**Five structural problems fixed in v7:**
+1. **Exit labels now sparse (66.5% vs 98%):** Reduced lookback from 120→15 bars, added a -5% underwater filter (skip entries that are deep in stop-loss territory), and added three distinct exit signals: trailing stop (P&L drops 40% from high-water mark), momentum stall (positive P&L flat for 6 bars), and take-profit (P&L reaches +20%).
+2. **Value head redesigned:** Changed from MSE regression on "remaining P&L" (predicts magnitude, not timing) to binary cross-entropy on exit labels (directly teaches "should I exit now?"). The old value head was value-destructive (-2.82% avg on value exits).
+3. **Take-profit mechanism added:** Previously no way for the model to learn profit-taking. Now exit=1 when unrealized P&L ≥ 20%.
+4. **Loss weights rebalanced:** EXIT_W raised from 0.15→0.40 (safe now that labels are sparse), VALUE_W from 0.3→0.5, DAY_SEQ_RATIO from 0.85→0.92.
+5. **Sigmoid value exit in replay + live:** Value head output converted via sigmoid to exit probability, with conviction-adjusted threshold (high conviction = harder to exit).
+
+**v6 isolated and backed up** before changes. Fresh start from score -5.0 (no warm start — architecture semantics changed). Early v7 results after 2 experiments: PF 5.0, 150 trades, 75% model exit rate, 19% stop rate. All chunks profitable (worst 1.45). Model still concentrated in lunch window — needs more training steps to diversify.
+
+> *v7 overhaul: exit labels 98%→66.5%, value head MSE→BCE, take-profit signal added. Fresh start showing PF 5.0 with 75% model exits after just 2 experiments.*
+
+---
+
 ## 2026-03-25 (evening) — Cycle 003: PBT Sweep Failed, Pivoting to Paper Trading
 
 **30 PBT experiments across 5 generations, 0 kept.** Best PBT score was 25.99 — still 38% below the 41.92 baseline. Combined with cycle 002's 10 manual experiments, that's 40 total experiments with zero improvements. The 41.92 appears to be a statistical outlier from training stochasticity, not a reproducible optimum.

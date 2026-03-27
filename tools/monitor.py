@@ -199,14 +199,29 @@ def get_active_run_name() -> str | None:
 PBT_STATE_PATH = PROJECT_ROOT / "training" / ".pbt_state.json"
 
 
-def load_pbt_state() -> dict | None:
-    """Load PBT state from .pbt_state.json and build a summary for the dashboard."""
+def load_pbt_state(experiments: list[dict] | None = None,
+                   runs: list[dict] | None = None) -> dict | None:
+    """Load PBT state from .pbt_state.json and build a summary for the dashboard.
+
+    Merges PBT experiments from all local runs so data persists across
+    deployment teardown/setup cycles.
+    """
     if not PBT_STATE_PATH.exists():
         return None
     try:
         raw = json.loads(PBT_STATE_PATH.read_text())
     except (json.JSONDecodeError, OSError):
         return None
+
+    # Merge PBT experiments from all local runs to survive deployment changes
+    all_pbt_experiments = list(experiments or [])
+    if runs:
+        existing_ids = {e.get("id") for e in all_pbt_experiments}
+        for run in runs:
+            for e in run.get("experiments", []):
+                if e.get("pbt_generation") is not None and e.get("id") not in existing_ids:
+                    all_pbt_experiments.append(e)
+                    existing_ids.add(e.get("id"))
 
     generations = raw.get("generations", [])
     summary = {
@@ -258,6 +273,48 @@ def load_pbt_state() -> dict | None:
         gen_summary["completed"] = len(scores)
         summary["generations"].append(gen_summary)
 
+    # Build in-progress generation from population + experiments
+    current_gen = raw.get("generation", 0)
+    population = raw.get("population", [])
+    already_has_gen = any(g["generation"] == current_gen for g in summary["generations"])
+
+    if population and not already_has_gen:
+        gen_exps = {}
+        if all_pbt_experiments:
+            for e in all_pbt_experiments:
+                if e.get("pbt_generation") == current_gen:
+                    gen_exps[e.get("pbt_member")] = e
+
+        gen_summary = {"generation": current_gen, "members": [], "in_progress": True}
+        scores = []
+        for p in population:
+            mid = p["id"]
+            exp = gen_exps.get(mid)
+            member = {
+                "member_id": mid,
+                "score": exp.get("score") if exp else None,
+                "role": p.get("specialist_type") or ("baseline" if mid == 0 and current_gen == 0 else "perturbed"),
+                "config_summary": _summarize_config(p.get("config", {})),
+                "anomaly_flags": exp.get("anomaly_flags", []) if exp else [],
+                "wall_time": exp.get("wall_time") if exp else None,
+            }
+            if exp:
+                member["pf"] = exp.get("profit_factor")
+                member["tpd"] = exp.get("trades_per_day")
+                member["wr"] = exp.get("win_rate")
+                member["sharpe"] = exp.get("trade_sharpe")
+                member["stop_rate"] = exp.get("stop_loss_rate")
+            if member["score"] is not None:
+                scores.append(member["score"])
+            gen_summary["members"].append(member)
+
+        if scores:
+            gen_summary["best_score"] = max(scores)
+            gen_summary["worst_score"] = min(scores)
+            gen_summary["avg_score"] = sum(scores) / len(scores)
+        gen_summary["completed"] = len(scores)
+        summary["generations"].append(gen_summary)
+
     return summary
 
 
@@ -265,8 +322,9 @@ def _summarize_config(config: dict) -> str:
     """Create a short string summarizing non-default PBT config values."""
     # Show the most important deviations from defaults
     defaults = {
-        "TRAIN_GATE_W": 0.5, "TRAIN_DIR_W": 2.5, "TRAIN_PNL_W": 0.5,
-        "TRAIN_VALUE_W": 0.3, "TRAIN_RISK_W": 0.2, "TRAIN_CONF_W": 0.1,
+        "TRAIN_GATE_W": 0.95, "TRAIN_DIR_W": 1.5, "TRAIN_PNL_W": 1.5,
+        "TRAIN_VALUE_W": 0.30, "TRAIN_RISK_W": 0.2, "TRAIN_CONF_W": 0.05,
+        "TRAIN_EXIT_W": 0.30,
     }
     diffs = []
     for k, default in defaults.items():
@@ -278,10 +336,28 @@ def _summarize_config(config: dict) -> str:
 
 
 def detect_training_mode(experiments: list[dict]) -> str:
-    """Detect whether experiments are from PBT or Opus-driven mode."""
+    """Detect whether experiments are from PBT or Opus-driven mode.
+
+    Primary signal: .pbt_state.json existence (persists across deployments).
+    Fallback: check recent experiments for pbt_generation field.
+    """
+    # Primary signal: local .pbt_state.json exists and has PBT data
+    if PBT_STATE_PATH.exists():
+        try:
+            raw = json.loads(PBT_STATE_PATH.read_text())
+            gen = raw.get("generation", 0)
+            max_gen = raw.get("max_generations", 0)
+            # Active PBT: not yet completed all generations
+            if gen < max_gen or raw.get("population"):
+                return "pbt"
+            # Completed PBT: still show results if generations were recorded
+            if raw.get("generations"):
+                return "pbt"
+        except (json.JSONDecodeError, OSError):
+            pass
+    # Fallback: check recent experiments for pbt_generation field
     if not experiments:
         return "unknown"
-    # Check recent experiments for pbt_generation field
     recent = experiments[-3:] if len(experiments) >= 3 else experiments
     if any(e.get("pbt_generation") is not None for e in recent):
         return "pbt"
@@ -512,7 +588,7 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
 
             run_state = _classify_run_state(status, ssh_ok, host)
             training_mode = detect_training_mode(experiments)
-            pbt = load_pbt_state() if training_mode == "pbt" else None
+            pbt = load_pbt_state(experiments, runs) if training_mode == "pbt" else None
             fetch_time = time.time() - t0
             poll_count = get_state()["poll_count"] + 1
 
@@ -718,6 +794,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     font-size: 12px;
     line-height: 1.6;
     margin-bottom: 6px;
+    white-space: pre-wrap;
   }
   .reasoning-change {
     color: var(--cyan);
@@ -883,14 +960,25 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .pbt-gens { flex: 1; overflow-x: auto; }
 
   /* Compact PBT table */
-  .pbt-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: auto; }
+  .pbt-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
   .pbt-table th {
     text-align: left; padding: 4px 8px; color: var(--text-dim);
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
     border-bottom: 1px solid var(--border); background: var(--bg2);
     position: sticky; top: 0;
   }
-  .pbt-table td { padding: 4px 8px; border-bottom: 1px solid var(--bg3); }
+  /* Column widths for fixed layout */
+  .pbt-table .col-gen { width: 36px; }
+  .pbt-table .col-mem { width: 28px; }
+  .pbt-table .col-role { width: 70px; }
+  .pbt-table .col-score { width: 56px; }
+  .pbt-table .col-pf { width: 40px; }
+  .pbt-table .col-tpd { width: 40px; }
+  .pbt-table .col-wr { width: 40px; }
+  .pbt-table .col-sl { width: 40px; }
+  .pbt-table .col-cfg { width: auto; }
+  .pbt-table .col-flags { width: 48px; }
+  .pbt-table td { padding: 4px 8px; border-bottom: 1px solid var(--bg3); overflow: hidden; text-overflow: ellipsis; }
   .pbt-table tr:hover { background: var(--bg3); }
   .pbt-table .gen-row td {
     background: var(--bg3); font-weight: 700; color: var(--cyan);
@@ -915,6 +1003,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .role-random { background: rgba(248,81,73,0.15); color: var(--red); }
   .pbt-table td.num, .pbt-table th { white-space: nowrap; }
   .pbt-table .cfg-cell { font-size: 10px; color: var(--text-dim); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ts-cell { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
 
   /* Anomaly flags in experiment table */
   .anomaly-dot {
@@ -1072,7 +1161,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
             <thead>
               <tr id="exp-thead-row">
                 <th>#</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th>
-                <th>Sharpe</th><th>WR</th><th>SL%</th><th>Hold</th><th>Flags</th><th>Time</th>
+                <th>Sharpe</th><th>WR</th><th>SL%</th><th>Hold</th><th>Flags</th><th>Time</th><th>When (PT)</th>
               </tr>
             </thead>
             <tbody id="exp-tbody"></tbody>
@@ -1198,6 +1287,20 @@ function fmtDuration(s) {
   if (s < 60) return s.toFixed(0) + 's';
   if (s < 3600) return (s/60).toFixed(0) + 'm';
   return Math.floor(s/3600) + 'h' + String(Math.floor((s%3600)/60)).padStart(2,'0') + 'm';
+}
+
+function fmtTimestampPST(ts) {
+  if (!ts) return '--';
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return '--';
+    return d.toLocaleString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      hour12: true
+    });
+  } catch(e) { return '--'; }
 }
 
 function escapeHtml(s) {
@@ -1428,16 +1531,19 @@ async function update() {
         const maxScore = allScores.length ? Math.max(...allScores) : 1;
         const globalBest = maxScore;
 
-        let html = '<table class="pbt-table"><thead><tr>';
+        let html = '<table class="pbt-table">';
+        html += '<colgroup><col class="col-gen"><col class="col-mem"><col class="col-role"><col class="col-score"><col class="col-pf"><col class="col-tpd"><col class="col-wr"><col class="col-sl"><col class="col-cfg"><col class="col-flags"></colgroup>';
+        html += '<thead><tr>';
         html += '<th>Gen</th><th>#</th><th>Role</th><th>Score</th><th>PF</th><th>TPD</th><th>WR</th><th>SL%</th><th>Config</th><th>Flags</th>';
         html += '</tr></thead><tbody>';
 
         for (const gen of [...pbt.generations].reverse()) {
           // Generation separator row
+          const statusTag = gen.in_progress ? ' (in progress)' : '';
           const genStats = gen.best_score != null
             ? `best ${gen.best_score.toFixed(2)} / avg ${gen.avg_score.toFixed(2)} / ${gen.completed}/${pbt.population_size} done`
             : `${gen.completed}/${pbt.population_size} done`;
-          html += `<tr class="gen-row" data-gen="${gen.generation}" onclick="toggleGen(this)"><td colspan="10"><span class="arrow">&#9660;</span> Generation ${gen.generation} &mdash; ${genStats}</td></tr>`;
+          html += `<tr class="gen-row" data-gen="${gen.generation}" onclick="toggleGen(this)"><td colspan="10"><span class="arrow">&#9660;</span> Generation ${gen.generation}${statusTag} &mdash; ${genStats}</td></tr>`;
 
           for (const m of [...gen.members].reverse()) {
             const isRunning = gen.generation === pbt.generation &&
@@ -1487,11 +1593,11 @@ async function update() {
     const theadRow = document.getElementById('exp-thead-row');
     if (isPbt && !theadRow.dataset.pbt) {
       theadRow.dataset.pbt = '1';
-      theadRow.innerHTML = '<th>#</th><th>Gen</th><th>Mem</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th><th>WR</th><th>SL%</th><th>Flags</th><th>Time</th>';
+      theadRow.innerHTML = '<th>#</th><th>Gen</th><th>Mem</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th><th>WR</th><th>SL%</th><th>Flags</th><th>Time</th><th>When (PT)</th>';
       lastExpCount = -1; // Force rebuild
     } else if (!isPbt && theadRow.dataset.pbt) {
       delete theadRow.dataset.pbt;
-      theadRow.innerHTML = '<th>#</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th><th>Sharpe</th><th>WR</th><th>SL%</th><th>Hold</th><th>Flags</th><th>Time</th>';
+      theadRow.innerHTML = '<th>#</th><th>Result</th><th>Score</th><th>PF</th><th>TPD</th><th>Sharpe</th><th>WR</th><th>SL%</th><th>Hold</th><th>Flags</th><th>Time</th><th>When (PT)</th>';
       lastExpCount = -1;
     }
 
@@ -1520,6 +1626,7 @@ async function update() {
         const wr = e.win_rate != null ? (e.win_rate * 100).toFixed(0) + '%' : '--';
         const sl = e.stop_loss_rate != null ? (e.stop_loss_rate * 100).toFixed(0) + '%' : '--';
         const trainTime = e.wall_time ? fmtDuration(e.wall_time) : '--';
+        const whenPST = fmtTimestampPST(e.timestamp);
         const flags = renderAnomalyFlags(e.anomaly_flags);
 
         const blockTip = e.keep_block_reason ? ` title="${escapeHtml(e.keep_block_reason)}"` : '';
@@ -1539,6 +1646,7 @@ async function update() {
             <td class="num">${sl}</td>
             <td>${flags}</td>
             <td class="num">${trainTime}</td>
+            <td class="num ts-cell">${whenPST}</td>
           `;
         } else {
           const sharpe = e.trade_sharpe != null ? e.trade_sharpe.toFixed(2) : '--';
@@ -1555,6 +1663,7 @@ async function update() {
             <td class="num">${hold}</td>
             <td>${flags}</td>
             <td class="num">${trainTime}</td>
+            <td class="num ts-cell">${whenPST}</td>
           `;
         }
         tbody.appendChild(tr);
@@ -1589,7 +1698,7 @@ async function update() {
             <span class="reasoning-badge ${badgeCls}">${badgeText}</span>
           </div>
           <div class="reasoning-text">${escapeHtml(reasoning || err)}</div>
-          ${change ? `<div class="reasoning-change">${escapeHtml(change)}</div>` : ''}
+          ${change && change !== reasoning ? `<div class="reasoning-change">${escapeHtml(change)}</div>` : ''}
           ${metrics ? `<div class="reasoning-metrics">${metrics}</div>` : ''}
         </div>`;
       }

@@ -418,7 +418,7 @@ def _polygon_client():
     from polygon import RESTClient
     return RESTClient(key)
 
-_ib_next_client_id = 10
+_ib_next_client_id = 20
 
 def _ib_client(host: str = "127.0.0.1", port: int = None, client_id: int = None):
     """Connect to IB Gateway with unique client ID. Returns IB client or exits."""
@@ -654,11 +654,35 @@ def _download_ibkr_index(symbol: str, start: str, end: str,
     current = dt.datetime.strptime(start, '%Y-%m-%d')
     end_dt = dt.datetime.strptime(end, '%Y-%m-%d')
 
+    def _safe_sleep(seconds: float) -> None:
+        """Sleep without hanging on dead IB connection."""
+        if ib.isConnected():
+            ib.sleep(seconds)
+        else:
+            time.sleep(seconds)
+
+    def _ensure_connected() -> None:
+        """Reconnect if IB connection dropped."""
+        if not ib.isConnected():
+            print(f"  {symbol}: reconnecting to IB Gateway...")
+            try:
+                ib.connect(
+                    os.environ.get("IB_HOST", "127.0.0.1"),
+                    int(os.environ.get("IB_PORT", "4001")),
+                    clientId=ib.client.clientId,
+                    timeout=30,
+                )
+                ib.qualifyContracts(contract)
+                print(f"  {symbol}: reconnected OK")
+            except Exception as e:
+                print(f"  {symbol}: reconnect failed: {e}")
+
     while current < end_dt:
         week_end = min(current + dt.timedelta(days=7), end_dt)
         end_str = week_end.strftime('%Y%m%d 16:00:00')
         bars = None
         for attempt, backoff in enumerate([10, 30, 60], 1):
+            _ensure_connected()
             try:
                 bars = ib.reqHistoricalData(
                     contract,
@@ -674,11 +698,11 @@ def _download_ibkr_index(symbol: str, start: str, end: str,
                 elif bars is not None and len(bars) == 0:
                     # Empty list often means timeout/rate-limit, not truly empty
                     print(f"  {current.strftime('%Y-%m-%d')}: attempt {attempt}/3 got 0 bars, retry in {backoff}s")
-                    ib.sleep(backoff)
+                    _safe_sleep(backoff)
                     bars = None  # reset so we retry
             except Exception as e:
                 print(f"  {current.strftime('%Y-%m-%d')}: attempt {attempt}/3 FAIL ({e}), retry in {backoff}s")
-                ib.sleep(backoff)
+                _safe_sleep(backoff)
         if bars:
             for b in bars:
                 all_bars.append({
@@ -690,7 +714,7 @@ def _download_ibkr_index(symbol: str, start: str, end: str,
         else:
             print(f"  {current.strftime('%Y-%m-%d')}: 0 bars after 3 attempts")
         current = week_end
-        ib.sleep(5)  # rate limit — prevent IBKR pacing violations
+        _safe_sleep(5)  # rate limit — prevent IBKR pacing violations
 
     ib.disconnect()
 

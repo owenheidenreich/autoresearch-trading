@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Daily paper trading: start at 6:30 AM PT (= 9:30 AM ET market open).
+         Runs until 1:00 PM PT (= 4:00 PM ET market close).
+         Requires IB Gateway running on port 4002.
+
+         Install:
+           cp infra/daily_paper_trade.plist ~/Library/LaunchAgents/com.trinity.daily-paper-trade.plist
+           launchctl load ~/Library/LaunchAgents/com.trinity.daily-paper-trade.plist
+
+         Uninstall:
+           launchctl unload ~/Library/LaunchAgents/com.trinity.daily-paper-trade.plist
+           rm ~/Library/LaunchAgents/com.trinity.daily-paper-trade.plist
+
+         Check status:
+           launchctl list | grep trinity
+    -->
+
+    <key>Label</key>
+    <string>com.trinity.daily-paper-trade</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/.venv/bin/python3</string>
+        <string>tools/paper_live.py</string>
+        <string>--paper-auto</string>
+        <string>--port</string>
+        <string>4002</string>
+        <string>--client-id</string>
+        <string>80</string>
+        <string>--no-context-refresh</string>
+        <string>--start-time-et</string>
+        <string>09:30</string>
+        <string>--end-time-et</string>
+        <string>16:00</string>
+        <string>--kill-switch</string>
+        <string>results/live/kill_switch</string>
+        <string>--audit-path</string>
+        <string>results/live/audit.jsonl</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading</string>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <!-- Mon-Fri at 6:30 AM PT (covers pre-market context warm-up) -->
+        <dict>
+            <key>Weekday</key><integer>1</integer>
+            <key>Hour</key><integer>6</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>2</integer>
+            <key>Hour</key><integer>6</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>3</integer>
+            <key>Hour</key><integer>6</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>4</integer>
+            <key>Hour</key><integer>6</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>5</integer>
+            <key>Hour</key><integer>6</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/results/live/paper_trade.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/results/live/paper_trade.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/Users/gduby/.local/bin</string>
+    </dict>
+</dict>
+</plist>

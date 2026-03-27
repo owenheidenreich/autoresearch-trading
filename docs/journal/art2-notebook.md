@@ -4,10 +4,15 @@
 ART² meta-loop wrapping autoresearch inner loop.
 Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner_loop.py) optimizes train.py.
 **v3 era (2026-03-24):** 37 features, fresh start, all pre-v3 cycles archived.
+**v7 (2026-03-26):** Sparse exit labels (66.5% vs 98%), binary value head (BCE instead of MSE), take-profit signal at 20%. EXIT_W=0.40, VALUE_W=0.5, DAY_SEQ_RATIO=0.92. Sigmoid-based value exit with conviction-adjusted threshold in replay + live. **Postmortem: all v7 changes were counterproductive.**
+**v8 (2026-03-26):** Reverted v7. VALUE_W=0.0, EXIT_W=0.15, VALUE_LOSS_TYPE=mse, COOLDOWN=0.4, BATCH=1024. Outer loop keep/revert. Pipeline snapshots. Checkpoint training_config with warm-start validation. **Best model ever: replay PF 1.43 (+120% return), beating v6 replay PF 1.03 (+45%).**
 
 ## Strategic Changes Tried
 | Cycle | Change | OOS PF Before | OOS PF After | Verdict |
 |-------|--------|---------------|--------------|---------|
+| 006 | v8: revert v7, VALUE_W=0, EXIT_W=0.15, outer loop keep/revert, fresh start | 0.99 (v7) | 1.43 (replay, +120%) | **BEST EVER.** Beats v6 (1.03) and v7 (0.99). Model holds trades 6 bars vs 3, captures larger winners. |
+| 005 | v7.1: overnight PBT sweep (8 gen × 6 pop, all 25 params) | 8.83 | 16.34 (train PF 3.62, replay PF 0.99) | PARTIAL — score improved but replay shows NOT VIABLE. EXIT_W≈0 and VALUE_W≈0 won. |
+| 004 | v7: sparse exit labels, BCE value head, take-profit, fresh start | N/A (fresh) | 8.83 | Score 8.83 after ~9 experiments. Val PF 0.74 (losing money). Value head exits too aggressively. |
 | 003 | PBT sweep: Tier 1 loss weights, pop=6, gen=5 | 3.28 | 3.28 (unchanged) | FAILED — 30/30 reverted, best=25.99, stagnation=5 |
 | 002 | EXIT_W tuning (0.20-0.35), VALUE_W boost (0.4-0.5), DAY_SEQ=0.90, LR/WD | 3.28 | 3.28 (unchanged) | FAILED — 10/10 reverted, tunnel vision on EXIT_W |
 | 001 | v6 four-head + BATCH_SIZE=1024 breakthrough | N/A (fresh) | 3.28 | VIABLE (p=0.0020, 208 trades, 63 val days) |
@@ -22,6 +27,7 @@ Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner
 |--------|--------|--------|
 | Manual EXIT_W tuning (0.20-0.35) | 1 (cycle 002) | 10/10 reverted. Score penalty terms (consec loss, drawdown) are fragile — changing exit timing cascades through penalties. |
 | PBT sweep on Tier 1 loss weights | 1 (cycle 003) | 30/30 reverted (5 gens × 6 members). Best=25.99 vs 41.92 baseline. Stagnation=5. Multi-param exploration didn't help — the 41.92 is a stochastic outlier, not an achievable optimum. |
+| Hardcoding hyperparameter defaults in two places | N/A (infra bug) | `_PARAM_SPACE` defaults drifted from train.py on 5 params. PBT baseline was wrong. **Fixed:** defaults parsed from train.py at runtime. Never duplicate source-of-truth values. |
 
 ## Lessons From Pre-v3 (230 cycles archived)
 - **Score gaming:** Agent tuned SCORE_DRAWDOWN_PENALTY to inflate scores 6x without PF improvement. Score config now LOCKED.
@@ -37,7 +43,9 @@ Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner
 - **Spread proxy was miscalibrated:** Bar range ≠ bid-ask spread. Killed 85-98% of bars. Fixed with premium-tier lookup + hard-fail guardrails.
 
 ## Current Hypothesis
-**Paper trading validation.** 40 experiments (10 manual + 30 PBT) couldn't improve the 41.92 score — it's a stochastic outlier, not an optimizable target. Model is VIABLE (val PF=3.28, p=0.0020). Per ground truth hierarchy (paper P&L > backtest > score), next step is IBKR paper trading validation: 3-5 sessions, measure live P&L vs backtest expectation. If they match, model is validated. If not, divergence reveals what to fix. Feature additions (GEX, market internals, walk-forward) are higher leverage than more hyperparameter tuning.
+**The v7 exit labels may be counterproductive.** PBT found the best model (score 16.34) with EXIT_W≈0 and VALUE_W≈0 — the gate head + PNL alignment handle exit timing better than explicit exit supervision. However, replay PF=0.99 means the model isn't generalizing. Two paths forward: (a) sequential warm-start from 16.34 with domain-knowledge-guided experiments, (b) rethink whether the value head architecture needs a different role (e.g., risk estimation instead of exit prediction).
+
+**Replay divergence is the primary blocker.** Training PF 3.62 on 70 val days vs replay PF 0.99 on 298 days. OTM10 calls hemorrhaging. Puts only profitable direction. Overtrading on bad days.
 
 ## What Works (Outer Loop)
 - ART² correctly identified gamed baselines, structural bugs, and architecture dead weight across 230 cycles.
@@ -66,3 +74,6 @@ Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner
 - Event calendar integration (CPI/FOMC IV crush prediction)
 - Order flow indicators (L2 book imbalance, block trades)
 - DIX (dark pool index, leads by 1-3 days but less useful for intraday 0DTE)
+
+| 006 (cycle-002) | Steer: suppress value exit, fix hold time, ATM bias | val PF 0.74 (NOT VIABLE) | TBD | Research: value_exit 70.8% of trades at -0.82% avg. OTM -1025% total. Scalp-and-lose (90% held ≤3 bars). |
+| 006 (cycle-003) | Steer: strict sequence — kill value exit (VALUE_W=0.0), fix hold time (COOLDOWN=0.5), ATM bias (DIR_W=4.0) | val PF 0.74 (NOT VIABLE) | TBD | Value exit 70.8% of trades at -0.82% avg. Scalp-and-lose 90%. OTM -1025%. Fresh start reached 7.642. |

@@ -55,6 +55,8 @@ from prepare import (
     make_dataloader,
     evaluate_trades,
     evaluate_sharpe,
+    PNL_TANH_SCALE,
+    BEST_PNL_TANH_SCALE,
 )
 
 
@@ -99,27 +101,28 @@ DEPTH = _env_int("TRAIN_DEPTH", 3, lo=2, hi=6)
 FF_MULT = _env_int("TRAIN_FF_MULT", 3, lo=2, hi=6)
 DROPOUT = _env_float("TRAIN_DROPOUT", 0.30, lo=0.05, hi=0.40)  # Increased from 0.25: force generalization across dates, not single-date memorization
 
-BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 512, lo=32, hi=2048)
+BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 1024, lo=32, hi=2048)  # v8: doubled from 512. v6 breakthrough used 1024.
 LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Proven sweet spot
 WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.08, lo=0.0, hi=0.3)  # Increased from 0.05: combat overfit
 ADAM_BETAS = (0.9, 0.98)
 GRAD_CLIP = _env_float("TRAIN_GRAD_CLIP", 1.0, lo=0.0, hi=5.0)
 WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
-COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.3, lo=0.0, hi=0.8)
+COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.4, lo=0.0, hi=0.8)  # v8: 0.3→0.4, proven improvement in v7.2 experiments
 
 # Loss weights
-GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 0.5, lo=0.1, hi=5.0)
-DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 2.5, lo=0.1, hi=5.0)  # Increased from 2.0 to break direction collapse
-PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.5, lo=0.0, hi=2.0)  # Increased from 0.3: stronger profitability signal
-EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.15, lo=0.0, hi=2.0)  # Increased from 0.10: confirmed working, helps model learn exits
-CONFIDENCE_LOSS_WEIGHT = _env_float("TRAIN_CONF_W", 0.10, lo=0.0, hi=1.0)  # Confidence calibration: reward high conf on winners, penalize on losers
-VALUE_LOSS_WEIGHT = _env_float("TRAIN_VALUE_W", 0.3, lo=0.0, hi=2.0)  # Phase D: value head MSE on remaining P&L
+GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 0.95, lo=0.1, hi=5.0)  # v7.2: full PBT — GATE_W≈0.97 won consistently. Gate handles entry AND exit.
+DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.5, lo=0.1, hi=5.0)  # v7.2: PBT winner had 1.15. Reduced from 2.5 — less directional pressure.
+PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 1.5, lo=0.0, hi=2.0)  # v7.2: PBT winner had 1.70. PnL alignment is the primary training signal.
+EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.15, lo=0.0, hi=2.0)  # v8: 0.30→0.15. PBT drove EXIT_W→0, exit labels counterproductive.
+CONFIDENCE_LOSS_WEIGHT = _env_float("TRAIN_CONF_W", 0.05, lo=0.0, hi=1.0)  # v7.2: PBT winner had 0.015. Minimal confidence loss.
+VALUE_LOSS_WEIGHT = _env_float("TRAIN_VALUE_W", 0.0, lo=0.0, hi=2.0)  # v8: disabled. PBT drove VALUE_W→0. Re-enable after gate-only baseline established.
+VALUE_LOSS_TYPE = os.environ.get("TRAIN_VALUE_LOSS_TYPE", "mse")  # mse|bce|none — v6 used mse, v7 used bce (proven counterproductive)
 VALUE_EXIT_THRESHOLD = _env_float("TRAIN_VALUE_EXIT_THRESH", 0.02, lo=-0.5, hi=0.5)  # Exit when value_pred < threshold
 RISK_LOSS_WEIGHT = _env_float("TRAIN_RISK_W", 0.2, lo=0.0, hi=2.0)  # Phase E: risk head (stop + size + conviction)
 
 # Asymmetric gate penalty: how much more to penalize false entries vs missed entries
 # >1.0 means "it's worse to trade when you shouldn't than to miss a trade"
-FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 1.2, lo=1.0, hi=5.0)  # Reduced from 1.5: less conservative gate, model was too reluctant to trade
+FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 1.0, lo=1.0, hi=5.0)  # v7.1: PBT gen0 — top 2 members both had 1.0. No asymmetric penalty = gate learns symmetric entry/exit.
 
 # Label smoothing
 GATE_LABEL_SMOOTHING = _env_float("TRAIN_GATE_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0.2)
@@ -506,7 +509,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         tod_weight = F.softplus(tod_weight_logits[bar_idx]) + 0.5  # floor at 0.5, no upper bound
     else:
         tod_weight = 1.0  # uniform if not provided
-    gate_loss = F.cross_entropy(g_logits, gate_targets, reduction='none')
+    gate_loss = F.cross_entropy(g_logits.float(), gate_targets, reduction='none')
     gate_loss = (gate_loss * tod_weight * sample_weight).mean()
 
     # ---- Direction loss: return-weighted soft targets ----
@@ -524,7 +527,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     dir_soft_targets = trade_pnl_shifted / trade_pnl_shifted.sum(dim=-1, keepdim=True).clamp(min=1e-6)
 
     # KL-divergence style loss: cross-entropy with soft targets
-    dir_loss = -(dir_soft_targets * F.log_softmax(d_logits_trade, dim=-1)).sum(dim=-1)
+    dir_loss = -(dir_soft_targets * F.log_softmax(d_logits_trade.float(), dim=-1)).sum(dim=-1)
 
     dir_time_weight = 1.0 + 0.5 * (1.0 - t_feat_trade)
     dir_w = sample_weight[trade_mask]
@@ -736,6 +739,17 @@ if __name__ == "__main__":
     print(f"Parameters: {num_params:,}")
     print(f"Architecture: v6 four-head (gate+dir+value+risk), ATM-biased, 7-dim position + 4-dim account state")
 
+    # Config summary (parseable by inner_loop.py)
+    print(f"--- Training Config ---")
+    print(f"  BATCH_SIZE={BATCH_SIZE} LR={LR} WEIGHT_DECAY={WEIGHT_DECAY}")
+    print(f"  GATE_W={GATE_LOSS_WEIGHT} DIR_W={DIR_LOSS_WEIGHT} PNL_W={PNL_ALIGNMENT_WEIGHT}")
+    print(f"  EXIT_W={EXIT_LOSS_WEIGHT} VALUE_W={VALUE_LOSS_WEIGHT} RISK_W={RISK_LOSS_WEIGHT}")
+    print(f"  CONF_W={CONFIDENCE_LOSS_WEIGHT} VALUE_LOSS_TYPE={VALUE_LOSS_TYPE}")
+    print(f"  PNL_TANH_SCALE={PNL_TANH_SCALE} BEST_PNL_TANH_SCALE={BEST_PNL_TANH_SCALE}")
+    print(f"  COOLDOWN_RATIO={COOLDOWN_RATIO} WARMUP_RATIO={WARMUP_RATIO}")
+    print(f"  FALSE_ENTRY_PENALTY={FALSE_ENTRY_PENALTY}")
+    print(f"--- End Config ---")
+
     # Warm start: load best_model.pt if it exists and shapes are compatible
     _warm_start_loaded = False
     _warm_path = os.path.join(os.path.dirname(__file__), "best_model.pt")
@@ -762,6 +776,44 @@ if __name__ == "__main__":
                 print(f"  Unexpected keys (ignored): {[k for k in _unexpected]}")
             _warm_start_loaded = True
             print(f"Warm start: loaded weights from {_warm_path} (arch={_ckpt_arch}, pos_dim={_ckpt_pos_dim})")
+
+            # Warm-start config validation: warn on mismatches
+            _saved_cfg = _ckpt.get('training_config', {}) if isinstance(_ckpt, dict) else {}
+            if _saved_cfg:
+                _critical_mismatches = []
+                _info_mismatches = []
+                _cfg_checks = [
+                    ('pnl_tanh_scale', PNL_TANH_SCALE, True),
+                    ('best_pnl_tanh_scale', BEST_PNL_TANH_SCALE, True),
+                    ('value_loss_type', VALUE_LOSS_TYPE, True),
+                    ('gate_w', GATE_LOSS_WEIGHT, False),
+                    ('dir_w', DIR_LOSS_WEIGHT, False),
+                    ('pnl_w', PNL_ALIGNMENT_WEIGHT, False),
+                    ('exit_w', EXIT_LOSS_WEIGHT, False),
+                    ('value_w', VALUE_LOSS_WEIGHT, False),
+                    ('risk_w', RISK_LOSS_WEIGHT, False),
+                    ('batch_size', BATCH_SIZE, False),
+                    ('cooldown_ratio', COOLDOWN_RATIO, False),
+                ]
+                for key, current, critical in _cfg_checks:
+                    saved = _saved_cfg.get(key)
+                    if saved is not None and saved != current:
+                        msg = f"  {key}: checkpoint={saved} → current={current}"
+                        if critical:
+                            _critical_mismatches.append(msg)
+                        else:
+                            _info_mismatches.append(msg)
+                if _critical_mismatches:
+                    print("WARNING: CRITICAL config mismatches with checkpoint:")
+                    for m in _critical_mismatches:
+                        print(m)
+                    print("  These affect model semantics — consider fresh start.")
+                if _info_mismatches:
+                    print("INFO: Config changes from checkpoint (non-critical):")
+                    for m in _info_mismatches:
+                        print(m)
+            else:
+                print("  Checkpoint has no training_config — cannot validate config compatibility")
         except Exception as e:
             print(f"Warm start failed ({e}), training from scratch.")
     else:
@@ -831,7 +883,7 @@ if __name__ == "__main__":
     x_batch, y_batch = next(train_loader)
 
     # Day-sequential loader for Phase 3
-    DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.85, lo=0.0, hi=1.0)  # Increased from 0.7: more temporal context for generalization
+    DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.92, lo=0.0, hi=1.0)  # v7: raised from 0.85 — exit learning needs position context (day-seq only)
     DAY_SEQ_BATCH = _env_int("TRAIN_DAY_SEQ_BATCH", 16, lo=4, hi=64)
     _use_day_seq = DAY_SEQ_RATIO > 0
     if _use_day_seq:
@@ -989,8 +1041,8 @@ if __name__ == "__main__":
             still_holding = (new_holding > 0.5) & ~entering
             new_bars[still_holding] = (bars_held[still_holding] + 1.0 / BARS_PER_DAY).clamp(max=1.0)
 
-            # Update unrealized P&L for holding positions (reduced saturation for better gradient)
-            cur_pnl_tanh = torch.tanh(cur_pnl * 2.0)
+            # Update unrealized P&L for holding positions
+            cur_pnl_tanh = torch.tanh(cur_pnl * PNL_TANH_SCALE)
             new_pnl[new_holding > 0.5] = cur_pnl_tanh[new_holding > 0.5]
 
             # Update best_pnl and bars_since_high for value head context
@@ -1043,7 +1095,6 @@ if __name__ == "__main__":
 
     while True:
         model.train()
-        if torch.cuda.is_available(): torch.cuda.synchronize()
         t0 = time.time()
 
         # Hybrid sampling: alternate between day-sequential and random
@@ -1110,10 +1161,23 @@ if __name__ == "__main__":
 
                 # Phase D: Value head loss (only while holding)
                 _holding = _day_seq_position_state[:, 0] > 0.5
-                if VALUE_LOSS_WEIGHT > 0 and _holding.any():
-                    _value_target = _cur_best[_holding].clamp(-1.0, 1.0)
+                if VALUE_LOSS_WEIGHT > 0 and VALUE_LOSS_TYPE != "none" and _holding.any():
                     _value_pred_holding = value_pred[_holding]
-                    _value_loss = F.mse_loss(_value_pred_holding, _value_target)
+                    if VALUE_LOSS_TYPE == "bce":
+                        # BCE on binary exit labels (v7 approach — proven counterproductive)
+                        _ec_h = y_dict['exit_call'][_holding] if y_dict.get('exit_call') is not None else torch.zeros_like(_value_pred_holding)
+                        _ep_h = y_dict['exit_put'][_holding] if y_dict.get('exit_put') is not None else torch.zeros_like(_value_pred_holding)
+                        _exit_target = torch.where(
+                            (torch.nan_to_num(_ec_h, nan=0.0) > 0.5) | (torch.nan_to_num(_ep_h, nan=0.0) > 0.5),
+                            torch.ones_like(_value_pred_holding),
+                            torch.zeros_like(_value_pred_holding),
+                        )
+                        _value_loss = F.binary_cross_entropy_with_logits(_value_pred_holding.float(), _exit_target.float())
+                    else:
+                        # MSE on remaining P&L (v6 approach — proven effective)
+                        _pnl_holding = _cur_best[_holding]
+                        _value_target = torch.tanh(_pnl_holding * PNL_TANH_SCALE).clamp(-1, 1)
+                        _value_loss = F.mse_loss(_value_pred_holding.float(), _value_target.float())
                     loss = loss + VALUE_LOSS_WEIGHT * _value_loss
 
                 # Phase E: Risk head loss (only while holding)
@@ -1129,16 +1193,16 @@ if __name__ == "__main__":
                     # Proxy: for winners, stop should be tight; for losers, wider
                     _mae_proxy = (-_day_seq_position_state[_holding, 2]).clamp(0.0)  # unrealized drawdown
                     _optimal_stop = (0.15 + _mae_proxy * 0.45 * 1.1).clamp(0.15, 0.60)
-                    _stop_loss_risk = F.mse_loss(_pred_stop, _optimal_stop)
+                    _stop_loss_risk = F.mse_loss(_pred_stop.float(), _optimal_stop.float())
 
                     # 2. Position size reward (weight 0.3)
                     _acct_growth = _day_seq_account_state[_holding, 0].clamp(0.5, 1.0) if _day_seq_account_state is not None else torch.ones_like(_pred_size)
                     _size_target = torch.sigmoid(_pnl_holding * 5.0) * _acct_growth
-                    _size_loss = F.mse_loss(_pred_size, _size_target)
+                    _size_loss = F.mse_loss(_pred_size.float(), _size_target.float())
 
                     # 3. Conviction-exit interaction (weight 0.2)
                     _conv_target = torch.tanh(_pnl_holding * 3.0)
-                    _conv_loss = F.mse_loss(_pred_conv, _conv_target)
+                    _conv_loss = F.mse_loss(_pred_conv.float(), _conv_target.float())
 
                     _risk_loss = 0.5 * _stop_loss_risk + 0.3 * _size_loss + 0.2 * _conv_loss
                     loss = loss + RISK_LOSS_WEIGHT * _risk_loss
@@ -1226,7 +1290,6 @@ if __name__ == "__main__":
         if not use_seq_this_step:
             x_batch, y_batch = next(train_loader)
 
-        if torch.cuda.is_available(): torch.cuda.synchronize()
         dt_step = time.time() - t0
         if step > 5:
             total_time += dt_step
@@ -1308,6 +1371,19 @@ if __name__ == "__main__":
             'batch_size': BATCH_SIZE,
             'exit_loss_weight': EXIT_LOSS_WEIGHT,
             'bf16': _use_amp,
+        },
+        'training_config': {
+            'pipeline_version': 'v8',
+            'gate_w': GATE_LOSS_WEIGHT, 'dir_w': DIR_LOSS_WEIGHT,
+            'pnl_w': PNL_ALIGNMENT_WEIGHT, 'exit_w': EXIT_LOSS_WEIGHT,
+            'conf_w': CONFIDENCE_LOSS_WEIGHT, 'value_w': VALUE_LOSS_WEIGHT,
+            'risk_w': RISK_LOSS_WEIGHT,
+            'value_loss_type': VALUE_LOSS_TYPE,
+            'cooldown_ratio': COOLDOWN_RATIO, 'day_seq_ratio': DAY_SEQ_RATIO,
+            'false_entry_penalty': FALSE_ENTRY_PENALTY,
+            'pnl_tanh_scale': PNL_TANH_SCALE,
+            'best_pnl_tanh_scale': BEST_PNL_TANH_SCALE,
+            'batch_size': BATCH_SIZE,
         },
         'data_fingerprint': _data_fingerprint,
         'step': step,

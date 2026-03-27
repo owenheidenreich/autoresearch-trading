@@ -119,18 +119,28 @@ _SSH_COMMON = [
 ]
 
 
-def _ssh_cmd(deploy: dict, cmd: str, timeout: int = 600) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        ["sshpass", "-e", "ssh"] + _SSH_COMMON + [
-            "-o", "ServerAliveInterval=30",
-            "-o", "ServerAliveCountMax=3",
-            "-p", deploy["SSH_PORT"],
-            f"root@{deploy['SSH_HOST']}",
-            cmd,
-        ],
-        capture_output=True, text=True, timeout=timeout,
-        env=_sshpass_env(),
-    )
+def _ssh_cmd(deploy: dict, cmd: str, timeout: int = 600, retries: int = 3) -> subprocess.CompletedProcess:
+    """Run command on Akash via SSH with retry on connection failures."""
+    for attempt in range(retries):
+        result = subprocess.run(
+            ["sshpass", "-e", "ssh"] + _SSH_COMMON + [
+                "-o", "ServerAliveInterval=30",
+                "-o", "ServerAliveCountMax=3",
+                "-p", deploy["SSH_PORT"],
+                f"root@{deploy['SSH_HOST']}",
+                cmd,
+            ],
+            capture_output=True, text=True, timeout=timeout,
+            env=_sshpass_env(),
+        )
+        # Exit code 255 = SSH connection failure (auth, network, etc.)
+        # Retry only on SSH-level failures, not on command failures
+        if result.returncode != 255 or attempt >= retries - 1:
+            return result
+        delay = 5 * (attempt + 1)  # 5s, 10s
+        _log.warning(f"SSH connection failed (attempt {attempt+1}/{retries}), retrying in {delay}s...")
+        time.sleep(delay)
+    return result
 
 
 def _scp_upload(deploy: dict, local: str, remote: str, timeout: int = 120, retries: int = 3):
@@ -173,6 +183,46 @@ def _scp_download(deploy: dict, remote: str, local: str, timeout: int = 120, ret
 # Monitor.py-compatible status writing
 # ---------------------------------------------------------------------------
 
+
+def _build_reasoning(summary: str, kept: bool, score: float, best_score: float,
+                     metrics: dict, reasons: list, anomaly_flags: list) -> str:
+    """Build a rich reasoning string for the Stream of Consciousness panel."""
+    parts = []
+    # Hypothesis
+    parts.append(f"Hypothesis: {summary}")
+    # Outcome
+    if kept:
+        delta = score - best_score
+        parts.append(f"KEPT — score {best_score:.4f} → {score:.4f} (+{delta:.4f})")
+    else:
+        reason_str = ", ".join(reasons) if reasons else "below best"
+        parts.append(f"REVERTED — score {score:.4f} vs best {best_score:.4f} ({reason_str})")
+    # Key metrics
+    pf = metrics.get("profit_factor")
+    tpd = metrics.get("trades_per_day")
+    wr = metrics.get("win_rate")
+    sharpe = metrics.get("trade_sharpe")
+    sl = metrics.get("stop_loss_rate")
+    rr = metrics.get("rr_ratio")
+    if pf is not None:
+        metric_parts = [f"PF={pf:.2f}"]
+        if tpd is not None:
+            metric_parts.append(f"TPD={tpd:.1f}")
+        if wr is not None:
+            metric_parts.append(f"WR={wr*100:.0f}%")
+        if sharpe is not None:
+            metric_parts.append(f"Sharpe={sharpe:.2f}")
+        if sl is not None:
+            metric_parts.append(f"SL={sl*100:.0f}%")
+        if rr is not None:
+            metric_parts.append(f"R:R={rr:.2f}")
+        parts.append("Metrics: " + " | ".join(metric_parts))
+    # Anomalies
+    if anomaly_flags:
+        parts.append(f"Anomalies: {', '.join(anomaly_flags)}")
+    return "\n".join(parts)
+
+
 def _write_status_json(run_dir: Path, state: dict, phase: str = "idle",
                        last_change: str = "", last_score: float | None = None,
                        last_kept: bool | None = None, time_remaining_h: float = 0.0):
@@ -201,8 +251,11 @@ def _write_status_json(run_dir: Path, state: dict, phase: str = "idle",
 def _append_experiment_jsonl(run_dir: Path, record: dict):
     """Append to experiments.v2.jsonl (monitor.py compatible)."""
     path = run_dir / "experiments.v2.jsonl"
-    with open(path, "a") as f:
-        f.write(json.dumps(record, default=str) + "\n")
+    try:
+        with open(path, "a") as f:
+            f.write(json.dumps(record, default=str) + "\n")
+    except OSError as e:
+        _log.error(f"Failed to write experiment record to {path}: {e} — record lost: {record.get('experiment_id', '?')}")
 
 
 # ---------------------------------------------------------------------------
@@ -223,13 +276,23 @@ def cmd_init(args):
     # Backup current train.py
     shutil.copy2(TRAIN_PY, run_dir / "train_baseline.py")
 
+    # Check for incomplete promotion from a previous crash
+    _promotion_sentinel = BEST_SCORE_FILE.parent / ".promotion_in_progress"
+    if _promotion_sentinel.exists():
+        _log.warning(
+            "Found .promotion_in_progress sentinel — previous promotion may be incomplete. "
+            f"Contents: {_promotion_sentinel.read_text().strip()!r}. "
+            "Verify best_model.pt, best_train.py, and .best_score are consistent."
+        )
+        _promotion_sentinel.unlink(missing_ok=True)
+
     # Read best_score from .best_score file if it exists
     best_score = -5.0
     if BEST_SCORE_FILE.exists():
         try:
             best_score = float(BEST_SCORE_FILE.read_text().strip())
-        except (ValueError, OSError):
-            pass
+        except (ValueError, OSError) as _e:
+            _log.warning(f"Could not parse .best_score (contents: {BEST_SCORE_FILE.read_text()!r}): {_e} — defaulting to -5.0")
 
     state = {
         "run_name": run_name,
@@ -262,8 +325,30 @@ def cmd_experiment(args):
 
     state = _load_state()
     if not state:
-        print(json.dumps({"error": "No active run. Call 'init' first."}))
-        sys.exit(1)
+        _log.info("No active run — auto-initializing...")
+        cmd_init(args)
+        state = _load_state()
+        if not state:
+            print(json.dumps({"error": "Auto-init failed. Check .best_score and training/ directory."}))
+            sys.exit(1)
+
+    # Consistency check: if .best_score file disagrees with state, re-sync.
+    # This catches stale state after a fresh start that resets .best_score.
+    if BEST_SCORE_FILE.exists():
+        try:
+            _file_score = float(BEST_SCORE_FILE.read_text().strip())
+            if abs(_file_score - state["best_score"]) > 0.01 and _file_score < state["best_score"]:
+                _log.warning(f".best_score file ({_file_score}) < state best_score ({state['best_score']:.4f}) — "
+                             f"fresh start detected, re-initializing...")
+                cmd_init(args)
+                state = _load_state()
+        except (ValueError, OSError):
+            pass
+
+    _log.info("=" * 60)
+    _log.info("TRAINING MODE: SEQUENTIAL (single experiment, warm-start)")
+    _log.info("=" * 60)
+    state["training_mode"] = "sequential"
 
     run_dir = Path(state["run_dir"])
     _setup_file_logging(run_dir)
@@ -445,9 +530,44 @@ def cmd_experiment(args):
         state["best_score"] = score
         state["kept_count"] += 1
 
-        shutil.copy2(tmp_model, BEST_MODEL_PT)    # Promote model
-        shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)     # Promote code
-        BEST_SCORE_FILE.write_text(str(score))     # Update score
+        # Validate downloaded model integrity before committing
+        _integrity_ok = False
+        try:
+            import torch as _torch
+            _ckpt = _torch.load(tmp_model, weights_only=False, map_location="cpu")
+            _embedded = _ckpt.get("metrics", {}).get("score")
+            if _embedded is not None:
+                _ratio = _embedded / score if score != 0 else 0
+                if _ratio < 0.5:
+                    _log.error(
+                        f"INTEGRITY FAIL: Downloaded model has embedded score {_embedded:.4f} "
+                        f"but training reported {score:.4f} (ratio={_ratio:.2f}). Skipping promotion."
+                    )
+                else:
+                    _log.info(f"Model integrity OK: embedded={_embedded:.4f}, reported={score:.4f}")
+                    _integrity_ok = True
+            else:
+                _log.warning("Model checkpoint has no embedded score — skipping promotion.")
+            del _ckpt
+        except Exception as _e:
+            _log.error(f"Model integrity check failed: {_e} — skipping promotion.")
+
+        if not _integrity_ok:
+            _log.warning("REVERTING: model integrity check did not pass, promotion blocked.")
+            keep = False
+            state["best_score"] = best_score  # restore original
+            state["kept_count"] -= 1
+        else:
+            # Atomic promotion: sentinel guards against partial writes
+            sentinel = BEST_SCORE_FILE.parent / ".promotion_in_progress"
+            sentinel.write_text(str(score))
+            shutil.copy2(tmp_model, BEST_MODEL_PT)    # Promote model
+            shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)     # Promote code
+            # Atomic score update via temp file + os.rename
+            tmp_score = BEST_SCORE_FILE.with_suffix(".tmp")
+            tmp_score.write_text(str(score))
+            os.rename(str(tmp_score), str(BEST_SCORE_FILE))
+            sentinel.unlink(missing_ok=True)
 
         # Record promotion
         run_loop.record_promotion_event({
@@ -507,7 +627,7 @@ def cmd_experiment(args):
         "train_py_before_hash": before_hash,
         "train_py_after_hash": after_hash,
         "change_summary": change_summary,
-        "reasoning": change_summary,
+        "reasoning": _build_reasoning(change_summary, keep, score, best_score, metrics, reasons, anomaly_flags),
         "wall_time": wall_time,
         "num_steps": metrics.get("num_steps"),
         "training_seconds": metrics.get("training_seconds"),
@@ -683,48 +803,92 @@ PBT_STATE_FILE = TRAINING_DIR / ".pbt_state.json"
 
 # Parameter space definitions — tiers match what train.py reads via _env_float/_env_int
 _PARAM_SPACE = {
-    # Tier 1: Loss Weights
-    "TRAIN_GATE_W":              {"default": 0.5,   "lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 1},
-    "TRAIN_DIR_W":               {"default": 2.5,   "lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 1},
-    "TRAIN_PNL_W":               {"default": 0.5,   "lo": 0.01, "hi": 2.0,  "scale": "log", "tier": 1},
-    "TRAIN_EXIT_W":              {"default": 0.15,  "lo": 0.01, "hi": 2.0,  "scale": "log", "tier": 1},
-    "TRAIN_CONF_W":              {"default": 0.10,  "lo": 0.01, "hi": 1.0,  "scale": "log", "tier": 1},
-    "TRAIN_FALSE_ENTRY_PENALTY": {"default": 1.2,   "lo": 1.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
+    # Tier 1: Loss Weights — defaults come from train.py at runtime via _parse_train_defaults()
+    "TRAIN_GATE_W":              {"lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 1},
+    "TRAIN_DIR_W":               {"lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 1},
+    "TRAIN_PNL_W":               {"lo": 0.01, "hi": 2.0,  "scale": "log", "tier": 1},
+    "TRAIN_EXIT_W":              {"lo": 0.01, "hi": 2.0,  "scale": "log", "tier": 1},
+    "TRAIN_CONF_W":              {"lo": 0.01, "hi": 1.0,  "scale": "log", "tier": 1},
+    "TRAIN_FALSE_ENTRY_PENALTY": {"lo": 1.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
     # Tier 2: Optimizer
-    "TRAIN_LR":                  {"default": 2.5e-4, "lo": 1e-5, "hi": 5e-3, "scale": "log", "tier": 2},
-    "TRAIN_WEIGHT_DECAY":        {"default": 0.08,  "lo": 0.001, "hi": 0.3,  "scale": "log", "tier": 2},
-    "TRAIN_DROPOUT":             {"default": 0.30,  "lo": 0.05, "hi": 0.40, "scale": "linear", "tier": 2},
-    "TRAIN_WARMUP_RATIO":        {"default": 0.15,  "lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 2},
-    "TRAIN_COOLDOWN_RATIO":      {"default": 0.3,   "lo": 0.0,  "hi": 0.8,  "scale": "linear", "tier": 2},
-    "TRAIN_GRAD_CLIP":           {"default": 1.0,   "lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 2},
+    "TRAIN_LR":                  {"lo": 1e-5, "hi": 5e-3, "scale": "log", "tier": 2},
+    "TRAIN_WEIGHT_DECAY":        {"lo": 0.001, "hi": 0.3,  "scale": "log", "tier": 2},
+    "TRAIN_DROPOUT":             {"lo": 0.05, "hi": 0.40, "scale": "linear", "tier": 2},
+    "TRAIN_WARMUP_RATIO":        {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 2},
+    "TRAIN_COOLDOWN_RATIO":      {"lo": 0.0,  "hi": 0.8,  "scale": "linear", "tier": 2},
+    "TRAIN_GRAD_CLIP":           {"lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 2},
     # Tier 3: Regularization & Sampling
-    "WEIGHT_RECENT_BOOST":       {"default": 0.3,   "lo": 0.0,  "hi": 2.0,  "scale": "linear", "tier": 3},
-    "WEIGHT_DAY_DIVERSITY":      {"default": 1.0,   "lo": 0.0,  "hi": 2.0,  "scale": "linear", "tier": 3},
-    "REG_GATE_ENTROPY":          {"default": 0.10,  "lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 3},
-    "REG_TEMPORAL_SMOOTH":       {"default": 0.0,   "lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 3},
-    "WARM_FREEZE_RATIO":         {"default": 0.0,   "lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 3},
-    "TRAIN_DAY_SEQ_RATIO":       {"default": 0.85,  "lo": 0.5,  "hi": 1.0,  "scale": "linear", "tier": 3},
-    "TRAIN_GATE_LABEL_SMOOTHING": {"default": 0.05, "lo": 0.0,  "hi": 0.2,  "scale": "linear", "tier": 3},
-    "TRAIN_DIR_LABEL_SMOOTHING":  {"default": 0.05, "lo": 0.0,  "hi": 0.2,  "scale": "linear", "tier": 3},
+    "WEIGHT_RECENT_BOOST":       {"lo": 0.0,  "hi": 2.0,  "scale": "linear", "tier": 3},
+    "WEIGHT_DAY_DIVERSITY":      {"lo": 0.0,  "hi": 2.0,  "scale": "linear", "tier": 3},
+    "REG_GATE_ENTROPY":          {"lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 3},
+    "REG_TEMPORAL_SMOOTH":       {"lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 3},
+    "WARM_FREEZE_RATIO":         {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 3},
+    "TRAIN_DAY_SEQ_RATIO":       {"lo": 0.5,  "hi": 1.0,  "scale": "linear", "tier": 3},
+    "TRAIN_GATE_LABEL_SMOOTHING": {"lo": 0.0,  "hi": 0.2,  "scale": "linear", "tier": 3},
+    "TRAIN_DIR_LABEL_SMOOTHING":  {"lo": 0.0,  "hi": 0.2,  "scale": "linear", "tier": 3},
     # Tier 1 (Phase C: RWR) — reward-weighted regression
-    "TRAIN_RWR_WEIGHT":          {"default": 0.0,  "lo": 0.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
-    "TRAIN_DAY_RWR_WEIGHT":      {"default": 0.0,  "lo": 0.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
+    "TRAIN_RWR_WEIGHT":          {"lo": 0.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
+    "TRAIN_DAY_RWR_WEIGHT":      {"lo": 0.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
     # Tier 1 (Phase D: Value Head) — exit intelligence
-    "TRAIN_VALUE_W":             {"default": 0.3,  "lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
-    "TRAIN_VALUE_EXIT_THRESH":   {"default": 0.02, "lo": -0.5, "hi": 0.5,  "scale": "linear", "tier": 1},
+    "TRAIN_VALUE_W":             {"lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
+    "TRAIN_VALUE_EXIT_THRESH":   {"lo": -0.5, "hi": 0.5,  "scale": "linear", "tier": 1},
     # Tier 1 (Phase E: Risk Head) — account-aware risk management
-    "TRAIN_RISK_W":              {"default": 0.2,  "lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
+    "TRAIN_RISK_W":              {"lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
 }
 
 
-def _build_parameter_space(focus: str) -> dict:
-    """Return parameter space dict filtered by focus tier."""
+def _parse_train_defaults(train_py_path: str | Path) -> dict[str, float]:
+    """Parse current defaults from train.py — the single source of truth.
+
+    Reads _env_float("NAME", DEFAULT), _env_int("NAME", DEFAULT), and
+    os.environ.setdefault("NAME", "VALUE") calls to extract current defaults.
+    Only returns params that exist in _PARAM_SPACE.
+    """
+    import re
+    text = Path(train_py_path).read_text()
+    defaults = {}
+
+    # Match _env_float("PARAM_NAME", 0.40, ...) and _env_int("PARAM_NAME", 512, ...)
+    for m in re.finditer(r'_env_(?:float|int)\(\s*"(\w+)"\s*,\s*([0-9.eE+-]+)', text):
+        name, val = m.group(1), m.group(2)
+        if name in _PARAM_SPACE:
+            defaults[name] = float(val)
+
+    # Match os.environ.setdefault("PARAM_NAME", "0.3")
+    for m in re.finditer(r'os\.environ\.setdefault\(\s*"(\w+)"\s*,\s*"([0-9.eE+-]+)"\s*\)', text):
+        name, val = m.group(1), m.group(2)
+        if name in _PARAM_SPACE:
+            defaults[name] = float(val)
+
+    return defaults
+
+
+def _build_parameter_space(focus: str, train_py_path: str | Path | None = None) -> dict:
+    """Return parameter space dict filtered by focus tier, with defaults from train.py.
+
+    Defaults are parsed from train_py_path (or BEST_TRAIN_PY) at call time,
+    so _PARAM_SPACE never goes stale.
+    """
+    if train_py_path is None:
+        train_py_path = BEST_TRAIN_PY if BEST_TRAIN_PY.exists() else TRAIN_PY
+    defaults = _parse_train_defaults(train_py_path)
+
+    # Build space with injected defaults
+    space = {}
+    for k, spec in _PARAM_SPACE.items():
+        if k not in defaults:
+            _log.warning(f"PBT param {k} has no default in {train_py_path} — skipping")
+            continue
+        entry = dict(spec)
+        entry["default"] = defaults[k]
+        space[k] = entry
+
     if focus == "loss_weights":
-        return {k: v for k, v in _PARAM_SPACE.items() if v["tier"] == 1}
+        return {k: v for k, v in space.items() if v["tier"] == 1}
     elif focus == "regularization":
-        return {k: v for k, v in _PARAM_SPACE.items() if v["tier"] in (2, 3)}
+        return {k: v for k, v in space.items() if v["tier"] in (2, 3)}
     else:  # "all"
-        return dict(_PARAM_SPACE)
+        return space
 
 
 def _sample_param(spec: dict, rng: random.Random) -> float:
@@ -933,6 +1097,12 @@ def cmd_pbt_run(args):
     run_dir = Path(state["run_dir"])
     _setup_file_logging(run_dir)
 
+    _log.info("=" * 60)
+    _log.info(f"TRAINING MODE: PBT (population={pbt['population_size']}, generations={pbt['max_generations']}, focus={pbt['focus']})")
+    _log.info("=" * 60)
+    state["training_mode"] = "pbt"
+    _save_state(state)
+
     time_budget = pbt["time_budget_per_member"]
 
     # Upload train.py + model once at start (all members use same code + weights)
@@ -950,6 +1120,11 @@ def cmd_pbt_run(args):
         start_member = pbt["current_member"]
 
         _log.info(f"=== PBT Generation {gen}/{max_gens}, members {start_member}-{len(population)-1} ===")
+
+        # Re-upload baseline model at start of each generation
+        # (ensures all members train from current best, especially after mid-sweep promotion)
+        if BEST_MODEL_PT.exists():
+            _scp_upload(deploy, str(BEST_MODEL_PT), "/root/autoresearch-trading/training/best_model.pt")
 
         for mi in range(start_member, len(population)):
             member = population[mi]
@@ -1027,7 +1202,9 @@ def cmd_pbt_run(args):
                 "anomaly_flags": [],
                 "failure_type": "none" if returncode == 0 else "train_crash",
                 "change_summary": summary,
-                "reasoning": summary,
+                "reasoning": _build_reasoning(
+                    summary, False, score if score > -999 else 0, state["best_score"],
+                    metrics or {}, [], anomaly_flags),
                 "wall_time": wall_time,
                 "pbt_generation": gen,
                 "pbt_member": mi,
@@ -1082,19 +1259,52 @@ def cmd_pbt_run(args):
                     env_overrides = _config_to_env(best_generalist["config"])
                     output, _, rc = _train_on_akash(
                         deploy, time_budget, env_overrides=env_overrides,
-                        upload_train_py=False, upload_model=False,
+                        upload_train_py=False, upload_model=True,
                     )
 
                 tmp_model = run_dir / f"pbt_winner_gen{gen}.pt"
                 _scp_download(deploy, "/root/autoresearch-trading/training/best_model.pt", str(tmp_model))
-                shutil.copy2(tmp_model, BEST_MODEL_PT)
-                shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)
-                state["best_score"] = best_generalist["score"]
-                state["kept_count"] += 1
-                BEST_SCORE_FILE.write_text(str(best_generalist["score"]))
-                _save_state(state)
-                promoted = True
-                _log.info(f"Promoted: best_model.pt updated, score={best_generalist['score']:.4f}")
+
+                # Validate promoted model integrity before committing
+                _pbt_integrity_ok = False
+                try:
+                    import torch as _torch
+                    _ckpt = _torch.load(tmp_model, weights_only=False, map_location="cpu")
+                    _embedded = _ckpt.get("metrics", {}).get("score")
+                    if _embedded is not None:
+                        _ratio = _embedded / best_generalist["score"] if best_generalist["score"] != 0 else 0
+                        if _ratio < 0.85 or _ratio > 1.15:
+                            _log.error(
+                                f"DIVERGENCE FAIL: Re-trained model score {_embedded:.4f} "
+                                f"vs original {best_generalist['score']:.4f} (ratio={_ratio:.2f}, "
+                                f"threshold=±15%). Re-training did not reproduce. Skipping promotion."
+                            )
+                        else:
+                            _log.info(f"Model integrity OK: embedded={_embedded:.4f}, expected={best_generalist['score']:.4f}, ratio={_ratio:.2f}")
+                            _pbt_integrity_ok = True
+                    else:
+                        _log.warning("PBT winner checkpoint has no embedded score — skipping promotion.")
+                    del _ckpt
+                except Exception as _e:
+                    _log.error(f"PBT model integrity check failed: {_e} — skipping promotion.")
+
+                if _pbt_integrity_ok:
+                    # Atomic promotion with sentinel
+                    _sentinel = BEST_SCORE_FILE.parent / ".promotion_in_progress"
+                    _sentinel.write_text(str(best_generalist["score"]))
+                    shutil.copy2(tmp_model, BEST_MODEL_PT)
+                    shutil.copy2(TRAIN_PY, BEST_TRAIN_PY)
+                    _tmp_score = BEST_SCORE_FILE.with_suffix(".tmp")
+                    _tmp_score.write_text(str(best_generalist["score"]))
+                    os.rename(str(_tmp_score), str(BEST_SCORE_FILE))
+                    _sentinel.unlink(missing_ok=True)
+                    state["best_score"] = best_generalist["score"]
+                    state["kept_count"] += 1
+                    _save_state(state)
+                    promoted = True
+                    _log.info(f"Promoted: best_model.pt updated, score={best_generalist['score']:.4f}")
+                else:
+                    _log.warning("PBT promotion blocked by integrity check — keeping current best_model.pt")
             elif best_critical:
                 _log.warning(f"Score improved ({best_generalist['score']:.4f}) but has critical anomalies — NOT promoting")
         else:
@@ -1111,7 +1321,7 @@ def cmd_pbt_run(args):
                 if best_spec["member_id"] != len(population) - 1:
                     _log.info(f"Re-training {st} specialist for model save...")
                     _train_on_akash(deploy, time_budget, env_overrides=spec_env,
-                                    upload_train_py=False, upload_model=False)
+                                    upload_train_py=False, upload_model=True)
                 spec_model = BEST_MODEL_PT.parent / f"best_model_{st}.pt"
                 _scp_download(deploy, "/root/autoresearch-trading/training/best_model.pt", str(spec_model))
                 _log.info(f"Saved {st} specialist: {spec_model} (score={best_spec['score']:.4f})")
