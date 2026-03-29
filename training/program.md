@@ -7,41 +7,33 @@ If anything else conflicts with this file, this file wins.
 Build a model that makes money trading SPX 0DTE options on IBKR paper trading. The score is a proxy — focus on improving actual TRADING BEHAVIOR (profit factor, win rate, regime consistency, drawdown) rather than optimizing the score metric itself. Use the trade-level diagnostics (best/worst trades, time-of-day splits, VIX regime breakdowns) to diagnose specific weaknesses and propose targeted fixes.
 
 ## Model Contract (Required)
-- Four-head architecture (v6):
-  - Gate head: `[NO_TRADE, TRADE]` (2 logits)
-  - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` (6 logits)
-  - Value head: binary exit classifier (BCE loss on sparse exit labels)
+- Four-head architecture (v14, restored from v10):
+  - Gate head: 2 logits — `[NO_TRADE, TRADE]` (entry/exit signal)
+  - Direction head: 14 logits — `[CALL_ATM, CALL_OTM5..OTM30, PUT_ATM, PUT_OTM5..OTM30]` (strike selection, only active when gate=TRADE)
+  - Value head: 1 scalar — expected remaining P&L (disabled, VALUE_W=0.0)
   - Risk head: `[stop_pct, size_frac, conviction]` (3 outputs, account-aware risk management)
 - Position state: 7 dims (in_trade, bars_held, unrealized_pnl, account_health, loss_streak, best_pnl, bars_since_high)
 - Account state: 4 dims (growth_ratio, log_size, daily_pnl_frac, win_rate_20) — risk head only
-- 8 effective actions:
-  - `DO_NOTHING`
-  - `BUY_CALL_ATM`, `BUY_CALL_OTM5`, `BUY_CALL_OTM10`
-  - `BUY_PUT_ATM`, `BUY_PUT_OTM5`, `BUY_PUT_OTM10`
-  - `EXIT` (gate=NO_TRADE while holding a position)
+- 16 actions (gate + direction combined):
+  - Action 0: `DO_NOTHING` (while flat = stay flat, while holding = EXIT)
+  - Actions 1-7: `BUY_CALL_ATM`, `BUY_CALL_OTM5`, ..., `BUY_CALL_OTM30`
+  - Actions 8-14: `BUY_PUT_ATM`, `BUY_PUT_OTM5`, ..., `BUY_PUT_OTM30`
 
-**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism. The **value head** provides a secondary exit with conviction-adjusted threshold: `VALUE_EXIT_THRESHOLD × (1 - conviction × 0.5)`. High conviction (from risk head) widens the exit threshold, letting winners run. The **risk head** provides learned stop-loss distance (replaces formula), position sizing, and conviction. Exit priority: stop_loss > model_exit > value_exit > max_hold > end_of_day.
+**Exit mechanics**: There is NO hardcoded profit target. Gate predicting NO_TRADE while holding triggers exit (after min hold bars). The **risk head** provides learned stop-loss distance, position sizing, and conviction. Exit priority: stop_loss > model_exit (gate=NO_TRADE, bars≥2) > max_hold > end_of_day.
 
 ## Data Contract (Required)
 `data.pt` must include the target fields and option price arrays required by training and replay:
-- Targets (unstopped P&L — entry to EOD, no stops; kept for reference only):
-  - `call_pnl`, `put_pnl`
-  - `exit_call_label`, `exit_put_label` (hindsight-optimal exit timing signals)
-  - `otm5_call_pnl`, `otm5_put_pnl`
-  - `otm10_call_pnl`, `otm10_put_pnl`
-- Targets (stopped P&L — with DYNAMIC_STOP_BASE applied; **used by sniper_loss**):
+- Stopped P&L (used by EV loss — counterfactual P&L for each action):
   - `call_stopped_pnl`, `put_stopped_pnl` (med-level, at DYNAMIC_STOP_BASE=0.35)
-  - `otm5_call_stopped_pnl`, `otm5_put_stopped_pnl`
-  - `otm10_call_stopped_pnl`, `otm10_put_stopped_pnl`
+  - `otm{5,10,15,20,25,30}_call_stopped_pnl`, `otm{5,10,15,20,25,30}_put_stopped_pnl`
 - Multi-level stopped P&L (for ATM strikes, selected by IV+VIX per bar):
   - `call_stopped_pnl_tight`, `put_stopped_pnl_tight` (stop=0.20)
   - `call_stopped_pnl_wide`, `put_stopped_pnl_wide` (stop=0.50)
 
-**CRITICAL**: `sniper_loss` selects tight/med/wide stopped P&L per bar based on market conditions (IV, VIX) to align training with the dynamic stop-loss used in replay/live. Do NOT add raw P&L as an additional loss signal — this creates conflicting gradients and was tried 9 times without success.
+**CRITICAL**: Multi-component `sniper_loss` (v14) uses gate labels (`pnl_ok.long()` — pure hindsight P&L), direction soft targets (P&L-weighted strike selection), and PnL alignment (trade_prob × dir_probs × stopped_pnl). ATM calls/puts use IV+VIX-based stop selection (tight/med/wide).
 - Prices:
   - `atm_call_prices`, `atm_put_prices`
-  - `otm5_call_prices`, `otm5_put_prices`
-  - `otm10_call_prices`, `otm10_put_prices`
+  - `otm{5,10,15,20,25,30}_call_prices`, `otm{5,10,15,20,25,30}_put_prices`
 - Metadata:
   - `day_boundaries` — tensor of indices where trading days start (for sequential batching)
 
@@ -94,45 +86,41 @@ The `_score_config` dictionary in train.py is **read-only**. You MUST NOT change
 
 **Why:** The score formula defines what "good trading" means. Changing it inflates scores without improving the model — the model trains on loss functions (gate_loss, dir_loss, pnl_alignment), NOT on the score. Modifying score_config only changes the post-training evaluation, making scores incomparable across experiments. This was exploited in a prior run where SCORE_DRAWDOWN_PENALTY was reduced from 0.5→0.05, inflating the score from 1.77→10.29 while PF and TPD barely changed.
 
-**What to do instead:** Improve the model's actual TRADING BEHAVIOR by modifying loss weights (GATE_W, DIR_W, PNL_W, EXIT_W), model architecture biases, or training dynamics. Improvements should be visible in raw metrics: profit factor, win rate, trades per day, drawdown.
+**What to do instead:** Improve the model's actual TRADING BEHAVIOR by modifying loss hyperparameters (ENTROPY_COEFF, DO_NOTHING_BONUS), model architecture biases, or training dynamics. Improvements should be visible in raw metrics: profit factor, win rate, trades per day, drawdown.
 
 ### Loss Function Policy
-The loss function STRUCTURE is locked — `total = gate + dir + pnl` must not change. Exit behavior is integrated into gate targets (exit-labeled bars override gate targets to NO_TRADE), not a separate loss term.
+The core loss is multi-component `sniper_loss` (v14, proven in v10 score 16.73):
+- Gate: cross-entropy on binary trade/no-trade labels + time-of-day weighting
+- Direction: KL-divergence against P&L-weighted soft targets
+- PnL alignment: trade_prob × (dir_probs × stopped_pnl).sum()
+- Confidence: penalize high confidence on losers
+- DIRECTION_ENTROPY_BONUS = 0.20 (hardcoded, prevents direction collapse)
+Current v14 defaults: GATE_W=0.95, DIR_W=1.5, PNL_W=1.5, EXIT_W=0.15, CONF_W=0.05, VALUE_W=0.0, RISK_W=0.2.
 
 ### What You MUST NOT Do
 - Modify the `forward()` method signature of TradingModel
-- Add new loss terms to the `total = gate + dir + pnl` summation
+- Replace gate+direction decomposition with unified action head (v12 failure)
 - Add `_env_float()` declarations outside of the allowed prefixes below
 
 ### New `_env_float` Rules
 You MAY add up to 3 new `_env_float()` declarations per experiment, but ONLY with these prefixes:
-- `SCHED_*` — loss weight scheduling parameters (e.g., SCHED_GATE_RAMP_EPOCHS)
-- `WEIGHT_*` — sample weighting parameters (e.g., WEIGHT_HARD_EXAMPLE_RATIO)
-- `WARM_*` — warm start controls (e.g., WARM_FREEZE_EPOCHS, WARM_LR_MULT)
-- `REG_*` — regularization parameters (e.g., REG_L1_LAMBDA, REG_GRAD_PENALTY)
+- `SCHED_*` — loss weight scheduling parameters
+- `WEIGHT_*` — sample weighting parameters
+- `WARM_*` — warm start controls
+- `REG_*` — regularization parameters
 
-All new `_env_float` declarations MUST default to 0.0 (no-op when absent). This ensures baseline behavior is preserved if the experiment is reverted.
-
-### Regularization Exception
-You MAY add ONE regularization penalty term to the training loop (not to `total_loss` directly, but as a separate `optimizer` gradient source or weight penalty), controlled by a `REG_*` _env_float defaulting to 0.0. Examples:
-- L1 sparsity on gate logits
-- Gradient penalty for temporal smoothness
-- Weight decay scheduling (varying across layers)
-
-This does NOT change the loss structure (`total = gate + dir + pnl`). The regularization is applied separately.
+All new `_env_float` declarations MUST default to 0.0 (no-op when absent).
 
 ### What You MAY Do
-- Tune existing `_env_float` values (DIR_W, GATE_W, PNL_W, EXIT_W, VALUE_W, DROPOUT, WEIGHT_DECAY, LR, FEATURE_NOISE_STD, etc.)
-- Set `TRAIN_VALUE_LOSS_TYPE` env var: `mse` (default, MSE on remaining P&L), `bce` (binary exit classifier), `none` (disable value loss)
-- Implement loss weight SCHEDULING (e.g., ramp gate_w from 0.95→1.5 over epochs using existing env values)
-- Add sample weighting within existing loss computations (harder examples, time-of-day weights, VIX regime weights)
-- Change learning rate schedules (warmup, cosine, OneCycle, cyclical — use existing LR value as base)
-- Modify bias initialization for gate and direction heads
+- Tune existing `_env_float` values (ENTROPY_COEFF, DO_NOTHING_BONUS, DROPOUT, WEIGHT_DECAY, LR, FEATURE_NOISE_STD, etc.)
+- Implement loss weight SCHEDULING (e.g., ramp entropy coeff over epochs)
+- Add sample weighting within EV loss (harder examples, time-of-day weights, VIX regime weights)
+- Change learning rate schedules (warmup, cosine, OneCycle, cyclical)
+- Modify bias initialization for action head
 - Adjust feature noise patterns (targeted noise on specific feature groups)
 - Change batch construction strategy (DAY_SEQ_RATIO, hard example mining)
 - Add gradient accumulation steps
-- Freeze early transformer layers during warm start (first N epochs)
-- Use a lower learning rate multiplier for warm-started weights vs new/reset parameters
+- Freeze early transformer layers during warm start
 - Add early stopping based on validation metrics (must save best checkpoint)
 
 `worst_chunk_pf` and `chunk_details` are reported for analysis — the agent may use these to evaluate temporal consistency.

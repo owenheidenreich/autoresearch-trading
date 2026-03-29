@@ -1,22 +1,22 @@
 """
-Autoresearch-trading v6: four-head model for SPX 0DTE options.
+Autoresearch-trading v14: 4-head model for SPX 0DTE options (38 features).
 Single-GPU, single-file. The agent modifies THIS file.
 
-Four-head architecture:
-  Gate head:      (batch, 2) — [NO_TRADE, TRADE]
-  Direction head: (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
-                                 PUT_ATM, PUT_OTM5, PUT_OTM10]
-  Value head:     (batch, 1) — remaining P&L prediction (exit intelligence)
+Four-head architecture (v14 = exact v10 restoration, 38 features):
+  Gate head:      (batch, 2) — [NO_TRADE, TRADE]  (binary entry/exit signal)
+  Direction head: (batch, 14) — strike selection (CALL/PUT × ATM/OTM5..OTM30)
+  Value head:     (batch, 1) — expected remaining P&L  (exit intelligence)
   Risk head:      (batch, 3) — [stop_pct, size_frac, conviction] (account-aware risk)
 
-Combined into 8 actions:
-  DO_NOTHING (0), BUY_CALL_ATM (1), BUY_CALL_OTM5 (2), BUY_CALL_OTM10 (3),
-  BUY_PUT_ATM (4), BUY_PUT_OTM5 (5), BUY_PUT_OTM10 (6), EXIT (7)
+v14 rationale: v13 silently ran v11's failed gate labels (score -0.27) because data.pt
+  had setup_mask/regime_mask fields. v10's gate=pnl_ok scored 16.73. Restoring exact v10
+  pipeline: 38 features, pure P&L gate labels, warm start from v10 weights.
 
 Usage: uv run train.py  (or: python3 train.py)
 """
 
 import os
+import sys
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "4")
 # Anti-overfit defaults: recency weighting, day diversity, gate entropy, temporal smoothing, layer freezing
@@ -47,9 +47,17 @@ from prepare import (
     ACTION_BUY_CALL_ATM,
     ACTION_BUY_CALL_OTM5,
     ACTION_BUY_CALL_OTM10,
+    ACTION_BUY_CALL_OTM15,
+    ACTION_BUY_CALL_OTM20,
+    ACTION_BUY_CALL_OTM25,
+    ACTION_BUY_CALL_OTM30,
     ACTION_BUY_PUT_ATM,
     ACTION_BUY_PUT_OTM5,
     ACTION_BUY_PUT_OTM10,
+    ACTION_BUY_PUT_OTM15,
+    ACTION_BUY_PUT_OTM20,
+    ACTION_BUY_PUT_OTM25,
+    ACTION_BUY_PUT_OTM30,
     ACTION_EXIT,
     load_data,
     make_dataloader,
@@ -115,7 +123,7 @@ DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.5, lo=0.1, hi=5.0)  # v7.2: PBT wi
 PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 1.5, lo=0.0, hi=2.0)  # v7.2: PBT winner had 1.70. PnL alignment is the primary training signal.
 EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.15, lo=0.0, hi=2.0)  # v8: 0.30→0.15. PBT drove EXIT_W→0, exit labels counterproductive.
 CONFIDENCE_LOSS_WEIGHT = _env_float("TRAIN_CONF_W", 0.05, lo=0.0, hi=1.0)  # v7.2: PBT winner had 0.015. Minimal confidence loss.
-VALUE_LOSS_WEIGHT = _env_float("TRAIN_VALUE_W", 0.0, lo=0.0, hi=2.0)  # v8: disabled. PBT drove VALUE_W→0. Re-enable after gate-only baseline established.
+VALUE_LOSS_WEIGHT = _env_float("TRAIN_VALUE_W", 0.0, lo=0.0, hi=2.0)  # v9: disabled. VALUE_EXIT proven destructive (-$1,341). Re-enable only with trained head.
 VALUE_LOSS_TYPE = os.environ.get("TRAIN_VALUE_LOSS_TYPE", "mse")  # mse|bce|none — v6 used mse, v7 used bce (proven counterproductive)
 VALUE_EXIT_THRESHOLD = _env_float("TRAIN_VALUE_EXIT_THRESH", 0.02, lo=-0.5, hi=0.5)  # Exit when value_pred < threshold
 RISK_LOSS_WEIGHT = _env_float("TRAIN_RISK_W", 0.2, lo=0.0, hi=2.0)  # Phase E: risk head (stop + size + conviction)
@@ -148,27 +156,29 @@ DAY_RWR_WEIGHT = _env_float("TRAIN_DAY_RWR_WEIGHT", 0.0, lo=0.0, hi=5.0)
 # Changing these games the evaluation metric without improving trading.
 # See program.md "Score Formula is LOCKED" for details.
 
-# Named feature indices
-IDX_MINUTES_TO_CLOSE = 19
-IDX_ATM_IV = 22
+# Named feature indices (v10 — 38 features after pruning)
+IDX_MINUTES_TO_CLOSE = 14
+IDX_ATM_IV = 16
 
-# Feature groups (37 features — v3 with market structure)
+# Feature groups (38 features — v10 pruned + 5 new)
 FEATURE_GROUPS = {
-    'returns':   (0, 2),
-    'volume':    (2, 5),
-    'vol':       (5, 8),
-    'vwap':      (8, 10),
-    'session':   (10, 12),
-    'levels':    (12, 14),
-    'trend':     (14, 17),
-    'micro':     (17, 19),
-    'time':      (19, 22),
-    'options':   (22, 24),
-    'vix':       (24, 26),
-    'greeks':    (26, 29),
-    'bollinger': (29, 30),
-    'range_ext': (30, 32),
-    'mkt_struct': (32, 37),
+    'returns':    (0, 2),    # ret_6, ret_12
+    'volume':     (2, 4),    # volume_ratio, volume_at_price_pctile
+    'vol':        (4, 7),    # bar_range, realized_vol, range_ratio
+    'vwap':       (7, 8),    # vwap_dist
+    'session':    (8, 9),    # session_range_pct
+    'levels':     (9, 10),   # prev_high_dist
+    'trend':      (10, 13),  # ema_cross, consec_direction, speed_estimate
+    'micro':      (13, 14),  # inside_bar
+    'time':       (14, 16),  # minutes_to_close, time_cos
+    'options':    (16, 18),  # atm_iv, iv_skew
+    'vix':        (18, 20),  # vix_regime, vrp
+    'greeks':     (20, 23),  # atm_gamma, atm_theta_per_bar, charm_estimate
+    'bollinger':  (23, 24),  # bollinger_position
+    'range_ext':  (24, 26),  # rsi_7, session_range_position
+    'mkt_struct': (26, 29),  # poc_dist, va_position, ib_break
+    'v9':         (29, 33),  # atr_14, bar_delta, session_cum_delta, top_of_hour_min
+    'v10':        (33, 38),  # macdh_slope, force_index_2, vol_price_diverg, effort_vs_result, trend_5min
 }
 
 
@@ -178,12 +188,12 @@ FEATURE_GROUPS = {
 
 
 class TradingModel(nn.Module):
-    """Four-head model for SPX 0DTE options (v6).
+    """Four-head model for SPX 0DTE options (v10).
 
     Architecture:
     - Shared transformer backbone
     - Gate head: (batch, 2) — [NO_TRADE, TRADE]  (entry/exit signal)
-    - Direction head: (batch, 6) — strike selection
+    - Direction head: (batch, 14) — strike selection (CALL/PUT × ATM/OTM5..OTM30)
     - Value head: (batch, 1) — expected remaining P&L  (exit intelligence)
     - Risk head: (batch, 3) — [stop_pct, size_frac, conviction]  (account-aware risk)
 
@@ -240,13 +250,13 @@ class TradingModel(nn.Module):
             nn.Linear(d_model // 2, 2),
         )
 
-        # Direction head: "which strike?" → 6-class
+        # Direction head: "which strike?" → 14-class (v10: CALL/PUT × ATM/OTM5..OTM30)
         self.dir_head = nn.Sequential(
             nn.LayerNorm(d_model),
             nn.Linear(d_model, d_model // 2),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(d_model // 2, 6),
+            nn.Linear(d_model // 2, 14),
         )
 
         # Value head: "how much P&L remains?" → scalar (Phase D)
@@ -276,22 +286,17 @@ class TradingModel(nn.Module):
         # 390 learnable weights (one per bar of day), initialized to 0 (neutral via softplus)
         self.tod_weight_logits = nn.Parameter(torch.zeros(BARS_PER_DAY))
 
-        # Direction bias: favor ATM (domain knowledge: highest gamma, most responsive)
-        # OTM has -601% cumulative backtest returns — penalize it
+        # Direction bias: ATM gets small bonus (highest gamma), OTM given equal consideration
+        # v10: removed OTM penalty — Pickles (17yr, $100M+) trades OTM exclusively, v9 data confirms OTM profitable
         # Gate bias: PRO-TRADE start — model defaults to NO_TRADE, must learn when to trade
-        # Reverted to pro-trade from [−0.3, +0.3] to [+0.3, −0.3] to prevent day-clustering / overtrading
         with torch.no_grad():
             self.gate_head[-1].bias[0] -= 0.3   # NO_TRADE: discourage (pro-trade)
             self.gate_head[-1].bias[1] += 0.3   # TRADE: encourage (find opportunities)
 
-            # ATM favored, OTM penalized (domain knowledge)
-            # Symmetric CALL/PUT initialization to prevent direction collapse
-            self.dir_head[-1].bias[0] += 0.20   # CALL_ATM bonus (increased)
-            self.dir_head[-1].bias[3] += 0.20   # PUT_ATM bonus (increased, equal to CALL)
-            self.dir_head[-1].bias[1] -= 0.15   # CALL_OTM5 penalty (increased)
-            self.dir_head[-1].bias[2] -= 0.20   # CALL_OTM10 penalty (increased)
-            self.dir_head[-1].bias[4] -= 0.15   # PUT_OTM5 penalty (increased)
-            self.dir_head[-1].bias[5] -= 0.20   # PUT_OTM10 penalty (increased)
+            # ATM gets small bonus (highest gamma); all OTM start neutral (learn from data)
+            # 14-class: [0-6]=CALL ATM/OTM5..30, [7-13]=PUT ATM/OTM5..30
+            self.dir_head[-1].bias[0] += 0.15   # CALL_ATM bonus
+            self.dir_head[-1].bias[7] += 0.15   # PUT_ATM bonus (symmetric)
 
             # Risk head bias init (domain knowledge priors)
             self.risk_head[-1].bias[0] = 0.0   # sigmoid(0)=0.5 → mid-range stop (~0.35)
@@ -375,20 +380,28 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
                 exit_call_labels=None, exit_put_labels=None,
                 otm5_call_pnl=None, otm5_put_pnl=None,
                 otm10_call_pnl=None, otm10_put_pnl=None,
+                otm15_call_pnl=None, otm15_put_pnl=None,
+                otm20_call_pnl=None, otm20_put_pnl=None,
+                otm25_call_pnl=None, otm25_put_pnl=None,
+                otm30_call_pnl=None, otm30_put_pnl=None,
                 supervision_weight=None, actionable_mask=None, risk_state_mask=None,
                 call_stopped_pnl=None, put_stopped_pnl=None,
                 otm5_call_stopped_pnl=None, otm5_put_stopped_pnl=None,
                 otm10_call_stopped_pnl=None, otm10_put_stopped_pnl=None,
+                otm15_call_stopped_pnl=None, otm15_put_stopped_pnl=None,
+                otm20_call_stopped_pnl=None, otm20_put_stopped_pnl=None,
+                otm25_call_stopped_pnl=None, otm25_put_stopped_pnl=None,
+                otm30_call_stopped_pnl=None, otm30_put_stopped_pnl=None,
                 call_stopped_tight=None, call_stopped_wide=None,
                 put_stopped_tight=None, put_stopped_wide=None,
                 is_holding=None,
-                tod_weight_logits=None):
-    """v5 EV-weighted loss: magnitude-aware gate + return-weighted direction.
+                tod_weight_logits=None,
+                ):
+    """v14 sniper_loss: return-weighted gate + direction (14 classes).
 
-    Key changes from v4:
-    - Gate: soft continuous target from sigmoid(best_stopped_pnl * scale) instead of binary
-    - Direction: return-weighted soft targets instead of argmax classification
-    - Uses stopped P&L (with dynamic stops) when available, falls back to unstopped
+    Key changes from v9:
+    - Direction head: 6→14 classes (CALL/PUT × ATM/OTM5..OTM30)
+    - All OTM strikes get equal treatment (no bias against OTM)
     """
     B = gate_logits.shape[0]
     device = gate_logits.device
@@ -421,20 +434,28 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         sample_weight = torch.ones_like(sample_weight)
     sample_weight = sample_weight / sample_weight.mean().clamp(min=1e-6)
 
-    # Build 6-class P&L arrays (unstopped for backward compat, stopped for v5 targets)
+    # Build 14-class P&L arrays (one per direction output)
     def _safe(arr):
         if arr is None:
             return torch.full_like(c_pnl, float('nan'))
         return arr[valid]
 
     all_pnl = torch.stack([
-        c_pnl,
-        _safe(otm5_call_pnl),
-        _safe(otm10_call_pnl),
-        p_pnl,
-        _safe(otm5_put_pnl),
-        _safe(otm10_put_pnl),
-    ], dim=-1)  # (valid, 6)
+        c_pnl,                      # CALL_ATM
+        _safe(otm5_call_pnl),       # CALL_OTM5
+        _safe(otm10_call_pnl),      # CALL_OTM10
+        _safe(otm15_call_pnl),      # CALL_OTM15
+        _safe(otm20_call_pnl),      # CALL_OTM20
+        _safe(otm25_call_pnl),      # CALL_OTM25
+        _safe(otm30_call_pnl),      # CALL_OTM30
+        p_pnl,                      # PUT_ATM
+        _safe(otm5_put_pnl),        # PUT_OTM5
+        _safe(otm10_put_pnl),       # PUT_OTM10
+        _safe(otm15_put_pnl),       # PUT_OTM15
+        _safe(otm20_put_pnl),       # PUT_OTM20
+        _safe(otm25_put_pnl),       # PUT_OTM25
+        _safe(otm30_put_pnl),       # PUT_OTM30
+    ], dim=-1)  # (valid, 14)
 
     # Stopped P&L — multi-level selection based on IV/VIX when available
     cs_med = _safe(call_stopped_pnl) if call_stopped_pnl is not None else c_pnl
@@ -442,7 +463,8 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
 
     # Select appropriate stop level per-bar using market conditions
     iv_feat = features[valid, IDX_ATM_IV] if features.shape[-1] > IDX_ATM_IV else torch.zeros_like(c_pnl)
-    vix_feat = features[valid, 5] if features.shape[-1] > 5 else torch.zeros_like(c_pnl)  # idx 5 = vix in feature set
+    IDX_VIX_REGIME = 18  # vix_regime in v10 38-feature set
+    vix_feat = features[valid, IDX_VIX_REGIME] if features.shape[-1] > IDX_VIX_REGIME else torch.zeros_like(c_pnl)
 
     cs_pnl = _select_stop_level_pnl(
         _safe(call_stopped_tight) if call_stopped_tight is not None else None,
@@ -455,14 +477,25 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         _safe(put_stopped_wide) if put_stopped_wide is not None else None,
         iv_feat, vix_feat)
 
+    def _stopped_or_unstopped(stopped, unstopped):
+        return _safe(stopped) if stopped is not None else _safe(unstopped)
+
     all_stopped_pnl = torch.stack([
-        cs_pnl,
-        _safe(otm5_call_stopped_pnl) if otm5_call_stopped_pnl is not None else _safe(otm5_call_pnl),
-        _safe(otm10_call_stopped_pnl) if otm10_call_stopped_pnl is not None else _safe(otm10_call_pnl),
-        ps_pnl,
-        _safe(otm5_put_stopped_pnl) if otm5_put_stopped_pnl is not None else _safe(otm5_put_pnl),
-        _safe(otm10_put_stopped_pnl) if otm10_put_stopped_pnl is not None else _safe(otm10_put_pnl),
-    ], dim=-1)  # (valid, 6)
+        cs_pnl,                                                           # CALL_ATM
+        _stopped_or_unstopped(otm5_call_stopped_pnl, otm5_call_pnl),     # CALL_OTM5
+        _stopped_or_unstopped(otm10_call_stopped_pnl, otm10_call_pnl),   # CALL_OTM10
+        _stopped_or_unstopped(otm15_call_stopped_pnl, otm15_call_pnl),   # CALL_OTM15
+        _stopped_or_unstopped(otm20_call_stopped_pnl, otm20_call_pnl),   # CALL_OTM20
+        _stopped_or_unstopped(otm25_call_stopped_pnl, otm25_call_pnl),   # CALL_OTM25
+        _stopped_or_unstopped(otm30_call_stopped_pnl, otm30_call_pnl),   # CALL_OTM30
+        ps_pnl,                                                           # PUT_ATM
+        _stopped_or_unstopped(otm5_put_stopped_pnl, otm5_put_pnl),       # PUT_OTM5
+        _stopped_or_unstopped(otm10_put_stopped_pnl, otm10_put_pnl),     # PUT_OTM10
+        _stopped_or_unstopped(otm15_put_stopped_pnl, otm15_put_pnl),     # PUT_OTM15
+        _stopped_or_unstopped(otm20_put_stopped_pnl, otm20_put_pnl),     # PUT_OTM20
+        _stopped_or_unstopped(otm25_put_stopped_pnl, otm25_put_pnl),     # PUT_OTM25
+        _stopped_or_unstopped(otm30_put_stopped_pnl, otm30_put_pnl),     # PUT_OTM30
+    ], dim=-1)  # (valid, 14)
 
     all_stopped_safe = torch.nan_to_num(all_stopped_pnl, nan=-999.0)
 
@@ -470,12 +503,12 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     # Best available return across all 6 option types (after stops)
     best_pnl = all_stopped_safe.max(dim=-1).values  # (valid,)
 
-    # ---- Gate targets: unified entry + exit signal ----
-    # TRADE (1) if profitable AND not an exit bar.
-    # NO_TRADE (0) if unprofitable OR exit signal fires.
-    # This resolves the prior gate/exit conflict where both losses trained
-    # the gate on the same bars with opposing targets.
-    gate_targets = (best_pnl > 0.0).long()  # 0=NO_TRADE, 1=TRADE
+    # ---- Gate targets: hindsight P&L (v10 proven approach) ----
+    # TRADE (1) = any option type would've been profitable after stops.
+    # v11's regime+setup filtering was proven circular (score 0.48) —
+    # those masks use the same lagging features already in the input.
+    pnl_ok = best_pnl > 0.0
+    gate_targets = pnl_ok.long()
 
     # Override: exit-labeled bars → NO_TRADE, but ONLY when the model is holding
     # This resolves the entry/exit conflict (Flaw 2): flat bars learn entry signals
@@ -734,10 +767,24 @@ if __name__ == "__main__":
     _data_fingerprint = _hashlib.sha256(_data_shape_str.encode()).hexdigest()[:16]
     print(f"  Data fingerprint: {_data_fingerprint}")
 
+    # Pre-training provenance validation gate
+    _prov = data.get('_provenance', {})
+    if _prov:
+        print(f"  Data provenance: {_prov.get('num_features','?')} features, "
+              f"{_prov.get('num_val_days','?')} val days, "
+              f"val range {_prov.get('val_date_range','?')}")
+        if _prov.get('num_features') and _prov['num_features'] != NUM_FEATURES:
+            raise RuntimeError(
+                f"data.pt was built with {_prov['num_features']} features but model expects {NUM_FEATURES}. "
+                f"Rebuild data.pt with: python3 training/prepare.py"
+            )
+    else:
+        print("  WARNING: data.pt has no provenance metadata (pre-v14 format)")
+
     model = TradingModel().to(device)
     num_params = sum(p.numel() for p in model.parameters())
     print(f"Parameters: {num_params:,}")
-    print(f"Architecture: v6 four-head (gate+dir+value+risk), ATM-biased, 7-dim position + 4-dim account state")
+    print(f"Architecture: v10 four-head (gate+dir14+value+risk), 7-dim position + 4-dim account state")
 
     # Config summary (parseable by inner_loop.py)
     print(f"--- Training Config ---")
@@ -760,10 +807,11 @@ if __name__ == "__main__":
             _ckpt = torch.load(_warm_path, map_location=device, weights_only=True)
             _state = _ckpt if not isinstance(_ckpt, dict) or 'model_state_dict' not in _ckpt else _ckpt['model_state_dict']
             # Architecture version gate: reject incompatible checkpoints
+            # Check metadata first, fall back to inspecting state dict weights
             _ckpt_arch = _ckpt.get('architecture', 'unknown') if isinstance(_ckpt, dict) else 'unknown'
-            _ckpt_has_value = _ckpt.get('has_value_head', False) if isinstance(_ckpt, dict) else ('value_head.4.weight' in _state)
-            _ckpt_has_risk = _ckpt.get('has_risk_head', False) if isinstance(_ckpt, dict) else ('risk_head.4.weight' in _state)
-            _ckpt_pos_dim = _ckpt.get('position_state_dim', 5) if isinstance(_ckpt, dict) else (_state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
+            _ckpt_has_value = _ckpt.get('has_value_head', 'value_head.4.weight' in _state) if isinstance(_ckpt, dict) else ('value_head.4.weight' in _state)
+            _ckpt_has_risk = _ckpt.get('has_risk_head', 'risk_head.4.weight' in _state) if isinstance(_ckpt, dict) else ('risk_head.4.weight' in _state)
+            _ckpt_pos_dim = _ckpt.get('position_state_dim', _state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5) if isinstance(_ckpt, dict) else (_state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
             if not _ckpt_has_value or not _ckpt_has_risk or _ckpt_pos_dim < TradingModel.POSITION_STATE_DIM:
                 print(f"WARNING: Checkpoint incompatible (arch={_ckpt_arch}, value_head={_ckpt_has_value}, risk_head={_ckpt_has_risk}, pos_dim={_ckpt_pos_dim}).")
                 print(f"  Current model requires: value_head=True, risk_head=True, pos_dim={TradingModel.POSITION_STATE_DIM}.")
@@ -858,7 +906,7 @@ if __name__ == "__main__":
 
         if TOD_FILTER == "highvol":
             features_t = data['features']
-            IDX_VIX_REGIME = 24
+            IDX_VIX_REGIME = 18  # vix_regime in v10 38-feature set
             for d in range(len(day_boundaries)):
                 ds = day_boundaries[d]
                 de = day_boundaries[d + 1] if d + 1 < len(day_boundaries) else n_bars
@@ -916,9 +964,13 @@ if __name__ == "__main__":
     # LR schedule
     # ---------------------------------------------------------------------------
 
+    _effective_warmup = 0.0 if _warm_start_loaded else WARMUP_RATIO
+    if _warm_start_loaded:
+        print(f"Warm start detected — skipping LR warmup (WARMUP_RATIO={WARMUP_RATIO} → 0.0)")
+
     def get_lr_mult(progress):
-        if progress < WARMUP_RATIO:
-            return progress / max(WARMUP_RATIO, 1e-8)
+        if progress < _effective_warmup:
+            return progress / max(_effective_warmup, 1e-8)
         if progress < 1.0 - COOLDOWN_RATIO:
             return 1.0
         else:
@@ -951,34 +1003,62 @@ if __name__ == "__main__":
     def _unpack_y(y_batch):
         """Unpack the y tuple from both random and day-sequential loaders.
 
-        Supports both 18-element (v5) and 22-element (v6 multi-level) tuples.
+        Supports v10 (38-element), v6 (22-element), and v5 (18-element) tuples.
         """
-        if len(y_batch) >= 22:
-            (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
-             otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
-             supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
-             call_stopped_batch, put_stopped_batch,
-             otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped,
-             call_stopped_tight, call_stopped_wide,
-             put_stopped_tight, put_stopped_wide) = y_batch
-        else:
-            (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
-             otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
-             supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
-             call_stopped_batch, put_stopped_batch,
-             otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped) = y_batch
-            call_stopped_tight = call_stopped_wide = None
-            put_stopped_tight = put_stopped_wide = None
+        n = len(y_batch)
+        # Core fields always present (positions 0-17)
+        (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
+         otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+         supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
+         call_stopped_batch, put_stopped_batch,
+         otm5c_stopped, otm5p_stopped, otm10c_stopped, otm10p_stopped) = y_batch[:18]
+
+        # v6 multi-level tight/wide (positions 18-21)
+        call_stopped_tight = y_batch[18] if n > 18 else None
+        call_stopped_wide = y_batch[19] if n > 19 else None
+        put_stopped_tight = y_batch[20] if n > 20 else None
+        put_stopped_wide = y_batch[21] if n > 21 else None
+
+        # v10 deep OTM P&L (positions 22-29)
+        otm15c_pnl = y_batch[22] if n > 22 else None
+        otm15p_pnl = y_batch[23] if n > 23 else None
+        otm20c_pnl = y_batch[24] if n > 24 else None
+        otm20p_pnl = y_batch[25] if n > 25 else None
+        otm25c_pnl = y_batch[26] if n > 26 else None
+        otm25p_pnl = y_batch[27] if n > 27 else None
+        otm30c_pnl = y_batch[28] if n > 28 else None
+        otm30p_pnl = y_batch[29] if n > 29 else None
+
+        # v10 deep OTM stopped P&L (positions 30-37)
+        otm15c_stopped = y_batch[30] if n > 30 else None
+        otm15p_stopped = y_batch[31] if n > 31 else None
+        otm20c_stopped = y_batch[32] if n > 32 else None
+        otm20p_stopped = y_batch[33] if n > 33 else None
+        otm25c_stopped = y_batch[34] if n > 34 else None
+        otm25p_stopped = y_batch[35] if n > 35 else None
+        otm30c_stopped = y_batch[36] if n > 36 else None
+        otm30p_stopped = y_batch[37] if n > 37 else None
+
+        # v11 setup/regime labels removed (proven circular, score 0.48)
+
         return {
             'call_pnl': call_pnl_batch, 'put_pnl': put_pnl_batch,
             'exit_call': exit_call_batch, 'exit_put': exit_put_batch,
             'otm5c': otm5c_pnl, 'otm5p': otm5p_pnl,
             'otm10c': otm10c_pnl, 'otm10p': otm10p_pnl,
+            'otm15c': otm15c_pnl, 'otm15p': otm15p_pnl,
+            'otm20c': otm20c_pnl, 'otm20p': otm20p_pnl,
+            'otm25c': otm25c_pnl, 'otm25p': otm25p_pnl,
+            'otm30c': otm30c_pnl, 'otm30p': otm30p_pnl,
             'sw': supervision_weight_batch, 'am': actionable_mask_batch,
             'rsm': risk_state_mask_batch,
             'call_stopped': call_stopped_batch, 'put_stopped': put_stopped_batch,
             'otm5c_stopped': otm5c_stopped, 'otm5p_stopped': otm5p_stopped,
             'otm10c_stopped': otm10c_stopped, 'otm10p_stopped': otm10p_stopped,
+            'otm15c_stopped': otm15c_stopped, 'otm15p_stopped': otm15p_stopped,
+            'otm20c_stopped': otm20c_stopped, 'otm20p_stopped': otm20p_stopped,
+            'otm25c_stopped': otm25c_stopped, 'otm25p_stopped': otm25p_stopped,
+            'otm30c_stopped': otm30c_stopped, 'otm30p_stopped': otm30p_stopped,
             'call_stopped_tight': call_stopped_tight, 'call_stopped_wide': call_stopped_wide,
             'put_stopped_tight': put_stopped_tight, 'put_stopped_wide': put_stopped_wide,
         }
@@ -1005,11 +1085,14 @@ if __name__ == "__main__":
             bars_since_high = position_state[:, 6]
 
             # For entering/holding trades: look up the best stopped P&L as proxy
-            all_stopped = torch.stack([
-                y_dict['call_stopped'], y_dict['put_stopped'],
+            _ups_stopped = [y_dict['call_stopped'], y_dict['put_stopped'],
                 y_dict['otm5c_stopped'], y_dict['otm5p_stopped'],
-                y_dict['otm10c_stopped'], y_dict['otm10p_stopped'],
-            ], dim=-1)
+                y_dict['otm10c_stopped'], y_dict['otm10p_stopped']]
+            for _k in ('otm15c_stopped', 'otm15p_stopped', 'otm20c_stopped', 'otm20p_stopped',
+                       'otm25c_stopped', 'otm25p_stopped', 'otm30c_stopped', 'otm30p_stopped'):
+                _v = y_dict.get(_k)
+                _ups_stopped.append(_v if _v is not None else torch.full_like(y_dict['call_stopped'], float('nan')))
+            all_stopped = torch.stack(_ups_stopped, dim=-1)
             cur_pnl = torch.nan_to_num(all_stopped, nan=-999.0).max(dim=-1).values
 
             # Entry: model says TRADE when not holding
@@ -1139,6 +1222,10 @@ if __name__ == "__main__":
                     y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
                     y_dict['exit_call'], y_dict['exit_put'],
                     y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                    y_dict.get('otm15c'), y_dict.get('otm15p'),
+                    y_dict.get('otm20c'), y_dict.get('otm20p'),
+                    y_dict.get('otm25c'), y_dict.get('otm25p'),
+                    y_dict.get('otm30c'), y_dict.get('otm30p'),
                     supervision_weight=y_dict['sw'],
                     actionable_mask=y_dict['am'],
                     risk_state_mask=y_dict['rsm'],
@@ -1148,6 +1235,14 @@ if __name__ == "__main__":
                     otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
                     otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
                     otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                    otm15_call_stopped_pnl=y_dict.get('otm15c_stopped'),
+                    otm15_put_stopped_pnl=y_dict.get('otm15p_stopped'),
+                    otm20_call_stopped_pnl=y_dict.get('otm20c_stopped'),
+                    otm20_put_stopped_pnl=y_dict.get('otm20p_stopped'),
+                    otm25_call_stopped_pnl=y_dict.get('otm25c_stopped'),
+                    otm25_put_stopped_pnl=y_dict.get('otm25p_stopped'),
+                    otm30_call_stopped_pnl=y_dict.get('otm30c_stopped'),
+                    otm30_put_stopped_pnl=y_dict.get('otm30p_stopped'),
                     call_stopped_tight=y_dict.get('call_stopped_tight'),
                     call_stopped_wide=y_dict.get('call_stopped_wide'),
                     put_stopped_tight=y_dict.get('put_stopped_tight'),
@@ -1156,12 +1251,15 @@ if __name__ == "__main__":
                     tod_weight_logits=model.tod_weight_logits,
                 )
 
-                # Current best P&L across 6 option types (shared by value + risk heads)
-                _all_stopped = torch.stack([
-                    y_dict['call_stopped'], y_dict['put_stopped'],
+                # Current best P&L across 14 option types (shared by value + risk heads)
+                _stopped_list = [y_dict['call_stopped'], y_dict['put_stopped'],
                     y_dict['otm5c_stopped'], y_dict['otm5p_stopped'],
-                    y_dict['otm10c_stopped'], y_dict['otm10p_stopped'],
-                ], dim=-1)
+                    y_dict['otm10c_stopped'], y_dict['otm10p_stopped']]
+                for _k in ('otm15c_stopped', 'otm15p_stopped', 'otm20c_stopped', 'otm20p_stopped',
+                           'otm25c_stopped', 'otm25p_stopped', 'otm30c_stopped', 'otm30p_stopped'):
+                    _v = y_dict.get(_k)
+                    _stopped_list.append(_v if _v is not None else torch.full_like(y_dict['call_stopped'], float('nan')))
+                _all_stopped = torch.stack(_stopped_list, dim=-1)
                 _cur_best = torch.nan_to_num(_all_stopped, nan=-999.0).max(dim=-1).values
 
                 # Phase D: Value head loss (only while holding)
@@ -1234,6 +1332,10 @@ if __name__ == "__main__":
                     y_dict['call_pnl'], y_dict['put_pnl'], time_feat, batch_features,
                     y_dict['exit_call'], y_dict['exit_put'],
                     y_dict['otm5c'], y_dict['otm5p'], y_dict['otm10c'], y_dict['otm10p'],
+                    y_dict.get('otm15c'), y_dict.get('otm15p'),
+                    y_dict.get('otm20c'), y_dict.get('otm20p'),
+                    y_dict.get('otm25c'), y_dict.get('otm25p'),
+                    y_dict.get('otm30c'), y_dict.get('otm30p'),
                     supervision_weight=y_dict['sw'],
                     actionable_mask=y_dict['am'],
                     risk_state_mask=y_dict['rsm'],
@@ -1243,6 +1345,14 @@ if __name__ == "__main__":
                     otm5_put_stopped_pnl=y_dict['otm5p_stopped'],
                     otm10_call_stopped_pnl=y_dict['otm10c_stopped'],
                     otm10_put_stopped_pnl=y_dict['otm10p_stopped'],
+                    otm15_call_stopped_pnl=y_dict.get('otm15c_stopped'),
+                    otm15_put_stopped_pnl=y_dict.get('otm15p_stopped'),
+                    otm20_call_stopped_pnl=y_dict.get('otm20c_stopped'),
+                    otm20_put_stopped_pnl=y_dict.get('otm20p_stopped'),
+                    otm25_call_stopped_pnl=y_dict.get('otm25c_stopped'),
+                    otm25_put_stopped_pnl=y_dict.get('otm25p_stopped'),
+                    otm30_call_stopped_pnl=y_dict.get('otm30c_stopped'),
+                    otm30_put_stopped_pnl=y_dict.get('otm30p_stopped'),
                     call_stopped_tight=y_dict.get('call_stopped_tight'),
                     call_stopped_wide=y_dict.get('call_stopped_wide'),
                     put_stopped_tight=y_dict.get('put_stopped_tight'),
@@ -1391,6 +1501,8 @@ if __name__ == "__main__":
             'batch_size': BATCH_SIZE,
         },
         'data_fingerprint': _data_fingerprint,
+        'num_val_days': metrics.get('num_val_days', 0),
+        'val_date_range': _prov.get('val_date_range', 'unknown'),
         'step': step,
     }, model_path)
     print(f"Model saved to {model_path}")
@@ -1564,4 +1676,18 @@ if __name__ == "__main__":
     _json_metrics['training_seconds'] = total_time
     _json_metrics['total_seconds'] = t_end - t_start
     _json_metrics['peak_vram_mb'] = peak_mb
+    # Provenance fields (for reproducibility tracking in promoted/history.jsonl)
+    _json_metrics['data_fingerprint'] = _data_fingerprint
+    _json_metrics['num_features'] = NUM_FEATURES
+    _json_metrics['lookback'] = LOOKBACK
+    # Write metrics to file (reliable — SSH stdout capture can lose data)
+    _metrics_path = os.path.join(os.path.dirname(__file__), "metrics.json")
+    with open(_metrics_path, "w") as _f:
+        _json.dump(_json_metrics, _f, default=str)
+
+    sys.stdout.flush()
     print("METRICS_JSON:" + _json.dumps(_json_metrics, default=str))
+    sys.stdout.flush()
+    sys.stderr.flush()
+    import time as _time
+    _time.sleep(1)

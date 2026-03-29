@@ -35,9 +35,14 @@ try:
         BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
         OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
         STARTING_CAPITAL, SPX_MULTIPLIER, POSITION_RISK_TARGET,
+        MAX_TRADE_RETURN, DYNAMIC_STOP_BASE,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
-        ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
-        ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
+        ACTION_BUY_CALL_OTM10, ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20,
+        ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30,
+        ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
+        ACTION_BUY_PUT_OTM10, ACTION_BUY_PUT_OTM15, ACTION_BUY_PUT_OTM20,
+        ACTION_BUY_PUT_OTM25, ACTION_BUY_PUT_OTM30,
+        ACTION_EXIT, NUM_ACTIONS,
         PNL_TANH_SCALE, BEST_PNL_TANH_SCALE,
     )
 except ModuleNotFoundError as e:
@@ -52,9 +57,14 @@ except ModuleNotFoundError as e:
         BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
         OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
         STARTING_CAPITAL, SPX_MULTIPLIER, POSITION_RISK_TARGET,
+        MAX_TRADE_RETURN, DYNAMIC_STOP_BASE,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
-        ACTION_BUY_CALL_OTM10, ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
-        ACTION_BUY_PUT_OTM10, ACTION_EXIT, NUM_ACTIONS,
+        ACTION_BUY_CALL_OTM10, ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20,
+        ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30,
+        ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5,
+        ACTION_BUY_PUT_OTM10, ACTION_BUY_PUT_OTM15, ACTION_BUY_PUT_OTM20,
+        ACTION_BUY_PUT_OTM25, ACTION_BUY_PUT_OTM30,
+        ACTION_EXIT, NUM_ACTIONS,
         PNL_TANH_SCALE, BEST_PNL_TANH_SCALE,
     )
 
@@ -253,66 +263,66 @@ LEDGER_DAY_COLUMNS = [
 # ---------------------------------------------------------------------------
 
 FEATURE_GROUPS = {
-    'returns':   (0, 2),
-    'volume':    (2, 5),
-    'vol':       (5, 8),
-    'vwap':      (8, 10),
-    'session':   (10, 12),
-    'levels':    (12, 14),
-    'trend':     (14, 17),
-    'micro':     (17, 19),
-    'time':      (19, 22),
-    'options':   (22, 24),
-    'vix':       (24, 26),
-    'greeks':    (26, 29),
-    'bollinger': (29, 30),
-    'range_ext': (30, 32),
+    'returns':    (0, 2),    # ret_6, ret_12
+    'volume':     (2, 4),    # volume_ratio, volume_at_price_pctile
+    'vol':        (4, 7),    # bar_range, realized_vol, range_ratio
+    'vwap':       (7, 8),    # vwap_dist
+    'session':    (8, 9),    # session_range_pct
+    'levels':     (9, 10),   # prev_high_dist
+    'trend':      (10, 13),  # ema_cross, consec_direction, speed_estimate
+    'micro':      (13, 14),  # inside_bar
+    'time':       (14, 16),  # minutes_to_close, time_cos
+    'options':    (16, 18),  # atm_iv, iv_skew
+    'vix':        (18, 20),  # vix_regime, vrp
+    'greeks':     (20, 23),  # atm_gamma, atm_theta_per_bar, charm_estimate
+    'bollinger':  (23, 24),  # bollinger_position
+    'range_ext':  (24, 26),  # rsi_7, session_range_position
+    'mkt_struct': (26, 29),  # poc_dist, va_position, ib_break
+    'v9':         (29, 33),  # atr_14, bar_delta, session_cum_delta, top_of_hour_min
+    'v10':        (33, 38),  # macdh_slope, force_index_2, vol_price_diverg, effort_vs_result, trend_5min
 }
 
+NUM_DIRECTIONS = 14  # v14: CALL/PUT × ATM/OTM5..OTM30
+
 # ---------------------------------------------------------------------------
-# Model architecture (copied from train.py — can't import due to module-level execution)
+# Model architecture (v14 — copied from train.py, can't import due to module-level execution)
 # ---------------------------------------------------------------------------
-
-class FeatureGroupGating(nn.Module):
-    """Learn which feature groups matter per timestep."""
-
-    def __init__(self, num_features, d_model, groups):
-        super().__init__()
-        self.groups = groups
-        self.n_groups = len(groups)
-        self.gate_net = nn.Sequential(
-            nn.Linear(num_features, self.n_groups * 2),
-            nn.GELU(),
-            nn.Linear(self.n_groups * 2, self.n_groups),
-            nn.Sigmoid(),
-        )
-        self.group_projs = nn.ModuleDict()
-        for name, (start, end) in groups.items():
-            self.group_projs[name] = nn.Linear(end - start, d_model)
-        self.mix = nn.Linear(d_model * self.n_groups, d_model)
-
-    def forward(self, x):
-        gates = self.gate_net(x)
-        projected = []
-        for i, (name, (start, end)) in enumerate(self.groups.items()):
-            proj = self.group_projs[name](x[:, :, start:end])
-            proj = proj * gates[:, :, i:i+1]
-            projected.append(proj)
-        return self.mix(torch.cat(projected, dim=-1))
 
 
 class TradingModel(nn.Module):
-    """Three-head sniper model for SPX 0DTE options (gate + direction + value)."""
+    """Four-head model for SPX 0DTE options (v14: exact v10 restoration, 38 features).
 
-    POSITION_STATE_DIM = 7  # matches train.py
+    Architecture:
+    - Shared transformer backbone
+    - Gate head: (batch, 2) — [NO_TRADE, TRADE]  (entry/exit signal)
+    - Direction head: (batch, 14) — strike selection (CALL/PUT × ATM/OTM5..OTM30)
+    - Value head: (batch, 1) — expected remaining P&L  (exit intelligence)
+    - Risk head: (batch, 3) — [stop_pct, size_frac, conviction]
+
+    Position state: 7 dims
+      [0] in_trade, [1] bars_held, [2] unrealized_pnl, [3] account_health,
+      [4] loss_streak, [5] best_pnl_since_entry, [6] bars_since_pnl_high
+
+    Account state: 4 dims (separate input, risk head only)
+      [0] account_growth_ratio, [1] log_account_size,
+      [2] daily_pnl_fraction, [3] win_rate_20
+    """
+
+    POSITION_STATE_DIM = 7
+    ACCOUNT_STATE_DIM = 4
 
     def __init__(self, num_features=NUM_FEATURES, lookback=120,
-                 d_model=64, n_heads=4, n_layers=4,
-                 ff_mult=4, dropout=0.1):
+                 d_model=64, n_heads=4, n_layers=3,
+                 ff_mult=3, dropout=0.30):
         super().__init__()
         self.lookback = lookback
         self.d_model = d_model
-        self.feature_gate = FeatureGroupGating(num_features, d_model, FEATURE_GROUPS)
+
+        self.input_proj = nn.Sequential(
+            nn.Linear(num_features, d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
         self.input_norm = nn.LayerNorm(d_model)
         self.pos_embed = nn.Parameter(torch.randn(1, lookback, d_model) * 0.02)
 
@@ -325,10 +335,11 @@ class TradingModel(nn.Module):
         mask = nn.Transformer.generate_square_subsequent_mask(lookback)
         self.register_buffer('causal_mask', mask)
 
-        # Position state: 7 dims (expanded for value head)
+        # Position state injection for gate head
         self.position_proj = nn.Linear(self.POSITION_STATE_DIM, d_model // 4)
         self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
 
+        # Gate head: "should I trade?" → [NO_TRADE, TRADE]
         self.gate_head = nn.Sequential(
             nn.LayerNorm(d_model),
             nn.Linear(d_model, d_model // 2),
@@ -336,15 +347,17 @@ class TradingModel(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(d_model // 2, 2),
         )
+
+        # Direction head: "which strike?" → 14-class
         self.dir_head = nn.Sequential(
             nn.LayerNorm(d_model),
             nn.Linear(d_model, d_model // 2),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(d_model // 2, 6),
+            nn.Linear(d_model // 2, NUM_DIRECTIONS),
         )
 
-        # Value head: predicts remaining P&L (Phase D)
+        # Value head: "how much P&L remains?" → scalar
         self.value_proj = nn.Linear(d_model + d_model // 4, d_model)
         self.value_head = nn.Sequential(
             nn.LayerNorm(d_model),
@@ -354,61 +367,110 @@ class TradingModel(nn.Module):
             nn.Linear(d_model // 2, 1),
         )
 
-        with torch.no_grad():
-            self.gate_head[-1].bias[0] = -0.5
+        # Risk head: account-aware risk management
+        self.risk_account_proj = nn.Linear(self.ACCOUNT_STATE_DIM, d_model // 4)
+        self.risk_proj = nn.Linear(d_model + d_model // 4 + d_model // 4, d_model)
+        self.risk_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 3),
+        )
 
-    def forward(self, x, position_state=None, return_value=False):
+        # Learned time-of-day loss weights
+        self.tod_weight_logits = nn.Parameter(torch.zeros(390))
+
+        # Bias initialization
+        with torch.no_grad():
+            self.gate_head[-1].bias[0] -= 0.3   # NO_TRADE: discourage (pro-trade)
+            self.gate_head[-1].bias[1] += 0.3   # TRADE: encourage
+            self.dir_head[-1].bias[0] += 0.15   # CALL_ATM bonus
+            self.dir_head[-1].bias[7] += 0.15   # PUT_ATM bonus
+            self.risk_head[-1].bias[0] = 0.0    # sigmoid(0)=0.5 → mid-range stop
+            self.risk_head[-1].bias[1] = -1.0   # sigmoid(-1)≈0.27 → conservative sizing
+            self.risk_head[-1].bias[2] = 0.0    # tanh(0)=0 → neutral conviction
+
+    def forward(self, x, position_state=None, account_state=None,
+                return_value=False, return_risk=False):
         batch_size = x.shape[0]
         device = x.device
 
         if position_state is None:
             position_state = torch.zeros(batch_size, self.POSITION_STATE_DIM, device=device)
             position_state[:, 3] = 1.0
-        elif position_state.shape[-1] < self.POSITION_STATE_DIM:
-            pad = torch.zeros(batch_size, self.POSITION_STATE_DIM - position_state.shape[-1], device=device)
-            position_state = torch.cat([position_state, pad], dim=-1)
 
-        x = self.feature_gate(x)
-        x = self.input_norm(x)
-        x = x + self.pos_embed[:, :x.size(1), :]
-        x = self.transformer(x, mask=self.causal_mask[:x.size(1), :x.size(1)],
-                              is_causal=True)
-        last = x[:, -1, :]
+        x_proj = self.input_proj(x)
+        x_proj = self.input_norm(x_proj)
+        x_proj = x_proj + self.pos_embed[:, :x_proj.size(1), :]
+        x_proj = self.transformer(x_proj, mask=self.causal_mask[:x_proj.size(1), :x_proj.size(1)],
+                                  is_causal=True)
+        last = x_proj[:, -1, :]
 
+        # Inject position state into gate head
         pos_emb = torch.relu(self.position_proj(position_state))
         gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
 
         gate_logits = self.gate_head(gate_input)
         dir_logits = self.dir_head(last)
 
+        outputs = (gate_logits, dir_logits)
+
         if return_value:
             value_input = self.value_proj(torch.cat([last, pos_emb], dim=-1))
             value_pred = self.value_head(value_input).squeeze(-1)
-            return gate_logits, dir_logits, value_pred
+            outputs = outputs + (value_pred,)
 
-        return gate_logits, dir_logits
+        if return_risk:
+            if account_state is None:
+                account_state = torch.zeros(batch_size, self.ACCOUNT_STATE_DIM, device=device)
+                account_state[:, 0] = 1.0
+            acct_emb = torch.relu(self.risk_account_proj(account_state))
+            risk_input = self.risk_proj(torch.cat([last, pos_emb, acct_emb], dim=-1))
+            risk_raw = self.risk_head(risk_input)
+            stop_pct = 0.15 + 0.45 * torch.sigmoid(risk_raw[:, 0])
+            size_frac = torch.sigmoid(risk_raw[:, 1])
+            conviction = torch.tanh(risk_raw[:, 2])
+            risk_output = torch.stack([stop_pct, size_frac, conviction], dim=-1)
+            outputs = outputs + (risk_output,)
+
+        return outputs if len(outputs) > 2 else outputs
 
 
 # ---------------------------------------------------------------------------
 # Action constants and names
 # ---------------------------------------------------------------------------
 
-_CALL_ACTIONS = {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10}
-_ENTRY_ACTIONS = {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
-                  ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10}
+_CALL_ACTIONS = {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+                 ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20, ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30}
+_ENTRY_ACTIONS = {
+    ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+    ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20, ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30,
+    ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10,
+    ACTION_BUY_PUT_OTM15, ACTION_BUY_PUT_OTM20, ACTION_BUY_PUT_OTM25, ACTION_BUY_PUT_OTM30,
+}
 
 ACTION_NAMES = {
     ACTION_DO_NOTHING: 'DO_NOTHING',
     ACTION_BUY_CALL_ATM: 'BUY_CALL_ATM',
     ACTION_BUY_CALL_OTM5: 'BUY_CALL_OTM5',
     ACTION_BUY_CALL_OTM10: 'BUY_CALL_OTM10',
+    ACTION_BUY_CALL_OTM15: 'BUY_CALL_OTM15',
+    ACTION_BUY_CALL_OTM20: 'BUY_CALL_OTM20',
+    ACTION_BUY_CALL_OTM25: 'BUY_CALL_OTM25',
+    ACTION_BUY_CALL_OTM30: 'BUY_CALL_OTM30',
     ACTION_BUY_PUT_ATM: 'BUY_PUT_ATM',
     ACTION_BUY_PUT_OTM5: 'BUY_PUT_OTM5',
     ACTION_BUY_PUT_OTM10: 'BUY_PUT_OTM10',
+    ACTION_BUY_PUT_OTM15: 'BUY_PUT_OTM15',
+    ACTION_BUY_PUT_OTM20: 'BUY_PUT_OTM20',
+    ACTION_BUY_PUT_OTM25: 'BUY_PUT_OTM25',
+    ACTION_BUY_PUT_OTM30: 'BUY_PUT_OTM30',
     ACTION_EXIT: 'EXIT',
 }
 
-DIR_NAMES = ['C_ATM', 'C_OTM5', 'C_OTM10', 'P_ATM', 'P_OTM5', 'P_OTM10']
+DIR_NAMES = ['C_ATM', 'C_OTM5', 'C_OTM10', 'C_OTM15', 'C_OTM20', 'C_OTM25', 'C_OTM30',
+             'P_ATM', 'P_OTM5', 'P_OTM10', 'P_OTM15', 'P_OTM20', 'P_OTM25', 'P_OTM30']
 
 
 # ---------------------------------------------------------------------------
@@ -437,9 +499,17 @@ def _load_model_class_from_train_py(train_py_path: str, config: dict | None = No
         "ACTION_BUY_CALL_ATM",
         "ACTION_BUY_CALL_OTM5",
         "ACTION_BUY_CALL_OTM10",
+        "ACTION_BUY_CALL_OTM15",
+        "ACTION_BUY_CALL_OTM20",
+        "ACTION_BUY_CALL_OTM25",
+        "ACTION_BUY_CALL_OTM30",
         "ACTION_BUY_PUT_ATM",
         "ACTION_BUY_PUT_OTM5",
         "ACTION_BUY_PUT_OTM10",
+        "ACTION_BUY_PUT_OTM15",
+        "ACTION_BUY_PUT_OTM20",
+        "ACTION_BUY_PUT_OTM25",
+        "ACTION_BUY_PUT_OTM30",
         "ACTION_EXIT",
         # Hyperparameters injected from checkpoint config (defined via _env_int/_env_float)
         "LOOKBACK", "D_MODEL", "N_HEADS", "DEPTH", "FF_MULT", "DROPOUT",
@@ -547,8 +617,13 @@ def _load_model_class_from_train_py(train_py_path: str, config: dict | None = No
             BARS_PER_DAY as _bpd, NUM_ACTIONS,
             ACTION_DO_NOTHING as _a0, ACTION_BUY_CALL_ATM as _a1,
             ACTION_BUY_CALL_OTM5 as _a2, ACTION_BUY_CALL_OTM10 as _a3,
+            ACTION_BUY_CALL_OTM15 as _a3b, ACTION_BUY_CALL_OTM20 as _a3c,
+            ACTION_BUY_CALL_OTM25 as _a3d, ACTION_BUY_CALL_OTM30 as _a3e,
             ACTION_BUY_PUT_ATM as _a4, ACTION_BUY_PUT_OTM5 as _a5,
-            ACTION_BUY_PUT_OTM10 as _a6, ACTION_EXIT as _a7,
+            ACTION_BUY_PUT_OTM10 as _a6,
+            ACTION_BUY_PUT_OTM15 as _a6b, ACTION_BUY_PUT_OTM20 as _a6c,
+            ACTION_BUY_PUT_OTM25 as _a6d, ACTION_BUY_PUT_OTM30 as _a6e,
+            ACTION_EXIT as _a7,
         )
         namespace.update({
             'FEATURE_NAMES': FEATURE_NAMES,
@@ -556,8 +631,13 @@ def _load_model_class_from_train_py(train_py_path: str, config: dict | None = No
             'NUM_ACTIONS': NUM_ACTIONS,
             'ACTION_DO_NOTHING': _a0, 'ACTION_BUY_CALL_ATM': _a1,
             'ACTION_BUY_CALL_OTM5': _a2, 'ACTION_BUY_CALL_OTM10': _a3,
+            'ACTION_BUY_CALL_OTM15': _a3b, 'ACTION_BUY_CALL_OTM20': _a3c,
+            'ACTION_BUY_CALL_OTM25': _a3d, 'ACTION_BUY_CALL_OTM30': _a3e,
             'ACTION_BUY_PUT_ATM': _a4, 'ACTION_BUY_PUT_OTM5': _a5,
-            'ACTION_BUY_PUT_OTM10': _a6, 'ACTION_EXIT': _a7,
+            'ACTION_BUY_PUT_OTM10': _a6,
+            'ACTION_BUY_PUT_OTM15': _a6b, 'ACTION_BUY_PUT_OTM20': _a6c,
+            'ACTION_BUY_PUT_OTM25': _a6d, 'ACTION_BUY_PUT_OTM30': _a6e,
+            'ACTION_EXIT': _a7,
         })
     except ImportError:
         pass
@@ -663,9 +743,9 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
             lookback=config.get('lookback', 120),
             d_model=config.get('d_model', 64),
             n_heads=config.get('n_heads', 4),
-            n_layers=config.get('depth', 4),
-            ff_mult=config.get('ff_mult', 4),
-            dropout=config.get('dropout', 0.1),
+            n_layers=config.get('depth', 3),
+            ff_mult=config.get('ff_mult', 3),
+            dropout=config.get('dropout', 0.30),
         )
     except TypeError:
         # Custom model may have different constructor args — try minimal
@@ -678,6 +758,7 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
     _ckpt_has_risk = ckpt.get('has_risk_head', False) or ('risk_head.4.weight' in _state)
     _ckpt_pos_dim = ckpt.get('position_state_dim', _state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
     _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
+    # v13/v10: require value head + risk head (gate+dir architecture)
     if not _ckpt_has_value or not _ckpt_has_risk or _ckpt_pos_dim < _ps_dim:
         raise ValueError(
             f"Checkpoint incompatible: arch={_ckpt_arch}, value_head={_ckpt_has_value}, "
@@ -911,6 +992,10 @@ def load_training_features(replay_date):
     for key in ['atm_call_prices', 'atm_put_prices',
                 'otm5_call_prices', 'otm5_put_prices',
                 'otm10_call_prices', 'otm10_put_prices',
+                'otm15_call_prices', 'otm15_put_prices',
+                'otm20_call_prices', 'otm20_put_prices',
+                'otm25_call_prices', 'otm25_put_prices',
+                'otm30_call_prices', 'otm30_put_prices',
                 'atm_strikes']:
         if key in data:
             arr = data[key].numpy()[:end]
@@ -924,6 +1009,14 @@ def load_training_features(replay_date):
         'otm5_put': option_prices.get('otm5_put'),
         'otm10_call': option_prices.get('otm10_call'),
         'otm10_put': option_prices.get('otm10_put'),
+        'otm15_call': option_prices.get('otm15_call'),
+        'otm15_put': option_prices.get('otm15_put'),
+        'otm20_call': option_prices.get('otm20_call'),
+        'otm20_put': option_prices.get('otm20_put'),
+        'otm25_call': option_prices.get('otm25_call'),
+        'otm25_put': option_prices.get('otm25_put'),
+        'otm30_call': option_prices.get('otm30_call'),
+        'otm30_put': option_prices.get('otm30_put'),
         'atm_strikes': option_prices.get('atm_strikes'),
     }
 
@@ -1521,12 +1614,20 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             ACTION_BUY_CALL_ATM: option_prices.get('atm_call'),
             ACTION_BUY_CALL_OTM5: option_prices.get('otm5_call'),
             ACTION_BUY_CALL_OTM10: option_prices.get('otm10_call'),
+            ACTION_BUY_CALL_OTM15: option_prices.get('otm15_call'),
+            ACTION_BUY_CALL_OTM20: option_prices.get('otm20_call'),
+            ACTION_BUY_CALL_OTM25: option_prices.get('otm25_call'),
+            ACTION_BUY_CALL_OTM30: option_prices.get('otm30_call'),
             ACTION_BUY_PUT_ATM: option_prices.get('atm_put'),
             ACTION_BUY_PUT_OTM5: option_prices.get('otm5_put'),
             ACTION_BUY_PUT_OTM10: option_prices.get('otm10_put'),
+            ACTION_BUY_PUT_OTM15: option_prices.get('otm15_put'),
+            ACTION_BUY_PUT_OTM20: option_prices.get('otm20_put'),
+            ACTION_BUY_PUT_OTM25: option_prices.get('otm25_put'),
+            ACTION_BUY_PUT_OTM30: option_prices.get('otm30_put'),
         }.get(action)
 
-    VIX_FEAT_IDX = 45
+    VIX_FEAT_IDX = _FEAT_IDX.get('vix_regime', 18)
 
     # Pre-compute bar_of_day
     _bar_of_day = {}
@@ -1614,26 +1715,27 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
 
+
         with torch.no_grad():
             _out = model(x, position_state=pos_state, account_state=_acct_state,
+                         return_value=hasattr(model, 'value_head'),
                          return_risk=_has_risk_head)
-            gate_logits, dir_logits = _out[0], _out[1]
             _risk_output = None
-            if _has_risk_head:
-                _risk_output = _out[-1]  # (1, 3): stop_pct, size_frac, conviction
 
-        gate_probs_t = torch.softmax(gate_logits, dim=-1)[0].cpu().numpy()
-        dir_probs = torch.softmax(dir_logits, dim=-1)[0].cpu().numpy()
-        gate_action = int(torch.argmax(gate_logits, dim=-1)[0].item())  # 0=NO_TRADE, 1=TRADE
-        dir_action = int(np.argmax(dir_probs))
-        gate_trade_prob = float(gate_probs_t[1])
-        gate_notrade_prob = float(gate_probs_t[0])
-
-        # Argmax gate — same as training evaluate_trades(). No hardcoded threshold.
-        if gate_action == 1:  # TRADE
-            action = dir_action + 1
-        else:  # NO_TRADE
-            action = ACTION_DO_NOTHING
+            # v13/v10: gate+direction two-head
+            gate_logits, dir_logits = _out[0], _out[1]
+            gate_probs_t = torch.softmax(gate_logits, dim=-1)[0].cpu().numpy()
+            dir_probs = torch.softmax(dir_logits, dim=-1)[0].cpu().numpy()
+            gate_action = int(torch.argmax(gate_logits, dim=-1)[0].item())
+            gate_trade_prob = float(gate_probs_t[1])
+            gate_notrade_prob = float(gate_probs_t[0])
+            dir_action = int(np.argmax(dir_probs))
+            if gate_action == 1:
+                action = dir_action + 1
+            else:
+                action = ACTION_DO_NOTHING
+            if _has_risk_head and len(_out) > 2:
+                _risk_output = _out[-1]
 
         # Market snapshot
         ts_raw = timestamps[global_idx] if timestamps is not None else None
@@ -1651,12 +1753,18 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         session_high = float(np.max(raw_high[session_bars_so_far]))
         session_low = float(np.min(raw_low[session_bars_so_far]))
 
-        # Raw feature snapshots for trade context
-        ret_5 = float(raw_features[global_idx, 0]) if not np.isnan(raw_features[global_idx, 0]) else None
-        ret_30 = float(raw_features[global_idx, 2]) if raw_features.shape[1] > 2 and not np.isnan(raw_features[global_idx, 2]) else None
-        trend = float(raw_features[global_idx, 28]) if raw_features.shape[1] > 28 and not np.isnan(raw_features[global_idx, 28]) else None
-        rvol = float(raw_features[global_idx, 9]) if raw_features.shape[1] > 9 and not np.isnan(raw_features[global_idx, 9]) else None
-        vol_z = float(raw_features[global_idx, 6]) if raw_features.shape[1] > 6 and not np.isnan(raw_features[global_idx, 6]) else None
+        # Raw feature snapshots for trade context (use _FEAT_IDX for index safety)
+        def _snap(name):
+            idx = _FEAT_IDX.get(name)
+            if idx is None or idx >= raw_features.shape[1]:
+                return None
+            v = raw_features[global_idx, idx]
+            return float(v) if not np.isnan(v) else None
+        ret_5 = _snap('ret_6')
+        ret_30 = _snap('ret_12')
+        trend = _snap('ema_cross')
+        rvol = _snap('realized_vol')
+        vol_z = _snap('volume_ratio')
 
         confidence = gate_trade_prob * float(dir_probs[dir_action])
 
@@ -1709,41 +1817,19 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             else:
                 _trade_bars_since_high += 1
 
-            # Phase D: value head exit — v7: binary exit classifier
-            # Value head now outputs logits for "should exit now?"
-            # Exit when sigmoid(logit) > threshold (conviction-adjusted)
-            _value_exit = False
-            _value_pred_float = None
-            _has_value_head = hasattr(model, 'value_head')
-            if _has_value_head and in_trade and bars_held >= 2:
-                with torch.no_grad():
-                    _vout = model(x, position_state=pos_state, return_value=True)
-                    _value_pred_float = float(_vout[2].item())
-                # Sigmoid converts logit to exit probability
-                _exit_prob = 1.0 / (1.0 + math.exp(-_value_pred_float))
-                # Conviction-adjusted threshold: high conviction → harder to exit (0.7), low → easier (0.5)
-                _vthresh = 0.50 + _trade_conviction * 0.20
-                if _exit_prob > _vthresh:
-                    _value_exit = True
-                bar_entry['value_pred'] = _exit_prob
-                bar_entry['conviction'] = _trade_conviction
-
             # Exit conditions — matching prepare.py evaluate_trades()
             hit_stop = net_pnl_pct <= -trade_dynamic_stop_pct
             hit_max_hold = bars_held >= MAX_HOLD_BARS
             model_exit = (action == ACTION_DO_NOTHING)  # gate=NO_TRADE while holding
             is_last = (k_pos == len(valid_indices) - 1)
 
-            if hit_stop or hit_max_hold or model_exit or _value_exit or is_last:
+            if hit_stop or hit_max_hold or model_exit or is_last:
                 if hit_stop:
                     final_pnl = -trade_dynamic_stop_pct
                     reason = 'STOP_LOSS'
                 elif model_exit:
                     final_pnl = net_pnl_pct
                     reason = 'MODEL_EXIT'
-                elif _value_exit:
-                    final_pnl = net_pnl_pct
-                    reason = 'VALUE_EXIT'
                 elif hit_max_hold:
                     final_pnl = net_pnl_pct
                     reason = 'MAX_HOLD'
@@ -1756,8 +1842,13 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 # action_cost_bps already includes spread + slippage (round-trip).
                 _ACTION_TO_COST_IDX = {
                     ACTION_BUY_CALL_ATM: 0, ACTION_BUY_CALL_OTM5: 1,
-                    ACTION_BUY_CALL_OTM10: 2, ACTION_BUY_PUT_ATM: 3,
-                    ACTION_BUY_PUT_OTM5: 4, ACTION_BUY_PUT_OTM10: 5,
+                    ACTION_BUY_CALL_OTM10: 2, ACTION_BUY_CALL_OTM15: 3,
+                    ACTION_BUY_CALL_OTM20: 4, ACTION_BUY_CALL_OTM25: 5,
+                    ACTION_BUY_CALL_OTM30: 6,
+                    ACTION_BUY_PUT_ATM: 7, ACTION_BUY_PUT_OTM5: 8,
+                    ACTION_BUY_PUT_OTM10: 9, ACTION_BUY_PUT_OTM15: 10,
+                    ACTION_BUY_PUT_OTM20: 11, ACTION_BUY_PUT_OTM25: 12,
+                    ACTION_BUY_PUT_OTM30: 13,
                 }
                 _cost_idx = _ACTION_TO_COST_IDX.get(trade_action)
                 _used_data_pt_cost = False
@@ -1771,12 +1862,14 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     _mtc_exit = BARS_PER_DAY - _bar_of_day.get(global_idx, 200)
                     _vr_entry = float(features[entry_global, _FEAT_IDX['vix_regime']]) if entry_global < features.shape[0] else 0.3
                     _vr_exit = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.3
-                    _is_otm = trade_action in (ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
-                                               ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10)
+                    _is_otm = trade_action not in (ACTION_BUY_CALL_ATM, ACTION_BUY_PUT_ATM)
                     _entry_spread = compute_adaptive_spread_bps(_mtc_entry, _vr_entry, _is_otm)
                     _exit_spread = compute_adaptive_spread_bps(_mtc_exit, _vr_exit, _is_otm)
                     _round_trip_spread = (_entry_spread + _exit_spread) / 10000.0
                 final_pnl -= _round_trip_spread
+
+                # Cap individual trade P&L (match evaluate_trades in prepare.py)
+                final_pnl = max(-trade_dynamic_stop_pct, min(final_pnl, MAX_TRADE_RETURN))
 
                 # Update account balance (dollar P&L)
                 dollar_pnl = final_pnl * trade_entry_price * SPX_MULTIPLIER * trade_n_contracts
@@ -1861,7 +1954,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     'entry_ret_30': _trade_entry_ret_30,
                     'entry_reason_codes': list(trade_entry_reason_codes) if trade_entry_reason_codes else ['trade_signal'],
                     'exit_reason_codes': [reason.lower()],
-                    'exit_value_pred': round(_value_pred_float, 4) if _value_pred_float is not None else None,
+                    'exit_value_pred': None,
                 }
                 trades.append(trade)
 
@@ -1930,9 +2023,12 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             trade_entry_confidence = confidence
             # Risk head: use learned stop and sizing; fall back to formula
             if _risk_output is not None:
-                trade_dynamic_stop_pct = float(_risk_output[0, 0].item())  # learned stop [0.15, 0.60]
-                _size_frac = float(_risk_output[0, 1].item())
-                _trade_conviction = float(_risk_output[0, 2].item())
+                _stop_raw = float(_risk_output[0, 0].item())
+                _size_raw = float(_risk_output[0, 1].item())
+                _conv_raw = float(_risk_output[0, 2].item())
+                trade_dynamic_stop_pct = _stop_raw if np.isfinite(_stop_raw) else DYNAMIC_STOP_BASE
+                _size_frac = _size_raw if np.isfinite(_size_raw) else 0.5
+                _trade_conviction = _conv_raw if np.isfinite(_conv_raw) else 0.0
                 # Position sizing from risk head
                 max_affordable = max(1, int(account_balance * POSITION_RISK_TARGET / contract_cost))
                 trade_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
@@ -2973,6 +3069,10 @@ def run_backtest(model, data_pt_path: str, device: str = 'cpu',
     for key in ['atm_call_prices', 'atm_put_prices',
                 'otm5_call_prices', 'otm5_put_prices',
                 'otm10_call_prices', 'otm10_put_prices',
+                'otm15_call_prices', 'otm15_put_prices',
+                'otm20_call_prices', 'otm20_put_prices',
+                'otm25_call_prices', 'otm25_put_prices',
+                'otm30_call_prices', 'otm30_put_prices',
                 'atm_strikes']:
         if key in data:
             arr = data[key].numpy()
@@ -2984,6 +3084,14 @@ def run_backtest(model, data_pt_path: str, device: str = 'cpu',
         'otm5_put': option_prices.get('otm5_put'),
         'otm10_call': option_prices.get('otm10_call'),
         'otm10_put': option_prices.get('otm10_put'),
+        'otm15_call': option_prices.get('otm15_call'),
+        'otm15_put': option_prices.get('otm15_put'),
+        'otm20_call': option_prices.get('otm20_call'),
+        'otm20_put': option_prices.get('otm20_put'),
+        'otm25_call': option_prices.get('otm25_call'),
+        'otm25_put': option_prices.get('otm25_put'),
+        'otm30_call': option_prices.get('otm30_call'),
+        'otm30_put': option_prices.get('otm30_put'),
         'atm_strikes': option_prices.get('atm_strikes'),
     }
 

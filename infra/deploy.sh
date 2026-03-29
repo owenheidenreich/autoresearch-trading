@@ -473,6 +473,23 @@ fi"
     ssh_cmd "mkdir -p /root/.cache/autoresearch-trading/features"
     scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/.cache/autoresearch-trading/features/data.pt"
 
+    # Verify data.pt upload integrity via SHA256 comparison
+    if [[ -f "${DATA_PT}.sha256" ]]; then
+        local local_hash
+        local_hash=$(cat "${DATA_PT}.sha256" | tr -d '[:space:]')
+        local remote_hash
+        remote_hash=$(ssh_cmd "sha256sum /root/.cache/autoresearch-trading/features/data.pt | cut -d' ' -f1" 2>/dev/null | tr -d '[:space:]')
+        if [[ -n "$remote_hash" && "$local_hash" != "$remote_hash" ]]; then
+            die "data.pt upload CORRUPTED! Local: ${local_hash:0:16}  Remote: ${remote_hash:0:16}"
+        elif [[ -n "$remote_hash" ]]; then
+            log "data.pt integrity verified (hash: ${local_hash:0:16})"
+        else
+            log "WARNING: Could not verify data.pt hash on remote (sha256sum unavailable)"
+        fi
+    else
+        log "WARNING: No data.pt.sha256 sidecar — run prepare.py to generate"
+    fi
+
     # Upload best_model.pt if it exists — warm-start from previous training run
     if [[ -f "$PROJECT_ROOT/training/best_model.pt" ]]; then
         log "Uploading best_model.pt ($(du -h "$PROJECT_ROOT/training/best_model.pt" | cut -f1)) for warm-start..."

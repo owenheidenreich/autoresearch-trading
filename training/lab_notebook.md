@@ -1,11 +1,13 @@
 # Lab Notebook
 
 ## System
-SPX 0DTE | 4-head gate+dir+value+risk (v8) | 37 features (v3) | 7-dim position state | 4-dim account state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
-- **v8 (2026-03-26):** Reverted v7's counterproductive changes. VALUE_W=0.0 (disabled), EXIT_W=0.15, VALUE_LOSS_TYPE=mse (reverted from BCE), COOLDOWN_RATIO=0.4, BATCH_SIZE=1024. P2 fp32 precision casts in loss. Checkpoint saves full training_config with warm-start validation. Outer loop keep/revert with pipeline snapshots.
-- **v7 (2026-03-26):** Value head changed from MSE regression → BCE binary exit classifier. Exit labels sparse (66.5% vs 98%). Take-profit signal at 20%. EXIT_W=0.40, VALUE_W=0.5, DAY_SEQ_RATIO=0.92. Sigmoid value exit with conviction-adjusted threshold. **Postmortem:** All v7 changes made things worse. PBT drove EXIT_W→0 and VALUE_W→0. Score dropped from 41.92 to 8.09. BCE value head and sparse exit labels proven counterproductive.
-- **v3 features (2026-03-24):** 5 market structure features added: poc_dist, va_position, vwap_band_sigma, ib_break, theta_pressure
-- **Fresh start:** All previous training sessions archived to `archive/pre-v3-2026-03-24/`. No best_model.pt. Clean slate.
+SPX 0DTE | 4-head gate+dir+value+risk (v14) | 38 features | 7-dim position state | 4-dim account state | 14 directions | 1-min bars | learned exits (no hardcoded TP)
+- **v14 (2026-03-28):** Exact v10 restoration. Fixed hidden bug: v13 silently ran v11's failed gate labels (AND of regime+setup+pnl ≈ 1.6% TRADE) because data.pt had setup/regime masks. Reverted to pure `pnl_ok.long()` gate labels. Reverted to 38 features (removed 6 redundant raw candle features). Warm start from v10 weights.
+- **v13 (2026-03-28, FAILED):** Score -0.27. Intended v10 restoration but ran v11 AND-gate labels (~1.6% TRADE). Direction collapsed to 100% PUT, 11.8% WR.
+- **v12 (2026-03-27, FAILED):** Unified action head (15-class). Score 1.16 after 48 experiments. Gate-direction coupling collapsed to 1 strike. 10x weaker entropy than v10.
+- **v11 (2026-03-27, FAILED):** Regime+setup gate labels. Score 0.48. Circular — relabeling with lagging features doesn't add information.
+- **v10 (2026-03-27):** Replay PF 1.74, 38 features, 14-class direction head. Score 16.73 was on **70 val days** (old data.pt). On current 298-day val set, v10 model scores **0.064**. V14 (0.138) beats it. Archived at `archive/models/v10/`.
+- **v8 (2026-03-26):** VALUE_W=0.0, EXIT_W=0.15, COOLDOWN_RATIO=0.4, BATCH_SIZE=1024. Replay PF 1.43.
 - **Score config LOCKED**: _score_config is hardcoded, mutation-guarded in run_loop.py.
 
 ## What Fails (do NOT retry)
@@ -30,16 +32,23 @@ SPX 0DTE | 4-head gate+dir+value+risk (v8) | 37 features (v3) | 7-dim position s
 | Changing position state tanh scaling in only ONE file | 0/1 | Was hardcoded independently in 3 files → mismatch. Now shared via PNL_TANH_SCALE / BEST_PNL_TANH_SCALE from prepare.py. Agents can tune via env var. |
 | Manual single-param EXIT_W tuning (0.20-0.35) | 0/10 | Score 41.92 depends on fragile penalty balance (consec loss, drawdown). Changing exit timing cascades through penalties. Best attempt: EXIT_W=0.25 DAY_SEQ=0.90 scored 26.15 (38% regression). Use PBT for multi-param exploration instead. |
 | Hardcoding defaults in two places (train.py + inner_loop.py) | 5 params drifted | `_PARAM_SPACE` had stale defaults (EXIT_W=0.15 vs actual 0.40, VALUE_W=0.3 vs 0.5, etc). PBT baseline explored wrong center. **Fixed:** `_PARAM_SPACE` no longer stores defaults — `_parse_train_defaults()` reads them from train.py at PBT init time. Single source of truth. |
+| Regime+setup gate labels from lagging features (v11) | 0/1 | Score 0.48 (-97%). `detect_setups()` and `compute_regime_labels()` use same features already in input. Circular — doesn't add information, just removes positive labels. |
+| Unified 15-class action head replacing gate+direction (v12) | 0/48 | Score 1.16. Gate-direction coupling collapses to 1 strike. ENTROPY_COEFF=0.02 is 10x weaker than DIRECTION_ENTROPY_BONUS=0.20. DO_NOTHING dominates. |
+| Multiple simultaneous changes (v12: architecture + loss + features + lookback) | 0/1 | Can't attribute regression to any single change. Every version that changed 2+ things failed. |
+| Silent data.pt gate label activation (v13 bug) | 0/4 | setup_mask/regime_mask in data.pt silently activates v11 AND-gate logic (~1.6% TRADE labels). Archive captured AFTER v11 code added. **Fixed:** removed setup_mask/regime_mask from sniper_loss. |
+| Comparing scores across different data.pt / val sets | 3 days wasted | v10 scored 16.73 on 70 val days. v14 scored 0.14 on 298 val days. Spent 3 days + $50 GPU trying to "fix" v14 when it was actually the best model. **Root cause:** data.pt was rebuilt (expanding val set 4x) without version tracking. Scores are NOT comparable across different val sets. **Fixed:** data.pt now has `_provenance` metadata, SHA256 sidecar, fatal feature mismatch (no silent truncation). |
 
 ## Best Runs
-| Run | Score | PF (train) | PF (val) | Trades | Win% | Notes |
-|-----|-------|------------|----------|--------|------|-------|
-| v8 cycle-006 exp5 | 13.78 | 5.45 | 1.43 (replay) | 133/334 | 44%/40% | v8 fresh start, VALUE_W=0 EXIT_W=0.15 COOLDOWN=0.4 BATCH=1024. Replay profitable (+120%). |
-| v7.1 PBT gen3 | 16.34 | 3.62 | 0.99 (replay) | 100/227 | 46%/44% | v7, EXIT_W≈0 VALUE_W≈0 PNL_W=1.7 GATE_W=0.97 LR=0.0037. Replay NOT VIABLE. |
-| cycle-002 exp2 | 41.92 | 6.78 | 3.28 | 128/208 | 47%/50% | v6, BATCH_SIZE=1024+DIR_W=3.0+DROPOUT=0.20, VIABLE (p=0.0020), max_consec=4, val 63 days |
-| cycle-001 exp9 | 18.78 | 6.24 | 2.77 | 216 | 48.6% | v6 four-head, warm start from exp6, VIABLE (p=0.0035) |
-| cycle-001 exp6 | 17.47 | 5.55 | — | — | — | v6 warm start from baseline |
-| cycle-001 exp4 | 13.14 | 6.06 | — | — | — | v6 fresh start baseline |
+
+**NOTE:** Scores before v14 were on a 70-day val set. Current 298-day val set produces lower but more honest scores. Do NOT compare across val sets.
+
+| Run | Score | Val Days | PF | Trades | Win% | Notes |
+|-----|-------|----------|-----|--------|------|-------|
+| **v14 (current)** | **0.138** | **298** | **1.58** | **555** | **28.6%** | Best model on 298-day eval. All 5 chunks profitable (worst PF=1.34). +36.5% return. |
+| v10 on 298 days | 0.064 | 298 | 2.02 | 180 | 33.3% | v10 model re-evaluated on current val set. WORSE than v14. Worst chunk PF=0.61. |
+| v10 (original) | 16.73 | 70 | 5.81 | 115 | 43.5% | ⚠️ 70-day val set (no longer reproducible). Inflated by small sample. |
+| cycle-002 exp2 | 41.92 | ~70 | 6.78 | 128 | 47% | ⚠️ 70-day val set. v6, BATCH_SIZE=1024+DIR_W=3.0+DROPOUT=0.20. |
+| v8 cycle-006 | 13.78 | ~70 | 5.45 | 133 | 44% | ⚠️ 70-day val set. Replay PF 1.43 (+120% return). |
 
 ## Dead Ends
 | Pattern | Attempts | Result |
@@ -55,35 +64,20 @@ SPX 0DTE | 4-head gate+dir+value+risk (v8) | 37 features (v3) | 7-dim position s
 - **Feature noise doesn't work on warm start:** Both σ=0.03 and σ=0.01 caused degradation.
 
 ## Next Priorities
-**WARM START from current best_model.pt (score 13.78).** v8 architecture, 37 features.
+**v14: EXACT V10 RESTORATION.** Warm start from `archive/models/v10/best_model.pt`. Target: reproduce score ~16.73.
 
-**v8 DEFAULTS (already applied):** BATCH_SIZE=1024, VALUE_W=0.0, EXIT_W=0.15, COOLDOWN_RATIO=0.4, VALUE_LOSS_TYPE=mse.
+**CURRENT STATE:** v14 code complete. data.pt rebuilt with 38 features. Gate labels restored to `pnl_ok.long()`. 6 raw candle features removed. Lookback=120. Ready for warm-start training.
 
-**CURRENT STATE:** Replay PF=1.43 (profitable!), training PF=5.45. The 3.8x gap = overfitting. 3 consecutive reverts at score 13.78. Model trades only 17% of days — very selective.
+**v14 HYPOTHESIS: v13's failure was a silent bug, not an architecture problem.**
+v13 appeared to restore v10 but silently ran v11's failed AND-gate labels (regime & setup & pnl_ok ≈ 1.6% TRADE) because data.pt had setup/regime mask fields. v14 fixes this by removing the v11 gate code entirely and reverting to pure `pnl_ok.long()` (~50% TRADE labels). With 38 features matching v10's architecture exactly, warm start from v10 weights should reproduce the 16.73 baseline.
 
-**PRIORITY 1: Reduce overfitting (training/replay PF gap)**
-- Training PF 5.45 but replay PF only 1.43. Model memorizes training patterns.
-- Try DROPOUT=0.25 (from 0.20). Higher dropout reduces overfitting.
-- Try WEIGHT_DECAY=5e-4 (from 1e-4). Stronger L2 regularization.
-- Try LABEL_SMOOTH=0.15 (from 0.10). Softer targets reduce overconfidence.
-- Run one at a time. KEEP if score holds AND replay PF improves.
+**AFTER v14 baseline confirmed, incremental improvements (one at a time):**
+1. VWAP bands (price vs ±1σ/±2σ) — Pickles' #1 signal, highest-leverage addition
+2. Lunch penalty in loss — 86% of trades during lunch = worst time
+3. Economic calendar flag — FOMC/CPI days have different dynamics
+4. ATR-normalized range — better stop sizing
 
-**PRIORITY 2: Break the plateau (score stuck at 13.78)**
-- 4 experiments failed since best. Random re-init may be finding better local optima.
-- Try LR=2.5e-4 (slight increase from 2e-4) to escape flat loss landscape.
-- Try PNL_W=2.0 (from 1.5) to strengthen profit-factor signal.
-- Try GATE_W=0.80 (from 0.95) to give other heads more gradient.
+**Available levers:** GATE_W (0.95), DIR_W (1.5), PNL_W (1.5), CONF_W (0.05), EXIT_W (0.15), VALUE_W (0.0), RISK_W (0.2), DROPOUT (0.30), WEIGHT_DECAY (0.08), LR (2.5e-4), BATCH_SIZE (1024).
 
-**PRIORITY 3: PBT sweep if sequential stalls**
-- If 5 more sequential experiments all revert, switch to PBT.
-- PBT population=6, generations=3, sweep: DROPOUT (0.15-0.30), WEIGHT_DECAY (1e-4 to 1e-3), LR (1.5e-4 to 3e-4), PNL_W (1.0-2.5).
-- Center PBT around current v8 defaults.
-
-**MONITORING: PUT vs CALL in replay**
-- PUT trades: $9,647 total P&L (dominant). CALL trades: $2,870 total P&L.
-- Track direction distribution. If call PF < 1.0, consider DIR_W increase.
-
-**Available levers:** DROPOUT (0.15-0.30), WEIGHT_DECAY (1e-4 to 1e-3), LR (1.5e-4 to 3e-4), PNL_W (1.0-2.5), GATE_W (0.7-1.0), DIR_W (1.0-3.0), LABEL_SMOOTH (0.05-0.20), COOLDOWN (0.3-0.6).
-
-**AVOID:** EXIT_W ≥ 0.5, GATE_W < 0.5, new nn.Module subclasses, score config changes, DAY_SEQ_RATIO < 0.7, LR > 3e-4, VALUE_W > 0 (proven counterproductive), feature noise on warm start.
+**AVOID:** Regime/setup gate labels, unified action head, multiple simultaneous changes, new nn.Module subclasses, score config changes.
 Do NOT repeat approaches from What Fails.

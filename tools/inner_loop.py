@@ -19,6 +19,7 @@ Usage (called by Claude Code):
   python3 tools/inner_loop.py status
 """
 
+from __future__ import annotations
 import argparse
 import hashlib
 import json
@@ -294,6 +295,24 @@ def cmd_init(args):
         except (ValueError, OSError) as _e:
             _log.warning(f"Could not parse .best_score (contents: {BEST_SCORE_FILE.read_text()!r}): {_e} — defaulting to -5.0")
 
+    # Validate .best_score matches model checkpoint (catch manual edits)
+    if BEST_MODEL_PT.exists() and best_score > -5.0:
+        try:
+            import torch as _torch
+            _ckpt = _torch.load(str(BEST_MODEL_PT), map_location="cpu", weights_only=False)
+            _ckpt_score = _ckpt.get('metrics', {}).get('score')
+            if _ckpt_score is not None and abs(_ckpt_score - best_score) > 0.5:
+                _log.error(
+                    f"INTEGRITY: .best_score ({best_score:.4f}) diverges from model checkpoint "
+                    f"({_ckpt_score:.4f}). Possible manual edit or stale state. "
+                    f"Using checkpoint score as truth."
+                )
+                best_score = _ckpt_score
+                BEST_SCORE_FILE.write_text(str(best_score))
+            del _ckpt
+        except Exception as _e:
+            _log.warning(f"Could not validate .best_score against checkpoint: {_e}")
+
     state = {
         "run_name": run_name,
         "run_dir": str(run_dir),
@@ -445,7 +464,7 @@ def cmd_experiment(args):
         f"/opt/conda/bin/python -u training/train.py 2>&1"
     )
 
-    timeout = time_budget + 240
+    timeout = time_budget + 480  # eval can take 3-4 min on large validation sets
     t_start = time.time()
     try:
         ssh_result = _ssh_cmd(deploy, train_cmd, timeout=timeout)
@@ -476,11 +495,23 @@ def cmd_experiment(args):
     metrics = run_loop._parse_training_output(output)
 
     if "error" in metrics:
-        _revert_train_py(artifact_dir, is_baseline)
-        result = _fail_experiment(state, run_dir, exp_id, metrics.get("error_type", "parse"),
-                                  metrics["error"], change_summary)
-        print(json.dumps(result, indent=2))
-        return
+        # Fallback: download metrics.json written by train.py (SSH stdout can lose data)
+        _log.info("SSH output parse failed — trying metrics.json file fallback...")
+        try:
+            _metrics_tmp = artifact_dir / "remote_metrics.json"
+            _scp_download(deploy, "/root/autoresearch-trading/training/metrics.json", str(_metrics_tmp))
+            with open(_metrics_tmp) as _f:
+                _remote_metrics = json.load(_f)
+            metrics = {"output": output}
+            metrics.update(_remote_metrics)
+            _log.info(f"Loaded metrics from remote file (score={metrics.get('score', 'N/A')})")
+        except Exception as _e:
+            _log.warning(f"Metrics file fallback also failed: {_e}")
+            _revert_train_py(artifact_dir, is_baseline)
+            result = _fail_experiment(state, run_dir, exp_id, metrics.get("error_type", "parse"),
+                                      metrics["error"], change_summary)
+            print(json.dumps(result, indent=2))
+            return
 
     # Save metrics
     (artifact_dir / "metrics.json").write_text(
@@ -569,7 +600,7 @@ def cmd_experiment(args):
             os.rename(str(tmp_score), str(BEST_SCORE_FILE))
             sentinel.unlink(missing_ok=True)
 
-        # Record promotion
+        # Record promotion (with full provenance for reproducibility)
         run_loop.record_promotion_event({
             "experiment_id": exp_id,
             "run_name": state["run_name"],
@@ -581,6 +612,12 @@ def cmd_experiment(args):
             "worst_chunk_pf": metrics.get("worst_chunk_pf"),
             "direction_collapse_pct": metrics.get("direction_collapse_pct"),
             "change_summary": change_summary,
+            "num_val_days": metrics.get("num_val_days"),
+            "num_val_bars": metrics.get("num_val_bars"),
+            "num_trades": metrics.get("num_trades"),
+            "num_features": metrics.get("num_features"),
+            "lookback": metrics.get("lookback"),
+            "data_fingerprint": metrics.get("data_fingerprint"),
         })
     else:
         # --- REVERT: restore code, best_model.pt unchanged (still matches best_train.py) ---
@@ -779,7 +816,7 @@ def _train_on_akash(deploy: dict, time_budget: int, env_overrides: dict | None =
         f"/opt/conda/bin/python -u training/train.py 2>&1"
     )
 
-    timeout = time_budget + 240
+    timeout = time_budget + 480  # eval can take 3-4 min on large validation sets
     t_start = time.time()
     try:
         ssh_result = _ssh_cmd(deploy, train_cmd, timeout=timeout)
@@ -803,13 +840,14 @@ PBT_STATE_FILE = TRAINING_DIR / ".pbt_state.json"
 
 # Parameter space definitions — tiers match what train.py reads via _env_float/_env_int
 _PARAM_SPACE = {
-    # Tier 1: Loss Weights — defaults come from train.py at runtime via _parse_train_defaults()
-    "TRAIN_GATE_W":              {"lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 1},
-    "TRAIN_DIR_W":               {"lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 1},
-    "TRAIN_PNL_W":               {"lo": 0.01, "hi": 2.0,  "scale": "log", "tier": 1},
-    "TRAIN_EXIT_W":              {"lo": 0.01, "hi": 2.0,  "scale": "log", "tier": 1},
-    "TRAIN_CONF_W":              {"lo": 0.01, "hi": 1.0,  "scale": "log", "tier": 1},
-    "TRAIN_FALSE_ENTRY_PENALTY": {"lo": 1.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
+    # Tier 1: v13 Loss Weights — gate+direction+PnL alignment (proven in v10)
+    "TRAIN_GATE_W":              {"lo": 0.3,  "hi": 3.0,  "scale": "log", "tier": 1},
+    "TRAIN_DIR_W":               {"lo": 0.3,  "hi": 3.0,  "scale": "log", "tier": 1},
+    "TRAIN_PNL_W":               {"lo": 0.3,  "hi": 3.0,  "scale": "log", "tier": 1},
+    "TRAIN_CONF_W":              {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 1},
+    "TRAIN_EXIT_W":              {"lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 1},
+    "TRAIN_VALUE_W":             {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 1},
+    "TRAIN_RISK_W":              {"lo": 0.05, "hi": 0.5,  "scale": "log", "tier": 1},
     # Tier 2: Optimizer
     "TRAIN_LR":                  {"lo": 1e-5, "hi": 5e-3, "scale": "log", "tier": 2},
     "TRAIN_WEIGHT_DECAY":        {"lo": 0.001, "hi": 0.3,  "scale": "log", "tier": 2},
@@ -817,23 +855,14 @@ _PARAM_SPACE = {
     "TRAIN_WARMUP_RATIO":        {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 2},
     "TRAIN_COOLDOWN_RATIO":      {"lo": 0.0,  "hi": 0.8,  "scale": "linear", "tier": 2},
     "TRAIN_GRAD_CLIP":           {"lo": 0.1,  "hi": 5.0,  "scale": "log", "tier": 2},
+    "TRAIN_BATCH_SIZE":          {"lo": 512,  "hi": 2048, "scale": "log", "tier": 2},
     # Tier 3: Regularization & Sampling
     "WEIGHT_RECENT_BOOST":       {"lo": 0.0,  "hi": 2.0,  "scale": "linear", "tier": 3},
     "WEIGHT_DAY_DIVERSITY":      {"lo": 0.0,  "hi": 2.0,  "scale": "linear", "tier": 3},
-    "REG_GATE_ENTROPY":          {"lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 3},
+    "REG_GATE_ENTROPY":          {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 3},
     "REG_TEMPORAL_SMOOTH":       {"lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 3},
     "WARM_FREEZE_RATIO":         {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 3},
     "TRAIN_DAY_SEQ_RATIO":       {"lo": 0.5,  "hi": 1.0,  "scale": "linear", "tier": 3},
-    "TRAIN_GATE_LABEL_SMOOTHING": {"lo": 0.0,  "hi": 0.2,  "scale": "linear", "tier": 3},
-    "TRAIN_DIR_LABEL_SMOOTHING":  {"lo": 0.0,  "hi": 0.2,  "scale": "linear", "tier": 3},
-    # Tier 1 (Phase C: RWR) — reward-weighted regression
-    "TRAIN_RWR_WEIGHT":          {"lo": 0.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
-    "TRAIN_DAY_RWR_WEIGHT":      {"lo": 0.0,  "hi": 5.0,  "scale": "linear", "tier": 1},
-    # Tier 1 (Phase D: Value Head) — exit intelligence
-    "TRAIN_VALUE_W":             {"lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
-    "TRAIN_VALUE_EXIT_THRESH":   {"lo": -0.5, "hi": 0.5,  "scale": "linear", "tier": 1},
-    # Tier 1 (Phase E: Risk Head) — account-aware risk management
-    "TRAIN_RISK_W":              {"lo": 0.0,  "hi": 2.0,  "scale": "log", "tier": 1},
 }
 
 
@@ -1149,16 +1178,25 @@ def cmd_pbt_run(args):
 
             # Parse metrics
             anomaly_flags = []
+            score = -999.0
             if returncode != 0:
                 _log.warning(f"  Member {mi}: CRASHED (exit {returncode})")
-                score = -999.0
                 metrics = {}
             else:
                 metrics = run_loop._parse_training_output(output)
                 if "error" in metrics:
-                    _log.warning(f"  Member {mi}: PARSE ERROR: {metrics['error'][:100]}")
-                    score = -999.0
-                else:
+                    # Fallback: download metrics.json file written by train.py
+                    try:
+                        _mtmp = run_dir / f"pbt_metrics_gen{gen}_m{mi}.json"
+                        _scp_download(deploy, "/root/autoresearch-trading/training/metrics.json", str(_mtmp))
+                        with open(_mtmp) as _f:
+                            metrics = {"output": output}
+                            metrics.update(json.load(_f))
+                        _log.info(f"  Member {mi}: loaded metrics from file fallback")
+                    except Exception:
+                        _log.warning(f"  Member {mi}: PARSE ERROR")
+                        metrics = {}
+                if "error" not in metrics and "score" in metrics:
                     score = metrics.get("score", -999)
                     anomaly_flags = run_loop.detect_anomaly_flags(metrics)
                     critical = run_loop._critical_anomaly_flags(anomaly_flags)

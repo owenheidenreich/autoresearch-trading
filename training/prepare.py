@@ -12,15 +12,13 @@ Date range: March 14, 2022 → present (~4 years, flat file limit).
 0DTE schedule: Mon/Wed/Fri only before May 11, 2022; daily after.
 Bar resolution: 1-minute (390 bars/day RTH).
 
-Computes 37 trader-relevant features (v3: returns, volume, VWAP, session,
-options, VIX/regime, Greeks, Bollinger, market structure) — reduced from 70 for
-signal density and training speed — and prepares tensors for train.py.
+Computes 44 trader-relevant features (v12: 38 base + 6 raw candle)
+and prepares tensors for train.py.
 
-The model uses a two-head action contract:
-  - Gate head: NO_TRADE / TRADE
-  - Direction head: CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10
-This yields 8 effective actions (DO_NOTHING, 6 entries, EXIT). Evaluation
-simulates actual 0DTE option trades with stops, targets, and model-driven exits.
+The model uses a unified action head (v12):
+  - Action head: 15 outputs (DO_NOTHING + 14 option types)
+  - Risk head: 3 outputs (stop_pct, size_frac, conviction)
+Evaluation simulates actual 0DTE option trades with stops, targets, and model-driven exits.
 
 Usage:
   python3 prepare.py --use-spx --ib-port 4002   # Full download
@@ -49,7 +47,7 @@ from scipy.optimize import brentq as _brentq
 TIME_BUDGET       = int(os.environ.get("TIME_BUDGET", 300))  # training seconds (5 min default)
 BARS_PER_DAY      = 390        # 1-min bars in RTH (9:30-16:00 ET)
 FORWARD_BARS      = 30         # prediction horizon: 30 x 1min = 30 min
-LOOKBACK_WINDOW   = 100        # rolling window for vol/volume stats (~100 min)
+LOOKBACK_WINDOW   = 60         # rolling window for vol/volume stats (~60 min, v11: reduced from 100 to unlock morning bars)
 MIN_TRADES        = 5          # minimum trades for valid evaluation
 ANNUAL_TRADING_BARS = 252 * BARS_PER_DAY
 ANNUAL_TRADING_HOURS = ANNUAL_TRADING_BARS  # compat alias
@@ -75,29 +73,40 @@ SPX_MULTIPLIER       = 100      # SPX option contract multiplier (premium * 100 
 BAR_SIZE_MINUTES     = 1           # 1-minute bar resolution
 SPX_MULTIPLIER       = 100     # option multiplier
 
-# Keep core model actions on ±5/±10, but expand historical sidecar ladders to ±15/±20.
-OTM_STRIKE_STEPS      = (5, 10, 15, 20)
+# Full OTM ladder: ±5/±10/±15/±20/±25/±30 (Pickles trades up to +30 OTM)
+OTM_STRIKE_STEPS      = (5, 10, 15, 20, 25, 30)
 SIDE_ACTION_ORDER     = (
     "call_atm",
     "call_otm5",
     "call_otm10",
+    "call_otm15",
+    "call_otm20",
+    "call_otm25",
+    "call_otm30",
     "put_atm",
     "put_otm5",
     "put_otm10",
+    "put_otm15",
+    "put_otm20",
+    "put_otm25",
+    "put_otm30",
 )
 SIDE_ACTION_TO_CHAIN_KEY = {
     "call_otm5": "otm5_call",
     "call_otm10": "otm10_call",
+    "call_otm15": "otm15_call",
+    "call_otm20": "otm20_call",
+    "call_otm25": "otm25_call",
+    "call_otm30": "otm30_call",
     "put_otm5": "otm5_put",
     "put_otm10": "otm10_put",
+    "put_otm15": "otm15_put",
+    "put_otm20": "otm20_put",
+    "put_otm25": "otm25_put",
+    "put_otm30": "otm30_put",
 }
 SIDE_ACTION_TO_IDX = {name: i for i, name in enumerate(SIDE_ACTION_ORDER)}
-SIDE_ALL_LEGS = SIDE_ACTION_ORDER + (
-    "call_otm15",
-    "call_otm20",
-    "put_otm15",
-    "put_otm20",
-)
+SIDE_ALL_LEGS = SIDE_ACTION_ORDER  # v10: all legs are now tradeable (no sidecar)
 
 RTH_OPEN  = dt.time(9, 30)
 RTH_CLOSE = dt.time(16, 0)
@@ -119,62 +128,65 @@ DATA_DIR     = os.path.join(CACHE_DIR, "data")
 FEATURES_DIR = os.path.join(CACHE_DIR, "features")
 
 # ---------------------------------------------------------------------------
-# Feature names (37 features: 32 core + 5 market structure from first-principles review)
+# Feature names (44 features: 29 core + 4 v9 + 5 v10 + 6 v12 raw candle)
 # ---------------------------------------------------------------------------
 
 FEATURE_NAMES = [
     # === Price returns (2) ===
-    'ret_6',                # 30-bar (30min) return
-    'ret_12',               # 60-bar (1hr) return
-    # === Volume (3) ===
-    'volume_ratio',         # bar volume / 20-bar SMA
-    'volume_zscore',        # (volume - mean) / std
-    'volume_at_price_pctile',  # current close vs session volume profile
+    'ret_6',                # 0: 30-bar (30min) return
+    'ret_12',               # 1: 60-bar (1hr) return
+    # === Volume (2) — pruned volume_zscore (0.95 corr w/ volume_ratio) ===
+    'volume_ratio',         # 2: bar volume / 20-bar SMA
+    'volume_at_price_pctile',  # 3: current close vs session volume profile
     # === Volatility (3) ===
-    'bar_range',            # (high - low) / close
-    'realized_vol',         # 20-bar rolling stdev of returns
-    'range_ratio',          # current bar range / 20-bar avg range
-    # === VWAP (2) ===
-    'vwap_dist',            # (close - session VWAP) / close
-    'vwap_slope',           # change in VWAP distance over 6 bars
-    # === Session structure (2) ===
-    'ib_width',             # IB range / close (normalized)
-    'session_range_pct',    # full session range so far / close
-    # === Key levels (2) ===
-    'prev_high_dist',       # distance to previous day high
-    'prev_low_dist',        # distance to previous day low
+    'bar_range',            # 4: (high - low) / close
+    'realized_vol',         # 5: 20-bar rolling stdev of returns
+    'range_ratio',          # 6: current bar range / 20-bar avg range
+    # === VWAP (1) — pruned vwap_slope (0.98 corr w/ ret_6) ===
+    'vwap_dist',            # 7: (close - session VWAP) / close
+    # === Session structure (1) — pruned ib_width (near-zero variance) ===
+    'session_range_pct',    # 8: full session range so far / close
+    # === Key levels (1) — pruned prev_low_dist (0.9999 corr w/ prev_high_dist) ===
+    'prev_high_dist',       # 9: distance to previous day high
     # === Trend (3) ===
-    'ema_cross',            # (EMA8 - EMA21) / close (momentum)
-    'consec_direction',     # consecutive same-direction bars: +N for up, -N for down
-    'speed_estimate',       # |5-bar return| / realized_vol: normalized speed of move
-    # === Microstructure (2) ===
-    'gap',                  # overnight gap, carried all day
-    'inside_bar',           # 1 if current bar inside previous bar
-    # === Time (3) ===
-    'minutes_to_close',     # log(minutes remaining + 1), normalized
-    'time_sin',             # sin(2pi * session_progress)
-    'time_cos',             # cos(2pi * session_progress)
+    'ema_cross',            # 10: (EMA8 - EMA21) / close (momentum)
+    'consec_direction',     # 11: consecutive same-direction bars: +N for up, -N for down
+    'speed_estimate',       # 12: |5-bar return| / realized_vol: normalized speed of move
+    # === Microstructure (1) — pruned gap (all zeros) ===
+    'inside_bar',           # 13: 1 if current bar inside previous bar
+    # === Time (2) — pruned time_sin (0.91 corr w/ minutes_to_close) ===
+    'minutes_to_close',     # 14: log(minutes remaining + 1), normalized
+    'time_cos',             # 15: cos(2pi * session_progress)
     # === Options (2) ===
-    'atm_iv',               # ATM implied vol (avg of call + put IV)
-    'iv_skew',              # put IV - call IV (fear/skew premium)
+    'atm_iv',               # 16: ATM implied vol (avg of call + put IV)
+    'iv_skew',              # 17: put IV - call IV (fear/skew premium)
     # === VIX / Regime (2) ===
-    'vix_regime',           # regime bucket: -1=low(<15), -0.33=normal, 0.33=elevated, 1=crisis(>30)
-    'vrp',                  # variance risk premium: atm_iv^2 - realized_vol^2
+    'vix_regime',           # 18: regime bucket: -1=low(<15), -0.33=normal, 0.33=elevated, 1=crisis(>30)
+    'vrp',                  # 19: variance risk premium: atm_iv^2 - realized_vol^2
     # === Greeks (3) ===
-    'atm_gamma',            # ATM call gamma (delta sensitivity to price)
-    'atm_theta_per_bar',    # ATM theta per 1-min bar (time decay per bar)
-    'charm_estimate',       # estimated dDelta/dT: delta sensitivity to time decay
+    'atm_gamma',            # 20: ATM call gamma (delta sensitivity to price)
+    'atm_theta_per_bar',    # 21: ATM theta per 1-min bar (time decay per bar)
+    'charm_estimate',       # 22: estimated dDelta/dT: delta sensitivity to time decay
     # === Bollinger (1) ===
-    'bollinger_position',   # (close - BB_mid) / (BB_upper - BB_lower): position within bands
+    'bollinger_position',   # 23: (close - BB_mid) / (BB_upper - BB_lower): position within bands
     # === Range extras (2) ===
-    'rsi_14',               # 14-period RSI (0-1 scale)
-    'session_range_position',  # (close - session_low) / (session_high - session_low)
-    # === Market structure (5) ===
-    'poc_dist',             # (close - session POC) / close: distance to Point of Control
-    'va_position',          # position within Value Area: 0=VAL, 1=VAH, <0/>1 = outside
-    'vwap_band_sigma',      # distance from VWAP in σ units (±1σ, ±2σ bands)
-    'ib_break',             # IB break state: -1=below IB low, 0=inside, +1=above IB high
-    'theta_pressure',       # afternoon theta pressure: ramps 0→1 from bar 120 (11:30am) to close
+    'rsi_7',                # 24: 7-period RSI (0-1 scale) — Elder: "7-9 bars for intraday"
+    'session_range_position',  # 25: (close - session_low) / (session_high - session_low)
+    # === Market structure (3) — pruned vwap_band_sigma (0.96 corr), theta_pressure (-0.98 corr) ===
+    'poc_dist',             # 26: (close - session POC) / close: distance to Point of Control
+    'va_position',          # 27: position within Value Area: 0=VAL, 1=VAH, <0/>1 = outside
+    'ib_break',             # 28: IB break state: -1=below IB low, 0=inside, +1=above IB high
+    # === v9 features (4) — pruned econ_calendar (95.6% zeros) ===
+    'atr_14',               # 29: 14-bar Average True Range / close: volatility context for stop sizing
+    'bar_delta',            # 30: (close - open) / (high - low): intrabar buy/sell pressure [-1, +1]
+    'session_cum_delta',    # 31: cumulative bar deltas since session open: daily order flow direction
+    'top_of_hour_min',      # 32: minutes to next hour mark / 60: sawtooth 0→1 (Pickles' reversal signal)
+    # === v10 new features (5) ===
+    'macdh_slope',          # 33: MACD-H tick direction: +1 rising, -1 falling (Elder's #1 signal)
+    'force_index_2',        # 34: 2-bar EMA of Force Index (Volume × price change), normalized
+    'vol_price_diverg',     # 35: consecutive bars of price/volume divergence (Coulling's leading signal)
+    'effort_vs_result',     # 36: (body/avg_body) / (vol/avg_vol): Coulling's effort vs result anomaly
+    'trend_5min',           # 37: 5-min aggregated EMA(13) slope: Elder Triple Screen trend filter
 ]
 
 NUM_FEATURES = len(FEATURE_NAMES)
@@ -184,30 +196,42 @@ _FEAT_IDX = {name: idx for idx, name in enumerate(FEATURE_NAMES)}
 
 # Features that should NOT be z-score normalized
 _NO_NORMALIZE = {
-    'time_sin', 'time_cos',
+    'time_cos',
     'minutes_to_close',
     'inside_bar',
     'vix_regime',           # categorical, already scaled
     'bollinger_position',   # already normalized to [-1, 1]-ish range
     'session_range_position',  # already 0-1
-    'rsi_14',               # already 0-1
+    'rsi_7',                # already 0-1
     'va_position',          # already ~0-1 (can exceed but bounded)
     'ib_break',             # categorical: -1, 0, +1
-    'theta_pressure',       # already 0-1
+    'bar_delta',            # already -1 to +1
+    'top_of_hour_min',      # already 0-1
+    'macdh_slope',          # already -1/0/+1
+    'vol_price_diverg',     # already bounded [-10, 10]
+    'effort_vs_result',     # already bounded [-3, 3]
 }
 
-# Action labels for the 8-class model
+# Action labels for the 16-class model (v10)
 # Gate head: NO_TRADE / TRADE → combined with direction head for full action
-# Direction head: 6 outputs [CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]
-ACTION_DO_NOTHING    = 0
-ACTION_BUY_CALL_ATM  = 1
-ACTION_BUY_CALL_OTM5 = 2
-ACTION_BUY_CALL_OTM10= 3
-ACTION_BUY_PUT_ATM   = 4
-ACTION_BUY_PUT_OTM5  = 5
-ACTION_BUY_PUT_OTM10 = 6
-ACTION_EXIT          = 7
-NUM_ACTIONS          = 8
+# Direction head: 14 outputs [CALL_ATM, CALL_OTM5..OTM30, PUT_ATM, PUT_OTM5..OTM30]
+ACTION_DO_NOTHING      = 0
+ACTION_BUY_CALL_ATM    = 1
+ACTION_BUY_CALL_OTM5   = 2
+ACTION_BUY_CALL_OTM10  = 3
+ACTION_BUY_CALL_OTM15  = 4
+ACTION_BUY_CALL_OTM20  = 5
+ACTION_BUY_CALL_OTM25  = 6
+ACTION_BUY_CALL_OTM30  = 7
+ACTION_BUY_PUT_ATM     = 8
+ACTION_BUY_PUT_OTM5    = 9
+ACTION_BUY_PUT_OTM10   = 10
+ACTION_BUY_PUT_OTM15   = 11
+ACTION_BUY_PUT_OTM20   = 12
+ACTION_BUY_PUT_OTM25   = 13
+ACTION_BUY_PUT_OTM30   = 14
+ACTION_EXIT            = 15
+NUM_ACTIONS            = 16
 
 # Option P&L target: round-trip spread cost as fraction of premium
 SPREAD_COST_PCT   = 2 * OPTION_SPREAD_BPS / 10000.0  # 3% round-trip (at 150 bps one-way)
@@ -1180,10 +1204,14 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
             'otm10_call': ('C', atm_strike + 10),
             'otm15_call': ('C', atm_strike + 15),
             'otm20_call': ('C', atm_strike + 20),
+            'otm25_call': ('C', atm_strike + 25),
+            'otm30_call': ('C', atm_strike + 30),
             'otm5_put': ('P', atm_strike - 5),
             'otm10_put': ('P', atm_strike - 10),
             'otm15_put': ('P', atm_strike - 15),
             'otm20_put': ('P', atm_strike - 20),
+            'otm25_put': ('P', atm_strike - 25),
+            'otm30_put': ('P', atm_strike - 30),
         }
         target_tickers = {}
         for label, (cp, strike) in strikes.items():
@@ -1263,8 +1291,8 @@ def prefetch_spxw_from_flatfiles(spy_df: pd.DataFrame, api_cutoff: str = None):
         # Build OTM chain data dict (same format as download_spxw_chain)
         chain_day_data = {}
         for label in [
-            'otm5_call', 'otm10_call', 'otm15_call', 'otm20_call',
-            'otm5_put', 'otm10_put', 'otm15_put', 'otm20_put',
+            'otm5_call', 'otm10_call', 'otm15_call', 'otm20_call', 'otm25_call', 'otm30_call',
+            'otm5_put', 'otm10_put', 'otm15_put', 'otm20_put', 'otm25_put', 'otm30_put',
         ]:
             tk_w, tk_spx, strike = target_tickers[label]
             raw_bars = bars_by_ticker.get(tk_w, []) or bars_by_ticker.get(tk_spx, [])
@@ -1345,7 +1373,7 @@ def download_spxw_ibkr(spy_df: pd.DataFrame, dates: list = None):
         # Expiry for 0DTE = same day
         expiry = day_str.replace('-', '')  # YYYYMMDD
 
-        # Define the 10 target contracts (core ±5/±10 plus sidecar ±15/±20)
+        # Define the 14 target contracts (ATM + OTM ±5/±10/±15/±20/±25/±30)
         targets = {
             'atm_call':   ('C', atm_strike),
             'atm_put':    ('P', atm_strike),
@@ -1353,10 +1381,14 @@ def download_spxw_ibkr(spy_df: pd.DataFrame, dates: list = None):
             'otm10_call': ('C', atm_strike + 10),
             'otm15_call': ('C', atm_strike + 15),
             'otm20_call': ('C', atm_strike + 20),
+            'otm25_call': ('C', atm_strike + 25),
+            'otm30_call': ('C', atm_strike + 30),
             'otm5_put':   ('P', atm_strike - 5),
             'otm10_put':  ('P', atm_strike - 10),
             'otm15_put':  ('P', atm_strike - 15),
             'otm20_put':  ('P', atm_strike - 20),
+            'otm25_put':  ('P', atm_strike - 25),
+            'otm30_put':  ('P', atm_strike - 30),
         }
 
         # Download 1-min bars for each contract
@@ -1422,8 +1454,8 @@ def download_spxw_ibkr(spy_df: pd.DataFrame, dates: list = None):
         # Build OTM chain cache (same format as flat files)
         chain_data = {}
         for label in [
-            'otm5_call', 'otm10_call', 'otm15_call', 'otm20_call',
-            'otm5_put', 'otm10_put', 'otm15_put', 'otm20_put',
+            'otm5_call', 'otm10_call', 'otm15_call', 'otm20_call', 'otm25_call', 'otm30_call',
+            'otm5_put', 'otm10_put', 'otm15_put', 'otm20_put', 'otm25_put', 'otm30_put',
         ]:
             _, strike = targets[label]
             for ts, bar in bars_by_label.get(label, {}).items():
@@ -1537,10 +1569,34 @@ def _compute_session_vwap_bands(close, volume, day_mask_indices):
     return vwap_vals, upper1, lower1, upper2, lower2
 
 
+# Major US economic event dates (FOMC decisions, CPI releases, NFP/jobs)
+# These days have fundamentally different 0DTE dynamics (IV crush, large moves)
+_ECON_EVENT_DATES = {
+    # FOMC 2025
+    '2025-01-29', '2025-03-19', '2025-05-07', '2025-06-18',
+    '2025-07-30', '2025-09-17', '2025-10-29', '2025-12-17',
+    # FOMC 2026
+    '2026-01-28', '2026-03-18', '2026-05-06', '2026-06-17',
+    '2026-07-29', '2026-09-16', '2026-10-28', '2026-12-16',
+    # CPI 2025
+    '2025-01-15', '2025-02-12', '2025-03-12', '2025-04-10',
+    '2025-05-13', '2025-06-11', '2025-07-10', '2025-08-12',
+    '2025-09-10', '2025-10-14', '2025-11-13', '2025-12-10',
+    # CPI 2026
+    '2026-01-14', '2026-02-12', '2026-03-12',
+    # NFP 2025
+    '2025-01-10', '2025-02-07', '2025-03-07', '2025-04-04',
+    '2025-05-02', '2025-06-06', '2025-07-03', '2025-08-01',
+    '2025-09-05', '2025-10-03', '2025-11-07', '2025-12-05',
+    # NFP 2026
+    '2026-01-09', '2026-02-06', '2026-03-06',
+}
+
+
 def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                      vix_data: dict | None = None,
                      chain_data: dict | None = None) -> tuple:
-    """Compute 37 trader-relevant features from SPX 1-min bars (+ SPY volume) + SPXW options.
+    """Compute 42 trader-relevant features from SPX 1-min bars (+ SPY volume) + SPXW options.
 
     Returns: (features_array, targets_array, dates_list, valid_mask, option_prices)
     option_prices is a dict with 'atm_call', 'atm_put', 'strike', 'call_pnl',
@@ -1558,11 +1614,15 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     otm5_put_prices = np.full(N, np.nan, dtype=np.float32)
     otm10_call_prices = np.full(N, np.nan, dtype=np.float32)
     otm10_put_prices = np.full(N, np.nan, dtype=np.float32)
-    # Deeper sidecar ladders (kept out of the 60-feature model contract).
+    # Deep OTM ladders (v10: all tradeable)
     otm15_call_prices = np.full(N, np.nan, dtype=np.float32)
     otm15_put_prices = np.full(N, np.nan, dtype=np.float32)
     otm20_call_prices = np.full(N, np.nan, dtype=np.float32)
     otm20_put_prices = np.full(N, np.nan, dtype=np.float32)
+    otm25_call_prices = np.full(N, np.nan, dtype=np.float32)
+    otm25_put_prices = np.full(N, np.nan, dtype=np.float32)
+    otm30_call_prices = np.full(N, np.nan, dtype=np.float32)
+    otm30_put_prices = np.full(N, np.nan, dtype=np.float32)
     # Dynamic remap sidecar labels (per-bar ATM and remapped strike ladders).
     dynamic_atm_strikes = np.full(N, np.nan, dtype=np.float32)
     remap_call_strikes = np.full((N, len(OTM_STRIKE_STEPS)), np.nan, dtype=np.float32)
@@ -1598,9 +1658,97 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     ema8 = pd.Series(close).ewm(span=40, adjust=False).mean().values
     ema21 = pd.Series(close).ewm(span=105, adjust=False).mean().values
 
+    # Pre-compute True Range and ATR-14
+    true_range = np.full(N, np.nan, dtype=np.float64)
+    true_range[0] = high[0] - low[0]
+    for i_tr in range(1, N):
+        tr1 = high[i_tr] - low[i_tr]
+        tr2 = abs(high[i_tr] - close[i_tr - 1])
+        tr3 = abs(low[i_tr] - close[i_tr - 1])
+        true_range[i_tr] = max(tr1, tr2, tr3)
+    atr_14 = pd.Series(true_range).rolling(14, min_periods=1).mean().values
+
+    # Pre-compute bar delta: (close - open) / (high - low), clipped to [-1, +1]
+    bar_range_raw = high - low
+    bar_delta = np.where(bar_range_raw > 1e-8, (close - opn) / bar_range_raw, 0.0)
+    bar_delta = np.clip(bar_delta, -1.0, 1.0)
+
     # Pre-compute per-day data
     unique_dates = sorted(set(dates))
     day_indices = {d: np.where(dates == d)[0] for d in unique_dates}
+
+    # Pre-compute session cumulative delta (vectorized per-day cumsum)
+    session_cum_delta = np.zeros(N, dtype=np.float64)
+    for _day_str, _didx in day_indices.items():
+        if len(_didx) > 0:
+            session_cum_delta[_didx] = np.cumsum(bar_delta[_didx])
+
+    # === v10 pre-computed features ===
+
+    # MACD-Histogram slope (Elder's #1 signal)
+    ema_12 = pd.Series(close).ewm(span=12, adjust=False).mean().values
+    ema_26 = pd.Series(close).ewm(span=26, adjust=False).mean().values
+    macd_line = ema_12 - ema_26
+    signal_line = pd.Series(macd_line).ewm(span=9, adjust=False).mean().values
+    macd_h = macd_line - signal_line
+    macdh_slope = np.zeros(N, dtype=np.float64)
+    macdh_slope[1:] = np.sign(macd_h[1:] - macd_h[:-1])
+
+    # Force Index 2-bar EMA (Elder's entry timing signal)
+    price_change = np.zeros(N, dtype=np.float64)
+    price_change[1:] = close[1:] - close[:-1]
+    force_raw = volume.astype(np.float64) * price_change
+    force_ema2 = pd.Series(force_raw).ewm(span=2, adjust=False).mean().values
+    # Normalize by rolling 20-bar std of absolute force
+    force_abs_std = pd.Series(np.abs(force_ema2)).rolling(20, min_periods=1).std().values
+    force_index_2 = np.where(force_abs_std > 1e-8, force_ema2 / force_abs_std, 0.0)
+    force_index_2 = np.clip(force_index_2, -5.0, 5.0)
+
+    # Volume-price divergence counter (Coulling's leading signal)
+    price_dir = np.zeros(N, dtype=np.float64)
+    price_dir[1:] = np.sign(close[1:] - close[:-1])
+    vol_dir = np.zeros(N, dtype=np.float64)
+    vol_dir[1:] = np.sign(volume[1:].astype(np.float64) - volume[:-1].astype(np.float64))
+    agreement = price_dir * vol_dir  # +1=agree, -1=disagree
+    vol_price_diverg = np.zeros(N, dtype=np.float64)
+    for i_vpd in range(1, N):
+        if agreement[i_vpd] < 0:  # disagreement
+            vol_price_diverg[i_vpd] = vol_price_diverg[i_vpd - 1] + price_dir[i_vpd]
+        else:
+            vol_price_diverg[i_vpd] = 0.0
+    vol_price_diverg = np.clip(vol_price_diverg, -10.0, 10.0)
+
+    # Effort vs Result (Coulling's anomaly detector)
+    body_size = np.abs(close - opn)
+    avg_body_20 = pd.Series(body_size).rolling(20, min_periods=1).mean().values
+    avg_vol_20 = pd.Series(volume.astype(np.float64)).rolling(20, min_periods=1).mean().values
+    body_ratio = np.where(avg_body_20 > 1e-8, body_size / avg_body_20, 1.0)
+    vol_ratio_local = np.where(avg_vol_20 > 1e-8, volume.astype(np.float64) / avg_vol_20, 1.0)
+    effort_vs_result = np.where(vol_ratio_local > 0.1, body_ratio / vol_ratio_local, 0.0)
+    effort_vs_result = np.clip(effort_vs_result, -3.0, 3.0)
+
+    # 5-min trend (Elder Triple Screen — Screen 1 trend filter)
+    # Aggregate 5-bar closes per session, compute EMA(13) slope, expand back
+    trend_5min = np.zeros(N, dtype=np.float64)
+    for _day_str, _didx in day_indices.items():
+        if len(_didx) < 5:
+            continue
+        day_close = close[_didx]
+        n_5min = len(day_close) // 5
+        if n_5min < 2:
+            continue
+        # Aggregate 5-bar close (use last close of each 5-bar group)
+        close_5m = np.array([day_close[(j + 1) * 5 - 1] for j in range(n_5min)])
+        ema13_5m = pd.Series(close_5m).ewm(span=13, adjust=False).mean().values
+        # Slope: diff of EMA, normalized by close
+        slope_5m = np.zeros(n_5min, dtype=np.float64)
+        slope_5m[1:] = (ema13_5m[1:] - ema13_5m[:-1]) / np.maximum(close_5m[1:], 1.0)
+        # Expand back to 1-min bars (each 5-min value covers 5 bars)
+        for j in range(n_5min):
+            start_bar = j * 5
+            end_bar = min((j + 1) * 5, len(_didx))
+            trend_5min[_didx[start_bar:end_bar]] = slope_5m[j]
+    trend_5min = np.clip(trend_5min, -0.01, 0.01)
 
     # Pre-compute overnight highs/lows, prev day stats, initial balance
     prev_day_high = {}
@@ -1692,7 +1840,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             vp_cache[bar_i] = (poc, vah_price, val_price)
 
     # -----------------------------------------------------------------------
-    # Main feature loop (37 features — v2 core + 5 market structure)
+    # Main feature loop (42 features — v2 core + 5 market structure + 5 v9)
     # -----------------------------------------------------------------------
     for i in range(N):
         fi = 0
@@ -1705,17 +1853,20 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 feat[i, fi] = (c / close[i - lag]) - 1.0
             fi += 1
 
-        # === Volume (3) ===
+        # === Volume (2) — pruned volume_zscore ===
         if i >= LOOKBACK_WINDOW:
             vol_window = volume[i - LOOKBACK_WINDOW:i]
             vol_mean = np.mean(vol_window)
-            vol_std = np.std(vol_window)
             feat[i, fi] = volume[i] / max(vol_mean, 1.0)
-            fi += 1
-            feat[i, fi] = (volume[i] - vol_mean) / max(vol_std, 1.0)
-            fi += 1
         else:
-            fi += 2
+            # v11 fallback: use available history or neutral value
+            if i > 0 and dates[i - 1] == day:
+                vol_window = volume[max(0, i - LOOKBACK_WINDOW):i]
+                vol_mean = np.mean(vol_window) if len(vol_window) > 0 else 1.0
+                feat[i, fi] = volume[i] / max(vol_mean, 1.0)
+            else:
+                feat[i, fi] = 1.0  # neutral: current volume = average
+        fi += 1
 
         # Volume at price percentile
         didx = day_indices[day]
@@ -1736,48 +1887,41 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
         if i >= LOOKBACK_WINDOW:
             feat[i, fi] = np.std(log_ret[i - LOOKBACK_WINDOW:i])
+        elif i >= 5:
+            # v11 fallback: use available history
+            feat[i, fi] = np.std(log_ret[max(0, i - LOOKBACK_WINDOW):i])
+        else:
+            feat[i, fi] = 0.0  # neutral: no volatility info yet
         fi += 1
 
         if i >= LOOKBACK_WINDOW:
             ranges = (high[i - LOOKBACK_WINDOW:i] - low[i - LOOKBACK_WINDOW:i]) / np.maximum(close[i - LOOKBACK_WINDOW:i], 1.0)
             feat[i, fi] = bar_range / max(np.mean(ranges), 1e-8)
+        elif i >= 5:
+            ranges = (high[max(0, i - LOOKBACK_WINDOW):i] - low[max(0, i - LOOKBACK_WINDOW):i]) / np.maximum(close[max(0, i - LOOKBACK_WINDOW):i], 1.0)
+            feat[i, fi] = bar_range / max(np.mean(ranges), 1e-8)
+        else:
+            feat[i, fi] = 1.0  # neutral: current range = average
         fi += 1
 
-        # === VWAP (2): vwap_dist, vwap_slope ===
+        # === VWAP (1) — pruned vwap_slope ===
         vw_data = vwap_cache.get(i)
         if vw_data is not None:
             vw, u1, l1, u2, l2 = vw_data
             feat[i, fi] = (c - vw) / max(c, 1.0)
-            fi += 1
-            # VWAP slope
-            if i >= 30:
-                prev_vw = vwap_cache.get(i - 30)
-                if prev_vw is not None:
-                    feat[i, fi] = feat[i, fi - 1] - (close[i - 30] - prev_vw[0]) / max(close[i - 30], 1.0)
-            fi += 1
-        else:
-            fi += 2
-
-        # === Session structure (2): ib_width, session_range_pct ===
-        ib_h = ib_high_map.get(day, c)
-        ib_l = ib_low_map.get(day, c)
-        feat[i, fi] = (ib_h - ib_l) / max(c, 1.0)  # ib_width
         fi += 1
 
+        # === Session structure (1) — pruned ib_width ===
         session_so_far = didx[:day_pos + 1]
         session_high = np.max(high[session_so_far])
         session_low = np.min(low[session_so_far])
         feat[i, fi] = (session_high - session_low) / max(c, 1.0)  # session_range_pct
         fi += 1
 
-        # === Key levels (2): prev_high_dist, prev_low_dist ===
+        # === Key levels (1) — pruned prev_low_dist ===
         if day in prev_day_high:
             feat[i, fi] = (c - prev_day_high[day]) / max(c, 1.0)
-            fi += 1
-            feat[i, fi] = (c - prev_day_low[day]) / max(c, 1.0)
-            fi += 1
-        else:
-            fi += 2
+        fi += 1
 
         # === Trend (3): ema_cross, consec_direction, speed_estimate ===
         feat[i, fi] = (ema8[i] - ema21[i]) / max(c, 1.0)  # ema_cross
@@ -1806,14 +1950,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 feat[i, fi] = ret5 / rv
         fi += 1
 
-        # === Microstructure (2): gap, inside_bar ===
-        day_start = didx[0]
-        if day_start > 0:
-            feat[i, fi] = (opn[day_start] / close[day_start - 1]) - 1.0
-        else:
-            feat[i, fi] = 0.0
-        fi += 1
-
+        # === Microstructure (1) — pruned gap ===
         if i > 0:
             feat[i, fi] = 1.0 if (high[i] <= high[i-1] and low[i] >= low[i-1]) else 0.0
         else:
@@ -1836,8 +1973,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
         feat[i, fi] = np.log1p(minutes_remaining) / np.log1p(total_session)
         fi += 1
-        feat[i, fi] = np.sin(2 * np.pi * session_progress)
-        fi += 1
+        # pruned time_sin (0.91 corr w/ minutes_to_close)
         feat[i, fi] = np.cos(2 * np.pi * session_progress)
         fi += 1
 
@@ -1974,6 +2110,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             otm15p = chain_close_map.get("otm15_put", np.nan)
             otm20c = chain_close_map.get("otm20_call", np.nan)
             otm20p = chain_close_map.get("otm20_put", np.nan)
+            otm25c = chain_close_map.get("otm25_call", np.nan)
+            otm25p = chain_close_map.get("otm25_put", np.nan)
+            otm30c = chain_close_map.get("otm30_call", np.nan)
+            otm30p = chain_close_map.get("otm30_put", np.nan)
 
             if not np.isnan(otm5c):
                 otm5_call_prices[i] = otm5c
@@ -1991,6 +2131,14 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 otm20_call_prices[i] = otm20c
             if not np.isnan(otm20p):
                 otm20_put_prices[i] = otm20p
+            if not np.isnan(otm25c):
+                otm25_call_prices[i] = otm25c
+            if not np.isnan(otm25p):
+                otm25_put_prices[i] = otm25p
+            if not np.isnan(otm30c):
+                otm30_call_prices[i] = otm30c
+            if not np.isnan(otm30p):
+                otm30_put_prices[i] = otm30p
 
             # Sidecar quote-quality + cost labels for tradeable OTM legs (±5, ±10).
             for leg_name, chain_key in SIDE_ACTION_TO_CHAIN_KEY.items():
@@ -2054,10 +2202,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 feat[i, fi] = (c - bb_mid) / (bb_width / 2.0)
         fi += 1
 
-        # === Range extras (2): rsi_14, session_range_position ===
-        # rsi_14
-        if i >= 14:
-            rsi_window = close[i - 14:i + 1]
+        # === Range extras (2): rsi_7, session_range_position ===
+        # rsi_7 (Elder: "7-9 bars for intraday")
+        if i >= 7:
+            rsi_window = close[i - 7:i + 1]
             rsi_changes = np.diff(rsi_window)
             gains = np.maximum(rsi_changes, 0)
             losses = np.maximum(-rsi_changes, 0)
@@ -2096,15 +2244,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 feat[i, fi] = 0.5
         fi += 1
 
-        # vwap_band_sigma: distance from VWAP in σ units
-        vw_data_ms = vwap_cache.get(i)
-        if vw_data_ms is not None:
-            vw_ms, u1_ms, l1_ms, u2_ms, l2_ms = vw_data_ms
-            if np.isfinite(u1_ms) and np.isfinite(l1_ms):
-                sigma = (u1_ms - vw_ms)  # 1σ distance
-                if sigma > 1e-8:
-                    feat[i, fi] = (c - vw_ms) / sigma
-        fi += 1
+        # pruned vwap_band_sigma (0.96 corr w/ volume_at_price_pctile)
 
         # ib_break: -1 if below IB low, 0 if inside, +1 if above IB high
         ib_h_ms = ib_high_map.get(day, c)
@@ -2117,9 +2257,50 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             feat[i, fi] = 0.0
         fi += 1
 
-        # theta_pressure: ramps 0→1 from bar 120 (11:30am) to close (bar 390)
-        bar_in_day = day_pos  # 0-indexed position in session
-        feat[i, fi] = max(0.0, (bar_in_day - 120) / 270.0) if bar_in_day > 120 else 0.0
+        # pruned theta_pressure (-0.98 corr w/ minutes_to_close)
+
+        # === v9 features (4) — pruned econ_calendar ===
+
+        # atr_14: 14-bar Average True Range / close (volatility context for stops)
+        if not np.isnan(atr_14[i]):
+            feat[i, fi] = atr_14[i] / max(c, 1.0)
+        fi += 1
+
+        # bar_delta: (close - open) / (high - low) — intrabar buy/sell pressure
+        feat[i, fi] = bar_delta[i]
+        fi += 1
+
+        # session_cum_delta: cumulative bar deltas since session open
+        feat[i, fi] = session_cum_delta[i]
+        fi += 1
+
+        # pruned econ_calendar (95.6% zeros)
+
+        # top_of_hour_min: minutes to next hour mark / 60 (sawtooth 0→1)
+        bar_minute = bar_time.minute
+        feat[i, fi] = (60 - bar_minute) / 60.0 if bar_minute > 0 else 0.0
+        fi += 1
+
+        # === v10 new features (5) ===
+
+        # macdh_slope: MACD-H tick direction (Elder's #1 signal)
+        feat[i, fi] = macdh_slope[i]
+        fi += 1
+
+        # force_index_2: 2-bar EMA of Force Index, normalized
+        feat[i, fi] = force_index_2[i]
+        fi += 1
+
+        # vol_price_diverg: consecutive bars of price/volume divergence
+        feat[i, fi] = vol_price_diverg[i]
+        fi += 1
+
+        # effort_vs_result: body/avg_body / vol/avg_vol anomaly
+        feat[i, fi] = effort_vs_result[i]
+        fi += 1
+
+        # trend_5min: 5-min aggregated EMA(13) slope (Triple Screen)
+        feat[i, fi] = trend_5min[i]
         fi += 1
 
         # Sidecar quality/risk masks for supervision weighting.
@@ -2190,7 +2371,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 pnl_real_arr[i] = pnl_real_val
 
     # -------------------------------------------------------------------
-    # OTM P&L targets: EOD/max-hold exits for OTM strikes (6-class dir head)
+    # OTM P&L targets: EOD/max-hold exits for OTM strikes (14-class dir head)
     # -------------------------------------------------------------------
     otm5_call_pnl = np.full(N, np.nan, dtype=np.float32)
     otm5_put_pnl = np.full(N, np.nan, dtype=np.float32)
@@ -2200,6 +2381,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     otm15_put_pnl = np.full(N, np.nan, dtype=np.float32)
     otm20_call_pnl = np.full(N, np.nan, dtype=np.float32)
     otm20_put_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm25_call_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm25_put_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm30_call_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm30_put_pnl = np.full(N, np.nan, dtype=np.float32)
     otm5_call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
     otm5_put_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
     otm10_call_pnl_realistic = np.full(N, np.nan, dtype=np.float32)
@@ -2214,6 +2399,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         (otm15_put_prices, otm15_put_pnl, None, "put_otm15"),
         (otm20_call_prices, otm20_call_pnl, None, "call_otm20"),
         (otm20_put_prices, otm20_put_pnl, None, "put_otm20"),
+        (otm25_call_prices, otm25_call_pnl, None, "call_otm25"),
+        (otm25_put_prices, otm25_put_pnl, None, "put_otm25"),
+        (otm30_call_prices, otm30_call_pnl, None, "call_otm30"),
+        (otm30_put_prices, otm30_put_pnl, None, "put_otm30"),
     ]
 
     for i in range(N):
@@ -2266,17 +2455,33 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 if not np.isnan(pnl_val):
                     pnl_arr[i] = pnl_val
 
-    # OTM stopped P&L (default level only — less critical for OTM)
+    # OTM stopped P&L (default level only)
     otm5_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
     otm5_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
     otm10_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
     otm10_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm15_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm15_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm20_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm20_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm25_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm25_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm30_call_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
+    otm30_put_stopped_pnl = np.full(N, np.nan, dtype=np.float32)
 
     _otm_stopped_legs = [
         (otm5_call_prices, otm5_call_stopped_pnl, "call_otm5"),
         (otm5_put_prices, otm5_put_stopped_pnl, "put_otm5"),
         (otm10_call_prices, otm10_call_stopped_pnl, "call_otm10"),
         (otm10_put_prices, otm10_put_stopped_pnl, "put_otm10"),
+        (otm15_call_prices, otm15_call_stopped_pnl, "call_otm15"),
+        (otm15_put_prices, otm15_put_stopped_pnl, "put_otm15"),
+        (otm20_call_prices, otm20_call_stopped_pnl, "call_otm20"),
+        (otm20_put_prices, otm20_put_stopped_pnl, "put_otm20"),
+        (otm25_call_prices, otm25_call_stopped_pnl, "call_otm25"),
+        (otm25_put_prices, otm25_put_stopped_pnl, "put_otm25"),
+        (otm30_call_prices, otm30_call_stopped_pnl, "call_otm30"),
+        (otm30_put_prices, otm30_put_stopped_pnl, "put_otm30"),
     ]
 
     for i in range(N):
@@ -2401,9 +2606,9 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         if has_put_data:
             exit_put_label[i] = best_put_exit
 
-    # Valid mask: only equity features (0:39) must be non-NaN.
-    # Options (39:45) and VIX/regime (45:49) depend on SPXW data and may be NaN.
-    equity_feat_end = 39  # first 39 features are pure equity (SPX prices + SPY volume)
+    # Valid mask: only equity features (0:16) must be non-NaN.
+    # Options (16+) depend on SPXW data and may be NaN.
+    equity_feat_end = 16  # first 16 features are pure equity (price, volume, vol, vwap, session, levels, trend, micro, time)
     equity_valid = ~np.isnan(feat[:, :equity_feat_end]).any(axis=1)
     valid = equity_valid & ~np.isnan(targets)
 
@@ -2432,6 +2637,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         'otm15_put': otm15_put_prices,
         'otm20_call': otm20_call_prices,
         'otm20_put': otm20_put_prices,
+        'otm25_call': otm25_call_prices,
+        'otm25_put': otm25_put_prices,
+        'otm30_call': otm30_call_prices,
+        'otm30_put': otm30_put_prices,
         'otm5_call_pnl': otm5_call_pnl,
         'otm5_put_pnl': otm5_put_pnl,
         'otm10_call_pnl': otm10_call_pnl,
@@ -2440,6 +2649,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         'otm15_put_pnl': otm15_put_pnl,
         'otm20_call_pnl': otm20_call_pnl,
         'otm20_put_pnl': otm20_put_pnl,
+        'otm25_call_pnl': otm25_call_pnl,
+        'otm25_put_pnl': otm25_put_pnl,
+        'otm30_call_pnl': otm30_call_pnl,
+        'otm30_put_pnl': otm30_put_pnl,
         'otm5_call_pnl_realistic': otm5_call_pnl_realistic,
         'otm5_put_pnl_realistic': otm5_put_pnl_realistic,
         'otm10_call_pnl_realistic': otm10_call_pnl_realistic,
@@ -2454,6 +2667,14 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         'otm5_put_stopped_pnl': otm5_put_stopped_pnl,
         'otm10_call_stopped_pnl': otm10_call_stopped_pnl,
         'otm10_put_stopped_pnl': otm10_put_stopped_pnl,
+        'otm15_call_stopped_pnl': otm15_call_stopped_pnl,
+        'otm15_put_stopped_pnl': otm15_put_stopped_pnl,
+        'otm20_call_stopped_pnl': otm20_call_stopped_pnl,
+        'otm20_put_stopped_pnl': otm20_put_stopped_pnl,
+        'otm25_call_stopped_pnl': otm25_call_stopped_pnl,
+        'otm25_put_stopped_pnl': otm25_put_stopped_pnl,
+        'otm30_call_stopped_pnl': otm30_call_stopped_pnl,
+        'otm30_put_stopped_pnl': otm30_put_stopped_pnl,
         'action_leg_names': list(SIDE_ACTION_ORDER),
         'action_spread_bps': action_spread_bps,
         'action_quote_age_s': action_quote_age_s,
@@ -2467,6 +2688,147 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     }
 
     return feat, targets, dates.tolist(), valid, option_prices, timestamps.tolist()
+
+
+# ---------------------------------------------------------------------------
+# v11: Setup Recognition + Regime Classification
+# ---------------------------------------------------------------------------
+
+def detect_setups(features: np.ndarray, valid: np.ndarray, dates) -> np.ndarray:
+    """Detect structural trading setups from feature values (pre-normalization).
+
+    Returns a boolean array (N,) where True = a recognizable setup is present.
+    Operates on RAW (unnormalized) features so thresholds are interpretable.
+
+    Four setups from domain knowledge:
+    1. VWAP Pullback — price extended from VWAP, now reverting (mean reversion)
+    2. IB Breakout — Initial Balance break with directional follow-through
+    3. Magic Time Reversal — 10:00-10:30 ET counter-trend at extremes
+    4. Trend Continuation — strong trend with volume confirmation
+    """
+    N = features.shape[0]
+    setup_mask = np.zeros(N, dtype=bool)
+    if N == 0:
+        return setup_mask
+
+    # Feature indices (raw, pre-normalization)
+    idx_vwap_dist = _FEAT_IDX['vwap_dist']           # 7
+    idx_bar_delta = _FEAT_IDX['bar_delta']            # 30
+    idx_ib_break = _FEAT_IDX['ib_break']              # 28
+    idx_consec = _FEAT_IDX['consec_direction']         # 11
+    idx_vol_ratio = _FEAT_IDX['volume_ratio']          # 2
+    idx_min_close = _FEAT_IDX['minutes_to_close']      # 14
+    idx_srp = _FEAT_IDX['session_range_position']      # 25
+    idx_trend5 = _FEAT_IDX['trend_5min']               # 37
+    idx_speed = _FEAT_IDX['speed_estimate']            # 12
+
+    vwap_dist = features[:, idx_vwap_dist]
+    bar_delta = features[:, idx_bar_delta]
+    ib_break = features[:, idx_ib_break]
+    consec = features[:, idx_consec]
+    vol_ratio = features[:, idx_vol_ratio]
+    min_close_raw = features[:, idx_min_close]
+    srp = features[:, idx_srp]
+    trend5 = features[:, idx_trend5]
+    speed = features[:, idx_speed]
+
+    # minutes_to_close is stored as log1p(minutes)/log1p(390), invert to get raw minutes
+    minutes_remaining = np.expm1(min_close_raw * np.log1p(390))
+
+    # --- Setup 1: VWAP Pullback (mean reversion) ---
+    # Price at VWAP ±1.5σ equivalent (vwap_dist > ~0.002 is ~1.5σ for SPX)
+    # AND bar delta shows reversal toward VWAP
+    extended_up = vwap_dist > 0.002
+    extended_down = vwap_dist < -0.002
+    reverting_down = bar_delta < -0.2  # bearish bar
+    reverting_up = bar_delta > 0.2     # bullish bar
+    vwap_pullback = (extended_up & reverting_down) | (extended_down & reverting_up)
+
+    # --- Setup 2: IB Breakout (trend day) ---
+    # IB break detected AND directional follow-through AND volume confirmation
+    ib_active = np.abs(ib_break) > 0.5
+    directional = np.abs(consec) >= 0.2  # ≥2 consecutive bars (scaled /10)
+    vol_confirm = vol_ratio > 1.0
+    ib_breakout = ib_active & directional & vol_confirm
+
+    # --- Setup 3: Magic Time Reversal (10:00-10:30 ET = 330-360 min to close) ---
+    # Counter-trend at session extremes during Magic Time window
+    magic_window = (minutes_remaining >= 330) & (minutes_remaining <= 360)
+    at_extreme = (srp > 0.85) | (srp < 0.15)
+    # Reversal: bar delta opposes the extreme
+    reversal_at_high = (srp > 0.85) & (bar_delta < -0.1)
+    reversal_at_low = (srp < 0.15) & (bar_delta > 0.1)
+    magic_time = magic_window & at_extreme & (reversal_at_high | reversal_at_low)
+
+    # --- Setup 4: Trend Continuation ---
+    # Strong trend + speed + volume, not at session extremes
+    strong_trend = np.abs(trend5) > 0.3
+    has_speed = speed > 0.3
+    has_volume = vol_ratio > 0.8
+    not_extreme = (srp > 0.2) & (srp < 0.8)
+    trend_continuation = strong_trend & has_speed & has_volume & not_extreme
+
+    # Combine all setups
+    setup_mask = vwap_pullback | ib_breakout | magic_time | trend_continuation
+    # Only count valid bars
+    setup_mask = setup_mask & valid
+
+    return setup_mask
+
+
+def compute_regime_labels(features: np.ndarray, valid: np.ndarray, dates) -> np.ndarray:
+    """Classify each bar as TRENDING (True) or CHOP (False).
+
+    Operates on RAW (unnormalized) features.
+    TRENDING requires multiple confirming signals — conservative by default.
+    """
+    N = features.shape[0]
+    regime_mask = np.zeros(N, dtype=bool)
+    if N == 0:
+        return regime_mask
+
+    idx_atr = _FEAT_IDX['atr_14']                     # 29
+    idx_consec = _FEAT_IDX['consec_direction']         # 11
+    idx_vol_ratio = _FEAT_IDX['volume_ratio']          # 2
+    idx_ib_break = _FEAT_IDX['ib_break']               # 28
+    idx_trend5 = _FEAT_IDX['trend_5min']               # 37
+    idx_speed = _FEAT_IDX['speed_estimate']            # 12
+
+    atr = features[:, idx_atr]
+    consec = features[:, idx_consec]
+    vol_ratio = features[:, idx_vol_ratio]
+    ib_break = features[:, idx_ib_break]
+    trend5 = features[:, idx_trend5]
+    speed = features[:, idx_speed]
+
+    # ATR expanding: compare to rolling mean
+    # Use a simple approach: ATR above its own 30-bar moving average
+    atr_expanding = np.zeros(N, dtype=bool)
+    date_arr = np.array(dates) if not isinstance(dates, np.ndarray) else dates
+    for i in range(N):
+        if not valid[i] or np.isnan(atr[i]):
+            continue
+        lookback_start = max(0, i - 30)
+        window_atr = atr[lookback_start:i]
+        window_valid = ~np.isnan(window_atr)
+        if window_valid.sum() >= 5:
+            atr_expanding[i] = atr[i] > np.mean(window_atr[window_valid])
+
+    # Directional consistency: ≥2 consecutive bars
+    directional = np.abs(consec) >= 0.2  # consec is scaled /10, so 0.2 = 2 bars
+
+    # Volume confirming
+    vol_confirm = vol_ratio > 0.8
+
+    # Catalyst: IB break OR strong 5-min trend
+    ib_active = np.abs(ib_break) > 0.5
+    strong_trend = np.abs(trend5) > 0.3
+
+    # TRENDING = ATR expanding + directional + volume + catalyst
+    regime_mask = atr_expanding & directional & vol_confirm & (ib_active | strong_trend)
+    regime_mask = regime_mask & valid
+
+    return regime_mask
 
 
 # ---------------------------------------------------------------------------
@@ -2624,6 +2986,17 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
         'train_end_idx': train_end_idx,
         'val_start_idx': val_start_idx,
         'val_end_idx': val_end_idx,
+        '_provenance': {
+            'created_at': __import__('datetime').datetime.now().isoformat(),
+            'feature_names': list(FEATURE_NAMES),
+            'num_features': NUM_FEATURES,
+            'num_train_days': len(train_dates),
+            'num_val_days': len(val_dates),
+            'train_date_range': f"{min(train_dates)}..{max(train_dates)}",
+            'val_date_range': f"{min(val_dates)}..{max(val_dates)}",
+            'total_bars': len(features),
+            'split_ratio': 0.7,
+        },
     }
 
     raw_source = raw_features if raw_features is not None else features
@@ -2657,7 +3030,8 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
         data['otm5_put_prices'] = torch.tensor(option_prices['otm5_put'], dtype=torch.float32)
         data['otm10_call_prices'] = torch.tensor(option_prices['otm10_call'], dtype=torch.float32)
         data['otm10_put_prices'] = torch.tensor(option_prices['otm10_put'], dtype=torch.float32)
-        for k in ('otm15_call', 'otm15_put', 'otm20_call', 'otm20_put'):
+        for k in ('otm15_call', 'otm15_put', 'otm20_call', 'otm20_put',
+                  'otm25_call', 'otm25_put', 'otm30_call', 'otm30_put'):
             if k in option_prices:
                 data[f'{k}_prices'] = torch.tensor(option_prices[k], dtype=torch.float32)
         data['otm5_call_pnl'] = torch.tensor(option_prices['otm5_call_pnl'], dtype=torch.float32)
@@ -2666,6 +3040,7 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
         data['otm10_put_pnl'] = torch.tensor(option_prices['otm10_put_pnl'], dtype=torch.float32)
         for k in (
             'otm15_call_pnl', 'otm15_put_pnl', 'otm20_call_pnl', 'otm20_put_pnl',
+            'otm25_call_pnl', 'otm25_put_pnl', 'otm30_call_pnl', 'otm30_put_pnl',
             'otm5_call_pnl_realistic', 'otm5_put_pnl_realistic',
             'otm10_call_pnl_realistic', 'otm10_put_pnl_realistic',
             'call_stopped_pnl', 'put_stopped_pnl',
@@ -2673,6 +3048,10 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
             'put_stopped_pnl_tight', 'put_stopped_pnl_wide',
             'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
             'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl',
+            'otm15_call_stopped_pnl', 'otm15_put_stopped_pnl',
+            'otm20_call_stopped_pnl', 'otm20_put_stopped_pnl',
+            'otm25_call_stopped_pnl', 'otm25_put_stopped_pnl',
+            'otm30_call_stopped_pnl', 'otm30_put_stopped_pnl',
         ):
             if k in option_prices:
                 data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
@@ -2680,6 +3059,7 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
             'action_spread_bps', 'action_quote_age_s', 'action_size',
             'action_quality_score', 'action_slippage_bps', 'action_cost_bps',
             'actionable_mask', 'risk_state_mask', 'supervision_weight',
+            'setup_mask', 'regime_mask',
         ):
             if k in option_prices:
                 data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
@@ -2749,7 +3129,14 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
     path = os.path.join(FEATURES_DIR, "data.pt")
     torch.save(data, path)
     size_mb = os.path.getsize(path) / (1024 * 1024)
-    print(f"  Saved: {path} ({size_mb:.1f} MB)")
+
+    # Write SHA256 sidecar for upload verification
+    import hashlib as _hashlib
+    with open(path, "rb") as _f:
+        _content_hash = _hashlib.sha256(_f.read()).hexdigest()
+    with open(path + ".sha256", "w") as _f:
+        _f.write(_content_hash + "\n")
+    print(f"  Saved: {path} ({size_mb:.1f} MB, hash: {_content_hash[:16]})")
     return data
 
 
@@ -2771,7 +3158,17 @@ def load_data():
     for path in search_paths:
         if os.path.exists(path):
             print(f"Loading data from: {path}")
-            return torch.load(path, map_location="cpu", weights_only=False)
+            _data = torch.load(path, map_location="cpu", weights_only=False)
+            # Print provenance for auditability
+            _prov = _data.get('_provenance', {})
+            if _prov:
+                print(f"  Provenance: {_prov.get('num_features', '?')} features, "
+                      f"{_prov.get('num_val_days', '?')} val days, "
+                      f"val range {_prov.get('val_date_range', '?')}, "
+                      f"created {_prov.get('created_at', '?')[:19]}")
+            else:
+                print(f"  WARNING: data.pt has no provenance metadata (pre-v14 format)")
+            return _data
     print(f"Data not found. Searched: {search_paths}")
     print("Run `python3 prepare.py` first.")
     sys.exit(1)
@@ -2790,9 +3187,17 @@ def _load_dataloader_arrays(data, device):
             + ". Rebuild data.pt with the current prepare.py."
         )
 
+    # Feature count must match exactly — no silent truncation
+    _raw_features = data['features']
+    if _raw_features.shape[-1] != NUM_FEATURES:
+        raise RuntimeError(
+            f"data.pt has {_raw_features.shape[-1]} features but code expects {NUM_FEATURES}. "
+            f"Rebuild data.pt with: python3 training/prepare.py"
+        )
+
     call_pnl_all = data['call_pnl'].to(device)
     arrays = {
-        'features': data['features'].to(device),
+        'features': _raw_features.to(device),
         'targets': data['targets'].to(device),
         'call_pnl': call_pnl_all,
         'put_pnl': data['put_pnl'].to(device),
@@ -2803,11 +3208,22 @@ def _load_dataloader_arrays(data, device):
         'otm10_call_pnl': data['otm10_call_pnl'].to(device),
         'otm10_put_pnl': data['otm10_put_pnl'].to(device),
     }
+    # v10: deep OTM P&L arrays (optional — NaN-filled if missing for backward compat)
+    for k in ('otm15_call_pnl', 'otm15_put_pnl', 'otm20_call_pnl', 'otm20_put_pnl',
+              'otm25_call_pnl', 'otm25_put_pnl', 'otm30_call_pnl', 'otm30_put_pnl'):
+        v = data.get(k)
+        arrays[k] = v.to(device) if v is not None else torch.full_like(call_pnl_all, float('nan'))
+
     for k in ('supervision_weight', 'actionable_mask', 'risk_state_mask'):
         v = data.get(k)
         arrays[k] = v.to(device) if v is not None else torch.ones_like(call_pnl_all)
 
-    # Stopped P&L arrays (v5) — REQUIRED (no fallback)
+    # v11: setup recognition + regime labels (optional — zeros if missing for backward compat)
+    for k in ('setup_mask', 'regime_mask'):
+        v = data.get(k)
+        arrays[k] = v.to(device) if v is not None else torch.zeros_like(call_pnl_all)
+
+    # Stopped P&L arrays (v5) — REQUIRED for core, optional for deep OTM
     for k in ('call_stopped_pnl', 'put_stopped_pnl',
               'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
               'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl'):
@@ -2816,6 +3232,14 @@ def _load_dataloader_arrays(data, device):
             arrays[k] = v.to(device)
         else:
             raise RuntimeError(f"Missing required field in data.pt: {k} — rebuild data.pt")
+
+    # v10: deep OTM stopped P&L (optional — fallback to unstopped)
+    for k in ('otm15_call_stopped_pnl', 'otm15_put_stopped_pnl',
+              'otm20_call_stopped_pnl', 'otm20_put_stopped_pnl',
+              'otm25_call_stopped_pnl', 'otm25_put_stopped_pnl',
+              'otm30_call_stopped_pnl', 'otm30_put_stopped_pnl'):
+        v = data.get(k)
+        arrays[k] = v.to(device) if v is not None else torch.full_like(call_pnl_all, float('nan'))
 
     # Multi-level stopped P&L (tight=0.20, wide=0.50) — REQUIRED (no fallback)
     for k in ('call_stopped_pnl_tight', 'call_stopped_pnl_wide',
@@ -2830,21 +3254,43 @@ def _load_dataloader_arrays(data, device):
 
 
 def _build_y_tuple(arrays, idx):
-    """Build the y tuple for a batch of indices."""
-    return (arrays['targets'][idx],
-            arrays['call_pnl'][idx], arrays['put_pnl'][idx],
-            arrays['exit_call'][idx], arrays['exit_put'][idx],
-            arrays['otm5_call_pnl'][idx], arrays['otm5_put_pnl'][idx],
-            arrays['otm10_call_pnl'][idx], arrays['otm10_put_pnl'][idx],
-            arrays['supervision_weight'][idx], arrays['actionable_mask'][idx],
-            arrays['risk_state_mask'][idx],
+    """Build the y tuple for a batch of indices.
+
+    v11 layout (40 elements):
+      0: targets, 1-2: call/put pnl, 3-4: exit labels,
+      5-8: otm5/10 call/put pnl, 9-11: sw/am/rsm,
+      12-17: stopped pnl (atm+otm5+otm10),
+      18-21: multi-level tight/wide,
+      22-29: deep OTM pnl (otm15-30 call/put),
+      30-37: deep OTM stopped pnl (otm15-30 call/put),
+      38-39: setup_mask, regime_mask (v11)
+    """
+    return (arrays['targets'][idx],                          # 0
+            arrays['call_pnl'][idx], arrays['put_pnl'][idx], # 1-2
+            arrays['exit_call'][idx], arrays['exit_put'][idx],# 3-4
+            arrays['otm5_call_pnl'][idx], arrays['otm5_put_pnl'][idx],   # 5-6
+            arrays['otm10_call_pnl'][idx], arrays['otm10_put_pnl'][idx], # 7-8
+            arrays['supervision_weight'][idx], arrays['actionable_mask'][idx],  # 9-10
+            arrays['risk_state_mask'][idx],                   # 11
             # v5: stopped P&L at med level (positions 12-17)
             arrays['call_stopped_pnl'][idx], arrays['put_stopped_pnl'][idx],
             arrays['otm5_call_stopped_pnl'][idx], arrays['otm5_put_stopped_pnl'][idx],
             arrays['otm10_call_stopped_pnl'][idx], arrays['otm10_put_stopped_pnl'][idx],
             # v6: multi-level stopped P&L tight/wide (positions 18-21)
             arrays['call_stopped_pnl_tight'][idx], arrays['call_stopped_pnl_wide'][idx],
-            arrays['put_stopped_pnl_tight'][idx], arrays['put_stopped_pnl_wide'][idx])
+            arrays['put_stopped_pnl_tight'][idx], arrays['put_stopped_pnl_wide'][idx],
+            # v10: deep OTM P&L (positions 22-29)
+            arrays['otm15_call_pnl'][idx], arrays['otm15_put_pnl'][idx],
+            arrays['otm20_call_pnl'][idx], arrays['otm20_put_pnl'][idx],
+            arrays['otm25_call_pnl'][idx], arrays['otm25_put_pnl'][idx],
+            arrays['otm30_call_pnl'][idx], arrays['otm30_put_pnl'][idx],
+            # v10: deep OTM stopped P&L (positions 30-37)
+            arrays['otm15_call_stopped_pnl'][idx], arrays['otm15_put_stopped_pnl'][idx],
+            arrays['otm20_call_stopped_pnl'][idx], arrays['otm20_put_stopped_pnl'][idx],
+            arrays['otm25_call_stopped_pnl'][idx], arrays['otm25_put_stopped_pnl'][idx],
+            arrays['otm30_call_stopped_pnl'][idx], arrays['otm30_put_stopped_pnl'][idx],
+            # v11: setup recognition + regime labels (positions 38-39)
+            arrays['setup_mask'][idx], arrays['regime_mask'][idx])
 
 
 def make_dataloader(data, lookback, batch_size, split="train", device="cuda", target_mask=None):
@@ -2852,14 +3298,7 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda", ta
 
     Yields (x, y):
         x: (batch, lookback, NUM_FEATURES)
-        y: tuple of (fwd_ret, call_pnl, put_pnl, exit_call, exit_put,
-                     otm5_call_pnl, otm5_put_pnl, otm10_call_pnl, otm10_put_pnl,
-                     supervision_weight, actionable_mask, risk_state_mask,
-                     call_stopped_pnl, put_stopped_pnl,
-                     otm5_call_stopped_pnl, otm5_put_stopped_pnl,
-                     otm10_call_stopped_pnl, otm10_put_stopped_pnl,
-                     call_stopped_pnl_tight, call_stopped_pnl_wide,
-                     put_stopped_pnl_tight, put_stopped_pnl_wide)
+        y: 38-element tuple (v10). See _build_y_tuple for layout.
            each (batch,). NaN where option data is unavailable.
 
     Args:
@@ -2888,8 +3327,9 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda", ta
             if target_mask[i]:
                 valid_indices.append(i)
         else:
-            # Standard mode: require full lookback validity
-            if valid_mask[max(0, i - lookback):i].all():
+            # v11: relaxed contiguity — require ≥90% valid bars in lookback window
+            window = valid_mask[max(0, i - lookback):i]
+            if len(window) > 0 and window.sum() >= 0.9 * len(window):
                 valid_indices.append(i)
 
     valid_indices = torch.tensor(valid_indices, dtype=torch.long, device=device)
@@ -2975,7 +3415,8 @@ def make_day_sequential_loader(data, lookback, batch_size, device="cuda", split=
             for ds, de in selected_days:
                 bar_idx = ds + bar_offset
                 if bar_idx < de and bar_idx >= start:
-                    if valid_mask[bar_idx] and valid_mask[max(0, bar_idx - lookback):bar_idx].all():
+                    window = valid_mask[max(0, bar_idx - lookback):bar_idx]
+                    if valid_mask[bar_idx] and len(window) > 0 and window.sum() >= 0.9 * len(window):
                         batch_indices.append(bar_idx)
 
             if len(batch_indices) == 0:
@@ -2999,16 +3440,15 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
                     score_config=None):
     """Simulate 0DTE option trades on validation set.
 
-    Required model output format (strict foundation contract):
-      - Two-head: model(x) returns (gate_logits, dir_logits)
-        gate_logits: (batch, 2) [NO_TRADE, TRADE]
-        dir_logits:  (batch, 6) [CALL_ATM, CALL_OTM5, CALL_OTM10,
-                                 PUT_ATM, PUT_OTM5, PUT_OTM10]
+    Supports both model formats:
+      - v12 unified: model(x) returns (action_logits,) with 15 classes
+        [DO_NOTHING, CALL_ATM..OTM30, PUT_ATM..OTM30]
+      - Legacy two-head: model(x) returns (gate_logits, dir_logits)
 
     Effective semantics:
-      - Gate=TRADE + direction head -> one of 6 BUY actions.
-      - Gate=NO_TRADE while in position -> model EXIT.
-      - Gate=NO_TRADE while flat -> DO_NOTHING.
+      - Action > 0 while flat -> ENTER with chosen option type.
+      - Action == 0 while in position -> model EXIT.
+      - Action == 0 while flat -> DO_NOTHING.
 
     Optional overrides (defaults from module constants):
       stop_loss_pct: Stop loss as fraction of premium (default 0.30)
@@ -3070,10 +3510,13 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
     val_start = max(lookback, data['val_start_idx'])
     val_end = data['val_end_idx'] + 1
 
-    val_indices = [
-        i for i in range(val_start, val_end)
-        if valid_mask[i] and valid_mask[max(0, i - lookback):i].all()
-    ]
+    val_indices = []
+    for i in range(val_start, val_end):
+        if not valid_mask[i]:
+            continue
+        window = valid_mask[max(0, i - lookback):i]
+        if len(window) > 0 and window.sum() >= 0.9 * len(window):
+            val_indices.append(i)
 
     if len(val_indices) < 10:
         return _empty_metrics(len(val_indices))
@@ -3090,36 +3533,25 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
     val_idx_t = torch.tensor(val_indices, dtype=torch.long, device=device)
     offsets = torch.arange(-lookback, 0, device=device)
 
-    # Phase 1: Batch inference for direction logits (position-independent)
-    # Phase 2: Sequential inference for gate decisions with position state
-    all_dir_actions = []
-    all_dir_logits_list = []
-    for i in range(0, len(val_idx_t), batch_size):
-        idx = val_idx_t[i:i + batch_size]
-        window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
-        x = features[window_idx]
-        out = model(x)  # no position_state → gate_input = last (backward compat)
-        if not isinstance(out, tuple) or len(out) < 2:
-            raise ValueError(
-                "evaluate_trades requires model output tuple with at least "
-                "(gate_logits, dir_logits). Got: " + str(type(out))
-            )
-        gate_logits, dir_logits = out[0], out[1]
-        if gate_logits.ndim != 2 or gate_logits.shape[-1] != 2:
-            raise ValueError(
-                f"Invalid gate head shape: expected (batch, 2), got {tuple(gate_logits.shape)}"
-            )
-        if dir_logits.ndim != 2 or dir_logits.shape[-1] != 6:
-            raise ValueError(
-                f"Invalid direction head shape: expected (batch, 6), got {tuple(dir_logits.shape)}"
-            )
-        dir_action = torch.argmax(dir_logits, dim=-1)
-        all_dir_actions.append(dir_action.cpu())
+    # Detect v12 unified action head vs legacy two-head
+    _is_v12 = hasattr(model, 'action_head')
 
-    dir_actions = torch.cat(all_dir_actions).numpy()
+    if not _is_v12:
+        # Legacy: Phase 1 batch direction inference (position-independent)
+        all_dir_actions = []
+        for i in range(0, len(val_idx_t), batch_size):
+            idx = val_idx_t[i:i + batch_size]
+            window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
+            x = features[window_idx]
+            out = model(x)
+            gate_logits, dir_logits = out[0], out[1]
+            dir_action = torch.argmax(dir_logits, dim=-1)
+            all_dir_actions.append(dir_action.cpu())
+        dir_actions = torch.cat(all_dir_actions).numpy()
+    else:
+        dir_actions = None  # v12 doesn't need separate direction inference
 
-    # Phase 2: Position-aware sequential gate inference
-    # Build position state for each bar based on trade simulation state
+    # Phase 2: Position-aware sequential inference
     _has_position_proj = hasattr(model, 'position_proj')
     actions = np.empty(len(val_indices), dtype=np.int64)
     gate_no_trade = np.empty(len(val_indices), dtype=bool)
@@ -3147,9 +3579,17 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
             ACTION_BUY_CALL_ATM:   data_dict.get('atm_call_prices'),
             ACTION_BUY_CALL_OTM5:  data_dict.get('otm5_call_prices'),
             ACTION_BUY_CALL_OTM10: data_dict.get('otm10_call_prices'),
+            ACTION_BUY_CALL_OTM15: data_dict.get('otm15_call_prices'),
+            ACTION_BUY_CALL_OTM20: data_dict.get('otm20_call_prices'),
+            ACTION_BUY_CALL_OTM25: data_dict.get('otm25_call_prices'),
+            ACTION_BUY_CALL_OTM30: data_dict.get('otm30_call_prices'),
             ACTION_BUY_PUT_ATM:    data_dict.get('atm_put_prices'),
             ACTION_BUY_PUT_OTM5:   data_dict.get('otm5_put_prices'),
             ACTION_BUY_PUT_OTM10:  data_dict.get('otm10_put_prices'),
+            ACTION_BUY_PUT_OTM15:  data_dict.get('otm15_put_prices'),
+            ACTION_BUY_PUT_OTM20:  data_dict.get('otm20_put_prices'),
+            ACTION_BUY_PUT_OTM25:  data_dict.get('otm25_put_prices'),
+            ACTION_BUY_PUT_OTM30:  data_dict.get('otm30_put_prices'),
         }
         return mapping.get(action)
 
@@ -3206,25 +3646,37 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
             _acct_state[0, 1] = min(_math.log10(max(_pos_account_balance, 1000) / 1000) / 3.0, 1.0)
             _acct_state[0, 3] = _pos_win_rate_20
 
-        # Run gate inference with position state
+        # Run inference with position state
         idx_t = val_idx_t[k:k+1]
         window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
         _out = model(x, position_state=pos_state, account_state=_acct_state,
                      return_risk=_has_risk_head)
-        gate_logits = _out[0]
-        gate_action = int(torch.argmax(gate_logits, dim=-1).item())
-        gate_conf = float(torch.softmax(gate_logits, dim=-1)[0, 1].item())  # P(TRADE)
-        _risk_out = _out[-1] if _has_risk_head else None
+
+        if _is_v12:
+            # v12: unified action head — single argmax
+            action_logits = _out[0]
+            action_idx = int(torch.argmax(action_logits, dim=-1).item())
+            action_probs = torch.softmax(action_logits, dim=-1)[0]
+            gate_no_trade[k] = (action_idx == 0)
+            gate_confidence[k] = float(1.0 - action_probs[0].item())  # P(any trade)
+            actions[k] = action_idx  # 0=DO_NOTHING, 1-14=BUY options
+            _risk_out = _out[1] if _has_risk_head and len(_out) > 1 else None
+        else:
+            # Legacy two-head
+            gate_logits = _out[0]
+            gate_action = int(torch.argmax(gate_logits, dim=-1).item())
+            gate_conf = float(torch.softmax(gate_logits, dim=-1)[0, 1].item())
+            gate_no_trade[k] = (gate_action == 0)
+            gate_confidence[k] = gate_conf
+            if gate_action == 1:
+                actions[k] = int(dir_actions[k]) + 1
+            else:
+                actions[k] = ACTION_DO_NOTHING
+            _risk_out = _out[-1] if _has_risk_head and len(_out) > 2 else None
+
         if _risk_out is not None:
             _risk_outputs[k] = _risk_out[0].float().cpu().numpy()
-
-        gate_no_trade[k] = (gate_action == 0)
-        gate_confidence[k] = gate_conf
-        if gate_action == 1:
-            actions[k] = int(dir_actions[k]) + 1  # BUY_CALL_ATM=1 .. BUY_PUT_OTM10=6
-        else:
-            actions[k] = ACTION_DO_NOTHING
 
         # Update position tracking for next bar's position state
         if _pos_in_trade:
@@ -3240,16 +3692,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
             else:
                 _pos_bars_since_high += 1
 
-            # Phase D: value-based exit
-            _value_exit = False
-            _has_value_head = hasattr(model, 'value_head')
-            if _has_value_head and _pos_bars_held >= 2:
-                with torch.no_grad():
-                    _vout = model(x, position_state=pos_state, return_value=True)
-                    _vp = float(_vout[2][0].item())
-                _vthresh = 0.02 * (1.0 - _pos_conviction * 0.5)
-                if _vp < _vthresh:
-                    _value_exit = True
+            _value_exit = False  # v12: no value head, exits via action=DO_NOTHING
 
             # Check exit conditions (mirrors trade loop below)
             hit_stop = _pos_unrealized_pnl <= -_pos_dynamic_stop
@@ -3279,7 +3722,9 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
                 if hit_stop:
                     _pos_last_stop_bar = k
         elif actions[k] in {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
-                            ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10}:
+                            ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20, ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30,
+                            ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10,
+                            ACTION_BUY_PUT_OTM15, ACTION_BUY_PUT_OTM20, ACTION_BUY_PUT_OTM25, ACTION_BUY_PUT_OTM30}:
             if (k - _pos_last_stop_bar) >= STOP_COOLDOWN_BARS:
                 if _bar_of_day.get(global_idx, 999) >= NO_TRADE_BEFORE_BAR:
                     candidate_px_array = _get_px_array(actions[k], data)
@@ -3301,9 +3746,9 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
                                 _pos_bars_since_high = 0
                                 # Risk head: use learned stop + sizing + conviction
                                 if _risk_out is not None:
-                                    _pos_dynamic_stop = float(_risk_out[0, 0].item())
-                                    _size_frac = float(_risk_out[0, 1].item())
-                                    _pos_conviction = float(_risk_out[0, 2].item())
+                                    _pos_dynamic_stop = float(np.nan_to_num(_risk_out[0, 0].item(), nan=DYNAMIC_STOP_BASE))
+                                    _size_frac = float(np.nan_to_num(_risk_out[0, 1].item(), nan=0.5))
+                                    _pos_conviction = float(np.nan_to_num(_risk_out[0, 2].item(), nan=0.0))
                                     max_affordable = max(1, int(_pos_account_balance * _position_risk_target / contract_cost))
                                     _pos_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
                                 else:
@@ -3322,13 +3767,22 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
     # Simulate trades (strict option-price-based P&L)
     # -------------------------------------------------------------------
     # Map action → price array for each strike/direction
-    _ENTRY_ACTIONS = {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
-                      ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10}
+    _ENTRY_ACTIONS = {
+        ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+        ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20, ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30,
+        ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10,
+        ACTION_BUY_PUT_OTM15, ACTION_BUY_PUT_OTM20, ACTION_BUY_PUT_OTM25, ACTION_BUY_PUT_OTM30,
+    }
 
     _ACTION_NAMES = {
         ACTION_BUY_CALL_ATM: 'CALL_ATM', ACTION_BUY_CALL_OTM5: 'CALL_OTM5',
-        ACTION_BUY_CALL_OTM10: 'CALL_OTM10', ACTION_BUY_PUT_ATM: 'PUT_ATM',
-        ACTION_BUY_PUT_OTM5: 'PUT_OTM5', ACTION_BUY_PUT_OTM10: 'PUT_OTM10',
+        ACTION_BUY_CALL_OTM10: 'CALL_OTM10', ACTION_BUY_CALL_OTM15: 'CALL_OTM15',
+        ACTION_BUY_CALL_OTM20: 'CALL_OTM20', ACTION_BUY_CALL_OTM25: 'CALL_OTM25',
+        ACTION_BUY_CALL_OTM30: 'CALL_OTM30',
+        ACTION_BUY_PUT_ATM: 'PUT_ATM', ACTION_BUY_PUT_OTM5: 'PUT_OTM5',
+        ACTION_BUY_PUT_OTM10: 'PUT_OTM10', ACTION_BUY_PUT_OTM15: 'PUT_OTM15',
+        ACTION_BUY_PUT_OTM20: 'PUT_OTM20', ACTION_BUY_PUT_OTM25: 'PUT_OTM25',
+        ACTION_BUY_PUT_OTM30: 'PUT_OTM30',
     }
 
     required_price_keys = (
@@ -3400,18 +3854,7 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
             eod = dates[global_idx] != dates[entry_global]
             model_exit = gate_flat_signal
 
-            # Phase D: value-based exit (conviction-adjusted threshold)
-            _trade_value_exit = False
-            _has_value_head = hasattr(model, 'value_head')
-            if _has_value_head and bars_held >= 2 and not hit_stop:
-                with torch.no_grad():
-                    _vout = model(x, position_state=pos_state, return_value=True)
-                    _vp = float(_vout[2][0].item())
-                _vthresh = 0.02 * (1.0 - _trade_conviction * 0.5)
-                if _vp < _vthresh:
-                    _trade_value_exit = True
-
-            if hit_stop or hit_max_hold or eod or model_exit or _trade_value_exit or k == len(val_indices) - 1:
+            if hit_stop or hit_max_hold or eod or model_exit or k == len(val_indices) - 1:
                 if hit_stop:
                     final_pnl = -trade_dynamic_stop
                     last_stop_bar = k
@@ -3432,8 +3875,6 @@ def evaluate_trades(model, data, lookback, device, batch_size=1024,
                     exit_reason = 'stop_loss'
                 elif model_exit:
                     exit_reason = 'model_exit'
-                elif _trade_value_exit:
-                    exit_reason = 'value_exit'
                 elif eod:
                     exit_reason = 'end_of_day'
                 elif hit_max_hold:
@@ -3904,10 +4345,13 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=1024,
     val_start = max(lookback, data['val_start_idx'])
     val_end = data['val_end_idx'] + 1
 
-    val_indices = [
-        i for i in range(val_start, val_end)
-        if valid_mask[i] and valid_mask[max(0, i - lookback):i].all()
-    ]
+    val_indices = []
+    for i in range(val_start, val_end):
+        if not valid_mask[i]:
+            continue
+        window = valid_mask[max(0, i - lookback):i]
+        if len(window) > 0 and window.sum() >= 0.9 * len(window):
+            val_indices.append(i)
 
     if len(val_indices) < 20:
         return {'val_sharpe': -999.0, 'max_drawdown': 0.0, 'annual_return': 0.0,
@@ -3917,33 +4361,34 @@ def evaluate_sharpe(model, data, lookback, device, batch_size=1024,
     val_idx_t = torch.tensor(val_indices, dtype=torch.long, device=device)
     offsets = torch.arange(-lookback, 0, device=device)
 
+    _is_v12 = hasattr(model, 'action_head')
+
     all_positions, all_returns = [], []
     for i in range(0, len(val_idx_t), batch_size):
         idx = val_idx_t[i:i + batch_size]
         window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
         out = model(x)
-        if not isinstance(out, tuple) or len(out) < 2:
-            raise ValueError(
-                "evaluate_sharpe requires model output tuple with at least "
-                "(gate_logits, dir_logits). Got: " + str(type(out))
-            )
-        gate_logits, dir_logits = out[0], out[1]
-        if gate_logits.ndim != 2 or gate_logits.shape[-1] != 2:
-            raise ValueError(
-                f"Invalid gate head shape: expected (batch, 2), got {tuple(gate_logits.shape)}"
-            )
-        if dir_logits.ndim != 2 or dir_logits.shape[-1] != 6:
-            raise ValueError(
-                f"Invalid direction head shape: expected (batch, 6), got {tuple(dir_logits.shape)}"
-            )
 
-        gate_probs = torch.softmax(gate_logits, dim=-1)   # [no_trade, trade]
-        dir_probs = torch.softmax(dir_logits, dim=-1)     # [call_atm..put_otm10]
-        trade_prob = gate_probs[:, 1]
-        call_prob = dir_probs[:, :3].sum(dim=-1)
-        put_prob = dir_probs[:, 3:].sum(dim=-1)
-        pos = trade_prob * (call_prob - put_prob)
+        if _is_v12:
+            # v12: unified action head (15 classes)
+            action_logits = out[0]
+            action_probs = torch.softmax(action_logits, dim=-1)
+            # Call actions: indices 1-7, Put actions: indices 8-14
+            call_prob = action_probs[:, 1:8].sum(dim=-1)
+            put_prob = action_probs[:, 8:15].sum(dim=-1)
+            trade_prob = call_prob + put_prob  # 1 - P(DO_NOTHING)
+            pos = trade_prob * (call_prob - put_prob) / (call_prob + put_prob + 1e-8)
+        else:
+            # Legacy two-head
+            gate_logits, dir_logits = out[0], out[1]
+            gate_probs = torch.softmax(gate_logits, dim=-1)
+            dir_probs = torch.softmax(dir_logits, dim=-1)
+            trade_prob = gate_probs[:, 1]
+            call_prob = dir_probs[:, :7].sum(dim=-1)
+            put_prob = dir_probs[:, 7:].sum(dim=-1)
+            pos = trade_prob * (call_prob - put_prob)
+
         if confidence_threshold > 0:
             pos = torch.where(pos.abs() < confidence_threshold,
                               torch.zeros_like(pos), pos)
@@ -4234,15 +4679,34 @@ if __name__ == "__main__":
     pnl_count = int(np.sum(~np.isnan(option_prices['call_pnl']))) if option_prices else 0
     exit_count = int(np.sum(option_prices['exit_call_label'] == 1.0)) if option_prices else 0
     otm_count = int(np.sum(~np.isnan(option_prices['otm5_call']))) if option_prices else 0
-    otm_deep_count = int(np.sum(~np.isnan(option_prices.get('otm20_call', np.array([]))))) if option_prices else 0
+    otm_deep_count = int(np.sum(~np.isnan(option_prices.get('otm30_call', np.array([]))))) if option_prices else 0
     actionable_count = int(np.sum(option_prices.get('actionable_mask', np.zeros(len(df))) > 0.5)) if option_prices else 0
     print(f"  Valid bars: {valid_count}/{len(df)} ({100*valid_count/len(df):.0f}%)")
     print(f"  Bars with option prices: {opt_count}/{len(df)} ({100*opt_count/len(df):.0f}%)")
     print(f"  Bars with OTM prices: {otm_count}/{len(df)} ({100*otm_count/len(df):.0f}%)")
-    print(f"  Bars with deep OTM (+/-20) prices: {otm_deep_count}/{len(df)} ({100*otm_deep_count/len(df):.0f}%)")
+    print(f"  Bars with deep OTM (+/-30) prices: {otm_deep_count}/{len(df)} ({100*otm_deep_count/len(df):.0f}%)")
     print(f"  Bars with option P&L: {pnl_count}/{len(df)} ({100*pnl_count/len(df):.0f}%)")
     print(f"  Bars flagged actionable (quality/risk mask): {actionable_count}/{len(df)} ({100*actionable_count/len(df):.0f}%)")
     print(f"  Bars with EXIT=1 (call): {exit_count}")
+    print(f"  ({time.time() - t0:.1f}s)")
+    print()
+
+    # --- v11: Setup Recognition + Regime Classification (pre-normalization) ---
+    print("Computing setup recognition and regime labels...")
+    t0 = time.time()
+    date_arr = np.array(dates)
+    setup_mask = detect_setups(raw_features, valid, date_arr)
+    regime_mask = compute_regime_labels(raw_features, valid, date_arr)
+    setup_count = int(np.sum(setup_mask))
+    regime_count = int(np.sum(regime_mask))
+    both_count = int(np.sum(setup_mask & regime_mask))
+    print(f"  Setup bars: {setup_count}/{valid_count} ({100*setup_count/max(valid_count,1):.1f}%)")
+    print(f"  Trending bars: {regime_count}/{valid_count} ({100*regime_count/max(valid_count,1):.1f}%)")
+    print(f"  Setup AND trending: {both_count}/{valid_count} ({100*both_count/max(valid_count,1):.1f}%)")
+    # Store in option_prices dict so it flows into prepare_tensors
+    if option_prices is not None:
+        option_prices['setup_mask'] = setup_mask.astype(np.float32)
+        option_prices['regime_mask'] = regime_mask.astype(np.float32)
     print(f"  ({time.time() - t0:.1f}s)")
     print()
 
