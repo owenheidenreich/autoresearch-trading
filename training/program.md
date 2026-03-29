@@ -88,6 +88,8 @@ The `_score_config` dictionary in train.py is **read-only**. You MUST NOT change
 
 **What to do instead:** Improve the model's actual TRADING BEHAVIOR by modifying loss hyperparameters (ENTROPY_COEFF, DO_NOTHING_BONUS), model architecture biases, or training dynamics. Improvements should be visible in raw metrics: profit factor, win rate, trades per day, drawdown.
 
+**Human-authorized update (2026-03-28):** `win_rate_bonus` 0→0.5, `rr_bonus` 0.3→0.1. Authorized by human operator based on Pickles' strategic directive: optimize for win rate with margin of error, not raw backtest P&L. Monte Carlo showed v14 is HINDSIGHT_DEPENDENT (30% WR, removing top 5% winners kills profitability). These values prior to this change should NOT be compared to values after.
+
 ### Loss Function Policy
 The core loss is multi-component `sniper_loss` (v14, proven in v10 score 16.73):
 - Gate: cross-entropy on binary trade/no-trade labels + time-of-day weighting
@@ -96,6 +98,11 @@ The core loss is multi-component `sniper_loss` (v14, proven in v10 score 16.73):
 - Confidence: penalize high confidence on losers
 - DIRECTION_ENTROPY_BONUS = 0.20 (hardcoded, prevents direction collapse)
 Current v14 defaults: GATE_W=0.95, DIR_W=1.5, PNL_W=1.5, EXIT_W=0.15, CONF_W=0.05, VALUE_W=0.0, RISK_W=0.2.
+
+**Win-rate-first levers (v14.1):**
+- `REG_GATE_MARGIN` (default 0.0): Minimum profit % to label a bar as TRADE. Filters marginal hindsight winners.
+- `REG_PNL_CLIP` (default 0.0): Cap P&L values in alignment loss at ±X. Prevents fat-tail chasing.
+- `REG_WIN_RATE` (default 0.0): Soft penalty when batch win rate < 45% target.
 
 ### What You MUST NOT Do
 - Modify the `forward()` method signature of TradingModel

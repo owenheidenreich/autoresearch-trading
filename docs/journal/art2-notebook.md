@@ -9,6 +9,7 @@ Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner
 ## Strategic Changes Tried
 | Cycle | Change | Replay PF Before | Replay PF After | Verdict |
 |-------|--------|------------------|-----------------|---------|
+| 009 | Win-rate-first restructure: gate margin, PnL clip, WR reg, score config | 2.77 | (pending) | Addresses HINDSIGHT_DEPENDENT verdict |
 | 008 | v14 pipeline integrity + doc cleanup + Monte Carlo | 2.77 | (current) | Infrastructure — no model changes |
 | 007 | v14 confirmation: re-eval v10 on 298-day set, proved v14 > v10 | N/A | 2.77 | v14 IS the best model. v10 scores 0.064 on same set. |
 | 006 | v8: revert v7, VALUE_W=0, EXIT_W=0.15, fresh start | 0.99 (v7) | 1.43 | Profitable but on 70-day val set (inflated). |
@@ -16,13 +17,16 @@ Outer loop (Opus) makes strategic decisions; inner loop (Sonnet agents via inner
 | 001-004 | v6 breakthrough → v7 experiments → PBT sweeps | N/A | various | See archive for details |
 
 ## Current Hypothesis
-**v14 is VIABLE but backtest P&L is hindsight-inflated.** Pickles (the trader): "backtests have advantage of hindsight, where something you would have never taken in the moment actually worked out on paper." Focus on **win rate with margin of error** rather than raw P&L to emulate the human factor. Monte Carlo stress-testing now validates robustness beyond single-path backtesting.
+**Win-rate-first restructure.** v14 is VIABLE (PF 2.77) but Monte Carlo verdict is HINDSIGHT_DEPENDENT — removing top 5% of winners kills profitability. The model chases lottery tickets (30% WR, +88.8% avg winner vs -13.5% avg loser).
 
-**Key v14 weaknesses (from cycle-008 research):**
-- Midday trades: PF 0.30, 64 trades avg -11% → suppress lunch entries
-- Short holds: 419 trades held ≤3 bars avg -7.4% → gate too jittery
-- EOD exits: 44 trades avg +264% → model should hold longer
-- Win rate 30% — needs improvement for real trading confidence
+Pickles (17yr trader, $100M+): "Stats are great but market don't give a hoot about stats. The stat is correct but the market goes into full fuckery mode to prove the stat right in the worst kind of way." Even statistically sound strategies fail because the PATH to profitability is psychologically unsurvivable.
+
+**Three root causes addressed:**
+1. Gate labels are pure hindsight (`best_pnl > 0.0`) → added `REG_GATE_MARGIN` (require meaningful profit)
+2. PnL alignment rewards fat tails (uncapped) → added `REG_PNL_CLIP` (cap at ±50%)
+3. Score blind to win rate (`win_rate_bonus: 0.0`) → enabled at 0.5, `rr_bonus` 0.3→0.1
+
+**Target:** WR >= 40%, PF >= 1.3, Monte Carlo ROBUST. A 45% WR / PF 1.5 model is more robust and tradeable than 30% WR / PF 2.77.
 
 ## Dead Ends (Strategic Level)
 | Change | Cycles | Result |

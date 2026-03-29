@@ -290,12 +290,15 @@ Priority order — stop at first YES:
 | Direction | 1.5 | TRAIN_DIR_W | Strike selection soft targets |
 | PnL Alignment | 1.5 | TRAIN_PNL_W | trade_prob × dir_probs × P&L (primary signal) |
 | Exit | 0.15 | TRAIN_EXIT_W | Exit label override strength (PBT drove toward 0) |
-| Confidence | 0.05 | TRAIN_CONF_W | Calibration loss (minimal) |
+| Confidence | 0.05 | TRAIN_CONF_W | Calibration loss (target 0.30 for win-rate-first) |
 | Value | 0.0 | TRAIN_VALUE_W | Disabled (proven destructive in v9) |
 | Risk | 0.2 | TRAIN_RISK_W | Stop + size + conviction |
 | DIRECTION_ENTROPY_BONUS | 0.20 | (hardcoded) | Prevents direction collapse (10x v12's 0.02) |
+| Gate Margin | 0.0 | REG_GATE_MARGIN | Min profit % to label TRADE (filters hindsight marginals) |
+| PnL Clip | 0.0 | REG_PNL_CLIP | Cap P&L in alignment loss (prevents fat-tail chasing) |
+| Win Rate Reg | 0.0 | REG_WIN_RATE | Soft penalty when batch WR < 45% target |
 
-**Unchanged from v10:** All loss weights identical to the v10 baseline that scored 16.73.
+**Win-rate-first restructure (v14.1):** Score config updated: `win_rate_bonus` 0→0.5, `rr_bonus` 0.3→0.1. Three new REG_* levers for gate conservatism, PnL clipping, and win rate regularization. Driven by Pickles' directive: optimize for win rate with margin of error, not raw backtest P&L.
 
 **Kept unchanged:** LR, BATCH_SIZE, DROPOUT, WEIGHT_DECAY, GRAD_CLIP, WARMUP_RATIO, COOLDOWN_RATIO, D_MODEL, DEPTH, N_HEADS, FF_MULT, REG_TEMPORAL_SMOOTH.
 

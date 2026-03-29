@@ -861,6 +861,9 @@ _PARAM_SPACE = {
     "WEIGHT_DAY_DIVERSITY":      {"lo": 0.0,  "hi": 2.0,  "scale": "linear", "tier": 3},
     "REG_GATE_ENTROPY":          {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 3},
     "REG_TEMPORAL_SMOOTH":       {"lo": 0.0,  "hi": 1.0,  "scale": "linear", "tier": 3},
+    "REG_GATE_MARGIN":           {"lo": 0.0,  "hi": 0.20, "scale": "linear", "tier": 2},
+    "REG_PNL_CLIP":              {"lo": 0.10, "hi": 1.50, "scale": "linear", "tier": 2},
+    "REG_WIN_RATE":              {"lo": 0.0,  "hi": 0.50, "scale": "linear", "tier": 2},
     "WARM_FREEZE_RATIO":         {"lo": 0.0,  "hi": 0.5,  "scale": "linear", "tier": 3},
     "TRAIN_DAY_SEQ_RATIO":       {"lo": 0.5,  "hi": 1.0,  "scale": "linear", "tier": 3},
 }
