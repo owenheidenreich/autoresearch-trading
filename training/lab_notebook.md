@@ -64,20 +64,18 @@ SPX 0DTE | 4-head gate+dir+value+risk (v14) | 38 features | 7-dim position state
 - **Feature noise doesn't work on warm start:** Both σ=0.03 and σ=0.01 caused degradation.
 
 ## Next Priorities
-**v14: EXACT V10 RESTORATION.** Warm start from `archive/models/v10/best_model.pt`. Target: reproduce score ~16.73.
+**v14 CONFIRMED AS BEST MODEL.** Replay PF 2.77 (+1,191% return, $10K→$129K). 537 trades, 30% WR, 91% model exits, 1% stop-loss exits. Score 0.138 on 298-day val set (score 0.064 for v10 on same set — v14 wins).
 
-**CURRENT STATE:** v14 code complete. data.pt rebuilt with 38 features. Gate labels restored to `pnl_ok.long()`. 6 raw candle features removed. Lookback=120. Ready for warm-start training.
+**CURRENT STATE:** Pipeline integrity overhaul complete. data.pt has provenance metadata + SHA256 sidecar. Feature mismatch is now FATAL. All experiments logged with data_fingerprint and num_val_days.
 
-**v14 HYPOTHESIS: v13's failure was a silent bug, not an architecture problem.**
-v13 appeared to restore v10 but silently ran v11's failed AND-gate labels (regime & setup & pnl_ok ≈ 1.6% TRADE) because data.pt had setup/regime mask fields. v14 fixes this by removing the v11 gate code entirely and reverting to pure `pnl_ok.long()` (~50% TRADE labels). With 38 features matching v10's architecture exactly, warm start from v10 weights should reproduce the 16.73 baseline.
-
-**AFTER v14 baseline confirmed, incremental improvements (one at a time):**
-1. VWAP bands (price vs ±1σ/±2σ) — Pickles' #1 signal, highest-leverage addition
-2. Lunch penalty in loss — 86% of trades during lunch = worst time
-3. Economic calendar flag — FOMC/CPI days have different dynamics
-4. ATR-normalized range — better stop sizing
+**Incremental improvements (one at a time, warm start):**
+1. VWAP bands (price vs ±1σ/±2σ) — Pickles' #1 signal, highest-leverage feature addition
+2. Lunch penalty in loss — time-of-day weighting to suppress low-quality lunch entries
+3. Gate confidence threshold — minimum gate probability before entering (execution-layer filter)
+4. EXIT_W tuning — model exits well (91% model_exit), but EXIT_W=0.15 is low vs proven range
+5. Regularization — DROPOUT (0.30), WEIGHT_DECAY (0.08) may have room for adjustment
 
 **Available levers:** GATE_W (0.95), DIR_W (1.5), PNL_W (1.5), CONF_W (0.05), EXIT_W (0.15), VALUE_W (0.0), RISK_W (0.2), DROPOUT (0.30), WEIGHT_DECAY (0.08), LR (2.5e-4), BATCH_SIZE (1024).
 
-**AVOID:** Regime/setup gate labels, unified action head, multiple simultaneous changes, new nn.Module subclasses, score config changes.
+**AVOID:** Regime/setup gate labels, unified action head, multiple simultaneous changes, new nn.Module subclasses, score config changes, VALUE_W>0 (proven destructive).
 Do NOT repeat approaches from What Fails.

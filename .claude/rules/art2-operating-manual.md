@@ -211,7 +211,6 @@ Account state  (4 dims): growth_ratio, log_account_size, daily_pnl_frac, win_rat
 | File | Read by | Purpose |
 |------|---------|---------|
 | `tools/opus-prompt.md` | art2.py `_invoke_opus()` | System prompt for programmatic Opus decisions |
-| `docs/domain/0dte-domain-knowledge.md` | art2.py `_invoke_opus()` | Domain knowledge injected into Opus prompt |
 | `docs/domain/pickles-trading-knowledge.md` | art2.py `_invoke_opus()` | Domain knowledge injected into Opus prompt |
 | `training/lab_notebook.md` | art2.py `cmd_report()` | Sections extracted into briefing (What Fails, Best Runs, Next Priorities) |
 | `docs/journal/art2-notebook.md` | art2.py `cmd_report()` | Outer loop memory included in briefing |
@@ -255,7 +254,7 @@ Priority order — stop at first YES:
 - **Time-of-day:** 9:35-10:30 trends. 11:30-13:30 chop (avoid). 15:30+ extreme gamma.
 - **VIX:** <15 tight, 15-20 normal, 20-30 wide stops, >30 crisis. Transitions most dangerous.
 - **Exits > Entries.** ATM preferred. "Always take profits off the table."
-- Full reference: `docs/domain/0dte-domain-knowledge.md`, `docs/domain/pickles-trading-knowledge.md`
+- Full reference: `docs/domain/pickles-trading-knowledge.md`
 
 ## 10. Policies
 

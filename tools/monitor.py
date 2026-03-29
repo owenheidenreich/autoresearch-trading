@@ -213,11 +213,30 @@ def load_pbt_state(experiments: list[dict] | None = None,
     except (json.JSONDecodeError, OSError):
         return None
 
-    # Merge PBT experiments from all local runs to survive deployment changes
+    # Merge PBT experiments from local runs that belong to THIS PBT run.
+    # Parse start time from pbt_run_id (format: pbt-YYYY-MM-DD-HHMMSS) to filter.
+    pbt_run_id = raw.get("pbt_run_id", "")
+    pbt_start_ts = None
+    if pbt_run_id.startswith("pbt-"):
+        try:
+            pbt_start_ts = datetime.strptime(pbt_run_id[4:], "%Y-%m-%d-%H%M%S")
+        except ValueError:
+            pass
+
     all_pbt_experiments = list(experiments or [])
-    if runs:
+    if runs and pbt_start_ts:
         existing_ids = {e.get("id") for e in all_pbt_experiments}
         for run in runs:
+            # Only include runs that started at or after this PBT run
+            run_name = run.get("name", "")
+            run_ts = None
+            if run_name.startswith("run-"):
+                try:
+                    run_ts = datetime.strptime(run_name[4:], "%Y-%m-%d-%H%M%S")
+                except ValueError:
+                    pass
+            if run_ts and run_ts < pbt_start_ts - timedelta(minutes=5):
+                continue
             for e in run.get("experiments", []):
                 if e.get("pbt_generation") is not None and e.get("id") not in existing_ids:
                     all_pbt_experiments.append(e)
@@ -319,20 +338,42 @@ def load_pbt_state(experiments: list[dict] | None = None,
 
 
 def _summarize_config(config: dict) -> str:
-    """Create a short string summarizing non-default PBT config values."""
-    # Show the most important deviations from defaults
-    defaults = {
-        "TRAIN_GATE_W": 0.95, "TRAIN_DIR_W": 1.5, "TRAIN_PNL_W": 1.5,
-        "TRAIN_VALUE_W": 0.30, "TRAIN_RISK_W": 0.2, "TRAIN_CONF_W": 0.05,
-        "TRAIN_EXIT_W": 0.30,
+    """Create a short string summarizing PBT config values.
+
+    Shows the most distinctive parameters with abbreviated names.
+    """
+    if not config:
+        return "defaults"
+    # Abbreviation map: prefix-strip + short names for readability (v13)
+    abbrev = {
+        "TRAIN_LR": "lr", "TRAIN_WEIGHT_DECAY": "wd", "TRAIN_DROPOUT": "do",
+        "TRAIN_WARMUP_RATIO": "warm", "TRAIN_COOLDOWN_RATIO": "cool",
+        "TRAIN_GRAD_CLIP": "gc", "WEIGHT_RECENT_BOOST": "rcnt",
+        "WEIGHT_DAY_DIVERSITY": "div", "REG_GATE_ENTROPY": "gent",
+        "REG_TEMPORAL_SMOOTH": "tsmth", "WARM_FREEZE_RATIO": "frz",
+        "TRAIN_DAY_SEQ_RATIO": "seq",
+        "TRAIN_GATE_W": "GATE", "TRAIN_DIR_W": "DIR",
+        "TRAIN_PNL_W": "PNL", "TRAIN_CONF_W": "CONF",
+        "TRAIN_EXIT_W": "EXIT", "TRAIN_VALUE_W": "VAL",
+        "TRAIN_RISK_W": "RISK",
     }
-    diffs = []
-    for k, default in defaults.items():
+    # Priority keys to show first (most impactful for v13 sniper_loss)
+    priority = ["TRAIN_GATE_W", "TRAIN_DIR_W", "TRAIN_PNL_W", "TRAIN_RISK_W",
+                "TRAIN_LR", "TRAIN_DROPOUT", "TRAIN_WEIGHT_DECAY"]
+    items = []
+    shown = set()
+    for k in priority:
         v = config.get(k)
-        if v is not None and abs(v - default) > 0.001:
-            short_name = k.replace("TRAIN_", "").replace("_W", "")
-            diffs.append(f"{short_name}={v:.2f}")
-    return ", ".join(diffs[:4]) or "defaults"
+        if v is not None:
+            name = abbrev.get(k, k.replace("TRAIN_", "").replace("_W", ""))
+            items.append(f"{name}={v:.3g}")
+            shown.add(k)
+    for k, v in config.items():
+        if k in shown or v is None:
+            continue
+        name = abbrev.get(k, k.replace("TRAIN_", ""))
+        items.append(f"{name}={v:.2g}")
+    return ", ".join(items[:5]) or "defaults"
 
 
 def detect_training_mode(experiments: list[dict]) -> str:
@@ -737,6 +778,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     padding: 4px 6px;
     text-align: center;
   }
+  .stat-card[title] { cursor: help; }
   .stat-value { font-size: 15px; font-weight: 700; }
   .stat-label { font-size: 8px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-green { color: var(--green); }
@@ -947,6 +989,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
+    cursor: help;
   }
   .training-mode-opus { background: rgba(88,166,255,0.2); color: var(--cyan); }
   .training-mode-pbt { background: rgba(188,140,255,0.2); color: var(--purple); }
@@ -1101,12 +1144,12 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           <span id="time-remaining"></span>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-value stat-green" id="stat-kept">--</div><div class="stat-label">Kept</div></div>
-          <div class="stat-card"><div class="stat-value stat-red" id="stat-failed">--</div><div class="stat-label">Failed</div></div>
-          <div class="stat-card"><div class="stat-value stat-cyan" id="stat-total">--</div><div class="stat-label">Total</div></div>
-          <div class="stat-card"><div class="stat-value stat-green" id="stat-best">--</div><div class="stat-label">Best Score</div></div>
-          <div class="stat-card"><div class="stat-value stat-yellow" id="stat-rate">--</div><div class="stat-label">Exp/hr</div></div>
-          <div class="stat-card"><div class="stat-value" id="stat-contract" style="font-size:10px;color:var(--text-dim)">--</div><div class="stat-label">Contract</div></div>
+          <div class="stat-card" title="Experiments that beat the previous best score and were promoted"><div class="stat-value stat-green" id="stat-kept">--</div><div class="stat-label">Kept</div></div>
+          <div class="stat-card" title="Experiments that crashed or had errors during training"><div class="stat-value stat-red" id="stat-failed">--</div><div class="stat-label">Failed</div></div>
+          <div class="stat-card" title="Total experiments run this deployment"><div class="stat-value stat-cyan" id="stat-total">--</div><div class="stat-label">Total</div></div>
+          <div class="stat-card" title="Composite score = PF × Sharpe × frequency multiplier × penalties. Higher = better trading. Negative = losing money."><div class="stat-value stat-green" id="stat-best">--</div><div class="stat-label">Best Score</div></div>
+          <div class="stat-card" title="How fast experiments are completing"><div class="stat-value stat-yellow" id="stat-rate">--</div><div class="stat-label">Exp/hr</div></div>
+          <div class="stat-card" title="Hash of program.md — ensures the training contract hasn't drifted"><div class="stat-value" id="stat-contract" style="font-size:10px;color:var(--text-dim)">--</div><div class="stat-label">Contract</div></div>
         </div>
         <div class="stats-grid" style="margin-top:3px;">
           <div class="stat-card"><div class="stat-value stat-yellow" id="stat-cost" style="font-size:13px">--</div><div class="stat-label">API Cost</div></div>
@@ -1120,10 +1163,11 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <!-- Row 2: PBT Population (shown only in PBT mode) -->
   <div class="panel full-row pbt-panel" id="pbt-panel" style="display:none">
     <div class="panel-header">
-      PBT Population
+      PBT Sweep
       <span id="pbt-header-info" style="font-weight:400;color:var(--text-dim);font-size:9px"></span>
     </div>
     <div class="panel-body" style="padding:0">
+      <div id="pbt-status-bar" style="padding:5px 10px;font-size:10px;color:var(--text-dim);border-bottom:1px solid var(--border);display:none"></div>
       <div style="overflow:auto;max-height:180px;" id="pbt-gens-container"></div>
     </div>
   </div>
@@ -1154,7 +1198,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <!-- Row 4 Left: Experiments + Code/Log stacked -->
   <div class="left-stack">
     <div class="panel">
-      <div class="panel-header">Experiments <span id="exp-count" style="font-weight:400;color:var(--text-dim)"></span></div>
+      <div class="panel-header"><span id="exp-panel-title">Experiments</span> <span id="exp-count" style="font-weight:400;color:var(--text-dim)"></span></div>
       <div class="panel-body" style="padding:0">
         <div style="overflow:auto;max-height:240px;">
           <table id="exp-table">
@@ -1392,8 +1436,14 @@ async function update() {
     // Training mode badge
     const modeBadge = document.getElementById('training-mode-badge');
     const tm = data.training_mode || 'unknown';
-    const modeLabels = {opus: 'OPUS-DRIVEN', pbt: 'PBT SWEEP', unknown: 'UNKNOWN'};
+    const modeLabels = {opus: 'SEQUENTIAL', pbt: 'PBT SWEEP', unknown: 'UNKNOWN'};
+    const modeTips = {
+      opus: 'Sequential mode: AI proposes one experiment at a time, each warm-starting from the best model. Score must improve to keep.',
+      pbt: 'Population-Based Training: evolutionary hyperparameter search. N members compete per generation, best survive and mutate.',
+      unknown: 'Training mode not detected'
+    };
     modeBadge.textContent = modeLabels[tm] || tm;
+    modeBadge.title = modeTips[tm] || '';
     modeBadge.className = 'training-mode-badge training-mode-' + tm;
 
     // Stale check
@@ -1522,8 +1572,44 @@ async function update() {
       const pbtHash = JSON.stringify(pbt).length + '_' + (pbt.current_member || 0);
       if (pbtHash !== lastPbtHash) {
         lastPbtHash = pbtHash;
-        document.getElementById('pbt-header-info').textContent =
-          `Gen ${pbt.generation}/${pbt.max_generations} | Pop ${pbt.population_size} | Focus: ${pbt.focus} | Best: ${pbt.best_pbt_score > 0 ? pbt.best_pbt_score.toFixed(2) : '--'} | Base: ${pbt.base_score > 0 ? pbt.base_score.toFixed(2) : '--'}${pbt.stagnation_count > 0 ? ' | Stag: ' + pbt.stagnation_count : ''}`;
+
+        // Compact header — just the focus area
+        document.getElementById('pbt-header-info').textContent = `(${pbt.focus})`;
+
+        // Human-readable status bar
+        const totalMembers = pbt.max_generations * pbt.population_size;
+        const completedGens = pbt.generations.filter(g => !g.in_progress).length;
+        const inProgressDone = pbt.generations.filter(g => g.in_progress).reduce((s,g) => s + g.completed, 0);
+        const totalDone = completedGens * pbt.population_size + inProgressDone;
+        const remaining = totalMembers - totalDone;
+        const budgetMin = (pbt.time_budget_per_member || 300) / 60;
+        const etaMin = remaining * budgetMin;
+        const etaStr = etaMin >= 60 ? `~${(etaMin/60).toFixed(1)}h` : `~${Math.round(etaMin)}m`;
+
+        const bestPbt = pbt.best_pbt_score > 0 ? pbt.best_pbt_score.toFixed(2) : null;
+        const base = pbt.base_score > 0 ? pbt.base_score.toFixed(2) : null;
+        const beating = pbt.best_pbt_score > pbt.base_score;
+
+        // Line 1: What's happening + progress
+        let line1 = `Generation ${pbt.generation + 1} of ${pbt.max_generations}`;
+        line1 += ` &mdash; training member ${pbt.current_member + 1} of ${pbt.population_size}`;
+        line1 += ` &nbsp;<span style="color:var(--text-dim)">(${totalDone}/${totalMembers} total, ${etaStr} remaining)</span>`;
+
+        // Line 2: Is it working?
+        let line2 = '';
+        if (bestPbt && base) {
+          if (beating) {
+            line2 = `<span style="color:var(--green)">&#10003; Found improvement:</span> best PBT score ${bestPbt} beats baseline ${base}`;
+          } else if (pbt.stagnation_count > 0) {
+            line2 = `<span style="color:var(--yellow)">&#9888; No improvement yet</span> &mdash; ${pbt.stagnation_count} generation${pbt.stagnation_count > 1 ? 's' : ''} tested, none beat baseline score of ${base}`;
+          } else {
+            line2 = `Baseline score: ${base} &mdash; searching for better hyperparameters`;
+          }
+        }
+
+        const statusBar = document.getElementById('pbt-status-bar');
+        statusBar.style.display = '';
+        statusBar.innerHTML = line1 + (line2 ? '<br>' + line2 : '');
 
         const container = document.getElementById('pbt-gens-container');
         const allScores = pbt.generations.flatMap(g =>
@@ -1589,7 +1675,9 @@ async function update() {
       }
     }
 
-    // Experiments table — adapt columns for PBT mode
+    // Experiments table — adapt title and columns for mode
+    document.getElementById('exp-panel-title').textContent =
+      isPbt ? 'PBT Experiments' : (tm === 'opus' ? 'Sequential Experiments' : 'Experiments');
     const theadRow = document.getElementById('exp-thead-row');
     if (isPbt && !theadRow.dataset.pbt) {
       theadRow.dataset.pbt = '1';

@@ -647,6 +647,11 @@ def _preflight_validate() -> bool:
     train_py = PROJECT_ROOT / "training" / "train.py"
     best_py = PROJECT_ROOT / "training" / "best_train.py"
 
+    # Ensure training package is importable
+    import sys as _sys
+    if str(PROJECT_ROOT) not in _sys.path:
+        _sys.path.insert(0, str(PROJECT_ROOT))
+
     # 1. Syntax check
     for f in [train_py, best_py]:
         if not f.exists():
@@ -694,11 +699,19 @@ def _preflight_validate() -> bool:
                 issues.append(f"data.pt missing fields: {', '.join(missing)}")
             else:
                 n_feat = data['features'].shape[1] if len(data['features'].shape) > 1 else 0
-                if n_feat != 37:
-                    issues.append(f"data.pt has {n_feat} features, expected 37 (v3)")
+                from training.run_loop import FEATURE_LOCK_COUNT
+                if n_feat != FEATURE_LOCK_COUNT:
+                    issues.append(f"data.pt has {n_feat} features, expected {FEATURE_LOCK_COUNT}")
                 log(f"  data.pt: {data['features'].shape[0]} bars, {n_feat} features ✓")
         except Exception as e:
             issues.append(f"Failed to load data.pt: {e}")
+
+    # 4. Version consistency check
+    if train_py.exists():
+        from training.run_loop import validate_version_consistency
+        vc_err = validate_version_consistency(train_py.read_text())
+        if vc_err:
+            issues.append(vc_err)
 
     # Report
     if issues:
@@ -2172,7 +2185,29 @@ def cmd_viability(args: argparse.Namespace) -> bool:
     tod_val = _tod_analysis(val_trades)
     tod_full = _tod_analysis(full_trades)
 
-    # --- 7. Overall Verdict ---
+    # --- 7. Monte Carlo Stress Test ---
+    mc_results = None
+    val_csv = val_dir / "backtest_trades.csv"
+    if not val_csv.exists():
+        val_csv = val_dir / "trade_log.csv"
+    if val_csv.exists() and len(val_trades) >= 20:
+        try:
+            mc_mod_path = PROJECT_ROOT / "tools" / "monte_carlo.py"
+            if mc_mod_path.exists():
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("monte_carlo", mc_mod_path)
+                mc_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mc_mod)
+                log("Running Monte Carlo stress test (10K simulations)...")
+                mc_results = mc_mod.run_analysis(str(val_csv), n_sims=10000)
+                log(f"  MC verdict: {mc_results.get('verdict', '?')} — "
+                    f"{mc_results.get('verdict_reason', '')[:80]}")
+        except Exception as e:
+            log(f"Monte Carlo analysis failed: {e}")
+    elif len(val_trades) < 20:
+        log("Skipping Monte Carlo — insufficient trades (<20)")
+
+    # --- 8. Overall Verdict ---
     red_flags = []
     green_flags = []
 
@@ -2204,6 +2239,16 @@ def cmd_viability(args: argparse.Namespace) -> bool:
 
     if m_val["num_trades"] < 30:
         red_flags.append(f"Insufficient sample size ({m_val['num_trades']} val trades, need 30+)")
+
+    # Monte Carlo flags
+    if mc_results:
+        mc_verdict = mc_results.get("verdict", "")
+        if mc_verdict == "ROBUST":
+            green_flags.append(f"Monte Carlo: ROBUST — profitable under stress scenarios")
+        elif mc_verdict == "HINDSIGHT_DEPENDENT":
+            red_flags.append(f"Monte Carlo: HINDSIGHT_DEPENDENT — removing top 5% winners kills profitability")
+        elif mc_verdict == "FRAGILE":
+            red_flags.append(f"Monte Carlo: FRAGILE — breaks under random resampling stress")
 
     # Verdict
     if len(red_flags) == 0 and len(green_flags) >= 3:
@@ -2244,6 +2289,8 @@ def cmd_viability(args: argparse.Namespace) -> bool:
         "exit_quality": {"val": exit_val, "full": exit_full},
         "time_of_day": {"val": tod_val, "full": tod_full},
     }
+    if mc_results:
+        viability["monte_carlo"] = mc_results
 
     write_json(viability_dir / "viability.json", viability)
 
@@ -2333,6 +2380,42 @@ def cmd_viability(args: argparse.Namespace) -> bool:
                 f"| {entry['pf']:.2f} | {entry['total_pnl']:+.2f}% | {entry['win_rate']:.0f}% |"
             )
         lines.append("")
+
+    if mc_results:
+        lines.append("## Monte Carlo Stress Test (10K simulations)")
+        lines.append(f"**Verdict: {mc_results.get('verdict', '?')}** — {mc_results.get('verdict_reason', '')}")
+        lines.append("")
+        boot = mc_results.get("bootstrap", {})
+        lines.append("### Bootstrap Resampling")
+        lines.append(f"- Median return: {boot.get('median_return_pct', 0):+.1f}%  "
+                     f"[5th: {boot.get('p5_return_pct', 0):+.1f}%, 95th: {boot.get('p95_return_pct', 0):+.1f}%]")
+        lines.append(f"- Median max drawdown: {boot.get('median_max_drawdown_pct', 0):.1f}%  "
+                     f"[95th worst: {boot.get('p95_max_drawdown_pct', 0):.1f}%]")
+        lines.append(f"- Ruin probability: {boot.get('ruin_probability', 0):.2%}")
+        lines.append(f"- Consec losses: median {boot.get('median_consec_losses', 0)}, "
+                     f"95th {boot.get('p95_consec_losses', 0)}, 99th {boot.get('p99_consec_losses', 0)}")
+        lines.append("")
+        hs = mc_results.get("hindsight_removal", {})
+        if hs:
+            lines.append("### Hindsight Removal")
+            for key, val in hs.items():
+                status = "PROFITABLE" if val.get("bootstrap_profitable") else "UNPROFITABLE"
+                lines.append(f"- {key}: WR {val.get('win_rate', 0):.1%}, "
+                             f"PF {val.get('profit_factor', 0):.2f}, "
+                             f"median return {val.get('median_return_pct', 0):+.1f}% — **{status}**")
+            lines.append("")
+        sens = mc_results.get("win_rate_sensitivity", {})
+        if sens:
+            lines.append("### Win Rate Sensitivity")
+            for key, val in sens.items():
+                if key == "breakeven_win_rate":
+                    lines.append(f"- **Breakeven win rate: {val:.1%}** (actual: {mc_results.get('actual_metrics', {}).get('win_rate', 0):.1%})")
+                else:
+                    status = "BROKEN" if val.get("broken") else "OK"
+                    lines.append(f"- {key}: target WR {val.get('target_win_rate', 0):.1%}, "
+                                 f"median return {val.get('median_return_pct', 0):+.1f}%, "
+                                 f"ruin {val.get('ruin_probability', 0):.1%} — {status}")
+            lines.append("")
 
     report_text = "\n".join(lines)
     report_path = viability_dir / "viability.md"
@@ -3194,7 +3277,7 @@ def _invoke_opus(briefing_path: Path, cycle_dir_path: Path,
 
     # Load domain knowledge files so Opus can make informed decisions
     domain_knowledge = ""
-    for dk_file in ["0dte-domain-knowledge.md", "pickles-trading-knowledge.md"]:
+    for dk_file in ["pickles-trading-knowledge.md"]:
         dk_path = PROJECT_ROOT / "docs" / "domain" / dk_file
         if dk_path.exists():
             domain_knowledge += f"\n\n--- {dk_file} ---\n{dk_path.read_text()}\n"
@@ -3690,8 +3773,158 @@ def cmd_daemon(args: argparse.Namespace) -> None:
                     log(f"Market-constrained: {effective_minutes} → {max_safe} min")
                     effective_minutes = max_safe
 
-            # 4. Run cycle
-            log(f"=== DAEMON CYCLE {cycles_completed + 1}/{max_cycles} ({effective_minutes} min) ===")
+            # ================================================================
+            # PHASE A: RESEARCH & DECIDE (no GPU — free)
+            #
+            # This phase is the core of ART². It must:
+            # 1. Analyze ALL existing data (replay trades, experiments, metrics)
+            # 2. Cross-reference with domain knowledge (0DTE Greeks, Pickles, etc.)
+            # 3. Form multiple hypotheses grounded in data + domain knowledge
+            # 4. Select the best hypothesis
+            # 5. Implement complete code changes
+            # 6. Verify changes are syntactically correct
+            #
+            # NO GPU is booted until this phase completes with a tested hypothesis.
+            # ================================================================
+            log(f"=== DAEMON CYCLE {cycles_completed + 1}/{max_cycles} ===")
+            log("PHASE A: Research & Decide (no GPU)")
+            _write_heartbeat("researching", cycles_completed, remaining)
+
+            # Use current cycle for research (cmd_train will increment for training)
+            state = load_state()
+            cycle_num = state.get("cycle", 0)
+            cdir = cycle_dir(cycle_num) if cycle_num > 0 else cycle_dir(1)
+            cdir.mkdir(parents=True, exist_ok=True)
+
+            # A1. Mechanical research: analyze replay trades against domain rules
+            #     Produces research.json with time-of-day, exit quality, strike perf, etc.
+            log("A1: Running mechanical research on replay data...")
+            research_args = argparse.Namespace(dry_run=dry_run)
+            research_ok = cmd_research(research_args)
+            if research_ok:
+                log("  Research findings generated")
+            else:
+                log("  No prior replay data — first cycle or fresh start")
+
+            # A2. Generate briefing: combines analysis + research + lab notebook + state
+            log("A2: Generating briefing for strategic decision...")
+            report_args = argparse.Namespace(dry_run=dry_run)
+            cmd_report(report_args)
+
+            # A3. Strategic decision: Opus reads briefing + domain knowledge,
+            #     forms hypotheses, selects best one, writes code changes.
+            #     This is where the REAL research happens — Opus cross-references
+            #     trade data with 0DTE domain knowledge and Pickles trading wisdom.
+            log("A3: Invoking Opus for deep research + hypothesis + code changes...")
+            decided_action = None
+            analysis = read_json(cdir / "analysis.json")
+
+            # Check previous cycle's analysis if current doesn't exist yet
+            if not analysis:
+                prev_cdir = cycle_dir(cycle_num - 1) if cycle_num > 1 else None
+                if prev_cdir and (prev_cdir / "analysis.json").exists():
+                    analysis = read_json(prev_cdir / "analysis.json")
+
+            if analysis:
+                rec = compute_recommended_action(analysis)
+                log(f"  Recommendation: {rec['action']} ({rec['label']}) — "
+                    f"confidence={rec['confidence']}")
+            else:
+                rec = {"action": "A", "label": "Continue training", "confidence": "high", "path": ["first_cycle"]}
+                log("  No prior analysis — first cycle, training with current config")
+
+            if rec["action"] == "A" and rec["confidence"] == "high":
+                _auto_decide(cycle_num, rec, analysis or {})
+                decided_action = "A"
+            elif claude_bin:
+                briefing_path = cdir / "briefing.md"
+                if not briefing_path.exists():
+                    prev_briefing = cycle_dir(cycle_num - 1) / "briefing.md" if cycle_num > 1 else None
+                    if prev_briefing and prev_briefing.exists():
+                        briefing_path = prev_briefing
+
+                decision = _invoke_opus(briefing_path, cdir, claude_bin)
+                if decision is None:
+                    if rec["action"] == "A":
+                        log("  Opus failed — falling back to auto-decide")
+                        _auto_decide(cycle_num, rec, analysis or {})
+                        decided_action = "A"
+                    else:
+                        _alert("Opus Failed", f"Could not get strategic decision for action {rec['action']}",
+                               critical=False)
+                        _pause("opus_failed")
+                        continue
+                elif decision.get("needs_human"):
+                    _alert("Opus Defers",
+                           decision.get("rationale", "Needs human review"),
+                           critical=False)
+                    _pause("opus_defers")
+                    continue
+                else:
+                    decided_action = decision.get("action", "A")
+
+                    # Log the research that went into this decision
+                    if decision.get("research_findings"):
+                        log(f"  Research: {decision['research_findings'][:200]}")
+                    if decision.get("selected_hypothesis"):
+                        log(f"  Hypothesis: {decision['selected_hypothesis'][:200]}")
+                    if decision.get("expected_outcome"):
+                        log(f"  Expected: {decision['expected_outcome'][:200]}")
+
+                    # Snapshot BEFORE applying strategic changes (Actions B-G)
+                    if decided_action != "A":
+                        pending_snapshot = _snapshot_pipeline(cycle_num)
+                        pending_snapshot_action = decided_action
+                        log(f"  Snapshot taken before action {decided_action}")
+
+                    # A4. Apply code changes (file_edits from Opus)
+                    log("A4: Applying code changes from hypothesis...")
+                    effective_minutes = _apply_opus_decision(decision, cycle_num)
+
+                    # A5. Verify syntax of modified files
+                    log("A5: Verifying code changes...")
+                    for edit in decision.get("file_edits", []) + decision.get("doc_edits", []):
+                        epath = edit.get("path", "")
+                        if epath.endswith(".py"):
+                            full_path = PROJECT_ROOT / epath
+                            if full_path.exists():
+                                try:
+                                    import py_compile
+                                    py_compile.compile(str(full_path), doraise=True)
+                                    log(f"  {epath}: syntax OK")
+                                except py_compile.PyCompileError as e:
+                                    log(f"  ERROR: {epath} has syntax error: {e}")
+                                    log("  Reverting to snapshot — will not train broken code")
+                                    if pending_snapshot:
+                                        _compare_pipeline(cycle_num, pending_snapshot)
+                                        pending_snapshot = None
+                                    _pause("syntax_error")
+                                    break
+                    else:
+                        # No syntax errors — ready for training
+                        log(f"  All code changes verified. Hypothesis ready for GPU test.")
+            elif rec["action"] == "A":
+                _auto_decide(cycle_num, rec, analysis or {})
+                decided_action = "A"
+            else:
+                _alert(f"Action {rec['action']}: {rec['label']}",
+                       f"No Claude CLI for autonomous execution. {rec.get('reason', '')}",
+                       critical=(rec["action"] == "F"))
+                _pause(f"action_{rec['action']}_no_cli")
+                continue
+
+            # ================================================================
+            # PHASE B: TRAIN & VALIDATE (GPU — costs money)
+            #
+            # Only reached after Phase A completes with:
+            # - Research findings documented
+            # - Hypothesis selected and justified
+            # - Code changes applied and syntax-verified
+            # ================================================================
+            log(f"PHASE B: Train & Validate (GPU, {effective_minutes} min)")
+            log(f"  Testing: {decided_action} — "
+                f"{(decision or {}).get('selected_hypothesis', 'continuing with current config')[:150]}"
+                if decided_action != "A" else "  Continuing with current config (action A)")
             _write_heartbeat("training", cycles_completed, remaining)
 
             cycle_args = argparse.Namespace(
@@ -3717,8 +3950,8 @@ def cmd_daemon(args: argparse.Namespace) -> None:
 
             consecutive_failures = 0
 
-            # 4b. Outer loop comparison — if a snapshot is pending from
-            #     a previous cycle's strategic change, compare now.
+            # B2. Outer loop comparison — if a snapshot is pending from
+            #     this cycle's strategic change, compare now.
             state = load_state()
             cycle_num = state.get("cycle", 0)
             cdir = cycle_dir(cycle_num)
@@ -3737,63 +3970,6 @@ def cmd_daemon(args: argparse.Namespace) -> None:
                         f"replay PF maintained or improved")
                 pending_snapshot = None
                 pending_snapshot_action = None
-
-            # 5. Make strategic decision
-            analysis = read_json(cdir / "analysis.json")
-
-            if not analysis:
-                log("No analysis.json — skipping decision")
-                cycles_completed += 1
-                continue
-
-            rec = compute_recommended_action(analysis)
-            log(f"Recommendation: {rec['action']} ({rec['label']}) — "
-                f"confidence={rec['confidence']}")
-            log(f"  Path: {' → '.join(rec.get('path', []))}")
-
-            # Determine the action that will be taken
-            decided_action = None
-
-            if rec["action"] == "A" and rec["confidence"] == "high":
-                _auto_decide(cycle_num, rec, analysis)
-                decided_action = "A"
-            elif claude_bin:
-                # ALL actions go through Opus — full autonomy
-                decision = _invoke_opus(cdir / "briefing.md", cdir, claude_bin)
-                if decision is None:
-                    if rec["action"] == "A":
-                        log("Opus failed — falling back to auto-decide for action A")
-                        _auto_decide(cycle_num, rec, analysis)
-                        decided_action = "A"
-                    else:
-                        _alert("Opus Failed", f"Could not get strategic decision for action {rec['action']}",
-                               critical=False)
-                        _pause("opus_failed")
-                        continue
-                elif decision.get("needs_human"):
-                    _alert("Opus Defers",
-                           decision.get("rationale", "Needs human review"),
-                           critical=False)
-                    _pause("opus_defers")
-                    continue
-                else:
-                    decided_action = decision.get("action", "A")
-                    # Snapshot BEFORE applying strategic changes (Actions B-F)
-                    if decided_action != "A":
-                        pending_snapshot = _snapshot_pipeline(cycle_num)
-                        pending_snapshot_action = decided_action
-                        log(f"Outer loop snapshot taken before action {decided_action}")
-                    effective_minutes = _apply_opus_decision(decision, cycle_num)
-            elif rec["action"] == "A":
-                _auto_decide(cycle_num, rec, analysis)
-                decided_action = "A"
-            else:
-                # No claude CLI available for non-A actions
-                _alert(f"Action {rec['action']}: {rec['label']}",
-                       f"No Claude CLI for autonomous execution. {rec.get('reason', '')}",
-                       critical=(rec["action"] == "F"))
-                _pause(f"action_{rec['action']}_no_cli")
-                continue
 
             cycles_completed += 1
             _write_heartbeat("between_cycles", cycle_num, _remaining_budget(budget))
