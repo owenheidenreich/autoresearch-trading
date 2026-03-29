@@ -85,6 +85,20 @@ def _save_state(state: dict):
     STATE_FILE.write_text(json.dumps(state, indent=2, default=str))
 
 
+def _score_config_fingerprint() -> str:
+    """Hash _score_config dict from train.py. Changes mean scores are incomparable."""
+    import hashlib, re
+    try:
+        code = TRAIN_PY.read_text()
+        # Extract _score_config block
+        m = re.search(r'_score_config\s*=\s*\{([^}]+)\}', code)
+        if m:
+            return hashlib.sha256(m.group(0).encode()).hexdigest()[:16]
+    except Exception:
+        pass
+    return "unknown"
+
+
 # ---------------------------------------------------------------------------
 # SSH/SCP helpers
 # ---------------------------------------------------------------------------
@@ -321,6 +335,7 @@ def cmd_init(args):
         "kept_count": 0,
         "total_count": 0,
         "started_at": datetime.now(timezone.utc).isoformat(),
+        "_score_config_fingerprint": _score_config_fingerprint(),
     }
     _save_state(state)
 
@@ -363,6 +378,25 @@ def cmd_experiment(args):
                 state = _load_state()
         except (ValueError, OSError):
             pass
+
+    # Score config drift detection: if _score_config changed since last experiment,
+    # the stored best_score is incomparable. Auto-reset to -5.0.
+    _sc_fingerprint = _score_config_fingerprint()
+    _stored_fp = state.get("_score_config_fingerprint")
+    if _stored_fp and _sc_fingerprint != _stored_fp:
+        _log.warning(
+            f"SCORE CONFIG CHANGED (fingerprint {_stored_fp[:8]}→{_sc_fingerprint[:8]}). "
+            f"Resetting best_score from {state['best_score']:.4f} to -5.0 — "
+            f"old scores are incomparable under new config."
+        )
+        state["best_score"] = -5.0
+        BEST_SCORE_FILE.write_text("-5.0")
+        state["_score_config_fingerprint"] = _sc_fingerprint
+        _save_state(state)
+    elif not _stored_fp:
+        # First time: store fingerprint without resetting
+        state["_score_config_fingerprint"] = _sc_fingerprint
+        _save_state(state)
 
     _log.info("=" * 60)
     _log.info("TRAINING MODE: SEQUENTIAL (single experiment, warm-start)")

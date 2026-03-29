@@ -141,6 +141,9 @@ WEIGHT_RECENT_BOOST = _env_float("WEIGHT_RECENT_BOOST", 0.0, lo=0.0, hi=2.0)
 WEIGHT_DAY_DIVERSITY = _env_float("WEIGHT_DAY_DIVERSITY", 0.0, lo=0.0, hi=2.0)
 REG_GATE_ENTROPY = _env_float("REG_GATE_ENTROPY", 0.0, lo=0.0, hi=1.0)
 REG_TEMPORAL_SMOOTH = _env_float("REG_TEMPORAL_SMOOTH", 0.0, lo=0.0, hi=1.0)
+REG_GATE_MARGIN = _env_float("REG_GATE_MARGIN", 0.0, lo=0.0, hi=0.50)
+REG_PNL_CLIP = _env_float("REG_PNL_CLIP", 0.0, lo=0.0, hi=2.0)
+REG_WIN_RATE = _env_float("REG_WIN_RATE", 0.0, lo=0.0, hi=1.0)
 WARM_FREEZE_RATIO = _env_float("WARM_FREEZE_RATIO", 0.0, lo=0.0, hi=0.5)
 
 # Time-of-day specialist filter (Phase B: Regime-Specialized Ensemble)
@@ -507,7 +510,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     # TRADE (1) = any option type would've been profitable after stops.
     # v11's regime+setup filtering was proven circular (score 0.48) —
     # those masks use the same lagging features already in the input.
-    pnl_ok = best_pnl > 0.0
+    pnl_ok = best_pnl > REG_GATE_MARGIN
     gate_targets = pnl_ok.long()
 
     # Override: exit-labeled bars → NO_TRADE, but ONLY when the model is holding
@@ -518,7 +521,7 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
         ep = exit_put_labels[valid]
         exit_signal = (ec > 0.5) | (ep > 0.5)
         # Only override profitable bars — unprofitable bars are already NO_TRADE
-        exit_override = exit_signal & (best_pnl > 0.0)
+        exit_override = exit_signal & (best_pnl > REG_GATE_MARGIN)
 
         # Position-conditional: only apply exit overrides when model is holding
         # Random batches (flat state) → is_holding=None → no exit override
@@ -582,6 +585,8 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
     dir_probs = F.softmax(d_logits, dim=-1)
     trade_prob = gate_probs[:, 1]
     all_pnl_safe = torch.nan_to_num(all_stopped_pnl, nan=0.0)
+    if REG_PNL_CLIP > 0:
+        all_pnl_safe = all_pnl_safe.clamp(-REG_PNL_CLIP, REG_PNL_CLIP)
     pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
     pnl_loss = -(pnl_signal * sample_weight).sum() / sample_weight.sum().clamp(min=1e-6)
 
@@ -600,6 +605,15 @@ def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, featu
 
     total = (GATE_LOSS_WEIGHT * gate_loss + DIR_LOSS_WEIGHT * dir_loss
              + PNL_ALIGNMENT_WEIGHT * pnl_loss + CONFIDENCE_LOSS_WEIGHT * conf_loss)
+
+    # Win rate regularization: soft nudge toward higher win rate
+    if REG_WIN_RATE > 0.0 and trade_mask.sum() >= 10:
+        trade_wins = (best_pnl[trade_mask] > REG_GATE_MARGIN).float()
+        batch_wr = trade_wins.mean()
+        wr_target = 0.45
+        wr_loss = F.relu(wr_target - batch_wr)
+        total = total + REG_WIN_RATE * wr_loss
+
     return total
 
 
@@ -741,6 +755,9 @@ if __name__ == "__main__":
 
     print(f"Gate entropy reg: REG_GATE_ENTROPY={REG_GATE_ENTROPY}")
     print(f"Temporal smoothing reg: REG_TEMPORAL_SMOOTH={REG_TEMPORAL_SMOOTH}")
+    print(f"Gate margin: REG_GATE_MARGIN={REG_GATE_MARGIN}")
+    print(f"PnL clip: REG_PNL_CLIP={REG_PNL_CLIP}")
+    print(f"Win rate reg: REG_WIN_RATE={REG_WIN_RATE}")
     print(f"Warm freeze ratio: WARM_FREEZE_RATIO={WARM_FREEZE_RATIO}")
 
     print(f"Loaded {n_bars} 1-min bars, {NUM_FEATURES} features, {NUM_ACTIONS} actions")
@@ -982,8 +999,8 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------
 
     _score_config = {
-        'win_rate_bonus': 0.0,
-        'rr_bonus': 0.3,
+        'win_rate_bonus': 0.5,
+        'rr_bonus': 0.1,
         'drawdown_penalty': 0.5,
         'hold_bonus': 0.0,
         'freq_center': 2.5,

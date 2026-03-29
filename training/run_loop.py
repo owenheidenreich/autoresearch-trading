@@ -44,7 +44,7 @@ REQUIRED_OUTPUT_METRIC_KEYS = (
     "score", "profit_factor", "trades_per_day",
     "trade_sharpe", "stop_loss_rate", "worst_chunk_pf",
 )
-FEATURE_LOCK_COUNT = 37
+FEATURE_LOCK_COUNT = 38  # v10: 38 pruned features (restored from v10 archive)
 
 OBSERVABILITY_CONFIG = {
     "schema_version": SCHEMA_VERSION,
@@ -156,10 +156,14 @@ def _extract_current_dynamics(train_py_path: str) -> dict:
         raise RuntimeError("FATAL: Cannot parse BATCH_SIZE from train.py")
     dynamics['batch_size'] = int(m.group(1))
 
-    m = _re.search(r'EXIT_LOSS_WEIGHT\s*=\s*_env_float\([^,]+,\s*([\d.e-]+)', code)
-    if not m:
-        raise RuntimeError("FATAL: Cannot parse EXIT_LOSS_WEIGHT from train.py")
-    dynamics['exit_loss_weight'] = float(m.group(1))
+    # v12: parse ENTROPY_COEFF instead of EXIT_LOSS_WEIGHT
+    m = _re.search(r'ENTROPY_COEFF\s*=\s*_env_float\([^,]+,\s*([\d.e-]+)', code)
+    if m:
+        dynamics['entropy_coeff'] = float(m.group(1))
+    # Legacy fallback: try EXIT_LOSS_WEIGHT for old checkpoints
+    m2 = _re.search(r'EXIT_LOSS_WEIGHT\s*=\s*_env_float\([^,]+,\s*([\d.e-]+)', code)
+    if m2:
+        dynamics['exit_loss_weight'] = float(m2.group(1))
 
     dynamics['bf16'] = 'torch.amp.autocast' in code
 
@@ -182,7 +186,7 @@ def _check_dynamics_compatibility(checkpoint_path: str, train_py_path: str) -> s
         )
 
     mismatches = []
-    for key in ('batch_size', 'exit_loss_weight', 'bf16'):
+    for key in ('batch_size', 'bf16'):
         ckpt_val = ckpt_dynamics.get(key)
         curr_val = current_dynamics.get(key)
         if ckpt_val is None:
@@ -303,8 +307,10 @@ def validate_safety(code: str) -> str | None:
             return f"SAFETY: {msg}"
 
     # Score config lock
+    # Human-authorized update 2026-03-28: win_rate_bonus 0→0.5, rr_bonus 0.3→0.1
+    # (Pickles' directive: optimize for win rate, not raw PnL)
     _locked_defaults = {
-        'win_rate_bonus': '0.0', 'rr_bonus': '0.3', 'drawdown_penalty': '0.5',
+        'win_rate_bonus': '0.5', 'rr_bonus': '0.1', 'drawdown_penalty': '0.5',
         'hold_bonus': '0.0', 'freq_center': '2.5', 'freq_width': '2.5',
         'consec_loss_threshold': '3', 'short_hold_threshold': '0.30',
         'stop_rate_threshold': '0.30', 'ruin_penalty': '1.0',
@@ -402,6 +408,11 @@ def validate_safety(code: str) -> str | None:
     if feature_total != FEATURE_LOCK_COUNT:
         return f"SAFETY: FEATURE_GROUPS covers {feature_total} features, expected {FEATURE_LOCK_COUNT}."
 
+    # Version consistency — catch stale satellite files before GPU spend
+    vc_err = validate_version_consistency(code)
+    if vc_err:
+        return f"SAFETY: {vc_err}"
+
     return None
 
 
@@ -465,6 +476,186 @@ def _extract_feature_groups_width(code: str) -> int | None:
                 return None
             max_end = end if max_end is None else max(max_end, end)
         return max_end
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Version consistency validation
+# ---------------------------------------------------------------------------
+
+# Params that train.py reads but are intentionally excluded from PBT
+_ARCHITECTURE_PARAMS = frozenset({
+    "TRAIN_LOOKBACK", "TRAIN_D_MODEL", "TRAIN_DEPTH", "TRAIN_FF_MULT",
+    "TRAIN_DAY_SEQ_BATCH", "TORCHINDUCTOR_COMPILE_THREADS",
+})
+
+
+def _extract_env_params_from_text(text: str) -> set[str]:
+    """Extract all env-var-controlled param names from source text.
+
+    Matches _env_float("NAME", ...), _env_int("NAME", ...), and
+    os.environ.setdefault("NAME", ...) patterns.
+    """
+    params: set[str] = set()
+    for m in _re.finditer(r'_env_(?:float|int)\(\s*["\'](\w+)["\']', text):
+        params.add(m.group(1))
+    for m in _re.finditer(r'os\.environ\.setdefault\(\s*["\'](\w+)["\']', text):
+        params.add(m.group(1))
+    return params
+
+
+def _extract_param_space_keys(text: str) -> set[str]:
+    """Extract parameter names from inner_loop.py's _PARAM_SPACE dict."""
+    keys: set[str] = set()
+    in_block = False
+    brace_depth = 0
+    for line in text.splitlines():
+        if '_PARAM_SPACE' in line and '{' in line:
+            in_block = True
+            brace_depth = line.count('{') - line.count('}')
+            continue
+        if in_block:
+            brace_depth += line.count('{') - line.count('}')
+            m = _re.match(r'\s*["\'](\w+)["\']', line)
+            if m:
+                keys.add(m.group(1))
+            if brace_depth <= 0:
+                break
+    return keys
+
+
+def _extract_constant(text: str, name: str) -> int | None:
+    """Extract a module-level or class-level integer constant by name."""
+    m = _re.search(rf'\b{name}\s*=\s*(\d+)', text)
+    return int(m.group(1)) if m else None
+
+
+def _extract_model_heads(text: str) -> set[str]:
+    """Extract self.*_head assignments from a TradingModel class."""
+    return set(_re.findall(r'self\.(\w+_head)\s*=', text))
+
+
+def validate_version_consistency(train_code: str) -> str | None:
+    """Check satellite files for stale parameter/architecture references.
+
+    Compares inner_loop.py, monitor.py, best_train.py, replay.py, and
+    prepare.py against train.py (the source of truth).
+
+    Returns None if consistent, or an error string describing the drift.
+    """
+    PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+    issues: list[str] = []
+
+    train_params = _extract_env_params_from_text(train_code)
+
+    # --- 1. PBT param space vs train.py ---
+    inner_loop_path = os.path.join(PROJECT_ROOT, "tools", "inner_loop.py")
+    if os.path.exists(inner_loop_path):
+        with open(inner_loop_path, 'r') as f:
+            il_text = f.read()
+        pbt_params = _extract_param_space_keys(il_text)
+        orphans = pbt_params - train_params
+        if orphans:
+            issues.append(
+                f"inner_loop.py _PARAM_SPACE has params not in train.py: "
+                f"{', '.join(sorted(orphans))}. Remove from _PARAM_SPACE or "
+                f"add _env_float/_env_int to train.py."
+            )
+
+    # --- 2. Monitor param names vs train.py ---
+    monitor_path = os.path.join(PROJECT_ROOT, "tools", "monitor.py")
+    if os.path.exists(monitor_path):
+        with open(monitor_path, 'r') as f:
+            mon_text = f.read()
+        # Extract keys from abbrev dict (pattern: "PARAM_NAME": "abbrev")
+        mon_params = set(_re.findall(r'["\'](\w+)["\']\s*:\s*["\']', mon_text))
+        # Also grab priority list entries (pattern: "PARAM_NAME" inside priority = [...])
+        priority_match = _re.search(r'priority\s*=\s*\[([^\]]+)\]', mon_text, _re.DOTALL)
+        if priority_match:
+            mon_params.update(_re.findall(r'["\'](\w+)["\']', priority_match.group(1)))
+        # Filter to only training param prefixes, exclude bare prefixes like "TRAIN_"
+        mon_params = {p for p in mon_params
+                      if p.startswith(('TRAIN_', 'WEIGHT_', 'REG_', 'WARM_'))
+                      and len(p) > 6}  # exclude bare "TRAIN_"
+        stale_mon = mon_params - train_params
+        if stale_mon:
+            issues.append(
+                f"monitor.py references stale params: "
+                f"{', '.join(sorted(stale_mon))}. Update abbrev dict and priority list."
+            )
+
+    # --- 3. Stale TRAIN_* env var reads in satellites ---
+    for rel_path, label in [
+        (os.path.join("training", "replay.py"), "replay.py"),
+        (os.path.join("training", "prepare.py"), "prepare.py"),
+    ]:
+        sat_path = os.path.join(PROJECT_ROOT, rel_path)
+        if not os.path.exists(sat_path):
+            continue
+        with open(sat_path, 'r') as f:
+            sat_text = f.read()
+        sat_envs = set(_re.findall(r'os\.environ\.get\(\s*["\'](\w+)["\']', sat_text))
+        sat_envs.update(_re.findall(r'_env_float\(\s*["\'](\w+)["\']', sat_text))
+        sat_envs.update(_re.findall(r'_env_int\(\s*["\'](\w+)["\']', sat_text))
+        # Only check TRAIN_* params (other env vars are fine)
+        sat_train = {p for p in sat_envs if p.startswith('TRAIN_')}
+        stale_sat = sat_train - train_params
+        if stale_sat:
+            issues.append(
+                f"{label} reads stale env vars: "
+                f"{', '.join(sorted(stale_sat))}. Remove or update."
+            )
+
+    # --- 4. Architecture constants: best_train.py must match train.py ---
+    if os.path.exists(BEST_TRAIN_PY):
+        with open(BEST_TRAIN_PY, 'r') as f:
+            best_text = f.read()
+        for const in ('NUM_ACTION_CLASSES', 'POSITION_STATE_DIM', 'ACCOUNT_STATE_DIM'):
+            train_val = _extract_constant(train_code, const)
+            best_val = _extract_constant(best_text, const)
+            if train_val is not None and best_val is not None and train_val != best_val:
+                issues.append(
+                    f"{const} mismatch: train.py={train_val}, best_train.py={best_val}."
+                )
+
+    # --- 5. Model heads: replay.py must match train.py ---
+    replay_path = os.path.join(SCRIPT_DIR, "replay.py")
+    if os.path.exists(replay_path):
+        with open(replay_path, 'r') as f:
+            replay_text = f.read()
+        train_heads = _extract_model_heads(train_code)
+        replay_heads = _extract_model_heads(replay_text)
+        # Only compare primary heads (action/risk/gate/dir/value), not projections
+        primary = {'action_head', 'risk_head', 'gate_head', 'dir_head', 'value_head', 'exit_head'}
+        train_primary = train_heads & primary
+        replay_primary = replay_heads & primary
+        if train_primary != replay_primary:
+            issues.append(
+                f"Model head mismatch: train.py has {sorted(train_primary)}, "
+                f"replay.py has {sorted(replay_primary)}. "
+                f"Replay architecture is stale."
+            )
+
+        # Also check POSITION_STATE_DIM in replay
+        replay_dim = _extract_constant(replay_text, 'POSITION_STATE_DIM')
+        train_dim = _extract_constant(train_code, 'POSITION_STATE_DIM')
+        if train_dim is not None and replay_dim is not None and train_dim != replay_dim:
+            issues.append(
+                f"POSITION_STATE_DIM mismatch: train.py={train_dim}, replay.py={replay_dim}."
+            )
+
+    # --- 6. Feature groups: best_train.py must match train.py ---
+    if os.path.exists(BEST_TRAIN_PY):
+        train_fg_width = _extract_feature_groups_width(train_code)
+        best_fg_width = _extract_feature_groups_width(best_text)
+        if train_fg_width is not None and best_fg_width is not None and train_fg_width != best_fg_width:
+            issues.append(
+                f"FEATURE_GROUPS width mismatch: train.py={train_fg_width}, "
+                f"best_train.py={best_fg_width}."
+            )
+
+    if issues:
+        return "VERSION DRIFT:\n  • " + "\n  • ".join(issues)
     return None
 
 
