@@ -29,9 +29,24 @@ results/
 # Runtime sync/process noise
 .sync-pid
 
+# Runtime state (recreated by inner_loop.py)
+training/.best_score
+training/.inner_loop_state.json
+training/.pbt_state.json
+
 # Non-canonical legacy runtime outputs (active runtime is results/run-*/)
 training/experiments.jsonl
 training/experiments.v2.jsonl
 training/status.json
 training/diagnostics.log
 training/results/
+
+# Large output directories
+backtest_output/
+archive/backtest_output/
+archive/runs/
+archive/models/
+
+# Personal / non-project files
+AI Breakthrough Papers/
+ART squared.heic

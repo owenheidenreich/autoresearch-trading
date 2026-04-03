@@ -1,0 +1,1 @@
+judging from the comments from the experiments, it looks like the models want more OTM options. i think we should include that data. more strikes to choose from. experiements are starting to find OTM options could work well

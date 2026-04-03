@@ -1,0 +1,8 @@
+usage_date_utc,model_version,api_key,workspace,usage_type,context_window,usage_input_tokens_no_cache,usage_input_tokens_cache_write_5m,usage_input_tokens_cache_write_1h,usage_input_tokens_cache_read,usage_output_tokens,web_search_count,inference_geo,speed
+2026-03-21 06:02:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,3488,0,2233,16335,13482,0,not_available,
+2026-03-21 06:05:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,3516,0,0,18568,12112,0,not_available,
+2026-03-21 06:10:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,3682,0,0,18568,12755,0,not_available,
+2026-03-21 06:14:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,3830,0,0,18568,13297,0,not_available,
+2026-03-21 06:18:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,17820,0,0,37136,24669,0,not_available,
+2026-03-21 06:21:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,3958,0,0,18568,12595,0,not_available,
+2026-03-21 06:26:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,4365,0,0,18568,13081,0,not_available,
