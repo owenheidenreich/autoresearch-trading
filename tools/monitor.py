@@ -71,6 +71,7 @@ _state: dict = {
     "poll_count": 0,
     "ssh_ok": False,
     "pbt": None,  # PBT state when in PBT mode
+    "daemon": None,  # ART² daemon status
 }
 
 
@@ -344,21 +345,17 @@ def _summarize_config(config: dict) -> str:
     """
     if not config:
         return "defaults"
-    # Abbreviation map: prefix-strip + short names for readability (v13)
+    # Abbreviation map: prefix-strip + short names for readability (v18)
     abbrev = {
         "TRAIN_LR": "lr", "TRAIN_WEIGHT_DECAY": "wd", "TRAIN_DROPOUT": "do",
         "TRAIN_WARMUP_RATIO": "warm", "TRAIN_COOLDOWN_RATIO": "cool",
-        "TRAIN_GRAD_CLIP": "gc", "WEIGHT_RECENT_BOOST": "rcnt",
-        "WEIGHT_DAY_DIVERSITY": "div", "REG_GATE_ENTROPY": "gent",
-        "REG_TEMPORAL_SMOOTH": "tsmth", "WARM_FREEZE_RATIO": "frz",
-        "TRAIN_DAY_SEQ_RATIO": "seq",
-        "TRAIN_GATE_W": "GATE", "TRAIN_DIR_W": "DIR",
-        "TRAIN_PNL_W": "PNL", "TRAIN_CONF_W": "CONF",
-        "TRAIN_EXIT_W": "EXIT", "TRAIN_VALUE_W": "VAL",
-        "TRAIN_RISK_W": "RISK",
+        "TRAIN_GRAD_CLIP": "gc",
+        "TRAIN_GATE_W": "GATE", "TRAIN_RISK_W": "RISK",
+        "TRAIN_EXIT_W": "EXIT", "TRAIN_DIR_W": "DIR",
+        "TRAIN_BATCH_SIZE": "bs",
     }
-    # Priority keys to show first (most impactful for v13 sniper_loss)
-    priority = ["TRAIN_GATE_W", "TRAIN_DIR_W", "TRAIN_PNL_W", "TRAIN_RISK_W",
+    # Priority keys to show first (most impactful for v18 trading model)
+    priority = ["TRAIN_GATE_W", "TRAIN_DIR_W",
                 "TRAIN_LR", "TRAIN_DROPOUT", "TRAIN_WEIGHT_DECAY"]
     items = []
     shown = set()
@@ -473,6 +470,75 @@ def _parse_gpu_csv(text: str) -> dict | None:
         }
     except (ValueError, IndexError):
         return None
+
+
+def fetch_daemon_state() -> dict | None:
+    """Read ART² daemon heartbeat and recent log lines."""
+    art2_dir = RESULTS_ROOT / "art2"
+    heartbeat_file = art2_dir / "daemon_heartbeat.json"
+    log_file = art2_dir / "daemon.log"
+    state_file = art2_dir / "state.json"
+
+    daemon = {}
+
+    # Heartbeat
+    if heartbeat_file.exists():
+        try:
+            hb = json.loads(heartbeat_file.read_text())
+            daemon["pid"] = hb.get("pid")
+            daemon["phase"] = hb.get("phase", "unknown")
+            daemon["checkpoint"] = hb.get("cycle", 0)
+            daemon["budget_remaining"] = hb.get("budget_remaining")
+            daemon["timestamp"] = hb.get("timestamp")
+            # Check if daemon is alive
+            if daemon["pid"]:
+                try:
+                    os.kill(daemon["pid"], 0)
+                    daemon["alive"] = True
+                except OSError:
+                    daemon["alive"] = False
+            else:
+                daemon["alive"] = False
+            # Stale check
+            if daemon["timestamp"]:
+                from datetime import datetime as _dt, timezone as _tz
+                try:
+                    ts = _dt.fromisoformat(daemon["timestamp"])
+                    ago = (_dt.now(_tz.utc) - ts.astimezone(_tz.utc)).total_seconds()
+                    daemon["heartbeat_age_s"] = ago
+                except Exception:
+                    daemon["heartbeat_age_s"] = None
+        except Exception:
+            pass
+
+    # ART² state.json
+    if state_file.exists():
+        try:
+            st = json.loads(state_file.read_text())
+            daemon["cycle"] = st.get("cycle", 0)
+            daemon["art2_phase"] = st.get("phase", "unknown")
+            daemon["last_action"] = st.get("last_action")
+            daemon["last_decision_by"] = st.get("last_decision_by")
+            daemon["training_mode"] = st.get("training_mode", "sequential")
+        except Exception:
+            pass
+
+    # Recent daemon log (last 15 lines)
+    if log_file.exists():
+        try:
+            lines = log_file.read_text().split("\n")
+            daemon["log_tail"] = "\n".join(lines[-15:])
+        except Exception:
+            pass
+
+    # Sentinels
+    daemon["sentinels"] = {
+        "stop": (art2_dir / "STOP").exists(),
+        "paused": (art2_dir / "PAUSED").exists(),
+        "review": (art2_dir / "REVIEW").exists(),
+    }
+
+    return daemon if daemon else None
 
 
 # -- Background poller -----------------------------------------------------
@@ -630,6 +696,7 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
             run_state = _classify_run_state(status, ssh_ok, host)
             training_mode = detect_training_mode(experiments)
             pbt = load_pbt_state(experiments, runs) if training_mode == "pbt" else None
+            daemon = fetch_daemon_state()
             fetch_time = time.time() - t0
             poll_count = get_state()["poll_count"] + 1
 
@@ -650,6 +717,7 @@ def poller_loop(host: str | None, port: int, local_path: str | None, interval: i
                 poll_count=poll_count,
                 ssh_ok=ssh_ok,
                 pbt=pbt,
+                daemon=daemon,
             )
         except Exception as e:
             print(f"[poller] Error: {e}", file=sys.stderr)
@@ -752,6 +820,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     min-width: 0;
   }
   .top-row .gpu-status { flex: 0 0 240px; min-width: 0; }
+  .top-row .daemon-status { flex: 0 0 280px; min-width: 0; }
   .top-row .active-run { flex: 1; min-width: 0; }
   /* Full-width panels */
   .charts-panel { grid-column: 1 / 3; }
@@ -1128,6 +1197,26 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         </div>
       </div>
     </div>
+    <div class="panel daemon-status">
+      <div class="panel-header">ART² Daemon <span id="daemon-state-badge" class="run-state-badge"></span></div>
+      <div class="panel-body" style="padding:6px 8px">
+        <div id="daemon-content">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span class="phase-dot" id="daemon-dot"></span>
+            <span id="daemon-phase" style="font-weight:600;font-size:12px">Offline</span>
+          </div>
+          <div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+            <div class="stat-card"><div class="stat-value stat-cyan" id="daemon-checkpoint">--</div><div class="stat-label">Checkpoint</div></div>
+            <div class="stat-card"><div class="stat-value stat-green" id="daemon-budget">--</div><div class="stat-label">Budget $</div></div>
+          </div>
+          <div style="margin-top:6px;font-size:10px;color:var(--text-dim)">
+            <span id="daemon-action"></span>
+          </div>
+          <div id="daemon-sentinels" style="margin-top:4px;font-size:10px"></div>
+          <div id="daemon-log" style="margin-top:6px;font-size:10px;color:var(--text-dim);max-height:80px;overflow:auto;white-space:pre-wrap;line-height:1.4"></div>
+        </div>
+      </div>
+    </div>
     <div class="panel active-run">
       <div class="panel-header">Active Run <span id="run-name" style="font-weight:400;color:var(--text)"></span><span id="run-state-badge" class="run-state-badge"></span></div>
       <div class="panel-body" style="padding:6px 10px">
@@ -1476,6 +1565,66 @@ async function update() {
       const isLocal = !data.mode.startsWith('Remote');
       document.getElementById('gpu-name').textContent = isLocal ? '(local — no GPU)' : (data.ssh_ok ? 'waiting...' : 'no SSH');
       document.getElementById('gpu-content').style.opacity = '0.3';
+    }
+
+    // Daemon
+    const dm = data.daemon;
+    const daemonDot = document.getElementById('daemon-dot');
+    const daemonBadge = document.getElementById('daemon-state-badge');
+    if (dm && dm.alive) {
+      const phaseMap = {
+        'ensuring_gpu': 'Booting GPU',
+        'training_sequential': 'Training',
+        'training_pbt': 'PBT Sweep',
+        'checkpointing': 'Checkpoint',
+        'budget_check': 'Budget Check',
+        'monitoring': 'Market Open',
+        'pre_market': 'Pre-Market',
+        'paused': 'Paused',
+        'review': 'Awaiting Review',
+        'between_checkpoints': 'Between Checkpoints',
+      };
+      const phase = dm.phase || 'unknown';
+      document.getElementById('daemon-phase').textContent = phaseMap[phase] || phase;
+      daemonDot.className = 'phase-dot ' + (
+        phase.startsWith('training') ? 'phase-training' :
+        phase === 'checkpointing' ? 'phase-calling_claude' :
+        phase === 'paused' || phase === 'review' ? 'phase-idle' :
+        'phase-evaluating'
+      );
+      daemonBadge.textContent = 'RUNNING';
+      daemonBadge.className = 'run-state-badge run-state-active';
+      document.getElementById('daemon-checkpoint').textContent = dm.checkpoint || '0';
+      document.getElementById('daemon-budget').textContent = dm.budget_remaining != null ? '$' + dm.budget_remaining.toFixed(0) : '--';
+      const actionText = dm.last_action ? `Last: ${dm.last_decision_by || '?'} → ${dm.last_action}` : '';
+      const modeText = dm.training_mode ? `Mode: ${dm.training_mode}` : '';
+      document.getElementById('daemon-action').textContent = [modeText, actionText].filter(Boolean).join(' | ');
+      // Sentinels
+      const sents = dm.sentinels || {};
+      let sentHtml = '';
+      if (sents.stop) sentHtml += '<span style="color:var(--red);font-weight:700">STOP </span>';
+      if (sents.paused) sentHtml += '<span style="color:var(--yellow);font-weight:700">PAUSED </span>';
+      if (sents.review) sentHtml += '<span style="color:var(--cyan);font-weight:700">REVIEW </span>';
+      document.getElementById('daemon-sentinels').innerHTML = sentHtml;
+      // Log tail (last 3 lines with [ART²] prefix)
+      if (dm.log_tail) {
+        const logLines = dm.log_tail.split('\n')
+          .filter(l => l.includes('[ART²]'))
+          .slice(-3)
+          .map(l => l.replace(/\[ART²\]\s*\[\d+:\d+:\d+\s*ET\]\s*/, ''))
+          .join('\n');
+        document.getElementById('daemon-log').textContent = logLines;
+      }
+    } else {
+      document.getElementById('daemon-phase').textContent = dm ? 'Stopped' : 'Offline';
+      daemonDot.className = 'phase-dot phase-completed';
+      daemonBadge.textContent = dm ? 'STOPPED' : 'OFF';
+      daemonBadge.className = 'run-state-badge run-state-idle';
+      document.getElementById('daemon-checkpoint').textContent = dm ? (dm.checkpoint || '0') : '--';
+      document.getElementById('daemon-budget').textContent = '--';
+      document.getElementById('daemon-action').textContent = '';
+      document.getElementById('daemon-sentinels').innerHTML = '';
+      document.getElementById('daemon-log').textContent = '';
     }
 
     // Active run
