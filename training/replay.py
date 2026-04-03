@@ -34,6 +34,7 @@ try:
         is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
         BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
         OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
+        NO_TRADE_LUNCH_START, NO_TRADE_LUNCH_END, MIN_HOLD_BARS, EXIT_GATE_THRESHOLD,
         STARTING_CAPITAL, SPX_MULTIPLIER, POSITION_RISK_TARGET,
         MAX_TRADE_RETURN, DYNAMIC_STOP_BASE,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
@@ -56,6 +57,7 @@ except ModuleNotFoundError as e:
         is_0dte_day, DATA_DIR, CACHE_DIR, NUM_FEATURES, BARS_PER_DAY,
         BAR_SIZE_MINUTES, STOP_LOSS_PCT, MAX_HOLD_BARS,
         OPTION_SPREAD_BPS, STOP_COOLDOWN_BARS, NO_TRADE_BEFORE_BAR,
+        NO_TRADE_LUNCH_START, NO_TRADE_LUNCH_END, MIN_HOLD_BARS, EXIT_GATE_THRESHOLD,
         STARTING_CAPITAL, SPX_MULTIPLIER, POSITION_RISK_TARGET,
         MAX_TRADE_RETURN, DYNAMIC_STOP_BASE,
         ACTION_DO_NOTHING, ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5,
@@ -67,6 +69,12 @@ except ModuleNotFoundError as e:
         ACTION_EXIT, NUM_ACTIONS,
         PNL_TANH_SCALE, BEST_PNL_TANH_SCALE,
     )
+
+# Trading rules engine (shared with live decision.py)
+try:
+    from trading_rules import should_enter as _rules_should_enter, select_strike as _rules_select_strike
+except ImportError:
+    from training.trading_rules import should_enter as _rules_should_enter, select_strike as _rules_select_strike
 
 # Path to pre-computed features (matches training exactly)
 DATA_PT_PATH = os.path.join(CACHE_DIR, "features", "data.pt")
@@ -281,160 +289,8 @@ FEATURE_GROUPS = {
     'v9':         (29, 33),  # atr_14, bar_delta, session_cum_delta, top_of_hour_min
     'v10':        (33, 38),  # macdh_slope, force_index_2, vol_price_diverg, effort_vs_result, trend_5min
 }
-
-NUM_DIRECTIONS = 14  # v14: CALL/PUT × ATM/OTM5..OTM30
-
-# ---------------------------------------------------------------------------
-# Model architecture (v14 — copied from train.py, can't import due to module-level execution)
-# ---------------------------------------------------------------------------
-
-
-class TradingModel(nn.Module):
-    """Four-head model for SPX 0DTE options (v14: exact v10 restoration, 38 features).
-
-    Architecture:
-    - Shared transformer backbone
-    - Gate head: (batch, 2) — [NO_TRADE, TRADE]  (entry/exit signal)
-    - Direction head: (batch, 14) — strike selection (CALL/PUT × ATM/OTM5..OTM30)
-    - Value head: (batch, 1) — expected remaining P&L  (exit intelligence)
-    - Risk head: (batch, 3) — [stop_pct, size_frac, conviction]
-
-    Position state: 7 dims
-      [0] in_trade, [1] bars_held, [2] unrealized_pnl, [3] account_health,
-      [4] loss_streak, [5] best_pnl_since_entry, [6] bars_since_pnl_high
-
-    Account state: 4 dims (separate input, risk head only)
-      [0] account_growth_ratio, [1] log_account_size,
-      [2] daily_pnl_fraction, [3] win_rate_20
-    """
-
-    POSITION_STATE_DIM = 7
-    ACCOUNT_STATE_DIM = 4
-
-    def __init__(self, num_features=NUM_FEATURES, lookback=120,
-                 d_model=64, n_heads=4, n_layers=3,
-                 ff_mult=3, dropout=0.30):
-        super().__init__()
-        self.lookback = lookback
-        self.d_model = d_model
-
-        self.input_proj = nn.Sequential(
-            nn.Linear(num_features, d_model),
-            nn.GELU(),
-            nn.Dropout(dropout),
-        )
-        self.input_norm = nn.LayerNorm(d_model)
-        self.pos_embed = nn.Parameter(torch.randn(1, lookback, d_model) * 0.02)
-
-        layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=n_heads,
-            dim_feedforward=d_model * ff_mult, dropout=dropout,
-            batch_first=True, activation='gelu', norm_first=True,
-        )
-        self.transformer = nn.TransformerEncoder(layer, num_layers=n_layers)
-        mask = nn.Transformer.generate_square_subsequent_mask(lookback)
-        self.register_buffer('causal_mask', mask)
-
-        # Position state injection for gate head
-        self.position_proj = nn.Linear(self.POSITION_STATE_DIM, d_model // 4)
-        self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
-
-        # Gate head: "should I trade?" → [NO_TRADE, TRADE]
-        self.gate_head = nn.Sequential(
-            nn.LayerNorm(d_model),
-            nn.Linear(d_model, d_model // 2),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_model // 2, 2),
-        )
-
-        # Direction head: "which strike?" → 14-class
-        self.dir_head = nn.Sequential(
-            nn.LayerNorm(d_model),
-            nn.Linear(d_model, d_model // 2),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_model // 2, NUM_DIRECTIONS),
-        )
-
-        # Value head: "how much P&L remains?" → scalar
-        self.value_proj = nn.Linear(d_model + d_model // 4, d_model)
-        self.value_head = nn.Sequential(
-            nn.LayerNorm(d_model),
-            nn.Linear(d_model, d_model // 2),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_model // 2, 1),
-        )
-
-        # Risk head: account-aware risk management
-        self.risk_account_proj = nn.Linear(self.ACCOUNT_STATE_DIM, d_model // 4)
-        self.risk_proj = nn.Linear(d_model + d_model // 4 + d_model // 4, d_model)
-        self.risk_head = nn.Sequential(
-            nn.LayerNorm(d_model),
-            nn.Linear(d_model, d_model // 2),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_model // 2, 3),
-        )
-
-        # Learned time-of-day loss weights
-        self.tod_weight_logits = nn.Parameter(torch.zeros(390))
-
-        # Bias initialization
-        with torch.no_grad():
-            self.gate_head[-1].bias[0] -= 0.3   # NO_TRADE: discourage (pro-trade)
-            self.gate_head[-1].bias[1] += 0.3   # TRADE: encourage
-            self.dir_head[-1].bias[0] += 0.15   # CALL_ATM bonus
-            self.dir_head[-1].bias[7] += 0.15   # PUT_ATM bonus
-            self.risk_head[-1].bias[0] = 0.0    # sigmoid(0)=0.5 → mid-range stop
-            self.risk_head[-1].bias[1] = -1.0   # sigmoid(-1)≈0.27 → conservative sizing
-            self.risk_head[-1].bias[2] = 0.0    # tanh(0)=0 → neutral conviction
-
-    def forward(self, x, position_state=None, account_state=None,
-                return_value=False, return_risk=False):
-        batch_size = x.shape[0]
-        device = x.device
-
-        if position_state is None:
-            position_state = torch.zeros(batch_size, self.POSITION_STATE_DIM, device=device)
-            position_state[:, 3] = 1.0
-
-        x_proj = self.input_proj(x)
-        x_proj = self.input_norm(x_proj)
-        x_proj = x_proj + self.pos_embed[:, :x_proj.size(1), :]
-        x_proj = self.transformer(x_proj, mask=self.causal_mask[:x_proj.size(1), :x_proj.size(1)],
-                                  is_causal=True)
-        last = x_proj[:, -1, :]
-
-        # Inject position state into gate head
-        pos_emb = torch.relu(self.position_proj(position_state))
-        gate_input = self.position_gate_proj(torch.cat([last, pos_emb], dim=-1))
-
-        gate_logits = self.gate_head(gate_input)
-        dir_logits = self.dir_head(last)
-
-        outputs = (gate_logits, dir_logits)
-
-        if return_value:
-            value_input = self.value_proj(torch.cat([last, pos_emb], dim=-1))
-            value_pred = self.value_head(value_input).squeeze(-1)
-            outputs = outputs + (value_pred,)
-
-        if return_risk:
-            if account_state is None:
-                account_state = torch.zeros(batch_size, self.ACCOUNT_STATE_DIM, device=device)
-                account_state[:, 0] = 1.0
-            acct_emb = torch.relu(self.risk_account_proj(account_state))
-            risk_input = self.risk_proj(torch.cat([last, pos_emb, acct_emb], dim=-1))
-            risk_raw = self.risk_head(risk_input)
-            stop_pct = 0.15 + 0.45 * torch.sigmoid(risk_raw[:, 0])
-            size_frac = torch.sigmoid(risk_raw[:, 1])
-            conviction = torch.tanh(risk_raw[:, 2])
-            risk_output = torch.stack([stop_pct, size_frac, conviction], dim=-1)
-            outputs = outputs + (risk_output,)
-
-        return outputs if len(outputs) > 2 else outputs
+if NUM_FEATURES > 38:
+    FEATURE_GROUPS['tournament'] = (38, NUM_FEATURES)
 
 
 # ---------------------------------------------------------------------------
@@ -687,10 +543,10 @@ def _load_model_class_from_train_py(train_py_path: str, config: dict | None = No
     if namespace.get('USE_RMSNORM') and 'RMSNorm' in namespace:
         namespace['NormLayer'] = namespace['RMSNorm']
 
-    # Find the model class (look for TradingModel or any nn.Module subclass)
-    model_class = namespace.get('TradingModel')
+    # Find the model class (v17: PredictionModel, legacy: TradingModel)
+    model_class = namespace.get('PredictionModel') or namespace.get('TradingModel')
     if model_class is None:
-        # Find any nn.Module subclass that isn't FeatureGroupGating
+        # Find any nn.Module subclass with 'Model' in name
         for name, obj in namespace.items():
             if (isinstance(obj, type) and issubclass(obj, nn.Module)
                     and obj is not nn.Module
@@ -733,8 +589,29 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
                 print(f"  Found model class: {model_cls.__name__}")
 
     if model_cls is None:
-        model_cls = TradingModel
-        print("  Using default TradingModel architecture")
+        # Import model class from train.py based on version
+        model_version = config.get('model_version', 'v17')
+        try:
+            if model_version == 'v18':
+                from train import TradingModel
+                model_cls = TradingModel
+            else:
+                from train import PredictionModel
+                model_cls = PredictionModel
+        except ImportError:
+            try:
+                if model_version == 'v18':
+                    from training.train import TradingModel
+                    model_cls = TradingModel
+                else:
+                    from training.train import PredictionModel
+                    model_cls = PredictionModel
+            except ImportError:
+                raise RuntimeError(
+                    "No model class found: dynamic load failed, and model "
+                    "not importable from train.py. Provide --train-py-path."
+                )
+        print(f"  Using default {model_cls.__name__} architecture ({model_version})")
 
     # Instantiate model
     try:
@@ -752,20 +629,6 @@ def load_model(path: str, device: str = 'cpu', train_py_path: str = None):
         model = model_cls()
 
     _state = ckpt['model_state_dict']
-    # Architecture version gate: reject incompatible checkpoints
-    _ckpt_arch = ckpt.get('architecture', 'unknown')
-    _ckpt_has_value = ckpt.get('has_value_head', False) or ('value_head.4.weight' in _state)
-    _ckpt_has_risk = ckpt.get('has_risk_head', False) or ('risk_head.4.weight' in _state)
-    _ckpt_pos_dim = ckpt.get('position_state_dim', _state['position_proj.weight'].shape[1] if 'position_proj.weight' in _state else 5)
-    _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
-    # v13/v10: require value head + risk head (gate+dir architecture)
-    if not _ckpt_has_value or not _ckpt_has_risk or _ckpt_pos_dim < _ps_dim:
-        raise ValueError(
-            f"Checkpoint incompatible: arch={_ckpt_arch}, value_head={_ckpt_has_value}, "
-            f"risk_head={_ckpt_has_risk}, pos_dim={_ckpt_pos_dim}. "
-            f"Model requires value_head=True, risk_head=True, pos_dim={_ps_dim}. "
-            f"A fresh-start checkpoint is needed."
-        )
     missing, unexpected = model.load_state_dict(_state, strict=False)
     if missing:
         print(f"  WARNING: Missing keys (random init): {missing}")
@@ -1051,10 +914,7 @@ def _infer_model_num_features(model, config):
             return int(cfg_features)
         except Exception:
             pass
-    try:
-        return int(model.feature_gate.gate_net[0].in_features)
-    except Exception:
-        return int(NUM_FEATURES)
+    return int(NUM_FEATURES)
 
 
 def _align_features_to_model_width(features: np.ndarray, expected_width: int, source_name: str) -> np.ndarray:
@@ -1561,7 +1421,7 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     """
     model.eval()
     features = features_t.to(device)
-    has_position_proj = hasattr(model, 'position_proj')
+    # v17: position_proj replaced by account_state
 
     raw_close = raw_df['close'].values.astype(np.float64)
     raw_high = raw_df['high'].values.astype(np.float64)
@@ -1653,7 +1513,8 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
     trade_px_array = None
     trade_entry_gate_prob = 0.0
     trade_entry_confidence = 0.0
-    trade_entry_dir_probs = None
+    trade_entry_pred_30 = 0.0
+    trade_entry_pred_conf = 0.0
     trade_entry_reason_codes: list[str] = []
     trade_stop_price = 0.0
     trade_take_profit_price = 0.0
@@ -1682,60 +1543,73 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
 
     offsets = torch.arange(-lookback, 0, device=device)
 
-    for k_pos, global_idx in enumerate(valid_indices):
-        # --- Build position state tensor (same as training eval + live decision.py) ---
-        pos_state = None
-        if has_position_proj:
-            _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
-            pos_state = torch.zeros(1, _ps_dim, device=device)
-            if in_trade:
-                pos_state[0, 0] = 1.0
-                pos_state[0, 1] = min(bars_held / BARS_PER_DAY, 1.0)
-                pos_state[0, 2] = float(np.tanh(unrealized_pnl * PNL_TANH_SCALE))
-                if _ps_dim >= 7:
-                    pos_state[0, 5] = float(np.tanh(_trade_best_pnl * BEST_PNL_TANH_SCALE))  # best_pnl
-                    pos_state[0, 6] = min(_trade_bars_since_high / BARS_PER_DAY, 1.0)
-            pos_state[0, 3] = account_balance / STARTING_CAPITAL  # account_health
-            pos_state[0, 4] = min(consecutive_losses / 3.0, 1.0)  # loss_streak_frac
+    # v17 PredictionModel only (v14 TradingModel support removed)
+    _peak_balance = initial_balance if initial_balance is not None else STARTING_CAPITAL
 
-        # --- Build account state for risk head ---
-        _acct_state = None
-        _has_risk_head = hasattr(model, 'risk_head')
-        if _has_risk_head:
-            _as_dim = getattr(model, 'ACCOUNT_STATE_DIM', 4)
-            _acct_state = torch.zeros(1, _as_dim, device=device)
-            _acct_state[0, 0] = account_balance / STARTING_CAPITAL  # growth ratio
-            _acct_state[0, 1] = min(np.log10(max(account_balance, 1000) / 1000) / 3.0, 1.0)
-            _acct_state[0, 2] = cum_pnl / max(account_balance, 1.0)  # daily P&L frac
-            _win_rate_20 = sum(1 for t in trades[-20:] if t.get('pnl_pct', 0) > 0) / max(len(trades[-20:]), 1) if trades else 0.0
-            _acct_state[0, 3] = _win_rate_20
+    for k_pos, global_idx in enumerate(valid_indices):
+        # --- Build account state (v17: 5-dim) ---
+        _as_dim = getattr(model, 'ACCOUNT_STATE_DIM', 5)
+        acct_state = torch.zeros(1, _as_dim, device=device)
+        acct_state[0, 0] = account_balance / STARTING_CAPITAL  # growth
+        acct_state[0, 1] = min(consecutive_losses / 5.0, 1.0)  # consec_losses
+        acct_state[0, 2] = cum_pnl / max(account_balance, 1.0)  # daily_pnl
+        _win_rate_20 = sum(1 for t in trades[-20:] if t.get('pnl_pct', 0) > 0) / max(len(trades[-20:]), 1) if trades else 0.5
+        acct_state[0, 3] = _win_rate_20  # win_rate
+        if _as_dim >= 5:
+            _peak_balance = max(_peak_balance, account_balance)
+            acct_state[0, 4] = (account_balance - _peak_balance) / max(_peak_balance, 1.0)  # drawdown
 
         # --- Get model prediction ---
         idx_t = torch.tensor([global_idx], dtype=torch.long, device=device)
         window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
         x = features[window_idx]
 
-
         with torch.no_grad():
-            _out = model(x, position_state=pos_state, account_state=_acct_state,
-                         return_value=hasattr(model, 'value_head'),
-                         return_risk=_has_risk_head)
-            _risk_output = None
-
-            # v13/v10: gate+direction two-head
-            gate_logits, dir_logits = _out[0], _out[1]
-            gate_probs_t = torch.softmax(gate_logits, dim=-1)[0].cpu().numpy()
-            dir_probs = torch.softmax(dir_logits, dim=-1)[0].cpu().numpy()
-            gate_action = int(torch.argmax(gate_logits, dim=-1)[0].item())
-            gate_trade_prob = float(gate_probs_t[1])
-            gate_notrade_prob = float(gate_probs_t[0])
-            dir_action = int(np.argmax(dir_probs))
-            if gate_action == 1:
-                action = dir_action + 1
+            _is_v18 = hasattr(model, 'gate_head')
+            if _is_v18:
+                # v18: TradingModel(x) -> (market_pred, entry_gate, risk_params, exit_signal, dir_logits)
+                _out = model(x)
+                market_pred_t, entry_gate_t, risk_params_t, exit_signal_t, dir_logits_t = _out
+                trade_prob = float(entry_gate_t[0].item())
+                exit_signal = float(exit_signal_t[0].item())
+                pred_30 = float(market_pred_t[0, 1].item())
+                pred_conf_val = float(risk_params_t[0, 2].item())  # conviction as confidence proxy
+                # v18 risk params
+                _v18_stop_dist = float(risk_params_t[0, 0].item())
+                _v18_target_dist = float(risk_params_t[0, 1].item())
+                _v18_conviction = float(risk_params_t[0, 2].item())
+                # Direction from 6-class head
+                _dir_cls = int(dir_logits_t[0].argmax().item())
+                _DIR_CLS_TO_ACTION = [
+                    ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+                    ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10,
+                ]
+                if trade_prob > 0.5:
+                    action = _DIR_CLS_TO_ACTION[_dir_cls]
+                else:
+                    action = ACTION_DO_NOTHING
+                gate_trade_prob = trade_prob
+                gate_notrade_prob = 1.0 - trade_prob
             else:
-                action = ACTION_DO_NOTHING
-            if _has_risk_head and len(_out) > 2:
-                _risk_output = _out[-1]
+                # v17: PredictionModel(x, account_state) -> (pred_returns, pred_conf, action_out)
+                _out = model(x, account_state=acct_state)
+                pred_returns_t, pred_conf_t, action_out_t = _out
+                trade_prob = float(action_out_t[0, 0].item())
+                exit_signal = float(action_out_t[0, 2].item())
+                pred_30 = float(pred_returns_t[0, 1].item())
+                pred_conf_val = float(pred_conf_t[0].item()) if pred_conf_t.dim() > 0 else float(pred_conf_t.item())
+                _v18_stop_dist = 0.0
+                _v18_target_dist = 0.0
+                _v18_conviction = 0.0
+                if trade_prob > 0.5 and abs(pred_30) > 0.001:
+                    if pred_30 > 0:
+                        action = ACTION_BUY_CALL_ATM
+                    else:
+                        action = ACTION_BUY_PUT_ATM
+                else:
+                    action = ACTION_DO_NOTHING
+                gate_trade_prob = trade_prob
+                gate_notrade_prob = 1.0 - trade_prob
 
         # Market snapshot
         ts_raw = timestamps[global_idx] if timestamps is not None else None
@@ -1766,13 +1640,13 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         rvol = _snap('realized_vol')
         vol_z = _snap('volume_ratio')
 
-        confidence = gate_trade_prob * float(dir_probs[dir_action])
+        confidence = trade_prob
 
         reason_codes: list[str] = []
-        if gate_action == 1:
+        if action != ACTION_DO_NOTHING:
             reason_codes.append("trade_signal")
         else:
-            reason_codes.append("gate_no_trade")
+            reason_codes.append("no_trade")
 
         # Bar log entry
         bar_entry = {
@@ -1785,9 +1659,9 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             'volume': vol_now,
             'gate_trade_prob': gate_trade_prob,
             'gate_notrade_prob': gate_notrade_prob,
-            'top_direction': DIR_NAMES[dir_action],
-            'top_dir_prob': float(dir_probs[dir_action]),
-            'dir_probs': {DIR_NAMES[i]: float(dir_probs[i]) for i in range(len(dir_probs))},
+            'pred_return_30': pred_30 ,
+            'pred_conf': pred_conf_val ,
+            'exit_signal': exit_signal ,
             'action': ACTION_NAMES.get(action, '?'),
             'executed_action': ACTION_NAMES.get(action, '?'),
             'position': 'IN_TRADE' if in_trade else 'FLAT',
@@ -1817,19 +1691,30 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             else:
                 _trade_bars_since_high += 1
 
-            # Exit conditions — matching prepare.py evaluate_trades()
+            # Exit conditions
             hit_stop = net_pnl_pct <= -trade_dynamic_stop_pct
             hit_max_hold = bars_held >= MAX_HOLD_BARS
-            model_exit = (action == ACTION_DO_NOTHING)  # gate=NO_TRADE while holding
+            model_exit = (exit_signal > EXIT_GATE_THRESHOLD) and (bars_held >= MIN_HOLD_BARS)
+            # v17: direction reversal exit -- if model now predicts opposite direction
+            direction_reversed = False
+            if bars_held >= MIN_HOLD_BARS:
+                entry_was_long = trade_entry_pred_30 > 0
+                now_predicts_short = pred_30 < -0.0005  # meaningful reversal, not noise
+                now_predicts_long = pred_30 > 0.0005
+                if (entry_was_long and now_predicts_short) or (not entry_was_long and now_predicts_long):
+                    direction_reversed = True
             is_last = (k_pos == len(valid_indices) - 1)
 
-            if hit_stop or hit_max_hold or model_exit or is_last:
+            if hit_stop or hit_max_hold or model_exit or direction_reversed or is_last:
                 if hit_stop:
                     final_pnl = -trade_dynamic_stop_pct
                     reason = 'STOP_LOSS'
                 elif model_exit:
                     final_pnl = net_pnl_pct
                     reason = 'MODEL_EXIT'
+                elif direction_reversed:
+                    final_pnl = net_pnl_pct
+                    reason = 'DIRECTION_REVERSAL'
                 elif hit_max_hold:
                     final_pnl = net_pnl_pct
                     reason = 'MAX_HOLD'
@@ -1941,9 +1826,9 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                     'session_low': round(session_low, 2),
                     'day_open': round(day_open, 2) if day_open else None,
                     'entry_gate_prob': round(trade_entry_gate_prob, 4),
-                    'entry_dir_probs': {DIR_NAMES[i]: round(float(trade_entry_dir_probs[i]), 4)
-                                        for i in range(len(DIR_NAMES))} if trade_entry_dir_probs is not None else None,
-                    'exit_gate_notrade_prob': round(gate_notrade_prob, 4),
+                    'entry_pred_return_30': round(float(trade_entry_pred_30), 6) ,
+                    'entry_pred_conf': round(float(trade_entry_pred_conf), 6) ,
+                    'exit_signal': round(exit_signal, 4),
                     'entry_confidence': round(float(trade_entry_confidence), 6),
                     'entry_stop_price': round(float(trade_stop_price), 4),
                     'entry_take_profit_price': round(float(trade_take_profit_price), 4),
@@ -1972,22 +1857,48 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
                 _trade_best_pnl = 0.0
                 _trade_bars_since_high = 0
 
-        # --- Handle trade entry ---
+        # --- Handle trade entry (via trading_rules engine) ---
         if not in_trade and action in _ENTRY_ACTIONS:
-            if (k_pos - last_stop_k) < STOP_COOLDOWN_BARS:
-                cooldown_blocked += 1
-                bar_entry['executed_action'] = 'DO_NOTHING'
-                bar_entry['policy_gate_reason_codes'].append('blocked_cooldown')
-                if verbose and not quiet:
-                    print(f"  {time_str}  BLOCKED (cooldown {k_pos - last_stop_k}/{STOP_COOLDOWN_BARS})")
-                continue
-            if _bar_of_day.get(global_idx, 999) < NO_TRADE_BEFORE_BAR:
-                pre_10am_blocked += 1
-                bar_entry['executed_action'] = 'DO_NOTHING'
-                bar_entry['policy_gate_reason_codes'].append('blocked_pre_10am')
-                if verbose and not quiet:
-                    print(f"  {time_str}  BLOCKED (pre-10am)")
-                continue
+            _bod_entry = _bar_of_day.get(global_idx, 999)
+            _bars_since_stop = k_pos - last_stop_k
+            if True:
+                _entry_signal = _rules_should_enter(
+                    trade_prob=trade_prob,
+                    pred_return_30=pred_30,
+                    exit_signal=exit_signal,
+                    bar_of_day=_bod_entry,
+                    bars_since_last_stop=_bars_since_stop,
+                    account_balance=account_balance,
+                )
+                if _entry_signal is None:
+                    if _bars_since_stop < STOP_COOLDOWN_BARS:
+                        cooldown_blocked += 1
+                        bar_entry['policy_gate_reason_codes'].append('blocked_cooldown')
+                    elif _bod_entry < NO_TRADE_BEFORE_BAR:
+                        pre_10am_blocked += 1
+                        bar_entry['policy_gate_reason_codes'].append('blocked_pre_10am')
+                    else:
+                        bar_entry['policy_gate_reason_codes'].append('blocked_rules')
+                    bar_entry['executed_action'] = 'DO_NOTHING'
+                    continue
+                # Use ATM action from trading rules (OTM tested in Track 4, hurt PF)
+                action = _entry_signal.action
+            else:
+                # Legacy v14 inline filtering
+                if _bars_since_stop < STOP_COOLDOWN_BARS:
+                    cooldown_blocked += 1
+                    bar_entry['executed_action'] = 'DO_NOTHING'
+                    bar_entry['policy_gate_reason_codes'].append('blocked_cooldown')
+                    continue
+                if _bod_entry < NO_TRADE_BEFORE_BAR:
+                    pre_10am_blocked += 1
+                    bar_entry['executed_action'] = 'DO_NOTHING'
+                    bar_entry['policy_gate_reason_codes'].append('blocked_pre_10am')
+                    continue
+                if NO_TRADE_LUNCH_START <= _bod_entry < NO_TRADE_LUNCH_END:
+                    bar_entry['executed_action'] = 'DO_NOTHING'
+                    bar_entry['policy_gate_reason_codes'].append('blocked_lunch')
+                    continue
             candidate_px_array = get_px_array(action)
             if candidate_px_array is None:
                 missing_option_array_blocked += 1
@@ -2018,25 +1929,19 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
             trade_entry_price = float(entry_px_raw)
             trade_last_price = float(entry_px_raw)
             trade_px_array = candidate_px_array
-            trade_entry_gate_prob = float(gate_trade_prob)
-            trade_entry_dir_probs = dir_probs.copy()
+            trade_entry_gate_prob = float(trade_prob)
             trade_entry_confidence = confidence
-            # Risk head: use learned stop and sizing; fall back to formula
-            if _risk_output is not None:
-                _stop_raw = float(_risk_output[0, 0].item())
-                _size_raw = float(_risk_output[0, 1].item())
-                _conv_raw = float(_risk_output[0, 2].item())
-                trade_dynamic_stop_pct = _stop_raw if np.isfinite(_stop_raw) else DYNAMIC_STOP_BASE
-                _size_frac = _size_raw if np.isfinite(_size_raw) else 0.5
-                _trade_conviction = _conv_raw if np.isfinite(_conv_raw) else 0.0
-                # Position sizing from risk head
-                max_affordable = max(1, int(account_balance * POSITION_RISK_TARGET / contract_cost))
-                trade_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
+            trade_entry_pred_30 = pred_30
+            trade_entry_pred_conf = pred_conf_val
+            # v18: use learned stop distance from risk head; v17: formula
+            if _is_v18 and _v18_stop_dist > 0:
+                # Risk head outputs stop in ATR units, convert to pct
+                _atr_feat = float(features[global_idx, _FEAT_IDX['atr_14']]) if global_idx < features.shape[0] else 0.01
+                trade_dynamic_stop_pct = min(max(_v18_stop_dist * _atr_feat, DYNAMIC_STOP_MIN), DYNAMIC_STOP_MAX)
             else:
                 _iv_feat = float(features[global_idx, _FEAT_IDX['atm_iv']]) if global_idx < features.shape[0] else 0.0
                 _vix_feat = float(features[global_idx, _FEAT_IDX['vix_regime']]) if global_idx < features.shape[0] else 0.0
-                trade_dynamic_stop_pct = compute_dynamic_stop(gate_trade_prob, _iv_feat, _vix_feat)
-                _trade_conviction = 0.0
+                trade_dynamic_stop_pct = compute_dynamic_stop(trade_prob, _iv_feat, _vix_feat)
             trade_stop_price = float(trade_entry_price * (1.0 - trade_dynamic_stop_pct))
             trade_take_profit_price = float(trade_entry_price * 6.0)  # effectively no TP — model decides
             bars_held = 0
@@ -3517,6 +3422,11 @@ def main():
                         help="Save trade log to CSV file (single-day mode)")
     parser.add_argument("--train-py", type=str, default=None,
                         help="Path to train.py/best_train.py for custom model architecture")
+    parser.add_argument("--min-trade-prob", type=float, default=0.55,
+                        help="Minimum gate probability to enter trade (metadata, default: 0.55)")
+    parser.add_argument("--risk-mode", type=str, default="live_like",
+                        choices=["live_like", "training"],
+                        help="Risk mode for stop-loss behavior (metadata, default: live_like)")
     args = parser.parse_args()
 
     if not args.date and not args.backtest:
