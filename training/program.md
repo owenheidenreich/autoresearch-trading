@@ -4,32 +4,50 @@ Single source of truth. If anything conflicts with this file, this file wins.
 
 ## Mission
 
-Build a model that predicts SPX price movement. The model does NOT know about options, P&L, or trading. It predicts where SPX goes. Separate code converts predictions into 0DTE option trades.
+Build a model that makes complete SPX 0DTE trading decisions: when to enter, which strike, how much risk, when to exit. The model learns from path-quality labels (MFE/MAE), not hindsight P&L.
 
-## The Loop
+## The Autoresearch Loop
 
-One loop. Karpathy's autoresearch design.
+This project follows Karpathy's autoresearch design: the AI is an autonomous researcher. It modifies train.py, runs experiments, evaluates results, keeps or discards, and repeats. The human's role is writing this program.md file -- programming the research organization, not doing the research.
+
+### LOOP FOREVER:
 
 1. Read this file + train.py + lab_notebook.md
 2. Propose ONE small change to train.py (or run baseline)
-3. Run experiment: `python3 tools/inner_loop.py experiment --mutation /tmp/mutation.py --summary "hypothesis"`
-4. Check score. If better: KEPT. If not: REVERTED.
-5. Repeat.
+3. git commit the change
+4. Run experiment: `python3 tools/inner_loop.py experiment --summary "hypothesis"`
+5. Check score. If better: KEPT (branch advances). If not: REVERTED (git reset).
+6. Log result in lab_notebook.md
+7. **Go to step 1. Do not stop. Do not ask "should I continue?" The human may be asleep.**
 
-Expected cadence: ~7 min per experiment. ~8 per hour on GPU.
+Expected cadence: ~7 min per experiment. ~8 per hour on GPU. ~100 overnight.
 
-When stuck (3+ consecutive reverts): stop experimenting. Read the replay backtest data. Form a hypothesis about why. Then try again with a structural change.
+### Decision Rules
 
-When the human asks "what should we do next": analyze existing data first, present findings, propose options. Research before GPU spend.
+- **KEEP** when score improves (higher is better)
+- **DISCARD** when score is equal or worse -- revert to previous commit
+- **CRASH** -- if it's a typo or easy fix, fix and re-run. If fundamentally broken, log it, discard, move on
+- **Timeout** -- if experiment exceeds 10 minutes, kill and treat as crash
+
+### When Stuck (3+ consecutive reverts)
+
+Stop experimenting. Read the replay backtest data. Form a hypothesis about WHY. Then try again with a structural change. Do not keep hammering small hyperparameter tweaks when the issue is structural.
+
+### NEVER STOP
+
+Once the experiment loop has begun, do NOT pause to ask the human if you should continue. Do NOT ask "should I keep going?" or "is this a good stopping point?" The human might be asleep and expects you to continue working indefinitely until manually stopped. You are autonomous. If you run out of ideas, think harder -- re-read domain knowledge, try combining previous near-misses, try more radical changes. The loop runs until the human interrupts you, period.
 
 ## Model Contract
 
-Three-head PredictionModel:
-- **Return head**: (batch, 3) -- predicted SPX % change at 15/30/60 bar horizons
-- **Confidence head**: (batch, 1) -- predicted volatility
-- **Action head**: (batch, 3) -- [trade_prob, position_size, exit_signal] (sigmoid, account-aware)
+Five-head TradingModel (v18):
+- **Market head**: (batch, 3) -- predicted SPX % change at 15/30/60 bar horizons
+- **Entry gate**: (batch, 1) -- sigmoid: should we enter a trade?
+- **Risk head**: (batch, 3) -- [stop_distance, target_distance, conviction]
+- **Exit head**: (batch, 1) -- sigmoid: should we exit?
+- **Direction head**: (batch, 6) -- 6-class softmax: call/put x ATM/OTM5/OTM10
 
-Account state: 5 dims [growth, consec_losses/5, daily_pnl/balance, win_rate, drawdown]
+Note: forward() returns 7 values (5 above + gate_logit + exit_logit for autocast-safe BCE).
+
 Backbone: Transformer d=64, 4 heads, depth=3, Pre-LN, causal
 Input: (batch, lookback, 39 features)
 
@@ -37,12 +55,11 @@ Input: (batch, lookback, 39 features)
 
 `data.pt` contains:
 - `features`: (N, 39) normalized market features
-- `pred_return_15/30/60`: forward SPX % change
-- `pred_volatility_30`: realized volatility
-- `pred_action_target`: graded signal (0.0 / 0.5 / 1.0)
+- v17 labels: `pred_return_15/30/60`, `pred_volatility_30`, `pred_action_target`
+- v18 labels: `v18_mfe`, `v18_mae`, `v18_entry_gate`, `v18_risk_stop_distance`, `v18_risk_target_distance`, `v18_risk_conviction`, `v18_exit_label`, `v18_direction_label`, `v18_bar_weight`
 - `valid_mask`, `train_end_idx`, `val_start_idx`, `val_end_idx`
 
-No options P&L. No hindsight.
+No options P&L in training loss. No hindsight.
 
 ## Score
 
@@ -55,26 +72,28 @@ One number. This is the ONLY input to the keep/revert decision.
 ## Loss
 
 ```python
-total = huber(pred_returns, actual_returns)
-     + CONF_W * mse(pred_conf, actual_vol)
-     + ACTION_W * mse(action, action_targets)
+total = huber(market_pred, ret_target, delta=0.01)
+     + GATE_W  * bce_with_logits(gate_logit, gate_target)  # weighted by bar_weight
+     + RISK_W  * huber(risk_params, risk_target, delta=0.5)
+     + EXIT_W  * bce_with_logits(exit_logit, exit_target)  # weighted by bar_weight
+     + DIR_W   * cross_entropy(dir_logits, dir_target)      # weighted by bar_weight
 ```
 
 ## What You MAY Change in train.py
 
-- Hyperparameters (LR, dropout, batch size, weight decay, loss weights)
-- Loss function form (Huber to MSE, add terms, change delta)
+- Hyperparameters (LR, dropout, batch size, weight decay, all loss weights)
+- Loss function form (Huber delta, add terms, change weighting)
 - Regularization
 - LR schedule
 - Batch construction
-- Prediction horizons
+- Head architecture (layers, width, activation)
 - New loss terms with env var weights
 
 ## What You MUST NOT Change
 
-- forward() signature (inputs: x, account_state; outputs: pred_returns, pred_conf, action)
+- forward() output contract (7-tuple: market_pred, entry_gate, risk_params, exit_signal, dir_logits, gate_logit, exit_logit)
 - Score formula
-- D_MODEL, DEPTH, N_HEADS (architecture lock)
+- D_MODEL, DEPTH, N_HEADS (architecture lock on backbone)
 - Add options P&L to labels
 - Add hindsight to features
 - Skip validation
@@ -113,7 +132,7 @@ If uncertain, fresh start. Poisoned warm start costs more than retraining.
 |------|------|------------|
 | training/train.py | Model + training loop | Agent (mutations) |
 | training/program.md | This file. Instructions. | Human only |
-| training/prepare.py | Data pipeline, features | Fixed (rebuild with --skip-download) |
+| training/prepare.py | Data pipeline, features, labels | Fixed (rebuild with --skip-download) |
 | training/replay.py | Backtest simulation | Fixed |
 | training/best_model.pt | Current best checkpoint | Promoted by inner_loop.py |
 | training/best_train.py | Code that produced best model | Promoted by inner_loop.py |
@@ -130,7 +149,6 @@ If uncertain, fresh start. Poisoned warm start costs more than retraining.
 | Rebuild data | `python3 training/prepare.py --skip-download --use-spx` |
 | Version check | `python3 -m pytest tests/test_version_consistency.py -v` |
 | Deploy GPU | `./infra/deploy.sh boot && ./infra/deploy.sh start` |
-| Paper trade | `python3 tools/paper_live.py --paper-auto --port 4002 --client-id 80` |
 | Status | `cat training/.best_score && python3 tools/inner_loop.py status` |
 | Fresh start | `rm training/best_model.pt; echo -5.0 > training/.best_score; rm -f training/.inner_loop_state.json; cp training/train.py training/best_train.py` |
 
@@ -152,3 +170,4 @@ Reference: `docs/domain/pickles-trading-knowledge.md`, `docs/domain/0dte-domain-
 - Version consistency gate must pass before training
 - One change per experiment
 - Research before GPU spend
+- The loop never stops until the human stops it
