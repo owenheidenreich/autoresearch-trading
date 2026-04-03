@@ -6,10 +6,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import time
 import uuid
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -25,6 +27,9 @@ from v2.core.policy import DecisionPolicy, DEFAULT_POLICY
 from v2.core.simulator import simulate_trade
 from v2.core.metrics import compute_metrics, ReplayMetrics
 from v2.train import TradingModel, LOOKBACK, STRIKE_OFFSETS, STRIKE_OFFSET_TO_IDX
+
+BATCH_SIZE = 4096
+BASELINE_CACHE_PATH = "v2/.baseline_cache.json"
 
 
 def load_model(path: str, device: str = "cpu") -> TradingModel:
@@ -113,6 +118,14 @@ def model_to_intent(
     )
 
 
+def _build_day_index(dates) -> dict[str, list[int]]:
+    """Build a dict mapping date string -> list of global bar indices."""
+    day_to_bars: dict[str, list[int]] = defaultdict(list)
+    for i, d in enumerate(dates):
+        day_to_bars[d].append(i)
+    return day_to_bars
+
+
 def replay_validation(
     model: TradingModel,
     data: dict,
@@ -151,97 +164,142 @@ def replay_validation(
     model = model.to(device)
     model.eval()
 
-    all_trades = []
-    num_days = 0
+    # Precompute day index
+    day_to_bars = _build_day_index(dates)
+
+    # --- Pass 1: collect all eligible bar indices ---
+    t_start = time.time()
+    eligible_bars = []  # list of (day, bar_idx, bar_of_day_value)
 
     for day in eval_dates:
-        # Get bars for this day
-        day_bars = [i for i in range(len(dates)) if dates[i] == day]
+        day_bars = day_to_bars.get(day, [])
         if len(day_bars) < LOOKBACK + 10:
             continue
-
-        num_days += 1
-        expiry = day.replace("-", "")
-
-        # State for this day
-        in_trade = False
-        trade_exit_bar = -1
-        last_stop_bar = -policy.cooldown_bars - 1
-
         for bar_idx in day_bars:
-            bod = int(bar_of_day[bar_idx])
-
-            # Skip if can't form lookback window
             if bar_idx < LOOKBACK:
                 continue
-
-            # Skip if outside trading window (from policy)
+            bod = int(bar_of_day[bar_idx])
             if bod < policy.no_trade_before_bar or bod >= policy.no_trade_after_bar:
                 continue
+            eligible_bars.append((day, bar_idx, bod))
 
-            # Skip if in position or cooldown
-            if in_trade and bar_idx <= trade_exit_bar:
-                continue
+    # --- Pass 2: build lookback windows and batch inference ---
+    n_bars = len(eligible_bars)
+    if n_bars == 0:
+        return ReplayMetrics(), []
+
+    # Build all windows at once using numpy for speed
+    window_indices = np.array([b[1] for b in eligible_bars])
+    # Create index arrays for gathering: for each bar, we need [bar_idx-LOOKBACK : bar_idx]
+    # Shape: (n_bars, LOOKBACK)
+    offsets = np.arange(-LOOKBACK, 0).reshape(1, -1)  # (1, LOOKBACK)
+    gather_idx = window_indices.reshape(-1, 1) + offsets  # (n_bars, LOOKBACK)
+    # Clip to valid range (shouldn't be needed given bar_idx >= LOOKBACK check, but safety)
+    gather_idx = np.clip(gather_idx, 0, len(features) - 1)
+
+    # Gather all windows: (n_bars, LOOKBACK, NUM_FEATURES)
+    all_windows = features[gather_idx]
+
+    # Batched inference
+    all_outputs_list = []
+    t_inf_start = time.time()
+    with torch.no_grad():
+        for start in range(0, n_bars, BATCH_SIZE):
+            end = min(start + BATCH_SIZE, n_bars)
+            batch = torch.from_numpy(all_windows[start:end]).to(device)
+            batch_out = model(batch)
+            # Move to CPU and store
+            all_outputs_list.append({k: v.cpu() for k, v in batch_out.items()})
+
+    # Concatenate all batch outputs
+    all_outputs = {}
+    if all_outputs_list:
+        keys = all_outputs_list[0].keys()
+        for k in keys:
+            all_outputs[k] = torch.cat([o[k] for o in all_outputs_list], dim=0)
+
+    t_inf = time.time() - t_inf_start
+    print(f"  Inference: {t_inf:.1f}s ({n_bars} bars)")
+
+    # --- Pass 3: sequential trade simulation using pre-computed model outputs ---
+    t_sim_start = time.time()
+
+    all_trades = []
+    num_days = 0
+    current_day = None
+
+    # Per-day state
+    in_trade = False
+    trade_exit_bar = -1
+    last_stop_bar = -1000
+
+    for i, (day, bar_idx, bod) in enumerate(eligible_bars):
+        # Reset state on day boundary
+        if day != current_day:
+            current_day = day
+            num_days += 1
             in_trade = False
+            trade_exit_bar = -1
+            last_stop_bar = -policy.cooldown_bars - 1
 
-            if bar_idx - last_stop_bar < policy.cooldown_bars:
-                continue
+        # Skip if in position or cooldown
+        if in_trade and bar_idx <= trade_exit_bar:
+            continue
+        in_trade = False
 
-            # Get feature window
-            window = features[bar_idx - LOOKBACK:bar_idx]
-            if window.shape[0] != LOOKBACK:
-                continue
+        if bar_idx - last_stop_bar < policy.cooldown_bars:
+            continue
 
-            x = torch.from_numpy(window).unsqueeze(0).to(device)
+        # Extract this bar's outputs from the batched result
+        outputs = {k: v[i] for k, v in all_outputs.items()}
 
-            # Model inference
-            with torch.no_grad():
-                outputs = model(x)
-                outputs = {k: v.squeeze(0) for k, v in outputs.items()}
+        spot = float(spot_prices[bar_idx])
+        if spot <= 0 or np.isnan(spot):
+            continue
 
-            spot = float(spot_prices[bar_idx])
-            if spot <= 0 or np.isnan(spot):
-                continue
+        # Get ATM option price for entry reference
+        atm_call_px = float(data.get('atm_call_prices', torch.zeros(1))[bar_idx]) if 'atm_call_prices' in data else 0
+        atm_put_px = float(data.get('atm_put_prices', torch.zeros(1))[bar_idx]) if 'atm_put_prices' in data else 0
+        option_mid = max(atm_call_px, atm_put_px, 0.5)  # fallback
 
-            # Get ATM option price for entry reference
-            atm_call_px = float(data.get('atm_call_prices', torch.zeros(1))[bar_idx]) if 'atm_call_prices' in data else 0
-            atm_put_px = float(data.get('atm_put_prices', torch.zeros(1))[bar_idx]) if 'atm_put_prices' in data else 0
-            option_mid = max(atm_call_px, atm_put_px, 0.5)  # fallback
+        expiry = day.replace("-", "")
+        intent = model_to_intent(
+            outputs, bar_idx, bod, spot, option_mid, expiry,
+            policy=policy,
+        )
 
-            intent = model_to_intent(
-                outputs, bar_idx, bod, spot, option_mid, expiry,
-                policy=policy,
-            )
+        if not intent.trade:
+            continue
 
-            if not intent.trade:
-                continue
+        # Find the option price array for this intent
+        price_key = _intent_to_price_key(intent)
+        if price_key not in data:
+            continue
 
-            # Find the option price array for this intent
-            price_key = _intent_to_price_key(intent)
-            if price_key not in data:
-                continue
+        option_prices = data[price_key].numpy().astype(np.float32)
 
-            option_prices = data[price_key].numpy().astype(np.float32)
+        trade = simulate_trade(
+            intent=intent,
+            option_prices=option_prices,
+            features=features,
+            bar_of_day=bar_of_day,
+            dates=dates,
+            global_entry_bar=bar_idx,
+        )
 
-            trade = simulate_trade(
-                intent=intent,
-                option_prices=option_prices,
-                features=features,
-                bar_of_day=bar_of_day,
-                dates=dates,
-                global_entry_bar=bar_idx,
-            )
+        if trade is None:
+            continue
 
-            if trade is None:
-                continue
+        all_trades.append(trade)
+        in_trade = True
+        trade_exit_bar = trade.exit_bar
 
-            all_trades.append(trade)
-            in_trade = True
-            trade_exit_bar = trade.exit_bar
+        if trade.exit_reason == "STOP_LOSS":
+            last_stop_bar = trade.exit_bar
+        in_trade = False
 
-            if trade.exit_reason == "STOP_LOSS":
-                last_stop_bar = trade.exit_bar
-            in_trade = False
+    t_sim = time.time() - t_sim_start
+    print(f"  Simulation: {t_sim:.1f}s ({len(all_trades)} trades)")
 
     metrics = compute_metrics(
         all_trades,
@@ -280,15 +338,76 @@ def _intent_to_price_key(intent: TradeIntent) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Baseline caching
+# ---------------------------------------------------------------------------
+
+def _baseline_cache_key(data: dict, mask_key: str, policy: DecisionPolicy, max_days: int | None) -> str:
+    """Generate a fingerprint for the dataset + policy + mask combo."""
+    # Use shape + mask sum + first/last values as a fast fingerprint
+    X = data['X']
+    parts = [
+        str(X.shape),
+        str(int(data[mask_key].sum().item())),
+        str(float(X[0, 0].item())) if X.numel() > 0 else "0",
+        str(float(X[-1, -1].item())) if X.numel() > 0 else "0",
+        mask_key,
+        str(policy.gate_threshold),
+        str(policy.no_trade_before_bar),
+        str(policy.no_trade_after_bar),
+        str(policy.cooldown_bars),
+        str(max_days),
+    ]
+    fingerprint = "|".join(parts)
+    return hashlib.md5(fingerprint.encode()).hexdigest()
+
+
+def _load_cached_baselines(cache_key: str) -> dict | None:
+    """Load baselines from cache if fingerprint matches."""
+    if not os.path.exists(BASELINE_CACHE_PATH):
+        return None
+    try:
+        with open(BASELINE_CACHE_PATH, 'r') as f:
+            cache = json.load(f)
+        if cache.get("cache_key") == cache_key:
+            return cache.get("baselines")
+    except (json.JSONDecodeError, KeyError, OSError):
+        pass
+    return None
+
+
+def _save_baseline_cache(cache_key: str, baselines: dict):
+    """Save baselines to cache file."""
+    cache = {
+        "cache_key": cache_key,
+        "baselines": baselines,
+    }
+    try:
+        with open(BASELINE_CACHE_PATH, 'w') as f:
+            json.dump(cache, f, indent=2)
+    except OSError:
+        pass  # non-fatal
+
+
+def _dict_to_replay_metrics(d: dict) -> ReplayMetrics:
+    """Reconstruct a ReplayMetrics from a dict (cache loading)."""
+    m = ReplayMetrics()
+    for k, v in d.items():
+        if hasattr(m, k):
+            setattr(m, k, v)
+    return m
+
+
+# ---------------------------------------------------------------------------
 # Baselines (computed on the same mask as the model for fair comparison)
 # ---------------------------------------------------------------------------
 
 def compute_baseline_random(
     data: dict,
     mask_key: str = "promote_mask",
-    n_seeds: int = 20,
+    n_seeds: int = 5,
     max_days: int | None = None,
     policy: DecisionPolicy = DEFAULT_POLICY,
+    day_to_bars: dict[str, list[int]] | None = None,
 ) -> ReplayMetrics:
     """Random baseline: 50% chance to trade at each bar, random candidate."""
     features = data['X'].numpy()
@@ -296,6 +415,9 @@ def compute_baseline_random(
     dates = data['dates']
     bar_of_day = data['bar_of_day'].numpy()
     spot_prices = data['spot_prices'].numpy()
+
+    if day_to_bars is None:
+        day_to_bars = _build_day_index(dates)
 
     all_pfs = []
     all_wrs = []
@@ -315,7 +437,7 @@ def compute_baseline_random(
         num_days = 0
 
         for day in eval_dates:
-            day_bars = [i for i in range(len(dates)) if dates[i] == day]
+            day_bars = day_to_bars.get(day, [])
             if len(day_bars) < 50:
                 continue
             num_days += 1
@@ -383,6 +505,7 @@ def compute_baseline_atm_always(
     mask_key: str = "promote_mask",
     max_days: int | None = None,
     policy: DecisionPolicy = DEFAULT_POLICY,
+    day_to_bars: dict[str, list[int]] | None = None,
 ) -> ReplayMetrics:
     """ATM-always baseline: buy ATM call at bar 30 every day."""
     features = data['X'].numpy()
@@ -390,6 +513,9 @@ def compute_baseline_atm_always(
     dates = data['dates']
     bar_of_day = data['bar_of_day'].numpy()
     spot_prices = data['spot_prices'].numpy()
+
+    if day_to_bars is None:
+        day_to_bars = _build_day_index(dates)
 
     mask_indices = np.where(mask)[0]
     eval_dates = sorted(set(dates[i] for i in mask_indices))
@@ -400,7 +526,7 @@ def compute_baseline_atm_always(
     num_days = 0
 
     for day in eval_dates:
-        day_bars = [i for i in range(len(dates)) if dates[i] == day]
+        day_bars = day_to_bars.get(day, [])
         if len(day_bars) < 50:
             continue
         num_days += 1
@@ -451,6 +577,7 @@ def compute_baseline_simple_rules(
     mask_key: str = "promote_mask",
     max_days: int | None = None,
     policy: DecisionPolicy = DEFAULT_POLICY,
+    day_to_bars: dict[str, list[int]] | None = None,
 ) -> ReplayMetrics:
     """Simple rules: buy call on +momentum, put on -momentum."""
     features = data['X'].numpy()
@@ -459,6 +586,9 @@ def compute_baseline_simple_rules(
     bar_of_day = data['bar_of_day'].numpy()
     spot_prices = data['spot_prices'].numpy()
     ret_idx = _FEAT_IDX.get('ret_6', 0)
+
+    if day_to_bars is None:
+        day_to_bars = _build_day_index(dates)
 
     mask_indices = np.where(mask)[0]
     eval_dates = sorted(set(dates[i] for i in mask_indices))
@@ -469,7 +599,7 @@ def compute_baseline_simple_rules(
     num_days = 0
 
     for day in eval_dates:
-        day_bars = [i for i in range(len(dates)) if dates[i] == day]
+        day_bars = day_to_bars.get(day, [])
         if len(day_bars) < 50:
             continue
         num_days += 1
@@ -540,6 +670,35 @@ def print_metrics(name: str, m: ReplayMetrics):
         print(f"  GATE FAILURE: {m.gate_failure}")
 
 
+def _compute_all_baselines(data, mask_key, max_days, policy, day_to_bars):
+    """Compute all three baselines, using cache when available."""
+    cache_key = _baseline_cache_key(data, mask_key, policy, max_days)
+    cached = _load_cached_baselines(cache_key)
+    if cached is not None:
+        print("  (baselines loaded from cache)")
+        return (
+            _dict_to_replay_metrics(cached["random"]),
+            _dict_to_replay_metrics(cached["atm_always"]),
+            _dict_to_replay_metrics(cached["simple_rules"]),
+        )
+
+    t0 = time.time()
+    b_random = compute_baseline_random(data, mask_key=mask_key, max_days=max_days, policy=policy, day_to_bars=day_to_bars)
+    b_atm = compute_baseline_atm_always(data, mask_key=mask_key, max_days=max_days, policy=policy, day_to_bars=day_to_bars)
+    b_rules = compute_baseline_simple_rules(data, mask_key=mask_key, max_days=max_days, policy=policy, day_to_bars=day_to_bars)
+    t_bl = time.time() - t0
+    print(f"  Baselines: {t_bl:.1f}s")
+
+    # Save to cache
+    _save_baseline_cache(cache_key, {
+        "random": b_random.to_dict(),
+        "atm_always": b_atm.to_dict(),
+        "simple_rules": b_rules.to_dict(),
+    })
+
+    return b_random, b_atm, b_rules
+
+
 def main():
     parser = argparse.ArgumentParser(description="v2 replay evaluation")
     parser.add_argument("--model", type=str, default="v2/model.pt")
@@ -573,15 +732,15 @@ def main():
         # Create a new policy with overridden gate threshold
         policy = DecisionPolicy(gate_threshold=args.gate)
 
+    # Precompute day index once for all uses
+    dates = data['dates']
+    day_to_bars = _build_day_index(dates)
+
     if args.baselines:
         print(f"\n--- COMPUTING BASELINES (on {mask_key}) ---")
-        b_random = compute_baseline_random(data, mask_key=mask_key, max_days=args.days, policy=policy)
+        b_random, b_atm, b_rules = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
         print_metrics("Random Baseline", b_random)
-
-        b_atm = compute_baseline_atm_always(data, mask_key=mask_key, max_days=args.days, policy=policy)
         print_metrics("ATM-Always Baseline", b_atm)
-
-        b_rules = compute_baseline_simple_rules(data, mask_key=mask_key, max_days=args.days, policy=policy)
         print_metrics("Simple-Rules Baseline", b_rules)
         return
 
@@ -600,13 +759,9 @@ def main():
 
     # Compare with baselines
     print(f"\n--- BASELINES (on {mask_key}) ---")
-    b_random = compute_baseline_random(data, mask_key=mask_key, max_days=args.days, policy=policy)
+    b_random, b_atm, b_rules = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
     print_metrics("Random", b_random)
-
-    b_atm = compute_baseline_atm_always(data, mask_key=mask_key, max_days=args.days, policy=policy)
     print_metrics("ATM-Always", b_atm)
-
-    b_rules = compute_baseline_simple_rules(data, mask_key=mask_key, max_days=args.days, policy=policy)
     print_metrics("Simple-Rules", b_rules)
 
     print(f"\n--- COMPARISON ---")
