@@ -195,6 +195,7 @@ class SimulatedTrade:
     mae_pct: float = 0.0                # max adverse excursion
 
     # Context
+    trade_date: str = ""                 # YYYY-MM-DD, for daily P&L grouping
     underlying_at_entry: float = 0.0
     underlying_at_exit: float = 0.0
     vix_regime_at_entry: float = 0.0

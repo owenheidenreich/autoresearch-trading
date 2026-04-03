@@ -1,12 +1,19 @@
 """Replay scoring: computes performance metrics from simulated trades.
 
+Score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
+
+Evaluated on a dollar equity curve starting at $50,000 with SPX 100x
+contract multiplier. Measures what matters: steady daily profits,
+downside risk control, and direction diversity.
+
 See docs/v2/evaluator.md for the promotion score formula.
 """
 from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, asdict
+from collections import defaultdict
+from dataclasses import dataclass, field, asdict
 
 import numpy as np
 
@@ -24,15 +31,24 @@ class ReplayMetrics:
     trades_per_day: float = 0.0
     num_days: int = 0
 
-    # P&L
+    # P&L (per-trade percentages)
     gross_profit: float = 0.0
     gross_loss: float = 0.0
     net_pnl: float = 0.0
     avg_win: float = 0.0
     avg_loss: float = 0.0
 
+    # Account curve (dollar-based)
+    starting_equity: float = 50_000.0
+    net_pnl_dollars: float = 0.0
+    daily_returns: list[float] = field(default_factory=list)
+    positive_day_rate: float = 0.0
+    daily_sortino: float = 0.0
+    max_account_drawdown: float = 0.0
+    traded_days: int = 0
+
     # Risk
-    max_drawdown: float = 0.0
+    max_drawdown: float = 0.0  # per-trade equity curve drawdown (legacy)
     sharpe: float = 0.0
 
     # Direction balance
@@ -57,15 +73,23 @@ class ReplayMetrics:
 
     # Promotion
     score: float = 0.0
+    gate_failure: str | None = None
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        d = asdict(self)
+        return d
 
 
-def compute_metrics(trades: list[SimulatedTrade], num_days: int = 1) -> ReplayMetrics:
+def compute_metrics(
+    trades: list[SimulatedTrade],
+    num_days: int = 1,
+    starting_equity: float = 50_000.0,
+    contract_multiplier: int = 100,
+) -> ReplayMetrics:
     """Compute aggregate metrics from a list of simulated trades."""
     m = ReplayMetrics()
     m.num_days = max(num_days, 1)
+    m.starting_equity = starting_equity
 
     if not trades:
         return m
@@ -82,8 +106,8 @@ def compute_metrics(trades: list[SimulatedTrade], num_days: int = 1) -> ReplayMe
     m.net_pnl = sum(pnls)
 
     m.win_rate = len(wins) / m.total_trades if m.total_trades > 0 else 0.0
-    m.avg_win = np.mean(wins) if wins else 0.0
-    m.avg_loss = np.mean(losses) if losses else 0.0
+    m.avg_win = float(np.mean(wins)) if wins else 0.0
+    m.avg_loss = float(np.mean(losses)) if losses else 0.0
 
     # Profit factor
     if m.gross_loss > 0:
@@ -93,7 +117,7 @@ def compute_metrics(trades: list[SimulatedTrade], num_days: int = 1) -> ReplayMe
     else:
         m.profit_factor = 0.0
 
-    # Max drawdown
+    # Per-trade equity curve drawdown (legacy)
     equity = [1.0]
     for p in pnls:
         equity.append(equity[-1] * (1.0 + p))
@@ -111,7 +135,6 @@ def compute_metrics(trades: list[SimulatedTrade], num_days: int = 1) -> ReplayMe
         mean_ret = float(np.mean(arr))
         std_ret = float(np.std(arr, ddof=1))
         if std_ret > 0:
-            # Annualize: assume ~1.5 trades/day, 252 days/year
             ann_factor = np.sqrt(1.5 * 252)
             m.sharpe = (mean_ret / std_ret) * ann_factor
 
@@ -139,9 +162,12 @@ def compute_metrics(trades: list[SimulatedTrade], num_days: int = 1) -> ReplayMe
             m.max_hold_count += 1
 
     # Duration and excursions
-    m.avg_bars_held = np.mean([t.bars_held for t in trades])
-    m.avg_mfe = np.mean([t.mfe_pct for t in trades])
-    m.avg_mae = np.mean([t.mae_pct for t in trades])
+    m.avg_bars_held = float(np.mean([t.bars_held for t in trades]))
+    m.avg_mfe = float(np.mean([t.mfe_pct for t in trades]))
+    m.avg_mae = float(np.mean([t.mae_pct for t in trades]))
+
+    # --- Account curve (dollar-based) ---
+    _compute_account_curve(m, trades, starting_equity, contract_multiplier)
 
     # Score
     m.score = compute_score(m)
@@ -149,50 +175,123 @@ def compute_metrics(trades: list[SimulatedTrade], num_days: int = 1) -> ReplayMe
     return m
 
 
-def compute_score(metrics: ReplayMetrics) -> float:
-    """Compute the promotion score. See docs/v2/evaluator.md.
+def _compute_account_curve(
+    m: ReplayMetrics,
+    trades: list[SimulatedTrade],
+    starting_equity: float,
+    contract_multiplier: int,
+) -> None:
+    """Build daily equity curve and compute account-level metrics.
 
-    Primary: profit factor. Adjusted by win rate, frequency, drawdown, direction balance.
+    Groups trades by trade_date, computes dollar P&L per day,
+    builds equity curve, derives Sortino and drawdown.
     """
-    pf = metrics.profit_factor
-    wr = metrics.win_rate
-    tpd = metrics.trades_per_day
-    dd = metrics.max_drawdown
+    # Group trades by date
+    daily_pnl: dict[str, float] = defaultdict(float)
+    for t in trades:
+        date = t.trade_date
+        if not date:
+            continue
+        # Dollar P&L = pnl_pct * entry_price * contract_multiplier * qty
+        dollar_pnl = t.net_pnl_pct * t.entry_price * contract_multiplier * t.intent.qty
+        daily_pnl[date] += dollar_pnl
 
-    # Direction balance: ratio of minority to majority direction
-    call_pct = metrics.call_pct
-    put_pct = metrics.put_pct
-    dir_majority = max(call_pct, put_pct, 0.01)
-    dir_minority = min(call_pct, put_pct)
+    if not daily_pnl:
+        return
+
+    # Sort by date
+    sorted_dates = sorted(daily_pnl.keys())
+    m.traded_days = len(sorted_dates)
+
+    # Build equity curve
+    equity = [starting_equity]
+    daily_dollar_pnls = []
+    for date in sorted_dates:
+        dpnl = daily_pnl[date]
+        daily_dollar_pnls.append(dpnl)
+        equity.append(equity[-1] + dpnl)
+
+    m.net_pnl_dollars = equity[-1] - starting_equity
+
+    # Daily returns (as fraction of starting equity for Sortino)
+    m.daily_returns = [dpnl / starting_equity for dpnl in daily_dollar_pnls]
+
+    # Positive day rate
+    positive_days = sum(1 for r in m.daily_returns if r > 0)
+    m.positive_day_rate = positive_days / m.traded_days if m.traded_days > 0 else 0.0
+
+    # Max account drawdown (peak-to-trough on equity curve)
+    peak = equity[0]
+    max_dd = 0.0
+    for e in equity:
+        peak = max(peak, e)
+        if peak > 0:
+            dd = (peak - e) / peak
+            max_dd = max(max_dd, dd)
+    m.max_account_drawdown = max_dd
+
+    # Daily Sortino ratio (annualized)
+    if len(m.daily_returns) > 1:
+        arr = np.array(m.daily_returns)
+        mean_daily = float(np.mean(arr))
+        # Downside deviation: std of returns below zero only
+        downside = arr[arr < 0]
+        if len(downside) > 0:
+            downside_std = float(np.std(downside, ddof=1))
+        else:
+            # No negative days: perfect but cap Sortino
+            downside_std = 0.0
+
+        if downside_std > 0:
+            # Annualize: sqrt(252 trading days)
+            m.daily_sortino = (mean_daily / downside_std) * np.sqrt(252)
+        elif mean_daily > 0:
+            m.daily_sortino = 6.0  # cap when no downside days
+        else:
+            m.daily_sortino = 0.0
+
+
+def compute_score(metrics: ReplayMetrics) -> float:
+    """Compute the promotion score.
+
+    score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
+
+    Hard gates return negative scores on failure.
+    """
+    # --- Hard gates ---
+    if metrics.total_trades < 30:
+        metrics.gate_failure = f"too_few_trades ({metrics.total_trades} < 30)"
+        return -1.0
+
+    if metrics.traded_days < 15:
+        metrics.gate_failure = f"too_few_traded_days ({metrics.traded_days} < 15)"
+        return -0.5
+
+    dir_majority = max(metrics.call_pct, metrics.put_pct, 0.01)
+    dir_minority = min(metrics.call_pct, metrics.put_pct)
     dir_balance = dir_minority / dir_majority
+    if dir_balance < 0.15:
+        metrics.gate_failure = f"direction_collapse (balance={dir_balance:.2f} < 0.15)"
+        return -0.3
 
-    # Base: profit factor (must be > 1.0 to be profitable)
-    base = max(0.0, pf - 1.0)
+    if metrics.max_account_drawdown > 0.20:
+        metrics.gate_failure = f"excessive_drawdown ({metrics.max_account_drawdown:.1%} > 20%)"
+        return -0.2
 
-    # Win rate bonus: reward consistent winners
-    wr_bonus = max(0.0, wr - 0.45) * 2.0
+    metrics.gate_failure = None
 
-    # Frequency penalty: too few or too many trades
-    freq_penalty = 1.0 - min(1.0, abs(tpd - 1.5) / 2.5)
+    # --- Ranking ---
+    sortino = min(metrics.daily_sortino, 6.0)
+    pdr = metrics.positive_day_rate
 
-    # Drawdown penalty: severe drawdowns kill the score
-    if dd < 0.15:
-        dd_penalty = 1.0
+    # DD multiplier: 1.0 at <= 8%, linear decay to 0.0 at 20%
+    dd = metrics.max_account_drawdown
+    if dd <= 0.08:
+        dd_mult = 1.0
     else:
-        dd_penalty = max(0.0, 1.0 - (dd - 0.15) * 4.0)
+        dd_mult = max(0.0, 1.0 - (dd - 0.08) / 0.12)
 
-    # Direction collapse penalty
-    if dir_balance > 0.2:
-        dir_penalty = 1.0
-    else:
-        dir_penalty = dir_balance / 0.2
-
-    score = base * (1.0 + wr_bonus) * freq_penalty * dd_penalty * dir_penalty
-
-    # Floor: unprofitable strategies get negative scores
-    if pf < 1.0:
-        score = -(1.0 - pf)
-
+    score = sortino * pdr * dd_mult
     return round(score, 6)
 
 
@@ -201,14 +300,17 @@ def compute_score(metrics: ReplayMetrics) -> float:
 # ---------------------------------------------------------------------------
 
 _SCORE_CONFIG = {
-    "base": "pf - 1.0",
-    "wr_bonus": "max(0, wr - 0.45) * 2.0",
-    "freq_center": 1.5,
-    "freq_width": 2.5,
-    "dd_threshold": 0.15,
-    "dd_slope": 4.0,
-    "dir_balance_threshold": 0.2,
-    "pf_floor": True,
+    "version": "v2.1_account_curve",
+    "primary": "daily_sortino * positive_day_rate * dd_mult",
+    "sortino_cap": 6.0,
+    "starting_equity": 50_000,
+    "contract_multiplier": 100,
+    "gate_min_trades": 30,
+    "gate_min_traded_days": 15,
+    "gate_min_dir_balance": 0.15,
+    "gate_max_drawdown": 0.20,
+    "dd_mult_free_below": 0.08,
+    "dd_mult_zero_above": 0.20,
 }
 
 
