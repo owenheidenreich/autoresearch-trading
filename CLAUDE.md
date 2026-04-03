@@ -35,6 +35,3 @@ This project follows Karpathy's autoresearch design (github.com/karpathy/autores
 - For tasks touching >5 files, launch parallel sub-agents.
 - File reads are capped at 2,000 lines. Use offset/limit for larger files.
 
-## User Decisions
-
-The user must agree on definition of every step of the Loop in ART2.
