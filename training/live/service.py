@@ -29,10 +29,10 @@ ACTION_NAMES = {
     1: "BUY_CALL_ATM",
     2: "BUY_CALL_OTM5",
     3: "BUY_CALL_OTM10",
-    4: "BUY_PUT_ATM",
-    5: "BUY_PUT_OTM5",
-    6: "BUY_PUT_OTM10",
-    7: "EXIT",
+    8: "BUY_PUT_ATM",
+    9: "BUY_PUT_OTM5",
+    10: "BUY_PUT_OTM10",
+    15: "EXIT",
 }
 
 TRADES_PATH = Path(os.path.join("results", "live", "trades.jsonl"))
@@ -273,7 +273,7 @@ class PaperTradingService:
             "bars_held": bars_held,
             "exit_reason": exit_reason,
             "gate_confidence": entry_meta.get("gate_confidence", 0),
-            "direction_probs": entry_meta.get("direction_probs", []),
+            "pred_return_30": entry_meta.get("pred_return_30", 0.0),
             "spx_at_entry": entry_meta.get("spx_at_entry", 0),
             "spx_at_exit": latest_spx,
             "stop_price": entry_meta.get("stop_price", 0),
@@ -608,8 +608,8 @@ class PaperTradingService:
                         "timestamp_ms": ts_ms,
                         "action": int(inference.action),
                         "confidence": float(inference.confidence),
-                        "gate_trade_prob": float(inference.gate_trade_prob),
-                        "direction_probs": [float(x) for x in inference.direction_probs],
+                        "trade_prob": float(inference.trade_prob),
+                        "pred_return_30": float(inference.pred_return_30),
                         "reason_codes": list(inference.reason_codes),
                     },
                 )
@@ -659,7 +659,7 @@ class PaperTradingService:
                             "intent_id": intent.intent_id,
                             "entry_ts": dt.datetime.utcnow().isoformat(),
                             "gate_confidence": float(intent.confidence),
-                            "direction_probs": [float(x) for x in inference.direction_probs],
+                            "pred_return_30": float(inference.pred_return_30),
                             "strike": getattr(intent.contract, "strike", ""),
                             "right": getattr(intent.contract, "right", ""),
                             "stop_price": float(intent.stop_price),

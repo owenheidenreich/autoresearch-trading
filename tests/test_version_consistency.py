@@ -115,49 +115,11 @@ def prepare_text():
     return _read("training/prepare.py")
 
 
-# Params intentionally excluded from PBT (architecture or system-level)
-ARCHITECTURE_PARAMS = frozenset({
-    "TRAIN_LOOKBACK", "TRAIN_D_MODEL", "TRAIN_DEPTH", "TRAIN_FF_MULT",
-    "TRAIN_DAY_SEQ_BATCH", "TORCHINDUCTOR_COMPILE_THREADS",
-    # v13 gate-specific: architecture or proven-best from PBT
-    "TRAIN_EV_GATE_SCALE", "TRAIN_FALSE_ENTRY_PENALTY",
-    "TRAIN_GATE_LABEL_SMOOTHING", "TRAIN_DIR_LABEL_SMOOTHING",
-    "TRAIN_VALUE_EXIT_THRESH", "TRAIN_VALUE_LOSS_TYPE", "TRAIN_TOD_FILTER",
-    # v10 experimental (default 0.0, rarely used)
-    "TRAIN_RWR_WEIGHT", "TRAIN_DAY_RWR_WEIGHT",
-})
+# PBT tests removed in v17 simplification (PBT removed from inner_loop.py)
 
 
 # ===================================================================
-# 1. PBT <-> train.py parameter sync
-# ===================================================================
-
-class TestPBTParamSync:
-
-    def test_pbt_params_exist_in_train(self, train_params):
-        """Every _PARAM_SPACE key must be consumed by train.py."""
-        il_text = _read("tools/inner_loop.py")
-        pbt_params = _extract_param_space_keys(il_text)
-        orphans = pbt_params - train_params
-        assert not orphans, (
-            f"inner_loop.py _PARAM_SPACE has params not read by train.py: {sorted(orphans)}. "
-            f"These env vars will be set but never consumed. "
-            f"Remove from _PARAM_SPACE or add _env_float/_env_int to train.py."
-        )
-
-    def test_train_params_covered_by_pbt_or_excluded(self, train_params):
-        """Every train.py env var should be in _PARAM_SPACE or the exclusion list."""
-        il_text = _read("tools/inner_loop.py")
-        pbt_params = _extract_param_space_keys(il_text)
-        uncovered = train_params - pbt_params - ARCHITECTURE_PARAMS
-        assert not uncovered, (
-            f"train.py reads env vars not in _PARAM_SPACE or ARCHITECTURE_PARAMS: {sorted(uncovered)}. "
-            f"Add to _PARAM_SPACE for PBT tuning, or add to ARCHITECTURE_PARAMS if intentionally excluded."
-        )
-
-
-# ===================================================================
-# 2. Monitor display params
+# 1. Monitor display params
 # ===================================================================
 
 class TestMonitorSync:
@@ -198,28 +160,28 @@ class TestArchitectureSync:
                 f"{const} mismatch: train.py={train_val}, best_train.py={best_val}."
             )
 
-    def test_replay_model_heads_match_train(self, train_text):
-        """replay.py's TradingModel must have same heads as train.py."""
-        replay_text = _read("training/replay.py")
-        primary = {'action_head', 'risk_head', 'gate_head', 'dir_head', 'value_head', 'exit_head'}
+    def test_best_train_model_heads_match_train(self, train_text, best_train_text):
+        """best_train.py must have same model heads as train.py."""
+        primary = {'action_head', 'risk_head', 'gate_head', 'dir_head', 'value_head',
+                   'exit_head', 'return_head', 'conf_head'}
         train_heads = _extract_model_heads(train_text) & primary
-        replay_heads = _extract_model_heads(replay_text) & primary
-        assert train_heads == replay_heads, (
+        best_heads = _extract_model_heads(best_train_text) & primary
+        assert train_heads == best_heads, (
             f"Model head mismatch!\n"
-            f"  train.py heads:  {sorted(train_heads)}\n"
-            f"  replay.py heads: {sorted(replay_heads)}\n"
-            f"replay.py architecture is stale — copy from train.py."
+            f"  train.py heads:      {sorted(train_heads)}\n"
+            f"  best_train.py heads: {sorted(best_heads)}\n"
+            f"best_train.py architecture is stale — run: cp training/train.py training/best_train.py"
         )
 
-    def test_replay_position_state_dim(self, train_text):
-        """replay.py POSITION_STATE_DIM must match train.py."""
-        replay_text = _read("training/replay.py")
-        train_dim = _extract_constant(train_text, 'POSITION_STATE_DIM')
-        replay_dim = _extract_constant(replay_text, 'POSITION_STATE_DIM')
-        assert train_dim is not None, "POSITION_STATE_DIM missing from train.py"
-        assert replay_dim is not None, "POSITION_STATE_DIM missing from replay.py"
-        assert train_dim == replay_dim, (
-            f"POSITION_STATE_DIM mismatch: train.py={train_dim}, replay.py={replay_dim}"
+    def test_account_state_dim_consistency(self, train_text, best_train_text):
+        """ACCOUNT_STATE_DIM must match between train.py and best_train.py."""
+        train_dim = _extract_constant(train_text, 'ACCOUNT_STATE_DIM')
+        best_dim = _extract_constant(best_train_text, 'ACCOUNT_STATE_DIM')
+        if train_dim is None:
+            return  # not defined (pre-v17), skip
+        assert best_dim is not None, "ACCOUNT_STATE_DIM missing from best_train.py"
+        assert train_dim == best_dim, (
+            f"ACCOUNT_STATE_DIM mismatch: train.py={train_dim}, best_train.py={best_dim}"
         )
 
     def test_num_actions_consistency(self, train_text, prepare_text):
@@ -251,13 +213,18 @@ class TestArchitectureSync:
 class TestFeatureSync:
 
     def test_feature_lock_count_matches_prepare(self, prepare_text):
-        """run_loop.py FEATURE_LOCK_COUNT must match prepare.py FEATURE_NAMES count."""
+        """run_loop.py _BASE_FEATURE_COUNT must match prepare.py base FEATURE_NAMES count.
+        FEATURE_LOCK_COUNT is now dynamic (base + EXTRA_FEATURES env var)."""
         feature_count = _count_feature_names(prepare_text)
         rl_text = _read("training/run_loop.py")
-        lock_count = _extract_constant(rl_text, 'FEATURE_LOCK_COUNT')
-        assert lock_count is not None, "FEATURE_LOCK_COUNT missing from run_loop.py"
-        assert lock_count == feature_count, (
-            f"FEATURE_LOCK_COUNT={lock_count} in run_loop.py != "
+        # Check the base count (static 38), not the dynamic FEATURE_LOCK_COUNT
+        base_count = _extract_constant(rl_text, '_BASE_FEATURE_COUNT')
+        if base_count is None:
+            # Fallback for legacy: try FEATURE_LOCK_COUNT directly
+            base_count = _extract_constant(rl_text, 'FEATURE_LOCK_COUNT')
+        assert base_count is not None, "_BASE_FEATURE_COUNT missing from run_loop.py"
+        assert base_count == feature_count, (
+            f"_BASE_FEATURE_COUNT={base_count} in run_loop.py != "
             f"len(FEATURE_NAMES)={feature_count} in prepare.py"
         )
 
@@ -370,14 +337,12 @@ class TestStaleEnvVars:
 
 class TestDocSync:
 
-    def test_operating_manual_env_vars(self, train_params):
-        """Operating manual loss params table should list current env vars."""
-        manual = _read(".claude/rules/art2-operating-manual.md")
-        # Extract env var names from the loss hyperparameters table
-        # Pattern: | ... | ... | ENV_VAR_NAME | ...
-        table_vars = set(re.findall(r'\|\s*(TRAIN_\w+)\s*\|', manual))
+    def test_program_md_env_vars(self, train_params):
+        """program.md hyperparameters table should list current env vars."""
+        program = _read("training/program.md")
+        table_vars = set(re.findall(r'\|\s*(TRAIN_\w+)\s*\|', program))
         stale = table_vars - train_params
         assert not stale, (
-            f"Operating manual lists env vars not in train.py: {sorted(stale)}. "
-            f"Update the Loss Hyperparameters table in art2-operating-manual.md."
+            f"program.md lists env vars not in train.py: {sorted(stale)}. "
+            f"Update the Hyperparameters table in program.md."
         )

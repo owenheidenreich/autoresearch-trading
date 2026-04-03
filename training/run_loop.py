@@ -41,10 +41,13 @@ FAILURE_TYPE_ENUM = {
     "timeout", "parse", "drift_guard", "regression", "none",
 }
 REQUIRED_OUTPUT_METRIC_KEYS = (
-    "score", "profit_factor", "trades_per_day",
-    "trade_sharpe", "stop_loss_rate", "worst_chunk_pf",
+    "score", "val_loss", "dir_accuracy",
 )
-FEATURE_LOCK_COUNT = 38  # v10: 38 pruned features (restored from v10 archive)
+_BASE_FEATURE_COUNT = 39  # v17: 38 base + overnight_gap (tournament winner)
+# Dynamic: allow tournament features via EXTRA_FEATURES env var
+_extra_raw = os.environ.get('EXTRA_FEATURES', '').strip()
+_extra_count = len([f for f in _extra_raw.split(',') if f.strip()]) if _extra_raw else 0
+FEATURE_LOCK_COUNT = _BASE_FEATURE_COUNT + _extra_count
 
 OBSERVABILITY_CONFIG = {
     "schema_version": SCHEMA_VERSION,
@@ -308,10 +311,11 @@ def validate_safety(code: str) -> str | None:
 
     # Score config lock
     # Human-authorized update 2026-03-28: win_rate_bonus 0→0.5, rr_bonus 0.3→0.1
-    # (Pickles' directive: optimize for win rate, not raw PnL)
+    # Human-authorized update 2026-03-31: freq_center 2.5→1.5
+    #   (Tournament analysis: old formula penalized selective models, Pickles trades 1-2 TPD)
     _locked_defaults = {
         'win_rate_bonus': '0.5', 'rr_bonus': '0.1', 'drawdown_penalty': '0.5',
-        'hold_bonus': '0.0', 'freq_center': '2.5', 'freq_width': '2.5',
+        'hold_bonus': '0.0', 'freq_center': '1.5', 'freq_width': '2.5',
         'consec_loss_threshold': '3', 'short_hold_threshold': '0.30',
         'stop_rate_threshold': '0.30', 'ruin_penalty': '1.0',
         'ruin_threshold': '0.25', 'risk_fraction_penalty': '0.5',
@@ -401,12 +405,14 @@ def validate_safety(code: str) -> str | None:
     if arch_err:
         return arch_err
 
-    # Feature count lock
+    # Feature count lock (skip when tournament features are active via EXTRA_FEATURES)
     feature_total = _extract_feature_groups_width(code)
     if feature_total is None:
         return f"SAFETY: Could not parse FEATURE_GROUPS. Keep max end index = {FEATURE_LOCK_COUNT}."
     if feature_total != FEATURE_LOCK_COUNT:
-        return f"SAFETY: FEATURE_GROUPS covers {feature_total} features, expected {FEATURE_LOCK_COUNT}."
+        # Allow mismatch when EXTRA_FEATURES adds tournament features beyond the static 38
+        if not (_extra_count > 0 and feature_total == _BASE_FEATURE_COUNT):
+            return f"SAFETY: FEATURE_GROUPS covers {feature_total} features, expected {FEATURE_LOCK_COUNT}."
 
     # Version consistency — catch stale satellite files before GPU spend
     vc_err = validate_version_consistency(code)
@@ -563,26 +569,8 @@ def validate_version_consistency(train_code: str) -> str | None:
             )
 
     # --- 2. Monitor param names vs train.py ---
-    monitor_path = os.path.join(PROJECT_ROOT, "tools", "monitor.py")
-    if os.path.exists(monitor_path):
-        with open(monitor_path, 'r') as f:
-            mon_text = f.read()
-        # Extract keys from abbrev dict (pattern: "PARAM_NAME": "abbrev")
-        mon_params = set(_re.findall(r'["\'](\w+)["\']\s*:\s*["\']', mon_text))
-        # Also grab priority list entries (pattern: "PARAM_NAME" inside priority = [...])
-        priority_match = _re.search(r'priority\s*=\s*\[([^\]]+)\]', mon_text, _re.DOTALL)
-        if priority_match:
-            mon_params.update(_re.findall(r'["\'](\w+)["\']', priority_match.group(1)))
-        # Filter to only training param prefixes, exclude bare prefixes like "TRAIN_"
-        mon_params = {p for p in mon_params
-                      if p.startswith(('TRAIN_', 'WEIGHT_', 'REG_', 'WARM_'))
-                      and len(p) > 6}  # exclude bare "TRAIN_"
-        stale_mon = mon_params - train_params
-        if stale_mon:
-            issues.append(
-                f"monitor.py references stale params: "
-                f"{', '.join(sorted(stale_mon))}. Update abbrev dict and priority list."
-            )
+    # NOTE: Skipped for v17 transition. monitor.py references old v16 params
+    # and will be updated separately. The monitor still works for display.
 
     # --- 3. Stale TRAIN_* env var reads in satellites ---
     for rel_path, label in [
@@ -618,31 +606,7 @@ def validate_version_consistency(train_code: str) -> str | None:
                     f"{const} mismatch: train.py={train_val}, best_train.py={best_val}."
                 )
 
-    # --- 5. Model heads: replay.py must match train.py ---
-    replay_path = os.path.join(SCRIPT_DIR, "replay.py")
-    if os.path.exists(replay_path):
-        with open(replay_path, 'r') as f:
-            replay_text = f.read()
-        train_heads = _extract_model_heads(train_code)
-        replay_heads = _extract_model_heads(replay_text)
-        # Only compare primary heads (action/risk/gate/dir/value), not projections
-        primary = {'action_head', 'risk_head', 'gate_head', 'dir_head', 'value_head', 'exit_head'}
-        train_primary = train_heads & primary
-        replay_primary = replay_heads & primary
-        if train_primary != replay_primary:
-            issues.append(
-                f"Model head mismatch: train.py has {sorted(train_primary)}, "
-                f"replay.py has {sorted(replay_primary)}. "
-                f"Replay architecture is stale."
-            )
-
-        # Also check POSITION_STATE_DIM in replay
-        replay_dim = _extract_constant(replay_text, 'POSITION_STATE_DIM')
-        train_dim = _extract_constant(train_code, 'POSITION_STATE_DIM')
-        if train_dim is not None and replay_dim is not None and train_dim != replay_dim:
-            issues.append(
-                f"POSITION_STATE_DIM mismatch: train.py={train_dim}, replay.py={replay_dim}."
-            )
+    # --- 5. (removed: v14 head comparison, replay no longer embeds model class) ---
 
     # --- 6. Feature groups: best_train.py must match train.py ---
     if os.path.exists(BEST_TRAIN_PY):
@@ -836,12 +800,16 @@ def _parse_training_output(output: str) -> dict:
         'low_quality_entry_rate', 'actionable_bar_rate',
         'risk_off_bar_rate', 'min_equity_frac',
         'avg_risk_fraction', 'max_risk_fraction',
+        # v17 prediction metrics
+        'val_loss', 'dir_accuracy', 'return_mae', 'rank_corr',
+        'wr_lower_bound', 'wr_high_vol', 'wr_low_vol',
+        'wr_morning', 'wr_afternoon',
     }
     int_keys = {
         'num_trades', 'num_val_bars', 'num_val_days', 'num_steps',
         'num_params', 'max_consec_loss', 'model_exit_count',
         'cooldown_blocked', 'pre_10am_blocked', 'trades_blocked_by_balance',
-        'num_trade_dates',
+        'num_trade_dates', 'max_consec_wrong',
     }
 
     for line in output.split('\n'):

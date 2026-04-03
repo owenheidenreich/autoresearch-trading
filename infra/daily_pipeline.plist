@@ -24,8 +24,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/env</string>
-        <string>python3</string>
+        <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/.venv/bin/python3</string>
         <string>tools/daily_pipeline.py</string>
     </array>
 

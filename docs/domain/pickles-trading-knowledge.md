@@ -279,6 +279,12 @@ this must be used in ART²
 - **ES & NQ have 96% positive correlation since the late 90s.** "One of these is wrong and will correct." When they diverge, trade the correction.
 - **RTY (Russell 2000) often front-runs:** When RTY is weakest, look for ES/NQ to follow. When RTY prints NHOD while others don't, it may drag them up or get corrected.
 
+
+## Back tests 
+
+- "back tests have advantage of hindsight, where something you would have never taken in the moment actually worked out on paper. back-testing is nice to add to an already existing foundation." 
+
+- "rather than back-testing PnL, configure for win-rate w/ considerable margin of error to 'emulate' that human factor if you'd actually do the trade at the time"
 ---
 
 ## 8. Anti-Patterns (Things to Avoid)

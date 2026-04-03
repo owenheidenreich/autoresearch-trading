@@ -23,7 +23,6 @@ import argparse
 import json
 import os
 import shutil
-import signal
 import socket
 import subprocess
 import sys
@@ -367,11 +366,15 @@ def stage_paper_trading(log_dir: Path, date_str: str, model_path: Path,
     audit_path = PROJECT_ROOT / "results" / "live" / f"audit-{date_str}.jsonl"
     paper_log = log_dir / "stage3_paper_trading.log"
 
+    kill_switch = PROJECT_ROOT / "results" / "live" / "kill_switch"
     cmd = [
         sys.executable, str(PROJECT_ROOT / "tools" / "paper_live.py"),
         "--paper-auto",
+        "--port", "4002",
+        "--client-id", "80",
         "--model", str(model_path),
         "--audit-path", str(audit_path),
+        "--kill-switch", str(kill_switch),
         "--max-minutes", "390",
     ]
     if train_py_path and train_py_path.exists():
@@ -485,8 +488,6 @@ def main() -> None:
     parser.add_argument("--skip-data", action="store_true", help="Skip data rebuild stage")
     parser.add_argument("--retrain", action="store_true",
                         help="Run Akash training (default: skip — use for weekly retraining)")
-    parser.add_argument("--skip-training", action="store_true",
-                        help="(deprecated, training is now off by default)")
     parser.add_argument("--skip-trading", action="store_true", help="Skip paper trading stage")
     parser.add_argument("--training-minutes", type=int, default=45, help="Training time budget (default: 45)")
     parser.add_argument("--dry-run", action="store_true", help="Log what would happen without executing")
@@ -557,10 +558,7 @@ def main() -> None:
                 shutil.copy2(prev_backup, model_backup)
                 log("  Restored previous model from backup")
     else:
-        if args.skip_training:
-            log("Skipping training (--skip-training is now default behavior)")
-        else:
-            log("Training skipped (default — use --retrain for weekly retraining)")
+        log("Training skipped (default -- use --retrain for weekly retraining)")
         stages["training"] = True
 
     # Find best model
