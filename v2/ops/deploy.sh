@@ -671,7 +671,7 @@ _run_sync() {
         }
         ssh_failures=0  # Reset on successful connection
 
-        local experiment_count best_score no_improve_streak stopped stop_reason kept_count
+        local experiment_count best_score no_improve_streak stopped stop_reason best_experiment_num
         eval "$(echo "$raw" | python3 -c "
 import sys, json
 s = json.load(sys.stdin)
@@ -680,7 +680,7 @@ print(f'best_score={s.get(\"best_score\",0)}')
 print(f'no_improve_streak={s.get(\"no_improve_streak\",0)}')
 print(f'stopped={s.get(\"stopped\",\"false\")}')
 print(f'stop_reason=\"{s.get(\"stop_reason\",\"\")}\"')
-print(f'kept_count={s.get(\"kept_count\",0)}')
+print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
 " 2>/dev/null)" || { sleep "$poll_interval"; continue; }
 
         # Defaults — prevent set -e crash if python3 returned partial output
@@ -689,25 +689,25 @@ print(f'kept_count={s.get(\"kept_count\",0)}')
         no_improve_streak=${no_improve_streak:-0}
         stopped=${stopped:-false}
         stop_reason=${stop_reason:-""}
-        kept_count=${kept_count:-0}
+        best_experiment_num=${best_experiment_num:-0}
 
         # First poll — seed counters without downloading
         if [[ "$last_kept" -eq -1 ]]; then
-            last_kept=$kept_count
+            last_kept=$best_experiment_num
             last_exp_count=$experiment_count
-            log "  Baseline: exp=$experiment_count kept=$kept_count best=$best_score streak=$no_improve_streak"
+            log "  Baseline: exp=$experiment_count best_exp=#$best_experiment_num best=$best_score streak=$no_improve_streak"
             sleep "$poll_interval"
             continue
         fi
 
         # --- New improvement: download model + artifacts + results ---
-        if [[ "$kept_count" -gt "$last_kept" ]]; then
-            log "* IMPROVEMENT #$kept_count (score=$best_score) — syncing model + artifacts..."
+        if [[ "$best_experiment_num" -gt "$last_kept" ]]; then
+            log "* IMPROVEMENT at exp #$best_experiment_num (score=$best_score) — syncing model + artifacts..."
             scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt" 2>/dev/null || true
             mkdir -p "$PROJECT_ROOT/v2/artifacts"
             scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/" "$PROJECT_ROOT/v2/artifacts/" 2>/dev/null || true
             scp_cmd "root@$SSH_HOST:/root/v2/results.tsv" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || true
-            last_kept=$kept_count
+            last_kept=$best_experiment_num
             last_exp_count=$experiment_count
             log "  Synced. Best score: $best_score"
 
@@ -719,7 +719,7 @@ print(f'kept_count={s.get(\"kept_count\",0)}')
 
         # --- Heartbeat: show sync is alive even when nothing changed ---
         else
-            log "  Polling... exp=$experiment_count kept=$kept_count best=$best_score streak=$no_improve_streak"
+            log "  Polling... exp=$experiment_count best_exp=#$best_experiment_num best=$best_score streak=$no_improve_streak"
         fi
 
         # --- Always sync lab_notebook.md (tiny file, keeps local copy current) ---
@@ -729,7 +729,7 @@ print(f'kept_count={s.get(\"kept_count\",0)}')
         # --- Stopped: final full sync and exit ---
         if [[ "$stopped" == "true" || "$stopped" == "True" ]]; then
             log ""
-            log "=== EXPERIMENT LOOP STOPPED (reason=$stop_reason, score=$best_score, kept=$kept_count) ==="
+            log "=== EXPERIMENT LOOP STOPPED (reason=$stop_reason, score=$best_score, best_exp=#$best_experiment_num) ==="
             log "Final sync..."
             ( cmd_download ) || log "WARNING: Final download failed"
             rm -f "$PROJECT_ROOT/.sync-pid"

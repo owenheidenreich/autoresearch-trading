@@ -1,0 +1,64 @@
+version: "2.0"
+
+# ============================================================================
+# Autoresearch-Trading: H100 GPU Training Instance
+# ============================================================================
+# Minimal container: CUDA + PyTorch + SSH.  That is it.
+# Code + data uploaded via SCP manually.
+# ============================================================================
+
+services:
+  trainer:
+    image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel
+    env:
+      - DEBIAN_FRONTEND=noninteractive
+      - TORCHINDUCTOR_COMPILE_THREADS=4
+    command:
+      - "bash"
+      - "-c"
+      - |
+        apt-get update -qq && apt-get install -y -qq openssh-server tini > /dev/null 2>&1
+        mkdir -p /run/sshd
+        echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+        echo "root:autoresearch2026" | chpasswd
+        /usr/sbin/sshd
+        /opt/conda/bin/pip install -q anthropic pandas scipy 2>/dev/null
+        echo "READY"
+        exec tini -- tail -f /dev/null
+    expose:
+      - port: 22
+        as: 22
+        to:
+          - global: true
+
+profiles:
+  compute:
+    trainer:
+      resources:
+        cpu:
+          units: 8
+        memory:
+          size: 64Gi
+        storage:
+          - size: 50Gi
+        gpu:
+          units: 1
+          attributes:
+            vendor:
+              nvidia:
+                # Foundation policy: prefer H100, fallback to A100.
+                - model: h100
+                - model: a100
+
+  placement:
+    akash:
+      pricing:
+        trainer:
+          denom: uact
+          amount: 2000000
+
+deployment:
+  trainer:
+    akash:
+      profile: trainer
+      count: 1
