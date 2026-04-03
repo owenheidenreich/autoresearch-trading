@@ -52,6 +52,12 @@ DIR_W = float(os.environ.get("WEIGHT_DIR", 1.0))
 STRIKE_W = float(os.environ.get("WEIGHT_STRIKE", 0.5))
 RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 
+# Gate selectivity: pos_weight < 1.0 makes the model more conservative
+# (penalizes false positives more than false negatives)
+# Oracle trade rate is ~35%, so pos_weight=0.3 means the model must be
+# 3x more certain to predict "trade" than "no trade"
+GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 0.3))
+
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
 # Strike offsets: -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30
@@ -176,11 +182,9 @@ class TradeDataset(Dataset):
         self.lookback = lookback
 
         # Valid indices: must have full lookback window and be in mask
-        self.indices = []
-        for i in range(lookback, len(features)):
-            if mask[i]:
-                self.indices.append(i)
-        self.indices = np.array(self.indices)
+        mask_np = mask.numpy() if isinstance(mask, torch.Tensor) else mask
+        all_indices = np.arange(lookback, len(features))
+        self.indices = all_indices[mask_np[lookback:]].copy()
 
     def __len__(self) -> int:
         return len(self.indices)
@@ -220,9 +224,13 @@ def compute_loss(
     oracle_max_hold = targets['oracle_max_hold'].float().to(device)
     oracle_confidence = targets['oracle_confidence'].float().to(device)
 
-    # 1. Gate loss: BCE on trade/no-trade decision
+    # 1. Gate loss: BCE with pos_weight to control selectivity
+    # pos_weight < 1.0 penalizes false positives (saying "trade" when shouldn't)
+    # more than false negatives (missing a trade opportunity)
+    pw = torch.tensor([GATE_POS_WEIGHT], device=device)
     gate_loss = F.binary_cross_entropy_with_logits(
         outputs['gate'].squeeze(-1), oracle_trade,
+        pos_weight=pw,
     )
 
     # 2. Direction loss: cross-entropy on call/put (only for trade=True bars)
@@ -232,9 +240,17 @@ def compute_loss(
         # Filter valid direction targets (0=call, 1=put)
         valid_dir = (dir_targets >= 0) & (dir_targets <= 1)
         if valid_dir.any():
+            # Balance direction loss: equal weight to calls and puts
+            dir_weight = torch.ones(2, device=device)
+            n_calls = (dir_targets[valid_dir] == 0).sum().float()
+            n_puts = (dir_targets[valid_dir] == 1).sum().float()
+            if n_calls > 0 and n_puts > 0:
+                dir_weight[0] = n_puts / (n_calls + n_puts)  # upweight minority
+                dir_weight[1] = n_calls / (n_calls + n_puts)
             dir_loss = F.cross_entropy(
                 outputs['direction'][trade_mask][valid_dir],
                 dir_targets[valid_dir],
+                weight=dir_weight,
             )
         else:
             dir_loss = torch.tensor(0.0, device=device)
