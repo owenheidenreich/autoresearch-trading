@@ -1,24 +1,16 @@
 """
-Autoresearch-trading v2: data prep for SPX 0DTE options sniper model.
+Autoresearch-trading v18: data prep for SPX 0DTE options trading model.
 
 Data sources:
-  - SPX prices:   Real SPX index via IBKR (--use-spx, recommended)
-  - SPY volume:   SPY ETF via IBKR (SPX index has no volume; SPY is the
-                   most liquid equity ETF — its volume is a legitimate signal)
+  - SPX prices:   Real SPX index via IBKR
+  - SPY volume:   SPY ETF via IBKR (SPX index has no volume)
   - SPXW options: Polygon flat files (S3 bulk data, 4-year rolling window)
   - VIX:          Real CBOE VIX index via IBKR
 
-Date range: March 14, 2022 → present (~4 years, flat file limit).
-0DTE schedule: Mon/Wed/Fri only before May 11, 2022; daily after.
+Date range: March 14, 2022 to present (~4 years).
 Bar resolution: 1-minute (390 bars/day RTH).
 
-Computes 44 trader-relevant features (v12: 38 base + 6 raw candle)
-and prepares tensors for train.py.
-
-The model uses a unified action head (v12):
-  - Action head: 15 outputs (DO_NOTHING + 14 option types)
-  - Risk head: 3 outputs (stop_pct, size_frac, conviction)
-Evaluation simulates actual 0DTE option trades with stops, targets, and model-driven exits.
+Computes 39 features and prediction labels for train.py.
 
 Usage:
   python3 prepare.py --use-spx --ib-port 4002   # Full download
@@ -55,7 +47,7 @@ ANNUAL_TRADING_HOURS = ANNUAL_TRADING_BARS  # compat alias
 # 0DTE option trade simulation parameters
 OPTION_SPREAD_BPS    = 150     # bid-ask spread on 0DTE ATM in bps of premium (150 bps one-way = 3% round-trip; realistic for ATM SPX 0DTE)
 STOP_LOSS_PCT        = 0.30    # legacy constant — kept for backward compat; active code uses compute_dynamic_stop()
-DYNAMIC_STOP_BASE    = float(os.environ.get("DYNAMIC_STOP_BASE", 0.35))
+DYNAMIC_STOP_BASE    = float(os.environ.get("DYNAMIC_STOP_BASE", 0.45))
 DYNAMIC_STOP_MIN     = 0.15    # minimum stop-loss (floor)
 DYNAMIC_STOP_MAX     = 0.60    # maximum stop-loss (ceiling)
 MAX_HOLD_BARS        = BARS_PER_DAY  # hold until stop/profit/EOD (0DTE closes at EOD)
@@ -66,6 +58,10 @@ STOP_COOLDOWN_BARS   = 5       # 5-bar (5-min) cooldown after stop loss before r
 PNL_TANH_SCALE       = float(os.environ.get("PNL_TANH_SCALE", 5.0))
 BEST_PNL_TANH_SCALE  = float(os.environ.get("BEST_PNL_TANH_SCALE", 2.0))
 NO_TRADE_BEFORE_BAR  = 30      # first 30 bars (9:30-9:59) are hard no-trade
+NO_TRADE_LUNCH_START = 60      # bar 60 = 10:30 AM (start of lunch chop suppression)
+NO_TRADE_LUNCH_END   = 240     # bar 240 = 13:30 PM (end of lunch chop suppression)
+MIN_HOLD_BARS        = 2       # minimum bars to hold before model_exit is allowed
+EXIT_GATE_THRESHOLD  = 0.60    # gate NO_TRADE prob must exceed this to exit (argmax = 0.50, higher = more patient)
 MAX_TRADE_RETURN     = 5.0     # cap individual trade P&L at 500% (allow large winners with learned exits)
 STARTING_CAPITAL     = 10_000.0  # starting account balance ($10k paper trading account)
 POSITION_RISK_TARGET = 0.05     # target 5% of account per trade; scales whole contracts with account growth
@@ -128,35 +124,37 @@ DATA_DIR     = os.path.join(CACHE_DIR, "data")
 FEATURES_DIR = os.path.join(CACHE_DIR, "features")
 
 # ---------------------------------------------------------------------------
-# Feature names (44 features: 29 core + 4 v9 + 5 v10 + 6 v12 raw candle)
+# Feature names (v18: 39 features)
 # ---------------------------------------------------------------------------
 
 FEATURE_NAMES = [
     # === Price returns (2) ===
     'ret_6',                # 0: 30-bar (30min) return
     'ret_12',               # 1: 60-bar (1hr) return
-    # === Volume (2) — pruned volume_zscore (0.95 corr w/ volume_ratio) ===
+    # === Volume (1) ===
     'volume_ratio',         # 2: bar volume / 20-bar SMA
-    'volume_at_price_pctile',  # 3: current close vs session volume profile
+    # === v18: replaced volume_at_price_pctile (redundant w/ va_position) ===
+    'gamma_pressure',       # 3: sum(gamma_i * volume_i * sign_i) across chain (GEX proxy)
     # === Volatility (3) ===
     'bar_range',            # 4: (high - low) / close
     'realized_vol',         # 5: 20-bar rolling stdev of returns
     'range_ratio',          # 6: current bar range / 20-bar avg range
-    # === VWAP (1) — pruned vwap_slope (0.98 corr w/ ret_6) ===
+    # === VWAP (1) ===
     'vwap_dist',            # 7: (close - session VWAP) / close
-    # === Session structure (1) — pruned ib_width (near-zero variance) ===
+    # === Session structure (1) ===
     'session_range_pct',    # 8: full session range so far / close
-    # === Key levels (1) — pruned prev_low_dist (0.9999 corr w/ prev_high_dist) ===
+    # === Key levels (1) ===
     'prev_high_dist',       # 9: distance to previous day high
     # === Trend (3) ===
     'ema_cross',            # 10: (EMA8 - EMA21) / close (momentum)
-    'consec_direction',     # 11: consecutive same-direction bars: +N for up, -N for down
-    'speed_estimate',       # 12: |5-bar return| / realized_vol: normalized speed of move
-    # === Microstructure (1) — pruned gap (all zeros) ===
-    'inside_bar',           # 13: 1 if current bar inside previous bar
-    # === Time (2) — pruned time_sin (0.91 corr w/ minutes_to_close) ===
+    'consec_direction',     # 11: consecutive same-direction bars
+    'speed_estimate',       # 12: |5-bar return| / realized_vol
+    # === v18: replaced inside_bar (30-40% of bars, no signal at 1-min) ===
+    'vix_roc',              # 13: VIX 10-bar rate of change (domain: "vol RoC > vol level")
+    # === Time (1) ===
     'minutes_to_close',     # 14: log(minutes remaining + 1), normalized
-    'time_cos',             # 15: cos(2pi * session_progress)
+    # === v18: replaced time_cos, then event_day (hardcoded dates unreliable) ===
+    'iv_percentile',        # 15: current IV rank vs rolling 60-day history [0,1] (captures event days implicitly)
     # === Options (2) ===
     'atm_iv',               # 16: ATM implied vol (avg of call + put IV)
     'iv_skew',              # 17: put IV - call IV (fear/skew premium)
@@ -167,26 +165,31 @@ FEATURE_NAMES = [
     'atm_gamma',            # 20: ATM call gamma (delta sensitivity to price)
     'atm_theta_per_bar',    # 21: ATM theta per 1-min bar (time decay per bar)
     'charm_estimate',       # 22: estimated dDelta/dT: delta sensitivity to time decay
-    # === Bollinger (1) ===
-    'bollinger_position',   # 23: (close - BB_mid) / (BB_upper - BB_lower): position within bands
+    # === Bollinger (1) -- reworked to 5-min in v18 ===
+    'bollinger_position',   # 23: 5-min Bollinger band position
     # === Range extras (2) ===
-    'rsi_7',                # 24: 7-period RSI (0-1 scale) — Elder: "7-9 bars for intraday"
+    'rsi_7',                # 24: 5-min RSI (Elder: "7-9 bars for intraday" on 5-min charts)
     'session_range_position',  # 25: (close - session_low) / (session_high - session_low)
-    # === Market structure (3) — pruned vwap_band_sigma (0.96 corr), theta_pressure (-0.98 corr) ===
-    'poc_dist',             # 26: (close - session POC) / close: distance to Point of Control
-    'va_position',          # 27: position within Value Area: 0=VAL, 1=VAH, <0/>1 = outside
-    'ib_break',             # 28: IB break state: -1=below IB low, 0=inside, +1=above IB high
-    # === v9 features (4) — pruned econ_calendar (95.6% zeros) ===
-    'atr_14',               # 29: 14-bar Average True Range / close: volatility context for stop sizing
-    'bar_delta',            # 30: (close - open) / (high - low): intrabar buy/sell pressure [-1, +1]
-    'session_cum_delta',    # 31: cumulative bar deltas since session open: daily order flow direction
-    'top_of_hour_min',      # 32: minutes to next hour mark / 60: sawtooth 0→1 (Pickles' reversal signal)
-    # === v10 new features (5) ===
-    'macdh_slope',          # 33: MACD-H tick direction: +1 rising, -1 falling (Elder's #1 signal)
-    'force_index_2',        # 34: 2-bar EMA of Force Index (Volume × price change), normalized
-    'vol_price_diverg',     # 35: consecutive bars of price/volume divergence (Coulling's leading signal)
-    'effort_vs_result',     # 36: (body/avg_body) / (vol/avg_vol): Coulling's effort vs result anomaly
-    'trend_5min',           # 37: 5-min aggregated EMA(13) slope: Elder Triple Screen trend filter
+    # === Market structure (3) ===
+    'poc_dist',             # 26: (close - session POC) / close
+    'va_position',          # 27: position within Value Area
+    'ib_break',             # 28: IB break state: -1/0/+1
+    # === v9 features (3) ===
+    'atr_14',               # 29: 14-bar ATR / close
+    'bar_delta',            # 30: (close - open) / (high - low) intrabar pressure
+    'session_cum_delta',    # 31: cumulative bar deltas
+    # === v18: replaced top_of_hour_min (calendar artifact, not market signal) ===
+    'option_spread_width',  # 32: ATM option (high-low)/close (bid-ask proxy, cost awareness)
+    # === v10 features reworked to 5-min in v18 (3) ===
+    'macdh_slope',          # 33: 5-min MACD-H direction (Elder's #1 signal, correct timeframe)
+    'force_index_2',        # 34: 5-min Force Index (Elder, correct timeframe)
+    # === v18: replaced vol_price_diverg (too noisy at 1-min) ===
+    'prev_close_dist',      # 35: (close - prev_day_close) / close
+    # === v10 continued ===
+    'effort_vs_result',     # 36: 5-min effort vs result (Coulling, correct timeframe)
+    'trend_5min',           # 37: 5-min EMA(13) slope (Elder Triple Screen)
+    # === v17 promoted (1) ===
+    'overnight_gap',        # 38: (day open - prev close) / prev close
 ]
 
 NUM_FEATURES = len(FEATURE_NAMES)
@@ -196,9 +199,8 @@ _FEAT_IDX = {name: idx for idx, name in enumerate(FEATURE_NAMES)}
 
 # Features that should NOT be z-score normalized
 _NO_NORMALIZE = {
-    'time_cos',
-    'minutes_to_close',
-    'inside_bar',
+    'minutes_to_close',     # already log-normalized
+    'iv_percentile',        # already 0-1
     'vix_regime',           # categorical, already scaled
     'bollinger_position',   # already normalized to [-1, 1]-ish range
     'session_range_position',  # already 0-1
@@ -206,13 +208,11 @@ _NO_NORMALIZE = {
     'va_position',          # already ~0-1 (can exceed but bounded)
     'ib_break',             # categorical: -1, 0, +1
     'bar_delta',            # already -1 to +1
-    'top_of_hour_min',      # already 0-1
     'macdh_slope',          # already -1/0/+1
-    'vol_price_diverg',     # already bounded [-10, 10]
     'effort_vs_result',     # already bounded [-3, 3]
 }
 
-# Action labels for the 16-class model (v10)
+# Action labels
 # Gate head: NO_TRADE / TRADE → combined with direction head for full action
 # Direction head: 14 outputs [CALL_ATM, CALL_OTM5..OTM30, PUT_ATM, PUT_OTM5..OTM30]
 ACTION_DO_NOTHING      = 0
@@ -1569,38 +1569,12 @@ def _compute_session_vwap_bands(close, volume, day_mask_indices):
     return vwap_vals, upper1, lower1, upper2, lower2
 
 
-# Major US economic event dates (FOMC decisions, CPI releases, NFP/jobs)
-# These days have fundamentally different 0DTE dynamics (IV crush, large moves)
-_ECON_EVENT_DATES = {
-    # FOMC 2025
-    '2025-01-29', '2025-03-19', '2025-05-07', '2025-06-18',
-    '2025-07-30', '2025-09-17', '2025-10-29', '2025-12-17',
-    # FOMC 2026
-    '2026-01-28', '2026-03-18', '2026-05-06', '2026-06-17',
-    '2026-07-29', '2026-09-16', '2026-10-28', '2026-12-16',
-    # CPI 2025
-    '2025-01-15', '2025-02-12', '2025-03-12', '2025-04-10',
-    '2025-05-13', '2025-06-11', '2025-07-10', '2025-08-12',
-    '2025-09-10', '2025-10-14', '2025-11-13', '2025-12-10',
-    # CPI 2026
-    '2026-01-14', '2026-02-12', '2026-03-12',
-    # NFP 2025
-    '2025-01-10', '2025-02-07', '2025-03-07', '2025-04-04',
-    '2025-05-02', '2025-06-06', '2025-07-03', '2025-08-01',
-    '2025-09-05', '2025-10-03', '2025-11-07', '2025-12-05',
-    # NFP 2026
-    '2026-01-09', '2026-02-06', '2026-03-06',
-}
-
-
 def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                      vix_data: dict | None = None,
                      chain_data: dict | None = None) -> tuple:
-    """Compute 42 trader-relevant features from SPX 1-min bars (+ SPY volume) + SPXW options.
+    """Compute 39 features from SPX 1-min bars + SPY volume + SPXW options + VIX.
 
-    Returns: (features_array, targets_array, dates_list, valid_mask, option_prices)
-    option_prices is a dict with 'atm_call', 'atm_put', 'strike', 'call_pnl',
-    'put_pnl', 'exit_call_label', 'exit_put_label', and OTM price arrays (per-bar).
+    Returns: (features_array, targets_array, dates_list, valid_mask, option_prices_dict)
     """
     N = len(df)
     feat = np.full((N, NUM_FEATURES), np.nan, dtype=np.float32)
@@ -1650,32 +1624,55 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
     opn = df['open'].values.astype(np.float64)
     volume = df['volume'].values.astype(np.float64)
 
-    # Pre-compute log returns
+    # Day index lookup (needed by all per-day pre-computations below)
+    unique_dates = sorted(set(dates))
+    day_indices = {d: np.where(dates == d)[0] for d in unique_dates}
+
+    # Pre-compute log returns (zeroed at day boundaries to prevent overnight contamination)
     log_ret = np.log(close[1:] / close[:-1])
     log_ret = np.concatenate([[0.0], log_ret])
+    # Zero out the first bar of each day (overnight return is not intraday data)
+    _day_starts = set()
+    for _d, _didx in day_indices.items():
+        if len(_didx) > 0:
+            _day_starts.add(_didx[0])
+    for _ds in _day_starts:
+        log_ret[_ds] = 0.0
 
-    # Pre-compute EMAs
-    ema8 = pd.Series(close).ewm(span=40, adjust=False).mean().values
-    ema21 = pd.Series(close).ewm(span=105, adjust=False).mean().values
+    # Pre-compute EMAs (per-day to prevent cross-day state bleeding)
+    ema8 = np.zeros(N, dtype=np.float64)
+    ema21 = np.zeros(N, dtype=np.float64)
+    for _d, _didx in day_indices.items():
+        if len(_didx) < 2:
+            continue
+        _day_close = pd.Series(close[_didx])
+        ema8[_didx] = _day_close.ewm(span=40, adjust=False).mean().values
+        ema21[_didx] = _day_close.ewm(span=105, adjust=False).mean().values
 
-    # Pre-compute True Range and ATR-14
+    # Pre-compute True Range and ATR-14 (day-boundary safe)
     true_range = np.full(N, np.nan, dtype=np.float64)
     true_range[0] = high[0] - low[0]
     for i_tr in range(1, N):
         tr1 = high[i_tr] - low[i_tr]
-        tr2 = abs(high[i_tr] - close[i_tr - 1])
-        tr3 = abs(low[i_tr] - close[i_tr - 1])
-        true_range[i_tr] = max(tr1, tr2, tr3)
-    atr_14 = pd.Series(true_range).rolling(14, min_periods=1).mean().values
+        if i_tr in _day_starts:
+            # First bar of day: use high-low only (no previous day's close)
+            true_range[i_tr] = tr1
+        else:
+            tr2 = abs(high[i_tr] - close[i_tr - 1])
+            tr3 = abs(low[i_tr] - close[i_tr - 1])
+            true_range[i_tr] = max(tr1, tr2, tr3)
+    # Per-day ATR to prevent cross-day rolling
+    atr_14 = np.full(N, np.nan, dtype=np.float64)
+    for _d, _didx in day_indices.items():
+        if len(_didx) < 2:
+            continue
+        _day_tr = pd.Series(true_range[_didx])
+        atr_14[_didx] = _day_tr.rolling(14, min_periods=1).mean().values
 
     # Pre-compute bar delta: (close - open) / (high - low), clipped to [-1, +1]
     bar_range_raw = high - low
     bar_delta = np.where(bar_range_raw > 1e-8, (close - opn) / bar_range_raw, 0.0)
     bar_delta = np.clip(bar_delta, -1.0, 1.0)
-
-    # Pre-compute per-day data
-    unique_dates = sorted(set(dates))
-    day_indices = {d: np.where(dates == d)[0] for d in unique_dates}
 
     # Pre-compute session cumulative delta (vectorized per-day cumsum)
     session_cum_delta = np.zeros(N, dtype=np.float64)
@@ -1683,71 +1680,114 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         if len(_didx) > 0:
             session_cum_delta[_didx] = np.cumsum(bar_delta[_didx])
 
-    # === v10 pre-computed features ===
+    # === v18: 5-min aggregated features ===
+    # All Elder/Coulling indicators reworked to 5-min bars (correct timeframe for intraday).
+    # Pattern: aggregate 1-min to 5-min per day, compute indicator, expand back.
 
-    # MACD-Histogram slope (Elder's #1 signal)
-    ema_12 = pd.Series(close).ewm(span=12, adjust=False).mean().values
-    ema_26 = pd.Series(close).ewm(span=26, adjust=False).mean().values
-    macd_line = ema_12 - ema_26
-    signal_line = pd.Series(macd_line).ewm(span=9, adjust=False).mean().values
-    macd_h = macd_line - signal_line
+    bollinger_5min = np.full(N, np.nan, dtype=np.float64)
+    rsi_5min = np.full(N, np.nan, dtype=np.float64)
     macdh_slope = np.zeros(N, dtype=np.float64)
-    macdh_slope[1:] = np.sign(macd_h[1:] - macd_h[:-1])
-
-    # Force Index 2-bar EMA (Elder's entry timing signal)
-    price_change = np.zeros(N, dtype=np.float64)
-    price_change[1:] = close[1:] - close[:-1]
-    force_raw = volume.astype(np.float64) * price_change
-    force_ema2 = pd.Series(force_raw).ewm(span=2, adjust=False).mean().values
-    # Normalize by rolling 20-bar std of absolute force
-    force_abs_std = pd.Series(np.abs(force_ema2)).rolling(20, min_periods=1).std().values
-    force_index_2 = np.where(force_abs_std > 1e-8, force_ema2 / force_abs_std, 0.0)
-    force_index_2 = np.clip(force_index_2, -5.0, 5.0)
-
-    # Volume-price divergence counter (Coulling's leading signal)
-    price_dir = np.zeros(N, dtype=np.float64)
-    price_dir[1:] = np.sign(close[1:] - close[:-1])
-    vol_dir = np.zeros(N, dtype=np.float64)
-    vol_dir[1:] = np.sign(volume[1:].astype(np.float64) - volume[:-1].astype(np.float64))
-    agreement = price_dir * vol_dir  # +1=agree, -1=disagree
-    vol_price_diverg = np.zeros(N, dtype=np.float64)
-    for i_vpd in range(1, N):
-        if agreement[i_vpd] < 0:  # disagreement
-            vol_price_diverg[i_vpd] = vol_price_diverg[i_vpd - 1] + price_dir[i_vpd]
-        else:
-            vol_price_diverg[i_vpd] = 0.0
-    vol_price_diverg = np.clip(vol_price_diverg, -10.0, 10.0)
-
-    # Effort vs Result (Coulling's anomaly detector)
-    body_size = np.abs(close - opn)
-    avg_body_20 = pd.Series(body_size).rolling(20, min_periods=1).mean().values
-    avg_vol_20 = pd.Series(volume.astype(np.float64)).rolling(20, min_periods=1).mean().values
-    body_ratio = np.where(avg_body_20 > 1e-8, body_size / avg_body_20, 1.0)
-    vol_ratio_local = np.where(avg_vol_20 > 1e-8, volume.astype(np.float64) / avg_vol_20, 1.0)
-    effort_vs_result = np.where(vol_ratio_local > 0.1, body_ratio / vol_ratio_local, 0.0)
-    effort_vs_result = np.clip(effort_vs_result, -3.0, 3.0)
-
-    # 5-min trend (Elder Triple Screen — Screen 1 trend filter)
-    # Aggregate 5-bar closes per session, compute EMA(13) slope, expand back
+    force_index_2 = np.zeros(N, dtype=np.float64)
+    effort_vs_result = np.zeros(N, dtype=np.float64)
     trend_5min = np.zeros(N, dtype=np.float64)
     for _day_str, _didx in day_indices.items():
         if len(_didx) < 5:
             continue
         day_close = close[_didx]
+        day_high = high[_didx]
+        day_low = low[_didx]
+        day_open = opn[_didx]
+        day_vol = volume[_didx].astype(np.float64)
         n_5min = len(day_close) // 5
         if n_5min < 2:
             continue
-        # Aggregate 5-bar close (use last close of each 5-bar group)
+
+        # Build 5-min OHLCV arrays
         close_5m = np.array([day_close[(j + 1) * 5 - 1] for j in range(n_5min)])
+        high_5m = np.array([np.max(day_high[j * 5:(j + 1) * 5]) for j in range(n_5min)])
+        low_5m = np.array([np.min(day_low[j * 5:(j + 1) * 5]) for j in range(n_5min)])
+        open_5m = np.array([day_open[j * 5] for j in range(n_5min)])
+        vol_5m = np.array([np.sum(day_vol[j * 5:(j + 1) * 5]) for j in range(n_5min)])
+
+        def _expand_to_1min(arr_5m):
+            """Expand 5-min array back to 1-min indices."""
+            for j in range(len(arr_5m)):
+                s = j * 5
+                e = min((j + 1) * 5, len(_didx))
+                yield j, _didx[s:e], arr_5m[j]
+
+        # --- Bollinger (20-bar = 100-min on 5-min chart) ---
+        bb_mid = pd.Series(close_5m).rolling(20, min_periods=5).mean().values
+        bb_std = pd.Series(close_5m).rolling(20, min_periods=5).std().values
+        for j, idx_1m, _ in _expand_to_1min(close_5m):
+            if not np.isnan(bb_mid[j]) and bb_std[j] > 1e-8:
+                bw = 2.0 * bb_std[j]
+                bollinger_5min[idx_1m] = (close_5m[j] - bb_mid[j]) / bw
+
+        # --- RSI 7-period on 5-min ---
+        if n_5min >= 8:
+            deltas_5m = np.diff(close_5m)
+            gains_5m = np.where(deltas_5m > 0, deltas_5m, 0.0)
+            losses_5m = np.where(deltas_5m < 0, -deltas_5m, 0.0)
+            period = 7
+            avg_g = np.mean(gains_5m[:period])
+            avg_l = np.mean(losses_5m[:period])
+            rsi_arr = np.full(n_5min, np.nan)
+            for j in range(period, n_5min):
+                if j > period:
+                    avg_g = (avg_g * (period - 1) + gains_5m[j - 1]) / period
+                    avg_l = (avg_l * (period - 1) + losses_5m[j - 1]) / period
+                if avg_l > 1e-10:
+                    rs = avg_g / avg_l
+                    rsi_arr[j] = rs / (1.0 + rs)
+                else:
+                    rsi_arr[j] = 1.0
+            for j, idx_1m, _ in _expand_to_1min(rsi_arr):
+                if not np.isnan(rsi_arr[j]):
+                    rsi_5min[idx_1m] = rsi_arr[j]
+
+        # --- MACD-H slope on 5-min ---
+        ema12_5m = pd.Series(close_5m).ewm(span=12, adjust=False).mean().values
+        ema26_5m = pd.Series(close_5m).ewm(span=26, adjust=False).mean().values
+        macd_5m = ema12_5m - ema26_5m
+        signal_5m = pd.Series(macd_5m).ewm(span=9, adjust=False).mean().values
+        macdh_5m = macd_5m - signal_5m
+        slope_macdh = np.zeros(n_5min)
+        slope_macdh[1:] = np.sign(macdh_5m[1:] - macdh_5m[:-1])
+        for j, idx_1m, _ in _expand_to_1min(slope_macdh):
+            macdh_slope[idx_1m] = slope_macdh[j]
+
+        # --- Force Index 2-bar on 5-min ---
+        pc_5m = np.zeros(n_5min)
+        pc_5m[1:] = close_5m[1:] - close_5m[:-1]
+        force_raw_5m = vol_5m * pc_5m
+        force_ema2_5m = pd.Series(force_raw_5m).ewm(span=2, adjust=False).mean().values
+        fabs_std_5m = pd.Series(np.abs(force_ema2_5m)).rolling(20, min_periods=1).std().values
+        fi_5m = np.where(fabs_std_5m > 1e-8, force_ema2_5m / fabs_std_5m, 0.0)
+        fi_5m = np.clip(fi_5m, -5.0, 5.0)
+        for j, idx_1m, _ in _expand_to_1min(fi_5m):
+            force_index_2[idx_1m] = fi_5m[j]
+
+        # --- Effort vs Result on 5-min ---
+        body_5m = np.abs(close_5m - open_5m)
+        avg_body_5m = pd.Series(body_5m).rolling(20, min_periods=1).mean().values
+        avg_vol_5m = pd.Series(vol_5m).rolling(20, min_periods=1).mean().values
+        br_5m = np.where(avg_body_5m > 1e-8, body_5m / avg_body_5m, 1.0)
+        vr_5m = np.where(avg_vol_5m > 1e-8, vol_5m / avg_vol_5m, 1.0)
+        evr_5m = np.where(vr_5m > 0.1, br_5m / vr_5m, 0.0)
+        evr_5m = np.clip(evr_5m, -3.0, 3.0)
+        for j, idx_1m, _ in _expand_to_1min(evr_5m):
+            effort_vs_result[idx_1m] = evr_5m[j]
+
+        # --- Trend 5-min (EMA-13 slope) ---
         ema13_5m = pd.Series(close_5m).ewm(span=13, adjust=False).mean().values
-        # Slope: diff of EMA, normalized by close
         slope_5m = np.zeros(n_5min, dtype=np.float64)
         slope_5m[1:] = (ema13_5m[1:] - ema13_5m[:-1]) / np.maximum(close_5m[1:], 1.0)
-        # Expand back to 1-min bars (each 5-min value covers 5 bars)
         for j in range(n_5min):
             start_bar = j * 5
             end_bar = min((j + 1) * 5, len(_didx))
             trend_5min[_didx[start_bar:end_bar]] = slope_5m[j]
+
     trend_5min = np.clip(trend_5min, -0.01, 0.01)
 
     # Pre-compute overnight highs/lows, prev day stats, initial balance
@@ -1840,12 +1880,54 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             vp_cache[bar_i] = (poc, vah_price, val_price)
 
     # -----------------------------------------------------------------------
-    # Main feature loop (42 features — v2 core + 5 market structure + 5 v9)
+    # Pre-compute iv_percentile cache (rolling 60-day IV history per day)
+    # -----------------------------------------------------------------------
+    _iv_history_by_day = {}
+    _daily_close_iv = {}
+    for _day in unique_dates:
+        _didx = day_indices[_day]
+        for _bi in reversed(_didx):
+            _okey = (_day, int(df.iloc[_bi]['timestamp']))
+            _odata = options_data.get(_okey) if options_data else None
+            if _odata is not None and not np.isnan(_odata.get('call_close', np.nan)):
+                _spx = close[_bi]
+                _K = _odata['strike']
+                _min_rem = max(BARS_PER_DAY - (_bi - _didx[0]), 1)
+                _T = _min_rem / (252.0 * 390.0)
+                _civ = _bs_iv(_odata['call_close'], _spx, _K, _T, 0.05, is_call=True)
+                if np.isfinite(_civ):
+                    _daily_close_iv[_day] = _civ
+                break
+    _day_list = list(unique_dates)
+    for _di, _day in enumerate(_day_list):
+        _start = max(0, _di - 60)
+        _hist = [_daily_close_iv[_day_list[j]] for j in range(_start, _di) if _day_list[j] in _daily_close_iv]
+        if _hist:
+            _iv_history_by_day[_day] = _hist
+
+    # -----------------------------------------------------------------------
+    # Main feature loop (39 features)
     # -----------------------------------------------------------------------
     for i in range(N):
         fi = 0
         day = dates[i]
         c = close[i]
+
+        # --- Pre-compute lookups needed by multiple feature blocks ---
+        didx = day_indices[day]
+        day_pos = np.searchsorted(didx, i)
+        bar_dt = df.iloc[i]['datetime']
+        bar_time = bar_dt.time()
+        minutes_into = (bar_time.hour * 60 + bar_time.minute) - (9 * 60 + 30)
+        total_session = 390
+        minutes_remaining = max(total_session - minutes_into, 0)
+        session_progress = minutes_into / total_session
+
+        opt_key = (dates[i], int(df.iloc[i]['timestamp']))
+        opt = options_data.get(opt_key) if options_data else None
+        ts_ms = int(df.iloc[i]['timestamp'])
+        vix_bar = vix_data.get(ts_ms) if vix_data else None
+        chain_bar = chain_data.get(opt_key) if chain_data else None
 
         # === Returns (2): ret_6, ret_12 ===
         for lag in [30, 60]:
@@ -1868,16 +1950,28 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
                 feat[i, fi] = 1.0  # neutral: current volume = average
         fi += 1
 
-        # Volume at price percentile
-        didx = day_indices[day]
-        day_pos = np.searchsorted(didx, i)
-        if day_pos > 2:
-            session_close = close[didx[:day_pos + 1]]
-            session_vol = volume[didx[:day_pos + 1]]
-            below_mask = session_close <= c
-            vol_below = np.sum(session_vol[below_mask])
-            vol_total = np.sum(session_vol)
-            feat[i, fi] = vol_below / max(vol_total, 1.0)
+        # gamma_pressure: sum(gamma_i * volume_i * sign_i) across OTM chain (GEX proxy)
+        _T_gp = minutes_remaining / (252.0 * 390.0)
+        if chain_bar is not None and opt is not None and _T_gp > 1e-10:
+            gp = 0.0
+            gp_valid = False
+            spx_gp = c
+            r_gp = 0.05
+            for _step in OTM_STRIKE_STEPS:
+                for _side, _sign in [('call', 1.0), ('put', -1.0)]:
+                    _k_key = f'otm{_step}_{_side}'
+                    _px = _safe_float(chain_bar.get(f'{_k_key}_close', np.nan))
+                    _vol = _safe_float(chain_bar.get(f'{_k_key}_volume', 0.0), default=0.0)
+                    _strike = _safe_float(chain_bar.get(f'{_k_key}_strike', np.nan))
+                    if np.isfinite(_px) and np.isfinite(_strike) and _px > 0 and _vol > 0:
+                        _iv = _bs_iv(_px, spx_gp, _strike, _T_gp, r_gp, is_call=(_side == 'call'))
+                        if np.isfinite(_iv) and _iv > 0:
+                            _, _gamma, _, _ = _bs_greeks(spx_gp, _strike, _T_gp, r_gp, _iv)
+                            if np.isfinite(_gamma):
+                                gp += _gamma * _vol * _sign
+                                gp_valid = True
+            if gp_valid:
+                feat[i, fi] = gp
         fi += 1
 
         # === Volatility (3) ===
@@ -1885,23 +1979,22 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         feat[i, fi] = bar_range
         fi += 1
 
-        if i >= LOOKBACK_WINDOW:
-            feat[i, fi] = np.std(log_ret[i - LOOKBACK_WINDOW:i])
-        elif i >= 5:
-            # v11 fallback: use available history
-            feat[i, fi] = np.std(log_ret[max(0, i - LOOKBACK_WINDOW):i])
+        # realized_vol: same-day lookback only (no cross-day contamination)
+        _day_start_idx = didx[0]
+        _same_day_lookback = min(LOOKBACK_WINDOW, i - _day_start_idx)
+        if _same_day_lookback >= 5:
+            feat[i, fi] = np.std(log_ret[i - _same_day_lookback:i])
         else:
-            feat[i, fi] = 0.0  # neutral: no volatility info yet
+            feat[i, fi] = 0.0
         fi += 1
 
-        if i >= LOOKBACK_WINDOW:
-            ranges = (high[i - LOOKBACK_WINDOW:i] - low[i - LOOKBACK_WINDOW:i]) / np.maximum(close[i - LOOKBACK_WINDOW:i], 1.0)
-            feat[i, fi] = bar_range / max(np.mean(ranges), 1e-8)
-        elif i >= 5:
-            ranges = (high[max(0, i - LOOKBACK_WINDOW):i] - low[max(0, i - LOOKBACK_WINDOW):i]) / np.maximum(close[max(0, i - LOOKBACK_WINDOW):i], 1.0)
+        # range_ratio: same-day lookback only
+        if _same_day_lookback >= 5:
+            _rb = i - _same_day_lookback
+            ranges = (high[_rb:i] - low[_rb:i]) / np.maximum(close[_rb:i], 1.0)
             feat[i, fi] = bar_range / max(np.mean(ranges), 1e-8)
         else:
-            feat[i, fi] = 1.0  # neutral: current range = average
+            feat[i, fi] = 1.0
         fi += 1
 
         # === VWAP (1) — pruned vwap_slope ===
@@ -1927,12 +2020,12 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         feat[i, fi] = (ema8[i] - ema21[i]) / max(c, 1.0)  # ema_cross
         fi += 1
 
-        # consec_direction
-        if i > 0:
+        # consec_direction (same-day only)
+        if i > _day_start_idx:
             consec = 0
             direction = 1 if close[i] >= close[i - 1] else -1
-            for j_c in range(i, max(i - 20, 0) - 1, -1):
-                if j_c == 0:
+            for j_c in range(i, max(i - 20, _day_start_idx) - 1, -1):
+                if j_c <= _day_start_idx:
                     break
                 bar_dir = 1 if close[j_c] >= close[j_c - 1] else -1
                 if bar_dir == direction:
@@ -1942,28 +2035,29 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             feat[i, fi] = direction * min(consec, 10) / 10.0
         fi += 1
 
-        # speed_estimate
-        if i >= 5:
+        # speed_estimate (same-day only)
+        if i - _day_start_idx >= 5:
             ret5 = abs((c / close[i - 5]) - 1.0)
             rv = feat[i, _FEAT_IDX['realized_vol']]
             if not np.isnan(rv) and rv > 1e-8:
                 feat[i, fi] = ret5 / rv
         fi += 1
 
-        # === Microstructure (1) — pruned gap ===
-        if i > 0:
-            feat[i, fi] = 1.0 if (high[i] <= high[i-1] and low[i] >= low[i-1]) else 0.0
-        else:
-            feat[i, fi] = 0.0
+        # vix_roc: VIX 10-bar rate of change (domain: "vol RoC > vol level")
+        if vix_bar is not None and not np.isnan(vix_bar['vix_close']):
+            vix_now = vix_bar['vix_close']
+            vix_prev_val = np.nan
+            if i >= 10 and dates[i - 10] == day:
+                ts_prev = int(df.iloc[i - 10]['timestamp'])
+                vix_prev_bar = vix_data.get(ts_prev) if vix_data else None
+                if vix_prev_bar is not None:
+                    vix_prev_val = vix_prev_bar['vix_close']
+            if not np.isnan(vix_prev_val) and vix_prev_val > 0:
+                feat[i, fi] = (vix_now - vix_prev_val) / vix_prev_val
         fi += 1
 
-        # === Time (3): minutes_to_close, time_sin, time_cos ===
-        bar_dt = df.iloc[i]['datetime']
-        bar_time = bar_dt.time()
-        minutes_into = (bar_time.hour * 60 + bar_time.minute) - (9 * 60 + 30)
-        total_session = 390
-        minutes_remaining = max(total_session - minutes_into, 0)
-        session_progress = minutes_into / total_session
+        # === Time (2): minutes_to_close, iv_percentile ===
+        # (bar_dt, bar_time, minutes_remaining, session_progress computed at loop top)
         spx_for_remap = c  # SPX-scale required (--use-spx default)
         dyn_atm = round(spx_for_remap / 5.0) * 5.0
         dynamic_atm_strikes[i] = dyn_atm
@@ -1973,13 +2067,23 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
         feat[i, fi] = np.log1p(minutes_remaining) / np.log1p(total_session)
         fi += 1
-        # pruned time_sin (0.91 corr w/ minutes_to_close)
-        feat[i, fi] = np.cos(2 * np.pi * session_progress)
+        # iv_percentile: current IV rank vs rolling 60-day history [0,1]
+        # Captures elevated-IV days (FOMC, CPI, NFP) implicitly without hardcoded dates
+        # Compute IV directly from option data (atm_iv feature not yet filled at this slot)
+        _iv_pctile_val = np.nan
+        if opt is not None and not np.isnan(opt.get('call_close', np.nan)):
+            _T_ivp = minutes_remaining / (252.0 * 390.0)
+            if _T_ivp > 1e-10:
+                _cur_iv = _bs_iv(opt['call_close'], c, opt['strike'], _T_ivp, 0.05, is_call=True)
+                if np.isfinite(_cur_iv) and day in _iv_history_by_day:
+                    hist = _iv_history_by_day[day]
+                    if len(hist) >= 5:
+                        _iv_pctile_val = float(np.sum(np.array(hist) <= _cur_iv)) / len(hist)
+        feat[i, fi] = _iv_pctile_val
         fi += 1
 
         # === Options (2): atm_iv, iv_skew ===
-        opt_key = (dates[i], int(df.iloc[i]['timestamp']))
-        opt = options_data.get(opt_key) if options_data else None
+        # (opt_key, opt computed at loop top)
         call_iv = np.nan  # initialize for use in Greeks/VIX sections
         if opt is not None and not np.isnan(opt.get('call_close', np.nan)):
             spx = c  # SPX-scale required (--use-spx default)
@@ -2040,8 +2144,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             fi += 2  # skip options features
 
         # === VIX / Regime (2): vix_regime, vrp ===
-        ts_ms = int(df.iloc[i]['timestamp'])
-        vix_bar = vix_data.get(ts_ms) if vix_data else None
+        # (ts_ms, vix_bar computed at loop top)
         cur_iv = feat[i, _FEAT_IDX['atm_iv']]
         cur_rv = feat[i, _FEAT_IDX['realized_vol']]
 
@@ -2074,7 +2177,7 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
             fi += 2  # skip VIX features
 
         # === OTM chain data (prices for trade simulation only, no features) ===
-        chain_bar = chain_data.get(opt_key) if chain_data else None
+        # (chain_bar computed at loop top)
         if chain_bar is not None and opt is not None:
             spx_for_iv = c  # SPX-scale required (--use-spx default)
             T_iv = minutes_remaining / (252.0 * 390.0)
@@ -2192,30 +2295,15 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         else:
             fi += 3  # skip Greeks (no option data)
 
-        # === Bollinger (1): bollinger_position ===
-        if i >= 20:
-            bb_window = close[max(i - 20, 0):i + 1]
-            bb_mid = np.mean(bb_window)
-            bb_std = np.std(bb_window)
-            bb_width = (bb_mid + 2.0 * bb_std) - (bb_mid - 2.0 * bb_std)
-            if bb_width > 1e-8:
-                feat[i, fi] = (c - bb_mid) / (bb_width / 2.0)
+        # === Bollinger (1): 5-min bollinger_position (pre-computed) ===
+        if not np.isnan(bollinger_5min[i]):
+            feat[i, fi] = bollinger_5min[i]
         fi += 1
 
-        # === Range extras (2): rsi_7, session_range_position ===
-        # rsi_7 (Elder: "7-9 bars for intraday")
-        if i >= 7:
-            rsi_window = close[i - 7:i + 1]
-            rsi_changes = np.diff(rsi_window)
-            gains = np.maximum(rsi_changes, 0)
-            losses = np.maximum(-rsi_changes, 0)
-            avg_gain = np.mean(gains)
-            avg_loss = np.mean(losses)
-            if avg_loss > 1e-10:
-                rs = avg_gain / avg_loss
-                feat[i, fi] = rs / (1.0 + rs)
-            else:
-                feat[i, fi] = 1.0
+        # === Range extras (2): rsi_7 (5-min), session_range_position ===
+        # rsi_7 on 5-min bars (pre-computed)
+        if not np.isnan(rsi_5min[i]):
+            feat[i, fi] = rsi_5min[i]
         fi += 1
 
         # session_range_position
@@ -2276,9 +2364,13 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
 
         # pruned econ_calendar (95.6% zeros)
 
-        # top_of_hour_min: minutes to next hour mark / 60 (sawtooth 0→1)
-        bar_minute = bar_time.minute
-        feat[i, fi] = (60 - bar_minute) / 60.0 if bar_minute > 0 else 0.0
+        # option_spread_width: ATM option (high-low)/close as bid-ask proxy
+        if opt is not None:
+            call_h_sw = _safe_float(opt.get('call_high', np.nan))
+            call_l_sw = _safe_float(opt.get('call_low', np.nan))
+            call_c_sw = _safe_float(opt.get('call_close', np.nan))
+            if np.isfinite(call_h_sw) and np.isfinite(call_l_sw) and np.isfinite(call_c_sw) and call_c_sw > 0:
+                feat[i, fi] = (call_h_sw - call_l_sw) / call_c_sw
         fi += 1
 
         # === v10 new features (5) ===
@@ -2291,8 +2383,10 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         feat[i, fi] = force_index_2[i]
         fi += 1
 
-        # vol_price_diverg: consecutive bars of price/volume divergence
-        feat[i, fi] = vol_price_diverg[i]
+        # prev_close_dist: (close - prev_day_close) / close
+        prev_cl_dist = prev_day_close_val.get(day)
+        if prev_cl_dist is not None and prev_cl_dist > 0:
+            feat[i, fi] = (c - prev_cl_dist) / c
         fi += 1
 
         # effort_vs_result: body/avg_body / vol/avg_vol anomaly
@@ -2302,6 +2396,15 @@ def compute_features(df: pd.DataFrame, options_data: dict | None = None,
         # trend_5min: 5-min aggregated EMA(13) slope (Triple Screen)
         feat[i, fi] = trend_5min[i]
         fi += 1
+
+        # overnight_gap: (day open - prev close) / prev close (promoted from tournament in v17)
+        prev_cl = prev_day_close_val.get(day)
+        if prev_cl is not None and prev_cl > 0:
+            day_open_px = opn[day_indices[day][0]]
+            feat[i, fi] = (day_open_px - prev_cl) / prev_cl
+        fi += 1
+
+        # (tournament feature system removed in v18)
 
         # Sidecar quality/risk masks for supervision weighting.
         row_quality = action_quality_score[i]
@@ -2852,12 +2955,15 @@ def _rolling_zscore(features: np.ndarray, valid: np.ndarray, window: int) -> np.
     return out
 
 
-def _per_day_zscore(features: np.ndarray, valid: np.ndarray, dates: list) -> np.ndarray:
-    """Per-day mean, global std normalization.
+def _per_day_zscore(features: np.ndarray, valid: np.ndarray, dates: list,
+                    walk_forward: bool = True) -> np.ndarray:
+    """Per-day mean, expanding-window std normalization (walk-forward).
 
     Removes day-specific feature fingerprints that cause the model to memorize
-    individual dates (e.g. the Sep 17 attractor) while preserving cross-day
-    regime information via the global standard deviation.
+    individual dates while preserving regime-level information.
+
+    Walk-forward mode (default): std computed using only data up to each day,
+    preventing future information leakage in normalization statistics.
     """
     out = features.copy().astype(np.float64)
 
@@ -2870,26 +2976,53 @@ def _per_day_zscore(features: np.ndarray, valid: np.ndarray, dates: list) -> np.
         if name in _NO_NORMALIZE:
             continue
 
-        # Global std across all valid bars (preserves regime-level differences)
-        all_vals = out[:, j][valid]
-        if len(all_vals) < 10:
-            out[:, j] = 0.0
-            continue
-        global_std = np.std(all_vals)
-        if global_std < 1e-10:
-            out[:, j] = 0.0
-            continue
-
-        # Per-day mean subtraction (removes day-specific fingerprints)
-        for ds, de in zip(day_starts, day_ends):
-            chunk = out[ds:de, j]
-            mask = valid[ds:de]
-            day_vals = chunk[mask]
-            if len(day_vals) < 3:
-                out[ds:de, j] = 0.0
-            else:
+        if not walk_forward:
+            # Legacy: global std across all valid bars
+            all_vals = out[:, j][valid]
+            if len(all_vals) < 10:
+                out[:, j] = 0.0
+                continue
+            global_std = float(np.std(all_vals))
+            if global_std < 1e-10:
+                out[:, j] = 0.0
+                continue
+            for ds, de in zip(day_starts, day_ends):
+                chunk = out[ds:de, j]
+                mask = valid[ds:de]
+                day_vals = chunk[mask]
+                if len(day_vals) < 3:
+                    out[ds:de, j] = 0.0
+                else:
+                    day_mean = np.mean(day_vals)
+                    out[ds:de, j] = (chunk - day_mean) / global_std
+        else:
+            # Walk-forward: expanding-window std (no future data leakage)
+            # Use a minimum of 20 days of data for std estimation
+            min_warmup_days = 20
+            for day_i, (ds, de) in enumerate(zip(day_starts, day_ends)):
+                chunk = out[ds:de, j]
+                mask = valid[ds:de]
+                day_vals = chunk[mask]
+                if len(day_vals) < 3:
+                    out[ds:de, j] = 0.0
+                    continue
                 day_mean = np.mean(day_vals)
-                out[ds:de, j] = (chunk - day_mean) / global_std
+                # Expanding std: use all valid data up to and including this day
+                expanding_end = ds  # strict walk-forward: exclude current day from std
+                expanding_vals = out[:expanding_end, j][valid[:expanding_end]]
+                if len(expanding_vals) < 50 or day_i < min_warmup_days:
+                    # Not enough history: use day-level std as fallback
+                    day_std = float(np.std(day_vals))
+                    if day_std < 1e-10:
+                        out[ds:de, j] = 0.0
+                    else:
+                        out[ds:de, j] = (chunk - day_mean) / day_std
+                else:
+                    expanding_std = float(np.std(expanding_vals))
+                    if expanding_std < 1e-10:
+                        out[ds:de, j] = 0.0
+                    else:
+                        out[ds:de, j] = (chunk - day_mean) / expanding_std
 
     out = np.clip(out, -5.0, 5.0)
     out = np.nan_to_num(out, nan=0.0)
@@ -2967,14 +3100,17 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
 
     unique_dates = sorted(set(dates))
     split_idx = int(len(unique_dates) * 0.7)
+    # Purge gap: skip 1 day at the boundary to prevent label/feature leakage
+    purge_days = 1
     train_dates = set(unique_dates[:split_idx])
-    val_dates = set(unique_dates[split_idx:])
+    val_dates = set(unique_dates[split_idx + purge_days:])
 
     train_end_idx = max(i for i, d in enumerate(dates) if d in train_dates)
     val_start_idx = min(i for i, d in enumerate(dates) if d in val_dates)
     val_end_idx = max(i for i, d in enumerate(dates) if d in val_dates)
 
     print(f"  Train: {len(train_dates)} days (idx 0-{train_end_idx})")
+    print(f"  Purge: {purge_days} day(s) at boundary")
     print(f"  Val:   {len(val_dates)} days (idx {val_start_idx}-{val_end_idx})")
 
     data = {
@@ -3065,6 +3201,20 @@ def prepare_tensors(features: np.ndarray, targets: np.ndarray,
                 data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
         if 'action_leg_names' in option_prices:
             data['action_leg_names'] = list(option_prices['action_leg_names'])
+
+        # v17: Prediction labels (forward returns + volatility + action targets)
+        for k in ('pred_return_15', 'pred_return_30', 'pred_return_60',
+                  'pred_volatility_30', 'pred_action_target'):
+            if k in option_prices:
+                data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
+
+        # v18: Path-quality labels
+        for k in ('v18_mfe', 'v18_mae', 'v18_entry_gate',
+                  'v18_risk_stop_distance', 'v18_risk_target_distance',
+                  'v18_risk_conviction', 'v18_exit_label',
+                  'v18_direction_label', 'v18_bar_weight'):
+            if k in option_prices:
+                data[k] = torch.tensor(option_prices[k], dtype=torch.float32)
 
     # Day boundaries for sequential batching (Phase 3)
     date_list = data['dates'].tolist() if isinstance(data['dates'], torch.Tensor) else list(data['dates'])
@@ -3174,167 +3324,64 @@ def load_data():
     sys.exit(1)
 
 
-def _load_dataloader_arrays(data, device):
-    """Load all target arrays needed by dataloaders. Returns a dict of tensors."""
-    required_targets = (
-        'call_pnl', 'put_pnl', 'exit_call_label', 'exit_put_label',
-        'otm5_call_pnl', 'otm5_put_pnl', 'otm10_call_pnl', 'otm10_put_pnl',
-    )
-    missing = [k for k in required_targets if k not in data]
-    if missing:
-        raise KeyError(
-            "data.pt missing required targets: " + ", ".join(missing)
-            + ". Rebuild data.pt with the current prepare.py."
-        )
-
-    # Feature count must match exactly — no silent truncation
-    _raw_features = data['features']
-    if _raw_features.shape[-1] != NUM_FEATURES:
-        raise RuntimeError(
-            f"data.pt has {_raw_features.shape[-1]} features but code expects {NUM_FEATURES}. "
-            f"Rebuild data.pt with: python3 training/prepare.py"
-        )
-
-    call_pnl_all = data['call_pnl'].to(device)
-    arrays = {
-        'features': _raw_features.to(device),
-        'targets': data['targets'].to(device),
-        'call_pnl': call_pnl_all,
-        'put_pnl': data['put_pnl'].to(device),
-        'exit_call': data['exit_call_label'].to(device),
-        'exit_put': data['exit_put_label'].to(device),
-        'otm5_call_pnl': data['otm5_call_pnl'].to(device),
-        'otm5_put_pnl': data['otm5_put_pnl'].to(device),
-        'otm10_call_pnl': data['otm10_call_pnl'].to(device),
-        'otm10_put_pnl': data['otm10_put_pnl'].to(device),
-    }
-    # v10: deep OTM P&L arrays (optional — NaN-filled if missing for backward compat)
-    for k in ('otm15_call_pnl', 'otm15_put_pnl', 'otm20_call_pnl', 'otm20_put_pnl',
-              'otm25_call_pnl', 'otm25_put_pnl', 'otm30_call_pnl', 'otm30_put_pnl'):
-        v = data.get(k)
-        arrays[k] = v.to(device) if v is not None else torch.full_like(call_pnl_all, float('nan'))
-
-    for k in ('supervision_weight', 'actionable_mask', 'risk_state_mask'):
-        v = data.get(k)
-        arrays[k] = v.to(device) if v is not None else torch.ones_like(call_pnl_all)
-
-    # v11: setup recognition + regime labels (optional — zeros if missing for backward compat)
-    for k in ('setup_mask', 'regime_mask'):
-        v = data.get(k)
-        arrays[k] = v.to(device) if v is not None else torch.zeros_like(call_pnl_all)
-
-    # Stopped P&L arrays (v5) — REQUIRED for core, optional for deep OTM
-    for k in ('call_stopped_pnl', 'put_stopped_pnl',
-              'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
-              'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl'):
-        v = data.get(k)
-        if v is not None:
-            arrays[k] = v.to(device)
-        else:
-            raise RuntimeError(f"Missing required field in data.pt: {k} — rebuild data.pt")
-
-    # v10: deep OTM stopped P&L (optional — fallback to unstopped)
-    for k in ('otm15_call_stopped_pnl', 'otm15_put_stopped_pnl',
-              'otm20_call_stopped_pnl', 'otm20_put_stopped_pnl',
-              'otm25_call_stopped_pnl', 'otm25_put_stopped_pnl',
-              'otm30_call_stopped_pnl', 'otm30_put_stopped_pnl'):
-        v = data.get(k)
-        arrays[k] = v.to(device) if v is not None else torch.full_like(call_pnl_all, float('nan'))
-
-    # Multi-level stopped P&L (tight=0.20, wide=0.50) — REQUIRED (no fallback)
-    for k in ('call_stopped_pnl_tight', 'call_stopped_pnl_wide',
-              'put_stopped_pnl_tight', 'put_stopped_pnl_wide'):
-        v = data.get(k)
-        if v is not None:
-            arrays[k] = v.to(device)
-        else:
-            raise RuntimeError(f"Missing required field in data.pt: {k} — rebuild data.pt")
-
-    return arrays
-
-
-def _build_y_tuple(arrays, idx):
-    """Build the y tuple for a batch of indices.
-
-    v11 layout (40 elements):
-      0: targets, 1-2: call/put pnl, 3-4: exit labels,
-      5-8: otm5/10 call/put pnl, 9-11: sw/am/rsm,
-      12-17: stopped pnl (atm+otm5+otm10),
-      18-21: multi-level tight/wide,
-      22-29: deep OTM pnl (otm15-30 call/put),
-      30-37: deep OTM stopped pnl (otm15-30 call/put),
-      38-39: setup_mask, regime_mask (v11)
-    """
-    return (arrays['targets'][idx],                          # 0
-            arrays['call_pnl'][idx], arrays['put_pnl'][idx], # 1-2
-            arrays['exit_call'][idx], arrays['exit_put'][idx],# 3-4
-            arrays['otm5_call_pnl'][idx], arrays['otm5_put_pnl'][idx],   # 5-6
-            arrays['otm10_call_pnl'][idx], arrays['otm10_put_pnl'][idx], # 7-8
-            arrays['supervision_weight'][idx], arrays['actionable_mask'][idx],  # 9-10
-            arrays['risk_state_mask'][idx],                   # 11
-            # v5: stopped P&L at med level (positions 12-17)
-            arrays['call_stopped_pnl'][idx], arrays['put_stopped_pnl'][idx],
-            arrays['otm5_call_stopped_pnl'][idx], arrays['otm5_put_stopped_pnl'][idx],
-            arrays['otm10_call_stopped_pnl'][idx], arrays['otm10_put_stopped_pnl'][idx],
-            # v6: multi-level stopped P&L tight/wide (positions 18-21)
-            arrays['call_stopped_pnl_tight'][idx], arrays['call_stopped_pnl_wide'][idx],
-            arrays['put_stopped_pnl_tight'][idx], arrays['put_stopped_pnl_wide'][idx],
-            # v10: deep OTM P&L (positions 22-29)
-            arrays['otm15_call_pnl'][idx], arrays['otm15_put_pnl'][idx],
-            arrays['otm20_call_pnl'][idx], arrays['otm20_put_pnl'][idx],
-            arrays['otm25_call_pnl'][idx], arrays['otm25_put_pnl'][idx],
-            arrays['otm30_call_pnl'][idx], arrays['otm30_put_pnl'][idx],
-            # v10: deep OTM stopped P&L (positions 30-37)
-            arrays['otm15_call_stopped_pnl'][idx], arrays['otm15_put_stopped_pnl'][idx],
-            arrays['otm20_call_stopped_pnl'][idx], arrays['otm20_put_stopped_pnl'][idx],
-            arrays['otm25_call_stopped_pnl'][idx], arrays['otm25_put_stopped_pnl'][idx],
-            arrays['otm30_call_stopped_pnl'][idx], arrays['otm30_put_stopped_pnl'][idx],
-            # v11: setup recognition + regime labels (positions 38-39)
-            arrays['setup_mask'][idx], arrays['regime_mask'][idx])
-
-
-def make_dataloader(data, lookback, batch_size, split="train", device="cuda", target_mask=None):
-    """Infinite (train) or single-pass (val) dataloader.
+def make_prediction_dataloader(data, lookback, batch_size, split="train", device="cuda"):
+    """Simple dataloader for v17 prediction model.
 
     Yields (x, y):
         x: (batch, lookback, NUM_FEATURES)
-        y: 38-element tuple (v10). See _build_y_tuple for layout.
-           each (batch,). NaN where option data is unavailable.
-
-    Args:
-        target_mask: optional bool tensor/array same length as features. When provided,
-                     only indices where target_mask[i] is True are used as training targets.
-                     Lookback context still uses the original valid_mask.
+        y: (batch, 5) — return_15, return_30, return_60, vol_30, action_target
     """
-    arrays = _load_dataloader_arrays(data, device)
-    features = arrays['features']
+    features = data['features'].to(device)
     valid_mask = data['valid_mask']
+
+    # Build prediction label tensor
+    pred_keys = ['pred_return_15', 'pred_return_30', 'pred_return_60',
+                 'pred_volatility_30', 'pred_action_target']
+    pred_arrays = []
+    for k in pred_keys:
+        v = data.get(k)
+        if v is None:
+            raise KeyError(f"data.pt missing '{k}'. Rebuild with current prepare.py.")
+        pred_arrays.append(v)
+    pred_labels = torch.stack(pred_arrays, dim=-1).to(device)  # (N, 5)
 
     if split == "train":
         end = data['train_end_idx'] + 1
+        start = max(lookback, 0)
     else:
         end = data['val_end_idx'] + 1
+        start = max(lookback, data['val_start_idx'])
 
-    start = max(lookback, data['val_start_idx'] if split != "train" else lookback)
+    # Build day start index lookup for cross-day prevention
+    _dates = data.get('dates', [])
+    _day_start_map = {}  # bar_index -> first bar of that day
+    if _dates:
+        _prev_d = None
+        for _bi in range(len(_dates)):
+            if _dates[_bi] != _prev_d:
+                _cur_day_start = _bi
+                _prev_d = _dates[_bi]
+            _day_start_map[_bi] = _cur_day_start
 
+    # Find valid indices (same-day lookback, valid prediction labels)
     valid_indices = []
     for i in range(start, end):
         if not valid_mask[i]:
             continue
-        if target_mask is not None:
-            # Specialist mode: target_mask selects which bars to train on.
-            # Lookback validity relaxed — invalid lookback bars are zero-filled.
-            if target_mask[i]:
-                valid_indices.append(i)
-        else:
-            # v11: relaxed contiguity — require ≥90% valid bars in lookback window
-            window = valid_mask[max(0, i - lookback):i]
-            if len(window) > 0 and window.sum() >= 0.9 * len(window):
-                valid_indices.append(i)
+        if torch.isnan(pred_labels[i, 1]):
+            continue
+        # Require full lookback within the same day (no cross-day window)
+        _ds = _day_start_map.get(i, 0)
+        if i - _ds < lookback:
+            continue  # not enough same-day bars for full lookback
+        window = valid_mask[i - lookback:i]
+        if len(window) > 0 and window.sum() >= 0.9 * len(window):
+            valid_indices.append(i)
 
     valid_indices = torch.tensor(valid_indices, dtype=torch.long, device=device)
     n = len(valid_indices)
-    assert n > 0, f"No valid samples for split={split}, lookback={lookback}"
+    assert n > 0, f"No valid samples for split={split}"
+    print(f"  Prediction dataloader ({split}): {n} valid bars")
 
     offsets = torch.arange(-lookback, 0, device=device)
 
@@ -3345,1098 +3392,420 @@ def make_dataloader(data, lookback, batch_size, split="train", device="cuda", ta
                 idx = valid_indices[perm[i:i + batch_size]]
                 window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
                 x = features[window_idx]
-                yield x, _build_y_tuple(arrays, idx)
+                y = pred_labels[idx]
+                # Replace NaN with 0 in labels (for bars near EOD with missing horizons)
+                y = torch.nan_to_num(y, nan=0.0)
+                yield x, y
     else:
         for i in range(0, n, batch_size):
             end_i = min(i + batch_size, n)
             idx = valid_indices[i:end_i]
             window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
             x = features[window_idx]
-            yield x, _build_y_tuple(arrays, idx)
+            y = pred_labels[idx]
+            y = torch.nan_to_num(y, nan=0.0)
+            yield x, y
 
 
-def make_day_sequential_loader(data, lookback, batch_size, device="cuda", split="train"):
-    """Day-sequential dataloader: yields bars sequentially within sampled days.
+def make_v18_dataloader(data, lookback, batch_size, split="train", device="cuda"):
+    """Dataloader for v18 5-head model.
 
-    For each epoch, samples `batch_size` random days from the split, then
-    iterates through bars of each day sequentially. This allows carrying
-    position state forward across bars within a day.
-
-    Yields (x, y, bar_in_day):
-        x: (actual_batch, lookback, NUM_FEATURES)
-        y: same tuple as make_dataloader
-        bar_in_day: int, position within the trading day (0 = first bar)
+    Yields (x, y_pred, y_v18, bar_weight):
+        x: (batch, lookback, NUM_FEATURES)
+        y_pred: (batch, 5) -- return_15, return_30, return_60, vol_30, action_target (v17 compat)
+        y_v18: (batch, 8) -- entry_gate, risk_stop, risk_target, risk_conviction,
+                              exit_label, direction_label, mfe, mae
+        bar_weight: (batch,) -- time-of-day loss weighting
     """
-    arrays = _load_dataloader_arrays(data, device)
-    features = arrays['features']
+    features = data['features'].to(device)
     valid_mask = data['valid_mask']
+
+    # v17 prediction labels (still used for return head)
+    pred_keys = ['pred_return_15', 'pred_return_30', 'pred_return_60',
+                 'pred_volatility_30', 'pred_action_target']
+    pred_arrays = []
+    for k in pred_keys:
+        v = data.get(k)
+        if v is None:
+            raise KeyError(f"data.pt missing '{k}'. Rebuild with current prepare.py.")
+        pred_arrays.append(v)
+    pred_labels = torch.stack(pred_arrays, dim=-1).to(device)  # (N, 5)
+
+    # v18 path-quality labels
+    v18_keys = ['v18_entry_gate', 'v18_risk_stop_distance', 'v18_risk_target_distance',
+                'v18_risk_conviction', 'v18_exit_label', 'v18_direction_label',
+                'v18_mfe', 'v18_mae']
+    v18_arrays = []
+    for k in v18_keys:
+        v = data.get(k)
+        if v is None:
+            raise KeyError(f"data.pt missing '{k}'. Rebuild with current prepare.py (v18).")
+        v18_arrays.append(v)
+    v18_labels = torch.stack(v18_arrays, dim=-1).to(device)  # (N, 8)
+
+    # bar_weight
+    bw = data.get('v18_bar_weight')
+    if bw is None:
+        raise KeyError("data.pt missing 'v18_bar_weight'. Rebuild with current prepare.py (v18).")
+    bar_weight = bw.to(device)  # (N,)
 
     if split == "train":
         end = data['train_end_idx'] + 1
+        start = max(lookback, 0)
     else:
         end = data['val_end_idx'] + 1
-    start = max(lookback, data['val_start_idx'] if split != "train" else lookback)
+        start = max(lookback, data['val_start_idx'])
 
-    # Build day boundaries within the split
-    day_boundaries = data.get('day_boundaries')
-    if day_boundaries is None:
-        raise KeyError("data.pt missing 'day_boundaries'. Rebuild with current prepare.py.")
-    day_boundaries = day_boundaries.tolist()
+    # Build day start index lookup for cross-day prevention
+    _dates = data.get('dates', [])
+    _day_start_map = {}
+    if _dates:
+        _prev_d = None
+        for _bi in range(len(_dates)):
+            if _dates[_bi] != _prev_d:
+                _cur_day_start = _bi
+                _prev_d = _dates[_bi]
+            _day_start_map[_bi] = _cur_day_start
 
-    # Find days that fall within the split range
-    split_days = []  # list of (day_start, day_end) tuples
-    for d in range(len(day_boundaries)):
-        day_start = day_boundaries[d]
-        day_end = day_boundaries[d + 1] if d + 1 < len(day_boundaries) else len(valid_mask)
-        # Day must overlap with split range
-        if day_end <= start or day_start >= end:
+    # Find valid indices (same-day lookback, valid v18 labels)
+    valid_indices = []
+    for i in range(start, end):
+        if not valid_mask[i]:
             continue
-        effective_start = max(day_start, start)
-        effective_end = min(day_end, end)
-        if effective_end - effective_start >= lookback + 1:
-            split_days.append((effective_start, effective_end))
+        # Require valid v18 entry_gate (index 0 in v18_labels)
+        if torch.isnan(v18_labels[i, 0]):
+            continue
+        # Require valid 30-bar return (for return head)
+        if torch.isnan(pred_labels[i, 1]):
+            continue
+        # Require full lookback within the same day
+        _ds = _day_start_map.get(i, 0)
+        if i - _ds < lookback:
+            continue
+        window = valid_mask[i - lookback:i]
+        if len(window) > 0 and window.sum() >= 0.9 * len(window):
+            valid_indices.append(i)
 
-    assert len(split_days) > 0, f"No valid days for split={split}"
+    valid_indices = torch.tensor(valid_indices, dtype=torch.long, device=device)
+    n = len(valid_indices)
+    assert n > 0, f"No valid v18 samples for split={split}"
+    print(f"  v18 dataloader ({split}): {n} valid bars")
 
     offsets = torch.arange(-lookback, 0, device=device)
 
-    while True:
-        # Sample batch_size random days
-        day_indices = torch.randint(0, len(split_days), (min(batch_size, len(split_days)),))
-        selected_days = [split_days[di] for di in day_indices]
-
-        # Truncate to shortest selected day so all days contribute equally
-        # to every bar position. Prevents long days from dominating late offsets.
-        min_bars = min(de - ds for ds, de in selected_days)
-
-        for bar_offset in range(lookback, min_bars):
-            # Every selected day contributes to every bar position
-            batch_indices = []
-            for ds, de in selected_days:
-                bar_idx = ds + bar_offset
-                if bar_idx < de and bar_idx >= start:
-                    window = valid_mask[max(0, bar_idx - lookback):bar_idx]
-                    if valid_mask[bar_idx] and len(window) > 0 and window.sum() >= 0.9 * len(window):
-                        batch_indices.append(bar_idx)
-
-            if len(batch_indices) == 0:
-                continue
-
-            idx = torch.tensor(batch_indices, dtype=torch.long, device=device)
+    if split == "train":
+        while True:
+            perm = torch.randperm(n, device=device)
+            for i in range(0, n - batch_size + 1, batch_size):
+                idx = valid_indices[perm[i:i + batch_size]]
+                window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
+                x = features[window_idx]
+                y_pred = torch.nan_to_num(pred_labels[idx], nan=0.0)
+                y_v18 = torch.nan_to_num(v18_labels[idx], nan=0.0)
+                bw = torch.nan_to_num(bar_weight[idx], nan=0.0)
+                yield x, y_pred, y_v18, bw
+    else:
+        for i in range(0, n, batch_size):
+            end_i = min(i + batch_size, n)
+            idx = valid_indices[i:end_i]
             window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
             x = features[window_idx]
-            yield x, _build_y_tuple(arrays, idx), bar_offset - lookback
+            y_pred = torch.nan_to_num(pred_labels[idx], nan=0.0)
+            y_v18 = torch.nan_to_num(v18_labels[idx], nan=0.0)
+            bw = torch.nan_to_num(bar_weight[idx], nan=0.0)
+            yield x, y_pred, y_v18, bw
 
 
 # ---------------------------------------------------------------------------
-# Evaluation: Trade Simulation (the new primary metric)
+# Prediction label computation (v17)
 # ---------------------------------------------------------------------------
 
-@torch.no_grad()
-def evaluate_trades(model, data, lookback, device, batch_size=1024,
-                    stop_loss_pct=None, max_hold_bars=None,
-                    max_trade_return=None,
-                    starting_capital=None, position_risk_target=None,
-                    score_config=None):
-    """Simulate 0DTE option trades on validation set.
+PREDICTION_ENTRY_THRESHOLD = 0.002  # trade when abs(return_30) > this
 
-    Supports both model formats:
-      - v12 unified: model(x) returns (action_logits,) with 15 classes
-        [DO_NOTHING, CALL_ATM..OTM30, PUT_ATM..OTM30]
-      - Legacy two-head: model(x) returns (gate_logits, dir_logits)
+def compute_prediction_labels_from_prices(close_prices, dates, valid):
+    """Compute forward return labels and action targets from raw close prices.
 
-    Effective semantics:
-      - Action > 0 while flat -> ENTER with chosen option type.
-      - Action == 0 while in position -> model EXIT.
-      - Action == 0 while flat -> DO_NOTHING.
-
-    Optional overrides (defaults from module constants):
-      stop_loss_pct: Stop loss as fraction of premium (default 0.30)
-      max_hold_bars: Max bars to hold a position (default BARS_PER_DAY)
-      max_trade_return: Cap individual trade P&L (default 5.0 = 500%)
-      starting_capital: Starting account balance for equity curve (default 10000.0)
-      position_risk_target: Target risk per trade as fraction of account (default 0.05 = 5%).
-          Determines whole contract count: n = max(1, floor(balance * target / cost)).
-      score_config: Dict of score tuning params (all default to neutral/0.0):
-        - win_rate_bonus: Reward high win rates (0.0-1.0)
-        - rr_bonus: Reward good R:R ratio (0.0-2.0)
-        - drawdown_penalty: Penalize deep drawdowns (0.0-1.0)
-        - hold_bonus: Reward appropriate hold times (0.0-1.0)
-        - freq_center: Ideal trades per day (1.0-8.0, default 3.0)
-        - freq_width: How tight the freq band is (1.0-6.0, default 3.0)
-        - consec_loss_threshold: Max consecutive losses before penalty (2-8, default 3)
-        - short_hold_threshold: Short hold % penalty trigger (0.10-0.60, default 0.30)
-        - stop_rate_threshold: Stop loss rate penalty trigger (0.10-0.60, default 0.30)
-        - ruin_penalty: Severity of account ruin penalty (0.0-1.0, default 1.0)
-        - ruin_threshold: Equity fraction that triggers ruin (0.05-0.50, default 0.25 = 75% loss)
-
-    Returns dict with trader + quant metrics and composite score.
+    Returns dict with keys: return_15, return_30, return_60, volatility_30, action_target
+    All arrays are (N,) float32, NaN where not computable.
     """
-    # Allow train.py to override strategy parameters
-    _stop_loss = stop_loss_pct if stop_loss_pct is not None else STOP_LOSS_PCT  # legacy; dynamic stop used instead
-    _max_hold = max_hold_bars if max_hold_bars is not None else MAX_HOLD_BARS
-    _max_return = max_trade_return if max_trade_return is not None else MAX_TRADE_RETURN
-    _starting_capital = starting_capital if starting_capital is not None else STARTING_CAPITAL
-    _position_risk_target = position_risk_target if position_risk_target is not None else POSITION_RISK_TARGET
+    N = len(close_prices)
+    labels = {
+        'return_15': np.full(N, np.nan, dtype=np.float32),
+        'return_30': np.full(N, np.nan, dtype=np.float32),
+        'return_60': np.full(N, np.nan, dtype=np.float32),
+        'volatility_30': np.full(N, np.nan, dtype=np.float32),
+        'action_target': np.full(N, np.nan, dtype=np.float32),
+    }
 
-    # Score tuning config (all defaults produce neutral/unchanged score)
-    _sc = score_config or {}
-    _sc_wr_bonus = float(_sc.get('win_rate_bonus', 0.0))
-    _sc_rr_bonus = float(_sc.get('rr_bonus', 0.0))
-    _sc_dd_penalty = float(_sc.get('drawdown_penalty', 0.5))
-    _sc_hold_bonus = float(_sc.get('hold_bonus', 0.0))
-    _sc_freq_center = float(_sc.get('freq_center', 3.0))
-    _sc_freq_width = float(_sc.get('freq_width', 3.0))
-    _sc_consec_thresh = int(_sc.get('consec_loss_threshold', 3))
-    _sc_short_thresh = float(_sc.get('short_hold_threshold', 0.30))
-    _sc_stop_thresh = float(_sc.get('stop_rate_threshold', 0.30))
-    _sc_ruin_penalty = float(_sc.get('ruin_penalty', 1.0))
-    _sc_ruin_thresh = float(_sc.get('ruin_threshold', 0.25))
-    _sc_risk_frac_penalty = float(_sc.get('risk_fraction_penalty', 0.5))
-
-    model.eval()
-
-    features = data['features'].to(device)
-    targets = data['targets']
-    valid_mask = data['valid_mask']
-    dates = data['dates']
-    timestamps = data.get('timestamps', dates)
-    atm_strikes = data.get('atm_strikes')
-    action_cost_matrix = data.get('action_cost_bps')
-    action_quality_matrix = data.get('action_quality_score')
-    actionable_series = data.get('actionable_mask')
-    risk_state_series = data.get('risk_state_mask')
-
-    val_start = max(lookback, data['val_start_idx'])
-    val_end = data['val_end_idx'] + 1
-
-    val_indices = []
-    for i in range(val_start, val_end):
-        if not valid_mask[i]:
+    for i in range(N):
+        if not valid[i]:
             continue
-        window = valid_mask[max(0, i - lookback):i]
-        if len(window) > 0 and window.sum() >= 0.9 * len(window):
-            val_indices.append(i)
+        day = dates[i]
 
-    if len(val_indices) < 10:
-        return _empty_metrics(len(val_indices))
+        # Forward returns at 15/30/60 bar horizons
+        for horizon, key in [(15, 'return_15'), (30, 'return_30'), (60, 'return_60')]:
+            end = i + horizon
+            if end < N and dates[end] == day and close_prices[i] > 0:
+                labels[key][i] = (close_prices[end] - close_prices[i]) / close_prices[i]
 
-    actionable_bar_rate = 0.0
-    risk_off_bar_rate = 0.0
-    if actionable_series is not None:
-        actionable_vals = np.array([float(actionable_series[i]) for i in val_indices], dtype=np.float64)
-        actionable_bar_rate = float(np.mean(actionable_vals))
-    if risk_state_series is not None:
-        risk_vals = np.array([float(risk_state_series[i]) for i in val_indices], dtype=np.float64)
-        risk_off_bar_rate = float(np.mean(1.0 - risk_vals))
+        # Realized volatility over next 30 bars
+        end_vol = min(i + 30, N)
+        if end_vol > i + 5:
+            window_prices = close_prices[i:end_vol].copy()
+            window_dates = dates[i:end_vol]
+            same_day = np.array([d == day for d in window_dates])
+            window_prices = window_prices[same_day]
+            if len(window_prices) > 5 and not np.any(np.isnan(window_prices)):
+                bar_returns = np.diff(window_prices) / window_prices[:-1]
+                labels['volatility_30'][i] = np.std(bar_returns).astype(np.float32)
 
-    val_idx_t = torch.tensor(val_indices, dtype=torch.long, device=device)
-    offsets = torch.arange(-lookback, 0, device=device)
-
-    # Detect v12 unified action head vs legacy two-head
-    _is_v12 = hasattr(model, 'action_head')
-
-    if not _is_v12:
-        # Legacy: Phase 1 batch direction inference (position-independent)
-        all_dir_actions = []
-        for i in range(0, len(val_idx_t), batch_size):
-            idx = val_idx_t[i:i + batch_size]
-            window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
-            x = features[window_idx]
-            out = model(x)
-            gate_logits, dir_logits = out[0], out[1]
-            dir_action = torch.argmax(dir_logits, dim=-1)
-            all_dir_actions.append(dir_action.cpu())
-        dir_actions = torch.cat(all_dir_actions).numpy()
-    else:
-        dir_actions = None  # v12 doesn't need separate direction inference
-
-    # Phase 2: Position-aware sequential inference
-    _has_position_proj = hasattr(model, 'position_proj')
-    actions = np.empty(len(val_indices), dtype=np.int64)
-    gate_no_trade = np.empty(len(val_indices), dtype=bool)
-    gate_confidence = np.empty(len(val_indices), dtype=np.float64)
-    # Store risk head outputs per-bar for use in trade loop
-    _risk_outputs = np.full((len(val_indices), 3), np.nan, dtype=np.float32)  # stop_pct, size_frac, conviction
-
-    # Pre-compute bar_of_day for each validation index (0=9:30, 29=9:59, 30=10:00)
-    _bar_of_day = {}
-    _prev_date = None
-    _bod = 0
-    for gi in val_indices:
-        d = dates[gi]
-        if d != _prev_date:
-            _bod = 0
-            _prev_date = d
-        else:
-            _bod += 1
-        _bar_of_day[gi] = _bod
-
-    # Helper: map action → option price array (needed by both position tracking and trade sim)
-    def _get_px_array(action, data_dict):
-        """Get the price array for a given action."""
-        mapping = {
-            ACTION_BUY_CALL_ATM:   data_dict.get('atm_call_prices'),
-            ACTION_BUY_CALL_OTM5:  data_dict.get('otm5_call_prices'),
-            ACTION_BUY_CALL_OTM10: data_dict.get('otm10_call_prices'),
-            ACTION_BUY_CALL_OTM15: data_dict.get('otm15_call_prices'),
-            ACTION_BUY_CALL_OTM20: data_dict.get('otm20_call_prices'),
-            ACTION_BUY_CALL_OTM25: data_dict.get('otm25_call_prices'),
-            ACTION_BUY_CALL_OTM30: data_dict.get('otm30_call_prices'),
-            ACTION_BUY_PUT_ATM:    data_dict.get('atm_put_prices'),
-            ACTION_BUY_PUT_OTM5:   data_dict.get('otm5_put_prices'),
-            ACTION_BUY_PUT_OTM10:  data_dict.get('otm10_put_prices'),
-            ACTION_BUY_PUT_OTM15:  data_dict.get('otm15_put_prices'),
-            ACTION_BUY_PUT_OTM20:  data_dict.get('otm20_put_prices'),
-            ACTION_BUY_PUT_OTM25:  data_dict.get('otm25_put_prices'),
-            ACTION_BUY_PUT_OTM30:  data_dict.get('otm30_put_prices'),
-        }
-        return mapping.get(action)
-
-    # Feature indices for dynamic stop computation
-    _idx_atm_iv = _FEAT_IDX['atm_iv']
-    _idx_vix_regime = _FEAT_IDX['vix_regime']
-
-    # Track position state for gate decisions
-    _pos_in_trade = False
-    _pos_bars_held = 0
-    _pos_unrealized_pnl = 0.0
-    _pos_entry_price = 0.0
-    _pos_px_array = None
-    _pos_last_stop_bar = -STOP_COOLDOWN_BARS
-    _pos_dynamic_stop = DYNAMIC_STOP_BASE  # per-trade dynamic stop (set at entry)
-    # Account state tracking (shadow simulation for position_state input)
-    _pos_account_balance = _starting_capital
-    _pos_consecutive_losses = 0
-    _pos_n_contracts = 1
-
-    _pos_best_pnl = 0.0           # Phase D: best P&L since entry
-    _pos_bars_since_high = 0       # Phase D: bars since P&L peak
-    _pos_conviction = 0.0          # Phase E: risk head conviction for exit modulation
-    _pos_win_rate_20 = 0.0         # Rolling win rate for account state
-    _pos_recent_wins = 0           # Win count in last 20 trades
-    _pos_recent_total = 0          # Total count in last 20 trades
-
-    for k, global_idx in enumerate(val_indices):
-        # Build position state tensor (7 dims: holding, bars_held, unrealized_pnl,
-        #   account_health, loss_streak, best_pnl, bars_since_high)
-        if _has_position_proj:
-            _ps_dim = getattr(model, 'POSITION_STATE_DIM', 7)
-            pos_state = torch.zeros(1, _ps_dim, device=device)
-            if _pos_in_trade:
-                pos_state[0, 0] = 1.0
-                pos_state[0, 1] = min(_pos_bars_held / BARS_PER_DAY, 1.0)
-                pos_state[0, 2] = float(np.tanh(_pos_unrealized_pnl * PNL_TANH_SCALE))
-                if _ps_dim >= 7:
-                    pos_state[0, 5] = float(np.tanh(_pos_best_pnl * BEST_PNL_TANH_SCALE))
-                    pos_state[0, 6] = min(_pos_bars_since_high / BARS_PER_DAY, 1.0)
-            pos_state[0, 3] = _pos_account_balance / _starting_capital  # account_health
-            pos_state[0, 4] = min(_pos_consecutive_losses / max(_sc_consec_thresh, 1), 1.0)  # loss_streak_frac
-        else:
-            pos_state = None
-
-        # Build account state for risk head
-        _has_risk_head = hasattr(model, 'risk_head')
-        _acct_state = None
-        if _has_risk_head:
-            _as_dim = getattr(model, 'ACCOUNT_STATE_DIM', 4)
-            _acct_state = torch.zeros(1, _as_dim, device=device)
-            _acct_state[0, 0] = _pos_account_balance / _starting_capital
-            import math as _math
-            _acct_state[0, 1] = min(_math.log10(max(_pos_account_balance, 1000) / 1000) / 3.0, 1.0)
-            _acct_state[0, 3] = _pos_win_rate_20
-
-        # Run inference with position state
-        idx_t = val_idx_t[k:k+1]
-        window_idx = idx_t.unsqueeze(1) + offsets.unsqueeze(0)
-        x = features[window_idx]
-        _out = model(x, position_state=pos_state, account_state=_acct_state,
-                     return_risk=_has_risk_head)
-
-        if _is_v12:
-            # v12: unified action head — single argmax
-            action_logits = _out[0]
-            action_idx = int(torch.argmax(action_logits, dim=-1).item())
-            action_probs = torch.softmax(action_logits, dim=-1)[0]
-            gate_no_trade[k] = (action_idx == 0)
-            gate_confidence[k] = float(1.0 - action_probs[0].item())  # P(any trade)
-            actions[k] = action_idx  # 0=DO_NOTHING, 1-14=BUY options
-            _risk_out = _out[1] if _has_risk_head and len(_out) > 1 else None
-        else:
-            # Legacy two-head
-            gate_logits = _out[0]
-            gate_action = int(torch.argmax(gate_logits, dim=-1).item())
-            gate_conf = float(torch.softmax(gate_logits, dim=-1)[0, 1].item())
-            gate_no_trade[k] = (gate_action == 0)
-            gate_confidence[k] = gate_conf
-            if gate_action == 1:
-                actions[k] = int(dir_actions[k]) + 1
+        # Action target: graded signal based on return magnitude
+        r30 = labels['return_30'][i]
+        if not np.isnan(r30):
+            abs_r30 = abs(r30)
+            if abs_r30 > PREDICTION_ENTRY_THRESHOLD * 2:
+                labels['action_target'][i] = 1.0
+            elif abs_r30 > PREDICTION_ENTRY_THRESHOLD:
+                labels['action_target'][i] = 0.5
             else:
-                actions[k] = ACTION_DO_NOTHING
-            _risk_out = _out[-1] if _has_risk_head and len(_out) > 2 else None
+                labels['action_target'][i] = 0.0
 
-        if _risk_out is not None:
-            _risk_outputs[k] = _risk_out[0].float().cpu().numpy()
-
-        # Update position tracking for next bar's position state
-        if _pos_in_trade:
-            _pos_bars_held += 1
-            if _pos_px_array is not None:
-                px_now = _pos_px_array[global_idx]
-                if not torch.isnan(px_now) and _pos_entry_price > 0:
-                    _pos_unrealized_pnl = (float(px_now) - _pos_entry_price) / _pos_entry_price
-            # Phase D: track best P&L for value head context
-            if _pos_unrealized_pnl > _pos_best_pnl:
-                _pos_best_pnl = _pos_unrealized_pnl
-                _pos_bars_since_high = 0
-            else:
-                _pos_bars_since_high += 1
-
-            _value_exit = False  # v12: no value head, exits via action=DO_NOTHING
-
-            # Check exit conditions (mirrors trade loop below)
-            hit_stop = _pos_unrealized_pnl <= -_pos_dynamic_stop
-            hit_max_hold = _pos_bars_held >= _max_hold
-            entry_date = dates[val_indices[k - _pos_bars_held]] if k >= _pos_bars_held else None
-            eod = dates[global_idx] != entry_date if entry_date else False
-            model_exit = gate_no_trade[k]
-            if hit_stop or hit_max_hold or eod or model_exit or _value_exit:
-                # Approximate dollar P&L for account tracking
-                _exit_pnl = -_pos_dynamic_stop if hit_stop else _pos_unrealized_pnl
-                _dollar_pnl = _exit_pnl * _pos_entry_price * SPX_MULTIPLIER * _pos_n_contracts
-                _pos_account_balance += _dollar_pnl
-                _pos_account_balance = max(_pos_account_balance, 0.0)
-                if _exit_pnl <= 0:
-                    _pos_consecutive_losses += 1
-                else:
-                    _pos_consecutive_losses = 0
-                # Update rolling win rate
-                _pos_recent_total += 1
-                if _exit_pnl > 0:
-                    _pos_recent_wins += 1
-                _pos_win_rate_20 = _pos_recent_wins / max(_pos_recent_total, 1)
-                _pos_in_trade = False
-                _pos_best_pnl = 0.0
-                _pos_bars_since_high = 0
-                _pos_conviction = 0.0
-                if hit_stop:
-                    _pos_last_stop_bar = k
-        elif actions[k] in {ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
-                            ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20, ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30,
-                            ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10,
-                            ACTION_BUY_PUT_OTM15, ACTION_BUY_PUT_OTM20, ACTION_BUY_PUT_OTM25, ACTION_BUY_PUT_OTM30}:
-            if (k - _pos_last_stop_bar) >= STOP_COOLDOWN_BARS:
-                if _bar_of_day.get(global_idx, 999) >= NO_TRADE_BEFORE_BAR:
-                    candidate_px_array = _get_px_array(actions[k], data)
-                    if candidate_px_array is not None and not torch.isnan(candidate_px_array[global_idx]):
-                        entry_px = float(candidate_px_array[global_idx])
-                        if entry_px > 0:
-                            # Affordability check: can't buy what you can't afford
-                            contract_cost = entry_px * SPX_MULTIPLIER
-                            if contract_cost > _pos_account_balance:
-                                actions[k] = ACTION_DO_NOTHING
-                            else:
-                                _pos_n_contracts = max(1, int(_pos_account_balance * _position_risk_target / contract_cost))
-                                _pos_in_trade = True
-                                _pos_bars_held = 0
-                                _pos_entry_price = entry_px
-                                _pos_px_array = candidate_px_array
-                                _pos_unrealized_pnl = 0.0
-                                _pos_best_pnl = 0.0
-                                _pos_bars_since_high = 0
-                                # Risk head: use learned stop + sizing + conviction
-                                if _risk_out is not None:
-                                    _pos_dynamic_stop = float(np.nan_to_num(_risk_out[0, 0].item(), nan=DYNAMIC_STOP_BASE))
-                                    _size_frac = float(np.nan_to_num(_risk_out[0, 1].item(), nan=0.5))
-                                    _pos_conviction = float(np.nan_to_num(_risk_out[0, 2].item(), nan=0.0))
-                                    max_affordable = max(1, int(_pos_account_balance * _position_risk_target / contract_cost))
-                                    _pos_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
-                                else:
-                                    _pos_dynamic_stop = compute_dynamic_stop(
-                                        gate_conf,
-                                        float(features[global_idx, _idx_atm_iv]),
-                                        float(features[global_idx, _idx_vix_regime]),
-                                    )
-                                    _pos_conviction = 0.0
-
-    # Count unique val dates
-    val_dates_list = [dates[i] for i in val_indices]
-    num_val_days = len(set(val_dates_list))
-
-    # -------------------------------------------------------------------
-    # Simulate trades (strict option-price-based P&L)
-    # -------------------------------------------------------------------
-    # Map action → price array for each strike/direction
-    _ENTRY_ACTIONS = {
-        ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
-        ACTION_BUY_CALL_OTM15, ACTION_BUY_CALL_OTM20, ACTION_BUY_CALL_OTM25, ACTION_BUY_CALL_OTM30,
-        ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10,
-        ACTION_BUY_PUT_OTM15, ACTION_BUY_PUT_OTM20, ACTION_BUY_PUT_OTM25, ACTION_BUY_PUT_OTM30,
-    }
-
-    _ACTION_NAMES = {
-        ACTION_BUY_CALL_ATM: 'CALL_ATM', ACTION_BUY_CALL_OTM5: 'CALL_OTM5',
-        ACTION_BUY_CALL_OTM10: 'CALL_OTM10', ACTION_BUY_CALL_OTM15: 'CALL_OTM15',
-        ACTION_BUY_CALL_OTM20: 'CALL_OTM20', ACTION_BUY_CALL_OTM25: 'CALL_OTM25',
-        ACTION_BUY_CALL_OTM30: 'CALL_OTM30',
-        ACTION_BUY_PUT_ATM: 'PUT_ATM', ACTION_BUY_PUT_OTM5: 'PUT_OTM5',
-        ACTION_BUY_PUT_OTM10: 'PUT_OTM10', ACTION_BUY_PUT_OTM15: 'PUT_OTM15',
-        ACTION_BUY_PUT_OTM20: 'PUT_OTM20', ACTION_BUY_PUT_OTM25: 'PUT_OTM25',
-        ACTION_BUY_PUT_OTM30: 'PUT_OTM30',
-    }
-
-    required_price_keys = (
-        'atm_call_prices',
-        'atm_put_prices',
-        'otm5_call_prices',
-        'otm5_put_prices',
-        'otm10_call_prices',
-        'otm10_put_prices',
-    )
-    missing_prices = [k for k in required_price_keys if k not in data or data.get(k) is None]
-    if missing_prices:
-        raise KeyError(
-            "data.pt missing required option price arrays: "
-            + ", ".join(missing_prices)
-            + ". Rebuild data.pt with the current prepare.py."
-        )
-
-    trade_pnls = []
-    trade_details = []
-    entry_cost_bps_samples = []
-    entry_quality_samples = []
-    entry_cost_known_count = 0
-    high_cost_entries = 0
-    low_quality_entries = 0
-    model_exit_count = 0
-    in_trade = False
-    trade_entry_bar = 0
-    trade_action = 0
-    trade_entry_price = 0.0
-    trade_entry_cost_bps = 2.0 * OPTION_SPREAD_BPS
-    trade_entry_quality = float("nan")
-    trade_entry_actionable = 0.0
-    trade_last_price = 0.0
-    trade_use_actual = False
-    trade_px_array = None
-    trade_dynamic_stop = DYNAMIC_STOP_BASE  # per-trade dynamic stop (set at entry)
-    _trade_conviction = 0.0  # Phase E: risk head conviction
-    last_stop_bar = -STOP_COOLDOWN_BARS  # initialize so first entry isn't blocked
-    cooldown_blocked_count = 0
-    pre_10am_blocked_count = 0
-    do_nothing_count = 0
-    exit_signal_count = 0
-    # Inline account tracking (replaces post-hoc equity curve)
-    account_balance = _starting_capital
-    equity_history = [_starting_capital]
-    trade_risk_fractions = []
-    trades_blocked_by_balance = 0
-    trade_n_contracts = 1
-
-    for k, global_idx in enumerate(val_indices):
-        gate_flat_signal = bool(gate_no_trade[k])
-        if in_trade:
-            bars_held = k - trade_entry_bar
-            entry_global = val_indices[trade_entry_bar]
-
-            # --- P&L computation ---
-            if not trade_use_actual or trade_px_array is None or trade_entry_price <= 0:
-                raise RuntimeError("Invalid trade state: active position without usable option prices.")
-
-            px_now = trade_px_array[global_idx]
-            if not torch.isnan(px_now):
-                trade_last_price = float(px_now)
-            current_px = trade_last_price
-            net_pnl_pct = (current_px - trade_entry_price) / trade_entry_price
-
-            hit_stop = net_pnl_pct <= -trade_dynamic_stop
-            hit_max_hold = bars_held >= _max_hold
-            eod = dates[global_idx] != dates[entry_global]
-            model_exit = gate_flat_signal
-
-            if hit_stop or hit_max_hold or eod or model_exit or k == len(val_indices) - 1:
-                if hit_stop:
-                    final_pnl = -trade_dynamic_stop
-                    last_stop_bar = k
-                else:
-                    final_pnl = net_pnl_pct
-
-                final_pnl -= float(trade_entry_cost_bps) / 10000.0
-
-                # Cap individual trade P&L to eliminate fat-tail lottery dependency
-                final_pnl = max(-trade_dynamic_stop, min(final_pnl, _max_return))
-
-                if model_exit:
-                    model_exit_count += 1
-                    exit_signal_count += 1
-
-                # Exit reason (priority: stop > model > value > max_hold > eod)
-                if hit_stop:
-                    exit_reason = 'stop_loss'
-                elif model_exit:
-                    exit_reason = 'model_exit'
-                elif eod:
-                    exit_reason = 'end_of_day'
-                elif hit_max_hold:
-                    exit_reason = 'max_hold'
-                else:
-                    exit_reason = 'end_of_data'
-
-                # Strike info
-                strike_val = float(atm_strikes[entry_global]) if atm_strikes is not None and not torch.isnan(atm_strikes[entry_global]) else None
-
-                # Inline account tracking: compute dollar P&L and update balance
-                dollar_pnl = final_pnl * trade_entry_price * SPX_MULTIPLIER * trade_n_contracts
-                account_balance += dollar_pnl
-                account_balance = max(account_balance, 0.0)
-                equity_history.append(account_balance)
-
-                trade_pnls.append(final_pnl)
-                # Extract diagnostic context for trade-level analysis
-                _entry_bod = _bar_of_day.get(entry_global, -1)
-                _vix_idx = _FEAT_IDX.get('vix_regime')
-                _entry_vix = float(features[entry_global, _vix_idx].cpu()) if _vix_idx is not None else 0.0
-
-                trade_details.append({
-                    'trade_num': len(trade_details) + 1,
-                    'date': dates[entry_global],
-                    'entry_time': timestamps[entry_global],
-                    'exit_time': timestamps[global_idx],
-                    'direction': _ACTION_NAMES.get(trade_action, 'UNKNOWN'),
-                    'strike': strike_val,
-                    'entry_price': trade_entry_price if trade_use_actual else None,
-                    'bars_held': bars_held,
-                    'hold_minutes': bars_held * BAR_SIZE_MINUTES,
-                    'entry_cost_bps': round(float(trade_entry_cost_bps), 4),
-                    'entry_quality': None if np.isnan(trade_entry_quality) else round(float(trade_entry_quality), 4),
-                    'entry_actionable': int(trade_entry_actionable > 0.5),
-                    'pnl_pct': round(final_pnl * 100, 4),
-                    'dollar_pnl': round(dollar_pnl, 2),
-                    'n_contracts': trade_n_contracts,
-                    'exit_reason': exit_reason,
-                    'dynamic_stop_pct': round(trade_dynamic_stop * 100, 2),
-                    'actual_prices': trade_use_actual,
-                    'result': 'WIN' if final_pnl > 0 else 'LOSS',
-                    'bar_of_day': _entry_bod,
-                    'vix_regime': round(_entry_vix, 2),
-                })
-                in_trade = False
-
-        # Entry: any BUY action can open a position
-        if not in_trade and actions[k] in _ENTRY_ACTIONS:
-            if (k - last_stop_bar) < STOP_COOLDOWN_BARS:
-                cooldown_blocked_count += 1
-                continue  # cooldown after stop loss
-            if _bar_of_day.get(global_idx, 999) < NO_TRADE_BEFORE_BAR:
-                pre_10am_blocked_count += 1
-                continue  # no entries before 10:00 AM
-            candidate_action = actions[k]
-            candidate_px_array = _get_px_array(candidate_action, data)
-            if candidate_px_array is None:
-                continue
-            if torch.isnan(candidate_px_array[global_idx]):
-                continue
-            entry_px = float(candidate_px_array[global_idx])
-            if entry_px <= 0:
-                continue
-            # Affordability check: can't buy what you can't afford
-            contract_cost = entry_px * SPX_MULTIPLIER
-            if contract_cost > account_balance:
-                trades_blocked_by_balance += 1
-                continue
-            trade_n_contracts = max(1, int(account_balance * _position_risk_target / contract_cost))
-            total_position_cost = contract_cost * trade_n_contracts
-            trade_risk_fractions.append(total_position_cost / max(account_balance, 1e-10))
-            action_idx = int(candidate_action - 1)
-            entry_cost_bps = 2.0 * OPTION_SPREAD_BPS
-            entry_quality = float("nan")
-            if action_cost_matrix is not None and action_idx >= 0:
-                try:
-                    c_bps = float(action_cost_matrix[global_idx, action_idx])
-                    if np.isfinite(c_bps):
-                        entry_cost_bps = c_bps
-                        entry_cost_known_count += 1
-                except Exception:
-                    pass
-            if action_quality_matrix is not None and action_idx >= 0:
-                try:
-                    q_val = float(action_quality_matrix[global_idx, action_idx])
-                    if np.isfinite(q_val):
-                        entry_quality = q_val
-                except Exception:
-                    pass
-            entry_actionable = 0.0
-            if actionable_series is not None:
-                try:
-                    entry_actionable = float(actionable_series[global_idx])
-                except Exception:
-                    entry_actionable = 0.0
-            entry_cost_bps_samples.append(float(entry_cost_bps))
-            if np.isfinite(entry_quality):
-                entry_quality_samples.append(float(entry_quality))
-            if entry_cost_bps > 250.0:
-                high_cost_entries += 1
-            if np.isfinite(entry_quality) and entry_quality < 0.30:
-                low_quality_entries += 1
-
-            in_trade = True
-            trade_entry_bar = k
-            trade_action = candidate_action
-            trade_px_array = candidate_px_array
-            trade_entry_price = entry_px
-            trade_entry_cost_bps = float(entry_cost_bps)
-            trade_entry_quality = float(entry_quality)
-            trade_entry_actionable = float(entry_actionable)
-            trade_last_price = entry_px
-            trade_use_actual = True
-            # Risk head: use learned stop + sizing + conviction
-            if not np.isnan(_risk_outputs[k, 0]):
-                trade_dynamic_stop = float(_risk_outputs[k, 0])
-                _size_frac = float(_risk_outputs[k, 1])
-                _trade_conviction = float(_risk_outputs[k, 2])
-                max_affordable = max(1, int(account_balance * _position_risk_target / contract_cost))
-                trade_n_contracts = max(1, min(1 + int(_size_frac * (max_affordable - 1)), max_affordable))
-            else:
-                trade_dynamic_stop = compute_dynamic_stop(
-                    gate_confidence[k],
-                    float(features[global_idx, _idx_atm_iv]),
-                    float(features[global_idx, _idx_vix_regime]),
-                )
-                _trade_conviction = 0.0
-        elif gate_flat_signal:
-            do_nothing_count += 1
-
-    # -------------------------------------------------------------------
-    # Compute metrics
-    # -------------------------------------------------------------------
-    pnls = np.array(trade_pnls) if trade_pnls else np.array([0.0])
-    num_trades = len(trade_pnls)
-
-    if num_trades < MIN_TRADES:
-        return _empty_metrics(len(val_indices), num_val_days, num_trades)
-
-    wins = pnls[pnls > 0]
-    losses = pnls[pnls <= 0]
-    win_rate = len(wins) / max(num_trades, 1)
-    avg_winner = float(np.mean(wins)) if len(wins) > 0 else 0.0
-    avg_loser = float(np.mean(losses)) if len(losses) > 0 else 0.0
-    gross_profit = float(np.sum(wins)) if len(wins) > 0 else 0.0
-    gross_loss = float(abs(np.sum(losses))) if len(losses) > 0 else 1e-10
-    profit_factor = gross_profit / max(gross_loss, 1e-10)
-    trades_per_day = num_trades / max(num_val_days, 1)
-
-    max_consec_loss = 0
-    cur_consec = 0
-    for p in pnls:
-        if p <= 0:
-            cur_consec += 1
-            max_consec_loss = max(max_consec_loss, cur_consec)
-        else:
-            cur_consec = 0
-
-    mean_pnl = float(np.mean(pnls))
-    std_pnl = float(np.std(pnls, ddof=1)) if num_trades > 1 else 1e-10
-    trades_per_year = trades_per_day * 252
-    trade_sharpe = (mean_pnl / max(std_pnl, 1e-10)) * math.sqrt(max(trades_per_year, 1))
-
-    downside_returns = pnls[pnls < 0]
-    downside_std = float(np.std(downside_returns, ddof=1)) if len(downside_returns) > 1 else 1e-10
-    sortino = (mean_pnl / max(downside_std, 1e-10)) * math.sqrt(max(trades_per_year, 1))
-
-    cum_pnl = np.cumsum(pnls)
-    peak = np.maximum.accumulate(cum_pnl)
-    dd = cum_pnl - peak
-    max_drawdown = float(np.min(dd)) if len(dd) > 0 else 0.0
-
-    total_return = float(cum_pnl[-1]) if len(cum_pnl) > 0 else 0.0
-    calmar = total_return / max(abs(max_drawdown), 1e-10)
-
-    # --- Additional metrics for score tuning ---
-    avg_hold_bars = float(np.mean([d['bars_held'] for d in trade_details])) if trade_details else 0.0
-    rr_ratio = abs(avg_winner) / max(abs(avg_loser), 1e-10) if avg_loser != 0 else 10.0
-
-    # Composite score with configurable trade frequency band
-    # freq_center and freq_width define the sweet spot
-    _freq_hi = _sc_freq_center + _sc_freq_width   # upper bound of sweet spot
-    _freq_lo = max(0.5, _sc_freq_center - _sc_freq_width)  # lower bound
-    if trades_per_day < 0.5:
-        score = -10.0
-    elif trades_per_day < _freq_lo:
-        # Ramp from -5 to raw_score as tpd approaches sweet spot
-        if trades_per_day <= _freq_hi:
-            freq_mult = min(1.0, trades_per_day / max(_sc_freq_center, 1.0))
-        else:
-            freq_mult = max(0.1, (_freq_hi / trades_per_day) ** 2)
-        raw_score = profit_factor * trade_sharpe * freq_mult
-        ramp = (trades_per_day - 0.5) / max(_freq_lo - 0.5, 0.5)
-        ramp = min(1.0, ramp)
-        score = -5.0 * (1.0 - ramp) + raw_score * ramp
-    else:
-        if trades_per_day <= _freq_hi:
-            freq_mult = min(1.0, trades_per_day / max(_sc_freq_center, 1.0))
-        else:
-            freq_mult = max(0.1, (_freq_hi / trades_per_day) ** 2)
-        score = profit_factor * trade_sharpe * freq_mult
-
-    # --- Configurable penalties (thresholds tunable by agent) ---
-
-    # Consecutive loss penalty (strengthened: 15% per loss beyond threshold, floor 0.2)
-    if max_consec_loss > _sc_consec_thresh and score > 0:
-        consec_penalty = max(0.2, 1.0 - 0.15 * (max_consec_loss - _sc_consec_thresh))
-        score *= consec_penalty
-
-    # Short-hold penalty
-    short_hold_pct = 0.0
-    if num_trades > 10:
-        short_holds = sum(1 for d in trade_details if d['bars_held'] <= 1)
-        short_hold_pct = short_holds / num_trades
-        if short_hold_pct > _sc_short_thresh and score > 0:
-            noise_penalty = max(0.7, 1.0 - (short_hold_pct - _sc_short_thresh))
-            score *= noise_penalty
-
-    # Stop-loss rate penalty
-    stop_loss_rate = 0.0
-    if num_trades > 10:
-        stop_loss_rate = sum(1 for d in trade_details if d.get('exit_reason') == 'stop_loss') / num_trades
-        if stop_loss_rate > _sc_stop_thresh and score > 0:
-            sl_penalty = max(0.5, 1.0 - (stop_loss_rate - _sc_stop_thresh))
-            score *= sl_penalty
-
-    # --- New tunable bonuses/penalties (all default to neutral at 0.0) ---
-
-    # Win rate bonus: reward consistent winners
-    if _sc_wr_bonus > 0 and score > 0:
-        wr_mult = 1.0 + _sc_wr_bonus * max(0.0, (win_rate - 0.40)) / 0.60
-        score *= wr_mult
-
-    # R:R ratio bonus: reward strategies where avg_win > avg_loss
-    if _sc_rr_bonus > 0 and score > 0:
-        rr_mult = 1.0 + _sc_rr_bonus * max(0.0, (rr_ratio - 1.0)) / 2.0
-        score *= rr_mult
-
-    # Max drawdown penalty: punish deep cumulative drawdowns
-    if _sc_dd_penalty > 0 and score > 0:
-        dd_mult = max(0.3, 1.0 - _sc_dd_penalty * max(0.0, abs(max_drawdown) - 0.10))
-        score *= dd_mult
-
-    # Hold time quality bonus: reward avg hold in sweet spot (5-60 bars)
-    if _sc_hold_bonus > 0 and score > 0:
-        # Bell curve centered at 30 bars, width 25
-        hold_z = (avg_hold_bars - 30.0) / 25.0
-        hold_bell = math.exp(-0.5 * hold_z * hold_z)
-        hold_mult = 1.0 + _sc_hold_bonus * hold_bell
-        score *= hold_mult
-
-    # Risk fraction penalty: penalize models that risk too much per trade
-    avg_risk_fraction = float(np.mean(trade_risk_fractions)) if trade_risk_fractions else 0.0
-    max_risk_fraction = float(np.max(trade_risk_fractions)) if trade_risk_fractions else 0.0
-    if _sc_risk_frac_penalty > 0 and trade_risk_fractions and score > 0:
-        if avg_risk_fraction > 0.30:
-            risk_penalty = max(0.3, 1.0 - _sc_risk_frac_penalty * (avg_risk_fraction - 0.30))
-            score *= risk_penalty
-
-    total_bars = len(actions)
-    do_nothing_pct = float(do_nothing_count) / max(total_bars, 1)
-    exit_pct = float(exit_signal_count) / max(total_bars, 1)
-    avg_entry_cost_bps = float(np.mean(entry_cost_bps_samples)) if entry_cost_bps_samples else float(2.0 * OPTION_SPREAD_BPS)
-    avg_entry_quality = float(np.mean(entry_quality_samples)) if entry_quality_samples else 0.0
-    cost_realism_coverage = float(entry_cost_known_count) / max(num_trades, 1)
-    high_cost_entry_rate = float(high_cost_entries) / max(num_trades, 1)
-    low_quality_entry_rate = float(low_quality_entries) / max(num_trades, 1)
-
-    # --- Equity curve (inline-tracked from simulation, dollar-denominated) ---
-    equity_arr = np.array(equity_history)
-    final_capital = float(equity_arr[-1])
-    total_dollar_return = (final_capital - _starting_capital) / _starting_capital
-
-    equity_peak = np.maximum.accumulate(equity_arr)
-    equity_dd = (equity_arr - equity_peak) / np.maximum(equity_peak, 1e-10)
-    max_equity_dd = float(np.min(equity_dd)) if len(equity_dd) > 0 else 0.0
-
-    # --- Account ruin detection ---
-    # Check if equity ever dropped below ruin threshold (fraction of starting capital)
-    min_equity = float(np.min(equity_arr))
-    ruin_floor = _starting_capital * _sc_ruin_thresh
-    hit_ruin = min_equity < ruin_floor
-    min_equity_frac = min_equity / _starting_capital  # 0.0 = total wipeout, 1.0 = never lost
-
-    if hit_ruin and _sc_ruin_penalty > 0:
-        # How far past ruin did we go? Scale penalty by severity
-        # At ruin_thresh (e.g. 25% of capital left), penalty starts
-        # At 0% capital, penalty is maximum
-        ruin_severity = max(0.0, 1.0 - min_equity_frac / max(_sc_ruin_thresh, 1e-10))
-        # ruin_severity: 0.0 = just touched ruin line, 1.0 = total wipeout
-        # Apply: score gets hammered — floor at -5.0 for total ruin
-        ruin_mult = max(0.0, 1.0 - _sc_ruin_penalty * ruin_severity)
-        if ruin_mult < 0.05:
-            # Near-total or total ruin → hard negative score
-            score = min(score, -5.0)
-        else:
-            score *= ruin_mult
-
-    if num_trades > 1:
-        equity_returns = np.diff(equity_arr) / np.maximum(equity_arr[:-1], 1e-10)
-        eq_mean = float(np.mean(equity_returns))
-        eq_std = float(np.std(equity_returns, ddof=1))
-        equity_sharpe = (eq_mean / max(eq_std, 1e-10)) * math.sqrt(max(trades_per_year, 1))
-    else:
-        equity_sharpe = 0.0
-
-    # --- worst_chunk_pf: split trades into 5 date-chunks, report min PF ---
-    worst_chunk_pf = 1.0  # default if not enough trades
-    chunk_details = []
-    if num_trades >= 5:
-        trade_dates = [d.get('date', '') for d in trade_details]
-        unique_dates = sorted(set(trade_dates))
-        n_chunks = min(5, len(unique_dates))
-        if n_chunks >= 2:
-            chunk_size = max(1, len(unique_dates) // n_chunks)
-            chunk_pfs = []
-            for ci in range(n_chunks):
-                start_i = ci * chunk_size
-                end_i = start_i + chunk_size if ci < n_chunks - 1 else len(unique_dates)
-                chunk_dates = set(unique_dates[start_i:end_i])
-                chunk_trades = [d for d in trade_details if d.get('date', '') in chunk_dates]
-                if not chunk_trades:
-                    continue
-                chunk_wins = sum(d['pnl_pct'] for d in chunk_trades if d['pnl_pct'] > 0)
-                chunk_losses = abs(sum(d['pnl_pct'] for d in chunk_trades if d['pnl_pct'] <= 0))
-                if chunk_losses > 0:
-                    chunk_pfs.append(chunk_wins / chunk_losses)
-                elif chunk_wins > 0:
-                    chunk_pfs.append(100.0)  # all winners
-                # else: 0 wins 0 losses in chunk, skip
-            if chunk_pfs:
-                worst_chunk_pf = min(chunk_pfs)
-            # Build per-chunk detail for regime analysis
-            chunk_details = []
-            for ci in range(n_chunks):
-                start_i = ci * chunk_size
-                end_i = start_i + chunk_size if ci < n_chunks - 1 else len(unique_dates)
-                chunk_dates_set = set(unique_dates[start_i:end_i])
-                chunk_trades_ci = [d for d in trade_details if d.get('date', '') in chunk_dates_set]
-                if not chunk_trades_ci:
-                    continue
-                c_wins = sum(d['pnl_pct'] for d in chunk_trades_ci if d['pnl_pct'] > 0)
-                c_losses = abs(sum(d['pnl_pct'] for d in chunk_trades_ci if d['pnl_pct'] <= 0))
-                c_pf = c_wins / c_losses if c_losses > 0 else (100.0 if c_wins > 0 else 0.0)
-                c_wr = sum(1 for d in chunk_trades_ci if d['pnl_pct'] > 0) / len(chunk_trades_ci)
-                chunk_details.append({
-                    'chunk': ci + 1,
-                    'dates': f"{unique_dates[start_i]}..{unique_dates[min(end_i - 1, len(unique_dates) - 1)]}",
-                    'trades': len(chunk_trades_ci),
-                    'profit_factor': round(c_pf, 2),
-                    'win_rate': round(c_wr, 3),
-                })
-
-    # --- direction_collapse_pct: fraction choosing single most common action ---
-    direction_collapse_pct = 0.0
-    if num_trades >= 1:
-        direction_counts: dict[str, int] = {}
-        for d in trade_details:
-            act = d.get('direction', 'UNKNOWN')
-            direction_counts[act] = direction_counts.get(act, 0) + 1
-        max_count = max(direction_counts.values())
-        direction_collapse_pct = float(max_count) / num_trades
-
-    return {
-        'score': float(score),
-        'profit_factor': float(profit_factor),
-        'win_rate': float(win_rate),
-        'avg_winner': float(avg_winner),
-        'avg_loser': float(avg_loser),
-        'trades_per_day': float(trades_per_day),
-        'max_consec_loss': int(max_consec_loss),
-        'num_trades': int(num_trades),
-        'trade_sharpe': float(trade_sharpe),
-        'sortino': float(sortino),
-        'max_drawdown': float(max_drawdown),
-        'calmar': float(calmar),
-        'ev_per_trade': float(mean_pnl),
-        'do_nothing_pct': float(do_nothing_pct),
-        'exit_pct': float(exit_pct),
-        'model_exit_count': int(model_exit_count),
-        'avg_entry_cost_bps': round(float(avg_entry_cost_bps), 4),
-        'avg_entry_quality': round(float(avg_entry_quality), 4),
-        'cost_realism_coverage': round(float(cost_realism_coverage), 4),
-        'high_cost_entry_rate': round(float(high_cost_entry_rate), 4),
-        'low_quality_entry_rate': round(float(low_quality_entry_rate), 4),
-        'actionable_bar_rate': round(float(actionable_bar_rate), 4),
-        'risk_off_bar_rate': round(float(risk_off_bar_rate), 4),
-        'num_val_bars': len(val_indices),
-        'num_val_days': int(num_val_days),
-        'total_return': float(total_return),
-        'cooldown_blocked': int(cooldown_blocked_count),
-        'pre_10am_blocked': int(pre_10am_blocked_count),
-        'short_hold_pct': round(float(short_hold_pct), 3),
-        'stop_loss_rate': round(float(stop_loss_rate), 3),
-        'final_capital': round(final_capital, 2),
-        'equity_sharpe': round(float(equity_sharpe), 4),
-        'max_equity_dd': round(float(max_equity_dd), 4),
-        'total_dollar_return': round(float(total_dollar_return), 4),
-        'worst_chunk_pf': round(float(worst_chunk_pf), 4),
-        'direction_collapse_pct': round(float(direction_collapse_pct), 4),
-        'rr_ratio': round(float(rr_ratio), 4),
-        'avg_hold_bars': round(float(avg_hold_bars), 2),
-        'model_exit_rate': round(float(model_exit_count) / max(num_trades, 1), 4),
-        'hit_ruin': bool(hit_ruin),
-        'min_equity_frac': round(float(min_equity_frac), 4),
-        'avg_risk_fraction': round(float(avg_risk_fraction), 4),
-        'max_risk_fraction': round(float(max_risk_fraction), 4),
-        'trades_blocked_by_balance': int(trades_blocked_by_balance),
-        'avg_n_contracts': round(float(np.mean([t['n_contracts'] for t in trade_details])) if trade_details else 1.0, 2),
-        'chunk_details': chunk_details if num_trades >= 5 else [],
-        'trade_log': trade_details,
-    }
-
-
-def _empty_metrics(num_val_bars=0, num_val_days=0, num_trades=0):
-    return {
-        'score': -10.0,
-        'profit_factor': 0.0, 'win_rate': 0.0,
-        'avg_winner': 0.0, 'avg_loser': 0.0,
-        'trades_per_day': 0.0, 'max_consec_loss': 0,
-        'num_trades': num_trades,
-        'trade_sharpe': 0.0, 'sortino': 0.0,
-        'max_drawdown': 0.0, 'calmar': 0.0,
-        'ev_per_trade': 0.0, 'do_nothing_pct': 1.0,
-        'exit_pct': 0.0, 'model_exit_count': 0,
-        'avg_entry_cost_bps': float(2.0 * OPTION_SPREAD_BPS),
-        'avg_entry_quality': 0.0,
-        'cost_realism_coverage': 0.0,
-        'high_cost_entry_rate': 1.0,
-        'low_quality_entry_rate': 1.0,
-        'actionable_bar_rate': 0.0,
-        'risk_off_bar_rate': 0.0,
-        'num_val_bars': num_val_bars, 'num_val_days': num_val_days,
-        'total_return': 0.0,
-        'final_capital': STARTING_CAPITAL,
-        'equity_sharpe': 0.0,
-        'max_equity_dd': 0.0,
-        'total_dollar_return': 0.0,
-        'worst_chunk_pf': 1.0,
-        'direction_collapse_pct': 0.0,
-        'rr_ratio': 0.0,
-        'avg_hold_bars': 0.0,
-        'model_exit_rate': 0.0,
-        'hit_ruin': False,
-        'min_equity_frac': 1.0,
-        'avg_risk_fraction': 0.0,
-        'max_risk_fraction': 0.0,
-        'trades_blocked_by_balance': 0,
-        'chunk_details': [],
-    }
+    return labels
 
 
 # ---------------------------------------------------------------------------
-# Secondary metric: evaluate_sharpe (strict two-head contract)
+# v18 label computation: path-quality labels (MFE/MAE, entry gate, risk, exit, direction)
 # ---------------------------------------------------------------------------
 
-@torch.no_grad()
-def evaluate_sharpe(model, data, lookback, device, batch_size=1024,
-                    confidence_threshold=0.0):
-    """Walk-forward Sharpe on validation set (secondary continuous metric)."""
-    model.eval()
+# Direction label classes (6-class: call/put x ATM/OTM5/OTM10)
+V18_DIRECTION_CLASSES = [
+    'call_atm', 'call_otm5', 'call_otm10',
+    'put_atm', 'put_otm5', 'put_otm10',
+]
+V18_NUM_DIRECTIONS = len(V18_DIRECTION_CLASSES)
 
-    features = data['features'].to(device)
-    targets = data['targets']
-    valid_mask = data['valid_mask']
+# Time-of-day bar_weight for loss weighting
+V18_MORNING_WEIGHT = 1.0    # bar 30-60: prime morning window
+V18_MIDDAY_WEIGHT = 0.5     # bar 60-240: midday (includes lunch)
+V18_LUNCH_WEIGHT = 0.1      # override for bars 120-210 (core lunch chop)
+V18_AFTERNOON_WEIGHT = 0.8  # bar 240-330: afternoon
+V18_POWER_HOUR_WEIGHT = 0.0 # bar 330+: too dangerous for 0DTE longs
 
-    val_start = max(lookback, data['val_start_idx'])
-    val_end = data['val_end_idx'] + 1
+# MFE/MAE forward window (bars)
+V18_FORWARD_WINDOW = 30
 
-    val_indices = []
-    for i in range(val_start, val_end):
-        if not valid_mask[i]:
+
+def compute_v18_labels(close_prices, high_prices, low_prices, dates, valid,
+                       atr_values, option_stopped_pnl):
+    """Compute v18 path-quality labels for 5-head model.
+
+    Args:
+        close_prices: (N,) float64 array of SPX close prices
+        high_prices: (N,) float64 array of SPX high prices
+        low_prices: (N,) float64 array of SPX low prices
+        dates: (N,) array of date strings
+        valid: (N,) bool array
+        atr_values: (N,) float64 array of ATR-14 values (raw, not normalized)
+        option_stopped_pnl: dict mapping strike key -> (N,) float32 array
+            Keys: 'call_stopped_pnl', 'put_stopped_pnl',
+                  'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
+                  'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl'
+
+    Returns:
+        dict with keys:
+            'mfe': (N,) max favorable excursion (% of entry price)
+            'mae': (N,) max adverse excursion (% of entry price, negative)
+            'entry_gate': (N,) sigmoid((MFE - MAE) / ATR - 1.0), zeroed lunch/power
+            'risk_stop_distance': (N,) MAE / ATR (how far to set stop)
+            'risk_target_distance': (N,) MFE / ATR (how far the target is)
+            'risk_conviction': (N,) MFE / (MFE + |MAE|) (0-1, quality of path)
+            'exit_label': (N,) 1.0 when remaining path quality flips unfavorable
+            'direction_label': (N,) int class index (0-5) for best strike type
+            'bar_weight': (N,) time-of-day loss weighting
+    """
+    N = len(close_prices)
+
+    labels = {
+        'mfe': np.full(N, np.nan, dtype=np.float32),
+        'mae': np.full(N, np.nan, dtype=np.float32),
+        'entry_gate': np.full(N, np.nan, dtype=np.float32),
+        'risk_stop_distance': np.full(N, np.nan, dtype=np.float32),
+        'risk_target_distance': np.full(N, np.nan, dtype=np.float32),
+        'risk_conviction': np.full(N, np.nan, dtype=np.float32),
+        'exit_label': np.full(N, np.nan, dtype=np.float32),
+        'direction_label': np.full(N, np.nan, dtype=np.float32),
+        'bar_weight': np.full(N, np.nan, dtype=np.float32),
+    }
+
+    # Build day start/end index map for same-day windowing
+    unique_dates = sorted(set(dates))
+    day_indices = {d: np.where(np.array([x == d for x in dates]))[0] for d in unique_dates}
+    bar_of_day_map = np.zeros(N, dtype=np.int32)
+    for d, idx_arr in day_indices.items():
+        for k, gi in enumerate(idx_arr):
+            bar_of_day_map[gi] = k
+
+    # Map from stopped_pnl dict keys to our 6-class labels
+    pnl_keys = [
+        'call_stopped_pnl', 'otm5_call_stopped_pnl', 'otm10_call_stopped_pnl',
+        'put_stopped_pnl', 'otm5_put_stopped_pnl', 'otm10_put_stopped_pnl',
+    ]
+
+    for i in range(N):
+        if not valid[i]:
             continue
-        window = valid_mask[max(0, i - lookback):i]
-        if len(window) > 0 and window.sum() >= 0.9 * len(window):
-            val_indices.append(i)
+        day = dates[i]
+        bar_of_day = bar_of_day_map[i]
+        price = close_prices[i]
 
-    if len(val_indices) < 20:
-        return {'val_sharpe': -999.0, 'max_drawdown': 0.0, 'annual_return': 0.0,
-                'num_trades': 0, 'win_rate': 0.0, 'profit_factor': 0.0,
-                'num_val_bars': len(val_indices), 'num_val_days': 0}
+        if price <= 0 or np.isnan(price):
+            continue
 
-    val_idx_t = torch.tensor(val_indices, dtype=torch.long, device=device)
-    offsets = torch.arange(-lookback, 0, device=device)
-
-    _is_v12 = hasattr(model, 'action_head')
-
-    all_positions, all_returns = [], []
-    for i in range(0, len(val_idx_t), batch_size):
-        idx = val_idx_t[i:i + batch_size]
-        window_idx = idx.unsqueeze(1) + offsets.unsqueeze(0)
-        x = features[window_idx]
-        out = model(x)
-
-        if _is_v12:
-            # v12: unified action head (15 classes)
-            action_logits = out[0]
-            action_probs = torch.softmax(action_logits, dim=-1)
-            # Call actions: indices 1-7, Put actions: indices 8-14
-            call_prob = action_probs[:, 1:8].sum(dim=-1)
-            put_prob = action_probs[:, 8:15].sum(dim=-1)
-            trade_prob = call_prob + put_prob  # 1 - P(DO_NOTHING)
-            pos = trade_prob * (call_prob - put_prob) / (call_prob + put_prob + 1e-8)
+        # --- bar_weight (always computable) ---
+        if bar_of_day < NO_TRADE_BEFORE_BAR:
+            labels['bar_weight'][i] = 0.0  # pre-market warmup
+        elif bar_of_day < MORNING_END_BAR:
+            labels['bar_weight'][i] = V18_MORNING_WEIGHT
+        elif bar_of_day < 120:
+            labels['bar_weight'][i] = V18_MIDDAY_WEIGHT
+        elif bar_of_day < 210:
+            labels['bar_weight'][i] = V18_LUNCH_WEIGHT  # core lunch
+        elif bar_of_day < NO_TRADE_LUNCH_END:
+            labels['bar_weight'][i] = V18_MIDDAY_WEIGHT
+        elif bar_of_day < 330:
+            labels['bar_weight'][i] = V18_AFTERNOON_WEIGHT
         else:
-            # Legacy two-head
-            gate_logits, dir_logits = out[0], out[1]
-            gate_probs = torch.softmax(gate_logits, dim=-1)
-            dir_probs = torch.softmax(dir_logits, dim=-1)
-            trade_prob = gate_probs[:, 1]
-            call_prob = dir_probs[:, :7].sum(dim=-1)
-            put_prob = dir_probs[:, 7:].sum(dim=-1)
-            pos = trade_prob * (call_prob - put_prob)
+            labels['bar_weight'][i] = V18_POWER_HOUR_WEIGHT
 
-        if confidence_threshold > 0:
-            pos = torch.where(pos.abs() < confidence_threshold,
-                              torch.zeros_like(pos), pos)
-        all_positions.append(pos.cpu())
-        all_returns.append(targets[idx.cpu()])
+        # --- MFE / MAE over forward window (same day only) ---
+        end_bar = min(i + V18_FORWARD_WINDOW, N)
+        # Clip to same day
+        same_day_end = end_bar
+        for j in range(i + 1, end_bar):
+            if dates[j] != day:
+                same_day_end = j
+                break
 
-    positions = torch.cat(all_positions).numpy()
-    returns = torch.cat(all_returns).numpy()
+        if same_day_end <= i + 1:
+            continue  # not enough forward bars
 
-    cost = 12 / 10_000  # 12 bps
-    turnover = np.abs(np.diff(positions, prepend=0.0))
-    pnl = positions * returns - turnover * cost
+        fwd_highs = high_prices[i + 1:same_day_end]
+        fwd_lows = low_prices[i + 1:same_day_end]
 
-    mean_pnl = float(np.mean(pnl))
-    std_pnl = float(np.std(pnl, ddof=1)) if len(pnl) > 1 else 1e-10
-    sharpe = (mean_pnl / max(std_pnl, 1e-10)) * math.sqrt(ANNUAL_TRADING_BARS)
+        if len(fwd_highs) == 0:
+            continue
 
-    cum = np.cumsum(pnl)
-    dd = cum - np.maximum.accumulate(cum)
-    max_dd = float(np.min(dd)) if len(dd) > 0 else 0.0
+        # MFE: max upside from entry (best high - entry) / entry
+        mfe = (np.nanmax(fwd_highs) - price) / price
+        # MAE: max downside from entry (worst low - entry) / entry (negative)
+        mae = (np.nanmin(fwd_lows) - price) / price
 
-    trades = int(np.sum(np.abs(np.diff(np.sign(positions))) > 0))
-    wins = int(np.sum(pnl > 0))
-    losses_count = int(np.sum(pnl < 0))
-    win_rate = wins / max(wins + losses_count, 1)
-    gross_profit = float(np.sum(pnl[pnl > 0]))
-    gross_loss = float(abs(np.sum(pnl[pnl < 0])))
-    profit_factor = gross_profit / max(gross_loss, 1e-10)
+        labels['mfe'][i] = mfe
+        labels['mae'][i] = mae
 
-    return {
-        'val_sharpe': float(sharpe),
-        'max_drawdown': max_dd,
-        'annual_return': mean_pnl * ANNUAL_TRADING_BARS,
-        'num_trades': trades,
-        'win_rate': float(win_rate),
-        'profit_factor': profit_factor,
-        'num_val_bars': len(val_indices),
-        'num_val_days': len(val_indices) // max(BARS_PER_DAY, 1),
-    }
+        # --- ATR-normalized risk labels ---
+        atr = atr_values[i]
+        if np.isnan(atr) or atr <= 0:
+            atr = price * 0.001  # fallback: 0.1% of price
+
+        atr_pct = atr / price  # ATR as % of price
+
+        labels['risk_stop_distance'][i] = abs(mae) / atr_pct
+        labels['risk_target_distance'][i] = mfe / atr_pct
+        denominator = mfe + abs(mae)
+        labels['risk_conviction'][i] = (mfe / denominator) if denominator > 0 else 0.5
+
+        # --- Entry gate: sigmoid((MFE - |MAE|) / atr_pct - 1.0) ---
+        edge = (mfe - abs(mae)) / atr_pct
+        gate_raw = 1.0 / (1.0 + math.exp(-(edge - 1.0)))
+        # Zero during lunch core and power hour
+        if 120 <= bar_of_day < 210 or bar_of_day >= 330:
+            gate_raw = 0.0
+        # Zero pre-market
+        if bar_of_day < NO_TRADE_BEFORE_BAR:
+            gate_raw = 0.0
+        labels['entry_gate'][i] = gate_raw
+
+        # --- Exit label: bar-by-bar remaining path quality ---
+        # For each bar j in [i+1, same_day_end), compute remaining MFE/MAE
+        # Exit = 1.0 when remaining edge goes negative
+        # We compute the exit label at bar i as: the first bar where
+        # remaining_mfe < remaining_mae (path turns bad)
+        # Actually, exit_label[i] is whether THIS bar is a good time to exit
+        # if we entered at some earlier bar. We set it to 1.0 when
+        # forward path quality is negative (remaining MFE < |remaining MAE|).
+        remaining_mfe = (np.nanmax(fwd_highs) - price) / price  # same as mfe
+        remaining_mae = (np.nanmin(fwd_lows) - price) / price   # same as mae
+        if remaining_mfe < abs(remaining_mae):
+            labels['exit_label'][i] = 1.0  # path is unfavorable, exit now
+        else:
+            labels['exit_label'][i] = 0.0
+
+        # --- Direction label: 6-class argmax by stopped P&L ---
+        pnl_values = np.full(V18_NUM_DIRECTIONS, np.nan, dtype=np.float32)
+        for cls_idx, key in enumerate(pnl_keys):
+            arr = option_stopped_pnl.get(key)
+            if arr is not None and i < len(arr):
+                pnl_values[cls_idx] = arr[i]
+
+        # If we have at least one valid P&L, pick the best
+        valid_mask = ~np.isnan(pnl_values)
+        if valid_mask.any():
+            # Among valid P&L, pick best. If all negative, still pick least bad.
+            best_cls = np.nanargmax(pnl_values)
+            labels['direction_label'][i] = float(best_cls)
+
+    # Second pass: refine exit_label using sliding window
+    # For bar i, exit_label should be 1.0 when remaining path from i is bad.
+    # We need to compute this more carefully: for each bar, look at what
+    # happens from THIS bar forward (not from some hypothetical entry).
+    for i in range(N):
+        if not valid[i] or np.isnan(labels['mfe'][i]):
+            continue
+        day = dates[i]
+        price = close_prices[i]
+        if price <= 0:
+            continue
+
+        end_bar = min(i + V18_FORWARD_WINDOW, N)
+        same_day_end = end_bar
+        for j in range(i + 1, end_bar):
+            if dates[j] != day:
+                same_day_end = j
+                break
+
+        if same_day_end <= i + 1:
+            labels['exit_label'][i] = 1.0  # no more bars, exit
+            continue
+
+        # Look at next 5 bars vs full window
+        short_end = min(i + 5, same_day_end)
+        short_highs = high_prices[i + 1:short_end]
+        short_lows = low_prices[i + 1:short_end]
+
+        if len(short_highs) == 0:
+            labels['exit_label'][i] = 1.0
+            continue
+
+        short_mfe = (np.nanmax(short_highs) - price) / price
+        short_mae = (np.nanmin(short_lows) - price) / price
+
+        # Exit when near-term (5 bar) risk exceeds near-term reward
+        if short_mfe < abs(short_mae) * 0.5:
+            labels['exit_label'][i] = 1.0
+        else:
+            labels['exit_label'][i] = 0.0
+
+    return labels
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+# Bar-of-day boundary for morning end (used by v18 bar_weight)
+MORNING_END_BAR = 60  # bar 60 = 10:30 AM
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Prepare SPX 0DTE trading data")
-    parser.add_argument("--start", type=str, default="2022-03-14")
+    parser.add_argument("--start", type=str, default="2022-05-11")
     parser.add_argument("--end", type=str, default=None)
     parser.add_argument("--polygon-key", type=str, default=None)
     parser.add_argument("--s3-key-id", type=str,
@@ -4691,24 +4060,74 @@ if __name__ == "__main__":
     print(f"  ({time.time() - t0:.1f}s)")
     print()
 
-    # --- v11: Setup Recognition + Regime Classification (pre-normalization) ---
-    print("Computing setup recognition and regime labels...")
+    # --- v17: Prediction labels (forward SPX returns + volatility) ---
+    print("Computing prediction labels (forward returns, volatility, action targets)...")
     t0 = time.time()
-    date_arr = np.array(dates)
-    setup_mask = detect_setups(raw_features, valid, date_arr)
-    regime_mask = compute_regime_labels(raw_features, valid, date_arr)
-    setup_count = int(np.sum(setup_mask))
-    regime_count = int(np.sum(regime_mask))
-    both_count = int(np.sum(setup_mask & regime_mask))
-    print(f"  Setup bars: {setup_count}/{valid_count} ({100*setup_count/max(valid_count,1):.1f}%)")
-    print(f"  Trending bars: {regime_count}/{valid_count} ({100*regime_count/max(valid_count,1):.1f}%)")
-    print(f"  Setup AND trending: {both_count}/{valid_count} ({100*both_count/max(valid_count,1):.1f}%)")
-    # Store in option_prices dict so it flows into prepare_tensors
-    if option_prices is not None:
-        option_prices['setup_mask'] = setup_mask.astype(np.float32)
-        option_prices['regime_mask'] = regime_mask.astype(np.float32)
+    # Extract close prices for prediction label computation
+    # Feature index 0 is 'ret_6' — we need actual close prices
+    # The close prices are stored in the dataframe
+    close_prices = df['close'].values.astype(np.float32) if 'close' in df.columns else None
+    if close_prices is not None:
+        pred_labels = compute_prediction_labels_from_prices(close_prices, dates, valid)
+        for k, v in pred_labels.items():
+            option_prices[f'pred_{k}'] = v
+        n_valid_r30 = int(np.sum(~np.isnan(pred_labels['return_30'])))
+        n_trade = int(np.sum(pred_labels['action_target'] > 0.5))
+        print(f"  Valid 30-bar returns: {n_valid_r30}/{valid_count}")
+        print(f"  Action target (trade): {n_trade}/{n_valid_r30} ({100*n_trade/max(n_valid_r30,1):.1f}%)")
+        print(f"  Mean abs return (30-bar): {np.nanmean(np.abs(pred_labels['return_30'])):.6f}")
+        print(f"  Mean volatility (30-bar): {np.nanmean(pred_labels['volatility_30']):.6f}")
+    else:
+        print("  WARNING: No close prices available, skipping prediction labels")
     print(f"  ({time.time() - t0:.1f}s)")
     print()
+
+    # --- v18: Path-quality labels (MFE/MAE, entry gate, risk, exit, direction) ---
+    print("Computing v18 path-quality labels...")
+    t0 = time.time()
+    if close_prices is not None and option_prices is not None:
+        high_prices = df['high'].values.astype(np.float64)
+        low_prices = df['low'].values.astype(np.float64)
+        # Extract raw ATR-14 values (feature index 29, pre-normalization)
+        # ATR in raw_features is atr_14 / close, so multiply back by close
+        idx_atr = _FEAT_IDX['atr_14']
+        atr_raw = raw_features[:, idx_atr].astype(np.float64)
+        atr_abs = atr_raw * close_prices.astype(np.float64)  # convert back to absolute ATR
+        # Provide stopped P&L arrays for direction labeling
+        stopped_pnl_dict = {}
+        for k in ('call_stopped_pnl', 'put_stopped_pnl',
+                  'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
+                  'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl'):
+            if k in option_prices:
+                stopped_pnl_dict[k] = option_prices[k]
+        v18_labels = compute_v18_labels(
+            close_prices.astype(np.float64), high_prices, low_prices,
+            dates, valid, atr_abs, stopped_pnl_dict,
+        )
+        for k, v in v18_labels.items():
+            option_prices[f'v18_{k}'] = v
+        n_valid_gate = int(np.sum(~np.isnan(v18_labels['entry_gate'])))
+        n_good_gate = int(np.sum(v18_labels['entry_gate'] > 0.5))
+        n_valid_dir = int(np.sum(~np.isnan(v18_labels['direction_label'])))
+        n_exit = int(np.sum(v18_labels['exit_label'] == 1.0))
+        print(f"  Valid entry gates: {n_valid_gate}/{valid_count}")
+        print(f"  Good gates (>0.5): {n_good_gate}/{n_valid_gate} ({100*n_good_gate/max(n_valid_gate,1):.1f}%)")
+        print(f"  Valid direction labels: {n_valid_dir}/{valid_count}")
+        print(f"  Exit=1 bars: {n_exit}/{n_valid_gate}")
+        print(f"  Mean MFE: {np.nanmean(v18_labels['mfe']):.6f}")
+        print(f"  Mean MAE: {np.nanmean(v18_labels['mae']):.6f}")
+        print(f"  Mean conviction: {np.nanmean(v18_labels['risk_conviction']):.4f}")
+    else:
+        print("  WARNING: Missing close/option data, skipping v18 labels")
+    print(f"  ({time.time() - t0:.1f}s)")
+    print()
+
+    # --- v11: Setup Recognition + Regime Classification (pre-normalization) ---
+    # (Legacy — kept for backward compatibility with old train.py versions)
+    date_arr = np.array(dates)
+    if option_prices is not None:
+        option_prices['setup_mask'] = np.zeros(len(dates), dtype=np.float32)
+        option_prices['regime_mask'] = np.zeros(len(dates), dtype=np.float32)
 
     # --- Normalize ---
     print("Normalizing (per-day mean, global std — anti-fingerprint)...")
