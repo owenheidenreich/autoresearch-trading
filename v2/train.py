@@ -476,4 +476,6 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
 
 
 if __name__ == "__main__":
-    train()
+    _data = os.environ.get("TRAIN_DATA_PATH", "v2/data.pt")
+    _model = os.environ.get("TRAIN_MODEL_PATH", "v2/model.pt")
+    train(data_path=_data, model_path=_model)
