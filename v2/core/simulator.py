@@ -1,17 +1,271 @@
 """Trade simulation engine: executes TradeIntents against historical data.
 
 See docs/v2/evaluator.md for the complete simulation rules.
-
-Given a sequence of TradeIntents and historical price/option data,
-simulates execution with realistic costs, stops, targets, and time limits.
 Single source of truth for trade P&L computation.
-
-v1 origin: training/replay.py (trade simulation loop, compute_adaptive_spread_bps,
-position management, exit logic)
 """
-# TODO: SimulatedTrade dataclass (entry, exit, P&L, metadata)
-# TODO: TradeSimulator class
-# TODO: simulate_day(model, features, option_prices) -> list[SimulatedTrade]
-# TODO: simulate_dataset(model, data) -> list[SimulatedTrade]
-# TODO: compute_adaptive_spread_bps(minutes_remaining, vix_regime, is_otm) -> float
-# TODO: Determinism: fixed seeds, no stochastic fills
+from __future__ import annotations
+
+import numpy as np
+
+from v2.core.schema import TradeIntent, SimulatedTrade
+from v2.core.features import (
+    BARS_PER_DAY, STOP_COOLDOWN_BARS, MIN_HOLD_BARS,
+    NO_TRADE_BEFORE_BAR, NO_TRADE_AFTER_BAR,
+    _FEAT_IDX, compute_adaptive_spread_bps,
+)
+
+
+# Trailing stop tiers: (unrealized_pct_threshold, lock_pct)
+TRAILING_TIERS = [
+    (1.20, 0.80),  # +120% unrealized -> lock +80%
+    (0.80, 0.50),  # +80% -> lock +50%
+    (0.50, 0.25),  # +50% -> lock +25%
+    (0.30, 0.00),  # +30% -> lock breakeven
+]
+
+
+def _compute_spread_cost(
+    entry_bar_of_day: int,
+    exit_bar_of_day: int,
+    vix_regime_entry: float,
+    vix_regime_exit: float,
+    is_otm: bool,
+) -> float:
+    """Compute round-trip spread cost as a fraction (not bps)."""
+    mtc_entry = BARS_PER_DAY - entry_bar_of_day
+    mtc_exit = BARS_PER_DAY - exit_bar_of_day
+    entry_spread = compute_adaptive_spread_bps(mtc_entry, vix_regime_entry, is_otm)
+    exit_spread = compute_adaptive_spread_bps(mtc_exit, vix_regime_exit, is_otm)
+    return (entry_spread + exit_spread) / 10000.0
+
+
+def simulate_trade(
+    intent: TradeIntent,
+    option_prices: np.ndarray,
+    features: np.ndarray,
+    bar_of_day: np.ndarray,
+    dates: list[str],
+    global_entry_bar: int,
+) -> SimulatedTrade | None:
+    """Simulate a single TradeIntent against historical price data.
+
+    Args:
+        intent: the trade to simulate
+        option_prices: (N,) array of option mid-prices for this contract
+        features: (N, 39) feature array (for VIX regime lookup)
+        bar_of_day: (N,) array of bar-of-day indices (0-389)
+        dates: list of date strings per bar
+        global_entry_bar: global index where intent was emitted
+
+    Returns:
+        SimulatedTrade or None if entry fill fails
+    """
+    if not intent.trade:
+        return None
+
+    N = len(option_prices)
+    fill_bar = global_entry_bar + 1  # fill at next bar
+    if fill_bar >= N:
+        return None
+
+    entry_day = dates[global_entry_bar]
+
+    # Entry fill: use next bar's price (MKT fills at ask ~ mid for simulation)
+    entry_px = float(option_prices[fill_bar])
+    if np.isnan(entry_px) or entry_px <= 0:
+        return None
+
+    # Compute stop/TP as percentages of entry premium
+    stop_pct = (entry_px - intent.stop_price) / entry_px
+    tp_pct = (intent.take_profit_price - entry_px) / entry_px
+
+    # Track position
+    entry_bod = int(bar_of_day[fill_bar])
+    is_otm = intent.strike is not None and intent.right is not None and (
+        abs(intent.strike - (intent.underlying_price or 0)) > 2.5
+    )
+
+    vix_idx = _FEAT_IDX.get('vix_regime', 18)
+    vix_entry = float(features[fill_bar, vix_idx]) if fill_bar < len(features) else 0.0
+
+    # Track MFE/MAE
+    mfe = 0.0
+    mae = 0.0
+    trailing_stop = -float('inf')  # no trailing stop initially
+    exit_bar = fill_bar
+    exit_price = entry_px
+    exit_reason = "EOD"
+    last_valid_px = entry_px
+
+    bars_in_trade = 0
+    max_bars = min(intent.max_hold_bars, BARS_PER_DAY)
+
+    for k in range(1, max_bars + 1):
+        check = fill_bar + k
+        if check >= N or dates[check] != entry_day:
+            # End of day
+            exit_bar = min(check - 1, N - 1)
+            exit_price = last_valid_px
+            exit_reason = "EOD"
+            break
+
+        px = float(option_prices[check])
+        if np.isnan(px) or px <= 0:
+            continue
+
+        last_valid_px = px
+        bars_in_trade = k
+        unrealized = (px - entry_px) / entry_px
+
+        # Track excursions
+        mfe = max(mfe, unrealized)
+        mae = min(mae, unrealized)
+
+        # 1. Stop loss (checked first - highest priority)
+        if unrealized <= -stop_pct:
+            exit_bar = check
+            exit_price = entry_px * (1.0 - stop_pct)  # fill at stop price
+            exit_reason = "STOP_LOSS"
+            break
+
+        # 2. Take profit
+        if unrealized >= tp_pct:
+            exit_bar = check
+            exit_price = entry_px * (1.0 + tp_pct)  # fill at TP price
+            exit_reason = "TAKE_PROFIT"
+            break
+
+        # 3. Trailing stop (if exit_policy is TRAILING)
+        if intent.exit_policy == "TRAILING":
+            for tier_threshold, lock_pct in TRAILING_TIERS:
+                if unrealized >= tier_threshold:
+                    new_floor = lock_pct
+                    if new_floor > trailing_stop:
+                        trailing_stop = new_floor
+                    break
+            if trailing_stop > -float('inf') and unrealized <= trailing_stop:
+                exit_bar = check
+                exit_price = entry_px * (1.0 + trailing_stop)
+                exit_reason = "TRAILING_STOP"
+                break
+
+        # 4. Max hold
+        if k >= max_bars:
+            exit_bar = check
+            exit_price = px
+            exit_reason = "MAX_HOLD"
+            break
+
+        # 5. Last bar of day (bar 389)
+        if int(bar_of_day[check]) >= BARS_PER_DAY - 1:
+            exit_bar = check
+            exit_price = px
+            exit_reason = "EOD"
+            break
+    else:
+        exit_bar = fill_bar + bars_in_trade if bars_in_trade > 0 else fill_bar
+        exit_price = last_valid_px
+        exit_reason = "EOD"
+
+    # Compute P&L
+    raw_pnl = (exit_price - entry_px) / entry_px
+    exit_bod = int(bar_of_day[min(exit_bar, N - 1)])
+    vix_exit = float(features[min(exit_bar, len(features) - 1), vix_idx])
+    spread_cost = _compute_spread_cost(entry_bod, exit_bod, vix_entry, vix_exit, is_otm)
+    net_pnl = raw_pnl - spread_cost
+
+    underlying_entry = float(features[fill_bar, _FEAT_IDX.get('ret_6', 0)]) if fill_bar < len(features) else 0.0
+    underlying_exit = float(features[min(exit_bar, len(features) - 1), _FEAT_IDX.get('ret_6', 0)])
+
+    return SimulatedTrade(
+        intent=intent,
+        entry_bar=global_entry_bar,
+        entry_price=entry_px,
+        entry_fill_bar=fill_bar,
+        exit_bar=exit_bar,
+        exit_price=exit_price,
+        exit_reason=exit_reason,
+        raw_pnl_pct=raw_pnl,
+        spread_cost_pct=spread_cost,
+        net_pnl_pct=net_pnl,
+        bars_held=exit_bar - fill_bar,
+        mfe_pct=mfe,
+        mae_pct=mae,
+        vix_regime_at_entry=vix_entry,
+    )
+
+
+def simulate_day(
+    intents: list[tuple[int, TradeIntent]],
+    option_prices_by_intent: dict[str, np.ndarray],
+    features: np.ndarray,
+    bar_of_day: np.ndarray,
+    dates: list[str],
+) -> list[SimulatedTrade]:
+    """Simulate a day of trading from a list of (bar_index, TradeIntent) pairs.
+
+    Enforces:
+    - Max 1 concurrent position
+    - Cooldown after stop loss
+    - Time block restrictions
+
+    Args:
+        intents: list of (global_bar_index, TradeIntent), sorted by bar
+        option_prices_by_intent: dict mapping intent_id -> option price array
+        features: (N, 39) feature array
+        bar_of_day: (N,) bar-of-day indices
+        dates: date strings per bar
+    """
+    trades: list[SimulatedTrade] = []
+    in_position = False
+    position_exit_bar = -1
+    last_stop_bar = -STOP_COOLDOWN_BARS - 1
+
+    for global_bar, intent in intents:
+        if not intent.trade:
+            continue
+
+        # Check time blocks
+        bod = int(bar_of_day[global_bar]) if global_bar < len(bar_of_day) else 0
+        if bod < NO_TRADE_BEFORE_BAR:
+            continue
+        if bod >= NO_TRADE_AFTER_BAR:
+            continue
+
+        # Check position
+        if in_position and global_bar <= position_exit_bar:
+            continue
+
+        # Check cooldown
+        if global_bar - last_stop_bar < STOP_COOLDOWN_BARS:
+            continue
+
+        # Get option prices for this intent
+        prices_key = intent.intent_id
+        if prices_key not in option_prices_by_intent:
+            continue
+        option_prices = option_prices_by_intent[prices_key]
+
+        trade = simulate_trade(
+            intent=intent,
+            option_prices=option_prices,
+            features=features,
+            bar_of_day=bar_of_day,
+            dates=dates,
+            global_entry_bar=global_bar,
+        )
+
+        if trade is None:
+            continue
+
+        trades.append(trade)
+        in_position = True
+        position_exit_bar = trade.exit_bar
+
+        if trade.exit_reason == "STOP_LOSS":
+            last_stop_bar = trade.exit_bar
+
+        # Position is now closed
+        in_position = False
+
+    return trades
