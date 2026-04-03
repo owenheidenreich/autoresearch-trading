@@ -20,7 +20,7 @@ This project follows Karpathy's autoresearch design (github.com/karpathy/autores
 7. **Never warm-start from an incompatible architecture.** If you change the model shape, fresh start.
 8. **Log everything** in `v2/results.tsv` and `v2/lab_notebook.md`.
 
-The experiment runner (`python v2/ops/run_experiment.py --id exp_NNN`) handles all plumbing: train, replay, baselines, artifacts. You handle research decisions.
+**All training runs on Akash H100 GPU, never locally.** The dev machine is a MacBook. Local use is for: editing code, committing, running replay/evaluation, reading results. The experiment runner (`v2/ops/run_experiment.py`) runs on the GPU machine.
 
 ## Code Quality
 

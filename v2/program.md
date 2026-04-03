@@ -4,6 +4,20 @@ You are an autonomous researcher improving a trading model that trades SPX 0DTE 
 
 For command syntax, see `v2/COMMANDS.md`. For detailed specs, see `v2/docs/`.
 
+## Compute
+
+**All training runs on Akash H100 GPU.** Never run training locally -- the dev machine is a MacBook. Local use is limited to: editing code, committing, reading results, and running replay/evaluation (which is CPU-friendly).
+
+Akash workflow:
+1. Boot GPU: `./v2/ops/deploy.sh boot`
+2. Upload code + data: `./v2/ops/deploy.sh start`
+3. Training runs on the remote GPU
+4. Download results: `./v2/ops/deploy.sh sync`
+5. Evaluate locally: `python -m v2.replay --model v2/model.pt --mask promote`
+6. Shut down GPU: `./v2/ops/deploy.sh stop`
+
+The experiment runner (`v2/ops/run_experiment.py`) is designed to run ON the GPU machine, not locally.
+
 ## Setup
 
 1. **Create a branch**: `git checkout -b autoresearch/v2-<tag>` from current main.
@@ -13,7 +27,7 @@ For command syntax, see `v2/COMMANDS.md`. For detailed specs, see `v2/docs/`.
    - `v2/core/policy.py` -- the trading policy. You can modify this too.
    - `v2/lab_notebook.md` -- experiment log.
 3. **Verify data**: `v2/data.pt` must exist and be Tier 3 (check metadata).
-4. **First run**: Establish baseline by running `python v2/ops/run_experiment.py --id baseline` without changing any code.
+4. **Boot Akash GPU** and establish baseline by running `run_experiment.py --id baseline` on the GPU without changing any code.
 5. **Record baseline** in `v2/results.tsv`.
 
 ## What You CAN Modify
@@ -63,12 +77,9 @@ Model must also beat all three baselines:
 
 ## Running an Experiment
 
+On the Akash GPU:
 ```bash
 python v2/ops/run_experiment.py --id exp_NNN > run.log 2>&1
-```
-
-Read the score:
-```bash
 grep "^score:" run.log
 ```
 
@@ -116,9 +127,9 @@ LOOP:
 2. Decide what to try. Write your hypothesis.
 3. Edit `v2/train.py` and/or `v2/core/policy.py`.
 4. `git commit` your changes.
-5. Run the experiment: `python v2/ops/run_experiment.py --id exp_NNN > run.log 2>&1`
-6. Read results: `grep "^score:" run.log`
-7. If crashed: read `tail -50 run.log`, try to fix. If unfixable, log as crash, move on.
+5. Upload to Akash and run the experiment on GPU.
+6. Download results. Read score.
+7. If crashed: read the log, try to fix. If unfixable, log as crash, move on.
 8. Log results to `v2/results.tsv`.
 9. If score improved AND beats all baselines: **KEEP**. Branch advances.
 10. If score equal or worse: **REVERT**. `git checkout v2/train.py v2/core/policy.py`
@@ -156,6 +167,7 @@ If you hit 3+ consecutive reverts:
 - **Evaluation**: Replay on promote_mask (60 days model never saw during training)
 - **Score**: Account curve health (Sortino * consistency * drawdown guard)
 - **Equity**: $50K starting, $100 SPX multiplier, 1 contract max
+- **Training**: Akash H100 GPU. 5-minute time budget per experiment. Never local.
 
 ## Data Split
 
