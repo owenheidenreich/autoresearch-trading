@@ -191,6 +191,7 @@ def simulate_trade(
         bars_held=exit_bar - fill_bar,
         mfe_pct=mfe,
         mae_pct=mae,
+        trade_date=entry_day,
         vix_regime_at_entry=vix_entry,
     )
 
