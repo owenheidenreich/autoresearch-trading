@@ -47,21 +47,27 @@ If no type-checker is configured, state that explicitly instead of claiming succ
 ## Github Hygeine
 1. commit every time a change is made in the code. 
 
-## Autoresearch Protocol (Karpathy's method)
+## v2 Autoresearch Protocol (Karpathy's method)
 
-This project follows Karpathy's autoresearch design (github.com/karpathy/autoresearch). When running experiments:
+This project follows Karpathy's autoresearch design (github.com/karpathy/autoresearch).
 
-1. **You are an autonomous researcher.** Read `training/program.md` for the full protocol.
-2. **Run the experiment loop per `training/principles.md` governance.** Session limits: 50 experiments or 6 hours. Stop when a stop rule fires. Log findings and wait for human.
-3. **One change per experiment.** Small, testable hypotheses. Not shotgun changes.
-4. **Keep/discard based on score only.** Score improves = keep (branch advances). Score same or worse = revert.
-5. **Log everything** in `training/lab_notebook.md`. What you tried, why, result.
-6. **When stuck (3+ reverts):** Stop. Read replay data. Form a hypothesis about WHY. Then try structural changes.
+**Before doing anything, read these files:**
+1. `v2/program.md` -- the definitive protocol. Single source of truth.
+2. `v2/COMMANDS.md` -- every command you can run, with exact syntax.
+
+**When the human says a command** (e.g. "begin experiment loop", "evaluate model", "rebuild dataset"), look it up in `v2/COMMANDS.md` and execute exactly what it says.
+
+**Core rules:**
+1. **Two mutable files only:** `v2/train.py` (model/loss) and `v2/core/policy.py` (trading params). Everything else is the immutable evaluation harness.
+2. **One change per experiment.** Small, testable hypotheses. Not shotgun changes.
+3. **Keep/revert based on score only.** Score = `min(daily_sortino, 6.0) * positive_day_rate * dd_mult`. Model must also beat all three baselines.
+4. **Session limits:** 50 experiments, 6 hours, 8 no-improve streak, 3hr plateau, 3 crashes. Stop when any limit fires.
+5. **Every experiment needs a hypothesis.** Write it BEFORE GPU spend.
+6. **When stuck (3+ reverts):** Stop. Read trade-level replay data. Form a hypothesis about WHY. Then try structural changes.
 7. **Never warm-start from an incompatible architecture.** If you change the model shape, fresh start.
-8. **Every experiment needs a hypothesis.** Write it BEFORE GPU spend. No "let's just try random things."
-9. **Read `training/principles.md` before every session.** It defines goals, stop rules, and the migration roadmap.
+8. **Log everything** in `v2/results.tsv` and `v2/lab_notebook.md`.
 
-The inner_loop.py handles the mechanical plumbing (SSH, upload, train, download, score, keep/revert). You handle the research decisions: what to try, why, and what the results mean.
+**The experiment runner** (`python v2/ops/run_experiment.py --id exp_NNN`) handles all plumbing: train, replay, baselines, artifacts. You handle research decisions.
 
 ## User Decisions
 1. The User must agree on definition of every step of the Loop in ART2.
