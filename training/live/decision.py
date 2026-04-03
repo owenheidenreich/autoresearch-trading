@@ -4,21 +4,26 @@ import math
 import os
 import sys
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import torch
 
 from training.prepare import (
     ACTION_DO_NOTHING,
-    ACTION_EXIT,
+    ACTION_BUY_CALL_ATM,
+    ACTION_BUY_CALL_OTM5,
+    ACTION_BUY_CALL_OTM10,
+    ACTION_BUY_PUT_ATM,
+    ACTION_BUY_PUT_OTM5,
+    ACTION_BUY_PUT_OTM10,
     BARS_PER_DAY,
     NO_TRADE_BEFORE_BAR,
-    STOP_LOSS_PCT,
-    STOP_COOLDOWN_BARS,
+    NUM_FEATURES,
+    STARTING_CAPITAL,
+    DYNAMIC_STOP_MIN,
+    DYNAMIC_STOP_MAX,
     compute_dynamic_stop,
-    PNL_TANH_SCALE,
-    BEST_PNL_TANH_SCALE,
+    _FEAT_IDX,
 )
 from training.live.contracts import (
     FEATURE_CONTRACT_VERSION,
@@ -34,20 +39,35 @@ if TRAINING_DIR not in sys.path:
 
 from replay import load_model  # noqa: E402
 
-# Phase D imports removed — value head is built into the model, no separate exit policy needed
+# v17 thresholds (backward compat)
+V17_TRADE_PROB_THRESHOLD = 0.5
+V17_MIN_PREDICTED_MOVE = 0.001
+V17_EXIT_SIGNAL_THRESHOLD = 0.6
+
+# v18 direction class to action mapping
+_V18_DIR_CLS_TO_ACTION = [
+    ACTION_BUY_CALL_ATM, ACTION_BUY_CALL_OTM5, ACTION_BUY_CALL_OTM10,
+    ACTION_BUY_PUT_ATM, ACTION_BUY_PUT_OTM5, ACTION_BUY_PUT_OTM10,
+]
 
 
 @dataclass
 class InferenceResult:
     action: int
     confidence: float
-    gate_trade_prob: float
-    direction_probs: list[float]
+    trade_prob: float
+    pred_return_30: float
+    pred_conf: float
+    exit_signal: float
     reason_codes: list[str]
+    # v18 risk params (zero for v17)
+    risk_stop_distance: float = 0.0
+    risk_target_distance: float = 0.0
+    risk_conviction: float = 0.0
 
 
 class ModelDecisionEngine:
-    """Turns model outputs into executable intents (entry and risk updates)."""
+    """Turns model outputs into executable intents. Supports v17 and v18."""
 
     def __init__(
         self,
@@ -56,9 +76,9 @@ class ModelDecisionEngine:
         device: str = "cpu",
         min_trade_prob: float = 0.55,
         max_qty: int = 1,
-        num_features: int = 60,
+        num_features: int = 39,
         feature_contract_version: str = FEATURE_CONTRACT_VERSION,
-        specialist_models: dict[str, torch.nn.Module] | None = None,
+        model_version: str = "v17",
     ) -> None:
         self.model = model
         self.lookback = lookback
@@ -67,20 +87,21 @@ class ModelDecisionEngine:
         self.max_qty = max(1, int(max_qty))
         self.num_features = int(num_features)
         self.feature_contract_version = feature_contract_version
-        self._has_position_proj = hasattr(model, 'position_proj')
-        self._has_value_head = hasattr(model, 'value_head')
-        # Phase B: specialist models (keyed by regime name)
-        self._specialists = specialist_models or {}
-        # Position tracking for gate head context
+        self.model_version = model_version
+        self._is_v18 = hasattr(model, 'gate_head')
+        # Account tracking
+        self._account_balance = STARTING_CAPITAL
+        self._daily_pnl_frac = 0.0
+        self._win_rate_20 = 0.5
+        self._consecutive_losses = 0
+        self._peak_balance = STARTING_CAPITAL
+        # Position tracking
         self._in_trade = False
         self._bars_held = 0
         self._unrealized_pnl = 0.0
-        self._account_health = 1.0  # account_balance / starting_capital
-        self._loss_streak_frac = 0.0  # consecutive_losses / threshold
-        self._entry_confidence = 0.0  # confidence at entry time
-        self._best_pnl = 0.0  # best unrealized P&L since entry
-        self._bars_since_high = 0  # bars since best P&L
-        self._entry_stop_distance = 0.35  # stop distance set at entry
+        self._entry_confidence = 0.0
+        self._best_pnl = 0.0
+        self._bars_since_high = 0
 
     def update_position_state(self, in_trade: bool, bars_held: int = 0,
                                unrealized_pnl: float = 0.0,
@@ -90,9 +111,7 @@ class ModelDecisionEngine:
         self._in_trade = in_trade
         self._bars_held = bars_held
         self._unrealized_pnl = unrealized_pnl
-        self._account_health = account_health
-        self._loss_streak_frac = loss_streak_frac
-        # Track best P&L for exit policy
+        self._consecutive_losses = int(loss_streak_frac * 5)
         if in_trade:
             if unrealized_pnl > self._best_pnl:
                 self._best_pnl = unrealized_pnl
@@ -111,36 +130,16 @@ class ModelDecisionEngine:
         device: str = "cpu",
         min_trade_prob: float = 0.55,
         max_qty: int = 1,
-        specialist_dir: str | None = None,
     ) -> "ModelDecisionEngine":
         model, lookback, config, _ = load_model(model_path, device=device, train_py_path=train_py_path)
         ckpt_contract = str(config.get("feature_contract_version", FEATURE_CONTRACT_VERSION))
-        ckpt_num_features = int(config.get("num_features", _infer_model_num_features(model)))
+        ckpt_num_features = int(config.get("num_features", NUM_FEATURES))
+        model_version = config.get("model_version", "v17")
         if ckpt_contract != FEATURE_CONTRACT_VERSION:
             raise RuntimeError(
                 f"Model feature_contract_version={ckpt_contract} "
                 f"does not match required {FEATURE_CONTRACT_VERSION}"
             )
-
-        # Phase D: value head is built into the model — no separate checkpoint
-        if hasattr(model, 'value_head'):
-            print(f"  Value head: available (Phase D exit intelligence)")
-        else:
-            print(f"  Value head: not available (gate-only exits)")
-
-        # Phase B: Load specialist models
-        specialists = {}
-        if specialist_dir is None:
-            specialist_dir = os.path.dirname(model_path)
-        for spec_name in ("morning", "midday", "afternoon", "highvol"):
-            spec_path = os.path.join(specialist_dir, f"best_model_{spec_name}.pt")
-            if os.path.exists(spec_path):
-                try:
-                    spec_model, _, _, _ = load_model(spec_path, device=device, train_py_path=train_py_path)
-                    specialists[spec_name] = spec_model
-                    print(f"  Specialist loaded: {spec_name} ({spec_path})")
-                except Exception as e:
-                    print(f"  WARNING: Failed to load {spec_name} specialist: {e}")
 
         return cls(
             model,
@@ -150,163 +149,107 @@ class ModelDecisionEngine:
             max_qty=max_qty,
             num_features=ckpt_num_features,
             feature_contract_version=ckpt_contract,
-            specialist_models=specialists if specialists else None,
+            model_version=model_version,
         )
 
-    def _select_model(self, feature_window: np.ndarray) -> tuple[torch.nn.Module, str]:
-        """Phase B meta-selector: pick specialist or generalist based on regime.
-
-        Returns (model, source_name).
-        """
-        if not self._specialists:
-            return self.model, "generalist"
-
-        # Determine time-of-day regime from minutes_to_close feature (idx 19)
-        if feature_window.shape[1] > 19:
-            # minutes_to_close is log(minutes_remaining + 1), normalized
-            # Approximate bar_of_day from raw value
-            mtc_raw = float(feature_window[-1, 19])
-            # Feature is z-scored, so use regime buckets instead:
-            # morning: bars 0-120 (9:30-11:30)
-            # midday: bars 120-240 (11:30-13:30)
-            # afternoon: bars 240-390 (13:30-16:00)
-            # We can estimate from VIX regime too
-        else:
-            return self.model, "generalist"
-
-        # Use bar_of_day from minutes_to_close if we can reconstruct it
-        # Simpler: check if vix_regime indicates high vol
-        vix_regime = float(feature_window[-1, 24]) if feature_window.shape[1] > 24 else 0.0
-
-        # Time-based specialist selection
-        # We need bar_of_day which isn't directly in features. Use time_sin/time_cos (idx 20,21)
-        if feature_window.shape[1] > 21:
-            time_sin = float(feature_window[-1, 20])
-            time_cos = float(feature_window[-1, 21])
-            # session_progress = atan2(sin, cos) / (2*pi), maps to [0, 1]
-            progress = (math.atan2(time_sin, time_cos) / (2 * math.pi)) % 1.0
-            bar_of_day_est = int(progress * BARS_PER_DAY)
-        else:
-            return self.model, "generalist"
-
-        # Check high-vol first (takes priority)
-        if vix_regime > 0 and "highvol" in self._specialists:
-            spec_model = self._specialists["highvol"]
-            # Compare confidence: run both, pick higher confidence
-            return self._compare_confidence(feature_window, spec_model, "highvol")
-
-        # Time-of-day routing
-        if bar_of_day_est < 120 and "morning" in self._specialists:
-            return self._compare_confidence(feature_window, self._specialists["morning"], "morning")
-        elif bar_of_day_est < 240 and "midday" in self._specialists:
-            return self._compare_confidence(feature_window, self._specialists["midday"], "midday")
-        elif "afternoon" in self._specialists:
-            return self._compare_confidence(feature_window, self._specialists["afternoon"], "afternoon")
-
-        return self.model, "generalist"
-
-    def _compare_confidence(self, feature_window: np.ndarray,
-                             specialist: torch.nn.Module, name: str
-                             ) -> tuple[torch.nn.Module, str]:
-        """Run both generalist and specialist, return higher-confidence one."""
-        x = torch.tensor(feature_window[-self.lookback:], dtype=torch.float32, device=self.device).unsqueeze(0)
-        pos_state = self._build_position_state()
-
-        with torch.no_grad():
-            g_gate, g_dir = self.model(x, position_state=pos_state)
-            s_gate, s_dir = specialist(x, position_state=pos_state)
-
-            g_conf = float(torch.softmax(g_gate, dim=-1)[0, 1] * torch.softmax(g_dir, dim=-1)[0].max())
-            s_conf = float(torch.softmax(s_gate, dim=-1)[0, 1] * torch.softmax(s_dir, dim=-1)[0].max())
-
-        if s_conf > g_conf * 1.05:  # specialist must beat generalist by 5%
-            return specialist, name
-        return self.model, "generalist"
-
-    def _build_position_state(self) -> torch.Tensor | None:
-        if not self._has_position_proj:
-            return None
-        _ps_dim = getattr(self.model, 'POSITION_STATE_DIM', 7)
-        pos_state = torch.zeros(1, _ps_dim, device=self.device)
-        if self._in_trade:
-            pos_state[0, 0] = 1.0
-            pos_state[0, 1] = min(self._bars_held / BARS_PER_DAY, 1.0)
-            pos_state[0, 2] = float(np.tanh(self._unrealized_pnl * PNL_TANH_SCALE))
-            if _ps_dim >= 7:
-                pos_state[0, 5] = float(np.tanh(self._best_pnl * BEST_PNL_TANH_SCALE))
-                pos_state[0, 6] = min(self._bars_since_high / BARS_PER_DAY, 1.0)
-        pos_state[0, 3] = self._account_health
-        pos_state[0, 4] = self._loss_streak_frac
-        return pos_state
+    def _build_account_state(self) -> torch.Tensor:
+        """Build v17 5-dim account state tensor (only used for v17 models)."""
+        _as_dim = getattr(self.model, 'ACCOUNT_STATE_DIM', 5)
+        acct = torch.zeros(1, _as_dim, device=self.device)
+        acct[0, 0] = self._account_balance / STARTING_CAPITAL
+        acct[0, 1] = min(self._consecutive_losses / 5.0, 1.0)
+        acct[0, 2] = self._daily_pnl_frac
+        acct[0, 3] = self._win_rate_20
+        if _as_dim >= 5:
+            self._peak_balance = max(self._peak_balance, self._account_balance)
+            acct[0, 4] = (self._account_balance - self._peak_balance) / max(self._peak_balance, 1.0)
+        return acct
 
     def infer(self, feature_window: np.ndarray) -> InferenceResult:
+        _no_trade = InferenceResult(
+            action=ACTION_DO_NOTHING, confidence=0.0, trade_prob=0.0,
+            pred_return_30=0.0, pred_conf=0.0, exit_signal=0.0,
+            reason_codes=[],
+        )
         if feature_window.ndim != 2:
-            return InferenceResult(
-                action=ACTION_DO_NOTHING,
-                confidence=0.0,
-                gate_trade_prob=0.0,
-                direction_probs=[],
-                reason_codes=["invalid_feature_shape"],
-            )
+            _no_trade.reason_codes = ["invalid_feature_shape"]
+            return _no_trade
         if feature_window.shape[0] < self.lookback:
-            return InferenceResult(
-                action=ACTION_DO_NOTHING,
-                confidence=0.0,
-                gate_trade_prob=0.0,
-                direction_probs=[],
-                reason_codes=["insufficient_lookback"],
-            )
+            _no_trade.reason_codes = ["insufficient_lookback"]
+            return _no_trade
         if feature_window.shape[1] < self.num_features:
-            return InferenceResult(
-                action=ACTION_DO_NOTHING,
-                confidence=0.0,
-                gate_trade_prob=0.0,
-                direction_probs=[],
-                reason_codes=["feature_dim_too_small"],
-            )
+            _no_trade.reason_codes = ["feature_dim_too_small"]
+            return _no_trade
+
         reason_codes: list[str] = []
         if feature_window.shape[1] > self.num_features:
-            feature_window = feature_window[:, : self.num_features]
+            feature_window = feature_window[:, :self.num_features]
             reason_codes.append("feature_dim_truncated")
-
-        # Phase B: Meta-selector picks specialist or generalist
-        selected_model, model_source = self._select_model(feature_window)
 
         x = torch.tensor(feature_window[-self.lookback:], dtype=torch.float32, device=self.device)
         x = x.unsqueeze(0)
-        pos_state = self._build_position_state()
+
         with torch.no_grad():
-            _out = selected_model(x, position_state=pos_state)
-            gate_logits, dir_logits = _out[0], _out[1]
-            gate_probs = torch.softmax(gate_logits, dim=-1)[0].detach().cpu().numpy()
-            dir_probs = torch.softmax(dir_logits, dim=-1)[0].detach().cpu().numpy()
+            if self._is_v18:
+                # v18: TradingModel(x) -> (market_pred, entry_gate, risk_params, exit_signal, dir_logits)
+                market_pred, entry_gate, risk_params, exit_sig, dir_logits = self.model(x)
+                trade_prob = float(entry_gate[0].item())
+                exit_signal = float(exit_sig[0].item())
+                pred_30 = float(market_pred[0, 1].item())
+                stop_dist = float(risk_params[0, 0].item())
+                target_dist = float(risk_params[0, 1].item())
+                conviction = float(risk_params[0, 2].item())
 
-        if model_source != "generalist":
-            reason_codes.append(f"specialist:{model_source}")
+                # Direction from 6-class head
+                dir_cls = int(dir_logits[0].argmax().item())
+                if trade_prob > self.min_trade_prob:
+                    action = _V18_DIR_CLS_TO_ACTION[dir_cls]
+                    reason_codes.append("trade_signal")
+                    reason_codes.append(f"dir_cls={dir_cls}")
+                else:
+                    action = ACTION_DO_NOTHING
+                    reason_codes.append("no_trade")
 
-        gate_trade_prob = float(gate_probs[1])
-        gate_action = int(torch.argmax(gate_logits, dim=-1).item())  # 0=NO_TRADE, 1=TRADE
-        best_dir = int(np.argmax(dir_probs))
-        best_dir_prob = float(dir_probs[best_dir])
-        confidence = gate_trade_prob * best_dir_prob
+                return InferenceResult(
+                    action=action,
+                    confidence=trade_prob,
+                    trade_prob=trade_prob,
+                    pred_return_30=pred_30,
+                    pred_conf=conviction,
+                    exit_signal=exit_signal,
+                    reason_codes=reason_codes,
+                    risk_stop_distance=stop_dist,
+                    risk_target_distance=target_dist,
+                    risk_conviction=conviction,
+                )
+            else:
+                # v17: PredictionModel(x, account_state) -> (pred_returns, pred_conf, action_out)
+                acct_state = self._build_account_state()
+                pred_returns, pred_conf, action_out = self.model(x, account_state=acct_state)
+                trade_prob = float(action_out[0, 0].item())
+                exit_signal = float(action_out[0, 2].item())
+                pred_30 = float(pred_returns[0, 1].item())
+                conf = float(pred_conf[0].item()) if pred_conf.dim() > 0 else float(pred_conf.item())
 
-        # Argmax gate — same as training evaluate_trades(). No hardcoded threshold.
-        if gate_action == 0:  # NO_TRADE
-            return InferenceResult(
-                action=ACTION_DO_NOTHING,
-                confidence=confidence,
-                gate_trade_prob=gate_trade_prob,
-                direction_probs=[float(x) for x in dir_probs],
-                reason_codes=["gate_no_trade", *reason_codes],
-            )
-        action = best_dir + 1
-        return InferenceResult(
-            action=action,
-            confidence=confidence,
-            gate_trade_prob=gate_trade_prob,
-            direction_probs=[float(x) for x in dir_probs],
-            reason_codes=["trade_signal", *reason_codes],
-        )
+                if trade_prob > V17_TRADE_PROB_THRESHOLD and abs(pred_30) > V17_MIN_PREDICTED_MOVE:
+                    if pred_30 > 0:
+                        action = ACTION_BUY_CALL_ATM
+                    else:
+                        action = ACTION_BUY_PUT_ATM
+                    reason_codes.append("trade_signal")
+                else:
+                    action = ACTION_DO_NOTHING
+                    reason_codes.append("no_trade")
+
+                return InferenceResult(
+                    action=action,
+                    confidence=trade_prob,
+                    trade_prob=trade_prob,
+                    pred_return_30=pred_30,
+                    pred_conf=conf,
+                    exit_signal=exit_signal,
+                    reason_codes=reason_codes,
+                )
 
     def _position_size(self, confidence: float) -> int:
         if self.max_qty <= 1:
@@ -322,52 +265,28 @@ class ModelDecisionEngine:
         bar_of_day: int = 999,
         feature_window: np.ndarray | None = None,
     ) -> DecisionIntent | None:
-        if inference.action in (ACTION_DO_NOTHING, ACTION_EXIT):
+        if inference.action == ACTION_DO_NOTHING:
             return None
-        # Gate confidence filter — reject low-confidence entries
-        if inference.gate_trade_prob < self.min_trade_prob:
+        if inference.trade_prob < self.min_trade_prob:
             return None
-        # Pre-10am block — matches training evaluate_trades()
         if bar_of_day < NO_TRADE_BEFORE_BAR:
             return None
         contract = resolver.resolve(inference.action, spx_price)
         entry_mid = resolver.quote_mid(contract) or 1.0
 
-        # Risk head: use learned stop + sizing if available
-        _has_risk_head = hasattr(self.model, 'risk_head')
-        _risk_stop = None
-        _risk_size_frac = None
-        _risk_conviction = 0.0
-        if _has_risk_head and feature_window is not None and len(feature_window) >= self.lookback:
-            x = torch.tensor(
-                feature_window[-self.lookback:, :self.num_features],
-                dtype=torch.float32, device=self.device
-            ).unsqueeze(0)
-            pos_state = self._build_position_state()
-            acct_state = self._build_account_state()
-            with torch.no_grad():
-                _out = self.model(x, position_state=pos_state, account_state=acct_state,
-                                  return_risk=True)
-                _ro = _out[-1]  # (1, 3)
-                _risk_stop = float(_ro[0, 0].item())
-                _risk_size_frac = float(_ro[0, 1].item())
-                _risk_conviction = float(_ro[0, 2].item())
-
-        if _risk_stop is not None:
-            stop_pct = _risk_stop
+        # v18: use learned stop distance; v17: formula
+        if self._is_v18 and inference.risk_stop_distance > 0:
+            _atr_feat = float(latest_features[_FEAT_IDX['atr_14']]) if len(latest_features) > _FEAT_IDX['atr_14'] else 0.01
+            stop_pct = min(max(inference.risk_stop_distance * _atr_feat, DYNAMIC_STOP_MIN), DYNAMIC_STOP_MAX)
         else:
-            from training.prepare import _FEAT_IDX
             _iv_val = float(latest_features[_FEAT_IDX['atm_iv']]) if len(latest_features) > _FEAT_IDX['atm_iv'] else 0.0
             _vix_val = float(latest_features[_FEAT_IDX['vix_regime']]) if len(latest_features) > _FEAT_IDX['vix_regime'] else 0.0
-            stop_pct = compute_dynamic_stop(inference.gate_trade_prob, _iv_val, _vix_val)
+            stop_pct = compute_dynamic_stop(inference.trade_prob, _iv_val, _vix_val)
 
         stop_px = float(entry_mid * (1.0 - stop_pct))
         take_profit_px = float(entry_mid * 6.0)
         qty = self._position_size(inference.confidence)
-        self._entry_conviction = _risk_conviction
-        # Use LMT at ask (mid + small buffer) — IBKR rejects MKT orders on
-        # SPXW due to worst-case margin calculation.
-        entry_limit = round(entry_mid * 1.05, 2)  # 5% above mid
+        entry_limit = round(entry_mid * 1.05, 2)
         return DecisionIntent(
             action=inference.action,
             contract=contract,
@@ -380,9 +299,13 @@ class ModelDecisionEngine:
             reason_codes=list(inference.reason_codes),
             reference_price=float(entry_mid),
             metadata={
-                "gate_trade_prob": inference.gate_trade_prob,
-                "direction_probs": inference.direction_probs,
+                "trade_prob": inference.trade_prob,
+                "pred_return_30": inference.pred_return_30,
+                "pred_conf": inference.pred_conf,
                 "entry_limit_price": entry_limit,
+                "risk_stop_distance": inference.risk_stop_distance,
+                "risk_target_distance": inference.risk_target_distance,
+                "risk_conviction": inference.risk_conviction,
             },
         )
 
@@ -393,15 +316,15 @@ class ModelDecisionEngine:
         latest_features: np.ndarray,
         feature_window: np.ndarray | None = None,
     ) -> RiskUpdateIntent | None:
-        """Risk management: trailing stop to lock profits + value head exit.
+        """Risk management: trailing stop + model exit signal.
 
         Trailing stop tiers (based on unrealized P&L):
-          +30% → move stop to entry (breakeven)
-          +50% → move stop to +25%
-          +80% → move stop to +50%
-          +120% → move stop to +80%
+          +30% -> move stop to entry (breakeven)
+          +50% -> move stop to +25%
+          +80% -> move stop to +50%
+          +120% -> move stop to +80%
 
-        Value head exit: if model predicts remaining P&L < threshold, exit.
+        Model exit: v18 uses exit_head directly, v17 uses action_out exit_signal.
         """
         if not self._in_trade or current_option_mid is None:
             return None
@@ -414,12 +337,12 @@ class ModelDecisionEngine:
         reason_codes: list[str] = []
         new_stop = None
 
-        # === Trailing stop: lock in profits at tiers ===
+        # Trailing stop tiers
         _tiers = [
-            (1.20, 0.80),  # +120% unrealized → lock +80%
-            (0.80, 0.50),  # +80% → lock +50%
-            (0.50, 0.25),  # +50% → lock +25%
-            (0.30, 0.00),  # +30% → lock breakeven
+            (1.20, 0.80),
+            (0.80, 0.50),
+            (0.50, 0.25),
+            (0.30, 0.00),
         ]
         for trigger_pct, lock_pct in _tiers:
             if unrealized_pct >= trigger_pct:
@@ -436,12 +359,8 @@ class ModelDecisionEngine:
                 reason_codes=reason_codes + [f"unrealized={unrealized_pct:.2%}"],
             )
 
-        # === Value head exit (requires 2+ bars held) ===
-        if self._bars_held < 2:
-            return None
-
-        _has_value_head = hasattr(self.model, 'value_head')
-        if not _has_value_head or feature_window is None:
+        # Model exit signal (requires 2+ bars held)
+        if self._bars_held < 2 or feature_window is None:
             return None
         if feature_window.shape[0] < self.lookback:
             return None
@@ -450,37 +369,24 @@ class ModelDecisionEngine:
             feature_window[-self.lookback:, :self.num_features],
             dtype=torch.float32, device=self.device
         ).unsqueeze(0)
-        pos_state = self._build_position_state()
 
         with torch.no_grad():
-            _vout = self.model(x, position_state=pos_state, return_value=True)
-            value = float(_vout[2][0].item())
+            if self._is_v18:
+                _, _, _, exit_sig, _ = self.model(x)
+                exit_signal = float(exit_sig[0].item())
+            else:
+                acct_state = self._build_account_state()
+                _, _, action_out = self.model(x, account_state=acct_state)
+                exit_signal = float(action_out[0, 2].item())
 
-        # v7: Value head is now a binary exit classifier (logits → sigmoid → probability)
-        import math
-        _exit_prob = 1.0 / (1.0 + math.exp(-value))
-        _conviction = getattr(self, '_entry_conviction', 0.0)
-        # High conviction → harder to exit (0.7), low conviction → easier to exit (0.5)
-        _threshold = 0.50 + _conviction * 0.20
-        if _exit_prob > _threshold:
+        if exit_signal > V17_EXIT_SIGNAL_THRESHOLD:
             return RiskUpdateIntent(
                 position_id=state.position_id,
-                new_stop_price=current_option_mid * 1.01,  # above current → triggers flatten
-                reason_codes=["value_exit", f"exit_prob={_exit_prob:.4f}"],
+                new_stop_price=current_option_mid * 1.01,
+                reason_codes=["model_exit", f"exit_signal={exit_signal:.4f}"],
             )
 
         return None
-
-    def _build_account_state(self) -> torch.Tensor | None:
-        """Build 4-dim account state tensor for risk head."""
-        _as_dim = getattr(self.model, 'ACCOUNT_STATE_DIM', 4)
-        acct = torch.zeros(1, _as_dim, device=self.device)
-        _balance = getattr(self, '_account_balance', 10000.0)
-        acct[0, 0] = _balance / 10000.0  # growth ratio
-        acct[0, 1] = min(math.log10(max(_balance, 1000) / 1000) / 3.0, 1.0)
-        acct[0, 2] = getattr(self, '_daily_pnl_frac', 0.0)
-        acct[0, 3] = getattr(self, '_win_rate_20', 0.0)
-        return acct
 
     def set_account_state(self, balance: float, daily_pnl_frac: float = 0.0,
                           win_rate_20: float = 0.0) -> None:
@@ -492,34 +398,5 @@ class ModelDecisionEngine:
     def set_entry_context(self, confidence: float, stop_distance: float) -> None:
         """Called at entry time to record context for exit policy."""
         self._entry_confidence = confidence
-        self._entry_stop_distance = stop_distance
-        self._entry_conviction = getattr(self, '_entry_conviction', 0.0)
         self._best_pnl = 0.0
         self._bars_since_high = 0
-
-
-def _safe(v: Any, default: float) -> float:
-    try:
-        x = float(v)
-        if math.isnan(x) or math.isinf(x):
-            return default
-        return x
-    except Exception:
-        return default
-
-
-def _feat_at(arr: np.ndarray, idx: int) -> float:
-    try:
-        if idx < 0 or idx >= int(arr.shape[0]):
-            return float("nan")
-        return float(arr[idx])
-    except Exception:
-        return float("nan")
-
-
-def _infer_model_num_features(model: torch.nn.Module) -> int:
-    try:
-        gate_net = model.feature_gate.gate_net
-        return int(gate_net[0].in_features)
-    except Exception:
-        return 60
