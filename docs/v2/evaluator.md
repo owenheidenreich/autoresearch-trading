@@ -159,52 +159,40 @@ must close before the next can open.
 ## Promotion Score Formula
 
 The promotion score is a single scalar that determines keep/revert decisions.
+Based on a **dollar equity curve** starting at $50,000 with $100 SPX multiplier.
 
 ```python
 def compute_score(metrics: ReplayMetrics) -> float:
     """
-    Primary metric: replay profit factor on held-out validation days.
+    score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
 
-    Adjustments penalize degenerate strategies (no trades, all one direction,
-    ruin-level drawdowns).
+    Hard gates return negative scores on failure.
     """
-    pf = metrics.profit_factor
-    wr = metrics.win_rate
-    tpd = metrics.trades_per_day
-    dd = metrics.max_drawdown
-    dir_balance = min(metrics.call_pct, metrics.put_pct) / max(metrics.call_pct, metrics.put_pct, 0.01)
+    # Hard gates
+    if metrics.total_trades < 30: return -1.0
+    if metrics.traded_days < 15: return -0.5
+    if dir_balance < 0.15: return -0.3
+    if metrics.max_account_drawdown > 0.20: return -0.2
 
-    # Base: profit factor (must be > 1.0 to be profitable)
-    base = max(0.0, pf - 1.0)
+    # Ranking
+    sortino = min(metrics.daily_sortino, 6.0)
+    pdr = metrics.positive_day_rate
 
-    # Win rate bonus: reward consistent winners
-    wr_bonus = max(0.0, wr - 0.45) * 2.0  # bonus kicks in above 45% WR
+    # DD multiplier: 1.0 at <= 8%, linear to 0.0 at 20%
+    dd = metrics.max_account_drawdown
+    dd_mult = 1.0 if dd <= 0.08 else max(0.0, 1.0 - (dd - 0.08) / 0.12)
 
-    # Frequency penalty: too few or too many trades
-    freq_penalty = 1.0 - min(1.0, abs(tpd - 1.5) / 2.5)  # centered at 1.5 TPD
-
-    # Drawdown penalty: severe drawdowns kill the score
-    dd_penalty = 1.0 if dd < 0.15 else max(0.0, 1.0 - (dd - 0.15) * 4.0)
-
-    # Direction collapse penalty: must trade both directions
-    dir_penalty = 1.0 if dir_balance > 0.2 else dir_balance / 0.2
-
-    score = base * (1.0 + wr_bonus) * freq_penalty * dd_penalty * dir_penalty
-
-    # Floor: strategies with PF < 1.0 get negative scores
-    if pf < 1.0:
-        score = -(1.0 - pf)
-
-    return round(score, 6)
+    return sortino * pdr * dd_mult
 ```
 
 ### Promotion Rule
 
 `KEEP` if ALL of:
 1. `new_score > best_score`
-2. No critical anomaly flags (direction collapse > 90%, zero trades, etc.)
+2. All hard gates pass (min trades, min days, direction balance, max DD)
 3. Model beats all three baselines (see baselines.md)
 4. Evaluator version matches (score_config fingerprint unchanged)
+5. Deterministic replay (two runs produce identical scores)
 
 Otherwise: `REVERT`.
 
@@ -215,12 +203,19 @@ formula resets best_score to -5.0 and requires a fresh baseline comparison.
 
 ---
 
-## Validation Window
+## Data Split (4-way)
 
-- Last 60 trading days of data = validation set
-- Train/val split by date (no bar-level mixing)
-- Score computed on validation days only
-- Model never sees validation data during training
+| Split | Days | Purpose |
+|-------|------|---------|
+| train_mask | 859 | Model training |
+| val_mask | 60 | Checkpoint selection (best val_loss during training) |
+| promote_mask | 60 | Keep/revert scoring (model never sees during training) |
+| shadow_mask | 20 | Live-readiness eval only (never used for promotion) |
+
+- All splits are date-only (no bar-level mixing)
+- Score is computed on `promote_mask` only
+- Model trains on `train_mask`, checkpoints on `val_mask`
+- Model never sees `promote_mask` or `shadow_mask` during training
 
 ---
 
