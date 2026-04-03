@@ -52,13 +52,14 @@ If no type-checker is configured, state that explicitly instead of claiming succ
 This project follows Karpathy's autoresearch design (github.com/karpathy/autoresearch). When running experiments:
 
 1. **You are an autonomous researcher.** Read `training/program.md` for the full protocol.
-2. **LOOP FOREVER:** Modify train.py -> commit -> run experiment -> keep or discard -> repeat. Do NOT stop. Do NOT ask "should I continue?" The human may be asleep.
+2. **Run the experiment loop per `training/principles.md` governance.** Session limits: 50 experiments or 6 hours. Stop when a stop rule fires. Log findings and wait for human.
 3. **One change per experiment.** Small, testable hypotheses. Not shotgun changes.
 4. **Keep/discard based on score only.** Score improves = keep (branch advances). Score same or worse = revert.
 5. **Log everything** in `training/lab_notebook.md`. What you tried, why, result.
 6. **When stuck (3+ reverts):** Stop. Read replay data. Form a hypothesis about WHY. Then try structural changes.
 7. **Never warm-start from an incompatible architecture.** If you change the model shape, fresh start.
-8. **Overnight runs are expected.** ~8 experiments/hour, ~100 overnight. The user wakes up to results.
+8. **Every experiment needs a hypothesis.** Write it BEFORE GPU spend. No "let's just try random things."
+9. **Read `training/principles.md` before every session.** It defines goals, stop rules, and the migration roadmap.
 
 The inner_loop.py handles the mechanical plumbing (SSH, upload, train, download, score, keep/revert). You handle the research decisions: what to try, why, and what the results mean.
 

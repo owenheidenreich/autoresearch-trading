@@ -4,23 +4,23 @@ Single source of truth. If anything conflicts with this file, this file wins.
 
 ## Mission
 
-Build a model that makes complete SPX 0DTE trading decisions: when to enter, which strike, how much risk, when to exit. The model learns from path-quality labels (MFE/MAE), not hindsight P&L.
+Build a model that profitably trades SPX 0DTE long options: when to enter, which strike, how much risk, when to exit. See `training/principles.md` for the full definition of profitability goals, integrity rules, and the migration path from current prediction-based scoring to P&L-based scoring.
 
 ## The Autoresearch Loop
 
 This project follows Karpathy's autoresearch design: the AI is an autonomous researcher. It modifies train.py, runs experiments, evaluates results, keeps or discards, and repeats. The human's role is writing this program.md file -- programming the research organization, not doing the research.
 
-### LOOP FOREVER:
+### Experiment Loop
 
-1. Read this file + train.py + lab_notebook.md
-2. Propose ONE small change to train.py (or run baseline)
+1. Read this file + train.py + lab_notebook.md + principles.md
+2. Propose ONE small change to train.py (or run baseline). Write hypothesis BEFORE GPU spend.
 3. git commit the change
 4. Run experiment: `python3 tools/inner_loop.py experiment --summary "hypothesis"`
 5. Check score. If better: KEPT (branch advances). If not: REVERTED (git reset).
 6. Log result in lab_notebook.md
-7. **Go to step 1. Do not stop. Do not ask "should I continue?" The human may be asleep.**
+7. Check stop rules (see `principles.md` Section 6). If no stop rule fires, go to step 1.
 
-Expected cadence: ~7 min per experiment. ~8 per hour on GPU. ~100 overnight.
+Session limits: max 50 experiments or 6 hours. Expected cadence: ~7 min per experiment.
 
 ### Decision Rules
 
@@ -33,9 +33,9 @@ Expected cadence: ~7 min per experiment. ~8 per hour on GPU. ~100 overnight.
 
 Stop experimenting. Read the replay backtest data. Form a hypothesis about WHY. Then try again with a structural change. Do not keep hammering small hyperparameter tweaks when the issue is structural.
 
-### NEVER STOP
+### When to Stop
 
-Once the experiment loop has begun, do NOT pause to ask the human if you should continue. Do NOT ask "should I keep going?" or "is this a good stopping point?" The human might be asleep and expects you to continue working indefinitely until manually stopped. You are autonomous. If you run out of ideas, think harder -- re-read domain knowledge, try combining previous near-misses, try more radical changes. The loop runs until the human interrupts you, period.
+The loop runs until a stop rule fires (see `principles.md` Section 6) or the human interrupts. Stop rules include: goal achieved, convergence plateau (8 experiments without >= 2% improvement), session budget exhausted (50 experiments or 6 hours), diminishing returns, stuck loop, or crash storm. When stopped: log findings to lab_notebook.md, summarize what worked, propose next research directions, and wait for human review before the next session.
 
 ## Model Contract
 
@@ -68,6 +68,8 @@ score = direction_accuracy * (1 + max(0, rank_correlation))
 ```
 
 One number. This is the ONLY input to the keep/revert decision.
+
+**Note:** This is the current score formula. The target is to incorporate replay P&L metrics (profit factor, risk-adjusted return) per `principles.md` Section 7, Phase 2.
 
 ## Loss
 
@@ -170,4 +172,4 @@ Reference: `docs/domain/pickles-trading-knowledge.md`, `docs/domain/0dte-domain-
 - Version consistency gate must pass before training
 - One change per experiment
 - Research before GPU spend
-- The loop never stops until the human stops it
+- Stop rules govern session boundaries (see `principles.md` Section 6)
