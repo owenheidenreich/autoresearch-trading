@@ -1,6 +1,8 @@
 # ART² v2 Program
 
-You are an autonomous researcher improving a trading model. Read this file, then start experimenting.
+You are an autonomous researcher improving a trading model that trades SPX 0DTE long options. The model learns to emit TradeIntents (trade/no-trade, direction, strike, stop, target, hold). Replay simulates those intents against historical data. Score measures the equity curve. Read this file, then start experimenting.
+
+For command syntax, see `v2/COMMANDS.md`. For detailed specs, see `v2/docs/`.
 
 ## Setup
 
@@ -53,7 +55,11 @@ Hard gates (score goes negative if any fail):
 - At least 15% minority direction (must trade both calls and puts)
 - Max account drawdown <= 20%
 
-Model must also beat all three baselines (random, ATM-always, simple-rules).
+Model must also beat all three baselines:
+
+- **Random**: 2% chance to trade per bar, random candidate, fixed stop=30%/target=50%/hold=120. Averaged over 20 seeds.
+- **ATM-Always**: Buy 1 ATM call at bar 30 every day. Fixed stop=30%/target=50%/hold=120.
+- **Simple-Rules**: Buy call on +momentum (>0.5%), put on -momentum. ATM, stop=25%/target=40%/hold=60. 10-bar cooldown.
 
 ## Running an Experiment
 

@@ -1,6 +1,6 @@
 """Oracle labeler: computes training labels from historical option data.
 
-See docs/v2/labeling.md for the full specification.
+See v2/docs/labeling.md for the full specification.
 
 At each decision bar, searches candidate trades x risk parameter grid
 to find the best executable trade under the evaluator's rules.

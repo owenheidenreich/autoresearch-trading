@@ -6,7 +6,7 @@ Evaluated on a dollar equity curve starting at $50,000 with SPX 100x
 contract multiplier. Measures what matters: steady daily profits,
 downside risk control, and direction diversity.
 
-See docs/v2/evaluator.md for the promotion score formula.
+See v2/docs/evaluator.md for the promotion score formula.
 """
 from __future__ import annotations
 

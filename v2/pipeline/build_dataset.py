@@ -33,7 +33,7 @@ from v2.core.labels import (
 from v2.core.metrics import score_config_fingerprint
 
 
-V1_DATA_PATH = os.path.join("training", "data.pt")
+V1_DATA_PATH = os.path.join("archive", "v1", "training", "data.pt")
 V2_DATA_PATH = os.path.join("v2", "data.pt")
 
 # Split sizes (in trading days, counted from the end of the dataset)

@@ -1,6 +1,6 @@
 """TradeIntent and related data contracts.
 
-The central contract of the v2 system. See docs/v2/contracts.md.
+The central contract of the v2 system. See v2/docs/contracts.md.
 
 TradeIntent is what:
 - replay scores (simulates the trade, measures P&L)

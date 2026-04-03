@@ -1,6 +1,6 @@
 """Trade simulation engine: executes TradeIntents against historical data.
 
-See docs/v2/evaluator.md for the complete simulation rules.
+See v2/docs/evaluator.md for the complete simulation rules.
 Single source of truth for trade P&L computation.
 """
 from __future__ import annotations
