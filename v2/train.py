@@ -446,6 +446,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
         if val_total < best_val_loss:
             best_val_loss = val_total
             best_epoch = epoch
+            dataset_fp = data.get('metadata', {}).get('fingerprint', 'unknown')
             torch.save({
                 'model_state_dict': model.state_dict(),
                 'epoch': epoch,
@@ -458,6 +459,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
                     'batch_size': BATCH_SIZE, 'lr': LR,
                 },
                 'score_config_fingerprint': score_config_fingerprint(),
+                'dataset_fingerprint': dataset_fp,
             }, model_path)
 
     # Final metrics output (for inner_loop parsing)
