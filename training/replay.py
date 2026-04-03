@@ -1567,9 +1567,9 @@ def run_replay(model, features_t, raw_features, dates, valid, option_prices,
         with torch.no_grad():
             _is_v18 = hasattr(model, 'gate_head')
             if _is_v18:
-                # v18: TradingModel(x) -> (market_pred, entry_gate, risk_params, exit_signal, dir_logits)
+                # v18: TradingModel(x) -> (market_pred, entry_gate, risk_params, exit_signal, dir_logits, gate_logit, exit_logit)
                 _out = model(x)
-                market_pred_t, entry_gate_t, risk_params_t, exit_signal_t, dir_logits_t = _out
+                market_pred_t, entry_gate_t, risk_params_t, exit_signal_t, dir_logits_t = _out[:5]
                 trade_prob = float(entry_gate_t[0].item())
                 exit_signal = float(exit_signal_t[0].item())
                 pred_30 = float(market_pred_t[0, 1].item())

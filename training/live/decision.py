@@ -192,7 +192,7 @@ class ModelDecisionEngine:
         with torch.no_grad():
             if self._is_v18:
                 # v18: TradingModel(x) -> (market_pred, entry_gate, risk_params, exit_signal, dir_logits)
-                market_pred, entry_gate, risk_params, exit_sig, dir_logits = self.model(x)
+                market_pred, entry_gate, risk_params, exit_sig, dir_logits = self.model(x)[:5]
                 trade_prob = float(entry_gate[0].item())
                 exit_signal = float(exit_sig[0].item())
                 pred_30 = float(market_pred[0, 1].item())
@@ -372,7 +372,7 @@ class ModelDecisionEngine:
 
         with torch.no_grad():
             if self._is_v18:
-                _, _, _, exit_sig, _ = self.model(x)
+                _, _, _, exit_sig, _ = self.model(x)[:5]
                 exit_signal = float(exit_sig[0].item())
             else:
                 acct_state = self._build_account_state()

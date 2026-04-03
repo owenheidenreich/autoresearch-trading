@@ -43,7 +43,10 @@ class _DummyModelV18(torch.nn.Module):
         exit_signal = torch.tensor([0.1], dtype=torch.float32).repeat(batch)
         # Direction class 2 = call_otm10
         dir_logits = torch.tensor([[0.1, 0.2, 3.0, 0.0, 0.0, 0.0]], dtype=torch.float32).repeat(batch, 1)
-        return market_pred, entry_gate, risk_params, exit_signal, dir_logits
+        # gate_logit and exit_logit (raw, pre-sigmoid)
+        gate_logit = torch.tensor([1.386], dtype=torch.float32).repeat(batch)  # sigmoid(1.386) ~ 0.8
+        exit_logit = torch.tensor([-2.197], dtype=torch.float32).repeat(batch)  # sigmoid(-2.197) ~ 0.1
+        return market_pred, entry_gate, risk_params, exit_signal, dir_logits, gate_logit, exit_logit
 
 
 def test_infer_truncates_extra_features_to_model_width() -> None:

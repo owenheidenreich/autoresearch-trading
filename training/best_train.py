@@ -236,13 +236,17 @@ class TradingModel(nn.Module):
 
         # Head outputs
         market_pred = self.market_head(last)                 # (batch, 3)
-        entry_gate = torch.sigmoid(self.gate_head(last).squeeze(-1))   # (batch,)
+        gate_logit = self.gate_head(last).squeeze(-1)        # (batch,) raw logit
         risk_params = self.risk_head(last)                   # (batch, 3)
         risk_params = torch.relu(risk_params)                # risk params are non-negative
-        exit_signal = torch.sigmoid(self.exit_head(last).squeeze(-1))  # (batch,)
+        exit_logit = self.exit_head(last).squeeze(-1)        # (batch,) raw logit
         direction_logits = self.direction_head(last)          # (batch, 6)
 
-        return market_pred, entry_gate, risk_params, exit_signal, direction_logits
+        # Apply sigmoid for inference (consumers expect 0-1)
+        entry_gate = torch.sigmoid(gate_logit)               # (batch,)
+        exit_signal = torch.sigmoid(exit_logit)              # (batch,)
+
+        return market_pred, entry_gate, risk_params, exit_signal, direction_logits, gate_logit, exit_logit
 
 
 # ---------------------------------------------------------------------------
@@ -250,19 +254,21 @@ class TradingModel(nn.Module):
 # ---------------------------------------------------------------------------
 
 def v18_loss(market_pred, entry_gate, risk_params, exit_signal, direction_logits,
-             y_pred, y_v18, bar_weight):
+             y_pred, y_v18, bar_weight, gate_logit=None, exit_logit=None):
     """Five-term loss for v18 trading model.
 
     Args:
         market_pred: (batch, 3) predicted SPX returns
-        entry_gate: (batch,) predicted entry probability
+        entry_gate: (batch,) predicted entry probability (sigmoid applied)
         risk_params: (batch, 3) [stop_dist, target_dist, conviction]
-        exit_signal: (batch,) predicted exit probability
+        exit_signal: (batch,) predicted exit probability (sigmoid applied)
         direction_logits: (batch, 6) direction class logits
         y_pred: (batch, 5) [ret_15, ret_30, ret_60, vol_30, action_target]
         y_v18: (batch, 8) [entry_gate, risk_stop, risk_target, risk_conviction,
                            exit_label, direction_label, mfe, mae]
         bar_weight: (batch,) time-of-day loss weight
+        gate_logit: (batch,) raw gate logit (pre-sigmoid, for autocast-safe BCE)
+        exit_logit: (batch,) raw exit logit (pre-sigmoid, for autocast-safe BCE)
     """
     # Unpack v18 labels
     gate_target = y_v18[:, 0]       # entry gate (0-1)
@@ -279,14 +285,20 @@ def v18_loss(market_pred, entry_gate, risk_params, exit_signal, direction_logits
     # 1. Market prediction loss (Huber, delta=0.01 for v18)
     market_loss = F.huber_loss(market_pred, ret_target, delta=0.01)
 
-    # 2. Entry gate loss (BCE)
-    gate_loss = F.binary_cross_entropy(entry_gate, gate_target)
+    # 2. Entry gate loss (BCE with logits -- autocast-safe)
+    if gate_logit is not None:
+        gate_loss = F.binary_cross_entropy_with_logits(gate_logit, gate_target)
+    else:
+        gate_loss = F.binary_cross_entropy(entry_gate.float(), gate_target.float())
 
     # 3. Risk parameter loss (Huber on stop/target/conviction)
     risk_loss = F.huber_loss(risk_params, risk_target, delta=0.5)
 
-    # 4. Exit signal loss (BCE)
-    exit_loss = F.binary_cross_entropy(exit_signal, exit_target)
+    # 4. Exit signal loss (BCE with logits -- autocast-safe)
+    if exit_logit is not None:
+        exit_loss = F.binary_cross_entropy_with_logits(exit_logit, exit_target)
+    else:
+        exit_loss = F.binary_cross_entropy(exit_signal.float(), exit_target.float())
 
     # 5. Direction loss (cross-entropy, weighted by bar_weight)
     dir_loss = F.cross_entropy(direction_logits, dir_target, reduction='none')
@@ -391,10 +403,10 @@ def main():
             break
 
         with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=device.type == 'cuda'):
-            market_pred, entry_gate, risk_params, exit_signal, dir_logits = model(xb)
+            market_pred, entry_gate, risk_params, exit_signal, dir_logits, gate_logit, exit_logit = model(xb)
             loss, components = v18_loss(
                 market_pred, entry_gate, risk_params, exit_signal, dir_logits,
-                y_pred, y_v18, bw,
+                y_pred, y_v18, bw, gate_logit=gate_logit, exit_logit=exit_logit,
             )
 
         optimizer.zero_grad()
@@ -440,9 +452,10 @@ def main():
 
     with torch.no_grad():
         for xb, y_pred, y_v18, bw in val_loader:
-            market_pred, entry_gate, risk_params, exit_signal, dir_logits = model(xb)
+            market_pred, entry_gate, risk_params, exit_signal, dir_logits, gate_logit, exit_logit = model(xb)
             vloss, _ = v18_loss(market_pred, entry_gate, risk_params, exit_signal,
-                                dir_logits, y_pred, y_v18, bw)
+                                dir_logits, y_pred, y_v18, bw,
+                                gate_logit=gate_logit, exit_logit=exit_logit)
             val_losses.append(vloss.item())
             pred_all.append(market_pred.cpu())
             actual_all.append(y_pred[:, :3].cpu())
