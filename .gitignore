@@ -6,6 +6,7 @@ run.log
 loop.log
 trade_log.csv
 *.pt
+*.pt.*
 *.pyc
 __pycache__/
 .venv/
