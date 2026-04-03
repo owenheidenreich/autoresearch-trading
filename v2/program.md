@@ -1,72 +1,161 @@
 # ART² v2 Program
 
-Single source of truth for v2. If anything conflicts with this file, this file wins.
+You are an autonomous researcher improving a trading model. Read this file, then start experimenting.
 
-## Mission
+## Setup
 
-Build a model that profitably trades SPX 0DTE long options.
-Same mission as v1. v2 is a structural reset, not a strategy change.
+1. **Create a branch**: `git checkout -b autoresearch/v2-<tag>` from current main.
+2. **Read the in-scope files**:
+   - This file (`v2/program.md`) -- your instructions.
+   - `v2/train.py` -- the model and training loop. You modify this.
+   - `v2/core/policy.py` -- the trading policy. You can modify this too.
+   - `v2/lab_notebook.md` -- experiment log.
+3. **Verify data**: `v2/data.pt` must exist and be Tier 3 (check metadata).
+4. **First run**: Establish baseline by running `python v2/ops/run_experiment.py --id baseline` without changing any code.
+5. **Record baseline** in `v2/results.tsv`.
 
-## Central Contract: TradeIntent
+## What You CAN Modify
 
-Everything revolves around one frozen dataclass. See [docs/v2/contracts.md](../docs/v2/contracts.md).
+Two files only:
 
-- Replay scores it (v2/core/simulator.py + v2/core/metrics.py)
-- Live executes it (v2/live/execution.py)
-- Training learns to emit it (v2/train.py via v2/core/labels.py)
+- **`v2/train.py`** -- Model architecture, loss function, hyperparameters, optimizer, batch construction, head design. Everything about how the model learns.
+- **`v2/core/policy.py`** -- Gate threshold, risk output ranges, cooldown bars, time blocks, order style, exit policy. Everything about how model outputs become trading decisions.
 
-## What Is Fixed
+## What You CANNOT Modify
 
-- **Input contract:** 39 features per [docs/v2/feature_schema.md](../docs/v2/feature_schema.md)
-- **Output contract:** TradeIntent per [docs/v2/contracts.md](../docs/v2/contracts.md)
-- **Evaluator rules:** fill model, spreads, stops, scoring per [docs/v2/evaluator.md](../docs/v2/evaluator.md)
-- **Baselines:** GPU gates per [docs/v2/baselines.md](../docs/v2/baselines.md)
+Everything else. These are the immutable evaluation harness:
 
-## What Is NOT Fixed
+- `v2/core/simulator.py` -- how trades play out
+- `v2/core/metrics.py` -- how score is computed
+- `v2/replay.py` -- how model outputs become trades and get evaluated
+- `v2/core/labels.py` -- how oracle labels are generated
+- `v2/core/schema.py` -- TradeIntent and SimulatedTrade contracts
+- `v2/data.pt` -- the dataset
+- `v2/ops/run_experiment.py` -- the experiment runner
+- `v2/ops/inner_loop.py` -- session limits and keep/revert logic
 
-- Model architecture (the thing being researched)
-- Loss formulation (follows from label scheme)
-- Hyperparameters (tuned by autoresearch loop)
+## The Goal
 
-## Module Map
+**Get the highest score.** The score is:
 
-| Module | Purpose | v1 Origin |
-|--------|---------|-----------|
-| v2/core/schema.py | TradeIntent contract | training/live/contracts.py |
-| v2/core/features.py | 39-feature engineering | training/prepare.py |
-| v2/core/labels.py | Oracle labeler | training/prepare.py |
-| v2/core/candidates.py | Dynamic candidate generation | training/trading_rules.py |
-| v2/core/simulator.py | Trade simulation | training/replay.py |
-| v2/core/metrics.py | Replay scoring | training/replay.py + train.py |
-| v2/live/market.py | IBKR market data | training/live/features.py + service.py |
-| v2/live/decision.py | Model -> TradeIntent | training/live/decision.py |
-| v2/live/execution.py | IBKR orders | training/live/execution.py + resolver.py |
-| v2/live/service.py | Main trading loop | training/live/service.py |
-| v2/ops/inner_loop.py | Experiment orchestrator | tools/inner_loop.py + run_loop.py |
-| v2/pipeline/build_dataset.py | Dataset pipeline | training/prepare.py |
+```
+score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
+```
 
-## Current Phase: 0 (Skeleton)
+Where:
+- `daily_sortino` = Sortino ratio from daily dollar returns on a $50K equity curve
+- `positive_day_rate` = fraction of traded days that were profitable
+- `dd_mult` = 1.0 when max drawdown <= 8%, linear decay to 0.0 at 20%
 
-No v2 behavior is implemented. All modules are stubs with TODOs.
-The v1 system at training/ remains the active system.
-See [docs/v2/migration.md](../docs/v2/migration.md) for the cutover plan.
+Hard gates (score goes negative if any fail):
+- Minimum 30 trades
+- Minimum 15 traded days
+- At least 15% minority direction (must trade both calls and puts)
+- Max account drawdown <= 20%
 
-## v1 Reference
+Model must also beat all three baselines (random, ATM-always, simple-rules).
 
-The v1 system is archived at `legacy_v1/` (frozen, never imported).
-Active v1 code remains at `training/`, `tools/`, `infra/`.
-v1 program: `training/program.md`. v1 governance: `training/principles.md`.
+## Running an Experiment
 
-## Key Design Documents
+```bash
+python v2/ops/run_experiment.py --id exp_NNN > run.log 2>&1
+```
 
-| Document | Purpose |
-|----------|---------|
-| [contracts.md](../docs/v2/contracts.md) | TradeIntent specification |
-| [evaluator.md](../docs/v2/evaluator.md) | Replay rules, promotion score formula |
-| [baselines.md](../docs/v2/baselines.md) | GPU spend gates, baseline definitions |
-| [labeling.md](../docs/v2/labeling.md) | Oracle label generation |
-| [execution.md](../docs/v2/execution.md) | IBKR order state machine |
-| [feature_schema.md](../docs/v2/feature_schema.md) | 39 features, normalization |
-| [data_contract.md](../docs/v2/data_contract.md) | Dataset format, fingerprinting |
-| [archive_map.md](../docs/v2/archive_map.md) | v1 -> v2 file disposition |
-| [migration.md](../docs/v2/migration.md) | Cutover sequence, coexistence rules |
+Read the score:
+```bash
+grep "^score:" run.log
+```
+
+The script trains the model, replays on `promote_mask` (60 held-out days the model never trained on), compares against baselines, and saves an artifact bundle.
+
+## Output Format
+
+```
+---
+score:                2.345678
+daily_sortino:        3.12
+positive_day_rate:    0.72
+max_account_drawdown: 0.06
+net_pnl_dollars:      4230.50
+total_trades:         187
+traded_days:          48
+profit_factor:        2.31
+win_rate:             0.58
+beats_random:         true
+beats_atm:            true
+beats_rules:          true
+training_seconds:     301.2
+status:               complete
+```
+
+## Logging Results
+
+Log to `v2/results.tsv` (tab-separated):
+
+```
+experiment	score	status	description
+baseline	-1.000000	keep	initial baseline
+exp_001	0.500000	keep	increased LR to 5e-4
+exp_002	0.300000	discard	switched to GeLU (worse)
+exp_003	0.000000	crash	OOM on batch_size=4096
+```
+
+Do NOT commit results.tsv. Leave it untracked.
+
+## The Experiment Loop
+
+LOOP:
+
+1. Look at git state and last experiment results.
+2. Decide what to try. Write your hypothesis.
+3. Edit `v2/train.py` and/or `v2/core/policy.py`.
+4. `git commit` your changes.
+5. Run the experiment: `python v2/ops/run_experiment.py --id exp_NNN > run.log 2>&1`
+6. Read results: `grep "^score:" run.log`
+7. If crashed: read `tail -50 run.log`, try to fix. If unfixable, log as crash, move on.
+8. Log results to `v2/results.tsv`.
+9. If score improved AND beats all baselines: **KEEP**. Branch advances.
+10. If score equal or worse: **REVERT**. `git checkout v2/train.py v2/core/policy.py`
+11. Check session limits (see below). If any limit hit, stop.
+12. Go to step 1.
+
+## Session Limits
+
+These are hard ceilings enforced by the orchestrator:
+
+| Limit | Threshold | Action |
+|-------|-----------|--------|
+| Experiments | 50 max | Stop session |
+| Time | 6 hours | Stop session |
+| No-improve streak | 8 consecutive reverts | Stop, rethink approach |
+| Plateau | 3 hours without improvement | Stop session |
+| Crash storm | 3 consecutive crashes | Stop, fix infrastructure |
+
+When stopped: log findings to `v2/lab_notebook.md`, summarize what worked, propose next directions, wait for human review.
+
+## When You're Stuck
+
+If you hit 3+ consecutive reverts:
+
+1. **Stop trying random things.**
+2. Read the trade-level replay data. Look at which trades lost money and why.
+3. Form a hypothesis about WHY the model is failing.
+4. Try structural changes, not just hyperparameter tweaks.
+
+## Key Architecture Facts
+
+- **Input**: (batch, 60, 39) -- 60 bars of 39 normalized features
+- **Output**: TradeIntent fields (gate, direction, strike_offset, stop, target, hold, confidence)
+- **Oracle labels**: Tier 3 -- searched 6 stops x 5 targets x 5 holds x all strikes x call+put
+- **Evaluation**: Replay on promote_mask (60 days model never saw during training)
+- **Score**: Account curve health (Sortino * consistency * drawdown guard)
+- **Equity**: $50K starting, $100 SPX multiplier, 1 contract max
+
+## Data Split
+
+| Split | Days | Purpose |
+|-------|------|---------|
+| train_mask | 859 | Model training |
+| val_mask | 60 | Checkpoint selection (best val_loss) |
+| promote_mask | 60 | Keep/revert scoring (model never sees this) |
+| shadow_mask | 20 | Live-readiness eval only (never used for promotion) |
