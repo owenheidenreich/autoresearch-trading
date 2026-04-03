@@ -46,7 +46,7 @@ class DecisionPolicy:
     daily_loss_cap_pct: float = 0.05  # 5% of equity, hard stop for the day
 
     # --- Account ---
-    starting_equity: float = 50_000.0
+    starting_equity: float = 10_000.0
     contract_multiplier: int = 100     # SPX option multiplier
 
     def to_dict(self) -> dict:

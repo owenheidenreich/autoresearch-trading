@@ -159,7 +159,7 @@ must close before the next can open.
 ## Promotion Score Formula
 
 The promotion score is a single scalar that determines keep/revert decisions.
-Based on a **dollar equity curve** starting at $50,000 with $100 SPX multiplier.
+Based on a **dollar equity curve** starting at $10,000 with $100 SPX multiplier.
 
 ```python
 def compute_score(metrics: ReplayMetrics) -> float:

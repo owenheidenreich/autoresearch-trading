@@ -2,7 +2,7 @@
 
 Score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
 
-Evaluated on a dollar equity curve starting at $50,000 with SPX 100x
+Evaluated on a dollar equity curve starting at $10,000 with SPX 100x
 contract multiplier. Measures what matters: steady daily profits,
 downside risk control, and direction diversity.
 
@@ -39,7 +39,7 @@ class ReplayMetrics:
     avg_loss: float = 0.0
 
     # Account curve (dollar-based)
-    starting_equity: float = 50_000.0
+    starting_equity: float = 10_000.0
     net_pnl_dollars: float = 0.0
     daily_returns: list[float] = field(default_factory=list)
     positive_day_rate: float = 0.0
@@ -83,7 +83,7 @@ class ReplayMetrics:
 def compute_metrics(
     trades: list[SimulatedTrade],
     num_days: int = 1,
-    starting_equity: float = 50_000.0,
+    starting_equity: float = 10_000.0,
     contract_multiplier: int = 100,
 ) -> ReplayMetrics:
     """Compute aggregate metrics from a list of simulated trades."""
@@ -303,7 +303,7 @@ _SCORE_CONFIG = {
     "version": "v2.1_account_curve",
     "primary": "daily_sortino * positive_day_rate * dd_mult",
     "sortino_cap": 6.0,
-    "starting_equity": 50_000,
+    "starting_equity": 10_000,
     "contract_multiplier": 100,
     "gate_min_trades": 30,
     "gate_min_traded_days": 15,

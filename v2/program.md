@@ -59,7 +59,7 @@ score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
 ```
 
 Where:
-- `daily_sortino` = Sortino ratio from daily dollar returns on a $50K equity curve
+- `daily_sortino` = Sortino ratio from daily dollar returns on a $10K equity curve
 - `positive_day_rate` = fraction of traded days that were profitable
 - `dd_mult` = 1.0 when max drawdown <= 8%, linear decay to 0.0 at 20%
 
@@ -166,7 +166,7 @@ If you hit 3+ consecutive reverts:
 - **Oracle labels**: Tier 3 -- searched 6 stops x 5 targets x 5 holds x all strikes x call+put
 - **Evaluation**: Replay on promote_mask (60 days model never saw during training)
 - **Score**: Account curve health (Sortino * consistency * drawdown guard)
-- **Equity**: $50K starting, $100 SPX multiplier, 1 contract max
+- **Equity**: $10K starting, $100 SPX multiplier, 1 contract max
 - **Training**: Akash H100 GPU. 5-minute time budget per experiment. Never local.
 
 ## Data Split

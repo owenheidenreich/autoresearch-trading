@@ -44,7 +44,7 @@ archive/                # Frozen v1 system (reference only)
 
 ## Scoring
 
-Models are evaluated on a $50,000 equity curve with SPX $100 multiplier:
+Models are evaluated on a $10,000 equity curve with SPX $100 multiplier:
 
 ```
 score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
