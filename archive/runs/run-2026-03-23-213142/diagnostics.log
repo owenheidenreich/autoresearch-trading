@@ -1,0 +1,16 @@
+[2026-03-23 21:31:46] Signal handlers installed
+[2026-03-23 21:31:46] Loop starting: hours=8.0, max_experiments=200
+[2026-03-23 21:31:46] phase=startup | rss_mb=807.4 | vmsize_kb=17375572 | vmrss_kb=721856 | cgroup_mb=1280 | pids=7 | disk_used_gb=3314.1 | disk_free_gb=3614.5
+[2026-03-23 21:35:45] phase=pre_train_1 | rss_mb=807.4 | vmsize_kb=17378644 | vmrss_kb=724160 | cgroup_mb=1285 | pids=10 | disk_used_gb=3314.3 | disk_free_gb=3614.3
+[2026-03-23 21:39:56] phase=post_train_1 | rss_mb=807.4 | vmsize_kb=17452392 | vmrss_kb=724160 | cgroup_mb=1286 | pids=8 | disk_used_gb=3314.3 | disk_free_gb=3614.3
+[2026-03-23 21:39:56] phase=post_exp_1 | rss_mb=807.4 | vmsize_kb=17452392 | vmrss_kb=724160 | cgroup_mb=1285 | pids=8 | disk_used_gb=3314.3 | disk_free_gb=3614.3
+[2026-03-23 21:39:56] phase=pre_train_2 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1284 | pids=8 | disk_used_gb=3314.3 | disk_free_gb=3614.3
+[2026-03-23 21:44:06] phase=post_train_2 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1286 | pids=9 | disk_used_gb=3314.6 | disk_free_gb=3614.0
+[2026-03-23 21:44:06] phase=post_exp_2 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1286 | pids=9 | disk_used_gb=3314.6 | disk_free_gb=3614.0
+[2026-03-23 21:44:06] phase=pre_train_3 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1287 | pids=9 | disk_used_gb=3314.6 | disk_free_gb=3614.0
+[2026-03-23 21:48:17] phase=post_train_3 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1285 | pids=8 | disk_used_gb=3315.5 | disk_free_gb=3613.2
+[2026-03-23 21:48:17] phase=post_exp_3 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1284 | pids=8 | disk_used_gb=3315.5 | disk_free_gb=3613.2
+[2026-03-23 21:48:17] phase=pre_train_4 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1285 | pids=8 | disk_used_gb=3315.5 | disk_free_gb=3613.2
+[2026-03-23 21:52:28] phase=post_train_4 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1287 | pids=10 | disk_used_gb=3314.5 | disk_free_gb=3614.2
+[2026-03-23 21:52:28] phase=post_exp_4 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1287 | pids=10 | disk_used_gb=3314.5 | disk_free_gb=3614.2
+[2026-03-23 21:52:28] phase=pre_train_5 | rss_mb=807.4 | vmsize_kb=17450512 | vmrss_kb=722284 | cgroup_mb=1288 | pids=10 | disk_used_gb=3314.5 | disk_free_gb=3614.2

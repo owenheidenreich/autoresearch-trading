@@ -1,0 +1,37 @@
+## Experiment Summary
+Total=17 | Kept=14 | Failed=0 | Accept rate=82% (14/17) | Best score=10.286387 (#run-2026-03-21-024549#29)
+
+## Top Kept Experiments
+  #run-2026-03-21-024549#29: score=10.286387 pf=3.432749 tpd=1.323077 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # NEW: Reduced from 0.1 to 0.05
+  #run-2026-03-21-024549#26: score=9.574644 pf=3.429758 tpd=1.246154 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.1, lo=0.0, hi=1.0)  # NEW: Reduced from 0.2 to 0.1
+  #run-2026-03-21-024549#24: score=8.967638 pf=3.565291 tpd=1.338462 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.2, lo=0.0, hi=1.0)  # NEW: Reduced from 0.3 to 0.2; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
+  #run-2026-03-21-024549#20: score=7.09302 pf=3.453757 tpd=1.338462 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.1 to 0.3
+  #run-2026-03-21-024549#18: score=5.542796 pf=3.34161 tpd=1.246154 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # NEW: Enhanced from 0.15 to 0.25; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # From exp #16
+  #run-2026-03-21-024549#16: score=4.084495 pf=3.219099 tpd=1.292308 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # NEW: Reduced from 0.5 to 0.3; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
+  #run-2026-03-21-024549#13: score=2.226176 pf=2.96755 tpd=1.384615 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # NEW: 0.15 bonus for optimal hold times; SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # NEW: Tighter frequency band; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # NEW: Prefer fewer but better trades
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 — class BalancedStrikeGate(nn.Module):
+
+## Recent Trajectory (last 30)
+  #run-2026-03-20-052312#1: score=0.011853 pf=1.908992 tpd=1.211604 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.3   # NO_TRADE; self.dir_head[-1].bias[1] += 0.25   # CALL_OTM5; self.dir_head[-1].bias[5] += 0.20   # PUT_OTM10
+  #run-2026-03-20-064901#1: score=0.355524 pf=1.862682 tpd=1.861538 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.5   # NO_TRADE (increased from 0.3); self.gate_head[-1].bias[1] -= 0.5   # TRADE (decreased from -0.3)
+  #run-2026-03-20-064901#3: score=0.41704 pf=2.402688 tpd=1.892308 [✓ KEPT] — self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15); self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15); self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
+  #run-2026-03-20-064901#12: score=0.505221 pf=1.955253 tpd=1.692308 [✓ KEPT] — LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+  #run-2026-03-20-064901#16: score=0.801958 pf=2.281165 tpd=1.353846 [✓ KEPT] — def forward(self, gate_input, account_health):; class CapitalPreservationGate(nn.Module):
+  #run-2026-03-20-064901#27: score=1.465128 pf=2.974894 tpd=1.369231 [✓ KEPT] — class SelectiveStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health):
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 [✓ KEPT] — class BalancedStrikeGate(nn.Module):
+  #run-2026-03-21-024549#13: score=2.226176 pf=2.96755 tpd=1.384615 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # NEW: 0.15 bonus for optimal hold times; SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # NEW: Tighter frequency band; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # NEW: Prefer fewer but better trades
+  #run-2026-03-21-024549#16: score=4.084495 pf=3.219099 tpd=1.292308 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # NEW: Reduced from 0.5 to 0.3; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
+  #run-2026-03-21-024549#18: score=5.542796 pf=3.34161 tpd=1.246154 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # NEW: Enhanced from 0.15 to 0.25; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # From exp #16
+  #run-2026-03-21-024549#20: score=7.09302 pf=3.453757 tpd=1.338462 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.1 to 0.3
+  #run-2026-03-21-024549#24: score=8.967638 pf=3.565291 tpd=1.338462 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.2, lo=0.0, hi=1.0)  # NEW: Reduced from 0.3 to 0.2; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
+  #run-2026-03-21-024549#26: score=9.574644 pf=3.429758 tpd=1.246154 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.1, lo=0.0, hi=1.0)  # NEW: Reduced from 0.2 to 0.1
+  #run-2026-03-21-024549#29: score=10.286387 pf=3.432749 tpd=1.323077 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # NEW: Reduced from 0.1 to 0.05
+  #1: score=0.177717 pf=1.639782 tpd=1.553846 [✗ reverted] — ETV_LOSS_WEIGHT = _env_float("TRAIN_ETV_W", 0.2, lo=0.0, hi=1.0); def __init__(self, d_model, dropout=0.15):; class EnhancedETVHead(nn.Module):
+  #2: score=0.028565 pf=1.106321 tpd=1.876923 [✗ reverted] — DAY_SEQ_RATIO = 0.0  # Fixed: disable day-sequential batching; EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 20.0, lo=1.0, hi=50.0)  # NEW: Increased from 10.0 to 20.0 for sharper decision boundaries
+  #3: score=0.413144 pf=2.031739 tpd=1.861538 [✗ reverted] — DAY_SEQ_RATIO = 0.0  # Fixed: disable day-sequential batching; ETV_LOSS_WEIGHT = _env_float("TRAIN_ETV_W", 0.3, lo=0.0, hi=1.0)
+
+## CURRENT BEST: Experiment #run-2026-03-21-024549#29 (score=10.2864, pf=3.432749)
+The code below IS experiment #run-2026-03-21-024549#29. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

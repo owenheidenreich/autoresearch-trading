@@ -1,0 +1,5 @@
+Looking at the recent trajectory, I can see clear progress from 0.63 to 3.20 score through incremental improvements. The best experiment (#1) achieved this by increasing the conservative gate bias from +0.8 to +1.0 for NO_TRADE. This suggests the model benefits from being more selective.
+
+However, I need to examine what specific trading weakness to address next. Based on the domain knowledge and the progression pattern, I suspect the model may still be taking too many marginal trades or not being selective enough about trade timing. The fact that increasing conservatism improved performance suggests we should continue in this direction.
+
+My hypothesis: Further increase the conservative gate bias to +1.2 (NO_TRADE) and -1.2 (TRADE) to make the model even more selective. This should improve the profit factor by filtering out more marginal trades that barely meet the profitability threshold, leading to higher quality entries and better overall performance.

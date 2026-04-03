@@ -1,0 +1,7 @@
+Looking at the trajectory, experiment #2 achieved the highest score (1.203) by simply increasing PNL_ALIGNMENT_WEIGHT from 0.3 to 0.5. However, it was reverted, likely due to stability concerns or secondary metrics failing thresholds. 
+
+The pattern shows that PNL alignment tuning has potential - experiments #2, #4 both tried increasing it and got decent scores. The key insight is that PNL_ALIGNMENT_WEIGHT directly teaches the model to align its trading probabilities with actual P&L outcomes, which should improve trading quality.
+
+Instead of just increasing PNL_ALIGNMENT_WEIGHT, I'll make a more targeted change: increase it moderately to 0.4 (between the baseline 0.3 and the reverted 0.5) while also slightly reducing DIR_LOSS_WEIGHT from 1.0 to 0.8. This rebalances the loss to emphasize P&L alignment over pure directional accuracy, which should improve the model's ability to distinguish profitable from unprofitable trades.
+
+The trading behavior I expect to improve: better trade selection by weighting actual profitability more heavily in the loss, leading to higher profit factor and more consistent performance across time periods.

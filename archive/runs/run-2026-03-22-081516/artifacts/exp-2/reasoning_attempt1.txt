@@ -1,0 +1,1 @@
+I'll reduce the cross-temporal consistency weight from 0.3 to 0.15 and increase the direction-side loss weight from 0.4 to 0.6. This should maintain temporal robustness while allowing the model to learn stronger directional signals. The previous attempt at 0.7 dir_side weight failed, but 0.6 may hit the sweet spot between direction learning and stability.

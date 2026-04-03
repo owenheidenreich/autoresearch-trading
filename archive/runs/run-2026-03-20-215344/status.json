@@ -1,0 +1,15 @@
+{
+  "phase": "training",
+  "experiment_id": 10,
+  "best_score": 1.768642,
+  "kept": 0,
+  "failed": 1,
+  "total": 9,
+  "accept_rate": 0.0,
+  "time_remaining_h": 4.26,
+  "updated": "2026-03-20T22:38:10.770575",
+  "contract_checksum": "897d384e0b7b",
+  "last_change": "RISK_LOSS_WEIGHT = _env_float(\"TRAIN_RISK_W\", 0.3, lo=0.0, hi=1.0); def forward(self, x):; class RiskAssessmentHead(nn.Module):",
+  "last_score": null,
+  "last_kept": false
+}

@@ -1,0 +1,6 @@
+{
+  "anomaly_flags": [],
+  "failure_type": "timeout",
+  "kept": false,
+  "reason": "Training timed out after 420s"
+}

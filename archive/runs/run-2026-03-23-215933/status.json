@@ -1,0 +1,29 @@
+{
+  "phase": "training",
+  "experiment_id": 13,
+  "best_score": 3.876675,
+  "kept": 0,
+  "failed": 0,
+  "total": 12,
+  "accept_rate": 0.0,
+  "time_remaining_h": 6.83,
+  "updated": "2026-03-23T23:09:51.524475",
+  "contract_checksum": "daf67a2324c0",
+  "last_change": "WEIGHT_DECAY = _env_float(\"TRAIN_WEIGHT_DECAY\", 0.07, lo=0.0, hi=0.3)  # Increased from 0.05; COOLDOWN_RATIO = _env_float(\"TRAIN_COOLDOWN_RATIO\", 0.25, lo=0.0, hi=0.8)  # Reduced from 0.3",
+  "last_score": null,
+  "last_kept": false,
+  "api_cost": {
+    "total_cost": 4.69,
+    "cost_input": 0.18,
+    "cost_cache_write": 0.23,
+    "cost_cache_read": 0.11,
+    "cost_output": 4.17,
+    "tokens_input": 58745,
+    "tokens_output": 277978,
+    "tokens_cache_read": 363622,
+    "tokens_cache_write": 38635,
+    "api_calls": 17,
+    "prefetch_discards": 0,
+    "cache_hit_pct": 78.9
+  }
+}

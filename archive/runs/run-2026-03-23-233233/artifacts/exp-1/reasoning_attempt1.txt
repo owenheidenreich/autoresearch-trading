@@ -1,0 +1,1 @@
+I'll implement dynamic direction loss weight scheduling that starts high (3.0) to force diverse direction learning early, then decays to the current best value (2.0) as training progresses. This should break the direction collapse pattern while preserving the profitable gate learning that's working well.

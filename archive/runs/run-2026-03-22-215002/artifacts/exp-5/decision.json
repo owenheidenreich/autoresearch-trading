@@ -1,0 +1,6 @@
+{
+  "anomaly_flags": [],
+  "failure_type": "regression",
+  "kept": false,
+  "reason": "score_not_improved"
+}

@@ -1,0 +1,53 @@
+## Experiment Summary
+Total=19 | Kept=1 | Failed=0 | Accept rate=5% (1/19) | Best score=-0.265802 (#run-2026-03-23-050717#5)
+
+## STRATEGY COLLAPSE WARNING
+Strategy collapse warning (1 signals): zero_accept_rate (0/8 kept in last 8)
+
+## LOW ACCEPT RATE WARNING
+Only 5% of proposals are being accepted. This means
+your proposals and the validation gate are misaligned.
+  - Make SMALLER, more conservative changes
+  - Focus on what the gate actually rewards (read the score formula)
+  - Study the gap between best score and recent scores
+
+## Top Kept Experiments
+  #run-2026-03-23-050717#5: score=-0.265802 pf=0.894049 tpd=1.0 — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+
+## Recent Trajectory (last 30)
+  #run-2026-03-23-050717#5: score=-0.265802 pf=0.894049 tpd=1.0 [✓ KEPT] — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+  #1: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 20.0, lo=1.0, hi=50.0)
+  #2: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.5, lo=0.1, hi=5.0)  # Increased for direction balance
+  #3: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.5, lo=0.0, hi=2.0); EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 1.2, lo=0.0, hi=2.0)
+  #4: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.85, lo=0.0, hi=1.0); LOOKBACK = _env_int("TRAIN_LOOKBACK", 90, lo=60, hi=240)
+  #5: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.3, lo=0.0, hi=1.0); EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 12.0, lo=1.0, hi=50.0)
+  #6: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 0.8, lo=0.1, hi=5.0)  # Reduced for better PNL alignment; EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 7.5, lo=1.0, hi=50.0)  # More selective
+  #7: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.7, lo=0.0, hi=2.0)  # Increased from 0.3; GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 0.3, lo=0.1, hi=5.0)  # Reduced from 0.5
+  #8: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 6.0, lo=1.0, hi=50.0)  # More selective; EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.8, lo=0.0, hi=2.0)  # Increased for better exit timing
+  #9: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)  # Reduced for stability; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.25, lo=0.0, hi=0.5)  # Extended warmup
+  #10: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — LR = _env_float("TRAIN_LR", 3.5e-4, lo=1e-5, hi=5e-3)  # Higher LR to escape zero-trade attractor; DAY_SEQ_RATIO = _env_float("TRAIN_DAY_SEQ_RATIO", 0.4, lo=0.0, hi=1.0)  # Reduced from 0.7; EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.3, lo=0.0, hi=2.0)  # Reduced
+  #11: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 0.3, lo=0.1, hi=5.0)  # Reduced further to allow trading
+  #12: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — minor change
+  #13: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — - Direction: same return-weighted soft targets; gate_loss = (gate_loss_vec * magnitude_weight * time_weight * sample_weight).mean(); - Reduced magnitude weighting to prevent gradient imbalance
+  #14: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — EV_GATE_SCALE = _env_float("TRAIN_EV_GATE_SCALE", 25.0, lo=1.0, hi=50.0)  # Much higher for stronger signal; GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 0.2, lo=0.1, hi=5.0)  # Reduced to prevent zero-trade dominance
+  #15: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — ACTIVITY_BONUS_WEIGHT = _env_float("TRAIN_ACTIVITY_W", 0.1, lo=0.0, hi=0.5)
+  #16: score=-1.16583 pf=0.431954 tpd=1.6 [✗ reverted] BLOCKED:secondary_regression:worst_chunk_pf_floor (0.26 < 0.50) — TRADE_FREQUENCY_BONUS = _env_float("TRAIN_TRADE_FREQ_BONUS", 0.1, lo=0.0, hi=1.0)
+  #17: score=-1.72646 pf=0.44005 tpd=2.0 [✗ reverted] BLOCKED:secondary_regression:worst_chunk_pf_floor (0.29 < 0.50) — gate_targets = (best_pnl > 0.0).long()  # 0=NO_TRADE, 1=TRADE; - Removed sigmoid-based soft targeting that caused zero-trade collapse; gate_loss = F.cross_entropy(g_logits, gate_targets, reduction='none')
+  #18: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — self.gate_head[-1].bias[0] -= 1.0   # NO_TRADE: strong penalty; self.gate_head[-1].bias[1] += 1.0   # TRADE: strong encouragement
+
+## DIAGNOSTIC SUMMARY (last scored experiment)
+- Direction collapse: ?
+- Stop-loss rate: ?
+- Avg entry quality: ?
+- Win rate: ?
+
+## Before proposing changes, write your <diagnosis> answering:
+1. What is the single biggest weakness in the current model's trading behavior?
+2. What approach have you NOT tried yet?
+3. Why do you believe your proposed change will improve the score?
+
+## CURRENT BEST: Experiment #run-2026-03-23-050717#5 (score=-0.2658, pf=0.894049)
+The code below IS experiment #run-2026-03-23-050717#5. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

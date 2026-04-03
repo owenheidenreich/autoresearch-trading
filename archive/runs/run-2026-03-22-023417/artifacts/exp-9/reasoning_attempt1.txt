@@ -1,0 +1,7 @@
+Looking at the current best experiment #5 with score=0.9159 and PF=2.796, I see VIX regime balancing was successful. However, I need to address a critical weakness: the model's temporal consistency across validation chunks.
+
+From the lab notebook, I see that Chunk 1 (Feb-May 2025) has PF=0.22 - the model loses badly in early validation periods. This suggests the model is overfitting to recent training data patterns and fails when market conditions change.
+
+The VIX regime balancing helps, but I need to go further. I'll implement a temporal robustness approach that explicitly trains the model to be consistent across different time periods within the training set itself. Instead of just balancing VIX regimes, I'll add temporal chunking to the training data and penalize the model when its predictions vary dramatically between early and late training periods.
+
+My hypothesis: Add temporal consistency regularization that splits training data into early/mid/late chunks and penalizes the model for having dramatically different gate/direction preferences across these periods. This will improve generalization to unseen time periods in validation.

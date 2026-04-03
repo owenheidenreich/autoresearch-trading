@@ -1,0 +1,29 @@
+{
+  "phase": "training",
+  "experiment_id": 7,
+  "best_score": 8.456477,
+  "kept": 3,
+  "failed": 0,
+  "total": 6,
+  "accept_rate": 0.5,
+  "time_remaining_h": 1.16,
+  "updated": "2026-03-22T07:36:18.856840",
+  "contract_checksum": "7b9b33f6b435",
+  "last_change": "CROSS_TEMPORAL_CONSISTENCY_WEIGHT = _env_float(\"TRAIN_CROSS_TEMPORAL_W\", 0.15, lo=0.0, hi=0.5)",
+  "last_score": null,
+  "last_kept": false,
+  "api_cost": {
+    "total_cost": 3.82,
+    "cost_input": 0.09,
+    "cost_cache_write": 0.54,
+    "cost_cache_read": 0.06,
+    "cost_output": 3.12,
+    "tokens_input": 31012,
+    "tokens_output": 208324,
+    "tokens_cache_read": 196546,
+    "tokens_cache_write": 90180,
+    "api_calls": 12,
+    "prefetch_discards": 3,
+    "cache_hit_pct": 61.9
+  }
+}

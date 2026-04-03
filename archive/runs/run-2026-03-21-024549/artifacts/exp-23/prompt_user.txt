@@ -1,0 +1,49 @@
+## Experiment Summary
+Total=29 | Kept=11 | Failed=0 | Accept rate=38% (11/29) | Best score=7.09302 (#20)
+
+## Top Kept Experiments
+  #20: score=7.09302 pf=3.453757 tpd=1.338462 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.1 to 0.3
+  #18: score=5.542796 pf=3.34161 tpd=1.246154 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # NEW: Enhanced from 0.15 to 0.25; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # From exp #16
+  #16: score=4.084495 pf=3.219099 tpd=1.292308 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # NEW: Reduced from 0.5 to 0.3; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
+  #13: score=2.226176 pf=2.96755 tpd=1.384615 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # NEW: 0.15 bonus for optimal hold times; SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # NEW: Tighter frequency band; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # NEW: Prefer fewer but better trades
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 — class BalancedStrikeGate(nn.Module):
+  #run-2026-03-20-064901#27: score=1.465128 pf=2.974894 tpd=1.369231 — class SelectiveStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health):
+  #run-2026-03-20-064901#16: score=0.801958 pf=2.281165 tpd=1.353846 — def forward(self, gate_input, account_health):; class CapitalPreservationGate(nn.Module):
+  #run-2026-03-20-064901#12: score=0.505221 pf=1.955253 tpd=1.692308 — LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+
+## Recent Trajectory (last 30)
+  #run-2026-03-20-052312#1: score=0.011853 pf=1.908992 tpd=1.211604 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.3   # NO_TRADE; self.dir_head[-1].bias[1] += 0.25   # CALL_OTM5; self.dir_head[-1].bias[5] += 0.20   # PUT_OTM10
+  #run-2026-03-20-064901#1: score=0.355524 pf=1.862682 tpd=1.861538 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.5   # NO_TRADE (increased from 0.3); self.gate_head[-1].bias[1] -= 0.5   # TRADE (decreased from -0.3)
+  #run-2026-03-20-064901#3: score=0.41704 pf=2.402688 tpd=1.892308 [✓ KEPT] — self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15); self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15); self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
+  #run-2026-03-20-064901#12: score=0.505221 pf=1.955253 tpd=1.692308 [✓ KEPT] — LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+  #run-2026-03-20-064901#16: score=0.801958 pf=2.281165 tpd=1.353846 [✓ KEPT] — def forward(self, gate_input, account_health):; class CapitalPreservationGate(nn.Module):
+  #run-2026-03-20-064901#27: score=1.465128 pf=2.974894 tpd=1.369231 [✓ KEPT] — class SelectiveStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health):
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 [✓ KEPT] — class BalancedStrikeGate(nn.Module):
+  #1: score=1.283686 pf=3.306827 tpd=1.276923 [✗ reverted] — stressed_mask = health_val < 0.8
+  #2: score=1.323657 pf=3.244432 tpd=1.323077 [✗ reverted] — 'architecture': 'v4_simplified_two_head_enhanced_balanced_strike_gating',; bias_adjustment[:, 2] += otm10_bonus.squeeze()  # CALL_OTM10; bias_adjustment[:, 1] += otm5_bonus.squeeze()   # CALL_OTM5
+  #3: score=0.984213 pf=3.398952 tpd=1.230769 [✗ reverted] — dir_logits[:, 5] += 0.15 * stress_unsqueezed.squeeze(-1) # PUT_OTM10; dir_logits[:, 3] -= 0.2 * stress_unsqueezed.squeeze(-1)  # PUT_ATM; dir_logits[:, 2] += 0.15 * stress_unsqueezed.squeeze(-1) # CALL_OTM10
+  #4: score=1.190958 pf=3.012827 tpd=1.184615 [✗ reverted] — moderate_stress = (health_val < 0.7) & (health_val >= 0.5); - NEW: Tiered balanced strike gating for capital preservation; bias_adjustment[severe_stress, 4] += 0.25   # PUT_OTM5 - strong bonus
+  #5: score=0.137952 pf=1.988513 tpd=1.384615 [✗ reverted] — 'architecture': 'v4_simplified_two_head_enhanced_balanced_strike_gating',
+  #6: score=0.113518 pf=1.657221 tpd=1.6 [✗ reverted] — print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating with frequency incentive"); nn.ReLU(),; - NEW: Balanced strike gating for capital preservation with frequency incentive
+  #7: score=0.219842 pf=2.285093 tpd=1.446154 [✗ reverted] — is_holding = position_state[:, 0:1]      # dim 0: is_holding; 'architecture': 'v4_simplified_two_head_balanced_strike_gating_exit_bias',; if losing_position_mask.any():
+  #8: score=1.107255 pf=2.874489 tpd=1.338462 [✗ reverted] — print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating with moderate capital preservation"); 'architecture': 'v4_simplified_two_head_balanced_strike_gating_moderate_capital_preservation',; stressed_mask = health_val < 0.6
+  #9: score=0.842843 pf=2.531802 tpd=1.323077 [✗ reverted] — SCORE_WIN_RATE_BONUS = _env_float("SCORE_WIN_RATE_BONUS", 0.2, lo=0.0, hi=1.0)
+  #10: score=1.236261 pf=3.005798 tpd=1.369231 [✗ reverted] — TEMPORAL_RECENCY_STRENGTH = _env_float("TEMPORAL_RECENCY_STRENGTH", 1.5, lo=1.0, hi=3.0)
+  #11: score=-0.281074 pf=0.897346 tpd=1.723077 [✗ reverted] — class LossAwareGate(nn.Module):; def forward(self, gate_input, loss_streak_frac):
+  #12: score=0.335689 pf=1.774714 tpd=1.446154 [✗ reverted] — def forward(self, gate_input, dir_input, account_health, loss_streak_frac):; class AdaptiveRecoveryGate(nn.Module):
+  #13: score=2.226176 pf=2.96755 tpd=1.384615 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # NEW: 0.15 bonus for optimal hold times; SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # NEW: Tighter frequency band; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # NEW: Prefer fewer but better trades
+  #14: score=0.92455 pf=2.901088 tpd=1.4 [✗ reverted] — SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 3.0, lo=1.0, hi=8.0); SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.0, lo=0.0, hi=2.0); SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 3.0, lo=1.0, hi=6.0)
+  #15: score=1.885472 pf=2.677851 tpd=1.215385 [✗ reverted] — SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # Tighter frequency band; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # Prefer fewer but better trades; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # 0.3 bonus for good R:R
+  #16: score=4.084495 pf=3.219099 tpd=1.292308 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # NEW: Reduced from 0.5 to 0.3; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
+  #17: score=2.68252 pf=2.918743 tpd=1.430769 [✗ reverted] — SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.5, lo=0.0, hi=2.0)  # NEW: 0.5 bonus for excellent R:R (was 0.3); SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # Keep 0.15 bonus for optimal hold times; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # Keep preference for fewer but better trades
+  #18: score=5.542796 pf=3.34161 tpd=1.246154 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # NEW: Enhanced from 0.15 to 0.25; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # From exp #16
+  #19: score=3.845924 pf=3.226143 tpd=1.292308 [✗ reverted] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # From exp #13; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.4, lo=0.0, hi=2.0)  # NEW: Increased from 0.3 to 0.4 for better R:R capture
+  #20: score=7.09302 pf=3.453757 tpd=1.338462 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.1 to 0.3
+  #21: score=4.705117 pf=3.194456 tpd=1.307692 [✗ reverted] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.35, lo=0.0, hi=1.0)  # NEW: Further enhanced from 0.25 to 0.35; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.1, lo=0.0, hi=2.0)
+  #22: score=1.388489 pf=2.747299 tpd=1.292308 [✗ reverted] — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.5, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.3 to 0.5
+
+## CURRENT BEST: Experiment #20 (score=7.0930, pf=3.453757)
+The code below IS experiment #20. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

@@ -1,0 +1,15 @@
+{
+  "phase": "training",
+  "experiment_id": 34,
+  "best_score": 10.286387,
+  "kept": 7,
+  "failed": 0,
+  "total": 33,
+  "accept_rate": 0.212,
+  "time_remaining_h": 2.47,
+  "updated": "2026-03-21T05:17:37.402983",
+  "contract_checksum": "add70be6209b",
+  "last_change": "SCORE_DRAWDOWN_PENALTY = _env_float(\"SCORE_DRAWDOWN_PENALTY\", 0.01, lo=0.0, hi=1.0)  # NEW: Reduced from 0.05 to 0.01",
+  "last_score": null,
+  "last_kept": false
+}

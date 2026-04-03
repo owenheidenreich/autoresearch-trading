@@ -1,0 +1,1 @@
+The safety checker detected forbidden SCORE_* environment variables. I need to remove all SCORE_* hardcoded values and replace them with the locked values from the contract. The score config must be hardcoded without any _env_float calls for SCORE_* variables.

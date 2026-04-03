@@ -1,0 +1,1 @@
+The failure is due to adding a new loss function `_compute_loss()` which violates the contract that the loss function structure is frozen. The existing `sniper_loss()` function should remain the only loss function. I need to remove the `_compute_loss()` function and directly call `sniper_loss()` in the training loop instead.

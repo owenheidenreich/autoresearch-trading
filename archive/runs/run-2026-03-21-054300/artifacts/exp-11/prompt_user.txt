@@ -1,0 +1,47 @@
+## Experiment Summary
+Total=24 | Kept=14 | Failed=0 | Accept rate=58% (14/24) | Best score=10.286387 (#run-2026-03-21-024549#29)
+
+## STRATEGY COLLAPSE WARNING
+Strategy collapse warning (1 signals): zero_accept_rate (0/8 kept in last 8)
+
+## Top Kept Experiments
+  #run-2026-03-21-024549#29: score=10.286387 pf=3.432749 tpd=1.323077 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # NEW: Reduced from 0.1 to 0.05
+  #run-2026-03-21-024549#26: score=9.574644 pf=3.429758 tpd=1.246154 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.1, lo=0.0, hi=1.0)  # NEW: Reduced from 0.2 to 0.1
+  #run-2026-03-21-024549#24: score=8.967638 pf=3.565291 tpd=1.338462 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.2, lo=0.0, hi=1.0)  # NEW: Reduced from 0.3 to 0.2; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
+  #run-2026-03-21-024549#20: score=7.09302 pf=3.453757 tpd=1.338462 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.1 to 0.3
+  #run-2026-03-21-024549#18: score=5.542796 pf=3.34161 tpd=1.246154 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # NEW: Enhanced from 0.15 to 0.25; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # From exp #16
+  #run-2026-03-21-024549#16: score=4.084495 pf=3.219099 tpd=1.292308 — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # NEW: Reduced from 0.5 to 0.3; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
+  #run-2026-03-21-024549#13: score=2.226176 pf=2.96755 tpd=1.384615 — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # NEW: 0.15 bonus for optimal hold times; SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # NEW: Tighter frequency band; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # NEW: Prefer fewer but better trades
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 — class BalancedStrikeGate(nn.Module):
+
+## Recent Trajectory (last 30)
+  #run-2026-03-20-052312#1: score=0.011853 pf=1.908992 tpd=1.211604 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.3   # NO_TRADE; self.dir_head[-1].bias[1] += 0.25   # CALL_OTM5; self.dir_head[-1].bias[5] += 0.20   # PUT_OTM10
+  #run-2026-03-20-064901#1: score=0.355524 pf=1.862682 tpd=1.861538 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.5   # NO_TRADE (increased from 0.3); self.gate_head[-1].bias[1] -= 0.5   # TRADE (decreased from -0.3)
+  #run-2026-03-20-064901#3: score=0.41704 pf=2.402688 tpd=1.892308 [✓ KEPT] — self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15); self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15); self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
+  #run-2026-03-20-064901#12: score=0.505221 pf=1.955253 tpd=1.692308 [✓ KEPT] — LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+  #run-2026-03-20-064901#16: score=0.801958 pf=2.281165 tpd=1.353846 [✓ KEPT] — def forward(self, gate_input, account_health):; class CapitalPreservationGate(nn.Module):
+  #run-2026-03-20-064901#27: score=1.465128 pf=2.974894 tpd=1.369231 [✓ KEPT] — class SelectiveStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health):
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 [✓ KEPT] — class BalancedStrikeGate(nn.Module):
+  #run-2026-03-21-024549#13: score=2.226176 pf=2.96755 tpd=1.384615 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.15, lo=0.0, hi=1.0)  # NEW: 0.15 bonus for optimal hold times; SCORE_FREQ_WIDTH = _env_float("SCORE_FREQ_WIDTH", 2.5, lo=1.0, hi=6.0)  # NEW: Tighter frequency band; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # NEW: Prefer fewer but better trades
+  #run-2026-03-21-024549#16: score=4.084495 pf=3.219099 tpd=1.292308 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # NEW: Reduced from 0.5 to 0.3; SCORE_RR_BONUS = _env_float("SCORE_RR_BONUS", 0.3, lo=0.0, hi=2.0)  # From exp #13; SCORE_FREQ_CENTER = _env_float("SCORE_FREQ_CENTER", 2.5, lo=1.0, hi=8.0)  # From exp #13
+  #run-2026-03-21-024549#18: score=5.542796 pf=3.34161 tpd=1.246154 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # NEW: Enhanced from 0.15 to 0.25; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.3, lo=0.0, hi=1.0)  # From exp #16
+  #run-2026-03-21-024549#20: score=7.09302 pf=3.453757 tpd=1.338462 [✓ KEPT] — SCORE_HOLD_BONUS = _env_float("SCORE_HOLD_BONUS", 0.25, lo=0.0, hi=1.0)  # From exp #18; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.1 to 0.3
+  #run-2026-03-21-024549#24: score=8.967638 pf=3.565291 tpd=1.338462 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.2, lo=0.0, hi=1.0)  # NEW: Reduced from 0.3 to 0.2; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
+  #run-2026-03-21-024549#26: score=9.574644 pf=3.429758 tpd=1.246154 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.1, lo=0.0, hi=1.0)  # NEW: Reduced from 0.2 to 0.1
+  #run-2026-03-21-024549#29: score=10.286387 pf=3.432749 tpd=1.323077 [✓ KEPT] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # NEW: Reduced from 0.1 to 0.05
+  #1: score=2.853676 pf=1.814614 tpd=2.061538 [✗ reverted] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.0, lo=0.0, hi=1.0)  # NEW: Eliminated drawdown penalty (was 0.05)
+  #2: score=2.808386 pf=1.813212 tpd=2.030769 [✗ reverted] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.0, lo=0.0, hi=1.0)  # NEW: Reduced from 0.05 to 0.0 - remove drawdown penalty entirely
+  #3: score=1.947755 pf=2.511467 tpd=1.261538 [✗ reverted] — EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.8, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.5 to 0.8 for better exit timing; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # From exp #29
+  #4: score=1.369312 pf=1.800047 tpd=2.107692 [✗ reverted] — FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 3.0, lo=1.0, hi=5.0)  # NEW: Increased from 2.0 to 3.0 for even more selectivity
+  #5: score=1.89583 pf=1.715997 tpd=2.030769 [✗ reverted] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # From exp #29; TEMPORAL_CONSISTENCY_WEIGHT = _env_float("TRAIN_TEMPORAL_W", 0.1, lo=0.0, hi=1.0)  # NEW: Chunk consistency loss; def __init__(self, num_chunks=5):; def update(self, gate_probs, dir_probs, dates_tensor):
+  #6: score=0.845063 pf=1.776437 tpd=1.815385 [✗ reverted] — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.5, lo=0.0, hi=2.0)  # NEW: Enhanced from 0.3 to 0.5 for better trade selection; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # From exp #29
+  #7: score=1.196096 pf=1.892102 tpd=1.953846 [✗ reverted] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # From exp #29; class ConfidenceAwareStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health, gate_logits=None):
+  #8: score=2.333703 pf=1.813491 tpd=2.030769 [✗ reverted] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # From exp #29
+  #9: score=0.291276 pf=1.452318 tpd=1.261538 [✗ reverted] — SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # From exp #29; class AdaptivePositionGate(nn.Module):; def forward(self, last_hidden, position_state):
+  #10: score=1.037295 pf=1.801141 tpd=2.0 [✗ reverted] — TIME_AWARE_WEIGHT = _env_float("TRAIN_TIME_AWARE_W", 1.5, lo=1.0, hi=3.0)  # NEW: Time-of-day loss weighting; SCORE_DRAWDOWN_PENALTY = _env_float("SCORE_DRAWDOWN_PENALTY", 0.05, lo=0.0, hi=1.0)  # From exp #29; def compute_time_of_day_weights(minutes_to_close):
+
+## CURRENT BEST: Experiment #run-2026-03-21-024549#29 (score=10.2864, pf=3.432749)
+The code below IS experiment #run-2026-03-21-024549#29. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

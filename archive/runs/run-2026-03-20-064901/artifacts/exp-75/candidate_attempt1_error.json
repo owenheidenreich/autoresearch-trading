@@ -1,0 +1,5 @@
+{
+  "early_crash": true,
+  "error": "Exit code 1:\nLoading data from: /root/.cache/autoresearch-trading/features/data.pt\nLoaded 382920 1-min bars, 32 features, 8 actions\n  ~981 trading days\nTraining:   up to idx 268019\nValidation: idx 268020-382919\n  Option P&L coverage: 296720/382920 (77%)\n/opt/conda/lib/python3.11/site-packages/torch/nn/modules/transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True\n  warnings.warn(\nTraceback (most recent call last):\n  File \"/root/train.py\", line 548, in <module>\n    model = TradingModel().to(device)\n            ^^^^^^^^^^^^^^\n  File \"/root/train.py\", line 266, in __init__\n    self.contrastive_head = ContrastiveLearningHead(d_model)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/train.py\", line 209, in __init__\n    nn.L2Norm(dim=-1)  # Normalize for cosine similarity\n    ^^^^^^^^^\nAttributeError: module 'torch.nn' has no attribute 'L2Norm'",
+  "failure_type": "train_crash"
+}

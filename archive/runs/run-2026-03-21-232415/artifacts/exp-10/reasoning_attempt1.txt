@@ -1,0 +1,9 @@
+Looking at the trajectory, I see clear strategy collapse - the last 8 experiments all failed, with 5/8 starting with "STOPPED_PNL_WEIGHT". The agent is fixated on using stopped P&L labels, but this approach has failed repeatedly.
+
+Examining the current best model (#52 with score=1.77, PF=3.42), I need to understand what trading behavior to improve. The model has good profit factor but relatively low trades per day (1.29). Looking at the Dead Ends section, I see that adding new nn.Module subclasses consistently fails due to insufficient training time.
+
+Instead of architectural changes, I should focus on the training signal. The model currently uses unstopped P&L for training but faces dynamic stops during evaluation. This mismatch could be creating suboptimal exit timing.
+
+Rather than adding STOPPED_PNL_WEIGHT (which failed 5+ times), I'll modify the existing loss function to better align with the evaluation reality. Specifically, I'll increase PNL_ALIGNMENT_WEIGHT from 0.3 to 0.6 - this teaches the model to better match its predictions with actual P&L outcomes, which should improve both entry quality and exit timing without architectural complexity.
+
+This addresses the core issue: the model trains on full P&L trajectories but trades with dynamic stops, creating a training-evaluation mismatch.

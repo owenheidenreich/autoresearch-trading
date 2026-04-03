@@ -1,0 +1,48 @@
+## Experiment Summary
+Total=8 | Kept=7 | Failed=1 | Accept rate=100% (7/7) | Best score=1.768642 (#run-2026-03-20-064901#52)
+
+## Top Kept Experiments
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 — class BalancedStrikeGate(nn.Module):
+  #run-2026-03-20-064901#27: score=1.465128 pf=2.974894 tpd=1.369231 — class SelectiveStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health):
+  #run-2026-03-20-064901#16: score=0.801958 pf=2.281165 tpd=1.353846 — def forward(self, gate_input, account_health):; class CapitalPreservationGate(nn.Module):
+  #run-2026-03-20-064901#12: score=0.505221 pf=1.955253 tpd=1.692308 — LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+  #run-2026-03-20-064901#3: score=0.41704 pf=2.402688 tpd=1.892308 — self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15); self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15); self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
+  #run-2026-03-20-064901#1: score=0.355524 pf=1.862682 tpd=1.861538 — self.gate_head[-1].bias[0] += 0.5   # NO_TRADE (increased from 0.3); self.gate_head[-1].bias[1] -= 0.5   # TRADE (decreased from -0.3)
+  #run-2026-03-20-052312#1: score=0.011853 pf=1.908992 tpd=1.211604 — self.gate_head[-1].bias[0] += 0.3   # NO_TRADE; self.dir_head[-1].bias[1] += 0.25   # CALL_OTM5; self.dir_head[-1].bias[5] += 0.20   # PUT_OTM10
+
+## Recent Trajectory (last 30)
+  #run-2026-03-20-052312#1: score=0.011853 pf=1.908992 tpd=1.211604 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.3   # NO_TRADE; self.dir_head[-1].bias[1] += 0.25   # CALL_OTM5; self.dir_head[-1].bias[5] += 0.20   # PUT_OTM10
+  #run-2026-03-20-064901#1: score=0.355524 pf=1.862682 tpd=1.861538 [✓ KEPT] — self.gate_head[-1].bias[0] += 0.5   # NO_TRADE (increased from 0.3); self.gate_head[-1].bias[1] -= 0.5   # TRADE (decreased from -0.3)
+  #run-2026-03-20-064901#3: score=0.41704 pf=2.402688 tpd=1.892308 [✓ KEPT] — self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM (was -0.15); self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM (was -0.15); self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5 (was 0.25)
+  #run-2026-03-20-064901#12: score=0.505221 pf=1.955253 tpd=1.692308 [✓ KEPT] — LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+  #run-2026-03-20-064901#16: score=0.801958 pf=2.281165 tpd=1.353846 [✓ KEPT] — def forward(self, gate_input, account_health):; class CapitalPreservationGate(nn.Module):
+  #run-2026-03-20-064901#27: score=1.465128 pf=2.974894 tpd=1.369231 [✓ KEPT] — class SelectiveStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health):
+  #run-2026-03-20-064901#52: score=1.768642 pf=3.422151 tpd=1.292308 [✓ KEPT] — class BalancedStrikeGate(nn.Module):
+  #1: FAILED — Exit code 1:
+Loading data from: /root/.cache/autoresearch-trading/features/data.pt
+Loaded 384870 1-min bars, 32 features, 8 actions
+  ~986 trading days
+Training:   up to idx 269189
+Validation: idx 269
+
+## LAST EXPERIMENT FAILED:
+Exit code 1:
+Loading data from: /root/.cache/autoresearch-trading/features/data.pt
+Loaded 384870 1-min bars, 32 features, 8 actions
+  ~986 trading days
+Training:   up to idx 269189
+Validation: idx 269
+
+Fix the error and try a different approach.
+
+## Before proposing changes, answer these questions in your <reasoning>:
+1. Based on the trade diagnostics, what is the model's biggest weakness?
+2. Is the model profitable across ALL time chunks and VIX regimes, or just some?
+3. Are the best trades repeatable patterns, or lucky outliers?
+4. What specific TRADING BEHAVIOR will your proposed change improve?
+
+## CURRENT BEST: Experiment #run-2026-03-20-064901#52 (score=1.7686, pf=3.422151)
+The code below IS experiment #run-2026-03-20-064901#52. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

@@ -1,0 +1,1 @@
+I'll implement WEIGHT_DECAY=0.07 + FEATURE_NOISE_STD=0.08 from the mandatory grid. Feature noise injection during training acts as data augmentation, preventing overfitting to exact feature patterns and improving generalization. This should reduce the training instability we've seen and create a more robust model that performs consistently across different market conditions.

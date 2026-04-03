@@ -1,0 +1,5 @@
+Looking at the search-space review requirements and the trajectory, I see that recent experiments have been making incremental tweaks to gating mechanisms with diminishing returns. The DIVERSITY NUDGE calls for something fundamentally different, and the search-space review shows the agent may be collapsing to fixed strategies.
+
+The biggest gap appears to be that the model still hits ruin frequently (min_equity_frac 3-6%) despite capital preservation attempts. Looking at successful experiments #52 (score=1.77) vs recent failures, I notice that we've been focused on complex gating but haven't explored the OPPOSITE direction: what if the issue isn't the gating logic but the fundamental loss function structure?
+
+I'll try a completely different approach: replace the complex sniper_loss with a simple, direct risk-adjusted loss that explicitly penalizes high-risk trades and rewards capital preservation. This is the opposite of recent gating complexity - instead, make the loss itself teach conservative behavior.

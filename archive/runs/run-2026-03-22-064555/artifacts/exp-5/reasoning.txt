@@ -1,0 +1,5 @@
+Looking at the progression, experiment #2 achieved a massive score jump to 8.23 with PF=4.96 by pushing the conservative gate bias to maximum (+1.2 NO_TRADE, -1.2 TRADE). This suggests the model benefits from ultra-selectivity - fewer but much higher quality trades.
+
+However, I need to address a critical weakness that's been persistent: temporal consistency. The Lab Notebook shows "Chunk 1 (Feb-May 2025) has PF=0.22" - the model is failing badly on early validation dates. This suggests the model is overfitting to recent market patterns and doesn't generalize to different market regimes.
+
+Since experiment #2 already maximized gate conservatism, I'll focus on improving temporal robustness by making the model learn more generalizable patterns. I'll increase the temporal chunk consistency weight significantly (from 0.25 to 0.5) and add a cross-temporal validation loss that specifically penalizes models that perform very differently across time periods. This should force the model to learn strategies that work consistently across all chunks, not just the recent ones.

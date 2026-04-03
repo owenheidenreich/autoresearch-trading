@@ -1,0 +1,7 @@
+The recent strategy collapse is clear - I've been micro-tuning the SCORE_DRAWDOWN_PENALTY parameter in tiny increments (0.3→0.2→0.1→0.05→0.0) without any fundamental change to the training signal or model behavior. This is classic optimization plateau behavior.
+
+Looking at the trajectory, all improvements since experiment #52 have come from score_config tuning alone, not model improvements. The core issue is that I'm optimizing the evaluation metric without improving the underlying trading strategy. The model's actual trading behavior (PF ~3.4, TPD ~1.3) has plateaued.
+
+The biggest insight from the search-space review: I need to change the TRAINING SIGNAL, not just the scoring. The current loss function may be missing something fundamental. Looking at 0DTE options domain knowledge, the key insight is that TIME-OF-DAY patterns are critical - different strategies work better at different times.
+
+The simplest high-impact change: add TIME-AWARE LOSS WEIGHTING. Weight training samples based on time-of-day patterns from the domain knowledge. Morning trends (9:35-10:30) should get higher weight for directional training, while afternoon charm flows (13:30-15:30) should emphasize mean-reversion exits. This changes what the model learns, not just how we score it.

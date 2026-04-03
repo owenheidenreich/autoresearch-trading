@@ -1,0 +1,5 @@
+Looking at the experiment history, the BalancedStrikeGate module achieved the best score (1.77) with strong profit factor (3.42) but relatively low trade frequency (1.29 TPD). The trajectory shows consistent improvement through bias tuning and account-aware gating.
+
+However, I notice a potential weakness: the current model uses completely synthetic position states during training via PositionStateGenerator, but real position states during evaluation. This creates a train/test mismatch that could hurt performance. The model learns on random synthetic states but must perform on coherent sequential position states during actual trading.
+
+My hypothesis: Replace the synthetic PositionStateGenerator with a more realistic sequential position state simulation during training. This should teach the model better position-aware decision making by seeing more realistic state transitions (e.g., declining account health after consecutive losses, realistic hold time progressions). This could improve both profit factor and consistency across regimes.

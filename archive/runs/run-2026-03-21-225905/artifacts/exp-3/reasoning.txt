@@ -1,0 +1,5 @@
+Looking at the trajectory, the BalancedStrikeGate module (#52) achieved the best score of 1.77 with PF=3.42. The progression shows clear improvements from basic bias tuning to more sophisticated account-aware gating. However, I need to examine what specific trading weakness to address next.
+
+The current best model has good profit factor (3.42) but relatively low trade frequency (1.29 TPD). Based on the lab notebook, the model has learned to be selective (NO_TRADE bias +0.5), but may be missing profitable opportunities. The BalancedStrikeGate helps with capital preservation when account is stressed, but doesn't help identify when to be MORE aggressive during favorable conditions.
+
+My hypothesis: The model needs to learn when market conditions favor MORE trading, not just account preservation. I'll add a MarketRegimeGate that increases trading propensity during favorable VIX/IV conditions while maintaining the existing BalancedStrikeGate for capital preservation. This should improve trade frequency without sacrificing the learned selectivity.

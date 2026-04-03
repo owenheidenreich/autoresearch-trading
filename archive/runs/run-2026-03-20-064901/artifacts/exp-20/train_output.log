@@ -1,0 +1,273 @@
+Loading data from: /root/.cache/autoresearch-trading/features/data.pt
+Loaded 382920 1-min bars, 32 features, 8 actions
+  ~981 trading days
+Training:   up to idx 268019
+Validation: idx 268020-382919
+  Option P&L coverage: 296720/382920 (77%)
+Parameters: 145,121
+Architecture: v4 simplified two-head (gate+dir) + position sizing curriculum
+Training from scratch (v4: no warm-start).
+
+Budget: 240s | Batch: 128 | Lookback: 120
+LR: 0.00015 | Depth: 3 | d_model: 64 | ff_mult: 3
+Dropout: 0.15 | Weight decay: 0.05
+False entry penalty: 2.0x
+Position sizing curriculum weight: 0.3
+Label smoothing: gate=0.05 dir=0.05
+
+step 00000 (  0.0%) | loss: 3.212606 | trade:0.28 call:0.46 put:0.54 | ATM:0.27 OTM:0.73 | curriculum:0.00 | lr: 0.00e+00 | left: 240s
+step 00050 (  0.4%) | loss: 3.280601 | trade:0.28 call:0.46 put:0.54 | ATM:0.27 OTM:0.73 | curriculum:0.00 | lr: 5.37e-06 | left: 239s
+step 00100 (  0.9%) | loss: 3.225995 | trade:0.33 call:0.46 put:0.54 | ATM:0.27 OTM:0.73 | curriculum:0.01 | lr: 1.34e-05 | left: 238s
+step 00150 (  1.4%) | loss: 3.156312 | trade:0.38 call:0.47 put:0.53 | ATM:0.28 OTM:0.72 | curriculum:0.01 | lr: 2.13e-05 | left: 237s
+step 00200 (  2.0%) | loss: 3.093827 | trade:0.43 call:0.48 put:0.52 | ATM:0.29 OTM:0.71 | curriculum:0.02 | lr: 2.94e-05 | left: 235s
+step 00250 (  2.5%) | loss: 3.028586 | trade:0.43 call:0.49 put:0.51 | ATM:0.31 OTM:0.69 | curriculum:0.02 | lr: 3.74e-05 | left: 234s
+step 00300 (  3.0%) | loss: 2.989952 | trade:0.43 call:0.50 put:0.50 | ATM:0.33 OTM:0.67 | curriculum:0.03 | lr: 4.55e-05 | left: 233s
+step 00350 (  3.6%) | loss: 2.970307 | trade:0.44 call:0.51 put:0.49 | ATM:0.34 OTM:0.66 | curriculum:0.04 | lr: 5.35e-05 | left: 231s
+step 00400 (  4.1%) | loss: 2.900072 | trade:0.44 call:0.52 put:0.48 | ATM:0.35 OTM:0.65 | curriculum:0.04 | lr: 6.15e-05 | left: 230s
+step 00450 (  4.6%) | loss: 2.854026 | trade:0.40 call:0.53 put:0.47 | ATM:0.35 OTM:0.65 | curriculum:0.05 | lr: 6.96e-05 | left: 229s
+step 00500 (  5.2%) | loss: 2.835242 | trade:0.42 call:0.53 put:0.47 | ATM:0.37 OTM:0.63 | curriculum:0.05 | lr: 7.76e-05 | left: 228s
+step 00550 (  5.7%) | loss: 2.773693 | trade:0.42 call:0.54 put:0.46 | ATM:0.37 OTM:0.63 | curriculum:0.06 | lr: 8.56e-05 | left: 226s
+step 00600 (  6.2%) | loss: 2.705516 | trade:0.41 call:0.54 put:0.46 | ATM:0.37 OTM:0.63 | curriculum:0.06 | lr: 9.36e-05 | left: 225s
+step 00650 (  6.8%) | loss: 2.631787 | trade:0.43 call:0.56 put:0.44 | ATM:0.39 OTM:0.61 | curriculum:0.07 | lr: 1.02e-04 | left: 224s
+step 00700 (  7.3%) | loss: 2.536409 | trade:0.40 call:0.58 put:0.42 | ATM:0.40 OTM:0.60 | curriculum:0.07 | lr: 1.10e-04 | left: 222s
+step 00750 (  7.8%) | loss: 2.465933 | trade:0.38 call:0.61 put:0.39 | ATM:0.44 OTM:0.56 | curriculum:0.08 | lr: 1.18e-04 | left: 221s
+step 00800 (  8.4%) | loss: 2.391881 | trade:0.41 call:0.54 put:0.46 | ATM:0.41 OTM:0.59 | curriculum:0.08 | lr: 1.26e-04 | left: 220s
+step 00850 (  8.9%) | loss: 2.326903 | trade:0.42 call:0.59 put:0.41 | ATM:0.42 OTM:0.58 | curriculum:0.09 | lr: 1.34e-04 | left: 219s
+step 00900 (  9.4%) | loss: 2.225959 | trade:0.42 call:0.56 put:0.44 | ATM:0.40 OTM:0.60 | curriculum:0.09 | lr: 1.42e-04 | left: 217s
+step 00950 ( 10.0%) | loss: 2.133765 | trade:0.38 call:0.65 put:0.35 | ATM:0.46 OTM:0.54 | curriculum:0.10 | lr: 1.50e-04 | left: 216s
+step 01000 ( 10.5%) | loss: 2.061245 | trade:0.38 call:0.63 put:0.37 | ATM:0.47 OTM:0.53 | curriculum:0.11 | lr: 1.50e-04 | left: 215s
+step 01050 ( 11.1%) | loss: 1.967862 | trade:0.38 call:0.68 put:0.32 | ATM:0.46 OTM:0.54 | curriculum:0.11 | lr: 1.50e-04 | left: 213s
+step 01100 ( 11.6%) | loss: 1.911540 | trade:0.39 call:0.68 put:0.32 | ATM:0.49 OTM:0.51 | curriculum:0.12 | lr: 1.50e-04 | left: 212s
+step 01150 ( 12.1%) | loss: 1.839327 | trade:0.39 call:0.64 put:0.36 | ATM:0.48 OTM:0.52 | curriculum:0.12 | lr: 1.50e-04 | left: 211s
+step 01200 ( 12.7%) | loss: 1.814037 | trade:0.41 call:0.65 put:0.35 | ATM:0.43 OTM:0.57 | curriculum:0.13 | lr: 1.50e-04 | left: 210s
+step 01250 ( 13.2%) | loss: 1.732904 | trade:0.39 call:0.67 put:0.33 | ATM:0.47 OTM:0.53 | curriculum:0.13 | lr: 1.50e-04 | left: 208s
+step 01300 ( 13.7%) | loss: 1.691786 | trade:0.32 call:0.69 put:0.31 | ATM:0.48 OTM:0.52 | curriculum:0.14 | lr: 1.50e-04 | left: 207s
+step 01350 ( 14.3%) | loss: 1.620556 | trade:0.40 call:0.63 put:0.37 | ATM:0.44 OTM:0.56 | curriculum:0.14 | lr: 1.50e-04 | left: 206s
+step 01400 ( 14.8%) | loss: 1.627785 | trade:0.41 call:0.63 put:0.37 | ATM:0.48 OTM:0.52 | curriculum:0.15 | lr: 1.50e-04 | left: 204s
+step 01450 ( 15.3%) | loss: 1.589579 | trade:0.33 call:0.75 put:0.25 | ATM:0.47 OTM:0.53 | curriculum:0.15 | lr: 1.50e-04 | left: 203s
+step 01500 ( 15.9%) | loss: 1.577165 | trade:0.42 call:0.65 put:0.35 | ATM:0.48 OTM:0.52 | curriculum:0.16 | lr: 1.50e-04 | left: 202s
+step 01550 ( 16.4%) | loss: 1.517641 | trade:0.37 call:0.71 put:0.29 | ATM:0.45 OTM:0.55 | curriculum:0.16 | lr: 1.50e-04 | left: 201s
+step 01600 ( 16.9%) | loss: 1.507283 | trade:0.39 call:0.65 put:0.35 | ATM:0.50 OTM:0.50 | curriculum:0.17 | lr: 1.50e-04 | left: 199s
+step 01650 ( 17.5%) | loss: 1.503258 | trade:0.39 call:0.67 put:0.33 | ATM:0.48 OTM:0.52 | curriculum:0.17 | lr: 1.50e-04 | left: 198s
+step 01700 ( 18.0%) | loss: 1.474424 | trade:0.32 call:0.69 put:0.31 | ATM:0.52 OTM:0.48 | curriculum:0.18 | lr: 1.50e-04 | left: 197s
+step 01750 ( 18.5%) | loss: 1.407060 | trade:0.37 call:0.68 put:0.32 | ATM:0.51 OTM:0.49 | curriculum:0.19 | lr: 1.50e-04 | left: 195s
+step 01800 ( 19.1%) | loss: 1.440587 | trade:0.33 call:0.69 put:0.31 | ATM:0.48 OTM:0.52 | curriculum:0.19 | lr: 1.50e-04 | left: 194s
+step 01850 ( 19.6%) | loss: 1.416827 | trade:0.38 call:0.68 put:0.32 | ATM:0.50 OTM:0.50 | curriculum:0.20 | lr: 1.50e-04 | left: 193s
+step 01900 ( 20.1%) | loss: 1.392118 | trade:0.38 call:0.68 put:0.32 | ATM:0.47 OTM:0.53 | curriculum:0.20 | lr: 1.50e-04 | left: 192s
+step 01950 ( 20.7%) | loss: 1.410244 | trade:0.34 call:0.63 put:0.37 | ATM:0.47 OTM:0.53 | curriculum:0.21 | lr: 1.50e-04 | left: 190s
+step 02000 ( 21.2%) | loss: 1.356990 | trade:0.33 call:0.74 put:0.26 | ATM:0.50 OTM:0.50 | curriculum:0.21 | lr: 1.50e-04 | left: 189s
+step 02050 ( 21.7%) | loss: 1.397284 | trade:0.36 call:0.72 put:0.28 | ATM:0.52 OTM:0.48 | curriculum:0.22 | lr: 1.50e-04 | left: 188s
+step 02100 ( 22.3%) | loss: 1.353067 | trade:0.35 call:0.70 put:0.30 | ATM:0.48 OTM:0.52 | curriculum:0.22 | lr: 1.50e-04 | left: 187s
+step 02150 ( 22.8%) | loss: 1.356969 | trade:0.35 call:0.68 put:0.32 | ATM:0.49 OTM:0.51 | curriculum:0.23 | lr: 1.50e-04 | left: 185s
+step 02200 ( 23.3%) | loss: 1.349683 | trade:0.41 call:0.66 put:0.34 | ATM:0.45 OTM:0.55 | curriculum:0.23 | lr: 1.50e-04 | left: 184s
+step 02250 ( 23.9%) | loss: 1.331250 | trade:0.36 call:0.71 put:0.29 | ATM:0.53 OTM:0.47 | curriculum:0.24 | lr: 1.50e-04 | left: 183s
+step 02300 ( 24.4%) | loss: 1.314422 | trade:0.34 call:0.64 put:0.36 | ATM:0.49 OTM:0.51 | curriculum:0.24 | lr: 1.50e-04 | left: 181s
+step 02350 ( 24.9%) | loss: 1.316718 | trade:0.36 call:0.73 put:0.27 | ATM:0.52 OTM:0.48 | curriculum:0.25 | lr: 1.50e-04 | left: 180s
+step 02400 ( 25.5%) | loss: 1.300528 | trade:0.31 call:0.77 put:0.23 | ATM:0.44 OTM:0.56 | curriculum:0.25 | lr: 1.50e-04 | left: 179s
+step 02450 ( 26.0%) | loss: 1.322808 | trade:0.40 call:0.71 put:0.29 | ATM:0.51 OTM:0.49 | curriculum:0.26 | lr: 1.50e-04 | left: 178s
+step 02500 ( 26.5%) | loss: 1.293564 | trade:0.40 call:0.65 put:0.35 | ATM:0.52 OTM:0.48 | curriculum:0.27 | lr: 1.50e-04 | left: 176s
+step 02550 ( 27.1%) | loss: 1.293738 | trade:0.35 call:0.65 put:0.35 | ATM:0.49 OTM:0.51 | curriculum:0.27 | lr: 1.50e-04 | left: 175s
+step 02600 ( 27.6%) | loss: 1.291060 | trade:0.35 call:0.61 put:0.39 | ATM:0.50 OTM:0.50 | curriculum:0.28 | lr: 1.50e-04 | left: 174s
+step 02650 ( 28.1%) | loss: 1.283529 | trade:0.33 call:0.67 put:0.33 | ATM:0.51 OTM:0.49 | curriculum:0.28 | lr: 1.50e-04 | left: 172s
+step 02700 ( 28.7%) | loss: 1.319112 | trade:0.31 call:0.72 put:0.28 | ATM:0.53 OTM:0.47 | curriculum:0.29 | lr: 1.50e-04 | left: 171s
+step 02750 ( 29.2%) | loss: 1.299498 | trade:0.35 call:0.63 put:0.37 | ATM:0.53 OTM:0.47 | curriculum:0.29 | lr: 1.50e-04 | left: 170s
+step 02800 ( 29.7%) | loss: 1.276647 | trade:0.36 call:0.66 put:0.34 | ATM:0.55 OTM:0.45 | curriculum:0.30 | lr: 1.50e-04 | left: 169s
+step 02850 ( 30.3%) | loss: 1.245952 | trade:0.28 call:0.73 put:0.27 | ATM:0.61 OTM:0.39 | curriculum:0.30 | lr: 1.50e-04 | left: 167s
+step 02900 ( 30.8%) | loss: 1.239239 | trade:0.41 call:0.68 put:0.32 | ATM:0.51 OTM:0.49 | curriculum:0.31 | lr: 1.50e-04 | left: 166s
+step 02950 ( 31.3%) | loss: 1.248907 | trade:0.39 call:0.67 put:0.33 | ATM:0.54 OTM:0.46 | curriculum:0.31 | lr: 1.50e-04 | left: 165s
+step 03000 ( 31.9%) | loss: 1.247487 | trade:0.40 call:0.63 put:0.37 | ATM:0.51 OTM:0.49 | curriculum:0.32 | lr: 1.50e-04 | left: 164s
+step 03050 ( 32.4%) | loss: 1.228096 | trade:0.36 call:0.71 put:0.29 | ATM:0.58 OTM:0.42 | curriculum:0.32 | lr: 1.50e-04 | left: 162s
+step 03100 ( 32.9%) | loss: 1.243490 | trade:0.34 call:0.73 put:0.27 | ATM:0.60 OTM:0.40 | curriculum:0.33 | lr: 1.50e-04 | left: 161s
+step 03150 ( 33.4%) | loss: 1.217752 | trade:0.36 call:0.68 put:0.32 | ATM:0.55 OTM:0.45 | curriculum:0.33 | lr: 1.50e-04 | left: 160s
+step 03200 ( 34.0%) | loss: 1.236157 | trade:0.35 call:0.69 put:0.31 | ATM:0.52 OTM:0.48 | curriculum:0.34 | lr: 1.50e-04 | left: 158s
+step 03250 ( 34.5%) | loss: 1.246655 | trade:0.29 call:0.69 put:0.31 | ATM:0.53 OTM:0.47 | curriculum:0.34 | lr: 1.50e-04 | left: 157s
+step 03300 ( 35.0%) | loss: 1.228862 | trade:0.36 call:0.72 put:0.28 | ATM:0.58 OTM:0.42 | curriculum:0.35 | lr: 1.50e-04 | left: 156s
+step 03350 ( 35.6%) | loss: 1.235544 | trade:0.31 call:0.65 put:0.35 | ATM:0.57 OTM:0.43 | curriculum:0.36 | lr: 1.50e-04 | left: 155s
+step 03400 ( 36.1%) | loss: 1.216707 | trade:0.36 call:0.68 put:0.32 | ATM:0.57 OTM:0.43 | curriculum:0.36 | lr: 1.50e-04 | left: 153s
+step 03450 ( 36.6%) | loss: 1.209804 | trade:0.34 call:0.69 put:0.31 | ATM:0.49 OTM:0.51 | curriculum:0.37 | lr: 1.50e-04 | left: 152s
+step 03500 ( 37.2%) | loss: 1.202530 | trade:0.34 call:0.69 put:0.31 | ATM:0.50 OTM:0.50 | curriculum:0.37 | lr: 1.50e-04 | left: 151s
+step 03550 ( 37.7%) | loss: 1.212794 | trade:0.33 call:0.67 put:0.33 | ATM:0.54 OTM:0.46 | curriculum:0.38 | lr: 1.50e-04 | left: 150s
+step 03600 ( 38.2%) | loss: 1.218880 | trade:0.32 call:0.66 put:0.34 | ATM:0.58 OTM:0.42 | curriculum:0.38 | lr: 1.50e-04 | left: 148s
+step 03650 ( 38.8%) | loss: 1.199363 | trade:0.30 call:0.71 put:0.29 | ATM:0.55 OTM:0.45 | curriculum:0.39 | lr: 1.50e-04 | left: 147s
+step 03700 ( 39.3%) | loss: 1.196441 | trade:0.34 call:0.69 put:0.31 | ATM:0.55 OTM:0.45 | curriculum:0.39 | lr: 1.50e-04 | left: 146s
+step 03750 ( 39.8%) | loss: 1.214181 | trade:0.28 call:0.69 put:0.31 | ATM:0.66 OTM:0.34 | curriculum:0.40 | lr: 1.50e-04 | left: 144s
+step 03800 ( 40.4%) | loss: 1.200938 | trade:0.35 call:0.66 put:0.34 | ATM:0.57 OTM:0.43 | curriculum:0.40 | lr: 1.50e-04 | left: 143s
+step 03850 ( 40.9%) | loss: 1.180275 | trade:0.35 call:0.64 put:0.36 | ATM:0.56 OTM:0.44 | curriculum:0.41 | lr: 1.50e-04 | left: 142s
+step 03900 ( 41.4%) | loss: 1.186774 | trade:0.41 call:0.63 put:0.37 | ATM:0.56 OTM:0.44 | curriculum:0.41 | lr: 1.50e-04 | left: 141s
+step 03950 ( 42.0%) | loss: 1.172660 | trade:0.26 call:0.74 put:0.26 | ATM:0.60 OTM:0.40 | curriculum:0.42 | lr: 1.50e-04 | left: 139s
+step 04000 ( 42.5%) | loss: 1.173892 | trade:0.38 call:0.66 put:0.34 | ATM:0.57 OTM:0.43 | curriculum:0.42 | lr: 1.50e-04 | left: 138s
+step 04050 ( 43.0%) | loss: 1.181710 | trade:0.36 call:0.68 put:0.32 | ATM:0.55 OTM:0.45 | curriculum:0.43 | lr: 1.50e-04 | left: 137s
+step 04100 ( 43.6%) | loss: 1.165559 | trade:0.29 call:0.72 put:0.28 | ATM:0.58 OTM:0.42 | curriculum:0.44 | lr: 1.50e-04 | left: 135s
+step 04150 ( 44.1%) | loss: 1.137627 | trade:0.33 call:0.63 put:0.37 | ATM:0.58 OTM:0.42 | curriculum:0.44 | lr: 1.50e-04 | left: 134s
+step 04200 ( 44.6%) | loss: 1.164556 | trade:0.30 call:0.70 put:0.30 | ATM:0.64 OTM:0.36 | curriculum:0.45 | lr: 1.50e-04 | left: 133s
+step 04250 ( 45.2%) | loss: 1.156084 | trade:0.33 call:0.64 put:0.36 | ATM:0.61 OTM:0.39 | curriculum:0.45 | lr: 1.50e-04 | left: 132s
+step 04300 ( 45.7%) | loss: 1.165832 | trade:0.39 call:0.66 put:0.34 | ATM:0.58 OTM:0.42 | curriculum:0.46 | lr: 1.50e-04 | left: 130s
+step 04350 ( 46.2%) | loss: 1.156819 | trade:0.32 call:0.68 put:0.32 | ATM:0.59 OTM:0.41 | curriculum:0.46 | lr: 1.50e-04 | left: 129s
+step 04400 ( 46.7%) | loss: 1.152926 | trade:0.34 call:0.70 put:0.30 | ATM:0.57 OTM:0.43 | curriculum:0.47 | lr: 1.50e-04 | left: 128s
+step 04450 ( 47.3%) | loss: 1.139061 | trade:0.38 call:0.68 put:0.32 | ATM:0.60 OTM:0.40 | curriculum:0.47 | lr: 1.50e-04 | left: 127s
+step 04500 ( 47.8%) | loss: 1.162356 | trade:0.36 call:0.65 put:0.35 | ATM:0.61 OTM:0.39 | curriculum:0.48 | lr: 1.50e-04 | left: 125s
+step 04550 ( 48.3%) | loss: 1.135840 | trade:0.35 call:0.62 put:0.38 | ATM:0.57 OTM:0.43 | curriculum:0.48 | lr: 1.50e-04 | left: 124s
+step 04600 ( 48.9%) | loss: 1.155946 | trade:0.34 call:0.67 put:0.33 | ATM:0.56 OTM:0.44 | curriculum:0.49 | lr: 1.50e-04 | left: 123s
+step 04650 ( 49.4%) | loss: 1.129492 | trade:0.34 call:0.65 put:0.35 | ATM:0.56 OTM:0.44 | curriculum:0.49 | lr: 1.50e-04 | left: 121s
+step 04700 ( 49.9%) | loss: 1.138133 | trade:0.39 call:0.69 put:0.31 | ATM:0.61 OTM:0.39 | curriculum:0.50 | lr: 1.50e-04 | left: 120s
+step 04750 ( 50.5%) | loss: 1.175913 | trade:0.31 call:0.64 put:0.36 | ATM:0.62 OTM:0.38 | curriculum:0.50 | lr: 1.50e-04 | left: 119s
+step 04800 ( 51.0%) | loss: 1.119097 | trade:0.38 call:0.64 put:0.36 | ATM:0.55 OTM:0.45 | curriculum:0.51 | lr: 1.50e-04 | left: 118s
+step 04850 ( 51.5%) | loss: 1.131819 | trade:0.38 call:0.65 put:0.35 | ATM:0.61 OTM:0.39 | curriculum:0.52 | lr: 1.50e-04 | left: 116s
+step 04900 ( 52.1%) | loss: 1.127138 | trade:0.31 call:0.66 put:0.34 | ATM:0.66 OTM:0.34 | curriculum:0.52 | lr: 1.50e-04 | left: 115s
+step 04950 ( 52.6%) | loss: 1.156865 | trade:0.35 call:0.65 put:0.35 | ATM:0.62 OTM:0.38 | curriculum:0.53 | lr: 1.50e-04 | left: 114s
+step 05000 ( 53.1%) | loss: 1.145754 | trade:0.35 call:0.61 put:0.39 | ATM:0.61 OTM:0.39 | curriculum:0.53 | lr: 1.50e-04 | left: 112s
+step 05050 ( 53.7%) | loss: 1.125825 | trade:0.35 call:0.64 put:0.36 | ATM:0.52 OTM:0.48 | curriculum:0.54 | lr: 1.50e-04 | left: 111s
+step 05100 ( 54.2%) | loss: 1.136257 | trade:0.31 call:0.66 put:0.34 | ATM:0.65 OTM:0.35 | curriculum:0.54 | lr: 1.50e-04 | left: 110s
+step 05150 ( 54.7%) | loss: 1.112588 | trade:0.39 call:0.61 put:0.39 | ATM:0.65 OTM:0.35 | curriculum:0.55 | lr: 1.50e-04 | left: 109s
+step 05200 ( 55.3%) | loss: 1.142437 | trade:0.32 call:0.68 put:0.32 | ATM:0.61 OTM:0.39 | curriculum:0.55 | lr: 1.50e-04 | left: 107s
+step 05250 ( 55.8%) | loss: 1.132914 | trade:0.30 call:0.68 put:0.32 | ATM:0.65 OTM:0.35 | curriculum:0.56 | lr: 1.50e-04 | left: 106s
+step 05300 ( 56.4%) | loss: 1.128668 | trade:0.30 call:0.68 put:0.32 | ATM:0.63 OTM:0.37 | curriculum:0.56 | lr: 1.50e-04 | left: 105s
+step 05350 ( 56.9%) | loss: 1.152073 | trade:0.27 call:0.70 put:0.30 | ATM:0.65 OTM:0.35 | curriculum:0.57 | lr: 1.50e-04 | left: 103s
+step 05400 ( 57.4%) | loss: 1.124944 | trade:0.40 call:0.62 put:0.38 | ATM:0.54 OTM:0.46 | curriculum:0.57 | lr: 1.50e-04 | left: 102s
+step 05450 ( 57.9%) | loss: 1.098380 | trade:0.37 call:0.60 put:0.40 | ATM:0.60 OTM:0.40 | curriculum:0.58 | lr: 1.50e-04 | left: 101s
+step 05500 ( 58.5%) | loss: 1.096656 | trade:0.34 call:0.58 put:0.42 | ATM:0.62 OTM:0.38 | curriculum:0.58 | lr: 1.50e-04 | left: 100s
+step 05550 ( 59.0%) | loss: 1.131210 | trade:0.34 call:0.61 put:0.39 | ATM:0.66 OTM:0.34 | curriculum:0.59 | lr: 1.50e-04 | left: 98s
+step 05600 ( 59.5%) | loss: 1.124537 | trade:0.35 call:0.68 put:0.32 | ATM:0.64 OTM:0.36 | curriculum:0.60 | lr: 1.50e-04 | left: 97s
+step 05650 ( 60.1%) | loss: 1.127052 | trade:0.33 call:0.70 put:0.30 | ATM:0.65 OTM:0.35 | curriculum:0.60 | lr: 1.50e-04 | left: 96s
+step 05700 ( 60.6%) | loss: 1.126234 | trade:0.40 call:0.67 put:0.33 | ATM:0.61 OTM:0.39 | curriculum:0.61 | lr: 1.50e-04 | left: 95s
+step 05750 ( 61.1%) | loss: 1.112907 | trade:0.35 call:0.62 put:0.38 | ATM:0.61 OTM:0.39 | curriculum:0.61 | lr: 1.50e-04 | left: 93s
+step 05800 ( 61.7%) | loss: 1.109635 | trade:0.34 call:0.68 put:0.32 | ATM:0.66 OTM:0.34 | curriculum:0.62 | lr: 1.50e-04 | left: 92s
+step 05850 ( 62.2%) | loss: 1.096244 | trade:0.32 call:0.64 put:0.36 | ATM:0.60 OTM:0.40 | curriculum:0.62 | lr: 1.50e-04 | left: 91s
+step 05900 ( 62.7%) | loss: 1.103682 | trade:0.36 call:0.63 put:0.37 | ATM:0.64 OTM:0.36 | curriculum:0.63 | lr: 1.50e-04 | left: 90s
+step 05950 ( 63.2%) | loss: 1.084493 | trade:0.34 call:0.54 put:0.46 | ATM:0.65 OTM:0.35 | curriculum:0.63 | lr: 1.50e-04 | left: 88s
+step 06000 ( 63.7%) | loss: 1.088672 | trade:0.36 call:0.64 put:0.36 | ATM:0.66 OTM:0.34 | curriculum:0.64 | lr: 1.50e-04 | left: 87s
+step 06050 ( 64.3%) | loss: 1.135767 | trade:0.35 call:0.63 put:0.37 | ATM:0.67 OTM:0.33 | curriculum:0.64 | lr: 1.50e-04 | left: 86s
+step 06100 ( 64.8%) | loss: 1.118072 | trade:0.30 call:0.59 put:0.41 | ATM:0.65 OTM:0.35 | curriculum:0.65 | lr: 1.50e-04 | left: 84s
+step 06150 ( 65.4%) | loss: 1.099960 | trade:0.29 call:0.67 put:0.33 | ATM:0.64 OTM:0.36 | curriculum:0.65 | lr: 1.50e-04 | left: 83s
+step 06200 ( 65.9%) | loss: 1.096415 | trade:0.32 call:0.56 put:0.44 | ATM:0.62 OTM:0.38 | curriculum:0.66 | lr: 1.50e-04 | left: 82s
+step 06250 ( 66.4%) | loss: 1.078136 | trade:0.34 call:0.70 put:0.30 | ATM:0.66 OTM:0.34 | curriculum:0.66 | lr: 1.50e-04 | left: 81s
+step 06300 ( 67.0%) | loss: 1.084208 | trade:0.34 call:0.60 put:0.40 | ATM:0.61 OTM:0.39 | curriculum:0.67 | lr: 1.50e-04 | left: 79s
+step 06350 ( 67.5%) | loss: 1.076064 | trade:0.32 call:0.63 put:0.37 | ATM:0.64 OTM:0.36 | curriculum:0.68 | lr: 1.50e-04 | left: 78s
+step 06400 ( 68.0%) | loss: 1.107866 | trade:0.34 call:0.64 put:0.36 | ATM:0.70 OTM:0.30 | curriculum:0.68 | lr: 1.50e-04 | left: 77s
+step 06450 ( 68.6%) | loss: 1.091435 | trade:0.34 call:0.55 put:0.45 | ATM:0.60 OTM:0.40 | curriculum:0.69 | lr: 1.50e-04 | left: 75s
+step 06500 ( 69.1%) | loss: 1.091947 | trade:0.30 call:0.58 put:0.42 | ATM:0.62 OTM:0.38 | curriculum:0.69 | lr: 1.50e-04 | left: 74s
+step 06550 ( 69.7%) | loss: 1.085597 | trade:0.35 call:0.61 put:0.39 | ATM:0.58 OTM:0.42 | curriculum:0.70 | lr: 1.50e-04 | left: 73s
+step 06600 ( 70.2%) | loss: 1.087380 | trade:0.36 call:0.66 put:0.34 | ATM:0.61 OTM:0.39 | curriculum:0.70 | lr: 1.50e-04 | left: 72s
+step 06650 ( 70.7%) | loss: 1.076361 | trade:0.37 call:0.65 put:0.35 | ATM:0.67 OTM:0.33 | curriculum:0.71 | lr: 1.50e-04 | left: 70s
+step 06700 ( 71.3%) | loss: 1.073208 | trade:0.34 call:0.67 put:0.33 | ATM:0.63 OTM:0.37 | curriculum:0.71 | lr: 1.49e-04 | left: 69s
+step 06750 ( 71.8%) | loss: 1.071119 | trade:0.38 call:0.65 put:0.35 | ATM:0.60 OTM:0.40 | curriculum:0.72 | lr: 1.49e-04 | left: 68s
+step 06800 ( 72.3%) | loss: 1.089832 | trade:0.32 call:0.57 put:0.43 | ATM:0.60 OTM:0.40 | curriculum:0.72 | lr: 1.48e-04 | left: 66s
+step 06850 ( 72.8%) | loss: 1.074708 | trade:0.34 call:0.62 put:0.38 | ATM:0.65 OTM:0.35 | curriculum:0.73 | lr: 1.47e-04 | left: 65s
+step 06900 ( 73.4%) | loss: 1.076448 | trade:0.33 call:0.57 put:0.43 | ATM:0.63 OTM:0.37 | curriculum:0.73 | lr: 1.45e-04 | left: 64s
+step 06950 ( 73.9%) | loss: 1.068047 | trade:0.29 call:0.60 put:0.40 | ATM:0.71 OTM:0.29 | curriculum:0.74 | lr: 1.44e-04 | left: 63s
+step 07000 ( 74.4%) | loss: 1.080181 | trade:0.34 call:0.60 put:0.40 | ATM:0.58 OTM:0.42 | curriculum:0.74 | lr: 1.42e-04 | left: 61s
+step 07050 ( 75.0%) | loss: 1.079676 | trade:0.28 call:0.60 put:0.40 | ATM:0.70 OTM:0.30 | curriculum:0.75 | lr: 1.40e-04 | left: 60s
+step 07100 ( 75.5%) | loss: 1.063358 | trade:0.29 call:0.64 put:0.36 | ATM:0.65 OTM:0.35 | curriculum:0.75 | lr: 1.38e-04 | left: 59s
+step 07150 ( 76.0%) | loss: 1.063999 | trade:0.34 call:0.61 put:0.39 | ATM:0.60 OTM:0.40 | curriculum:0.76 | lr: 1.36e-04 | left: 57s
+step 07200 ( 76.6%) | loss: 1.049552 | trade:0.32 call:0.59 put:0.41 | ATM:0.61 OTM:0.39 | curriculum:0.77 | lr: 1.33e-04 | left: 56s
+step 07250 ( 77.1%) | loss: 1.056276 | trade:0.34 call:0.62 put:0.38 | ATM:0.60 OTM:0.40 | curriculum:0.77 | lr: 1.30e-04 | left: 55s
+step 07300 ( 77.6%) | loss: 1.052809 | trade:0.38 call:0.63 put:0.37 | ATM:0.59 OTM:0.41 | curriculum:0.78 | lr: 1.27e-04 | left: 54s
+step 07350 ( 78.1%) | loss: 1.038671 | trade:0.29 call:0.61 put:0.39 | ATM:0.66 OTM:0.34 | curriculum:0.78 | lr: 1.24e-04 | left: 52s
+step 07400 ( 78.7%) | loss: 1.062394 | trade:0.31 call:0.62 put:0.38 | ATM:0.64 OTM:0.36 | curriculum:0.79 | lr: 1.21e-04 | left: 51s
+step 07450 ( 79.2%) | loss: 1.050814 | trade:0.35 call:0.65 put:0.35 | ATM:0.68 OTM:0.32 | curriculum:0.79 | lr: 1.18e-04 | left: 50s
+step 07500 ( 79.7%) | loss: 1.046925 | trade:0.32 call:0.60 put:0.40 | ATM:0.63 OTM:0.37 | curriculum:0.80 | lr: 1.14e-04 | left: 49s
+step 07550 ( 80.3%) | loss: 1.038033 | trade:0.24 call:0.59 put:0.41 | ATM:0.72 OTM:0.28 | curriculum:0.80 | lr: 1.11e-04 | left: 47s
+step 07600 ( 80.8%) | loss: 1.038741 | trade:0.32 call:0.60 put:0.40 | ATM:0.62 OTM:0.38 | curriculum:0.81 | lr: 1.07e-04 | left: 46s
+step 07650 ( 81.3%) | loss: 1.048450 | trade:0.30 call:0.55 put:0.45 | ATM:0.62 OTM:0.38 | curriculum:0.81 | lr: 1.03e-04 | left: 45s
+step 07700 ( 81.8%) | loss: 1.044844 | trade:0.33 call:0.66 put:0.34 | ATM:0.59 OTM:0.41 | curriculum:0.82 | lr: 9.93e-05 | left: 44s
+step 07750 ( 82.4%) | loss: 1.030995 | trade:0.35 call:0.59 put:0.41 | ATM:0.64 OTM:0.36 | curriculum:0.82 | lr: 9.53e-05 | left: 42s
+step 07800 ( 82.9%) | loss: 1.040300 | trade:0.33 call:0.56 put:0.44 | ATM:0.65 OTM:0.35 | curriculum:0.83 | lr: 9.13e-05 | left: 41s
+step 07850 ( 83.4%) | loss: 1.063541 | trade:0.36 call:0.60 put:0.40 | ATM:0.66 OTM:0.34 | curriculum:0.83 | lr: 8.71e-05 | left: 40s
+step 07900 ( 84.0%) | loss: 1.044582 | trade:0.35 call:0.64 put:0.36 | ATM:0.64 OTM:0.36 | curriculum:0.84 | lr: 8.30e-05 | left: 38s
+step 07950 ( 84.5%) | loss: 1.025789 | trade:0.39 call:0.55 put:0.45 | ATM:0.58 OTM:0.42 | curriculum:0.85 | lr: 7.88e-05 | left: 37s
+step 08000 ( 85.1%) | loss: 1.035152 | trade:0.33 call:0.52 put:0.48 | ATM:0.69 OTM:0.31 | curriculum:0.85 | lr: 7.46e-05 | left: 36s
+step 08050 ( 85.6%) | loss: 1.037799 | trade:0.40 call:0.58 put:0.42 | ATM:0.63 OTM:0.37 | curriculum:0.86 | lr: 7.04e-05 | left: 35s
+step 08100 ( 86.1%) | loss: 1.034662 | trade:0.31 call:0.57 put:0.43 | ATM:0.70 OTM:0.30 | curriculum:0.86 | lr: 6.62e-05 | left: 33s
+step 08150 ( 86.7%) | loss: 1.038487 | trade:0.33 call:0.56 put:0.44 | ATM:0.65 OTM:0.35 | curriculum:0.87 | lr: 6.21e-05 | left: 32s
+step 08200 ( 87.2%) | loss: 1.051214 | trade:0.36 call:0.60 put:0.40 | ATM:0.62 OTM:0.38 | curriculum:0.87 | lr: 5.80e-05 | left: 31s
+step 08250 ( 87.7%) | loss: 1.028157 | trade:0.42 call:0.59 put:0.41 | ATM:0.58 OTM:0.42 | curriculum:0.88 | lr: 5.40e-05 | left: 29s
+step 08300 ( 88.2%) | loss: 1.047552 | trade:0.27 call:0.64 put:0.36 | ATM:0.64 OTM:0.36 | curriculum:0.88 | lr: 5.00e-05 | left: 28s
+step 08350 ( 88.8%) | loss: 1.046428 | trade:0.38 call:0.60 put:0.40 | ATM:0.64 OTM:0.36 | curriculum:0.89 | lr: 4.61e-05 | left: 27s
+step 08400 ( 89.3%) | loss: 1.018610 | trade:0.35 call:0.59 put:0.41 | ATM:0.67 OTM:0.33 | curriculum:0.89 | lr: 4.23e-05 | left: 26s
+step 08450 ( 89.9%) | loss: 1.023609 | trade:0.33 call:0.55 put:0.45 | ATM:0.60 OTM:0.40 | curriculum:0.90 | lr: 3.85e-05 | left: 24s
+step 08500 ( 90.4%) | loss: 1.029576 | trade:0.37 call:0.57 put:0.43 | ATM:0.63 OTM:0.37 | curriculum:0.90 | lr: 3.50e-05 | left: 23s
+step 08550 ( 90.9%) | loss: 1.012373 | trade:0.35 call:0.64 put:0.36 | ATM:0.67 OTM:0.33 | curriculum:0.91 | lr: 3.15e-05 | left: 22s
+step 08600 ( 91.4%) | loss: 1.019020 | trade:0.33 call:0.55 put:0.45 | ATM:0.63 OTM:0.37 | curriculum:0.91 | lr: 2.81e-05 | left: 21s
+step 08650 ( 92.0%) | loss: 1.007079 | trade:0.32 call:0.55 put:0.45 | ATM:0.61 OTM:0.39 | curriculum:0.92 | lr: 2.49e-05 | left: 19s
+step 08700 ( 92.5%) | loss: 1.013625 | trade:0.36 call:0.53 put:0.47 | ATM:0.63 OTM:0.37 | curriculum:0.93 | lr: 2.19e-05 | left: 18s
+step 08750 ( 93.1%) | loss: 1.026339 | trade:0.34 call:0.57 put:0.43 | ATM:0.64 OTM:0.36 | curriculum:0.93 | lr: 1.89e-05 | left: 17s
+step 08800 ( 93.6%) | loss: 1.029225 | trade:0.35 call:0.63 put:0.37 | ATM:0.64 OTM:0.36 | curriculum:0.94 | lr: 1.62e-05 | left: 15s
+step 08850 ( 94.1%) | loss: 1.019665 | trade:0.32 call:0.57 put:0.43 | ATM:0.71 OTM:0.29 | curriculum:0.94 | lr: 1.37e-05 | left: 14s
+step 08900 ( 94.7%) | loss: 1.016899 | trade:0.32 call:0.63 put:0.37 | ATM:0.60 OTM:0.40 | curriculum:0.95 | lr: 1.14e-05 | left: 13s
+step 08950 ( 95.2%) | loss: 1.016003 | trade:0.38 call:0.63 put:0.37 | ATM:0.61 OTM:0.39 | curriculum:0.95 | lr: 9.34e-06 | left: 12s
+step 09000 ( 95.7%) | loss: 1.003530 | trade:0.31 call:0.63 put:0.37 | ATM:0.65 OTM:0.35 | curriculum:0.96 | lr: 7.41e-06 | left: 10s
+step 09050 ( 96.3%) | loss: 1.018319 | trade:0.39 call:0.55 put:0.45 | ATM:0.59 OTM:0.41 | curriculum:0.96 | lr: 5.69e-06 | left: 9s
+step 09100 ( 96.8%) | loss: 1.041288 | trade:0.34 call:0.58 put:0.42 | ATM:0.66 OTM:0.34 | curriculum:0.97 | lr: 4.22e-06 | left: 8s
+step 09150 ( 97.3%) | loss: 1.012240 | trade:0.29 call:0.59 put:0.41 | ATM:0.69 OTM:0.31 | curriculum:0.97 | lr: 2.94e-06 | left: 6s
+step 09200 ( 97.9%) | loss: 1.023988 | trade:0.31 call:0.57 put:0.43 | ATM:0.70 OTM:0.30 | curriculum:0.98 | lr: 1.88e-06 | left: 5s
+step 09250 ( 98.4%) | loss: 0.990324 | trade:0.32 call:0.56 put:0.44 | ATM:0.72 OTM:0.28 | curriculum:0.98 | lr: 1.06e-06 | left: 4s
+step 09300 ( 98.9%) | loss: 0.999006 | trade:0.32 call:0.63 put:0.37 | ATM:0.65 OTM:0.35 | curriculum:0.99 | lr: 4.71e-07 | left: 3s
+step 09350 ( 99.5%) | loss: 1.020294 | trade:0.36 call:0.63 put:0.37 | ATM:0.68 OTM:0.32 | curriculum:0.99 | lr: 1.18e-07 | left: 1s
+step 09400 (100.0%) | loss: 1.033685 | trade:0.33 call:0.63 put:0.37 | ATM:0.67 OTM:0.33 | curriculum:1.00 | lr: 6.53e-14 | left: 0s
+
+Training done at 245s. Starting evaluation...
+Evaluation done in 6s (total wall: 251s)
+Model saved to /root/best_model.pt
+Trade log: 88 trades -> /root/trade_log.csv
+
+---
+score:              0.043560
+profit_factor:      1.333778
+win_rate:           0.306818
+avg_winner:         0.687989
+avg_loser:          -0.228313
+trades_per_day:     1.353846
+max_consec_loss:    17
+num_trades:         88
+trade_sharpe:       1.371342
+sortino:            9.294946
+max_drawdown:       -6.286266
+calmar:             0.739481
+ev_per_trade:       0.052825
+do_nothing_pct:     0.591928
+exit_pct:           0.011883
+model_exit_count:   53
+cooldown_blocked:   162
+pre_10am_blocked:   615
+short_hold_pct:     0.136000
+stop_loss_rate:     0.420000
+direction_collapse_pct: 0.340900
+avg_entry_cost_bps: 282.916800
+avg_entry_quality:  0.789100
+cost_realism_coverage: 1.011400
+high_cost_entry_rate: 0.375000
+low_quality_entry_rate: 0.000000
+actionable_bar_rate: 0.829100
+risk_off_bar_rate:  0.000000
+final_capital:      6337.50
+equity_sharpe:      -0.401700
+max_equity_dd:      -0.634300
+total_dollar_return:-0.366300
+val_sharpe:         -39.326015
+total_return:       4.648573
+num_val_bars:       4460
+num_val_days:       65
+worst_chunk_pf:     0.24
+rr_ratio:           3.0134
+avg_hold_bars:      11.84
+model_exit_rate:    0.6023
+hit_ruin:           False
+min_equity_frac:    0.3846
+avg_risk_fraction:  0.1717
+max_risk_fraction:  0.5553
+trades_blocked_by_balance: 0
+training_seconds:   240.0
+total_seconds:      253.0
+peak_vram_mb:       357.0
+num_steps:          9401
+num_params:         145,121
+lookback:           120
+depth:              3
+d_model:            64
+effective_lr:       0.00015
+gate_label_smoothing:0.050000
+dir_label_smoothing:0.050000
+false_entry_penalty:2.000000
+position_size_curriculum_weight:0.300000
+/opt/conda/lib/python3.11/site-packages/torch/nn/modules/transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(

@@ -1,0 +1,1 @@
+The error is clear: data.pt is missing 'day_boundaries' field, which is required by make_day_sequential_loader. The fix is to gracefully handle this missing field by disabling day-sequential batching when day_boundaries is not available, just like the existing error handling does for KeyError and AssertionError.

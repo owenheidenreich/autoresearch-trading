@@ -1,0 +1,18 @@
+{
+  "anomaly_flags": [],
+  "contract_checksum": "7b9b33f6b435",
+  "data_fingerprint": "93cdaa55b70dfc9f4d9b7bef20509873ff3f39c48498101583d08bb70b6e87aa",
+  "error": "API error: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CZJdz8Uc4u4DnCeYB17ra'}",
+  "experiment_id": 12,
+  "failure_type": "api",
+  "kept": false,
+  "model_fingerprint_after": "d322d96e0144ca6b21debe4f9a97284a369c0a435dff2b5431030fc26f09101a",
+  "model_fingerprint_before": "d322d96e0144ca6b21debe4f9a97284a369c0a435dff2b5431030fc26f09101a",
+  "program_md_fingerprint": "b30c8fb596aa9ea1b23d88e4677b9a62d0621f24713eb5f311a94cf9c40508e9",
+  "prompt_fingerprint": "d1663fdcb54b80ca485d2728afc870d831358dee3a8fab8a732fecb3c25bb96c",
+  "schema_version": 2,
+  "score": -999.0,
+  "timestamp": "2026-03-22T19:03:45.856586",
+  "train_py_after_hash": "48ec9b3c2b02c61806553b9c070fb1c0b4022938c01d4042e3ea7adf345ee10f",
+  "train_py_before_hash": "48ec9b3c2b02c61806553b9c070fb1c0b4022938c01d4042e3ea7adf345ee10f"
+}

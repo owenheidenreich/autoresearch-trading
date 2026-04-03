@@ -1,0 +1,5 @@
+The strategy has collapsed into micro-tuning SCORE_DRAWDOWN_PENALTY, which has hit diminishing returns at 0.05. All recent experiments are variations of the same theme and failing. The core issue is that we've optimized the score formula but haven't improved the actual trading strategy.
+
+Looking at the trajectory, the biggest jumps came from: (1) BalancedStrikeGate architecture, (2) score formula tuning, and (3) PNL_ALIGNMENT_WEIGHT increase to 0.3. But we haven't touched the actual loss structure or training signal selection recently.
+
+My hypothesis: Instead of micro-tuning penalties, let's focus on SAMPLE SELECTION during training. The model currently trains on all valid bars equally, but what if we weighted samples based on their "teachability"? High-volatility periods with clear directional moves should be weighted more heavily than choppy, low-signal periods. This would give the model clearer training signal without adding new parameters or modules.

@@ -1,0 +1,9 @@
+[2026-03-21 19:41:13] Signal handlers installed
+[2026-03-21 19:41:13] Loop starting: hours=0.75, max_experiments=7
+[2026-03-21 19:41:13] phase=startup | rss_mb=801.5 | vmsize_kb=17369300 | vmrss_kb=715860 | cgroup_mb=1266 | pids=10 | disk_used_gb=2853.2 | disk_free_gb=4075.4
+[2026-03-21 19:47:11] phase=pre_train_1 | rss_mb=801.5 | vmsize_kb=17371348 | vmrss_kb=718164 | cgroup_mb=1266 | pids=8 | disk_used_gb=2865.6 | disk_free_gb=4063.0
+[2026-03-21 19:47:16] phase=post_train_1 | rss_mb=801.5 | vmsize_kb=17445096 | vmrss_kb=718164 | cgroup_mb=1268 | pids=8 | disk_used_gb=2865.8 | disk_free_gb=4062.9
+[2026-03-21 19:50:18] phase=post_exp_1 | rss_mb=801.5 | vmsize_kb=17445096 | vmrss_kb=718164 | cgroup_mb=1272 | pids=10 | disk_used_gb=2881.7 | disk_free_gb=4046.9
+[2026-03-21 19:56:03] phase=post_exp_2 | rss_mb=801.5 | vmsize_kb=17443216 | vmrss_kb=716544 | cgroup_mb=1267 | pids=8 | disk_used_gb=2882.4 | disk_free_gb=4046.2
+[2026-03-21 20:04:01] SIGNAL RECEIVED: SIGTERM (signum=15)
+[2026-03-21 20:04:01] phase=signal_death | rss_mb=801.5 | vmsize_kb=17443216 | vmrss_kb=716544 | cgroup_mb=1270 | pids=9 | disk_used_gb=2897.8 | disk_free_gb=4030.8

@@ -1,0 +1,7 @@
+Looking at the recent trajectory, experiment #5 achieved the best score (0.916) by adding VIX regime robustness features. This suggests the model was struggling with temporal consistency across different volatility regimes. However, I notice a pattern in the failed experiments: they all tried to add complexity (new modules, new loss terms, day-sequential batching) which failed due to insufficient training time.
+
+The biggest weakness appears to be temporal robustness - the model likely performs well in some time periods but poorly in others. Experiment #5's success with VIX regime weighting confirms this. The key insight is that low-VIX periods are underrepresented in training but critical for validation performance.
+
+My hypothesis: The model needs better exit timing discipline. Looking at the pattern, every failed experiment tried to add complexity, but what we need is better training signal quality. The current model uses STOPPED P&L for training (good), but I suspect the exit loss weight is too low (0.5), causing the model to rely too heavily on stops rather than learning proactive exits.
+
+I'll increase EXIT_LOSS_WEIGHT from 0.5 to 1.2 to force the model to learn better exit timing. This should improve the win rate and reduce stop-loss dependency without adding architectural complexity.

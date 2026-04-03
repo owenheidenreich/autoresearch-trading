@@ -1,0 +1,7 @@
+[2026-03-23 03:34:37] Signal handlers installed
+[2026-03-23 03:34:37] Loop starting: hours=3.0, max_experiments=30
+[2026-03-23 03:34:37] phase=startup | rss_mb=805.8 | vmsize_kb=17376584 | vmrss_kb=720744 | cgroup_mb=1288 | pids=8 | disk_used_gb=3103.5 | disk_free_gb=3825.2
+[2026-03-23 03:44:18] phase=pre_train_1 | rss_mb=805.8 | vmsize_kb=17376752 | vmrss_kb=722108 | cgroup_mb=1292 | pids=8 | disk_used_gb=3105.2 | disk_free_gb=3823.4
+[2026-03-23 03:48:27] phase=post_train_1 | rss_mb=805.8 | vmsize_kb=17450500 | vmrss_kb=722108 | cgroup_mb=1292 | pids=6 | disk_used_gb=3102.9 | disk_free_gb=3825.8
+[2026-03-23 03:48:28] phase=post_exp_1 | rss_mb=805.8 | vmsize_kb=17450500 | vmrss_kb=722108 | cgroup_mb=1291 | pids=6 | disk_used_gb=3102.9 | disk_free_gb=3825.8
+[2026-03-23 03:53:10] phase=pre_train_2 | rss_mb=805.8 | vmsize_kb=17450500 | vmrss_kb=722108 | cgroup_mb=1292 | pids=6 | disk_used_gb=3105.0 | disk_free_gb=3823.6

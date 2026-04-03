@@ -1,0 +1,29 @@
+{
+  "phase": "training",
+  "experiment_id": 2,
+  "best_score": 1.768642,
+  "kept": 0,
+  "failed": 0,
+  "total": 1,
+  "accept_rate": 0.0,
+  "time_remaining_h": 7.88,
+  "updated": "2026-03-21T22:56:18.836121",
+  "contract_checksum": "27646c74cf68",
+  "last_change": "class ProfitAwareStrikeGate(nn.Module):; def forward(self, gate_input, dir_input, account_health, unrealized_pnl):",
+  "last_score": null,
+  "last_kept": false,
+  "api_cost": {
+    "total_cost": 0.38,
+    "cost_input": 0.01,
+    "cost_cache_write": 0.0,
+    "cost_cache_read": 0.01,
+    "cost_output": 0.36,
+    "tokens_input": 3184,
+    "tokens_output": 24312,
+    "tokens_cache_read": 35638,
+    "tokens_cache_write": 0,
+    "api_calls": 2,
+    "prefetch_discards": 0,
+    "cache_hit_pct": 91.8
+  }
+}

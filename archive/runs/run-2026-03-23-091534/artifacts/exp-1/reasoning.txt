@@ -1,0 +1,1 @@
+The direction collapse (1.0) indicates the model always chooses the same strike type. I'll increase DIR_LOSS_WEIGHT from 1.0 to 2.0 to strengthen direction head training and reduce the OTM penalty from -0.10 to -0.05 to allow more diversity while still favoring ATM. This should help the model learn better call/put discrimination rather than collapsing to one direction.

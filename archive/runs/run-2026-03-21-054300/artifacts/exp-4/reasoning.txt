@@ -1,0 +1,5 @@
+The recent trajectory shows a pattern of repeatedly tuning SCORE_DRAWDOWN_PENALTY from 0.5 → 0.3 → 0.2 → 0.1 → 0.05, with each reduction improving the score. However, attempts to eliminate it entirely (0.0) failed, suggesting 0.05 is near optimal. I need a different approach to break through the current best of 10.29.
+
+Looking at the chunk details from successful runs, I notice the strategy performs well across different time periods but there might be room to improve the model's learning signal. The current FALSE_ENTRY_PENALTY=2.0 penalizes bad trades 2x vs missed opportunities, but perhaps this isn't aggressive enough given that 0DTE options can cause rapid account destruction.
+
+I'll increase FALSE_ENTRY_PENALTY from 2.0 to 3.0 to make the model even more selective about entries, potentially improving the quality of trades and reducing drawdowns further.

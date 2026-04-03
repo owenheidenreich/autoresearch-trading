@@ -1,0 +1,1 @@
+I'll add feature noise injection during training to combat overfitting. This involves adding small Gaussian noise to input features, which acts as data augmentation and forces the model to learn more robust patterns rather than memorizing exact feature values. I'll use a moderate noise scale (0.02) that's large enough to regularize but not so large as to destroy useful signal.

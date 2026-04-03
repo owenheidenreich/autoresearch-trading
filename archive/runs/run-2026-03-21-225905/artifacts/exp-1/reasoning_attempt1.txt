@@ -1,0 +1,7 @@
+Looking at the trajectory, the BalancedStrikeGate approach (#52) achieved the best score of 1.77 with PF=3.42 and TPD=1.29. The progression shows that account-aware modules (CapitalPreservationGate, SelectiveStrikeGate, BalancedStrikeGate) consistently outperformed simple bias tuning.
+
+The current BalancedStrikeGate applies softer strike bias when account health < 0.7, but I notice two potential improvements:
+1. The stopped P&L labels are available in the data but not used in the loss function - these could teach the model about realistic exit timing under dynamic stops
+2. The current approach only modulates strike selection, but doesn't adapt the gate decision itself based on account stress
+
+My hypothesis: Incorporate stopped P&L labels into the loss function to teach the model about realistic stop-loss exits, while keeping the successful BalancedStrikeGate architecture. This should improve exit timing and reduce drawdowns without disrupting the proven strike selection logic.

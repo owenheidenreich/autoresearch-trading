@@ -1,0 +1,6 @@
+{
+  "anomaly_flags": [],
+  "failure_type": "regression",
+  "kept": false,
+  "reason": "secondary_regression:score_inflation_suspected (score +0.57 but PF -7.1%, TPD +0.0%)"
+}

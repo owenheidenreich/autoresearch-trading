@@ -1,0 +1,4 @@
+{
+  "error": "SAFETY: _score_config['drawdown_penalty'] changed to 0.05 (locked at 0.5). Modifying score_config games the evaluation metric without improving the model. Improve TRADING BEHAVIOR (PF, win rate, drawdown) instead.",
+  "failure_type": "safety"
+}

@@ -1,0 +1,15 @@
+{
+  "phase": "training",
+  "experiment_id": 3,
+  "best_score": 0.029242,
+  "kept": 0,
+  "failed": 2,
+  "total": 2,
+  "accept_rate": 0.0,
+  "time_remaining_h": 9.72,
+  "updated": "2026-03-20T05:07:08.241894",
+  "contract_checksum": "3e3ad89756bb",
+  "last_change": "VAL_EVAL_INTERVAL = _env_int(\"TRAIN_VAL_INTERVAL\", 1000, lo=100, hi=2000); BATCH_SIZE = _env_int(\"TRAIN_BATCH_SIZE\", 256, lo=32, hi=256)",
+  "last_score": null,
+  "last_kept": false
+}

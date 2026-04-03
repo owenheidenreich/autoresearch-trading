@@ -1,0 +1,518 @@
+{
+  "created_at": "2026-03-20T04:50:19.938380",
+  "fingerprint": "bbc39c3f8425a76b4b4afe2e7590f21d355c232b12bb9f394a2eaa08988111d9",
+  "nan_rate_by_feature": [
+    {
+      "index": 0,
+      "name": "ret_1",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 1,
+      "name": "ret_3",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 2,
+      "name": "ret_6",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 3,
+      "name": "ret_12",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 4,
+      "name": "ret_24",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 5,
+      "name": "volume_ratio",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 6,
+      "name": "volume_zscore",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 7,
+      "name": "volume_at_price_pctile",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 8,
+      "name": "bar_range",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 9,
+      "name": "realized_vol",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 10,
+      "name": "range_ratio",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 11,
+      "name": "vwap_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 12,
+      "name": "vwap_slope",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 13,
+      "name": "vwap_upper1_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 14,
+      "name": "vwap_lower1_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 15,
+      "name": "vwap_upper2_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 16,
+      "name": "vwap_lower2_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 17,
+      "name": "ib_high_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 18,
+      "name": "ib_low_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 19,
+      "name": "ib_width",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 20,
+      "name": "am_range_pct",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 21,
+      "name": "session_range_pct",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 22,
+      "name": "onh_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 23,
+      "name": "onl_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 24,
+      "name": "prev_high_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 25,
+      "name": "prev_low_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 26,
+      "name": "prev_close_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 27,
+      "name": "prev_vwap_dist",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 28,
+      "name": "trend_hh_hl",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 29,
+      "name": "ema_cross",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 30,
+      "name": "close_position",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 31,
+      "name": "gap",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 32,
+      "name": "inside_bar",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 33,
+      "name": "minutes_to_close",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 34,
+      "name": "time_sin",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 35,
+      "name": "time_cos",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 36,
+      "name": "day_of_week",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 37,
+      "name": "half_hour_proximity",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 38,
+      "name": "ib_complete",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 39,
+      "name": "atm_iv",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 40,
+      "name": "iv_skew",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 41,
+      "name": "atm_premium_pct",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 42,
+      "name": "put_call_vol_ratio",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 43,
+      "name": "option_volume",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 44,
+      "name": "theta_rate",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 45,
+      "name": "vix_level",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 46,
+      "name": "vix_change",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 47,
+      "name": "vix_regime",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 48,
+      "name": "vrp",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 49,
+      "name": "otm_call_iv_5",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 50,
+      "name": "otm_put_iv_5",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 51,
+      "name": "iv_skew_5",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 52,
+      "name": "iv_term_call",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 53,
+      "name": "iv_term_put",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 54,
+      "name": "otm_vol_ratio",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 55,
+      "name": "atm_delta",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 56,
+      "name": "atm_gamma",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 57,
+      "name": "atm_theta_per_bar",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 58,
+      "name": "atm_vega",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 59,
+      "name": "gamma_theta_ratio",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 60,
+      "name": "charm_estimate",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 61,
+      "name": "vanna_estimate",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 62,
+      "name": "bollinger_position",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 63,
+      "name": "bollinger_width",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 64,
+      "name": "consec_direction",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 65,
+      "name": "speed_estimate",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 66,
+      "name": "vwap_crosses",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 67,
+      "name": "session_range_position",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 68,
+      "name": "rsi_14",
+      "nan_rate": 0.0
+    },
+    {
+      "index": 69,
+      "name": "atr_ratio",
+      "nan_rate": 0.0
+    }
+  ],
+  "summary": {
+    "date_end": "2026-03-13",
+    "date_start": "2022-03-16",
+    "n_bars": 382920,
+    "n_features": 70,
+    "num_days": 986,
+    "option_coverage": {
+      "atm_call_prices": 0.774888,
+      "atm_put_prices": 0.732889,
+      "otm10_call_prices": 0.863616,
+      "otm10_put_prices": 0.931939,
+      "otm15_call_prices": 0.0,
+      "otm15_put_prices": 0.0,
+      "otm20_call_prices": 0.0,
+      "otm20_put_prices": 0.0,
+      "otm5_call_prices": 0.818928,
+      "otm5_put_prices": 0.929698
+    },
+    "overall_nan_pct": 0.0,
+    "sidecar_coverage": {
+      "action_cost_bps": 0.841993,
+      "action_quality_score": 0.841993,
+      "action_quote_age_s": 0.841993,
+      "action_size": 0.841993,
+      "action_slippage_bps": 0.841993,
+      "action_spread_bps": 0.841993,
+      "actionable_mask": 1.0,
+      "risk_state_mask": 1.0,
+      "supervision_weight": 1.0
+    }
+  },
+  "time_of_day_missingness_top": [
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 0,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 1,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 2,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 3,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 4,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 5,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 6,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 7,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 8,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 9,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 10,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 11,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 12,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 13,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 14,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 15,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 16,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 17,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 18,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 19,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 20,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 21,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 22,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 23,
+      "samples": 986
+    },
+    {
+      "avg_nan_rate": 0.0,
+      "bar_of_day": 24,
+      "samples": 986
+    }
+  ],
+  "timestamp_samples": {
+    "first": "2022-03-16 09:30",
+    "last": "2026-03-13 15:59"
+  }
+}

@@ -1,0 +1,5 @@
+Looking at the trajectory, we've made excellent progress from 0.634 to 2.703 through incremental improvements focusing on temporal robustness and VIX regime consistency. The model now has feature noise injection, temporal chunking consistency, and stop prevention mechanisms. However, I need to identify the remaining weakness.
+
+The key insight from the lab notebook is "Chunk 1 (Feb-May 2025) has PF=0.22" - this suggests the model still struggles with early validation periods despite temporal chunk consistency regularization. The model also has "Stop rate = Win rate = 34%" meaning it never exits losers early via the gate head.
+
+My hypothesis: The current temporal chunk regularization splits by time-of-day, but the real issue is likely calendar time drift. The model trained on later dates may not generalize well to earlier validation dates due to regime changes. I'll add a calendar-time based consistency loss that explicitly addresses the train/validation temporal split, while also strengthening the exit signal training to improve the gate head's ability to cut losses before stops.

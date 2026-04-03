@@ -1,0 +1,1 @@
+The model has strong profit factor but is losing money on trades that hit stops. I'll increase the conservative gate bias even further (from ±1.2 to ±1.5) to make the model even more selective, and increase the false entry penalty from 2.5 to 3.5 to more heavily penalize bad trades. This should reduce the stop-loss rate by making the model only trade when it's very confident.

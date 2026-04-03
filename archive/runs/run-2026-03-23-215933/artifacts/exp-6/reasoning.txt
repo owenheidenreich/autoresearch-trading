@@ -1,0 +1,1 @@
+I will increase LOOKBACK from 120 to 150 bars to give the model more historical context for pattern recognition, which should help it identify more diverse trading opportunities. I'll also reduce DAY_SEQ_RATIO from 0.7 to 0.6 to increase random batch sampling, which can help prevent overfitting to specific temporal patterns and encourage more diverse trading behavior.

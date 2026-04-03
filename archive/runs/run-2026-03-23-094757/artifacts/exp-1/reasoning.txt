@@ -1,0 +1,1 @@
+The direction collapse indicates the model's direction head is stuck predicting the same class. I'll reduce DIR_LOSS_WEIGHT from 1.0 to 0.5 to allow the gate head to dominate early training, then increase GATE_LOSS_WEIGHT from 1.0 to 1.5 to encourage more selective trading. This should help the model learn when NOT to trade before learning complex directional patterns.

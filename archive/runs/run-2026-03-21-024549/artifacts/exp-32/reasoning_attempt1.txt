@@ -1,0 +1,5 @@
+Looking at the trajectory, I see a clear pattern of diminishing returns from repeatedly tuning SCORE_DRAWDOWN_PENALTY (experiments #24, #26, #29 all just reduced this parameter). The strategy collapse warning confirms this repetitive approach. While score improved from 8.97 to 10.29, this is likely near the limit of what drawdown penalty tuning can achieve.
+
+The current best model has strong fundamentals: PF=3.43, TPD=1.32, and the BalancedStrikeGate architecture is proven. However, I notice the model shows some temporal inconsistency in chunk performance (visible in training output). Instead of continuing the drawdown penalty tuning pattern, I'll focus on a different dimension: improving model robustness across different market regimes by enhancing the position state influence adaptively based on recent performance trends.
+
+My hypothesis: The model can achieve better temporal consistency and higher scores by making the position state influence adaptive to recent loss streaks. When the model is performing well (low loss streak), rely more on market features. When struggling (high loss streak), rely more heavily on position state for capital preservation.

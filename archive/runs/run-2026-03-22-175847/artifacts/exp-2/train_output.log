@@ -1,0 +1,38 @@
+Loading data from: /root/.cache/autoresearch-trading/features/data.pt
+Loaded 384870 1-min bars, 32 features, 8 actions
+  ~986 trading days
+Training:   up to idx 269189
+Validation: idx 269190-384869
+  Option P&L coverage: 297877/384870 (77%)
+Parameters: 146,265
+Architecture: v4 simplified two-head (gate+dir) + balanced strike gating + VIX regime robustness + temporal chunking + stop prevention + FULL STOPPED P&L CONSISTENCY + feature noise injection + cross-temporal consistency + MAXIMUM CONSERVATIVE GATE BIAS + DIRECTION ACCURACY FOCUS
+Training from scratch (v4: no warm-start).
+
+Budget: 240s | Batch: 128 | Lookback: 120
+LR: 0.00015 | Depth: 3 | d_model: 64 | ff_mult: 3
+Dropout: 0.15 | Weight decay: 0.05
+False entry penalty: 2.5x
+Label smoothing: gate=0.05 dir=0.05
+Loss weights: gate=1.0, dir=2.0, pnl=0.3, exit=0.5
+DIRECTION FOCUS: DIR_LOSS_WEIGHT=2.0 (increased from 1.0), DIRECTION_CONFIDENCE_BONUS=0.2
+VIX regime weights: vix_regime=0.2, vix_consistency=0.1
+Temporal robustness: temporal_chunk=0.5, cross_temporal=0.3
+Stop prevention: stop_prevention=0.3
+Feature noise injection: std=0.05
+CRITICAL: Training exclusively on STOPPED P&L to align with evaluation reality
+MAXIMUM CONSERVATIVE GATE BIAS: NO_TRADE=+1.2, TRADE=-1.2 for ultra-selectivity
+NEW: Direction accuracy focus with increased DIR_LOSS_WEIGHT and confidence bonus
+
+/opt/conda/lib/python3.11/site-packages/torch/nn/modules/transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(
+Traceback (most recent call last):
+  File "/root/train.py", line 993, in <module>
+    loss = sniper_loss(gate_logits, dir_logits, call_pnl_batch, put_pnl_batch, time_feat, batch_features,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/train.py", line 830, in sniper_loss
+    direction_bonus = direction_confidence_bonus(d_logits, dir_targets, trade_mask)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/train.py", line 643, in direction_confidence_bonus
+    dir_targets_trade = dir_targets[trade_mask]
+                        ~~~~~~~~~~~^^^^^^^^^^^^
+IndexError: The shape of the mask [128] at index 0 does not match the shape of the indexed tensor [55] at index 0

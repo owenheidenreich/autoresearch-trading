@@ -1,0 +1,42 @@
+## Experiment Summary
+Total=4 | Kept=0 | Failed=0 | Accept rate=0% (0/4) | Best score=-10.0 (#1)
+
+## STRATEGY COLLAPSE WARNING
+Strategy collapse warning (3 signals): repetitive_changes (3/4 start with 'pnl_alignment_weight'); zero_accept_rate (0/4 kept in last 4); score_plateau (range=0.0000 in last 4)
+The search has COLLAPSED — recent experiments are repetitive and none succeeded.
+Before proposing anything, re-read Dead Ends and What Fails in the Lab Notebook.
+What assumption are ALL recent failed experiments sharing? Challenge that assumption.
+Consider changes to the TRAINING SIGNAL (loss weighting, sample selection, score_config),
+not just the model architecture.
+
+## Recent Trajectory (last 30)
+  #1: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.4, lo=0.0, hi=2.0)  # Increased from 0.3 to 0.4
+  #2: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — actionable_mask=y_dict['am'],; otm10_call_stopped_pnl=y_dict['otm10c_stopped'],; otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+  #3: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.1, lo=0.0, hi=2.0)  # Reduced from 0.3 to reduce gradient conflicts
+  #4: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # Keep original weight
+
+## DIAGNOSTIC SUMMARY (last scored experiment)
+- Direction collapse: ?
+- Stop-loss rate: ?
+- Avg entry quality: ?
+- Win rate: ?
+
+## Before proposing changes, write your <diagnosis> answering:
+1. What is the single biggest weakness in the current model's trading behavior?
+2. What approach have you NOT tried yet?
+3. Why do you believe your proposed change will improve the score?
+
+## CREATIVE EXPLORATION (every 5th experiment)
+Step back from incremental tuning. Consider these unexplored directions:
+- What if the model learned different strategies for different VIX regimes?
+- What if the loss function weighted morning trades differently from afternoon?
+- What if the model's gate was more selective (fewer but better trades)?
+- What if you changed HOW the model exits, not just when?
+- Look at the worst trades in the diagnostics — what pattern do they share?
+- Is the model better at calls or puts? Should it specialize?
+
+## CURRENT BEST: Experiment #1 (score=-10.0000, pf=0.0)
+The code below IS experiment #1. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

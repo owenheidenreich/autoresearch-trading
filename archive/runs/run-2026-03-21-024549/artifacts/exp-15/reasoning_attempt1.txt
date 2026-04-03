@@ -1,0 +1,5 @@
+Looking at the trajectory, experiment #13 achieved the best score by tuning the score formula parameters (hold bonus, frequency center/width) rather than changing model architecture. The recent failed experiments all tried architectural changes that didn't improve on the BalancedStrikeGate foundation. Since this is a diversity nudge, I should step back and examine a fundamental assumption.
+
+The current model uses symmetric strike penalties for ATM options (-0.25 for both CALL_ATM and PUT_ATM). But 0DTE options have strong directional biases based on time-of-day and market conditions. Morning sessions often favor calls (upward drift), while afternoon charm flows can favor puts (gravitational pull toward max pain). The model might benefit from asymmetric ATM penalties that reflect these intraday directional patterns.
+
+I'll modify the strike bias to be time-aware: reduce CALL_ATM penalty in morning hours (when calls historically perform better) and reduce PUT_ATM penalty in afternoon hours (when puts/downward moves are more common).

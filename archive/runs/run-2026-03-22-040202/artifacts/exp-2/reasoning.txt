@@ -1,0 +1,9 @@
+Looking at the trajectory, we've had consistent improvements from VIX regime balancing and temporal chunk consistency. The current best score is 1.22 with PF=3.13. However, I need to identify the model's biggest weakness from the patterns I can see:
+
+1. The model has improved steadily by addressing regime consistency (VIX) and temporal robustness (chunk consistency), suggesting it was overfitting to specific market conditions.
+
+2. Based on the lab notebook, the critical weakness is Chunk 1 performance (PF=0.22) - the model fails badly on early validation dates. The temporal chunk consistency helped but didn't fully solve this.
+
+3. The stop rate equals win rate (34%), meaning every loss hits the dynamic stop. The model never learns to exit losing trades early via the gate head.
+
+My hypothesis: The model needs stronger exit timing discipline. While we've addressed regime consistency, the model still holds losing positions until they hit stops rather than learning to exit early when momentum turns negative. I'll increase the EXIT_LOSS_WEIGHT to emphasize learning proper exit timing, and add a momentum-based exit signal that teaches the model to recognize when a trade's thesis has failed before hitting the stop-loss.

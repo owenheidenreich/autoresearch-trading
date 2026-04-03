@@ -1,0 +1,7 @@
+Looking at the trajectory, experiment #2 achieved the best score (1.203) by increasing PNL_ALIGNMENT_WEIGHT from 0.3 to 0.5, but it was reverted due to "score_inflation_suspected" - meaning the score went up but actual trading metrics (PF, TPD) didn't improve proportionally. 
+
+The pattern shows that pure loss weight tuning isn't working well. The model needs architectural improvements to its trading behavior, not just re-weighting existing signals.
+
+Looking at the current best experiment #1 (score=0.634, PF=2.64, TPD=1.39), I need to identify what specific trading weakness to address. Since I don't have the detailed trade diagnostics, I'll focus on a fundamental issue: the model's position sizing and risk management under different market conditions.
+
+The BalancedStrikeGate is good but only addresses strike selection. I'll add a complementary module that adjusts the gate threshold based on market volatility conditions (VIX feature), making the model more conservative during high-VIX periods and more aggressive during low-VIX periods. This should improve regime consistency without adding many new parameters.

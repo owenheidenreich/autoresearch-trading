@@ -1,0 +1,34 @@
+## Experiment Summary
+Total=9 | Kept=2 | Failed=0 | Accept rate=22% (2/9) | Best score=3.876675 (#2)
+
+## Top Kept Experiments
+  #2: score=3.876675 pf=2.300186 tpd=1.0 — DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 2.0, lo=0.1, hi=5.0)  # Increased from 1.0
+  #run-2026-03-23-050717#5: score=-0.265802 pf=0.894049 tpd=1.0 — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+
+## Recent Trajectory (last 30)
+  #run-2026-03-23-050717#5: score=-0.265802 pf=0.894049 tpd=1.0 [✓ KEPT] — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+  #1: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — DIRECTION_FEATURE_NOISE = _env_float("TRAIN_DIRECTION_NOISE", 0.15, lo=0.0, hi=0.5); def _apply_direction_feature_noise(x, noise_std=DIRECTION_FEATURE_NOISE):
+  #2: score=3.876675 pf=2.300186 tpd=1.0 [✓ KEPT] — DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 2.0, lo=0.1, hi=5.0)  # Increased from 1.0
+  #3: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved — EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.8, lo=0.0, hi=2.0)  # Increased from 0.5 for more aggressive profit-taking
+  #4: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 0.3, lo=0.1, hi=5.0)  # Reduced from 0.5
+  #5: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — self.gate_head[-1].bias[1] += 0.3   # TRADE: encourage; self.gate_head[-1].bias[0] -= 0.1   # NO_TRADE: less penalty (was -0.3)
+  #6: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — DROPOUT = _env_float("TRAIN_DROPOUT", 0.20, lo=0.05, hi=0.40)  # Increased for better regularization; def get_weight_decay_mult(progress):
+  #7: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 3.0, lo=0.1, hi=5.0)  # Increased from 2.0
+  #8: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — DROPOUT = _env_float("TRAIN_DROPOUT", 0.18, lo=0.05, hi=0.40)  # Increased from 0.15 for better regularization; DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 2.0, lo=0.1, hi=5.0)  # Increased from 1.0 (from experiment #2); WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.1, lo=0.0, hi=0.3)  # Increased from 0.05 for stronger regularization
+
+## DIAGNOSTIC SUMMARY (last scored experiment)
+- Direction collapse: ?
+- Stop-loss rate: ?
+- Avg entry quality: ?
+- Win rate: ?
+
+## Before proposing changes, write your <diagnosis> answering:
+1. What is the single biggest weakness in the current model's trading behavior?
+2. What approach have you NOT tried yet?
+3. Why do you believe your proposed change will improve the score?
+
+## CURRENT BEST: Experiment #2 (score=3.8767, pf=2.300186)
+The code below IS experiment #2. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

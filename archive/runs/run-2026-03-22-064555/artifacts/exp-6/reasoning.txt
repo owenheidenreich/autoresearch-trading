@@ -1,0 +1,9 @@
+Looking at the recent trajectory, I see a clear progression: conservative gate biases have been the key driver of improvement, with scores jumping from 0.63 → 3.20 → 8.23 → 8.46 as gate biases became more conservative. The current best (#5) combines maximum conservative gate bias (+1.2/-1.2) with cross-temporal consistency.
+
+However, I notice a critical pattern in the lab notebook: every experiment focuses on the same temporal robustness issue (Chunk 1 weakness) but none directly address the core trading behavior problems. The model's biggest weaknesses are likely:
+
+1. **Direction collapse**: All recent experiments show similar TPD (~1.6) but varying PF (2.27 → 4.96), suggesting the model is learning WHEN to trade but not necessarily WHICH direction/strike to choose optimally.
+
+2. **Exit timing**: The lab notebook mentions "Stop rate = Win rate = 34%" meaning every loss hits the stop-loss. The model never exits losing trades early via the gate head.
+
+Rather than add yet another temporal consistency mechanism, I'll focus on improving the core trading logic: better direction selection and exit timing. I'll increase the FALSE_ENTRY_PENALTY further (to 3.5 from 2.5) to make the model even more selective, and add a small exit timing bias to encourage earlier exits on losing trades.

@@ -1,0 +1,8 @@
+{
+  "anomaly_flags": [
+    "high_cost_entry_rate_high"
+  ],
+  "failure_type": "regression",
+  "kept": false,
+  "reason": "score_not_improved;critical_anomalies:high_cost_entry_rate_high"
+}

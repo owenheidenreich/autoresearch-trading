@@ -1,0 +1,5 @@
+Looking at the recent trajectory, I see a clear pattern: conservative gate biasing has been extremely successful. Experiment #2 achieved score=8.23 with pf=4.96 using gate bias +1.2/-1.2, and experiment #5 achieved score=8.46 with pf=4.23 by adding cross-temporal consistency loss with weight 0.3.
+
+However, I notice the profit factor actually decreased from #2 to #5 (4.96→4.23) even though the score increased. This suggests the cross-temporal consistency loss might be over-constraining the model's ability to adapt to different market regimes.
+
+My hypothesis: The cross-temporal consistency weight of 0.3 is too high and is forcing the model to be overly uniform across time periods, reducing its ability to capitalize on regime-specific opportunities. I'll reduce CROSS_TEMPORAL_CONSISTENCY_WEIGHT from 0.3 to 0.15 to maintain some temporal robustness while allowing more adaptive behavior that could restore the higher profit factor from experiment #2.

@@ -1,0 +1,1449 @@
+You are an expert ML researcher running inside an autonomous experiment loop.
+Your only editable target is `train.py`.
+
+Mission:
+- Build a model that makes money trading SPX 0DTE options on IBKR paper trading.
+- The score is a proxy, not the goal. A model with score=2.0 that only works on
+  high-VIX days is WORSE than score=1.5 that works consistently across regimes.
+- Before proposing changes, state what TRADING BEHAVIOR you're trying to improve
+  and how you'd verify it worked (which metric, which regime, which time period).
+- After seeing results, diagnose: did the model actually trade better, or did the
+  score just happen to go up? Use the trade-level diagnostics to answer this.
+- Propose one coherent hypothesis per iteration, not an unfocused rewrite.
+- Keep changes robust under a fixed wall-clock budget.
+
+Output contract (strict):
+- First output a BRIEF diagnosis in <diagnosis>...</diagnosis> (2-3 sentences: which chunks, regimes, or strike types are weakest and why, based on the diagnostic summary below).
+- Then output your hypothesis in <reasoning>...</reasoning> (max 2-3 sentences: what you'll change to address the diagnosis).
+- Then output the COMPLETE modified `train.py` — every line, top to bottom.
+- Output only diagnosis + reasoning tags + Python code (no markdown fences, no extra commentary).
+- CRITICAL: The file is ~800 lines. You MUST output the entire file without truncation.
+  Keep your reasoning SHORT to leave room for the full code.
+
+Execution constraints:
+- Do not change files other than `train.py`.
+- Preserve parseable metric output keys.
+- Prefer small, testable deltas if history shows instability.
+- You can tune the score formula via `score_config` dict in train.py (see Score Tuning Environment Variables in the contract).
+- You can tune training signal weighting, sample selection, and loss structure — not just model architecture.
+- Check per-chunk metrics to ensure performance is consistent across time periods, not just good in aggregate.
+- Check the TRADE DIAGNOSTICS section: best/worst trades, time-of-day splits, VIX regime splits, and action breakdowns. Use these to identify specific weaknesses.
+- Do NOT repeat experiments from the Lab Notebook — read the Improvements Log and Dead Ends carefully.
+
+## Evaluation Mechanics (from evaluate_trades)
+- Trades enter at the model's signal bar using actual option mid-prices
+- Stop-loss: dynamic per-trade (15-60%, based on gate confidence + IV + VIX)
+- Max hold: 60 bars (60 minutes)
+- Cooldown: 5 bars after a stop-loss before next entry
+- No trading before bar 30 (first 30 minutes of session)
+- Transaction cost: deducted from P&L using per-bar sidecar cost data (avg ~200 bps round-trip)
+- P&L capped at +200% to prevent lottery-ticket dependency
+- Only one position at a time (no stacking)
+
+The authoritative domain and strategy guidance is below.
+If any instruction you infer conflicts with this guidance, follow this guidance.
+
+# Autoresearch Trading Contract (v2 Phase)
+
+This file is the strict operating contract for autonomous loop experiments.
+If anything else conflicts with this file, this file wins.
+
+## Mission
+Build a model that makes money trading SPX 0DTE options on IBKR paper trading. The score is a proxy — focus on improving actual TRADING BEHAVIOR (profit factor, win rate, regime consistency, drawdown) rather than optimizing the score metric itself. Use the trade-level diagnostics (best/worst trades, time-of-day splits, VIX regime breakdowns) to diagnose specific weaknesses and propose targeted fixes.
+
+## Scope Lock
+- Feature set: **32 features** (reduced from 70 in v2 phase transition for signal density and training speed).
+- Model contract is locked to **two-head** outputs.
+- Active trading semantics are locked to 6-direction entries + contextual exit.
+
+## Model Contract (Required)
+- Two-head architecture (v4):
+  - Gate head: `[NO_TRADE, TRADE]` (2 logits)
+  - Direction head: `[CALL_ATM, CALL_OTM5, CALL_OTM10, PUT_ATM, PUT_OTM5, PUT_OTM10]` (6 logits)
+- 8 effective actions:
+  - `DO_NOTHING`
+  - `BUY_CALL_ATM`, `BUY_CALL_OTM5`, `BUY_CALL_OTM10`
+  - `BUY_PUT_ATM`, `BUY_PUT_OTM5`, `BUY_PUT_OTM10`
+  - `EXIT` (gate=NO_TRADE while holding a position)
+
+**Exit mechanics**: There is NO hardcoded profit target. The model's gate head is the PRIMARY exit mechanism — it must learn when to take profits and cut losses. A **dynamic stop-loss** adapts per-trade based on gate confidence + market conditions (IV, VIX). Exits are: dynamic_stop (15%-60%), model_exit (gate=NO_TRADE), end_of_day, max_hold.
+
+## Data Contract (Required)
+`data.pt` must include the target fields and option price arrays required by training and replay:
+- Targets (unstopped P&L — entry to EOD, no stops; kept for reference only):
+  - `call_pnl`, `put_pnl`
+  - `exit_call_label`, `exit_put_label` (hindsight-optimal exit timing signals)
+  - `otm5_call_pnl`, `otm5_put_pnl`
+  - `otm10_call_pnl`, `otm10_put_pnl`
+- Targets (stopped P&L — with DYNAMIC_STOP_BASE applied; **used by sniper_loss**):
+  - `call_stopped_pnl`, `put_stopped_pnl`
+  - `otm5_call_stopped_pnl`, `otm5_put_stopped_pnl`
+  - `otm10_call_stopped_pnl`, `otm10_put_stopped_pnl`
+
+**CRITICAL**: `sniper_loss` trains on STOPPED P&L (not raw). This aligns training with evaluation, which applies dynamic stops. Do NOT add raw P&L as an additional loss signal — this creates conflicting gradients and was tried 9 times without success.
+- Prices:
+  - `atm_call_prices`, `atm_put_prices`
+  - `otm5_call_prices`, `otm5_put_prices`
+  - `otm10_call_prices`, `otm10_put_prices`
+- Metadata:
+  - `day_boundaries` — tensor of indices where trading days start (for sequential batching)
+
+Missing required fields must fail fast. No silent fallback behavior.
+
+## Architecture Lock
+Do not change tensor-shape-defining architecture values during this phase:
+- `D_MODEL`
+- `DEPTH`
+- `N_HEADS`
+
+Note: Input dimension changed from 70 to 32 features in v2 phase. Warm-start from prior `best_model.pt` is incompatible; fresh training required. D_MODEL/DEPTH/N_HEADS remain locked for future warm-start compatibility.
+
+## Safety + Runtime Constraints
+- No `torch.compile`.
+- No `DataParallel` / `DistributedDataParallel`.
+- No `torch.jit.trace` / `torch.jit.script`.
+- Keep memory/runtime within the configured budget.
+- Keep changes focused: one coherent hypothesis per experiment.
+
+## Score Formula
+
+The composite score determines experiment quality:
+
+```
+score = ProfitFactor * TradeSharpe * freq_mult * penalties * bonuses
+```
+
+**freq_mult** (configurable trade frequency band):
+- `tpd < 0.5` → hard floor: score = -10
+- `tpd < freq_lo` → linear ramp from -5 to raw_score
+- `freq_lo ≤ tpd ≤ freq_hi` → `min(1, tpd/freq_center)`
+- `tpd > freq_hi` → quadratic decay: `max(0.1, (freq_hi/tpd)²)`
+
+**Configurable penalty thresholds** (applied only when score > 0):
+- Consecutive loss penalty: -5% per consecutive loss beyond threshold (floor 0.5×)
+- Short-hold penalty: penalizes above threshold of trades held ≤1 bar (floor 0.7×)
+- Stop-loss rate penalty: penalizes above threshold of stop-outs (floor 0.5×)
+
+**Configurable bonuses** (all default to 0.0 = neutral):
+- Win rate bonus: rewards consistent winners above 40% WR
+- R:R bonus: rewards strategies where avg_win > avg_loss
+- Drawdown penalty: penalizes deep cumulative drawdowns
+- Hold time bonus: rewards average hold times in the 5-60 bar sweet spot
+
+**Negative scores are possible and informative.** When PF < 1.0, TradeSharpe is typically negative, yielding a negative score. A score of -0.5 is clearly closer to profitability than -10.0, giving the agent useful gradient signal.
+
+### Score Formula is LOCKED — Do Not Modify
+The `_score_config` dictionary in train.py is **read-only**. You MUST NOT change its values, add new SCORE_* env var readers, or modify how the score is computed.
+
+**Why:** The score formula defines what "good trading" means. Changing it inflates scores without improving the model — the model trains on loss functions (gate_loss, dir_loss, pnl_alignment), NOT on the score. Modifying score_config only changes the post-training evaluation, making scores incomparable across experiments. This was exploited in a prior run where SCORE_DRAWDOWN_PENALTY was reduced from 0.5→0.05, inflating the score from 1.77→10.29 while PF and TPD barely changed.
+
+**What to do instead:** Improve the model's actual TRADING BEHAVIOR by modifying loss weights (GATE_W, DIR_W, PNL_W, EXIT_W), model architecture biases, or training dynamics. Improvements should be visible in raw metrics: profit factor, win rate, trades per day, drawdown.
+
+`worst_chunk_pf` and `chunk_details` are reported for analysis — the agent may use these to evaluate temporal consistency.
+
+### Dynamic Stop Environment Variables
+These control the per-trade stop-loss computed from gate confidence + market conditions:
+
+| Variable | Default | Range | Effect |
+|----------|---------|-------|--------|
+| DYNAMIC_STOP_BASE | 0.35 | 0.20-0.50 | Base stop percentage before adjustments |
+
+The dynamic stop formula: `stop = BASE * confidence_factor * iv_factor * vix_factor`, clamped to [15%, 60%].
+- **confidence_factor**: `1.0 - (gate_confidence - 0.5) * 0.8` — tighter stops for high-confidence trades
+- **iv_factor**: `1.0 + max(0, iv_feature) * 0.15` — wider stops in high-IV environments
+- **vix_factor**: `1.0 + max(0, vix_feature) * 0.10` — wider stops in elevated-VIX regimes
+
+Training P&L labels do NOT include stop truncation — the model sees the full trade trajectory and learns exits through the gate head. The ruin penalty is the safety net.
+
+## Position State Contract
+The model receives a 5-dimensional position state tensor at inference time:
+- `[0]` is_holding: 1.0 if in a trade, 0.0 if flat
+- `[1]` bars_held_norm: bars held / BARS_PER_DAY, clamped to [0, 1]
+- `[2]` unrealized_pnl_norm: tanh(unrealized_pnl * 5.0), clamped to [-1, 1]
+- `[3]` account_health: account_balance / starting_capital (1.0 = full, 0.0 = wiped)
+- `[4]` loss_streak_frac: consecutive_losses / consec_loss_threshold, clamped to [0, 1]
+
+During training, `PositionStateGenerator` produces correlated synthetic states:
+- account_health and loss_streak_frac are correlated (low health → higher streak)
+- This teaches the model that account state is informative, not noise
+
+During evaluation/replay, dims 3-4 use real tracked account state.
+
+## Account-Aware Simulation
+- Starting capital: $10,000 (STARTING_CAPITAL constant)
+- Contract multiplier: $100 (SPX_MULTIPLIER constant)
+- Affordability check: entries blocked if contract cost > account balance
+- **Scaled position sizing**: `n_contracts = max(1, floor(balance * POSITION_RISK_TARGET / contract_cost))` where POSITION_RISK_TARGET = 0.05 (5%). Always whole contracts. Scales with account growth — at $10k with a $500 contract: 1 contract; at $30k: 3 contracts.
+- Inline equity tracking: account balance updated at each trade exit (dollar_pnl *= n_contracts)
+- Risk fraction penalty: penalizes models that consistently risk >30% of account per trade
+
+## Output Metrics Contract (Required Keys)
+The training script output must include these parseable metric keys:
+- `score:`
+- `profit_factor:`
+- `trades_per_day:`
+- `trade_sharpe:`
+- `stop_loss_rate:`
+- `worst_chunk_pf:`
+- `rr_ratio:`
+- `avg_hold_bars:`
+- `model_exit_rate:`
+- `hit_ruin:`
+- `min_equity_frac:`
+- `avg_risk_fraction:`
+- `trades_blocked_by_balance:`
+
+## Domain Knowledge (0DTE SPX Options)
+
+### Exit Mechanics
+- There is NO hardcoded profit target. The model must learn when to exit.
+- The gate head predicting NO_TRADE while holding a position triggers an exit.
+- **Dynamic stop-loss** adapts per-trade: high-confidence calm-market trades get tighter stops (~20%), uncertain volatile trades get wider stops (~50%). The model should learn to cut losers BEFORE hitting even the dynamic stop.
+- EXIT labels in training data use hindsight-optimal timing: EXIT=1 at the bar nearest to peak P&L, or when P&L has dropped >50% from its high-water mark.
+- The edge comes from exit TIMING, not just entry selection.
+
+### Theta Decay (Critical for 0DTE)
+- Theta is NOT linear — follows 1/sqrt(T). Approximately doubles when remaining time quarters.
+- At open (6.5h left): ~$2/hr. At 2pm (2h left): ~$5/hr. At 3:30pm (30min): ~$30+/hr.
+- Long options bleed fastest in final 2 hours. Model should bias toward earlier exits for longs held past noon.
+
+### Gamma
+- ATM gamma: ~0.02-0.04 morning, spikes to 0.08-0.15 by 3pm (5-8x morning levels).
+- High gamma = small SPX moves create large option P&L swings.
+- Negative GEX days: momentum amplified (trend-following edge). Positive GEX: mean-reversion edge.
+
+### Time-of-Day Patterns
+- 9:30-9:35: Avoid (chaotic opening rotation). NO_TRADE_BEFORE_BAR=30 blocks first 30 minutes.
+- 9:35-10:30: Strongest trends, best directional entries.
+- 10:00-10:30: "Magic time" — session direction often decided here.
+- 11:30-13:30: Lunch chop — low volume, erratic, avoid or go small.
+- 13:30-15:30: Charm flows dominate. SPX gravitates toward high-OI strikes / max pain.
+- 15:30-16:00: Power hour — extreme gamma, avoid unless high conviction.
+- Top-of-hour: Systematic tendency for reversals at :00 marks.
+
+### VIX Regimes
+- VIX < 15: Tight ranges, slow moves. Favor premium selling, tight stops.
+- VIX 15-20: Normal. Balanced strategies.
+- VIX 20-30: Wide moves, rich premiums. Need wider stops, smaller size.
+- VIX > 30: Crisis. Trade tiny or sit out.
+- Regime TRANSITIONS (VIX 14→22) more dangerous than steady high VIX.
+
+### Strike Selection
+- ATM: Highest gamma, most responsive, most whipsaw risk.
+- OTM 0.5-1%: Better Sharpe ratio empirically, lower gamma risk.
+- OTM trades in backtest: -601% cumulative. Model should strongly prefer ATM unless high directional conviction.
+
+### Professional Exit Patterns
+- Exits matter more than entries. Best traders manage exits more actively.
+- Time-based: If thesis hasn't played out by 2pm, take what's left.
+- Trailing: If P&L drops >50% from peak, exit (momentum lost).
+- Regime awareness: Tighter exits during power hour, wider during morning trends.
+
+### Regime Risk and Temporal Robustness
+- 0DTE dynamics change across VIX regimes. A model trained on elevated-VIX data (large moves, big OTM payoffs) may degrade when VIX normalizes (smaller moves, theta-dominated).
+- The 70/30 temporal train/val split means the model trains on earlier data and validates on later data. If market character changes, validation performance degrades from early to late dates.
+- `worst_chunk_pf` reports the minimum PF across 5 date chunks. Per-chunk details (PF, WR, date range) are printed in training output. Robust models should have consistent per-chunk PF.
+- The score formula evaluates validation trades with equal weight. A model with PF=7 on chunk 1 and PF=0.5 on chunk 5 has a regime problem even if aggregate score is high.
+
+## Reliability Policy
+A candidate can be kept only if:
+- Score improves over current best, and
+- No contract violation, and
+- No critical anomaly flags.
+
+Near-tie improvements require stability confirmation from guard-band metrics.
+
+## Autonomy Rules
+- Modify `train.py` only.
+- Preserve parseable output format.
+- Avoid broad rewrites unless strongly justified by experiment evidence.
+- Prefer small, testable deltas that can be reverted cleanly.
+
+
+
+
+## Current train.py (this is the code you must modify):
+```python
+"""
+Autoresearch-trading v4: simplified two-head model for SPX 0DTE options.
+Single-GPU, single-file. The agent modifies THIS file.
+
+v4 changes from v3:
+  - Smaller model (3 layers, d_model=64) to prevent memorization
+  - Real dropout (0.15) for regularization
+  - Validation early stopping: evaluate every 500 steps, save best
+  - No warm start (forced fresh training — old weights exploited oracle exits)
+  - Removed: DynamicStopModule, QualityGate, Greeks-adaptive loss weights
+  - Kept: 2-head gate+dir, position state, 32 features (v2 reduced), causal exit labels
+  - Asymmetric gate loss: false entries penalized 2x vs missed entries
+
+Two-head architecture:
+  Gate head: (batch, 2) — [NO_TRADE, TRADE]
+  Direction head: (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
+                                  PUT_ATM, PUT_OTM5, PUT_OTM10]
+
+Combined into 8 actions:
+  DO_NOTHING (0), BUY_CALL_ATM (1), BUY_CALL_OTM5 (2), BUY_CALL_OTM10 (3),
+  BUY_PUT_ATM (4), BUY_PUT_OTM5 (5), BUY_PUT_OTM10 (6), EXIT (7)
+
+Usage: uv run train.py  (or: python3 train.py)
+"""
+
+import os
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "4")
+
+import gc
+import math
+import time
+from typing import Optional
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+
+from prepare import (
+    TIME_BUDGET,
+    NUM_FEATURES,
+    FEATURE_NAMES,
+    ANNUAL_TRADING_BARS,
+    BARS_PER_DAY,
+    NUM_ACTIONS,
+    ACTION_DO_NOTHING,
+    ACTION_BUY_CALL_ATM,
+    ACTION_BUY_CALL_OTM5,
+    ACTION_BUY_CALL_OTM10,
+    ACTION_BUY_PUT_ATM,
+    ACTION_BUY_PUT_OTM5,
+    ACTION_BUY_PUT_OTM10,
+    ACTION_EXIT,
+    load_data,
+    make_dataloader,
+    evaluate_trades,
+    evaluate_sharpe,
+)
+
+
+def _env_float(name: str, default: float, lo: Optional[float] = None, hi: Optional[float] = None) -> float:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        val = float(raw)
+    except Exception:
+        return default
+    if lo is not None:
+        val = max(lo, val)
+    if hi is not None:
+        val = min(hi, val)
+    return val
+
+
+def _env_int(name: str, default: int, lo: Optional[int] = None, hi: Optional[int] = None) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        val = int(raw)
+    except Exception:
+        return default
+    if lo is not None:
+        val = max(lo, val)
+    if hi is not None:
+        val = min(hi, val)
+    return val
+
+
+# ---------------------------------------------------------------------------
+# Hyperparameters — v4: smaller model, more regularization
+# ---------------------------------------------------------------------------
+
+LOOKBACK = _env_int("TRAIN_LOOKBACK", 120, lo=60, hi=240)
+D_MODEL = _env_int("TRAIN_D_MODEL", 64, lo=32, hi=128)
+N_HEADS = 4
+DEPTH = _env_int("TRAIN_DEPTH", 3, lo=2, hi=6)
+FF_MULT = _env_int("TRAIN_FF_MULT", 3, lo=2, hi=6)
+DROPOUT = _env_float("TRAIN_DROPOUT", 0.15, lo=0.05, hi=0.40)
+
+BATCH_SIZE = _env_int("TRAIN_BATCH_SIZE", 128, lo=32, hi=256)
+LR = _env_float("TRAIN_LR", 1.5e-4, lo=1e-5, hi=5e-3)
+WEIGHT_DECAY = _env_float("TRAIN_WEIGHT_DECAY", 0.05, lo=0.0, hi=0.3)
+ADAM_BETAS = (0.9, 0.98)
+GRAD_CLIP = _env_float("TRAIN_GRAD_CLIP", 1.0, lo=0.0, hi=5.0)
+WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.1, lo=0.0, hi=0.5)
+COOLDOWN_RATIO = _env_float("TRAIN_COOLDOWN_RATIO", 0.3, lo=0.0, hi=0.8)
+
+# Loss weights
+GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 1.0, lo=0.1, hi=5.0)
+DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.0, lo=0.1, hi=5.0)
+PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # From exp #20
+EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.5, lo=0.0, hi=2.0)
+
+# VIX regime robustness (from successful exp #5)
+VIX_REGIME_WEIGHT = _env_float("TRAIN_VIX_REGIME_W", 0.2, lo=0.0, hi=1.0)
+VIX_CONSISTENCY_WEIGHT = _env_float("TRAIN_VIX_CONSISTENCY_W", 0.1, lo=0.0, hi=0.5)
+
+# Light temporal regularization (reduced from 0.5 — heavy weighting caused fixation)
+TEMPORAL_CHUNK_WEIGHT = _env_float("TRAIN_TEMPORAL_CHUNK_W", 0.15, lo=0.0, hi=1.0)
+
+# Direction-side loss: explicitly penalize call/put confusion (addresses 50% direction collapse)
+DIR_SIDE_WEIGHT = _env_float("TRAIN_DIR_SIDE_W", 0.4, lo=0.0, hi=1.0)
+
+# Stop-loss prevention - penalize trades that would hit dynamic stops
+STOP_PREVENTION_WEIGHT = _env_float("TRAIN_STOP_PREVENTION_W", 0.3, lo=0.0, hi=1.0)
+
+# Feature noise injection for temporal robustness
+FEATURE_NOISE_STD = _env_float("TRAIN_FEATURE_NOISE_STD", 0.05, lo=0.0, hi=0.2)
+
+# Asymmetric gate penalty: how much more to penalize false entries vs missed entries
+# >1.0 means "it's worse to trade when you shouldn't than to miss a trade"
+FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 2.5, lo=1.0, hi=5.0)  # Increased from 2.0
+
+# Label smoothing
+GATE_LABEL_SMOOTHING = _env_float("TRAIN_GATE_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0.2)
+DIR_LABEL_SMOOTHING = _env_float("TRAIN_DIR_LABEL_SMOOTHING", 0.05, lo=0.0, hi=0.2)
+
+# Score formula tuning (passed to evaluate_trades)
+# LOCKED: These values are hardcoded to match run_loop.py defaults.
+# Do NOT read SCORE values from environment variables — the safety checker will reject it.
+SCORE_WIN_RATE_BONUS = 0.0
+SCORE_RR_BONUS = 0.3
+SCORE_DRAWDOWN_PENALTY = 0.5
+SCORE_HOLD_BONUS = 0.0
+SCORE_FREQ_CENTER = 2.5
+SCORE_FREQ_WIDTH = 2.5
+SCORE_CONSEC_LOSS_THRESHOLD = 3
+SCORE_SHORT_HOLD_THRESHOLD = 0.30
+SCORE_STOP_RATE_THRESHOLD = 0.30
+SCORE_RUIN_PENALTY = 1.0
+SCORE_RUIN_THRESHOLD = 0.25
+SCORE_RISK_FRACTION_PENALTY = 0.5
+
+# Named feature indices
+IDX_MINUTES_TO_CLOSE = 19
+IDX_VIX_NORM = 24  # VIX feature index
+
+# Feature groups (32 features — v2 reduced set)
+FEATURE_GROUPS = {
+    'returns':   (0, 2),
+    'volume':    (2, 5),
+    'vol':       (5, 8),
+    'vwap':      (8, 10),
+    'session':   (10, 12),
+    'levels':    (12, 14),
+    'trend':     (14, 17),
+    'micro':     (17, 19),
+    'time':      (19, 22),
+    'options':   (22, 24),
+    'vix':       (24, 26),
+    'greeks':    (26, 29),
+    'bollinger': (29, 30),
+    'range_ext': (30, 32),
+}
+
+
+# ---------------------------------------------------------------------------
+# Model — v4: simplified, regularized
+# ---------------------------------------------------------------------------
+
+class PositionStateGenerator(nn.Module):
+    """Generate synthetic position state for training."""
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, batch_size, device):
+        """Generate correlated position states for training.
+
+        Returns:
+            position_state: (batch, 5) - [is_holding, bars_held_norm, unrealized_pnl_norm,
+                                          account_health, loss_streak_frac]
+        """
+        is_holding = torch.randint(0, 2, (batch_size,), device=device, dtype=torch.float32)
+
+        bars_held_raw = torch.randint(1, 61, (batch_size,), device=device, dtype=torch.float32)
+        bars_held_norm = (bars_held_raw / 60.0) * is_holding
+
+        unrealized_pnl_raw = torch.randn(batch_size, device=device) * 0.5 - 0.1
+        unrealized_pnl_norm = torch.tanh(unrealized_pnl_raw) * is_holding
+
+        account_health = torch.empty(batch_size, device=device).uniform_(0.1, 1.5)
+        loss_streak_base = torch.empty(batch_size, device=device).uniform_(0.0, 1.0)
+        health_penalty = torch.clamp(1.0 - account_health, min=0.0)
+        loss_streak_frac = torch.clamp(loss_streak_base + health_penalty * 0.5, max=1.0)
+
+        return torch.stack([is_holding, bars_held_norm, unrealized_pnl_norm,
+                           account_health, loss_streak_frac], dim=1)
+
+
+class FeatureNoiseInjection(nn.Module):
+    """Inject controlled noise into features during training for temporal robustness."""
+    
+    def __init__(self, noise_std=0.05):
+        super().__init__()
+        self.noise_std = noise_std
+        
+        # Define which feature groups should get noise injection
+        # Focus on market microstructure features that may be regime-specific
+        self.noise_groups = ['returns', 'volume', 'vol', 'vwap', 'levels', 'micro', 'greeks']
+        
+    def forward(self, features):
+        """
+        Args:
+            features: (batch, lookback, num_features)
+        
+        Returns:
+            features with noise injected during training
+        """
+        if not self.training or self.noise_std <= 0:
+            return features
+            
+        noisy_features = features.clone()
+        
+        for group_name in self.noise_groups:
+            if group_name in FEATURE_GROUPS:
+                start_idx, end_idx = FEATURE_GROUPS[group_name]
+                
+                # Generate noise scaled to the feature's natural variance
+                feature_slice = features[:, :, start_idx:end_idx]
+                feature_std = torch.std(feature_slice, dim=(0, 1), keepdim=True).clamp(min=1e-6)
+                
+                # Inject multiplicative noise (preserves sign and scale)
+                noise_factor = 1.0 + torch.randn_like(feature_slice) * self.noise_std
+                noisy_features[:, :, start_idx:end_idx] = feature_slice * noise_factor
+                
+        return noisy_features
+
+
+class BalancedStrikeGate(nn.Module):
+    """Balanced strike biasing - softer bias toward OTM when account stressed."""
+    
+    def __init__(self, d_model):
+        super().__init__()
+        self.health_proj = nn.Linear(1, d_model // 8)
+        self.gate_mod = nn.Sequential(
+            nn.Linear(d_model + d_model // 8, d_model // 4),
+            nn.Tanh(),
+            nn.Linear(d_model // 4, 1),
+            nn.Sigmoid()
+        )
+        
+    def forward(self, gate_input, dir_input, account_health):
+        """
+        Args:
+            gate_input: (batch, d_model) - input to gate head
+            dir_input: (batch, d_model) - input to direction head  
+            account_health: (batch, 1) - account health fraction
+        
+        Returns:
+            modified_gate_input: (batch, d_model) - gate input with health modulation
+            modified_dir_input: (batch, d_model) - direction input with strike bias
+        """
+        health_emb = F.relu(self.health_proj(account_health))
+        combined = torch.cat([gate_input, health_emb], dim=-1)
+        
+        # Health gate: closer to 0 when account is stressed (health < 0.6)
+        health_gate = self.gate_mod(combined)
+        
+        # When health is low, reduce the trading signal strength
+        health_multiplier = 0.5 + 0.5 * health_gate  # Range: [0.5, 1.0]
+        
+        return gate_input * health_multiplier, dir_input
+
+
+class TradingModel(nn.Module):
+    """Simplified two-head model for SPX 0DTE options.
+
+    v4 design principles:
+    - Simple linear projection instead of FeatureGroupGating (less capacity to memorize)
+    - 3 transformer layers instead of 6
+    - Dropout 0.15 throughout
+    - Position state injection for gate head (kept — this is real signal)
+    - No DynamicStopModule, no QualityGate, no Greeks-adaptive anything
+    - NEW: Balanced strike gating for capital preservation
+    - NEW: Feature noise injection for temporal robustness
+
+    Input:  (batch, lookback, NUM_FEATURES)
+    Output: (gate_logits, dir_logits)
+        gate_logits: (batch, 2) — [NO_TRADE, TRADE]
+        dir_logits:  (batch, 6) — [CALL_ATM, CALL_OTM5, CALL_OTM10,
+                                     PUT_ATM, PUT_OTM5, PUT_OTM10]
+    """
+
+    def __init__(self, num_features=NUM_FEATURES, lookback=LOOKBACK,
+                 d_model=D_MODEL, n_heads=N_HEADS, n_layers=DEPTH,
+                 ff_mult=FF_MULT, dropout=DROPOUT):
+        super().__init__()
+        self.lookback = lookback
+        self.d_model = d_model
+
+        # Feature noise injection for temporal robustness
+        self.feature_noise = FeatureNoiseInjection(noise_std=FEATURE_NOISE_STD)
+
+        # Simple linear projection — no feature group gating
+        self.input_proj = nn.Sequential(
+            nn.Linear(num_features, d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+        self.input_norm = nn.LayerNorm(d_model)
+        self.pos_embed = nn.Parameter(torch.randn(1, lookback, d_model) * 0.02)
+
+        layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=n_heads,
+            dim_feedforward=d_model * ff_mult, dropout=dropout,
+            batch_first=True, activation='gelu', norm_first=True,
+        )
+        self.transformer = nn.TransformerEncoder(layer, num_layers=n_layers)
+        mask = nn.Transformer.generate_square_subsequent_mask(lookback)
+        self.register_buffer('causal_mask', mask)
+
+        # Position state injection for gate head
+        self.position_proj = nn.Linear(5, d_model // 4)
+        self.position_gate_proj = nn.Linear(d_model + d_model // 4, d_model)
+        self.position_state_gen = PositionStateGenerator()
+
+        # Balanced strike gate
+        self.balanced_gate = BalancedStrikeGate(d_model)
+
+        # Gate head: "should I trade?" → [NO_TRADE, TRADE]
+        self.gate_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 2),
+        )
+
+        # Direction head: "which strike?" → 6-class
+        self.dir_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model // 2, 6),
+        )
+
+        # Apply MAXIMUM conservative biases for ultra-selectivity
+        with torch.no_grad():
+            self.gate_head[-1].bias[0] += 1.2   # NO_TRADE (increased from 1.0)
+            self.gate_head[-1].bias[1] -= 1.2   # TRADE (increased from -1.0)
+            
+            # Apply exact biases from experiment #3
+            self.dir_head[-1].bias[0] -= 0.25   # CALL_ATM
+            self.dir_head[-1].bias[3] -= 0.25   # PUT_ATM
+            self.dir_head[-1].bias[4] += 0.35   # PUT_OTM5
+
+    def forward(self, x, position_state=None):
+        batch_size = x.shape[0]
+        device = x.device
+
+        # Generate synthetic position state for training if not provided
+        if position_state is None and self.training:
+            position_state = self.position_state_gen(batch_size, device)
+
+        # Apply feature noise injection for temporal robustness
+        x = self.feature_noise(x)
+
+        x_proj = self.input_proj(x)
+        x_proj = self.input_norm(x_proj)
+        x_proj = x_proj + self.pos_embed[:, :x_proj.size(1), :]
+        x_proj = self.transformer(x_proj, mask=self.causal_mask[:x_proj.size(1), :x_proj.size(1)],
+                                  is_causal=True)
+        last = x_proj[:, -1, :]  # (batch, d_model)
+
+        # Inject position state into gate head with conservative scaling
+        if position_state is not None:
+            pos_emb = torch.relu(self.position_proj(position_state))
+            # Scale down position influence to prevent overriding conservative gate bias
+            gate_input = self.position_gate_proj(torch.cat([last, pos_emb * 0.7], dim=-1))
+            
+            # Apply balanced strike gating using account health
+            account_health = position_state[:, 3:4]  # Extract account_health (dim 3)
+            gate_input, dir_input = self.balanced_gate(gate_input, last, account_health)
+            
+            # Apply softer dynamic strike bias when account health < 0.7 (higher threshold)
+            health_val = account_health.squeeze(-1)  # (batch,)
+            stressed_mask = health_val < 0.7
+            
+        else:
+            gate_input = last
+            dir_input = last
+            stressed_mask = torch.zeros(batch_size, dtype=torch.bool, device=device)
+
+        gate_logits = self.gate_head(gate_input)
+        dir_logits = self.dir_head(dir_input)
+        
+        # Apply softer strike bias when account is stressed - gentle nudge toward cheaper options
+        if stressed_mask.any():
+            bias_adjustment = torch.zeros_like(dir_logits)
+            # Softer bias: less aggressive penalties and bonuses to maintain ATM viability
+            bias_adjustment[stressed_mask, 0] -= 0.15  # CALL_ATM - mild penalty
+            bias_adjustment[stressed_mask, 3] -= 0.15  # PUT_ATM - mild penalty
+            bias_adjustment[stressed_mask, 1] += 0.10  # CALL_OTM5 - small bonus
+            bias_adjustment[stressed_mask, 2] += 0.15  # CALL_OTM10 - modest bonus
+            bias_adjustment[stressed_mask, 4] += 0.10  # PUT_OTM5 - small bonus
+            bias_adjustment[stressed_mask, 5] += 0.15  # PUT_OTM10 - modest bonus
+            
+            dir_logits = dir_logits + bias_adjustment
+
+        return gate_logits, dir_logits
+
+
+# ---------------------------------------------------------------------------
+# Loss — v4: simplified, asymmetric gate penalty + VIX regime robustness + temporal chunking + stop prevention + cross-temporal consistency
+# ---------------------------------------------------------------------------
+
+def compute_vix_regime_weights(vix_features, target_low_vix_weight=3.0):
+    """Compute sample weights to balance VIX regimes in training.
+    
+    Args:
+        vix_features: (batch,) - normalized VIX values
+        target_low_vix_weight: upweight factor for low-VIX samples
+    
+    Returns:
+        regime_weights: (batch,) - sample weights for VIX regime balancing
+    """
+    # VIX thresholds (normalized): <-0.5 = low, -0.5 to 0.5 = normal, >0.5 = high
+    low_vix_mask = vix_features < -0.5
+    high_vix_mask = vix_features > 0.5
+    normal_vix_mask = ~(low_vix_mask | high_vix_mask)
+    
+    weights = torch.ones_like(vix_features)
+    
+    # Upweight low-VIX samples (underrepresented but critical for validation)
+    weights[low_vix_mask] = target_low_vix_weight
+    
+    # Slightly downweight high-VIX samples (overrepresented in training)
+    weights[high_vix_mask] = 0.7
+    
+    # Normal VIX gets baseline weight
+    weights[normal_vix_mask] = 1.0
+    
+    return weights
+
+
+def vix_consistency_loss(gate_logits, dir_logits, vix_features):
+    """Regularizer to encourage consistent behavior across VIX regimes.
+    
+    Penalizes the model for having dramatically different gate/direction preferences
+    between low and high VIX periods.
+    """
+    if len(gate_logits) < 10:  # Need sufficient samples
+        return torch.tensor(0.0, device=gate_logits.device)
+    
+    low_vix_mask = vix_features < -0.5
+    high_vix_mask = vix_features > 0.5
+    
+    if low_vix_mask.sum() < 2 or high_vix_mask.sum() < 2:
+        return torch.tensor(0.0, device=gate_logits.device)
+    
+    # Gate consistency: similar trading frequency across regimes
+    gate_probs = F.softmax(gate_logits, dim=-1)
+    low_vix_trade_rate = gate_probs[low_vix_mask, 1].mean()
+    high_vix_trade_rate = gate_probs[high_vix_mask, 1].mean()
+    
+    gate_consistency = torch.abs(low_vix_trade_rate - high_vix_trade_rate)
+    
+    # Direction consistency: similar strike preferences across regimes
+    dir_probs = F.softmax(dir_logits, dim=-1)
+    low_vix_dir_dist = dir_probs[low_vix_mask].mean(dim=0)
+    high_vix_dir_dist = dir_probs[high_vix_mask].mean(dim=0)
+    
+    dir_consistency = F.kl_div(
+        F.log_softmax(low_vix_dir_dist.unsqueeze(0), dim=-1),
+        F.softmax(high_vix_dir_dist.unsqueeze(0), dim=-1),
+        reduction='batchmean'
+    )
+    
+    return gate_consistency + dir_consistency
+
+
+def temporal_chunk_consistency_loss(gate_logits, dir_logits, time_features):
+    """Regularizer to encourage consistent behavior across temporal chunks.
+    
+    Splits training data into early/mid/late chunks based on minutes_to_close
+    and penalizes dramatic differences in trading behavior between chunks.
+    This addresses the Chunk 1 weakness (PF=0.22) by preventing temporal overfitting.
+    """
+    if len(gate_logits) < 15:  # Need sufficient samples for 3 chunks
+        return torch.tensor(0.0, device=gate_logits.device)
+    
+    # Split by time of day (minutes to close normalized 0-1, where 1=market open, 0=close)
+    # Early session: > 0.67 (first ~2 hours)
+    # Mid session: 0.33-0.67 (middle ~2.5 hours) 
+    # Late session: < 0.33 (final ~2 hours)
+    early_mask = time_features > 0.67
+    mid_mask = (time_features >= 0.33) & (time_features <= 0.67)
+    late_mask = time_features < 0.33
+    
+    # Need at least 2 samples in each chunk
+    if early_mask.sum() < 2 or mid_mask.sum() < 2 or late_mask.sum() < 2:
+        return torch.tensor(0.0, device=gate_logits.device)
+    
+    gate_probs = F.softmax(gate_logits, dim=-1)
+    dir_probs = F.softmax(dir_logits, dim=-1)
+    
+    # Gate consistency across temporal chunks
+    early_trade_rate = gate_probs[early_mask, 1].mean()
+    mid_trade_rate = gate_probs[mid_mask, 1].mean()
+    late_trade_rate = gate_probs[late_mask, 1].mean()
+    
+    gate_consistency = (torch.abs(early_trade_rate - mid_trade_rate) + 
+                       torch.abs(mid_trade_rate - late_trade_rate) + 
+                       torch.abs(early_trade_rate - late_trade_rate)) / 3.0
+    
+    # Direction consistency across temporal chunks
+    early_dir_dist = dir_probs[early_mask].mean(dim=0)
+    mid_dir_dist = dir_probs[mid_mask].mean(dim=0)
+    late_dir_dist = dir_probs[late_mask].mean(dim=0)
+    
+    # KL divergence between distributions
+    dir_consistency = (
+        F.kl_div(F.log_softmax(early_dir_dist.unsqueeze(0), dim=-1), 
+                 F.softmax(mid_dir_dist.unsqueeze(0), dim=-1), reduction='batchmean') +
+        F.kl_div(F.log_softmax(mid_dir_dist.unsqueeze(0), dim=-1),
+                 F.softmax(late_dir_dist.unsqueeze(0), dim=-1), reduction='batchmean') +
+        F.kl_div(F.log_softmax(early_dir_dist.unsqueeze(0), dim=-1),
+                 F.softmax(late_dir_dist.unsqueeze(0), dim=-1), reduction='batchmean')
+    ) / 3.0
+    
+    return gate_consistency + dir_consistency
+
+
+def direction_side_loss(dir_logits, call_pnl, put_pnl):
+    """Penalize call/put confusion — the model should learn the correct SIDE first.
+
+    Direction collapse (50%) means the model can't distinguish bullish from bearish setups.
+    This loss trains a binary call-vs-put signal before worrying about strike selection.
+    """
+    if len(dir_logits) < 5:
+        return torch.tensor(0.0, device=dir_logits.device)
+
+    # Aggregate call-side vs put-side probabilities
+    dir_probs = F.softmax(dir_logits, dim=-1)
+    call_prob = dir_probs[:, :3].sum(dim=-1)  # CALL_ATM + CALL_OTM5 + CALL_OTM10
+    put_prob = dir_probs[:, 3:].sum(dim=-1)   # PUT_ATM + PUT_OTM5 + PUT_OTM10
+
+    # Best side based on P&L: which side was actually profitable?
+    call_better = call_pnl > put_pnl
+
+    # Binary cross-entropy: reward model for picking the correct side
+    side_pred = call_prob  # probability model assigns to calls
+    side_target = call_better.float()
+
+    # Only train on bars where there's a meaningful difference between sides
+    side_gap = torch.abs(call_pnl - put_pnl)
+    meaningful = side_gap > 0.05  # At least 5% P&L difference between sides
+
+    if meaningful.sum() < 2:
+        return torch.tensor(0.0, device=dir_logits.device)
+
+    side_loss = F.binary_cross_entropy(
+        side_pred[meaningful].clamp(1e-6, 1 - 1e-6),
+        side_target[meaningful],
+        reduction='mean'
+    )
+
+    return side_loss
+
+
+def stop_prevention_loss(gate_logits, call_stopped_pnl, put_stopped_pnl, call_raw_pnl, put_raw_pnl):
+    """Penalize the model for making trades that would hit dynamic stops.
+    
+    Compares stopped P&L vs raw P&L to identify trades killed by stops.
+    Penalizes the gate for predicting TRADE on such samples.
+    """
+    if call_stopped_pnl is None or put_stopped_pnl is None or call_raw_pnl is None or put_raw_pnl is None:
+        return torch.tensor(0.0, device=gate_logits.device)
+    
+    # Identify trades that hit stops: large negative difference between stopped and raw P&L
+    call_stopped_by_stop = (call_stopped_pnl - call_raw_pnl) < -0.3  # Lost >30% due to stop
+    put_stopped_by_stop = (put_stopped_pnl - put_raw_pnl) < -0.3
+    
+    # Any option hitting stop means this bar would have been a bad trade
+    hit_stop = call_stopped_by_stop | put_stopped_by_stop
+    
+    if hit_stop.sum() < 2:
+        return torch.tensor(0.0, device=gate_logits.device)
+    
+    # For bars that would hit stops, penalize gate for predicting TRADE
+    stop_gate_logits = gate_logits[hit_stop]
+    stop_targets = torch.zeros(hit_stop.sum().item(), dtype=torch.long, device=gate_logits.device)  # NO_TRADE
+    
+    stop_loss = F.cross_entropy(stop_gate_logits, stop_targets, reduction='mean')
+    
+    return stop_loss
+
+
+def _get_stopped_or_raw(stopped_pnl, raw_pnl):
+    """Use stopped P&L if available, otherwise fall back to raw P&L."""
+    if stopped_pnl is not None:
+        return stopped_pnl
+    else:
+        return raw_pnl
+
+
+def sniper_loss(gate_logits, dir_logits, call_pnl, put_pnl, time_features, features,
+                exit_call_labels=None, exit_put_labels=None,
+                otm5_call_pnl=None, otm5_put_pnl=None,
+                otm10_call_pnl=None, otm10_put_pnl=None,
+                supervision_weight=None, actionable_mask=None, risk_state_mask=None,
+                call_stopped_pnl=None, put_stopped_pnl=None,
+                otm5_call_stopped_pnl=None, otm5_put_stopped_pnl=None,
+                otm10_call_stopped_pnl=None, otm10_put_stopped_pnl=None):
+    """Two-head loss with FULL STOPPED P&L CONSISTENCY + direction-side loss.
+
+    CRITICAL CHANGE: Use ONLY stopped P&L for all training targets to align with evaluation reality.
+    This eliminates conflicting signals between "hold through drawdowns" (raw P&L) and 
+    "trades get stopped out" (evaluation behavior).
+    """
+    B = gate_logits.shape[0]
+    device = gate_logits.device
+
+    # Use stopped P&L consistently throughout
+    call_pnl_final = _get_stopped_or_raw(call_stopped_pnl, call_pnl)
+    put_pnl_final = _get_stopped_or_raw(put_stopped_pnl, put_pnl)
+    otm5_call_final = _get_stopped_or_raw(otm5_call_stopped_pnl, otm5_call_pnl)
+    otm5_put_final = _get_stopped_or_raw(otm5_put_stopped_pnl, otm5_put_pnl)
+    otm10_call_final = _get_stopped_or_raw(otm10_call_stopped_pnl, otm10_call_pnl)
+    otm10_put_final = _get_stopped_or_raw(otm10_put_stopped_pnl, otm10_put_pnl)
+
+    # Mask: only compute loss where we have ATM option P&L data
+    valid = ~torch.isnan(call_pnl_final) & ~torch.isnan(put_pnl_final)
+    if valid.sum() < 2:
+        return gate_logits.sum() * 0.0
+
+    g_logits = gate_logits[valid]
+    d_logits = dir_logits[valid]
+    c_pnl = call_pnl_final[valid]
+    p_pnl = put_pnl_final[valid]
+    t_feat = time_features[valid]
+    feat = features[valid]
+    
+    # Extract VIX feature for regime balancing
+    vix_feat = feat[:, IDX_VIX_NORM] if feat.shape[1] > IDX_VIX_NORM else torch.zeros(feat.shape[0], device=device)
+    
+    sample_weight = torch.ones_like(c_pnl)
+
+    if supervision_weight is not None:
+        sw = torch.nan_to_num(supervision_weight[valid], nan=0.0).clamp(min=0.0)
+        if sw.sum() > 0:
+            sample_weight = sw
+    if actionable_mask is not None:
+        act = torch.nan_to_num(actionable_mask[valid], nan=0.0).clamp(0.0, 1.0)
+        sample_weight = sample_weight * torch.where(
+            act > 0.5, torch.ones_like(act), torch.full_like(act, 0.20))
+    if risk_state_mask is not None:
+        risk = torch.nan_to_num(risk_state_mask[valid], nan=1.0).clamp(0.0, 1.0)
+        sample_weight = sample_weight * torch.where(
+            risk > 0.5, torch.ones_like(risk), torch.full_like(risk, 0.50))
+    
+    # Apply VIX regime balancing
+    vix_weights = compute_vix_regime_weights(vix_feat)
+    sample_weight = sample_weight * vix_weights
+    
+    if sample_weight.sum() <= 0:
+        sample_weight = torch.ones_like(sample_weight)
+    sample_weight = sample_weight / sample_weight.mean().clamp(min=1e-6)
+
+    # Build 6-class P&L array using STOPPED P&L consistently
+    all_pnl = torch.stack([
+        c_pnl,                             # CALL_ATM (stopped)
+        otm5_call_final[valid],           # CALL_OTM5 (stopped)
+        otm10_call_final[valid],          # CALL_OTM10 (stopped)
+        p_pnl,                             # PUT_ATM (stopped)
+        otm5_put_final[valid],            # PUT_OTM5 (stopped)
+        otm10_put_final[valid],           # PUT_OTM10 (stopped)
+    ], dim=-1)  # (valid, 6)
+
+    # Gate targets: TRADE (1) when ANY option is profitable after stops
+    any_profitable = torch.any(torch.nan_to_num(all_pnl, nan=-999.0) > 0, dim=-1)
+    gate_targets = any_profitable.long()
+
+    # Asymmetric gate weights: penalize false entries more than missed entries
+    n_trade = gate_targets.sum().float().clamp(min=1)
+    n_no_trade = (gate_targets == 0).sum().float().clamp(min=1)
+    base_balance = (n_no_trade / n_trade).clamp(max=10.0)
+    gate_weights = torch.tensor([1.0 / FALSE_ENTRY_PENALTY, base_balance], device=device)
+
+    time_weight = 1.0 + 0.5 * (1.0 - t_feat)
+    gate_loss = F.cross_entropy(
+        g_logits, gate_targets, weight=gate_weights,
+        reduction='none', label_smoothing=GATE_LABEL_SMOOTHING,
+    )
+    gate_loss = (gate_loss * time_weight * sample_weight).mean()
+
+    # Direction targets: only where gate_target = TRADE
+    trade_mask = gate_targets == 1
+    if trade_mask.sum() < 2:
+        total = GATE_LOSS_WEIGHT * gate_loss
+        
+        # Add VIX consistency loss
+        if VIX_CONSISTENCY_WEIGHT > 0:
+            consistency_loss = vix_consistency_loss(g_logits, d_logits, vix_feat)
+            total = total + VIX_CONSISTENCY_WEIGHT * consistency_loss
+            
+        # Add temporal chunk consistency loss
+        if TEMPORAL_CHUNK_WEIGHT > 0:
+            temporal_loss = temporal_chunk_consistency_loss(g_logits, d_logits, t_feat)
+            total = total + TEMPORAL_CHUNK_WEIGHT * temporal_loss
+            
+        # Add direction-side loss (addresses 50% direction collapse)
+        if DIR_SIDE_WEIGHT > 0:
+            dir_side = direction_side_loss(d_logits, c_pnl, p_pnl)
+            total = total + DIR_SIDE_WEIGHT * dir_side
+
+        # Add stop prevention loss (using raw P&L as reference)
+        if STOP_PREVENTION_WEIGHT > 0:
+            raw_call = call_pnl[valid] if call_pnl is not None else c_pnl
+            raw_put = put_pnl[valid] if put_pnl is not None else p_pnl
+            stop_loss = stop_prevention_loss(g_logits, c_pnl, p_pnl, raw_call, raw_put)
+            total = total + STOP_PREVENTION_WEIGHT * stop_loss
+            
+        return total
+
+    d_logits_trade = d_logits[trade_mask]
+    t_feat_trade = t_feat[trade_mask]
+    trade_pnl = all_pnl[trade_mask]
+
+    trade_pnl_safe = torch.nan_to_num(trade_pnl, nan=-999.0)
+    dir_targets = torch.argmax(trade_pnl_safe, dim=-1)
+
+    dir_loss = F.cross_entropy(
+        d_logits_trade, dir_targets,
+        reduction='none', label_smoothing=DIR_LABEL_SMOOTHING,
+    )
+    dir_time_weight = 1.0 + 0.5 * (1.0 - t_feat_trade)
+    dir_w = sample_weight[trade_mask]
+    dir_w = dir_w / dir_w.mean().clamp(min=1e-6)
+    dir_loss = (dir_loss * dir_time_weight * dir_w).mean()
+
+    # P&L alignment bonus using STOPPED P&L
+    gate_probs = F.softmax(g_logits, dim=-1)
+    dir_probs = F.softmax(d_logits, dim=-1)
+    trade_prob = gate_probs[:, 1]
+    all_pnl_safe = torch.nan_to_num(all_pnl, nan=0.0)
+    pnl_signal = trade_prob * (dir_probs * all_pnl_safe).sum(dim=-1)
+    pnl_loss = -(pnl_signal * sample_weight).sum() / sample_weight.sum().clamp(min=1e-6)
+
+    # EXIT loss: train gate to predict NO_TRADE on exit signal bars
+    exit_loss = torch.tensor(0.0, device=device)
+    if exit_call_labels is not None and exit_put_labels is not None:
+        ec = exit_call_labels[valid]
+        ep = exit_put_labels[valid]
+        exit_mask = (ec > 0.5) | (ep > 0.5)
+        if exit_mask.sum() > 1:
+            exit_g = g_logits[exit_mask]
+            exit_targets = torch.zeros(exit_mask.sum().item(), dtype=torch.long, device=device)
+            exit_loss_vec = F.cross_entropy(exit_g, exit_targets, reduction='none')
+            exit_w = sample_weight[exit_mask]
+            exit_loss = (exit_loss_vec * exit_w).sum() / exit_w.sum().clamp(min=1e-6)
+
+    # VIX consistency regularization
+    vix_consistency_loss_val = torch.tensor(0.0, device=device)
+    if VIX_CONSISTENCY_WEIGHT > 0:
+        vix_consistency_loss_val = vix_consistency_loss(g_logits, d_logits, vix_feat)
+
+    # Temporal chunk consistency regularization
+    temporal_consistency_loss_val = torch.tensor(0.0, device=device)
+    if TEMPORAL_CHUNK_WEIGHT > 0:
+        temporal_consistency_loss_val = temporal_chunk_consistency_loss(g_logits, d_logits, t_feat)
+
+    # Direction-side loss (addresses 50% direction collapse)
+    dir_side_loss_val = torch.tensor(0.0, device=device)
+    if DIR_SIDE_WEIGHT > 0:
+        dir_side_loss_val = direction_side_loss(d_logits, c_pnl, p_pnl)
+
+    # Stop prevention loss (using raw P&L as reference if available)
+    stop_prevention_loss_val = torch.tensor(0.0, device=device)
+    if STOP_PREVENTION_WEIGHT > 0:
+        raw_call = call_pnl[valid] if call_pnl is not None else c_pnl
+        raw_put = put_pnl[valid] if put_pnl is not None else p_pnl
+        stop_prevention_loss_val = stop_prevention_loss(g_logits, c_pnl, p_pnl, raw_call, raw_put)
+
+    total = (GATE_LOSS_WEIGHT * gate_loss + DIR_LOSS_WEIGHT * dir_loss
+             + PNL_ALIGNMENT_WEIGHT * pnl_loss + EXIT_LOSS_WEIGHT * exit_loss
+             + VIX_CONSISTENCY_WEIGHT * vix_consistency_loss_val
+             + TEMPORAL_CHUNK_WEIGHT * temporal_consistency_loss_val
+             + DIR_SIDE_WEIGHT * dir_side_loss_val
+             + STOP_PREVENTION_WEIGHT * stop_prevention_loss_val)
+    return total
+
+
+# ---------------------------------------------------------------------------
+# Setup
+# ---------------------------------------------------------------------------
+
+t_start = time.time()
+torch.manual_seed(42)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(42)
+torch.set_float32_matmul_precision("high")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+data = load_data()
+n_bars = len(data['dates'])
+
+# Replace NaN features with 0
+data['features'] = torch.nan_to_num(data['features'], nan=0.0)
+
+print(f"Loaded {n_bars} 1-min bars, {NUM_FEATURES} features, {NUM_ACTIONS} actions")
+print(f"  ~{n_bars // BARS_PER_DAY} trading days")
+print(f"Training:   up to idx {data['train_end_idx']}")
+print(f"Validation: idx {data['val_start_idx']}-{data['val_end_idx']}")
+
+required_targets = (
+    'call_pnl', 'put_pnl', 'exit_call_label', 'exit_put_label',
+    'otm5_call_pnl', 'otm5_put_pnl', 'otm10_call_pnl', 'otm10_put_pnl',
+    'call_stopped_pnl', 'put_stopped_pnl',
+    'otm5_call_stopped_pnl', 'otm5_put_stopped_pnl',
+    'otm10_call_stopped_pnl', 'otm10_put_stopped_pnl',
+)
+missing_targets = [k for k in required_targets if k not in data]
+if missing_targets:
+    raise KeyError(
+        "data.pt missing required targets: " + ", ".join(missing_targets)
+        + ". Rebuild data.pt with current prepare.py."
+    )
+pnl_valid = (~torch.isnan(data['call_pnl'])).sum().item()
+print(f"  Option P&L coverage: {pnl_valid}/{n_bars} ({100*pnl_valid/n_bars:.0f}%)")
+
+# v4: ALWAYS train from scratch — no warm start from oracle-contaminated weights
+model = TradingModel().to(device)
+num_params = sum(p.numel() for p in model.parameters())
+print(f"Parameters: {num_params:,}")
+print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating + VIX regime robustness + light temporal chunking + stop prevention + FULL STOPPED P&L CONSISTENCY + feature noise injection + direction-side loss + MAXIMUM CONSERVATIVE GATE BIAS")
+print("Training from scratch (v4: no warm-start).")
+
+optimizer = torch.optim.AdamW(
+    model.parameters(), lr=LR,
+    weight_decay=WEIGHT_DECAY, betas=ADAM_BETAS,
+)
+
+train_loader = make_dataloader(data, LOOKBACK, BATCH_SIZE, "train", device)
+x_batch, y_batch = next(train_loader)
+
+print(f"\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {LOOKBACK}")
+print(f"LR: {LR} | Depth: {DEPTH} | d_model: {D_MODEL} | ff_mult: {FF_MULT}")
+print(f"Dropout: {DROPOUT} | Weight decay: {WEIGHT_DECAY}")
+print(f"False entry penalty: {FALSE_ENTRY_PENALTY}x")
+print(f"Label smoothing: gate={GATE_LABEL_SMOOTHING} dir={DIR_LABEL_SMOOTHING}")
+print(f"Loss weights: gate={GATE_LOSS_WEIGHT}, dir={DIR_LOSS_WEIGHT}, pnl={PNL_ALIGNMENT_WEIGHT}, exit={EXIT_LOSS_WEIGHT}")
+print(f"VIX regime weights: vix_regime={VIX_REGIME_WEIGHT}, vix_consistency={VIX_CONSISTENCY_WEIGHT}")
+print(f"Temporal robustness: temporal_chunk={TEMPORAL_CHUNK_WEIGHT}")
+print(f"Direction-side loss: dir_side={DIR_SIDE_WEIGHT}")
+print(f"Stop prevention: stop_prevention={STOP_PREVENTION_WEIGHT}")
+print(f"Feature noise injection: std={FEATURE_NOISE_STD}")
+print(f"CRITICAL: Training exclusively on STOPPED P&L to align with evaluation reality")
+print(f"MAXIMUM CONSERVATIVE GATE BIAS: NO_TRADE=+1.2, TRADE=-1.2 for ultra-selectivity")
+print()
+
+# ---------------------------------------------------------------------------
+# LR schedule
+# ---------------------------------------------------------------------------
+
+def get_lr_mult(progress):
+    if progress < WARMUP_RATIO:
+        return progress / max(WARMUP_RATIO, 1e-8)
+    if progress < 1.0 - COOLDOWN_RATIO:
+        return 1.0
+    else:
+        t = (1.0 - progress) / max(COOLDOWN_RATIO, 1e-8)
+        return 0.5 * (1.0 + math.cos(math.pi * (1.0 - t)))
+
+# ---------------------------------------------------------------------------
+# Score config (passed to evaluate_trades)
+# ---------------------------------------------------------------------------
+
+_score_config = {
+    'win_rate_bonus': SCORE_WIN_RATE_BONUS,
+    'rr_bonus': SCORE_RR_BONUS,
+    'drawdown_penalty': SCORE_DRAWDOWN_PENALTY,
+    'hold_bonus': SCORE_HOLD_BONUS,
+    'freq_center': SCORE_FREQ_CENTER,
+    'freq_width': SCORE_FREQ_WIDTH,
+    'consec_loss_threshold': SCORE_CONSEC_LOSS_THRESHOLD,
+    'short_hold_threshold': SCORE_SHORT_HOLD_THRESHOLD,
+    'stop_rate_threshold': SCORE_STOP_RATE_THRESHOLD,
+    'ruin_penalty': SCORE_RUIN_PENALTY,
+    'ruin_threshold': SCORE_RUIN_THRESHOLD,
+    'risk_fraction_penalty': SCORE_RISK_FRACTION_PENALTY,
+}
+
+# ---------------------------------------------------------------------------
+# Training loop
+# ---------------------------------------------------------------------------
+
+total_time = 0.0
+_wall_start = time.time()
+step = 0
+smooth_loss = 0.0
+
+while True:
+    model.train()
+    if torch.cuda.is_available(): torch.cuda.synchronize()
+    t0 = time.time()
+
+    gate_logits, dir_logits = model(x_batch)
+
+    (fwd_ret, call_pnl_batch, put_pnl_batch, exit_call_batch, exit_put_batch,
+     otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+     supervision_weight_batch, actionable_mask_batch, risk_state_mask_batch,
+     call_stopped_pnl, put_stopped_pnl,
+     otm5c_stopped_pnl, otm5p_stopped_pnl,
+     otm10c_stopped_pnl, otm10p_stopped_pnl) = y_batch
+
+    time_feat = x_batch[:, -1, IDX_MINUTES_TO_CLOSE]
+    batch_features = x_batch[:, -1, :]
+
+    # STOPPED P&L CONSISTENCY: Use stopped P&L as primary training signal
+    # This aligns training with evaluation which applies dynamic stops
+    loss = sniper_loss(gate_logits, dir_logits, call_pnl_batch, put_pnl_batch, time_feat, batch_features,
+                       exit_call_batch, exit_put_batch,
+                       otm5c_pnl, otm5p_pnl, otm10c_pnl, otm10p_pnl,
+                       supervision_weight=supervision_weight_batch,
+                       actionable_mask=actionable_mask_batch,
+                       risk_state_mask=risk_state_mask_batch,
+                       call_stopped_pnl=call_stopped_pnl, put_stopped_pnl=put_stopped_pnl,
+                       otm5_call_stopped_pnl=otm5c_stopped_pnl, otm5_put_stopped_pnl=otm5p_stopped_pnl,
+                       otm10_call_stopped_pnl=otm10c_stopped_pnl, otm10_put_stopped_pnl=otm10p_stopped_pnl)
+
+    loss.backward()
+    if GRAD_CLIP > 0:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+
+    progress = min(total_time / TIME_BUDGET, 1.0)
+    for pg in optimizer.param_groups:
+        pg['lr'] = LR * get_lr_mult(progress)
+
+    optimizer.step()
+    optimizer.zero_grad(set_to_none=True)
+    x_batch, y_batch = next(train_loader)
+
+    if torch.cuda.is_available(): torch.cuda.synchronize()
+    dt_step = time.time() - t0
+    if step > 5:
+        total_time += dt_step
+
+    loss_val = loss.item()
+    if math.isnan(loss_val) or loss_val > 100:
+        print(f"\nFAIL: loss={loss_val} at step {step}")
+        exit(1)
+
+    ema = 0.95
+    smooth_loss = ema * smooth_loss + (1 - ema) * loss_val
+    debiased = smooth_loss / (1 - ema ** (step + 1))
+
+    if step % 50 == 0:
+        remaining = max(0, TIME_BUDGET - total_time)
+        with torch.no_grad():
+            gate_probs = F.softmax(gate_logits, dim=-1).mean(dim=0)
+            dir_probs = F.softmax(dir_logits, dim=-1).mean(dim=0)
+            p_trade = gate_probs[1].item()
+            p_call = dir_probs[:3].sum().item()
+            p_put = dir_probs[3:].sum().item()
+            p_atm = dir_probs[0].item() + dir_probs[3].item()
+            p_otm = 1.0 - p_atm
+
+        print(f"step {step:05d} ({100*progress:5.1f}%) | loss: {debiased:.6f} "
+              f"| trade:{p_trade:.2f} call:{p_call:.2f} put:{p_put:.2f} "
+              f"| ATM:{p_atm:.2f} OTM:{p_otm:.2f} "
+              f"| lr: {LR * get_lr_mult(progress):.2e} | left: {remaining:.0f}s")
+
+    if step == 0:
+        gc.collect(); gc.freeze(); gc.disable()
+    elif (step + 1) % 5000 == 0:
+        gc.collect()
+
+    step += 1
+    if step > 5 and total_time >= TIME_BUDGET:
+        break
+
+print()
+
+# ---------------------------------------------------------------------------
+# Final evaluation
+# ---------------------------------------------------------------------------
+
+model.eval()
+_eval_start = time.time()
+print(f"Training done at {time.time() - _wall_start:.0f}s. Starting evaluation...")
+
+trade_metrics = evaluate_trades(model, data, LOOKBACK, device, score_config=_score_config)
+sharpe_metrics = evaluate_sharpe(model, data, LOOKBACK, device)
+print(f"Evaluation done in {time.time() - _eval_start:.0f}s (total wall: {time.time() - _wall_start:.0f}s)")
+
+metrics = {**trade_metrics}
+metrics['val_sharpe'] = sharpe_metrics.get('val_sharpe', 0.0)
+
+# ---------------------------------------------------------------------------
+# Save & report
+# ---------------------------------------------------------------------------
+
+model_path = os.path.join(os.path.dirname(__file__), "best_model.pt")
+state = model.state_dict()
+torch.save({
+    'model_state_dict': state,
+    'metrics': metrics,
+    'config': {
+        'lookback': LOOKBACK, 'd_model': D_MODEL, 'n_heads': N_HEADS,
+        'depth': DEPTH, 'ff_mult': FF_MULT, 'dropout': DROPOUT,
+        'num_features': NUM_FEATURES, 'num_actions': NUM_ACTIONS,
+        'architecture': 'v4_simplified_two_head_balanced_strike_gating_vix_regime_robustness_light_temporal_chunking_stop_prevention_FULL_STOPPED_PNL_CONSISTENCY_feature_noise_injection_direction_side_loss_MAXIMUM_CONSERVATIVE_GATE_BIAS',
+        'false_entry_penalty': FALSE_ENTRY_PENALTY,
+        'vix_regime_weight': VIX_REGIME_WEIGHT,
+        'vix_consistency_weight': VIX_CONSISTENCY_WEIGHT,
+        'temporal_chunk_weight': TEMPORAL_CHUNK_WEIGHT,
+        'cross_temporal_consistency_weight': CROSS_TEMPORAL_CONSISTENCY_WEIGHT,
+        'stop_prevention_weight': STOP_PREVENTION_WEIGHT,
+        'feature_noise_std': FEATURE_NOISE_STD,
+    },
+    'step': step,
+}, model_path)
+print(f"Model saved to {model_path}")
+
+# --- Export trade log CSV ---
+trade_log = metrics.get('trade_log', [])
+if trade_log:
+    import csv
+    log_path = os.path.join(os.path.dirname(__file__), "trade_log.csv")
+    fieldnames = ['trade_num', 'date', 'entry_time', 'exit_time', 'direction',
+                  'strike', 'entry_price', 'bars_held', 'hold_minutes',
+                  'entry_cost_bps', 'entry_quality', 'entry_actionable',
+                  'pnl_pct', 'exit_reason', 'actual_prices', 'result']
+    with open(log_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        writer.writerows(trade_log)
+    print(f"Trade log: {len(trade_log)} trades -> {log_path}")
+
+t_end = time.time()
+peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else 0.0
+
+# --- Output section (parsed by run_loop.py) ---
+print("\n---")
+print(f"score:              {metrics['score']:.6f}")
+print(f"profit_factor:      {metrics['profit_factor']:.6f}")
+print(f"win_rate:           {metrics['win_rate']:.6f}")
+print(f"avg_winner:         {metrics['avg_winner']:.6f}")
+print(f"avg_loser:          {metrics['avg_loser']:.6f}")
+print(f"trades_per_day:     {metrics['trades_per_day']:.6f}")
+print(f"max_consec_loss:    {metrics['max_consec_loss']}")
+print(f"num_trades:         {metrics['num_trades']}")
+print(f"trade_sharpe:       {metrics['trade_sharpe']:.6f}")
+print(f"sortino:            {metrics['sortino']:.6f}")
+print(f"max_drawdown:       {metrics['max_drawdown']:.6f}")
+print(f"calmar:             {metrics['calmar']:.6f}")
+print(f"ev_per_trade:       {metrics['ev_per_trade']:.6f}")
+print(f"do_nothing_pct:     {metrics['do_nothing_pct']:.6f}")
+print(f"exit_pct:           {metrics.get('exit_pct', 0.0):.6f}")
+print(f"model_exit_count:   {metrics.get('model_exit_count', 0)}")
+print(f"cooldown_blocked:   {metrics.get('cooldown_blocked', 0)}")
+print(f"pre_10am_blocked:   {metrics.get('pre_10am_blocked', 0)}")
+print(f"short_hold_pct:     {metrics.get('short_hold_pct', 0.0):.6f}")
+print(f"stop_loss_rate:     {metrics.get('stop_loss_rate', 0.0):.6f}")
+print(f"direction_collapse_pct: {metrics.get('direction_collapse_pct', 0.0):.6f}")
+print(f"avg_entry_cost_bps: {metrics.get('avg_entry_cost_bps', 0.0):.6f}")
+print(f"avg_entry_quality:  {metrics.get('avg_entry_quality', 0.0):.6f}")
+print(f"cost_realism_coverage: {metrics.get('cost_realism_coverage', 0.0):.6f}")
+print(f"high_cost_entry_rate: {metrics.get('high_cost_entry_rate', 0.0):.6f}")
+print(f"low_quality_entry_rate: {metrics.get('low_quality_entry_rate', 0.0):.6f}")
+print(f"actionable_bar_rate: {metrics.get('actionable_bar_rate', 0.0):.6f}")
+print(f"risk_off_bar_rate:  {metrics.get('risk_off_bar_rate', 0.0):.6f}")
+print(f"final_capital:      {metrics.get('final_capital', 0.0):.2f}")
+print(f"equity_sharpe:      {metrics.get('equity_sharpe', 0.0):.6f}")
+print(f"max_equity_dd:      {metrics.get('max_equity_dd', 0.0):.6f}")
+print(f"total_dollar_return:{metrics.get('total_dollar_return', 0.0):.6f}")
+print(f"val_sharpe:         {metrics['val_sharpe']:.6f}")
+print(f"total_return:       {metrics['total_return']:.6f}")
+print(f"num_val_bars:       {metrics['num_val_bars']}")
+print(f"num_val_days:       {metrics['num_val_days']}")
+print(f"worst_chunk_pf:     {metrics.get('worst_chunk_pf', 1.0):.2f}")
+print(f"rr_ratio:           {metrics.get('rr_ratio', 0.0):.4f}")
+print(f"avg_hold_bars:      {metrics.get('avg_hold_bars', 0.0):.2f}")
+print(f"model_exit_rate:    {metrics.get('model_exit_rate', 0.0):.4f}")
+print(f"hit_ruin:           {metrics.get('hit_ruin', False)}")
+print(f"min_equity_frac:    {metrics.get('min_equity_frac', 1.0):.4f}")
+print(f"avg_risk_fraction:  {metrics.get('avg_risk_fraction', 0.0):.4f}")
+print(f"max_risk_fraction:  {metrics.get('max_risk_fraction', 0.0):.4f}")
+print(f"trades_blocked_by_balance: {metrics.get('trades_blocked_by_balance', 0)}")
+for cd in metrics.get('chunk_details', []):
+    print(f"  Chunk {cd['chunk']}: {cd['dates']} | {cd['trades']} trades | PF={cd['profit_factor']:.2f} | WR={cd['win_rate']:.1%}")
+print(f"training_seconds:   {total_time:.1f}")
+print(f"total_seconds:      {t_end - t_start:.1f}")
+print(f"peak_vram_mb:       {peak_mb:.1f}")
+print(f"num_steps:          {step}")
+print(f"num_params:         {num_params:,}")
+print(f"lookback:           {LOOKBACK}")
+print(f"depth:              {DEPTH}")
+print(f"d_model:            {D_MODEL}")
+print(f"effective_lr:       {LR:.6g}")
+print(f"gate_label_smoothing:{GATE_LABEL_SMOOTHING:.6f}")
+print(f"dir_label_smoothing:{DIR_LABEL_SMOOTHING:.6f}")
+print(f"false_entry_penalty:{FALSE_ENTRY_PENALTY:.6f}")
+print(f"feature_noise_std:  {FEATURE_NOISE_STD:.6f}")
+```
+
+
+
+
+## Lab Notebook (persistent learning across runs)
+Use this to understand what has been tried, what worked, and what to avoid.
+Do NOT re-try approaches listed in Dead Ends.
+Build on approaches in the Improvements Log — extend what worked.
+
+# Lab Notebook
+
+## System
+SPX 0DTE | 2-head gate+dir (v4) | 32 features (v2) | 5-dim position state | 8 actions | 1-min bars | learned exits (no hardcoded TP)
+- **Score config LOCKED**: _score_config is hardcoded, mutation-guarded in run_loop.py.
+
+## What Fails (do NOT retry)
+| Pattern | Attempts | Result |
+|---------|----------|--------|
+| New nn.Module subclasses (adding brand new modules with fresh parameters) | 0/16+ | Not enough training time for new params to converge in 4-min budget |
+| Dynamic gate scaling from position_state | 0/6 | Disrupts learned gate behavior |
+| Curriculum learning / staged training | 0/4 | Training instability, always scores <0.25 |
+| Hand-coded stress scaling formulas | 0/6 | Inverted logic or too aggressive |
+| Attention-based feature reweighting | 0/2 | Too many new params for 4-min training budget |
+| Contrastive / momentum loss terms | 0/3 | Added loss complexity without improving score |
+| LR < 1e-4 or > 3e-4 | 0/2 | Too slow or too unstable |
+| Fixating on a single metric (stop-loss rate, temporal consistency, etc.) | 0/25+ | Leads to tunnel vision; all experiments target same thing and none improve |
+| Explicit temporal/recency weighting in loss | 0/10 | TEMPORAL_CONSISTENCY_WEIGHT, TEMPORAL_ROBUSTNESS_WEIGHT, TEMPORAL_RECENCY_WEIGHT all failed to beat baseline |
+| Rewriting exit label computation | 0/3 | Changing trailing/stall thresholds destabilized training; scores went negative |
+| Tuning _score_config values (drawdown_penalty, hold_bonus, rr_bonus, etc.) | 0/7 | Games the evaluation metric without improving model — score inflates while PF/TPD stay flat. Score config is now LOCKED. |
+| STOPPED_PNL_WEIGHT as additional loss term | 0/9 | Adding stopped P&L as extra loss creates conflicting gradients with raw P&L. All 9 attempts degraded PF from 3.42 to 1.2-1.8. The correct fix (now applied) is to REPLACE raw P&L with stopped P&L, not add it alongside. |
+
+## Best Runs
+| Run | Score | PF | TPD | Key Change |
+|-----|-------|----|-----|------------|
+| run-2026-03-22-001946#1 | 0.63 | 2.64 | 1.4 | First stopped-PNL baseline (fresh start) |
+| run-2026-03-22-023417#5 | 0.92 | 2.80 | 1.3 | VIX_CONSISTENCY_WEIGHT = _env_float("TRAIN_VIX_CONSISTENCY_W", 0.1, lo=0.0, hi=0 |
+| run-2026-03-22-023417#9 | 1.22 | 3.13 | 1.3 | TEMPORAL_CHUNK_WEIGHT = _env_float("TRAIN_TEMPORAL_CHUNK_W", 0.15, lo=0.0, hi=0. |
+| run-2026-03-22-040202#5 | 1.78 | 3.25 | 1.5 | STOP_PREVENTION_WEIGHT = _env_float("TRAIN_STOP_PREVENTION_W", 0.3, lo=0.0, hi=1 |
+| run-2026-03-22-040202#6 | 2.53 | 3.39 | 1.5 | def _get_stopped_or_raw(stopped_pnl, raw_pnl): |
+| run-2026-03-22-040202#8 | 2.61 | 3.45 | 1.5 | FEATURE_NOISE_STD = _env_float("TRAIN_FEATURE_NOISE_STD", 0.05, lo=0.0, hi=0.2); |
+| run-2026-03-22-040202#9 | 2.70 | 3.48 | 1.5 | TEMPORAL_CHUNK_WEIGHT = _env_float("TRAIN_TEMPORAL_CHUNK_W", 0.25, lo=0.0, hi=0. |
+| run-2026-03-22-064555#1 | 3.20 | 3.58 | 1.6 | print(f"Architecture: v4 simplified two-head (gate+dir) + balanced strike gating |
+| run-2026-03-22-064555#2 | 8.23 | 4.96 | 1.7 | self.gate_head[-1].bias[1] -= 1.2   # TRADE (increased from -1.0); 'architecture |
+| run-2026-03-22-064555#5 | 8.46 | 4.23 | 1.6 | TEMPORAL_CHUNK_WEIGHT = _env_float("TRAIN_TEMPORAL_CHUNK_W", 0.5, lo=0.0, hi=1.0 |
+
+## Dead Ends
+| Change | Result | Why |
+|--------|--------|-----|
+| self.gate_head[-1].bias[0] += 0.8   # NO_TRADE (reduced from | score=0.39 | score_not_improved |
+| TIME_AWARE_EXIT_WEIGHT = _env_float("TRAIN_TIME_AWARE_EXIT_W | score=-0.80 | score_not_improved |
+| PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.8, lo=0.0 | score=0.47 | score_not_improved |
+| REGIME_ADAPTATION_WEIGHT = _env_float("TRAIN_REGIME_ADAPTATI | score=0.22 | score_not_improved |
+| PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.6, lo=0.0 | score=0.14 | score_not_improved |
+| removed code | score=0.45 | score_not_improved |
+| PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.5, lo=0.0 | score=0.28 | score_not_improved |
+| DIR_LOSS_WEIGHT = _env_float("TRAIN_DIR_W", 1.5, lo=0.1, hi= | score=0.35 | score_not_improved |
+| VIX_ADAPTIVE_GATE_WEIGHT = _env_float("TRAIN_VIX_ADAPTIVE_GA | score=0.13 | score_not_improved |
+| FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY" | score=0.43 | score_not_improved |
+
+## Next Priorities
+- Beat the current best score. Explore any approach NOT listed in "What Fails".
+

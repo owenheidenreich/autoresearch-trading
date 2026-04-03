@@ -1,0 +1,1 @@
+I'll reduce the cross_temporal_consistency_loss weight from 0.3 to 0.1 to allow more regime-specific directional learning while keeping some temporal stability. Additionally, I'll increase the DIR_SIDE_WEIGHT from 0.4 to 0.7 to more aggressively train the call-vs-put distinction, which should directly address the 50% direction collapse issue.

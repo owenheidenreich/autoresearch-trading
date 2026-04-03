@@ -1,0 +1,23 @@
+## Experiment Summary
+Total=4 | Kept=1 | Failed=0 | Accept rate=25% (1/4) | Best score=0.634455 (#run-2026-03-22-001946#1)
+
+## Top Kept Experiments
+  #run-2026-03-22-001946#1: score=0.634455 pf=2.642592 tpd=1.38806 — minor change
+
+## Recent Trajectory (last 30)
+  #run-2026-03-22-001946#1: score=0.634455 pf=2.642592 tpd=1.38806 [✓ KEPT] — minor change
+  #1: score=0.511472 pf=2.465685 tpd=1.537313 [✗ reverted] BLOCKED:score_not_improved — EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 1.0, lo=0.0, hi=2.0)
+  #2: score=0.294245 pf=1.935479 tpd=1.552239 [✗ reverted] BLOCKED:score_not_improved — FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 2.5, lo=1.0, hi=5.0)  # Increased from 2.0; EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.8, lo=0.0, hi=2.0)  # Increased from 0.5; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.2, lo=0.0, hi=2.0)  # Reduced from 0.3; class ConservativeStrikeGate(nn.Module):
+  #3: score=0.160135 pf=1.595708 tpd=1.537313 [✗ reverted] BLOCKED:score_not_improved — def day_sequential_generator():; def make_day_sequential_dataloader(data, lookback, batch_size, split, device):
+
+## Before proposing changes, answer these questions in your <reasoning>:
+1. Based on the trade diagnostics, what is the model's biggest weakness?
+2. Is the model profitable across ALL time chunks and VIX regimes, or just some?
+3. Are the best trades repeatable patterns, or lucky outliers?
+4. What specific TRADING BEHAVIOR will your proposed change improve?
+
+## CURRENT BEST: Experiment #run-2026-03-22-001946#1 (score=0.6345, pf=2.642592)
+The code below IS experiment #run-2026-03-22-001946#1. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

@@ -1,0 +1,12 @@
+{
+  "phase": "calling_claude",
+  "experiment_id": 18,
+  "best_score": 1.768642,
+  "kept": 0,
+  "failed": 3,
+  "total": 17,
+  "accept_rate": 0.0,
+  "time_remaining_h": 4.62,
+  "updated": "2026-03-21T02:36:52.810327",
+  "contract_checksum": "add70be6209b"
+}

@@ -1,0 +1,327 @@
+Loading data from: /root/.cache/autoresearch-trading/features/data.pt
+Loaded 382920 1-min bars, 32 features, 8 actions
+  ~981 trading days
+Training:   up to idx 268019
+Validation: idx 268020-382919
+  Option P&L coverage: 296720/382920 (77%)
+Parameters: 146,265
+Architecture: v4 simplified two-head (gate+dir) + smooth balanced strike gating
+Training from scratch (v4: no warm-start).
+
+Budget: 240s | Batch: 128 | Lookback: 120
+LR: 0.00015 | Depth: 3 | d_model: 64 | ff_mult: 3
+Dropout: 0.15 | Weight decay: 0.05
+False entry penalty: 2.0x
+Label smoothing: gate=0.05 dir=0.05
+
+step 00000 (  0.0%) | loss: 3.095771 | trade:0.27 call:0.45 put:0.55 | ATM:0.23 OTM:0.77 | lr: 0.00e+00 | left: 240s
+step 00050 (  0.4%) | loss: 3.218689 | trade:0.27 call:0.46 put:0.54 | ATM:0.24 OTM:0.76 | lr: 5.45e-06 | left: 239s
+step 00100 (  0.9%) | loss: 3.164505 | trade:0.29 call:0.45 put:0.55 | ATM:0.24 OTM:0.76 | lr: 1.30e-05 | left: 238s
+step 00150 (  1.4%) | loss: 3.112454 | trade:0.32 call:0.47 put:0.53 | ATM:0.25 OTM:0.75 | lr: 2.08e-05 | left: 237s
+step 00200 (  1.9%) | loss: 3.051919 | trade:0.36 call:0.48 put:0.52 | ATM:0.26 OTM:0.74 | lr: 2.83e-05 | left: 235s
+step 00250 (  2.4%) | loss: 2.968255 | trade:0.39 call:0.49 put:0.51 | ATM:0.28 OTM:0.72 | lr: 3.63e-05 | left: 234s
+step 00300 (  2.9%) | loss: 2.915809 | trade:0.42 call:0.51 put:0.49 | ATM:0.30 OTM:0.70 | lr: 4.42e-05 | left: 233s
+step 00350 (  3.2%) | loss: 2.902296 | trade:0.44 call:0.52 put:0.48 | ATM:0.32 OTM:0.68 | lr: 4.78e-05 | left: 232s
+step 00400 (  3.4%) | loss: 2.836381 | trade:0.45 call:0.53 put:0.47 | ATM:0.34 OTM:0.66 | lr: 5.12e-05 | left: 232s
+step 00450 (  3.7%) | loss: 2.790679 | trade:0.42 call:0.54 put:0.46 | ATM:0.34 OTM:0.66 | lr: 5.49e-05 | left: 231s
+step 00500 (  3.9%) | loss: 2.777970 | trade:0.44 call:0.54 put:0.46 | ATM:0.35 OTM:0.65 | lr: 5.85e-05 | left: 231s
+step 00550 (  4.1%) | loss: 2.748540 | trade:0.43 call:0.55 put:0.45 | ATM:0.36 OTM:0.64 | lr: 6.17e-05 | left: 230s
+step 00600 (  4.3%) | loss: 2.704613 | trade:0.43 call:0.56 put:0.44 | ATM:0.36 OTM:0.64 | lr: 6.49e-05 | left: 230s
+step 00650 (  4.6%) | loss: 2.658330 | trade:0.44 call:0.57 put:0.43 | ATM:0.36 OTM:0.64 | lr: 6.84e-05 | left: 229s
+step 00700 (  4.8%) | loss: 2.587234 | trade:0.41 call:0.57 put:0.43 | ATM:0.36 OTM:0.64 | lr: 7.18e-05 | left: 229s
+step 00750 (  5.0%) | loss: 2.547461 | trade:0.41 call:0.59 put:0.41 | ATM:0.40 OTM:0.60 | lr: 7.53e-05 | left: 228s
+step 00800 (  5.3%) | loss: 2.485461 | trade:0.43 call:0.55 put:0.45 | ATM:0.38 OTM:0.62 | lr: 7.88e-05 | left: 227s
+step 00850 (  5.6%) | loss: 2.450953 | trade:0.43 call:0.59 put:0.41 | ATM:0.38 OTM:0.62 | lr: 8.38e-05 | left: 227s
+step 00900 (  6.0%) | loss: 2.384416 | trade:0.44 call:0.57 put:0.43 | ATM:0.37 OTM:0.63 | lr: 8.95e-05 | left: 226s
+step 00950 (  6.5%) | loss: 2.318463 | trade:0.41 call:0.60 put:0.40 | ATM:0.38 OTM:0.62 | lr: 9.71e-05 | left: 224s
+step 01000 (  6.7%) | loss: 2.230930 | trade:0.41 call:0.61 put:0.39 | ATM:0.40 OTM:0.60 | lr: 1.00e-04 | left: 224s
+step 01050 (  6.9%) | loss: 2.151644 | trade:0.41 call:0.61 put:0.39 | ATM:0.41 OTM:0.59 | lr: 1.04e-04 | left: 223s
+step 01100 (  7.1%) | loss: 2.092832 | trade:0.43 call:0.62 put:0.38 | ATM:0.41 OTM:0.59 | lr: 1.07e-04 | left: 223s
+step 01150 (  7.3%) | loss: 2.004681 | trade:0.38 call:0.60 put:0.40 | ATM:0.43 OTM:0.57 | lr: 1.10e-04 | left: 222s
+step 01200 (  7.6%) | loss: 1.970024 | trade:0.43 call:0.62 put:0.38 | ATM:0.38 OTM:0.62 | lr: 1.14e-04 | left: 222s
+step 01250 (  7.8%) | loss: 1.865931 | trade:0.40 call:0.62 put:0.38 | ATM:0.43 OTM:0.57 | lr: 1.17e-04 | left: 221s
+step 01300 (  8.0%) | loss: 1.816398 | trade:0.35 call:0.63 put:0.37 | ATM:0.42 OTM:0.58 | lr: 1.20e-04 | left: 221s
+step 01350 (  8.3%) | loss: 1.732751 | trade:0.39 call:0.55 put:0.45 | ATM:0.42 OTM:0.58 | lr: 1.24e-04 | left: 220s
+step 01400 (  8.5%) | loss: 1.698831 | trade:0.43 call:0.60 put:0.40 | ATM:0.45 OTM:0.55 | lr: 1.27e-04 | left: 220s
+step 01450 (  8.7%) | loss: 1.681454 | trade:0.35 call:0.68 put:0.32 | ATM:0.46 OTM:0.54 | lr: 1.30e-04 | left: 219s
+step 01500 (  8.9%) | loss: 1.637169 | trade:0.43 call:0.60 put:0.40 | ATM:0.44 OTM:0.56 | lr: 1.34e-04 | left: 219s
+step 01550 (  9.2%) | loss: 1.558069 | trade:0.36 call:0.66 put:0.34 | ATM:0.44 OTM:0.56 | lr: 1.37e-04 | left: 218s
+step 01600 (  9.4%) | loss: 1.540354 | trade:0.42 call:0.59 put:0.41 | ATM:0.41 OTM:0.59 | lr: 1.41e-04 | left: 217s
+step 01650 (  9.6%) | loss: 1.520339 | trade:0.43 call:0.64 put:0.36 | ATM:0.47 OTM:0.53 | lr: 1.45e-04 | left: 217s
+step 01700 (  9.9%) | loss: 1.475451 | trade:0.35 call:0.63 put:0.37 | ATM:0.47 OTM:0.53 | lr: 1.48e-04 | left: 216s
+step 01750 ( 10.1%) | loss: 1.415988 | trade:0.37 call:0.63 put:0.37 | ATM:0.51 OTM:0.49 | lr: 1.50e-04 | left: 216s
+step 01800 ( 10.3%) | loss: 1.453486 | trade:0.34 call:0.60 put:0.40 | ATM:0.47 OTM:0.53 | lr: 1.50e-04 | left: 215s
+step 01850 ( 10.5%) | loss: 1.415926 | trade:0.40 call:0.64 put:0.36 | ATM:0.48 OTM:0.52 | lr: 1.50e-04 | left: 215s
+step 01900 ( 10.7%) | loss: 1.379700 | trade:0.39 call:0.61 put:0.39 | ATM:0.50 OTM:0.50 | lr: 1.50e-04 | left: 214s
+step 01950 ( 10.9%) | loss: 1.382577 | trade:0.34 call:0.57 put:0.43 | ATM:0.47 OTM:0.53 | lr: 1.50e-04 | left: 214s
+step 02000 ( 11.2%) | loss: 1.335875 | trade:0.32 call:0.66 put:0.34 | ATM:0.51 OTM:0.49 | lr: 1.50e-04 | left: 213s
+step 02050 ( 11.4%) | loss: 1.381676 | trade:0.38 call:0.66 put:0.34 | ATM:0.49 OTM:0.51 | lr: 1.50e-04 | left: 213s
+step 02100 ( 11.6%) | loss: 1.335016 | trade:0.36 call:0.63 put:0.37 | ATM:0.47 OTM:0.53 | lr: 1.50e-04 | left: 212s
+step 02150 ( 11.8%) | loss: 1.342697 | trade:0.36 call:0.59 put:0.41 | ATM:0.48 OTM:0.52 | lr: 1.50e-04 | left: 212s
+step 02200 ( 12.0%) | loss: 1.324069 | trade:0.39 call:0.62 put:0.38 | ATM:0.43 OTM:0.57 | lr: 1.50e-04 | left: 211s
+step 02250 ( 12.3%) | loss: 1.297790 | trade:0.37 call:0.64 put:0.36 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 211s
+step 02300 ( 12.5%) | loss: 1.286477 | trade:0.35 call:0.59 put:0.41 | ATM:0.51 OTM:0.49 | lr: 1.50e-04 | left: 210s
+step 02350 ( 12.7%) | loss: 1.279188 | trade:0.34 call:0.72 put:0.28 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 210s
+step 02400 ( 12.9%) | loss: 1.276997 | trade:0.33 call:0.70 put:0.30 | ATM:0.42 OTM:0.58 | lr: 1.50e-04 | left: 209s
+step 02450 ( 13.1%) | loss: 1.295105 | trade:0.40 call:0.66 put:0.34 | ATM:0.48 OTM:0.52 | lr: 1.50e-04 | left: 209s
+step 02500 ( 13.3%) | loss: 1.282892 | trade:0.39 call:0.58 put:0.42 | ATM:0.50 OTM:0.50 | lr: 1.50e-04 | left: 208s
+step 02550 ( 13.6%) | loss: 1.273911 | trade:0.34 call:0.62 put:0.38 | ATM:0.51 OTM:0.49 | lr: 1.50e-04 | left: 207s
+step 02600 ( 13.8%) | loss: 1.272039 | trade:0.34 call:0.55 put:0.45 | ATM:0.49 OTM:0.51 | lr: 1.50e-04 | left: 207s
+step 02650 ( 14.1%) | loss: 1.250208 | trade:0.36 call:0.62 put:0.38 | ATM:0.53 OTM:0.47 | lr: 1.50e-04 | left: 206s
+step 02700 ( 14.3%) | loss: 1.278573 | trade:0.33 call:0.63 put:0.37 | ATM:0.51 OTM:0.49 | lr: 1.50e-04 | left: 206s
+step 02750 ( 14.6%) | loss: 1.267427 | trade:0.36 call:0.57 put:0.43 | ATM:0.50 OTM:0.50 | lr: 1.50e-04 | left: 205s
+step 02800 ( 14.8%) | loss: 1.254878 | trade:0.37 call:0.61 put:0.39 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 204s
+step 02850 ( 15.0%) | loss: 1.204122 | trade:0.30 call:0.63 put:0.37 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 204s
+step 02900 ( 15.3%) | loss: 1.212354 | trade:0.38 call:0.62 put:0.38 | ATM:0.52 OTM:0.48 | lr: 1.50e-04 | left: 203s
+step 02950 ( 15.5%) | loss: 1.227522 | trade:0.36 call:0.60 put:0.40 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 203s
+step 03000 ( 16.0%) | loss: 1.223757 | trade:0.38 call:0.57 put:0.43 | ATM:0.54 OTM:0.46 | lr: 1.50e-04 | left: 202s
+step 03050 ( 16.5%) | loss: 1.195568 | trade:0.37 call:0.66 put:0.34 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 200s
+step 03100 ( 17.0%) | loss: 1.198163 | trade:0.38 call:0.67 put:0.33 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 199s
+step 03150 ( 17.5%) | loss: 1.193409 | trade:0.35 call:0.59 put:0.41 | ATM:0.51 OTM:0.49 | lr: 1.50e-04 | left: 198s
+step 03200 ( 18.0%) | loss: 1.220447 | trade:0.36 call:0.63 put:0.37 | ATM:0.52 OTM:0.48 | lr: 1.50e-04 | left: 197s
+step 03250 ( 18.6%) | loss: 1.210478 | trade:0.30 call:0.59 put:0.41 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 195s
+step 03300 ( 19.1%) | loss: 1.205830 | trade:0.37 call:0.65 put:0.35 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 194s
+step 03350 ( 19.6%) | loss: 1.195926 | trade:0.31 call:0.58 put:0.42 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 193s
+step 03400 ( 20.2%) | loss: 1.186657 | trade:0.37 call:0.60 put:0.40 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 192s
+step 03450 ( 20.7%) | loss: 1.153989 | trade:0.34 call:0.61 put:0.39 | ATM:0.50 OTM:0.50 | lr: 1.50e-04 | left: 190s
+step 03500 ( 21.2%) | loss: 1.189188 | trade:0.33 call:0.62 put:0.38 | ATM:0.51 OTM:0.49 | lr: 1.50e-04 | left: 189s
+step 03550 ( 21.8%) | loss: 1.182314 | trade:0.34 call:0.63 put:0.37 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 188s
+step 03600 ( 22.3%) | loss: 1.174153 | trade:0.32 call:0.61 put:0.39 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 186s
+step 03650 ( 22.9%) | loss: 1.172765 | trade:0.30 call:0.62 put:0.38 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 185s
+step 03700 ( 23.4%) | loss: 1.164700 | trade:0.34 call:0.65 put:0.35 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 184s
+step 03750 ( 23.9%) | loss: 1.214117 | trade:0.29 call:0.67 put:0.33 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 183s
+step 03800 ( 24.5%) | loss: 1.177289 | trade:0.39 call:0.58 put:0.42 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 181s
+step 03850 ( 25.0%) | loss: 1.157193 | trade:0.35 call:0.59 put:0.41 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 180s
+step 03900 ( 25.5%) | loss: 1.149287 | trade:0.39 call:0.56 put:0.44 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 179s
+step 03950 ( 26.1%) | loss: 1.124214 | trade:0.26 call:0.67 put:0.33 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 177s
+step 04000 ( 26.6%) | loss: 1.162097 | trade:0.36 call:0.65 put:0.35 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 176s
+step 04050 ( 27.1%) | loss: 1.156083 | trade:0.36 call:0.62 put:0.38 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 175s
+step 04100 ( 27.6%) | loss: 1.145100 | trade:0.30 call:0.64 put:0.36 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 174s
+step 04150 ( 28.2%) | loss: 1.115527 | trade:0.33 call:0.57 put:0.43 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 172s
+step 04200 ( 28.7%) | loss: 1.123082 | trade:0.30 call:0.62 put:0.38 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 171s
+step 04250 ( 29.2%) | loss: 1.133686 | trade:0.33 call:0.57 put:0.43 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 170s
+step 04300 ( 29.8%) | loss: 1.134194 | trade:0.40 call:0.60 put:0.40 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 168s
+step 04350 ( 30.3%) | loss: 1.125875 | trade:0.29 call:0.65 put:0.35 | ATM:0.62 OTM:0.38 | lr: 1.50e-04 | left: 167s
+step 04400 ( 30.9%) | loss: 1.130653 | trade:0.34 call:0.64 put:0.36 | ATM:0.54 OTM:0.46 | lr: 1.50e-04 | left: 166s
+step 04450 ( 31.4%) | loss: 1.110058 | trade:0.37 call:0.66 put:0.34 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 165s
+step 04500 ( 31.9%) | loss: 1.142566 | trade:0.36 call:0.60 put:0.40 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 163s
+step 04550 ( 32.5%) | loss: 1.116737 | trade:0.34 call:0.58 put:0.42 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 162s
+step 04600 ( 33.0%) | loss: 1.129982 | trade:0.35 call:0.63 put:0.37 | ATM:0.54 OTM:0.46 | lr: 1.50e-04 | left: 161s
+step 04650 ( 33.5%) | loss: 1.103608 | trade:0.35 call:0.60 put:0.40 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 160s
+step 04700 ( 34.1%) | loss: 1.128665 | trade:0.38 call:0.64 put:0.36 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 158s
+step 04750 ( 34.6%) | loss: 1.141519 | trade:0.31 call:0.59 put:0.41 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 157s
+step 04800 ( 35.1%) | loss: 1.098323 | trade:0.39 call:0.59 put:0.41 | ATM:0.53 OTM:0.47 | lr: 1.50e-04 | left: 156s
+step 04850 ( 35.6%) | loss: 1.107322 | trade:0.38 call:0.61 put:0.39 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 155s
+step 04900 ( 36.1%) | loss: 1.099258 | trade:0.30 call:0.61 put:0.39 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 153s
+step 04950 ( 36.7%) | loss: 1.130379 | trade:0.35 call:0.61 put:0.39 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 152s
+step 05000 ( 37.2%) | loss: 1.117862 | trade:0.36 call:0.58 put:0.42 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 151s
+step 05050 ( 37.8%) | loss: 1.105137 | trade:0.34 call:0.64 put:0.36 | ATM:0.52 OTM:0.48 | lr: 1.50e-04 | left: 149s
+step 05100 ( 38.3%) | loss: 1.121495 | trade:0.33 call:0.61 put:0.39 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 148s
+step 05150 ( 38.8%) | loss: 1.100708 | trade:0.38 call:0.58 put:0.42 | ATM:0.62 OTM:0.38 | lr: 1.50e-04 | left: 147s
+step 05200 ( 39.4%) | loss: 1.106620 | trade:0.30 call:0.62 put:0.38 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 146s
+step 05250 ( 39.9%) | loss: 1.097055 | trade:0.29 call:0.63 put:0.37 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 144s
+step 05300 ( 40.4%) | loss: 1.101996 | trade:0.30 call:0.67 put:0.33 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 143s
+step 05350 ( 41.0%) | loss: 1.112899 | trade:0.29 call:0.68 put:0.32 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 142s
+step 05400 ( 41.5%) | loss: 1.106989 | trade:0.39 call:0.54 put:0.46 | ATM:0.54 OTM:0.46 | lr: 1.50e-04 | left: 140s
+step 05450 ( 42.0%) | loss: 1.076315 | trade:0.37 call:0.58 put:0.42 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 139s
+step 05500 ( 42.6%) | loss: 1.088403 | trade:0.33 call:0.56 put:0.44 | ATM:0.60 OTM:0.40 | lr: 1.50e-04 | left: 138s
+step 05550 ( 43.1%) | loss: 1.101056 | trade:0.35 call:0.61 put:0.39 | ATM:0.67 OTM:0.33 | lr: 1.50e-04 | left: 137s
+step 05600 ( 43.5%) | loss: 1.086083 | trade:0.35 call:0.67 put:0.33 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 136s
+step 05650 ( 44.1%) | loss: 1.080129 | trade:0.31 call:0.67 put:0.33 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 134s
+step 05700 ( 44.6%) | loss: 1.103145 | trade:0.40 call:0.63 put:0.37 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 133s
+step 05750 ( 45.1%) | loss: 1.063809 | trade:0.33 call:0.59 put:0.41 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 132s
+step 05800 ( 45.6%) | loss: 1.084640 | trade:0.34 call:0.67 put:0.33 | ATM:0.67 OTM:0.33 | lr: 1.50e-04 | left: 130s
+step 05850 ( 46.2%) | loss: 1.081399 | trade:0.33 call:0.61 put:0.39 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 129s
+step 05900 ( 46.7%) | loss: 1.079424 | trade:0.35 call:0.62 put:0.38 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 128s
+step 05950 ( 47.2%) | loss: 1.056699 | trade:0.34 call:0.52 put:0.48 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 127s
+step 06000 ( 47.8%) | loss: 1.076009 | trade:0.36 call:0.63 put:0.37 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 125s
+step 06050 ( 48.3%) | loss: 1.100312 | trade:0.33 call:0.61 put:0.39 | ATM:0.62 OTM:0.38 | lr: 1.50e-04 | left: 124s
+step 06100 ( 48.8%) | loss: 1.082825 | trade:0.30 call:0.58 put:0.42 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 123s
+step 06150 ( 49.4%) | loss: 1.079110 | trade:0.27 call:0.62 put:0.38 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 121s
+step 06200 ( 49.9%) | loss: 1.070783 | trade:0.34 call:0.56 put:0.44 | ATM:0.60 OTM:0.40 | lr: 1.50e-04 | left: 120s
+step 06250 ( 50.4%) | loss: 1.060268 | trade:0.33 call:0.68 put:0.32 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 119s
+step 06300 ( 51.0%) | loss: 1.070639 | trade:0.34 call:0.60 put:0.40 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 118s
+step 06350 ( 51.5%) | loss: 1.066759 | trade:0.31 call:0.65 put:0.35 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 116s
+step 06400 ( 52.0%) | loss: 1.067323 | trade:0.34 call:0.61 put:0.39 | ATM:0.67 OTM:0.33 | lr: 1.50e-04 | left: 115s
+step 06450 ( 52.6%) | loss: 1.051863 | trade:0.34 call:0.56 put:0.44 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 114s
+step 06500 ( 53.1%) | loss: 1.064462 | trade:0.32 call:0.57 put:0.43 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 113s
+step 06550 ( 53.6%) | loss: 1.064101 | trade:0.37 call:0.63 put:0.37 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 111s
+step 06600 ( 54.2%) | loss: 1.074908 | trade:0.38 call:0.63 put:0.37 | ATM:0.60 OTM:0.40 | lr: 1.50e-04 | left: 110s
+step 06650 ( 54.7%) | loss: 1.064851 | trade:0.36 call:0.63 put:0.37 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 109s
+step 06700 ( 55.3%) | loss: 1.065035 | trade:0.35 call:0.68 put:0.32 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 107s
+step 06750 ( 55.8%) | loss: 1.065794 | trade:0.36 call:0.63 put:0.37 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 106s
+step 06800 ( 56.3%) | loss: 1.084623 | trade:0.33 call:0.55 put:0.45 | ATM:0.62 OTM:0.38 | lr: 1.50e-04 | left: 105s
+step 06850 ( 56.9%) | loss: 1.056061 | trade:0.33 call:0.62 put:0.38 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 103s
+step 06900 ( 57.4%) | loss: 1.050957 | trade:0.34 call:0.59 put:0.41 | ATM:0.62 OTM:0.38 | lr: 1.50e-04 | left: 102s
+step 06950 ( 57.9%) | loss: 1.048503 | trade:0.28 call:0.59 put:0.41 | ATM:0.70 OTM:0.30 | lr: 1.50e-04 | left: 101s
+step 07000 ( 58.5%) | loss: 1.055599 | trade:0.34 call:0.59 put:0.41 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 100s
+step 07050 ( 59.0%) | loss: 1.054814 | trade:0.29 call:0.59 put:0.41 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 98s
+step 07100 ( 59.6%) | loss: 1.062034 | trade:0.30 call:0.61 put:0.39 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 97s
+step 07150 ( 60.1%) | loss: 1.042541 | trade:0.35 call:0.60 put:0.40 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 96s
+step 07200 ( 60.6%) | loss: 1.027881 | trade:0.32 call:0.59 put:0.41 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 95s
+step 07250 ( 61.1%) | loss: 1.041892 | trade:0.34 call:0.60 put:0.40 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 93s
+step 07300 ( 61.6%) | loss: 1.038938 | trade:0.39 call:0.61 put:0.39 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 92s
+step 07350 ( 62.2%) | loss: 1.025925 | trade:0.30 call:0.61 put:0.39 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 91s
+step 07400 ( 62.6%) | loss: 1.054799 | trade:0.31 call:0.61 put:0.39 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 90s
+step 07450 ( 63.0%) | loss: 1.062953 | trade:0.33 call:0.63 put:0.37 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 89s
+step 07500 ( 63.2%) | loss: 1.034343 | trade:0.31 call:0.59 put:0.41 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 88s
+step 07550 ( 63.5%) | loss: 1.038782 | trade:0.24 call:0.60 put:0.40 | ATM:0.68 OTM:0.32 | lr: 1.50e-04 | left: 88s
+step 07600 ( 63.8%) | loss: 1.042537 | trade:0.32 call:0.58 put:0.42 | ATM:0.60 OTM:0.40 | lr: 1.50e-04 | left: 87s
+step 07650 ( 64.0%) | loss: 1.050999 | trade:0.30 call:0.55 put:0.45 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 86s
+step 07700 ( 64.3%) | loss: 1.049450 | trade:0.33 call:0.64 put:0.36 | ATM:0.56 OTM:0.44 | lr: 1.50e-04 | left: 86s
+step 07750 ( 64.5%) | loss: 1.038555 | trade:0.35 call:0.54 put:0.46 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 85s
+step 07800 ( 64.8%) | loss: 1.055169 | trade:0.31 call:0.56 put:0.44 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 85s
+step 07850 ( 65.0%) | loss: 1.056895 | trade:0.35 call:0.58 put:0.42 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 84s
+step 07900 ( 65.3%) | loss: 1.039086 | trade:0.35 call:0.64 put:0.36 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 83s
+step 07950 ( 65.7%) | loss: 1.025111 | trade:0.39 call:0.55 put:0.45 | ATM:0.55 OTM:0.45 | lr: 1.50e-04 | left: 82s
+step 08000 ( 65.9%) | loss: 1.030560 | trade:0.33 call:0.52 put:0.48 | ATM:0.67 OTM:0.33 | lr: 1.50e-04 | left: 82s
+step 08050 ( 66.1%) | loss: 1.053385 | trade:0.38 call:0.61 put:0.39 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 81s
+step 08100 ( 66.4%) | loss: 1.026220 | trade:0.33 call:0.61 put:0.39 | ATM:0.69 OTM:0.31 | lr: 1.50e-04 | left: 81s
+step 08150 ( 66.6%) | loss: 1.044924 | trade:0.34 call:0.57 put:0.43 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 80s
+step 08200 ( 66.8%) | loss: 1.052745 | trade:0.36 call:0.59 put:0.41 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 80s
+step 08250 ( 67.1%) | loss: 1.039709 | trade:0.42 call:0.60 put:0.40 | ATM:0.53 OTM:0.47 | lr: 1.50e-04 | left: 79s
+step 08300 ( 67.4%) | loss: 1.048893 | trade:0.26 call:0.62 put:0.38 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 78s
+step 08350 ( 67.6%) | loss: 1.056732 | trade:0.36 call:0.61 put:0.39 | ATM:0.63 OTM:0.37 | lr: 1.50e-04 | left: 78s
+step 08400 ( 67.8%) | loss: 1.029969 | trade:0.33 call:0.60 put:0.40 | ATM:0.67 OTM:0.33 | lr: 1.50e-04 | left: 77s
+step 08450 ( 68.0%) | loss: 1.040643 | trade:0.33 call:0.53 put:0.47 | ATM:0.59 OTM:0.41 | lr: 1.50e-04 | left: 77s
+step 08500 ( 68.3%) | loss: 1.040855 | trade:0.35 call:0.56 put:0.44 | ATM:0.62 OTM:0.38 | lr: 1.50e-04 | left: 76s
+step 08550 ( 68.5%) | loss: 1.008760 | trade:0.33 call:0.65 put:0.35 | ATM:0.67 OTM:0.33 | lr: 1.50e-04 | left: 76s
+step 08600 ( 68.7%) | loss: 1.009938 | trade:0.32 call:0.59 put:0.41 | ATM:0.62 OTM:0.38 | lr: 1.50e-04 | left: 75s
+step 08650 ( 68.9%) | loss: 1.008828 | trade:0.32 call:0.57 put:0.43 | ATM:0.58 OTM:0.42 | lr: 1.50e-04 | left: 75s
+step 08700 ( 69.2%) | loss: 1.026339 | trade:0.36 call:0.53 put:0.47 | ATM:0.61 OTM:0.39 | lr: 1.50e-04 | left: 74s
+step 08750 ( 69.4%) | loss: 1.042892 | trade:0.34 call:0.54 put:0.46 | ATM:0.60 OTM:0.40 | lr: 1.50e-04 | left: 73s
+step 08800 ( 69.6%) | loss: 1.024095 | trade:0.36 call:0.60 put:0.40 | ATM:0.64 OTM:0.36 | lr: 1.50e-04 | left: 73s
+step 08850 ( 69.8%) | loss: 1.018685 | trade:0.30 call:0.57 put:0.43 | ATM:0.69 OTM:0.31 | lr: 1.50e-04 | left: 72s
+step 08900 ( 70.0%) | loss: 1.035231 | trade:0.32 call:0.64 put:0.36 | ATM:0.60 OTM:0.40 | lr: 1.50e-04 | left: 72s
+step 08950 ( 70.2%) | loss: 1.034241 | trade:0.39 call:0.64 put:0.36 | ATM:0.60 OTM:0.40 | lr: 1.50e-04 | left: 71s
+step 09000 ( 70.5%) | loss: 1.000367 | trade:0.30 call:0.64 put:0.36 | ATM:0.66 OTM:0.34 | lr: 1.50e-04 | left: 71s
+step 09050 ( 70.7%) | loss: 1.038618 | trade:0.40 call:0.56 put:0.44 | ATM:0.57 OTM:0.43 | lr: 1.50e-04 | left: 70s
+step 09100 ( 71.0%) | loss: 1.049065 | trade:0.34 call:0.60 put:0.40 | ATM:0.67 OTM:0.33 | lr: 1.50e-04 | left: 70s
+step 09150 ( 71.2%) | loss: 1.007677 | trade:0.29 call:0.61 put:0.39 | ATM:0.68 OTM:0.32 | lr: 1.49e-04 | left: 69s
+step 09200 ( 71.5%) | loss: 1.038981 | trade:0.31 call:0.60 put:0.40 | ATM:0.69 OTM:0.31 | lr: 1.49e-04 | left: 68s
+step 09250 ( 71.7%) | loss: 0.994823 | trade:0.33 call:0.58 put:0.42 | ATM:0.72 OTM:0.28 | lr: 1.49e-04 | left: 68s
+step 09300 ( 71.9%) | loss: 1.003928 | trade:0.31 call:0.63 put:0.37 | ATM:0.64 OTM:0.36 | lr: 1.48e-04 | left: 67s
+step 09350 ( 72.2%) | loss: 1.016242 | trade:0.34 call:0.62 put:0.38 | ATM:0.67 OTM:0.33 | lr: 1.48e-04 | left: 67s
+step 09400 ( 72.5%) | loss: 1.037953 | trade:0.33 call:0.63 put:0.37 | ATM:0.69 OTM:0.31 | lr: 1.47e-04 | left: 66s
+step 09450 ( 72.8%) | loss: 1.001396 | trade:0.35 call:0.58 put:0.42 | ATM:0.62 OTM:0.38 | lr: 1.47e-04 | left: 65s
+step 09500 ( 73.1%) | loss: 1.020797 | trade:0.36 call:0.60 put:0.40 | ATM:0.63 OTM:0.37 | lr: 1.46e-04 | left: 65s
+step 09550 ( 73.3%) | loss: 0.991580 | trade:0.36 call:0.63 put:0.37 | ATM:0.62 OTM:0.38 | lr: 1.45e-04 | left: 64s
+step 09600 ( 73.6%) | loss: 1.019141 | trade:0.33 call:0.57 put:0.43 | ATM:0.55 OTM:0.45 | lr: 1.45e-04 | left: 63s
+step 09650 ( 73.9%) | loss: 1.013775 | trade:0.38 call:0.58 put:0.42 | ATM:0.62 OTM:0.38 | lr: 1.44e-04 | left: 63s
+step 09700 ( 74.3%) | loss: 1.009624 | trade:0.35 call:0.58 put:0.42 | ATM:0.63 OTM:0.37 | lr: 1.43e-04 | left: 62s
+step 09750 ( 74.8%) | loss: 1.003904 | trade:0.30 call:0.59 put:0.41 | ATM:0.71 OTM:0.29 | lr: 1.41e-04 | left: 61s
+step 09800 ( 75.1%) | loss: 1.000829 | trade:0.31 call:0.62 put:0.38 | ATM:0.65 OTM:0.35 | lr: 1.40e-04 | left: 60s
+step 09850 ( 75.3%) | loss: 1.010640 | trade:0.34 call:0.51 put:0.49 | ATM:0.62 OTM:0.38 | lr: 1.39e-04 | left: 59s
+step 09900 ( 75.6%) | loss: 1.015072 | trade:0.29 call:0.60 put:0.40 | ATM:0.68 OTM:0.32 | lr: 1.37e-04 | left: 58s
+step 09950 ( 75.9%) | loss: 1.004552 | trade:0.33 call:0.60 put:0.40 | ATM:0.69 OTM:0.31 | lr: 1.36e-04 | left: 58s
+step 10000 ( 76.2%) | loss: 1.016394 | trade:0.36 call:0.53 put:0.47 | ATM:0.65 OTM:0.35 | lr: 1.35e-04 | left: 57s
+step 10050 ( 76.6%) | loss: 1.006540 | trade:0.33 call:0.61 put:0.39 | ATM:0.61 OTM:0.39 | lr: 1.33e-04 | left: 56s
+step 10100 ( 77.2%) | loss: 1.003826 | trade:0.33 call:0.53 put:0.47 | ATM:0.65 OTM:0.35 | lr: 1.30e-04 | left: 55s
+step 10150 ( 77.7%) | loss: 1.009221 | trade:0.34 call:0.60 put:0.40 | ATM:0.63 OTM:0.37 | lr: 1.27e-04 | left: 53s
+step 10200 ( 78.3%) | loss: 0.998737 | trade:0.36 call:0.60 put:0.40 | ATM:0.63 OTM:0.37 | lr: 1.24e-04 | left: 52s
+step 10250 ( 78.8%) | loss: 0.971354 | trade:0.35 call:0.56 put:0.44 | ATM:0.63 OTM:0.37 | lr: 1.20e-04 | left: 51s
+step 10300 ( 79.3%) | loss: 1.010445 | trade:0.29 call:0.58 put:0.42 | ATM:0.64 OTM:0.36 | lr: 1.17e-04 | left: 50s
+step 10350 ( 79.9%) | loss: 0.991350 | trade:0.33 call:0.60 put:0.40 | ATM:0.65 OTM:0.35 | lr: 1.13e-04 | left: 48s
+step 10400 ( 80.4%) | loss: 1.004482 | trade:0.32 call:0.62 put:0.38 | ATM:0.64 OTM:0.36 | lr: 1.10e-04 | left: 47s
+step 10450 ( 81.0%) | loss: 0.975298 | trade:0.30 call:0.63 put:0.37 | ATM:0.70 OTM:0.30 | lr: 1.06e-04 | left: 46s
+step 10500 ( 81.5%) | loss: 1.016530 | trade:0.30 call:0.64 put:0.36 | ATM:0.66 OTM:0.34 | lr: 1.02e-04 | left: 44s
+step 10550 ( 82.0%) | loss: 0.999725 | trade:0.31 call:0.57 put:0.43 | ATM:0.58 OTM:0.42 | lr: 9.79e-05 | left: 43s
+step 10600 ( 82.6%) | loss: 1.000543 | trade:0.29 call:0.59 put:0.41 | ATM:0.70 OTM:0.30 | lr: 9.39e-05 | left: 42s
+step 10650 ( 83.1%) | loss: 0.998737 | trade:0.29 call:0.58 put:0.42 | ATM:0.66 OTM:0.34 | lr: 8.97e-05 | left: 40s
+step 10700 ( 83.7%) | loss: 1.002677 | trade:0.37 call:0.61 put:0.39 | ATM:0.63 OTM:0.37 | lr: 8.56e-05 | left: 39s
+step 10750 ( 84.2%) | loss: 0.990905 | trade:0.32 call:0.52 put:0.48 | ATM:0.62 OTM:0.38 | lr: 8.14e-05 | left: 38s
+step 10800 ( 84.7%) | loss: 0.995853 | trade:0.36 call:0.60 put:0.40 | ATM:0.62 OTM:0.38 | lr: 7.71e-05 | left: 37s
+step 10850 ( 85.3%) | loss: 0.976495 | trade:0.39 call:0.54 put:0.46 | ATM:0.63 OTM:0.37 | lr: 7.29e-05 | left: 35s
+step 10900 ( 85.8%) | loss: 0.971481 | trade:0.34 call:0.58 put:0.42 | ATM:0.66 OTM:0.34 | lr: 6.87e-05 | left: 34s
+step 10950 ( 86.3%) | loss: 1.010210 | trade:0.37 call:0.64 put:0.36 | ATM:0.60 OTM:0.40 | lr: 6.46e-05 | left: 33s
+step 11000 ( 86.9%) | loss: 0.992461 | trade:0.30 call:0.59 put:0.41 | ATM:0.63 OTM:0.37 | lr: 6.04e-05 | left: 31s
+step 11050 ( 87.4%) | loss: 0.991057 | trade:0.28 call:0.62 put:0.38 | ATM:0.70 OTM:0.30 | lr: 5.63e-05 | left: 30s
+step 11100 ( 87.9%) | loss: 0.994676 | trade:0.38 call:0.62 put:0.38 | ATM:0.60 OTM:0.40 | lr: 5.23e-05 | left: 29s
+step 11150 ( 88.5%) | loss: 0.975158 | trade:0.34 call:0.56 put:0.44 | ATM:0.64 OTM:0.36 | lr: 4.83e-05 | left: 28s
+step 11200 ( 89.0%) | loss: 0.982210 | trade:0.36 call:0.55 put:0.45 | ATM:0.62 OTM:0.38 | lr: 4.45e-05 | left: 26s
+step 11250 ( 89.5%) | loss: 0.980390 | trade:0.29 call:0.57 put:0.43 | ATM:0.66 OTM:0.34 | lr: 4.08e-05 | left: 25s
+step 11300 ( 90.0%) | loss: 0.984881 | trade:0.34 call:0.63 put:0.37 | ATM:0.63 OTM:0.37 | lr: 3.72e-05 | left: 24s
+step 11350 ( 90.6%) | loss: 0.974562 | trade:0.38 call:0.58 put:0.42 | ATM:0.61 OTM:0.39 | lr: 3.36e-05 | left: 23s
+step 11400 ( 91.1%) | loss: 0.979449 | trade:0.35 call:0.60 put:0.40 | ATM:0.63 OTM:0.37 | lr: 3.02e-05 | left: 21s
+step 11450 ( 91.7%) | loss: 0.955658 | trade:0.31 call:0.61 put:0.39 | ATM:0.68 OTM:0.32 | lr: 2.68e-05 | left: 20s
+step 11500 ( 92.2%) | loss: 0.965880 | trade:0.32 call:0.62 put:0.38 | ATM:0.66 OTM:0.34 | lr: 2.37e-05 | left: 19s
+step 11550 ( 92.7%) | loss: 0.976444 | trade:0.31 call:0.59 put:0.41 | ATM:0.65 OTM:0.35 | lr: 2.07e-05 | left: 17s
+step 11600 ( 93.3%) | loss: 0.984015 | trade:0.36 call:0.58 put:0.42 | ATM:0.65 OTM:0.35 | lr: 1.79e-05 | left: 16s
+step 11650 ( 93.8%) | loss: 0.982290 | trade:0.34 call:0.55 put:0.45 | ATM:0.66 OTM:0.34 | lr: 1.52e-05 | left: 15s
+step 11700 ( 94.3%) | loss: 0.979819 | trade:0.33 call:0.62 put:0.38 | ATM:0.70 OTM:0.30 | lr: 1.28e-05 | left: 14s
+step 11750 ( 94.9%) | loss: 0.983824 | trade:0.33 call:0.61 put:0.39 | ATM:0.63 OTM:0.37 | lr: 1.05e-05 | left: 12s
+step 11800 ( 95.4%) | loss: 0.965959 | trade:0.37 call:0.61 put:0.39 | ATM:0.67 OTM:0.33 | lr: 8.46e-06 | left: 11s
+step 11850 ( 96.0%) | loss: 0.940005 | trade:0.35 call:0.63 put:0.37 | ATM:0.68 OTM:0.32 | lr: 6.61e-06 | left: 10s
+step 11900 ( 96.5%) | loss: 0.985672 | trade:0.27 call:0.62 put:0.38 | ATM:0.70 OTM:0.30 | lr: 4.99e-06 | left: 8s
+step 11950 ( 97.0%) | loss: 0.968205 | trade:0.34 call:0.57 put:0.43 | ATM:0.67 OTM:0.33 | lr: 3.58e-06 | left: 7s
+step 12000 ( 97.6%) | loss: 0.965470 | trade:0.37 call:0.55 put:0.45 | ATM:0.63 OTM:0.37 | lr: 2.41e-06 | left: 6s
+step 12050 ( 98.1%) | loss: 0.975127 | trade:0.34 call:0.60 put:0.40 | ATM:0.66 OTM:0.34 | lr: 1.47e-06 | left: 5s
+step 12100 ( 98.6%) | loss: 0.941596 | trade:0.27 call:0.63 put:0.37 | ATM:0.66 OTM:0.34 | lr: 7.52e-07 | left: 3s
+step 12150 ( 99.2%) | loss: 0.963264 | trade:0.32 call:0.61 put:0.39 | ATM:0.71 OTM:0.29 | lr: 2.74e-07 | left: 2s
+step 12200 ( 99.7%) | loss: 0.973636 | trade:0.31 call:0.54 put:0.46 | ATM:0.68 OTM:0.32 | lr: 3.26e-08 | left: 1s
+
+Training done at 245s. Starting evaluation...
+Evaluation done in 7s (total wall: 252s)
+Model saved to /root/best_model.pt
+Trade log: 87 trades -> /root/trade_log.csv
+
+---
+score:              1.081792
+profit_factor:      2.873917
+win_rate:           0.436782
+avg_winner:         0.837677
+avg_loser:          -0.226042
+trades_per_day:     1.338462
+max_consec_loss:    5
+num_trades:         87
+trade_sharpe:       4.059585
+sortino:            41.695531
+max_drawdown:       -2.120978
+calmar:             9.785882
+ev_per_trade:       0.238571
+do_nothing_pct:     0.593722
+exit_pct:           0.012780
+model_exit_count:   57
+cooldown_blocked:   117
+pre_10am_blocked:   601
+short_hold_pct:     0.207000
+stop_loss_rate:     0.310000
+direction_collapse_pct: 0.379300
+avg_entry_cost_bps: 447.654900
+avg_entry_quality:  0.692500
+cost_realism_coverage: 1.011500
+high_cost_entry_rate: 0.563200
+low_quality_entry_rate: 0.000000
+actionable_bar_rate: 0.829100
+risk_off_bar_rate:  0.000000
+final_capital:      10426.70
+equity_sharpe:      0.631200
+max_equity_dd:      -0.354400
+total_dollar_return:0.042700
+val_sharpe:         4.964786
+total_return:       20.755639
+num_val_bars:       4460
+num_val_days:       65
+worst_chunk_pf:     0.71
+rr_ratio:           3.7058
+avg_hold_bars:      12.56
+model_exit_rate:    0.6552
+hit_ruin:           False
+min_equity_frac:    0.6877
+avg_risk_fraction:  0.1059
+max_risk_fraction:  0.4397
+trades_blocked_by_balance: 0
+training_seconds:   240.0
+total_seconds:      254.2
+peak_vram_mb:       357.0
+num_steps:          12227
+num_params:         146,265
+lookback:           120
+depth:              3
+d_model:            64
+effective_lr:       0.00015
+gate_label_smoothing:0.050000
+dir_label_smoothing:0.050000
+false_entry_penalty:2.000000
+/opt/conda/lib/python3.11/site-packages/torch/nn/modules/transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(

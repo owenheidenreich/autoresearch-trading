@@ -1,0 +1,1 @@
+The error is `NameError: name 'progress' is not defined` on line 817. Looking at the code, `progress` is calculated inside the gradient accumulation block (`if _accum_step % GRAD_ACCUM_STEPS == 0:`), but it's being used outside that block in the print statement. I need to calculate `progress` before the gradient accumulation check so it's always available for the print statement.

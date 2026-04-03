@@ -1,0 +1,27 @@
+## Experiment Summary
+Total=7 | Kept=2 | Failed=0 | Accept rate=29% (2/7) | Best score=0.915907 (#5)
+
+## Top Kept Experiments
+  #5: score=0.915907 pf=2.796383 tpd=1.328358 — VIX_CONSISTENCY_WEIGHT = _env_float("TRAIN_VIX_CONSISTENCY_W", 0.1, lo=0.0, hi=0.5); VIX_REGIME_WEIGHT = _env_float("TRAIN_VIX_REGIME_W", 0.2, lo=0.0, hi=1.0); IDX_VIX_NORM = 24  # VIX feature index; def vix_consistency_loss(gate_logits, dir_logits, vix_features):; def compute_vix_regime_weights(vix_features, target_low_vix_weight=3.0):
+  #run-2026-03-22-001946#1: score=0.634455 pf=2.642592 tpd=1.38806 — minor change
+
+## Recent Trajectory (last 30)
+  #run-2026-03-22-001946#1: score=0.634455 pf=2.642592 tpd=1.38806 [✓ KEPT] — minor change
+  #1: score=0.511472 pf=2.465685 tpd=1.537313 [✗ reverted] BLOCKED:score_not_improved — EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 1.0, lo=0.0, hi=2.0)
+  #2: score=0.294245 pf=1.935479 tpd=1.552239 [✗ reverted] BLOCKED:score_not_improved — FALSE_ENTRY_PENALTY = _env_float("TRAIN_FALSE_ENTRY_PENALTY", 2.5, lo=1.0, hi=5.0)  # Increased from 2.0; EXIT_LOSS_WEIGHT = _env_float("TRAIN_EXIT_W", 0.8, lo=0.0, hi=2.0)  # Increased from 0.5; PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.2, lo=0.0, hi=2.0)  # Reduced from 0.3; class ConservativeStrikeGate(nn.Module):
+  #3: score=0.160135 pf=1.595708 tpd=1.537313 [✗ reverted] BLOCKED:score_not_improved — def day_sequential_generator():; def make_day_sequential_dataloader(data, lookback, batch_size, split, device):
+  #4: score=0.622783 pf=2.681284 tpd=1.358209 [✗ reverted] BLOCKED:score_not_improved — minor change
+  #5: score=0.915907 pf=2.796383 tpd=1.328358 [✓ KEPT] — VIX_CONSISTENCY_WEIGHT = _env_float("TRAIN_VIX_CONSISTENCY_W", 0.1, lo=0.0, hi=0.5); VIX_REGIME_WEIGHT = _env_float("TRAIN_VIX_REGIME_W", 0.2, lo=0.0, hi=1.0); IDX_VIX_NORM = 24  # VIX feature index; def vix_consistency_loss(gate_logits, dir_logits, vix_features):; def compute_vix_regime_weights(vix_features, target_low_vix_weight=3.0):
+  #6: score=0.599608 pf=2.374119 tpd=1.597015 [✗ reverted] BLOCKED:score_not_improved — TEMPORAL_ROBUSTNESS_WEIGHT = _env_float("TRAIN_TEMPORAL_ROBUSTNESS_W", 0.15, lo=0.0, hi=0.5); def temporal_robustness_loss(gate_logits, dir_logits, time_features):
+
+## Before proposing changes, answer these questions in your <reasoning>:
+1. Based on the trade diagnostics, what is the model's biggest weakness?
+2. Is the model profitable across ALL time chunks and VIX regimes, or just some?
+3. Are the best trades repeatable patterns, or lucky outliers?
+4. What specific TRADING BEHAVIOR will your proposed change improve?
+
+## CURRENT BEST: Experiment #5 (score=0.9159, pf=2.796383)
+The code below IS experiment #5. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

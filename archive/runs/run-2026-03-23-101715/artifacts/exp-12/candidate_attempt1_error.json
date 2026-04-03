@@ -1,0 +1,4 @@
+{
+  "error": "SAFETY: New _env_float declarations added (18 vs baseline 17). The loss function is FROZEN per program.md \u2014 tune existing hyperparameter VALUES only, do not add new ones.",
+  "failure_type": "safety"
+}

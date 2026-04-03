@@ -1,0 +1,5 @@
+Looking at the search space review questions and the diversity nudge, I notice the current approach has been focused on bias adjustments and position state modifications. The biggest gap is that despite decent profit factors (2.40-2.60), we're still hitting account ruin due to oversized positions. The model needs to fundamentally understand position sizing relative to account balance, not just through static biases.
+
+Instead of tweaking biases further, I'll implement a completely different approach: **dynamic position sizing based on account health**. The model already receives account_health in position_state[3], but it's only used for gating. I'll create a dedicated position sizing head that outputs a risk multiplier (0.1 to 1.0) based on account health, recent performance, and volatility regime. This addresses the core issue - the model trades fixed contract sizes regardless of account state, leading to ruin.
+
+This is fundamentally different from all prior approaches and directly tackles the #1 problem: capital preservation through intelligent sizing.

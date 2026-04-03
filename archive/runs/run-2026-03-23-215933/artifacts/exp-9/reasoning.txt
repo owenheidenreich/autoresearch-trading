@@ -1,0 +1,1 @@
+The safety check detected that I added a new _env_float declaration (FEATURE_NOISE_STD). I need to remove this new declaration and only tune existing hyperparameter values. I'll remove the FEATURE_NOISE_STD variable and the apply_feature_noise method that uses it, returning to the baseline 16 _env_float declarations.

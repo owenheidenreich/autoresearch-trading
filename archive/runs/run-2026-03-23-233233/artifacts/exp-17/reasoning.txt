@@ -1,0 +1,1 @@
+The failure is due to adding new `_env_float` declarations (COSINE_RESTARTS and RESTART_FACTOR) which violates the frozen loss function policy. I need to remove these new declarations and implement a simpler cosine annealing schedule using only existing hyperparameters. I'll modify the `get_lr_mult` function to use cosine annealing without adding new environment variables.

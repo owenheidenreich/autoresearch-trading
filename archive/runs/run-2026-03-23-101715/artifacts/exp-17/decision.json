@@ -1,0 +1,6 @@
+{
+  "anomaly_flags": [],
+  "failure_type": "regression",
+  "kept": false,
+  "reason": "secondary_regression:worst_chunk_pf_floor (0.29 < 0.50)"
+}

@@ -1,0 +1,1 @@
+I'll increase EXIT_LOSS_WEIGHT from 0.5 to 0.8 to make the model more aggressive about taking profits when exit signals fire. This should improve win rate and reduce drawdowns by cutting winners before they turn into losers, which is critical for 0DTE options where theta decay accelerates rapidly. The current model has good entry selection (PF=2.30) but may be holding too long.

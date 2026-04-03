@@ -1,0 +1,1 @@
+The error is in the AdaptivePositionSizing forward method. The issue is on line 262 where `sizing_adjustment` is referenced but not defined. Looking at the code, the variable should be `sizing_adjustments` (plural). This is a simple typo that needs to be fixed.

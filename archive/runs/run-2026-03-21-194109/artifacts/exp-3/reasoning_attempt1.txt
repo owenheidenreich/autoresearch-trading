@@ -1,0 +1,7 @@
+Looking at the experiment history, the BalancedStrikeGate approach (#52) achieved the best score of 1.77 with PF=3.42 and TPD=1.29. The progression shows that account-aware gating modules work well, but I need to understand what specific weakness to address next.
+
+From the lab notebook, I see that adding new nn.Module subclasses often fails due to insufficient training time for new parameters. However, the BalancedStrikeGate succeeded, so the key is likely making targeted improvements to existing successful patterns rather than adding complexity.
+
+The current model has good profit factor (3.42) but relatively low trade frequency (1.29 TPD). This suggests the model is being overly conservative. I hypothesize that the gate bias (+0.5 for NO_TRADE) combined with the health-based gating might be making the model too selective, missing profitable opportunities.
+
+My approach: Reduce the conservative gate bias from +0.5 to +0.3 and adjust the BalancedStrikeGate to be less restrictive when account health is reasonable (>0.8), allowing more trades while maintaining capital preservation when truly stressed.

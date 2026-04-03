@@ -1,0 +1,7 @@
+Looking at the trajectory, experiment #9 achieved the best score (1.215477) with temporal chunk consistency loss. The key insight is that the model needs to perform consistently across different time periods, not just optimize aggregate metrics.
+
+However, I notice a critical pattern in the diagnostics section of the contract: "Stop rate = Win rate = 34%" means every loss is a stop-loss hit. The model never exits losing trades early via the gate head. This is the biggest weakness - the model should learn to cut losers BEFORE hitting the stop.
+
+The current model trains on stopped P&L but doesn't learn proactive exit timing. I want to try a different approach: train the gate head to be more aggressive about exits when trades are going against the model. Specifically, I'll add a "loss acceleration" term that teaches the gate to predict NO_TRADE when P&L is deteriorating rapidly, even if it hasn't hit the stop yet.
+
+This addresses a specific trading behavior: improving exit timing to reduce the stop-loss rate from 34% to something lower, which should improve both win rate and profit factor.

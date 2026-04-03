@@ -1,0 +1,1 @@
+The error is that `nn.L2Norm` doesn't exist in PyTorch. I need to replace it with `F.normalize` or implement L2 normalization manually. I'll use `F.normalize` which is the standard way to normalize tensors in PyTorch.

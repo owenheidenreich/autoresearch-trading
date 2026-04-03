@@ -1,0 +1,5 @@
+Looking at the current best experiment (score=0.634, PF=2.64, TPD=1.39), I need to understand what's limiting performance. From the lab notebook, the critical weakness is temporal robustness - Chunk 1 (Feb-May 2025) has PF=0.22, meaning the model fails badly on early validation dates. 
+
+The model also has stop_rate = win_rate = 34%, indicating every loss hits the stop-loss without early exit via the gate head. The model needs to learn better exit timing.
+
+My hypothesis: The model is overfitting to recent market conditions and not learning generalizable exit patterns. I'll implement day-sequential batching using the available day_boundaries data to force the model to see chronological patterns within training days, which should improve temporal robustness. This will help the model learn consistent trading patterns that work across different time periods rather than just memorizing recent data patterns.

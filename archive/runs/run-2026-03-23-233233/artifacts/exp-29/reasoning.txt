@@ -1,0 +1,1 @@
+The best run (#2) succeeded with DIR_W=2.0. Instead of making dramatic changes, I'll make a minimal conservative adjustment: slightly increase DIR_W from 2.0 to 2.2 to potentially improve direction learning while staying close to the proven successful configuration. This is a 10% increase rather than the 25%+ changes that have been failing.

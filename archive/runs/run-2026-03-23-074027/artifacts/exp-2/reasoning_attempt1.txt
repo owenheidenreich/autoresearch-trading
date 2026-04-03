@@ -1,0 +1,1 @@
+The model is severely overfitting (direction collapse + low PF). I'll increase DROPOUT from 0.15 to 0.25 to add more regularization and prevent memorization. Higher dropout should force the model to learn more robust patterns instead of memorizing training sequences, which should reduce the train/val performance gap and improve generalization.

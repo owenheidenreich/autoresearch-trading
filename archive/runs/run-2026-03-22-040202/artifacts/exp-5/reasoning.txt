@@ -1,0 +1,5 @@
+Looking at the recent trajectory, experiment #1 was rejected for "near_tie_stability_failed:worst_chunk_pf_below_threshold,stop_loss_rate_above_threshold" despite having the highest score (1.2284) and profit factor (3.166). This suggests the model is becoming less robust across time periods and hitting too many stop losses.
+
+The key insight is that temporal chunk consistency (TEMPORAL_CHUNK_WEIGHT=0.15) worked well in experiment #9, but increasing it to 0.25 in experiment #1 caused instability. Rather than just tuning this weight, I'll address the underlying issue: the model needs to be more selective about when to trade and better at cutting losses early.
+
+My hypothesis: The model's gate head is not selective enough, leading to too many marginal trades that hit stop losses. I'll implement a more conservative gate bias and add a loss term that explicitly penalizes trades that end up hitting stops. This should improve both temporal robustness and stop-loss rate simultaneously.

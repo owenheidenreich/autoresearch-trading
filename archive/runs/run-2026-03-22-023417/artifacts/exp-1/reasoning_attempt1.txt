@@ -1,0 +1,9 @@
+Looking at the current best experiment with score=0.6345 and pf=2.64, I need to identify the biggest weakness. From the lab notebook, I can see that:
+
+1. The model has severe temporal inconsistency - Chunk 1 (Feb-May 2025) has PF=0.22, meaning it loses badly in early validation dates
+2. Stop rate = Win rate = 34% indicates the model never exits losing trades early - every loss hits the stop-loss
+3. OTM trades are hemorrhaging money (PUT_OTM5 alone lost $1,521 in backtest)
+
+The biggest weakness appears to be exit timing - the model holds losing trades until they hit the dynamic stop rather than learning to cut losses early via the gate head. This is evidenced by the stop rate equaling the win rate.
+
+My hypothesis: Increase EXIT_LOSS_WEIGHT from 0.5 to 1.0 to strengthen the model's ability to learn optimal exit timing. This should improve the model's ability to exit losing trades before they hit the stop-loss, potentially improving both profit factor and temporal consistency by teaching better loss management across all regimes.

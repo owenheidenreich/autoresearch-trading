@@ -1,0 +1,41 @@
+## Experiment Summary
+Total=7 | Kept=1 | Failed=0 | Accept rate=14% (1/7) | Best score=-0.265802 (#5)
+
+## STRATEGY COLLAPSE WARNING
+Strategy collapse warning (1 signals): repetitive_changes (5/7 start with 'pnl_alignment_weight')
+
+## LOW ACCEPT RATE WARNING
+Only 14% of proposals are being accepted. This means
+your proposals and the validation gate are misaligned.
+  - Make SMALLER, more conservative changes
+  - Focus on what the gate actually rewards (read the score formula)
+  - Study the gap between best score and recent scores
+
+## Top Kept Experiments
+  #5: score=-0.265802 pf=0.894049 tpd=1.0 — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+
+## Recent Trajectory (last 30)
+  #1: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.4, lo=0.0, hi=2.0)  # Increased from 0.3 to 0.4
+  #2: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — actionable_mask=y_dict['am'],; otm10_call_stopped_pnl=y_dict['otm10c_stopped'],; otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+  #3: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.1, lo=0.0, hi=2.0)  # Reduced from 0.3 to reduce gradient conflicts
+  #4: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # Keep original weight
+  #5: score=-0.265802 pf=0.894049 tpd=1.0 [✓ KEPT] — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+  #6: score=-2.321869 pf=0.329624 tpd=2.0 [✗ reverted] BLOCKED:score_not_improved — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.2, lo=0.0, hi=2.0)  # Reduced to avoid conflicts; GATE_LOSS_WEIGHT = _env_float("TRAIN_GATE_W", 3.0, lo=0.1, hi=5.0)  # Stronger gate signal
+  #7: score=-0.325685 pf=0.884428 tpd=1.2 [✗ reverted] BLOCKED:score_not_improved — self.gate_head[-1].bias[0] -= 0.2   # NO_TRADE (reduced from +0.1); _safe(put_stopped_wide) if call_stopped_wide is not None else None,; self.gate_head[-1].bias[1] += 0.2   # TRADE (increased from -0.1)
+
+## DIAGNOSTIC SUMMARY (last scored experiment)
+- Direction collapse: ?
+- Stop-loss rate: ?
+- Avg entry quality: ?
+- Win rate: ?
+
+## Before proposing changes, write your <diagnosis> answering:
+1. What is the single biggest weakness in the current model's trading behavior?
+2. What approach have you NOT tried yet?
+3. Why do you believe your proposed change will improve the score?
+
+## CURRENT BEST: Experiment #5 (score=-0.2658, pf=0.894049)
+The code below IS experiment #5. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

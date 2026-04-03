@@ -1,0 +1,7 @@
+Looking at the strategy collapse warning and recent trajectory, I see that the last 7 experiments all failed to improve on the current best (#27 with score=1.465128). The model has been stuck trying incremental tweaks to capital preservation and position sizing.
+
+Given this is the DIVERSITY NUDGE (every 5th experiment) and SEARCH-SPACE REVIEW (every 10th), I need to try something FUNDAMENTALLY DIFFERENT. Looking at the history, all recent experiments have focused on gating and capital preservation, but none have explored the core feature processing or loss function structure.
+
+The biggest gap I see is that the model is still using simple linear projection for features, while the domain has rich temporal and cross-sectional structure that's being underutilized. The current approach treats all 32 features equally, but options trading has clear feature hierarchies (greeks > returns > volume, etc.).
+
+I'll implement a multi-scale temporal feature processor that captures both short-term (5-bar) momentum signals and medium-term (20-bar) trend signals, then combines them with the current features. This is fundamentally different from all prior gating/capital preservation approaches and should give the model richer temporal context for better entry/exit decisions.

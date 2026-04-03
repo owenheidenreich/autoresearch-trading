@@ -1,0 +1,1 @@
+The failure is caused by trying to use day-sequential batching when the data doesn't contain the required 'day_boundaries' field. The error occurs at line 829 when calling make_day_sequential_loader. I need to disable day-sequential batching and fall back to random-only batching to fix this immediate issue.

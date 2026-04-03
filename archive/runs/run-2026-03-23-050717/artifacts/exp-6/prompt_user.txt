@@ -1,0 +1,32 @@
+## Experiment Summary
+Total=5 | Kept=1 | Failed=0 | Accept rate=20% (1/5) | Best score=-0.265802 (#5)
+
+## STRATEGY COLLAPSE WARNING
+Strategy collapse warning (1 signals): repetitive_changes (4/5 start with 'pnl_alignment_weight')
+
+## Top Kept Experiments
+  #5: score=-0.265802 pf=0.894049 tpd=1.0 — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+
+## Recent Trajectory (last 30)
+  #1: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.4, lo=0.0, hi=2.0)  # Increased from 0.3 to 0.4
+  #2: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — actionable_mask=y_dict['am'],; otm10_call_stopped_pnl=y_dict['otm10c_stopped'],; otm5_call_stopped_pnl=y_dict['otm5c_stopped'],
+  #3: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.1, lo=0.0, hi=2.0)  # Reduced from 0.3 to reduce gradient conflicts
+  #4: score=-10.0 pf=0.0 tpd=0.0 [✗ reverted] BLOCKED:score_not_improved;critical_anomalies:cost_realism_low_coverage,entry_quality_too_low,high_cost_entry_rate_high,low_quality_entry_rate_high,metric_inconsistent,trades_per_day_extreme — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0)  # Keep original weight
+  #5: score=-0.265802 pf=0.894049 tpd=1.0 [✓ KEPT] — PNL_ALIGNMENT_WEIGHT = _env_float("TRAIN_PNL_W", 0.3, lo=0.0, hi=2.0); LR = _env_float("TRAIN_LR", 2.5e-4, lo=1e-5, hi=5e-3)  # Higher initial LR; WARMUP_RATIO = _env_float("TRAIN_WARMUP_RATIO", 0.15, lo=0.0, hi=0.5)  # Longer warmup
+
+## DIAGNOSTIC SUMMARY (last scored experiment)
+- Direction collapse: ?
+- Stop-loss rate: ?
+- Avg entry quality: ?
+- Win rate: ?
+
+## Before proposing changes, write your <diagnosis> answering:
+1. What is the single biggest weakness in the current model's trading behavior?
+2. What approach have you NOT tried yet?
+3. Why do you believe your proposed change will improve the score?
+
+## CURRENT BEST: Experiment #5 (score=-0.2658, pf=0.894049)
+The code below IS experiment #5. Build on THIS code — it is the current best.
+
+Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
+The current train.py is in the system prompt above — modify THAT code.

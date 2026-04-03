@@ -1,0 +1,26 @@
+{
+  "phase": "completed",
+  "experiment_id": 11,
+  "best_score": 8.456477,
+  "kept": 0,
+  "failed": 3,
+  "total": 12,
+  "accept_rate": 0.0,
+  "time_remaining_h": 1.09,
+  "updated": "2026-03-22T19:03:46.314922",
+  "contract_checksum": "7b9b33f6b435",
+  "api_cost": {
+    "total_cost": 5.21,
+    "cost_input": 0.25,
+    "cost_cache_write": 0.22,
+    "cost_cache_read": 0.11,
+    "cost_output": 4.63,
+    "tokens_input": 84290,
+    "tokens_output": 308924,
+    "tokens_cache_read": 372954,
+    "tokens_cache_write": 35964,
+    "api_calls": 17,
+    "prefetch_discards": 0,
+    "cache_hit_pct": 75.6
+  }
+}

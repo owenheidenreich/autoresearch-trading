@@ -1,0 +1,1 @@
+I will increase DAY_SEQ_RATIO from 0.7 to 0.85 to provide more realistic position state training. The current model sees too many flat-state random batches (30%) which doesn't teach it how to behave when actually holding positions. More sequential training should improve exit timing and reduce over-selectivity, leading to higher trade frequency while maintaining profitability.

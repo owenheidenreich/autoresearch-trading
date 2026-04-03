@@ -1,0 +1,29 @@
+{
+  "phase": "training",
+  "experiment_id": 5,
+  "best_score": -5.0,
+  "kept": 0,
+  "failed": 0,
+  "total": 4,
+  "accept_rate": 0.0,
+  "time_remaining_h": 1.83,
+  "updated": "2026-03-23T09:36:14.660594",
+  "contract_checksum": "795124e4f56d",
+  "last_change": "PNL_ALIGNMENT_WEIGHT = _env_float(\"TRAIN_PNL_W\", 0.8, lo=0.0, hi=2.0)  # Increased from 0.3 for stronger profit signals; GATE_LOSS_WEIGHT = _env_float(\"TRAIN_GATE_W\", 1.0, lo=0.1, hi=5.0)  # Reduced from 2.0 to encourage trading",
+  "last_score": null,
+  "last_kept": false,
+  "api_cost": {
+    "total_cost": 1.28,
+    "cost_input": 0.01,
+    "cost_cache_write": 0.01,
+    "cost_cache_read": 0.03,
+    "cost_output": 1.22,
+    "tokens_input": 4160,
+    "tokens_output": 81635,
+    "tokens_cache_read": 113344,
+    "tokens_cache_write": 1695,
+    "api_calls": 5,
+    "prefetch_discards": 0,
+    "cache_hit_pct": 95.1
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "anomaly_flags": [],
+  "failure_type": "train_crash",
+  "kept": false,
+  "reason": "Exit code 1:\nnum_trades:         135\ntrade_sharpe:       0.320834\nsortino:            1.538325\nmax_drawdown:       -4.414431\ncalmar:             0.239148\nev_per_trade:       0.007820\ndo_nothing_pct:     0.622646\nexit_pct:           0.021525\nmodel_exit_count:   96\ncooldown_blocked:   171\npre_10am_blocked:   592\nshort_hold_pct:     0.296000\nstop_loss_rate:     0.304000\ndirection_collapse_pct: 0.570400\navg_entry_cost_bps: 115.859900\navg_entry_quality:  0.905900\ncost_realism_coverage: 1.007400\nhigh_cost_entry_rate: 0.163000\nlow_quality_entry_rate: 0.000000\nactionable_bar_rate: 0.829100\nrisk_off_bar_rate:  0.000000\nfinal_capital:      8663.77\nequity_sharpe:      0.243100\nmax_equity_dd:      -0.479800\ntotal_dollar_return:-0.133600\nval_sharpe:         -48.330045\ntotal_return:       1.055704\nnum_val_bars:       4460\nnum_val_days:       65\nworst_chunk_pf:     0.27\nrr_ratio:           1.6481\navg_hold_bars:      6.81\nmodel_exit_rate:    0.7111\nhit_ruin:           False\nmin_equity_frac:    0.5225\n"
+}

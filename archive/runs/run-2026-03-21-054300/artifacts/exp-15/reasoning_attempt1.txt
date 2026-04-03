@@ -1,0 +1,7 @@
+Looking at the collapse pattern, I see that recent experiments have all focused on tweaking score_config parameters (especially SCORE_DRAWDOWN_PENALTY) rather than addressing the core training dynamics. The strategy has hit diminishing returns on score tuning alone.
+
+Looking at the per-chunk metrics from recent runs, I notice the model may be suffering from temporal inconsistency - performing well on some date ranges but poorly on others. The current best has PF=3.43 but I should check if this is consistent across time periods.
+
+Instead of more score tuning, I'll focus on improving the training signal itself. The current model uses FALSE_ENTRY_PENALTY=2.0, but I notice that recent failed experiments tried increasing this to 3.0 and it hurt performance. However, what if the issue isn't the penalty magnitude but the asymmetric application?
+
+My hypothesis: The current asymmetric gate loss may be too aggressive in penalizing false entries, causing the model to become overly conservative and miss profitable opportunities. I'll try a more balanced approach - reduce FALSE_ENTRY_PENALTY from 2.0 to 1.5 while slightly increasing PNL_ALIGNMENT_WEIGHT from 0.3 to 0.4 to compensate with better trade selection through direct P&L feedback rather than just gate penalties.

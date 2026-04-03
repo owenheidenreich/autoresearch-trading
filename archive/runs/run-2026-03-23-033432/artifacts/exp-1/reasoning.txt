@@ -1,0 +1,1 @@
+The safety check failed because I added a new _env_float declaration (VOLATILITY_ADAPTIVE_WEIGHT) which increases the count from 20 to 21. The contract states the loss function is FROZEN and I should only tune existing hyperparameter VALUES, not add new ones. I need to remove this new declaration and the associated volatility-adaptive functionality to fix the safety violation.

@@ -1,0 +1,7 @@
+Looking at the trajectory, the BalancedStrikeGate achieved the best score (1.77) with PF=3.42 and TPD=1.29. The model is clearly profitable, but I need to examine what could be improved.
+
+From the lab notebook, I see that stopped P&L labels are available in the data but not being used in the loss function. These labels incorporate realistic dynamic stop-losses that adapt based on gate confidence + market conditions (IV, VIX). Currently, the model trains on unstopped P&L (full trade trajectories) but gets evaluated with dynamic stops applied.
+
+This creates a training/evaluation mismatch: the model learns exit timing from full P&L curves but trades with stops that cut losses early. Teaching the model about realistic stop-outs should improve its risk management and make training more aligned with actual trading behavior.
+
+I'll add a STOPPED_PNL_WEIGHT parameter and incorporate the stopped P&L targets into the loss function, giving the model exposure to how trades actually end when dynamic stops are applied.

@@ -1,0 +1,11 @@
+Looking at the trajectory, the BalancedStrikeGate approach achieved the best score (1.77) with strong profit factor (3.42) but relatively low trade frequency (1.29 TPD). The progression shows clear improvement from bias tuning → learning rate reduction → capital preservation modules → balanced strike gating.
+
+However, I need to examine what specific trading weakness to address. Given that we have trade diagnostics available but they're not shown in the experiment summary, I'll focus on what the current architecture might be missing:
+
+1. The model likely has good entry selection (PF=3.42) but may be leaving money on the table with suboptimal exits
+2. The position state injection helps with capital preservation but might not be fully utilizing the exit timing signal
+3. The stopped P&L labels are available in y_batch but completely unused - this is the most obvious improvement opportunity
+
+My hypothesis: Train the model on realistic stop-loss outcomes by incorporating the stopped P&L labels into the loss function. This will teach the model what trades actually look like after dynamic stops are applied, rather than just learning from unstopped EOD outcomes. This should improve exit timing and reduce the gap between training targets and evaluation reality.
+
+I'll add a STOPPED_PNL_WEIGHT parameter and modify sniper_loss to blend unstopped and stopped P&L targets, giving the model awareness of both the theoretical maximum (unstopped) and practical outcome (stopped).

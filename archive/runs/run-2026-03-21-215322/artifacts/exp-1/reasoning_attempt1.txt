@@ -1,0 +1,5 @@
+The current best experiment (#52) uses BalancedStrikeGate which provides softer strike bias when account health is low. Looking at the trajectory, there's clear progression: basic biases (0.36) → enhanced biases (0.42) → LR tuning (0.51) → capital preservation (0.80) → selective strikes (1.47) → balanced strikes (1.77).
+
+The model appears to be learning good trading behavior with PF=3.42 and reasonable trade frequency (1.29 TPD). However, I need to push beyond 1.77 score. The key insight is that the current model trains on unstopped P&L labels but evaluates with dynamic stops. This mismatch means the model sees unrealistic profit trajectories during training.
+
+I'll modify the loss function to use the available stopped P&L labels (call_stopped_pnl, put_stopped_pnl, etc.) instead of raw P&L. This should teach the model more realistic expectations about trade outcomes and improve exit timing by training on P&L trajectories that include stop-loss truncation.

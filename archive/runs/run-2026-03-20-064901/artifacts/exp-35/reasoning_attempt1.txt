@@ -1,0 +1,5 @@
+Looking at the experiment history, the current best (#27) uses SelectiveStrikeGate with a score of 1.47. The strategy collapse warning shows repetitive gate/direction modifications. Since this is every 5th experiment, I need something fundamentally different. 
+
+I notice that all experiments focus heavily on gating mechanisms but ignore the core issue: the model sees 32 features but may not be using them effectively. The Lab Notebook shows that direction accuracy is only ~51% (near random), which suggests the model isn't learning meaningful patterns from the input features.
+
+Instead of another gating mechanism, I'll try a completely opposite approach: multi-scale feature processing with explicit time horizon awareness. The model will process features at different temporal scales (short/medium/long term) and combine them, similar to how professional traders analyze multiple timeframes simultaneously.

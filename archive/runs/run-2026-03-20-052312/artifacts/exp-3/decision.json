@@ -1,0 +1,6 @@
+{
+  "anomaly_flags": [],
+  "failure_type": "regression",
+  "kept": false,
+  "reason": "near_tie_stability_failed:worst_chunk_pf_below_threshold"
+}

@@ -1,0 +1,1 @@
+I'll reduce loss complexity by removing some temporal regularization terms that may be conflicting, while keeping the proven conservative gate bias (+1.2/-1.2) and core stopped P&L consistency. This should maintain selectivity while improving gradient flow and potentially boosting both profit factor and trade frequency.

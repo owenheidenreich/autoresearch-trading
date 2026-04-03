@@ -1,0 +1,7 @@
+Looking at the experiment trajectory, I see consistent improvement from temporal chunking (0.25 weight), feature noise injection, and stop prevention. The current best (score=2.70, PF=3.48) shows strong performance, but I need to examine what specific trading weaknesses remain.
+
+From the lab notebook, the critical weakness is Chunk 1 (Feb-May 2025) with PF=0.22 - the model fails badly on early validation dates. The temporal chunking weight helped but may not be sufficient. 
+
+My hypothesis: The model still suffers from temporal overfitting despite the chunking regularizer. I'll implement a more sophisticated temporal robustness approach by adding **early validation consistency loss** that specifically penalizes differences between training behavior and early validation period behavior. This directly addresses the Chunk 1 weakness by ensuring the model's learned patterns generalize to the earliest validation dates.
+
+This targets the specific trading behavior of maintaining consistent performance across all time periods, not just recent ones.

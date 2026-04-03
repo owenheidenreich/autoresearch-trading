@@ -1,0 +1,26 @@
+{
+  "phase": "calling_claude",
+  "experiment_id": 1,
+  "best_score": 1.768642,
+  "kept": 0,
+  "failed": 0,
+  "total": 0,
+  "accept_rate": 0.0,
+  "time_remaining_h": 0.75,
+  "updated": "2026-03-21T19:21:03.491516",
+  "contract_checksum": "80b351ad7173",
+  "api_cost": {
+    "total_cost": 0.0,
+    "cost_input": 0.0,
+    "cost_cache_write": 0.0,
+    "cost_cache_read": 0.0,
+    "cost_output": 0.0,
+    "tokens_input": 0,
+    "tokens_output": 0,
+    "tokens_cache_read": 0,
+    "tokens_cache_write": 0,
+    "api_calls": 0,
+    "prefetch_discards": 0,
+    "cache_hit_pct": 0.0
+  }
+}

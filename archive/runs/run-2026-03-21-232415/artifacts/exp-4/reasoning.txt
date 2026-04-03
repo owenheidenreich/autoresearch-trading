@@ -1,0 +1,5 @@
+Looking at the trajectory, the BalancedStrikeGate achieved the best score (1.77) by dynamically biasing strikes based on account health. However, I notice a key opportunity: the model has access to stopped P&L labels in the training data but isn't using them in the loss function yet. 
+
+The stopped P&L targets represent realistic trade outcomes with dynamic stop-losses applied, which should teach the model about actual risk management rather than just theoretical full-trajectory P&L. This could improve the model's risk-adjusted trading behavior by learning from more realistic exit scenarios.
+
+I'll modify sniper_loss to incorporate stopped P&L targets alongside the existing unstopped targets, weighted by a new STOPPED_PNL_WEIGHT parameter. This should teach the model to make decisions based on realistic stop-truncated outcomes, potentially improving profit factor and reducing drawdowns.

@@ -1,0 +1,5 @@
+Looking at the experiment history, I see that the best model (#27, score=1.47) uses SelectiveStrikeGate that favors cheaper OTM options when account health is low. However, there's a clear pattern of strategy collapse with 0/7 accepts in the last 8 experiments, indicating the model might be overfitting to a narrow strategy.
+
+The DIVERSITY NUDGE suggests trying something fundamentally different. Looking at the feature groups, I notice the model uses a simple linear projection for all 32 features equally. The domain knowledge emphasizes that different market regimes (VIX levels, time-of-day, trend strength) require different feature importance. 
+
+My hypothesis: Implement a dynamic feature attention mechanism that adaptively weights feature groups based on market conditions, particularly VIX regime and time-of-day patterns mentioned in the domain knowledge.

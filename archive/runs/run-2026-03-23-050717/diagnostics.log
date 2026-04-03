@@ -1,0 +1,30 @@
+[2026-03-23 05:07:21] Signal handlers installed
+[2026-03-23 05:07:21] Loop starting: hours=2.17, max_experiments=21
+[2026-03-23 05:07:21] phase=startup | rss_mb=807.5 | vmsize_kb=17375688 | vmrss_kb=721244 | cgroup_mb=1286 | pids=8 | disk_used_gb=3175.0 | disk_free_gb=3753.7
+[2026-03-23 05:15:52] phase=pre_train_1 | rss_mb=807.5 | vmsize_kb=17376880 | vmrss_kb=723176 | cgroup_mb=1288 | pids=7 | disk_used_gb=3174.7 | disk_free_gb=3753.9
+[2026-03-23 05:20:02] phase=post_train_1 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1289 | pids=7 | disk_used_gb=3174.6 | disk_free_gb=3754.0
+[2026-03-23 05:20:03] phase=post_exp_1 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1289 | pids=7 | disk_used_gb=3174.6 | disk_free_gb=3754.0
+[2026-03-23 05:24:18] phase=pre_train_2 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1296 | pids=9 | disk_used_gb=3174.9 | disk_free_gb=3753.8
+[2026-03-23 05:28:29] phase=post_train_2 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1288 | pids=6 | disk_used_gb=3175.0 | disk_free_gb=3753.6
+[2026-03-23 05:28:29] phase=post_exp_2 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1288 | pids=6 | disk_used_gb=3175.0 | disk_free_gb=3753.6
+[2026-03-23 05:36:57] phase=pre_train_3 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1291 | pids=8 | disk_used_gb=3174.7 | disk_free_gb=3753.9
+[2026-03-23 05:41:08] phase=post_train_3 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1292 | pids=8 | disk_used_gb=3175.0 | disk_free_gb=3753.6
+[2026-03-23 05:41:08] phase=post_exp_3 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1291 | pids=8 | disk_used_gb=3175.0 | disk_free_gb=3753.6
+[2026-03-23 05:49:35] phase=pre_train_4 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1289 | pids=6 | disk_used_gb=3175.1 | disk_free_gb=3753.5
+[2026-03-23 05:53:46] phase=post_train_4 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1290 | pids=6 | disk_used_gb=3174.8 | disk_free_gb=3753.9
+[2026-03-23 05:53:46] phase=post_exp_4 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1289 | pids=6 | disk_used_gb=3174.8 | disk_free_gb=3753.9
+[2026-03-23 06:02:13] phase=pre_train_5 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1294 | pids=9 | disk_used_gb=3180.2 | disk_free_gb=3748.5
+[2026-03-23 06:06:23] phase=post_train_5 | rss_mb=807.5 | vmsize_kb=17450628 | vmrss_kb=723176 | cgroup_mb=1284 | pids=8 | disk_used_gb=3270.4 | disk_free_gb=3658.3
+[2026-03-23 06:06:24] phase=post_exp_5 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1285 | pids=8 | disk_used_gb=3270.7 | disk_free_gb=3658.0
+[2026-03-23 06:10:30] phase=pre_train_6 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1270 | pids=8 | disk_used_gb=3351.3 | disk_free_gb=3577.3
+[2026-03-23 06:14:40] phase=post_train_6 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1271 | pids=10 | disk_used_gb=3351.3 | disk_free_gb=3577.3
+[2026-03-23 06:14:40] phase=post_exp_6 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1270 | pids=10 | disk_used_gb=3351.3 | disk_free_gb=3577.3
+[2026-03-23 06:18:53] phase=pre_train_7 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1268 | pids=8 | disk_used_gb=3351.3 | disk_free_gb=3577.3
+[2026-03-23 06:23:03] phase=post_train_7 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1259 | pids=8 | disk_used_gb=3207.4 | disk_free_gb=3721.2
+[2026-03-23 06:23:03] phase=post_exp_7 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1259 | pids=8 | disk_used_gb=3207.4 | disk_free_gb=3721.2
+[2026-03-23 06:27:23] phase=pre_train_8 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1263 | pids=10 | disk_used_gb=3174.9 | disk_free_gb=3753.8
+[2026-03-23 06:31:33] phase=post_train_8 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1261 | pids=8 | disk_used_gb=3174.8 | disk_free_gb=3753.9
+[2026-03-23 06:31:33] phase=post_exp_8 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1260 | pids=8 | disk_used_gb=3174.7 | disk_free_gb=3753.9
+[2026-03-23 06:35:48] phase=pre_train_9 | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=1265 | pids=10 | disk_used_gb=3174.9 | disk_free_gb=3753.8
+[2026-03-23 06:37:01] SIGNAL RECEIVED: SIGTERM (signum=15)
+[2026-03-23 06:37:01] phase=signal_death | rss_mb=807.5 | vmsize_kb=17451396 | vmrss_kb=733928 | cgroup_mb=2693 | pids=10 | disk_used_gb=3175.0 | disk_free_gb=3753.6

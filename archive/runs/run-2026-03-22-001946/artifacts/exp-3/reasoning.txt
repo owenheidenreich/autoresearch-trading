@@ -1,0 +1,8 @@
+Looking at the current best score of 0.6345 with PF=2.64 and TPD=1.39, I need to diagnose what's holding back performance. The score is well below the historical best of 1.77 (PF=3.42), suggesting significant room for improvement.
+
+Key issues I suspect:
+1. The model may be too conservative (low TPD of 1.39) - not finding enough profitable opportunities
+2. The balanced strike gating might be too aggressive in steering away from ATM trades when account health is good
+3. The softer strike bias (0.10-0.15) may be too weak to meaningfully improve trade selection
+
+My hypothesis: The current BalancedStrikeGate is applying stress-based strike bias even when the account is healthy, and the bias magnitudes are too small to create meaningful differentiation. I'll strengthen the strike bias and make it more conditional - only apply significant OTM bias when truly stressed (health < 0.5), and increase the bias magnitudes to create clearer preference signals.

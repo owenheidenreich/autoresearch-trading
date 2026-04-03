@@ -1,0 +1,5 @@
+Looking at the trajectory, experiment #2 achieved the best score (8.23) by increasing the conservative gate bias to ±1.2. This suggests that ultra-selectivity is the key to profitability. However, I need to examine what specific trading weakness to address next.
+
+From the lab notebook, the critical weakness is Chunk 1 (Feb-May 2025) with PF=0.22 - the model fails badly on early validation dates. Also, stop_loss_rate = win_rate = 34% means every loss hits the dynamic stop, indicating the model never learns to exit losing trades early via the gate head.
+
+My hypothesis: The model needs to learn better exit timing to cut losers before hitting stops. The current exit loss only trains on hindsight-optimal exit signals, but doesn't teach the model to recognize when a trade is going bad in real-time. I'll add a "loss prevention" component that specifically trains the gate head to predict NO_TRADE when a trade would become a loser if held longer. This should improve the model's ability to exit losing trades early, reducing the stop-loss rate and improving temporal robustness.

@@ -1,0 +1,19 @@
+{
+  "anomaly_flags": [],
+  "contract_checksum": "80b351ad7173",
+  "data_fingerprint": "93cdaa55b70dfc9f4d9b7bef20509873ff3f39c48498101583d08bb70b6e87aa",
+  "error": "SAFETY: SCORE_* env vars are forbidden. The score formula is locked to prevent gaming. Improve the model, not the scorer.",
+  "experiment_id": 1,
+  "failure_type": "safety",
+  "kept": false,
+  "model_fingerprint_after": "6cb9370405a5228bf431f492c9b5dc0ecb7ad2b9be4768d39f0a40e2ea224fe8",
+  "model_fingerprint_before": "6cb9370405a5228bf431f492c9b5dc0ecb7ad2b9be4768d39f0a40e2ea224fe8",
+  "program_md_fingerprint": "7f0abaf6587c8392c60d02657a1b79bd1455fbb80ca121fa4ddeefc6b7b7f5f5",
+  "prompt_fingerprint": "3e854eec84b1a5159dba47beea32e52fb0b9a6df1719a3e759c30dfe50fcbabe",
+  "schema_version": 2,
+  "score": -999.0,
+  "timestamp": "2026-03-21T19:41:13.867772",
+  "train_py_after_hash": "15725e55715eb8acb9cf74b16fdcc9de272b533244a8a1ee6f6893e7c030d809",
+  "train_py_before_hash": "15725e55715eb8acb9cf74b16fdcc9de272b533244a8a1ee6f6893e7c030d809",
+  "train_wall_time": 4.6
+}
