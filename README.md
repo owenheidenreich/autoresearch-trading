@@ -1,42 +1,73 @@
-# Auto Research Trader (ART²)
+# Auto Research Trader (ART^2)
 
-Autonomous SPX 0DTE long options trading bot. An AI agent (Claude Sonnet) iteratively evolves a neural network trading model through hundreds of experiments on GPU, then deploys the best model to live paper trading on IBKR.
+Autonomous SPX 0DTE options trading system. A neural network learns complete trading decisions (entry, direction, strike, risk, exit) from minute-bar market data, then executes on IBKR paper trading.
 
-**ART²** (ART squared) is the meta-loop: an outer loop (Claude Opus) makes strategic decisions — architecture changes, loss function design, feature engineering — while the inner loop (Claude Sonnet) optimizes hyperparameters and training dynamics within those constraints.
+**ART^2** is the meta-loop: Claude Opus makes strategic decisions (architecture, features, loss design) while Claude Sonnet optimizes hyperparameters within those constraints. Training runs on Akash H100 GPUs in 5-minute experiments. The best model promotes automatically and trades the next session.
 
-## Model Architecture (v6 Four-Head)
+## Architecture (v18 Five-Head Trader)
 
-Four-head transformer for SPX 0DTE options trading:
+Transformer backbone (d=64, 4 attention heads, 3 layers, causal masking) feeds five task-specific heads:
 
 | Head | Output | Purpose |
 |------|--------|---------|
-| **Gate** | (batch, 2) → [NO_TRADE, TRADE] | Entry/exit signal |
-| **Direction** | (batch, 6) → 3 call + 3 put strikes | Strike + direction selection |
-| **Value** | (batch, 1) → binary exit classifier | Exit intelligence (BCE) |
-| **Risk** | (batch, 3) → [stop_pct, size_frac, conviction] | Account-aware risk management |
+| **Market** | (batch, 3) | SPX % change at 15/30/60 bar horizons |
+| **Entry Gate** | (batch,) sigmoid | P(should enter trade now) |
+| **Risk** | (batch, 3) | stop distance, target distance, conviction |
+| **Exit** | (batch,) sigmoid | P(should exit current position) |
+| **Direction** | (batch, 6) softmax | CALL/PUT at ATM, OTM+5, OTM+10 strikes |
 
-- **37 features** (v3): price/volume, session/time, options/Greeks, market structure
-- **7-dim position state**: in_trade, bars_held, unrealized P&L, account health, loss streak, best P&L, bars since high
-- **4-dim account state** (risk head only): growth ratio, log size, daily P&L fraction, win rate
-- **Dynamic stop-loss**: 15%-60% range, learned by risk head (formula fallback)
-- **Exit priority**: stop_loss > model_exit > value_exit > max_hold > EOD
+**39 features** from SPX price, SPY volume, VIX, and SPXW option chains (IV, Greeks, gamma pressure, skew). Labels use path-quality metrics (MFE/MAE) from forward price action. No hindsight P&L in training.
 
-## Training Pipeline
+## How The Loop Works
 
-The inner loop runs on Akash H100 GPUs. Each experiment (~6 min):
-1. Sonnet agent proposes targeted edits to `train.py`
-2. `inner_loop.py` validates, uploads, trains, scores
-3. If score improves: promote model + code. Otherwise: revert.
+```
+Sunday 8 PM PT: Weekly Retrain
+  1. prepare.py rebuilds data.pt (4-year SPX history + option chains)
+  2. deploy.sh boots Akash H100
+  3. Opus proposes mutation -> inner_loop.py runs experiment (5 min)
+  4. Score improves? KEEP (promote model + code). Otherwise REVERT.
+  5. Repeat until budget exhausted. Shut down GPU.
 
-**PBT mode** (Population-Based Training): N members compete per generation with evolutionary selection — elite carry-forward, exploit top-25%, explore top-50%.
+Weekday 2:30 AM PT: Daily Pipeline
+  1. Incremental data update (append-only cache)
+  2. paper_live.py runs full session (9:30-16:00 ET)
+     - 5-second bars aggregate into 1-min candles
+     - 39 features computed (identical to training)
+     - Model inference -> DecisionIntent -> IBKR orders
+  3. All trades logged to trades.jsonl
+```
 
-## Core Design Principles
+## Project Structure
 
-- **The model IS a trader.** Training simulates minute-by-minute 0DTE options trading — the same game as live IBKR paper trading.
-- **No hardcoded exits.** The gate head learns when to enter and exit. The value head predicts remaining P&L and exits when upside is gone. Dynamic stop-loss is the emergency backstop.
-- **Data integrity first.** `data.pt` must always include option chain sidecar data.
-- **Train on GPU, not locally.** All training runs deploy to Akash H100s via `deploy.sh`.
-- **Feature parity enforced.** Training, replay, and live all use the same `compute_features()` pipeline.
+```
+training/
+  train.py           # v18 model definition + training loop
+  best_train.py      # Promoted production code (auto-synced)
+  best_model.pt      # Production weights
+  prepare.py         # Data pipeline: 39 features, path-quality labels
+  replay.py          # Backtest simulator (forward-test on unseen days)
+  program.md         # Architecture contract (single source of truth)
+  lab_notebook.md    # What works and what doesn't (37 failed patterns)
+  trading_rules.py   # Hardcoded safety envelope (stop limits, cooldowns)
+  live/
+    service.py       # IBKR paper trading session manager
+    decision.py      # Model output -> trading intent
+    execution.py     # OCO bracket order placement
+    features.py      # Live feature computation (parity with training)
+    resolver.py      # SPXW contract resolution
+    context.py       # Normalization context bundles
+
+tools/
+  inner_loop.py      # Experiment orchestrator (validate -> upload -> train -> score -> keep/revert)
+  daily_pipeline.py  # Scheduled data rebuild + paper trading
+  paper_live.py      # Paper trading CLI
+  monitor.py         # Training dashboard (localhost:8420)
+
+infra/
+  deploy.sh          # Akash GPU lifecycle (boot/start/stop/sync)
+  daily_pipeline.plist   # launchd: weekday 2:30 AM PT
+  weekly_retrain.plist   # launchd: Sunday 8 PM PT
+```
 
 ## Quick Start
 
@@ -45,39 +76,51 @@ The inner loop runs on Akash H100 GPUs. Each experiment (~6 min):
 cp .env.example .env  # Add POLYGON_API_KEY, POLYGON_S3_KEY_ID, POLYGON_S3_SECRET
 set -a && source .env && set +a
 
-# Training (inner loop)
-./infra/deploy.sh boot                                    # Spin up H100 on Akash
-./infra/deploy.sh start --hours 8 --max-experiments 200   # Upload + start
-python3 tools/monitor.py                                  # Dashboard → localhost:8420
-./infra/deploy.sh stop                                    # Download + close
-
-# ART² (outer loop — autonomous cycles)
-python3 tools/art2.py daemon --max-cycles 3 --minutes 90  # 3 autonomous cycles
+# Training (inner loop on Akash H100)
+./infra/deploy.sh boot
+./infra/deploy.sh start --hours 8 --max-experiments 200
+python3 tools/monitor.py
+./infra/deploy.sh stop
 
 # Paper trading (IBKR)
-python tools/paper_live.py --context-only                 # Refresh context
-python tools/paper_live.py --paper-auto --max-minutes 390 # Full session
+python tools/paper_live.py --context-only
+python tools/paper_live.py --paper-auto --max-minutes 390
 
 # Replay / backtest
-python3 training/replay.py --date 2026-03-17 --output replay-trades.csv
+python3 training/replay.py --backtest --model training/best_model.pt
 ```
+
+## Scoring
+
+Experiments are scored on a held-out validation set:
+
+```
+score = direction_accuracy * (1 + max(0, rank_correlation))
+```
+
+Direction accuracy measures how often the model predicts the correct sign of SPX returns. Rank correlation measures whether predicted magnitudes rank correctly against actual returns. Both must improve together.
+
+## Design Principles
+
+- **The model is a trader.** It learns entry timing, strike selection, risk parameters, and exit signals. Not just direction prediction.
+- **No hindsight.** Labels come from forward price paths (MFE/MAE), not realized option P&L.
+- **Feature parity enforced.** Training, replay, and live all run the same `compute_features()` pipeline. 39 features, same normalization.
+- **Train on GPU, not locally.** All training deploys to Akash H100 via deploy.sh. 5-minute budget per experiment.
+- **Score is the arbiter.** Inner loop promotes or reverts based on score alone. No manual cherry-picking.
+
+## Safety
+
+- Real-money trading is not enabled. Paper trading only.
+- 1 SPX contract maximum. Long calls/puts only. 0DTE only.
+- Dynamic stop-loss (15%-60% range), learned by risk head.
+- 5% daily loss cap. 5-bar cooldown after stops.
+- Lunch suppression (10:30-13:30 ET). No trades in first 30 minutes.
+- Exit priority: stop_loss > model_exit > max_hold > EOD.
 
 ## Documentation
 
 | Doc | Purpose |
 |-----|---------|
-| [docs/misc/old-docs-readme.md](docs/misc/old-docs-readme.md) | Documentation index |
-| [docs/misc/reference.md](docs/misc/reference.md) | Full project reference: key files, constants, subcommands, IBKR ops, daily pipeline |
-| [docs/misc/ARCHITECTURE.md](docs/misc/ARCHITECTURE.md) | System architecture diagrams (data flow, model heads, live stack, inner loop) |
-| [.claude/rules/art2-operating-manual.md](.claude/rules/art2-operating-manual.md) | ART² lifecycle, roles, policies (auto-loaded) |
-| [docs/domain/](docs/domain/) | 0DTE options + practical trading domain knowledge |
-| [docs/misc/ibkr-trade-analysis-guide.md](docs/misc/ibkr-trade-analysis-guide.md) | Guide for analyzing IBKR paper trading sessions |
-
-## Safety
-
-- Real-money trading is not enabled
-- Paper trading verified end-to-end: all 37 features (v3), four-head inference, LMT fills, OCO brackets
-- All positions are 1 SPX contract, long calls/puts only
-- Dynamic stop loss (15%-60%) on all positions
-- 5-bar cooldown after stop-loss exits
-- Human review gate (REVIEW phase) before every ART² training cycle
+| [training/program.md](training/program.md) | Architecture contract (locked elements, agent constraints) |
+| [training/lab_notebook.md](training/lab_notebook.md) | Anti-patterns and experimental results |
+| [docs/domain/](docs/domain/) | 0DTE options, volatility, trading psychology |
