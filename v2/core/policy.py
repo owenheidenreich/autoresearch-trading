@@ -22,7 +22,7 @@ class DecisionPolicy:
     """
 
     # --- Gate ---
-    gate_threshold: float = 0.5
+    gate_threshold: float = 0.7
 
     # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
     stop_range: tuple[float, float] = (0.10, 0.65)
