@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Daily automation pipeline: data rebuild → train → paper trade → CSV
+         Triggers at 2:30 AM PT (= 5:30 AM ET) on weekdays.
+         NOTE: StartCalendarInterval uses SYSTEM timezone. If your Mac is set to
+         PT, Hour=2/Minute=30 is correct. If ET, change Hour to 5.
+
+         Install:
+           cp infra/daily_pipeline.plist ~/Library/LaunchAgents/com.trinity.autoresearch.daily-pipeline.plist
+           launchctl load ~/Library/LaunchAgents/com.trinity.autoresearch.daily-pipeline.plist
+
+         Uninstall:
+           launchctl unload ~/Library/LaunchAgents/com.trinity.autoresearch.daily-pipeline.plist
+           rm ~/Library/LaunchAgents/com.trinity.autoresearch.daily-pipeline.plist
+
+         Check status:
+           launchctl list | grep trinity
+    -->
+
+    <key>Label</key>
+    <string>com.trinity.autoresearch.daily-pipeline</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/.venv/bin/python3</string>
+        <string>tools/daily_pipeline.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    </dict>
+
+    <!-- Run at 2:30 AM PT (5:30 AM ET) Monday-Friday -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Weekday</key><integer>1</integer>
+            <key>Hour</key><integer>2</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>2</integer>
+            <key>Hour</key><integer>2</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>3</integer>
+            <key>Hour</key><integer>2</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>4</integer>
+            <key>Hour</key><integer>2</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>5</integer>
+            <key>Hour</key><integer>2</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/results/pipeline/launchd-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/results/pipeline/launchd-stderr.log</string>
+
+    <!-- Don't restart if it exits cleanly -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Allow up to 12 hours (covers full trading day) -->
+    <key>TimeOut</key>
+    <integer>43200</integer>
+</dict>
+</plist>

@@ -48,6 +48,9 @@ archive/backtest_output/
 archive/runs/
 archive/models/
 
+# Legacy v1 snapshot (code tracked, binaries excluded by *.pt glob)
+legacy_v1/**/__pycache__/
+
 # Personal / non-project files
 AI Breakthrough Papers/
 ART squared.heic

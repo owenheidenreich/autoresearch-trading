@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Weekly retraining: data rebuild → Akash autoresearch → validate → paper trade
+         Triggers Sunday at 8:00 PM PT (= 11:00 PM ET).
+         Gives 2-4 hours for autoresearch before Monday's market open.
+
+         Install:
+           cp infra/weekly_retrain.plist ~/Library/LaunchAgents/com.trinity.autoresearch.weekly-retrain.plist
+           launchctl load ~/Library/LaunchAgents/com.trinity.autoresearch.weekly-retrain.plist
+
+         Uninstall:
+           launchctl unload ~/Library/LaunchAgents/com.trinity.autoresearch.weekly-retrain.plist
+           rm ~/Library/LaunchAgents/com.trinity.autoresearch.weekly-retrain.plist
+
+         Check status:
+           launchctl list | grep trinity
+    -->
+
+    <key>Label</key>
+    <string>com.trinity.autoresearch.weekly-retrain</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/.venv/bin/python3</string>
+        <string>tools/daily_pipeline.py</string>
+        <string>--retrain</string>
+        <string>--training-minutes</string>
+        <string>120</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    </dict>
+
+    <!-- Run at 8:00 PM PT Sunday (Weekday 0 = Sunday) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key><integer>0</integer>
+        <key>Hour</key><integer>20</integer>
+        <key>Minute</key><integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/results/pipeline/launchd-retrain-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/gduby/Documents/Trinity/Trinity/autoresearch-trading/results/pipeline/launchd-retrain-stderr.log</string>
+
+    <!-- Don't restart if it exits cleanly -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Allow up to 4 hours for training -->
+    <key>TimeOut</key>
+    <integer>14400</integer>
+</dict>
+</plist>
