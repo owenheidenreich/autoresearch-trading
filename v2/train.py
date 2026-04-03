@@ -54,9 +54,9 @@ RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 
 # Gate selectivity: pos_weight < 1.0 makes the model more conservative
 # (penalizes false positives more than false negatives)
-# Tier 3 has 73.7% positive rate. pos_weight=0.1 means 10x penalty for
-# false positives -- forces model to be highly selective.
-GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 0.1))
+# Oracle trade rate is ~35%, so pos_weight=0.3 means the model must be
+# 3x more certain to predict "trade" than "no trade"
+GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 0.3))
 
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
