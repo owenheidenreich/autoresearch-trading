@@ -15,7 +15,7 @@ dist/
 build/
 uv.lock
 
-# Data cache (downloaded separately)
+# Data cache
 data/
 
 # Notebooks
@@ -24,32 +24,27 @@ data/
 # OS
 .DS_Store
 
-# Monitor backup files
-results/
+# v2 runtime state (recreated by inner_loop.py)
+v2/.best_score
+v2/.inner_loop_state.json
 
-# Runtime sync/process noise
-.sync-pid
-
-# Runtime state (recreated by inner_loop.py)
-training/.best_score
-training/.inner_loop_state.json
-training/.pbt_state.json
-
-# Non-canonical legacy runtime outputs (active runtime is results/run-*/)
-training/experiments.jsonl
-training/experiments.v2.jsonl
-training/status.json
-training/diagnostics.log
-training/results/
+# v1 archive runtime state
+archive/v1/training/.best_score
+archive/v1/training/.inner_loop_state.json
+archive/v1/training/.pbt_state.json
+archive/v1/training/experiments.jsonl
+archive/v1/training/experiments.v2.jsonl
+archive/v1/training/status.json
+archive/v1/training/diagnostics.log
+archive/v1/training/results/
+archive/v1/results/
+archive/v1/backtest_output/
 
 # Large output directories
 backtest_output/
-archive/backtest_output/
-archive/runs/
-archive/models/
 
-# Legacy v1 snapshot (code tracked, binaries excluded by *.pt glob)
-legacy_v1/**/__pycache__/
+# Runtime sync/process noise
+.sync-pid
 
 # Personal / non-project files
 AI Breakthrough Papers/

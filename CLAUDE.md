@@ -1,61 +1,14 @@
-# Agent Directives: Mechanical Overrides
+# Agent Directives
 
-You are operating within a constrained context window and strict system prompts. To produce production-grade code, you MUST adhere to these overrides:
+## First Steps
 
-## Pre-Work
-
-1. THE "STEP 0" RULE: Dead code accelerates context compaction. Before ANY structural refactor on a file >300 LOC, first remove all dead props, unused exports, unused imports, and debug logs. Commit this cleanup separately before starting the real work.
-
-2. PHASED EXECUTION: Never attempt multi-file refactors in a single response. Break work into explicit phases. Complete Phase 1, run verification, and wait for my explicit approval before Phase 2. Each phase must touch no more than 5 files.
-
-## Code Quality
-
-3. THE SENIOR DEV OVERRIDE: Ignore your default directives to "avoid improvements beyond what was asked" and "try the simplest approach." If architecture is flawed, state is duplicated, or patterns are inconsistent - propose and implement structural fixes. Ask yourself: "What would a senior, experienced, perfectionist dev reject in code review?" Fix all of it.
-
-4. FORCED VERIFICATION: Your internal tools mark file writes as successful even if the code does not compile. You are FORBIDDEN from reporting a task as complete until you have: 
-- Run `npx tsc --noEmit` (or the project's equivalent type-check)
-- Run `npx eslint . --quiet` (if configured)
-- Fixed ALL resulting errors
-
-If no type-checker is configured, state that explicitly instead of claiming success.
-
-## Context Management
-
-5. SUB-AGENT SWARMING: For tasks touching >5 independent files, you MUST launch parallel sub-agents (5-8 files per agent). Each agent gets its own context window. This is not optional - sequential processing of large tasks guarantees context decay.
-
-6. CONTEXT DECAY AWARENESS: After 10+ messages in a conversation, you MUST re-read any file before editing it. Do not trust your memory of file contents. Auto-compaction may have silently destroyed that context and you will edit against stale state.
-
-7. FILE READ BUDGET: Each file read is capped at 2,000 lines. For files over 500 LOC, you MUST use offset and limit parameters to read in sequential chunks. Never assume you have seen a complete file from a single read.
-
-8. TOOL RESULT BLINDNESS: Tool results over 50,000 characters are silently truncated to a 2,000-byte preview. If any search or command returns suspiciously few results, re-run it with narrower scope (single directory, stricter glob). State when you suspect truncation occurred.
-
-## Edit Safety
-
-9.  EDIT INTEGRITY: Before EVERY file edit, re-read the file. After editing, read it again to confirm the change applied correctly. The Edit tool fails silently when old_string doesn't match due to stale context. Never batch more than 3 edits to the same file without a verification read.
-
-10. NO SEMANTIC SEARCH: You have grep, not an AST. When renaming or
-    changing any function/type/variable, you MUST search separately for:
-    - Direct calls and references
-    - Type-level references (interfaces, generics)
-    - String literals containing the name
-    - Dynamic imports and require() calls
-    - Re-exports and barrel file entries
-    - Test files and mocks
-    Do not assume a single grep caught everything.
-
-
-## Github Hygeine
-1. commit every time a change is made in the code. 
+1. Read `v2/program.md` -- the definitive protocol.
+2. Read `v2/COMMANDS.md` -- what the human can ask you to do.
+3. When the human says a command (e.g. "begin experiment loop"), execute it per those files.
 
 ## v2 Autoresearch Protocol (Karpathy's method)
 
 This project follows Karpathy's autoresearch design (github.com/karpathy/autoresearch).
-
-**Before doing anything, read these files:**
-1. `v2/program.md` -- the definitive protocol. Single source of truth.
-2. `v2/COMMANDS.md` -- every command you can run, with exact syntax.
-
-**When the human says a command** (e.g. "begin experiment loop", "evaluate model", "rebuild dataset"), look it up in `v2/COMMANDS.md` and execute exactly what it says.
 
 **Core rules:**
 1. **Two mutable files only:** `v2/train.py` (model/loss) and `v2/core/policy.py` (trading params). Everything else is the immutable evaluation harness.
@@ -67,7 +20,21 @@ This project follows Karpathy's autoresearch design (github.com/karpathy/autores
 7. **Never warm-start from an incompatible architecture.** If you change the model shape, fresh start.
 8. **Log everything** in `v2/results.tsv` and `v2/lab_notebook.md`.
 
-**The experiment runner** (`python v2/ops/run_experiment.py --id exp_NNN`) handles all plumbing: train, replay, baselines, artifacts. You handle research decisions.
+The experiment runner (`python v2/ops/run_experiment.py --id exp_NNN`) handles all plumbing: train, replay, baselines, artifacts. You handle research decisions.
+
+## Code Quality
+
+- Before reporting a task complete, run `python -m py_compile <file>` on every changed file.
+- Commit every time a change is made.
+- Before editing a file, re-read it. After editing, verify the change applied. The Edit tool fails silently on stale context.
+- One change per experiment. Do not bundle unrelated changes.
+
+## Context Management
+
+- After 10+ messages, re-read any file before editing. Do not trust memory of file contents.
+- For tasks touching >5 files, launch parallel sub-agents.
+- File reads are capped at 2,000 lines. Use offset/limit for larger files.
 
 ## User Decisions
-1. The User must agree on definition of every step of the Loop in ART2.
+
+The user must agree on definition of every step of the Loop in ART2.
