@@ -95,21 +95,33 @@ class TradingModel(nn.Module):
         confidence: (batch, 1) - sigmoid confidence score
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        d_model: int = None,
+        depth: int = None,
+        n_heads: int = None,
+        dropout: float = None,
+    ):
         super().__init__()
-        self.input_proj = nn.Linear(NUM_FEATURES, D_MODEL)
-        self.input_norm = nn.LayerNorm(D_MODEL)
-        self.pos_enc = PositionalEncoding(D_MODEL, max_len=LOOKBACK + 10)
+        # Use provided args or fall back to module-level globals
+        d = d_model or D_MODEL
+        dep = depth or DEPTH
+        nh = n_heads or N_HEADS
+        dr = dropout if dropout is not None else DROPOUT
+
+        self.input_proj = nn.Linear(NUM_FEATURES, d)
+        self.input_norm = nn.LayerNorm(d)
+        self.pos_enc = PositionalEncoding(d, max_len=LOOKBACK + 10)
 
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=D_MODEL,
-            nhead=N_HEADS,
-            dim_feedforward=D_MODEL * 4,
-            dropout=DROPOUT,
+            d_model=d,
+            nhead=nh,
+            dim_feedforward=d * 4,
+            dropout=dr,
             batch_first=True,
             norm_first=True,
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=DEPTH)
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=dep)
 
         # Causal mask
         self.register_buffer(
@@ -119,24 +131,24 @@ class TradingModel(nn.Module):
 
         # Heads
         self.gate_head = nn.Sequential(
-            nn.Linear(D_MODEL, D_MODEL // 2), nn.GELU(), nn.Dropout(DROPOUT),
-            nn.Linear(D_MODEL // 2, 1),
+            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+            nn.Linear(d // 2, 1),
         )
         self.direction_head = nn.Sequential(
-            nn.Linear(D_MODEL, D_MODEL // 2), nn.GELU(), nn.Dropout(DROPOUT),
-            nn.Linear(D_MODEL // 2, 2),  # call, put
+            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+            nn.Linear(d // 2, 2),  # call, put
         )
         self.strike_head = nn.Sequential(
-            nn.Linear(D_MODEL, D_MODEL // 2), nn.GELU(), nn.Dropout(DROPOUT),
-            nn.Linear(D_MODEL // 2, NUM_STRIKE_CLASSES),
+            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+            nn.Linear(d // 2, NUM_STRIKE_CLASSES),
         )
         self.risk_head = nn.Sequential(
-            nn.Linear(D_MODEL, D_MODEL // 2), nn.GELU(), nn.Dropout(DROPOUT),
-            nn.Linear(D_MODEL // 2, 3),  # stop_pct, target_pct, max_hold_frac
+            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+            nn.Linear(d // 2, 3),  # stop_pct, target_pct, max_hold_frac
         )
         self.confidence_head = nn.Sequential(
-            nn.Linear(D_MODEL, D_MODEL // 2), nn.GELU(), nn.Dropout(DROPOUT),
-            nn.Linear(D_MODEL // 2, 1),
+            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+            nn.Linear(d // 2, 1),
         )
 
     def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
