@@ -3,3 +3,9 @@ exp_001	-0.300000	revert	gate_pos_weight=1.0, label_smoothing=0.1, threshold=0.3
 exp_002	-0.300000	revert	call_weight=3x, label_smoothing=0.15 -- direction 3.1% still collapsed
 exp_003	1.779944	keep	CALL_BOOST=1.5 at inference -- direction balanced 39/61, first positive score
 exp_004	5.593220	keep	stop_range=(0.10,0.40), max_hold=(10,250) -- DD 15.4%->2.1%, score 3.1x
+exp_005	-0.300000	revert	gate_threshold=0.4 -- direction collapse 7.4%, gate filters boosted calls
+exp_006	1.193435	revert	target_range=(0.15,0.80) -- DD spiked to 17.5%, smaller profits worse
+exp_007	5.593220	revert	D_MODEL=128, DEPTH=4 -- same score, bigger model no help
+exp_008	5.571429	revert	cooldown_bars=15 -- fewer trades, +day_rate dropped to 92.9%
+exp_009	-0.300000	revert	CALL_BOOST=0.8 -- direction 9.1%, too few calls (need 15%)
+exp_010	-0.300000	revert	CALL_BOOST=1.1 -- direction 5.1%, training seed randomness
