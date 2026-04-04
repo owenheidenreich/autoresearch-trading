@@ -312,7 +312,7 @@ def compute_loss(
                 outputs['direction'][trade_mask][valid_dir],
                 dir_targets[valid_dir],
                 weight=dir_weight,
-                label_smoothing=0.1,
+                label_smoothing=0.25,
             )
         else:
             dir_loss = torch.tensor(0.0, device=device)
