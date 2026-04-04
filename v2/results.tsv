@@ -13,3 +13,4 @@ exp_012	-0.300000	revert	confidence-weighted gate + BUG: call_boost buffer=0.0 n
 exp_012b	3.398730	revert	conf-weighted gate + call_boost fix -- +day_rate dropped to 86.4%, DD 12.1%
 exp_014	5.694915	keep	FiLM regime conditioning -- direction 26% calls (no CALL_BOOST), DD 0.14%, WR 86.3%, PF 334
 exp_015	-0.300000	revert	gate_threshold=0.5 -- direction collapse 10.8% calls, higher threshold filters calls preferentially
+exp_016	5.800000	keep	label_smoothing=0.25 -- +day_rate 96.7%, WR 87.3%, 60/60 days, calls 22.6%
