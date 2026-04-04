@@ -58,7 +58,7 @@ GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 1.0))
 
 # Inference-time call boost: added to call logits at eval to prevent
 # direction collapse in low-vol periods. Training stays honest.
-CALL_BOOST = float(os.environ.get("CALL_BOOST", 0.0))  # set by calibration after training
+CALL_BOOST = float(os.environ.get("CALL_BOOST", 1.5))
 
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
@@ -251,12 +251,22 @@ def compute_loss(
     lab_hold = targets['label_max_hold'].float().to(device)
     lab_confidence = targets['label_confidence'].float().to(device)
 
-    # 1. Gate loss: BCE -- label_trade=True only for profitable setups
+    # 1. Gate loss: confidence-weighted BCE
+    # High-confidence trade bars get higher weight so the gate learns to
+    # distinguish strong setups from marginal ones (which fail on flat days).
+    # No-trade bars (label_trade=0) get weight=1.0 (always learn to avoid).
+    gate_weight = torch.where(
+        lab_trade > 0.5,
+        0.5 + lab_confidence,  # trade bars: weight 0.5-1.5 based on confidence
+        torch.ones_like(lab_trade),  # no-trade bars: weight 1.0
+    )
     pw = torch.tensor([GATE_POS_WEIGHT], device=device)
-    gate_loss = F.binary_cross_entropy_with_logits(
+    gate_loss_unreduced = F.binary_cross_entropy_with_logits(
         outputs['gate'].squeeze(-1), lab_trade,
         pos_weight=pw,
+        reduction='none',
     )
+    gate_loss = (gate_loss_unreduced * gate_weight).mean()
 
     # 2. Direction loss: cross-entropy on call/put (only for trade=True bars)
     trade_mask = lab_trade > 0.5
@@ -495,51 +505,6 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
                 'dataset_fingerprint': dataset_fp,
             }, model_path)
 
-    # --- Calibrate CALL_BOOST ---
-    # Measure direction logit gap on training data, set boost to target ~20% calls
-    global CALL_BOOST
-    print("\n--- CALIBRATING CALL_BOOST ---")
-    ckpt = torch.load(model_path, map_location=device, weights_only=False)
-    model.load_state_dict(ckpt['model_state_dict'])
-    model.eval()
-
-    # Sample a subset of training data for calibration
-    cal_indices = np.random.choice(len(train_ds), size=min(5000, len(train_ds)), replace=False)
-    cal_gaps = []
-    with torch.no_grad():
-        for start in range(0, len(cal_indices), BATCH_SIZE):
-            batch_idx = cal_indices[start:start + BATCH_SIZE]
-            windows = []
-            for idx in batch_idx:
-                w, _ = train_ds[int(idx)]
-                windows.append(w)
-            batch_x = torch.stack(windows).to(device)
-            # Get raw direction logits (CALL_BOOST=0 during calibration)
-            out = model(batch_x)
-            dir_logits = out['direction']  # (batch, 2)
-            # Gap = put_logit - call_logit (positive means model favors put)
-            gap = (dir_logits[:, 1] - dir_logits[:, 0]).cpu().numpy()
-            cal_gaps.extend(gap.tolist())
-
-    cal_gaps = np.array(cal_gaps)
-    # Target: 20% of bars should predict call. Set boost so that
-    # 20th percentile of gap becomes 0 (tipping point for call).
-    target_pct = 0.20  # 20% calls
-    target_gap_percentile = 1.0 - target_pct  # 80th percentile of gap
-    boost_value = float(np.percentile(cal_gaps, target_gap_percentile * 100))
-    boost_value = max(0.0, boost_value)  # never negative
-
-    CALL_BOOST = boost_value
-    model.call_boost.fill_(boost_value)
-    print(f"Direction gap stats: mean={cal_gaps.mean():.2f}, "
-          f"median={np.median(cal_gaps):.2f}, p80={np.percentile(cal_gaps, 80):.2f}")
-    print(f"Calibrated CALL_BOOST = {boost_value:.3f} (targeting {target_pct*100:.0f}% calls)")
-
-    # Re-save model with calibrated call_boost buffer
-    ckpt['model_state_dict'] = model.state_dict()
-    ckpt['call_boost'] = boost_value
-    torch.save(ckpt, model_path)
-
     # Final metrics output (for inner_loop parsing)
     metrics = {
         'val_loss': best_val_loss,
@@ -548,7 +513,6 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
         'best_epoch': best_epoch,
         'epochs_run': min(epoch, EPOCHS),
         'score_config_fingerprint': score_config_fingerprint(),
-        'calibrated_call_boost': boost_value,
     }
     print(f"\nMETRICS_JSON:{json.dumps(metrics)}")
     print(f"Best epoch: {best_epoch}, val_loss: {best_val_loss:.4f}")
