@@ -12,3 +12,4 @@ exp_010	-0.300000	revert	CALL_BOOST=1.1 -- direction 5.1%, training seed randomn
 exp_012	-0.300000	revert	confidence-weighted gate + BUG: call_boost buffer=0.0 not 1.5
 exp_012b	3.398730	revert	conf-weighted gate + call_boost fix -- +day_rate dropped to 86.4%, DD 12.1%
 exp_014	5.694915	keep	FiLM regime conditioning -- direction 26% calls (no CALL_BOOST), DD 0.14%, WR 86.3%, PF 334
+exp_015	-0.300000	revert	gate_threshold=0.5 -- direction collapse 10.8% calls, higher threshold filters calls preferentially
