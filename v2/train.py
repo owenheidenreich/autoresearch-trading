@@ -48,7 +48,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))  # seconds
 
 # Loss weights
 GATE_W = float(os.environ.get("WEIGHT_GATE", 2.0))
-DIR_W = float(os.environ.get("WEIGHT_DIR", 1.0))
+DIR_W = float(os.environ.get("WEIGHT_DIR", 2.0))
 STRIKE_W = float(os.environ.get("WEIGHT_STRIKE", 0.5))
 RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 
