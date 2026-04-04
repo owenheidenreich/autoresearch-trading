@@ -58,7 +58,7 @@ GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 1.0))
 
 # Inference-time call boost: added to call logits at eval to prevent
 # direction collapse in low-vol periods. Training stays honest.
-CALL_BOOST = float(os.environ.get("CALL_BOOST", 0.8))
+CALL_BOOST = float(os.environ.get("CALL_BOOST", 1.1))
 
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
