@@ -36,7 +36,7 @@ class DecisionPolicy:
 
     # --- Time blocks ---
     no_trade_before_bar: int = 30
-    no_trade_after_bar: int = 330
+    no_trade_after_bar: int = 290
 
     # --- Order execution ---
     order_style: str = "MKT"
