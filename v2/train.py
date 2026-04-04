@@ -52,13 +52,10 @@ DIR_W = float(os.environ.get("WEIGHT_DIR", 1.0))
 STRIKE_W = float(os.environ.get("WEIGHT_STRIKE", 0.5))
 RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 
-# Gate selectivity: pos_weight < 1.0 makes the model more conservative
-# (penalizes false positives more than false negatives)
-GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 1.0))
-
-# Inference-time call boost: added to call logits at eval to prevent
-# direction collapse in low-vol periods. Training stays honest.
-CALL_BOOST = float(os.environ.get("CALL_BOOST", 1.5))
+# Gate selectivity: pos_weight balances gate=True vs gate=False.
+# With triple-barrier labels, expect ~30% gate=True, ~70% gate=False.
+# pos_weight = 70/30 = 2.3 to balance the classes.
+GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 2.3))
 
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
@@ -85,8 +82,36 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 
+class FiLMLayer(nn.Module):
+    """Feature-wise Linear Modulation: regime embedding -> (gamma, beta) for a head."""
+
+    def __init__(self, regime_dim: int, feature_dim: int):
+        super().__init__()
+        self.fc = nn.Linear(regime_dim, feature_dim * 2)
+        # Initialize gamma=1, beta=0 so FiLM is identity at start
+        nn.init.zeros_(self.fc.weight)
+        nn.init.zeros_(self.fc.bias)
+        with torch.no_grad():
+            self.fc.bias[:feature_dim] = 1.0  # gamma init = 1
+
+    def forward(self, regime: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            regime: (B, regime_dim)
+            x: (B, feature_dim) -- the representation to modulate
+        Returns:
+            modulated x: gamma * x + beta
+        """
+        gb = self.fc(regime)  # (B, feature_dim * 2)
+        gamma, beta = gb.chunk(2, dim=-1)
+        return gamma * x + beta
+
+
+REGIME_DIM = 16  # regime embedding size
+
+
 class TradingModel(nn.Module):
-    """v2 Trading Model.
+    """v2 Trading Model with FiLM regime conditioning.
 
     Input: (batch, lookback, NUM_FEATURES)
     Outputs:
@@ -95,6 +120,12 @@ class TradingModel(nn.Module):
         strike: (batch, NUM_STRIKE_CLASSES) - softmax over strike offsets
         risk: (batch, 3) - [stop_pct, target_pct, max_hold_frac]
         confidence: (batch, 1) - sigmoid confidence score
+
+    FiLM conditioning: a RegimeEncoder reads the last bar's raw features
+    and produces a regime embedding. Each prediction head's input is
+    modulated by a per-head FiLM layer: gamma * last + beta. This lets
+    the model learn regime-conditional behavior (e.g., high vol -> calls,
+    low vol -> puts) without changing the backbone.
     """
 
     def __init__(
@@ -110,9 +141,6 @@ class TradingModel(nn.Module):
         dep = depth or DEPTH
         nh = n_heads or N_HEADS
         dr = dropout if dropout is not None else DROPOUT
-
-        # Call boost buffer: persists through save/load for inference
-        self.register_buffer('call_boost', torch.tensor(float(CALL_BOOST)))
 
         self.input_proj = nn.Linear(NUM_FEATURES, d)
         self.input_norm = nn.LayerNorm(d)
@@ -133,6 +161,20 @@ class TradingModel(nn.Module):
             'causal_mask',
             nn.Transformer.generate_square_subsequent_mask(LOOKBACK),
         )
+
+        # Regime encoder: raw features -> regime embedding
+        self.regime_encoder = nn.Sequential(
+            nn.Linear(NUM_FEATURES, 32),
+            nn.GELU(),
+            nn.Linear(32, REGIME_DIM),
+        )
+
+        # Per-head FiLM layers
+        self.film_gate = FiLMLayer(REGIME_DIM, d)
+        self.film_direction = FiLMLayer(REGIME_DIM, d)
+        self.film_strike = FiLMLayer(REGIME_DIM, d)
+        self.film_risk = FiLMLayer(REGIME_DIM, d)
+        self.film_confidence = FiLMLayer(REGIME_DIM, d)
 
         # Heads
         self.gate_head = nn.Sequential(
@@ -165,6 +207,9 @@ class TradingModel(nn.Module):
         """
         B, T, F = x.shape
 
+        # Regime embedding from last bar's raw features (before projection)
+        regime = self.regime_encoder(x[:, -1, :])  # (B, REGIME_DIM)
+
         h = self.input_proj(x)
         h = self.input_norm(h)
         h = self.pos_enc(h)
@@ -173,22 +218,15 @@ class TradingModel(nn.Module):
         mask = self.causal_mask[:T, :T] if T <= self.causal_mask.size(0) else None
         h = self.encoder(h, mask=mask)
 
-        # Use last token
+        # Use last token, modulated per-head by regime
         last = h[:, -1, :]  # (B, D_MODEL)
 
-        direction = self.direction_head(last)      # (B, 2) logits
-        # At inference, boost call logits to prevent direction collapse
-        boost = self.call_boost.item()
-        if not self.training and boost > 0:
-            direction = direction.clone()
-            direction[:, 0] += boost
-
         return {
-            'gate': self.gate_head(last),               # (B, 1) logits
-            'direction': direction,                      # (B, 2) logits
-            'strike': self.strike_head(last),            # (B, 13) logits
-            'risk': self.risk_head(last),                # (B, 3) raw
-            'confidence': self.confidence_head(last),    # (B, 1) logits
+            'gate': self.gate_head(self.film_gate(regime, last)),
+            'direction': self.direction_head(self.film_direction(regime, last)),
+            'strike': self.strike_head(self.film_strike(regime, last)),
+            'risk': self.risk_head(self.film_risk(regime, last)),
+            'confidence': self.confidence_head(self.film_confidence(regime, last)),
         }
 
 
