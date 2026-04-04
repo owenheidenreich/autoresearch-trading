@@ -22,7 +22,7 @@ import pandas as pd
 BARS_PER_DAY = 390
 FORWARD_BARS = 30
 LOOKBACK_WINDOW = 60
-NUM_FEATURES = 39
+NUM_FEATURES = 55  # 39 original + 16 enriched (moneyness, volume, spread, etc.)
 
 OPTION_SPREAD_BPS = 150
 SPREAD_COST_PCT = 2 * OPTION_SPREAD_BPS / 10000.0  # 0.03 = 3% round-trip
