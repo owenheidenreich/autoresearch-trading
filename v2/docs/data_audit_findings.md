@@ -1,52 +1,79 @@
 # Data Audit Findings (2026-04-03)
 
-## Finding 1: Oracle labels are 100% winners (CRITICAL)
+## Finding 1: Narrow strike grid (CRITICAL)
+
+prepare.py downloads only 14 of 209 available strikes from Polygon flat files.
+ATM +/- 30pt in 5pt steps. SPX daily range is 20-100pt. After a 30pt move,
+the grid is lopsided -- the model can't see contracts a real trader would use.
+
+38.7% of tradeable bars have >20pt drift (4+ strikes of compression).
+
+FIX: Wide-grid downloader extracts ATM +/- 100pt (82 contracts per day).
+After 50pt move, still 50pt OTM coverage on each side.
+
+STATUS: download_wide_grid.py built and running.
+
+## Finding 2: Oracle labels are 100% winners (CRITICAL)
 
 All 286,053 trade labels have P&L > 0. Zero losing trades in training.
-The model learns to classify "oracle-profitable bars" not to trade.
-PF=388, WR=84% are artifacts of this labeling, not real performance.
+PF=388, WR=84% are artifacts, not real performance.
 
-## Finding 2: Moneyness drift (CRITICAL)
+FIX: Triple-barrier labeler with real losers (35-50% loss rate expected).
 
-Strikes are classified relative to OPENING ATM (fixed per day). By 11am,
-53% of days have SPX drifted $10+ from open. By 2pm, 22% have drifted $20+.
+STATUS: not yet implemented. Waiting for wide-grid data.
 
-The "ATM call" at 2pm might actually be 15 points ITM or OTM. The model
-has no feature that tracks CURRENT moneyness -- only opening-day labels.
+## Finding 3: Moneyness drift (CRITICAL)
 
-The model's strike selection head is choosing from stale classifications.
+ATM strike fixed at opening. 84% of bars drift >5pt. 58% of "OTM5 call"
+bars are actually ITM. Mean drift 19.3pt, max 462.8pt.
 
-## Finding 3: No real bid/ask data
+Call-put parity gives real-time SPX with 73.3% coverage. Confirmed working.
 
-Spread costs are estimated from premium tier assumptions (30-150 bps by
-time of day). No actual bid/ask quotes from the market. Real spreads
-vary by strike, volume, and market conditions.
+Features MUST be relative (moneyness %, normalized price) not absolute.
+What the model learns at SPX 4300 must transfer to SPX 6500.
 
-## Finding 4: Simple signals have no edge
+FIX: compute current moneyness from call-put parity.
+STATUS: proven in data_enriched.pt, needs integration with wide grid.
 
-Tested momentum (ret_6 + ema_cross) with honest triple-barrier labels across
-all stop/target/hold combinations. PF=0.49-0.54. Even with zero spreads: PF=0.52.
-The causal features as currently constructed don't predict option P&L.
+## Finding 4: Spread costs (SIGNIFICANT)
 
-## Finding 5: Missing trader-essential data
+Commission: $1.30 round trip = 0.13% on $10 option. Negligible.
+Bid-ask spread: unknown from Polygon data. Real range ~$0.05-$0.30 ATM.
+Old lookup table estimated 30-150 bps, off by 4-20x for some time periods.
 
-- No vega (IV sensitivity)
-- No per-strike volume
-- No open interest
-- No bid/ask
-- No real-time moneyness feature
+Corwin-Schultz estimator: shows correct time-of-day pattern but overestimates
+(mixes real price movement with spread). Median non-zero estimate: $0.49.
+
+FIX: $0.30 round-trip spread + $1.30 commission as conservative fixed cost.
+Corwin-Schultz as relative feature (model learns when expensive to trade).
+
+## Finding 5: Per-strike OHLCV thrown away (FIXED)
+
+Raw cache has high, low, volume, transactions per strike per bar. prepare.py
+only kept close prices. 20.6% of bars have zero volume (illiquid).
+
+STATUS: extracted to v2/data_enriched.pt (228 MB, 118 keys).
+
+## Finding 6: Signal edge exists in volatility features (GO signal)
+
+Baseline: always-put PF=1.106 (structural intraday put bias).
+
+Features that beat baseline:
+- option_spread_width: PF=1.855 (+0.748)
+- session_range_pct: PF=1.435 (+0.328)
+- rsi_7: PF=1.219, bollinger_position: PF=1.216
+- atm_iv: PF=1.182, atm_gamma: PF=1.176
+
+Pattern: high vol = calls win (gamma), low vol = puts win (theta).
+Momentum has NO edge (ret_6 PF=0.81, worse than always-put).
+
+Neural network combining volatility-regime features could achieve PF > 2.
 
 ## What's sound
 
-- Option prices track the same contract all day (no contract switching)
+- Option prices track the same contract all day (no switching)
 - 39 features well-engineered for SPX price action
-- 4 years of history (sufficient for deep learning)
-- Simulator correctly models same-contract entry/exit with realistic spreads
-- Infrastructure (deploy, train, replay, scoring) all working end-to-end
-
-## What must be fixed before training
-
-1. Add current-moneyness features (how far each strike is from current SPX)
-2. Replace oracle labeler with triple-barrier (includes losing trades)
-3. Get real bid/ask data from Polygon (or estimate from option price dynamics)
-4. Add walk-forward validation (not just fixed 60-day holdout)
+- 4 years history (999 trading days)
+- Simulator correctly models same-contract entry/exit
+- Infrastructure works end-to-end (Akash deploy, train, replay, score)
+- Polygon flat files have 209+ strikes per day (we just need to extract more)
