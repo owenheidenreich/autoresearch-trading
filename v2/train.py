@@ -47,7 +47,7 @@ EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 30))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))  # seconds
 
 # Loss weights
-GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
+GATE_W = float(os.environ.get("WEIGHT_GATE", 2.0))
 DIR_W = float(os.environ.get("WEIGHT_DIR", 1.0))
 STRIKE_W = float(os.environ.get("WEIGHT_STRIKE", 0.5))
 RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
@@ -251,22 +251,12 @@ def compute_loss(
     lab_hold = targets['label_max_hold'].float().to(device)
     lab_confidence = targets['label_confidence'].float().to(device)
 
-    # 1. Gate loss: confidence-weighted BCE
-    # High-confidence trade bars get higher weight so the gate learns to
-    # distinguish strong setups from marginal ones (which fail on flat days).
-    # No-trade bars (label_trade=0) get weight=1.0 (always learn to avoid).
-    gate_weight = torch.where(
-        lab_trade > 0.5,
-        0.5 + lab_confidence,  # trade bars: weight 0.5-1.5 based on confidence
-        torch.ones_like(lab_trade),  # no-trade bars: weight 1.0
-    )
+    # 1. Gate loss: BCE with standard pos_weight
     pw = torch.tensor([GATE_POS_WEIGHT], device=device)
-    gate_loss_unreduced = F.binary_cross_entropy_with_logits(
+    gate_loss = F.binary_cross_entropy_with_logits(
         outputs['gate'].squeeze(-1), lab_trade,
         pos_weight=pw,
-        reduction='none',
     )
-    gate_loss = (gate_loss_unreduced * gate_weight).mean()
 
     # 2. Direction loss: cross-entropy on call/put (only for trade=True bars)
     trade_mask = lab_trade > 0.5
