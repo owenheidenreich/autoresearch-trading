@@ -55,7 +55,7 @@ RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 # Gate selectivity: pos_weight balances gate=True vs gate=False.
 # With triple-barrier labels, expect ~30% gate=True, ~70% gate=False.
 # pos_weight = 70/30 = 2.3 to balance the classes.
-GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 1.0))
+GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 2.3))
 
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
