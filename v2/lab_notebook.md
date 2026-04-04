@@ -68,6 +68,46 @@ All features are RELATIVE (moneyness %, normalized prices) so patterns at SPX 43
 - dir_acc=67.4% (learning -- baseline 50%)
 - No NaN in loss. Model trains.
 
-## Next: First Real Training on Akash H100
+## Experiment: honest_baseline on Akash H100 (2026-04-03)
 
-Pending. Will be the first experiment with honest data.
+**First training with honest data.** 25 epochs on H100, 305s training, 46s replay.
+
+**Training metrics:**
+- val_loss: 1.06 -> 0.60 (converging)
+- dir_acc: 58.8% -> 88.3% (direction head LEARNED)
+- gate_acc: 79.4% -> 79.8% (gate head DID NOT LEARN -- stuck at majority class baseline)
+
+**Replay on promote_mask (60 held-out days):**
+- 52 trades total, 6 traded days (way too few)
+- ALL 52 trades are puts (call_count=0) -- direction collapse
+- WR=98.1%, PF=102 -- looks good but only 52 trades on 6 days
+- Score: -0.5 (gate failure: too_few_traded_days, 6 < 15 minimum)
+
+**Diagnosis:**
+1. **Gate head stuck.** 72% of training labels are gate=True. The model learns to always
+   predict True (gets 72% accuracy). The gate loss (BCE with pos_weight=0.3) doesn't give
+   enough gradient to learn selectivity. Need to either:
+   - Increase pos_weight (penalize false positives more)
+   - Use a different gate architecture (separate classifier)
+   - Add the P&L as a weighting signal (higher loss for confident-but-wrong predictions)
+
+2. **Direction collapse to puts.** The volatility-regime signal (session_range_pct) during
+   the promote_mask period (Dec 2025 - Mar 2026) is consistently below the training median,
+   so it always says "put." The model learned this correctly but it means no directional
+   diversity. Need to either:
+   - Use a more balanced direction signal
+   - Force a minimum call fraction in replay
+   - Use multiple direction features (not just session_range_pct)
+
+3. **Gate threshold too strict.** The default policy gate_threshold=0.5 filters almost
+   everything because the gate output is near 0.5 (barely learned). Lower the threshold
+   for initial experiments, then let the model learn to be more decisive.
+
+**Key insight:** The DATA pipeline is honest and working. The MODEL needs tuning.
+This is what the ART² loop is for.
+
+**Next experiments to try:**
+- Increase GATE_POS_WEIGHT from 0.3 to 1.0 or higher
+- Lower gate_threshold from 0.5 to 0.3 in policy.py
+- Add more direction features (not just session_range_pct median split)
+- Try weighting gate loss by |label_pnl| so confident trades matter more
