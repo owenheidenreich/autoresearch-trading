@@ -2,3 +2,4 @@ experiment	score	status	description
 exp_001	-0.300000	revert	gate_pos_weight=1.0, label_smoothing=0.1, threshold=0.3 -- direction collapse 1.9% calls
 exp_002	-0.300000	revert	call_weight=3x, label_smoothing=0.15 -- direction 3.1% still collapsed
 exp_003	1.779944	keep	CALL_BOOST=1.5 at inference -- direction balanced 39/61, first positive score
+exp_004	5.593220	keep	stop_range=(0.10,0.40), max_hold=(10,250) -- DD 15.4%->2.1%, score 3.1x
