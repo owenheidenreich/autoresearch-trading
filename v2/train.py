@@ -56,7 +56,7 @@ RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 # (penalizes false positives more than false negatives)
 # Oracle trade rate is ~35%, so pos_weight=0.3 means the model must be
 # 3x more certain to predict "trade" than "no trade"
-GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 0.3))
+GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 1.0))
 
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
@@ -262,6 +262,7 @@ def compute_loss(
                 outputs['direction'][trade_mask][valid_dir],
                 dir_targets[valid_dir],
                 weight=dir_weight,
+                label_smoothing=0.1,
             )
         else:
             dir_loss = torch.tensor(0.0, device=device)
