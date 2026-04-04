@@ -8,11 +8,19 @@ Built on Karpathy's autoresearch pattern: the AI proposes hypotheses, trains mod
 
 ```
 1. AI edits v2/train.py (model architecture, loss, hyperparams)
-2. Trains on 859 days of historical SPX data (Tier 3 oracle labels)
+2. Trains on 859 days of historical SPX data (55 features, honest labels)
 3. Replays on 60 held-out days the model never saw
 4. Scores the equity curve: Sortino * consistency * drawdown guard
 5. Score improved? KEEP. Otherwise REVERT. Repeat.
 ```
+
+## Data Pipeline
+
+- **Wide-grid option data**: 82 contracts per day (ATM +/- 100pt) from Polygon flat files
+- **55 features**: 39 market (SPX, VIX, volume, Greeks) + 16 option-enriched (moneyness, per-strike volume, flow ratio, spread proxy)
+- **Honest labels**: Risk-grid search (64 stop/target/hold combos), gate=True only when profitable, 28% of signal bars are no-trade
+- **Real-time SPX**: estimated via call-put parity (not fixed opening ATM)
+- **Forward-filled**: matches live IBKR behavior (stale quotes, not missing data)
 
 ## Project Structure
 
@@ -26,17 +34,19 @@ v2/                     # The active system
     schema.py           # TradeIntent contract
     simulator.py        # Trade simulation engine
     metrics.py          # Score formula
-    features.py         # 39-feature spec
-    labels.py           # Oracle label generation
+    features.py         # 55-feature spec (39 market + 16 enriched)
+    labels.py           # Label generation
   replay.py             # Evaluation harness
   ops/
+    deploy.sh           # Akash H100 GPU lifecycle
     run_experiment.py   # Train + replay + score (one command)
     inner_loop.py       # Keep/revert + session limits
     monitor.py          # Human oversight dashboard
-    artifact.py         # Self-describing model packages
   pipeline/
-    build_dataset.py    # Data construction (Tier 1/2/3 labels, 4-way split)
-  live/                 # IBKR execution (stubs, Phase 5)
+    download_wide_grid.py  # Download 82 contracts/day from Polygon
+    build_v2_dataset.py    # Build data with enriched features + honest labels
+    extract_raw.py         # Extract OHLCV from raw Polygon cache
+  live/                 # IBKR execution (stubs)
   docs/                 # Design specs + domain knowledge
 
 archive/                # Frozen v1 system (reference only)
@@ -55,14 +65,18 @@ Hard gates: 30+ trades, 15+ traded days, both directions, max 20% drawdown. Must
 ## Quick Start
 
 ```bash
-# Rebuild dataset (Tier 3 oracle labels, 30-60 min)
-python -m v2.pipeline.build_dataset --tier 3
+# Download wide-grid option data from Polygon (first time, ~10 min)
+python -m v2.pipeline.download_wide_grid
 
-# Run one experiment
-python v2/ops/run_experiment.py --id baseline
+# Build dataset with enriched features + honest labels (~30 sec)
+python -m v2.pipeline.build_v2_dataset
 
-# Evaluate
-python -m v2.replay --model v2/model.pt --mask promote
+# Boot Akash H100 and upload
+./v2/ops/deploy.sh boot
+./v2/ops/deploy.sh start
+
+# Run experiment on GPU
+ssh root@<gpu> "python v2/ops/run_experiment.py --id baseline"
 
 # Monitor
 python v2/ops/monitor.py
@@ -72,6 +86,6 @@ python v2/ops/monitor.py
 
 - Paper trading only. No real money.
 - 1 SPX contract max. Long calls/puts only. 0DTE only.
-- Dynamic stop-loss (10-65% range), learned by model.
+- Dynamic stop-loss (30-60% range), learned by model risk head.
 - 5% daily loss cap. 5-bar cooldown after stops.
 - EOD flatten at 15:59 ET.

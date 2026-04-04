@@ -1,57 +1,73 @@
 # v2 Lab Notebook
 
-## Experiment 0: Initial Assessment (2026-04-03)
+## Data Audit (2026-04-03)
 
-**Hypothesis:** A 163K-param causal transformer trained on tier-1 oracle labels
-can learn selective, profitable trade entry decisions.
+Full pipeline audit revealed 5 critical problems. See `v2/docs/data_audit_findings.md`.
 
-**Setup:**
-- Dataset: 387,990 bars, 999 days, tier-1 oracle labels (35.4% trade rate)
-- Model: 64d, 3 layers, 4 heads, 5 output heads (gate/direction/strike/risk/confidence)
-- Training: 1 epoch (CPU, hit 120s budget), batch=1024, lr=3e-4
+Key findings:
+- Oracle labels had 100% win rate (zero losers in training). PF=388 was an artifact.
+- Moneyness drift: 84% of bars had >5pt drift from opening ATM. 58% of "OTM5 call" were actually ITM.
+- Narrow grid: only 14 of 209 available strikes downloaded from Polygon.
+- Spreads estimated incorrectly (old lookup table off by 4-20x).
+- Simple momentum signals had no edge (PF=0.49-0.54).
 
-**Baselines (30 val days):**
+## Signal Scan (2026-04-03)
 
-| Baseline | PF | WR | TPD | Score |
-|----------|-----|-----|-----|-------|
-| Random | 0.797 | 34% | 2.3 | 0.0 |
-| ATM-Always | 1.345 | 45% | 1.0 | 0.0 |
-| Simple-Rules | 0.937 | 40% | 7.8 | -0.06 |
+Tested all 39 original features as direction signals against always-put baseline (PF=1.106).
 
-**Result (1 epoch model):**
+Edge found in volatility-regime features:
+- `option_spread_width`: PF=1.855 (+0.748 vs baseline)
+- `session_range_pct`: PF=1.435 (+0.328)
+- `rsi_7`: PF=1.219, `bollinger_position`: PF=1.216
+- `atm_iv`: PF=1.182, `atm_gamma`: PF=1.176
 
-| Metric | Value |
-|--------|-------|
-| PF | 45.2 |
-| WR | 85.5% |
-| TPD | 36.5 |
-| Score | 0.0 |
+**Pattern:** High vol/range/gamma = calls win (gamma convexity). Low vol = puts win (theta decay). Multiple features confirm independently.
 
-**Diagnosis:**
-- PF=45 is an artifact: oracle labels guarantee profitability by construction.
-  The model just needs to say "trade" at any labeled bar and it wins.
-- 36 TPD is way too many trades. Gate threshold 0.5 too low.
-- Score = 0 because frequency penalty kills it (center=1.5, width=2.5).
-- Gate accuracy 73% after 1 epoch means model hasn't learned selectivity.
+Momentum (ret_6) has NO edge (PF=0.81).
 
-**Key Insight:** The bottleneck is not "can the model find profitable trades"
-(oracle labels make that easy) but "can it learn WHEN to be selective."
-The score formula penalizes overtrading. The model needs to learn that
-trading less with higher conviction beats trading more.
+## Data Rebuild (2026-04-03)
 
-**Next:**
-- Train more epochs for convergence
-- Test higher gate thresholds (0.7, 0.8, 0.9) during replay
-- Investigate class imbalance in gate labels (35% trade vs 65% no-trade)
-- Consider weighting gate loss to penalize false positives more
+### Wide-grid download
+- ATM +/- 100pt (82 contracts per day) from Polygon flat files
+- 994 days, 2.2 GB, avg 41 strikes per day
+- After 50pt intraday move, still 50pt OTM coverage
 
----
+### Enriched features (16 new)
+- `current_moneyness_pct`, `intraday_drift_pct`, `near_atm_moneyness_pct`
+- `near_atm_call_volume`, `near_atm_put_volume`, `call_put_flow_ratio`
+- `log_total_volume`, `chain_call_put_ratio`, `log_chain_volume`
+- `volume_zero_flag`, `call_hl_range_pct`, `near_atm_call/put_price_norm`
+- `theta_acceleration`, `near_atm_transactions`
 
-## Experiment 1: Extended Training (2026-04-03)
+All features are RELATIVE (moneyness %, normalized prices) so patterns at SPX 4300 transfer to SPX 6500.
 
-**Hypothesis:** Training for 15 epochs with lr=5e-4 will improve gate selectivity
-and reduce overtrading.
+### Risk-grid labels
+- 64 combos (4 stops x 4 targets x 4 holds) searched per bar
+- Direction from session_range_pct volatility regime (causal, no lookahead)
+- Same-contract simulation (no switching artifacts)
+- Gate=True only when best combo is profitable
+- 87K signal bars, 62K gate=True (72%), 24K gate=False (28%)
+- Risk diversity: 4 distinct stops, 4 targets, 4 holds
 
-**Setup:** 15 epochs, batch=2048, lr=5e-4, CPU
+### NaN handling
+- 27% of bars had NaN (0DTE options stop trading near close)
+- Root cause: no trades in Polygon flat file = no price
+- Fix: forward-fill within day (matches live IBKR behavior -- stale quotes)
+- Remaining NaN (start-of-day): filled with 0
 
-**Result:** (pending)
+### Cost model
+- Commission: $1.30 round trip (0.13% on $10 option, negligible)
+- Bid-ask spread: $0.30 round trip estimate (conservative)
+- Total cost per trade: ~$1.60
+
+## Smoke Test (2026-04-03)
+
+1-epoch local test on CPU with new data:
+- train_loss=1.11, val_loss=1.04
+- gate_acc=79.4% (learning -- baseline 72%)
+- dir_acc=67.4% (learning -- baseline 50%)
+- No NaN in loss. Model trains.
+
+## Next: First Real Training on Akash H100
+
+Pending. Will be the first experiment with honest data.

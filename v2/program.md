@@ -18,6 +18,21 @@ Akash workflow:
 
 The experiment runner (`v2/ops/run_experiment.py`) is designed to run ON the GPU machine, not locally.
 
+## Data
+
+**55 features** (39 original SPX/VIX/market features + 16 enriched from wide-grid option data).
+**Wide-grid option data**: ATM +/- 100pt (82 contracts per day), full OHLCV per bar per strike.
+**Labels**: Risk-grid search with dynamic stop/target/hold. Gate=True only for profitable setups.
+
+Key design: all option features are RELATIVE (moneyness %, normalized prices) so patterns
+learned at SPX 4300 transfer to SPX 6500. Real-time SPX estimated via call-put parity.
+
+Label statistics:
+- 87K signal bars, 62K gate=True (72%), 24K gate=False (28%)
+- Dynamic risk: 4 stop values, 4 target values, 4 hold durations
+- Direction from volatility regime (high vol = call, low vol = put)
+- Costs: $0.30 spread + $1.30 commission per round trip
+
 ## Setup
 
 1. **Create a branch**: `git checkout -b autoresearch/v2-<tag>` from current main.
@@ -26,8 +41,8 @@ The experiment runner (`v2/ops/run_experiment.py`) is designed to run ON the GPU
    - `v2/train.py` -- the model and training loop. You modify this.
    - `v2/core/policy.py` -- the trading policy. You can modify this too.
    - `v2/lab_notebook.md` -- experiment log.
-3. **Verify data**: `v2/data.pt` must exist and be Tier 3 (check metadata).
-4. **Boot Akash GPU** and establish baseline by running `run_experiment.py --id baseline` on the GPU without changing any code.
+3. **Verify data**: `v2/data_v2.pt` must exist (check metadata version = `v2_wide_grid_risk_search`).
+4. **Boot Akash GPU** and establish baseline.
 5. **Record baseline** in `v2/results.tsv`.
 
 ## What You CAN Modify
@@ -44,9 +59,9 @@ Everything else. These are the immutable evaluation harness:
 - `v2/core/simulator.py` -- how trades play out
 - `v2/core/metrics.py` -- how score is computed
 - `v2/replay.py` -- how model outputs become trades and get evaluated
-- `v2/core/labels.py` -- how oracle labels are generated
+- `v2/core/labels.py` -- how labels are generated
 - `v2/core/schema.py` -- TradeIntent and SimulatedTrade contracts
-- `v2/data.pt` -- the dataset
+- `v2/data_v2.pt` -- the dataset
 - `v2/ops/run_experiment.py` -- the experiment runner
 - `v2/ops/inner_loop.py` -- session limits and keep/revert logic
 
@@ -69,55 +84,27 @@ Hard gates (score goes negative if any fail):
 - At least 15% minority direction (must trade both calls and puts)
 - Max account drawdown <= 20%
 
-Model must also beat all three baselines:
+Model must also beat all three baselines (random, ATM-always, simple-rules).
 
-- **Random**: 2% chance to trade per bar, random candidate, fixed stop=30%/target=50%/hold=120. Averaged over 20 seeds.
-- **ATM-Always**: Buy 1 ATM call at bar 30 every day. Fixed stop=30%/target=50%/hold=120.
-- **Simple-Rules**: Buy call on +momentum (>0.5%), put on -momentum. ATM, stop=25%/target=40%/hold=60. 10-bar cooldown.
+## Key Architecture Facts
 
-## Running an Experiment
+- **Input**: (batch, 60, 55) -- 60 bars of 55 features (39 market + 16 option-enriched)
+- **Output**: 5 heads (gate, direction, strike, risk, confidence)
+- **Labels**: Risk-grid search -- direction committed from volatility regime, stop/target/hold searched over 64 combos
+- **Evaluation**: Replay on promote_mask (60 days model never saw during training)
+- **Score**: Account curve health (Sortino * consistency * drawdown guard)
+- **Equity**: $10K starting, $100 SPX multiplier, 1 contract max
+- **Training**: Akash H100 GPU. 5-minute time budget per experiment. Never local.
+- **Costs**: $0.30 bid-ask spread + $1.30 commission per round trip
 
-On the Akash GPU:
-```bash
-python v2/ops/run_experiment.py --id exp_NNN > run.log 2>&1
-grep "^score:" run.log
-```
+## Data Split
 
-The script trains the model, replays on `promote_mask` (60 held-out days the model never trained on), compares against baselines, and saves an artifact bundle.
-
-## Output Format
-
-```
----
-score:                2.345678
-daily_sortino:        3.12
-positive_day_rate:    0.72
-max_account_drawdown: 0.06
-net_pnl_dollars:      4230.50
-total_trades:         187
-traded_days:          48
-profit_factor:        2.31
-win_rate:             0.58
-beats_random:         true
-beats_atm:            true
-beats_rules:          true
-training_seconds:     301.2
-status:               complete
-```
-
-## Logging Results
-
-Log to `v2/results.tsv` (tab-separated):
-
-```
-experiment	score	status	description
-baseline	-1.000000	keep	initial baseline
-exp_001	0.500000	keep	increased LR to 5e-4
-exp_002	0.300000	discard	switched to GeLU (worse)
-exp_003	0.000000	crash	OOM on batch_size=4096
-```
-
-Do NOT commit results.tsv. Leave it untracked.
+| Split | Days | Purpose |
+|-------|------|---------|
+| train_mask | 859 | Model training |
+| val_mask | 60 | Checkpoint selection (best val_loss) |
+| promote_mask | 60 | Keep/revert scoring (model never sees this) |
+| shadow_mask | 20 | Live-readiness eval only (never used for promotion) |
 
 ## The Experiment Loop
 
@@ -138,8 +125,6 @@ LOOP:
 
 ## Session Limits
 
-These are hard ceilings enforced by the orchestrator:
-
 | Limit | Threshold | Action |
 |-------|-----------|--------|
 | Experiments | 50 max | Stop session |
@@ -147,8 +132,6 @@ These are hard ceilings enforced by the orchestrator:
 | No-improve streak | 8 consecutive reverts | Stop, rethink approach |
 | Plateau | 3 hours without improvement | Stop session |
 | Crash storm | 3 consecutive crashes | Stop, fix infrastructure |
-
-When stopped: log findings to `v2/lab_notebook.md`, summarize what worked, propose next directions, wait for human review.
 
 ## When You're Stuck
 
@@ -158,22 +141,3 @@ If you hit 3+ consecutive reverts:
 2. Read the trade-level replay data. Look at which trades lost money and why.
 3. Form a hypothesis about WHY the model is failing.
 4. Try structural changes, not just hyperparameter tweaks.
-
-## Key Architecture Facts
-
-- **Input**: (batch, 60, 39) -- 60 bars of 39 normalized features
-- **Output**: TradeIntent fields (gate, direction, strike_offset, stop, target, hold, confidence)
-- **Oracle labels**: Tier 3 -- searched 6 stops x 5 targets x 5 holds x all strikes x call+put
-- **Evaluation**: Replay on promote_mask (60 days model never saw during training)
-- **Score**: Account curve health (Sortino * consistency * drawdown guard)
-- **Equity**: $10K starting, $100 SPX multiplier, 1 contract max
-- **Training**: Akash H100 GPU. 5-minute time budget per experiment. Never local.
-
-## Data Split
-
-| Split | Days | Purpose |
-|-------|------|---------|
-| train_mask | 859 | Model training |
-| val_mask | 60 | Checkpoint selection (best val_loss) |
-| promote_mask | 60 | Keep/revert scoring (model never sees this) |
-| shadow_mask | 20 | Live-readiness eval only (never used for promotion) |
