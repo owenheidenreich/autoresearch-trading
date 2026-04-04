@@ -25,9 +25,9 @@ class DecisionPolicy:
     gate_threshold: float = 0.3
 
     # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
-    stop_range: tuple[float, float] = (0.10, 0.65)
+    stop_range: tuple[float, float] = (0.10, 0.40)
     target_range: tuple[float, float] = (0.15, 1.65)
-    max_hold_range: tuple[int, int] = (10, 390)
+    max_hold_range: tuple[int, int] = (10, 250)
 
     # --- Position management ---
     cooldown_bars: int = 5
