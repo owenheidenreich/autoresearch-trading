@@ -26,7 +26,7 @@ class DecisionPolicy:
 
     # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
     stop_range: tuple[float, float] = (0.10, 0.40)
-    target_range: tuple[float, float] = (0.15, 0.80)
+    target_range: tuple[float, float] = (0.15, 1.65)
     max_hold_range: tuple[int, int] = (10, 250)
 
     # --- Position management ---
