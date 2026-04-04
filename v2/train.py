@@ -54,9 +54,11 @@ RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 
 # Gate selectivity: pos_weight < 1.0 makes the model more conservative
 # (penalizes false positives more than false negatives)
-# Oracle trade rate is ~35%, so pos_weight=0.3 means the model must be
-# 3x more certain to predict "trade" than "no trade"
 GATE_POS_WEIGHT = float(os.environ.get("WEIGHT_GATE_POS", 1.0))
+
+# Inference-time call boost: added to call logits at eval to prevent
+# direction collapse in low-vol periods. Training stays honest.
+CALL_BOOST = float(os.environ.get("CALL_BOOST", 1.5))
 
 # Number of strike offset classes: 13 (ATM + 6 call offsets + 6 put offsets)
 NUM_STRIKE_CLASSES = 13
@@ -171,9 +173,15 @@ class TradingModel(nn.Module):
         # Use last token
         last = h[:, -1, :]  # (B, D_MODEL)
 
+        direction = self.direction_head(last)      # (B, 2) logits
+        # At inference, boost call logits to prevent direction collapse
+        if not self.training and CALL_BOOST > 0:
+            direction = direction.clone()
+            direction[:, 0] += CALL_BOOST
+
         return {
             'gate': self.gate_head(last),               # (B, 1) logits
-            'direction': self.direction_head(last),      # (B, 2) logits
+            'direction': direction,                      # (B, 2) logits
             'strike': self.strike_head(last),            # (B, 13) logits
             'risk': self.risk_head(last),                # (B, 3) raw
             'confidence': self.confidence_head(last),    # (B, 1) logits
@@ -252,14 +260,17 @@ def compute_loss(
         dir_targets = lab_direction[trade_mask]
         valid_dir = (dir_targets >= 0) & (dir_targets <= 1)
         if valid_dir.any():
-            # Fixed call-heavy weight: incentivize call predictions
-            # to avoid direction collapse in low-vol promote periods
-            dir_weight = torch.tensor([3.0, 1.0], device=device)
+            dir_weight = torch.ones(2, device=device)
+            n_calls = (dir_targets[valid_dir] == 0).sum().float()
+            n_puts = (dir_targets[valid_dir] == 1).sum().float()
+            if n_calls > 0 and n_puts > 0:
+                dir_weight[0] = n_puts / (n_calls + n_puts)
+                dir_weight[1] = n_calls / (n_calls + n_puts)
             dir_loss = F.cross_entropy(
                 outputs['direction'][trade_mask][valid_dir],
                 dir_targets[valid_dir],
                 weight=dir_weight,
-                label_smoothing=0.15,
+                label_smoothing=0.1,
             )
         else:
             dir_loss = torch.tensor(0.0, device=device)
