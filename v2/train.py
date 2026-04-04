@@ -35,9 +35,9 @@ from v2.core.metrics import score_config_fingerprint
 # ---------------------------------------------------------------------------
 
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 60))
-D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 128))
+D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 64))
 N_HEADS = 4
-DEPTH = int(os.environ.get("TRAIN_DEPTH", 4))
+DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
 DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.1))
 
 BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
