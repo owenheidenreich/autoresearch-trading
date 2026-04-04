@@ -9,3 +9,4 @@ exp_007	5.593220	revert	D_MODEL=128, DEPTH=4 -- same score, bigger model no help
 exp_008	5.571429	revert	cooldown_bars=15 -- fewer trades, +day_rate dropped to 92.9%
 exp_009	-0.300000	revert	CALL_BOOST=0.8 -- direction 9.1%, too few calls (need 15%)
 exp_010	-0.300000	revert	CALL_BOOST=1.1 -- direction 5.1%, training seed randomness
+exp_012	-0.300000	revert	confidence-weighted gate + BUG: call_boost buffer=0.0 not 1.5

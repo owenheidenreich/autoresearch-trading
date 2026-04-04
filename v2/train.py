@@ -112,7 +112,7 @@ class TradingModel(nn.Module):
         dr = dropout if dropout is not None else DROPOUT
 
         # Call boost buffer: persists through save/load for inference
-        self.register_buffer('call_boost', torch.tensor(0.0))
+        self.register_buffer('call_boost', torch.tensor(float(CALL_BOOST)))
 
         self.input_proj = nn.Linear(NUM_FEATURES, d)
         self.input_norm = nn.LayerNorm(d)
