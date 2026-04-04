@@ -252,17 +252,14 @@ def compute_loss(
         dir_targets = lab_direction[trade_mask]
         valid_dir = (dir_targets >= 0) & (dir_targets <= 1)
         if valid_dir.any():
-            dir_weight = torch.ones(2, device=device)
-            n_calls = (dir_targets[valid_dir] == 0).sum().float()
-            n_puts = (dir_targets[valid_dir] == 1).sum().float()
-            if n_calls > 0 and n_puts > 0:
-                dir_weight[0] = n_puts / (n_calls + n_puts)
-                dir_weight[1] = n_calls / (n_calls + n_puts)
+            # Fixed call-heavy weight: incentivize call predictions
+            # to avoid direction collapse in low-vol promote periods
+            dir_weight = torch.tensor([3.0, 1.0], device=device)
             dir_loss = F.cross_entropy(
                 outputs['direction'][trade_mask][valid_dir],
                 dir_targets[valid_dir],
                 weight=dir_weight,
-                label_smoothing=0.1,
+                label_smoothing=0.15,
             )
         else:
             dir_loss = torch.tensor(0.0, device=device)
