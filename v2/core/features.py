@@ -108,6 +108,23 @@ FEATURE_NAMES = [
     'trend_5min',               # 37: 5-min EMA(13) slope
     # === v17 promoted (1) ===
     'overnight_gap',            # 38: (day open - prev close) / prev close
+    # === v2 enriched (16) -- from wide-grid option data ===
+    'current_moneyness_pct',    # 39: how far ATM strike is from current SPX
+    'intraday_drift_pct',       # 40: (current SPX - opening ATM) / ATM
+    'near_atm_moneyness_pct',   # 41: moneyness of nearest-ATM strike
+    'near_atm_call_volume',     # 42: call volume at nearest ATM strike
+    'near_atm_put_volume',      # 43: put volume at nearest ATM strike
+    'near_atm_total_volume',    # 44: total volume at nearest ATM
+    'call_put_flow_ratio',      # 45: call_vol / total_vol (flow direction)
+    'volume_zero_flag',         # 46: 1.0 if nearest ATM has zero volume
+    'log_total_volume',         # 47: log(1 + total volume)
+    'chain_call_put_ratio',     # 48: call/total across entire chain
+    'log_chain_volume',         # 49: log(1 + chain total volume)
+    'call_hl_range_pct',        # 50: (high-low)/mid for nearest ATM call
+    'near_atm_call_price_norm', # 51: call_close / SPX * 100 (normalized)
+    'near_atm_put_price_norm',  # 52: put_close / SPX * 100 (normalized)
+    'theta_acceleration',       # 53: 1/sqrt(minutes_to_close) (0DTE specific)
+    'near_atm_transactions',    # 54: transactions at nearest ATM
 ]
 
 assert len(FEATURE_NAMES) == NUM_FEATURES

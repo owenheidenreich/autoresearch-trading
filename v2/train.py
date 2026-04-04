@@ -221,43 +221,42 @@ def compute_loss(
     targets: dict[str, torch.Tensor],
     bar_of_day: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, dict[str, float]]:
-    """Compute training loss from model outputs and oracle labels.
+    """Compute training loss from model outputs and v2 labels.
+
+    Labels use risk-grid search: label_trade is True only when the best
+    risk combo is profitable. The gate learns WHEN to trade, the risk head
+    learns WHAT stop/target/hold to use.
 
     Returns (total_loss, loss_dict) for logging.
     """
     device = outputs['gate'].device
 
-    # Oracle labels
-    oracle_trade = targets['oracle_trade'].float().to(device)
-    oracle_right = targets['oracle_right'].long().to(device)
-    oracle_offset = targets['oracle_strike_offset'].long().to(device)
-    oracle_stop = targets['oracle_stop_pct'].float().to(device)
-    oracle_target = targets['oracle_target_pct'].float().to(device)
-    oracle_max_hold = targets['oracle_max_hold'].float().to(device)
-    oracle_confidence = targets['oracle_confidence'].float().to(device)
+    # v2 labels
+    lab_trade = targets['label_trade'].float().to(device)
+    lab_direction = targets['label_direction'].long().to(device)
+    lab_stop = targets['label_stop_pct'].float().to(device)
+    lab_target = targets['label_target_pct'].float().to(device)
+    lab_hold = targets['label_max_hold'].float().to(device)
+    lab_confidence = targets['label_confidence'].float().to(device)
 
-    # 1. Gate loss: BCE with pos_weight to control selectivity
-    # pos_weight < 1.0 penalizes false positives (saying "trade" when shouldn't)
-    # more than false negatives (missing a trade opportunity)
+    # 1. Gate loss: BCE -- label_trade=True only for profitable setups
     pw = torch.tensor([GATE_POS_WEIGHT], device=device)
     gate_loss = F.binary_cross_entropy_with_logits(
-        outputs['gate'].squeeze(-1), oracle_trade,
+        outputs['gate'].squeeze(-1), lab_trade,
         pos_weight=pw,
     )
 
     # 2. Direction loss: cross-entropy on call/put (only for trade=True bars)
-    trade_mask = oracle_trade > 0.5
+    trade_mask = lab_trade > 0.5
     if trade_mask.any():
-        dir_targets = oracle_right[trade_mask]
-        # Filter valid direction targets (0=call, 1=put)
+        dir_targets = lab_direction[trade_mask]
         valid_dir = (dir_targets >= 0) & (dir_targets <= 1)
         if valid_dir.any():
-            # Balance direction loss: equal weight to calls and puts
             dir_weight = torch.ones(2, device=device)
             n_calls = (dir_targets[valid_dir] == 0).sum().float()
             n_puts = (dir_targets[valid_dir] == 1).sum().float()
             if n_calls > 0 and n_puts > 0:
-                dir_weight[0] = n_puts / (n_calls + n_puts)  # upweight minority
+                dir_weight[0] = n_puts / (n_calls + n_puts)
                 dir_weight[1] = n_calls / (n_calls + n_puts)
             dir_loss = F.cross_entropy(
                 outputs['direction'][trade_mask][valid_dir],
@@ -267,23 +266,20 @@ def compute_loss(
         else:
             dir_loss = torch.tensor(0.0, device=device)
 
-        # 3. Strike loss: cross-entropy on strike offset class
-        # Convert offset to class index
-        strike_targets = torch.zeros_like(oracle_offset[trade_mask])
-        for i, off in enumerate(oracle_offset[trade_mask]):
-            off_val = int(off.item())
-            strike_targets[i] = STRIKE_OFFSET_TO_IDX.get(off_val, NUM_STRIKE_CLASSES // 2)
+        # 3. Strike loss: simplified -- model selects nearest ATM, label is always 0 (center class)
+        strike_targets = torch.full(
+            (trade_mask.sum(),), NUM_STRIKE_CLASSES // 2, dtype=torch.long, device=device,
+        )
         strike_loss = F.cross_entropy(
-            outputs['strike'][trade_mask],
-            strike_targets,
+            outputs['strike'][trade_mask], strike_targets,
         )
 
-        # 4. Risk loss: Huber on stop, target, max_hold (only for trades)
+        # 4. Risk loss: Huber on stop, target, max_hold (varied labels from grid search)
         risk_out = outputs['risk'][trade_mask]  # (n_trades, 3)
         risk_targets = torch.stack([
-            oracle_stop[trade_mask],
-            oracle_target[trade_mask],
-            oracle_max_hold[trade_mask] / BARS_PER_DAY,  # normalize to [0,1]
+            lab_stop[trade_mask],
+            lab_target[trade_mask],
+            lab_hold[trade_mask] / BARS_PER_DAY,  # normalize hold to [0,1]
         ], dim=-1)
         risk_loss = F.huber_loss(risk_out, risk_targets, delta=0.5)
     else:
@@ -291,9 +287,9 @@ def compute_loss(
         strike_loss = torch.tensor(0.0, device=device)
         risk_loss = torch.tensor(0.0, device=device)
 
-    # 5. Confidence loss: BCE
+    # 5. Confidence loss: BCE on fraction of profitable combos
     conf_loss = F.binary_cross_entropy_with_logits(
-        outputs['confidence'].squeeze(-1), oracle_confidence,
+        outputs['confidence'].squeeze(-1), lab_confidence,
     )
 
     # Total weighted loss
@@ -337,15 +333,27 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
     features = data['X']
     bar_of_day = data.get('bar_of_day', torch.zeros(len(features), dtype=torch.long))
 
-    labels = {
-        'oracle_trade': data['oracle_trade'],
-        'oracle_right': data['oracle_right'],
-        'oracle_strike_offset': data['oracle_strike_offset'],
-        'oracle_stop_pct': data['oracle_stop_pct'],
-        'oracle_target_pct': data['oracle_target_pct'],
-        'oracle_max_hold': data['oracle_max_hold'],
-        'oracle_confidence': data['oracle_confidence'],
-    }
+    # v2 labels: risk-grid search with dynamic stop/target/hold
+    # Falls back to oracle_* keys for backward compat with old data.pt
+    if 'label_trade' in data:
+        labels = {
+            'label_trade': data['label_trade'],
+            'label_direction': data['label_direction'],
+            'label_stop_pct': data['label_stop_pct'],
+            'label_target_pct': data['label_target_pct'],
+            'label_max_hold': data['label_max_hold'],
+            'label_confidence': data['label_confidence'],
+        }
+    else:
+        # Backward compat with old oracle-labeled data.pt
+        labels = {
+            'label_trade': data['oracle_trade'],
+            'label_direction': data['oracle_right'],
+            'label_stop_pct': data['oracle_stop_pct'],
+            'label_target_pct': data['oracle_target_pct'],
+            'label_max_hold': data['oracle_max_hold'].float() / BARS_PER_DAY,
+            'label_confidence': data['oracle_confidence'],
+        }
 
     # Train/val split
     train_mask = data['train_mask']
@@ -424,15 +432,15 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
 
                 # Gate accuracy
                 gate_pred = (torch.sigmoid(outputs['gate'].squeeze(-1)) > 0.5).float()
-                gate_true = batch_y['oracle_trade'].float()
+                gate_true = batch_y['label_trade'].float()
                 val_gate_correct += (gate_pred == gate_true).sum().item()
                 val_gate_total += len(gate_true)
 
                 # Direction accuracy (only for trade bars)
-                trade_mask = batch_y['oracle_trade'] > 0.5
+                trade_mask = batch_y['label_trade'] > 0.5
                 if trade_mask.any():
                     dir_pred = outputs['direction'][trade_mask].argmax(dim=-1)
-                    dir_true = batch_y['oracle_right'][trade_mask]
+                    dir_true = batch_y['label_direction'][trade_mask]
                     valid = (dir_true >= 0) & (dir_true <= 1)
                     if valid.any():
                         val_dir_correct += (dir_pred[valid] == dir_true[valid]).sum().item()

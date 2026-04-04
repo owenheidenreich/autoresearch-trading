@@ -612,10 +612,31 @@ def build_dataset(
     else:
         print(f"\nAll validation gates PASSED.")
 
-    # --- Combine features ---
-    X_combined = np.concatenate([X_old, X_new], axis=1)
+    # --- Forward-fill NaN within each day (matches live IBKR behavior) ---
+    # In live trading, IBKR shows last traded price even when no new trades.
+    # Forward-fill replicates this: stale quote, not missing data.
+    # Volume/transaction features naturally stay 0 for stale bars (no fill needed).
+    nan_before = np.isnan(X_new).sum()
+    for day in unique_dates:
+        day_indices = day_to_bars[day]
+        for j in range(n_new):
+            col = X_new[day_indices, j]
+            # Forward-fill within this day
+            last_valid = np.nan
+            for k, gi in enumerate(day_indices):
+                if np.isnan(col[k]):
+                    if not np.isnan(last_valid):
+                        X_new[gi, j] = last_valid
+                else:
+                    last_valid = col[k]
+    nan_after = np.isnan(X_new).sum()
+    # Remaining NaN = start-of-day bars before first valid quote. Fill with 0.
+    X_new_clean = np.nan_to_num(X_new, nan=0.0)
+    X_combined = np.concatenate([X_old, X_new_clean], axis=1)
     all_feature_names = list(feature_names_old) + NEW_FEATURE_NAMES
     print(f"\nCombined features: {X_combined.shape[1]} ({n_old_features} old + {n_new} new)")
+    print(f"  NaN before forward-fill: {nan_before:,}")
+    print(f"  NaN after forward-fill: {nan_after:,} (remaining = start-of-day, filled with 0)")
 
     # --- Build 4-way split ---
     val_dates = set(unique_dates[train_end_day_idx:train_end_day_idx + VAL_DAYS])
