@@ -82,6 +82,9 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 
+REGIME_DIM = 16  # regime embedding size
+
+
 class MicroMoE(nn.Module):
     """Tiny mixture of experts: 2 expert MLPs routed by regime embedding."""
 
@@ -125,9 +128,6 @@ class FiLMLayer(nn.Module):
         gb = self.fc(regime)  # (B, feature_dim * 2)
         gamma, beta = gb.chunk(2, dim=-1)
         return gamma * x + beta
-
-
-REGIME_DIM = 16  # regime embedding size
 
 
 class TradingModel(nn.Module):
