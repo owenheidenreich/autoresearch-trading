@@ -20,3 +20,4 @@ exp_019	5.800000	revert	no_trade_after_bar=290 -- same score, losing trades also
 exp_020	5.800000	revert	focal loss gate -- direction balance 48.6% (great!) but same 2 losing days, WR dropped 82.7%
 exp_021	2.323531	revert	DROPOUT=0.2 -- DD spiked to 15.1%, score crashed to 2.32, too much regularization
 exp_022	6.000000	keep	exit_policy=TRAILING -- PERFECT SCORE, 100% +day_rate, 0% DD, trailing stops lock in profits
+exp_023	6.000000	keep	focal loss + trailing stops -- PERFECT on both promote AND shadow, 52% calls
