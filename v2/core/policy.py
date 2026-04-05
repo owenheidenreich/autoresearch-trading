@@ -40,7 +40,7 @@ class DecisionPolicy:
 
     # --- Order execution ---
     order_style: str = "MKT"
-    exit_policy: str = "STOP_TP_TIME"
+    exit_policy: str = "TRAILING"
 
     # --- Risk limits ---
     daily_loss_cap_pct: float = 0.05  # 5% of equity, hard stop for the day
