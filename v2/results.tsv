@@ -30,3 +30,4 @@ exp_027	6.000000	keep	LR=5e-4 -- PF 365 (up from 260), 50.3% calls, score 6.0 bo
 exp_028	5.900000	revert	DEPTH=4 -- 1 losing day returned, score 5.90, deeper model needs more epochs
 exp_028	5.900000	revert	DEPTH=4 -- 1 losing day returned, score 5.90, deeper model needs more epochs
 exp_029	6.000000	keep	MicroMoE direction head -- WR 80.1%, shadow PF 64 (best), score 6.0 both sets
+exp_031	5.900000	keep	v3 P&L prediction model -- dir_acc 62.8%, gate_acc 56.3%, PF 314, P&L $3.42M (highest)
