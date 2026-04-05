@@ -197,7 +197,10 @@ class TradingModel(nn.Module):
         self.film_confidence = FiLMLayer(REGIME_DIM, d)
 
         # Heads
-        self.gate_head = MicroMoE(d, 1, REGIME_DIM, n_experts=2, dropout=dr)
+        self.gate_head = nn.Sequential(
+            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+            nn.Linear(d // 2, 1),
+        )
         self.direction_head = MicroMoE(d, 2, REGIME_DIM, n_experts=2, dropout=dr)
         self.strike_head = nn.Sequential(
             nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
@@ -236,7 +239,7 @@ class TradingModel(nn.Module):
         last = h[:, -1, :]  # (B, D_MODEL)
 
         return {
-            'gate': self.gate_head(self.film_gate(regime, last), regime),
+            'gate': self.gate_head(self.film_gate(regime, last)),
             'direction': self.direction_head(self.film_direction(regime, last), regime),
             'strike': self.strike_head(self.film_strike(regime, last)),
             'risk': self.risk_head(self.film_risk(regime, last)),
