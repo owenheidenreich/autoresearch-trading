@@ -82,6 +82,26 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 
+class MicroMoE(nn.Module):
+    """Tiny mixture of experts: 2 expert MLPs routed by regime embedding."""
+
+    def __init__(self, d_in: int, d_out: int, regime_dim: int = REGIME_DIM, n_experts: int = 2, dropout: float = 0.1):
+        super().__init__()
+        self.experts = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(d_in, d_in // 2), nn.GELU(), nn.Dropout(dropout),
+                nn.Linear(d_in // 2, d_out),
+            )
+            for _ in range(n_experts)
+        ])
+        self.router = nn.Linear(regime_dim, n_experts)
+
+    def forward(self, x: torch.Tensor, regime: torch.Tensor) -> torch.Tensor:
+        weights = F.softmax(self.router(regime), dim=-1)  # (B, n_experts)
+        expert_outs = torch.stack([e(x) for e in self.experts], dim=1)  # (B, n_experts, d_out)
+        return (weights.unsqueeze(-1) * expert_outs).sum(dim=1)  # (B, d_out)
+
+
 class FiLMLayer(nn.Module):
     """Feature-wise Linear Modulation: regime embedding -> (gamma, beta) for a head."""
 
@@ -181,10 +201,7 @@ class TradingModel(nn.Module):
             nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
-        self.direction_head = nn.Sequential(
-            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
-            nn.Linear(d // 2, 2),  # call, put
-        )
+        self.direction_head = MicroMoE(d, 2, REGIME_DIM, n_experts=2, dropout=dr)
         self.strike_head = nn.Sequential(
             nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
             nn.Linear(d // 2, NUM_STRIKE_CLASSES),
@@ -223,7 +240,7 @@ class TradingModel(nn.Module):
 
         return {
             'gate': self.gate_head(self.film_gate(regime, last)),
-            'direction': self.direction_head(self.film_direction(regime, last)),
+            'direction': self.direction_head(self.film_direction(regime, last), regime),
             'strike': self.strike_head(self.film_strike(regime, last)),
             'risk': self.risk_head(self.film_risk(regime, last)),
             'confidence': self.confidence_head(self.film_confidence(regime, last)),
