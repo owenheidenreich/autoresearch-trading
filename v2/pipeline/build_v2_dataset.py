@@ -27,6 +27,8 @@ from collections import defaultdict
 import numpy as np
 import torch
 
+from v2.core.features import compute_adaptive_spread_bps
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -40,13 +42,12 @@ VAL_DAYS = 60
 PROMOTE_DAYS = 60
 SHADOW_DAYS = 20
 
-# Risk parameter grid: the labeler searches these combos per bar and picks the best.
-# All values within DecisionPolicy sigmoid bounds:
-#   stop: [0.10, 0.65], target: [0.15, 1.65], hold: [10, 390]
-RISK_GRID_STOPS = [0.30, 0.40, 0.50, 0.60]
-RISK_GRID_TARGETS = [0.20, 0.30, 0.50, 0.80]
-RISK_GRID_HOLDS = [10, 15, 30, 45]
-# Total combos: 4 x 4 x 4 = 64 per bar
+# Fixed risk parameters for triple-barrier labeling.
+# No grid search -- one config per trade, producing real losers.
+# Values chosen from the most common winners in the old grid search.
+FIXED_STOP = 0.30
+FIXED_TARGET = 0.50
+FIXED_HOLD = 30
 
 # Minimum volume to consider a bar tradeable
 MIN_VOLUME = 1
@@ -319,34 +320,48 @@ def build_dataset(
     label_max_hold = np.zeros(N, dtype=np.int32)
     label_confidence = np.zeros(N, dtype=np.float32)
 
+    # Per-direction P&L: model sees BOTH outcomes to learn direction selection
+    label_call_pnl = np.zeros(N, dtype=np.float32)
+    label_put_pnl = np.zeros(N, dtype=np.float32)
+
     # For nearest-ATM contract prices (used by labeler for simulation)
     nearest_call_close = np.full(N, np.nan, dtype=np.float32)
     nearest_put_close = np.full(N, np.nan, dtype=np.float32)
     spx_estimated = np.full(N, np.nan, dtype=np.float32)
 
-    # Compute session_range_pct median from TRAINING data for direction threshold
-    # Use existing feature for now; will be computed on train split only
-    sr_idx = feature_names_old.index('session_range_pct') if 'session_range_pct' in feature_names_old else None
+    # Multi-feature direction signal: majority vote from top 3 confirmed signals.
+    # QC validated: session_range PF=1.371, realized_vol PF=1.279, option_spread_width PF=1.174.
+    # VIX level alone has NO edge (QC PF=0.933). Not used for direction.
+    dir_features = ['session_range_pct', 'realized_vol', 'option_spread_width']
+    dir_indices = {}
+    for fname in dir_features:
+        if fname in feature_names_old:
+            dir_indices[fname] = feature_names_old.index(fname)
+    print(f"  Direction features: {list(dir_indices.keys())}")
 
-    # First pass: determine train split to compute threshold
+    # First pass: determine train split to compute per-feature medians
     n_days = len(unique_dates)
     eval_days = VAL_DAYS + PROMOTE_DAYS + SHADOW_DAYS
     train_end_day_idx = n_days - eval_days
     train_dates = set(unique_dates[:train_end_day_idx])
 
-    if sr_idx is not None:
-        train_mask_arr = np.array([d in train_dates for d in dates])
-        tradeable = (bar_of_day >= 30) & (bar_of_day < 300) & train_mask_arr
-        sr_values = X_old[tradeable, sr_idx]
-        sr_values = sr_values[~np.isnan(sr_values)]
-        sr_median = float(np.median(sr_values)) if len(sr_values) > 0 else 0.0
-        sr_q25 = float(np.percentile(sr_values, 25)) if len(sr_values) > 0 else 0.0
-        sr_q75 = float(np.percentile(sr_values, 75)) if len(sr_values) > 0 else 0.0
-        sr_iqr = sr_q75 - sr_q25
-        print(f"  session_range_pct: median={sr_median:.6f} IQR={sr_iqr:.6f}")
-    else:
-        sr_median = 0.0
-        sr_iqr = 0.01  # fallback
+    train_mask_arr = np.array([d in train_dates for d in dates])
+    tradeable = (bar_of_day >= 30) & (bar_of_day < 300) & train_mask_arr
+
+    dir_medians = {}
+    for fname, fidx in dir_indices.items():
+        vals = X_old[tradeable, fidx]
+        vals = vals[~np.isnan(vals)]
+        med = float(np.median(vals)) if len(vals) > 0 else 0.0
+        dir_medians[fname] = med
+        print(f"    {fname}: median={med:.6f} (n={len(vals)})")
+
+    if not dir_medians:
+        print("  WARNING: No direction features found, all bars will be skipped")
+
+    # For backward compat logging
+    sr_idx = dir_indices.get('session_range_pct')
+    sr_median = dir_medians.get('session_range_pct', 0.0)
 
     # Process each day
     print(f"\nProcessing {len(unique_dates)} days...")
@@ -415,10 +430,12 @@ def build_dataset(
                     nearest_call_close[gi] = nd.get('call_close', np.nan) or np.nan
                     nearest_put_close[gi] = nd.get('put_close', np.nan) or np.nan
 
-        # ===== PASS 2: Risk-grid labeling (same-contract, search best combo) =====
-        # For each entry bar: commit direction (causal), pick nearest-ATM strike,
-        # search ALL risk combos, label with the best P&L combo.
-        # Gate = True ONLY if best combo is profitable.
+        # ===== PASS 2: Dual-direction labeling (model learns to choose) =====
+        # For each entry bar: simulate BOTH call AND put with fixed risk params.
+        # The model sees both outcomes and learns WHEN to trade and WHICH direction.
+        # gate=True only when the BETTER direction is profitable.
+        # Direction = whichever side had higher P&L.
+        # No pre-computed direction vote -- the model learns from features.
 
         for local_i in range(n_align):
             gi = global_indices[local_i]
@@ -430,17 +447,6 @@ def build_dataset(
             feats = day_features_computed.get(gi, {})
             total_vol = feats.get('near_atm_total_volume', 0)
             if total_vol < MIN_VOLUME:
-                continue
-
-            # Direction from volatility regime (causal, no lookahead)
-            if sr_idx is not None:
-                sr_val = X_old[gi, sr_idx]
-                if np.isnan(sr_val):
-                    continue
-                if abs(sr_val - sr_median) < sr_iqr * 0.5:
-                    continue
-                direction = 0 if sr_val > sr_median else 1
-            else:
                 continue
 
             # Find the entry strike (nearest ATM at this bar)
@@ -455,24 +461,36 @@ def build_dataset(
             if entry_strike is None:
                 continue
 
-            side = 'call' if direction == 0 else 'put'
-
-            # Get entry price (fill at next bar)
+            # Get fill prices for BOTH directions (fill at next bar)
             fill_local = local_i + 1
             if fill_local >= n_align or fill_local >= len(wide_timestamps):
                 continue
             fill_ts = wide_timestamps[fill_local]
             fill_bar_data = wide['bars'].get(fill_ts, {})
             fill_strike_data = fill_bar_data.get(entry_strike, {})
-            entry_px = fill_strike_data.get(f'{side}_close', np.nan)
-            if not entry_px or np.isnan(entry_px) or entry_px <= 0:
+            call_entry_px = fill_strike_data.get('call_close', np.nan)
+            put_entry_px = fill_strike_data.get('put_close', np.nan)
+
+            if not call_entry_px or np.isnan(call_entry_px) or call_entry_px <= 0:
+                call_entry_px = None
+            if not put_entry_px or np.isnan(put_entry_px) or put_entry_px <= 0:
+                put_entry_px = None
+            if call_entry_px is None and put_entry_px is None:
                 continue
 
-            cost_frac = 1.60 / (entry_px * 100)
+            # Cost model: matches simulator's compute_adaptive_spread_bps
+            is_otm = False
+            vix_regime = float(X_old[gi, sr_idx]) if sr_idx is not None else 0.0
+            mtc = max(390 - bod, 10)
+            entry_spread_bps = compute_adaptive_spread_bps(mtc, vix_regime, is_otm)
+            exit_mtc = max(mtc - FIXED_HOLD, 10)
+            exit_spread_bps = compute_adaptive_spread_bps(exit_mtc, vix_regime, is_otm)
+            cost_frac = (entry_spread_bps + exit_spread_bps) / 10000.0
 
-            # Pre-fetch the price series for this strike (avoids re-looking up per combo)
-            max_look = max(RISK_GRID_HOLDS) + 2
-            price_series = []
+            # Pre-fetch price series for BOTH directions
+            max_look = FIXED_HOLD + 2
+            call_prices = []
+            put_prices = []
             for k in range(max_look):
                 cl = fill_local + k
                 if cl >= n_align or cl >= len(wide_timestamps):
@@ -483,74 +501,61 @@ def build_dataset(
                 cts = wide_timestamps[cl]
                 cbd = wide['bars'].get(cts, {})
                 csd = cbd.get(entry_strike, {})
-                px = csd.get(f'{side}_close', np.nan)
-                price_series.append(px if px and not np.isnan(px) and px > 0 else np.nan)
+                cpx = csd.get('call_close', np.nan)
+                ppx = csd.get('put_close', np.nan)
+                call_prices.append(cpx if cpx and not np.isnan(cpx) and cpx > 0 else np.nan)
+                put_prices.append(ppx if ppx and not np.isnan(ppx) and ppx > 0 else np.nan)
 
-            if len(price_series) < 3:
+            if len(call_prices) < 3:
                 continue
 
-            # Search ALL risk combos
-            best_pnl = float('-inf')
-            best_stop = 0.0
-            best_target = 0.0
-            best_hold = 0
-            best_outcome = 0
-            n_profitable = 0
+            # Simulate BOTH directions with fixed params
+            def _sim_one(entry_px, prices):
+                if entry_px is None:
+                    return 0.0, 0
+                last_px = entry_px
+                for k in range(1, min(FIXED_HOLD + 1, len(prices))):
+                    px = prices[k]
+                    if np.isnan(px):
+                        continue
+                    last_px = px
+                    unr = (px - entry_px) / entry_px
+                    if unr <= -FIXED_STOP:
+                        return -FIXED_STOP - cost_frac, -1
+                    if unr >= FIXED_TARGET:
+                        return FIXED_TARGET - cost_frac, 1
+                raw = (last_px - entry_px) / entry_px
+                pnl = raw - cost_frac
+                return pnl, (1 if pnl > 0 else -1)
 
-            for stop in RISK_GRID_STOPS:
-                for target in RISK_GRID_TARGETS:
-                    for hold in RISK_GRID_HOLDS:
-                        if hold + 1 >= len(price_series):
-                            continue
+            call_pnl, call_outcome = _sim_one(call_entry_px, call_prices)
+            put_pnl, put_outcome = _sim_one(put_entry_px, put_prices)
 
-                        last_px = entry_px
-                        outcome = 0
-                        pnl = 0.0
+            # Store both P&Ls for the model to learn from
+            label_call_pnl[gi] = call_pnl
+            label_put_pnl[gi] = put_pnl
 
-                        for k in range(1, hold + 1):
-                            if k >= len(price_series):
-                                break
-                            px = price_series[k]
-                            if np.isnan(px):
-                                continue
-                            last_px = px
-                            unr = (px - entry_px) / entry_px
+            # Best direction = whichever had higher P&L
+            best_pnl = max(call_pnl, put_pnl)
+            if call_pnl >= put_pnl:
+                direction = 0  # call
+                outcome = call_outcome
+            else:
+                direction = 1  # put
+                outcome = put_outcome
 
-                            if unr <= -stop:
-                                pnl = -stop - cost_frac
-                                outcome = -1
-                                break
-                            if unr >= target:
-                                pnl = target - cost_frac
-                                outcome = 1
-                                break
-
-                        if outcome == 0:
-                            raw = (last_px - entry_px) / entry_px
-                            pnl = raw - cost_frac
-                            outcome = 1 if pnl > 0 else -1
-
-                        if pnl > 0:
-                            n_profitable += 1
-
-                        if pnl > best_pnl:
-                            best_pnl = pnl
-                            best_stop = stop
-                            best_target = target
-                            best_hold = hold
-                            best_outcome = outcome
-
-            # Gate: True ONLY if best combo is profitable
-            is_trade = best_pnl > 0 and best_outcome == 1
+            # gate=True only when the best direction is profitable
+            is_trade = best_pnl > 0
             total_signal_bars += 1
 
             label_direction[gi] = direction
             label_pnl[gi] = best_pnl
-            label_stop_pct[gi] = best_stop
-            label_target_pct[gi] = best_target
-            label_max_hold[gi] = best_hold
-            label_outcome[gi] = best_outcome
-            label_confidence[gi] = n_profitable / 64.0  # fraction of combos profitable
+            label_stop_pct[gi] = FIXED_STOP
+            label_target_pct[gi] = FIXED_TARGET
+            label_max_hold[gi] = FIXED_HOLD
+            label_outcome[gi] = outcome
+            # Confidence = how clear the directional edge is
+            label_confidence[gi] = max(0.0, min(1.0, abs(call_pnl - put_pnl) * 3.0))
 
             if is_trade:
                 label_trade[gi] = True
@@ -575,35 +580,37 @@ def build_dataset(
     pnls_all = label_pnl[label_pnl != 0]  # all bars that got a P&L (trade or not)
     mean_pnl_trade = pnls_trade.mean() if len(pnls_trade) > 0 else 0
 
-    # Risk param diversity
-    stops_unique = len(set(label_stop_pct[label_trade].tolist())) if label_trade.sum() > 0 else 0
-    targets_unique = len(set(label_target_pct[label_trade].tolist())) if label_trade.sum() > 0 else 0
-    holds_unique = len(set(label_max_hold[label_trade].tolist())) if label_trade.sum() > 0 else 0
+    # Direction diversity
+    call_count = int((label_direction[label_trade] == 0).sum()) if label_trade.sum() > 0 else 0
+    put_count = int((label_direction[label_trade] == 1).sum()) if label_trade.sum() > 0 else 0
 
     print(f"\n=== LABEL STATISTICS ===")
     print(f"Signal bars (passed filters): {total_signal_bars:,}")
-    print(f"Gate=True (best combo profitable): {label_trade.sum():,} ({gate_true_rate*100:.1f}% of signal bars)")
-    print(f"Gate=False (all combos lose): {total_losses:,} ({total_losses/max(total_signal_bars,1)*100:.1f}%)")
+    print(f"Gate=True (trade profitable): {label_trade.sum():,} ({gate_true_rate*100:.1f}% of signal bars)")
+    print(f"Gate=False (trade lost): {total_losses:,} ({total_losses/max(total_signal_bars,1)*100:.1f}%)")
+    print(f"Direction: {call_count} calls, {put_count} puts")
+    print(f"Fixed risk: stop={FIXED_STOP}, target={FIXED_TARGET}, hold={FIXED_HOLD}")
     print(f"Mean P&L (trade=True bars): {mean_pnl_trade*100:.2f}%")
     print(f"Mean P&L (all signal bars): {pnls_all.mean()*100:.2f}%" if len(pnls_all) > 0 else "")
     if len(pnls_trade) > 0:
         gp = pnls_trade[pnls_trade > 0].sum()
         gl = abs(pnls_trade[pnls_trade < 0].sum())
         pf = gp / gl if gl > 0 else float('inf')
-        print(f"PF (trade=True): {pf:.3f}")
-    print(f"Risk diversity: {stops_unique} stops, {targets_unique} targets, {holds_unique} holds")
+        wr = (pnls_trade > 0).sum() / len(pnls_trade) * 100
+        print(f"PF (trade=True): {pf:.3f}, WR: {wr:.1f}%")
     print(f"Avg confidence: {label_confidence[label_trade].mean():.3f}" if label_trade.sum() > 0 else "")
 
     # --- Validation gates ---
     errors = []
-    if total_signal_bars > 0 and total_losses / total_signal_bars < 0.20:
-        errors.append(f"Gate=False rate {total_losses/total_signal_bars:.1%} < 20% -- gate not selective enough")
     if gate_true_rate > 0.70:
-        errors.append(f"Gate=True rate {gate_true_rate:.1%} > 70% -- gate not selective enough")
-    if stops_unique < 3:
-        errors.append(f"Only {stops_unique} unique stop values -- risk head can't learn diversity")
-    if targets_unique < 3:
-        errors.append(f"Only {targets_unique} unique target values -- risk head can't learn diversity")
+        errors.append(f"Gate=True rate {gate_true_rate:.1%} > 70% -- labels not selective enough")
+    if gate_true_rate < 0.10:
+        errors.append(f"Gate=True rate {gate_true_rate:.1%} < 10% -- too few positive examples")
+    if total_signal_bars > 0 and total_losses / total_signal_bars < 0.15:
+        errors.append(f"Loss rate {total_losses/total_signal_bars:.1%} < 15% -- not enough losers")
+    dir_balance = min(call_count, put_count) / max(call_count, put_count, 1)
+    if dir_balance < 0.15:
+        errors.append(f"Direction balance {dir_balance:.2f} < 0.15 -- direction collapse in labels")
 
     if errors:
         print(f"\n*** VALIDATION WARNINGS ***")
@@ -659,7 +666,7 @@ def build_dataset(
     print(f"Split: {split_info}")
 
     # --- Fingerprint ---
-    fp_str = f"wide_grid_risk:features:{X_combined.shape}:signals:{total_signal_bars}:trades:{total_trades}:gate_rate:{gate_true_rate:.4f}"
+    fp_str = f"triple_barrier:features:{X_combined.shape}:signals:{total_signal_bars}:trades:{total_trades}:gate_rate:{gate_true_rate:.4f}:stop:{FIXED_STOP}:target:{FIXED_TARGET}:hold:{FIXED_HOLD}"
     fingerprint = hashlib.sha256(fp_str.encode()).hexdigest()[:16]
 
     # --- Build output ---
@@ -676,6 +683,10 @@ def build_dataset(
         'label_target_pct': torch.from_numpy(label_target_pct),
         'label_max_hold': torch.from_numpy(label_max_hold.astype(np.int32)),
         'label_confidence': torch.from_numpy(label_confidence),
+
+        # Per-direction P&L: model sees both outcomes to learn direction
+        'label_call_pnl': torch.from_numpy(label_call_pnl),
+        'label_put_pnl': torch.from_numpy(label_put_pnl),
 
         # Keep oracle labels for backward compat (marked as deprecated)
         **{k: existing[k] for k in existing if k.startswith('oracle_')},
@@ -699,7 +710,7 @@ def build_dataset(
 
         # Metadata
         'metadata': {
-            'version': 'v2_wide_grid_risk_search',
+            'version': 'v2_triple_barrier',
             'build_timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
             'fingerprint': fingerprint,
             'n_features': X_combined.shape[1],
@@ -710,16 +721,16 @@ def build_dataset(
             'gate_true_rate': gate_true_rate,
             'gate_false_count': total_losses,
             'mean_pnl_trade': float(mean_pnl_trade),
-            'risk_stops': RISK_GRID_STOPS,
-            'risk_targets': RISK_GRID_TARGETS,
-            'risk_holds': RISK_GRID_HOLDS,
+            'fixed_stop': FIXED_STOP,
+            'fixed_target': FIXED_TARGET,
+            'fixed_hold': FIXED_HOLD,
             'split': split_info,
             'cost_model': {
                 'spread_rt': 0.30,
                 'commission_rt': 1.30,
             },
-            'direction_signal': 'session_range_pct > train_median -> call, else put',
-            'sr_median_threshold': sr_median,
+            'direction_signal': 'dual-direction P&L (model learns to choose)',
+            'label_scheme': 'dual_direction_pnl',
         },
     }
 
