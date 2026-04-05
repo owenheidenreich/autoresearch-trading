@@ -23,3 +23,6 @@ exp_022	6.000000	keep	exit_policy=TRAILING -- PERFECT SCORE, 100% +day_rate, 0% 
 exp_023	6.000000	keep	focal loss + trailing stops -- PERFECT on both promote AND shadow, 52% calls
 exp_024	5.800000	revert	gate_threshold=0.4 -- 2 losing days return, score drops to 5.80
 exp_025	5.800000	revert	cooldown_bars=10 -- 2 losing days return, score 5.80
+exp_024	5.800000	revert	gate_threshold=0.4 -- 2 losing days return, score drops to 5.80
+exp_025	5.800000	revert	cooldown_bars=10 -- 2 losing days return, fewer trades hurt marginal days
+exp_026	6.000000	keep	WEIGHT_DECAY=0.01 -- PF 260 (up from 187), WR 79.0% (up from 76.1%), still perfect 6.0
