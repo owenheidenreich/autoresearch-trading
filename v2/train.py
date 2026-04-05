@@ -289,14 +289,12 @@ def compute_loss(
     lab_hold = targets['label_max_hold'].float().to(device)
     lab_confidence = targets['label_confidence'].float().to(device)
 
-    # 1. Gate loss: focal loss (focuses on hard boundary examples)
-    gate_logits = outputs['gate'].squeeze(-1)
-    bce = F.binary_cross_entropy_with_logits(gate_logits, lab_trade, reduction='none')
-    p = torch.sigmoid(gate_logits)
-    pt = p * lab_trade + (1 - p) * (1 - lab_trade)
-    focal_weight = (1 - pt) ** 2.0  # gamma=2.0
-    alpha_weight = 0.75 * lab_trade + 0.25 * (1 - lab_trade)  # alpha=0.75 for trade class
-    gate_loss = (focal_weight * alpha_weight * bce).mean()
+    # 1. Gate loss: BCE with standard pos_weight
+    pw = torch.tensor([GATE_POS_WEIGHT], device=device)
+    gate_loss = F.binary_cross_entropy_with_logits(
+        outputs['gate'].squeeze(-1), lab_trade,
+        pos_weight=pw,
+    )
 
     # 2. Direction loss: cross-entropy on call/put (only for trade=True bars)
     trade_mask = lab_trade > 0.5

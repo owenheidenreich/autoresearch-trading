@@ -15,3 +15,6 @@ exp_014	5.694915	keep	FiLM regime conditioning -- direction 26% calls (no CALL_B
 exp_015	-0.300000	revert	gate_threshold=0.5 -- direction collapse 10.8% calls, higher threshold filters calls preferentially
 exp_016	5.800000	keep	label_smoothing=0.25 -- +day_rate 96.7%, WR 87.3%, 60/60 days, calls 22.6%
 exp_017	-0.300000	revert	GATE_POS_WEIGHT=1.0 -- direction collapse 7.1% calls, gate kills calls first
+exp_018	5.800000	revert	DIR_W=2.0 -- same score 5.80, same 2 losing days, direction already good enough
+exp_019	5.800000	revert	no_trade_after_bar=290 -- same score, losing trades also before bar 290
+exp_020	5.800000	revert	focal loss gate -- direction balance 48.6% (great!) but same 2 losing days, WR dropped 82.7%
