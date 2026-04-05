@@ -55,6 +55,7 @@ RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 # For replay compatibility
 NUM_STRIKE_CLASSES = 13
 STRIKE_OFFSETS = list(range(-30, 31, 5))
+STRIKE_OFFSET_TO_IDX = {off: i for i, off in enumerate(STRIKE_OFFSETS)}
 
 REGIME_DIM = 16
 
