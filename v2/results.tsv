@@ -18,3 +18,4 @@ exp_017	-0.300000	revert	GATE_POS_WEIGHT=1.0 -- direction collapse 7.1% calls, g
 exp_018	5.800000	revert	DIR_W=2.0 -- same score 5.80, same 2 losing days, direction already good enough
 exp_019	5.800000	revert	no_trade_after_bar=290 -- same score, losing trades also before bar 290
 exp_020	5.800000	revert	focal loss gate -- direction balance 48.6% (great!) but same 2 losing days, WR dropped 82.7%
+exp_021	2.323531	revert	DROPOUT=0.2 -- DD spiked to 15.1%, score crashed to 2.32, too much regularization
