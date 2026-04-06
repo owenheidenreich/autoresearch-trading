@@ -187,7 +187,7 @@ class TradingModel(nn.Module):
         # Gate: logit proportional to max predicted P&L
         # Scale so predicted P&L of 0 -> sigmoid ~0.5, P&L of 0.1 -> sigmoid ~0.73
         max_pnl = torch.max(call_v, put_v)
-        gate_logit = max_pnl * 10.0  # tighter: need P&L > ~0.08 for gate > 0.7
+        gate_logit = max_pnl * 5.0
 
         # Direction: [call_logit, put_logit] from P&L predictions
         direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
@@ -272,8 +272,8 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    call_loss = F.huber_loss(pred_call, true_call, delta=0.3)
-    put_loss = F.huber_loss(pred_put, true_put, delta=0.3)
+    call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
+    put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
 
     pnl_loss = call_loss + put_loss
 
