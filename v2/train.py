@@ -140,10 +140,9 @@ class TradingModel(nn.Module):
             nn.Transformer.generate_square_subsequent_mask(LOOKBACK),
         )
 
-        # Regime encoder: reads window stats (mean + std of last 10 bars + last bar)
-        # Gives regime awareness of recent intraday trend, not just current snapshot
+        # Regime encoder
         self.regime_encoder = nn.Sequential(
-            nn.Linear(NUM_FEATURES * 3, 64), nn.GELU(), nn.Linear(64, REGIME_DIM),
+            nn.Linear(NUM_FEATURES, 32), nn.GELU(), nn.Linear(32, REGIME_DIM),
         )
 
         # FiLM layers for P&L heads
@@ -168,14 +167,7 @@ class TradingModel(nn.Module):
     def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
         B, T, F = x.shape
 
-        # Regime: concat last bar + window mean + window std for trend context
-        window = x[:, -10:, :]  # last 10 bars
-        regime_input = torch.cat([
-            x[:, -1, :],           # current snapshot
-            window.mean(dim=1),    # recent average (trend level)
-            window.std(dim=1),     # recent volatility (trend strength)
-        ], dim=-1)
-        regime = self.regime_encoder(regime_input)
+        regime = self.regime_encoder(x[:, -1, :])
 
         h = self.input_proj(x)
         h = self.input_norm(h)
@@ -195,10 +187,9 @@ class TradingModel(nn.Module):
         put_v = put_pnl.squeeze(-1)    # (B,)
 
         # Gate: logit proportional to max predicted P&L
-        # Scale=15: predicted P&L of 0 -> sigmoid 0.5, P&L of 0.05 -> sigmoid 0.68
-        # Requires stronger P&L conviction than scale=5 (which only needs P&L > -17%)
+        # Scale so predicted P&L of 0 -> sigmoid ~0.5, P&L of 0.1 -> sigmoid ~0.73
         max_pnl = torch.max(call_v, put_v)
-        gate_logit = max_pnl * 15.0
+        gate_logit = max_pnl * 5.0
 
         # Direction: [call_logit, put_logit] from P&L predictions
         direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
