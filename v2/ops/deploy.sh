@@ -3,7 +3,8 @@
 # Akash GPU — v2 Deployment
 # ===========================================================================
 #   ./deploy.sh boot      → Deploy GPU container on Akash, wait for SSH
-#   ./deploy.sh start     → Upload v2 codebase + data, prepare for experiments
+#   ./deploy.sh start     → Upload v2 codebase + data, install deps, verify GPU
+#   ./deploy.sh run       → Start experiment loop (inner_loop.py) on GPU
 #
 # Optional:
 #   ./deploy.sh sync      → Foreground sync (polls inner_loop_state)
@@ -65,7 +66,7 @@ load_state() {
 }
 
 ssh_cmd() {
-    SSHPASS="$SSH_PASS" sshpass -e ssh \
+    SSHPASS="$SSH_PASS" sshpass -e ssh -T \
         -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
         -o ConnectTimeout=15 -o LogLevel=ERROR \
         -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
@@ -438,9 +439,17 @@ cmd_start() {
     log "Files on remote GPU node:"
     ssh_cmd "ls -lh /root/v2/train.py /root/v2/data.pt /root/deploy_source.json"
 
+    # Install GPU dependencies (torch, numpy, pandas) from pinned requirements
+    log "Installing GPU dependencies..."
+    ssh_cmd "pip3 install -q -r /root/v2/ops/requirements-gpu.txt" \
+        || ssh_cmd "pip install -q -r /root/v2/ops/requirements-gpu.txt" \
+        || die "Failed to install GPU dependencies. Check requirements-gpu.txt."
+    log "Dependencies installed."
+
     # Pre-flight: verify GPU, Python, PyTorch, and data on remote node
     log "Running pre-flight checks on remote GPU node..."
-    if ! ssh_cmd "/opt/conda/bin/python /root/v2/ops/preflight.py"; then
+    if ! ssh_cmd "python3 /root/v2/ops/preflight.py" \
+        && ! ssh_cmd "/opt/conda/bin/python /root/v2/ops/preflight.py"; then
         die "Pre-flight failed on remote GPU node. Fix issues before running."
     fi
     log "Pre-flight passed!"
@@ -484,7 +493,10 @@ cmd_ssh() {
     log "Connecting to H100..."
     SSHPASS="$SSH_PASS" sshpass -e ssh \
         -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        -o LogLevel=ERROR -p "$SSH_PORT" "root@$SSH_HOST"
+        -o ConnectTimeout=15 -o LogLevel=ERROR \
+        -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+        -o PubkeyAuthentication=no \
+        -p "$SSH_PORT" "root@$SSH_HOST"
 }
 
 cmd_logs() {
@@ -760,6 +772,41 @@ cmd_sync() {
     _run_sync
 }
 
+# ===================================================================
+# RUN — start the experiment loop on the GPU via inner_loop.py
+# ===================================================================
+cmd_run() {
+    load_state
+    log "=== RUN: Starting experiment loop on GPU ==="
+
+    # Check if already running
+    if ssh_cmd "pgrep -f 'inner_loop'" &>/dev/null; then
+        log "Experiment loop already running on GPU."
+        log "Use './deploy.sh logs' to tail output, or './deploy.sh status' for dashboard."
+        return 0
+    fi
+
+    # Start inner_loop.py via nohup, log to run.log
+    log "Launching inner_loop.py on remote GPU..."
+    ssh_cmd "cd /root && nohup python3 -m v2.ops.inner_loop > /root/run.log 2>&1 &"
+    sleep 2
+
+    # Verify it started
+    if ssh_cmd "pgrep -f 'inner_loop'" &>/dev/null; then
+        log "Experiment loop started successfully."
+        log ""
+        log "Monitor with:"
+        log "  ./deploy.sh status    — GPU + session dashboard"
+        log "  ./deploy.sh logs      — tail run.log"
+        log "  ./deploy.sh sync      — auto-sync results to local"
+        log "  python v2/ops/monitor.py — local monitor"
+    else
+        log "WARNING: inner_loop.py may not have started. Check with:"
+        log "  ./deploy.sh ssh"
+        log "  cat /root/run.log"
+    fi
+}
+
 cmd_stop() {
     load_state
     echo ""
@@ -827,6 +874,7 @@ export EXTRA_ARGS
 case "$CMD" in
     boot)     cmd_boot     ;;
     start)    cmd_start    ;;
+    run)      cmd_run      ;;
     fund)     cmd_fund     ;;
     ssh)      cmd_ssh      ;;
     logs)     cmd_logs     ;;
@@ -839,6 +887,7 @@ case "$CMD" in
         echo ""
         echo "  boot      Deploy H100 container on Akash (~2 min)"
         echo "  start     Upload v2 code + data, prepare for experiments"
+        echo "  run       Start experiment loop (inner_loop.py) on GPU"
         echo "  ssh       SSH into the H100"
         echo "  logs      Tail run.log"
         echo "  status    GPU + experiment dashboard"

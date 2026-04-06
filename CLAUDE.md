@@ -22,6 +22,23 @@ This project follows Karpathy's autoresearch design (github.com/karpathy/autores
 
 **All training runs on Akash H100 GPU, never locally.** The dev machine is a MacBook. Local use is for: editing code, committing, running replay/evaluation, reading results. The experiment runner (`v2/ops/run_experiment.py`) runs on the GPU machine.
 
+## Experiment Loop Execution
+
+When told "begin experiment loop" or "run the full experiment loop":
+
+1. `./v2/ops/deploy.sh boot` -- boot GPU
+2. `./v2/ops/deploy.sh start` -- upload code + data, install deps, verify CUDA
+3. `./v2/ops/deploy.sh run` -- start inner_loop.py on GPU (NOT a custom script)
+4. `./v2/ops/deploy.sh sync` -- auto-sync results to local (or `./v2/ops/deploy.sh status`)
+
+**Hard rules:**
+- NEVER write custom loop scripts. Use `inner_loop.py` via `deploy.sh run`.
+- NEVER bypass `deploy.sh` with raw `sshpass` commands. If `deploy.sh` has a bug, fix `deploy.sh`.
+- NEVER delete `model.pt` unless executing a "fresh start" command.
+- NEVER shut down the GPU lease until the loop finishes or the user says to stop.
+- Each experiment in the autoresearch loop requires a hypothesis and a code change BEFORE training. Re-running identical code is not an experiment.
+- If `deploy.sh start` fails, fix the issue in `deploy.sh`, don't work around it.
+
 ## Code Quality
 
 - Before reporting a task complete, run `python -m py_compile <file>` on every changed file.

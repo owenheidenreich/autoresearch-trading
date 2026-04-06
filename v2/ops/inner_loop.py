@@ -1,11 +1,15 @@
 """Autoresearch experiment orchestrator.
 
-Manages the experiment cycle: parse results from run_experiment.py,
+Manages the experiment cycle: run_experiment.py per iteration,
 keep or revert, enforce session limits, track state.
 
-This is NOT called by the AI directly. The AI runs run_experiment.py,
-reads the results, and calls the keep/revert functions here. The session
-limits are checked by the AI before each experiment.
+Can be used two ways:
+1. As a library: the AI calls init_session(), record_result(), etc.
+2. As a runner: `python -m v2.ops.inner_loop` runs the full loop autonomously.
+
+The __main__ runner is the standard way to execute on the GPU node.
+It runs run_experiment.py in a subprocess, parses results, does keep/revert,
+writes state files (so monitor.py can observe), and enforces all session limits.
 
 v2 changes from v1:
 - Scores using replay P&L (account curve), not prediction accuracy
@@ -224,3 +228,132 @@ def format_session_status(state: SessionState) -> str:
     if state.stopped:
         lines.append(f"STOPPED: {state.stop_reason}")
     return "\n".join(lines)
+
+
+# ===================================================================
+# Autonomous loop runner (__main__)
+# ===================================================================
+
+def _run_single_experiment(experiment_id: str) -> dict:
+    """Run run_experiment.py as a subprocess and parse its JSON output."""
+    cmd = [
+        "python3", "-m", "v2.ops.run_experiment",
+        "--id", experiment_id,
+    ]
+    print(f"\n{'='*60}")
+    print(f"  LAUNCHING: {experiment_id}")
+    print(f"{'='*60}\n")
+
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=1800,  # 30 min max
+        )
+    except subprocess.TimeoutExpired:
+        print(f"TIMEOUT: {experiment_id} exceeded 30 minutes")
+        return {"status": "crash", "error": "timeout", "score": -999.0}
+
+    # Print stdout so it appears in run.log
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        import sys as _sys
+        print(result.stderr, file=_sys.stderr)
+
+    # Parse RESULTS_JSON from stdout
+    for line in (result.stdout or "").splitlines():
+        if line.startswith("RESULTS_JSON:"):
+            try:
+                return json.loads(line[len("RESULTS_JSON:"):])
+            except json.JSONDecodeError:
+                pass
+
+    # If we got here, couldn't parse results
+    if result.returncode != 0:
+        return {
+            "status": "crash",
+            "error": f"exit code {result.returncode}",
+            "score": -999.0,
+        }
+
+    return {
+        "status": "crash",
+        "error": "no RESULTS_JSON in output",
+        "score": -999.0,
+    }
+
+
+def run_loop():
+    """Run the full autonomous experiment loop.
+
+    This is the standard entry point on the GPU node.
+    Runs run_experiment.py repeatedly, does keep/revert, enforces limits.
+    """
+    import sys
+
+    print(f"\n{'='*60}")
+    print(f"  ART2 EXPERIMENT LOOP")
+    print(f"  Limits: {MAX_EXPERIMENTS} experiments, {MAX_HOURS}h, "
+          f"{MAX_NO_IMPROVE_STREAK} no-improve, {MAX_CRASH_STREAK} crashes")
+    print(f"{'='*60}\n")
+
+    state = init_session()
+    print(format_session_status(state))
+
+    while True:
+        # Check limits
+        can_continue, reason = check_session_limits(state)
+        if not can_continue:
+            print(f"\n*** SESSION STOPPED: {reason} ***")
+            state.stopped = True
+            state.stop_reason = reason
+            state.save()
+            break
+
+        # Generate experiment ID
+        exp_num = state.experiment_count + 1
+        experiment_id = f"exp_{exp_num:03d}"
+
+        # Run experiment
+        results = _run_single_experiment(experiment_id)
+
+        # Parse results
+        score = results.get("score", -999.0)
+        status = results.get("status", "crash")
+        beats_all = all([
+            results.get("beats_random", False),
+            results.get("beats_atm", False),
+            results.get("beats_rules", False),
+            results.get("beats_trailing", False),
+        ])
+
+        # Build description
+        if status == "crash":
+            description = f"CRASH: {results.get('error', 'unknown')}"
+        else:
+            trades = results.get("total_trades", 0)
+            wr = results.get("win_rate", 0)
+            description = f"score={score:.3f} trades={trades} wr={wr:.1%} baselines={'ALL' if beats_all else 'PARTIAL'}"
+
+        # Record and decide
+        decision = record_result(
+            state, experiment_id, score, status, description, beats_all,
+        )
+
+        print(f"\n--- DECISION: {decision.upper()} (score={score:.4f}, best={state.best_score:.4f}) ---")
+
+        if decision == "revert":
+            print("Reverting mutable files to best known state...")
+            revert_mutable_files(state)
+
+        print(f"\n{format_session_status(state)}\n")
+
+    # Final summary
+    print(f"\n{'='*60}")
+    print(f"  SESSION COMPLETE")
+    print(f"{'='*60}")
+    print(format_session_status(state))
+    print(f"\nBest model: experiment #{state.best_experiment_num} (score {state.best_score:.4f})")
+
+
+if __name__ == "__main__":
+    run_loop()

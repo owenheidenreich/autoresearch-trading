@@ -6,7 +6,7 @@ All training runs on Akash H100 GPU, never locally. Local machine is for editing
 
 ## Research
 
-- **begin experiment loop** -- Boot Akash GPU, setup, baseline, then loop until session limit. Keep/revert is automatic. Do not ask for permission between experiments.
+- **begin experiment loop** -- Boot Akash GPU, setup, run loop. Steps: `deploy.sh boot`, `deploy.sh start`, `deploy.sh run`, `deploy.sh sync`. Keep/revert is automatic via inner_loop.py. NEVER write custom loop scripts.
 - **fresh start** -- Reset all state (`rm -f v2/model.pt v2/.best_score v2/.inner_loop_state.json v2/results.tsv`). Use after structural changes.
 
 ## Evaluation (runs locally)
