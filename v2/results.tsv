@@ -40,4 +40,4 @@ exp_038	4.548963	revert	MSE loss -- DD 10.7%, too sensitive to outliers
 exp_039	4.253678	revert	LOOKBACK=30 -- lost context, DD 11.3%, WR dropped
 exp_041	-0.200000	revert	CVaR W=0.5 -- DD 21% (hard gate fail), direction collapse to 84% puts, model too conservative
 exp_042	1.962106	revert	CVaR W=0.1 -- DD 16%, slows convergence, makes model worse
-exp_043	2.095695	revert	asymmetric FP penalty -- DD 15.7%, gate too conservative (45%), slows convergence
+exp_044	3.740744	revert	regime window stats (mean+std of 10 bars) -- DD spiked 4.8%->12.4%, score 5.90->3.74
