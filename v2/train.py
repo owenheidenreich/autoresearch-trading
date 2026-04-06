@@ -36,7 +36,7 @@ from v2.core.metrics import score_config_fingerprint
 # Hyperparameters
 # ---------------------------------------------------------------------------
 
-LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 60))
+LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
 D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 64))
 N_HEADS = 4
 DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
@@ -272,8 +272,8 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    call_loss = F.mse_loss(pred_call, true_call)
-    put_loss = F.mse_loss(pred_put, true_put)
+    call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
+    put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
 
     pnl_loss = call_loss + put_loss
 
