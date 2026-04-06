@@ -35,4 +35,4 @@ exp_032	3.979875	revert	D_MODEL=96 -- DD spiked 11.9%, overfit early (best epoch
 exp_033	4.784761	revert	tighter gate (scale*10, threshold=0.55) -- DD 10.1%, fewer trades hurt
 exp_034	5.900000	keep	Huber delta=0.5 -- gate_acc 66.4% (up from 56%), PF 350, DD 4.8%
 exp_035	5.900000	revert	dir penalty -- gate_acc 67.7% (best) but dir_acc dropped to 60.6%, PF/WR worse
-exp_036	4.176808	revert	TIME_BUDGET=450s -- overfit, DD spiked 11.5%, extra epochs hurt
+exp_037	5.491108	revert	window momentum feature -- DD 8.8%, no improvement over exp_034

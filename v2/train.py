@@ -138,9 +138,9 @@ class TradingModel(nn.Module):
             nn.Transformer.generate_square_subsequent_mask(LOOKBACK),
         )
 
-        # Regime encoder (takes raw features + 1 window momentum feature)
-        self.regime_encoder_with_trend = nn.Sequential(
-            nn.Linear(NUM_FEATURES + 1, 32), nn.GELU(), nn.Linear(32, REGIME_DIM),
+        # Regime encoder
+        self.regime_encoder = nn.Sequential(
+            nn.Linear(NUM_FEATURES, 32), nn.GELU(), nn.Linear(32, REGIME_DIM),
         )
 
         # FiLM layers for P&L heads
@@ -165,16 +165,7 @@ class TradingModel(nn.Module):
     def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
         B, T, F = x.shape
 
-        # Compute window-level momentum: trend of ret_6 (feature 0) over the window
-        # This gives the transformer an explicit "market direction over last hour" signal
-        ret_6 = x[:, :, 0]  # (B, T) -- 30-min return at each bar
-        # Trend = mean of second half minus mean of first half (simple momentum)
-        half = T // 2
-        window_trend = ret_6[:, half:].mean(dim=1) - ret_6[:, :half].mean(dim=1)  # (B,)
-        # Append as extra feature to the last bar (regime encoder uses last bar)
-        last_bar_with_trend = torch.cat([x[:, -1, :], window_trend.unsqueeze(-1)], dim=-1)  # (B, F+1)
-
-        regime = self.regime_encoder_with_trend(last_bar_with_trend)
+        regime = self.regime_encoder(x[:, -1, :])
 
         h = self.input_proj(x)
         h = self.input_norm(h)
@@ -281,8 +272,8 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
-    put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
+    call_loss = F.mse_loss(pred_call, true_call)
+    put_loss = F.mse_loss(pred_put, true_put)
 
     pnl_loss = call_loss + put_loss
 
