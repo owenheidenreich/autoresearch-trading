@@ -5,8 +5,9 @@
 # reproduce our Black-Scholes estimates locally. This lets us measure
 # how far off our BS Greeks are from QC's properly computed values.
 #
-# Key fix vs qc_05: filters for TRUE 0DTE only (expiry == today),
+# Key fix vs qc_05: uses Expiration(0,0) to get SPXW 0DTE contracts,
 # and outputs SPX price + strike so we can run _bs_greeks() locally.
+# v2: confirmed Expiration(0,0) returns SPXW dailies (qc_10 test).
 #
 # Output format (pipe-delimited records):
 #   date|bar|right|SPX|strike|mid|bid|ask|IV|delta|gamma|theta|vega|mtc
@@ -26,9 +27,9 @@ class GreeksComparison(QCAlgorithm):
 
         self.spx = self.AddIndex("SPX", Resolution.Minute)
         option = self.AddIndexOption(self.spx.Symbol, Resolution.Minute)
-        # Wide expiration window -- we filter for 0DTE manually below
+        # Expiration(0,0) returns SPXW 0DTE dailies (confirmed by qc_10)
         option.SetFilter(
-            lambda u: u.IncludeWeeklys().Strikes(-5, 5).Expiration(0, 5)
+            lambda u: u.IncludeWeeklys().Strikes(-5, 5).Expiration(0, 0)
         )
 
         self.day_date = None
@@ -78,9 +79,7 @@ class GreeksComparison(QCAlgorithm):
                 if c.Expiry.date() == current_date
             ]
             if not today_contracts:
-                # Fallback: no 0DTE found, try nearest expiry
-                # but tag it so we know
-                today_contracts = contracts
+                continue  # skip if no 0DTE on this day
 
             # Find nearest-ATM call and put
             best_call = None
