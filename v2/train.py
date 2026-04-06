@@ -275,7 +275,16 @@ def compute_loss(
     call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
     put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
 
-    pnl_loss = call_loss + put_loss
+    # Direction penalty: extra cost when model predicts wrong side is better
+    # If true_call > true_put but pred_put > pred_call (wrong direction), penalize
+    pred_best = (pred_put > pred_call).float()  # 1 = model picks put
+    true_best = (true_put > true_call).float()  # 1 = put was actually better
+    wrong_dir = (pred_best != true_best).float()
+    # Weight by how bad the mistake was (margin between actual P&Ls)
+    dir_margin = torch.abs(true_call - true_put)
+    dir_penalty = (wrong_dir * dir_margin).mean() * 0.5
+
+    pnl_loss = call_loss + put_loss + dir_penalty
 
     # Risk loss: fixed targets (stop=0.30, target=0.50, hold=30/390)
     risk_out = outputs['risk'][valid]
