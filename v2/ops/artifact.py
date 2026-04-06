@@ -26,7 +26,7 @@ from v2.core.policy import DecisionPolicy, DEFAULT_POLICY
 from v2.core.metrics import score_config_fingerprint
 
 
-ARTIFACTS_DIR = os.path.join("v2", "artifacts")
+ARTIFACTS_DIR = os.path.join("v2", "artifacts", "artifacts")
 
 
 def _get_git_sha() -> str:

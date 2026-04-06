@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import time
 from dataclasses import dataclass, asdict, field
@@ -172,12 +173,37 @@ def record_result(
     return decision
 
 
-def revert_mutable_files():
-    """Git checkout the mutable research files to undo a failed experiment."""
+def revert_mutable_files(state: SessionState | None = None):
+    """Git checkout the mutable research files and restore the best model.
+
+    Without model restoration, a reverted experiment leaves the FAILED model
+    on disk at v2/model.pt, corrupting all subsequent evaluations and
+    warm-starts.
+    """
     mutable_files = ["v2/train.py", "v2/core/policy.py"]
     for f in mutable_files:
         if os.path.exists(f):
             subprocess.run(["git", "checkout", f], capture_output=True)
+
+    # Restore best model.pt from the session's best artifact
+    from v2.ops.artifact import ARTIFACTS_DIR
+    best_id = state.best_artifact_id if state else None
+
+    if best_id:
+        best_model = os.path.join(ARTIFACTS_DIR, best_id, "model.pt")
+        if os.path.exists(best_model):
+            shutil.copy2(best_model, "v2/model.pt")
+            print(f"Restored model.pt from artifact {best_id}")
+            return
+
+    # Fallback: no session state, scan for best artifact with compatible arch
+    from v2.ops.artifact import get_best_artifact
+    best_dir = get_best_artifact()
+    if best_dir:
+        best_model = os.path.join(best_dir, "model.pt")
+        if os.path.exists(best_model):
+            shutil.copy2(best_model, "v2/model.pt")
+            print(f"Restored model.pt from {best_dir}")
 
 
 def format_session_status(state: SessionState) -> str:
