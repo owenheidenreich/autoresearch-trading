@@ -28,7 +28,13 @@ class Greeks1Day(QCAlgorithm):
         self.SetCash(100000)
 
         self.spx = self.AddIndex("SPX", Resolution.Minute)
-        option = self.AddIndexOption(self.spx.Symbol, Resolution.Minute)
+
+        # SPXW must be added as a SEPARATE index -- AddIndexOption on SPX
+        # only returns standard SPX options (Friday expiry), not SPXW dailies.
+        # Confirmed by qc_10: Approach C (AddIndex("SPXW")) is what made
+        # 0DTE data appear in data.OptionChains.
+        spxw = self.AddIndex("SPXW", Resolution.Minute)
+        option = self.AddIndexOption(spxw.Symbol, Resolution.Minute)
         option.SetFilter(
             lambda u: u.IncludeWeeklys().Strikes(-5, 5).Expiration(0, 0)
         )
