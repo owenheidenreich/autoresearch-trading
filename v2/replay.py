@@ -242,10 +242,12 @@ def replay_validation(
             trade_exit_bar = -1
             last_stop_bar = -policy.cooldown_bars - 1
 
-        # Skip if in position or cooldown
-        if in_trade and bar_idx <= trade_exit_bar:
-            continue
-        in_trade = False
+        # Skip if in position
+        if in_trade:
+            if bar_idx <= trade_exit_bar:
+                continue
+            else:
+                in_trade = False
 
         if bar_idx - last_stop_bar < policy.cooldown_bars:
             continue
@@ -260,7 +262,9 @@ def replay_validation(
         # Get ATM option price for entry reference
         atm_call_px = float(data.get('atm_call_prices', torch.zeros(1))[bar_idx]) if 'atm_call_prices' in data else 0
         atm_put_px = float(data.get('atm_put_prices', torch.zeros(1))[bar_idx]) if 'atm_put_prices' in data else 0
-        option_mid = max(atm_call_px, atm_put_px, 0.5)  # fallback
+        option_mid = max(atm_call_px, atm_put_px)
+        if option_mid <= 0:
+            continue  # no valid ATM price, skip bar
 
         expiry = day.replace("-", "")
         intent = model_to_intent(
@@ -296,7 +300,6 @@ def replay_validation(
 
         if trade.exit_reason == "STOP_LOSS":
             last_stop_bar = trade.exit_bar
-        in_trade = False
 
     t_sim = time.time() - t_sim_start
     print(f"  Simulation: {t_sim:.1f}s ({len(all_trades)} trades)")
@@ -343,7 +346,6 @@ def _intent_to_price_key(intent: TradeIntent) -> str:
 
 def _baseline_cache_key(data: dict, mask_key: str, policy: DecisionPolicy, max_days: int | None) -> str:
     """Generate a fingerprint for the dataset + policy + mask combo."""
-    # Use shape + mask sum + first/last values as a fast fingerprint
     X = data['X']
     parts = [
         str(X.shape),
@@ -351,10 +353,7 @@ def _baseline_cache_key(data: dict, mask_key: str, policy: DecisionPolicy, max_d
         str(float(X[0, 0].item())) if X.numel() > 0 else "0",
         str(float(X[-1, -1].item())) if X.numel() > 0 else "0",
         mask_key,
-        str(policy.gate_threshold),
-        str(policy.no_trade_before_bar),
-        str(policy.no_trade_after_bar),
-        str(policy.cooldown_bars),
+        policy.fingerprint(),  # covers ALL policy fields
         str(max_days),
     ]
     fingerprint = "|".join(parts)
@@ -409,7 +408,11 @@ def compute_baseline_random(
     policy: DecisionPolicy = DEFAULT_POLICY,
     day_to_bars: dict[str, list[int]] | None = None,
 ) -> ReplayMetrics:
-    """Random baseline: 50% chance to trade at each bar, random candidate."""
+    """Random baseline: 2% chance to trade at each bar, random candidate.
+
+    Aggregates all trades across seeds into one pool then computes metrics
+    once, so the score (Sortino, drawdown, etc.) is properly computed.
+    """
     features = data['X'].numpy()
     mask = data[mask_key].numpy()
     dates = data['dates']
@@ -419,10 +422,6 @@ def compute_baseline_random(
     if day_to_bars is None:
         day_to_bars = _build_day_index(dates)
 
-    all_pfs = []
-    all_wrs = []
-    all_trades_count = []
-
     option_keys = [k for k in data.keys() if k.endswith('_prices') and k != 'spot_prices']
     option_keys = [k for k in option_keys if 'call_prices' in k or 'put_prices' in k]
 
@@ -431,9 +430,11 @@ def compute_baseline_random(
     if max_days:
         eval_dates = eval_dates[:max_days]
 
+    all_trades_combined = []
+    total_num_days = 0
+
     for seed in range(n_seeds):
         rng = np.random.RandomState(seed)
-        all_trades = []
         num_days = 0
 
         for day in eval_dates:
@@ -479,25 +480,20 @@ def compute_baseline_random(
 
                 trade = simulate_trade(intent, arr, features, bar_of_day, dates, bar_idx)
                 if trade:
-                    all_trades.append(trade)
+                    all_trades_combined.append(trade)
                     last_exit = trade.exit_bar
 
-        m = compute_metrics(
-            all_trades, num_days=max(num_days, 1),
-            starting_equity=policy.starting_equity,
-            contract_multiplier=policy.contract_multiplier,
-        )
-        all_pfs.append(m.profit_factor)
-        all_wrs.append(m.win_rate)
-        all_trades_count.append(m.total_trades)
+        total_num_days += num_days
 
-    avg = ReplayMetrics()
-    avg.profit_factor = float(np.mean(all_pfs)) if all_pfs else 0
-    avg.win_rate = float(np.mean(all_wrs)) if all_wrs else 0
-    avg.total_trades = int(np.mean(all_trades_count)) if all_trades_count else 0
-    avg.num_days = len(eval_dates)
-    avg.trades_per_day = avg.total_trades / max(avg.num_days, 1)
-    return avg
+    # Average the day count across seeds for a fair per-day metric
+    avg_num_days = max(total_num_days // max(n_seeds, 1), 1)
+
+    return compute_metrics(
+        all_trades_combined,
+        num_days=avg_num_days,
+        starting_equity=policy.starting_equity,
+        contract_multiplier=policy.contract_multiplier,
+    )
 
 
 def compute_baseline_atm_always(
@@ -655,6 +651,89 @@ def compute_baseline_simple_rules(
     )
 
 
+def compute_baseline_atm_trailing(
+    data: dict,
+    mask_key: str = "promote_mask",
+    max_days: int | None = None,
+    policy: DecisionPolicy = DEFAULT_POLICY,
+    day_to_bars: dict[str, list[int]] | None = None,
+) -> ReplayMetrics:
+    """ATM-always with TRAILING exits: isolates neural net value from exit strategy.
+
+    Same as ATM-always but uses the model's TRAILING exit policy and risk params,
+    so any difference between this and the model is attributable to the neural net.
+    """
+    features = data['X'].numpy()
+    mask = data[mask_key].numpy()
+    dates = data['dates']
+    bar_of_day = data['bar_of_day'].numpy()
+    spot_prices = data['spot_prices'].numpy()
+
+    if day_to_bars is None:
+        day_to_bars = _build_day_index(dates)
+
+    mask_indices = np.where(mask)[0]
+    eval_dates = sorted(set(dates[i] for i in mask_indices))
+    if max_days:
+        eval_dates = eval_dates[:max_days]
+
+    all_trades = []
+    num_days = 0
+
+    # Use midpoint of policy risk ranges for a fair baseline
+    stop_pct = (policy.stop_range[0] + policy.stop_range[1]) / 2.0
+    target_pct = (policy.target_range[0] + policy.target_range[1]) / 2.0
+    max_hold = (policy.max_hold_range[0] + policy.max_hold_range[1]) // 2
+
+    for day in eval_dates:
+        day_bars = day_to_bars.get(day, [])
+        if len(day_bars) < 50:
+            continue
+        num_days += 1
+        expiry = day.replace("-", "")
+
+        entry_bar = None
+        for b in day_bars:
+            if int(bar_of_day[b]) == 30:
+                entry_bar = b
+                break
+        if entry_bar is None:
+            continue
+
+        if 'atm_call_prices' not in data:
+            continue
+        arr = data['atm_call_prices'].numpy().astype(np.float32)
+        px = float(arr[entry_bar])
+        if np.isnan(px) or px <= 0:
+            continue
+
+        spot = float(spot_prices[entry_bar])
+        atm = round(spot / 5.0) * 5.0
+
+        intent = TradeIntent(
+            trade=True, expiry=expiry, strike=atm, right="C",
+            qty=policy.qty,
+            entry_ref_price=px, order_style="MKT", tif="DAY",
+            stop_price=px * (1.0 - stop_pct),
+            take_profit_price=px * (1.0 + target_pct),
+            max_hold_bars=max_hold,
+            exit_policy="TRAILING",
+            confidence=0.5, reason_codes=("atm_trailing",),
+            bar_index=30, intent_id=str(uuid.uuid4()),
+            underlying_price=spot,
+        )
+
+        trade = simulate_trade(intent, arr, features, bar_of_day, dates, entry_bar)
+        if trade:
+            all_trades.append(trade)
+
+    return compute_metrics(
+        all_trades, num_days=max(num_days, 1),
+        starting_equity=policy.starting_equity,
+        contract_multiplier=policy.contract_multiplier,
+    )
+
+
 def print_metrics(name: str, m: ReplayMetrics):
     print(f"\n{'=' * 60}")
     print(f"  {name}")
@@ -671,21 +750,23 @@ def print_metrics(name: str, m: ReplayMetrics):
 
 
 def _compute_all_baselines(data, mask_key, max_days, policy, day_to_bars):
-    """Compute all three baselines, using cache when available."""
+    """Compute all four baselines, using cache when available."""
     cache_key = _baseline_cache_key(data, mask_key, policy, max_days)
     cached = _load_cached_baselines(cache_key)
-    if cached is not None:
+    if cached is not None and "atm_trailing" in cached:
         print("  (baselines loaded from cache)")
         return (
             _dict_to_replay_metrics(cached["random"]),
             _dict_to_replay_metrics(cached["atm_always"]),
             _dict_to_replay_metrics(cached["simple_rules"]),
+            _dict_to_replay_metrics(cached["atm_trailing"]),
         )
 
     t0 = time.time()
     b_random = compute_baseline_random(data, mask_key=mask_key, max_days=max_days, policy=policy, day_to_bars=day_to_bars)
     b_atm = compute_baseline_atm_always(data, mask_key=mask_key, max_days=max_days, policy=policy, day_to_bars=day_to_bars)
     b_rules = compute_baseline_simple_rules(data, mask_key=mask_key, max_days=max_days, policy=policy, day_to_bars=day_to_bars)
+    b_trailing = compute_baseline_atm_trailing(data, mask_key=mask_key, max_days=max_days, policy=policy, day_to_bars=day_to_bars)
     t_bl = time.time() - t0
     print(f"  Baselines: {t_bl:.1f}s")
 
@@ -694,9 +775,10 @@ def _compute_all_baselines(data, mask_key, max_days, policy, day_to_bars):
         "random": b_random.to_dict(),
         "atm_always": b_atm.to_dict(),
         "simple_rules": b_rules.to_dict(),
+        "atm_trailing": b_trailing.to_dict(),
     })
 
-    return b_random, b_atm, b_rules
+    return b_random, b_atm, b_rules, b_trailing
 
 
 def main():
@@ -722,7 +804,7 @@ def main():
         masks = [k for k in data.keys() if k.endswith('_mask')]
         print(f"  {masks}")
         if 'val_mask' in data and mask_key == 'promote_mask':
-            print(f"  Falling back to val_mask (old 2-way split)")
+            print(f"  WARNING: Falling back to val_mask -- scores may be inflated (evaluating on validation data)")
             mask_key = 'val_mask'
         else:
             return
@@ -738,10 +820,11 @@ def main():
 
     if args.baselines:
         print(f"\n--- COMPUTING BASELINES (on {mask_key}) ---")
-        b_random, b_atm, b_rules = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
+        b_random, b_atm, b_rules, b_trailing = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
         print_metrics("Random Baseline", b_random)
         print_metrics("ATM-Always Baseline", b_atm)
         print_metrics("Simple-Rules Baseline", b_rules)
+        print_metrics("ATM-Trailing Baseline", b_trailing)
         return
 
     if not os.path.exists(args.model):
@@ -759,20 +842,23 @@ def main():
 
     # Compare with baselines
     print(f"\n--- BASELINES (on {mask_key}) ---")
-    b_random, b_atm, b_rules = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
+    b_random, b_atm, b_rules, b_trailing = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
     print_metrics("Random", b_random)
     print_metrics("ATM-Always", b_atm)
     print_metrics("Simple-Rules", b_rules)
+    print_metrics("ATM-Trailing", b_trailing)
 
     print(f"\n--- COMPARISON ---")
     print(f"  Model Score={metrics.score:.4f} vs Random={b_random.score:.4f} "
-          f"ATM={b_atm.score:.4f} Rules={b_rules.score:.4f}")
+          f"ATM={b_atm.score:.4f} Rules={b_rules.score:.4f} Trailing={b_trailing.score:.4f}")
     beats_random = metrics.score > b_random.score
     beats_atm = metrics.score > b_atm.score
     beats_rules = metrics.score > b_rules.score
+    beats_trailing = metrics.score > b_trailing.score
     print(f"  Beats random: {'YES' if beats_random else 'NO'}")
     print(f"  Beats ATM-always: {'YES' if beats_atm else 'NO'}")
     print(f"  Beats simple-rules: {'YES' if beats_rules else 'NO'}")
+    print(f"  Beats ATM-trailing: {'YES' if beats_trailing else 'NO'}")
 
 
 if __name__ == "__main__":

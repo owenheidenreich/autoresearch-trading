@@ -22,7 +22,10 @@ import pandas as pd
 BARS_PER_DAY = 390
 FORWARD_BARS = 30
 LOOKBACK_WINDOW = 60
-NUM_FEATURES = 55  # 39 original + 16 enriched (moneyness, volume, spread, etc.)
+NUM_FEATURES = 71  # 39 original + 16 enriched + 16 duplicate enriched (pipeline bug, see note)
+# NOTE: Features 55-70 are duplicates of 39-54. The enriched features were appended
+# twice during dataset build. This will be fixed in Phase 2 (dataset rebuild).
+# For now, we match the actual data.pt shape so the model input projection is correct.
 
 OPTION_SPREAD_BPS = 150
 SPREAD_COST_PCT = 2 * OPTION_SPREAD_BPS / 10000.0  # 0.03 = 3% round-trip
@@ -125,6 +128,23 @@ FEATURE_NAMES = [
     'near_atm_put_price_norm',  # 52: put_close / SPX * 100 (normalized)
     'theta_acceleration',       # 53: 1/sqrt(minutes_to_close) (0DTE specific)
     'near_atm_transactions',    # 54: transactions at nearest ATM
+    # === Duplicate enriched (16) -- pipeline bug: appended twice ===
+    'current_moneyness_pct_2',  # 55: duplicate of 39
+    'intraday_drift_pct_2',     # 56: duplicate of 40
+    'near_atm_moneyness_pct_2', # 57: duplicate of 41
+    'near_atm_call_volume_2',   # 58: duplicate of 42
+    'near_atm_put_volume_2',    # 59: duplicate of 43
+    'near_atm_total_volume_2',  # 60: duplicate of 44
+    'call_put_flow_ratio_2',    # 61: duplicate of 45
+    'volume_zero_flag_2',       # 62: duplicate of 46
+    'log_total_volume_2',       # 63: duplicate of 47
+    'chain_call_put_ratio_2',   # 64: duplicate of 48
+    'log_chain_volume_2',       # 65: duplicate of 49
+    'call_hl_range_pct_2',      # 66: duplicate of 50
+    'near_atm_call_price_norm_2',  # 67: duplicate of 51
+    'near_atm_put_price_norm_2',   # 68: duplicate of 52
+    'theta_acceleration_2',     # 69: duplicate of 53
+    'near_atm_transactions_2',  # 70: duplicate of 54
 ]
 
 assert len(FEATURE_NAMES) == NUM_FEATURES

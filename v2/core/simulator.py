@@ -30,13 +30,27 @@ def _compute_spread_cost(
     vix_regime_entry: float,
     vix_regime_exit: float,
     is_otm: bool,
+    entry_px: float | None = None,
 ) -> float:
-    """Compute round-trip spread cost as a fraction (not bps)."""
+    """Compute round-trip spread cost as a fraction (not bps).
+
+    Enforces a minimum-tick dollar floor: SPX options have $0.05 minimum
+    tick for options under $3.00. The BPS model alone severely understates
+    spread costs on cheap options.
+    """
     mtc_entry = BARS_PER_DAY - entry_bar_of_day
     mtc_exit = BARS_PER_DAY - exit_bar_of_day
-    entry_spread = compute_adaptive_spread_bps(mtc_entry, vix_regime_entry, is_otm)
-    exit_spread = compute_adaptive_spread_bps(mtc_exit, vix_regime_exit, is_otm)
-    return (entry_spread + exit_spread) / 10000.0
+    entry_spread_frac = compute_adaptive_spread_bps(mtc_entry, vix_regime_entry, is_otm) / 10000.0
+    exit_spread_frac = compute_adaptive_spread_bps(mtc_exit, vix_regime_exit, is_otm) / 10000.0
+
+    # Floor: minimum tick is $0.05 per side for options under $3.00
+    if entry_px is not None and entry_px > 0:
+        min_tick = 0.05 if entry_px < 3.00 else 0.10
+        min_spread_frac = min_tick / entry_px
+        entry_spread_frac = max(entry_spread_frac, min_spread_frac)
+        exit_spread_frac = max(exit_spread_frac, min_spread_frac)
+
+    return entry_spread_frac + exit_spread_frac
 
 
 def simulate_trade(
@@ -75,9 +89,18 @@ def simulate_trade(
     if np.isnan(entry_px) or entry_px <= 0:
         return None
 
+    # Skip penny options: below $0.50 mid, fills are unreliable
+    MIN_ENTRY_PRICE = 0.50
+    if entry_px < MIN_ENTRY_PRICE:
+        return None
+
     # Compute stop/TP as percentages of entry premium
     stop_pct = (entry_px - intent.stop_price) / entry_px
     tp_pct = (intent.take_profit_price - entry_px) / entry_px
+
+    # Guard: if price moved through stop or TP before fill, skip trade
+    if stop_pct <= 0 or tp_pct <= 0:
+        return None
 
     # Track position
     entry_bod = int(bar_of_day[fill_bar])
@@ -85,7 +108,7 @@ def simulate_trade(
         abs(intent.strike - (intent.underlying_price or 0)) > 2.5
     )
 
-    vix_idx = _FEAT_IDX.get('vix_regime', 18)
+    vix_idx = _FEAT_IDX['vix_regime']  # fail loudly if feature index missing
     vix_entry = float(features[fill_bar, vix_idx]) if fill_bar < len(features) else 0.0
 
     # Track MFE/MAE
@@ -120,6 +143,10 @@ def simulate_trade(
         # Track excursions
         mfe = max(mfe, unrealized)
         mae = min(mae, unrealized)
+
+        # Enforce minimum hold period before any exit checks
+        if k < MIN_HOLD_BARS:
+            continue
 
         # 1. Stop loss (checked first - highest priority)
         if unrealized <= -stop_pct:
@@ -171,7 +198,7 @@ def simulate_trade(
     raw_pnl = (exit_price - entry_px) / entry_px
     exit_bod = int(bar_of_day[min(exit_bar, N - 1)])
     vix_exit = float(features[min(exit_bar, len(features) - 1), vix_idx])
-    spread_cost = _compute_spread_cost(entry_bod, exit_bod, vix_entry, vix_exit, is_otm)
+    spread_cost = _compute_spread_cost(entry_bod, exit_bod, vix_entry, vix_exit, is_otm, entry_px=entry_px)
     net_pnl = raw_pnl - spread_cost
 
     underlying_entry = float(features[fill_bar, _FEAT_IDX.get('ret_6', 0)]) if fill_bar < len(features) else 0.0
@@ -202,6 +229,9 @@ def simulate_day(
     features: np.ndarray,
     bar_of_day: np.ndarray,
     dates: list[str],
+    daily_loss_cap_pct: float = 0.05,
+    starting_equity: float = 10_000.0,
+    contract_multiplier: int = 100,
 ) -> list[SimulatedTrade]:
     """Simulate a day of trading from a list of (bar_index, TradeIntent) pairs.
 
@@ -209,18 +239,23 @@ def simulate_day(
     - Max 1 concurrent position
     - Cooldown after stop loss
     - Time block restrictions
+    - Daily loss cap (skip new entries when cumulative loss exceeds cap)
 
     Args:
         intents: list of (global_bar_index, TradeIntent), sorted by bar
         option_prices_by_intent: dict mapping intent_id -> option price array
-        features: (N, 39) feature array
+        features: (N, F) feature array
         bar_of_day: (N,) bar-of-day indices
         dates: date strings per bar
+        daily_loss_cap_pct: max daily loss as fraction of starting_equity
+        starting_equity: account size for loss cap computation
+        contract_multiplier: option multiplier (100 for SPX)
     """
     trades: list[SimulatedTrade] = []
     in_position = False
     position_exit_bar = -1
     last_stop_bar = -STOP_COOLDOWN_BARS - 1
+    daily_dollar_pnl = 0.0
 
     for global_bar, intent in intents:
         if not intent.trade:
@@ -233,12 +268,19 @@ def simulate_day(
         if bod >= NO_TRADE_AFTER_BAR:
             continue
 
-        # Check position
-        if in_position and global_bar <= position_exit_bar:
-            continue
+        # Check position overlap
+        if in_position:
+            if global_bar <= position_exit_bar:
+                continue
+            else:
+                in_position = False
 
         # Check cooldown
         if global_bar - last_stop_bar < STOP_COOLDOWN_BARS:
+            continue
+
+        # Check daily loss cap
+        if daily_dollar_pnl < 0 and abs(daily_dollar_pnl) / starting_equity >= daily_loss_cap_pct:
             continue
 
         # Get option prices for this intent
@@ -263,10 +305,11 @@ def simulate_day(
         in_position = True
         position_exit_bar = trade.exit_bar
 
+        # Accumulate daily dollar P&L for loss cap
+        dollar_pnl = trade.net_pnl_pct * trade.entry_price * contract_multiplier * trade.intent.qty
+        daily_dollar_pnl += dollar_pnl
+
         if trade.exit_reason == "STOP_LOSS":
             last_stop_bar = trade.exit_bar
-
-        # Position is now closed
-        in_position = False
 
     return trades

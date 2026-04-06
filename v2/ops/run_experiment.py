@@ -32,7 +32,7 @@ from v2.train import train as train_model
 from v2.replay import (
     load_model, replay_validation, print_metrics,
     compute_baseline_random, compute_baseline_atm_always,
-    compute_baseline_simple_rules,
+    compute_baseline_simple_rules, compute_baseline_atm_trailing,
 )
 from v2.core.policy import DecisionPolicy, DEFAULT_POLICY
 from v2.core.metrics import score_config_fingerprint
@@ -98,10 +98,12 @@ def run_experiment(
     b_random = compute_baseline_random(data, mask_key=mask_key, policy=policy)
     b_atm = compute_baseline_atm_always(data, mask_key=mask_key, policy=policy)
     b_rules = compute_baseline_simple_rules(data, mask_key=mask_key, policy=policy)
+    b_trailing = compute_baseline_atm_trailing(data, mask_key=mask_key, policy=policy)
 
     beats_random = metrics.score > b_random.score
     beats_atm = metrics.score > b_atm.score
     beats_rules = metrics.score > b_rules.score
+    beats_trailing = metrics.score > b_trailing.score
 
     # --- Phase 4: Save artifact ---
     dataset_fp = data.get('metadata', {}).get('fingerprint', 'unknown')
@@ -144,9 +146,11 @@ def run_experiment(
         "beats_random": beats_random,
         "beats_atm": beats_atm,
         "beats_rules": beats_rules,
+        "beats_trailing": beats_trailing,
         "baseline_random_score": b_random.score,
         "baseline_atm_score": b_atm.score,
         "baseline_rules_score": b_rules.score,
+        "baseline_trailing_score": b_trailing.score,
         "training_seconds": training_seconds,
         "dataset_fingerprint": dataset_fp,
         "score_fingerprint": score_config_fingerprint(),
@@ -164,7 +168,7 @@ def _print_results(results: dict) -> None:
     for key in [
         "score", "daily_sortino", "positive_day_rate", "max_account_drawdown",
         "net_pnl_dollars", "total_trades", "traded_days", "profit_factor",
-        "win_rate", "trades_per_day", "beats_random", "beats_atm", "beats_rules",
+        "win_rate", "trades_per_day", "beats_random", "beats_atm", "beats_rules", "beats_trailing",
         "training_seconds", "status",
     ]:
         if key in results:

@@ -45,6 +45,7 @@ class SessionState:
     no_improve_streak: int = 0
     crash_streak: int = 0
     last_improve_time: float = 0.0
+    kept_count: int = 0
     stopped: bool = False
     stop_reason: str = ""
 
@@ -147,6 +148,7 @@ def record_result(
         state.no_improve_streak = 0
         state.crash_streak = 0
         state.last_improve_time = time.time()
+        state.kept_count += 1
         decision = "keep"
 
         # Update best score file

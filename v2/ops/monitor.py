@@ -26,7 +26,7 @@ import time
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEPLOY_STATE = os.path.join(PROJECT_ROOT, ".deploy-state")
-SSH_PASS = "autoresearch2026"
+SSH_PASS = os.environ.get("DEPLOY_SSH_PASS", "autoresearch2026")
 
 W = 70  # dashboard width
 

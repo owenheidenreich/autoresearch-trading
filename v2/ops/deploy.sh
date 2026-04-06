@@ -32,7 +32,7 @@ SDL_FILE="$SCRIPT_DIR/deploy-autoresearch.yaml"
 DATA_PT="$PROJECT_ROOT/v2/data.pt"
 STATE_FILE="$PROJECT_ROOT/.deploy-state"
 
-SSH_PASS="autoresearch2026"
+SSH_PASS="${DEPLOY_SSH_PASS:-autoresearch2026}"
 # Auto-source .env if ANTHROPIC_API_KEY is not already set
 if [[ -z "${ANTHROPIC_API_KEY:-}" && -f "$PROJECT_ROOT/.env" ]]; then
     set -a; source "$PROJECT_ROOT/.env"; set +a
@@ -586,8 +586,8 @@ if os.path.exists(results_path):
                 row = dict(zip(header, cols))
                 eid = row.get("experiment_id", "?")
                 score = row.get("score", "?")
-                kept_flag = row.get("kept", "?")
-                summary = row.get("summary", "")[:50]
+                kept_flag = row.get("status", "?")
+                summary = row.get("description", "")[:50]
                 try:
                     score_f = float(score)
                     print(f"  {eid:>3}  {score_f:>8.3f}  {kept_flag:>6}  {summary}")
