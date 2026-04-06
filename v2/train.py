@@ -51,7 +51,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
 RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
-CVAR_W = float(os.environ.get("WEIGHT_CVAR", 0.5))  # tail risk penalty
+CVAR_W = float(os.environ.get("WEIGHT_CVAR", 0.1))  # tail risk penalty (gentle)
 CVAR_ALPHA = 0.10  # penalize worst 10% of predictions
 
 # For replay compatibility
