@@ -38,3 +38,4 @@ exp_035	5.900000	revert	dir penalty -- gate_acc 67.7% (best) but dir_acc dropped
 exp_037	5.491108	revert	window momentum feature -- DD 8.8%, no improvement over exp_034
 exp_038	4.548963	revert	MSE loss -- DD 10.7%, too sensitive to outliers
 exp_039	4.253678	revert	LOOKBACK=30 -- lost context, DD 11.3%, WR dropped
+exp_040	2.181094	revert	margin-weighted loss -- DD 15.6%, overfits to high-margin training patterns

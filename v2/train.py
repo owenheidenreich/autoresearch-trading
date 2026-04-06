@@ -272,15 +272,8 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    # Weight each sample by directional margin: bars with clear call/put edge
-    # get more gradient than noise bars. This focuses learning on learnable patterns.
-    dir_margin = torch.abs(true_call - true_put).detach()
-    sample_weight = 1.0 + dir_margin * 2.0  # 1x for noise, ~2.5x for strong signal
-
-    call_err = F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')
-    put_err = F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')
-    call_loss = (call_err * sample_weight).mean()
-    put_loss = (put_err * sample_weight).mean()
+    call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
+    put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
 
     pnl_loss = call_loss + put_loss
 
