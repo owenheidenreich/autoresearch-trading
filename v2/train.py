@@ -51,6 +51,8 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
 RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
+CVAR_W = float(os.environ.get("WEIGHT_CVAR", 0.5))  # tail risk penalty
+CVAR_ALPHA = 0.10  # penalize worst 10% of predictions
 
 # For replay compatibility
 NUM_STRIKE_CLASSES = 13
@@ -272,10 +274,19 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
-    put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
+    call_losses = F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')
+    put_losses = F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')
+    call_loss = call_losses.mean()
+    put_loss = put_losses.mean()
 
     pnl_loss = call_loss + put_loss
+
+    # CVaR: penalize the worst CVAR_ALPHA fraction of predictions
+    # This forces the model to specifically avoid catastrophic mispredictions
+    combined_losses = call_losses + put_losses
+    k = max(1, int(CVAR_ALPHA * len(combined_losses)))
+    worst_k = torch.topk(combined_losses, k).values
+    cvar_loss = worst_k.mean()
 
     # Risk loss: fixed targets (stop=0.30, target=0.50, hold=30/390)
     risk_out = outputs['risk'][valid]
@@ -283,7 +294,7 @@ def compute_loss(
     risk_target = risk_target.unsqueeze(0).expand_as(risk_out)
     risk_loss = F.huber_loss(risk_out, risk_target, delta=0.5)
 
-    total = PNL_W * pnl_loss + RISK_W * risk_loss
+    total = PNL_W * pnl_loss + RISK_W * risk_loss + CVAR_W * cvar_loss
 
     # Metrics for logging
     with torch.no_grad():
