@@ -274,19 +274,21 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    call_losses = F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')
-    put_losses = F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')
-    call_loss = call_losses.mean()
-    put_loss = put_losses.mean()
+    # Asymmetric false-positive penalty: when model predicts profit but
+    # reality was a loss, penalize 2x. This reduces trades that lose money.
+    call_err = F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')
+    put_err = F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')
+
+    # False positive = predicted positive P&L, actual negative P&L
+    call_fp = ((pred_call.detach() > 0) & (true_call < 0)).float()
+    put_fp = ((pred_put.detach() > 0) & (true_put < 0)).float()
+    call_weight = 1.0 + call_fp  # 1x normal, 2x for false positives
+    put_weight = 1.0 + put_fp
+
+    call_loss = (call_err * call_weight).mean()
+    put_loss = (put_err * put_weight).mean()
 
     pnl_loss = call_loss + put_loss
-
-    # CVaR: penalize the worst CVAR_ALPHA fraction of predictions
-    # This forces the model to specifically avoid catastrophic mispredictions
-    combined_losses = call_losses + put_losses
-    k = max(1, int(CVAR_ALPHA * len(combined_losses)))
-    worst_k = torch.topk(combined_losses, k).values
-    cvar_loss = worst_k.mean()
 
     # Risk loss: fixed targets (stop=0.30, target=0.50, hold=30/390)
     risk_out = outputs['risk'][valid]
@@ -294,7 +296,7 @@ def compute_loss(
     risk_target = risk_target.unsqueeze(0).expand_as(risk_out)
     risk_loss = F.huber_loss(risk_out, risk_target, delta=0.5)
 
-    total = PNL_W * pnl_loss + RISK_W * risk_loss + CVAR_W * cvar_loss
+    total = PNL_W * pnl_loss + RISK_W * risk_loss
 
     # Metrics for logging
     with torch.no_grad():
