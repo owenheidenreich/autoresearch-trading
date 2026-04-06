@@ -32,7 +32,7 @@ Momentum (ret_6) has NO edge (PF=0.81).
 - 994 days, 2.2 GB, avg 41 strikes per day
 - After 50pt intraday move, still 50pt OTM coverage
 
-### Enriched features (16 new)
+### Enriched features (16 new, total 71)
 - `current_moneyness_pct`, `intraday_drift_pct`, `near_atm_moneyness_pct`
 - `near_atm_call_volume`, `near_atm_put_volume`, `call_put_flow_ratio`
 - `log_total_volume`, `chain_call_put_ratio`, `log_chain_volume`
@@ -41,73 +41,151 @@ Momentum (ret_6) has NO edge (PF=0.81).
 
 All features are RELATIVE (moneyness %, normalized prices) so patterns at SPX 4300 transfer to SPX 6500.
 
-### Risk-grid labels
-- 64 combos (4 stops x 4 targets x 4 holds) searched per bar
-- Direction from session_range_pct volatility regime (causal, no lookahead)
-- Same-contract simulation (no switching artifacts)
-- Gate=True only when best combo is profitable
-- 87K signal bars, 62K gate=True (72%), 24K gate=False (28%)
-- Risk diversity: 4 distinct stops, 4 targets, 4 holds
-
 ### NaN handling
 - 27% of bars had NaN (0DTE options stop trading near close)
-- Root cause: no trades in Polygon flat file = no price
-- Fix: forward-fill within day (matches live IBKR behavior -- stale quotes)
+- Fix: forward-fill within day (matches live IBKR behavior)
 - Remaining NaN (start-of-day): filled with 0
 
 ### Cost model
-- Commission: $1.30 round trip (0.13% on $10 option, negligible)
-- Bid-ask spread: $0.30 round trip estimate (conservative)
-- Total cost per trade: ~$1.60
+- Commission: $1.30 round trip
+- Bid-ask spread: adaptive by time-of-day and VIX regime
+- Total cost per trade: varies, computed per-bar
 
-## Smoke Test (2026-04-03)
+## Phase 1: Classification Model (exp_001 -- exp_013, 2026-04-03)
 
-1-epoch local test on CPU with new data:
-- train_loss=1.11, val_loss=1.04
-- gate_acc=79.4% (learning -- baseline 72%)
-- dir_acc=67.4% (learning -- baseline 50%)
-- No NaN in loss. Model trains.
+Old approach: model classifies gate (trade/no-trade) and direction (call/put) as separate heads. Labels from pre-computed direction vote + oracle grid search.
 
-## Experiment: honest_baseline on Akash H100 (2026-04-03)
+**Problems identified:**
+- Gate head stuck at majority-class baseline (79.8% accuracy = always predict True)
+- Direction collapse to 100% puts during promote period
+- CALL_BOOST inference hack needed to get any calls
 
-**First training with honest data.** 25 epochs on H100, 305s training, 46s replay.
+**Best score: 5.59 (exp_004)** -- but achieved by tuning stop/target ranges, not by the model learning.
 
-**Training metrics:**
-- val_loss: 1.06 -> 0.60 (converging)
-- dir_acc: 58.8% -> 88.3% (direction head LEARNED)
-- gate_acc: 79.4% -> 79.8% (gate head DID NOT LEARN -- stuck at majority class baseline)
+## Phase 2: Regime Conditioning (exp_014 -- exp_029, 2026-04-04)
 
-**Replay on promote_mask (60 held-out days):**
-- 52 trades total, 6 traded days (way too few)
-- ALL 52 trades are puts (call_count=0) -- direction collapse
-- WR=98.1%, PF=102 -- looks good but only 52 trades on 6 days
-- Score: -0.5 (gate failure: too_few_traded_days, 6 < 15 minimum)
+### FiLM Regime Conditioning (exp_014) -- BREAKTHROUGH 1
 
-**Diagnosis:**
-1. **Gate head stuck.** 72% of training labels are gate=True. The model learns to always
-   predict True (gets 72% accuracy). The gate loss (BCE with pos_weight=0.3) doesn't give
-   enough gradient to learn selectivity. Need to either:
-   - Increase pos_weight (penalize false positives more)
-   - Use a different gate architecture (separate classifier)
-   - Add the P&L as a weighting signal (higher loss for confident-but-wrong predictions)
+Added a RegimeEncoder (55->32->16 MLP) that reads the last bar's raw features and produces a regime embedding. Each prediction head gets a FiLM layer (gamma * x + beta) that modulates the transformer output based on regime.
 
-2. **Direction collapse to puts.** The volatility-regime signal (session_range_pct) during
-   the promote_mask period (Dec 2025 - Mar 2026) is consistently below the training median,
-   so it always says "put." The model learned this correctly but it means no directional
-   diversity. Need to either:
-   - Use a more balanced direction signal
-   - Force a minimum call fraction in replay
-   - Use multiple direction features (not just session_range_pct)
+**Result:** Direction collapse solved without CALL_BOOST. 26% calls naturally. Score 5.59 -> 5.69.
 
-3. **Gate threshold too strict.** The default policy gate_threshold=0.5 filters almost
-   everything because the gate output is near 0.5 (barely learned). Lower the threshold
-   for initial experiments, then let the model learn to be more decisive.
+**Why it worked:** The model can now produce different outputs for different volatility regimes. High vol -> calls, low vol -> puts, learned from data instead of hardcoded.
 
-**Key insight:** The DATA pipeline is honest and working. The MODEL needs tuning.
-This is what the ART² loop is for.
+### Label Smoothing (exp_016) -- Score 5.80
 
-**Next experiments to try:**
-- Increase GATE_POS_WEIGHT from 0.3 to 1.0 or higher
-- Lower gate_threshold from 0.5 to 0.3 in policy.py
-- Add more direction features (not just session_range_pct median split)
-- Try weighting gate loss by |label_pnl| so confident trades matter more
+Direction label smoothing 0.1 -> 0.25 reduced direction memorization. +day_rate jumped to 96.7% (only 2 losing days out of 60). Score hit 5.80.
+
+### Score Ceiling Analysis (exp_017 -- exp_021)
+
+7 consecutive reverts. Analysis showed:
+- Score = min(sortino, 6.0) * positive_day_rate * dd_mult = 6.0 * 58/60 * 1.0 = 5.80
+- The 2 losing days are the binding constraint
+- Trade-level analysis: trades with 47-73% MFE giving it all back to stop loss
+- Any change that reduces trade count kills calls first (model less confident about calls)
+
+### Trailing Stops (exp_022) -- BREAKTHROUGH 2, PERFECT SCORE
+
+Changed exit_policy from STOP_TP_TIME to TRAILING. The simulator's trailing stop tiers lock in profits at +30/+50/+80/+120% unrealized.
+
+**Result:** Score 6.0 (perfect). All 60 promote days profitable. 0% drawdown.
+
+**Why it worked:** The 2 losing days had trades that reached 47-73% profit then reversed to stop loss. Trailing stops locked in those profits.
+
+### Focal Loss + MicroMoE (exp_023, exp_029)
+
+- Focal loss for gate: down-weights easy examples, focuses on hard boundary cases. Achieved near-perfect 50/50 call/put direction balance.
+- MicroMoE direction head: 2 expert MLPs routed by regime embedding. Best shadow generalization (PF=64 on shadow vs PF=52 without).
+
+**Best classification model: exp_029** -- Score 6.0 on both promote and shadow. WR 80.1% promote, 72.2% shadow. PF 333 promote, 64 shadow.
+
+## Phase 3: The Honesty Reckoning (2026-04-05)
+
+### What the "perfect score" model was actually doing
+
+The score was 6.0 but the model was NOT trading. It was:
+- Firing 40+ trades per day (spray-and-pray)
+- Gate head at 84% accuracy = majority class prediction, not selectivity
+- Direction from pre-computed median split of volatility features, not learned
+- Strike always ATM (never learned strike selection)
+- Risk params curve-fit to oracle grid-searched values
+- Trailing stops (hardcoded in simulator) doing all risk management
+
+The 5x PF gap between promote (333) and shadow (64) confirmed overfitting.
+
+### The Fundamental Redesign (exp_031)
+
+**Old approach (classification):**
+- 5 heads: gate, direction, strike, risk, confidence
+- Gate: "should I trade?" (binary classification against oracle label)
+- Direction: "call or put?" (classification against pre-computed vote)
+- The model learned to predict labels, not to trade
+
+**New approach (P&L prediction):**
+- 2 regression heads: call_pnl_head, put_pnl_head
+- Model predicts: "if I buy a call here, what P&L do I expect? And a put?"
+- Trading decisions DERIVED from predictions at inference:
+  - gate = max(pred_call, pred_put) > threshold
+  - direction = argmax(pred_call, pred_put)
+  - confidence = |pred_call - pred_put|
+
+**Dataset changes:**
+- For every eligible bar, simulate BOTH call AND put with fixed risk params (20% stop, 50% target, 30 bar hold)
+- Store label_call_pnl and label_put_pnl (both outcomes)
+- Direction = whichever had higher P&L
+- Gate = True when best direction is profitable
+- No pre-computed direction vote. The model learns direction from features.
+
+**Training changes:**
+- Loss = Huber regression on both call_pnl and put_pnl predictions (delta=0.3)
+- No gate classification loss (gate is implicit from P&L prediction)
+- No direction classification loss (direction is implicit from P&L comparison)
+- FiLM regime conditioning retained
+- Focal loss removed (not needed for regression)
+
+### First Result: exp_031
+
+Training metrics:
+- gate_acc: 56.3% (model is selective -- not majority class)
+- dir_acc: 62.8% (learning direction from features alone, above 50% random)
+- val_loss: 0.082 (converging)
+
+Replay:
+- Score: 5.90 (1 losing day)
+- PF: 314, WR: 80.1%
+- Net P&L: $3.42M (highest ever)
+- Direction: C=1288 P=1628 (44% calls, natural balance)
+- Trades/day: 48.6
+
+**Key difference from old model:** The gate_acc of 56% means the model is correctly identifying profitable setups more than half the time on a stochastic process. The old model had 84% "accuracy" but was just predicting the majority class. 56% on actual prediction is more meaningful than 84% on a lookup table.
+
+## Architecture Summary (Current)
+
+```
+Input: (batch, 60, 71) -- 60 bars of 71 features (55 original + 16 enriched)
+
+Backbone:
+  Linear(71 -> 64) -> LayerNorm -> PositionalEncoding
+  TransformerEncoder(3 layers, 4 heads, dim_ff=256, causal mask)
+  -> last token: (batch, 64)
+
+RegimeEncoder:
+  Linear(71 -> 32) -> GELU -> Linear(32 -> 16)
+  Reads last bar's raw features -> regime embedding
+
+FiLM Conditioning:
+  Per-head: regime -> (gamma, beta) -> modulate transformer output
+
+Prediction Heads:
+  call_pnl_head: FiLM(regime, last) -> Linear(64->32) -> GELU -> Linear(32->1)
+  put_pnl_head:  FiLM(regime, last) -> Linear(64->32) -> GELU -> Linear(32->1)
+  risk_head:     FiLM(regime, last) -> Linear(64->32) -> GELU -> Linear(32->3)
+
+Inference:
+  gate = max(call_pnl, put_pnl) * 5.0 > threshold
+  direction = argmax(call_pnl, put_pnl)
+  strike = always ATM
+  risk = sigmoid-squashed to policy ranges
+```
+
+Parameters: ~170K. Trains in ~300s on H100 (19-24 epochs).

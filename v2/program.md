@@ -20,18 +20,18 @@ The experiment runner (`v2/ops/run_experiment.py`) is designed to run ON the GPU
 
 ## Data
 
-**55 features** (39 original SPX/VIX/market features + 16 enriched from wide-grid option data).
+**71 features** (39 original SPX/VIX/market features + 16 enriched from wide-grid option data + 16 volume/moneyness/theta).
 **Wide-grid option data**: ATM +/- 100pt (82 contracts per day), full OHLCV per bar per strike.
-**Labels**: Risk-grid search with dynamic stop/target/hold. Gate=True only for profitable setups.
+**Labels**: Dual-direction P&L (both call AND put simulated per bar). Model learns which direction from features.
 
 Key design: all option features are RELATIVE (moneyness %, normalized prices) so patterns
 learned at SPX 4300 transfer to SPX 6500. Real-time SPX estimated via call-put parity.
 
 Label statistics:
-- 87K signal bars, 62K gate=True (72%), 24K gate=False (28%)
-- Dynamic risk: 4 stop values, 4 target values, 4 hold durations
-- Direction from volatility regime (high vol = call, low vol = put)
-- Costs: $0.30 spread + $1.30 commission per round trip
+- 178K signal bars, label_call_pnl and label_put_pnl per bar
+- Fixed risk: stop=0.30, target=0.50, hold=30 bars (no grid search)
+- Direction = whichever side had higher P&L (model learns to predict)
+- Costs: adaptive spread (by time/VIX) + $1.30 commission per round trip
 
 ## Setup
 
@@ -88,14 +88,14 @@ Model must also beat all three baselines (random, ATM-always, simple-rules).
 
 ## Key Architecture Facts
 
-- **Input**: (batch, 60, 55) -- 60 bars of 55 features (39 market + 16 option-enriched)
-- **Output**: 5 heads (gate, direction, strike, risk, confidence)
-- **Labels**: Risk-grid search -- direction committed from volatility regime, stop/target/hold searched over 64 combos
+- **Input**: (batch, 60, 71) -- 60 bars of 71 features (39 market + 16 option-enriched + 16 volume/moneyness)
+- **Output**: P&L predictions (call_pnl, put_pnl) + risk params. Gate/direction derived from P&L.
+- **Labels**: Dual-direction P&L -- both call and put simulated per bar with fixed risk params
 - **Evaluation**: Replay on promote_mask (60 days model never saw during training)
 - **Score**: Account curve health (Sortino * consistency * drawdown guard)
 - **Equity**: $10K starting, $100 SPX multiplier, 1 contract max
 - **Training**: Akash H100 GPU. 5-minute time budget per experiment. Never local.
-- **Costs**: $0.30 bid-ask spread + $1.30 commission per round trip
+- **Costs**: adaptive spread (by time-of-day, VIX, moneyness) + $1.30 commission per round trip
 
 ## Data Split
 
