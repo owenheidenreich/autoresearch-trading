@@ -192,9 +192,8 @@ class TradingModel(nn.Module):
         # Direction: [call_logit, put_logit] from P&L predictions
         direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
 
-        # Strike: always ATM (center class)
+        # Strike: uniform prior (no hardcoded ATM bias -- let the model learn)
         strike = torch.zeros(B, NUM_STRIKE_CLASSES, device=x.device)
-        strike[:, NUM_STRIKE_CLASSES // 2] = 10.0  # strong ATM preference
 
         # Confidence: margin between directions
         confidence = torch.abs(call_v - put_v).unsqueeze(-1) * 3.0  # (B, 1)

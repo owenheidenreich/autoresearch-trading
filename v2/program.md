@@ -84,7 +84,11 @@ Hard gates (score goes negative if any fail):
 - At least 15% minority direction (must trade both calls and puts)
 - Max account drawdown <= 20%
 
-Model must also beat all three baselines (random, ATM-always, simple-rules).
+Model must also beat all four baselines:
+1. **Random**: 2% entry probability, random contract, STOP_TP_TIME exits, 5 seeds averaged
+2. **ATM-Always**: buy ATM call at bar 30 every day, STOP_TP_TIME exits
+3. **Simple-Rules**: 5-bar momentum heuristic with 10-bar cooldown, STOP_TP_TIME exits
+4. **ATM-Trailing**: buy ATM call at bar 30 every day, TRAILING exits with model's risk params (the honest test -- isolates neural net value from exit strategy)
 
 ## Key Architecture Facts
 
@@ -119,7 +123,7 @@ LOOP:
 7. If crashed: read the log, try to fix. If unfixable, log as crash, move on.
 8. Log results to `v2/results.tsv`.
 9. If score improved AND beats all baselines: **KEEP**. Branch advances.
-10. If score equal or worse: **REVERT**. `git checkout v2/train.py v2/core/policy.py`
+10. If score equal or worse: **REVERT**. `git checkout v2/train.py v2/core/policy.py` AND restore model.pt from the best artifact bundle.
 11. Check session limits (see below). If any limit hit, stop.
 12. Go to step 1.
 

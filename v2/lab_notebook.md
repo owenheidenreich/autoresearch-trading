@@ -185,7 +185,54 @@ Inference:
   gate = max(call_pnl, put_pnl) * 5.0 > threshold
   direction = argmax(call_pnl, put_pnl)
   strike = always ATM
-  risk = sigmoid-squashed to policy ranges
+  risk = clamped to policy ranges (no sigmoid)
 ```
 
 Parameters: ~170K. Trains in ~300s on H100 (19-24 epochs).
+
+## Phase 4: Full Audit + Honest Baseline (2026-04-06)
+
+### 8-Section Audit
+
+Complete audit of all v2 code found 34 issues (3 critical, 6 high, 10 medium, 16 low).
+
+**CRITICAL bugs invalidating all prior scores:**
+1. Negative stop_pct creating phantom +3,734% avg STOP_LOSS profits (simulator.py:79)
+2. Position overlap: in_position immediately set False (simulator.py:270, replay.py:299)
+3. Random baseline score always 0.0 (replay.py:494-500)
+
+**The score of 5.90 was fake.** Every STOP_LOSS "win" was a phantom fill at an imaginary price. Positions overlapped freely. The random baseline was trivially beaten.
+
+### Three-Phase Fix
+
+**Phase 1 (harness):** 11 fixes to simulator, replay, baselines. Added min entry price ($0.50), spread tick floor, TRAILING baseline, MIN_HOLD_BARS enforcement, daily loss cap enforcement.
+
+**Phase 2 (labels/dataset):** Trailing stops in labeler. Commission $1.30 RT. Gate selectivity raised (best_pnl > 2%). Tick-floor spread. Duplicate feature append bug fixed. Dataset rebuilt.
+
+**Phase 3 (model/training):** Risk head sigmoid removed (was producing 108% targets). Gate 5x scaling removed. gate_threshold raised to 0.5. Per-bar risk labels. Conditional metrics (dir_acc_gated, avg_pnl_gated). Dollar-weighted WR/PF. CVaR dead code removed. ATM hardcoded bias removed.
+
+### First Honest Retrain: exp_001 (2026-04-06)
+
+| Metric | Value |
+|--------|-------|
+| Score | 2.26 |
+| Profit Factor | 1.66 |
+| Win Rate | 52.4% |
+| Sortino | 21.23 |
+| Positive Day Rate | 71.7% |
+| Max Drawdown | 13.7% |
+| Net P&L | +$58,484 on $10K |
+| Trades | 433 (7.2/day) |
+| Direction | 239C / 194P (55/45%) |
+| Beats Random | YES |
+| Beats ATM-Always | YES |
+| Beats Simple-Rules | YES |
+| Beats ATM-Trailing | YES |
+
+Training metrics:
+- gate_acc: 58.9% (model is selective, not majority class)
+- dir_acc: 64.6% (above 50% random)
+- dir_acc_gated: 69.7% (gate selects bars where direction is more predictable)
+- avg_pnl_gated: +0.095 vs avg_pnl_ungated: -0.030 (gate adds real value)
+
+**This is the first honest score.** All prior scores were contaminated by phantom profits, overlapping positions, and broken baselines. The autoresearch loop can now improve from a truthful starting point.

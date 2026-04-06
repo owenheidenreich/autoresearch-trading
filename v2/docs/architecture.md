@@ -137,16 +137,17 @@ Data flows top-to-bottom. Each section has a clear contract with its neighbors.
 - Optimizer: AdamW, cosine annealing, 30 epochs or 300s budget
 - Best checkpoint by val_loss
 
-**Inference-time derivations:**
-- gate_logit = max(call_pnl, put_pnl) * 5.0
+**Inference-time derivations (updated 2026-04-06):**
+- gate_logit = max(call_pnl, put_pnl) (no scaling; sigmoid(0)=0.5)
+- gate_threshold = 0.5 (requires predicted P&L > 0)
 - direction = argmax(call_pnl, put_pnl)
-- strike = always ATM (center class)
+- strike = uniform prior (no hardcoded ATM bias)
+- risk = raw outputs clamped to policy ranges (no sigmoid)
 
-**Questions an audit should answer:**
-- The model trains on labels capped at [-33%, +49%]. But at replay time, penny options produce 50,000% returns. Is the model actually learning P&L prediction or just learning which bars have cheap options?
-- gate_acc is 66% -- what does this mean? Is the model beating a "always trade" baseline on gate decisions?
-- dir_acc is 64% -- on which bars? All bars or only gated bars?
-- Does the model differentiate between a $0.03 option and a $30 option? The features don't directly encode option price.
+**Audit questions (answered 2026-04-06, see v2/docs/audit/):**
+- Penny options: filtered at $0.50 minimum entry price. Spread model has tick floor.
+- gate_acc: 58.9% overall, dir_acc_gated: 69.7% on gated bars only. Gate adds real value.
+- Option price: model cannot differentiate, but penny options are now excluded.
 
 ---
 
@@ -263,10 +264,10 @@ Data flows top-to-bottom. Each section has a clear contract with its neighbors.
 - `v2/docs/execution.md` -- order state machine spec
 
 **Reference implementation (v1, archived):**
-- `archive/v1/live/execution.py` -- working IBKR order engine
-- `archive/v1/live/decision.py` -- working inference engine
-- `archive/v1/live/features.py` -- working feature computation
-- `archive/v1/live/service.py` -- working market data streaming
+- `archive/v1/training/live/execution.py` -- working IBKR order engine
+- `archive/v1/training/live/decision.py` -- working inference engine
+- `archive/v1/training/live/features.py` -- working feature computation
+- `archive/v1/training/live/service.py` -- working market data streaming
 
 **Contract:** TradeIntent flows identically through train -> replay -> live.
 
@@ -280,12 +281,12 @@ Data flows top-to-bottom. Each section has a clear contract with its neighbors.
 
 ## Cross-Section Issues (discovered in this session)
 
-These problems span multiple sections and need coordinated fixes:
+**All four issues below were FIXED on 2026-04-06. See v2/docs/audit/ for full details.**
 
-1. **Penny option exploitation** (Sections 2, 4, 5): Options priced $0.01-$0.50 produce 100-100,000% returns in the simulator. These drive the 80% WR and PF 350. Not realistic. Needs fixing in labels (exclude penny options?) or simulator (realistic spread on cheap options?) or evaluation (cap returns? weight by capital?).
+1. **Penny option exploitation** -- FIXED. Min entry price $0.50, tick-floor spread ($0.05/$0.10), commission $1.30 RT. Both simulator and labeler.
 
-2. **Label-simulator disconnect** (Sections 2, 4): Labels are capped at [-33%, +49%] but the simulator produces uncapped returns. The model trains on one distribution and is evaluated on a completely different one.
+2. **Label-simulator disconnect** -- FIXED. Labels now use trailing stops, min hold bars, and identical cost model (tick floor + commission) as the simulator.
 
-3. **Trade frequency** (Sections 3, 5): 47 trades/day with max_concurrent=1 and cooldown=5 bars means the model fires on nearly every eligible bar. This is spray-and-pray, not selective trading.
+3. **Trade frequency** -- FIXED. Gate scaling removed (was 5x). gate_threshold raised to 0.5 (requires P&L > 0). Model now trades 7.2/day (was 47).
 
-4. **dead_loss_cap_pct** (Sections 4, 6): The daily loss cap in policy.py is never enforced by the simulator or replay.
+4. **daily_loss_cap_pct** -- FIXED. Enforced in simulate_day(). Cumulative daily dollar P&L checked before new entries.
