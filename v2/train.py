@@ -37,7 +37,7 @@ from v2.core.metrics import score_config_fingerprint
 # ---------------------------------------------------------------------------
 
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 60))
-D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 96))
+D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 64))
 N_HEADS = 4
 DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
 DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.1))
@@ -184,9 +184,10 @@ class TradingModel(nn.Module):
         call_v = call_pnl.squeeze(-1)  # (B,)
         put_v = put_pnl.squeeze(-1)    # (B,)
 
-        # Gate: logit proportional to max predicted P&L (scaled to sigmoid range)
+        # Gate: logit proportional to max predicted P&L
+        # Scale so predicted P&L of 0 -> sigmoid ~0.5, P&L of 0.1 -> sigmoid ~0.73
         max_pnl = torch.max(call_v, put_v)
-        gate_logit = max_pnl * 5.0  # scale so ~0.1 P&L -> sigmoid ~0.62
+        gate_logit = max_pnl * 10.0  # tighter: need P&L > ~0.08 for gate > 0.7
 
         # Direction: [call_logit, put_logit] from P&L predictions
         direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
