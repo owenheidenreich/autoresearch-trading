@@ -36,7 +36,7 @@ from v2.core.metrics import score_config_fingerprint
 # Hyperparameters
 # ---------------------------------------------------------------------------
 
-LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
+LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 60))
 D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 64))
 N_HEADS = 4
 DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
