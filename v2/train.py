@@ -274,19 +274,8 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    # Asymmetric false-positive penalty: when model predicts profit but
-    # reality was a loss, penalize 2x. This reduces trades that lose money.
-    call_err = F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')
-    put_err = F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')
-
-    # False positive = predicted positive P&L, actual negative P&L
-    call_fp = ((pred_call.detach() > 0) & (true_call < 0)).float()
-    put_fp = ((pred_put.detach() > 0) & (true_put < 0)).float()
-    call_weight = 1.0 + call_fp  # 1x normal, 2x for false positives
-    put_weight = 1.0 + put_fp
-
-    call_loss = (call_err * call_weight).mean()
-    put_loss = (put_err * put_weight).mean()
+    call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
+    put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
 
     pnl_loss = call_loss + put_loss
 
