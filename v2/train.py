@@ -140,9 +140,10 @@ class TradingModel(nn.Module):
             nn.Transformer.generate_square_subsequent_mask(LOOKBACK),
         )
 
-        # Regime encoder
+        # Regime encoder: reads window stats (mean + std of last 10 bars + last bar)
+        # Gives regime awareness of recent intraday trend, not just current snapshot
         self.regime_encoder = nn.Sequential(
-            nn.Linear(NUM_FEATURES, 32), nn.GELU(), nn.Linear(32, REGIME_DIM),
+            nn.Linear(NUM_FEATURES * 3, 64), nn.GELU(), nn.Linear(64, REGIME_DIM),
         )
 
         # FiLM layers for P&L heads
@@ -167,7 +168,14 @@ class TradingModel(nn.Module):
     def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
         B, T, F = x.shape
 
-        regime = self.regime_encoder(x[:, -1, :])
+        # Regime: concat last bar + window mean + window std for trend context
+        window = x[:, -10:, :]  # last 10 bars
+        regime_input = torch.cat([
+            x[:, -1, :],           # current snapshot
+            window.mean(dim=1),    # recent average (trend level)
+            window.std(dim=1),     # recent volatility (trend strength)
+        ], dim=-1)
+        regime = self.regime_encoder(regime_input)
 
         h = self.input_proj(x)
         h = self.input_norm(h)
