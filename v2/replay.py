@@ -79,16 +79,16 @@ def model_to_intent(
     atm = round(spot_price / 5.0) * 5.0
     strike = atm + strike_offset
 
-    # Risk parameters (sigmoid squashed to policy ranges)
+    # Risk parameters: clamp raw outputs to policy ranges (no sigmoid)
     risk = outputs['risk']
     stop_lo, stop_hi = policy.stop_range
     target_lo, target_hi = policy.target_range
     hold_lo, hold_hi = policy.max_hold_range
 
-    stop_pct = torch.sigmoid(risk[0]).item() * (stop_hi - stop_lo) + stop_lo
-    target_pct = torch.sigmoid(risk[1]).item() * (target_hi - target_lo) + target_lo
-    hold_frac = torch.sigmoid(risk[2]).item()
-    max_hold = max(hold_lo, int(hold_frac * hold_hi))
+    stop_pct = torch.clamp(risk[0], stop_lo, stop_hi).item()
+    target_pct = torch.clamp(risk[1], target_lo, target_hi).item()
+    hold_raw = torch.clamp(risk[2], 0.0, 1.0).item()
+    max_hold = max(hold_lo, int(hold_raw * hold_hi))
 
     # Convert to prices
     stop_price = option_mid * (1.0 - stop_pct)

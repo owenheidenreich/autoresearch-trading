@@ -51,8 +51,6 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
 RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
-CVAR_W = float(os.environ.get("WEIGHT_CVAR", 0.1))  # tail risk penalty (gentle)
-CVAR_ALPHA = 0.10  # penalize worst 10% of predictions
 
 # For replay compatibility
 NUM_STRIKE_CLASSES = 13
@@ -186,10 +184,10 @@ class TradingModel(nn.Module):
         call_v = call_pnl.squeeze(-1)  # (B,)
         put_v = put_pnl.squeeze(-1)    # (B,)
 
-        # Gate: logit proportional to max predicted P&L
-        # Scale so predicted P&L of 0 -> sigmoid ~0.5, P&L of 0.1 -> sigmoid ~0.73
+        # Gate: raw max predicted P&L as logit (no scaling)
+        # sigmoid(0) = 0.5, so gate_threshold=0.5 means "trade when best P&L > 0"
         max_pnl = torch.max(call_v, put_v)
-        gate_logit = max_pnl * 5.0
+        gate_logit = max_pnl
 
         # Direction: [call_logit, put_logit] from P&L predictions
         direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
@@ -279,10 +277,16 @@ def compute_loss(
 
     pnl_loss = call_loss + put_loss
 
-    # Risk loss: fixed targets (stop=0.30, target=0.50, hold=30/390)
+    # Risk loss: per-bar targets from labels if available, else fixed defaults
     risk_out = outputs['risk'][valid]
-    risk_target = torch.tensor([0.30, 0.50, 30.0 / BARS_PER_DAY], device=device)
-    risk_target = risk_target.unsqueeze(0).expand_as(risk_out)
+    if 'label_stop_pct' in targets and 'label_target_pct' in targets and 'label_max_hold' in targets:
+        t_stop = targets['label_stop_pct'].float().to(device)[valid]
+        t_target = targets['label_target_pct'].float().to(device)[valid]
+        t_hold = targets['label_max_hold'].float().to(device)[valid] / BARS_PER_DAY
+        risk_target = torch.stack([t_stop, t_target, t_hold], dim=-1)
+    else:
+        risk_target = torch.tensor([0.30, 0.50, 30.0 / BARS_PER_DAY], device=device)
+        risk_target = risk_target.unsqueeze(0).expand_as(risk_out)
     risk_loss = F.huber_loss(risk_out, risk_target, delta=0.5)
 
     total = PNL_W * pnl_loss + RISK_W * risk_loss
@@ -301,6 +305,19 @@ def compute_loss(
         true_trade = lab_trade[valid]
         gate_acc = (pred_trade == true_trade).float().mean().item()
 
+        # Conditional metrics: direction accuracy only on gated bars
+        pred_gated = pred_trade.bool()
+        dir_acc_gated = 0.0
+        if pred_gated.any() and dir_valid.any():
+            gated_and_valid = pred_gated & dir_valid
+            if gated_and_valid.any():
+                dir_acc_gated = (pred_dir[gated_and_valid] == true_dir[gated_and_valid]).float().mean().item()
+
+        # Avg predicted P&L for gated vs ungated (measures gate value)
+        max_pred = torch.max(pred_call, pred_put)
+        avg_pnl_gated = max_pred[pred_gated].mean().item() if pred_gated.any() else 0.0
+        avg_pnl_ungated = max_pred[~pred_gated].mean().item() if (~pred_gated).any() else 0.0
+
     loss_dict = {
         'call_pnl': call_loss.item(),
         'put_pnl': put_loss.item(),
@@ -308,6 +325,9 @@ def compute_loss(
         'total': total.item(),
         'dir_acc': dir_acc,
         'gate_acc': gate_acc,
+        'dir_acc_gated': dir_acc_gated,
+        'avg_pnl_gated': avg_pnl_gated,
+        'avg_pnl_ungated': avg_pnl_ungated,
     }
 
     return total, loss_dict
@@ -412,11 +432,16 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
         gate_acc = avg_val.get('gate_acc', 0)
         dir_acc = avg_val.get('dir_acc', 0)
 
+        dir_acc_gated = avg_val.get('dir_acc_gated', 0)
+        avg_pnl_g = avg_val.get('avg_pnl_gated', 0)
+        avg_pnl_u = avg_val.get('avg_pnl_ungated', 0)
+
         print(f"Epoch {epoch:3d} | "
               f"train={avg_train.get('total', 0):.4f} | "
               f"val={avg_val.get('total', 0):.4f} | "
               f"call={avg_val.get('call_pnl', 0):.4f} put={avg_val.get('put_pnl', 0):.4f} | "
-              f"gate={gate_acc:.3f} dir={dir_acc:.3f} | "
+              f"gate={gate_acc:.3f} dir={dir_acc:.3f} dir_g={dir_acc_gated:.3f} | "
+              f"pnl_g={avg_pnl_g:+.4f} pnl_u={avg_pnl_u:+.4f} | "
               f"lr={scheduler.get_last_lr()[0]:.2e}")
 
         val_total = avg_val.get('total', float('inf'))

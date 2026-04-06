@@ -71,6 +71,10 @@ class ReplayMetrics:
     avg_mfe: float = 0.0
     avg_mae: float = 0.0
 
+    # Dollar-weighted metrics (each trade weighted by notional)
+    dollar_weighted_win_rate: float = 0.0
+    dollar_weighted_profit_factor: float = 0.0
+
     # Promotion
     score: float = 0.0
     gate_failure: str | None = None
@@ -165,6 +169,20 @@ def compute_metrics(
     m.avg_bars_held = float(np.mean([t.bars_held for t in trades]))
     m.avg_mfe = float(np.mean([t.mfe_pct for t in trades]))
     m.avg_mae = float(np.mean([t.mae_pct for t in trades]))
+
+    # Dollar-weighted metrics: each trade weighted by notional (entry_price * multiplier * qty)
+    notionals = np.array([t.entry_price * contract_multiplier * t.intent.qty for t in trades])
+    dollar_pnls = np.array([t.net_pnl_pct * n for t, n in zip(trades, notionals)])
+    total_notional = notionals.sum()
+    if total_notional > 0:
+        win_notional = sum(n for t, n in zip(trades, notionals) if t.net_pnl_pct > 0)
+        m.dollar_weighted_win_rate = win_notional / total_notional
+        dollar_wins = dollar_pnls[dollar_pnls > 0].sum()
+        dollar_losses = abs(dollar_pnls[dollar_pnls <= 0].sum())
+        if dollar_losses > 0:
+            m.dollar_weighted_profit_factor = min(dollar_wins / dollar_losses, 10.0)
+        elif dollar_wins > 0:
+            m.dollar_weighted_profit_factor = 10.0
 
     # --- Account curve (dollar-based) ---
     _compute_account_curve(m, trades, starting_equity, contract_multiplier)
