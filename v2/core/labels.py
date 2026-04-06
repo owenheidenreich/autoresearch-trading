@@ -16,9 +16,10 @@ from v2.core.schema import TradeIntent
 from v2.core.features import (
     BARS_PER_DAY, DYNAMIC_STOP_MIN, DYNAMIC_STOP_MAX,
     NO_TRADE_BEFORE_BAR, NO_TRADE_AFTER_BAR,
-    SPREAD_COST_PCT, _FEAT_IDX,
+    SPREAD_COST_PCT, MIN_HOLD_BARS, _FEAT_IDX,
     compute_adaptive_spread_bps,
 )
+from v2.core.simulator import TRAILING_TIERS
 
 
 # ---------------------------------------------------------------------------
@@ -56,6 +57,9 @@ class OracleLabel:
     num_profitable: int = 0
 
 
+MIN_ENTRY_PRICE = 0.50  # match simulator
+
+
 def _simulate_forward(
     entry_bar: int,
     option_prices: np.ndarray,
@@ -64,8 +68,12 @@ def _simulate_forward(
     max_hold: int,
     spread_cost: float,
     dates: list[str],
+    use_trailing: bool = True,
 ) -> float:
-    """Fast forward simulation of a single trade. Returns net P&L pct."""
+    """Fast forward simulation matching simulator behavior. Returns net P&L pct.
+
+    Matches v2/core/simulator.py: min entry price, min hold bars, trailing stops.
+    """
     N = len(option_prices)
     fill_bar = entry_bar + 1
     if fill_bar >= N:
@@ -75,8 +83,13 @@ def _simulate_forward(
     if np.isnan(entry_px) or entry_px <= 0:
         return float('-inf')
 
+    # Match simulator: skip penny options
+    if entry_px < MIN_ENTRY_PRICE:
+        return float('-inf')
+
     entry_day = dates[entry_bar]
     last_valid_px = entry_px
+    trailing_stop = -float('inf')
 
     for k in range(1, min(max_hold + 1, N - fill_bar)):
         check = fill_bar + k
@@ -90,6 +103,10 @@ def _simulate_forward(
         last_valid_px = px
         unrealized = (px - entry_px) / entry_px
 
+        # Enforce minimum hold period before exit checks
+        if k < MIN_HOLD_BARS:
+            continue
+
         # Stop loss (checked first)
         if unrealized <= -stop_pct:
             return -stop_pct - spread_cost
@@ -97,6 +114,16 @@ def _simulate_forward(
         # Take profit
         if unrealized >= target_pct:
             return target_pct - spread_cost
+
+        # Trailing stop (matches simulator TRAILING_TIERS)
+        if use_trailing:
+            for tier_threshold, lock_pct in TRAILING_TIERS:
+                if unrealized >= tier_threshold:
+                    if lock_pct > trailing_stop:
+                        trailing_stop = lock_pct
+                    break
+            if trailing_stop > -float('inf') and unrealized <= trailing_stop:
+                return trailing_stop - spread_cost
 
     # EOD / max hold
     raw_pnl = (last_valid_px - entry_px) / entry_px
@@ -167,7 +194,7 @@ def compute_oracle_labels(
     if tier == 1:
         price_keys = [(k, o, r) for k, o, r in price_keys if o == 0]
 
-    vix_idx = _FEAT_IDX.get('vix_regime', 18)
+    vix_idx = _FEAT_IDX['vix_regime']
 
     labels: list[OracleLabel] = []
 
@@ -202,12 +229,21 @@ def compute_oracle_labels(
                 continue
 
             is_otm = offset != 0
-            # Estimate spread cost for this candidate
-            entry_spread = compute_adaptive_spread_bps(mtc, vix_regime, is_otm)
-            # Rough exit spread (assume exit ~30 bars later)
+            # Skip penny options (match simulator MIN_ENTRY_PRICE)
+            if px < MIN_ENTRY_PRICE:
+                continue
+            # Estimate spread cost with tick floor + commission
+            entry_spread_frac = compute_adaptive_spread_bps(mtc, vix_regime, is_otm) / 10000.0
             exit_mtc = max(mtc - 30, 10)
-            exit_spread = compute_adaptive_spread_bps(exit_mtc, vix_regime, is_otm)
-            spread_cost = (entry_spread + exit_spread) / 10000.0
+            exit_spread_frac = compute_adaptive_spread_bps(exit_mtc, vix_regime, is_otm) / 10000.0
+            # Tick floor (match simulator)
+            min_tick = 0.05 if px < 3.00 else 0.10
+            min_frac = min_tick / px
+            entry_spread_frac = max(entry_spread_frac, min_frac)
+            exit_spread_frac = max(exit_spread_frac, min_frac)
+            # Commission: $0.65/leg * 2 legs / (px * 100)
+            commission_frac = (2 * 0.65) / (px * 100)
+            spread_cost = entry_spread_frac + exit_spread_frac + commission_frac
 
             for stop in stops:
                 for target in targets:

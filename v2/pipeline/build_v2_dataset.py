@@ -27,7 +27,13 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from v2.core.features import compute_adaptive_spread_bps
+from v2.core.features import compute_adaptive_spread_bps, MIN_HOLD_BARS
+from v2.core.simulator import TRAILING_TIERS
+
+# Minimum entry price -- match simulator
+MIN_ENTRY_PRICE = 0.50
+# Commission per contract per side ($0.65/leg, $1.30 RT)
+COMMISSION_PER_CONTRACT = 0.65
 
 # ---------------------------------------------------------------------------
 # Config
@@ -478,14 +484,12 @@ def build_dataset(
             if call_entry_px is None and put_entry_px is None:
                 continue
 
-            # Cost model: matches simulator's compute_adaptive_spread_bps
+            # Cost model: matches simulator's _compute_spread_cost with tick floor
             is_otm = False
             vix_regime = float(X_old[gi, sr_idx]) if sr_idx is not None else 0.0
             mtc = max(390 - bod, 10)
-            entry_spread_bps = compute_adaptive_spread_bps(mtc, vix_regime, is_otm)
-            exit_mtc = max(mtc - FIXED_HOLD, 10)
-            exit_spread_bps = compute_adaptive_spread_bps(exit_mtc, vix_regime, is_otm)
-            cost_frac = (entry_spread_bps + exit_spread_bps) / 10000.0
+            # Note: actual exit conditions will be used per-direction below
+            # (we compute a base spread here; the per-trade cost is adjusted)
 
             # Pre-fetch price series for BOTH directions
             max_look = FIXED_HOLD + 2
@@ -509,27 +513,71 @@ def build_dataset(
             if len(call_prices) < 3:
                 continue
 
-            # Simulate BOTH directions with fixed params
-            def _sim_one(entry_px, prices):
-                if entry_px is None:
+            # Simulate BOTH directions with fixed params (matches simulator behavior)
+            def _sim_one(entry_px, prices, entry_bod):
+                if entry_px is None or entry_px < MIN_ENTRY_PRICE:
                     return 0.0, 0
                 last_px = entry_px
+                trailing_stop = -float('inf')
+                exit_k = len(prices) - 1  # default: last bar
+                exit_px = entry_px
+                exit_reason = 'EOD'
                 for k in range(1, min(FIXED_HOLD + 1, len(prices))):
                     px = prices[k]
                     if np.isnan(px):
                         continue
                     last_px = px
                     unr = (px - entry_px) / entry_px
+                    # Enforce min hold before exit checks
+                    if k < MIN_HOLD_BARS:
+                        continue
+                    # Stop loss
                     if unr <= -FIXED_STOP:
-                        return -FIXED_STOP - cost_frac, -1
+                        exit_k = k
+                        exit_px = entry_px * (1.0 - FIXED_STOP)
+                        exit_reason = 'SL'
+                        break
+                    # Take profit
                     if unr >= FIXED_TARGET:
-                        return FIXED_TARGET - cost_frac, 1
-                raw = (last_px - entry_px) / entry_px
-                pnl = raw - cost_frac
-                return pnl, (1 if pnl > 0 else -1)
+                        exit_k = k
+                        exit_px = entry_px * (1.0 + FIXED_TARGET)
+                        exit_reason = 'TP'
+                        break
+                    # Trailing stop
+                    for tier_thr, lock_pct in TRAILING_TIERS:
+                        if unr >= tier_thr:
+                            if lock_pct > trailing_stop:
+                                trailing_stop = lock_pct
+                            break
+                    if trailing_stop > -float('inf') and unr <= trailing_stop:
+                        exit_k = k
+                        exit_px = entry_px * (1.0 + trailing_stop)
+                        exit_reason = 'TRAIL'
+                        break
+                else:
+                    exit_px = last_px
 
-            call_pnl, call_outcome = _sim_one(call_entry_px, call_prices)
-            put_pnl, put_outcome = _sim_one(put_entry_px, put_prices)
+                raw_pnl = (exit_px - entry_px) / entry_px
+                # Compute spread cost with tick floor (matches simulator)
+                entry_mtc = mtc
+                exit_bod_val = min(entry_bod + exit_k, 389)
+                exit_mtc_val = max(390 - exit_bod_val, 1)
+                entry_spread = compute_adaptive_spread_bps(entry_mtc, vix_regime, is_otm) / 10000.0
+                exit_spread = compute_adaptive_spread_bps(exit_mtc_val, vix_regime, is_otm) / 10000.0
+                # Tick floor
+                min_tick = 0.05 if entry_px < 3.00 else 0.10
+                min_frac = min_tick / entry_px
+                entry_spread = max(entry_spread, min_frac)
+                exit_spread = max(exit_spread, min_frac)
+                spread_cost = entry_spread + exit_spread
+                # Commission: $0.65/leg * 2 legs / (entry_px * 100)
+                commission_frac = (2 * COMMISSION_PER_CONTRACT) / (entry_px * 100)
+                net_pnl = raw_pnl - spread_cost - commission_frac
+                outcome = 1 if net_pnl > 0 else -1
+                return net_pnl, outcome
+
+            call_pnl, call_outcome = _sim_one(call_entry_px, call_prices, bod)
+            put_pnl, put_outcome = _sim_one(put_entry_px, put_prices, bod)
 
             # Store both P&Ls for the model to learn from
             label_call_pnl[gi] = call_pnl
@@ -544,8 +592,10 @@ def build_dataset(
                 direction = 1  # put
                 outcome = put_outcome
 
-            # gate=True only when the best direction is profitable
-            is_trade = best_pnl > 0
+            # gate=True only when best direction clears a minimum edge
+            # Threshold > 0 makes labels more selective (was 79.7% at > 0)
+            GATE_MIN_PNL = 0.02  # 2% minimum net P&L to label as trade
+            is_trade = best_pnl > GATE_MIN_PNL
             total_signal_bars += 1
 
             label_direction[gi] = direction
@@ -639,9 +689,28 @@ def build_dataset(
     nan_after = np.isnan(X_new).sum()
     # Remaining NaN = start-of-day bars before first valid quote. Fill with 0.
     X_new_clean = np.nan_to_num(X_new, nan=0.0)
-    X_combined = np.concatenate([X_old, X_new_clean], axis=1)
-    all_feature_names = list(feature_names_old) + NEW_FEATURE_NAMES
-    print(f"\nCombined features: {X_combined.shape[1]} ({n_old_features} old + {n_new} new)")
+    # Check if enriched features already exist in the base (prevents double-append)
+    already_has_enriched = any(n in feature_names_old for n in NEW_FEATURE_NAMES)
+    if already_has_enriched:
+        # Replace existing enriched columns instead of appending duplicates
+        enriched_start = None
+        for ei, fname in enumerate(feature_names_old):
+            if fname == NEW_FEATURE_NAMES[0]:
+                enriched_start = ei
+                break
+        if enriched_start is not None:
+            print(f"\n  Enriched features already at columns {enriched_start}-{enriched_start + n_new - 1}, replacing in-place")
+            X_old[:, enriched_start:enriched_start + n_new] = X_new_clean
+            X_combined = X_old
+            all_feature_names = list(feature_names_old)
+        else:
+            # Names match but can't find start index -- append as normal
+            X_combined = np.concatenate([X_old, X_new_clean], axis=1)
+            all_feature_names = list(feature_names_old) + NEW_FEATURE_NAMES
+    else:
+        X_combined = np.concatenate([X_old, X_new_clean], axis=1)
+        all_feature_names = list(feature_names_old) + NEW_FEATURE_NAMES
+    print(f"\nCombined features: {X_combined.shape[1]} ({n_old_features} base, {n_new} enriched)")
     print(f"  NaN before forward-fill: {nan_before:,}")
     print(f"  NaN after forward-fill: {nan_after:,} (remaining = start-of-day, filled with 0)")
 

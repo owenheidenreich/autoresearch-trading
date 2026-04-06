@@ -199,7 +199,9 @@ def simulate_trade(
     exit_bod = int(bar_of_day[min(exit_bar, N - 1)])
     vix_exit = float(features[min(exit_bar, len(features) - 1), vix_idx])
     spread_cost = _compute_spread_cost(entry_bod, exit_bod, vix_entry, vix_exit, is_otm, entry_px=entry_px)
-    net_pnl = raw_pnl - spread_cost
+    # Commission: $0.65/leg, 2 legs per round-trip, as fraction of entry premium
+    commission_frac = (2 * 0.65) / (entry_px * 100)
+    net_pnl = raw_pnl - spread_cost - commission_frac
 
     underlying_entry = float(features[fill_bar, _FEAT_IDX.get('ret_6', 0)]) if fill_bar < len(features) else 0.0
     underlying_exit = float(features[min(exit_bar, len(features) - 1), _FEAT_IDX.get('ret_6', 0)])
