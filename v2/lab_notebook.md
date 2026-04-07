@@ -264,3 +264,11 @@ PDR 82.2% (37/45). 2 more traded days, same 8 losing. Marginal improvement.
 ### exp_021: asymmetric loss 2x -> 3x -- KEEP (5.053)
 
 Score 5.053 (was 4.933). PDR 84.2% (16/19 winning, 3 losing). Very selective: 44 trades in 19 traded days. Model barely above minimum thresholds (30 trades, 15 days). The 3x asymmetric penalty makes the model extremely conservative -- it only trades when very confident.
+
+### exp_022-023: gate_threshold tuning -- BOTH REVERTED
+
+Gate sensitivity very nonlinear: 0.40=549t/PDR 66.7%, 0.47=319t/PDR 77.2%, 0.50=44t/PDR 84.2%. Policy tuning alone insufficient.
+
+### exp_024: dropout 0.1 -> 0.05 -- KEEP (5.786)
+
+**BREAKTHROUGH.** Score 5.786 (was 5.053). PDR 96.4% -- only 1 losing day out of 28 traded. 83 trades, WR 72.3%, PF 6.14. Less dropout gives the model sharper P&L predictions while the 3x asymmetric loss prevents overconfidence. The combination (3x asym + 0.05 dropout) is powerful: the model can learn precise patterns but is penalized heavily for false positives.
