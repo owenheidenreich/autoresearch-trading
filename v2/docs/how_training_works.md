@@ -27,7 +27,7 @@ OUTER LOOP (autoresearch / ART2)           <-- Karpathy-style, code changes
 
 The **inner loop** (epochs) produces one trained model. It is standard machine learning. This is what `train.py` does.
 
-The **outer loop** (experiments) is the Karpathy autoresearch part. This is where the AI researcher (Claude, running on the GPU machine) mutates the code, trains, evaluates, and keeps or reverts. This is what `run_experiment.py` and `inner_loop.py` manage.
+The **outer loop** (experiments) is the Karpathy autoresearch part. This is where the AI researcher (Claude) mutates the code, trains, evaluates, and keeps or reverts. Claude drives this loop using `deploy.sh run_one` which uploads code to the GPU, runs `run_experiment.py`, and downloads the result.
 
 One experiment = one full training run (up to 30 epochs) + replay + scoring. A session can run up to 50 experiments.
 
@@ -55,15 +55,15 @@ Training = teaching the model to match those oracle decisions, using only the ma
 
 ## What the Model Does
 
-The model is a small transformer (~100K parameters). It takes the last 60 bars of 39 market features and outputs a complete trading decision:
+The model is a small transformer (~170K parameters). It takes the last 60 bars of 71 features (39 market + 16 option-enriched + 16 volume/moneyness) and predicts P&L for both directions:
 
 | Output | What it means |
 |--------|--------------|
-| Gate | Trade or skip this bar? (yes/no) |
-| Direction | Call or put? |
-| Strike | Which strike offset? (13 classes from -30 to +30) |
-| Risk | Stop-loss %, profit target %, max hold time |
-| Confidence | How sure the model is |
+| call_pnl | Predicted P&L if buying an ATM call here |
+| put_pnl | Predicted P&L if buying an ATM put here |
+| risk | Stop-loss %, profit target %, max hold fraction |
+
+Trading decisions are derived at inference time: gate = max(call_pnl, put_pnl) > threshold, direction = argmax(call_pnl, put_pnl).
 
 ## What an Epoch Is
 
@@ -73,10 +73,10 @@ Your training data has ~859 days of bars. Each epoch:
 
 1. **Shuffle** the data into batches of 2048 samples.
 2. For each batch:
-   - Feed 2048 windows (each 60 bars x 39 features) into the model.
-   - Model outputs its trading decisions for all 2048 windows.
-   - Compare outputs to oracle labels. Compute a **loss** (a number that measures how wrong the model is).
-   - Run **backpropagation**: calculus that figures out which of the model's ~100K weights to nudge, and by how much, to reduce the loss.
+   - Feed 2048 windows (each 60 bars x 71 features) into the model.
+   - Model predicts call_pnl and put_pnl for all 2048 windows.
+   - Compare predictions to actual P&L labels. Compute a **loss** (a number that measures how wrong the model is).
+   - Run **backpropagation**: calculus that figures out which of the model's ~170K weights to nudge, and by how much, to reduce the loss.
    - **Update the weights** by a tiny amount in the direction that reduces the loss.
 3. After all batches: run the **validation set** (60 separate days the model did not train on) to check whether the model is learning general patterns or just memorizing.
 
@@ -86,17 +86,17 @@ Each epoch, the model sees the same data in a different random order. Its weight
 
 ## The Loss Function
 
-The loss is a weighted sum of five sub-losses:
+The loss is P&L regression with an asymmetric penalty:
 
 | Sub-loss | What it measures | Weight |
 |----------|-----------------|--------|
-| Gate | Did it correctly say trade/no-trade? (binary cross-entropy) | 1.0 |
-| Direction | Did it pick the right direction? (cross-entropy, only on trade bars) | 1.0 |
-| Strike | Did it pick the right strike offset? (cross-entropy, only on trade bars) | 0.5 |
-| Risk | Are stop/target/hold close to oracle values? (Huber loss, only on trade bars) | 0.3 |
-| Confidence | Does confidence match oracle confidence? (binary cross-entropy) | 0.5 |
+| call_pnl | How close is predicted call P&L to actual? (asymmetric Huber) | 1.0 |
+| put_pnl | How close is predicted put P&L to actual? (asymmetric Huber) | 1.0 |
+| risk | Are stop/target/hold close to label values? (Huber loss) | 0.3 |
 
-Lower loss = model's outputs are closer to oracle answers.
+The asymmetric Huber loss penalizes optimistic errors (model predicted profit, actual was loss) 2x more than pessimistic errors. This makes the gate conservative.
+
+Lower loss = model's P&L predictions are closer to actual outcomes.
 
 ## What the Log Output Means
 
@@ -132,9 +132,10 @@ Training runs on an Akash H100 GPU, never locally. The local MacBook is only use
 |-----------|---------|-----------------|
 | EPOCHS | 30 | Max passes through training data |
 | BATCH_SIZE | 2048 | Samples per weight update |
-| LR | 3e-4 | How big each weight nudge is |
+| LR | 5e-4 | How big each weight nudge is |
 | LOOKBACK | 60 | Bars of history the model sees |
 | D_MODEL | 64 | Width of the transformer's internal representation |
 | DEPTH | 3 | Number of transformer layers |
 | TIME_BUDGET | 300s | Hard time cap on training |
-| GATE_POS_WEIGHT | 0.3 | Makes the model conservative about trading (< 1.0 penalizes false "trade" signals) |
+| PNL_W | 1.0 | Weight for P&L regression loss |
+| RISK_W | 0.3 | Weight for risk parameter loss |

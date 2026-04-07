@@ -41,7 +41,7 @@ Label statistics:
    - `v2/train.py` -- the model and training loop. You modify this.
    - `v2/core/policy.py` -- the trading policy. You can modify this too.
    - `v2/lab_notebook.md` -- experiment log.
-3. **Verify data**: `v2/data_v2.pt` must exist (check metadata version = `v2_wide_grid_risk_search`).
+3. **Verify data**: `v2/data.pt` must exist (check metadata version = `v2_wide_grid_risk_search`).
 4. **Boot Akash GPU** and establish baseline.
 5. **Record baseline** in `v2/results.tsv`.
 
@@ -61,9 +61,9 @@ Everything else. These are the immutable evaluation harness:
 - `v2/replay.py` -- how model outputs become trades and get evaluated
 - `v2/core/labels.py` -- how labels are generated
 - `v2/core/schema.py` -- TradeIntent and SimulatedTrade contracts
-- `v2/data_v2.pt` -- the dataset
-- `v2/ops/run_experiment.py` -- the experiment runner
-- `v2/ops/inner_loop.py` -- session limits and keep/revert logic
+- `v2/data.pt` -- the dataset
+- `v2/ops/run_experiment.py` -- the experiment runner (train + replay + score + baselines)
+- `v2/ops/deploy.sh` -- GPU deployment and `run_one` command
 
 ## The Goal
 
@@ -112,20 +112,21 @@ Model must also beat all four baselines:
 
 ## The Experiment Loop
 
+One-time setup: `./v2/ops/deploy.sh boot` then `./v2/ops/deploy.sh start`.
+
 LOOP:
 
-1. Look at git state and last experiment results.
-2. Decide what to try. Write your hypothesis.
-3. Edit `v2/train.py` and/or `v2/core/policy.py`.
-4. `git commit` your changes.
-5. Upload to Akash and run the experiment on GPU.
-6. Download results. Read score.
-7. If crashed: read the log, try to fix. If unfixable, log as crash, move on.
-8. Log results to `v2/results.tsv`.
-9. If score improved AND beats all baselines: **KEEP**. Branch advances.
-10. If score equal or worse: **REVERT**. `git checkout v2/train.py v2/core/policy.py` AND restore model.pt from the best artifact bundle.
-11. Check session limits (see below). If any limit hit, stop.
-12. Go to step 1.
+1. Look at last experiment results. Decide what to try. Write your hypothesis.
+2. Edit `v2/train.py` and/or `v2/core/policy.py`.
+3. `git commit` your changes.
+4. `./v2/ops/deploy.sh run_one exp_NNN` -- uploads code + model, trains on GPU, downloads new model.
+5. Read the score from stdout.
+6. If crashed: read the log, try to fix. If unfixable, log as crash, move on.
+7. If score improved AND beats all baselines: **KEEP**. `cp v2/model.pt v2/model.pt.best`.
+8. If score equal or worse: **REVERT**. `git checkout HEAD~1 -- v2/train.py v2/core/policy.py` and `cp v2/model.pt.best v2/model.pt`.
+9. Append result to `v2/results.tsv`.
+10. Check session limits (see below). If any limit hit, stop.
+11. Go to step 1.
 
 ## Session Limits
 
