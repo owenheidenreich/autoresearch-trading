@@ -22,7 +22,7 @@ class DecisionPolicy:
     """
 
     # --- Gate ---
-    gate_threshold: float = 0.5  # sigmoid(0)=0.5, so this means "trade when predicted P&L > 0"
+    gate_threshold: float = 0.50  # trade only when model predicts positive P&L
 
     # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
     stop_range: tuple[float, float] = (0.10, 0.40)

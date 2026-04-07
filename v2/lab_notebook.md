@@ -236,3 +236,19 @@ Training metrics:
 - avg_pnl_gated: +0.095 vs avg_pnl_ungated: -0.030 (gate adds real value)
 
 **This is the first honest score.** All prior scores were contaminated by phantom profits, overlapping positions, and broken baselines. The autoresearch loop can now improve from a truthful starting point.
+
+## Session 3: Score Bottleneck Analysis (2026-04-06)
+
+### Score Bottleneck
+
+Score = min(sortino, 6.0) * positive_day_rate * dd_mult = 6.0 * (35/43) * 1.0 = 4.884
+
+Sortino already maxed at 6.0. **Binding constraint: 8 losing days out of 43 traded (81.4% PDR).**
+
+Worst losing days: Dec 16 (-$1016, 6 puts on rally), Jan 6 (-$1079, 3 calls MAX_HOLD), Feb 11 (-$1287, 34.7% put loss at MAX_HOLD). Borderline: Dec 18 (-$70), Jan 2 (-$22), Jan 5 (-$111).
+
+Exit analysis: STOP_LOSS 0% WR (avg -$372). MAX_HOLD 69.5% WR but 25-35% losses on losers. TAKE_PROFIT 100% WR avg +$1123.
+
+### exp_018: gate_threshold 0.45 -> 0.50
+
+**Hypothesis:** Higher gate threshold filters out marginal trades, flipping borderline losing days (Dec 18, Jan 2, Jan 5) to no-trade or winning. Model's asymmetric loss already penalizes optimistic predictions, so P&L > 0 threshold is a natural cut.
