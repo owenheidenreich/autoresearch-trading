@@ -353,8 +353,17 @@ def load_dataset(path: str = "v2/data.pt") -> dict:
     return torch.load(path, map_location="cpu", weights_only=False)
 
 
+SEED = int(os.environ.get("TRAIN_SEED", 42))
+
+
 def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
     t_start = time.time()
+
+    # Reproducible training
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    np.random.seed(SEED)
+    print(f"Seed: {SEED}")
 
     data = load_dataset(data_path)
     features = data['X']
