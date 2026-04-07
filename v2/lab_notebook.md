@@ -252,3 +252,5 @@ PDR 82.2% (37/45). 2 more traded days, same 8 losing. Marginal improvement.
 ### exp_019: stop_range (0.10, 0.40) -> (0.10, 0.25)
 
 **Hypothesis:** Worst losses are 33.5%, 34.7%, 31.3% at MAX_HOLD/STOP_LOSS. Max stop at 40% is too loose. Capping at 25% should reduce catastrophic single-trade losses.
+
+**Result:** Score 4.468 (was 4.933). PDR dropped to 74.5% (12 losing days). Tighter stops = more stop-outs = more losing trades. REVERT.

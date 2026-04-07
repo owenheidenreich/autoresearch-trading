@@ -25,7 +25,7 @@ class DecisionPolicy:
     gate_threshold: float = 0.50  # trade only when model predicts positive P&L
 
     # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
-    stop_range: tuple[float, float] = (0.10, 0.25)
+    stop_range: tuple[float, float] = (0.10, 0.40)
     target_range: tuple[float, float] = (0.15, 1.65)
     max_hold_range: tuple[int, int] = (10, 250)
 
