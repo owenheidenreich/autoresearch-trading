@@ -116,7 +116,6 @@ FEATURE_NAMES = [
     'near_atm_put_volume',      # 43: put volume at nearest ATM strike
     'near_atm_total_volume',    # 44: total volume at nearest ATM
     'call_put_flow_ratio',      # 45: call_vol / total_vol (flow direction)
-    'volume_zero_flag',         # 46: 1.0 if nearest ATM has zero volume
     'log_total_volume',         # 47: log(1 + total volume)
     'chain_call_put_ratio',     # 48: call/total across entire chain
     'log_chain_volume',         # 49: log(1 + chain total volume)
