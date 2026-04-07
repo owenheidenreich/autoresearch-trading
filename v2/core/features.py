@@ -10,9 +10,6 @@ import math
 import numpy as np
 import pandas as pd
 
-from v2.pipeline.compute_features import ALL_FEATURE_NAMES, NUM_FEATURES
-
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -42,10 +39,26 @@ STARTING_CAPITAL = 10_000
 POSITION_RISK_TARGET = 0.05
 SPX_MULTIPLIER = 100
 
-# Canonical feature names (from compute_features.py)
-FEATURE_NAMES = ALL_FEATURE_NAMES
-
-assert len(FEATURE_NAMES) == NUM_FEATURES
+# Canonical feature names (must match v2/pipeline/compute_features.py order)
+FEATURE_NAMES = [
+    # Price/market structure (28)
+    'ret_6', 'ret_12', 'volume_ratio', 'bar_range', 'realized_vol',
+    'range_ratio', 'vwap_dist', 'session_range_pct', 'prev_high_dist',
+    'ema_cross', 'consec_direction', 'speed_estimate', 'vix_roc',
+    'minutes_to_close', 'vix_regime', 'bollinger_position', 'rsi_7',
+    'session_range_position', 'poc_dist', 'va_position', 'ib_break',
+    'atr_14', 'bar_delta', 'session_cum_delta', 'macdh_slope',
+    'force_index_2', 'effort_vs_result', 'trend_5min',
+    # Option/Greeks (11)
+    'atm_iv', 'vrp', 'iv_percentile', 'atm_gamma', 'atm_theta_per_bar',
+    'gamma_pressure', 'option_spread_pct', 'iv_skew_pct',
+    'current_moneyness_pct', 'near_atm_moneyness_pct', 'theta_acceleration',
+    # Volume/flow (8)
+    'log_near_call_volume', 'log_near_put_volume', 'call_put_flow_ratio',
+    'log_total_volume', 'chain_call_put_ratio', 'log_chain_volume',
+    'log_near_transactions', 'put_call_txn_ratio',
+]
+NUM_FEATURES = len(FEATURE_NAMES)  # 47
 
 # Fast name -> index lookup
 _FEAT_IDX = {name: idx for idx, name in enumerate(FEATURE_NAMES)}
