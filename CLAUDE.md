@@ -24,31 +24,41 @@ This project follows Karpathy's autoresearch design (github.com/karpathy/autores
 
 ## Experiment Loop Execution
 
-**Claude IS the experiment loop.** Like Karpathy's autoresearch, the AI agent drives every iteration: form hypothesis, edit code, train, read score, keep/revert, repeat.
+**Claude IS the experiment loop.** Same as Karpathy's autoresearch: edit code, train, read score, keep or revert, repeat. The only difference is training runs on a remote GPU.
 
 ### One-time setup:
 1. `./v2/ops/deploy.sh boot` -- boot GPU
-2. `./v2/ops/deploy.sh start` -- upload code + data, install deps, verify CUDA
+2. `./v2/ops/deploy.sh start` -- upload code + data, install deps
 
-### Per-experiment cycle (Claude drives this):
-1. Read last experiment results (results.tsv, artifacts, trade-level data)
-2. Form a hypothesis. Write it in lab_notebook.md.
-3. Edit `v2/train.py` and/or `v2/core/policy.py` locally. One change per experiment.
-4. `git commit` the change.
-5. `./v2/ops/deploy.sh push` -- upload changed files to GPU
-6. `./v2/ops/deploy.sh experiment exp_NNN` -- run single experiment (~5 min, blocking)
-7. `./v2/ops/deploy.sh pull` -- download results + artifacts
-8. Read the score. If improved AND beats all baselines: **KEEP**. Otherwise: **REVERT** (`git checkout v2/train.py v2/core/policy.py`).
-9. Log to results.tsv.
-10. Check session limits. If any limit hit, stop. Otherwise go to step 1.
+### The loop:
+```
+LOOP FOREVER:
+  1. Edit v2/train.py and/or v2/core/policy.py
+  2. git commit
+  3. ./v2/ops/deploy.sh run_one exp_NNN
+  4. Read the score from stdout
+  5. If score improved AND beats all baselines: KEEP
+       cp v2/model.pt v2/model.pt.best
+  6. If not: REVERT
+       git checkout HEAD~1 -- v2/train.py v2/core/policy.py
+       cp v2/model.pt.best v2/model.pt
+  7. Go to 1
+```
+
+`run_one` does everything in one shot: uploads code + model to GPU, runs training + replay + scoring, downloads the new model. No separate push/pull steps.
+
+### Keep/revert state:
+- **Code state**: git. Keep = committed. Revert = `git checkout`.
+- **Model state**: `model.pt.best` is the best model. Keep = copy new to best. Revert = copy best back.
+- **Score**: Claude reads from `run_one` stdout. Best score tracked in conversation.
+- **Log**: Claude appends to `results.tsv` after each experiment.
 
 ### Hard rules:
-- NEVER fire off inner_loop.py and walk away. It re-trains identical code with no mutations. That is not autoresearch.
-- NEVER bypass `deploy.sh` with raw `sshpass` commands. If `deploy.sh` has a bug, fix `deploy.sh`.
+- NEVER run inner_loop.py. Claude IS the loop.
+- NEVER bypass `deploy.sh` with raw `sshpass` commands.
 - NEVER delete `model.pt` unless executing a "fresh start" command.
-- NEVER shut down the GPU lease until the session ends or the user says to stop.
-- Each experiment requires a hypothesis and a code change BEFORE training. Re-running identical code is not an experiment.
-- If `deploy.sh` fails, fix the issue in `deploy.sh`, don't work around it.
+- Each experiment requires a hypothesis and a code change BEFORE training.
+- If stuck (3+ reverts): stop, analyze trade-level data, form a real hypothesis.
 
 ## Code Quality
 

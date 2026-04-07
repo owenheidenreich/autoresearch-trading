@@ -3,18 +3,15 @@
 # Akash GPU — v2 Deployment
 # ===========================================================================
 # Autoresearch loop (Claude drives each experiment):
-#   ./deploy.sh boot            → Deploy GPU container on Akash, wait for SSH
-#   ./deploy.sh start           → Upload v2 codebase + data, install deps, verify GPU
-#   ./deploy.sh push            → Upload train.py + policy.py to GPU (fast)
-#   ./deploy.sh experiment ID   → Run single experiment on GPU (blocking, ~5 min)
-#   ./deploy.sh pull            → Download results + artifacts from GPU
+#   ./deploy.sh boot        → Deploy GPU container on Akash, wait for SSH
+#   ./deploy.sh start       → Upload v2 codebase + data, install deps
+#   ./deploy.sh run_one ID  → Upload code + run experiment + download model
 #
 # Utilities:
-#   ./deploy.sh ssh       → Drop into SSH shell on the H100
-#   ./deploy.sh logs      → Tail run.log
-#   ./deploy.sh status    → GPU, experiment count, best score dashboard
-#   ./deploy.sh download  → Download all v2 results
-#   ./deploy.sh stop      → Kill experiment + close Akash deployment
+#   ./deploy.sh ssh         → SSH into the H100
+#   ./deploy.sh status      → GPU + experiment dashboard
+#   ./deploy.sh download    → Download all v2 results + artifacts
+#   ./deploy.sh stop        → Kill experiment + close Akash deployment
 # ===========================================================================
 set -euo pipefail
 
@@ -806,106 +803,38 @@ cmd_sync() {
 }
 
 # ===================================================================
-# PUSH — upload mutable research files (train.py, policy.py) to GPU
+# RUN_ONE — upload code + model, run single experiment, download model
 # ===================================================================
-cmd_push() {
-    load_state
-    log "=== PUSH: Uploading mutable files to GPU ==="
-
-    wait_for_ssh
-
-    for f in v2/train.py v2/core/policy.py; do
-        local local_path="$PROJECT_ROOT/$f"
-        local remote_path="/root/$f"
-        [[ -f "$local_path" ]] || { log "WARNING: $local_path not found, skipping"; continue; }
-
-        scp_cmd "$local_path" "root@$SSH_HOST:$remote_path"
-
-        # SHA256 integrity check
-        local local_sha remote_sha
-        local_sha=$(shasum -a 256 "$local_path" | awk '{print $1}')
-        remote_sha=$(ssh_cmd "sha256sum $remote_path | awk '{print \$1}'" 2>/dev/null || true)
-        if [[ "$remote_sha" == "$local_sha" ]]; then
-            log "  $f OK (sha256=${local_sha:0:12})"
-        else
-            die "Integrity check failed for $f (local=$local_sha remote=$remote_sha)"
-        fi
-    done
-
-    log "Push complete."
-}
-
-# ===================================================================
-# EXPERIMENT — run a single experiment on the GPU (blocking, ~5 min)
-# ===================================================================
-cmd_experiment() {
+# This is the autoresearch loop primitive. Claude calls this once per
+# experiment. It does push + train + pull in one shot.
+#
+# Usage: ./deploy.sh run_one exp_017
+cmd_run_one() {
     load_state
     local exp_id="${EXTRA_ARGS:-}"
-    [[ -n "$exp_id" ]] || die "Usage: deploy.sh experiment <exp_id>  (e.g. exp_016)"
+    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_one <exp_id>"
 
     log "=== EXPERIMENT: $exp_id ==="
-    log "Running run_experiment.py on GPU (blocking, ~5 min)..."
 
-    ssh_cmd "cd /root && python3 -m v2.ops.run_experiment --id $exp_id 2>&1" \
-        || log "WARNING: run_experiment.py exited with non-zero status"
-}
-
-# ===================================================================
-# PULL — download results from GPU (lightweight)
-# ===================================================================
-cmd_pull() {
-    load_state
-    log "=== PULL: Downloading results ==="
-
-    # Download key files
-    for f in v2/model.pt v2/results.tsv v2/.best_score v2/.inner_loop_state.json; do
-        scp_cmd "root@$SSH_HOST:/root/$f" "$PROJECT_ROOT/$f" 2>/dev/null || \
-            log "  WARNING: $f not found on remote"
+    # 1. Upload mutable files + model for warm-start
+    for f in v2/train.py v2/core/policy.py v2/model.pt; do
+        [[ -f "$PROJECT_ROOT/$f" ]] || continue
+        scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
     done
 
-    # Download artifacts/
-    mkdir -p "$PROJECT_ROOT/v2/artifacts"
-    scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || \
-        log "  WARNING: artifacts/ not found on remote"
+    # Verify train.py integrity
+    local local_sha remote_sha
+    local_sha=$(shasum -a 256 "$PROJECT_ROOT/v2/train.py" | awk '{print $1}')
+    remote_sha=$(ssh_cmd "sha256sum /root/v2/train.py | awk '{print \$1}'" 2>/dev/null)
+    [[ "$remote_sha" == "$local_sha" ]] || die "train.py upload integrity check failed"
+    log "Code uploaded. Training..."
 
-    log "Pull complete. Results in: $PROJECT_ROOT/v2/"
-}
+    # 2. Run experiment (blocking, ~5 min)
+    ssh_cmd "cd /root && python3 -m v2.ops.run_experiment --id $exp_id 2>&1"
 
-# ===================================================================
-# RUN — start the autonomous experiment loop on GPU (DEPRECATED)
-# ===================================================================
-cmd_run() {
-    load_state
-    log "=== RUN: Starting experiment loop on GPU ==="
-    log "NOTE: This starts inner_loop.py which re-trains without code mutations."
-    log "      For autoresearch, use: push -> experiment -> pull (Claude drives the loop)."
-
-    # Check if already running
-    if ssh_cmd "pgrep -f 'inner_loop'" &>/dev/null; then
-        log "Experiment loop already running on GPU."
-        log "Use './deploy.sh logs' to tail output, or './deploy.sh status' for dashboard."
-        return 0
-    fi
-
-    # Start inner_loop.py via nohup, log to run.log
-    log "Launching inner_loop.py on remote GPU..."
-    ssh_cmd "cd /root && nohup python3 -m v2.ops.inner_loop > /root/run.log 2>&1 &"
-    sleep 2
-
-    # Verify it started
-    if ssh_cmd "pgrep -f 'inner_loop'" &>/dev/null; then
-        log "Experiment loop started successfully."
-        log ""
-        log "Monitor with:"
-        log "  ./deploy.sh status    — GPU + session dashboard"
-        log "  ./deploy.sh logs      — tail run.log"
-        log "  ./deploy.sh sync      — auto-sync results to local"
-        log "  python v2/ops/monitor.py — local monitor"
-    else
-        log "WARNING: inner_loop.py may not have started. Check with:"
-        log "  ./deploy.sh ssh"
-        log "  cat /root/run.log"
-    fi
+    # 3. Download new model.pt
+    scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt"
+    log "Done. model.pt synced."
 }
 
 cmd_stop() {
@@ -975,34 +904,28 @@ export EXTRA_ARGS
 case "$CMD" in
     boot)       cmd_boot       ;;
     start)      cmd_start      ;;
-    push)       cmd_push       ;;
-    experiment) cmd_experiment ;;
-    pull)       cmd_pull       ;;
-    run)        cmd_run        ;;
+    run_one)    cmd_run_one    ;;
     fund)       cmd_fund       ;;
     ssh)        cmd_ssh        ;;
     logs)       cmd_logs       ;;
     status)     cmd_status     ;;
     download)   cmd_download   ;;
-    sync)       cmd_sync       ;;
     stop)       cmd_stop       ;;
     *)
         echo "Usage: ./deploy.sh <command> [options]"
         echo ""
         echo "Autoresearch loop (Claude drives):"
-        echo "  boot            Deploy H100 container on Akash (~2 min)"
-        echo "  start           Upload v2 code + data, prepare for experiments"
-        echo "  push            Upload train.py + policy.py to GPU (fast)"
-        echo "  experiment ID   Run single experiment on GPU (blocking, ~5 min)"
-        echo "  pull            Download results + artifacts from GPU"
+        echo "  boot          Deploy H100 container on Akash (~2 min)"
+        echo "  start         Upload v2 code + data, install deps"
+        echo "  run_one ID    Upload code + run experiment + download model (~5 min)"
         echo ""
         echo "Utilities:"
-        echo "  ssh             SSH into the H100"
-        echo "  logs            Tail run.log"
-        echo "  status          GPU + experiment dashboard"
-        echo "  download        Download all v2 results"
-        echo "  fund            Add ACT to deployment escrow"
-        echo "  stop            Kill experiment + close Akash deployment"
+        echo "  ssh           SSH into the H100"
+        echo "  logs          Tail run.log"
+        echo "  status        GPU + experiment dashboard"
+        echo "  download      Download all v2 results + artifacts"
+        echo "  fund          Add ACT to deployment escrow"
+        echo "  stop          Kill experiment + close Akash deployment"
         exit 1
         ;;
 esac

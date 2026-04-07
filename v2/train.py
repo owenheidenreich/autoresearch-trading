@@ -278,10 +278,10 @@ def compute_loss(
     put_err = pred_put - true_put
     # Optimistic = predicted higher than actual (positive error when true is negative)
     call_weight = torch.where(
-        (call_err > 0) & (true_call < 0), 1.5, 1.0
+        (call_err > 0) & (true_call < 0), 2.0, 1.0
     )
     put_weight = torch.where(
-        (put_err > 0) & (true_put < 0), 1.5, 1.0
+        (put_err > 0) & (true_put < 0), 2.0, 1.0
     )
     call_loss = (call_weight * F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')).mean()
     put_loss = (put_weight * F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')).mean()
