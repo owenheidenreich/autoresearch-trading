@@ -21,3 +21,4 @@ exp_004	4.700000	revert	score=4.700 trades=397 wr=54.4% baselines=ALL
 exp_018	4.933333	keep	score=4.933 trades=139 wr=64.7% baselines=ALL gate_threshold=0.50
 exp_019	4.468085	revert	score=4.468 trades=159 wr=59.7% baselines=ALL stop_range=(0.10,0.25)
 exp_020	4.636364	revert	score=4.636 trades=125 wr=70.4% baselines=ALL cooldown=10
+exp_021	5.052632	keep	score=5.053 trades=44 wr=59.1% baselines=ALL asymmetric_3x

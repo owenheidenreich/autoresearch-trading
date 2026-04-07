@@ -258,3 +258,9 @@ PDR 82.2% (37/45). 2 more traded days, same 8 losing. Marginal improvement.
 ### exp_020: cooldown_bars 5 -> 10
 
 **Hypothesis:** Dec 16 had 6 puts in rapid succession, all lost. Jan 6 had 3 calls stacking losses. Wider cooldown prevents re-entering quickly after a loss, reducing loss stacking on worst days.
+
+**Result:** Score 4.636 (was 4.933). PDR 77.3%. Fewer trades, same losing days. REVERT.
+
+### exp_021: asymmetric loss 2x -> 3x -- KEEP (5.053)
+
+Score 5.053 (was 4.933). PDR 84.2% (16/19 winning, 3 losing). Very selective: 44 trades in 19 traded days. Model barely above minimum thresholds (30 trades, 15 days). The 3x asymmetric penalty makes the model extremely conservative -- it only trades when very confident.
