@@ -237,52 +237,31 @@ Training metrics:
 
 **This is the first honest score.** All prior scores were contaminated by phantom profits, overlapping positions, and broken baselines. The autoresearch loop can now improve from a truthful starting point.
 
-## Session 3: Score Bottleneck Analysis (2026-04-06)
+## Session 3: Hyperparameter Optimization (2026-04-06)
 
-Score = min(sortino, 6.0) * positive_day_rate * dd_mult = 6.0 * (35/43) * 1.0 = 4.884. Sortino maxed at 6.0. Binding constraint: 8 losing days out of 43 traded (81.4% PDR).
+Score 4.884 -> 5.786 via three key changes:
+- exp_018: gate_threshold 0.45->0.50 (4.933)
+- exp_021: asymmetric loss 2x->3x (5.053)
+- exp_024: dropout 0.1->0.05 (5.786, PDR 96.4%, 1 losing day)
 
-Worst losing days: Dec 16 (-$1016, 6 puts on rally), Jan 6 (-$1079, 3 calls MAX_HOLD), Feb 11 (-$1287, 34.7% put loss at MAX_HOLD). Borderline: Dec 18 (-$70), Jan 2 (-$22), Jan 5 (-$111).
+8 consecutive reverts after exp_024 trying: weight_decay, LR, asymmetric 4x, deeper regime, time budget, batch size, gate+margin. Config is a strong local optimum.
 
-Exit analysis: STOP_LOSS 0% WR (avg -$372). MAX_HOLD 69.5% WR but 25-35% losses on losers. TAKE_PROFIT 100% WR avg +$1123.
+## Session 4: Feature Overhaul + Dataset Rebuild (2026-04-06)
 
-### exp_018: gate_threshold 0.45 -> 0.50 -- KEEP (4.933)
+### Score Bottleneck Analysis
+Score = 6.0 * PDR. Only lever is positive_day_rate. Gate threshold sweep confirmed model's P&L predictions too tightly clustered for post-hoc tuning.
 
-PDR 82.2% (37/45). 2 more traded days, same 8 losing. Marginal improvement.
+### Feature Accuracy Audit
+- Greek features (20-22): UNRELIABLE (BS estimates, never validated)
+- Duplicate features (55-70): CONFIRMED BUG (exact copies of 39-54)
+- Core market features: SOUND (no lookahead, correctly computed)
+- Enriched features (39-54): SOUND (relative moneyness, scale-invariant)
 
-### exp_019: stop_range (0.10, 0.40) -> (0.10, 0.25)
-
-**Hypothesis:** Worst losses are 33.5%, 34.7%, 31.3% at MAX_HOLD/STOP_LOSS. Max stop at 40% is too loose. Capping at 25% should reduce catastrophic single-trade losses.
-
-**Result:** Score 4.468 (was 4.933). PDR dropped to 74.5% (12 losing days). Tighter stops = more stop-outs = more losing trades. REVERT.
-
-### exp_020: cooldown_bars 5 -> 10
-
-**Hypothesis:** Dec 16 had 6 puts in rapid succession, all lost. Jan 6 had 3 calls stacking losses. Wider cooldown prevents re-entering quickly after a loss, reducing loss stacking on worst days.
-
-**Result:** Score 4.636 (was 4.933). PDR 77.3%. Fewer trades, same losing days. REVERT.
-
-### exp_021: asymmetric loss 2x -> 3x -- KEEP (5.053)
-
-Score 5.053 (was 4.933). PDR 84.2% (16/19 winning, 3 losing). Very selective: 44 trades in 19 traded days. Model barely above minimum thresholds (30 trades, 15 days). The 3x asymmetric penalty makes the model extremely conservative -- it only trades when very confident.
-
-### exp_022-023: gate_threshold tuning -- BOTH REVERTED
-
-Gate sensitivity very nonlinear: 0.40=549t/PDR 66.7%, 0.47=319t/PDR 77.2%, 0.50=44t/PDR 84.2%. Policy tuning alone insufficient.
-
-### exp_024: dropout 0.1 -> 0.05 -- KEEP (5.786)
-
-**BREAKTHROUGH.** Score 5.786 (was 5.053). PDR 96.4% -- only 1 losing day out of 28 traded. 83 trades, WR 72.3%, PF 6.14. Less dropout gives the model sharper P&L predictions while the 3x asymmetric loss prevents overconfidence. The combination (3x asym + 0.05 dropout) is powerful: the model can learn precise patterns but is penalized heavily for false positives.
-
-### exp_025-031: Plateau (8 consecutive reverts)
-
-| Exp | Change | Score | Why Worse |
-|-----|--------|-------|-----------|
-| 025 | weight_decay 0.005 | 5.333 | 3 losing days |
-| 026 | LR 3e-4 | 5.182 | 3 losing days |
-| 027 | asymmetric 4x | -0.5 | Gate failure (14 days) |
-| 028 | deeper regime | 4.800 | Only 15 traded days |
-| 029 | time_budget 400s | 5.053 | Best epoch still early |
-| 030 | batch 4096 | 4.800 | Only 33 trades |
-| 031 | gate+margin | 4.714 | Too many trades (294) |
-
-**Conclusion:** The exp_024 config (3x asymmetric, 0.05 dropout, 0.50 gate, 5e-4 LR, 2048 batch, 300s) is a strong local optimum. Hyperparameter and minor structural changes in both directions make things worse. Next steps require fundamentally different approaches (new features, dataset changes, or architectural redesign).
+### Dataset Rebuild Changes
+1. Removed 16 duplicate features (55-70)
+2. Added put_call_txn_ratio (order flow from wide-grid call/put transactions)
+3. Added vix_ma_ratio (EMA-5/EMA-20, regime shift signal)
+4. Added vix_acceleration (2nd derivative of VIX ROC)
+5. Raised GATE_MIN_PNL 0.02->0.04 (more selective labels)
+6. Added seed control (TRAIN_SEED env var, default 42)
+7. NUM_FEATURES: 71->58 (39 base + 19 enriched)
