@@ -6,14 +6,14 @@ All training runs on Akash H100 GPU, never locally. Local machine is for editing
 
 ## Research
 
-- **begin experiment loop** -- Boot Akash GPU, setup, run loop. Steps: `deploy.sh boot`, `deploy.sh start`, `deploy.sh run`, `deploy.sh sync`. Keep/revert is automatic via inner_loop.py. NEVER write custom loop scripts.
+- **begin experiment loop** -- Boot Akash GPU, then Claude drives the loop: form hypothesis, edit train.py, `deploy.sh push`, `deploy.sh experiment exp_NNN`, `deploy.sh pull`, read score, keep/revert, repeat. Claude IS the loop.
 - **fresh start** -- Reset all state (`rm -f v2/model.pt v2/.best_score v2/.inner_loop_state.json v2/results.tsv`). Use after structural changes.
 
 ## Evaluation (runs locally)
 
-- **evaluate model** -- `python -m v2.replay --model v2/model.pt --mask promote`. Score on held-out days with baselines.
+- **evaluate model** -- `python -m v2.replay --mask promote`. Loads best model from artifact system. Score on held-out days with baselines.
 - **evaluate on shadow** -- Same but `--mask shadow`. Live-readiness check only.
-- **analyze trades** -- Load replay trades, inspect which trades won/lost and why.
+- **analyze trades** -- `python v2/analyze_losses.py`. Loads best model from artifact system, inspects which trades won/lost and why.
 
 ## Data (runs locally)
 

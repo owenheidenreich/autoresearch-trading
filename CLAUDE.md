@@ -24,20 +24,31 @@ This project follows Karpathy's autoresearch design (github.com/karpathy/autores
 
 ## Experiment Loop Execution
 
-When told "begin experiment loop" or "run the full experiment loop":
+**Claude IS the experiment loop.** Like Karpathy's autoresearch, the AI agent drives every iteration: form hypothesis, edit code, train, read score, keep/revert, repeat.
 
+### One-time setup:
 1. `./v2/ops/deploy.sh boot` -- boot GPU
 2. `./v2/ops/deploy.sh start` -- upload code + data, install deps, verify CUDA
-3. `./v2/ops/deploy.sh run` -- start inner_loop.py on GPU (NOT a custom script)
-4. `./v2/ops/deploy.sh sync` -- auto-sync results to local (or `./v2/ops/deploy.sh status`)
 
-**Hard rules:**
-- NEVER write custom loop scripts. Use `inner_loop.py` via `deploy.sh run`.
+### Per-experiment cycle (Claude drives this):
+1. Read last experiment results (results.tsv, artifacts, trade-level data)
+2. Form a hypothesis. Write it in lab_notebook.md.
+3. Edit `v2/train.py` and/or `v2/core/policy.py` locally. One change per experiment.
+4. `git commit` the change.
+5. `./v2/ops/deploy.sh push` -- upload changed files to GPU
+6. `./v2/ops/deploy.sh experiment exp_NNN` -- run single experiment (~5 min, blocking)
+7. `./v2/ops/deploy.sh pull` -- download results + artifacts
+8. Read the score. If improved AND beats all baselines: **KEEP**. Otherwise: **REVERT** (`git checkout v2/train.py v2/core/policy.py`).
+9. Log to results.tsv.
+10. Check session limits. If any limit hit, stop. Otherwise go to step 1.
+
+### Hard rules:
+- NEVER fire off inner_loop.py and walk away. It re-trains identical code with no mutations. That is not autoresearch.
 - NEVER bypass `deploy.sh` with raw `sshpass` commands. If `deploy.sh` has a bug, fix `deploy.sh`.
 - NEVER delete `model.pt` unless executing a "fresh start" command.
-- NEVER shut down the GPU lease until the loop finishes or the user says to stop.
-- Each experiment in the autoresearch loop requires a hypothesis and a code change BEFORE training. Re-running identical code is not an experiment.
-- If `deploy.sh start` fails, fix the issue in `deploy.sh`, don't work around it.
+- NEVER shut down the GPU lease until the session ends or the user says to stop.
+- Each experiment requires a hypothesis and a code change BEFORE training. Re-running identical code is not an experiment.
+- If `deploy.sh` fails, fix the issue in `deploy.sh`, don't work around it.
 
 ## Code Quality
 
