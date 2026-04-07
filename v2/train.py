@@ -138,11 +138,9 @@ class TradingModel(nn.Module):
             nn.Transformer.generate_square_subsequent_mask(LOOKBACK),
         )
 
-        # Regime encoder (deeper: 71->64->32->16)
+        # Regime encoder
         self.regime_encoder = nn.Sequential(
-            nn.Linear(NUM_FEATURES, 64), nn.GELU(),
-            nn.Linear(64, 32), nn.GELU(),
-            nn.Linear(32, REGIME_DIM),
+            nn.Linear(NUM_FEATURES, 32), nn.GELU(), nn.Linear(32, REGIME_DIM),
         )
 
         # FiLM layers for P&L heads

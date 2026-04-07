@@ -28,3 +28,4 @@ exp_024	5.785714	keep	score=5.786 trades=83 wr=72.3% baselines=ALL dropout=0.05
 exp_025	5.333333	revert	score=5.333 trades=65 wr=73.8% weight_decay=0.005
 exp_026	5.181818	revert	score=5.182 trades=67 wr=68.7% lr=3e-4
 exp_027	-0.500000	revert	GATE_FAILURE 14_traded_days asymmetric_4x_too_conservative
+exp_028	4.800000	revert	score=4.800 trades=46 wr=69.6% deeper_regime
