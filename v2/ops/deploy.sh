@@ -816,9 +816,8 @@ cmd_run_one() {
 
     log "=== EXPERIMENT: $exp_id ==="
 
-    # 1. Upload mutable files + model for warm-start
-    for f in v2/train.py v2/core/policy.py v2/model.pt; do
-        [[ -f "$PROJECT_ROOT/$f" ]] || continue
+    # 1. Upload mutable code files (model trains from scratch every time)
+    for f in v2/train.py v2/core/policy.py; do
         scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
     done
 

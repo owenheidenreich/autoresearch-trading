@@ -6,8 +6,7 @@ All training runs on Akash H100 GPU, never locally. Local machine is for editing
 
 ## Research
 
-- **begin experiment loop** -- Boot Akash GPU, then Claude drives the loop: edit train.py, commit, `deploy.sh run_one exp_NNN`, read score, keep/revert, repeat. One command per experiment.
-- **fresh start** -- `rm -f v2/model.pt v2/model.pt.best`. Use after architecture changes.
+- **begin experiment loop** -- Boot Akash GPU, then Claude drives the loop: edit train.py, commit, `deploy.sh run_one exp_NNN`, read score, keep/revert, repeat. Every experiment trains from scratch.
 
 ## Evaluation (runs locally)
 

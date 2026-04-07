@@ -119,11 +119,11 @@ LOOP:
 1. Look at last experiment results. Decide what to try. Write your hypothesis.
 2. Edit `v2/train.py` and/or `v2/core/policy.py`.
 3. `git commit` your changes.
-4. `./v2/ops/deploy.sh run_one exp_NNN` -- uploads code + model, trains on GPU, downloads new model.
+4. `./v2/ops/deploy.sh run_one exp_NNN` -- uploads code, trains from scratch on GPU, downloads model.pt.
 5. Read the score from stdout.
 6. If crashed: read the log, try to fix. If unfixable, log as crash, move on.
-7. If score improved AND beats all baselines: **KEEP**. `cp v2/model.pt v2/model.pt.best`.
-8. If score equal or worse: **REVERT**. `git checkout HEAD~1 -- v2/train.py v2/core/policy.py` and `cp v2/model.pt.best v2/model.pt`.
+7. If score improved AND beats all baselines: **KEEP**. Branch advances.
+8. If score equal or worse: **REVERT**. `git checkout HEAD~1 -- v2/train.py v2/core/policy.py`.
 9. Append result to `v2/results.tsv`.
 10. Check session limits (see below). If any limit hit, stop.
 11. Go to step 1.
