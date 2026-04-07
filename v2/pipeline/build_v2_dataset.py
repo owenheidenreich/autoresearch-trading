@@ -588,7 +588,7 @@ def build_dataset(output_path: str = OUTPUT_PATH):
     oracle_tensors = {}  # no backward compat needed for fresh rebuild
 
     dataset = {
-        'X': torch.from_numpy(X_normalized),
+        'X': torch.from_numpy(X_normalized.astype(np.float32)),
         'feature_names': list(all_feature_names),
 
         'label_trade': torch.from_numpy(label_trade),
