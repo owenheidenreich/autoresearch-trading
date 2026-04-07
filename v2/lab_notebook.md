@@ -272,3 +272,17 @@ Gate sensitivity very nonlinear: 0.40=549t/PDR 66.7%, 0.47=319t/PDR 77.2%, 0.50=
 ### exp_024: dropout 0.1 -> 0.05 -- KEEP (5.786)
 
 **BREAKTHROUGH.** Score 5.786 (was 5.053). PDR 96.4% -- only 1 losing day out of 28 traded. 83 trades, WR 72.3%, PF 6.14. Less dropout gives the model sharper P&L predictions while the 3x asymmetric loss prevents overconfidence. The combination (3x asym + 0.05 dropout) is powerful: the model can learn precise patterns but is penalized heavily for false positives.
+
+### exp_025-031: Plateau (8 consecutive reverts)
+
+| Exp | Change | Score | Why Worse |
+|-----|--------|-------|-----------|
+| 025 | weight_decay 0.005 | 5.333 | 3 losing days |
+| 026 | LR 3e-4 | 5.182 | 3 losing days |
+| 027 | asymmetric 4x | -0.5 | Gate failure (14 days) |
+| 028 | deeper regime | 4.800 | Only 15 traded days |
+| 029 | time_budget 400s | 5.053 | Best epoch still early |
+| 030 | batch 4096 | 4.800 | Only 33 trades |
+| 031 | gate+margin | 4.714 | Too many trades (294) |
+
+**Conclusion:** The exp_024 config (3x asymmetric, 0.05 dropout, 0.50 gate, 5e-4 LR, 2048 batch, 300s) is a strong local optimum. Hyperparameter and minor structural changes in both directions make things worse. Next steps require fundamentally different approaches (new features, dataset changes, or architectural redesign).
