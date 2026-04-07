@@ -1,14 +1,15 @@
-"""Build the v2 dataset from wide-grid Polygon data + existing features.
+"""Build the v2 dataset from raw market data + wide-grid option data.
 
-This is the COMPLETE rebuild pipeline that:
-1. Loads existing 39 features from data.pt
-2. Loads wide-grid OHLCV from spxw_wide/ cache (82 contracts per day)
-3. Computes enriched features (moneyness, volume, spread, regime indicators)
-4. Computes triple-barrier labels (with real losers)
-5. Builds data.pt with 4-way split
+Ground-up rebuild: computes ALL features from raw SPX/SPY/VIX caches
+and spxw_wide/ option data. No dependency on pre-computed v1 features.
 
-All new features are RELATIVE (moneyness %, normalized prices) so patterns
-learned at SPX 4300 transfer to SPX 6500.
+Pipeline:
+  1. Load raw SPX/SPY/VIX from pickle caches
+  2. Compute price features (Group 1) from raw data
+  3. For each day, load spxw_wide/ and compute option + flow features (Groups 2-3)
+  4. Compute triple-barrier labels (dual-direction P&L)
+  5. Apply rolling z-score normalization (preserves regime info)
+  6. Save to v2/data.pt with 4-way split
 
 Usage:
     python -m v2.pipeline.build_v2_dataset [--output v2/data.pt]
@@ -16,7 +17,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import hashlib  # noqa: used for fingerprint
+import hashlib
 import math
 import os
 import pickle
@@ -27,8 +28,16 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from v2.core.features import compute_adaptive_spread_bps, MIN_HOLD_BARS
+from v2.core.features import (
+    compute_adaptive_spread_bps, MIN_HOLD_BARS,
+    normalize_features, FEATURE_NAMES, NUM_FEATURES, _FEAT_IDX,
+)
 from v2.core.simulator import TRAILING_TIERS
+from v2.pipeline.compute_features import (
+    compute_price_features, compute_option_features, compute_flow_features,
+    PRICE_FEATURE_NAMES, OPTION_FEATURE_NAMES, FLOW_FEATURE_NAMES,
+    ALL_FEATURE_NAMES, _find_nearest_atm,
+)
 
 # Minimum entry price -- match simulator
 MIN_ENTRY_PRICE = 0.50
@@ -39,9 +48,11 @@ COMMISSION_PER_CONTRACT = 0.65
 # Config
 # ---------------------------------------------------------------------------
 
-WIDE_CACHE_DIR = os.path.expanduser("~/.cache/autoresearch-trading/data/spxw_wide")
-VIX_DATA_PATH = os.path.expanduser("~/.cache/autoresearch-trading/data/vix_1min.pkl")
-EXISTING_DATA = "v2/data.pt"
+DATA_DIR = os.path.expanduser("~/.cache/autoresearch-trading/data")
+WIDE_CACHE_DIR = os.path.join(DATA_DIR, "spxw_wide")
+SPX_PATH = os.path.join(DATA_DIR, "spx_1min.pkl")
+SPY_PATH = os.path.join(DATA_DIR, "spy_1min.pkl")
+VIX_PATH = os.path.join(DATA_DIR, "vix_1min.pkl")
 OUTPUT_PATH = "v2/data.pt"
 
 # Split sizes (trading days from end)
@@ -49,9 +60,7 @@ VAL_DAYS = 60
 PROMOTE_DAYS = 60
 SHADOW_DAYS = 20
 
-# Fixed risk parameters for triple-barrier labeling.
-# No grid search -- one config per trade, producing real losers.
-# Values chosen from the most common winners in the old grid search.
+# Fixed risk parameters for triple-barrier labeling
 FIXED_STOP = 0.30
 FIXED_TARGET = 0.50
 FIXED_HOLD = 30
@@ -59,9 +68,11 @@ FIXED_HOLD = 30
 # Minimum volume to consider a bar tradeable
 MIN_VOLUME = 1
 
+BARS_PER_DAY = 390
+
 
 # ---------------------------------------------------------------------------
-# Phase 1: Feature computation from wide grid
+# SPX from call-put parity
 # ---------------------------------------------------------------------------
 
 def compute_spx_from_parity(atm_strike: float, call_close: float, put_close: float) -> float:
@@ -71,311 +82,270 @@ def compute_spx_from_parity(atm_strike: float, call_close: float, put_close: flo
     return atm_strike + call_close - put_close
 
 
-def find_nearest_atm_strike(bar_data: dict, spx_current: float) -> float | None:
-    """Find the strike closest to current SPX from the available strikes."""
-    if np.isnan(spx_current) or not bar_data:
-        return None
-    best_strike = None
-    best_dist = float('inf')
-    for strike in bar_data.keys():
-        dist = abs(strike - spx_current)
-        if dist < best_dist:
-            best_dist = dist
-            best_strike = strike
-    return best_strike
-
-
-def compute_bar_features(
-    bar_data: dict,
-    atm_strike: float,
-    spx_current: float,
-    minutes_to_close: float,
-) -> dict:
-    """Compute enriched features for one bar from wide-grid data.
-
-    All features are RELATIVE (moneyness %, normalized) not absolute.
-    """
-    features = {}
-
-    if np.isnan(spx_current) or spx_current <= 0 or not bar_data:
-        return features
-
-    # Find strike closest to current SPX
-    near_atm = find_nearest_atm_strike(bar_data, spx_current)
-    if near_atm is None:
-        return features
-
-    near_data = bar_data.get(near_atm, {})
-
-    # --- Moneyness features ---
-    features['current_moneyness_pct'] = (atm_strike - spx_current) / spx_current * 100
-    features['intraday_drift_pct'] = (spx_current - atm_strike) / atm_strike * 100
-    features['near_atm_moneyness_pct'] = (near_atm - spx_current) / spx_current * 100
-
-    # --- Volume features (from nearest-ATM strike) ---
-    call_vol = near_data.get('call_volume', 0) or 0
-    put_vol = near_data.get('put_volume', 0) or 0
-    total_vol = call_vol + put_vol
-    features['near_atm_call_volume'] = float(call_vol)
-    features['near_atm_put_volume'] = float(put_vol)
-    features['near_atm_total_volume'] = float(total_vol)
-    features['call_put_flow_ratio'] = call_vol / total_vol if total_vol > 0 else 0.5
-    features['log_total_volume'] = math.log1p(total_vol)
-
-    # --- Volume across the chain (aggregate flow) ---
-    chain_call_vol = sum(bar_data[s].get('call_volume', 0) or 0 for s in bar_data)
-    chain_put_vol = sum(bar_data[s].get('put_volume', 0) or 0 for s in bar_data)
-    chain_total = chain_call_vol + chain_put_vol
-    features['chain_call_put_ratio'] = chain_call_vol / chain_total if chain_total > 0 else 0.5
-    features['log_chain_volume'] = math.log1p(chain_total)
-
-    # --- Spread proxy (Corwin-Schultz simplified: high-low of nearest ATM) ---
-    call_high = near_data.get('call_high', np.nan) or np.nan
-    call_low = near_data.get('call_low', np.nan) or np.nan
-    call_close = near_data.get('call_close', np.nan) or np.nan
-    if not np.isnan(call_high) and not np.isnan(call_low) and call_high > 0 and call_low > 0:
-        hl_range = call_high - call_low
-        mid = (call_high + call_low) / 2
-        features['call_hl_range_pct'] = hl_range / mid if mid > 0 else 0.0
-    else:
-        features['call_hl_range_pct'] = np.nan
-
-    # --- Normalized option prices (price / SPX for scale invariance) ---
-    if not np.isnan(call_close) and call_close > 0:
-        features['near_atm_call_price_norm'] = call_close / spx_current * 100
-    else:
-        features['near_atm_call_price_norm'] = np.nan
-
-    put_close = near_data.get('put_close', np.nan) or np.nan
-    if not np.isnan(put_close) and put_close > 0:
-        features['near_atm_put_price_norm'] = put_close / spx_current * 100
-    else:
-        features['near_atm_put_price_norm'] = np.nan
-
-    # --- Theta acceleration (0DTE specific: theta burns faster near close) ---
-    if minutes_to_close > 0:
-        features['theta_acceleration'] = 1.0 / math.sqrt(max(minutes_to_close, 1.0))
-    else:
-        features['theta_acceleration'] = 1.0
-
-    # --- Transaction activity ---
-    call_txn = near_data.get('call_transactions', 0) or 0
-    put_txn = near_data.get('put_transactions', 0) or 0
-    features['near_atm_transactions'] = float(call_txn + put_txn)
-
-    # --- Put/call transaction ratio (order flow signal) ---
-    total_txn = call_txn + put_txn
-    features['put_call_txn_ratio'] = put_txn / total_txn if total_txn > 0 else 0.5
-
-    return features
-
-
-# New feature names (appended to existing 39)
-NEW_FEATURE_NAMES = [
-    'current_moneyness_pct',
-    'intraday_drift_pct',
-    'near_atm_moneyness_pct',
-    'near_atm_call_volume',
-    'near_atm_put_volume',
-    'near_atm_total_volume',
-    'call_put_flow_ratio',
-    'log_total_volume',
-    'chain_call_put_ratio',
-    'log_chain_volume',
-    'call_hl_range_pct',
-    'near_atm_call_price_norm',
-    'near_atm_put_price_norm',
-    'theta_acceleration',
-    'near_atm_transactions',
-    'put_call_txn_ratio',
-]
-
-
-# ---------------------------------------------------------------------------
-# Phase 2: Triple-barrier labeler
-# ---------------------------------------------------------------------------
-
-def triple_barrier_label(
-    entry_bar_idx: int,
-    option_prices: np.ndarray,
-    stop_pct: float,
-    target_pct: float,
-    max_hold: int,
-    cost_pct: float,
-    same_day_mask: np.ndarray,
-) -> tuple[int, float]:
-    """Simulate a trade forward with triple barrier.
-
-    Returns (outcome, net_pnl):
-        outcome: +1 (TP hit), -1 (SL hit), 0 (timeout/EOD)
-        net_pnl: actual P&L as fraction of entry price, after costs
-    """
-    fill_bar = entry_bar_idx + 1
-    if fill_bar >= len(option_prices):
-        return (0, 0.0)
-
-    entry_px = option_prices[fill_bar]
-    if np.isnan(entry_px) or entry_px <= 0:
-        return (0, 0.0)
-
-    last_valid_px = entry_px
-    for k in range(1, max_hold + 1):
-        check = fill_bar + k
-        if check >= len(option_prices):
-            break
-        if not same_day_mask[check]:
-            break
-
-        px = option_prices[check]
-        if np.isnan(px) or px <= 0:
-            continue
-
-        last_valid_px = px
-        unrealized = (px - entry_px) / entry_px
-
-        # Stop loss (checked first)
-        if unrealized <= -stop_pct:
-            net = -stop_pct - cost_pct
-            return (-1, net)
-
-        # Take profit
-        if unrealized >= target_pct:
-            net = target_pct - cost_pct
-            return (+1, net)
-
-    # Timeout / EOD
-    raw_pnl = (last_valid_px - entry_px) / entry_px
-    net = raw_pnl - cost_pct
-    outcome = +1 if net > 0 else -1 if net < -0.01 else 0
-    return (outcome, net)
-
-
-def compute_direction_signal(features_row: np.ndarray, feature_names: list[str]) -> int:
-    """Determine direction from volatility-regime features.
-
-    Returns: +1 (buy call), -1 (buy put), 0 (no trade)
-
-    Uses session_range_pct as primary signal (strongest edge in signal scan).
-    High session range = volatile = buy call (gamma regime).
-    Low session range = calm = buy put (theta regime).
-    """
-    # Get feature indices
-    idx = {name: i for i, name in enumerate(feature_names)}
-
-    session_range = features_row[idx.get('session_range_pct', -1)] if 'session_range_pct' in idx else np.nan
-    atm_iv = features_row[idx.get('atm_iv', -1)] if 'atm_iv' in idx else np.nan
-    realized_vol = features_row[idx.get('realized_vol', -1)] if 'realized_vol' in idx else np.nan
-
-    if np.isnan(session_range):
-        return 0
-
-    # Combined volatility score (simple average of available signals)
-    vol_signals = []
-    if not np.isnan(session_range):
-        vol_signals.append(session_range)
-    if not np.isnan(atm_iv):
-        vol_signals.append(atm_iv)
-    if not np.isnan(realized_vol):
-        vol_signals.append(realized_vol)
-
-    if not vol_signals:
-        return 0
-
-    # We'll use session_range_pct > median as the split.
-    # The median is computed during label generation over the training set.
-    # For now, return the raw signal; the caller applies the threshold.
-    return 1  # placeholder -- actual threshold applied in label loop
-
-
 # ---------------------------------------------------------------------------
 # Main build pipeline
 # ---------------------------------------------------------------------------
 
-def build_dataset(
-    existing_path: str = EXISTING_DATA,
-    output_path: str = OUTPUT_PATH,
-):
-    """Build complete v2 dataset with enriched features + honest labels."""
+def build_dataset(output_path: str = OUTPUT_PATH):
+    """Build complete v2 dataset from raw market data."""
     t0 = time.time()
 
-    # Load existing data for the 39 original features and metadata
-    print(f"Loading existing data from {existing_path}...")
-    existing = torch.load(existing_path, map_location='cpu', weights_only=False)
-    X_old = existing['X'].numpy()
-    feature_names_old = existing.get('feature_names', [f'f{i}' for i in range(X_old.shape[1])])
-    dates = existing['dates']
-    bar_of_day = existing['bar_of_day'].numpy()
-    N = len(dates)
-    n_old_features = X_old.shape[1]
+    # ===== STEP 1: Load raw market data =====
+    print("Loading raw market data...")
+    spx_df = pickle.load(open(SPX_PATH, 'rb'))
+    spy_df = pickle.load(open(SPY_PATH, 'rb'))
+    vix_df = pickle.load(open(VIX_PATH, 'rb'))
 
-    print(f"  {N:,} bars, {len(set(dates))} days, {n_old_features} existing features")
+    # Filter SPX to only dates that have wide grid data
+    wide_dates = set(f.replace('.pkl', '') for f in os.listdir(WIDE_CACHE_DIR) if f.endswith('.pkl'))
+    spx_mask = spx_df['date'].isin(wide_dates)
+    spx_df = spx_df[spx_mask].reset_index(drop=True)
+    print(f"  Filtered to {len(wide_dates)} dates with wide grid data "
+          f"(dropped {(~spx_mask).sum():,} bars)")
 
-    # Build day -> global bar indices mapping
+    # Align all three dataframes by timestamp
+    spx_dates = spx_df['date'].values
+    spx_times = spx_df['time'].values
+    dates_list = list(spx_df['date'].values)
+    N = len(spx_df)
+    print(f"  SPX: {N:,} bars, {len(set(dates_list))} days")
+    print(f"  SPY: {len(spy_df):,} bars")
+    print(f"  VIX: {len(vix_df):,} bars")
+
+    # Extract arrays
+    spx_close = spx_df['spx_close'].values.astype(np.float64)
+    spx_high = spx_df['spx_high'].values.astype(np.float64)
+    spx_low = spx_df['spx_low'].values.astype(np.float64)
+    spx_open = spx_df['spx_open'].values.astype(np.float64)
+
+    # SPY: align by matching timestamps (SPX and SPY have same timestamps)
+    spy_ts_to_idx = {ts: i for i, ts in enumerate(spy_df['timestamp'].values)}
+    spy_volume = np.zeros(N, dtype=np.float64)
+    spy_close = np.zeros(N, dtype=np.float64)
+    for i, ts in enumerate(spx_df['timestamp'].values):
+        j = spy_ts_to_idx.get(ts)
+        if j is not None:
+            spy_volume[i] = spy_df['volume'].values[j]
+            spy_close[i] = spy_df['close'].values[j]
+
+    # VIX: align by matching timestamps
+    vix_ts_to_idx = {ts: i for i, ts in enumerate(vix_df['timestamp'].values)}
+    vix_close = np.full(N, np.nan, dtype=np.float64)
+    for i, ts in enumerate(spx_df['timestamp'].values):
+        j = vix_ts_to_idx.get(ts)
+        if j is not None:
+            vix_close[i] = vix_df['vix_close'].values[j]
+
+    # Compute day_starts and bar_of_day
+    day_starts = [0]
+    for i in range(1, N):
+        if dates_list[i] != dates_list[i - 1]:
+            day_starts.append(i)
+    day_ends = day_starts[1:] + [N]
+
+    bar_of_day = np.zeros(N, dtype=np.int32)
+    for ds, de in zip(day_starts, day_ends):
+        for i in range(ds, de):
+            bar_of_day[i] = i - ds
+
+    # Day -> bar index mapping
     day_to_bars = defaultdict(list)
-    for i, d in enumerate(dates):
+    for i, d in enumerate(dates_list):
         day_to_bars[d].append(i)
     unique_dates = sorted(day_to_bars.keys())
 
-    # Allocate new feature arrays
-    n_new = len(NEW_FEATURE_NAMES)
-    X_new = np.full((N, n_new), np.nan, dtype=np.float32)
+    # ===== STEP 2: Compute Group 1 features (price/volume/market structure) =====
+    print("\nComputing price features (Group 1)...")
+    t1 = time.time()
+    X_price = compute_price_features(
+        spx_close, spx_high, spx_low, spx_open,
+        spy_volume, spy_close, vix_close,
+        day_starts, bar_of_day,
+    )
+    print(f"  {X_price.shape[1]} price features computed in {time.time()-t1:.1f}s")
 
-    # Allocate label arrays
+    # ===== STEP 3: Compute Group 2 + 3 features (options + flow) from wide grid =====
+    print("\nComputing option + flow features (Groups 2-3)...")
+    t2 = time.time()
+    n_opt = len(OPTION_FEATURE_NAMES)
+    n_flow = len(FLOW_FEATURE_NAMES)
+    X_opt = np.full((N, n_opt), np.nan, dtype=np.float64)
+    X_flow = np.zeros((N, n_flow), dtype=np.float64)
+
+    # SPX estimated from call-put parity (for labeling)
+    spx_estimated = np.full(N, np.nan, dtype=np.float32)
+    nearest_call_close = np.full(N, np.nan, dtype=np.float32)
+    nearest_put_close = np.full(N, np.nan, dtype=np.float32)
+
+    # Option price arrays for replay (ATM + OTM ladder)
+    OTM_STEPS = [5, 10, 15, 20, 25, 30]
+    atm_call_prices = np.full(N, np.nan, dtype=np.float32)
+    atm_put_prices = np.full(N, np.nan, dtype=np.float32)
+    otm_prices = {}
+    for step in OTM_STEPS:
+        otm_prices[f'otm{step}_call_prices'] = np.full(N, np.nan, dtype=np.float32)
+        otm_prices[f'otm{step}_put_prices'] = np.full(N, np.nan, dtype=np.float32)
+
+    # IV history for percentile calculation (expanding window)
+    iv_history = []
+    IV_HISTORY_MAX = 390 * 60  # 60 days of bars
+
+    # Check which wide grid files exist
+    wide_files = set(os.listdir(WIDE_CACHE_DIR))
+    processed_days = 0
+
+    for day_idx, day in enumerate(unique_dates):
+        fname = f"{day}.pkl"
+        if fname not in wide_files:
+            continue
+
+        global_indices = day_to_bars[day]
+        n_bars = len(global_indices)
+
+        wide = pickle.load(open(os.path.join(WIDE_CACHE_DIR, fname), 'rb'))
+        if not wide.get('bars'):
+            continue
+
+        atm_strike_open = wide['atm_strike']
+        wide_timestamps = sorted(wide['bars'].keys())
+        n_wide = len(wide_timestamps)
+        n_align = min(n_bars, n_wide)
+
+        for local_i in range(n_align):
+            gi = global_indices[local_i]
+            bod = int(bar_of_day[gi])
+            mtc = max(BARS_PER_DAY - bod, 1)
+
+            ts = wide_timestamps[local_i]
+            bar_data = wide['bars'][ts]
+
+            # SPX from parity
+            atm_data = bar_data.get(atm_strike_open, {})
+            atm_call_c = atm_data.get('call_close', np.nan) or np.nan
+            atm_put_c = atm_data.get('put_close', np.nan) or np.nan
+            spx = compute_spx_from_parity(atm_strike_open, atm_call_c, atm_put_c)
+            # Fallback to raw SPX if parity fails
+            if np.isnan(spx):
+                spx = spx_close[gi]
+            spx_estimated[gi] = spx
+
+            if np.isnan(spx) or spx <= 0:
+                continue
+
+            # Nearest ATM prices (for labeling)
+            near_strike = _find_nearest_atm(bar_data, spx)
+            if near_strike is not None:
+                nd = bar_data.get(near_strike, {})
+                nearest_call_close[gi] = nd.get('call_close', np.nan) or np.nan
+                nearest_put_close[gi] = nd.get('put_close', np.nan) or np.nan
+
+            # ATM + OTM price arrays (for replay baselines)
+            atm_call_prices[gi] = atm_call_c
+            atm_put_prices[gi] = atm_put_c
+            for step in OTM_STEPS:
+                call_strike = atm_strike_open + step
+                put_strike = atm_strike_open - step
+                cs = bar_data.get(call_strike, {})
+                ps = bar_data.get(put_strike, {})
+                otm_prices[f'otm{step}_call_prices'][gi] = cs.get('call_close', np.nan) or np.nan
+                otm_prices[f'otm{step}_put_prices'][gi] = ps.get('put_close', np.nan) or np.nan
+
+            # Option features
+            opt_feats = compute_option_features(
+                bar_data, spx, atm_strike_open, mtc,
+                iv_history=iv_history[-IV_HISTORY_MAX:] if iv_history else None,
+            )
+            for j, fname_opt in enumerate(OPTION_FEATURE_NAMES):
+                if fname_opt in opt_feats:
+                    X_opt[gi, j] = opt_feats[fname_opt]
+
+            # Track IV for percentile history
+            atm_iv_val = opt_feats.get('atm_iv', np.nan)
+            if np.isfinite(atm_iv_val):
+                iv_history.append(atm_iv_val)
+
+            # Flow features
+            flow_feats = compute_flow_features(bar_data, spx)
+            for j, fname_flow in enumerate(FLOW_FEATURE_NAMES):
+                if fname_flow in flow_feats:
+                    X_flow[gi, j] = flow_feats[fname_flow]
+
+        processed_days += 1
+        if (day_idx + 1) % 100 == 0:
+            print(f"  {day_idx+1}/{len(unique_dates)} days processed")
+
+    print(f"  Options/flow computed for {processed_days} days in {time.time()-t2:.1f}s")
+
+    # Fill VRP now that we have both atm_iv and realized_vol
+    vrp_idx = OPTION_FEATURE_NAMES.index('vrp')
+    rv_idx = PRICE_FEATURE_NAMES.index('realized_vol')
+    iv_idx = OPTION_FEATURE_NAMES.index('atm_iv')
+    for i in range(N):
+        atm_iv_val = X_opt[i, iv_idx]
+        rv_val = X_price[i, rv_idx]
+        if np.isfinite(atm_iv_val) and rv_val > 0:
+            X_opt[i, vrp_idx] = atm_iv_val**2 - rv_val**2
+
+    # Forward-fill option/flow NaN within each day
+    print("\nForward-filling NaN within days...")
+    for arr in [X_opt, X_flow]:
+        for day in unique_dates:
+            indices = day_to_bars[day]
+            for j in range(arr.shape[1]):
+                last_valid = np.nan
+                for gi in indices:
+                    if np.isnan(arr[gi, j]):
+                        if not np.isnan(last_valid):
+                            arr[gi, j] = last_valid
+                    else:
+                        last_valid = arr[gi, j]
+
+    # Fill remaining NaN with 0
+    X_opt = np.nan_to_num(X_opt, nan=0.0)
+
+    # ===== STEP 4: Combine all features =====
+    X_combined = np.concatenate([X_price, X_opt, X_flow], axis=1).astype(np.float32)
+    all_feature_names = ALL_FEATURE_NAMES
+    print(f"\nCombined: {X_combined.shape[1]} features ({len(PRICE_FEATURE_NAMES)} price + "
+          f"{len(OPTION_FEATURE_NAMES)} option + {len(FLOW_FEATURE_NAMES)} flow)")
+    assert X_combined.shape[1] == NUM_FEATURES, \
+        f"Expected {NUM_FEATURES} features, got {X_combined.shape[1]}"
+
+    # ===== STEP 5: Normalize =====
+    print("\nNormalizing features (rolling z-score, 60-day window)...")
+    t3 = time.time()
+    valid = np.ones(N, dtype=bool)  # all bars valid for normalization
+    X_normalized = normalize_features(X_combined, valid, dates=dates_list)
+    print(f"  Normalized in {time.time()-t3:.1f}s")
+
+    # Sanity check
+    for j in range(X_normalized.shape[1]):
+        col = X_normalized[:, j]
+        vmax = np.abs(col).max()
+        if vmax > 5.01:
+            print(f"  WARNING: [{j}] {all_feature_names[j]} max |value| = {vmax:.2f} (expected <= 5)")
+
+    # ===== STEP 6: Dual-direction labeling =====
+    print(f"\nLabeling ({len(unique_dates)} days)...")
+    t4 = time.time()
+
     label_trade = np.zeros(N, dtype=bool)
-    label_direction = np.full(N, -1, dtype=np.int32)  # 0=call, 1=put, -1=no trade
-    label_outcome = np.zeros(N, dtype=np.int32)  # +1, -1, 0
+    label_direction = np.full(N, -1, dtype=np.int32)
+    label_outcome = np.zeros(N, dtype=np.int32)
     label_pnl = np.zeros(N, dtype=np.float32)
     label_stop_pct = np.zeros(N, dtype=np.float32)
     label_target_pct = np.zeros(N, dtype=np.float32)
     label_max_hold = np.zeros(N, dtype=np.int32)
     label_confidence = np.zeros(N, dtype=np.float32)
-
-    # Per-direction P&L: model sees BOTH outcomes to learn direction selection
     label_call_pnl = np.zeros(N, dtype=np.float32)
     label_put_pnl = np.zeros(N, dtype=np.float32)
 
-    # For nearest-ATM contract prices (used by labeler for simulation)
-    nearest_call_close = np.full(N, np.nan, dtype=np.float32)
-    nearest_put_close = np.full(N, np.nan, dtype=np.float32)
-    spx_estimated = np.full(N, np.nan, dtype=np.float32)
-
-    # Multi-feature direction signal: majority vote from top 3 confirmed signals.
-    # QC validated: session_range PF=1.371, realized_vol PF=1.279, option_spread_width PF=1.174.
-    # VIX level alone has NO edge (QC PF=0.933). Not used for direction.
-    dir_features = ['session_range_pct', 'realized_vol', 'option_spread_width']
-    dir_indices = {}
-    for fname in dir_features:
-        if fname in feature_names_old:
-            dir_indices[fname] = feature_names_old.index(fname)
-    print(f"  Direction features: {list(dir_indices.keys())}")
-
-    # First pass: determine train split to compute per-feature medians
+    # Train split for direction medians
     n_days = len(unique_dates)
     eval_days = VAL_DAYS + PROMOTE_DAYS + SHADOW_DAYS
     train_end_day_idx = n_days - eval_days
     train_dates = set(unique_dates[:train_end_day_idx])
 
-    train_mask_arr = np.array([d in train_dates for d in dates])
-    tradeable = (bar_of_day >= 30) & (bar_of_day < 300) & train_mask_arr
-
-    dir_medians = {}
-    for fname, fidx in dir_indices.items():
-        vals = X_old[tradeable, fidx]
-        vals = vals[~np.isnan(vals)]
-        med = float(np.median(vals)) if len(vals) > 0 else 0.0
-        dir_medians[fname] = med
-        print(f"    {fname}: median={med:.6f} (n={len(vals)})")
-
-    if not dir_medians:
-        print("  WARNING: No direction features found, all bars will be skipped")
-
-    # For backward compat logging
-    sr_idx = dir_indices.get('session_range_pct')
-    sr_median = dir_medians.get('session_range_pct', 0.0)
-
-    # Process each day
-    print(f"\nProcessing {len(unique_dates)} days...")
-    processed_days = 0
     total_trades = 0
     total_wins = 0
     total_losses = 0
@@ -383,9 +353,8 @@ def build_dataset(
 
     for day_idx, day in enumerate(unique_dates):
         global_indices = day_to_bars[day]
-        n_bars = len(global_indices)
+        n_bars_day = len(global_indices)
 
-        # Load wide-grid data for this day
         wide_path = os.path.join(WIDE_CACHE_DIR, f"{day}.pkl")
         if not os.path.exists(wide_path):
             continue
@@ -397,55 +366,10 @@ def build_dataset(
         atm_strike = wide['atm_strike']
         wide_timestamps = sorted(wide['bars'].keys())
         n_wide = len(wide_timestamps)
-        n_align = min(n_bars, n_wide)
+        n_align = min(n_bars_day, n_wide)
 
-        # Build same-day mask for this day
-        same_day = np.zeros(N, dtype=bool)
-        for gi in global_indices:
-            same_day[gi] = True
-
-        # ===== PASS 1: Compute features + populate price series for ALL bars =====
-        day_features_computed = {}  # gi -> feats dict
-
-        for local_i in range(n_align):
-            gi = global_indices[local_i]
-            bod = int(bar_of_day[gi])
-
-            if local_i >= len(wide_timestamps):
-                continue
-            ts = wide_timestamps[local_i]
-            bar_data = wide['bars'][ts]
-
-            # Compute SPX from call-put parity
-            atm_data = bar_data.get(atm_strike, {})
-            atm_call_c = atm_data.get('call_close', np.nan) or np.nan
-            atm_put_c = atm_data.get('put_close', np.nan) or np.nan
-            spx = compute_spx_from_parity(atm_strike, atm_call_c, atm_put_c)
-            spx_estimated[gi] = spx
-
-            mtc = max(390 - bod, 1)
-
-            # Compute enriched features
-            feats = compute_bar_features(bar_data, atm_strike, spx, mtc)
-            day_features_computed[gi] = feats
-            for j, fname in enumerate(NEW_FEATURE_NAMES):
-                if fname in feats:
-                    X_new[gi, j] = feats[fname]
-
-            # Populate nearest-ATM price series (needed by labeler to look forward)
-            if not np.isnan(spx):
-                near_strike = find_nearest_atm_strike(bar_data, spx)
-                if near_strike is not None:
-                    nd = bar_data.get(near_strike, {})
-                    nearest_call_close[gi] = nd.get('call_close', np.nan) or np.nan
-                    nearest_put_close[gi] = nd.get('put_close', np.nan) or np.nan
-
-        # ===== PASS 2: Dual-direction labeling (model learns to choose) =====
-        # For each entry bar: simulate BOTH call AND put with fixed risk params.
-        # The model sees both outcomes and learns WHEN to trade and WHICH direction.
-        # gate=True only when the BETTER direction is profitable.
-        # Direction = whichever side had higher P&L.
-        # No pre-computed direction vote -- the model learns from features.
+        # Get vix_regime for cost model
+        vix_regime_idx = _FEAT_IDX.get('vix_regime')
 
         for local_i in range(n_align):
             gi = global_indices[local_i]
@@ -454,24 +378,26 @@ def build_dataset(
             if bod < 30 or bod >= 270:
                 continue
 
-            feats = day_features_computed.get(gi, {})
-            total_vol = feats.get('near_atm_total_volume', 0)
-            if total_vol < MIN_VOLUME:
-                continue
+            # Check minimum volume
+            log_vol_idx = _FEAT_IDX.get('log_total_volume')
+            if log_vol_idx is not None:
+                # log1p(vol) > log1p(MIN_VOLUME) means vol > MIN_VOLUME
+                if X_combined[gi, log_vol_idx] < math.log1p(MIN_VOLUME):
+                    continue
 
-            # Find the entry strike (nearest ATM at this bar)
             spx_now = spx_estimated[gi]
             if np.isnan(spx_now):
                 continue
             if local_i >= len(wide_timestamps):
                 continue
+
             entry_ts = wide_timestamps[local_i]
             entry_bar_data = wide['bars'].get(entry_ts, {})
-            entry_strike = find_nearest_atm_strike(entry_bar_data, spx_now)
+            entry_strike = _find_nearest_atm(entry_bar_data, spx_now)
             if entry_strike is None:
                 continue
 
-            # Get fill prices for BOTH directions (fill at next bar)
+            # Get fill prices for BOTH directions
             fill_local = local_i + 1
             if fill_local >= n_align or fill_local >= len(wide_timestamps):
                 continue
@@ -488,12 +414,10 @@ def build_dataset(
             if call_entry_px is None and put_entry_px is None:
                 continue
 
-            # Cost model: matches simulator's _compute_spread_cost with tick floor
+            # Cost model
             is_otm = False
-            vix_regime = float(X_old[gi, sr_idx]) if sr_idx is not None else 0.0
-            mtc = max(390 - bod, 10)
-            # Note: actual exit conditions will be used per-direction below
-            # (we compute a base spread here; the per-trade cost is adjusted)
+            vix_regime = float(X_combined[gi, vix_regime_idx]) if vix_regime_idx is not None else 0.0
+            mtc = max(BARS_PER_DAY - bod, 10)
 
             # Pre-fetch price series for BOTH directions
             max_look = FIXED_HOLD + 2
@@ -504,7 +428,7 @@ def build_dataset(
                 if cl >= n_align or cl >= len(wide_timestamps):
                     break
                 cgi = global_indices[cl] if cl < len(global_indices) else None
-                if cgi is None or dates[cgi] != day:
+                if cgi is None or dates_list[cgi] != day:
                     break
                 cts = wide_timestamps[cl]
                 cbd = wide['bars'].get(cts, {})
@@ -517,37 +441,29 @@ def build_dataset(
             if len(call_prices) < 3:
                 continue
 
-            # Simulate BOTH directions with fixed params (matches simulator behavior)
             def _sim_one(entry_px, prices, entry_bod):
                 if entry_px is None or entry_px < MIN_ENTRY_PRICE:
                     return 0.0, 0
                 last_px = entry_px
                 trailing_stop = -float('inf')
-                exit_k = len(prices) - 1  # default: last bar
+                exit_k = len(prices) - 1
                 exit_px = entry_px
-                exit_reason = 'EOD'
                 for k in range(1, min(FIXED_HOLD + 1, len(prices))):
                     px = prices[k]
                     if np.isnan(px):
                         continue
                     last_px = px
                     unr = (px - entry_px) / entry_px
-                    # Enforce min hold before exit checks
                     if k < MIN_HOLD_BARS:
                         continue
-                    # Stop loss
                     if unr <= -FIXED_STOP:
                         exit_k = k
                         exit_px = entry_px * (1.0 - FIXED_STOP)
-                        exit_reason = 'SL'
                         break
-                    # Take profit
                     if unr >= FIXED_TARGET:
                         exit_k = k
                         exit_px = entry_px * (1.0 + FIXED_TARGET)
-                        exit_reason = 'TP'
                         break
-                    # Trailing stop
                     for tier_thr, lock_pct in TRAILING_TIERS:
                         if unr >= tier_thr:
                             if lock_pct > trailing_stop:
@@ -556,25 +472,21 @@ def build_dataset(
                     if trailing_stop > -float('inf') and unr <= trailing_stop:
                         exit_k = k
                         exit_px = entry_px * (1.0 + trailing_stop)
-                        exit_reason = 'TRAIL'
                         break
                 else:
                     exit_px = last_px
 
                 raw_pnl = (exit_px - entry_px) / entry_px
-                # Compute spread cost with tick floor (matches simulator)
                 entry_mtc = mtc
                 exit_bod_val = min(entry_bod + exit_k, 389)
-                exit_mtc_val = max(390 - exit_bod_val, 1)
+                exit_mtc_val = max(BARS_PER_DAY - exit_bod_val, 1)
                 entry_spread = compute_adaptive_spread_bps(entry_mtc, vix_regime, is_otm) / 10000.0
                 exit_spread = compute_adaptive_spread_bps(exit_mtc_val, vix_regime, is_otm) / 10000.0
-                # Tick floor
                 min_tick = 0.05 if entry_px < 3.00 else 0.10
                 min_frac = min_tick / entry_px
                 entry_spread = max(entry_spread, min_frac)
                 exit_spread = max(exit_spread, min_frac)
                 spread_cost = entry_spread + exit_spread
-                # Commission: $0.65/leg * 2 legs / (entry_px * 100)
                 commission_frac = (2 * COMMISSION_PER_CONTRACT) / (entry_px * 100)
                 net_pnl = raw_pnl - spread_cost - commission_frac
                 outcome = 1 if net_pnl > 0 else -1
@@ -583,22 +495,18 @@ def build_dataset(
             call_pnl, call_outcome = _sim_one(call_entry_px, call_prices, bod)
             put_pnl, put_outcome = _sim_one(put_entry_px, put_prices, bod)
 
-            # Store both P&Ls for the model to learn from
             label_call_pnl[gi] = call_pnl
             label_put_pnl[gi] = put_pnl
 
-            # Best direction = whichever had higher P&L
             best_pnl = max(call_pnl, put_pnl)
             if call_pnl >= put_pnl:
-                direction = 0  # call
+                direction = 0
                 outcome = call_outcome
             else:
-                direction = 1  # put
+                direction = 1
                 outcome = put_outcome
 
-            # gate=True only when best direction clears a minimum edge
-            # Threshold > 0 makes labels more selective (was 79.7% at > 0)
-            GATE_MIN_PNL = 0.04  # 4% minimum net P&L to label as trade (raised for selectivity)
+            GATE_MIN_PNL = 0.04
             is_trade = best_pnl > GATE_MIN_PNL
             total_signal_bars += 1
 
@@ -608,7 +516,6 @@ def build_dataset(
             label_target_pct[gi] = FIXED_TARGET
             label_max_hold[gi] = FIXED_HOLD
             label_outcome[gi] = outcome
-            # Confidence = how clear the directional edge is
             label_confidence[gi] = max(0.0, min(1.0, abs(call_pnl - put_pnl) * 3.0))
 
             if is_trade:
@@ -619,107 +526,42 @@ def build_dataset(
                 label_trade[gi] = False
                 total_losses += 1
 
-        processed_days += 1
         if (day_idx + 1) % 100 == 0:
-            print(f"  {day_idx+1}/{len(unique_dates)} days, "
-                  f"{total_trades:,} trades ({total_wins} W / {total_losses} L)")
+            print(f"  {day_idx+1}/{len(unique_dates)} days labeled, "
+                  f"{total_trades:,} trades")
 
-    elapsed = time.time() - t0
-    print(f"\nDone: {processed_days} days in {elapsed:.1f}s")
+    print(f"  Labeling done in {time.time()-t4:.1f}s")
 
-    # --- Label statistics ---
-    tradeable_bars = ((bar_of_day >= 30) & (bar_of_day < 270)).sum()
+    # Label statistics
     gate_true_rate = label_trade.sum() / total_signal_bars if total_signal_bars > 0 else 0
     pnls_trade = label_pnl[label_trade]
-    pnls_all = label_pnl[label_pnl != 0]  # all bars that got a P&L (trade or not)
     mean_pnl_trade = pnls_trade.mean() if len(pnls_trade) > 0 else 0
-
-    # Direction diversity
     call_count = int((label_direction[label_trade] == 0).sum()) if label_trade.sum() > 0 else 0
     put_count = int((label_direction[label_trade] == 1).sum()) if label_trade.sum() > 0 else 0
 
     print(f"\n=== LABEL STATISTICS ===")
-    print(f"Signal bars (passed filters): {total_signal_bars:,}")
-    print(f"Gate=True (trade profitable): {label_trade.sum():,} ({gate_true_rate*100:.1f}% of signal bars)")
-    print(f"Gate=False (trade lost): {total_losses:,} ({total_losses/max(total_signal_bars,1)*100:.1f}%)")
+    print(f"Signal bars: {total_signal_bars:,}")
+    print(f"Gate=True: {label_trade.sum():,} ({gate_true_rate*100:.1f}%)")
     print(f"Direction: {call_count} calls, {put_count} puts")
-    print(f"Fixed risk: stop={FIXED_STOP}, target={FIXED_TARGET}, hold={FIXED_HOLD}")
-    print(f"Mean P&L (trade=True bars): {mean_pnl_trade*100:.2f}%")
-    print(f"Mean P&L (all signal bars): {pnls_all.mean()*100:.2f}%" if len(pnls_all) > 0 else "")
+    print(f"Mean P&L (trade=True): {mean_pnl_trade*100:.2f}%")
     if len(pnls_trade) > 0:
         gp = pnls_trade[pnls_trade > 0].sum()
         gl = abs(pnls_trade[pnls_trade < 0].sum())
         pf = gp / gl if gl > 0 else float('inf')
         wr = (pnls_trade > 0).sum() / len(pnls_trade) * 100
-        print(f"PF (trade=True): {pf:.3f}, WR: {wr:.1f}%")
-    print(f"Avg confidence: {label_confidence[label_trade].mean():.3f}" if label_trade.sum() > 0 else "")
+        print(f"PF: {pf:.3f}, WR: {wr:.1f}%")
 
-    # --- Validation gates ---
-    errors = []
-    if gate_true_rate > 0.70:
-        errors.append(f"Gate=True rate {gate_true_rate:.1%} > 70% -- labels not selective enough")
-    if gate_true_rate < 0.10:
-        errors.append(f"Gate=True rate {gate_true_rate:.1%} < 10% -- too few positive examples")
-    if total_signal_bars > 0 and total_losses / total_signal_bars < 0.15:
-        errors.append(f"Loss rate {total_losses/total_signal_bars:.1%} < 15% -- not enough losers")
-    dir_balance = min(call_count, put_count) / max(call_count, put_count, 1)
-    if dir_balance < 0.15:
-        errors.append(f"Direction balance {dir_balance:.2f} < 0.15 -- direction collapse in labels")
-
-    if errors:
-        print(f"\n*** VALIDATION WARNINGS ***")
-        for e in errors:
-            print(f"  - {e}")
-    else:
-        print(f"\nAll validation gates PASSED.")
-
-    # --- Forward-fill NaN within each day (matches live IBKR behavior) ---
-    # In live trading, IBKR shows last traded price even when no new trades.
-    # Forward-fill replicates this: stale quote, not missing data.
-    # Volume/transaction features naturally stay 0 for stale bars (no fill needed).
-    nan_before = np.isnan(X_new).sum()
-    for day in unique_dates:
-        day_indices = day_to_bars[day]
-        for j in range(n_new):
-            col = X_new[day_indices, j]
-            # Forward-fill within this day
-            last_valid = np.nan
-            for k, gi in enumerate(day_indices):
-                if np.isnan(col[k]):
-                    if not np.isnan(last_valid):
-                        X_new[gi, j] = last_valid
-                else:
-                    last_valid = col[k]
-    nan_after = np.isnan(X_new).sum()
-    # Remaining NaN = start-of-day bars before first valid quote. Fill with 0.
-    X_new_clean = np.nan_to_num(X_new, nan=0.0)
-    # Strip any enriched/duplicate columns from base, keep only original 39.
-    # Then concatenate fresh enriched features. This eliminates the duplicate bug.
-    N_ORIGINAL = 39
-    if n_old_features > N_ORIGINAL:
-        print(f"\n  Stripping {n_old_features - N_ORIGINAL} old enriched/duplicate columns from base")
-        X_base = X_old[:, :N_ORIGINAL]
-        base_feature_names = list(feature_names_old)[:N_ORIGINAL]
-    else:
-        X_base = X_old
-        base_feature_names = list(feature_names_old)
-    X_combined = np.concatenate([X_base, X_new_clean], axis=1)
-    all_feature_names = base_feature_names + NEW_FEATURE_NAMES
-    print(f"\nCombined features: {X_combined.shape[1]} ({N_ORIGINAL} base, {n_new} enriched)")
-    print(f"  NaN before forward-fill: {nan_before:,}")
-    print(f"  NaN after forward-fill: {nan_after:,} (remaining = start-of-day, filled with 0)")
-
-    # --- Build 4-way split ---
+    # ===== STEP 7: Build splits =====
     val_dates = set(unique_dates[train_end_day_idx:train_end_day_idx + VAL_DAYS])
     promote_start = train_end_day_idx + VAL_DAYS
     promote_dates = set(unique_dates[promote_start:promote_start + PROMOTE_DAYS])
     shadow_start = promote_start + PROMOTE_DAYS
     shadow_dates = set(unique_dates[shadow_start:])
 
-    train_mask = np.array([d in train_dates for d in dates])
-    val_mask = np.array([d in val_dates for d in dates])
-    promote_mask = np.array([d in promote_dates for d in dates])
-    shadow_mask = np.array([d in shadow_dates for d in dates])
+    train_mask = np.array([d in train_dates for d in dates_list])
+    val_mask = np.array([d in val_dates for d in dates_list])
+    promote_mask = np.array([d in promote_dates for d in dates_list])
+    shadow_mask = np.array([d in shadow_dates for d in dates_list])
 
     split_info = {
         'train_days': len(train_dates),
@@ -727,18 +569,28 @@ def build_dataset(
         'promote_days': len(promote_dates),
         'shadow_days': len(shadow_dates),
     }
-    print(f"Split: {split_info}")
+    print(f"\nSplit: {split_info}")
 
-    # --- Fingerprint ---
-    fp_str = f"triple_barrier:features:{X_combined.shape}:signals:{total_signal_bars}:trades:{total_trades}:gate_rate:{gate_true_rate:.4f}:stop:{FIXED_STOP}:target:{FIXED_TARGET}:hold:{FIXED_HOLD}"
+    # ===== STEP 8: Save =====
+    fp_str = (f"v2_rebuild:features:{X_normalized.shape}:signals:{total_signal_bars}"
+              f":trades:{total_trades}:gate_rate:{gate_true_rate:.4f}"
+              f":stop:{FIXED_STOP}:target:{FIXED_TARGET}:hold:{FIXED_HOLD}")
     fingerprint = hashlib.sha256(fp_str.encode()).hexdigest()[:16]
 
-    # --- Build output ---
-    dataset = {
-        'X': torch.from_numpy(X_combined),
-        'feature_names': all_feature_names,
+    # Build option price tensors for replay (computed from wide grid above)
+    price_tensors = {
+        'spot_prices': torch.from_numpy(spx_close.astype(np.float32)),
+        'atm_call_prices': torch.from_numpy(atm_call_prices),
+        'atm_put_prices': torch.from_numpy(atm_put_prices),
+    }
+    for k, v in otm_prices.items():
+        price_tensors[k] = torch.from_numpy(v)
+    oracle_tensors = {}  # no backward compat needed for fresh rebuild
 
-        # Labels (risk-grid search)
+    dataset = {
+        'X': torch.from_numpy(X_normalized),
+        'feature_names': list(all_feature_names),
+
         'label_trade': torch.from_numpy(label_trade),
         'label_direction': torch.from_numpy(label_direction),
         'label_outcome': torch.from_numpy(label_outcome),
@@ -747,43 +599,33 @@ def build_dataset(
         'label_target_pct': torch.from_numpy(label_target_pct),
         'label_max_hold': torch.from_numpy(label_max_hold.astype(np.int32)),
         'label_confidence': torch.from_numpy(label_confidence),
-
-        # Per-direction P&L: model sees both outcomes to learn direction
         'label_call_pnl': torch.from_numpy(label_call_pnl),
         'label_put_pnl': torch.from_numpy(label_put_pnl),
 
-        # Keep oracle labels for backward compat (marked as deprecated)
-        **{k: existing[k] for k in existing if k.startswith('oracle_')},
+        **oracle_tensors,
 
-        # Auxiliary
         'spx_estimated': torch.from_numpy(spx_estimated),
         'nearest_call_close': torch.from_numpy(nearest_call_close),
         'nearest_put_close': torch.from_numpy(nearest_put_close),
 
-        # Splits
-        'dates': dates,
-        'bar_of_day': existing['bar_of_day'],
+        'dates': dates_list,
+        'bar_of_day': torch.from_numpy(bar_of_day),
         'train_mask': torch.from_numpy(train_mask),
         'val_mask': torch.from_numpy(val_mask),
         'promote_mask': torch.from_numpy(promote_mask),
         'shadow_mask': torch.from_numpy(shadow_mask),
 
-        # Keep option prices for replay
-        'spot_prices': existing['spot_prices'],
-        **{k: existing[k] for k in existing if k.endswith('_prices') and k != 'spot_prices'},
+        **price_tensors,
 
-        # Metadata
         'metadata': {
-            'version': 'v2_triple_barrier',
+            'version': 'v2_rebuild',
             'build_timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
             'fingerprint': fingerprint,
-            'n_features': X_combined.shape[1],
-            'n_old_features': n_old_features,
-            'n_new_features': n_new,
+            'n_features': NUM_FEATURES,
+            'normalization': 'rolling_zscore_60day',
             'total_signal_bars': total_signal_bars,
             'total_trades': total_trades,
             'gate_true_rate': gate_true_rate,
-            'gate_false_count': total_losses,
             'mean_pnl_trade': float(mean_pnl_trade),
             'fixed_stop': FIXED_STOP,
             'fixed_target': FIXED_TARGET,
@@ -798,23 +640,23 @@ def build_dataset(
         },
     }
 
-    # Save
     os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
     print(f"\nSaving to {output_path}...")
     torch.save(dataset, output_path)
     size_mb = os.path.getsize(output_path) / 1024 / 1024
     print(f"  Size: {size_mb:.1f} MB")
-    print(f"  Features: {X_combined.shape[1]}")
+    print(f"  Features: {NUM_FEATURES}")
     print(f"  Fingerprint: {fingerprint}")
+    elapsed = time.time() - t0
+    print(f"  Total time: {elapsed:.1f}s")
     print("Done.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build v2 dataset with wide grid + honest labels")
-    parser.add_argument("--existing", type=str, default=EXISTING_DATA)
+    parser = argparse.ArgumentParser(description="Build v2 dataset from raw data")
     parser.add_argument("--output", type=str, default=OUTPUT_PATH)
     args = parser.parse_args()
-    build_dataset(existing_path=args.existing, output_path=args.output)
+    build_dataset(output_path=args.output)
 
 
 if __name__ == "__main__":

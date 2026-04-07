@@ -20,15 +20,18 @@ The experiment runner (`v2/ops/run_experiment.py`) is designed to run ON the GPU
 
 ## Data
 
-**71 features** (39 original SPX/VIX/market features + 16 enriched from wide-grid option data + 16 volume/moneyness/theta).
+**47 features** (28 price/market structure + 11 option/Greeks + 8 volume/flow).
+All features computed from raw data in `v2/pipeline/compute_features.py`.
 **Wide-grid option data**: ATM +/- 100pt (82 contracts per day), full OHLCV per bar per strike.
 **Labels**: Dual-direction P&L (both call AND put simulated per bar). Model learns which direction from features.
 
-Key design: all option features are RELATIVE (moneyness %, normalized prices) so patterns
-learned at SPX 4300 transfer to SPX 6500. Real-time SPX estimated via call-put parity.
+Key design: all features are RELATIVE (moneyness %, normalized prices) so patterns
+learned at SPX 4300 transfer to SPX 6500. Rolling z-score normalization (60-day window)
+preserves inter-day regime information (unlike per-day z-score which destroyed it).
+Option features use dynamic ATM tracking from the wide grid.
 
 Label statistics:
-- 178K signal bars, label_call_pnl and label_put_pnl per bar
+- ~237K signal bars, label_call_pnl and label_put_pnl per bar
 - Fixed risk: stop=0.30, target=0.50, hold=30 bars (no grid search)
 - Direction = whichever side had higher P&L (model learns to predict)
 - Costs: adaptive spread (by time/VIX) + $1.30 commission per round trip
@@ -92,7 +95,7 @@ Model must also beat all four baselines:
 
 ## Key Architecture Facts
 
-- **Input**: (batch, 60, 71) -- 60 bars of 71 features (39 market + 16 option-enriched + 16 volume/moneyness)
+- **Input**: (batch, 60, 47) -- 60 bars of 47 features (28 price/market + 11 option/Greeks + 8 volume/flow)
 - **Output**: P&L predictions (call_pnl, put_pnl) + risk params. Gate/direction derived from P&L.
 - **Labels**: Dual-direction P&L -- both call and put simulated per bar with fixed risk params
 - **Evaluation**: Replay on promote_mask (60 days model never saw during training)

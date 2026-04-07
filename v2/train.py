@@ -28,7 +28,7 @@ from v2.core.features import (
 )
 
 # Feature count determined at runtime from data.pt shape
-NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 55))
+NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 47))
 from v2.core.metrics import score_config_fingerprint
 
 
