@@ -441,8 +441,16 @@ cmd_start() {
 
     # Install GPU dependencies (torch, numpy, pandas) from pinned requirements
     log "Installing GPU dependencies..."
+    # Bootstrap pip if not available (bare Ubuntu containers)
+    ssh_cmd "pip3 --version >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq python3-pip >/dev/null 2>&1)" \
+        || log "WARNING: pip bootstrap via apt failed, trying get-pip.py..."
+    ssh_cmd "pip3 --version >/dev/null 2>&1 || (python3 -c 'import ensurepip; ensurepip.bootstrap()' 2>/dev/null)" \
+        || log "WARNING: ensurepip failed too, trying get-pip.py..."
+    ssh_cmd "pip3 --version >/dev/null 2>&1 || (python3 <(curl -sS https://bootstrap.pypa.io/get-pip.py))" \
+        || true
     ssh_cmd "pip3 install -q -r /root/v2/ops/requirements-gpu.txt" \
         || ssh_cmd "pip install -q -r /root/v2/ops/requirements-gpu.txt" \
+        || ssh_cmd "python3 -m pip install -q -r /root/v2/ops/requirements-gpu.txt" \
         || die "Failed to install GPU dependencies. Check requirements-gpu.txt."
     log "Dependencies installed."
 
@@ -626,7 +634,7 @@ cmd_download() {
     # Download artifacts/
     log "Downloading artifacts/..."
     mkdir -p "$PROJECT_ROOT/v2/artifacts"
-    scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/" "$PROJECT_ROOT/v2/artifacts/" 2>/dev/null || \
+    scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || \
         log "  WARNING: artifacts/ not found on remote"
 
     # Download results.tsv
@@ -717,7 +725,7 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
             log "* IMPROVEMENT at exp #$best_experiment_num (score=$best_score) — syncing model + artifacts..."
             scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt" 2>/dev/null || true
             mkdir -p "$PROJECT_ROOT/v2/artifacts"
-            scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/" "$PROJECT_ROOT/v2/artifacts/" 2>/dev/null || true
+            scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
             scp_cmd "root@$SSH_HOST:/root/v2/results.tsv" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || true
             last_kept=$best_experiment_num
             last_exp_count=$experiment_count

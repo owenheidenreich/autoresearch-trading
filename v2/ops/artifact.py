@@ -26,7 +26,7 @@ from v2.core.policy import DecisionPolicy, DEFAULT_POLICY
 from v2.core.metrics import score_config_fingerprint
 
 
-ARTIFACTS_DIR = os.path.join("v2", "artifacts", "artifacts")
+ARTIFACTS_DIR = os.path.join("v2", "artifacts")
 
 
 def _get_git_sha() -> str:
@@ -75,10 +75,15 @@ def save_artifact(
     with open(dst_policy, "w") as f:
         f.write(policy.to_json())
 
-    # Snapshot train.py source
+    # Snapshot mutable source files
     dst_train = os.path.join(artifact_dir, "train.py.snapshot")
     if os.path.exists(train_source_path):
         shutil.copy2(train_source_path, dst_train)
+
+    policy_source_path = "v2/core/policy.py"
+    dst_policy_src = os.path.join(artifact_dir, "policy.py.snapshot")
+    if os.path.exists(policy_source_path):
+        shutil.copy2(policy_source_path, dst_policy_src)
 
     # Load checkpoint to get hyperparams
     checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)

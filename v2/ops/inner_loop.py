@@ -186,20 +186,53 @@ def revert_mutable_files(state: SessionState | None = None):
     on disk at v2/model.pt, corrupting all subsequent evaluations and
     warm-starts.
     """
-    mutable_files = ["v2/train.py", "v2/core/policy.py"]
-    for f in mutable_files:
-        if os.path.exists(f):
-            subprocess.run(["git", "checkout", f], capture_output=True)
-
     # Restore best model.pt from the session's best artifact
-    from v2.ops.artifact import ARTIFACTS_DIR
+    from v2.ops.artifact import ARTIFACTS_DIR, _file_fingerprint
     best_id = state.best_artifact_id if state else None
 
     if best_id:
         best_model = os.path.join(ARTIFACTS_DIR, best_id, "model.pt")
-        if os.path.exists(best_model):
+        manifest_path = os.path.join(ARTIFACTS_DIR, best_id, "manifest.json")
+
+        if not os.path.exists(best_model):
+            print(f"ERROR: artifact model not found at {best_model}")
+        else:
+            # Validate fingerprint matches manifest before restoring
+            if os.path.exists(manifest_path):
+                with open(manifest_path) as f:
+                    manifest = json.load(f)
+                expected_fp = manifest.get("model_fingerprint", "")
+                actual_fp = _file_fingerprint(best_model)
+                if expected_fp and actual_fp != expected_fp:
+                    print(f"ERROR: model fingerprint mismatch in {best_id}!")
+                    print(f"  manifest expects: {expected_fp}")
+                    print(f"  file on disk:     {actual_fp}")
+                    print(f"  NOT restoring -- artifact may be corrupted")
+                    return
+                print(f"Restored model.pt from artifact {best_id} "
+                      f"(score={manifest.get('score', '?')}, fp={actual_fp})")
+            else:
+                print(f"WARNING: no manifest for {best_id}, restoring without validation")
+
             shutil.copy2(best_model, "v2/model.pt")
-            print(f"Restored model.pt from artifact {best_id}")
+
+            # Restore mutable files: prefer git checkout, fall back to artifact snapshots
+            has_git = shutil.which("git") is not None
+            if has_git:
+                for f in ["v2/train.py", "v2/core/policy.py"]:
+                    if os.path.exists(f):
+                        subprocess.run(["git", "checkout", f], capture_output=True)
+            else:
+                # No git (GPU container) -- restore from artifact snapshots
+                snapshot_map = {
+                    "train.py.snapshot": "v2/train.py",
+                    "policy.py.snapshot": "v2/core/policy.py",
+                }
+                for snap_name, target in snapshot_map.items():
+                    snap_path = os.path.join(ARTIFACTS_DIR, best_id, snap_name)
+                    if os.path.exists(snap_path):
+                        shutil.copy2(snap_path, target)
+                        print(f"Restored {target} from artifact snapshot")
             return
 
     # Fallback: no session state, scan for best artifact with compatible arch
