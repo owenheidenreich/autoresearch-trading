@@ -636,15 +636,11 @@ cmd_download() {
     scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || \
         log "  WARNING: artifacts/ not found on remote"
 
-    # Download results.tsv
-    log "Downloading results.tsv..."
-    scp_cmd "root@$SSH_HOST:/root/v2/results.tsv" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || \
-        log "  WARNING: results.tsv not found on remote"
+    # results.tsv: NOT downloaded. Claude appends results locally after each experiment.
+    # Downloading would overwrite local entries with stale GPU copy.
 
-    # Download lab_notebook.md
-    log "Downloading lab_notebook.md..."
-    scp_cmd "root@$SSH_HOST:/root/v2/lab_notebook.md" "$PROJECT_ROOT/v2/lab_notebook.md" 2>/dev/null || \
-        log "  WARNING: lab_notebook.md not found on remote"
+    # lab_notebook.md: NOT downloaded. Claude edits it locally after each experiment.
+    # Downloading would overwrite local notes with stale GPU copy.
 
     # Download .best_score
     log "Downloading .best_score..."
@@ -733,7 +729,6 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
                 scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt" 2>/dev/null || true
                 mkdir -p "$PROJECT_ROOT/v2/artifacts"
                 scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
-                scp_cmd "root@$SSH_HOST:/root/v2/results.tsv" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || true
             fi
             last_kept=$best_experiment_num
             last_exp_count=$experiment_count
@@ -742,21 +737,19 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
             continue
         fi
 
-        # --- New improvement: download model + artifacts + results ---
+        # --- New improvement: download model + artifacts ---
         if [[ "$best_experiment_num" -gt "$last_kept" ]]; then
             log "* IMPROVEMENT at exp #$best_experiment_num (score=$best_score) — syncing model + artifacts..."
             scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt" 2>/dev/null || true
             mkdir -p "$PROJECT_ROOT/v2/artifacts"
             scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
-            scp_cmd "root@$SSH_HOST:/root/v2/results.tsv" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || true
             last_kept=$best_experiment_num
             last_exp_count=$experiment_count
             log "  Synced. Best score: $best_score"
 
-        # --- Experiment finished but no improvement: sync results only ---
+        # --- Experiment finished but no improvement ---
         elif [[ "$experiment_count" -gt "$last_exp_count" ]]; then
-            log "  Exp #$experiment_count done (not kept). Syncing results.tsv..."
-            scp_cmd "root@$SSH_HOST:/root/v2/results.tsv" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || true
+            log "  Exp #$experiment_count done (not kept)."
             last_exp_count=$experiment_count
 
         # --- Heartbeat: show sync is alive even when nothing changed ---
@@ -764,9 +757,7 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
             log "  Polling... exp=$experiment_count best_exp=#$best_experiment_num best=$best_score streak=$no_improve_streak"
         fi
 
-        # --- Always sync lab_notebook.md (tiny file, keeps local copy current) ---
-        scp_cmd "root@$SSH_HOST:/root/v2/lab_notebook.md" \
-            "$PROJECT_ROOT/v2/lab_notebook.md" 2>/dev/null || true
+        # lab_notebook.md: NOT synced. Claude edits it locally.
 
         # --- Stopped: final full sync and exit ---
         if [[ "$stopped" == "true" || "$stopped" == "True" ]]; then
