@@ -22,7 +22,7 @@ class DecisionPolicy:
     """
 
     # --- Gate ---
-    gate_threshold: float = 0.50  # trade only when model predicts positive P&L
+    gate_threshold: float = 0.47  # fine-tuned: 3x conservative model needs slightly lower bar
 
     # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
     stop_range: tuple[float, float] = (0.10, 0.40)
