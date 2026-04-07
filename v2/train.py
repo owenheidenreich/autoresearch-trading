@@ -46,7 +46,7 @@ BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
 LR = float(os.environ.get("TRAIN_LR", 5e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.01))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 30))
-TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
+TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 400))
 
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
