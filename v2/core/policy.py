@@ -30,7 +30,7 @@ class DecisionPolicy:
     max_hold_range: tuple[int, int] = (10, 250)
 
     # --- Position management ---
-    cooldown_bars: int = 5
+    cooldown_bars: int = 10
     max_concurrent: int = 1
     qty: int = 1
 

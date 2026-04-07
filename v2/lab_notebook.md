@@ -254,3 +254,7 @@ PDR 82.2% (37/45). 2 more traded days, same 8 losing. Marginal improvement.
 **Hypothesis:** Worst losses are 33.5%, 34.7%, 31.3% at MAX_HOLD/STOP_LOSS. Max stop at 40% is too loose. Capping at 25% should reduce catastrophic single-trade losses.
 
 **Result:** Score 4.468 (was 4.933). PDR dropped to 74.5% (12 losing days). Tighter stops = more stop-outs = more losing trades. REVERT.
+
+### exp_020: cooldown_bars 5 -> 10
+
+**Hypothesis:** Dec 16 had 6 puts in rapid succession, all lost. Jan 6 had 3 calls stacking losses. Wider cooldown prevents re-entering quickly after a loss, reducing loss stacking on worst days.
