@@ -239,16 +239,16 @@ Training metrics:
 
 ## Session 3: Score Bottleneck Analysis (2026-04-06)
 
-### Score Bottleneck
-
-Score = min(sortino, 6.0) * positive_day_rate * dd_mult = 6.0 * (35/43) * 1.0 = 4.884
-
-Sortino already maxed at 6.0. **Binding constraint: 8 losing days out of 43 traded (81.4% PDR).**
+Score = min(sortino, 6.0) * positive_day_rate * dd_mult = 6.0 * (35/43) * 1.0 = 4.884. Sortino maxed at 6.0. Binding constraint: 8 losing days out of 43 traded (81.4% PDR).
 
 Worst losing days: Dec 16 (-$1016, 6 puts on rally), Jan 6 (-$1079, 3 calls MAX_HOLD), Feb 11 (-$1287, 34.7% put loss at MAX_HOLD). Borderline: Dec 18 (-$70), Jan 2 (-$22), Jan 5 (-$111).
 
 Exit analysis: STOP_LOSS 0% WR (avg -$372). MAX_HOLD 69.5% WR but 25-35% losses on losers. TAKE_PROFIT 100% WR avg +$1123.
 
-### exp_018: gate_threshold 0.45 -> 0.50
+### exp_018: gate_threshold 0.45 -> 0.50 -- KEEP (4.933)
 
-**Hypothesis:** Higher gate threshold filters out marginal trades, flipping borderline losing days (Dec 18, Jan 2, Jan 5) to no-trade or winning. Model's asymmetric loss already penalizes optimistic predictions, so P&L > 0 threshold is a natural cut.
+PDR 82.2% (37/45). 2 more traded days, same 8 losing. Marginal improvement.
+
+### exp_019: stop_range (0.10, 0.40) -> (0.10, 0.25)
+
+**Hypothesis:** Worst losses are 33.5%, 34.7%, 31.3% at MAX_HOLD/STOP_LOSS. Max stop at 40% is too loose. Capping at 25% should reduce catastrophic single-trade losses.
