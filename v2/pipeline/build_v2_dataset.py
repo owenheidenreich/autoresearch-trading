@@ -120,7 +120,6 @@ def compute_bar_features(
     features['near_atm_put_volume'] = float(put_vol)
     features['near_atm_total_volume'] = float(total_vol)
     features['call_put_flow_ratio'] = call_vol / total_vol if total_vol > 0 else 0.5
-    features['volume_zero_flag'] = 1.0 if total_vol == 0 else 0.0
     features['log_total_volume'] = math.log1p(total_vol)
 
     # --- Volume across the chain (aggregate flow) ---
@@ -180,7 +179,6 @@ NEW_FEATURE_NAMES = [
     'near_atm_put_volume',
     'near_atm_total_volume',
     'call_put_flow_ratio',
-    'volume_zero_flag',
     'log_total_volume',
     'chain_call_put_ratio',
     'log_chain_volume',
@@ -190,8 +188,6 @@ NEW_FEATURE_NAMES = [
     'theta_acceleration',
     'near_atm_transactions',
     'put_call_txn_ratio',
-    'vix_ma_ratio',
-    'vix_acceleration',
 ]
 
 
@@ -377,17 +373,6 @@ def build_dataset(
     sr_idx = dir_indices.get('session_range_pct')
     sr_median = dir_medians.get('session_range_pct', 0.0)
 
-    # Load VIX data for term structure features
-    vix_by_day = {}
-    if os.path.exists(VIX_DATA_PATH):
-        import pandas as pd
-        vix_df = pickle.load(open(VIX_DATA_PATH, 'rb'))
-        for day_str, group in vix_df.groupby('date'):
-            vix_by_day[day_str] = group['vix_close'].values
-        print(f"  VIX data loaded: {len(vix_by_day)} days")
-    else:
-        print(f"  WARNING: VIX data not found at {VIX_DATA_PATH}, skipping VIX features")
-
     # Process each day
     print(f"\nProcessing {len(unique_dates)} days...")
     processed_days = 0
@@ -454,38 +439,6 @@ def build_dataset(
                     nd = bar_data.get(near_strike, {})
                     nearest_call_close[gi] = nd.get('call_close', np.nan) or np.nan
                     nearest_put_close[gi] = nd.get('put_close', np.nan) or np.nan
-
-        # ===== VIX features: rolling MA ratio + acceleration =====
-        vix_day = vix_by_day.get(day)
-        if vix_day is not None and len(vix_day) > 0:
-            vix_ma_ratio_idx = NEW_FEATURE_NAMES.index('vix_ma_ratio')
-            vix_accel_idx = NEW_FEATURE_NAMES.index('vix_acceleration')
-            n_vix = min(n_bars, len(vix_day))
-            # Compute EMA-5 and EMA-20 of VIX close within this day
-            ema5 = np.full(n_vix, np.nan)
-            ema20 = np.full(n_vix, np.nan)
-            alpha5 = 2.0 / 6.0
-            alpha20 = 2.0 / 21.0
-            for vi in range(n_vix):
-                v = vix_day[vi]
-                if vi == 0:
-                    ema5[vi] = v
-                    ema20[vi] = v
-                else:
-                    ema5[vi] = alpha5 * v + (1 - alpha5) * ema5[vi - 1]
-                    ema20[vi] = alpha20 * v + (1 - alpha20) * ema20[vi - 1]
-            # VIX MA ratio: ema5 / ema20 (>1 = vol rising, <1 = vol falling)
-            for vi in range(min(n_vix, n_align)):
-                gi = global_indices[vi]
-                if ema20[vi] > 0:
-                    X_new[gi, vix_ma_ratio_idx] = ema5[vi] / ema20[vi]
-            # VIX acceleration: change in VIX ROC (2nd derivative)
-            # Use 5-bar diff of VIX close as ROC, then diff again
-            for vi in range(10, min(n_vix, n_align)):
-                gi = global_indices[vi]
-                roc_now = (vix_day[vi] - vix_day[vi - 5]) / max(vix_day[vi - 5], 0.01)
-                roc_prev = (vix_day[vi - 5] - vix_day[vi - 10]) / max(vix_day[vi - 10], 0.01)
-                X_new[gi, vix_accel_idx] = roc_now - roc_prev
 
         # ===== PASS 2: Dual-direction labeling (model learns to choose) =====
         # For each entry bar: simulate BOTH call AND put with fixed risk params.

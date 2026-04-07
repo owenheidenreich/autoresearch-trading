@@ -22,7 +22,7 @@ import pandas as pd
 BARS_PER_DAY = 390
 FORWARD_BARS = 30
 LOOKBACK_WINDOW = 60
-NUM_FEATURES = 58  # 39 original + 19 enriched (16 original + put_call_txn_ratio + vix_ma_ratio + vix_acceleration)
+NUM_FEATURES = 55  # 39 original + 16 enriched (removed dupes, volume_zero_flag, vix features)
 
 OPTION_SPREAD_BPS = 150
 SPREAD_COST_PCT = 2 * OPTION_SPREAD_BPS / 10000.0  # 0.03 = 3% round-trip
@@ -124,11 +124,8 @@ FEATURE_NAMES = [
     'near_atm_call_price_norm', # 51: call_close / SPX * 100 (normalized)
     'near_atm_put_price_norm',  # 52: put_close / SPX * 100 (normalized)
     'theta_acceleration',       # 53: 1/sqrt(minutes_to_close) (0DTE specific)
-    'near_atm_transactions',    # 54: transactions at nearest ATM
-    # === v2 new features (3) ===
-    'put_call_txn_ratio',       # 55: put_txn / (call_txn + put_txn) (order flow)
-    'vix_ma_ratio',             # 56: VIX EMA-5 / EMA-20 (regime shift)
-    'vix_acceleration',         # 57: 2nd derivative of VIX ROC
+    'near_atm_transactions',    # 53: transactions at nearest ATM
+    'put_call_txn_ratio',       # 54: put_txn / (call_txn + put_txn) (order flow)
 ]
 
 assert len(FEATURE_NAMES) == NUM_FEATURES
