@@ -30,3 +30,4 @@ exp_026	5.181818	revert	score=5.182 trades=67 wr=68.7% lr=3e-4
 exp_027	-0.500000	revert	GATE_FAILURE 14_traded_days asymmetric_4x_too_conservative
 exp_028	4.800000	revert	score=4.800 trades=46 wr=69.6% deeper_regime
 exp_029	5.052632	revert	score=5.053 trades=51 wr=68.6% time_budget=400s
+exp_030	4.800000	revert	score=4.800 trades=33 wr=66.7% batch=4096
