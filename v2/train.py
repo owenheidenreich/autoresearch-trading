@@ -272,16 +272,16 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    # Asymmetric loss: penalize optimistic errors (predicted profit, actual loss) 2x
+    # Asymmetric loss: penalize optimistic errors (predicted profit, actual loss) 3x
     # This makes the gate more conservative, reducing losing-day frequency
     call_err = pred_call - true_call
     put_err = pred_put - true_put
     # Optimistic = predicted higher than actual (positive error when true is negative)
     call_weight = torch.where(
-        (call_err > 0) & (true_call < 0), 2.0, 1.0
+        (call_err > 0) & (true_call < 0), 3.0, 1.0
     )
     put_weight = torch.where(
-        (put_err > 0) & (true_put < 0), 2.0, 1.0
+        (put_err > 0) & (true_put < 0), 3.0, 1.0
     )
     call_loss = (call_weight * F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')).mean()
     put_loss = (put_weight * F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')).mean()
