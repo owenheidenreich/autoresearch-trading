@@ -42,7 +42,7 @@ N_HEADS = 4
 DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
 DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.05))
 
-BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
+BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 4096))
 LR = float(os.environ.get("TRAIN_LR", 5e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.01))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 30))
