@@ -1,44 +1,21 @@
 experiment	score	status	description
-exp_001	-0.300000	revert	gate_pos_weight=1.0, label_smoothing=0.1, threshold=0.3 -- direction collapse 1.9% calls
-exp_002	-0.300000	revert	call_weight=3x, label_smoothing=0.15 -- direction 3.1% still collapsed
-exp_003	1.779944	keep	CALL_BOOST=1.5 at inference -- direction balanced 39/61, first positive score
-exp_004	5.593220	keep	stop_range=(0.10,0.40), max_hold=(10,250) -- DD 15.4%->2.1%, score 3.1x
-exp_005	-0.300000	revert	gate_threshold=0.4 -- direction collapse 7.4%, gate filters boosted calls
-exp_006	1.193435	revert	target_range=(0.15,0.80) -- DD spiked to 17.5%, smaller profits worse
-exp_007	5.593220	revert	D_MODEL=128, DEPTH=4 -- same score, bigger model no help
-exp_008	5.571429	revert	cooldown_bars=15 -- fewer trades, +day_rate dropped to 92.9%
-exp_009	-0.300000	revert	CALL_BOOST=0.8 -- direction 9.1%, too few calls (need 15%)
-exp_010	-0.300000	revert	CALL_BOOST=1.1 -- direction 5.1%, training seed randomness
-exp_012	-0.300000	revert	confidence-weighted gate + BUG: call_boost buffer=0.0 not 1.5
-exp_012b	3.398730	revert	conf-weighted gate + call_boost fix -- +day_rate dropped to 86.4%, DD 12.1%
-exp_014	5.694915	keep	FiLM regime conditioning -- direction 26% calls (no CALL_BOOST), DD 0.14%, WR 86.3%, PF 334
-exp_015	-0.300000	revert	gate_threshold=0.5 -- direction collapse 10.8% calls, higher threshold filters calls preferentially
-exp_016	5.800000	keep	label_smoothing=0.25 -- +day_rate 96.7%, WR 87.3%, 60/60 days, calls 22.6%
-exp_017	-0.300000	revert	GATE_POS_WEIGHT=1.0 -- direction collapse 7.1% calls, gate kills calls first
-exp_018	5.800000	revert	DIR_W=2.0 -- same score 5.80, same 2 losing days, direction already good enough
-exp_019	5.800000	revert	no_trade_after_bar=290 -- same score, losing trades also before bar 290
-exp_020	5.800000	revert	focal loss gate -- direction balance 48.6% (great!) but same 2 losing days, WR dropped 82.7%
-exp_021	2.323531	revert	DROPOUT=0.2 -- DD spiked to 15.1%, score crashed to 2.32, too much regularization
-exp_022	6.000000	keep	exit_policy=TRAILING -- PERFECT SCORE, 100% +day_rate, 0% DD, trailing stops lock in profits
-exp_023	6.000000	keep	focal loss + trailing stops -- PERFECT on both promote AND shadow, 52% calls
-exp_024	5.800000	revert	gate_threshold=0.4 -- 2 losing days return, score drops to 5.80
-exp_025	5.800000	revert	cooldown_bars=10 -- 2 losing days return, score 5.80
-exp_024	5.800000	revert	gate_threshold=0.4 -- 2 losing days return, score drops to 5.80
-exp_025	5.800000	revert	cooldown_bars=10 -- 2 losing days return, fewer trades hurt marginal days
-exp_026	6.000000	keep	WEIGHT_DECAY=0.01 -- PF 260 (up from 187), WR 79.0% (up from 76.1%), still perfect 6.0
-exp_027	6.000000	keep	LR=5e-4 -- PF 365 (up from 260), 50.3% calls, score 6.0 both sets
-exp_028	5.900000	revert	DEPTH=4 -- 1 losing day returned, score 5.90, deeper model needs more epochs
-exp_028	5.900000	revert	DEPTH=4 -- 1 losing day returned, score 5.90, deeper model needs more epochs
-exp_029	6.000000	keep	MicroMoE direction head -- WR 80.1%, shadow PF 64 (best), score 6.0 both sets
-exp_031	5.900000	keep	v3 P&L prediction model -- dir_acc 62.8%, gate_acc 56.3%, PF 314, P&L $3.42M (highest)
-exp_032	3.979875	revert	D_MODEL=96 -- DD spiked 11.9%, overfit early (best epoch 9/19), gate/dir_acc improved but score dropped
-exp_033	4.784761	revert	tighter gate (scale*10, threshold=0.55) -- DD 10.1%, fewer trades hurt
-exp_034	5.900000	keep	Huber delta=0.5 -- gate_acc 66.4% (up from 56%), PF 350, DD 4.8%
-exp_035	5.900000	revert	dir penalty -- gate_acc 67.7% (best) but dir_acc dropped to 60.6%, PF/WR worse
-exp_037	5.491108	revert	window momentum feature -- DD 8.8%, no improvement over exp_034
-exp_038	4.548963	revert	MSE loss -- DD 10.7%, too sensitive to outliers
-exp_039	4.253678	revert	LOOKBACK=30 -- lost context, DD 11.3%, WR dropped
-exp_041	-0.200000	revert	CVaR W=0.5 -- DD 21% (hard gate fail), direction collapse to 84% puts, model too conservative
-exp_042	1.962106	revert	CVaR W=0.1 -- DD 16%, slows convergence, makes model worse
-exp_044	3.740744	revert	regime window stats (mean+std of 10 bars) -- DD spiked 4.8%->12.4%, score 5.90->3.74
-exp_045	5.900000	revert	gate_logit scale 5->15 -- same score, DD up 4.8%->7.1%, model adapted to new scaling
+exp_001	0.280104	keep	score=0.280 trades=387 wr=51.2% baselines=ALL
+exp_002	4.700000	keep	score=4.700 trades=416 wr=53.6% baselines=ALL
+exp_003	3.635013	revert	score=3.635 trades=370 wr=53.2% baselines=ALL
+exp_004	4.200000	revert	score=4.200 trades=424 wr=52.8% baselines=ALL
+exp_005	4.236292	revert	score=4.236 trades=368 wr=52.4% baselines=ALL
+exp_006	4.425371	revert	score=4.425 trades=392 wr=50.0% baselines=ALL
+exp_007	4.372881	revert	score=4.373 trades=366 wr=53.6% baselines=ALL
+exp_008	4.758621	keep	score=4.759 trades=395 wr=55.7% baselines=ALL
+exp_009	4.344828	revert	score=4.345 trades=376 wr=53.2% baselines=ALL
+exp_010	0.277027	revert	score=0.277 trades=435 wr=49.9% baselines=ALL
+exp_011	2.514581	revert	score=2.515 trades=395 wr=53.9% baselines=ALL
+exp_012	4.042040	revert	score=4.042 trades=437 wr=50.8% baselines=ALL
+exp_013	2.487828	revert	score=2.488 trades=400 wr=49.2% baselines=ALL
+exp_014	4.259283	revert	score=4.259 trades=366 wr=53.3% baselines=ALL
+exp_015	2.301367	revert	score=2.301 trades=378 wr=50.8% baselines=ALL
+exp_001	4.677966	revert	score=4.678 trades=374 wr=54.8% baselines=ALL
+exp_002	2.550921	revert	score=2.551 trades=401 wr=54.9% baselines=ALL
+exp_003	3.931395	revert	score=3.931 trades=452 wr=54.4% baselines=ALL
+exp_004	4.700000	revert	score=4.700 trades=397 wr=54.4% baselines=ALL
+exp_018	4.933333	keep	score=4.933 trades=139 wr=64.7% baselines=ALL gate_threshold=0.50
