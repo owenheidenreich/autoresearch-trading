@@ -40,6 +40,7 @@ COMMISSION_PER_CONTRACT = 0.65
 # ---------------------------------------------------------------------------
 
 WIDE_CACHE_DIR = os.path.expanduser("~/.cache/autoresearch-trading/data/spxw_wide")
+VIX_DATA_PATH = os.path.expanduser("~/.cache/autoresearch-trading/data/vix_1min.pkl")
 EXISTING_DATA = "v2/data.pt"
 OUTPUT_PATH = "v2/data.pt"
 
@@ -163,6 +164,10 @@ def compute_bar_features(
     put_txn = near_data.get('put_transactions', 0) or 0
     features['near_atm_transactions'] = float(call_txn + put_txn)
 
+    # --- Put/call transaction ratio (order flow signal) ---
+    total_txn = call_txn + put_txn
+    features['put_call_txn_ratio'] = put_txn / total_txn if total_txn > 0 else 0.5
+
     return features
 
 
@@ -184,6 +189,9 @@ NEW_FEATURE_NAMES = [
     'near_atm_put_price_norm',
     'theta_acceleration',
     'near_atm_transactions',
+    'put_call_txn_ratio',
+    'vix_ma_ratio',
+    'vix_acceleration',
 ]
 
 
@@ -369,6 +377,17 @@ def build_dataset(
     sr_idx = dir_indices.get('session_range_pct')
     sr_median = dir_medians.get('session_range_pct', 0.0)
 
+    # Load VIX data for term structure features
+    vix_by_day = {}
+    if os.path.exists(VIX_DATA_PATH):
+        import pandas as pd
+        vix_df = pickle.load(open(VIX_DATA_PATH, 'rb'))
+        for day_str, group in vix_df.groupby('date'):
+            vix_by_day[day_str] = group['vix_close'].values
+        print(f"  VIX data loaded: {len(vix_by_day)} days")
+    else:
+        print(f"  WARNING: VIX data not found at {VIX_DATA_PATH}, skipping VIX features")
+
     # Process each day
     print(f"\nProcessing {len(unique_dates)} days...")
     processed_days = 0
@@ -435,6 +454,38 @@ def build_dataset(
                     nd = bar_data.get(near_strike, {})
                     nearest_call_close[gi] = nd.get('call_close', np.nan) or np.nan
                     nearest_put_close[gi] = nd.get('put_close', np.nan) or np.nan
+
+        # ===== VIX features: rolling MA ratio + acceleration =====
+        vix_day = vix_by_day.get(day)
+        if vix_day is not None and len(vix_day) > 0:
+            vix_ma_ratio_idx = NEW_FEATURE_NAMES.index('vix_ma_ratio')
+            vix_accel_idx = NEW_FEATURE_NAMES.index('vix_acceleration')
+            n_vix = min(n_bars, len(vix_day))
+            # Compute EMA-5 and EMA-20 of VIX close within this day
+            ema5 = np.full(n_vix, np.nan)
+            ema20 = np.full(n_vix, np.nan)
+            alpha5 = 2.0 / 6.0
+            alpha20 = 2.0 / 21.0
+            for vi in range(n_vix):
+                v = vix_day[vi]
+                if vi == 0:
+                    ema5[vi] = v
+                    ema20[vi] = v
+                else:
+                    ema5[vi] = alpha5 * v + (1 - alpha5) * ema5[vi - 1]
+                    ema20[vi] = alpha20 * v + (1 - alpha20) * ema20[vi - 1]
+            # VIX MA ratio: ema5 / ema20 (>1 = vol rising, <1 = vol falling)
+            for vi in range(min(n_vix, n_align)):
+                gi = global_indices[vi]
+                if ema20[vi] > 0:
+                    X_new[gi, vix_ma_ratio_idx] = ema5[vi] / ema20[vi]
+            # VIX acceleration: change in VIX ROC (2nd derivative)
+            # Use 5-bar diff of VIX close as ROC, then diff again
+            for vi in range(10, min(n_vix, n_align)):
+                gi = global_indices[vi]
+                roc_now = (vix_day[vi] - vix_day[vi - 5]) / max(vix_day[vi - 5], 0.01)
+                roc_prev = (vix_day[vi - 5] - vix_day[vi - 10]) / max(vix_day[vi - 10], 0.01)
+                X_new[gi, vix_accel_idx] = roc_now - roc_prev
 
         # ===== PASS 2: Dual-direction labeling (model learns to choose) =====
         # For each entry bar: simulate BOTH call AND put with fixed risk params.
@@ -594,7 +645,7 @@ def build_dataset(
 
             # gate=True only when best direction clears a minimum edge
             # Threshold > 0 makes labels more selective (was 79.7% at > 0)
-            GATE_MIN_PNL = 0.02  # 2% minimum net P&L to label as trade
+            GATE_MIN_PNL = 0.04  # 4% minimum net P&L to label as trade (raised for selectivity)
             is_trade = best_pnl > GATE_MIN_PNL
             total_signal_bars += 1
 
@@ -689,28 +740,19 @@ def build_dataset(
     nan_after = np.isnan(X_new).sum()
     # Remaining NaN = start-of-day bars before first valid quote. Fill with 0.
     X_new_clean = np.nan_to_num(X_new, nan=0.0)
-    # Check if enriched features already exist in the base (prevents double-append)
-    already_has_enriched = any(n in feature_names_old for n in NEW_FEATURE_NAMES)
-    if already_has_enriched:
-        # Replace existing enriched columns instead of appending duplicates
-        enriched_start = None
-        for ei, fname in enumerate(feature_names_old):
-            if fname == NEW_FEATURE_NAMES[0]:
-                enriched_start = ei
-                break
-        if enriched_start is not None:
-            print(f"\n  Enriched features already at columns {enriched_start}-{enriched_start + n_new - 1}, replacing in-place")
-            X_old[:, enriched_start:enriched_start + n_new] = X_new_clean
-            X_combined = X_old
-            all_feature_names = list(feature_names_old)
-        else:
-            # Names match but can't find start index -- append as normal
-            X_combined = np.concatenate([X_old, X_new_clean], axis=1)
-            all_feature_names = list(feature_names_old) + NEW_FEATURE_NAMES
+    # Strip any enriched/duplicate columns from base, keep only original 39.
+    # Then concatenate fresh enriched features. This eliminates the duplicate bug.
+    N_ORIGINAL = 39
+    if n_old_features > N_ORIGINAL:
+        print(f"\n  Stripping {n_old_features - N_ORIGINAL} old enriched/duplicate columns from base")
+        X_base = X_old[:, :N_ORIGINAL]
+        base_feature_names = list(feature_names_old)[:N_ORIGINAL]
     else:
-        X_combined = np.concatenate([X_old, X_new_clean], axis=1)
-        all_feature_names = list(feature_names_old) + NEW_FEATURE_NAMES
-    print(f"\nCombined features: {X_combined.shape[1]} ({n_old_features} base, {n_new} enriched)")
+        X_base = X_old
+        base_feature_names = list(feature_names_old)
+    X_combined = np.concatenate([X_base, X_new_clean], axis=1)
+    all_feature_names = base_feature_names + NEW_FEATURE_NAMES
+    print(f"\nCombined features: {X_combined.shape[1]} ({N_ORIGINAL} base, {n_new} enriched)")
     print(f"  NaN before forward-fill: {nan_before:,}")
     print(f"  NaN after forward-fill: {nan_after:,} (remaining = start-of-day, filled with 0)")
 

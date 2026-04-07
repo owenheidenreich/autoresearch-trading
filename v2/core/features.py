@@ -22,10 +22,7 @@ import pandas as pd
 BARS_PER_DAY = 390
 FORWARD_BARS = 30
 LOOKBACK_WINDOW = 60
-NUM_FEATURES = 71  # 39 original + 16 enriched + 16 duplicate enriched (pipeline bug, see note)
-# NOTE: Features 55-70 are duplicates of 39-54. The enriched features were appended
-# twice during dataset build. This will be fixed in Phase 2 (dataset rebuild).
-# For now, we match the actual data.pt shape so the model input projection is correct.
+NUM_FEATURES = 58  # 39 original + 19 enriched (16 original + put_call_txn_ratio + vix_ma_ratio + vix_acceleration)
 
 OPTION_SPREAD_BPS = 150
 SPREAD_COST_PCT = 2 * OPTION_SPREAD_BPS / 10000.0  # 0.03 = 3% round-trip
