@@ -37,9 +37,9 @@ from v2.core.metrics import score_config_fingerprint
 # ---------------------------------------------------------------------------
 
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 60))
-D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 96))
+D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 64))
 N_HEADS = 4
-DEPTH = int(os.environ.get("TRAIN_DEPTH", 4))
+DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
 DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.1))
 
 BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
@@ -272,8 +272,19 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    call_loss = F.huber_loss(pred_call, true_call, delta=0.5)
-    put_loss = F.huber_loss(pred_put, true_put, delta=0.5)
+    # Asymmetric loss: penalize optimistic errors (predicted profit, actual loss) 2x
+    # This makes the gate more conservative, reducing losing-day frequency
+    call_err = pred_call - true_call
+    put_err = pred_put - true_put
+    # Optimistic = predicted higher than actual (positive error when true is negative)
+    call_weight = torch.where(
+        (call_err > 0) & (true_call < 0), 2.0, 1.0
+    )
+    put_weight = torch.where(
+        (put_err > 0) & (true_put < 0), 2.0, 1.0
+    )
+    call_loss = (call_weight * F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')).mean()
+    put_loss = (put_weight * F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')).mean()
 
     pnl_loss = call_loss + put_loss
 
