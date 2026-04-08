@@ -61,11 +61,12 @@ Everything else. These are the immutable evaluation harness:
 
 - `v2/core/simulator.py` -- how trades play out
 - `v2/core/metrics.py` -- how score is computed
+- `v2/core/walkforward.py` -- walk-forward CV fold generation and execution
 - `v2/replay.py` -- how model outputs become trades and get evaluated
 - `v2/core/labels.py` -- how labels are generated
 - `v2/core/schema.py` -- TradeIntent and SimulatedTrade contracts
 - `v2/data.pt` -- the dataset
-- `v2/ops/run_experiment.py` -- the experiment runner (train + replay + score + baselines)
+- `v2/ops/run_experiment_wf.py` -- the walk-forward experiment runner
 - `v2/ops/deploy.sh` -- GPU deployment and `run_one` command
 
 ## The Goal
@@ -95,23 +96,32 @@ Model must also beat all four baselines:
 
 ## Key Architecture Facts
 
-- **Input**: (batch, 60, 47) -- 60 bars of 47 features (28 price/market + 11 option/Greeks + 8 volume/flow)
+- **Input**: (batch, 30, 47) -- 30 bars of 47 features (28 price/market + 11 option/Greeks + 8 volume/flow)
 - **Output**: P&L predictions (call_pnl, put_pnl) + risk params. Gate/direction derived from P&L.
 - **Labels**: Dual-direction P&L -- both call and put simulated per bar with fixed risk params
-- **Evaluation**: Replay on promote_mask (60 days model never saw during training)
-- **Score**: Account curve health (Sortino * consistency * drawdown guard)
+- **Evaluation**: Walk-forward CV (5 folds, 300 test days across diverse market regimes)
+- **Score**: Account curve health (Sortino * consistency * drawdown guard), averaged across folds
 - **Equity**: $10K starting, $100 SPX multiplier, 1 contract max
-- **Training**: Akash H100 GPU. 5-minute time budget per experiment. Never local.
+- **Training**: Akash H100 GPU. ~25 minutes per experiment (5 folds x 5 min). Never local.
 - **Costs**: adaptive spread (by time-of-day, VIX, moneyness) + $1.30 commission per round trip
 
-## Data Split
+## Walk-Forward Evaluation
 
-| Split | Days | Purpose |
-|-------|------|---------|
-| train_mask | 859 | Model training |
-| val_mask | 60 | Checkpoint selection (best val_loss) |
-| promote_mask | 60 | Keep/revert scoring (model never sees this) |
-| shadow_mask | 20 | Live-readiness eval only (never used for promotion) |
+Experiments use walk-forward cross-validation: train on the past, test on the future, slide forward. This tests the model across diverse market regimes (bull, bear, chop) instead of a single 60-day window.
+
+| Fold | Train Days | Val (last 40) | Test Days (60) |
+|------|-----------|---------------|----------------|
+| 0 | 0-673 | 634-673 | 674-733 |
+| 1 | 0-733 | 694-733 | 734-793 |
+| 2 | 0-793 | 754-793 | 794-853 |
+| 3 | 0-853 | 814-853 | 854-913 |
+| 4 | 0-913 | 874-913 | 914-973 |
+
+- **300 total test days** across 5 folds (Dec 2024 -- Mar 2026)
+- **Shadow**: last 20 days (974-993) reserved for final live-readiness check
+- **Score**: mean of per-fold scores. Each fold scored independently with hard gates.
+- **Seed**: each fold uses a different random seed (base_seed + fold_idx)
+- **Production model**: last fold's model (most training data) is saved as model.pt
 
 ## The Experiment Loop
 
@@ -122,8 +132,8 @@ LOOP:
 1. Look at last experiment results. Decide what to try. Write your hypothesis.
 2. Edit `v2/train.py` and/or `v2/core/policy.py`.
 3. `git commit` your changes.
-4. `./v2/ops/deploy.sh run_one exp_NNN` -- uploads code, trains from scratch on GPU, downloads model.pt.
-5. Read the score from stdout.
+4. `./v2/ops/deploy.sh run_one exp_NNN` -- uploads code, trains 5 walk-forward folds on GPU (~25 min), downloads model.pt.
+5. Read the aggregate score from stdout (mean of 5 fold scores). Also check per-fold scores for consistency.
 6. If crashed: read the log, try to fix. If unfixable, log as crash, move on.
 7. If score improved AND beats all baselines: **KEEP**. Branch advances.
 8. If score equal or worse: **REVERT**. `git checkout HEAD~1 -- v2/train.py v2/core/policy.py`.
@@ -135,10 +145,10 @@ LOOP:
 
 | Limit | Threshold | Action |
 |-------|-----------|--------|
-| Experiments | 50 max | Stop session |
-| Time | 6 hours | Stop session |
-| No-improve streak | 8 consecutive reverts | Stop, rethink approach |
-| Plateau | 3 hours without improvement | Stop session |
+| Experiments | 20 max | Stop session (~25 min each = 8+ hours) |
+| Time | 10 hours | Stop session |
+| No-improve streak | 6 consecutive reverts | Stop, rethink approach |
+| Plateau | 4 hours without improvement | Stop session |
 | Crash storm | 3 consecutive crashes | Stop, fix infrastructure |
 
 ## When You're Stuck

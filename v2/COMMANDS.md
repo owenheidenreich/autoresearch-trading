@@ -6,13 +6,13 @@ All training runs on Akash H100 GPU, never locally. Local machine is for editing
 
 ## Research
 
-- **begin experiment loop** -- Boot Akash GPU, then Claude drives the loop: edit train.py, commit, `deploy.sh run_one exp_NNN`, read score, keep/revert, repeat. Every experiment trains from scratch.
+- **begin experiment loop** -- Boot Akash GPU, then Claude drives the loop: edit train.py, commit, `deploy.sh run_one exp_NNN`, read score, keep/revert, repeat. Each experiment runs 5 walk-forward folds (~25 min). Score = mean of fold scores across 300 test days.
 
 ## Evaluation (runs locally)
 
-- **evaluate model** -- `python -m v2.replay --mask promote`. Loads best model from artifact system. Score on held-out days with baselines.
-- **evaluate on shadow** -- Same but `--mask shadow`. Live-readiness check only.
-- **analyze trades** -- `python v2/analyze_losses.py`. Loads best model from artifact system, inspects which trades won/lost and why.
+- **evaluate model** -- `python -m v2.replay --model v2/model.pt --mask promote`. Score the last fold's model on its test window. Note: this only covers 60 days (fold 4's test window). The full walk-forward score comes from the experiment runner.
+- **evaluate on shadow** -- Same but `--mask shadow`. Live-readiness check on 20 held-out days.
+- **analyze trades** -- `python v2/analyze_losses.py`. Inspects which trades won/lost and why.
 
 ## Data (runs locally)
 
