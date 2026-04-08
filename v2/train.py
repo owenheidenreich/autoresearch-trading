@@ -50,7 +50,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
-RISK_W = float(os.environ.get("WEIGHT_RISK", 0.6))
+RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 
 # For replay compatibility
 NUM_STRIKE_CLASSES = 13
@@ -295,14 +295,19 @@ def compute_loss(
     pnl_loss = call_loss + put_loss
 
     # Risk loss: per-bar targets from labels if available, else fixed defaults
+    # hold_frac normalized by MAX_HOLD_BARS to match replay decoding:
+    #   replay does: max_hold = max(hold_lo, int(hold_raw * hold_hi))
+    #   so training target must be: label_max_hold / hold_hi
+    from v2.core.policy import DEFAULT_POLICY
+    _hold_hi = DEFAULT_POLICY.max_hold_range[1]  # 250
     risk_out = outputs['risk'][valid]
     if 'label_stop_pct' in targets and 'label_target_pct' in targets and 'label_max_hold' in targets:
         t_stop = targets['label_stop_pct'].float().to(device)[valid]
         t_target = targets['label_target_pct'].float().to(device)[valid]
-        t_hold = targets['label_max_hold'].float().to(device)[valid] / BARS_PER_DAY
+        t_hold = targets['label_max_hold'].float().to(device)[valid] / _hold_hi
         risk_target = torch.stack([t_stop, t_target, t_hold], dim=-1)
     else:
-        risk_target = torch.tensor([0.30, 0.50, 30.0 / BARS_PER_DAY], device=device)
+        risk_target = torch.tensor([0.30, 0.50, 30.0 / _hold_hi], device=device)
         risk_target = risk_target.unsqueeze(0).expand_as(risk_out)
     risk_loss = F.huber_loss(risk_out, risk_target, delta=0.5)
 
