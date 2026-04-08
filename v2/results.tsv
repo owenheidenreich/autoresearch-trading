@@ -28,3 +28,4 @@ exp_038	-1.000000	revert	GATE_FAILURE too_few_trades=21 gate_threshold=0.55 (too
 exp_039	5.058824	revert	score=5.059 trades=160 wr=66.2% pdr=84.3% d32_depth2 (less capacity hurt)
 exp_040	4.961538	revert	score=4.962 trades=158 wr=66.5% pdr=82.7% lr=2e-4 (slower learning, worse PDR)
 exp_041	4.560000	revert	score=4.560 trades=207 wr=58.5% pdr=76.0% max_hold_60 (too tight, worse everything)
+exp_042	4.300000	revert	score=4.300 trades=348 wr=58.3% pdr=71.7% confidence_gate (opened gate wider, not tighter)

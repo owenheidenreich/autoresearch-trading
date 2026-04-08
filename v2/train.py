@@ -184,12 +184,10 @@ class TradingModel(nn.Module):
         call_v = call_pnl.squeeze(-1)  # (B,)
         put_v = put_pnl.squeeze(-1)    # (B,)
 
-        # Gate: max P&L + directional confidence bonus
-        # Requires both positive expected P&L AND clear direction preference
-        # This filters out bars where call/put predictions are similar (coin flip)
+        # Gate: raw max predicted P&L as logit (no scaling)
+        # sigmoid(0) = 0.5, so gate_threshold=0.5 means "trade when best P&L > 0"
         max_pnl = torch.max(call_v, put_v)
-        dir_margin = torch.abs(call_v - put_v)
-        gate_logit = max_pnl + 0.5 * dir_margin
+        gate_logit = max_pnl
 
         # Direction: [call_logit, put_logit] from P&L predictions
         direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
