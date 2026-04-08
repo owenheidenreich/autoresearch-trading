@@ -18,17 +18,4 @@ exp_001	4.677966	revert	score=4.678 trades=374 wr=54.8% baselines=ALL
 exp_002	2.550921	revert	score=2.551 trades=401 wr=54.9% baselines=ALL
 exp_003	3.931395	revert	score=3.931 trades=452 wr=54.4% baselines=ALL
 exp_004	4.700000	revert	score=4.700 trades=397 wr=54.4% baselines=ALL
-exp_018	4.933333	keep	score=4.933 trades=139 wr=64.7% baselines=ALL gate_threshold=0.50
-exp_019	4.468085	revert	score=4.468 trades=159 wr=59.7% baselines=ALL stop_range=(0.10,0.25)
-exp_020	4.636364	revert	score=4.636 trades=125 wr=70.4% baselines=ALL cooldown=10
-exp_021	5.052632	keep	score=5.053 trades=44 wr=59.1% baselines=ALL asymmetric_3x
-exp_022	2.100481	revert	score=2.100 trades=549 wr=49.7% gate=0.40_too_low
-exp_023	4.631579	revert	score=4.632 trades=319 wr=54.9% gate=0.47_still_too_low
-exp_024	5.785714	keep	score=5.786 trades=83 wr=72.3% baselines=ALL dropout=0.05
-exp_025	5.333333	revert	score=5.333 trades=65 wr=73.8% weight_decay=0.005
-exp_026	5.181818	revert	score=5.182 trades=67 wr=68.7% lr=3e-4
-exp_027	-0.500000	revert	GATE_FAILURE 14_traded_days asymmetric_4x_too_conservative
-exp_028	4.800000	revert	score=4.800 trades=46 wr=69.6% deeper_regime
-exp_029	5.052632	revert	score=5.053 trades=51 wr=68.6% time_budget=400s
-exp_030	4.800000	revert	score=4.800 trades=33 wr=66.7% batch=4096
-exp_031	4.714286	revert	score=4.714 trades=294 gate_margin_too_many_trades
+exp_032	4.920000	keep	score=4.920 trades=168 wr=64.3% pdr=82.0% baselines=ALL (new 47-feature baseline)
