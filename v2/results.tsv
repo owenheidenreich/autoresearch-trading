@@ -37,3 +37,4 @@ exp_047	5.520000	revert	score=5.520 trades=41 wr=75.6% pdr=92.0% asym=8x (too co
 exp_048	5.666667	revert	score=5.667 trades=77 wr=74.0% pdr=94.4% wd=0.005 (identical to exp_046)
 exp_049	5.333333	revert	score=5.333 trades=72 wr=76.4% pdr=88.9% cooldown=15 (killed buffer trades)
 exp_050	5.307692	revert	score=5.308 trades=46 wr=73.9% pdr=88.5% huber_delta=0.3 (too conservative, 26 days)
+exp_051	5.600000	revert	score=5.600 trades=57 wr=71.9% pdr=93.3% huber_delta=0.8 (close but fewer traded days)
