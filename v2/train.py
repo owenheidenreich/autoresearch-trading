@@ -272,16 +272,17 @@ def compute_loss(
     true_call = lab_call_pnl[valid]
     true_put = lab_put_pnl[valid]
 
-    # Asymmetric loss: penalize optimistic errors (predicted profit, actual loss) 3x
-    # This makes the gate more conservative, reducing losing-day frequency
+    # Direction-asymmetric loss: penalize optimistic errors more for puts than calls.
+    # Trade data shows puts WR 66% vs calls 82%. Put P&L predictions are noisier.
+    # Calls: 4x penalty for predicting profit on actual loss.
+    # Puts: 6x penalty -- stricter because put predictions less reliable.
     call_err = pred_call - true_call
     put_err = pred_put - true_put
-    # Optimistic = predicted higher than actual (positive error when true is negative)
     call_weight = torch.where(
         (call_err > 0) & (true_call < 0), 4.0, 1.0
     )
     put_weight = torch.where(
-        (put_err > 0) & (true_put < 0), 4.0, 1.0
+        (put_err > 0) & (true_put < 0), 6.0, 1.0
     )
 
     # Sample weighting: bars with large |P&L| carry more signal
