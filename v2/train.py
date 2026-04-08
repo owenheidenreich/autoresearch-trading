@@ -362,14 +362,16 @@ def load_dataset(path: str = "v2/data.pt") -> dict:
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 
 
-def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
+def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
+          train_mask_override=None, val_mask_override=None):
     t_start = time.time()
 
-    # Reproducible training
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed(SEED)
-    np.random.seed(SEED)
-    print(f"Seed: {SEED}")
+    # Reproducible training (re-read env var so walk-forward can set per-fold seeds)
+    seed = int(os.environ.get("TRAIN_SEED", SEED))
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    print(f"Seed: {seed}")
 
     data = load_dataset(data_path)
     features = data['X']
@@ -385,8 +387,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
         'label_confidence': data['label_confidence'],
     }
 
-    train_mask = data['train_mask']
-    val_mask = data['val_mask']
+    train_mask = train_mask_override if train_mask_override is not None else data['train_mask']
+    val_mask = val_mask_override if val_mask_override is not None else data['val_mask']
 
     train_ds = TradeDataset(features, labels, train_mask, lookback=LOOKBACK)
     val_ds = TradeDataset(features, labels, val_mask, lookback=LOOKBACK)

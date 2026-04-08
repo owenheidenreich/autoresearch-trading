@@ -820,7 +820,7 @@ cmd_run_one() {
     log "Code uploaded. Training..."
 
     # 2. Run experiment (blocking, ~5 min)
-    ssh_cmd "cd /root && python3 -m v2.ops.run_experiment --id $exp_id 2>&1"
+    ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1"
 
     # 3. Download new model.pt
     scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt"
