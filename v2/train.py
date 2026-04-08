@@ -44,7 +44,7 @@ DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.05))
 
 BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
 LR = float(os.environ.get("TRAIN_LR", 5e-4))
-WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.005))
+WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.01))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 30))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 
