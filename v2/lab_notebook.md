@@ -308,3 +308,174 @@ Removed dead features (volume_zero_flag, vix_ma_ratio, vix_acceleration).
 - Asymmetric loss: 5x for optimistic errors
 - Sample weighting: 1 + |max_pnl|
 - Seed: 123, Huber delta: 0.5
+
+## Session 6: Walk-Forward CV (2026-04-08)
+
+### Walk-Forward Baseline (exp_052)
+First walk-forward run on GPU. 5 folds, 300 test days.
+
+| Fold | Score | Trades | Traded Days |
+|------|-------|--------|-------------|
+| 0 | 4.776 | 216 | 49 |
+| 1 | 4.979 | 191 | 47 |
+| 2 | 5.063 | 67 | 32 |
+| 3 | 5.793 | 63 | 29 |
+| 4 | 5.357 | 51 | 28 |
+| **Agg** | **5.193** | **588** | **185** |
+
+Folds 0-1 (less training data) trade 200+ times with lower scores. Folds 2-4 (more data) are selective (50-67 trades) with higher scores. The model becomes more selective with more training data.
+
+### Experiment Loop (exp_052 -- exp_060)
+
+| Exp | Score | Change | Result |
+|-----|-------|--------|--------|
+| 052 | 5.193 | WF baseline | KEEP |
+| 053 | 4.829 | dropout 0.10 | REVERT (fold 0 collapsed to 2.64) |
+| 054 | 4.937 | asym 3x | REVERT (1080 trades, fold 1 collapsed) |
+| 055 | 4.654 | d_model 96 | REVERT (fold 4 collapsed to 2.59) |
+| 056 | 5.267 | wd 0.03 | KEEP (fold 0 improved 4.78->5.14) |
+| 057 | 5.218 | wd 0.05 | REVERT (over-regularized, fold 0 regressed) |
+| 058 | 5.305 | asym 4x | KEEP (fold 2 jumped +0.78) |
+| 059 | 5.309 | hold_frac fix | KEEP (bug fix: training/replay scale aligned) |
+| 059b | crash | hold_frac fix | CRASH (fold 2 model file not saved, disk issue) |
+| 060 | -1.0 | gate 0.55 | REVERT (GATE_FAILURE all folds, 7-28 trades) |
+
+### Key Learnings
+
+**1. Walk-forward reveals fragility.** The old single-split score of 5.67 was optimistic. Walk-forward across 5 diverse folds dropped to 5.19. Individual fold scores range from 4.78 to 5.79 -- the model is NOT uniformly good.
+
+**2. Hyperparameter changes create fold conflicts.** More dropout helped some folds, destroyed others. More capacity same. The only safe lever was weight_decay (0.01->0.03) which gently improved the weakest fold without hurting others.
+
+**3. Training/replay mismatch found and fixed.** The hold_frac output was normalized by BARS_PER_DAY (390) during training but decoded by multiplying with max_hold_range[1] (250) at replay. Every hold prediction was compressed by 64%. Fixed by normalizing training target by hold_hi.
+
+**4. Trade analysis reveals the real bottleneck: put quality.**
+- All 6 losing days in the current model are caused by put trades
+- Calls: WR 82.4%, avg $743. Puts: WR 65.9%, avg $453
+- STOP_LOSS exits are 100% losers (bad entries with 0% MFE)
+- High-MFE trailing stop losers: trades that go 30-48% right then reverse past the stop
+
+### Trade Analysis (fold 4, exp_059 best model)
+
+**Exit reasons:**
+- MAX_HOLD: 27/75 (36%), WR 74.1%, avg $502
+- TAKE_PROFIT: 21/75 (28%), WR 100%, avg $1,123
+- TRAILING_STOP: 13/75 (17%), WR 53.8%, avg $38
+- EOD: 8/75 (11%), WR 87.5%, avg $959
+- STOP_LOSS: 6/75 (8%), WR 0%, avg -$243
+
+**Monthly performance (fold 4 promote):**
+- Dec 2025: $+15,895 (33 trades, 2 losing days)
+- Jan 2026: $+8,997 (16 trades, 2 losing days)
+- Feb 2026: $+17,882 (24 trades, 2 losing days)
+- Mar 2026: $+1,052 (2 trades, 0 losing days)
+
+**Losing days (6):**
+- Dec 18: 2 puts, one with 0% MFE (-$230), regime mismatch
+- Dec 26: 1 put, 40% MFE reversed to -$11 via trailing stop
+- Jan 15: 1 put, 0% MFE, -$64 at max hold (bad entry)
+- Jan 29: 1 call, 0% MFE, -$33 stop loss (bad entry)
+- Feb 13: 2 puts, one 33% MFE reversed, other 5.6% MFE to -56% MAE
+- Feb 19: 2 puts, both 40-48% MFE reversed via trailing stop (-$42 total)
+
+**Direction gap is the #1 priority.** Calls WR 82.4%, puts 65.9%. Every losing day is put-driven. Next session should focus on why put predictions are weaker.
+
+### Best Model (exp_059, walk-forward)
+
+| Metric | Value |
+|--------|-------|
+| WF Score | 5.309 |
+| Per-fold | [4.80, 5.38, 6.00, 5.25, 5.12] |
+| Fold std | 0.39 |
+| Total trades | 574 |
+| Traded days | 185/300 |
+
+### Config (exp_059)
+- Lookback: 30, d_model: 64, depth: 3, dropout: 0.05
+- LR: 5e-4, batch: 2048, weight_decay: 0.03
+- Asymmetric loss: 4x for optimistic errors
+- Sample weighting: 1 + |max_pnl|
+- Huber delta: 0.5
+- Hold_frac normalization: / hold_hi (250), aligned with replay
+- Gate threshold: 0.50
+
+## Research Phase: Domain-Informed Analysis (2026-04-08)
+
+### Method
+Exported all 75 trades from fold 4 promote mask to CSV. Cross-referenced patterns with domain knowledge from v2/docs/domain/ (Pickles, Sinclair, Douglas, Elder, 0DTE microstructure).
+
+### Finding 1: Half of losses are EXIT failures, not ENTRY failures
+
+Of 20 losing trades:
+- **10 "HAD EDGE"** (MFE > 10%): direction was correct, trade went 11-48% right then reversed. EXIT problem.
+- **3 "MARGINAL"** (MFE 1-10%): borderline, could go either way.
+- **7 "BAD ENTRY"** (MFE 0%): immediately went wrong. ENTRY problem, unfilterable noise.
+
+Douglas (Trading in the Zone): "Only 1 in 10 trades was an immediate loser. 25-30% of eventual losers went in direction by 3-4 ticks first." Our data matches this exactly: 10% bad entries, ~50% of losers had the right direction initially.
+
+**Implication:** Improving entry quality has limited upside (7 bad entries = $1,864 loss, small). Improving exits has massive upside (10 HAD-EDGE losers = $575 loss, but these were $575 that COULD have been profits if exited properly).
+
+### Finding 2: TRAILING_STOP is 100% puts and only 54% WR
+
+All 13 trailing stop exits are put trades. 6 won, 7 lost. The trailing stop tiers are locking in losses on puts, not profits.
+
+Domain context (0DTE knowledge): "Gamma inversely proportional to sqrt(T). By 3pm, ATM gamma can reach 0.10-0.20 (5-10x increase)." Puts are more volatile near expiry. The fixed trailing stop tiers (designed for moderate moves) may be too tight for the natural volatility of 0DTE puts.
+
+Sinclair: "At expiry, gamma maximized ATM. Pin risk from MM hedging compresses or amplifies RV." Trailing stops that work for calls may be wrong for puts because put gamma/theta dynamics are different.
+
+### Finding 3: MAX_HOLD puts are the worst category
+
+MAX_HOLD exits by direction:
+- **Calls**: 16 trades, WR 88%, avg $615
+- **Puts**: 11 trades, WR 55%, avg $337
+
+Puts held to max_hold lose nearly half the time. The model's risk head outputs the same hold duration for both directions, but puts need shorter holds.
+
+0DTE domain knowledge: "Theta decay follows 1/sqrt(T). ATM put holding 10am-2pm costs 60-70% of remaining time value." Puts bleed faster through theta. Holding a put for 30 bars (30 minutes) costs significantly more in theta than holding a call for the same duration.
+
+### Finding 4: Time-of-day does NOT explain the put weakness
+
+| Period | Call WR | Put WR |
+|--------|---------|--------|
+| Morning (9:30-11:30) | 71% | 64% |
+| Lunch (11:30-13:30) | 85% | 67% |
+| Afternoon (13:30-16:00) | 86% | 67% |
+
+Puts are consistently 15-20pp below calls across ALL time periods. The weakness is structural, not temporal. Pickles' "avoid lunch" rule doesn't apply -- our model actually does better during lunch (highest overall WR 74%).
+
+### Finding 5: VIX regime analysis impossible with current features
+
+All 75 trades show vix_at_entry between -1.0 and 0.33. Features are z-scored (60-day rolling window), so raw VIX level is normalized away. We cannot test Sinclair's "VIX < EWMA = worst time to buy options" hypothesis because the absolute VIX level is lost.
+
+This is a potential feature gap: the model can see VIX *changes* (z-score captures relative movement) but not VIX *level* (which determines variance risk premium regime).
+
+### Hypotheses for Next Session (ranked by expected impact)
+
+**H1: Direction-asymmetric P&L loss (HIGHEST PRIORITY)**
+- **Evidence:** Put predictions are noisier (WR 66% vs 82%). 10 losing trades had MFE > 10% -- direction was right but P&L magnitude was wrong, causing the gate to open on trades that would reverse.
+- **Domain:** Sinclair: "Variance risk premium works AGAINST long options. Edge must come from timing + direction + exit speed." Puts face a steeper headwind (theta + skew premium). The loss function should reflect that put P&L is harder to predict.
+- **Change:** In compute_loss, apply a stronger asymmetric weight (e.g. 6x) specifically to put predictions where the model predicted profit but actual was loss. Keep call asymmetric at 4x. This makes the model more conservative about opening put positions.
+- **Expected effect:** Fewer put trades, higher put WR, reduced losing days. May slightly reduce total trades across folds.
+
+**H2: Separate call/put P&L scaling in gate (MEDIUM PRIORITY)**
+- **Evidence:** Gate uses `max(call_pnl, put_pnl) > threshold`. But put P&L is noisier and has lower average. A put prediction of +0.05 is less reliable than a call prediction of +0.05.
+- **Domain:** 0DTE knowledge: "Puts trade 3-5 vol points higher than calls (downside fear premium)." Puts are structurally more expensive, meaning the bar for a profitable put trade is higher.
+- **Change:** In TradingModel.forward(), scale put_pnl by 0.8 before the gate comparison. Gate = max(call_pnl, put_pnl * 0.8) > threshold. This effectively requires 25% higher predicted P&L to take a put.
+- **Expected effect:** Filters marginal puts without affecting calls. Should reduce put losers (the 14 put losses -> maybe 8-10) while preserving the 27 put winners (which had avg MFE 105%).
+
+**H3: Raw VIX level as additional feature (MEDIUM PRIORITY)**
+- **Evidence:** All trades show VIX at similar z-scored values (-1 to +0.33). The model can't distinguish VIX=12 (crushed volatility, expensive to be long) from VIX=25 (elevated, cheaper to be long).
+- **Domain:** Sinclair: VIX < 20 = 28% premium overpay. VIX 20-30 = 20% overpay. VIX > 50 = premium inverts. The variance risk premium is the #1 headwind and it's regime-dependent. Book-knowledge-synthesis: "VIX below EWMA = worst time to buy options."
+- **Change:** This requires modifying the feature pipeline (compute_features.py) which is immutable. HOWEVER, we could add the raw VIX level as a derived feature in train.py's dataset loading, computed from the existing z-scored VIX feature + the rolling statistics. Or we could add it in the next dataset rebuild.
+- **Expected effect:** Model learns to avoid buying options (especially puts) in low-VIX regimes where variance premium is highest. Could help all folds but especially fold 0 (earliest data, likely lower VIX environment).
+
+**H4: Tighter max_hold for puts via training labels (LOWER PRIORITY)**
+- **Evidence:** MAX_HOLD puts WR 55%, MAX_HOLD calls WR 88%. Puts need shorter hold times because theta acceleration punishes longer holds near expiry.
+- **Domain:** 0DTE knowledge: "Theta at 2pm: extreme acceleration. ATM can lose 30-50% of remaining value per hour." Elder: "Breakeven move becomes unrealistically large in afternoon."
+- **Change:** In compute_loss, when the label direction is PUT, train the risk head with a shorter max_hold target (e.g., 20 bars instead of 30). This teaches the model to hold puts for shorter durations.
+- **Expected effect:** Puts exit earlier, capturing more of the MFE before reversal. The 10 HAD-EDGE losers (avg MFE 35%) should more often exit in profit if hold is shorter.
+
+**H5: Confidence-weighted gate (EXPLORATORY)**
+- **Evidence:** Confidence = |call_pnl - put_pnl| * 3.0. Currently used for intent confidence but NOT for gate decision. High-confidence trades (large margin between call and put predictions) should be more reliable.
+- **Domain:** Douglas: "An edge = higher probability, not certainty." Pickles: "Confluence required -- never single signal." Higher model confidence = more confluence between call/put predictions.
+- **Change:** In TradingModel.forward(), multiply gate_logit by confidence: `gate_logit = max_pnl * (1 + confidence_normalized)`. This amplifies the gate signal when the model is more certain about direction.
+- **Expected effect:** Uncertain trades (where call and put predictions are similar) get weaker gate signal and are more likely filtered. Should reduce the "marginal" entries.
