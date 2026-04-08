@@ -22,3 +22,4 @@ exp_032	4.920000	keep	score=4.920 trades=168 wr=64.3% pdr=82.0% baselines=ALL (n
 exp_033	4.846154	revert	score=4.846 trades=166 wr=66.3% pdr=80.8% dropout=0.15 (worse PDR)
 exp_034	4.981132	keep	score=4.981 trades=185 wr=62.7% pdr=83.0% lookback=30 NEW BEST
 exp_035	4.800000	revert	score=4.800 trades=162 wr=64.8% pdr=80.0% lookback=15 (too short)
+exp_036	5.280000	keep	score=5.280 trades=159 wr=64.2% pdr=88.0% pnl_sample_weighting NEW BEST
