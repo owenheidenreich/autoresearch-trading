@@ -26,3 +26,4 @@ exp_036	5.280000	keep	score=5.280 trades=159 wr=64.2% pdr=88.0% pnl_sample_weigh
 exp_037	4.981132	revert	score=4.981 trades=175 wr=60.6% pdr=83.0% 3x_sample_weight (too aggressive)
 exp_038	-1.000000	revert	GATE_FAILURE too_few_trades=21 gate_threshold=0.55 (too aggressive)
 exp_039	5.058824	revert	score=5.059 trades=160 wr=66.2% pdr=84.3% d32_depth2 (less capacity hurt)
+exp_040	4.961538	revert	score=4.962 trades=158 wr=66.5% pdr=82.7% lr=2e-4 (slower learning, worse PDR)
