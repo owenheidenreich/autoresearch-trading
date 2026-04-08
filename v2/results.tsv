@@ -35,3 +35,4 @@ exp_045	4.981132	revert	score=4.981 trades=202 wr=61.9% pdr=83.0% seed=2024 (muc
 exp_046	5.666667	keep	score=5.667 trades=77 wr=74.0% pdr=94.4% asym=5x NEW BEST PF=10.69
 exp_047	5.520000	revert	score=5.520 trades=41 wr=75.6% pdr=92.0% asym=8x (too conservative, only 25 days)
 exp_048	5.666667	revert	score=5.667 trades=77 wr=74.0% pdr=94.4% wd=0.005 (identical to exp_046)
+exp_049	5.333333	revert	score=5.333 trades=72 wr=76.4% pdr=88.9% cooldown=15 (killed buffer trades)
