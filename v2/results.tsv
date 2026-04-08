@@ -31,3 +31,4 @@ exp_041	4.560000	revert	score=4.560 trades=207 wr=58.5% pdr=76.0% max_hold_60 (t
 exp_042	4.300000	revert	score=4.300 trades=348 wr=58.3% pdr=71.7% confidence_gate (opened gate wider, not tighter)
 exp_043	5.375000	keep	score=5.375 trades=147 wr=70.1% pdr=89.6% seed=123 NEW BEST
 exp_044	5.361702	revert	score=5.362 trades=121 wr=64.5% pdr=89.4% seed=7 (close but seed 123 better)
+exp_045	4.981132	revert	score=4.981 trades=202 wr=61.9% pdr=83.0% seed=2024 (much worse)
