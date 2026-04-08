@@ -40,7 +40,7 @@ LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
 D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 64))
 N_HEADS = 4
 DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
-DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.10))
+DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.05))
 
 BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
 LR = float(os.environ.get("TRAIN_LR", 5e-4))
@@ -278,10 +278,10 @@ def compute_loss(
     put_err = pred_put - true_put
     # Optimistic = predicted higher than actual (positive error when true is negative)
     call_weight = torch.where(
-        (call_err > 0) & (true_call < 0), 5.0, 1.0
+        (call_err > 0) & (true_call < 0), 3.0, 1.0
     )
     put_weight = torch.where(
-        (put_err > 0) & (true_put < 0), 5.0, 1.0
+        (put_err > 0) & (true_put < 0), 3.0, 1.0
     )
 
     # Sample weighting: bars with large |P&L| carry more signal
