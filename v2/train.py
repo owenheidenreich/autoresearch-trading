@@ -359,7 +359,7 @@ def load_dataset(path: str = "v2/data.pt") -> dict:
     return torch.load(path, map_location="cpu", weights_only=False)
 
 
-SEED = int(os.environ.get("TRAIN_SEED", 7))
+SEED = int(os.environ.get("TRAIN_SEED", 123))
 
 
 def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt"):
