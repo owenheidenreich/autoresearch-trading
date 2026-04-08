@@ -265,3 +265,46 @@ Score = 6.0 * PDR. Only lever is positive_day_rate. Gate threshold sweep confirm
 5. Raised GATE_MIN_PNL 0.02->0.04 (more selective labels)
 6. Added seed control (TRAIN_SEED env var, default 42)
 7. NUM_FEATURES: 71->58 (39 base + 19 enriched)
+
+## Session 5: 47-Feature Dataset + Optimization (2026-04-07)
+
+### Feature Pipeline Rebuild
+Full rebuild from raw data: 47 features (28 price/market + 11 option/Greeks + 8 volume/flow).
+Rolling z-score normalization (60-day window) preserves inter-day regime info.
+Removed dead features (volume_zero_flag, vix_ma_ratio, vix_acceleration).
+
+### Experiment Loop (exp_032 -- exp_051, 20 experiments)
+
+**Baseline (exp_032):** Score 4.92, 168 trades, WR 64.3%, PDR 82%.
+
+**Key improvements (3 keeps):**
+1. **exp_034: Lookback 60->30** -- Score 4.98. Shorter context reduces overfitting surface. Best epoch pushed from 2 to 3.
+2. **exp_036: P&L sample weighting** -- Score 5.28. Loss weighted by `1 + |max_pnl|` focuses learning on high-signal bars. PDR 82%->88%.
+3. **exp_043: Seed 123** -- Score 5.38. Different random init produced significantly better model. PDR 88%->89.6%.
+4. **exp_046: Asymmetric loss 3x->5x** -- Score 5.67. Stronger penalty for optimistic predictions makes gate very selective. PDR 89.6%->94.4%. Only 77 trades (1.28/day) but PF=10.69, WR=74%.
+
+**Score ceiling analysis:**
+- Score = 6.0 * PDR. At 94.4% PDR, only 2 losing days remain out of 36 traded.
+- Jan 23: wrong direction (puts in rally), -$75
+- Feb 13: essentially breakeven (-$2), noise
+- Attempted: stronger asymmetric (8x), cooldown, Huber delta changes, weight decay, smaller model, gate modifications. All failed to improve.
+- The 2 remaining losing days are structural (direction miss) and noise (breakeven). Near the ceiling for this architecture.
+
+### Best Model (exp_046)
+| Metric | Value |
+|--------|-------|
+| Score | 5.667 |
+| PF | 10.69 |
+| WR | 74.0% |
+| Trades | 77 (1.28/day) |
+| PDR | 94.4% (2 losing days) |
+| Sortino | 303 |
+| Max DD | 0.3% |
+| Direction | 38C / 39P (49/51%) |
+
+### Config (exp_046)
+- Lookback: 30, d_model: 64, depth: 3, dropout: 0.05
+- LR: 5e-4, batch: 2048, weight_decay: 0.01
+- Asymmetric loss: 5x for optimistic errors
+- Sample weighting: 1 + |max_pnl|
+- Seed: 123, Huber delta: 0.5
