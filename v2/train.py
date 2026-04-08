@@ -289,8 +289,8 @@ def compute_loss(
     max_abs_pnl = torch.max(true_call.abs(), true_put.abs())
     sample_weight = 1.0 + max_abs_pnl  # baseline 1.0, up-weight high-signal bars
 
-    call_loss = (sample_weight * call_weight * F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')).mean()
-    put_loss = (sample_weight * put_weight * F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')).mean()
+    call_loss = (sample_weight * call_weight * F.huber_loss(pred_call, true_call, delta=0.3, reduction='none')).mean()
+    put_loss = (sample_weight * put_weight * F.huber_loss(pred_put, true_put, delta=0.3, reduction='none')).mean()
 
     pnl_loss = call_loss + put_loss
 
