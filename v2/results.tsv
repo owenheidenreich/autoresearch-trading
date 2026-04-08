@@ -19,3 +19,4 @@ exp_002	2.550921	revert	score=2.551 trades=401 wr=54.9% baselines=ALL
 exp_003	3.931395	revert	score=3.931 trades=452 wr=54.4% baselines=ALL
 exp_004	4.700000	revert	score=4.700 trades=397 wr=54.4% baselines=ALL
 exp_032	4.920000	keep	score=4.920 trades=168 wr=64.3% pdr=82.0% baselines=ALL (new 47-feature baseline)
+exp_033	4.846154	revert	score=4.846 trades=166 wr=66.3% pdr=80.8% dropout=0.15 (worse PDR)
