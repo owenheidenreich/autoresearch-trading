@@ -625,9 +625,9 @@ cmd_download() {
     load_state
     log "=== DOWNLOAD: Syncing v2 results ==="
 
-    # Download model.pt
-    log "Downloading model.pt..."
-    scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt" 2>/dev/null || \
+    # Download model.pt to staging (never overwrite best directly)
+    log "Downloading model_candidate.pt..."
+    scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt" 2>/dev/null || \
         log "  WARNING: model.pt not found on remote"
 
     # Download artifacts/
@@ -726,7 +726,7 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
         if [[ "$last_kept" -eq -1 ]]; then
             if [[ "$best_experiment_num" -gt 0 ]]; then
                 log "* Initial sync: best is exp #$best_experiment_num (score=$best_score) -- downloading..."
-                scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt" 2>/dev/null || true
+                scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt" 2>/dev/null || true
                 mkdir -p "$PROJECT_ROOT/v2/artifacts"
                 scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
             fi
@@ -740,7 +740,7 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
         # --- New improvement: download model + artifacts ---
         if [[ "$best_experiment_num" -gt "$last_kept" ]]; then
             log "* IMPROVEMENT at exp #$best_experiment_num (score=$best_score) — syncing model + artifacts..."
-            scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt" 2>/dev/null || true
+            scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt" 2>/dev/null || true
             mkdir -p "$PROJECT_ROOT/v2/artifacts"
             scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
             last_kept=$best_experiment_num
@@ -822,9 +822,9 @@ cmd_run_one() {
     # 2. Run experiment (blocking, ~5 min)
     ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1"
 
-    # 3. Download new model.pt
-    scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model.pt"
-    log "Done. model.pt synced."
+    # 3. Download new model.pt to staging (never overwrite model_best.pt directly)
+    scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt"
+    log "Done. model_candidate.pt synced (run model_manage.py keep to promote)."
 }
 
 cmd_stop() {
