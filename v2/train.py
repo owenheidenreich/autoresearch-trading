@@ -50,7 +50,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
-RISK_W = float(os.environ.get("WEIGHT_RISK", 0.5))
+RISK_W = float(os.environ.get("WEIGHT_RISK", 0.7))
 
 # For replay compatibility
 NUM_STRIKE_CLASSES = 13
