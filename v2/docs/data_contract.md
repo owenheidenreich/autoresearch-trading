@@ -1,163 +1,179 @@
 # v2 Data Contract
 
-## Purpose
+This document describes the active dataset artifact used by training and replay.
 
-Defines the raw data inputs, derived dataset format, and migration path
-from v1 data artifacts.
+## Canonical Artifact
 
----
+- Active path: `v2/data.pt`
+- Backup copy: `v2/data_harness_repair.pt`
+- Current version: `v2_harness_repair`
+- Current fingerprint: `03566aeb8adf1040`
 
-## Raw Data Sources
+The active dataset is a PyTorch artifact. Its fingerprint is content-based and is recomputed whenever labels or metadata materially change.
 
-### SPX 1-Minute OHLCV
-- **Source:** IBKR historical data API
-- **Format:** Parquet files, one per date
-- **Fields:** timestamp, open, high, low, close (no volume for index)
-- **Cache:** `data/spx_1min/YYYY-MM-DD.parquet`
-- **Coverage:** 4+ years rolling (March 2022 to present)
+## Raw Inputs
 
-### SPY 1-Minute Volume
-- **Source:** Polygon.io API
-- **Format:** Parquet files, one per date
-- **Fields:** timestamp, volume, vwap
-- **Cache:** `data/spy_1min/YYYY-MM-DD.parquet`
-- **Purpose:** SPX has no volume. SPY volume proxies SPX activity.
+`build_v2_dataset.py` reads from the local pickle caches:
 
-### VIX 1-Minute
-- **Source:** IBKR historical data API
-- **Format:** Parquet files, one per date
-- **Fields:** timestamp, open, high, low, close
-- **Cache:** `data/vix_1min/YYYY-MM-DD.parquet`
+- `~/.cache/autoresearch-trading/data/spx_1min.pkl`
+- `~/.cache/autoresearch-trading/data/spy_1min.pkl`
+- `~/.cache/autoresearch-trading/data/vix_1min.pkl`
+- `~/.cache/autoresearch-trading/data/spxw_wide/*.pkl`
 
-### Option Chain Snapshots
-- **Source:** IBKR historical data API (or computed from Greeks models)
-- **Format:** Parquet files, keyed by (date, bar_index)
-- **Fields:** strike, right, bid, ask, last, IV, delta, gamma, theta, vega
-- **Cache:** `data/options/YYYY-MM-DD.parquet`
-- **Coverage:** ATM +/- 50 points, both calls and puts, 0DTE only
+Those inputs provide:
 
----
+- SPX OHLC
+- SPY volume and close
+- VIX close
+- wide-grid SPXW option bars, volumes, and transaction counts
 
-## Derived Dataset Format
+## Build Pipeline
 
-### v2 data.pt Structure
+The full canonical rebuild is a two-step process:
+
+1. `python -m v2.pipeline.build_v2_dataset --output v2/data.pt`
+2. `python -m v2.pipeline.relabel_tier3 --data v2/data.pt --tier 3`
+
+Step 1 builds:
+
+- all 47 features from raw caches
+- dynamic ATM and OTM replay price tensors
+- fixed-risk dual-direction P&L labels
+- train / val / promote / shadow masks
+- initial metadata and fingerprint
+
+Step 2 upgrades the labels to Tier 3 variable-risk labels and recomputes the fingerprint.
+
+## Dataset Structure
 
 ```python
 {
-    # Features
-    "X": torch.Tensor,              # (N_bars, 39) float32
-    "feature_names": list[str],      # 39 names, matches FEATURE_NAMES
+    "X": torch.Tensor,                  # (N_bars, 47) float32
+    "feature_names": list[str],         # 47 names, canonical order
 
-    # Oracle labels (from labeling.md)
-    "oracle_intents": list[dict],    # TradeIntent.asdict() per bar, or None for no-trade
-    "oracle_pnl": torch.Tensor,      # (N_bars,) best achievable P&L per bar
-    "oracle_trade": torch.Tensor,    # (N_bars,) bool: should trade here?
-    "oracle_direction": torch.Tensor, # (N_bars,) 0=call, 1=put (NaN if no trade)
-    "oracle_strike_offset": torch.Tensor, # (N_bars,) offset from ATM in points
-    "oracle_stop_pct": torch.Tensor,  # (N_bars,) optimal stop as % of premium
-    "oracle_target_pct": torch.Tensor, # (N_bars,) optimal target as % of premium
+    # Labels
+    "label_trade": torch.Tensor,        # (N_bars,) bool
+    "label_direction": torch.Tensor,    # (N_bars,) int32, 0=call 1=put -1=invalid
+    "label_outcome": torch.Tensor,      # (N_bars,) int32
+    "label_pnl": torch.Tensor,          # (N_bars,) best directional P&L
+    "label_stop_pct": torch.Tensor,     # (N_bars,) float32
+    "label_target_pct": torch.Tensor,   # (N_bars,) float32
+    "label_max_hold": torch.Tensor,     # (N_bars,) int32
+    "label_confidence": torch.Tensor,   # (N_bars,) float32
+    "label_call_pnl": torch.Tensor,     # (N_bars,) float32
+    "label_put_pnl": torch.Tensor,      # (N_bars,) float32
 
-    # Auxiliary prediction labels (for market head, if used)
-    "y_return_15": torch.Tensor,     # (N_bars,) 15-bar forward SPX return
-    "y_return_30": torch.Tensor,     # (N_bars,) 30-bar forward SPX return
-    "y_return_60": torch.Tensor,     # (N_bars,) 60-bar forward SPX return
+    # Price references
+    "spot_prices": torch.Tensor,        # (N_bars,) float32
+    "spx_estimated": torch.Tensor,      # (N_bars,) float32
+    "nearest_call_close": torch.Tensor, # (N_bars,) float32
+    "nearest_put_close": torch.Tensor,  # (N_bars,) float32
+    "atm_call_prices": torch.Tensor,    # (N_bars,) float32
+    "atm_put_prices": torch.Tensor,     # (N_bars,) float32
+    "otm5_call_prices": torch.Tensor,   # (N_bars,) float32
+    "otm5_put_prices": torch.Tensor,    # (N_bars,) float32
+    "otm10_call_prices": torch.Tensor,  # (N_bars,) float32
+    "otm10_put_prices": torch.Tensor,   # (N_bars,) float32
+    "otm15_call_prices": torch.Tensor,  # (N_bars,) float32
+    "otm15_put_prices": torch.Tensor,   # (N_bars,) float32
+    "otm20_call_prices": torch.Tensor,  # (N_bars,) float32
+    "otm20_put_prices": torch.Tensor,   # (N_bars,) float32
+    "otm25_call_prices": torch.Tensor,  # (N_bars,) float32
+    "otm25_put_prices": torch.Tensor,   # (N_bars,) float32
+    "otm30_call_prices": torch.Tensor,  # (N_bars,) float32
+    "otm30_put_prices": torch.Tensor,   # (N_bars,) float32
 
-    # Metadata
-    "dates": list[str],              # date string per bar
-    "bar_indices": torch.Tensor,     # (N_bars,) bar-of-day index (0-389)
-    "timestamps": list[str],         # ISO 8601 per bar
+    # Bar context
+    "dates": list[str],                 # length N_bars
+    "bar_of_day": torch.Tensor,         # (N_bars,) int32, 0..389
 
-    # Split masks
-    "train_mask": torch.Tensor,      # (N_bars,) bool
-    "val_mask": torch.Tensor,        # (N_bars,) bool
+    # Masks
+    "train_mask": torch.Tensor,         # (N_bars,) bool
+    "val_mask": torch.Tensor,           # (N_bars,) bool
+    "promote_mask": torch.Tensor,       # (N_bars,) bool
+    "shadow_mask": torch.Tensor,        # (N_bars,) bool
 
-    # Provenance
-    "metadata": {
-        "feature_version": str,       # e.g. "v2.0"
-        "label_version": str,         # e.g. "oracle_tier3"
-        "evaluator_version": str,     # SHA-256 of evaluator rules
-        "data_dates": [str, str],     # [first_date, last_date]
-        "num_bars": int,
-        "num_train_bars": int,
-        "num_val_bars": int,
-        "build_timestamp": str,       # when this dataset was created
-        "raw_data_fingerprint": str,  # SHA-256 of raw data files used
-    }
+    "metadata": { ... },
 }
 ```
 
-### Train/Val Split
+## Metadata Contract
 
-- Split by date: last 60 trading days = validation
-- No bar-level mixing (entire days are train or val)
-- Split date stored in metadata for reproducibility
+Important metadata fields in the active dataset:
 
----
+- `version`
+- `build_timestamp`
+- `fingerprint`
+- `n_features`
+- `normalization`
+- `total_signal_bars`
+- `total_trades`
+- `gate_true_rate`
+- `mean_pnl_trade`
+- `fixed_stop`
+- `fixed_target`
+- `fixed_hold`
+- `label_gate_min_pnl`
+- `split`
+- `cost_model`
+- `direction_signal`
+- `label_scheme`
+- `label_tier`
+- `label_grid`
+- `atm_source`
+- `poc_va_source`
+- `trade_window`
 
-## Fingerprinting
+The metadata must describe the actual tensor contents. `relabel_tier3.py` now updates the counts and recomputes the fingerprint after relabeling.
 
-**Raw data fingerprint:** SHA-256 of sorted list of raw data file paths + sizes.
-If any raw file changes, the fingerprint changes, and the dataset is stale.
+## Current Active Values
 
-**Feature version:** String incremented when feature computation logic changes.
-If feature version in data.pt doesn't match current code, the dataset must be rebuilt.
+```text
+n_features:        47
+normalization:     rolling_zscore_60day
+label_scheme:      dual_direction_pnl_tier3
+trade_window:      bar 30-270
+atm_source:        dynamic_nearest_per_bar
+poc_va_source:     incremental_bars_seen_so_far
+total_signal_bars: 236,641
+total_trades:      157,232
+```
 
-**Label version:** String identifying the oracle labeler tier and parameters.
-Different label versions produce incompatible datasets.
+## Split Contract
 
-**Evaluator version:** SHA-256 of the evaluator rules (spread, stops, fills).
-Oracle labels are only valid under the evaluator version they were computed with.
+The dataset stores four masks:
 
----
+- `train_mask`
+- `val_mask`
+- `promote_mask`
+- `shadow_mask`
 
-## Backward Compatibility with v1
+The canonical fixed split at the dataset level is used for local replay and analysis.
+Walk-forward experiments do not rely on those masks for training. `v2/core/walkforward.py` builds fold-specific masks from the date list.
 
-### What v2 Can Read from v1
+## Replay Price Contract
 
-- **Raw caches** (data/spx_1min/, data/spy_1min/, data/vix_1min/): Same format.
-  v2 pipeline reads them directly. No migration needed.
+Replay uses coarse option price arrays:
 
-- **Feature computation** (prepare.py compute_features()): Same 39 features.
-  v2 core/features.py produces identical output given identical input.
+- current nearest ATM
+- OTM 5
+- OTM 10
+- OTM 15
+- OTM 20
+- OTM 25
+- OTM 30
 
-### What v2 Cannot Read from v1
+These arrays are keyed to the dynamic nearest ATM per bar, not to the session-open ATM.
 
-- **v1 data.pt**: Different label scheme. v1 labels are proxy-based (MFE/MAE).
-  v2 labels are oracle-based (TradeIntent). The feature tensor (X) is compatible,
-  but the label tensors are not.
+## Fingerprint Rules
 
-- **v1 model weights**: v2 may use a different architecture. Even if the
-  architecture matches, the loss function targets are different, so v1 weights
-  are not meaningful for v2 training.
+Dataset compatibility is enforced by `v2/core/dataset_fingerprint.py`.
 
-### Separation
+The fingerprint changes when any of these materially change:
 
-- v1 data lives at `training/data.pt` (unchanged, never overwritten)
-- v2 data lives at `v2/data.pt` (new path)
-- v1 raw caches are shared (read-only for both systems)
-- v2 never modifies v1 artifacts
+- tensors
+- dates
+- feature names
+- core metadata fields
 
----
-
-## Data Pipeline (v2/pipeline/build_dataset.py)
-
-### Steps
-
-1. **Download** raw data for missing dates (IBKR + Polygon APIs)
-2. **Compute features** using v2/core/features.py (same 39 features)
-3. **Compute oracle labels** using v2/core/labels.py (new)
-4. **Normalize** features using v2/core/features.py normalization
-5. **Split** into train/val by date
-6. **Fingerprint** all components
-7. **Save** to v2/data.pt
-
-### Incremental Updates
-
-When new trading days are available:
-1. Download only new dates
-2. Recompute features and labels for new dates only
-3. Append to existing dataset
-4. Re-split (val window slides forward)
-5. Update fingerprint
-
-Full rebuild is only required when feature or label logic changes.
+Artifact loading and replay use the fingerprint to reject models trained on a different dataset.

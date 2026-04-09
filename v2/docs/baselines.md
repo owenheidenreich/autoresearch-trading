@@ -1,123 +1,93 @@
-# v2 Baselines and GPU Spend Gates
+# v2 Baselines
 
-## Hard Rule
+This file documents the baselines that replay currently computes and compares against.
 
-No GPU run starts unless ALL of the following pass locally first.
-This is not a guideline. It is a gate enforced by the experiment orchestrator.
+## Important Clarification
 
----
+The repo does not currently enforce a heavyweight pre-GPU local gate suite.
+There is no root `tests/` gate that blocks `run_one`.
 
-## Pre-GPU Checklist
+What is real today:
 
-### 1. Smoke Tests Pass
+- local replay and audit smoke checks are good practice
+- baseline comparison happens during replay and walk-forward evaluation
+- `run_one` itself does not run an external preflight test battery beyond the GPU-side preflight script
 
-```bash
-pytest tests/ -x --timeout=60
-```
+## Current Baselines
 
-All existing tests must pass. A failing test means the pipeline is broken
-and GPU time would be wasted.
+Replay compares the model against four baselines.
 
-### 2. Feature Contract Tests Pass
+### 1. Random
 
-- Feature array shape is (N, 39)
-- Feature names match FEATURE_NAMES exactly
-- Normalized features are in [-5.0, 5.0] range (clipped)
-- No NaN values in mandatory features (minutes_to_close, vix_regime)
+Implemented in `compute_baseline_random()`:
 
-### 3. Replay Determinism Test Passes
+- 2% chance to enter on each eligible bar
+- random option price array from the stored replay universe
+- random direction implied by the selected array
+- fixed stop `30%`
+- fixed target `50%`
+- fixed hold `120`
+- averaged over 5 seeds
 
-Run the same model on the same data twice. The scores must be identical.
+### 2. ATM-Always
 
-```python
-score_1 = replay(model, data, seed=42)
-score_2 = replay(model, data, seed=42)
-assert score_1 == score_2, f"Non-deterministic replay: {score_1} vs {score_2}"
-```
+Implemented in `compute_baseline_atm_always()`:
 
-If this fails, there is a bug in the simulator (random state leak, floating
-point non-determinism, or stochastic model behavior during eval).
+- one ATM call
+- entered at bar `30`
+- one trade per eligible day
+- fixed stop `30%`
+- fixed target `50%`
+- fixed hold `120`
 
-### 4. Model Beats Random Baseline
+### 3. Simple-Rules
 
-**Random baseline:** At each bar with a valid candidate set, flip a coin
-(50% trade, 50% no-trade). If trading, select a random candidate from the
-universe. Use fixed stop=30%, target=50%, max_hold=120 bars.
+Implemented in `compute_baseline_simple_rules()`:
 
-The model's replay PF must exceed the random baseline's PF on the same
-validation days. The random baseline is computed once (averaged over 100
-random seeds) and cached.
+- 5-bar momentum signal from `ret_6`
+- call if momentum `> 0.005`
+- put if momentum `< -0.005`
+- no trade otherwise
+- entry window bar `30` through `299`
+- 10-bar cooldown
+- fixed stop `25%`
+- fixed target `40%`
+- fixed hold `60`
 
-### 5. Model Beats ATM-Always Baseline
+### 4. ATM-Trailing
 
-**ATM-always baseline:** At bar 30 every day, buy 1 ATM call. Fixed stop=30%,
-target=50%, max_hold=120 bars. No model involved.
+Implemented in `compute_baseline_atm_trailing()`:
 
-This baseline tests whether the model adds value beyond "buy ATM at open
-and hope." If the model can't beat this, it has learned nothing useful.
+- one ATM call
+- entered at bar `30`
+- `TRAILING` exit policy
+- stop, target, and hold are set to the midpoint of the active policy ranges
 
-### 6. Model Beats Simple-Rules Baseline
+This is the "honest exit" baseline because it uses the model-era risk regime without using the model itself.
 
-**Simple-rules baseline:**
-- If 5-bar momentum > +0.15%: buy ATM call
-- If 5-bar momentum < -0.15%: buy ATM put
-- Otherwise: no trade
-- Fixed stop=25%, target=40%, max_hold=60 bars
-- Cooldown: 10 bars after any exit
-- No entry before bar 30 or after bar 300
+## Baseline Cache
 
-This baseline tests whether a learned model beats a hand-coded heuristic.
-It is deliberately simple. If the model can't beat this, the learning
-objective is wrong.
+Replay caches baseline outputs in:
 
----
+- `v2/.baseline_cache.json`
 
-## Baseline Caching
+The cache key includes:
 
-Baselines are computed once on the current validation set and stored as:
+- dataset fingerprint
+- mask key
+- policy fingerprint
+- optional `max_days`
 
-```
-results/baselines/
-  random_baseline.json       # avg PF, WR, trades over 100 seeds
-  atm_always_baseline.json   # PF, WR, trades
-  simple_rules_baseline.json # PF, WR, trades
-  baseline_meta.json         # data fingerprint, evaluator version, date computed
-```
+If the dataset fingerprint changes, the cache invalidates automatically.
 
-Baselines are recomputed when:
-- The validation set changes (new data added, split date moves)
-- The evaluator version changes (spread model, stop rules, etc.)
-- Manually requested
+## What Matters Operationally
 
----
+For keep/revert, the experiment must beat all four baselines under the current repaired harness.
 
-## GPU Budget Gates
+The most useful local smoke checks before GPU spend are:
 
-Once the pre-GPU checklist passes and a GPU session starts:
+1. `python -m py_compile` on changed Python files
+2. `python -m v2.analysis.contract_drift_audit --data v2/data.pt`
+3. `python -m v2.replay --data v2/data.pt --mask promote`
 
-| Gate | Limit | Action |
-|------|-------|--------|
-| Session time | 6 hours max | Auto-stop |
-| Experiment count | 50 experiments max | Auto-stop |
-| No-improve streak | 8 consecutive reverts | Auto-stop |
-| Stale plateau | Best score unchanged for 3 hours | Auto-stop |
-| Crash storm | 3 consecutive crashes | Auto-stop, log for human review |
-
-These gates are enforced by `v2/ops/inner_loop.py`. The agent cannot
-override them.
-
----
-
-## Cheap Local Research Loop
-
-Before any full historical run or GPU deployment, run this sequence locally:
-
-1. **Tiny debug dataset:** 5 days of data, 1 epoch, verify loss decreases
-2. **One-day replay smoke:** Run replay on a single day, verify trade log makes sense
-3. **Five-day replay smoke:** Run on 5 days, verify PF/WR/trades are reasonable
-4. **Baseline comparison:** Compare against cached baselines on same 5 days
-5. **Deterministic rerun:** Run step 3 twice, verify identical scores
-
-If any step fails, do not proceed to full training. Fix the issue first.
-
-Total local time: under 10 minutes on CPU. Cost: zero.
+Those are current reality. Treat any older doc that claims a larger enforced local gate suite as historical planning, not current behavior.

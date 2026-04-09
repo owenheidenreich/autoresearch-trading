@@ -1,41 +1,55 @@
-# v2/ Directory Map
+# v2 Directory Map
 
-## Training (mutable)
-- `train.py` -- model architecture and training loop
-- `core/policy.py` -- trading policy parameters (gate, stop, target, hold)
-- `model.pt` -- current best model checkpoint
+## Research Surface
 
-## Evaluation (immutable harness)
-- `replay.py` -- validation/replay simulator
-- `core/` -- schema, features, labels, metrics, simulator, candidates, walkforward
+- `train.py` -- model architecture, loss, optimizer, and training loop
+- `core/policy.py` -- trading policy and replay-time decision ranges
 
-## Output (generated every experiment)
-- `output/trades.html` -- interactive trade chart (Plotly)
-- `output/equity.html` -- equity curve (Plotly)
-- `output/trades.csv` -- trade log export
-- `output/progress.png` -- experiment score history (Karpathy-style)
-- `results.tsv` -- experiment results table
+## Frozen Harness
 
-## Analysis
-- `analysis/analyze_losses.py` -- losing trade post-mortem
-- `analysis/analyze_whipsaw.py` -- whipsaw day deep-dive
-- `plot_trades.py` -- generates output/trades.html + equity.html + trades.csv
-- `plot_progress.py` -- generates output/progress.png from results.tsv
+- `replay.py` -- replay driver, baselines, artifact loading
+- `core/features.py` -- feature constants and normalization contract
+- `core/metrics.py` -- score formula and hard gates
+- `core/schema.py` -- `TradeIntent` and `SimulatedTrade`
+- `core/simulator.py` -- trade simulation rules
+- `core/walkforward.py` -- 5-fold walk-forward geometry
+- `ops/run_experiment_wf.py` -- canonical GPU experiment runner
 
 ## Data
-- `data.pt` -- active dataset (referenced everywhere, do not move)
-- `data/` -- backup and alternate dataset versions
-- `pipeline/` -- dataset build scripts (build_dataset, compute_features, extract_raw, download_wide_grid)
+
+- `data.pt` -- active repaired dataset used by training and replay
+- `data_harness_repair.pt` -- backup copy of the same repaired dataset
+- `pipeline/build_v2_dataset.py` -- rebuild features and fixed-risk labels from raw caches
+- `pipeline/relabel_tier3.py` -- upgrade to Tier 3 variable-risk labels
+- `pipeline/compute_features.py` -- raw feature computation
+
+## Models And Artifacts
+
+- `model.pt` -- current promoted local model
+- `model_best.pt` -- best promoted checkpoint on disk
+- `model_candidate.pt` -- latest downloaded experiment result awaiting keep/revert
+- `artifacts/` -- experiment bundles with checkpoint, policy snapshot, and manifest
+
+## Analysis And Output
+
+- `analysis/contract_drift_audit.py` -- honesty audit for the dataset contract
+- `analysis/analyze_losses.py` -- trade-level post-mortem
+- `analysis/analyze_whipsaw.py` -- losing-day feature comparison
+- `plot_trades.py` -- writes `output/trades.html` and `output/equity.html`
+- `plot_progress.py` -- writes `output/progress.png`
+- `results.tsv` -- experiment result log
+- `lab_notebook.md` -- human-readable research notebook
 
 ## Operations
-- `ops/` -- deploy.sh, run_experiment, inner_loop, sweeps, preflight, monitor
 
-## Live Trading
-- `live/` -- IBKR integration (service, decision, execution, market)
+- `ops/deploy.sh` -- boot/start/run_one/status/stop for the Akash GPU workflow
+- `ops/model_manage.py` -- keep/revert the downloaded candidate model
+- `ops/artifact.py` -- artifact save/load/lineage helpers
 
-## Research and Docs
-- `research/` -- QuantConnect validation scripts
-- `docs/` -- specifications and domain knowledge
-- `artifacts/` -- experiment bundles (exp_001 through exp_060+)
-- `lab_notebook.md` -- experiment log
-- `program.md` -- master protocol
+## Documentation
+
+- `program.md` -- definitive operator protocol
+- `COMMANDS.md` -- command phrases the agent should honor
+- `HANDOFF.md` -- current state snapshot
+- `docs/current_state.md` -- detailed source-of-truth system overview
+- `docs/` -- contracts, evaluation docs, historical audits, and domain notes

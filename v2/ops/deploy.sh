@@ -460,7 +460,7 @@ cmd_start() {
     log ""
     log "=== GPU READY ==="
     log ""
-    log "GPU READY. Run experiments with: python v2/ops/run_experiment.py --id exp_NNN"
+    log "GPU READY. Run experiments with: ./v2/ops/deploy.sh run_one exp_NNN"
     log ""
     log "Status: ./deploy.sh status"
     log "SSH:    ./deploy.sh ssh"
@@ -550,7 +550,7 @@ if gpu:
 else:
     print("  GPU:  unavailable")
 
-pid = run("pgrep -f '[r]un_experiment.py'")
+pid = run("pgrep -f 'run_experiment_wf|run_experiment.py|v2\\.ops\\.run_experiment_wf|v2\\.ops\\.run_experiment'")
 if pid:
     pid_line = pid.split("\n")[0]
     uptime = run(f"ps -o etime= -p {pid_line}").strip()
@@ -858,11 +858,11 @@ cmd_stop() {
     fi
 
     log "Killing experiment process..."
-    ssh_cmd "pkill -f run_experiment.py 2>/dev/null || true" || true
+    ssh_cmd "pkill -f 'run_experiment_wf|run_experiment.py|v2\\.ops\\.run_experiment_wf|v2\\.ops\\.run_experiment' 2>/dev/null || true" || true
 
     # Wait for process to actually die (up to 30s) — prevents partial file downloads
     for _ in $(seq 1 30); do
-        if ! ssh_cmd "pgrep -f run_experiment.py" &>/dev/null; then
+        if ! ssh_cmd "pgrep -f 'run_experiment_wf|run_experiment.py|v2\\.ops\\.run_experiment_wf|v2\\.ops\\.run_experiment'" &>/dev/null; then
             break
         fi
         sleep 1

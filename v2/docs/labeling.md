@@ -1,163 +1,112 @@
 # v2 Labeling Contract
 
-## Purpose
+This document describes the labels that are actually in the active dataset.
 
-Defines how training labels are generated from historical data.
-This is the core of whether the model learns to trade or learns hindsight.
+## Active Label Regime
 
----
+The canonical dataset currently uses:
 
-## v1 Label Problem
+- `label_scheme = dual_direction_pnl_tier3`
+- variable stop, target, and hold labels
+- current fingerprint `03566aeb8adf1040`
 
-v1 used 5 label heads, 4 of which were proxies:
+## What Is Stored Per Supervised Bar
 
-| Head | v1 Label Source | Problem |
-|------|----------------|---------|
-| Market | SPX returns at 15/30/60 bars | Direction signal, not trade outcome |
-| Entry gate | sigmoid(MFE - MAE / ATR) | Proxy for "is this a good spot" |
-| Risk | MAE/ATR, MFE/ATR, MFE/(MFE+MAE) | ATR-normalized proxies, not executable risk levels |
-| Exit | Remaining MFE vs MAE comparison | Proxy for "should I exit", not tied to a position |
-| Direction | argmax of 6 stopped option P&L | Only real trade-outcome label |
+For each valid supervised bar, the dataset stores:
 
-The direction label was the only one using actual option P&L with stops.
-The model could optimize the proxy heads without improving trade quality.
+- `label_call_pnl`
+- `label_put_pnl`
+- `label_pnl` = max of the two
+- `label_direction` = whichever side had the higher P&L
+- `label_trade` = whether `label_pnl > DEFAULT_POLICY.label_gate_min_pnl`
+- `label_stop_pct`
+- `label_target_pct`
+- `label_max_hold`
+- `label_confidence`
 
----
+This is not a serialized oracle `TradeIntent` label. Training is component-supervised through these tensors.
 
-## v2 Label Design: Oracle Labeler
+## Current Two-Step Label Path
 
-At each decision bar, the oracle labeler asks: "What is the best TradeIntent
-that could have been emitted here, given the evaluator's rules?"
+### Step 1: Base Build
 
-### Process
+`v2/pipeline/build_v2_dataset.py` creates the initial dataset with:
 
-For each bar `t` in the training set:
+- fixed stop `0.30`
+- fixed target `0.50`
+- fixed hold `30`
+- dual-direction P&L labels
+- current nearest ATM entry prices
 
-1. **Generate candidates.** Same candidate universe as evaluator.md:
-   ATM +/- 30 points in 5-point steps, calls and puts = up to 26 candidates.
-   Plus a no-trade option.
+It labels bars only inside the supervised trade window.
 
-2. **For each candidate, simulate the trade forward.**
-   Using the exact same simulator rules as the evaluator:
-   - Entry at next bar (bar t+1)
-   - Stop loss, take profit, trailing stops per evaluator rules
-   - Max hold enforced
-   - EOD flatten at bar 389
-   - Spread costs applied
+### Step 2: Tier 3 Relabel
 
-3. **Search over risk parameters.**
-   For each candidate, try a bounded grid of stop/TP combinations:
-   - Stop: [15%, 20%, 25%, 30%, 40%, 50%] of premium
-   - Target: [20%, 30%, 50%, 80%, 120%] of premium
-   - Max hold: [30, 60, 120, 240, 390] bars
+`v2/pipeline/relabel_tier3.py` upgrades those labels using a grid search over:
 
-   This is 6 x 5 x 5 = 150 configurations per candidate.
-   26 candidates x 150 configs = 3,900 simulations per bar.
+- stops: `[0.15, 0.2, 0.25, 0.3, 0.4, 0.5]`
+- targets: `[0.2, 0.3, 0.5, 0.8, 1.2]`
+- holds: `[30, 60, 120, 240, 390]`
 
-4. **Select the best trade** by P&L after costs.
-   - If the best trade has positive P&L: label = that TradeIntent
-   - If no trade has positive P&L: label = no-trade (trade=False)
+The relabeler:
 
-5. **Store the oracle TradeIntent** as the label for bar `t`.
+- uses `nearest_call_close` and `nearest_put_close`
+- prices spread from the actual exit bar timing
+- recomputes label counts and fingerprint after relabeling
 
-### What This Gives the Model
+## Supervised Window
 
-The model is not learning "which direction will SPX move." It is learning
-"which specific option trade, with which specific risk parameters, would
-have made money here." This is a fundamentally different learning signal.
+Current supervised bars are:
 
----
+- `30 <= bar_of_day < 270`
 
-## Label Fields
+That matches the current replay-time no-trade window in the default policy.
 
-The oracle TradeIntent label provides supervision for:
+## Current Label Facts
 
-| Field | Supervision Signal |
-|-------|-------------------|
-| trade (bool) | Should the model enter here at all? |
-| strike / right | Which contract? |
-| stop_price | How tight should the stop be? |
-| take_profit_price | Where to take profit? |
-| max_hold_bars | How long to hold? |
-| confidence | Oracle P&L magnitude as proxy for conviction |
+From the active dataset metadata:
 
-The model does NOT need to predict every field of TradeIntent. Some fields
-are set by policy (order_style, tif, exit_policy). The model's job is the
-subset above.
+```text
+total_signal_bars = 236,641
+total_trades      = 157,232
+gate_true_rate    = 0.6644
+```
 
----
+Current label grid in metadata:
 
-## Computational Budget
+```text
+stops=[0.15, 0.2, 0.25, 0.3, 0.4, 0.5]
+targets=[0.2, 0.3, 0.5, 0.8, 1.2]
+holds=[30, 60, 120, 240, 390]
+```
 
-At 390 bars/day, 252 days/year, 4 years of data:
-- ~393,000 bars total
-- 3,900 simulations per bar (worst case)
-- ~1.5 billion forward simulations
+## Gate Rule
 
-This is expensive but parallelizable:
-- Each bar is independent (embarrassingly parallel)
-- Each candidate x config is independent
-- Simulation is pure arithmetic (no GPU needed)
-- Estimated: ~2 hours on 8-core CPU, or ~15 minutes on 64-core
+`label_trade` is not hardcoded in multiple places anymore.
 
-Labels are computed once and cached. Recomputed only when:
-- Evaluator rules change (new spread model, new stop rules)
-- New data is added
-- Feature schema changes
+The single source of truth is:
 
----
+- `DEFAULT_POLICY.label_gate_min_pnl`
 
-## Fallback: Simplified Oracle
+Current value:
 
-If full oracle search is too slow for iteration:
+- `0.04`
 
-**Tier 1 (fast):** Only search ATM call and ATM put, fixed stop/TP.
-2 candidates x 1 config = 2 simulations per bar.
-Gives: direction label + entry/no-entry label.
+## What Labels Are Teaching Today
 
-**Tier 2 (medium):** ATM + OTM5 + OTM10, calls and puts, 3 stop levels.
-6 candidates x 3 configs = 18 simulations per bar.
-Gives: direction + strike selection + rough risk levels.
+The model is being asked to learn:
 
-**Tier 3 (full):** Complete search as described above.
+- whether there is enough directional edge to trade
+- which direction has better expected P&L
+- what stop / target / hold regime tends to work
 
-**Current state:** data.pt uses Tier 3 labels (metadata `v2_wide_grid_risk_search`).
-P&L range: up to 1.19. Risk labels have real variance: stop std=0.10, target std=0.32, hold std=72.1.
+The model is not yet strongly supervised on rich strike choice.
 
----
+## What Is No Longer True
 
-## Label Quality Checks
+These older statements are no longer correct for the active dataset:
 
-After oracle labeling, verify:
-
-1. **No-trade rate:** Should be 70-90% of bars. If > 95%, labels are too conservative.
-   If < 50%, labels are too aggressive (or the spread model is too lenient).
-
-2. **Direction balance:** Oracle should find both call and put opportunities.
-   If > 85% one direction, the spot-return signal is leaking into the label.
-
-3. **Average holding period:** Should be 5-60 bars (5-60 minutes).
-   If < 5, the oracle is scalping with unrealistic costs.
-   If > 120, the oracle is holding too long for 0DTE.
-
-4. **Win rate:** Oracle should win > 55% of trades it takes (by construction,
-   since it only trades when positive P&L is available). If < 55%, the
-   forward simulation has a bug.
-
-5. **Consistency:** Re-running oracle labeling with same parameters should
-   produce identical labels (determinism check).
-
----
-
-## Relationship to Evaluator
-
-The oracle labeler uses the **exact same** simulator and cost model as the
-evaluator (evaluator.md). This is critical:
-
-- If the oracle uses different spread assumptions than replay, the model
-  learns trades that look good under one cost model but fail under another.
-- If the oracle uses different stop rules than replay, the model's risk
-  parameters won't match the execution environment.
-
-The oracle IS the evaluator running in "what's the best trade?" mode instead
-of "how did this model's trade do?" mode.
+- Tier 3 holds stop at 240
+- session-open ATM prices drive relabeling
+- relabeling leaves metadata stale
+- labels are oracle `TradeIntent` objects

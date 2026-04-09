@@ -1,36 +1,84 @@
 # v2 Commands
 
-When the human says one of these, do it. Read `v2/program.md` for full protocol.
+When the human says one of these, do it. Read [program.md](program.md) for the full protocol.
 
-All training runs on Akash H100 GPU, never locally. Local machine is for editing code, committing, reading results, and running replay/evaluation only.
+All training runs are remote on the Akash H100. Local commands are for replay, analysis, plotting, data rebuilds, commits, and docs.
 
 ## Research
 
-- **begin experiment loop** -- Boot Akash GPU, then Claude drives the loop: edit train.py, commit, `deploy.sh run_one exp_NNN`, read score, keep/revert, repeat. Each experiment runs 5 walk-forward folds (~25 min). Score = mean of fold scores across 300 test days.
+- `begin experiment loop`
+  Use the full loop from `v2/program.md`: hypothesis, edit `train.py` and/or `core/policy.py`, commit, `deploy.sh run_one exp_NNN`, then keep or revert.
 
-## Evaluation (runs locally)
+## Evaluation
 
-- **evaluate model** -- `python -m v2.replay --model v2/model.pt --mask promote`. Score the last fold's model on its test window. Note: this only covers 60 days (fold 4's test window). The full walk-forward score comes from the experiment runner.
-- **evaluate on shadow** -- Same but `--mask shadow`. Live-readiness check on 20 held-out days.
-- **analyze trades** -- `python -m v2.analysis.analyze_losses`. Inspects which trades won/lost and why.
+- `evaluate model`
+  Run:
+  `python -m v2.replay --model v2/model.pt --data v2/data.pt --mask promote`
 
-## Data (runs locally)
+- `evaluate promoted artifact`
+  Run:
+  `python -m v2.replay --data v2/data.pt --mask promote`
 
-- **rebuild dataset** -- `python -m v2.pipeline.build_dataset --tier 3`. Tier 3 labels, 4-way split. 30-60 min.
+- `evaluate on shadow`
+  Run:
+  `python -m v2.replay --data v2/data.pt --mask shadow`
+
+- `analyze trades`
+  Run:
+  `python -m v2.analysis.analyze_losses`
+
+- `audit dataset`
+  Run:
+  `python -m v2.analysis.contract_drift_audit --data v2/data.pt`
+
+## Data
+
+- `rebuild dataset`
+  Rebuild the canonical repaired dataset from raw caches:
+  1. `python -m v2.pipeline.build_v2_dataset --output v2/data.pt`
+  2. `python -m v2.pipeline.relabel_tier3 --data v2/data.pt --tier 3`
+  3. `python -m v2.analysis.contract_drift_audit --data v2/data.pt`
+
+- `relabel dataset`
+  Run:
+  `python -m v2.pipeline.relabel_tier3 --data v2/data.pt --tier 3`
 
 ## GPU
 
-- **boot gpu** -- `./v2/ops/deploy.sh boot`. Start Akash H100 instance.
-- **stop gpu** -- `./v2/ops/deploy.sh stop`. Tear down Akash deployment.
+- `boot gpu`
+  Run:
+  `./v2/ops/deploy.sh boot`
+
+- `start gpu`
+  Run:
+  `./v2/ops/deploy.sh start`
+
+- `run experiment exp_NNN`
+  Run:
+  `./v2/ops/deploy.sh run_one exp_NNN`
+
+- `stop gpu`
+  Run:
+  `./v2/ops/deploy.sh stop`
+
+- `gpu status`
+  Run:
+  `./v2/ops/deploy.sh status`
 
 ## Monitoring
 
-- **status** -- `python v2/ops/monitor.py`. Session state, scores, streaks.
-- **plot progress** -- `python v2/plot_progress.py`. Score chart for current session (saves `v2/output/progress.png`). Use `--all` for full history.
-- **plot trades** -- `python -m v2.plot_trades --model v2/model.pt`. SPX chart with all trades (`v2/output/trades.html`) + equity curve (`v2/output/equity.html`). Use `--mask shadow` for shadow data.
+- `plot progress`
+  Run:
+  `python v2/plot_progress.py`
 
-## Live (not yet implemented)
+- `plot trades`
+  Run:
+  `python -m v2.plot_trades --model v2/model.pt`
 
-- **begin shadow session** -- Run model on live data, no orders. Verify intent parity.
-- **begin paper session** -- Real IBKR paper orders, full RTH session.
-- **kill switch** -- Emergency stop, close all positions.
+## Live
+
+These are not implemented yet:
+
+- `begin shadow session`
+- `begin paper session`
+- `kill switch`
