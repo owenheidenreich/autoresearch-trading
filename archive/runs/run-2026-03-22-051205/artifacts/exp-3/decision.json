@@ -1,6 +1,0 @@
-{
-  "anomaly_flags": [],
-  "failure_type": "regression",
-  "kept": false,
-  "reason": "near_tie_stability_failed:stop_loss_rate_above_threshold,high_cost_entry_rate_above_threshold"
-}

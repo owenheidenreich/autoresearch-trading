@@ -5,8 +5,17 @@ results.tsv
 run.log
 loop.log
 trade_log.csv
-*.pt
-*.pt.*
+# Working model (changes every experiment, never commit)
+v2/model.pt
+# Data files (large, never commit)
+v2/data*.pt
+v2/data*.pt.*
+# Archive model files (including backups like .pt.bak, .pt.prev, etc.)
+archive/**/*.pt
+archive/**/*.pt.*
+# Working model candidate (downloaded during experiments)
+v2/model_candidate.pt
+# NOTE: v2/artifacts/*/model.pt is NOT excluded -- commit these as permanent record
 *.pyc
 __pycache__/
 .venv/
@@ -42,6 +51,10 @@ archive/v1/backtest_output/
 
 # Large output directories
 backtest_output/
+results/
+
+# Generated visualizations
+v2/output/
 
 # Runtime sync/process noise
 .sync-pid

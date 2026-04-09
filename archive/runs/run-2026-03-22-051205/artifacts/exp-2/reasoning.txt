@@ -1,7 +1,0 @@
-Looking at the progression, I see strong momentum with score improving from 0.63 → 2.70 through systematic improvements to temporal robustness. The current best combines VIX regime balancing, temporal chunking, stop prevention, feature noise injection, and full stopped P&L consistency.
-
-However, examining the Lab Notebook reveals a critical weakness: "Chunk 1 (Feb-May 2025) has PF=0.22" - the model is losing badly in early validation dates. This suggests the model is overfitting to later training periods and fails when market conditions change.
-
-My hypothesis: The model needs stronger temporal invariance through **cross-temporal consistency regularization**. I'll add a regularizer that enforces similar behavior patterns between early and late training samples, preventing the model from learning regime-specific patterns that don't generalize to the validation period.
-
-This directly addresses the Chunk 1 weakness by teaching the model to maintain consistent trading logic across different time periods, not just within-session consistency.

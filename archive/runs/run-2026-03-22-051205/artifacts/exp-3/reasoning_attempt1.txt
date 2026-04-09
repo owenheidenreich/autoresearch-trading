@@ -1,7 +1,0 @@
-Looking at the trajectory, the model has been steadily improving from score=0.63 to 2.70 by adding: VIX regime robustness, temporal chunk consistency, stop prevention, full stopped P&L consistency, feature noise injection, and increased temporal chunk weight. However, I need to examine the specific weaknesses from the trade diagnostics.
-
-The current best experiment (#9) increased TEMPORAL_CHUNK_WEIGHT from 0.15 to 0.25, which improved score from 1.22 to 2.70. This suggests temporal consistency is critical. The Lab Notebook mentions "CRITICAL WEAKNESS: Chunk 1 (Feb-May 2025) has PF=0.22" - the model loses badly in early validation dates.
-
-My hypothesis: The model still suffers from temporal overfitting despite the improvements. The current approach uses time-of-day features for temporal chunking, but the real issue is calendar time - the model trains on earlier dates and validates on later dates. I'll add calendar-aware temporal consistency that explicitly addresses the early/mid/late validation period performance, complementing the existing time-of-day chunking.
-
-Specifically, I'll add calendar temporal consistency that splits validation data by actual date ranges and ensures consistent behavior across early vs late validation periods.
