@@ -26,8 +26,8 @@ class DecisionPolicy:
 
     # --- Risk output ranges (clamped in model_to_intent) ---
     stop_range: tuple[float, float] = (0.10, 0.50)
-    target_range: tuple[float, float] = (0.15, 5.00)
-    max_hold_range: tuple[int, int] = (10, 350)
+    target_range: tuple[float, float] = (0.15, 1.65)
+    max_hold_range: tuple[int, int] = (10, 250)
 
     # --- Position management ---
     cooldown_bars: int = 5
