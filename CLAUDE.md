@@ -14,7 +14,7 @@ This project follows Karpathy's autoresearch design (github.com/karpathy/autores
 1. **Two mutable files only:** `v2/train.py` (model/loss) and `v2/core/policy.py` (trading params). Everything else is the immutable evaluation harness.
 2. **One change per experiment.** Small, testable hypotheses. Not shotgun changes.
 3. **Keep/revert based on score only.** Score = `min(daily_sortino, 6.0) * positive_day_rate * dd_mult`. Model must also beat all four baselines.
-4. **Session limits:** 50 experiments, 6 hours, 8 no-improve streak, 3hr plateau, 3 crashes. Stop when any limit fires.
+4. **Session limits:** 20 experiments, 10 hours, 6 no-improve streak, 4hr plateau, 3 crashes. Stop when any limit fires.
 5. **Every experiment needs a hypothesis.** Write it BEFORE GPU spend.
 6. **When stuck (3+ reverts):** Stop. Read trade-level replay data. Form a hypothesis about WHY. Then try structural changes.
 7. **Every experiment trains from scratch.** There is no warm-starting. train.py always creates a fresh model with random weights. Architecture changes are always safe.
@@ -54,6 +54,10 @@ LOOP FOREVER:
 - NEVER bypass `deploy.sh` with raw `sshpass` commands.
 - Each experiment requires a hypothesis and a code change BEFORE training.
 - If stuck (3+ reverts): stop, analyze trade-level data, form a real hypothesis.
+- **After EVERY experiment**, regenerate all three visual artifacts:
+  1. `python -m v2.plot_trades --model v2/model.pt` (generates `v2/output/trades.html` + `v2/output/equity.html`)
+  2. `python v2/plot_progress.py` (generates `v2/output/progress.png`)
+  These are how the human monitors what the model is doing. Never skip this step.
 
 ## Code Quality
 

@@ -18,7 +18,7 @@ Hold:      Calls avg 21 bars, Puts avg 16 bars
 Lookback: 30, d_model: 64, depth: 3, dropout: 0.05
 LR: 5e-4, batch: 2048, weight_decay: 0.03
 Asymmetric loss: calls 4x, puts 6x (direction-asymmetric)
-Sample weighting: 1 + |max_pnl|
+Sample weighting: 1 + 2*|max_pnl|
 RISK_W: 0.5, Huber delta: 0.5
 Hold targets: calls 30 bars, puts 20 bars (0.67x multiplier)
 Hold_frac normalization: / hold_hi (250), aligned with replay

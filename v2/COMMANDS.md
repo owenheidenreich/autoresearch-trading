@@ -12,7 +12,7 @@ All training runs on Akash H100 GPU, never locally. Local machine is for editing
 
 - **evaluate model** -- `python -m v2.replay --model v2/model.pt --mask promote`. Score the last fold's model on its test window. Note: this only covers 60 days (fold 4's test window). The full walk-forward score comes from the experiment runner.
 - **evaluate on shadow** -- Same but `--mask shadow`. Live-readiness check on 20 held-out days.
-- **analyze trades** -- `python v2/analyze_losses.py`. Inspects which trades won/lost and why.
+- **analyze trades** -- `python -m v2.analysis.analyze_losses`. Inspects which trades won/lost and why.
 
 ## Data (runs locally)
 
@@ -26,6 +26,8 @@ All training runs on Akash H100 GPU, never locally. Local machine is for editing
 ## Monitoring
 
 - **status** -- `python v2/ops/monitor.py`. Session state, scores, streaks.
+- **plot progress** -- `python v2/plot_progress.py`. Score chart for current session (saves `v2/output/progress.png`). Use `--all` for full history.
+- **plot trades** -- `python -m v2.plot_trades --model v2/model.pt`. SPX chart with all trades (`v2/output/trades.html`) + equity curve (`v2/output/equity.html`). Use `--mask shadow` for shadow data.
 
 ## Live (not yet implemented)
 

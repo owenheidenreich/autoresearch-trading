@@ -30,9 +30,10 @@ learned at SPX 4300 transfer to SPX 6500. Rolling z-score normalization (60-day 
 preserves inter-day regime information (unlike per-day z-score which destroyed it).
 Option features use dynamic ATM tracking from the wide grid.
 
-Label statistics:
+Label statistics (Tier 3 grid-search labels, metadata `v2_wide_grid_risk_search`):
 - ~237K signal bars, label_call_pnl and label_put_pnl per bar
-- Fixed risk: stop=0.30, target=0.50, hold=30 bars (no grid search)
+- Variable risk from grid search: stop [0.15-0.50], target [0.20-1.20], hold [30-240 bars]
+- P&L range up to 1.19 (not capped at 0.50 like Tier 1)
 - Direction = whichever side had higher P&L (model learns to predict)
 - Costs: adaptive spread (by time/VIX) + $1.30 commission per round trip
 
@@ -138,8 +139,15 @@ LOOP:
 7. If score improved AND beats all baselines: **KEEP**. Branch advances.
 8. If score equal or worse: **REVERT**. `git checkout HEAD~1 -- v2/train.py v2/core/policy.py`.
 9. Append result to `v2/results.tsv`.
-10. Check session limits (see below). If any limit hit, stop.
-11. Go to step 1.
+10. **Post-experiment analysis** (every experiment, not just when stuck):
+    a. Run `python -m v2.plot_trades --model v2/model.pt` to generate `v2/output/trades.html` and `v2/output/equity.html` for the human to visually inspect.
+    b. Run `python v2/plot_progress.py` to regenerate `v2/output/progress.png` (score chart with all experiments).
+    c. Read `python -m v2.analysis.analyze_losses` output: per-day P&L, exit reason breakdown, direction split, losing trade patterns.
+    d. Note in your hypothesis for the NEXT experiment what the trade data revealed. Examples: "losers cluster in morning", "puts have 40% WR vs calls 85%", "STOP_LOSS exits dominate losses", "high-vol days account for all drawdown".
+    e. Update `v2/lab_notebook.md` with findings.
+    **All three visual artifacts (`v2/output/trades.html`, `v2/output/equity.html`, `v2/output/progress.png`) MUST be regenerated after every experiment.** The human uses these to visually verify what the model is doing.
+11. Check session limits (see below). If any limit hit, stop.
+12. Go to step 1.
 
 ## Session Limits
 
@@ -156,6 +164,8 @@ LOOP:
 If you hit 3+ consecutive reverts:
 
 1. **Stop trying random things.**
-2. Read the trade-level replay data. Look at which trades lost money and why.
-3. Form a hypothesis about WHY the model is failing.
-4. Try structural changes, not just hyperparameter tweaks.
+2. Run `python -m v2.analysis.analyze_losses` and `python -m v2.analysis.analyze_whipsaw`. Read every line of output.
+3. Regenerate all visual artifacts: `python -m v2.plot_trades --model v2/model.pt` (output/trades.html + output/equity.html) and `python v2/plot_progress.py` (output/progress.png).
+4. Look at: which days lost money, which exit reasons dominate losses, call vs put performance, feature distributions on losing vs winning trades, whether losses cluster in specific regimes.
+5. Form a hypothesis about WHY the model is failing based on evidence, not intuition.
+6. Try structural changes, not just hyperparameter tweaks.

@@ -125,9 +125,9 @@ def run_experiment(config: SweepConfig, data_path: str, output_dir: str) -> dict
                 eval_result = subprocess.run(
                     [sys.executable, "-c", f"""
 import torch
-from v2.replay import load_model, replay_validation
+from v2.replay import load_model_from_path, replay_validation
 data = torch.load('{data_path}', map_location='cuda' if torch.cuda.is_available() else 'cpu', weights_only=False)
-model = load_model('{model_path}', device='cuda' if torch.cuda.is_available() else 'cpu')
+model = load_model_from_path('{model_path}', device='cuda' if torch.cuda.is_available() else 'cpu')
 m, trades = replay_validation(model, data, max_days=60, min_gate_prob={gate}, device='cuda' if torch.cuda.is_available() else 'cpu')
 import json
 print(json.dumps({{

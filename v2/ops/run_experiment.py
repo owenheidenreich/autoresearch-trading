@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from v2.train import train as train_model
 from v2.replay import (
-    load_model, replay_validation, print_metrics,
+    load_model_from_path, replay_validation, print_metrics,
     compute_baseline_random, compute_baseline_atm_always,
     compute_baseline_simple_rules, compute_baseline_atm_trailing,
 )
@@ -87,7 +87,7 @@ def run_experiment(
         print(f"WARNING: {mask_key} not in dataset, falling back to val_mask")
         mask_key = "val_mask"
 
-    model = load_model(model_path)
+    model = load_model_from_path(model_path)
     metrics, trades = replay_validation(
         model, data, mask_key=mask_key, policy=policy,
     )

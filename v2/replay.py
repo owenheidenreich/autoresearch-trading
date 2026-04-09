@@ -32,17 +32,41 @@ BATCH_SIZE = 4096
 BASELINE_CACHE_PATH = "v2/.baseline_cache.json"
 
 
-def load_model(path: str, device: str = "cpu") -> TradingModel:
-    """Load a trained model from checkpoint.
+def load_model_from_path(path: str, device: str = "cpu") -> TradingModel:
+    """Load a model from a raw checkpoint path (GPU training hot path only).
 
-    TODO(Phase 3b): Replace with artifact bundle loading that reconstructs
-    from saved spec and hard-fails on mismatch.
+    For evaluation, use load_best_model() which loads from the artifact system.
     """
     checkpoint = torch.load(path, map_location=device, weights_only=False)
-    model = TradingModel()
+    hyperparams = checkpoint.get('hyperparams', {})
+    model = TradingModel(
+        d_model=hyperparams.get('d_model', 64),
+        depth=hyperparams.get('depth', 3),
+        n_heads=hyperparams.get('n_heads', 4),
+        dropout=hyperparams.get('dropout', 0.1),
+    )
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     return model
+
+
+def load_best_model(device: str = "cpu") -> tuple[TradingModel, 'DecisionPolicy', dict]:
+    """Load the best model from the artifact system. Hard-fails if no artifact exists.
+
+    Returns (model, policy, manifest).
+    """
+    from v2.ops.artifact import get_best_artifact, load_artifact
+
+    best_dir = get_best_artifact()
+    if best_dir is None:
+        raise FileNotFoundError(
+            "No artifacts found. Run an experiment loop first to produce a model."
+        )
+
+    result = load_artifact(best_dir, device=device)
+    print(f"Loaded best model from artifact {result['manifest']['experiment_id']} "
+          f"(score={result['manifest']['score']:.4f})")
+    return result["model"], result["policy"], result["manifest"]
 
 
 def model_to_intent(
@@ -783,7 +807,12 @@ def _compute_all_baselines(data, mask_key, max_days, policy, day_to_bars):
 
 def main():
     parser = argparse.ArgumentParser(description="v2 replay evaluation")
-    parser.add_argument("--model", type=str, default="v2/model.pt")
+    parser.add_argument("--model", type=str, default=None,
+                        help="Raw checkpoint path (GPU training only). "
+                             "Omit to load from best artifact.")
+    parser.add_argument("--artifact", type=str, default=None,
+                        help="Artifact dir to load (e.g. v2/artifacts/exp_008). "
+                             "Omit to auto-select best.")
     parser.add_argument("--data", type=str, default="v2/data.pt")
     parser.add_argument("--days", type=int, default=None)
     parser.add_argument("--mask", type=str, default="promote",
@@ -827,12 +856,21 @@ def main():
         print_metrics("ATM-Trailing Baseline", b_trailing)
         return
 
-    if not os.path.exists(args.model):
-        print(f"No model at {args.model}. Train first: python -m v2.train")
-        return
-
-    model = load_model(args.model)
-    print(f"Model loaded from {args.model}")
+    # Load model: --model for raw path (GPU), --artifact for specific bundle, default = best artifact
+    if args.model:
+        model = load_model_from_path(args.model)
+        print(f"Model loaded from raw path {args.model}")
+    elif args.artifact:
+        from v2.ops.artifact import load_artifact
+        result = load_artifact(args.artifact)
+        model = result["model"]
+        policy = result["policy"]
+        print(f"Model loaded from artifact {args.artifact} "
+              f"(score={result['manifest']['score']:.4f})")
+    else:
+        model, artifact_policy, manifest = load_best_model()
+        if args.gate is None:
+            policy = artifact_policy
     print(f"Evaluating on {mask_key}")
 
     metrics, trades = replay_validation(

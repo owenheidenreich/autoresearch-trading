@@ -121,8 +121,8 @@ Gives: direction + strike selection + rough risk levels.
 
 **Tier 3 (full):** Complete search as described above.
 
-Start with Tier 1 to validate the pipeline. Graduate to Tier 3 for
-production labeling.
+**Current state:** data.pt uses Tier 3 labels (metadata `v2_wide_grid_risk_search`).
+P&L range: up to 1.19. Risk labels have real variance: stop std=0.10, target std=0.32, hold std=72.1.
 
 ---
 
