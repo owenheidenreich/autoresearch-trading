@@ -1,96 +1,91 @@
-# Handoff: Walk-Forward CV Session
+# Handoff: Sessions 6-7 (Walk-Forward + Domain-Informed)
 
-Read this before running the experiment loop. It explains what changed and why.
+Read this, then `v2/program.md`, then `v2/COMMANDS.md`.
 
-## What Happened Last Session (2026-04-07)
-
-### Experiment Loop (20 experiments, exp_032-051)
-
-Ran the first experiments on a rebuilt 47-feature dataset (rolling z-score normalization). Score went from 4.92 to 5.67 through four changes:
-
-1. **Lookback 60->30** (exp_034): shorter context reduced overfitting
-2. **P&L sample weighting** (exp_036): `1 + |max_pnl|` in loss focuses on high-signal bars
-3. **Seed 42->123** (exp_043): different random init matters a lot for this model
-4. **Asymmetric loss 3x->5x** (exp_046): stronger penalty for predicting profit on actual losers
-
-### The Problem That Was Identified
-
-The 5.67 score was achieved by making the model extremely selective: 77 trades across 36 of 60 test days, sitting out 40% of days entirely. The user correctly identified this as **reward hacking** -- the model learned to avoid trading rather than to trade well.
-
-The root cause: the score formula `min(sortino, 6.0) * positive_day_rate * dd_mult` makes PDR the binding constraint once sortino caps at 6.0. Optimizing solely for PDR leads to over-conservative models that cherry-pick easy days.
-
-**Key feedback from the user:**
-- Losing days are normal. Don't try to eliminate them all.
-- Over-trading (trading too often, giving back gains) is the real risk. Low trade count is fine.
-- But a model that hides from 40% of trading days is not a real edge.
-
-### Walk-Forward CV (New)
-
-The old evaluation used a single 60-day promote window. That's too thin -- a few lucky days swing the score. We replaced it with **walk-forward cross-validation**:
-
-- 5 folds, each training on all prior data, testing on the next 60 days
-- 300 total test days covering Dec 2024 through Mar 2026
-- Final score = mean of 5 fold scores
-- Each fold uses a different random seed (base_seed + fold_idx)
-- ~25 min per experiment (5 x 5 min training)
-- Last fold's model saved as model.pt (most training data)
-
-This is now the default when you run `deploy.sh run_one`.
-
-## Current State of train.py
+## Current Best: exp_066, WF Score 5.523
 
 ```
-Lookback: 30 bars
-d_model: 64, depth: 3, n_heads: 4, dropout: 0.05
-Batch: 2048, LR: 5e-4, weight_decay: 0.01
-Seed: 123 (but walk-forward overrides per fold)
-Asymmetric loss: 5x for optimistic errors (predicted profit, actual loss)
-Sample weighting: 1 + |max_pnl| (up-weight high-signal bars)
-Huber delta: 0.5
+Per-fold:  [5.17, 5.59, 5.66, 5.61, 5.59]  std=0.18
+Trades:    431 across 175/300 test days
+Fold 4:    Score 5.586, WR 77.8%, PF 10.53, 54 trades
+Direction: Calls 78% WR, Puts 76% WR (gap closed)
+Hold:      Calls avg 21 bars, Puts avg 16 bars
 ```
 
-### What the Model Does
-
-P&L prediction model. Predicts expected call_pnl and put_pnl for every bar. Trading decisions derived at inference:
-- Gate: trade when max(call_pnl, put_pnl) > 0 (sigmoid threshold 0.50)
-- Direction: argmax(call_pnl, put_pnl)
-- Strike: always ATM
-- Risk: model outputs stop/target/hold, squashed to policy ranges
-
-Architecture: TransformerEncoder (3 layers, causal mask) + FiLM regime conditioning on last bar's raw features.
-
-## What to Do Next
-
-### First Experiment
-
-The walk-forward setup has NOT been tested on GPU yet. The first experiment should be a baseline run with the current train.py to establish the walk-forward score. This score will be different from the old single-split score of 5.67.
+## Config (exp_066, in train.py now)
 
 ```
-1. deploy.sh boot
-2. deploy.sh start
-3. deploy.sh run_one exp_052
-4. Read the aggregate score + per-fold breakdown
-5. Log as the new baseline
+Lookback: 30, d_model: 64, depth: 3, dropout: 0.05
+LR: 5e-4, batch: 2048, weight_decay: 0.03
+Asymmetric loss: calls 4x, puts 6x (direction-asymmetric)
+Sample weighting: 1 + |max_pnl|
+RISK_W: 0.5, Huber delta: 0.5
+Hold targets: calls 30 bars, puts 20 bars (0.67x multiplier)
+Hold_frac normalization: / hold_hi (250), aligned with replay
+Gate threshold: 0.50
 ```
 
-Expect ~25 min for the run. If any fold crashes, check the error -- it might be a mask/data issue since this is the first walk-forward run on GPU.
+## What Changed in Sessions 6-7 (16 experiments, exp_052-067)
 
-### What to Optimize For
+**Session 6 (walk-forward baseline):** Single-split score 5.67 dropped to walk-forward 5.19. Revealed the model was fragile across market regimes. weight_decay 0.03 and asymmetric 4x improved to 5.31. Found and fixed hold_frac training/replay mismatch (was off by 37%).
 
-The score formula hasn't changed, but now it's averaged across 5 diverse market windows. A model that only works in one regime will score poorly. Focus on:
+**Session 7 (domain-informed):** Cross-referenced trade data with domain knowledge (Pickles, Sinclair, Douglas, Elder, 0DTE microstructure). Three changes worked:
 
-- **Consistency across folds**: low std_fold_score means the model generalizes
-- **Trade quality**: win rate, profit factor, not just PDR
-- **Trading in diverse conditions**: the model should trade across all 5 folds, not just the easy ones
+1. **Direction-asymmetric loss** (puts 6x, calls 4x): Put predictions were noisier. Closed the WR gap from 16pp to 2pp. Sinclair: puts face steeper variance premium headwind.
+2. **RISK_W 0.3 -> 0.5**: Risk head gets 33% of loss signal. Improved stop calibration, all folds broke above 5.0.
+3. **Direction-dependent hold** (puts 20 bars, calls 30): Biggest single gain (+0.100). 0DTE theta decay punishes puts more for long holds.
 
-Do NOT try to make every day profitable. Losses are part of trading.
+## Infrastructure Changes
 
-### The 5x Asymmetric Loss Question
+- **model_candidate.pt**: deploy.sh now downloads to `model_candidate.pt`, never overwrites `model.pt` directly. After reading the score:
+  - KEEP: `python v2/ops/model_manage.py keep` (promotes candidate)
+  - REVERT: `python v2/ops/model_manage.py revert` (discards candidate)
+- **model_best.pt**: Canonical best model. Analysis tools default to this.
+- **lease_check.py**: `python v2/ops/lease_check.py` between experiments. Auto-funds if < 1hr remaining.
+- **CSV export**: `python -m v2.plot_trades` now produces trades.html, equity.html, AND trades.csv in v2/output/.
+- **Output dir**: v2/output/ for all viewable artifacts.
 
-The 5x asymmetric loss was tuned to maximize PDR on a single 60-day window. Under walk-forward, it might be too conservative (the model may refuse to trade in some folds). The first thing to test after the baseline might be **dialing it back to 3x** and seeing if that produces a better walk-forward score with more consistent trading across folds.
+## Trade Profile (what the model is doing)
 
-### Known Issues
+54 trades on fold 4 promote (60 days). 12 losers:
+- **8 BAD ENTRY** (0% MFE): immediately went wrong. Unfilterable noise (~10% of trades, matches Douglas's prediction).
+- **4 HAD EDGE** (MFE 11-43%): direction was right but reversed. Exit timing issue.
+- **STOP_LOSS**: 6 trades, 0% WR, avg -$851. Dominated by Feb 20 (-$3,338 single trade).
+- **TAKE_PROFIT**: 20 trades, 100% WR, avg $1,110. The big winners.
+- **MAX_HOLD**: 16 trades, 88% WR. Dramatically improved from 55% before direction-dependent holds.
 
-- `v2/analyze_losses.py` still uses the old fixed promote_mask. It works for quick trade inspection but doesn't cover all 5 fold windows.
-- Local `python -m v2.replay --mask promote` only evaluates on the old 60-day window. The real walk-forward score comes from the experiment runner on GPU.
-- The `.best_score` file still tracks single-split scores. Walk-forward scores will likely be lower (harder test). Need to reset it after the first walk-forward baseline.
+## What to Try Next (ranked hypotheses from research phase)
+
+**H3: Raw VIX level as feature (HIGHEST REMAINING PRIORITY)**
+- VIX is z-scored (60-day rolling), so the model can't see absolute VIX level.
+- Sinclair: VIX < 20 = 28% variance premium overpay for long options. VIX > 50 = premium inverts.
+- The model is blind to the regime that determines how expensive it is to buy options.
+- Requires: either adding raw VIX to feature pipeline (compute_features.py rebuild) or deriving it from existing z-scored data in train.py.
+
+**New features: MACD-histogram slope, Force Index**
+- Elder's #1 signal (MACD slope) and price+volume combo (Force Index) are not in the 47 features.
+- Would require feature pipeline rebuild.
+
+**What NOT to try (exhausted directions):**
+- Hyperparameter tweaks (dropout, d_model, LR, batch): all failed or were no-ops
+- Gate threshold changes: 0.55 caused gate failure on all folds
+- Confidence-modulated gate: was a no-op (multiplicative boost doesn't change threshold crossing)
+- Extended training time: best epoch is always 1-5, model converges immediately
+- Stronger sample weighting: 2x was too aggressive
+
+## Loop Discipline
+
+```
+1. Edit train.py / policy.py, commit
+2. deploy.sh run_one exp_NNN
+3. Read score from stdout
+4. KEEP:   python v2/ops/model_manage.py keep
+   REVERT: git checkout HEAD~1 -- v2/train.py v2/core/policy.py
+           python v2/ops/model_manage.py revert
+5. Log to results.tsv
+6. python v2/ops/lease_check.py
+7. python -m v2.plot_trades          (-> v2/output/trades.html, equity.html, trades.csv)
+8. python v2/plot_progress.py        (-> v2/output/progress.png)
+9. Read trades.csv, form hypothesis citing trade data + domain knowledge
+10. Repeat
+```
