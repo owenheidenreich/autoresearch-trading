@@ -50,23 +50,54 @@ def load_model_from_path(path: str, device: str = "cpu") -> TradingModel:
     return model
 
 
-def load_best_model(device: str = "cpu") -> tuple[TradingModel, 'DecisionPolicy', dict]:
+def load_best_model(
+    device: str = "cpu",
+    current_dataset_fingerprint: str | None = None,
+) -> tuple[TradingModel, 'DecisionPolicy', dict]:
     """Load the best model from the artifact system. Hard-fails if no artifact exists.
 
     Returns (model, policy, manifest).
     """
-    from v2.ops.artifact import get_best_artifact, load_artifact
+    from v2.ops.artifact import iter_artifacts_by_score, load_artifact
 
-    best_dir = get_best_artifact()
-    if best_dir is None:
+    artifact_errors: list[str] = []
+    for artifact_dir in iter_artifacts_by_score():
+        try:
+            result = load_artifact(
+                artifact_dir,
+                current_dataset_fingerprint=current_dataset_fingerprint,
+                device=device,
+            )
+            print(f"Loaded best model from artifact {result['manifest']['experiment_id']} "
+                  f"(score={result['manifest']['score']:.4f})")
+            return result["model"], result["policy"], result["manifest"]
+        except (RuntimeError, ValueError, FileNotFoundError) as exc:
+            artifact_errors.append(f"{artifact_dir}: {exc}")
+
+    # Harness repair can temporarily leave us with a valid checkpoint on disk
+    # before a matching local artifact bundle exists. Fall back to the stable
+    # raw checkpoint so replay stays usable during the transition.
+    for fallback_path in ("v2/model_best.pt", "v2/model.pt"):
+        if os.path.exists(fallback_path):
+            model = load_model_from_path(fallback_path, device=device)
+            print(f"WARNING: no compatible artifact bundle found; using raw checkpoint {fallback_path}")
+            if artifact_errors:
+                print("Skipped artifacts:")
+                for err in artifact_errors[:5]:
+                    print(f"  {err}")
+            return model, DEFAULT_POLICY, {
+                "experiment_id": os.path.basename(fallback_path),
+                "score": float("nan"),
+                "raw_checkpoint_fallback": True,
+            }
+
+    if artifact_errors:
         raise FileNotFoundError(
-            "No artifacts found. Run an experiment loop first to produce a model."
+            "No compatible artifact bundle found.\n" + "\n".join(artifact_errors[:5])
         )
-
-    result = load_artifact(best_dir, device=device)
-    print(f"Loaded best model from artifact {result['manifest']['experiment_id']} "
-          f"(score={result['manifest']['score']:.4f})")
-    return result["model"], result["policy"], result["manifest"]
+    raise FileNotFoundError(
+        "No artifacts found. Run an experiment loop first to produce a model."
+    )
 
 
 def model_to_intent(
@@ -256,6 +287,9 @@ def replay_validation(
     in_trade = False
     trade_exit_bar = -1
     last_stop_bar = -1000
+    daily_dollar_pnl = 0.0
+    daily_loss_cap_hit = False
+    cumulative_equity = policy.starting_equity
 
     for i, (day, bar_idx, bod) in enumerate(eligible_bars):
         # Reset state on day boundary
@@ -265,6 +299,16 @@ def replay_validation(
             in_trade = False
             trade_exit_bar = -1
             last_stop_bar = -policy.cooldown_bars - 1
+            daily_dollar_pnl = 0.0
+            daily_loss_cap_hit = False
+
+        # Solvency check: stop trading if account is wiped out
+        if cumulative_equity <= 0:
+            continue
+
+        # Daily loss cap: stop new entries when daily loss exceeds cap
+        if daily_loss_cap_hit:
+            continue
 
         # Skip if in position
         if in_trade:
@@ -283,14 +327,24 @@ def replay_validation(
         if spot <= 0 or np.isnan(spot):
             continue
 
-        # Get ATM option price for entry reference
+        # Get ATM option prices for entry reference (both sides)
         atm_call_px = float(data.get('atm_call_prices', torch.zeros(1))[bar_idx]) if 'atm_call_prices' in data else 0
         atm_put_px = float(data.get('atm_put_prices', torch.zeros(1))[bar_idx]) if 'atm_put_prices' in data else 0
-        option_mid = max(atm_call_px, atm_put_px)
-        if option_mid <= 0:
+        if atm_call_px <= 0 and atm_put_px <= 0:
             continue  # no valid ATM price, skip bar
 
         expiry = day.replace("-", "")
+
+        # Determine direction first, then use the CORRECT side's price
+        dir_probs = torch.softmax(outputs['direction'], dim=-1)
+        dir_class = dir_probs.argmax(dim=-1).item()
+        option_mid = atm_call_px if dir_class == 0 else atm_put_px
+        if option_mid <= 0:
+            # Chosen side has no price; fall back to the other side
+            option_mid = max(atm_call_px, atm_put_px)
+            if option_mid <= 0:
+                continue
+
         intent = model_to_intent(
             outputs, bar_idx, bod, spot, option_mid, expiry,
             policy=policy,
@@ -321,6 +375,14 @@ def replay_validation(
         all_trades.append(trade)
         in_trade = True
         trade_exit_bar = trade.exit_bar
+
+        # Track daily P&L and check loss cap
+        dollar_pnl = trade.net_pnl_pct * trade.entry_price * policy.contract_multiplier * policy.qty
+        daily_dollar_pnl += dollar_pnl
+        cumulative_equity += dollar_pnl
+
+        if daily_dollar_pnl < 0 and abs(daily_dollar_pnl) / policy.starting_equity >= policy.daily_loss_cap_pct:
+            daily_loss_cap_hit = True
 
         if trade.exit_reason == "STOP_LOSS":
             last_stop_bar = trade.exit_bar
@@ -370,6 +432,11 @@ def _intent_to_price_key(intent: TradeIntent) -> str:
 
 def _baseline_cache_key(data: dict, mask_key: str, policy: DecisionPolicy, max_days: int | None) -> str:
     """Generate a fingerprint for the dataset + policy + mask combo."""
+    dataset_fp = data.get('metadata', {}).get('fingerprint')
+    if dataset_fp:
+        parts = [dataset_fp, mask_key, policy.fingerprint(), str(max_days)]
+        return hashlib.md5("|".join(parts).encode()).hexdigest()
+
     X = data['X']
     parts = [
         str(X.shape),
@@ -826,6 +893,7 @@ def main():
     mask_key = f"{args.mask}_mask"
 
     data = torch.load(args.data, map_location="cpu", weights_only=False)
+    dataset_fp = data.get("metadata", {}).get("fingerprint")
 
     # Check mask exists (backwards compat with old data.pt)
     if mask_key not in data:
@@ -862,13 +930,18 @@ def main():
         print(f"Model loaded from raw path {args.model}")
     elif args.artifact:
         from v2.ops.artifact import load_artifact
-        result = load_artifact(args.artifact)
+        result = load_artifact(
+            args.artifact,
+            current_dataset_fingerprint=dataset_fp,
+        )
         model = result["model"]
         policy = result["policy"]
         print(f"Model loaded from artifact {args.artifact} "
               f"(score={result['manifest']['score']:.4f})")
     else:
-        model, artifact_policy, manifest = load_best_model()
+        model, artifact_policy, manifest = load_best_model(
+            current_dataset_fingerprint=dataset_fp,
+        )
         if args.gate is None:
             policy = artifact_policy
     print(f"Evaluating on {mask_key}")

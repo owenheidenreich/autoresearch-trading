@@ -16,11 +16,13 @@ import time
 import numpy as np
 import torch
 
+from v2.core.dataset_fingerprint import compute_dataset_fingerprint
 from v2.core.features import (
     BARS_PER_DAY, MIN_HOLD_BARS, _FEAT_IDX,
     compute_adaptive_spread_bps,
 )
 from v2.core.simulator import TRAILING_TIERS
+from v2.core.policy import DEFAULT_POLICY
 
 MIN_ENTRY_PRICE = 0.50
 COMMISSION_PER_CONTRACT = 0.65
@@ -35,7 +37,7 @@ GRIDS = {
     3: {
         'stops': [0.15, 0.20, 0.25, 0.30, 0.40, 0.50],
         'targets': [0.20, 0.30, 0.50, 0.80, 1.20],
-        'holds': [30, 60, 120, 240],
+        'holds': [30, 60, 120, 240, 390],
     },
 }
 
@@ -47,6 +49,7 @@ def _sim_one(entry_px, prices, stop, target, hold, entry_bod, vix_regime, is_otm
 
     last_px = entry_px
     trailing_stop = -float('inf')
+    exit_k = min(hold, len(prices) - 1)  # track actual exit bar offset
 
     for k in range(1, min(hold + 1, len(prices))):
         px = prices[k]
@@ -60,9 +63,11 @@ def _sim_one(entry_px, prices, stop, target, hold, entry_bod, vix_regime, is_otm
 
         if unr <= -stop:
             exit_px = entry_px * (1.0 - stop)
+            exit_k = k
             break
         if unr >= target:
             exit_px = entry_px * (1.0 + target)
+            exit_k = k
             break
 
         for tier_thr, lock_pct in TRAILING_TIERS:
@@ -72,16 +77,17 @@ def _sim_one(entry_px, prices, stop, target, hold, entry_bod, vix_regime, is_otm
                 break
         if trailing_stop > -float('inf') and unr <= trailing_stop:
             exit_px = entry_px * (1.0 + trailing_stop)
+            exit_k = k
             break
     else:
         exit_px = last_px
 
     raw_pnl = (exit_px - entry_px) / entry_px
 
-    # Cost model matching simulator
+    # Cost model: use ACTUAL exit bar timing, not max hold
     mtc = max(BARS_PER_DAY - entry_bod, 10)
-    exit_bod_val = min(entry_bod + hold, 389)
-    exit_mtc = max(BARS_PER_DAY - exit_bod_val, 1)
+    actual_exit_bod = min(entry_bod + exit_k, 389)
+    exit_mtc = max(BARS_PER_DAY - actual_exit_bod, 1)
     entry_spread = compute_adaptive_spread_bps(mtc, vix_regime, is_otm) / 10000.0
     exit_spread = compute_adaptive_spread_bps(exit_mtc, vix_regime, is_otm) / 10000.0
     min_tick = 0.05 if entry_px < 3.00 else 0.10
@@ -103,8 +109,12 @@ def relabel(data_path: str = "v2/data.pt", tier: int = 3):
     bar_of_day = data['bar_of_day'].numpy()
     features = data['X'].numpy()
 
-    call_px = data['atm_call_prices'].numpy()
-    put_px = data['atm_put_prices'].numpy()
+    # Use nearest (dynamic ATM) prices for labeling -- these track the
+    # actual nearest ATM strike per bar, not the stale session-open ATM.
+    # After the Step 2 rebuild, atm_*_prices == nearest_*_close by
+    # construction, but we use nearest_* here to be explicit.
+    call_px = data['nearest_call_close'].numpy()
+    put_px = data['nearest_put_close'].numpy()
 
     vix_idx = _FEAT_IDX.get('vix_regime', 0)
     grid = GRIDS[tier]
@@ -206,8 +216,7 @@ def relabel(data_path: str = "v2/data.pt", tier: int = 3):
             direction = 1
             best_params = best_put_params
 
-        GATE_MIN_PNL = 0.04
-        is_trade = best_pnl > GATE_MIN_PNL
+        is_trade = best_pnl > DEFAULT_POLICY.label_gate_min_pnl
 
         new_direction[i] = direction
         new_pnl[i] = best_pnl
@@ -258,21 +267,31 @@ def relabel(data_path: str = "v2/data.pt", tier: int = 3):
     data['label_direction'] = torch.from_numpy(new_direction).to(torch.int32)
     data['label_pnl'] = torch.from_numpy(new_pnl)
 
-    # Update metadata
+    # Update metadata to match actual tensor contents (Step 5: metadata truthfulness)
+    actual_trades = int(new_trade.sum())
+    actual_gate_rate = new_trade[valid].mean() if valid.any() else 0.0
+    pnls_trade = new_pnl[new_trade]
+    actual_mean_pnl = float(pnls_trade.mean()) if len(pnls_trade) > 0 else 0.0
+
     meta = data.get('metadata', {})
     meta['label_scheme'] = f'dual_direction_pnl_tier{tier}'
     meta['label_tier'] = tier
     meta['label_grid'] = f"stops={stops} targets={targets} holds={holds}"
+    meta['total_trades'] = actual_trades
+    meta['gate_true_rate'] = float(actual_gate_rate)
+    meta['mean_pnl_trade'] = actual_mean_pnl
     meta['fixed_stop'] = 'VARIABLE'
     meta['fixed_target'] = 'VARIABLE'
     meta['fixed_hold'] = 'VARIABLE'
     data['metadata'] = meta
+    data['metadata']['fingerprint'] = compute_dataset_fingerprint(data)
 
     # Save
     out_path = data_path
     print(f"\nSaving to {out_path}...")
     torch.save(data, out_path)
     print(f"Done. {out_path} updated with Tier {tier} labels.")
+    print(f"Fingerprint: {data['metadata']['fingerprint']}")
 
 
 if __name__ == "__main__":

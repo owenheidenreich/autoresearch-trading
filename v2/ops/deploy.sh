@@ -29,7 +29,7 @@ AKASH_SIGN_MODE="amino-json"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SDL_FILE="$SCRIPT_DIR/deploy-autoresearch.yaml"
-DATA_PT="$PROJECT_ROOT/v2/data.pt"
+DATA_PT="${V2_DATA_PATH:-$PROJECT_ROOT/v2/data.pt}"
 STATE_FILE="$PROJECT_ROOT/.deploy-state"
 
 SSH_PASS="${DEPLOY_SSH_PASS:-autoresearch2026}"
@@ -403,9 +403,9 @@ cmd_start() {
     deployed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     ssh_cmd "printf '%s\n' '{\"bundle_sha256\":\"$bundle_sha\",\"git_sha\":\"$source_git_sha\",\"dirty_files\":$source_dirty_count,\"deployed_at\":\"$deployed_at\",\"source\":\"v2_local_workspace_snapshot\"}' > /root/deploy_source.json"
 
-    # Upload data.pt to v2 directory
+    # Upload the selected dataset artifact to v2/data.pt on the GPU node
     [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
-    log "Uploading v2/data.pt ($(du -h "$DATA_PT" | cut -f1))..."
+    log "Uploading dataset $(basename "$DATA_PT") ($(du -h "$DATA_PT" | cut -f1))..."
     scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
 
     # Verify data.pt upload integrity via SHA256 comparison
@@ -425,14 +425,10 @@ cmd_start() {
         log "WARNING: No data.pt.sha256 sidecar — skipping integrity check"
     fi
 
-    # Upload model.pt if it exists — warm-start from previous training run
-    if [[ -f "$PROJECT_ROOT/v2/model.pt" ]]; then
-        log "Uploading v2/model.pt ($(du -h "$PROJECT_ROOT/v2/model.pt" | cut -f1)) for warm-start..."
-        ssh_cmd "rm -f /root/v2/model.pt"
-        scp_cmd "$PROJECT_ROOT/v2/model.pt" "root@$SSH_HOST:/root/v2/model.pt"
-    else
-        log "No v2/model.pt found — starting from scratch"
-    fi
+    # Experiments always train from scratch. Keep the remote model path empty
+    # until run_experiment_wf writes a fresh checkpoint for this harness era.
+    ssh_cmd "rm -f /root/v2/model.pt"
+    log "Remote v2/model.pt cleared (training from scratch; no warm-start upload)"
 
     # Verify files on remote
     log "Files on remote GPU node:"
@@ -817,6 +813,16 @@ cmd_run_one() {
     local_sha=$(shasum -a 256 "$PROJECT_ROOT/v2/train.py" | awk '{print $1}')
     remote_sha=$(ssh_cmd "sha256sum /root/v2/train.py | awk '{print \$1}'" 2>/dev/null)
     [[ "$remote_sha" == "$local_sha" ]] || die "train.py upload integrity check failed"
+
+    # If V2_DATA_PATH points at a staging dataset, keep the remote harness in sync.
+    [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
+    local local_data_sha remote_data_sha
+    local_data_sha=$(shasum -a 256 "$DATA_PT" | awk '{print $1}')
+    remote_data_sha=$(ssh_cmd "sha256sum /root/v2/data.pt | awk '{print \$1}'" 2>/dev/null || true)
+    if [[ "$remote_data_sha" != "$local_data_sha" ]]; then
+        log "Syncing dataset $(basename "$DATA_PT") to remote v2/data.pt..."
+        scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
+    fi
     log "Code uploaded. Training..."
 
     # 2. Run experiment (blocking, ~5 min)
@@ -824,6 +830,8 @@ cmd_run_one() {
 
     # 3. Download new model.pt to staging (never overwrite model_best.pt directly)
     scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt"
+    mkdir -p "$PROJECT_ROOT/v2/artifacts"
+    scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/$exp_id" "$PROJECT_ROOT/v2/artifacts/"
     log "Done. model_candidate.pt synced (run model_manage.py keep to promote)."
 }
 

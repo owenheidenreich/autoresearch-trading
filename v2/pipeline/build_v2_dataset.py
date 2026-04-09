@@ -28,11 +28,13 @@ from collections import defaultdict
 import numpy as np
 import torch
 
+from v2.core.dataset_fingerprint import compute_dataset_fingerprint
 from v2.core.features import (
-    compute_adaptive_spread_bps, MIN_HOLD_BARS,
+    compute_adaptive_spread_bps, MIN_HOLD_BARS, NO_TRADE_BEFORE_BAR,
     normalize_features, FEATURE_NAMES, NUM_FEATURES, _FEAT_IDX,
 )
 from v2.core.simulator import TRAILING_TIERS
+from v2.core.policy import DEFAULT_POLICY
 from v2.pipeline.compute_features import (
     compute_price_features, compute_option_features, compute_flow_features,
     PRICE_FEATURE_NAMES, OPTION_FEATURE_NAMES, FLOW_FEATURE_NAMES,
@@ -232,23 +234,26 @@ def build_dataset(output_path: str = OUTPUT_PATH):
             if np.isnan(spx) or spx <= 0:
                 continue
 
-            # Nearest ATM prices (for labeling)
+            # Dynamic nearest ATM per bar (replaces session-open ATM)
             near_strike = _find_nearest_atm(bar_data, spx)
             if near_strike is not None:
                 nd = bar_data.get(near_strike, {})
                 nearest_call_close[gi] = nd.get('call_close', np.nan) or np.nan
                 nearest_put_close[gi] = nd.get('put_close', np.nan) or np.nan
 
-            # ATM + OTM price arrays (for replay baselines)
-            atm_call_prices[gi] = atm_call_c
-            atm_put_prices[gi] = atm_put_c
-            for step in OTM_STEPS:
-                call_strike = atm_strike_open + step
-                put_strike = atm_strike_open - step
-                cs = bar_data.get(call_strike, {})
-                ps = bar_data.get(put_strike, {})
-                otm_prices[f'otm{step}_call_prices'][gi] = cs.get('call_close', np.nan) or np.nan
-                otm_prices[f'otm{step}_put_prices'][gi] = ps.get('put_close', np.nan) or np.nan
+            # ATM + OTM price arrays: use DYNAMIC nearest ATM, not session-open
+            # This fixes the 92%+ contract drift found in the audit.
+            if near_strike is not None:
+                nd = bar_data.get(near_strike, {})
+                atm_call_prices[gi] = nd.get('call_close', np.nan) or np.nan
+                atm_put_prices[gi] = nd.get('put_close', np.nan) or np.nan
+                for step in OTM_STEPS:
+                    call_strike = near_strike + step
+                    put_strike = near_strike - step
+                    cs = bar_data.get(call_strike, {})
+                    ps = bar_data.get(put_strike, {})
+                    otm_prices[f'otm{step}_call_prices'][gi] = cs.get('call_close', np.nan) or np.nan
+                    otm_prices[f'otm{step}_put_prices'][gi] = ps.get('put_close', np.nan) or np.nan
 
             # Option features
             opt_feats = compute_option_features(
@@ -506,8 +511,7 @@ def build_dataset(output_path: str = OUTPUT_PATH):
                 direction = 1
                 outcome = put_outcome
 
-            GATE_MIN_PNL = 0.04
-            is_trade = best_pnl > GATE_MIN_PNL
+            is_trade = best_pnl > DEFAULT_POLICY.label_gate_min_pnl
             total_signal_bars += 1
 
             label_direction[gi] = direction
@@ -572,11 +576,6 @@ def build_dataset(output_path: str = OUTPUT_PATH):
     print(f"\nSplit: {split_info}")
 
     # ===== STEP 8: Save =====
-    fp_str = (f"v2_rebuild:features:{X_normalized.shape}:signals:{total_signal_bars}"
-              f":trades:{total_trades}:gate_rate:{gate_true_rate:.4f}"
-              f":stop:{FIXED_STOP}:target:{FIXED_TARGET}:hold:{FIXED_HOLD}")
-    fingerprint = hashlib.sha256(fp_str.encode()).hexdigest()[:16]
-
     # Build option price tensors for replay (computed from wide grid above)
     price_tensors = {
         'spot_prices': torch.from_numpy(spx_close.astype(np.float32)),
@@ -618,9 +617,9 @@ def build_dataset(output_path: str = OUTPUT_PATH):
         **price_tensors,
 
         'metadata': {
-            'version': 'v2_rebuild',
+            'version': 'v2_harness_repair',
             'build_timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
-            'fingerprint': fingerprint,
+            'fingerprint': 'pending',
             'n_features': NUM_FEATURES,
             'normalization': 'rolling_zscore_60day',
             'total_signal_bars': total_signal_bars,
@@ -630,6 +629,7 @@ def build_dataset(output_path: str = OUTPUT_PATH):
             'fixed_stop': FIXED_STOP,
             'fixed_target': FIXED_TARGET,
             'fixed_hold': FIXED_HOLD,
+            'label_gate_min_pnl': DEFAULT_POLICY.label_gate_min_pnl,
             'split': split_info,
             'cost_model': {
                 'spread_rt': 0.30,
@@ -637,8 +637,13 @@ def build_dataset(output_path: str = OUTPUT_PATH):
             },
             'direction_signal': 'dual-direction P&L (model learns to choose)',
             'label_scheme': 'dual_direction_pnl',
+            'atm_source': 'dynamic_nearest_per_bar',
+            'poc_va_source': 'incremental_bars_seen_so_far',
+            'trade_window': f'bar {NO_TRADE_BEFORE_BAR}-{270}',
         },
     }
+    dataset['metadata']['fingerprint'] = compute_dataset_fingerprint(dataset)
+    fingerprint = dataset['metadata']['fingerprint']
 
     os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
     print(f"\nSaving to {output_path}...")

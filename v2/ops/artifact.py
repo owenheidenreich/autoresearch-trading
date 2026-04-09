@@ -95,6 +95,7 @@ def save_artifact(
         "git_sha": _get_git_sha(),
         "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S'),
         "score": score,
+        "promoted": False,
         "dataset_fingerprint": dataset_fingerprint,
         "evaluator_fingerprint": score_config_fingerprint(),
         "policy_fingerprint": policy.fingerprint(),
@@ -183,17 +184,43 @@ def load_artifact(
     }
 
 
-def get_best_artifact() -> str | None:
-    """Find the artifact with the highest score.
+def mark_promoted(artifact_dir: str):
+    """Mark an artifact as promoted (kept). Only promoted artifacts are
+    eligible for ``get_best_artifact``."""
+    manifest_path = os.path.join(artifact_dir, "manifest.json")
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    manifest["promoted"] = True
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
 
-    Returns artifact directory path, or None if no artifacts exist.
+
+def mark_reverted(artifact_dir: str):
+    """Mark an artifact as reverted. Reverted artifacts are excluded from
+    ``get_best_artifact``."""
+    manifest_path = os.path.join(artifact_dir, "manifest.json")
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    manifest["promoted"] = False
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+
+
+def iter_artifacts_by_score(promoted_only: bool = True) -> list[str]:
+    """Return eligible artifact directories sorted by descending score.
+
+    Args:
+        promoted_only: if True (default), only consider artifacts that have
+            been explicitly promoted. Legacy manifests without a
+            ``promoted`` field are treated as ineligible so pre-repair
+            artifacts never become the implicit "best" model again.
+
+    Returns a possibly-empty list of artifact directory paths.
     """
     if not os.path.exists(ARTIFACTS_DIR):
-        return None
+        return []
 
-    best_score = float('-inf')
-    best_dir = None
-
+    manifests: list[tuple[float, str, object]] = []
     for name in os.listdir(ARTIFACTS_DIR):
         manifest_path = os.path.join(ARTIFACTS_DIR, name, "manifest.json")
         if not os.path.exists(manifest_path):
@@ -201,11 +228,22 @@ def get_best_artifact() -> str | None:
         try:
             with open(manifest_path) as f:
                 manifest = json.load(f)
+            promoted = manifest.get("promoted")
             score = manifest.get("score", float('-inf'))
-            if score > best_score:
-                best_score = score
-                best_dir = os.path.join(ARTIFACTS_DIR, name)
+            manifests.append((score, os.path.join(ARTIFACTS_DIR, name), promoted))
         except (json.JSONDecodeError, KeyError):
             continue
 
-    return best_dir
+    eligible: list[tuple[float, str]] = []
+    for score, artifact_dir, promoted in manifests:
+        if promoted_only and promoted is not True:
+            continue
+        eligible.append((score, artifact_dir))
+    eligible.sort(key=lambda item: item[0], reverse=True)
+    return [artifact_dir for _, artifact_dir in eligible]
+
+
+def get_best_artifact(promoted_only: bool = True) -> str | None:
+    """Find the best eligible artifact, or None if no candidate exists."""
+    artifact_dirs = iter_artifacts_by_score(promoted_only=promoted_only)
+    return artifact_dirs[0] if artifact_dirs else None

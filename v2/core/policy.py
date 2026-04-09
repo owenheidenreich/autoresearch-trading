@@ -23,6 +23,7 @@ class DecisionPolicy:
 
     # --- Gate ---
     gate_threshold: float = 0.50  # trade only when model predicts positive P&L
+    label_gate_min_pnl: float = 0.04  # label_trade=True only when best_pnl > this
 
     # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
     stop_range: tuple[float, float] = (0.10, 0.40)
@@ -35,8 +36,10 @@ class DecisionPolicy:
     qty: int = 1
 
     # --- Time blocks ---
+    # Clamped to 270 to match label supervision window (labels only exist
+    # for bars 30-269). Trading beyond 270 means replay uses unsupervised bars.
     no_trade_before_bar: int = 30
-    no_trade_after_bar: int = 330
+    no_trade_after_bar: int = 270
 
     # --- Order execution ---
     order_style: str = "MKT"

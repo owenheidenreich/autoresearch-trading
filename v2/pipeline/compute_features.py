@@ -231,47 +231,90 @@ def compute_price_features(
         sess_high[ds:de] = np.maximum.accumulate(h[ds:de])
         sess_low[ds:de] = np.minimum.accumulate(lo[ds:de])
 
-    # --- Volume profile: POC and Value Area (per-day, ~994 iterations) ---
+    # --- Volume profile: POC and Value Area (incremental, no look-ahead) ---
+    # Each bar sees only the volume profile from bars [day_start .. current_bar].
+    # The tracked range expands with the running session low/high so trend bars
+    # stay represented instead of being clipped out of the profile.
     poc_arr = np.zeros(n, dtype=np.float64)
     va_lo_arr = np.zeros(n, dtype=np.float64)
     va_hi_arr = np.zeros(n, dtype=np.float64)
+    N_BINS = 50
     for ds, de in zip(day_starts, day_ends):
+        day_len = de - ds
+        if day_len < 10:
+            continue
         day_c = c[ds:de]
         day_v = vol[ds:de]
-        if len(day_c) < 10:
-            continue
-        lo_px, hi_px = day_c.min(), day_c.max()
-        if hi_px - lo_px < 0.01:
-            poc_arr[ds:de] = (lo_px + hi_px) / 2
-            va_lo_arr[ds:de] = lo_px
-            va_hi_arr[ds:de] = hi_px
-            continue
-        n_bins = 50
-        bin_idx = np.clip(((day_c - lo_px) / (hi_px - lo_px) * n_bins).astype(int), 0, n_bins - 1)
-        profile = np.bincount(bin_idx, weights=day_v, minlength=n_bins)
-        bins = np.linspace(lo_px, hi_px, n_bins + 1)
-        poc_idx = np.argmax(profile)
-        poc_arr[ds:de] = (bins[poc_idx] + bins[poc_idx + 1]) / 2
-        total_v = profile.sum()
-        if total_v <= 0:
-            va_lo_arr[ds:de] = lo_px
-            va_hi_arr[ds:de] = hi_px
-            continue
-        va_vol = profile[poc_idx]
-        l_idx, h_idx = poc_idx, poc_idx
-        while va_vol < 0.70 * total_v:
-            add_lo = profile[l_idx - 1] if l_idx > 0 else 0
-            add_hi = profile[h_idx + 1] if h_idx < n_bins - 1 else 0
-            if add_lo >= add_hi and l_idx > 0:
-                l_idx -= 1
-                va_vol += add_lo
-            elif h_idx < n_bins - 1:
-                h_idx += 1
-                va_vol += add_hi
-            else:
-                break
-        va_lo_arr[ds:de] = bins[l_idx]
-        va_hi_arr[ds:de] = bins[h_idx + 1]
+        lo_px = float(day_c[0])
+        hi_px = float(day_c[0])
+        profile = np.zeros(N_BINS, dtype=np.float64)
+        total_v = 0.0
+        poc_idx = 0
+        poc_max_v = 0.0
+
+        for i in range(ds, de):
+            seen_end = i - ds + 1
+            px = float(day_c[seen_end - 1])
+            v = float(day_v[seen_end - 1])
+            prev_lo = lo_px
+            prev_hi = hi_px
+            lo_px = min(lo_px, px)
+            hi_px = max(hi_px, px)
+
+            if hi_px - lo_px < 0.01:
+                poc_arr[i] = px
+                va_lo_arr[i] = lo_px
+                va_hi_arr[i] = hi_px
+                continue
+
+            bin_idx = np.clip(
+                ((day_c[:seen_end] - lo_px) / (hi_px - lo_px) * N_BINS).astype(int),
+                0,
+                N_BINS - 1,
+            )
+            if lo_px != prev_lo or hi_px != prev_hi:
+                profile = np.bincount(
+                    bin_idx,
+                    weights=day_v[:seen_end],
+                    minlength=N_BINS,
+                ).astype(np.float64, copy=False)
+                total_v = float(profile.sum())
+                poc_idx = int(np.argmax(profile))
+                poc_max_v = float(profile[poc_idx])
+            elif v > 0.0:
+                bidx = int(bin_idx[-1])
+                profile[bidx] += v
+                total_v += v
+                if profile[bidx] > poc_max_v:
+                    poc_max_v = float(profile[bidx])
+                    poc_idx = bidx
+
+            if total_v <= 0.0:
+                poc_arr[i] = px
+                va_lo_arr[i] = px
+                va_hi_arr[i] = px
+                continue
+
+            bin_edges = np.linspace(lo_px, hi_px, N_BINS + 1)
+            poc_arr[i] = (bin_edges[poc_idx] + bin_edges[poc_idx + 1]) / 2.0
+
+            # Value area (70% of volume) — expand from POC
+            va_vol = profile[poc_idx]
+            l_idx, h_idx = poc_idx, poc_idx
+            target = 0.70 * total_v
+            while va_vol < target:
+                add_lo = profile[l_idx - 1] if l_idx > 0 else 0.0
+                add_hi = profile[h_idx + 1] if h_idx < N_BINS - 1 else 0.0
+                if add_lo >= add_hi and l_idx > 0:
+                    l_idx -= 1
+                    va_vol += add_lo
+                elif h_idx < N_BINS - 1:
+                    h_idx += 1
+                    va_vol += add_hi
+                else:
+                    break
+            va_lo_arr[i] = bin_edges[l_idx]
+            va_hi_arr[i] = bin_edges[h_idx + 1]
 
     # --- 5-min technical indicators (per-day loop, ~78 bars/day, fast) ---
     boll_pos = np.zeros(n, dtype=np.float64)
