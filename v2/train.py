@@ -12,9 +12,6 @@ Trading decisions derive from MFE predictions at inference time:
   - gate = True if max(pred_call_mfe, pred_put_mfe) > threshold
   - direction = argmax(pred_call_mfe, pred_put_mfe)
   - risk params = conditioned on predicted MFE magnitude
-
-This replaces the old capped-P&L approach where labels were hard-capped at 49.3%
-and risk labels were ALL IDENTICAL constants.
 """
 from __future__ import annotations
 
@@ -62,6 +59,14 @@ RISK_W = float(os.environ.get("WEIGHT_RISK", 0.3))
 # MFE computation
 MFE_WINDOW = int(os.environ.get("MFE_WINDOW", 120))  # bars forward for MFE
 
+# Gate scaling: MFE predictions are in log1p space (0-4.4 range).
+# We need aggressive gating to stay selective.
+# gate_logit = (max_mfe - GATE_CENTER) * GATE_SCALE
+# sigmoid(0) = 0.5, so GATE_CENTER = the MFE level where we're 50/50 on trading.
+# log1p(0.5) = 0.405, so GATE_CENTER=0.6 means "trade when predicted MFE > ~82%"
+GATE_CENTER = float(os.environ.get("GATE_CENTER", 0.6))
+GATE_SCALE = float(os.environ.get("GATE_SCALE", 3.0))
+
 # For replay compatibility
 NUM_STRIKE_CLASSES = 13
 STRIKE_OFFSETS = list(range(-30, 31, 5))
@@ -79,18 +84,8 @@ def compute_mfe_mae(prices: torch.Tensor, bar_of_day: torch.Tensor,
     """Compute Maximum Favorable Excursion and Maximum Adverse Excursion.
 
     For each bar, looks forward `window` bars (same day only) and computes:
-      MFE = max(future_prices) / entry_price - 1  (how high it went)
-      MAE = min(future_prices) / entry_price - 1  (how low it went)
-
-    Args:
-        prices: (N,) option prices per bar
-        bar_of_day: (N,) bar index within day
-        dates: list of date strings per bar
-        window: forward-looking window in bars
-
-    Returns:
-        mfe: (N,) max favorable excursion (positive = went up)
-        mae: (N,) max adverse excursion (negative = went down)
+      MFE = max(future_prices) / entry_price - 1
+      MAE = min(future_prices) / entry_price - 1
     """
     N = len(prices)
     mfe = torch.full((N,), float('nan'))
@@ -98,11 +93,8 @@ def compute_mfe_mae(prices: torch.Tensor, bar_of_day: torch.Tensor,
     prices_np = prices.numpy() if isinstance(prices, torch.Tensor) else prices
 
     # Build day boundaries for efficient same-day checking
-    day_start = {}
     day_end = {}
     for i, d in enumerate(dates):
-        if d not in day_start:
-            day_start[d] = i
         day_end[d] = i
 
     for i in range(N):
@@ -111,13 +103,11 @@ def compute_mfe_mae(prices: torch.Tensor, bar_of_day: torch.Tensor,
             continue
 
         d = dates[i]
-        # Same-day forward window
         end = min(i + window, day_end.get(d, i) + 1)
         if end <= i + 1:
             continue
 
         fwd = prices_np[i + 1:end]
-        # Filter NaN/invalid
         valid_mask = ~np.isnan(fwd) & (fwd > 0)
         if valid_mask.sum() < 3:
             continue
@@ -163,22 +153,14 @@ class FiLMLayer(nn.Module):
 
 
 class TradingModel(nn.Module):
-    """MFE prediction model.
+    """MFE prediction model with trade-quality-aware gating.
 
     Predicts Maximum Favorable Excursion (uncapped upside potential) for
-    both call and put directions. Trading decisions derive from predictions:
-      gate = max(call_mfe, put_mfe) > threshold
-      direction = argmax(call_mfe, put_mfe)
-      risk = conditioned on predicted MFE magnitude
+    both call and put directions. Uses aggressive gate scaling to stay
+    selective: only trades bars with high predicted MFE.
 
-    Outputs:
-        call_pnl: (batch, 1) - predicted MFE if buying ATM call (log1p scale)
-        put_pnl: (batch, 1) - predicted MFE if buying ATM put (log1p scale)
-        risk: (batch, 3) - [stop_pct, target_pct, max_hold_frac]
-        gate, direction, strike, confidence - derived for replay compatibility
-
-    Note: outputs use 'call_pnl'/'put_pnl' keys for replay compatibility,
-    but they actually represent MFE predictions.
+    Outputs use 'call_pnl'/'put_pnl' keys for replay compatibility,
+    but they actually represent MFE predictions in log1p space.
     """
 
     def __init__(
@@ -214,12 +196,12 @@ class TradingModel(nn.Module):
             nn.Linear(NUM_FEATURES, 32), nn.GELU(), nn.Linear(32, REGIME_DIM),
         )
 
-        # FiLM layers for MFE heads
+        # FiLM layers
         self.film_call = FiLMLayer(REGIME_DIM, d)
         self.film_put = FiLMLayer(REGIME_DIM, d)
         self.film_risk = FiLMLayer(REGIME_DIM, d)
 
-        # MFE prediction heads (regression, uncapped)
+        # MFE prediction heads
         self.call_pnl_head = nn.Sequential(
             nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
             nn.Linear(d // 2, 1),
@@ -251,34 +233,31 @@ class TradingModel(nn.Module):
         call_mfe = self.call_pnl_head(self.film_call(regime, last))  # (B, 1)
         put_mfe = self.put_pnl_head(self.film_put(regime, last))    # (B, 1)
 
-        # Risk head sees backbone + MFE predictions (detached to avoid gradient interference)
-        mfe_context = torch.cat([call_mfe.detach(), put_mfe.detach()], dim=-1)  # (B, 2)
-        risk_input = torch.cat([self.film_risk(regime, last), mfe_context], dim=-1)  # (B, d+2)
-        risk = self.risk_head(risk_input)  # (B, 3)
+        # Risk head sees backbone + MFE predictions
+        mfe_context = torch.cat([call_mfe.detach(), put_mfe.detach()], dim=-1)
+        risk_input = torch.cat([self.film_risk(regime, last), mfe_context], dim=-1)
+        risk = self.risk_head(risk_input)
 
-        # Derive gate/direction/strike/confidence for replay compatibility
-        call_v = call_mfe.squeeze(-1)  # (B,)
-        put_v = put_mfe.squeeze(-1)    # (B,)
+        # Derive gate/direction for replay compatibility
+        call_v = call_mfe.squeeze(-1)
+        put_v = put_mfe.squeeze(-1)
 
-        # Gate: predicted MFE as logit
-        # Model predicts in log1p space, so expm1 to get raw MFE
-        # sigmoid(0) = 0.5 maps to gate_threshold=0.5
+        # Gate: centered and scaled so sigmoid threshold is meaningful
+        # GATE_CENTER=0.6 -> trade when predicted log1p(MFE) > 0.6 -> MFE > 82%
+        # GATE_SCALE=3.0 -> sharp sigmoid transition
         max_mfe = torch.max(call_v, put_v)
-        gate_logit = max_mfe
+        gate_logit = (max_mfe - GATE_CENTER) * GATE_SCALE
 
-        # Direction: [call_logit, put_logit] from MFE predictions
-        direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
+        direction = torch.stack([call_v, put_v], dim=-1)
 
-        # Strike: ATM default
         strike = torch.zeros(B, NUM_STRIKE_CLASSES, device=x.device)
         strike[:, NUM_STRIKE_CLASSES // 2] = 1.0
 
-        # Confidence: margin between directions (higher = more certain about direction)
-        confidence = torch.abs(call_v - put_v).unsqueeze(-1) * 3.0  # (B, 1)
+        confidence = torch.abs(call_v - put_v).unsqueeze(-1) * 3.0
 
         return {
-            'call_pnl': call_mfe,   # key name kept for replay compat
-            'put_pnl': put_mfe,     # key name kept for replay compat
+            'call_pnl': call_mfe,
+            'put_pnl': put_mfe,
             'gate': gate_logit.unsqueeze(-1),
             'direction': direction,
             'strike': strike,
@@ -323,17 +302,7 @@ def compute_loss(
     targets: dict[str, torch.Tensor],
     bar_of_day: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, dict[str, float]]:
-    """MFE regression loss.
-
-    The model predicts call_mfe and put_mfe (in log1p space).
-    Loss = Huber on both predictions against actual forward MFE.
-
-    Runner-weighted: bars with high MFE get disproportionately more weight,
-    teaching the model that finding runners is the priority.
-
-    Direction-asymmetric: puts get stricter penalty for over-prediction
-    (put MFE predictions are noisier due to variance premium headwind).
-    """
+    """MFE regression loss with runner weighting and direction asymmetry."""
     device = outputs['call_pnl'].device
 
     mfe_call = targets['mfe_call'].float().to(device)
@@ -342,36 +311,32 @@ def compute_loss(
     mae_put = targets['mae_put'].float().to(device)
     lab_direction = targets['label_direction'].long().to(device)
 
-    # Valid mask: bars where we have MFE data (not NaN)
     valid = ~torch.isnan(mfe_call) & ~torch.isnan(mfe_put) & (lab_direction >= 0)
 
     if not valid.any():
         zero = torch.tensor(0.0, device=device)
         return zero, {'call_mfe': 0.0, 'put_mfe': 0.0, 'total': 0.0}
 
-    # MFE regression in log1p space (compresses 0-67x range to 0-4.2)
+    # MFE regression in log1p space
     pred_call = outputs['call_pnl'].squeeze(-1)[valid]
     pred_put = outputs['put_pnl'].squeeze(-1)[valid]
     true_call = torch.log1p(torch.clamp(mfe_call[valid], min=0))
     true_put = torch.log1p(torch.clamp(mfe_put[valid], min=0))
 
-    # Direction-asymmetric loss: penalize optimistic MFE errors more for puts
-    # Put MFE predictions are noisier (variance premium headwind, Sinclair)
+    # Direction-asymmetric: puts 6x penalty for over-prediction
     call_err = pred_call - true_call
     put_err = pred_put - true_put
     call_weight = torch.where(
-        (call_err > 0) & (true_call < 0.2), 4.0, 1.0  # over-predicting on low-MFE bars
+        (call_err > 0) & (true_call < 0.2), 4.0, 1.0
     )
     put_weight = torch.where(
-        (put_err > 0) & (true_put < 0.2), 6.0, 1.0  # stricter for puts
+        (put_err > 0) & (true_put < 0.2), 6.0, 1.0
     )
 
-    # Runner-weighted sampling: bars with high MFE get disproportionately more weight
-    # This teaches the model that finding runners is THE priority
+    # Runner-weighted sampling
     best_mfe = torch.max(mfe_call[valid], mfe_put[valid])
     best_mfe_clamped = torch.clamp(best_mfe, 0, 5.0)
     sample_weight = 1.0 + 3.0 * best_mfe_clamped
-    # A +500% MFE bar gets 16x weight vs a 0% bar
 
     call_loss = (sample_weight * call_weight * F.huber_loss(
         pred_call, true_call, delta=1.0, reduction='none')).mean()
@@ -380,24 +345,18 @@ def compute_loss(
 
     mfe_loss = call_loss + put_loss
 
-    # Risk loss: MFE-derived targets (not constants!)
+    # Risk loss: MFE-derived targets
     from v2.core.policy import DEFAULT_POLICY
     _hold_hi = DEFAULT_POLICY.max_hold_range[1]
 
     risk_out = outputs['risk'][valid]
-
-    # Dynamic risk targets from MFE/MAE
     best_mfe_v = torch.max(mfe_call[valid], mfe_put[valid])
     best_mae_v = torch.min(mae_call[valid], mae_put[valid])
 
-    # Stop: proportional to MAE (half of max adverse excursion, clamped)
     t_stop = torch.clamp(best_mae_v.abs() * 0.5, 0.10, 0.50)
-    # Target: fraction of MFE (aim for 70% of upside potential, clamped)
     t_target = torch.clamp(best_mfe_v * 0.7, 0.15, 5.0)
-    # Hold: longer for higher MFE (more time to develop, proportional)
     t_hold = torch.clamp(best_mfe_v * 80 + 30, 30, 350) / _hold_hi
 
-    # Direction-dependent hold: puts get shorter (theta decay)
     is_put = (lab_direction[valid] == 1).float()
     t_hold = t_hold * (1.0 - 0.25 * is_put)
 
@@ -406,33 +365,30 @@ def compute_loss(
 
     total = MFE_W * mfe_loss + RISK_W * risk_loss
 
-    # Metrics for logging
+    # Metrics
     with torch.no_grad():
-        # Direction accuracy: did we predict the right side (higher MFE)?
         pred_dir = (pred_put > pred_call).long()
         true_dir = lab_direction[valid]
         dir_valid = (true_dir >= 0) & (true_dir <= 1)
         dir_acc = (pred_dir[dir_valid] == true_dir[dir_valid]).float().mean().item() if dir_valid.any() else 0.0
 
-        # Gate accuracy: does predicted MFE > 0.2 match label_trade?
         lab_trade = targets['label_trade'].float().to(device)
-        pred_trade = (torch.max(pred_call, pred_put) > 0.2).float()  # log1p(0.2) ~ 0.18
+        # Gate fires when max_mfe > GATE_CENTER (matches inference logic)
+        max_pred = torch.max(pred_call, pred_put)
+        pred_trade = (max_pred > GATE_CENTER).float()
         true_trade = lab_trade[valid]
         gate_acc = (pred_trade == true_trade).float().mean().item()
 
-        # MFE calibration: mean predicted vs actual on gated bars
         pred_gated = pred_trade.bool()
-        max_pred_mfe = torch.max(pred_call, pred_put)
-        avg_pred_gated = max_pred_mfe[pred_gated].mean().item() if pred_gated.any() else 0.0
+        avg_pred_gated = max_pred[pred_gated].mean().item() if pred_gated.any() else 0.0
         avg_true_gated = torch.log1p(torch.clamp(best_mfe_v[pred_gated], min=0)).mean().item() if pred_gated.any() else 0.0
 
-        # Runner detection: how well does the model identify high-MFE bars?
-        is_runner = best_mfe_v > 1.0  # >100% MFE = runner
+        is_runner = best_mfe_v > 1.0
         runner_recall = 0.0
         if is_runner.any() and pred_gated.any():
             runner_recall = (pred_gated & is_runner).float().sum().item() / max(is_runner.float().sum().item(), 1)
 
-        # Mean predicted target (from risk head)
+        gate_rate = pred_gated.float().mean().item()
         avg_target = risk_out[:, 1].mean().item()
         avg_hold = risk_out[:, 2].mean().item() * _hold_hi
 
@@ -443,6 +399,7 @@ def compute_loss(
         'total': total.item(),
         'dir_acc': dir_acc,
         'gate_acc': gate_acc,
+        'gate_rate': gate_rate,
         'avg_pred_gated': avg_pred_gated,
         'avg_true_gated': avg_true_gated,
         'runner_recall': runner_recall,
@@ -469,7 +426,6 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
           train_mask_override=None, val_mask_override=None):
     t_start = time.time()
 
-    # Reproducible training (re-read env var so walk-forward can set per-fold seeds)
     seed = int(os.environ.get("TRAIN_SEED", SEED))
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -483,15 +439,11 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
     print(f"Computing MFE/MAE labels (window={MFE_WINDOW} bars)...")
     t_mfe_start = time.time()
 
-    atm_call_px = data['atm_call_prices']
-    atm_put_px = data['atm_put_prices']
-    bar_of_day = data['bar_of_day']
-    dates = data['dates']
+    mfe_call, mae_call = compute_mfe_mae(
+        data['atm_call_prices'], data['bar_of_day'], data['dates'], window=MFE_WINDOW)
+    mfe_put, mae_put = compute_mfe_mae(
+        data['atm_put_prices'], data['bar_of_day'], data['dates'], window=MFE_WINDOW)
 
-    mfe_call, mae_call = compute_mfe_mae(atm_call_px, bar_of_day, dates, window=MFE_WINDOW)
-    mfe_put, mae_put = compute_mfe_mae(atm_put_px, bar_of_day, dates, window=MFE_WINDOW)
-
-    # Stats
     valid_mfe = ~torch.isnan(mfe_call) & ~torch.isnan(mfe_put)
     n_valid = valid_mfe.sum().item()
     if n_valid > 0:
@@ -499,10 +451,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
         best_valid = best_mfe[~torch.isnan(best_mfe)]
         runners = (best_valid > 1.0).sum().item()
         print(f"MFE computed: {n_valid:,} valid bars, "
-              f"mean best MFE={best_valid.mean():.3f}, "
-              f"runners (>100%): {runners:,} ({100*runners/len(best_valid):.1f}%), "
-              f"max={best_valid.max():.1f}x, "
-              f"took {time.time()-t_mfe_start:.1f}s")
+              f"mean={best_valid.mean():.3f}, runners(>100%): {runners:,} ({100*runners/len(best_valid):.1f}%), "
+              f"max={best_valid.max():.1f}x, took {time.time()-t_mfe_start:.1f}s")
 
     labels = {
         'label_trade': data['label_trade'],
@@ -513,7 +463,6 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
         'label_target_pct': data['label_target_pct'],
         'label_max_hold': data['label_max_hold'],
         'label_confidence': data['label_confidence'],
-        # MFE/MAE labels (computed above)
         'mfe_call': mfe_call,
         'mfe_put': mfe_put,
         'mae_call': mae_call,
@@ -526,7 +475,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
     train_ds = TradeDataset(features, labels, train_mask, lookback=LOOKBACK)
     val_ds = TradeDataset(features, labels, val_mask, lookback=LOOKBACK)
 
-    print(f"Train samples: {len(train_ds):,}, Val samples: {len(val_ds):,}")
+    print(f"Train: {len(train_ds):,}, Val: {len(val_ds):,}")
+    print(f"Gate: center={GATE_CENTER}, scale={GATE_SCALE} -> trade when MFE > {(math.exp(GATE_CENTER)-1)*100:.0f}%")
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,
                               num_workers=0, drop_last=True)
@@ -536,7 +486,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TradingModel().to(device)
     param_count = sum(p.numel() for p in model.parameters())
-    print(f"Model: {param_count:,} parameters, device={device}")
+    print(f"Model: {param_count:,} params, device={device}")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
@@ -592,10 +542,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
 
         gate_acc = avg_val.get('gate_acc', 0)
         dir_acc = avg_val.get('dir_acc', 0)
-
+        gate_rate = avg_val.get('gate_rate', 0)
         runner_recall = avg_val.get('runner_recall', 0)
-        avg_pred_g = avg_val.get('avg_pred_gated', 0)
-        avg_true_g = avg_val.get('avg_true_gated', 0)
         avg_target = avg_val.get('avg_target', 0)
         avg_hold = avg_val.get('avg_hold', 0)
 
@@ -603,8 +551,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
               f"train={avg_train.get('total', 0):.4f} | "
               f"val={avg_val.get('total', 0):.4f} | "
               f"call={avg_val.get('call_mfe', 0):.4f} put={avg_val.get('put_mfe', 0):.4f} | "
-              f"gate={gate_acc:.3f} dir={dir_acc:.3f} runner={runner_recall:.3f} | "
-              f"pred/true={avg_pred_g:+.3f}/{avg_true_g:+.3f} | "
+              f"gate={gate_acc:.3f} dir={dir_acc:.3f} grate={gate_rate:.3f} runner={runner_recall:.3f} | "
               f"tgt={avg_target:.2f} hold={avg_hold:.0f} | "
               f"lr={scheduler.get_last_lr()[0]:.2e}")
 
