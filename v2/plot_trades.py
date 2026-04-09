@@ -23,19 +23,31 @@ import torch
 # Data loading
 # ---------------------------------------------------------------------------
 
+BEST_MODEL_PATH = "v2/model_best.pt"
+
+
 def load_trades(mask_key: str, model_path: str | None = None) -> tuple[list, dict, object]:
-    """Load model, run replay, return (trades, data_dict, metrics)."""
-    from v2.replay import load_best_model, load_model_from_path, replay_validation
+    """Load model, run replay, return (trades, data_dict, metrics).
+
+    Default: loads v2/model_best.pt (canonical best from experiment loop).
+    Falls back to v2/model.pt if model_best.pt doesn't exist.
+    """
+    from v2.replay import load_model_from_path, replay_validation
     from v2.core.policy import DEFAULT_POLICY
+    from pathlib import Path
 
     data = torch.load("v2/data.pt", map_location="cpu", weights_only=False)
 
     if model_path:
-        model = load_model_from_path(model_path)
-        policy = DEFAULT_POLICY
-        print(f"Loaded model from {model_path}")
+        resolved = model_path
+    elif Path(BEST_MODEL_PATH).exists():
+        resolved = BEST_MODEL_PATH
     else:
-        model, policy, manifest = load_best_model()
+        resolved = "v2/model.pt"
+
+    model = load_model_from_path(resolved)
+    policy = DEFAULT_POLICY
+    print(f"Loaded model from {resolved}")
 
     metrics, trades = replay_validation(model, data, mask_key=mask_key, policy=policy)
 
@@ -448,7 +460,7 @@ def main():
                         help="Data mask: promote_mask, shadow_mask, val_mask")
     parser.add_argument("--model", default=None,
                         help="Path to model.pt (default: load from artifact system)")
-    parser.add_argument("--output-dir", default="v2", help="Output directory")
+    parser.add_argument("--output-dir", default="v2/output", help="Output directory")
     args = parser.parse_args()
 
     mask_key = args.mask
@@ -456,6 +468,7 @@ def main():
         mask_key += "_mask"
 
     out_dir = Path(args.output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     trades, data, metrics = load_trades(mask_key, model_path=args.model)
 
