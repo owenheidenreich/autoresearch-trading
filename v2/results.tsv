@@ -38,3 +38,20 @@ exp_048	5.666667	revert	score=5.667 trades=77 wr=74.0% pdr=94.4% wd=0.005 (ident
 exp_049	5.333333	revert	score=5.333 trades=72 wr=76.4% pdr=88.9% cooldown=15 (killed buffer trades)
 exp_050	5.307692	revert	score=5.308 trades=46 wr=73.9% pdr=88.5% huber_delta=0.3 (too conservative, 26 days)
 exp_051	5.600000	revert	score=5.600 trades=57 wr=71.9% pdr=93.3% huber_delta=0.8 (close but fewer traded days)
+exp_052	5.193396	keep	WF_BASELINE score=5.193 folds=[4.78,4.98,5.06,5.79,5.36] trades=588 days=185 baselines=ALL
+exp_053	4.829049	revert	score=4.829 folds=[2.64,5.22,5.52,5.21,5.56] dropout=0.10 (fold 0 collapsed)
+exp_054	4.937374	revert	score=4.937 folds=[4.90,4.25,5.32,5.32,4.90] asym=3x (too many trades, fold1 collapsed)
+exp_055	4.653680	revert	score=4.654 folds=[5.05,5.11,5.03,5.50,2.59] d_model=96 (fold 4 collapsed)
+exp_056	5.266862	keep	score=5.267 folds=[5.14,4.98,5.06,5.79,5.36] std=0.29 wd=0.03 NEW WF BEST
+exp_057	5.217870	revert	score=5.218 folds=[4.90,4.98,5.06,5.79,5.36] wd=0.05 (fold 0 regressed vs 0.03)
+exp_058	5.304720	keep	score=5.305 folds=[4.80,5.25,5.84,5.81,4.83] std=0.45 asym=4x NEW WF BEST
+exp_059	-999.000	crash	fold 2 model_fold2.pt not saved (disk/save issue), folds 0-1 OK
+exp_059	5.309400	keep	score=5.309 folds=[4.80,5.38,6.00,5.25,5.12] hold_frac fix (training/replay aligned) NEW WF BEST
+exp_060	-1.000000	revert	GATE_FAILURE all folds too_few_trades (7-28), gate=0.55 way too aggressive
+exp_061	5.349200	keep	score=5.349 folds=[4.90,5.59,5.66,5.20,5.40] std=0.28 dir-asym calls=4x puts=6x NEW WF BEST
+exp_062	5.423000	keep	score=5.423 folds=[5.17,5.33,5.83,5.20,5.59] std=0.25 RISK_W=0.5 NEW WF BEST
+exp_063	5.343700	revert	score=5.344 folds=[4.97,5.32,5.82,5.23,5.38] RISK_W=0.7 (fold 0 regressed)
+exp_064	5.423000	revert	score=5.423 identical to exp_062 (confidence gate was no-op)
+exp_065	5.423000	revert	score=5.423 identical to exp_062 (extra time didn't help, best epoch still 1-5)
+exp_066	5.522800	keep	score=5.523 folds=[5.17,5.59,5.66,5.61,5.59] std=0.18 dir-dependent hold (puts 20 bars) NEW WF BEST
+exp_067	5.419600	revert	score=5.420 folds=[5.19,5.22,5.83,5.25,5.61] 2x sample weight (marginal regression)

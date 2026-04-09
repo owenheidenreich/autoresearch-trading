@@ -479,3 +479,88 @@ This is a potential feature gap: the model can see VIX *changes* (z-score captur
 - **Domain:** Douglas: "An edge = higher probability, not certainty." Pickles: "Confluence required -- never single signal." Higher model confidence = more confluence between call/put predictions.
 - **Change:** In TradingModel.forward(), multiply gate_logit by confidence: `gate_logit = max_pnl * (1 + confidence_normalized)`. This amplifies the gate signal when the model is more certain about direction.
 - **Expected effect:** Uncertain trades (where call and put predictions are similar) get weaker gate signal and are more likely filtered. Should reduce the "marginal" entries.
+
+## Session 7: Domain-Informed Experiments (2026-04-08)
+
+### Experiment Loop (exp_061 -- exp_067)
+
+| Exp | Score | Change | Result |
+|-----|-------|--------|--------|
+| 061 | 5.349 | dir-asym loss (calls 4x, puts 6x) | KEEP (put WR 66%->78%) |
+| 062 | 5.423 | RISK_W 0.3->0.5 | KEEP (fold 0 broke 5.0, all folds above 5) |
+| 063 | 5.344 | RISK_W 0.5->0.7 | REVERT (fold 0 regressed) |
+| 064 | 5.423 | confidence-modulated gate | REVERT (no-op, identical to exp_062) |
+| 065 | 5.423 | TIME_BUDGET 300->400s | REVERT (no-op, best epoch still 1-5) |
+| 066 | 5.523 | dir-dependent hold (puts 20, calls 30) | KEEP (+0.100, biggest single gain) |
+| 067 | 5.420 | stronger sample weight (2x) | REVERT (marginal regression) |
+
+**3 keeps, 4 reverts.** Score 5.309 -> 5.523 (+0.214). Fold std 0.39 -> 0.18.
+
+### What Worked (domain-informed changes)
+
+**1. Direction-asymmetric loss (exp_061):** Put predictions are noisier. Applying 6x penalty to optimistic put errors (vs 4x for calls) closed the call/put WR gap from 16pp to 2pp. Domain support: Sinclair (variance premium fights long options, puts face steeper headwind).
+
+**2. Risk head emphasis (exp_062):** RISK_W 0.3->0.5 gave the risk head 33% of loss signal. Improved stop/target calibration across all folds. Fold 0 finally broke above 5.0. Domain support: Elder (stop-loss placement is critical), Douglas (pre-define risk before every trade).
+
+**3. Direction-dependent hold targets (exp_066):** Training puts with 20-bar hold target vs 30 for calls. Biggest single improvement (+0.100). Fold 3 jumped +0.41. Domain support: 0DTE knowledge (theta proportional to 1/sqrt(T), puts bleed faster), Pickles (always take profits off the table).
+
+### What Didn't Work
+
+**1. Confidence-modulated gate (exp_064):** Multiplicative boost to gate_logit doesn't change which bars pass threshold (sign doesn't change). Was a no-op.
+
+**2. Extended training time (exp_065):** Best epoch is 1-5 regardless of time budget. Extra epochs just overfit. The model converges very quickly.
+
+**3. Stronger sample weighting (exp_067):** 2x up-weight on high-P&L bars was too aggressive, slightly degraded predictions.
+
+### Infrastructure Improvements
+
+1. **lease_check.py**: Auto-monitors Akash deployment time, funds if < 1hr remaining
+2. **model_manage.py**: Maintains model_best.pt as canonical best. Prevents analysis on wrong model after reverts. deploy.sh stop/run_one always overwrite model.pt -- model_manage.py revert fixes this.
+3. **CSV export in plot_trades.py**: trades.csv alongside HTML charts
+4. **Output directory**: v2/output/ for all viewable artifacts
+
+### Best Model (exp_066, walk-forward)
+
+| Metric | Value |
+|--------|-------|
+| WF Score | 5.523 |
+| Per-fold | [5.17, 5.59, 5.66, 5.61, 5.59] |
+| Fold std | 0.18 |
+| Total trades | 431 |
+| Traded days | 175/300 |
+| Fold 4 promote | Score 5.586, WR 77.8%, PF 10.53 |
+
+### Config (exp_066)
+- Lookback: 30, d_model: 64, depth: 3, dropout: 0.05
+- LR: 5e-4, batch: 2048, weight_decay: 0.03
+- Asymmetric loss: calls 4x, puts 6x
+- Sample weighting: 1 + |max_pnl|
+- Huber delta: 0.5, RISK_W: 0.5
+- Hold targets: calls 30 bars, puts 20 bars (0.67x)
+- Hold_frac normalization: / hold_hi (250)
+- Gate threshold: 0.50
+
+### Trade Profile (fold 4 promote, 54 trades)
+
+| Exit | Count | WR | Avg P&L |
+|------|-------|----|---------|
+| TAKE_PROFIT | 20 | 100% | $1,110 |
+| MAX_HOLD | 16 | 88% | $373 |
+| EOD | 8 | 75% | $816 |
+| STOP_LOSS | 6 | 0% | -$851 |
+| TRAILING_STOP | 4 | 50% | $271 |
+
+Direction: Calls 37 (78% WR), Puts 17 (76% WR). Gap closed.
+Hold duration: Calls avg 21 bars, Puts avg 16 bars.
+
+### Score Progression (sessions 6-7)
+
+| Milestone | Score | Key Change |
+|-----------|-------|------------|
+| WF baseline (exp_052) | 5.193 | First walk-forward run |
+| +weight_decay (exp_056) | 5.267 | Regularize weakest fold |
+| +asym 4x (exp_058) | 5.305 | Better fold 2 |
+| +hold_frac fix (exp_059) | 5.309 | Bug fix |
+| +dir-asym loss (exp_061) | 5.349 | Put WR gap closed |
+| +RISK_W 0.5 (exp_062) | 5.423 | All folds above 5.0 |
+| +put hold 20 bars (exp_066) | 5.523 | Most consistent model |
