@@ -46,7 +46,7 @@ BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
 LR = float(os.environ.get("TRAIN_LR", 5e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.03))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 30))
-TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 400))
+TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
@@ -299,6 +299,8 @@ def compute_loss(
     # hold_frac normalized by MAX_HOLD_BARS to match replay decoding:
     #   replay does: max_hold = max(hold_lo, int(hold_raw * hold_hi))
     #   so training target must be: label_max_hold / hold_hi
+    # Direction-dependent hold: puts get shorter target (20 bars) than calls (30 bars)
+    # because theta decay accelerates faster for puts near expiry.
     from v2.core.policy import DEFAULT_POLICY
     _hold_hi = DEFAULT_POLICY.max_hold_range[1]  # 250
     risk_out = outputs['risk'][valid]
@@ -306,6 +308,9 @@ def compute_loss(
         t_stop = targets['label_stop_pct'].float().to(device)[valid]
         t_target = targets['label_target_pct'].float().to(device)[valid]
         t_hold = targets['label_max_hold'].float().to(device)[valid] / _hold_hi
+        # Shorten hold target for put bars (direction=1)
+        is_put = (lab_direction[valid] == 1).float()
+        t_hold = t_hold * (1.0 - 0.33 * is_put)  # puts: 30 * 0.67 = ~20 bars
         risk_target = torch.stack([t_stop, t_target, t_hold], dim=-1)
     else:
         risk_target = torch.tensor([0.30, 0.50, 30.0 / _hold_hi], device=device)
