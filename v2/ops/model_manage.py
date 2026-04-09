@@ -1,15 +1,16 @@
 """Model management for ART² experiment loop.
 
 Maintains v2/model_best.pt as the canonical best model.
-After KEEP: copies model.pt -> model_best.pt
-After REVERT: copies model_best.pt -> model.pt (restores best)
 
-Analysis tools (plot_trades, replay, analyze_losses) should always
-use model_best.pt to ensure they evaluate the correct model.
+deploy.sh run_one always downloads model.pt after training, overwriting
+whatever was there -- even if the experiment was worse. This script
+ensures model.pt always reflects the best kept model.
 
 Usage:
-    python v2/ops/model_manage.py keep     # after a keep decision
-    python v2/ops/model_manage.py revert   # after a revert decision
+    python v2/ops/model_manage.py keep     # model.pt -> model_best.pt, then both match
+    python v2/ops/model_manage.py revert   # model_best.pt -> model.pt, undoes bad overwrite
+
+Call IMMEDIATELY after reading the score, BEFORE any analysis.
 """
 from __future__ import annotations
 
@@ -22,22 +23,22 @@ MODEL_BEST = Path("v2/model_best.pt")
 
 
 def keep():
-    """After KEEP: current model.pt becomes the new best."""
+    """After KEEP: current model.pt (just downloaded) becomes the new best."""
     if not MODEL_PT.exists():
         print(f"ERROR: {MODEL_PT} not found")
         sys.exit(1)
     shutil.copy2(MODEL_PT, MODEL_BEST)
     size_kb = MODEL_BEST.stat().st_size / 1024
-    print(f"  model_best.pt updated ({size_kb:.0f}K)")
+    print(f"  model_best.pt updated from model.pt ({size_kb:.0f}K)")
 
 
 def revert():
-    """After REVERT: restore model.pt from best."""
+    """After REVERT: restore model.pt from best (undo run_one's overwrite)."""
     if not MODEL_BEST.exists():
         print(f"WARNING: {MODEL_BEST} not found, model.pt unchanged")
         return
     shutil.copy2(MODEL_BEST, MODEL_PT)
-    print(f"  model.pt restored from model_best.pt")
+    print(f"  model.pt restored from model_best.pt (reverted bad overwrite)")
 
 
 def main():
