@@ -263,6 +263,38 @@ def format_session_status(state: SessionState) -> str:
     return "\n".join(lines)
 
 
+def _next_experiment_number(state: SessionState) -> int:
+    """Return the next globally-unique experiment number.
+
+    Reads existing results.tsv and artifact dirs to find the highest
+    experiment number ever used, then returns max + 1. This prevents
+    ID collisions across sessions.
+    """
+    import re
+    max_num = state.experiment_count  # session-local fallback
+
+    # Scan results.tsv
+    if os.path.exists(RESULTS_TSV):
+        try:
+            with open(RESULTS_TSV) as f:
+                for line in f:
+                    m = re.match(r'exp_(\d+)', line.strip())
+                    if m:
+                        max_num = max(max_num, int(m.group(1)))
+        except OSError:
+            pass
+
+    # Scan artifact dirs
+    artifacts_dir = os.path.join("v2", "artifacts")
+    if os.path.exists(artifacts_dir):
+        for name in os.listdir(artifacts_dir):
+            m = re.match(r'exp_(\d+)', name)
+            if m:
+                max_num = max(max_num, int(m.group(1)))
+
+    return max_num + 1
+
+
 # ===================================================================
 # Autonomous loop runner (__main__)
 # ===================================================================
@@ -342,8 +374,8 @@ def run_loop():
             state.save()
             break
 
-        # Generate experiment ID
-        exp_num = state.experiment_count + 1
+        # Generate experiment ID (globally unique across sessions)
+        exp_num = _next_experiment_number(state)
         experiment_id = f"exp_{exp_num:03d}"
 
         # Run experiment
