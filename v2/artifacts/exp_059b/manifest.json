@@ -1,0 +1,35 @@
+{
+  "checkpoint_epoch": 1,
+  "checkpoint_val_loss": 0.19175934232771397,
+  "dataset_fingerprint": "32d1d7cf0ff69192",
+  "evaluator_fingerprint": "4124d697aa426658",
+  "experiment_id": "exp_059b",
+  "extra": {
+    "min_fold_score": -999.0,
+    "n_folds": 5,
+    "per_fold_scores": [
+      4.8,
+      5.375,
+      -999.0,
+      5.25,
+      5.121951
+    ],
+    "std_fold_score": 401.6547407133563,
+    "training_seconds": 1686.4460082054138,
+    "walk_forward": true
+  },
+  "git_sha": "unknown",
+  "hyperparams": {
+    "batch_size": 2048,
+    "d_model": 64,
+    "depth": 3,
+    "dropout": 0.05,
+    "lookback": 30,
+    "lr": 0.0005,
+    "n_heads": 4
+  },
+  "model_fingerprint": "66b4c243469fe3e5",
+  "policy_fingerprint": "520a0d807ec2e28b",
+  "score": -195.6906098,
+  "timestamp": "2026-04-08T09:29:22"
+}
