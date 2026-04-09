@@ -50,7 +50,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 
 # Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
-RISK_W = float(os.environ.get("WEIGHT_RISK", 0.7))
+RISK_W = float(os.environ.get("WEIGHT_RISK", 0.5))
 
 # For replay compatibility
 NUM_STRIKE_CLASSES = 13
@@ -184,10 +184,12 @@ class TradingModel(nn.Module):
         call_v = call_pnl.squeeze(-1)  # (B,)
         put_v = put_pnl.squeeze(-1)    # (B,)
 
-        # Gate: raw max predicted P&L as logit (no scaling)
-        # sigmoid(0) = 0.5, so gate_threshold=0.5 means "trade when best P&L > 0"
+        # Gate: max predicted P&L, modulated by direction confidence.
+        # When model is certain about direction (large |call-put|), amplify gate.
+        # When uncertain (similar predictions), dampen gate to filter marginal entries.
         max_pnl = torch.max(call_v, put_v)
-        gate_logit = max_pnl
+        direction_margin = torch.abs(call_v - put_v)
+        gate_logit = max_pnl * (1.0 + 0.5 * direction_margin)
 
         # Direction: [call_logit, put_logit] from P&L predictions
         direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
