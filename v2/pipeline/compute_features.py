@@ -89,6 +89,102 @@ def _bs_greeks(S: float, K: float, T: float, r: float, sigma: float):
 
 
 # ---------------------------------------------------------------------------
+# Vectorized Black-Scholes (numpy arrays, Newton-Raphson IV solver)
+# ---------------------------------------------------------------------------
+
+_NORM_CDF = _norm_dist.cdf
+_NORM_PDF = _norm_dist.pdf
+
+
+def _bs_vec_d1(S, K, T, r, sigma):
+    return (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+
+
+def _bs_vec_price(S, K, T, r, sigma, is_call):
+    """Vectorized BS price. All inputs are numpy arrays (or broadcastable)."""
+    sqrt_T = np.sqrt(T)
+    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * sqrt_T)
+    d2 = d1 - sigma * sqrt_T
+    call_price = S * _NORM_CDF(d1) - K * np.exp(-r * T) * _NORM_CDF(d2)
+    put_price = K * np.exp(-r * T) * _NORM_CDF(-d2) - S * _NORM_CDF(-d1)
+    return np.where(is_call, call_price, put_price)
+
+
+def _bs_vec_vega(S, K, T, r, sigma):
+    """Vectorized BS vega (d(price)/d(sigma))."""
+    sqrt_T = np.sqrt(T)
+    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * sqrt_T)
+    return S * _NORM_PDF(d1) * sqrt_T
+
+
+def bs_iv_vec(prices, S, K, T, r, is_call, n_iter=12, tol=1e-6):
+    """Vectorized implied vol via Newton-Raphson.
+
+    All inputs are 1-D numpy arrays of the same length.
+    Returns array of IVs (NaN where solver fails).
+    """
+    n = len(prices)
+    iv = np.full(n, 0.3, dtype=np.float64)  # initial guess
+    result = np.full(n, np.nan, dtype=np.float64)
+
+    # Validity mask
+    intrinsic = np.where(is_call, np.maximum(S - K, 0.0), np.maximum(K - S, 0.0))
+    valid = (T > 1e-10) & (prices > 0) & (S > 0) & (K > 0) & (prices >= intrinsic - 0.01)
+    active = valid.copy()
+
+    for _ in range(n_iter):
+        if not active.any():
+            break
+        a = active
+        model_price = _bs_vec_price(S[a], K[a], T[a], r, iv[a], is_call[a])
+        vega = _bs_vec_vega(S[a], K[a], T[a], r, iv[a])
+        diff = model_price - prices[a]
+        # Avoid division by zero vega
+        safe_vega = np.where(vega > 1e-12, vega, 1e-12)
+        step = diff / safe_vega
+        iv[a] = np.clip(iv[a] - step, 0.01, 5.0)
+        converged = np.abs(diff) < tol
+        # Mark converged ones as done
+        active_indices = np.where(active)[0]
+        active[active_indices[converged]] = False
+
+    result[valid] = iv[valid]
+    # Mark non-converged as NaN
+    still_active = valid & active
+    result[still_active] = np.nan
+    return result
+
+
+def bs_greeks_vec(S, K, T, r, sigma, is_call):
+    """Vectorized Greeks. Returns (delta, gamma, theta_per_bar, vega) arrays."""
+    n = len(S)
+    delta = np.full(n, np.nan)
+    gamma = np.full(n, np.nan)
+    theta = np.full(n, np.nan)
+    vega = np.full(n, np.nan)
+
+    ok = (T > 1e-10) & (sigma > 0) & (S > 0) & np.isfinite(sigma)
+    if not ok.any():
+        return delta, gamma, theta, vega
+
+    s, k, t, sig = S[ok], K[ok], T[ok], sigma[ok]
+    sqrt_t = np.sqrt(t)
+    d1 = (np.log(s / k) + (r + 0.5 * sig**2) * t) / (sig * sqrt_t)
+    d2 = d1 - sig * sqrt_t
+    npdf_d1 = _NORM_PDF(d1)
+
+    call_delta = _NORM_CDF(d1)
+    delta[ok] = np.where(is_call[ok], call_delta, call_delta - 1.0)
+    gamma[ok] = npdf_d1 / (s * sig * sqrt_t)
+    theta_annual = (-(s * npdf_d1 * sig) / (2.0 * sqrt_t)
+                    - r * k * np.exp(-r * t) * _NORM_CDF(d2))
+    theta[ok] = theta_annual / (252.0 * BARS_PER_DAY)
+    vega[ok] = s * npdf_d1 * sqrt_t / 100.0
+
+    return delta, gamma, theta, vega
+
+
+# ---------------------------------------------------------------------------
 # Helper: find nearest ATM strike in wide grid bar
 # ---------------------------------------------------------------------------
 

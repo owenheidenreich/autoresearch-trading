@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import functools
 import math
+import multiprocessing
 import os
 import pickle
 import subprocess
@@ -47,6 +48,8 @@ from v2.pipeline.compute_features import (
     PRICE_FEATURE_NAMES,
     _bs_greeks,
     _bs_iv,
+    bs_greeks_vec,
+    bs_iv_vec,
     compute_flow_features,
     compute_option_features,
     compute_price_features,
@@ -188,6 +191,8 @@ def _fill_chain_matrices(
     n_contracts = len(contracts)
     n_bars = len(bar_contracts_list)
     contract_to_idx = {c: i for i, c in enumerate(contracts)}
+    contract_strikes = np.asarray([c[0] for c in contracts], dtype=np.float64)
+    contract_is_call = np.asarray([c[1] == "C" for c in contracts], dtype=bool)
 
     mats = {
         "mid": np.full((n_contracts, n_bars), np.nan, dtype=np.float32),
@@ -208,8 +213,10 @@ def _fill_chain_matrices(
         spot = float(spot_series[local_i])
         mtc = max(BARS_PER_DAY - local_i, 1)
         year_frac = mtc / (252.0 * BARS_PER_DAY)
-        seen = 0
-        labeled = 0
+
+        # Phase 1: populate price/volume/quality/spread (still per-contract,
+        # but these are cheap field lookups -- not the bottleneck)
+        seen_idxs: list[int] = []
         for contract, fields in bar_contracts.items():
             idx = contract_to_idx.get(contract)
             if idx is None:
@@ -230,21 +237,43 @@ def _fill_chain_matrices(
             mats["volume"][idx, local_i] = volume
             mats["transactions"][idx, local_i] = transactions
             mats["spread"][idx, local_i] = spread
-            seen += 1
+            seen_idxs.append(idx)
 
-            strike, right = contract
-            is_call = right == "C"
-            iv = _bs_iv(close_px, spot, strike, year_frac, 0.05, is_call=is_call) if np.isfinite(close_px) and close_px > 0 else np.nan
-            mats["iv"][idx, local_i] = iv if np.isfinite(iv) else np.nan
-            if np.isfinite(iv):
-                delta, gamma, theta, _ = _bs_greeks(spot, strike, year_frac, 0.05, iv)
-                if np.isfinite(delta):
-                    mats["delta"][idx, local_i] = delta if is_call else (delta - 1.0)
-                    mats["gamma"][idx, local_i] = gamma
-                    mats["theta"][idx, local_i] = theta
-                    labeled += 1
+        # Phase 2: vectorized IV + Greeks for all seen contracts at this bar
+        if seen_idxs:
+            idxs = np.asarray(seen_idxs, dtype=np.intp)
+            prices = mats["mid"][idxs, local_i].astype(np.float64)
+            strikes = contract_strikes[idxs]
+            is_call = contract_is_call[idxs]
+            priceable = np.isfinite(prices) & (prices > 0)
 
-        bar_quality.append({"observed_contracts": seen, "greeked_contracts": labeled})
+            if priceable.any():
+                p_idx = idxs[priceable]
+                p_prices = prices[priceable]
+                p_strikes = strikes[priceable]
+                p_is_call = is_call[priceable]
+                p_spot = np.full(len(p_prices), spot, dtype=np.float64)
+                p_T = np.full(len(p_prices), year_frac, dtype=np.float64)
+
+                iv_arr = bs_iv_vec(p_prices, p_spot, p_strikes, p_T, 0.05, p_is_call)
+                mats["iv"][p_idx, local_i] = iv_arr.astype(np.float32)
+
+                iv_ok = np.isfinite(iv_arr)
+                if iv_ok.any():
+                    g_idx = p_idx[iv_ok]
+                    g_spot = p_spot[iv_ok]
+                    g_strikes = p_strikes[iv_ok]
+                    g_T = p_T[iv_ok]
+                    g_iv = iv_arr[iv_ok]
+                    g_is_call = p_is_call[iv_ok]
+                    delta, gamma, theta, _ = bs_greeks_vec(g_spot, g_strikes, g_T, 0.05, g_iv, g_is_call)
+                    ok = np.isfinite(delta)
+                    mats["delta"][g_idx[ok], local_i] = delta[ok].astype(np.float32)
+                    mats["gamma"][g_idx[ok], local_i] = gamma[ok].astype(np.float32)
+                    mats["theta"][g_idx[ok], local_i] = theta[ok].astype(np.float32)
+
+        labeled = int(np.isfinite(mats["iv"][:, local_i]).sum()) if seen_idxs else 0
+        bar_quality.append({"observed_contracts": len(seen_idxs), "greeked_contracts": labeled})
     return mats, bar_quality
 
 
@@ -428,6 +457,138 @@ def _label_day_sidecar(
     }
 
 
+def _process_one_day(args: dict) -> dict:
+    """Worker: process a single day's chain data into a sidecar + features.
+
+    Runs in a child process.  All inputs are passed explicitly so that
+    nothing depends on mutable parent-process state.
+    """
+    day = args["day"]
+    global_indices = args["global_indices"]
+    day_spot = args["day_spot"]
+    day_X_price = args["day_X_price"]
+    day_timestamps = args["day_timestamps"]
+    sd = args["sidecar_dir"]
+
+    n_bars_day = len(global_indices)
+    n_opt = len(OPTION_FEATURE_NAMES)
+    n_flow = len(FLOW_FEATURE_NAMES)
+    X_opt_day = np.full((n_bars_day, n_opt), np.nan, dtype=np.float64)
+    X_flow_day = np.zeros((n_bars_day, n_flow), dtype=np.float64)
+
+    cache_path = os.path.join(FULL_CHAIN_CACHE_DIR, f"{day}.pkl")
+    expiry = day.replace("-", "")
+    day_ts_ms = np.asarray(day_timestamps, dtype=np.int64)
+
+    if os.path.exists(cache_path):
+        full_day = pickle.load(open(cache_path, "rb"))
+        raw_day_bars = full_day.get("bars", {})
+        raw_bars = [_chain_bar_for_timestamp(raw_day_bars, int(ts)) for ts in day_ts_ms]
+        contracts = sorted(full_day.get("contracts", []))
+    else:
+        raw_bars = [{} for _ in range(n_bars_day)]
+        contracts = []
+
+    if contracts:
+        chain_mats, _ = _fill_chain_matrices(contracts, raw_bars, day_spot)
+        chain_mats["contract_strike"] = np.asarray([c[0] for c in contracts], dtype=np.float32)
+        chain_mats["contract_right"] = np.asarray([1 if c[1] == "P" else 0 for c in contracts], dtype=np.int8)
+    else:
+        chain_mats = {k: np.zeros((0, n_bars_day), dtype=np.float32) for k in
+                      ("mid", "bid", "ask", "quality", "iv", "delta", "gamma",
+                       "theta", "volume", "transactions", "spread")}
+        chain_mats["contract_strike"] = np.zeros(0, dtype=np.float32)
+        chain_mats["contract_right"] = np.zeros(0, dtype=np.int8)
+
+    atm_strike_open = round(float(day_spot[0]) / 5.0) * 5.0
+    iv_history: list[float] = []
+    for local_i in range(n_bars_day):
+        mtc = max(BARS_PER_DAY - local_i, 1)
+        wide_bar = to_wide_bar(raw_bars[local_i])
+        opt_feats = compute_option_features(
+            wide_bar, float(day_spot[local_i]), atm_strike_open, mtc,
+            iv_history=iv_history[-390 * 60:] if iv_history else None,
+        )
+        for j, name in enumerate(OPTION_FEATURE_NAMES):
+            if name in opt_feats:
+                X_opt_day[local_i, j] = opt_feats[name]
+        flow_feats = compute_flow_features(wide_bar, float(day_spot[local_i]))
+        for j, name in enumerate(FLOW_FEATURE_NAMES):
+            if name in flow_feats:
+                X_flow_day[local_i, j] = flow_feats[name]
+        atm_iv_val = opt_feats.get("atm_iv", np.nan)
+        if np.isfinite(atm_iv_val):
+            iv_history.append(atm_iv_val)
+
+    vrp_idx = OPTION_FEATURE_NAMES.index("vrp")
+    rv_idx = PRICE_FEATURE_NAMES.index("realized_vol")
+    iv_idx = OPTION_FEATURE_NAMES.index("atm_iv")
+    for local_i in range(n_bars_day):
+        atm_iv_val = X_opt_day[local_i, iv_idx]
+        rv_val = day_X_price[local_i, rv_idx]
+        if np.isfinite(atm_iv_val) and rv_val > 0:
+            X_opt_day[local_i, vrp_idx] = atm_iv_val ** 2 - rv_val ** 2
+
+    X_opt_day = np.nan_to_num(X_opt_day, nan=0.0)
+
+    X_day_context = np.concatenate(
+        [day_X_price, X_opt_day, X_flow_day], axis=1,
+    ).astype(np.float32)
+
+    sc = _label_day_sidecar(
+        day=day, expiry=expiry, global_indices=global_indices,
+        timestamps=day_ts_ms, spot_series=day_spot,
+        feature_context=X_day_context, raw_full_bar_list=raw_bars,
+        chain_mats=chain_mats,
+    )
+
+    path = sidecar_path(sd, day)
+    torch.save(sc, path)
+
+    max_c = 0
+    if len(sc["bar_ptrs"]) > 1:
+        day_counts = np.diff(sc["bar_ptrs"])
+        if len(day_counts):
+            max_c = int(day_counts.max())
+
+    signal_bars = 0
+    trade_bars = 0
+    bar_info: list[dict] = []
+    for local_i in range(n_bars_day):
+        gi = global_indices[local_i]
+        info: dict = {
+            "gi": gi,
+            "best_pnl": float(sc["bar_best_pnl"][local_i]),
+            "label_trade": bool(sc["bar_label_trade"][local_i]),
+            "labelable": bool(sc["bar_labelable"][local_i]),
+            "best_strike": 0.0,
+            "best_right": -1,
+            "is_trade": False,
+        }
+        if sc["bar_best_contract_idx"][local_i] >= 0:
+            start = int(sc["bar_ptrs"][local_i])
+            row_local = int(sc["bar_best_contract_idx"][local_i])
+            cidx = int(sc["row_contract_idx"][start + row_local])
+            info["best_strike"] = float(sc["contract_strike"][cidx])
+            info["best_right"] = int(sc["contract_right"][cidx])
+            info["is_trade"] = True
+            trade_bars += 1
+        signal_bars += 1
+        bar_info.append(info)
+
+    return {
+        "day": day,
+        "global_indices": global_indices,
+        "X_opt_day": X_opt_day,
+        "X_flow_day": X_flow_day,
+        "sidecar_path": path,
+        "max_contracts": max_c,
+        "signal_bars": signal_bars,
+        "trade_bars": trade_bars,
+        "bar_info": bar_info,
+    }
+
+
 def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR) -> None:
     global print
     _orig_print = print
@@ -508,121 +669,45 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
     label_trade = np.zeros(N, dtype=bool)
     label_trade_valid = np.zeros(N, dtype=bool)
 
-    for day_idx, day in enumerate(unique_dates):
-        global_indices = day_to_bars[day]
-        n_bars_day = len(global_indices)
-        cache_path = os.path.join(FULL_CHAIN_CACHE_DIR, f"{day}.pkl")
-        expiry = day.replace("-", "")
-        day_ts_ms = np.asarray(spx_df["timestamp"][global_indices], dtype=np.int64)
+    # Build per-day work items
+    work_items: list[dict] = []
+    for day in unique_dates:
+        gi = day_to_bars[day]
+        work_items.append({
+            "day": day,
+            "global_indices": gi,
+            "day_spot": spot_prices[gi],
+            "day_X_price": X_price[gi],
+            "day_timestamps": np.asarray(spx_df["timestamp"][gi], dtype=np.int64),
+            "sidecar_dir": sidecar_dir,
+        })
 
-        if os.path.exists(cache_path):
-            full_day = pickle.load(open(cache_path, "rb"))
-            raw_day_bars = full_day.get("bars", {})
-            raw_bars = [_chain_bar_for_timestamp(raw_day_bars, int(ts)) for ts in day_ts_ms]
-            aligned_ts = day_ts_ms
-            contracts = sorted(full_day.get("contracts", []))
-        else:
-            raw_bars = [{} for _ in range(n_bars_day)]
-            aligned_ts = day_ts_ms
-            contracts = []
+    n_workers = min(max(1, os.cpu_count() or 1), len(work_items))
+    print(f"  Processing {len(work_items)} days with {n_workers} workers...")
 
-        day_spot = spot_prices[global_indices]
-        if contracts:
-            chain_mats, _ = _fill_chain_matrices(contracts, raw_bars, day_spot)
-            chain_mats["contract_strike"] = np.asarray([c[0] for c in contracts], dtype=np.float32)
-            chain_mats["contract_right"] = np.asarray([1 if c[1] == "P" else 0 for c in contracts], dtype=np.int8)
-        else:
-            chain_mats = {
-                "mid": np.zeros((0, n_bars_day), dtype=np.float32),
-                "bid": np.zeros((0, n_bars_day), dtype=np.float32),
-                "ask": np.zeros((0, n_bars_day), dtype=np.float32),
-                "quality": np.zeros((0, n_bars_day), dtype=np.int8),
-                "iv": np.zeros((0, n_bars_day), dtype=np.float32),
-                "delta": np.zeros((0, n_bars_day), dtype=np.float32),
-                "gamma": np.zeros((0, n_bars_day), dtype=np.float32),
-                "theta": np.zeros((0, n_bars_day), dtype=np.float32),
-                "volume": np.zeros((0, n_bars_day), dtype=np.float32),
-                "transactions": np.zeros((0, n_bars_day), dtype=np.float32),
-                "spread": np.zeros((0, n_bars_day), dtype=np.float32),
-                "contract_strike": np.zeros(0, dtype=np.float32),
-                "contract_right": np.zeros(0, dtype=np.int8),
-            }
-
-        atm_strike_open = round(float(spot_prices[global_indices[0]]) / 5.0) * 5.0 if global_indices else 0.0
-        iv_history: list[float] = []
-        for local_i in range(n_bars_day):
-            gi = global_indices[local_i]
-            mtc = max(BARS_PER_DAY - local_i, 1)
-            wide_bar = to_wide_bar(raw_bars[local_i])
-            opt_feats = compute_option_features(
-                wide_bar,
-                float(spot_prices[gi]),
-                atm_strike_open,
-                mtc,
-                iv_history=iv_history[-390 * 60:] if iv_history else None,
-            )
-            for j, name in enumerate(OPTION_FEATURE_NAMES):
-                if name in opt_feats:
-                    X_opt[gi, j] = opt_feats[name]
-            flow_feats = compute_flow_features(wide_bar, float(spot_prices[gi]))
-            for j, name in enumerate(FLOW_FEATURE_NAMES):
-                if name in flow_feats:
-                    X_flow[gi, j] = flow_feats[name]
-            atm_iv_val = opt_feats.get("atm_iv", np.nan)
-            if np.isfinite(atm_iv_val):
-                iv_history.append(atm_iv_val)
-
-        vrp_idx = OPTION_FEATURE_NAMES.index("vrp")
-        rv_idx = PRICE_FEATURE_NAMES.index("realized_vol")
-        iv_idx = OPTION_FEATURE_NAMES.index("atm_iv")
-        for gi in global_indices:
-            atm_iv_val = X_opt[gi, iv_idx]
-            rv_val = X_price[gi, rv_idx]
-            if np.isfinite(atm_iv_val) and rv_val > 0:
-                X_opt[gi, vrp_idx] = atm_iv_val ** 2 - rv_val ** 2
-
-        X_opt[global_indices] = np.nan_to_num(X_opt[global_indices], nan=0.0)
-
-        X_day_context = np.concatenate(
-            [X_price[global_indices], X_opt[global_indices], X_flow[global_indices]],
-            axis=1,
-        ).astype(np.float32)
-        sidecar = _label_day_sidecar(
-            day=day,
-            expiry=expiry,
-            global_indices=global_indices,
-            timestamps=aligned_ts,
-            spot_series=spot_prices[global_indices],
-            feature_context=X_day_context,
-            raw_full_bar_list=raw_bars,
-            chain_mats=chain_mats,
-        )
-
-        path = sidecar_path(sidecar_dir, day)
-        torch.save(sidecar, path)
-        sidecar_paths.append(path)
-        if len(sidecar["bar_ptrs"]) > 1:
-            day_counts = np.diff(sidecar["bar_ptrs"])
-            if len(day_counts):
-                max_contracts_per_bar = max(max_contracts_per_bar, int(day_counts.max()))
-
-        for local_i, gi in enumerate(global_indices):
-            if local_i >= len(sidecar["bar_best_pnl"]):
-                continue
-            best_contract_pnl[gi] = sidecar["bar_best_pnl"][local_i]
-            label_trade[gi] = bool(sidecar["bar_label_trade"][local_i])
-            label_trade_valid[gi] = bool(sidecar["bar_labelable"][local_i])
-            if sidecar["bar_best_contract_idx"][local_i] >= 0:
-                start = int(sidecar["bar_ptrs"][local_i])
-                row_local = int(sidecar["bar_best_contract_idx"][local_i])
-                contract_idx = int(sidecar["row_contract_idx"][start + row_local])
-                best_contract_strike[gi] = float(sidecar["contract_strike"][contract_idx])
-                best_contract_right[gi] = int(sidecar["contract_right"][contract_idx])
-                total_trade_bars += 1
-            total_signal_bars += 1
-
-        if (day_idx + 1) % 100 == 0:
-            print(f"  {day_idx + 1}/{len(unique_dates)} days processed")
+    done = 0
+    # Use fork context to avoid re-importing heavy modules in each worker
+    ctx = multiprocessing.get_context("fork")
+    with ctx.Pool(n_workers) as pool:
+        for result in pool.imap_unordered(_process_one_day, work_items, chunksize=4):
+            gi = result["global_indices"]
+            X_opt[gi] = result["X_opt_day"]
+            X_flow[gi] = result["X_flow_day"]
+            sidecar_paths.append(result["sidecar_path"])
+            max_contracts_per_bar = max(max_contracts_per_bar, result["max_contracts"])
+            total_signal_bars += result["signal_bars"]
+            total_trade_bars += result["trade_bars"]
+            for info in result["bar_info"]:
+                g = info["gi"]
+                best_contract_pnl[g] = info["best_pnl"]
+                label_trade[g] = info["label_trade"]
+                label_trade_valid[g] = info["labelable"]
+                if info["is_trade"]:
+                    best_contract_strike[g] = info["best_strike"]
+                    best_contract_right[g] = info["best_right"]
+            done += 1
+            if done % 100 == 0:
+                print(f"  {done}/{len(unique_dates)} days processed")
 
     X_combined = np.concatenate([X_price, X_opt, X_flow], axis=1).astype(np.float32)
     assert X_combined.shape[1] == NUM_FEATURES, f"expected {NUM_FEATURES}, got {X_combined.shape[1]}"
