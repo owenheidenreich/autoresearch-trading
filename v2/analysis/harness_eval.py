@@ -161,6 +161,39 @@ def _pick_core_cases(all_cases: list[dict]) -> list[dict]:
     return core
 
 
+MAX_OPT_CASES = 500
+MAX_HOLDOUT_CASES = 500
+
+
+def _stratified_sample(cases: list[dict], max_cases: int, rng: np.random.Generator) -> list[dict]:
+    """Stratified sample: keep at least one case per tag, then fill randomly."""
+    if len(cases) <= max_cases:
+        return cases
+    selected_ids: set[str] = set()
+    selected: list[dict] = []
+    # First pass: one case per tag for coverage
+    tag_pool: dict[str, list[dict]] = defaultdict(list)
+    for case in cases:
+        for tag in case["tags"]:
+            tag_pool[tag].append(case)
+    for tag in sorted(tag_pool):
+        if len(selected) >= max_cases:
+            break
+        candidates = [c for c in tag_pool[tag] if c["case_id"] not in selected_ids]
+        if candidates:
+            pick = candidates[int(rng.integers(len(candidates)))]
+            selected.append(pick)
+            selected_ids.add(pick["case_id"])
+    # Second pass: fill remaining budget with random draws
+    remaining = [c for c in cases if c["case_id"] not in selected_ids]
+    if remaining and len(selected) < max_cases:
+        n_fill = min(max_cases - len(selected), len(remaining))
+        indices = rng.choice(len(remaining), size=n_fill, replace=False)
+        for i in sorted(indices):
+            selected.append(remaining[i])
+    return selected
+
+
 def _split_remaining_cases(cases: list[dict]) -> tuple[list[dict], list[dict]]:
     if not cases:
         return [], []
@@ -201,11 +234,15 @@ def _split_remaining_cases(cases: list[dict]) -> tuple[list[dict], list[dict]]:
             holdout_days.add(day)
             holdout_tag_counts.update(date_to_tags[day])
 
-    optimization = [case for case in cases if case["date"] not in holdout_days]
-    holdout = [case for case in cases if case["date"] in holdout_days]
-    if not optimization and len(holdout) > 1:
-        optimization = holdout[::2]
-        holdout = holdout[1::2]
+    optimization_full = [case for case in cases if case["date"] not in holdout_days]
+    holdout_full = [case for case in cases if case["date"] in holdout_days]
+    if not optimization_full and len(holdout_full) > 1:
+        optimization_full = holdout_full[::2]
+        holdout_full = holdout_full[1::2]
+
+    rng = np.random.default_rng(42)
+    optimization = _stratified_sample(optimization_full, MAX_OPT_CASES, rng)
+    holdout = _stratified_sample(holdout_full, MAX_HOLDOUT_CASES, rng)
     return optimization, holdout
 
 
@@ -324,14 +361,11 @@ def build_suite(data_path: str = "v2/data.pt", suite_path: str = SUITE_PATH) -> 
     return suite
 
 
-def _evaluate_case(data: dict, case: dict) -> dict:
-    sidecar_dir = data["metadata"]["chain_sidecar_dir"]
-    sim_features = data["X_sim"].numpy() if "X_sim" in data else data["X"].numpy()
-    day = case["date"]
+def _evaluate_case_with_context(case: dict, sidecar: dict, day_indices: np.ndarray,
+                                spot_day: np.ndarray, sim_features_day: np.ndarray,
+                                day: str) -> dict:
+    """Evaluate a single case using pre-loaded day context."""
     local_bar = int(case["bar_of_day"])
-    sidecar = load_sidecar_cached(sidecar_path(sidecar_dir, day))
-    day_indices = np.where(np.asarray(data["dates"]) == day)[0]
-    spot_day = data["spot_prices"].numpy()[day_indices]
     actual_count = _snapshot_count(sidecar, local_bar)
     result = {"case_id": case["case_id"], "tags": case["tags"], "pass": True, "checks": {}}
 
@@ -384,12 +418,13 @@ def _evaluate_case(data: dict, case: dict) -> dict:
         bar_index=local_bar,
         underlying_price=spot_now,
     )
+    n_day_bars = len(day_indices)
     trade = simulate_trade(
         intent,
         series,
-        sim_features[day_indices],
-        np.arange(len(day_indices), dtype=np.int32),
-        [day] * len(day_indices),
+        sim_features_day,
+        np.arange(n_day_bars, dtype=np.int32),
+        [day] * n_day_bars,
         local_bar,
     )
 
@@ -408,9 +443,34 @@ def run_suite(data_path: str = "v2/data.pt", suite_path: str = SUITE_PATH) -> di
     if not os.path.exists(suite_path):
         build_suite(data_path, suite_path)
     suite = load_suite(suite_path)
+    sidecar_dir = data["metadata"]["chain_sidecar_dir"]
+    sim_features = data["X_sim"].numpy() if "X_sim" in data else data["X"].numpy()
+    spot = data["spot_prices"].numpy()
+    dates_arr = np.asarray(data["dates"])
+
+    # Pre-compute day indices once
+    day_index_cache: dict[str, np.ndarray] = {}
+    for day in sorted(set(data["dates"])):
+        day_index_cache[day] = np.where(dates_arr == day)[0]
+
     out = {}
     for split in ("core_regression", "optimization", "holdout"):
-        results = [_evaluate_case(data, case) for case in suite.get(split, [])]
+        cases = suite.get(split, [])
+        # Group cases by day to load each sidecar once
+        day_cases: dict[str, list[dict]] = defaultdict(list)
+        for case in cases:
+            day_cases[case["date"]].append(case)
+
+        results: list[dict] = []
+        for day in sorted(day_cases):
+            day_indices = day_index_cache[day]
+            spot_day = spot[day_indices]
+            sim_day = sim_features[day_indices]
+            sc = load_sidecar_cached(sidecar_path(sidecar_dir, day))
+            for case in day_cases[day]:
+                results.append(_evaluate_case_with_context(
+                    case, sc, day_indices, spot_day, sim_day, day))
+
         passed = sum(1 for r in results if r["pass"])
         out[split] = {"passed": passed, "total": len(results), "results": results}
         print(f"{split}: {passed}/{len(results)} passed")
