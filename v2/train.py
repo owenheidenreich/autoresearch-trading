@@ -95,10 +95,11 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d // 2, 1),
         )
-        # Learned side bias: directly adjusts contract scores by call/put side.
-        # Side CE gradient flows straight to this parameter (1-2 epoch convergence)
-        # instead of routing through the full contract_proj → score_head MLP.
-        self.side_bias = nn.Parameter(torch.zeros(1))
+        # Context-dependent side head: predicts call/put preference per bar.
+        # A global bias can't work because oracle side varies bar-to-bar (~50/50),
+        # so gradients cancel. This head reads the context embedding to predict
+        # which side is better on each specific bar.
+        self.side_head = nn.Linear(d, 1)
 
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         B, T, _ = x.shape
@@ -113,9 +114,10 @@ class TradingModel(nn.Module):
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
         base_scores = self.score_head(combined).squeeze(-1)
-        # Side offset: decoupled from PnL regression so they don't fight
+        # Context-dependent side offset: decoupled from PnL regression
         is_put = contracts[:, :, 2]  # right_is_put: 0=call, 1=put
-        side_offset = self.side_bias * (2.0 * is_put - 1.0)
+        put_pref = self.side_head(context)  # (B, 1): positive = prefer puts
+        side_offset = put_pref * (2.0 * is_put - 1.0)  # (B, K)
         contract_scores = base_scores + side_offset
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         valid_mask = contracts[:, :, 0] > 0.5
