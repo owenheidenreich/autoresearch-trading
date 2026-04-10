@@ -112,15 +112,16 @@ class TradingModel(nn.Module):
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
-        contract_scores = self.score_head(combined).squeeze(-1)
-        # Add learned side offset: +bias for puts, -bias for calls
+        base_scores = self.score_head(combined).squeeze(-1)
+        # Side offset: decoupled from PnL regression so they don't fight
         is_put = contracts[:, :, 2]  # right_is_put: 0=call, 1=put
         side_offset = self.side_bias * (2.0 * is_put - 1.0)
-        contract_scores = contract_scores + side_offset
+        contract_scores = base_scores + side_offset
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         valid_mask = contracts[:, :, 0] > 0.5
         return {
-            "contract_scores": contract_scores,
+            "base_scores": base_scores,          # PnL regression target (no side bias)
+            "contract_scores": contract_scores,   # selection + gate + replay (with side bias)
             "no_trade_score": no_trade_score,
             "valid_mask": valid_mask,
         }
@@ -186,7 +187,8 @@ class TradeDataset(Dataset):
 
 def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
     device = outputs["contract_scores"].device
-    scores = outputs["contract_scores"]
+    scores = outputs["contract_scores"]       # with side bias (for gate + side CE)
+    base_scores = outputs["base_scores"]      # without side bias (for PnL regression)
     no_trade = outputs["no_trade_score"]
     valid_mask = outputs["valid_mask"]
     labels = targets["contract_labels"].to(device)
@@ -194,12 +196,13 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     label_trade = targets["label_trade"].to(device)
     label_trade_valid = targets["label_trade_valid"].to(device)
 
-    # --- A. PNL loss (unchanged): Huber regression on contract P&L ---
+    # --- A. PNL loss: Huber regression on BASE scores (no side bias) ---
+    # Decoupled: PnL regression trains score_head only, not side_bias
     active = valid_mask & torch.isfinite(labels)
     pnl_loss = torch.tensor(0.0, device=device)
     if active.any():
         weights = 1.0 + 2.0 * labels[active].abs()
-        pnl_loss = (weights * F.huber_loss(scores[active], labels[active], delta=0.5, reduction="none")).mean()
+        pnl_loss = (weights * F.huber_loss(base_scores[active], labels[active], delta=0.5, reduction="none")).mean()
 
     supervised_rows = label_trade_valid
     trade_rows = supervised_rows & label_trade & (best_idx >= 0)
