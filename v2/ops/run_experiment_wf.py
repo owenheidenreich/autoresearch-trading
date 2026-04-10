@@ -33,13 +33,14 @@ def run_experiment(
     experiment_id: str | None = None,
     policy: DecisionPolicy = DEFAULT_POLICY,
     save_artifacts: bool = True,
+    n_folds: int | None = None,
 ) -> dict:
     """Run walk-forward CV experiment."""
     if experiment_id is None:
         experiment_id = f"exp_{int(time.time())}"
 
     print(f"\n{'='*60}")
-    print(f"  EXPERIMENT: {experiment_id}")
+    print(f"  EXPERIMENT: {experiment_id}  (n_folds={n_folds or 'all'})")
     print(f"{'='*60}")
 
     try:
@@ -47,6 +48,7 @@ def run_experiment(
             data_path=data_path,
             model_path=model_path,
             policy=policy,
+            n_folds=n_folds,
         )
     except Exception as e:
         results = {
@@ -166,6 +168,8 @@ def main():
     parser.add_argument("--model", type=str, default="v2/model.pt")
     parser.add_argument("--id", type=str, default=None, help="Experiment ID")
     parser.add_argument("--no-artifacts", action="store_true")
+    parser.add_argument("--n-folds", type=int, default=None,
+                        help="Number of folds to run (default: all 5). Use 1 for screening.")
     args = parser.parse_args()
 
     run_experiment(
@@ -173,6 +177,7 @@ def main():
         model_path=args.model,
         experiment_id=args.id,
         save_artifacts=not args.no_artifacts,
+        n_folds=args.n_folds,
     )
 
 

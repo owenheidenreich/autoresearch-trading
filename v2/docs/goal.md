@@ -8,21 +8,22 @@ Build a model that can profitably trade SPX 0DTE long options under an honest hi
 
 ## Current Phase
 
-The project is currently in the repaired-harness research phase.
+The project is currently in the exact-chain recovery phase.
 
 That means:
 
-- the historical data / replay contract has been repaired and re-frozen
-- the immediate goal is to establish a strong repaired-era baseline through honest walk-forward experiments
-- live and paper trading are still future work
+- the v4 exact-chain harness is frozen and working
+- all five initial exact-chain experiments (exp_074 through exp_078) failed
+- the immediate goal is to recover positive exact-chain edge and beat baselines under the exact-chain scorer
+- the recovery plan is: side supervision first, then soft within-side ranking, then gate calibration
 
 ## What Success Means Right Now
 
 Near-term success is:
 
-1. establish the first honest repaired-era baseline score
-2. improve that score through disciplined keep/revert experimentation
-3. beat all replay baselines consistently on walk-forward evaluation
+1. get the model to reliably fire trades (solve gate collapse)
+2. achieve positive exact-chain score across 5-fold walk-forward
+3. beat all four replay baselines consistently
 4. preserve harness integrity while doing so
 
 ## What Is Not Yet In Scope
@@ -33,4 +34,4 @@ These are not current realities:
 - a finished live execution service
 - broker-connected production deployment
 
-Those remain roadmap items after the repaired research harness proves itself.
+Those remain roadmap items after the exact-chain research phase proves itself.

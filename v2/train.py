@@ -211,16 +211,52 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         )
         gate_loss = gate_bce
 
-    # --- C. Selection loss: CE over K contracts, trade rows only ---
-    # "Given I should trade, which contract?" — NO_TRADE class excluded
-    selection_loss = torch.tensor(0.0, device=device)
+    # --- C. Side CE: 2-class call/put supervision from contract_scores ---
+    # Replace hard contract selection with side prediction.
+    # For trade rows with both call and put contracts present:
+    #   best_call_score = max(scores where right_is_put < 0.5)
+    #   best_put_score  = max(scores where right_is_put >= 0.5)
+    #   target = 1 if oracle best contract is a put, else 0
+    #   loss = BCE(best_put_score - best_call_score, target)
+    side_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
-        sel_logits = scores[trade_rows].clone()  # (N_trade, K)
-        sel_logits[~valid_mask[trade_rows]] = -1e9
-        sel_target = best_idx[trade_rows]  # (N_trade,) 0-indexed into contracts
-        selection_loss = F.cross_entropy(sel_logits, sel_target)
+        tr_scores = scores[trade_rows].clone()
+        tr_valid = valid_mask[trade_rows]
+        tr_contracts = targets["contracts_full"][trade_rows]  # (N, K, F)
+        is_put = tr_contracts[:, :, 2] >= 0.5  # right_is_put is feature idx 2
+        is_call = ~is_put & tr_valid
+        is_put_valid = is_put & tr_valid
 
-    total = GATE_W * gate_loss + SEL_W * selection_loss + PNL_W * pnl_loss
+        # Need both sides present
+        has_calls = is_call.any(dim=-1)
+        has_puts = is_put_valid.any(dim=-1)
+        both_sides = has_calls & has_puts
+
+        if both_sides.any():
+            bs_scores = tr_scores[both_sides]
+            bs_is_call = is_call[both_sides]
+            bs_is_put = is_put_valid[both_sides]
+
+            # Best call score and best put score per row
+            call_scores = bs_scores.clone()
+            call_scores[~bs_is_call] = -1e9
+            best_call_score, _ = call_scores.max(dim=-1)
+
+            put_scores = bs_scores.clone()
+            put_scores[~bs_is_put] = -1e9
+            best_put_score, _ = put_scores.max(dim=-1)
+
+            # Side logit: positive = put, negative = call
+            side_logit = best_put_score - best_call_score  # (N,)
+
+            # Oracle target: is the best contract a put?
+            bs_best_idx = best_idx[trade_rows][both_sides]
+            bs_contracts = tr_contracts[both_sides]
+            oracle_is_put = (bs_contracts[torch.arange(bs_contracts.size(0), device=device), bs_best_idx, 2] >= 0.5).float()
+
+            side_loss = F.binary_cross_entropy_with_logits(side_logit, oracle_is_put)
+
+    total = GATE_W * gate_loss + SEL_W * side_loss + PNL_W * pnl_loss
 
     # --- Metrics ---
     # Predict: trade if max(contract_scores) > no_trade_score (matches replay gate)
@@ -232,9 +268,8 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     gate_acc = (pred_trade[supervised_rows] == label_trade[supervised_rows]).float().mean().item() if supervised_rows.any() else 0.0
     trade_rate = pred_trade[supervised_rows].float().mean().item() if supervised_rows.any() else 0.0
 
-    # Selection accuracy: did we pick the right contract on trade rows?
+    # Side accuracy: did we predict the correct call/put side on trade rows?
     pred_contract = masked_scores_eval.argmax(dim=-1)
-    sel_acc = (pred_contract[trade_rows] == best_idx[trade_rows]).float().mean().item() if trade_rows.any() else 0.0
 
     dir_acc = 0.0
     if trade_rows.any():
@@ -247,10 +282,9 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     return total, {
         "pnl": float(pnl_loss.item()),
         "gate": float(gate_loss.item()),
-        "selection": float(selection_loss.item()),
+        "side": float(side_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
-        "sel_acc": sel_acc,
         "dir_acc": dir_acc,
         "trade_rate": trade_rate,
     }
@@ -268,10 +302,12 @@ def load_dataset(path: str = "v2/data.pt") -> dict:
 
 def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_mask_override=None, val_mask_override=None):
     t_start = time.time()
-    torch.manual_seed(SEED)
+    # Re-read TRAIN_SEED at call time so walk-forward can set per-fold seeds
+    seed = int(os.environ.get("TRAIN_SEED", SEED))
+    torch.manual_seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed(SEED)
-    np.random.seed(SEED)
+        torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
 
     data = load_dataset(data_path)
     train_mask = train_mask_override if train_mask_override is not None else data["train_mask"]
@@ -304,7 +340,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_
 
     best_val_loss = float("inf")
     best_epoch = 0
-    best_metrics = {"gate_accuracy": 0.0, "selection_accuracy": 0.0, "direction_accuracy": 0.0}
+    best_metrics = {"gate_accuracy": 0.0, "direction_accuracy": 0.0}
 
     for epoch in range(1, EPOCHS + 1):
         if time.time() - t_start > TIME_BUDGET:
@@ -344,8 +380,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | pnl={avg_val.get('pnl', 0):.4f} "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('selection', 0):.4f} | "
-            f"gate={avg_val.get('gate_acc', 0):.3f} sel_acc={avg_val.get('sel_acc', 0):.3f} "
+            f"gate_l={avg_val.get('gate', 0):.4f} side={avg_val.get('side', 0):.4f} | "
+            f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
 
@@ -355,7 +391,6 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_
             best_epoch = epoch
             best_metrics = {
                 "gate_accuracy": avg_val.get("gate_acc", 0.0),
-                "selection_accuracy": avg_val.get("sel_acc", 0.0),
                 "direction_accuracy": avg_val.get("dir_acc", 0.0),
             }
             dataset_fp = data.get("metadata", {}).get("fingerprint", "unknown")

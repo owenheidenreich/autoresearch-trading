@@ -1,59 +1,72 @@
 experiment	score	status	description
-exp_001	0.280104	keep	score=0.280 trades=387 wr=51.2% baselines=ALL
-exp_002	4.700000	keep	score=4.700 trades=416 wr=53.6% baselines=ALL
-exp_003	3.635013	revert	score=3.635 trades=370 wr=53.2% baselines=ALL
-exp_004	4.200000	revert	score=4.200 trades=424 wr=52.8% baselines=ALL
-exp_005	4.236292	revert	score=4.236 trades=368 wr=52.4% baselines=ALL
-exp_006	4.425371	revert	score=4.425 trades=392 wr=50.0% baselines=ALL
-exp_007	4.372881	revert	score=4.373 trades=366 wr=53.6% baselines=ALL
-exp_008	4.758621	keep	score=4.759 trades=395 wr=55.7% baselines=ALL
-exp_009	4.344828	revert	score=4.345 trades=376 wr=53.2% baselines=ALL
-exp_010	0.277027	revert	score=0.277 trades=435 wr=49.9% baselines=ALL
-exp_011	2.514581	revert	score=2.515 trades=395 wr=53.9% baselines=ALL
-exp_012	4.042040	revert	score=4.042 trades=437 wr=50.8% baselines=ALL
-exp_013	2.487828	revert	score=2.488 trades=400 wr=49.2% baselines=ALL
-exp_014	4.259283	revert	score=4.259 trades=366 wr=53.3% baselines=ALL
-exp_015	2.301367	revert	score=2.301 trades=378 wr=50.8% baselines=ALL
-exp_001	4.677966	revert	score=4.678 trades=374 wr=54.8% baselines=ALL
-exp_002	2.550921	revert	score=2.551 trades=401 wr=54.9% baselines=ALL
-exp_003	3.931395	revert	score=3.931 trades=452 wr=54.4% baselines=ALL
-exp_004	4.700000	revert	score=4.700 trades=397 wr=54.4% baselines=ALL
-exp_032	4.920000	keep	score=4.920 trades=168 wr=64.3% pdr=82.0% baselines=ALL (new 47-feature baseline)
-exp_033	4.846154	revert	score=4.846 trades=166 wr=66.3% pdr=80.8% dropout=0.15 (worse PDR)
-exp_034	4.981132	keep	score=4.981 trades=185 wr=62.7% pdr=83.0% lookback=30 NEW BEST
-exp_035	4.800000	revert	score=4.800 trades=162 wr=64.8% pdr=80.0% lookback=15 (too short)
-exp_036	5.280000	keep	score=5.280 trades=159 wr=64.2% pdr=88.0% pnl_sample_weighting NEW BEST
-exp_037	4.981132	revert	score=4.981 trades=175 wr=60.6% pdr=83.0% 3x_sample_weight (too aggressive)
-exp_038	-1.000000	revert	GATE_FAILURE too_few_trades=21 gate_threshold=0.55 (too aggressive)
-exp_039	5.058824	revert	score=5.059 trades=160 wr=66.2% pdr=84.3% d32_depth2 (less capacity hurt)
-exp_040	4.961538	revert	score=4.962 trades=158 wr=66.5% pdr=82.7% lr=2e-4 (slower learning, worse PDR)
-exp_041	4.560000	revert	score=4.560 trades=207 wr=58.5% pdr=76.0% max_hold_60 (too tight, worse everything)
-exp_042	4.300000	revert	score=4.300 trades=348 wr=58.3% pdr=71.7% confidence_gate (opened gate wider, not tighter)
-exp_043	5.375000	keep	score=5.375 trades=147 wr=70.1% pdr=89.6% seed=123 NEW BEST
-exp_044	5.361702	revert	score=5.362 trades=121 wr=64.5% pdr=89.4% seed=7 (close but seed 123 better)
-exp_045	4.981132	revert	score=4.981 trades=202 wr=61.9% pdr=83.0% seed=2024 (much worse)
-exp_046	5.666667	keep	score=5.667 trades=77 wr=74.0% pdr=94.4% asym=5x NEW BEST PF=10.69
-exp_047	5.520000	revert	score=5.520 trades=41 wr=75.6% pdr=92.0% asym=8x (too conservative, only 25 days)
-exp_048	5.666667	revert	score=5.667 trades=77 wr=74.0% pdr=94.4% wd=0.005 (identical to exp_046)
-exp_049	5.333333	revert	score=5.333 trades=72 wr=76.4% pdr=88.9% cooldown=15 (killed buffer trades)
-exp_050	5.307692	revert	score=5.308 trades=46 wr=73.9% pdr=88.5% huber_delta=0.3 (too conservative, 26 days)
-exp_051	5.600000	revert	score=5.600 trades=57 wr=71.9% pdr=93.3% huber_delta=0.8 (close but fewer traded days)
-exp_052	5.193396	keep	WF_BASELINE score=5.193 folds=[4.78,4.98,5.06,5.79,5.36] trades=588 days=185 baselines=ALL
-exp_053	4.829049	revert	score=4.829 folds=[2.64,5.22,5.52,5.21,5.56] dropout=0.10 (fold 0 collapsed)
-exp_054	4.937374	revert	score=4.937 folds=[4.90,4.25,5.32,5.32,4.90] asym=3x (too many trades, fold1 collapsed)
-exp_055	4.653680	revert	score=4.654 folds=[5.05,5.11,5.03,5.50,2.59] d_model=96 (fold 4 collapsed)
-exp_056	5.266862	keep	score=5.267 folds=[5.14,4.98,5.06,5.79,5.36] std=0.29 wd=0.03 NEW WF BEST
-exp_057	5.217870	revert	score=5.218 folds=[4.90,4.98,5.06,5.79,5.36] wd=0.05 (fold 0 regressed vs 0.03)
-exp_058	5.304720	keep	score=5.305 folds=[4.80,5.25,5.84,5.81,4.83] std=0.45 asym=4x NEW WF BEST
-exp_059	-999.000	crash	fold 2 model_fold2.pt not saved (disk/save issue), folds 0-1 OK
-exp_059	5.309400	keep	score=5.309 folds=[4.80,5.38,6.00,5.25,5.12] hold_frac fix (training/replay aligned) NEW WF BEST
-exp_060	-1.000000	revert	GATE_FAILURE all folds too_few_trades (7-28), gate=0.55 way too aggressive
-exp_061	5.349200	keep	score=5.349 folds=[4.90,5.59,5.66,5.20,5.40] std=0.28 dir-asym calls=4x puts=6x NEW WF BEST
-exp_062	5.423000	keep	score=5.423 folds=[5.17,5.33,5.83,5.20,5.59] std=0.25 RISK_W=0.5 NEW WF BEST
-exp_063	5.343700	revert	score=5.344 folds=[4.97,5.32,5.82,5.23,5.38] RISK_W=0.7 (fold 0 regressed)
-exp_064	5.423000	revert	score=5.423 identical to exp_062 (confidence gate was no-op)
-exp_065	5.423000	revert	score=5.423 identical to exp_062 (extra time didn't help, best epoch still 1-5)
-exp_066	5.522800	keep	score=5.523 folds=[5.17,5.59,5.66,5.61,5.59] std=0.18 dir-dependent hold (puts 20 bars) NEW WF BEST
-exp_067	5.419600	revert	score=5.420 folds=[5.19,5.22,5.83,5.25,5.61] 2x sample weight (marginal regression)
-exp_068	4.702255	revert	score=4.702 folds=[5.00,4.90,4.80,3.81,5.00] std=0.45 MFE-training gate-too-loose 1693trades WR=46% PF=1.61 PDR=83%
-exp_069	4.624281	revert	score=4.624 folds=[4.60,4.69,4.74,5.02,4.08] MFE+gate-scaling still too many trades WR=47% PF=2.14 PDR=68%
+exp_074	0.000000	revert	score=0.000 folds=[0.00,0.00,0.00,0.00,0.00] std=0.00 exact-chain baseline attempt, zero trades all folds
+exp_075	0.000000	revert	score=0.000 folds=[0.00,0.00,0.00,0.00,0.00] std=0.00 decouple gate from selection — three independent losses, still zero trades
+exp_076	-0.040000	revert	score=-0.040 folds=[0.00,0.00,0.00,-0.20,0.00] std=0.08 gate_threshold=-100 (disable absolute threshold), 1 fold fires
+exp_077	-0.300000	revert	score=-0.300 folds=[-0.30,-0.30,-0.30,-0.30,-0.30] std=0.00 SEL_W=0 drop selection CE, rely on PNL regression for ranking
+exp_078	-0.740000	revert	score=-0.740 folds=[-1.00,-0.50,-1.00,-1.00,-0.20] std=0.33 PNL_W=5.0 stronger P&L regression, keep selection CE
+exp_001	0.280104	unknown	score=0.280 [from artifact]
+exp_002	4.700000	unknown	score=4.700 [from artifact]
+exp_003	3.635013	unknown	score=3.635 [from artifact]
+exp_004	4.200000	unknown	score=4.200 [from artifact]
+exp_005	4.236292	unknown	score=4.236 [from artifact]
+exp_006	4.425371	unknown	score=4.425 [from artifact]
+exp_007	4.372881	unknown	score=4.373 [from artifact]
+exp_008	4.758621	unknown	score=4.759 [from artifact]
+exp_009	4.344828	unknown	score=4.345 [from artifact]
+exp_010	0.277027	unknown	score=0.277 [from artifact]
+exp_011	2.514581	unknown	score=2.515 [from artifact]
+exp_012	4.042040	unknown	score=4.042 [from artifact]
+exp_013	2.487828	unknown	score=2.488 [from artifact]
+exp_014	4.259283	unknown	score=4.259 [from artifact]
+exp_015	2.301367	unknown	score=2.301 [from artifact]
+exp_016	3.284028	unknown	score=3.284 [from artifact]
+exp_017	4.883721	unknown	score=4.884 [from artifact]
+exp_018	4.933333	unknown	score=4.933 [from artifact]
+exp_019	4.468085	unknown	score=4.468 [from artifact]
+exp_020	4.636364	unknown	score=4.636 [from artifact]
+exp_021	5.052632	unknown	score=5.053 [from artifact]
+exp_022	2.100481	unknown	score=2.100 [from artifact]
+exp_023	4.631579	unknown	score=4.632 [from artifact]
+exp_024	5.785714	unknown	score=5.786 [from artifact]
+exp_025	5.333333	unknown	score=5.333 [from artifact]
+exp_026	5.181818	unknown	score=5.182 [from artifact]
+exp_027	-0.500000	unknown	score=-0.500 [from artifact]
+exp_028	4.800000	unknown	score=4.800 [from artifact]
+exp_029	5.052632	unknown	score=5.053 [from artifact]
+exp_030	4.800000	unknown	score=4.800 [from artifact]
+exp_031	4.714286	unknown	score=4.714 [from artifact]
+exp_032	4.920000	unknown	score=4.920 [from artifact]
+exp_033	4.846154	unknown	score=4.846 [from artifact]
+exp_034	4.981132	unknown	score=4.981 [from artifact]
+exp_035	4.800000	unknown	score=4.800 [from artifact]
+exp_036	5.280000	unknown	score=5.280 [from artifact]
+exp_037	4.981132	unknown	score=4.981 [from artifact]
+exp_038	-1.000000	unknown	score=-1.000 [from artifact]
+exp_039	5.058824	unknown	score=5.059 [from artifact]
+exp_040	4.961538	unknown	score=4.962 [from artifact]
+exp_041	4.560000	unknown	score=4.560 [from artifact]
+exp_042	4.300000	unknown	score=4.300 [from artifact]
+exp_043	5.375000	unknown	score=5.375 [from artifact]
+exp_044	5.361702	unknown	score=5.362 [from artifact]
+exp_045	4.981132	unknown	score=4.981 [from artifact]
+exp_046	5.666667	unknown	score=5.667 [from artifact]
+exp_047	5.520000	unknown	score=5.520 [from artifact]
+exp_048	5.666667	unknown	score=5.667 [from artifact]
+exp_049	5.333333	unknown	score=5.333 [from artifact]
+exp_050	5.307692	unknown	score=5.308 [from artifact]
+exp_051	5.600000	unknown	score=5.600 [from artifact]
+exp_055	4.653673	unknown	score=4.654 folds=[5.05,5.11,5.03,5.50,2.59] std=1.05 [from artifact]
+exp_056	5.266865	unknown	score=5.267 folds=[5.14,4.98,5.06,5.79,5.36] std=0.29 [from artifact]
+exp_057	5.217886	unknown	score=5.218 folds=[4.90,4.98,5.06,5.79,5.36] std=0.33 [from artifact]
+exp_058	5.304712	unknown	score=5.305 folds=[4.80,5.25,5.84,5.81,4.83] std=0.45 [from artifact]
+exp_059	5.309390	unknown	score=5.309 folds=[4.80,5.38,6.00,5.25,5.12] std=0.39 [from artifact]
+exp_059b	-195.690610	unknown	score=-195.691 folds=[4.80,5.38,-999.00,5.25,5.12] std=401.65 [from artifact]
+exp_060	-1.000000	unknown	score=-1.000 folds=[-1.00,-1.00,-1.00,-1.00,-1.00] std=0.00 [from artifact]
+exp_061	5.349202	unknown	score=5.349 folds=[4.90,5.59,5.66,5.20,5.40] std=0.28 [from artifact]
+exp_062	5.422956	unknown	score=5.423 folds=[5.17,5.33,5.83,5.20,5.59] std=0.25 [from artifact]
+exp_063	5.343651	unknown	score=5.344 folds=[4.97,5.32,5.82,5.23,5.38] std=0.28 [from artifact]
+exp_064	5.422956	unknown	score=5.423 folds=[5.17,5.33,5.83,5.20,5.59] std=0.25 [from artifact]
+exp_065	5.422956	unknown	score=5.423 folds=[5.17,5.33,5.83,5.20,5.59] std=0.25 [from artifact]
+exp_066	5.522766	unknown	score=5.523 folds=[5.17,5.59,5.66,5.61,5.59] std=0.18 [from artifact]
+exp_067	5.419611	unknown	score=5.420 folds=[5.19,5.22,5.83,5.25,5.61] std=0.26 [from artifact]
+exp_070	2.841223	unknown	score=2.841 folds=[4.40,-0.20,2.03,2.98,5.00] std=1.85 [from artifact]

@@ -6,8 +6,16 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 
 ## Research
 
+- `run screening experiment exp_NNN`
+  Screen first (1-fold, no artifacts):
+  `./v2/ops/deploy.sh run_screen exp_NNN`
+
+- `run official experiment exp_NNN`
+  Official 5-fold scored run:
+  `./v2/ops/deploy.sh run_one exp_NNN`
+
 - `begin experiment loop`
-  Use the full loop from `v2/program.md`: hypothesis, edit `train.py` and/or `core/policy.py`, commit, `deploy.sh run_one exp_NNN`, then keep or revert.
+  Use the full loop from `v2/program.md`: hypothesis, edit `train.py` and/or `core/policy.py`, commit, screen first, then if screening passes run official, then keep or revert.
 
 ## Evaluation
 
@@ -52,10 +60,6 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 - `start gpu`
   Run:
   `./v2/ops/deploy.sh start`
-
-- `run experiment exp_NNN`
-  Run:
-  `./v2/ops/deploy.sh run_one exp_NNN`
 
 - `stop gpu`
   Run:

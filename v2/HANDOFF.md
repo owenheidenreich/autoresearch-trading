@@ -4,71 +4,53 @@ Read this file, then [program.md](program.md), then [current_state.md](docs/curr
 
 ## What Changed
 
-The 2026-04-08 / 2026-04-09 harness repair is no longer a staging plan. It is the active system.
+The v4 exact-chain rebuild replaced the old ATM/OTM ladder with per-bar executable contract scoring. Every experiment from `exp_074` onward uses the exact-chain harness.
 
-- Contract drift was repaired.
-- POC / value-area look-ahead was removed.
-- Tier 3 labels now include `hold=390`.
-- Replay, dataset metadata, and artifact lineage now key off the repaired dataset.
-- The canonical dataset is now `v2/data.pt`.
+- Per-day sidecars store exact contract identities and per-contract forward P&L labels
+- Replay selects one exact contract row from `contract_scores`; no direction head, no coarse strike offset, no learned risk head
+- Training supervises per-contract P&L regression and contract selection
+- Risk is policy-driven, not learned
 
 ## Canonical State
 
 ```text
 Dataset path:        v2/data.pt
-Backup copy:         v2/data_harness_repair.pt
-Dataset version:     v2_harness_repair
-Dataset fingerprint: 03566aeb8adf1040
+Per-day sidecars:    v2/data_sidecars/*.pt
+Dataset version:     v4_exact_chain
+Dataset fingerprint: 46f2d184e186496f
+Unique days:         986
 Features:            47
-Signal bars:         236,641
-Trade bars:          157,232
 Trade window:        bar 30-270
-Label scheme:        dual_direction_pnl_tier3
-Label grid:          stops=[0.15, 0.2, 0.25, 0.3, 0.4, 0.5]
-                     targets=[0.2, 0.3, 0.5, 0.8, 1.2]
-                     holds=[30, 60, 120, 240, 390]
 ATM source:          dynamic_nearest_per_bar
-POC/VA source:       incremental_bars_seen_so_far
 ```
-
-`v2/data_harness_repair.pt` is currently just a backup copy of the same repaired dataset, not a different staging artifact.
-
-## What To Trust
-
-- Trust `v2/data.pt`, not the old audit-era assumptions.
-- Trust promoted artifacts only.
-- Trust post-repair replay scores only.
-- Trust `run_experiment_wf.py` as the canonical training runner.
-
-## What Not To Trust
-
-- Any pre-repair score as a current baseline.
-- Any legacy artifact that was trained on the old dataset fingerprint.
-- Any doc that still says:
-  - 39 features
-  - per-day z-score normalization
-  - session-open ATM arrays
-  - full-day POC / VA
-  - warm-start training
-  - live execution is already operating
 
 ## Current Research Position
 
-- The harness is ready for honest experimentation.
-- The current local model is not a meaningful repaired-era baseline.
-- The next important event is the first honest walk-forward GPU run on the repaired harness.
-- That run establishes the new baseline for all future keep/revert decisions.
+- All five exact-chain experiments (exp_074 through exp_078) failed: zero trades or negative edge
+- The next experiment is `exp_079`: side CE from `contract_scores`
+- Recovery plan: side supervision first, then soft within-side ranking, then gate calibration
+- See `lab_notebook.md` for the full diagnosis and hypothesis queue
+
+## What To Trust
+
+- `v2/data.pt` and `v2/data_sidecars/` as the canonical dataset
+- `run_experiment_wf.py` as the canonical training runner
+- `results.tsv` exact-chain entries (exp_074+) as the official scored runs
+- Post-exact-chain replay scores only
+
+## What Not To Trust
+
+- Any pre-exact-chain score as a current baseline
+- Any legacy artifact trained on a different dataset fingerprint
+- Any doc in `archive/` — those describe prior regimes, not current truth
 
 ## Practical Operator Notes
 
-- `./v2/ops/deploy.sh start` uploads the canonical dataset and clears the remote model path.
-- `./v2/ops/deploy.sh run_one exp_NNN` downloads:
-  - `v2/model_candidate.pt`
-  - `v2/artifacts/exp_NNN/`
-- Use:
-  - `python v2/ops/model_manage.py keep`
-  - `python v2/ops/model_manage.py revert`
+- `./v2/ops/deploy.sh start` uploads the canonical dataset
+- `./v2/ops/deploy.sh run_one exp_NNN` is the official 5-fold run
+- `./v2/ops/deploy.sh run_screen exp_NNN` is the 1-fold screening run (no artifacts, no results.tsv)
+- Keep/revert: `python v2/ops/model_manage.py keep` or `revert`
 
 ## Live Status
 
-Live and paper trading code paths are still stubs. This repo is currently a data, training, replay, and experiment-management system.
+Live and paper trading code paths are stubs. This repo is a data, training, replay, and experiment-management system.

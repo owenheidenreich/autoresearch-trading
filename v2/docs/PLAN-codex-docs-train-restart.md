@@ -1,0 +1,163 @@
+# Exact-Chain Reset: Quarantine Noise, Implement Recovery, Then Lock The Protocol
+
+## Summary
+- Reduce `v2/` to a strict live whitelist and move every historical, superseded, audit, future-state, and old-regime artifact out of the agent read path into `archive/v2_historical/`.
+- Reset the current research memory so `v2/results.tsv` and `v2/lab_notebook.md` contain exact-chain history only, starting at `exp_074`.
+- Implement explicit two-mode execution in code:
+  - `screening run` = 1 fold, no artifacts, no keep/revert, no `results.tsv`.
+  - `official run` = 5 folds, canonical score, artifacts, keep/revert, plots, logs.
+- Implement the exact-chain recovery sequence in `v2/train.py` as three isolated experiments: side supervision through contract scores, then soft within-side ranking, then gate reweighting only if needed.
+- Encode the final workflow only after the runner and model changes exist, so the instructions describe reality rather than aspiration.
+
+## Phase 1: Noise Quarantine
+- Create `archive/v2_historical/` with `docs/`, `logs/`, `analysis/`, `ops/`, and `research/`.
+- Move these out of the live `v2/` tree:
+  - `v2/docs/audit/**`
+  - `v2/docs/domain/**`
+  - `v2/docs/CLAUDE-DISCOVERY-OF-CRITICAL-RESEARCH.md`
+  - `v2/docs/archive_map.md`
+  - `v2/docs/data_audit_findings.md`
+  - `v2/docs/feature_audit_handoff.md`
+  - `v2/docs/feature_rebuild_summary.md`
+  - `v2/docs/migration.md`
+  - `v2/docs/quantconnect_research.md`
+  - `v2/docs/execution.md`
+  - `v2/analysis/pre_repair_snapshot.md`
+  - `v2/ops/inner_loop.py`
+  - `v2/ops/run_experiment.py`
+  - `v2/ops/gpu_sweep.py`
+  - `v2/research/**`
+- Keep the live whitelist under `v2/` to:
+  - `program.md`, `COMMANDS.md`, `HANDOFF.md`, `LAYOUT.md`, `results.tsv`, `lab_notebook.md`
+  - `docs/README.md`, `docs/current_state.md`, `docs/goal.md`, `docs/how_training_works.md`, `docs/data_contract.md`, `docs/feature_schema.md`, `docs/labeling.md`, `docs/evaluator.md`, `docs/baselines.md`, `docs/contracts.md`
+  - root `AGENTS.md` and `CLAUDE.md`
+- Rewrite the live logs:
+  - archive all pre-`exp_074` rows from `v2/results.tsv` into `archive/v2_historical/logs/results_pre_exact_chain.tsv`
+  - archive all pre-exact-chain notebook content into `archive/v2_historical/logs/lab_notebook_pre_exact_chain.md`
+  - keep `v2/results.tsv` with `exp_074+` official exact-chain runs only
+  - rewrite `v2/lab_notebook.md` as a compact exact-chain notebook with:
+    - exact-chain diagnosis
+    - official experiment log
+    - screening rejects
+    - current next hypotheses
+- Rewrite the live factual docs to exact current truth:
+  - `HANDOFF.md` and `docs/current_state.md` use dataset fingerprint `46f2d184e186496f`, 986 unique days, and current exact-chain status `exp_074` through `exp_078` all failed
+  - `docs/contracts.md` describes replay selecting one exact contract row from `contract_scores`; no direction head, no coarse strike offset, no learned risk head
+  - `docs/labeling.md` describes exact-chain sidecar labels: `row_labels`, `bar_best_contract_idx`, `bar_best_pnl`, `bar_label_trade`, `bar_labelable`
+  - `docs/goal.md` changes from “establish first repaired-era baseline” to “recover positive exact-chain edge and beat baselines under the exact-chain scorer”
+- Add `v2/docs/README.md` as the live-doc index and state explicitly: do not read `archive/` unless the human asks for historical context.
+- Make `v2/FRESH_SESSION_HANDOFF.md` a short pointer to `v2/HANDOFF.md`, `v2/program.md`, and `v2/COMMANDS.md` instead of a second state snapshot.
+- Make `AGENTS.md` and `CLAUDE.md` identical minimal bootstraps that point into the live whitelist and explicitly forbid using `archive/` as default context.
+- Leave `v2/ops/monitor.py` untouched in this pass because it is already dirty in the worktree and is not part of the agent read path.
+
+## Phase 2: Implement The Two-Tier Exact-Chain Recovery
+- Land one non-experiment infra/hygiene commit first:
+  - `v2/ops/run_experiment_wf.py`: add `--n-folds`
+  - `v2/ops/deploy.sh`: keep `run_one` as official 5-fold and add `run_screen <exp_id>` that calls `run_experiment_wf --n-folds 1 --no-artifacts`
+  - `v2/train.py`: reread `TRAIN_SEED` inside `train()` so fold seeds actually vary
+- Define screening behavior in code:
+  - `./v2/ops/deploy.sh run_screen exp_079` runs as `exp_079_screen`
+  - screening does not save artifacts, does not download `model_candidate.pt`, does not touch `results.tsv`
+  - screening logs only a short note in `v2/lab_notebook.md`
+- Before the next experiment, add a concise diagnosis section to the rewritten current notebook and handoff:
+  - exact-chain trade rows average about 38 executable contracts
+  - top-vs-second contract margin is about 0.024 median
+  - best-call vs best-put margin is about 0.703 median
+  - conclusion: side is learnable; hard one-hot contract selection is too sharp
+- Implement the recovery experiments in this exact order:
+  - `exp_079`: replace hard contract selection CE with side CE derived from `contract_scores`
+    - compute `best_call_score` and `best_put_score` from the current per-contract scores
+    - compute 2-logit side CE on trade rows with both sides present
+    - remove the old hard `selection_loss`
+    - keep PnL regression and gate loss unchanged
+  - `exp_080`: add soft within-side ranking
+    - restrict to the oracle side on trade rows
+    - build target distribution as `softmax(oracle_side_pnl / 0.05)`
+    - optimize KL / soft cross-entropy between oracle-side target probs and model side-contract logits
+    - keep the side CE from `exp_079`
+  - `exp_081`: only if overtrading remains after `exp_080`, add gate BCE reweighting
+    - supervised rows only
+    - `no_trade_weight = 3.0`
+    - manual sample weighting on `gate_target == 0`
+- Run each model experiment with the same commit in two steps:
+  - screen first
+  - only if screening survives, rerun the same commit as the official 5-fold experiment
+- Use these screening reject rules:
+  - gate failure
+  - zero trades
+  - score `<= 0`
+  - minority direction balance `< 15%`
+  - fully one-sided behavior
+- Use these official keep rules:
+  - aggregate 5-fold score beats the current exact-chain best in `v2/results.tsv`
+  - beats all four baselines
+  - no hard-gate failure
+- Keep the post-official workflow unchanged except that it applies to official runs only:
+  - `model_manage.py keep` or revert
+  - regenerate plots
+  - run `analyze_losses`
+  - update `results.tsv` and `lab_notebook.md`
+
+## Phase 3: Encode The Final Protocol Into Repo Instructions
+- After Phase 2 code lands, update the instructions to describe the real commands and real model regime:
+  - `AGENTS.md` and `CLAUDE.md` become small boot files with hard rules only
+  - `v2/program.md` becomes the single protocol source of truth
+  - `v2/COMMANDS.md` exposes explicit commands:
+    - `run screening experiment exp_NNN`
+    - `run official experiment exp_NNN`
+    - `begin experiment loop`
+- Encode these hard protocol rules in `v2/program.md`:
+  - screening is provisional and never drives keep/revert
+  - official 5-fold runs are the only scored runs
+  - infrastructure/doc/archive changes are not experiments
+  - screening notes go to `lab_notebook.md` only
+  - official runs go to `results.tsv` and `lab_notebook.md`
+  - plots and `analyze_losses` are required after official runs only
+  - after 3 consecutive official reverts, analyze trade-level failure before another structural model change
+- Update `v2/how_training_works.md` to include the current exact-chain recovery plan:
+  - stage 1 = side supervision through `contract_scores`
+  - stage 2 = soft within-side ranking
+  - stage 3 = gate calibration only after side/ranking improve
+  - explicitly forbid “auxiliary head not used by replay” as the primary recovery path
+- Update `v2/LAYOUT.md` with a short “where to look when X fails” map:
+  - dataset/label issues -> `build_v2_dataset.py`, `core/chain_data.py`, `docs/data_contract.md`, `docs/labeling.md`
+  - training/model issues -> `train.py`, `docs/how_training_works.md`
+  - replay/score issues -> `replay.py`, `core/metrics.py`, `core/walkforward.py`, `docs/evaluator.md`, `docs/baselines.md`
+  - protocol/operator issues -> `program.md`, `AGENTS.md`, `CLAUDE.md`, `HANDOFF.md`
+
+## Public Interfaces / Command Changes
+- New archive root: `archive/v2_historical/`
+- New live docs index: `v2/docs/README.md`
+- `v2/results.tsv` becomes official exact-chain runs only
+- `v2/lab_notebook.md` becomes current exact-chain notebook only
+- New runner surface:
+  - `./v2/ops/deploy.sh run_screen exp_NNN`
+  - `./v2/ops/deploy.sh run_one exp_NNN`
+- New runner flag:
+  - `python -m v2.ops.run_experiment_wf --n-folds <N>`
+
+## Test Plan
+- Doc-surface test:
+  - `rg` over the live whitelist must not contain `repaired-era`, `first honest`, `dual_direction_pnl_tier3`, `call_pnl`, `put_pnl`, `risk head`, `run_experiment.py`, or `inner_loop.py` except where explicitly marked historical in archive paths
+- Read-graph test:
+  - live docs contain no links to archived docs
+  - `AGENTS.md`, `CLAUDE.md`, and `FRESH_SESSION_HANDOFF.md` all point to the same live read order
+- Log reset test:
+  - `v2/results.tsv` starts at `exp_074`
+  - `v2/lab_notebook.md` starts at exact-chain rebuild context only
+  - `plot_progress.py` still renders from the trimmed `results.tsv`
+- Runner test:
+  - `run_screen` prints `n_folds=1`, saves no artifact, and does not modify `results.tsv`
+  - `run_one` prints `n_folds=5`, saves artifacts, and remains the only official scorer
+- Model test:
+  - `py_compile` all changed Python files
+  - `exp_079_screen` must either reject quickly on catastrophic failure or advance to `exp_079`
+  - if `exp_079` fails officially, notebook logs the exact reason before `exp_080`
+- Protocol test:
+  - a fresh agent reading only `AGENTS.md` / `CLAUDE.md`, `v2/program.md`, `v2/COMMANDS.md`, and `v2/HANDOFF.md` should describe the same screen-vs-official workflow without consulting archive material
+
+## Assumptions
+- Historical context should be preserved with `git mv`, not deleted.
+- The live `v2/` surface should optimize for correctness and low ambiguity, not completeness.
+- Dirty unrelated files stay untouched unless required; notably avoid `v2/ops/monitor.py` in this pass.
+- The next official exact-chain experiment ID is `exp_079`.

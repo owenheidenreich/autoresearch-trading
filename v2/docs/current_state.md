@@ -4,13 +4,15 @@ Last refreshed: 2026-04-10
 
 ## Snapshot
 
-- Project mode: exact-chain harness rebuild
+- Project mode: exact-chain recovery
 - Live trading: not implemented
 - Active manifest: `v2/data.pt`
 - Dataset version: `v4_exact_chain`
-- Raw option source: full same-day SPXW 0DTE chain cache
+- Dataset fingerprint: `46f2d184e186496f`
 - Per-day sidecars: `v2/data_sidecars/*.pt`
-- First new baseline experiment: `exp_074`
+- Unique days: 986
+- First exact-chain experiment: `exp_074`
+- All exact-chain experiments so far: failed (exp_074 through exp_078)
 
 ## End-To-End Flow
 
@@ -49,7 +51,7 @@ raw SPX/SPY/VIX pickles + full-chain SPXW pickles
 - The current model scores:
   - `NO_TRADE`
   - each executable contract on the current bar
-- Risk is policy-driven, not learned, in the first frozen v4 harness.
+- Risk is policy-driven, not learned, in the frozen v4 harness.
 
 ### Replay
 
@@ -78,6 +80,7 @@ raw SPX/SPY/VIX pickles + full-chain SPXW pickles
 2. Edit `v2/train.py` and/or `v2/core/policy.py`.
 3. `python3 -m py_compile` the changed Python files.
 4. Commit.
-5. `./v2/ops/deploy.sh run_one exp_NNN`
-6. KEEP or REVERT.
-7. Update logs and plots.
+5. Screen first: `./v2/ops/deploy.sh run_screen exp_NNN`
+6. If screening passes: `./v2/ops/deploy.sh run_one exp_NNN`
+7. KEEP or REVERT.
+8. Update logs and plots.

@@ -1,16 +1,18 @@
 # ART2 v2 Program
 
-This is the definitive operating protocol for the current exact-chain rebuild.
+This is the definitive operating protocol for the current exact-chain recovery.
 Read this file first, then [COMMANDS.md](COMMANDS.md), then [current_state.md](docs/current_state.md).
 
 ## Current Status
 
-- **v4 exact-chain harness rebuild.**
+- **v4 exact-chain recovery phase.**
 - The active manifest is `v2/data.pt`.
 - Current dataset version: `v4_exact_chain`
-- Canonical raw option source: full same-day SPXW 0DTE chain cache
-- `v2/data.pt` stores the market-context manifest; per-day chain snapshots live in `v2/data_sidecars/`
-- Experiment numbering resumes at `exp_074`
+- Dataset fingerprint: `46f2d184e186496f`
+- Unique days: 986
+- Per-day sidecars: `v2/data_sidecars/`
+- All exact-chain experiments so far (exp_074 through exp_078) failed
+- Next experiment: `exp_079`
 
 ## Compute Rules
 
@@ -37,6 +39,49 @@ During the normal experiment loop, only these two files are mutable:
 
 Everything else is the frozen evaluation harness unless you are doing explicit infrastructure, data, or documentation work.
 
+## Two-Tier Experiment Workflow
+
+### Screening Run (provisional)
+
+- Command: `./v2/ops/deploy.sh run_screen exp_NNN`
+- Runs 1 fold only
+- No artifacts saved, no model downloaded, no `results.tsv` entry
+- Log a short note in `lab_notebook.md` only
+- Screening never drives keep/revert decisions
+
+Screening reject rules:
+- Gate failure
+- Zero trades
+- Score <= 0
+- Minority direction balance < 15%
+- Fully one-sided behavior
+
+### Official Run (scored)
+
+- Command: `./v2/ops/deploy.sh run_one exp_NNN`
+- Runs all 5 folds
+- Saves artifacts, downloads model_candidate.pt
+- Entries go to both `results.tsv` and `lab_notebook.md`
+- Official runs are the only scored runs
+
+Official keep rules:
+- Aggregate 5-fold score beats the current exact-chain best in `results.tsv`
+- Beats all four baselines
+- No hard-gate failure
+
+### Post-Official Workflow
+
+After an official run:
+1. KEEP or REVERT:
+   - `python3 v2/ops/model_manage.py keep`
+   - or: `git checkout HEAD~1 -- v2/train.py v2/core/policy.py` then `python3 v2/ops/model_manage.py revert`
+2. Regenerate plots:
+   - `python3 -m v2.plot_trades --model v2/model.pt`
+   - `python3 v2/plot_progress.py`
+3. Run `python3 -m v2.analysis.analyze_losses`
+4. Update `results.tsv` and `lab_notebook.md`
+5. Check session limits before next experiment
+
 ## Setup
 
 1. Work from a clean branch.
@@ -47,28 +92,25 @@ Everything else is the frozen evaluation harness unless you are doing explicit i
 4. Upload code, `data.pt`, and chain sidecars:
    - `./v2/ops/deploy.sh start`
 
-## Experiment Loop
+## Hard Protocol Rules
 
-1. Read the latest results, plots, and trade analysis.
-2. Write one concrete hypothesis.
-3. Edit only `v2/train.py` and/or `v2/core/policy.py`.
-4. Run `python3 -m py_compile` on every changed Python file.
-5. Commit the change.
-6. Run one experiment:
-   - `./v2/ops/deploy.sh run_one exp_NNN`
-7. Read the aggregate walk-forward score and the per-fold scores from stdout.
-8. Decide:
-   - KEEP: `python3 v2/ops/model_manage.py keep`
-   - REVERT: `git checkout HEAD~1 -- v2/train.py v2/core/policy.py`
-   - Then: `python3 v2/ops/model_manage.py revert`
-9. Append the result to `v2/results.tsv`.
-10. Regenerate visual artifacts:
-   - `python3 -m v2.plot_trades --model v2/model.pt`
-   - `python3 v2/plot_progress.py`
-11. Read the loss / trade diagnostics:
-   - `python3 -m v2.analysis.analyze_losses`
-12. Update `v2/lab_notebook.md`.
-13. Check session limits before the next experiment.
+- Screening is provisional and never drives keep/revert
+- Official 5-fold runs are the only scored runs
+- Infrastructure/doc/archive changes are not experiments
+- Screening notes go to `lab_notebook.md` only
+- Official runs go to `results.tsv` and `lab_notebook.md`
+- Plots and `analyze_losses` are required after official runs only
+- After 3 consecutive official reverts, analyze trade-level failure before another structural model change
+
+## Session Limits
+
+- 20 experiments
+- 10 hours
+- 6 no-improve streak
+- 4hr plateau
+- 3 crashes
+
+Stop when any limit fires.
 
 ## Harness Eval Suite
 
@@ -76,9 +118,9 @@ Everything else is the frozen evaluation harness unless you are doing explicit i
 - `optimization`: cases used while repairing the harness
 - `holdout`: unseen tagged cases used to verify harness generalization
 
-If a nightly experiment exposes a harness bug:
+If an experiment exposes a harness bug:
 
-1. stop the nightly loop
+1. stop the loop
 2. add a harness eval case
 3. repair the harness on a dedicated branch
 4. re-freeze before resuming experiments
@@ -105,9 +147,6 @@ The model must also beat all four baselines:
 
 ## Source Of Truth
 
-Use these docs for current behavior:
+See `v2/docs/README.md` for the full live documentation index.
 
-- [current_state.md](docs/current_state.md)
-- [data_contract.md](docs/data_contract.md)
-- [evaluator.md](docs/evaluator.md)
-- [how_training_works.md](docs/how_training_works.md)
+Do not read `archive/` unless the human asks for historical context.

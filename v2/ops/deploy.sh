@@ -857,6 +857,48 @@ cmd_run_one() {
     log "Done. model_candidate.pt synced (run model_manage.py keep to promote)."
 }
 
+# ===================================================================
+# RUN_SCREEN — 1-fold screening run (no artifacts, no model download)
+# ===================================================================
+# Usage: ./deploy.sh run_screen exp_079
+cmd_run_screen() {
+    load_state
+    local exp_id="${EXTRA_ARGS:-}"
+    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_screen <exp_id>"
+
+    local screen_id="${exp_id}_screen"
+    log "=== SCREENING: $screen_id (1-fold, no artifacts) ==="
+
+    # 1. Upload mutable code files
+    for f in v2/train.py v2/core/policy.py; do
+        scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
+    done
+
+    # Verify train.py integrity
+    local local_sha remote_sha
+    local_sha=$(shasum -a 256 "$PROJECT_ROOT/v2/train.py" | awk '{print $1}')
+    remote_sha=$(ssh_cmd "sha256sum /root/v2/train.py | awk '{print \$1}'" 2>/dev/null)
+    [[ "$remote_sha" == "$local_sha" ]] || die "train.py upload integrity check failed"
+
+    # Sync data if needed
+    [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
+    local local_data_sha remote_data_sha
+    local_data_sha=$(shasum -a 256 "$DATA_PT" | awk '{print $1}')
+    remote_data_sha=$(ssh_cmd "sha256sum /root/v2/data.pt | awk '{print \$1}'" 2>/dev/null || true)
+    if [[ "$remote_data_sha" != "$local_data_sha" ]]; then
+        log "Syncing dataset $(basename "$DATA_PT") to remote v2/data.pt..."
+        scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
+    fi
+    log "Code uploaded. Screening (1-fold)..."
+
+    # 2. Run 1-fold screening (no artifacts saved)
+    ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1"
+
+    # 3. No model download, no artifact download for screening
+    log "Screening complete. No model or artifacts downloaded."
+    log "If screening passes, run: ./deploy.sh run_one $exp_id"
+}
+
 cmd_stop() {
     load_state
     echo ""
@@ -925,6 +967,7 @@ case "$CMD" in
     boot)       cmd_boot       ;;
     start)      cmd_start      ;;
     run_one)    cmd_run_one    ;;
+    run_screen) cmd_run_screen ;;
     fund)       cmd_fund       ;;
     ssh)        cmd_ssh        ;;
     logs)       cmd_logs       ;;
@@ -937,7 +980,8 @@ case "$CMD" in
         echo "Autoresearch loop (Claude drives):"
         echo "  boot          Deploy H100 container on Akash (~2 min)"
         echo "  start         Upload v2 code + data, install deps"
-        echo "  run_one ID    Upload code + run experiment + download model (~5 min)"
+        echo "  run_screen ID 1-fold screening run (no artifacts, no model download)"
+        echo "  run_one ID    Official 5-fold experiment + download model (~5 min)"
         echo ""
         echo "Utilities:"
         echo "  ssh           SSH into the H100"

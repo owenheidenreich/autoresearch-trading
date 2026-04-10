@@ -4,55 +4,29 @@ This document describes the labels that are actually in the active dataset.
 
 ## Active Label Regime
 
-The canonical dataset currently uses:
+The canonical dataset uses exact-chain sidecar labels:
 
-- `label_scheme = dual_direction_pnl_tier3`
-- variable stop, target, and hold labels
-- current fingerprint `03566aeb8adf1040`
+- dataset version: `v4_exact_chain`
+- dataset fingerprint: `46f2d184e186496f`
 
-## What Is Stored Per Supervised Bar
+## What Is Stored Per Day Sidecar
 
-For each valid supervised bar, the dataset stores:
+Each day sidecar (`v2/data_sidecars/*.pt`) stores:
 
-- `label_call_pnl`
-- `label_put_pnl`
-- `label_pnl` = max of the two
-- `label_direction` = whichever side had the higher P&L
-- `label_trade` = whether `label_pnl > DEFAULT_POLICY.label_gate_min_pnl`
-- `label_stop_pct`
-- `label_target_pct`
-- `label_max_hold`
-- `label_confidence`
+- `row_labels`: per-contract forward P&L under the fixed policy (stop/target/hold from `core/policy.py`)
+- `bar_best_contract_idx`: index of the best contract on each bar
+- `bar_best_pnl`: realized P&L of the best contract
+- `bar_label_trade`: whether the best P&L exceeds `DEFAULT_POLICY.label_gate_min_pnl`
+- `bar_labelable`: whether the bar has valid forward contract labels
 
-This is not a serialized oracle `TradeIntent` label. Training is component-supervised through these tensors.
+## What Is Stored In The Manifest
 
-## Current Two-Step Label Path
+The manifest (`v2/data.pt`) stores:
 
-### Step 1: Base Build
-
-`v2/pipeline/build_v2_dataset.py` creates the initial dataset with:
-
-- fixed stop `0.30`
-- fixed target `0.50`
-- fixed hold `30`
-- dual-direction P&L labels
-- current nearest ATM entry prices
-
-It labels bars only inside the supervised trade window.
-
-### Step 2: Tier 3 Relabel
-
-`v2/pipeline/relabel_tier3.py` upgrades those labels using a grid search over:
-
-- stops: `[0.15, 0.2, 0.25, 0.3, 0.4, 0.5]`
-- targets: `[0.2, 0.3, 0.5, 0.8, 1.2]`
-- holds: `[30, 60, 120, 240, 390]`
-
-The relabeler:
-
-- uses `nearest_call_close` and `nearest_put_close`
-- prices spread from the actual exit bar timing
-- recomputes label counts and fingerprint after relabeling
+- `X`: `(bars, 30, 47)` normalized context features
+- `X_sim`: raw replay features
+- bar metadata and split masks
+- no contract-level data (that lives in sidecars)
 
 ## Supervised Window
 
@@ -62,51 +36,36 @@ Current supervised bars are:
 
 That matches the current replay-time no-trade window in the default policy.
 
-## Current Label Facts
-
-From the active dataset metadata:
-
-```text
-total_signal_bars = 236,641
-total_trades      = 157,232
-gate_true_rate    = 0.6644
-```
-
-Current label grid in metadata:
-
-```text
-stops=[0.15, 0.2, 0.25, 0.3, 0.4, 0.5]
-targets=[0.2, 0.3, 0.5, 0.8, 1.2]
-holds=[30, 60, 120, 240, 390]
-```
-
 ## Gate Rule
 
-`label_trade` is not hardcoded in multiple places anymore.
-
-The single source of truth is:
+The single source of truth for the gate threshold is:
 
 - `DEFAULT_POLICY.label_gate_min_pnl`
+- Current value: `0.04`
 
-Current value:
+## Key Dataset Properties
 
-- `0.04`
+- 986 unique trading days
+- ~38 executable contracts per bar (median)
+- top-vs-second contract margin: ~0.024 (median, very tight)
+- best-call vs best-put margin: ~0.703 (median, strongly learnable)
 
 ## What Labels Are Teaching Today
 
 The model is being asked to learn:
 
-- whether there is enough directional edge to trade
-- which direction has better expected P&L
-- what stop / target / hold regime tends to work
+- whether to trade at all (gate)
+- which specific contract to select (hard selection from ~38 candidates)
+- predicted P&L per contract (regression)
 
-The model is not yet strongly supervised on rich strike choice.
+The recovery plan changes this to: side first, then soft within-side ranking, then gate calibration.
 
 ## What Is No Longer True
 
 These older statements are no longer correct for the active dataset:
 
-- Tier 3 holds stop at 240
+- separate per-direction P&L tensors in the manifest
+- a binary call/put direction label in the manifest
+- the pre-v4 label scheme with fixed stop/target grids
 - session-open ATM prices drive relabeling
-- relabeling leaves metadata stale
 - labels are oracle `TradeIntent` objects
