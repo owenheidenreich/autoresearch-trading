@@ -32,7 +32,7 @@ LR = float(os.environ.get("TRAIN_LR", 3e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.03))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
-PNL_W = float(os.environ.get("WEIGHT_PNL", 0.0))
+PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 3.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
@@ -95,6 +95,10 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d // 2, 1),
         )
+        # Learned side bias: directly adjusts contract scores by call/put side.
+        # Side CE gradient flows straight to this parameter (1-2 epoch convergence)
+        # instead of routing through the full contract_proj → score_head MLP.
+        self.side_bias = nn.Parameter(torch.zeros(1))
 
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         B, T, _ = x.shape
@@ -109,6 +113,10 @@ class TradingModel(nn.Module):
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
         contract_scores = self.score_head(combined).squeeze(-1)
+        # Add learned side offset: +bias for puts, -bias for calls
+        is_put = contracts[:, :, 2]  # right_is_put: 0=call, 1=put
+        side_offset = self.side_bias * (2.0 * is_put - 1.0)
+        contract_scores = contract_scores + side_offset
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         valid_mask = contracts[:, :, 0] > 0.5
         return {
