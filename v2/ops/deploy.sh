@@ -425,6 +425,28 @@ cmd_start() {
         log "WARNING: No data.pt.sha256 sidecar — skipping integrity check"
     fi
 
+    # Upload exact-chain sidecars when the dataset manifest references them.
+    local sidecar_rel sidecar_abs sidecar_bundle remote_sidecar_dir
+    sidecar_rel=$(python3 - <<'PY' "$DATA_PT"
+import sys, torch
+d = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
+print(d.get("metadata", {}).get("chain_sidecar_dir", ""))
+PY
+)
+    sidecar_rel=$(echo "$sidecar_rel" | tr -d '[:space:]')
+    if [[ -n "$sidecar_rel" ]]; then
+        sidecar_abs="$PROJECT_ROOT/$sidecar_rel"
+        remote_sidecar_dir="/root/$sidecar_rel"
+        [[ -d "$sidecar_abs" ]] || die "Dataset expects sidecar dir but it is missing: $sidecar_abs"
+        sidecar_bundle="/tmp/autoresearch-v2-sidecars-$$.tgz"
+        log "Uploading chain sidecars from $sidecar_rel..."
+        tar -czf "$sidecar_bundle" -C "$PROJECT_ROOT" "$sidecar_rel"
+        scp_cmd "$sidecar_bundle" "root@$SSH_HOST:/root/v2-sidecars.tgz"
+        rm -f "$sidecar_bundle"
+        ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")' && tar -xzf /root/v2-sidecars.tgz -C /root && rm -f /root/v2-sidecars.tgz"
+        ssh_cmd "test -d '$remote_sidecar_dir'" || die "Remote sidecar upload failed: $remote_sidecar_dir missing"
+    fi
+
     # Experiments always train from scratch. Keep the remote model path empty
     # until run_experiment_wf writes a fresh checkpoint for this harness era.
     ssh_cmd "rm -f /root/v2/model.pt"

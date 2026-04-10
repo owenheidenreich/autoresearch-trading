@@ -1,14 +1,4 @@
-"""ART² v2 Training Loop -- P&L Prediction Model
-
-The model predicts expected P&L for BOTH call and put directions.
-Trading decisions derive from predictions at inference time:
-  - gate = True if max(pred_call_pnl, pred_put_pnl) > threshold
-  - direction = argmax(pred_call_pnl, pred_put_pnl)
-  - confidence = |pred_call_pnl - pred_put_pnl|
-
-This replaces the old classification approach (gate/direction as separate heads)
-with regression: predict the outcome, then decide whether to trade.
-"""
+"""ART² v4 Training Loop -- Exact-chain contract scorer."""
 from __future__ import annotations
 
 import json
@@ -20,500 +10,330 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
-from v2.core.features import (
-    BARS_PER_DAY,
-    NO_TRADE_BEFORE_BAR, NO_TRADE_AFTER_BAR,
+from v2.core.chain_data import (
+    NUM_CONTRACT_FEATURES,
+    load_sidecar_cached,
+    padded_snapshot,
 )
-
-# Feature count determined at runtime from data.pt shape
-NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 47))
+from v2.core.features import NO_TRADE_AFTER_BAR, NO_TRADE_BEFORE_BAR
 from v2.core.metrics import score_config_fingerprint
 
 
-# ---------------------------------------------------------------------------
-# Hyperparameters
-# ---------------------------------------------------------------------------
-
+NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 47))
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
-D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 64))
+D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 96))
 N_HEADS = 4
 DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
 DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.05))
-
-BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 2048))
-LR = float(os.environ.get("TRAIN_LR", 5e-4))
+BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 1024))
+LR = float(os.environ.get("TRAIN_LR", 3e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.03))
-EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 30))
+EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
-
-# Loss weights
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
-RISK_W = float(os.environ.get("WEIGHT_RISK", 0.5))
+SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
+SEED = int(os.environ.get("TRAIN_SEED", 123))
 
-# For replay compatibility
-NUM_STRIKE_CLASSES = 13
-STRIKE_OFFSETS = list(range(-30, 31, 5))
-STRIKE_OFFSET_TO_IDX = {off: i for i, off in enumerate(STRIKE_OFFSETS)}
-
-REGIME_DIM = 16
-
-
-# ---------------------------------------------------------------------------
-# Model
-# ---------------------------------------------------------------------------
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, max_len: int = 500):
         super().__init__()
         pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        position = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
         pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term[:d_model // 2])
-        self.register_buffer('pe', pe.unsqueeze(0))
+        pe[:, 1::2] = torch.cos(position * div_term[: d_model // 2])
+        self.register_buffer("pe", pe.unsqueeze(0))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x + self.pe[:, :x.size(1)]
-
-
-class FiLMLayer(nn.Module):
-    def __init__(self, regime_dim: int, feature_dim: int):
-        super().__init__()
-        self.fc = nn.Linear(regime_dim, feature_dim * 2)
-        nn.init.zeros_(self.fc.weight)
-        nn.init.zeros_(self.fc.bias)
-        with torch.no_grad():
-            self.fc.bias[:feature_dim] = 1.0
-
-    def forward(self, regime: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
-        gb = self.fc(regime)
-        gamma, beta = gb.chunk(2, dim=-1)
-        return gamma * x + beta
+        return x + self.pe[:, : x.size(1)]
 
 
 class TradingModel(nn.Module):
-    """P&L prediction model.
+    """Score the real executable contracts visible on the current bar."""
 
-    Instead of classifying gate/direction, predicts expected P&L for
-    both call and put. Trading decisions derive from predictions:
-      gate = max(call_pnl, put_pnl) > threshold
-      direction = argmax(call_pnl, put_pnl)
-
-    Outputs:
-        call_pnl: (batch, 1) - predicted P&L if buying ATM call
-        put_pnl: (batch, 1) - predicted P&L if buying ATM put
-        risk: (batch, 3) - [stop_pct, target_pct, max_hold_frac]
-
-    For replay compatibility, also outputs gate, direction, strike, confidence
-    derived from the P&L predictions.
-    """
-
-    def __init__(
-        self,
-        d_model: int = None,
-        depth: int = None,
-        n_heads: int = None,
-        dropout: float = None,
-    ):
+    def __init__(self, d_model: int | None = None, depth: int | None = None, n_heads: int | None = None, dropout: float | None = None):
         super().__init__()
         d = d_model or D_MODEL
         dep = depth or DEPTH
         nh = n_heads or N_HEADS
-        dr = dropout if dropout is not None else DROPOUT
+        dr = DROPOUT if dropout is None else dropout
 
         self.input_proj = nn.Linear(NUM_FEATURES, d)
         self.input_norm = nn.LayerNorm(d)
         self.pos_enc = PositionalEncoding(d, max_len=LOOKBACK + 10)
-
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d, nhead=nh, dim_feedforward=d * 4,
-            dropout=dr, batch_first=True, norm_first=True,
+            d_model=d,
+            nhead=nh,
+            dim_feedforward=d * 4,
+            dropout=dr,
+            batch_first=True,
+            norm_first=True,
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=dep)
+        self.register_buffer("causal_mask", nn.Transformer.generate_square_subsequent_mask(LOOKBACK))
 
-        self.register_buffer(
-            'causal_mask',
-            nn.Transformer.generate_square_subsequent_mask(LOOKBACK),
+        self.contract_proj = nn.Sequential(
+            nn.Linear(NUM_CONTRACT_FEATURES, d),
+            nn.GELU(),
+            nn.Linear(d, d),
         )
-
-        # Regime encoder
-        self.regime_encoder = nn.Sequential(
-            nn.Linear(NUM_FEATURES, 32), nn.GELU(), nn.Linear(32, REGIME_DIM),
-        )
-
-        # FiLM layers for P&L heads
-        self.film_call = FiLMLayer(REGIME_DIM, d)
-        self.film_put = FiLMLayer(REGIME_DIM, d)
-        self.film_risk = FiLMLayer(REGIME_DIM, d)
-
-        # P&L prediction heads (regression, not classification)
-        self.call_pnl_head = nn.Sequential(
-            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+        self.no_trade_head = nn.Sequential(
+            nn.Linear(d, d // 2),
+            nn.GELU(),
+            nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
-        self.put_pnl_head = nn.Sequential(
-            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
+        self.score_head = nn.Sequential(
+            nn.Linear(d * 2, d),
+            nn.GELU(),
+            nn.Dropout(dr),
+            nn.Linear(d, d // 2),
+            nn.GELU(),
             nn.Linear(d // 2, 1),
         )
-        self.risk_head = nn.Sequential(
-            nn.Linear(d, d // 2), nn.GELU(), nn.Dropout(dr),
-            nn.Linear(d // 2, 3),
-        )
 
-    def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
-        B, T, F = x.shape
-
-        regime = self.regime_encoder(x[:, -1, :])
-
+    def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
+        B, T, _ = x.shape
         h = self.input_proj(x)
         h = self.input_norm(h)
         h = self.pos_enc(h)
-
         mask = self.causal_mask[:T, :T] if T <= self.causal_mask.size(0) else None
         h = self.encoder(h, mask=mask)
+        context = h[:, -1, :]
 
-        last = h[:, -1, :]
-
-        call_pnl = self.call_pnl_head(self.film_call(regime, last))  # (B, 1)
-        put_pnl = self.put_pnl_head(self.film_put(regime, last))    # (B, 1)
-        risk = self.risk_head(self.film_risk(regime, last))           # (B, 3)
-
-        # Derive gate/direction/strike/confidence for replay compatibility
-        call_v = call_pnl.squeeze(-1)  # (B,)
-        put_v = put_pnl.squeeze(-1)    # (B,)
-
-        # Gate: raw max predicted P&L as logit (no scaling)
-        # sigmoid(0) = 0.5, so gate_threshold=0.5 means "trade when best P&L > 0"
-        max_pnl = torch.max(call_v, put_v)
-        gate_logit = max_pnl
-
-        # Direction: [call_logit, put_logit] from P&L predictions
-        direction = torch.stack([call_v, put_v], dim=-1)  # (B, 2)
-
-        # Strike: mild ATM prior (model can learn to override, but defaults to ATM)
-        strike = torch.zeros(B, NUM_STRIKE_CLASSES, device=x.device)
-        strike[:, NUM_STRIKE_CLASSES // 2] = 1.0
-
-        # Confidence: margin between directions
-        confidence = torch.abs(call_v - put_v).unsqueeze(-1) * 3.0  # (B, 1)
-
+        contract_emb = self.contract_proj(contracts)
+        context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
+        combined = torch.cat([context_exp, contract_emb], dim=-1)
+        contract_scores = self.score_head(combined).squeeze(-1)
+        no_trade_score = self.no_trade_head(context).squeeze(-1)
+        valid_mask = contracts[:, :, 0] > 0.5
         return {
-            'call_pnl': call_pnl,
-            'put_pnl': put_pnl,
-            'gate': gate_logit.unsqueeze(-1),
-            'direction': direction,
-            'strike': strike,
-            'risk': risk,
-            'confidence': confidence,
+            "contract_scores": contract_scores,
+            "no_trade_score": no_trade_score,
+            "valid_mask": valid_mask,
         }
 
 
-# ---------------------------------------------------------------------------
-# Dataset
-# ---------------------------------------------------------------------------
-
 class TradeDataset(Dataset):
-    def __init__(self, features: torch.Tensor, labels: dict[str, torch.Tensor],
-                 mask: torch.Tensor, lookback: int = LOOKBACK):
-        self.features = features
-        self.labels = labels
+    def __init__(self, data: dict, mask: torch.Tensor, lookback: int = LOOKBACK):
+        self.features = data["X"]
+        self.dates = data["dates"]
+        self.bar_of_day = data["bar_of_day"]
         self.lookback = lookback
+        meta = data.get("metadata", {})
+        self.sidecar_dir = meta["chain_sidecar_dir"]
+        self.max_contracts = int(meta["max_contracts_per_bar"])
 
         mask_np = mask.numpy() if isinstance(mask, torch.Tensor) else mask
-        all_indices = np.arange(lookback, len(features))
+        all_indices = np.arange(lookback, len(self.features))
         self.indices = all_indices[mask_np[lookback:]].copy()
 
     def __len__(self) -> int:
         return len(self.indices)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-        i = self.indices[idx]
-        window = self.features[i - self.lookback:i]
-        target = {}
-        for key, tensor in self.labels.items():
-            target[key] = tensor[i]
-        return window, target
+    def __getitem__(self, idx: int):
+        i = int(self.indices[idx])
+        day = self.dates[i]
+        local_bar = int(self.bar_of_day[i])
+        sidecar = load_sidecar_cached(os.path.join(self.sidecar_dir, f"{day}.pt"))
+        contracts, labels, _ = padded_snapshot(sidecar, local_bar, self.max_contracts)
+        window = self.features[i - self.lookback : i]
+        target = {
+            "contract_labels": torch.from_numpy(labels.astype(np.float32)),
+            "best_idx": torch.tensor(int(sidecar["bar_best_contract_idx"][local_bar]), dtype=torch.long),
+            "label_trade": torch.tensor(bool(sidecar["bar_label_trade"][local_bar]), dtype=torch.bool),
+            "label_trade_valid": torch.tensor(bool(sidecar["bar_labelable"][local_bar]), dtype=torch.bool),
+        }
+        return window, torch.from_numpy(contracts.astype(np.float32)), target
 
 
-# ---------------------------------------------------------------------------
-# Loss
-# ---------------------------------------------------------------------------
+def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
+    device = outputs["contract_scores"].device
+    scores = outputs["contract_scores"]
+    no_trade = outputs["no_trade_score"]
+    valid_mask = outputs["valid_mask"]
+    labels = targets["contract_labels"].to(device)
+    best_idx = targets["best_idx"].to(device)
+    label_trade = targets["label_trade"].to(device)
+    label_trade_valid = targets["label_trade_valid"].to(device)
 
-def compute_loss(
-    outputs: dict[str, torch.Tensor],
-    targets: dict[str, torch.Tensor],
-    bar_of_day: torch.Tensor | None = None,
-) -> tuple[torch.Tensor, dict[str, float]]:
-    """P&L regression loss.
+    active = valid_mask & torch.isfinite(labels)
+    pnl_loss = torch.tensor(0.0, device=device)
+    if active.any():
+        weights = 1.0 + 2.0 * labels[active].abs()
+        pnl_loss = (weights * F.huber_loss(scores[active], labels[active], delta=0.5, reduction="none")).mean()
 
-    The model predicts call_pnl and put_pnl. Loss = Huber on both predictions
-    against actual forward P&L for each direction.
+    class_logits = torch.cat([no_trade.unsqueeze(-1), scores], dim=-1)
+    class_logits[:, 1:][~valid_mask] = -1e9
+    ce_target = torch.zeros(class_logits.size(0), dtype=torch.long, device=device)
+    supervised_rows = label_trade_valid
+    trade_rows = supervised_rows & label_trade & (best_idx >= 0)
+    ce_target[trade_rows] = best_idx[trade_rows] + 1
+    ce_per = F.cross_entropy(class_logits, ce_target, reduction="none")
+    selection_loss = ce_per[supervised_rows].mean() if supervised_rows.any() else torch.tensor(0.0, device=device)
 
-    Only bars with valid signal (label_direction >= 0) are used.
-    """
-    device = outputs['call_pnl'].device
+    total = PNL_W * pnl_loss + SEL_W * selection_loss
+    pred_class = class_logits.argmax(dim=-1)
+    pred_trade = pred_class > 0
+    gate_acc = (pred_trade[supervised_rows] == label_trade[supervised_rows]).float().mean().item() if supervised_rows.any() else 0.0
+    sel_acc = ((pred_class[trade_rows] - 1) == best_idx[trade_rows]).float().mean().item() if trade_rows.any() else 0.0
 
-    lab_call_pnl = targets['label_call_pnl'].float().to(device)
-    lab_put_pnl = targets['label_put_pnl'].float().to(device)
-    lab_direction = targets['label_direction'].long().to(device)
+    dir_acc = 0.0
+    if trade_rows.any():
+        pred_idx = pred_class[trade_rows] - 1
+        true_idx = best_idx[trade_rows]
+        pred_put = outputs["valid_mask"][trade_rows].new_zeros(pred_idx.shape, dtype=torch.long)
+        true_put = outputs["valid_mask"][trade_rows].new_zeros(true_idx.shape, dtype=torch.long)
+        # contract right is field 2 (1 = put)
+        pred_put = (targets_contract_field(targets, trade_rows, pred_idx, 2) > 0.5).long()
+        true_put = (targets_contract_field(targets, trade_rows, true_idx, 2) > 0.5).long()
+        dir_acc = (pred_put == true_put).float().mean().item() if len(pred_put) else 0.0
 
-    # Valid signal mask: bars where we have P&L data
-    valid = lab_direction >= 0
-
-    if not valid.any():
-        zero = torch.tensor(0.0, device=device)
-        return zero, {'call_pnl': 0.0, 'put_pnl': 0.0, 'total': 0.0}
-
-    # P&L regression: predict both directions
-    pred_call = outputs['call_pnl'].squeeze(-1)[valid]
-    pred_put = outputs['put_pnl'].squeeze(-1)[valid]
-    true_call = lab_call_pnl[valid]
-    true_put = lab_put_pnl[valid]
-
-    # Direction-asymmetric loss: penalize optimistic errors more for puts than calls.
-    # Trade data shows puts WR 66% vs calls 82%. Put P&L predictions are noisier.
-    # Calls: 4x penalty for predicting profit on actual loss.
-    # Puts: 6x penalty -- stricter because put predictions less reliable.
-    call_err = pred_call - true_call
-    put_err = pred_put - true_put
-    call_weight = torch.where(
-        (call_err > 0) & (true_call < 0), 4.0, 1.0
-    )
-    put_weight = torch.where(
-        (put_err > 0) & (true_put < 0), 6.0, 1.0
-    )
-
-    # Sample weighting: bars with large |P&L| carry more signal
-    # Bars near zero P&L are noisy coin flips; large moves are learnable
-    max_abs_pnl = torch.max(true_call.abs(), true_put.abs())
-    sample_weight = 1.0 + 2.0 * max_abs_pnl  # baseline 1.0, stronger up-weight on high-signal bars
-
-    call_loss = (sample_weight * call_weight * F.huber_loss(pred_call, true_call, delta=0.5, reduction='none')).mean()
-    put_loss = (sample_weight * put_weight * F.huber_loss(pred_put, true_put, delta=0.5, reduction='none')).mean()
-
-    pnl_loss = call_loss + put_loss
-
-    # Risk loss: per-bar targets from labels if available, else fixed defaults
-    # hold_frac normalized by MAX_HOLD_BARS to match replay decoding:
-    #   replay does: max_hold = max(hold_lo, int(hold_raw * hold_hi))
-    #   so training target must be: label_max_hold / hold_hi
-    # Direction-dependent hold: puts get shorter target (20 bars) than calls (30 bars)
-    # because theta decay accelerates faster for puts near expiry.
-    from v2.core.policy import DEFAULT_POLICY
-    _hold_hi = DEFAULT_POLICY.max_hold_range[1]  # 250
-    risk_out = outputs['risk'][valid]
-    if 'label_stop_pct' in targets and 'label_target_pct' in targets and 'label_max_hold' in targets:
-        t_stop = targets['label_stop_pct'].float().to(device)[valid]
-        t_target = targets['label_target_pct'].float().to(device)[valid]
-        t_hold = targets['label_max_hold'].float().to(device)[valid] / _hold_hi
-        # Shorten hold target for put bars (direction=1)
-        is_put = (lab_direction[valid] == 1).float()
-        t_hold = t_hold * (1.0 - 0.33 * is_put)  # puts: 30 * 0.67 = ~20 bars
-        risk_target = torch.stack([t_stop, t_target, t_hold], dim=-1)
-    else:
-        risk_target = torch.tensor([0.30, 0.50, 30.0 / _hold_hi], device=device)
-        risk_target = risk_target.unsqueeze(0).expand_as(risk_out)
-    risk_loss = F.huber_loss(risk_out, risk_target, delta=0.5)
-
-    total = PNL_W * pnl_loss + RISK_W * risk_loss
-
-    # Metrics for logging
-    with torch.no_grad():
-        # Direction accuracy: did we predict the right side?
-        pred_dir = (pred_put > pred_call).long()
-        true_dir = lab_direction[valid]
-        dir_valid = (true_dir >= 0) & (true_dir <= 1)
-        dir_acc = (pred_dir[dir_valid] == true_dir[dir_valid]).float().mean().item() if dir_valid.any() else 0.0
-
-        # Gate accuracy: does max(pred) > 0 match label_trade?
-        lab_trade = targets['label_trade'].float().to(device)
-        pred_trade = (torch.max(pred_call, pred_put) > 0).float()
-        true_trade = lab_trade[valid]
-        gate_acc = (pred_trade == true_trade).float().mean().item()
-
-        # Conditional metrics: direction accuracy only on gated bars
-        pred_gated = pred_trade.bool()
-        dir_acc_gated = 0.0
-        if pred_gated.any() and dir_valid.any():
-            gated_and_valid = pred_gated & dir_valid
-            if gated_and_valid.any():
-                dir_acc_gated = (pred_dir[gated_and_valid] == true_dir[gated_and_valid]).float().mean().item()
-
-        # Avg predicted P&L for gated vs ungated (measures gate value)
-        max_pred = torch.max(pred_call, pred_put)
-        avg_pnl_gated = max_pred[pred_gated].mean().item() if pred_gated.any() else 0.0
-        avg_pnl_ungated = max_pred[~pred_gated].mean().item() if (~pred_gated).any() else 0.0
-
-    loss_dict = {
-        'call_pnl': call_loss.item(),
-        'put_pnl': put_loss.item(),
-        'risk': risk_loss.item(),
-        'total': total.item(),
-        'dir_acc': dir_acc,
-        'gate_acc': gate_acc,
-        'dir_acc_gated': dir_acc_gated,
-        'avg_pnl_gated': avg_pnl_gated,
-        'avg_pnl_ungated': avg_pnl_ungated,
+    return total, {
+        "pnl": float(pnl_loss.item()),
+        "selection": float(selection_loss.item()),
+        "total": float(total.item()),
+        "gate_acc": gate_acc,
+        "sel_acc": sel_acc,
+        "dir_acc": dir_acc,
     }
 
-    return total, loss_dict
 
+def targets_contract_field(targets: dict[str, torch.Tensor], trade_rows: torch.Tensor, idxs: torch.Tensor, field_idx: int) -> torch.Tensor:
+    full = targets["contracts_full"][trade_rows]
+    rows = torch.arange(full.size(0), device=full.device)
+    return full[rows, idxs, field_idx]
 
-# ---------------------------------------------------------------------------
-# Training loop
-# ---------------------------------------------------------------------------
 
 def load_dataset(path: str = "v2/data.pt") -> dict:
-    print(f"Loading dataset from {path}...")
     return torch.load(path, map_location="cpu", weights_only=False)
 
 
-SEED = int(os.environ.get("TRAIN_SEED", 123))
-
-
-def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt",
-          train_mask_override=None, val_mask_override=None):
+def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_mask_override=None, val_mask_override=None):
     t_start = time.time()
-
-    # Reproducible training (re-read env var so walk-forward can set per-fold seeds)
-    seed = int(os.environ.get("TRAIN_SEED", SEED))
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
-    print(f"Seed: {seed}")
+    torch.manual_seed(SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(SEED)
+    np.random.seed(SEED)
 
     data = load_dataset(data_path)
-    features = data['X']
+    train_mask = train_mask_override if train_mask_override is not None else data["train_mask"]
+    val_mask = val_mask_override if val_mask_override is not None else data["val_mask"]
 
-    labels = {
-        'label_trade': data['label_trade'],
-        'label_direction': data['label_direction'],
-        'label_call_pnl': data['label_call_pnl'],
-        'label_put_pnl': data['label_put_pnl'],
-        'label_stop_pct': data['label_stop_pct'],
-        'label_target_pct': data['label_target_pct'],
-        'label_max_hold': data['label_max_hold'],
-        'label_confidence': data['label_confidence'],
-    }
-
-    train_mask = train_mask_override if train_mask_override is not None else data['train_mask']
-    val_mask = val_mask_override if val_mask_override is not None else data['val_mask']
-
-    train_ds = TradeDataset(features, labels, train_mask, lookback=LOOKBACK)
-    val_ds = TradeDataset(features, labels, val_mask, lookback=LOOKBACK)
-
+    train_ds = TradeDataset(data, train_mask, lookback=LOOKBACK)
+    val_ds = TradeDataset(data, val_mask, lookback=LOOKBACK)
     print(f"Train samples: {len(train_ds):,}, Val samples: {len(val_ds):,}")
 
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,
-                              num_workers=0, drop_last=True)
-    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
-                            num_workers=0)
+    def collate_fn(batch):
+        windows, contracts, targets_list = zip(*batch)
+        windows = torch.stack(windows)
+        contracts = torch.stack(contracts)
+        targets = {
+            "contracts_full": contracts,
+            "contract_labels": torch.stack([t["contract_labels"] for t in targets_list]),
+            "best_idx": torch.stack([t["best_idx"] for t in targets_list]),
+            "label_trade": torch.stack([t["label_trade"] for t in targets_list]),
+            "label_trade_valid": torch.stack([t["label_trade_valid"] for t in targets_list]),
+        }
+        return windows, contracts, targets
+
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=0, drop_last=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0, collate_fn=collate_fn)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TradingModel().to(device)
-    param_count = sum(p.numel() for p in model.parameters())
-    print(f"Model: {param_count:,} parameters, device={device}")
-
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
-    best_val_loss = float('inf')
+    best_val_loss = float("inf")
     best_epoch = 0
-    gate_acc = 0.0
-    dir_acc = 0.0
+    best_metrics = {"gate_accuracy": 0.0, "selection_accuracy": 0.0, "direction_accuracy": 0.0}
 
     for epoch in range(1, EPOCHS + 1):
-        elapsed = time.time() - t_start
-        if elapsed > TIME_BUDGET:
-            print(f"Time budget ({TIME_BUDGET}s) reached at epoch {epoch}")
+        if time.time() - t_start > TIME_BUDGET:
+            print(f"Time budget reached at epoch {epoch}")
             break
 
         model.train()
-        train_losses = []
-        for batch_x, batch_y in train_loader:
+        train_stats = []
+        for batch_x, batch_c, batch_y in train_loader:
             batch_x = batch_x.to(device)
-            batch_y = {k: v.to(device) for k, v in batch_y.items()}
+            batch_c = batch_c.to(device)
+            batch_y = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch_y.items()}
 
             optimizer.zero_grad()
-            outputs = model(batch_x)
-            loss, loss_dict = compute_loss(outputs, batch_y)
+            outputs = model(batch_x, batch_c)
+            loss, metrics = compute_loss(outputs, batch_y)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-            train_losses.append(loss_dict)
+            train_stats.append(metrics)
 
         scheduler.step()
 
-        avg_train = {}
-        if train_losses:
-            for key in train_losses[0]:
-                avg_train[key] = np.mean([d[key] for d in train_losses])
-
         model.eval()
-        val_losses = []
-
+        val_stats = []
         with torch.no_grad():
-            for batch_x, batch_y in val_loader:
+            for batch_x, batch_c, batch_y in val_loader:
                 batch_x = batch_x.to(device)
-                batch_y = {k: v.to(device) for k, v in batch_y.items()}
+                batch_c = batch_c.to(device)
+                batch_y = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch_y.items()}
+                outputs = model(batch_x, batch_c)
+                _, metrics = compute_loss(outputs, batch_y)
+                val_stats.append(metrics)
 
-                outputs = model(batch_x)
-                loss, loss_dict = compute_loss(outputs, batch_y)
-                val_losses.append(loss_dict)
+        avg_train = {k: float(np.mean([d[k] for d in train_stats])) for k in train_stats[0]} if train_stats else {}
+        avg_val = {k: float(np.mean([d[k] for d in val_stats])) for k in val_stats[0]} if val_stats else {}
+        print(
+            f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
+            f"val={avg_val.get('total', 0):.4f} | pnl={avg_val.get('pnl', 0):.4f} "
+            f"sel={avg_val.get('selection', 0):.4f} | gate={avg_val.get('gate_acc', 0):.3f} "
+            f"sel_acc={avg_val.get('sel_acc', 0):.3f} dir={avg_val.get('dir_acc', 0):.3f}"
+        )
 
-        avg_val = {}
-        if val_losses:
-            for key in val_losses[0]:
-                avg_val[key] = np.mean([d[key] for d in val_losses])
-
-        gate_acc = avg_val.get('gate_acc', 0)
-        dir_acc = avg_val.get('dir_acc', 0)
-
-        dir_acc_gated = avg_val.get('dir_acc_gated', 0)
-        avg_pnl_g = avg_val.get('avg_pnl_gated', 0)
-        avg_pnl_u = avg_val.get('avg_pnl_ungated', 0)
-
-        print(f"Epoch {epoch:3d} | "
-              f"train={avg_train.get('total', 0):.4f} | "
-              f"val={avg_val.get('total', 0):.4f} | "
-              f"call={avg_val.get('call_pnl', 0):.4f} put={avg_val.get('put_pnl', 0):.4f} | "
-              f"gate={gate_acc:.3f} dir={dir_acc:.3f} dir_g={dir_acc_gated:.3f} | "
-              f"pnl_g={avg_pnl_g:+.4f} pnl_u={avg_pnl_u:+.4f} | "
-              f"lr={scheduler.get_last_lr()[0]:.2e}")
-
-        val_total = avg_val.get('total', float('inf'))
+        val_total = avg_val.get("total", float("inf"))
         if val_total < best_val_loss:
             best_val_loss = val_total
             best_epoch = epoch
-            dataset_fp = data.get('metadata', {}).get('fingerprint', 'unknown')
-            torch.save({
-                'model_state_dict': model.state_dict(),
-                'epoch': epoch,
-                'val_loss': val_total,
-                'gate_acc': gate_acc,
-                'dir_acc': dir_acc,
-                'hyperparams': {
-                    'lookback': LOOKBACK, 'd_model': D_MODEL, 'depth': DEPTH,
-                    'n_heads': N_HEADS, 'dropout': DROPOUT,
-                    'batch_size': BATCH_SIZE, 'lr': LR,
+            best_metrics = {
+                "gate_accuracy": avg_val.get("gate_acc", 0.0),
+                "selection_accuracy": avg_val.get("sel_acc", 0.0),
+                "direction_accuracy": avg_val.get("dir_acc", 0.0),
+            }
+            dataset_fp = data.get("metadata", {}).get("fingerprint", "unknown")
+            torch.save(
+                {
+                    "model_state_dict": model.state_dict(),
+                    "model_class": "TradingModel",
+                    "epoch": epoch,
+                    "val_loss": val_total,
+                    "hyperparams": {
+                        "lookback": LOOKBACK,
+                        "d_model": D_MODEL,
+                        "depth": DEPTH,
+                        "n_heads": N_HEADS,
+                        "dropout": DROPOUT,
+                        "contract_features": NUM_CONTRACT_FEATURES,
+                        "max_contracts_per_bar": int(data["metadata"]["max_contracts_per_bar"]),
+                    },
+                    "score_config_fingerprint": score_config_fingerprint(),
+                    "dataset_fingerprint": dataset_fp,
                 },
-                'score_config_fingerprint': score_config_fingerprint(),
-                'dataset_fingerprint': dataset_fp,
-            }, model_path)
+                model_path,
+            )
 
     metrics = {
-        'val_loss': best_val_loss,
-        'gate_accuracy': gate_acc,
-        'dir_accuracy': dir_acc,
-        'best_epoch': best_epoch,
-        'epochs_run': min(epoch, EPOCHS),
-        'score_config_fingerprint': score_config_fingerprint(),
+        "val_loss": best_val_loss,
+        "best_epoch": best_epoch,
+        "epochs_run": min(epoch, EPOCHS),
+        "score_config_fingerprint": score_config_fingerprint(),
+        **best_metrics,
     }
     print(f"\nMETRICS_JSON:{json.dumps(metrics)}")
     print(f"Best epoch: {best_epoch}, val_loss: {best_val_loss:.4f}")
-
     return model, metrics
 
 

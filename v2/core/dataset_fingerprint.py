@@ -8,7 +8,7 @@ from typing import Any
 import torch
 
 
-FINGERPRINT_SCHEMA_VERSION = "v2_dataset_fp_v2"
+FINGERPRINT_SCHEMA_VERSION = "v4_dataset_fp_v1"
 
 _METADATA_KEYS = (
     "version",
@@ -16,13 +16,14 @@ _METADATA_KEYS = (
     "normalization",
     "split",
     "label_scheme",
-    "label_tier",
-    "label_grid",
     "label_gate_min_pnl",
-    "direction_signal",
-    "atm_source",
-    "poc_va_source",
     "trade_window",
+    "chain_schema_version",
+    "chain_sidecar_digest",
+    "contract_feature_fields",
+    "max_contracts_per_bar",
+    "risk_policy",
+    "execution_filters",
 )
 
 
@@ -40,7 +41,6 @@ def _update_with_tensor(hasher: "hashlib._Hash", tensor: torch.Tensor) -> None:
 
 
 def compute_dataset_fingerprint(dataset: dict[str, Any]) -> str:
-    """Hash dataset contents and semantic metadata into a stable short fingerprint."""
     hasher = hashlib.sha256()
     hasher.update(FINGERPRINT_SCHEMA_VERSION.encode("utf-8"))
 

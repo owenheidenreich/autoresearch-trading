@@ -13,35 +13,35 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 
 - `evaluate model`
   Run:
-  `python -m v2.replay --model v2/model.pt --data v2/data.pt --mask promote`
+  `python3 -m v2.replay --model v2/model.pt --data v2/data.pt --mask promote`
 
 - `evaluate promoted artifact`
   Run:
-  `python -m v2.replay --data v2/data.pt --mask promote`
+  `python3 -m v2.replay --data v2/data.pt --mask promote`
 
 - `evaluate on shadow`
   Run:
-  `python -m v2.replay --data v2/data.pt --mask shadow`
+  `python3 -m v2.replay --data v2/data.pt --mask shadow`
 
 - `analyze trades`
   Run:
-  `python -m v2.analysis.analyze_losses`
+  `python3 -m v2.analysis.analyze_losses`
 
 - `audit dataset`
   Run:
-  `python -m v2.analysis.contract_drift_audit --data v2/data.pt`
+  `python3 -m v2.analysis.harness_eval --data v2/data.pt`
 
 ## Data
 
-- `rebuild dataset`
-  Rebuild the canonical repaired dataset from raw caches:
-  1. `python -m v2.pipeline.build_v2_dataset --output v2/data.pt`
-  2. `python -m v2.pipeline.relabel_tier3 --data v2/data.pt --tier 3`
-  3. `python -m v2.analysis.contract_drift_audit --data v2/data.pt`
-
-- `relabel dataset`
+- `download full chain`
   Run:
-  `python -m v2.pipeline.relabel_tier3 --data v2/data.pt --tier 3`
+  `python3 -m v2.pipeline.download_full_chain`
+
+- `rebuild dataset`
+  Rebuild the canonical exact-chain dataset from raw caches:
+  1. `python3 -m v2.pipeline.build_v2_dataset --output v2/data.pt --sidecar-dir v2/data_sidecars`
+  2. `python3 -m v2.analysis.harness_eval --data v2/data.pt --build`
+  3. `python3 -m v2.analysis.harness_eval --data v2/data.pt`
 
 ## GPU
 
@@ -69,16 +69,8 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 
 - `plot progress`
   Run:
-  `python v2/plot_progress.py`
+  `python3 v2/plot_progress.py`
 
 - `plot trades`
   Run:
-  `python -m v2.plot_trades --model v2/model.pt`
-
-## Live
-
-These are not implemented yet:
-
-- `begin shadow session`
-- `begin paper session`
-- `kill switch`
+  `python3 -m v2.plot_trades --model v2/model.pt`

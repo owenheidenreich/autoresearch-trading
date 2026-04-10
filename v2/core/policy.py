@@ -1,86 +1,71 @@
-"""Shared trading policy: single source of truth for all trade-shaping parameters.
-
-Used identically by train.py (output squashing), replay.py (intent construction),
-and live/decision.py (live inference). The AI researcher can mutate this file
-alongside train.py as one of the two mutable research surfaces.
-
-This file is part of the artifact bundle. Every kept experiment saves a snapshot
-of the policy that produced it.
-"""
+"""Shared trading policy for the frozen v4 exact-chain harness."""
 from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass
 
 
 @dataclass(frozen=True)
 class DecisionPolicy:
-    """All parameters that materially shape trading decisions.
+    """All parameters that materially shape trading decisions."""
 
-    Frozen so it can be hashed, serialized, and compared across experiments.
-    """
+    # Entry gate
+    gate_threshold: float = 0.04
+    label_gate_min_pnl: float = 0.04
 
-    # --- Gate ---
-    gate_threshold: float = 0.50  # trade only when model predicts positive P&L
-    label_gate_min_pnl: float = 0.04  # label_trade=True only when best_pnl > this
+    # Executability filters
+    min_contract_mid: float = 0.50
+    max_spread_fraction: float = 0.18
+    require_volume_or_transactions: bool = True
 
-    # --- Risk output ranges (sigmoid squashing in model_to_intent) ---
-    stop_range: tuple[float, float] = (0.10, 0.40)
-    target_range: tuple[float, float] = (0.15, 1.65)
-    max_hold_range: tuple[int, int] = (10, 250)
+    # Fixed risk policy for the first frozen exact-chain harness
+    stop_pct: float = 0.30
+    target_pct: float = 0.50
+    max_hold_bars: int = 120
+    exit_policy: str = "TRAILING"
+    breakeven_trigger_pct: float = 0.30
 
-    # --- Position management ---
+    # Position management
     cooldown_bars: int = 5
     max_concurrent: int = 1
     qty: int = 1
 
-    # --- Time blocks ---
-    # Clamped to 270 to match label supervision window (labels only exist
-    # for bars 30-269). Trading beyond 270 means replay uses unsupervised bars.
+    # Session restrictions
     no_trade_before_bar: int = 30
     no_trade_after_bar: int = 270
 
-    # --- Order execution ---
+    # Execution
     order_style: str = "MKT"
-    exit_policy: str = "TRAILING"
+    tif: str = "DAY"
 
-    # --- Risk limits ---
-    daily_loss_cap_pct: float = 0.05  # 5% of equity, hard stop for the day
+    # Risk limits
+    daily_loss_cap_pct: float = 0.05
 
-    # --- Account ---
+    # Account
     starting_equity: float = 10_000.0
-    contract_multiplier: int = 100     # SPX option multiplier
+    contract_multiplier: int = 100
 
     def to_dict(self) -> dict:
-        """Serialize to a JSON-safe dict."""
-        d = asdict(self)
-        # tuples become lists in asdict, convert back for clarity
-        d['stop_range'] = list(d['stop_range'])
-        d['target_range'] = list(d['target_range'])
-        d['max_hold_range'] = list(d['max_hold_range'])
-        return d
+        return asdict(self)
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, sort_keys=True)
 
     @classmethod
-    def from_dict(cls, d: dict) -> DecisionPolicy:
-        d = dict(d)
-        d['stop_range'] = tuple(d['stop_range'])
-        d['target_range'] = tuple(d['target_range'])
-        d['max_hold_range'] = tuple(int(x) for x in d['max_hold_range'])
-        return cls(**d)
+    def from_dict(cls, d: dict) -> "DecisionPolicy":
+        import dataclasses
+
+        known = {f.name for f in dataclasses.fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in known})
 
     @classmethod
-    def from_json(cls, s: str) -> DecisionPolicy:
+    def from_json(cls, s: str) -> "DecisionPolicy":
         return cls.from_dict(json.loads(s))
 
     def fingerprint(self) -> str:
-        """SHA-256 fingerprint. Changes mean a new policy version."""
         payload = json.dumps(self.to_dict(), sort_keys=True)
         return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
-# Default policy used when no override is provided
 DEFAULT_POLICY = DecisionPolicy()
