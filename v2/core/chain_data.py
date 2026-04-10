@@ -138,7 +138,7 @@ def file_sha256(path: str) -> str:
     return h.hexdigest()
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=None)
 def load_sidecar_cached(path: str) -> dict[str, Any]:
     return torch.load(path, map_location="cpu", weights_only=False)
 

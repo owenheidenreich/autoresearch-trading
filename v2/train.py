@@ -120,34 +120,59 @@ class TradingModel(nn.Module):
 class TradeDataset(Dataset):
     def __init__(self, data: dict, mask: torch.Tensor, lookback: int = LOOKBACK):
         self.features = data["X"]
-        self.dates = data["dates"]
-        self.bar_of_day = data["bar_of_day"]
         self.lookback = lookback
+        dates = data["dates"]
+        bar_of_day = data["bar_of_day"]
         meta = data.get("metadata", {})
-        self.sidecar_dir = meta["chain_sidecar_dir"]
-        self.max_contracts = int(meta["max_contracts_per_bar"])
+        sidecar_dir = meta["chain_sidecar_dir"]
+        max_contracts = int(meta["max_contracts_per_bar"])
 
         mask_np = mask.numpy() if isinstance(mask, torch.Tensor) else mask
         all_indices = np.arange(lookback, len(self.features))
         self.indices = all_indices[mask_np[lookback:]].copy()
+
+        # Pre-materialize all contract snapshots into contiguous tensors.
+        # Loads each day's sidecar exactly once, then discards raw data.
+        n = len(self.indices)
+        self.all_contracts = torch.zeros(n, max_contracts, NUM_CONTRACT_FEATURES, dtype=torch.float32)
+        self.all_labels = torch.full((n, max_contracts), float("nan"), dtype=torch.float32)
+        self.all_best_idx = torch.zeros(n, dtype=torch.long)
+        self.all_label_trade = torch.zeros(n, dtype=torch.bool)
+        self.all_label_trade_valid = torch.zeros(n, dtype=torch.bool)
+
+        t0 = time.time()
+        sidecar_cache: dict[str, dict] = {}
+        for j in range(n):
+            i = int(self.indices[j])
+            day = dates[i]
+            local_bar = int(bar_of_day[i])
+            if day not in sidecar_cache:
+                sidecar_cache[day] = torch.load(
+                    os.path.join(sidecar_dir, f"{day}.pt"),
+                    map_location="cpu", weights_only=False,
+                )
+            sc = sidecar_cache[day]
+            contracts, labels, _ = padded_snapshot(sc, local_bar, max_contracts)
+            self.all_contracts[j] = torch.from_numpy(contracts)
+            self.all_labels[j] = torch.from_numpy(labels)
+            self.all_best_idx[j] = int(sc["bar_best_contract_idx"][local_bar])
+            self.all_label_trade[j] = bool(sc["bar_label_trade"][local_bar])
+            self.all_label_trade_valid[j] = bool(sc["bar_labelable"][local_bar])
+        print(f"  Dataset materialized: {n:,} samples, {len(sidecar_cache)} days, {time.time() - t0:.1f}s")
 
     def __len__(self) -> int:
         return len(self.indices)
 
     def __getitem__(self, idx: int):
         i = int(self.indices[idx])
-        day = self.dates[i]
-        local_bar = int(self.bar_of_day[i])
-        sidecar = load_sidecar_cached(os.path.join(self.sidecar_dir, f"{day}.pt"))
-        contracts, labels, _ = padded_snapshot(sidecar, local_bar, self.max_contracts)
         window = self.features[i - self.lookback : i]
         target = {
-            "contract_labels": torch.from_numpy(labels.astype(np.float32)),
-            "best_idx": torch.tensor(int(sidecar["bar_best_contract_idx"][local_bar]), dtype=torch.long),
-            "label_trade": torch.tensor(bool(sidecar["bar_label_trade"][local_bar]), dtype=torch.bool),
-            "label_trade_valid": torch.tensor(bool(sidecar["bar_labelable"][local_bar]), dtype=torch.bool),
+            "contract_labels": self.all_labels[idx],
+            "best_idx": self.all_best_idx[idx],
+            "label_trade": self.all_label_trade[idx],
+            "label_trade_valid": self.all_label_trade_valid[idx],
         }
-        return window, torch.from_numpy(contracts.astype(np.float32)), target
+        return window, self.all_contracts[idx], target
 
 
 def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
@@ -240,8 +265,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_
         }
         return windows, contracts, targets
 
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=0, drop_last=True, collate_fn=collate_fn)
-    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0, collate_fn=collate_fn)
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=True, drop_last=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=True, collate_fn=collate_fn)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TradingModel().to(device)
