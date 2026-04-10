@@ -34,6 +34,7 @@ EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
+GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 
 
@@ -185,45 +186,73 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     label_trade = targets["label_trade"].to(device)
     label_trade_valid = targets["label_trade_valid"].to(device)
 
+    # --- A. PNL loss (unchanged): Huber regression on contract P&L ---
     active = valid_mask & torch.isfinite(labels)
     pnl_loss = torch.tensor(0.0, device=device)
     if active.any():
         weights = 1.0 + 2.0 * labels[active].abs()
         pnl_loss = (weights * F.huber_loss(scores[active], labels[active], delta=0.5, reduction="none")).mean()
 
-    class_logits = torch.cat([no_trade.unsqueeze(-1), scores], dim=-1)
-    class_logits[:, 1:][~valid_mask] = -1e9
-    ce_target = torch.zeros(class_logits.size(0), dtype=torch.long, device=device)
     supervised_rows = label_trade_valid
     trade_rows = supervised_rows & label_trade & (best_idx >= 0)
-    ce_target[trade_rows] = best_idx[trade_rows] + 1
-    ce_per = F.cross_entropy(class_logits, ce_target, reduction="none")
-    selection_loss = ce_per[supervised_rows].mean() if supervised_rows.any() else torch.tensor(0.0, device=device)
 
-    total = PNL_W * pnl_loss + SEL_W * selection_loss
-    pred_class = class_logits.argmax(dim=-1)
-    pred_trade = pred_class > 0
+    # --- B. Gate loss: Binary CE on supervised rows ---
+    # Gate logit = max(valid contract scores) - no_trade_score
+    # Mirrors replay.py:90: trade iff best_score > abstain_score
+    gate_loss = torch.tensor(0.0, device=device)
+    if supervised_rows.any():
+        masked_scores = scores.clone()
+        masked_scores[~valid_mask] = -1e9
+        best_contract_score, _ = masked_scores.max(dim=-1)  # (B,)
+        gate_logit = best_contract_score - no_trade  # (B,)
+        gate_target = label_trade.float()  # 1.0 = TRADE, 0.0 = NO_TRADE
+        gate_bce = F.binary_cross_entropy_with_logits(
+            gate_logit[supervised_rows], gate_target[supervised_rows], reduction="mean"
+        )
+        gate_loss = gate_bce
+
+    # --- C. Selection loss: CE over K contracts, trade rows only ---
+    # "Given I should trade, which contract?" — NO_TRADE class excluded
+    selection_loss = torch.tensor(0.0, device=device)
+    if trade_rows.any():
+        sel_logits = scores[trade_rows].clone()  # (N_trade, K)
+        sel_logits[~valid_mask[trade_rows]] = -1e9
+        sel_target = best_idx[trade_rows]  # (N_trade,) 0-indexed into contracts
+        selection_loss = F.cross_entropy(sel_logits, sel_target)
+
+    total = GATE_W * gate_loss + SEL_W * selection_loss + PNL_W * pnl_loss
+
+    # --- Metrics ---
+    # Predict: trade if max(contract_scores) > no_trade_score (matches replay gate)
+    masked_scores_eval = scores.clone().detach()
+    masked_scores_eval[~valid_mask] = -1e9
+    best_eval, _ = masked_scores_eval.max(dim=-1)
+    pred_trade = best_eval > no_trade.detach()
+
     gate_acc = (pred_trade[supervised_rows] == label_trade[supervised_rows]).float().mean().item() if supervised_rows.any() else 0.0
-    sel_acc = ((pred_class[trade_rows] - 1) == best_idx[trade_rows]).float().mean().item() if trade_rows.any() else 0.0
+    trade_rate = pred_trade[supervised_rows].float().mean().item() if supervised_rows.any() else 0.0
+
+    # Selection accuracy: did we pick the right contract on trade rows?
+    pred_contract = masked_scores_eval.argmax(dim=-1)
+    sel_acc = (pred_contract[trade_rows] == best_idx[trade_rows]).float().mean().item() if trade_rows.any() else 0.0
 
     dir_acc = 0.0
     if trade_rows.any():
-        pred_idx = pred_class[trade_rows] - 1
+        pred_idx = pred_contract[trade_rows]
         true_idx = best_idx[trade_rows]
-        pred_put = outputs["valid_mask"][trade_rows].new_zeros(pred_idx.shape, dtype=torch.long)
-        true_put = outputs["valid_mask"][trade_rows].new_zeros(true_idx.shape, dtype=torch.long)
-        # contract right is field 2 (1 = put)
         pred_put = (targets_contract_field(targets, trade_rows, pred_idx, 2) > 0.5).long()
         true_put = (targets_contract_field(targets, trade_rows, true_idx, 2) > 0.5).long()
         dir_acc = (pred_put == true_put).float().mean().item() if len(pred_put) else 0.0
 
     return total, {
         "pnl": float(pnl_loss.item()),
+        "gate": float(gate_loss.item()),
         "selection": float(selection_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "sel_acc": sel_acc,
         "dir_acc": dir_acc,
+        "trade_rate": trade_rate,
     }
 
 
@@ -315,8 +344,9 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | pnl={avg_val.get('pnl', 0):.4f} "
-            f"sel={avg_val.get('selection', 0):.4f} | gate={avg_val.get('gate_acc', 0):.3f} "
-            f"sel_acc={avg_val.get('sel_acc', 0):.3f} dir={avg_val.get('dir_acc', 0):.3f}"
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('selection', 0):.4f} | "
+            f"gate={avg_val.get('gate_acc', 0):.3f} sel_acc={avg_val.get('sel_acc', 0):.3f} "
+            f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
 
         val_total = avg_val.get("total", float("inf"))
