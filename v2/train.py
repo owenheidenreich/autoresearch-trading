@@ -95,15 +95,6 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d // 2, 1),
         )
-        # Context-dependent side head: predicts call/put preference per bar.
-        # A global bias can't work because oracle side varies bar-to-bar (~50/50),
-        # so gradients cancel. This head reads the context embedding to predict
-        # which side is better on each specific bar.
-        # Heavy dropout prevents memorization (96-dim linear overfits fast).
-        self.side_head = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(d, 1),
-        )
 
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         B, T, _ = x.shape
@@ -117,17 +108,11 @@ class TradingModel(nn.Module):
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
-        base_scores = self.score_head(combined).squeeze(-1)
-        # Context-dependent side offset: decoupled from PnL regression
-        is_put = contracts[:, :, 2]  # right_is_put: 0=call, 1=put
-        put_pref = self.side_head(context)  # (B, 1): positive = prefer puts
-        side_offset = put_pref * (2.0 * is_put - 1.0)  # (B, K)
-        contract_scores = base_scores + side_offset
+        contract_scores = self.score_head(combined).squeeze(-1)
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         valid_mask = contracts[:, :, 0] > 0.5
         return {
-            "base_scores": base_scores,          # PnL regression target (no side bias)
-            "contract_scores": contract_scores,   # selection + gate + replay (with side bias)
+            "contract_scores": contract_scores,
             "no_trade_score": no_trade_score,
             "valid_mask": valid_mask,
         }
@@ -191,10 +176,12 @@ class TradeDataset(Dataset):
         return window, self.all_contracts[idx], target
 
 
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.05))
+
+
 def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
     device = outputs["contract_scores"].device
-    scores = outputs["contract_scores"]       # with side bias (for gate + side CE)
-    base_scores = outputs["base_scores"]      # without side bias (for PnL regression)
+    scores = outputs["contract_scores"]
     no_trade = outputs["no_trade_score"]
     valid_mask = outputs["valid_mask"]
     labels = targets["contract_labels"].to(device)
@@ -202,74 +189,54 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     label_trade = targets["label_trade"].to(device)
     label_trade_valid = targets["label_trade_valid"].to(device)
 
-    # --- A. PNL loss: Huber regression on BASE scores (no side bias) ---
-    # Decoupled: PnL regression trains score_head only, not side_bias
+    # --- A. PNL loss: Huber regression on contract P&L ---
     active = valid_mask & torch.isfinite(labels)
     pnl_loss = torch.tensor(0.0, device=device)
     if active.any():
         weights = 1.0 + 2.0 * labels[active].abs()
-        pnl_loss = (weights * F.huber_loss(base_scores[active], labels[active], delta=0.5, reduction="none")).mean()
+        pnl_loss = (weights * F.huber_loss(scores[active], labels[active], delta=0.5, reduction="none")).mean()
 
     supervised_rows = label_trade_valid
     trade_rows = supervised_rows & label_trade & (best_idx >= 0)
 
     # --- B. Gate loss: Binary CE on supervised rows ---
-    # Gate logit = max(valid contract scores) - no_trade_score
-    # Mirrors replay.py:90: trade iff best_score > abstain_score
     gate_loss = torch.tensor(0.0, device=device)
     if supervised_rows.any():
         masked_scores = scores.clone()
         masked_scores[~valid_mask] = -1e9
-        best_contract_score, _ = masked_scores.max(dim=-1)  # (B,)
-        gate_logit = best_contract_score - no_trade  # (B,)
-        gate_target = label_trade.float()  # 1.0 = TRADE, 0.0 = NO_TRADE
+        best_contract_score, _ = masked_scores.max(dim=-1)
+        gate_logit = best_contract_score - no_trade
+        gate_target = label_trade.float()
         gate_bce = F.binary_cross_entropy_with_logits(
             gate_logit[supervised_rows], gate_target[supervised_rows], reduction="mean"
         )
         gate_loss = gate_bce
 
-    # --- C. Side CE: 2-class call/put supervision from contract_scores ---
-    # Aggregate each side's scores via logsumexp (not max) so gradient flows
-    # to ALL contracts within each side, not just the argmax.
-    side_loss = torch.tensor(0.0, device=device)
+    # --- C. Soft selection: KL divergence with temperature-scaled P&L targets ---
+    # Instead of one-hot CE (38 classes, near-zero gradient), build a soft target
+    # distribution from realized contract P&L: softmax(pnl / temperature).
+    # This gives gradient to ALL contracts proportional to their quality.
+    sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
-        tr_contracts = targets["contracts_full"][trade_rows]  # (N, K, F)
-        is_put = tr_contracts[:, :, 2] >= 0.5  # right_is_put is feature idx 2
-        is_call = ~is_put & tr_valid
-        is_put_valid = is_put & tr_valid
+        tr_labels = labels[trade_rows]
 
-        # Need both sides present
-        has_calls = is_call.any(dim=-1)
-        has_puts = is_put_valid.any(dim=-1)
-        both_sides = has_calls & has_puts
+        # Build soft targets from realized P&L (only valid contracts)
+        pnl_for_target = tr_labels.clone()
+        pnl_for_target[~tr_valid] = -1e9  # invalid contracts get zero probability
+        pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
+        soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
-        if both_sides.any():
-            bs_scores = tr_scores[both_sides]
-            bs_is_call = is_call[both_sides]
-            bs_is_put = is_put_valid[both_sides]
+        # Model log-probs (mask invalid contracts)
+        logits_for_sel = tr_scores.clone()
+        logits_for_sel[~tr_valid] = -1e9
+        log_probs = F.log_softmax(logits_for_sel, dim=-1)
 
-            # Logsumexp over each side — spreads gradient across all contracts
-            call_scores_masked = bs_scores.clone()
-            call_scores_masked[~bs_is_call] = -1e9
-            call_lse = torch.logsumexp(call_scores_masked, dim=-1)
+        # KL divergence: target * (log_target - log_probs)
+        sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
-            put_scores_masked = bs_scores.clone()
-            put_scores_masked[~bs_is_put] = -1e9
-            put_lse = torch.logsumexp(put_scores_masked, dim=-1)
-
-            # Side logit: positive = put, negative = call
-            side_logit = put_lse - call_lse  # (N,)
-
-            # Oracle target: is the best contract a put?
-            bs_best_idx = best_idx[trade_rows][both_sides]
-            bs_contracts = tr_contracts[both_sides]
-            oracle_is_put = (bs_contracts[torch.arange(bs_contracts.size(0), device=device), bs_best_idx, 2] >= 0.5).float()
-
-            side_loss = F.binary_cross_entropy_with_logits(side_logit, oracle_is_put)
-
-    total = GATE_W * gate_loss + SEL_W * side_loss + PNL_W * pnl_loss
+    total = GATE_W * gate_loss + SEL_W * sel_loss + PNL_W * pnl_loss
 
     # --- Metrics ---
     # Predict: trade if max(contract_scores) > no_trade_score (matches replay gate)
@@ -295,7 +262,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     return total, {
         "pnl": float(pnl_loss.item()),
         "gate": float(gate_loss.item()),
-        "side": float(side_loss.item()),
+        "sel": float(sel_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -393,7 +360,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | pnl={avg_val.get('pnl', 0):.4f} "
-            f"gate_l={avg_val.get('gate', 0):.4f} side={avg_val.get('side', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
