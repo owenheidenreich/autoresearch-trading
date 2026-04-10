@@ -53,7 +53,11 @@ def _s3_client():
 
 
 def _get_trading_days() -> list[str]:
-    for dirname in ("spxw_full_chain", "spxw_wide", "spxw"):
+    # Use the broadest source for day discovery -- spxw_full_chain is the
+    # *target* cache, not the discovery source.  Prefer spxw_wide or spxw
+    # (which have all historically-downloaded days), then fall back to the
+    # SPX price cache.
+    for dirname in ("spxw_wide", "spxw"):
         path = os.path.join(CACHE_DIR, dirname)
         if os.path.isdir(path):
             days = sorted(f.replace(".pkl", "") for f in os.listdir(path) if f.endswith(".pkl"))
