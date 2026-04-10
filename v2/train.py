@@ -212,15 +212,11 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         gate_loss = gate_bce
 
     # --- C. Side CE: 2-class call/put supervision from contract_scores ---
-    # Replace hard contract selection with side prediction.
-    # For trade rows with both call and put contracts present:
-    #   best_call_score = max(scores where right_is_put < 0.5)
-    #   best_put_score  = max(scores where right_is_put >= 0.5)
-    #   target = 1 if oracle best contract is a put, else 0
-    #   loss = BCE(best_put_score - best_call_score, target)
+    # Aggregate each side's scores via logsumexp (not max) so gradient flows
+    # to ALL contracts within each side, not just the argmax.
     side_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
-        tr_scores = scores[trade_rows].clone()
+        tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_contracts = targets["contracts_full"][trade_rows]  # (N, K, F)
         is_put = tr_contracts[:, :, 2] >= 0.5  # right_is_put is feature idx 2
@@ -237,17 +233,17 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             bs_is_call = is_call[both_sides]
             bs_is_put = is_put_valid[both_sides]
 
-            # Best call score and best put score per row
-            call_scores = bs_scores.clone()
-            call_scores[~bs_is_call] = -1e9
-            best_call_score, _ = call_scores.max(dim=-1)
+            # Logsumexp over each side — spreads gradient across all contracts
+            call_scores_masked = bs_scores.clone()
+            call_scores_masked[~bs_is_call] = -1e9
+            call_lse = torch.logsumexp(call_scores_masked, dim=-1)
 
-            put_scores = bs_scores.clone()
-            put_scores[~bs_is_put] = -1e9
-            best_put_score, _ = put_scores.max(dim=-1)
+            put_scores_masked = bs_scores.clone()
+            put_scores_masked[~bs_is_put] = -1e9
+            put_lse = torch.logsumexp(put_scores_masked, dim=-1)
 
             # Side logit: positive = put, negative = call
-            side_logit = best_put_score - best_call_score  # (N,)
+            side_logit = put_lse - call_lse  # (N,)
 
             # Oracle target: is the best contract a put?
             bs_best_idx = best_idx[trade_rows][both_sides]
