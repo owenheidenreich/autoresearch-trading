@@ -29,7 +29,7 @@ EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
-DIR_W = float(os.environ.get("WEIGHT_DIR", 1.0))
+DIR_W = float(os.environ.get("WEIGHT_DIR", 0.3))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
 
@@ -118,8 +118,8 @@ class TradingModel(nn.Module):
 
         # Gate from context (gradient flows to encoder)
         gate_logit = self.gate_head(context).squeeze(-1)
-        # Direction from detached context (prevents overfitting from corrupting encoder)
-        direction_logit = self.direction_head(context.detach()).squeeze(-1)  # >0 = put
+        # Direction from context (DIR_W=0.3 limits gradient contribution to encoder)
+        direction_logit = self.direction_head(context).squeeze(-1)  # >0 = put
 
         # Strike scores from context + contract features
         contract_emb = self.contract_proj(contracts)
