@@ -3,6 +3,49 @@
 Pre-exact-chain history lives in `archive/v2_historical/logs/lab_notebook_pre_exact_chain.md`.
 The full mixed-state notebook before this reset lives in `archive/v2_historical/logs/lab_notebook_pre_reset_mixed_state_2026-04-10.md`.
 
+## Post-Reset Diagnostic (2026-04-10)
+
+### Why The Score Dropped from 5.4 to -0.2
+
+Five-part diagnostic run after 6 consecutive no-improve screenings (exp_090–095).
+
+#### Finding 1: The KL Selection Target Is Near-Uniform
+
+At `SOFT_TEMP=0.20`, the soft KL target has median max probability **0.23** — the model is being asked to match a nearly uniform distribution over ~16 contracts. Only 10.7% of bars have a clear winner (max prob > 0.50). The selection gradient is negligible.
+
+At `SOFT_TEMP=0.05`, median max prob jumps to **0.51** and 52% of bars have a clear winner. The current temperature is 4x too high for this number of contracts.
+
+#### Finding 2: Contract Features Alone Have Zero Predictive Power
+
+A logistic regression on the 15 contract features (strike, IV, delta, gamma, moneyness, etc.) achieves **zero lift** over base rate for predicting which contract the oracle picks. Per-bar exact ranking accuracy: **8.2%** (random chance: 6.2%). Direction match: **53.1%** (random: 50%).
+
+This means the `score_head` in `train.py` — which receives `[context_embedding, contract_embedding]` — must rely almost entirely on the context embedding to differentiate contracts. But the KL target gives it almost no gradient to learn how context should influence contract selection.
+
+#### Finding 3: Gate Imbalance Is 4:1, Not 15:1
+
+Train split: **80% trade / 20% no-trade** (4:1 ratio). This is a learnable imbalance — the gate failure is not from impossible class ratios but from the selection loss drowning the gate gradient. Balanced gate sampling (exp_095) confirmed the gate can learn when given equal representation.
+
+#### Finding 4: 30.6% of Bars Have No Clear "Best" Contract
+
+The top margin (best minus 2nd-best pnl) is **< 0.01** for 30.6% of bars. These are noise bars where any selection is equally good/bad. The model is being trained on noise one-third of the time.
+
+#### Finding 5: The Oracle Trades 190 Times Per Day
+
+Every labelable bar has `best_pnl > 0.04` (the gate threshold). The gate threshold never filters anything in the oracle — it's a rubber stamp. The profitable filtering the old model did (1.28 trades/day at threshold 0.5) has no equivalent in the new system.
+
+#### Root Cause Summary
+
+The v4 exact-chain rebuild changed the task from predicting two P&L scalars (learnable via Huber regression) to ranking ~16 contracts (unlearnable from contract features alone, with near-uniform KL targets). The old model's selectivity came from domain-encoded loss asymmetry and a meaningful gate threshold. The new system has neither.
+
+The current architecture is not wrong — it's underpowered for the task. The selection signal is buried under temperature-smoothed noise, and the gate has no meaningful threshold to optimize against.
+
+#### Implications for Next Experiment Block
+
+1. **Lower `SOFT_TEMP` substantially** (0.05 or lower) to create peaked targets the model can learn from
+2. **Filter noisy bars** where top margin < threshold from the selection loss
+3. **Decompose the task**: direction first (call/put), then strike selection — the old binary structure was the right abstraction
+4. **Raise or restructure the gate threshold** so the gate has a meaningful filtering role
+
 ## Reset Reconciliation (2026-04-10)
 
 - Restored `v2/train.py` to the `exp_080`-style baseline: gate BCE plus soft KL selection only

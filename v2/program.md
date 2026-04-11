@@ -29,7 +29,13 @@ If optimization pressure conflicts with project judgment, defer to [founder_inte
 - Oracle replay scores `6.0`, so the evaluation harness is achievable
 - Logistic regression reaches `60.9%` test direction accuracy from current-bar features
 - Longer lookback windows did not improve that diagnostic
-- The current bottleneck is model architecture and training, not the frozen exact-chain dataset or replay harness
+- Contract features alone have **zero predictive power** for oracle contract selection (8.2% exact match vs 6.2% random chance)
+- At `SOFT_TEMP=0.20`, the KL selection target is near-uniform (median max prob 0.23) — the selection gradient is negligible
+- At `SOFT_TEMP=0.05`, targets become peaked (median max prob 0.51) — but exp_079 showed too few trades at this temp
+- Gate class imbalance is 4:1 (80% trade / 20% no-trade), not 15:1 — learnable with balanced sampling
+- 30.6% of bars have top margin < 0.01 (no meaningful "best" contract) — training on noise
+- The gate threshold (0.04) never filters anything in the oracle — all tradeable bars exceed it
+- The current bottleneck is the selection loss design (near-uniform KL targets) and task decomposition (38-way ranking vs binary direction)
 
 ## Current Live Baseline
 
@@ -134,10 +140,12 @@ After an official run:
 
 ## Hypothesis Queue
 
-- `exp_096`: balanced gate sampling + `SOFT_TEMP=0.10` (combining the two best individual changes)
-- `exp_097`: balanced gate sampling + reduced capacity (`D_MODEL=48`)
-- `exp_098`: balanced gate sampling + longer training (`TIME_BUDGET=600`)
-- Defer detached two-stage side models until simpler replay-compatible changes are exhausted
+Post-diagnostic hypothesis queue — informed by the five-part diagnostic (2026-04-10):
+
+- `exp_096`: `SOFT_TEMP=0.05` + balanced gate sampling — combine peaked KL targets with balanced gate; the two most impactful individual findings
+- `exp_097`: filter noisy bars (top margin < 0.01) from selection loss — remove the 30.6% of training signal that is pure noise
+- `exp_098`: direction-first decomposition — learn call/put direction from context features, then select strike within the chosen direction; recovers the old binary task structure
+- Defer broad architecture changes until the selection signal is fixed
 
 ## Session Limits
 
