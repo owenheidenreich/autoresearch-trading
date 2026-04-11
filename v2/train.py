@@ -1,4 +1,4 @@
-"""ART² v4 Training Loop -- hierarchical: gate → direction → strike selection."""
+"""ART² v4 Training Loop -- balanced gate + direction-conditioned selection."""
 from __future__ import annotations
 
 import json
@@ -29,7 +29,6 @@ EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
-DIR_W = float(os.environ.get("WEIGHT_DIR", 0.3))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
 
@@ -49,7 +48,7 @@ class PositionalEncoding(nn.Module):
 
 
 class TradingModel(nn.Module):
-    """Hierarchical trading model: gate → direction → strike selection."""
+    """Contract scorer with balanced gate + direction-conditioned training."""
 
     def __init__(self, d_model: int | None = None, depth: int | None = None, n_heads: int | None = None, dropout: float | None = None):
         super().__init__()
@@ -58,7 +57,6 @@ class TradingModel(nn.Module):
         nh = n_heads or N_HEADS
         dr = DROPOUT if dropout is None else dropout
 
-        # Shared context encoder
         self.input_proj = nn.Linear(NUM_FEATURES, d)
         self.input_norm = nn.LayerNorm(d)
         self.pos_enc = PositionalEncoding(d, max_len=LOOKBACK + 10)
@@ -73,32 +71,18 @@ class TradingModel(nn.Module):
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=dep)
         self.register_buffer("causal_mask", nn.Transformer.generate_square_subsequent_mask(LOOKBACK))
 
-        # Contract embedding
         self.contract_proj = nn.Sequential(
             nn.Linear(NUM_CONTRACT_FEATURES, d),
             nn.GELU(),
             nn.Linear(d, d),
         )
-
-        # Head 1: Gate (trade / no-trade) from context
-        self.gate_head = nn.Sequential(
+        self.no_trade_head = nn.Sequential(
             nn.Linear(d, d // 2),
             nn.GELU(),
             nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
-
-        # Head 2: Direction (call=0 / put=1) from context
-        # Uses detached context to prevent direction overfitting from corrupting encoder
-        self.direction_head = nn.Sequential(
-            nn.Linear(d, d // 4),
-            nn.GELU(),
-            nn.Dropout(0.3),
-            nn.Linear(d // 4, 1),
-        )
-
-        # Head 3: Strike selection (context + contract → score)
-        self.strike_head = nn.Sequential(
+        self.score_head = nn.Sequential(
             nn.Linear(d * 2, d),
             nn.GELU(),
             nn.Dropout(dr),
@@ -116,22 +100,15 @@ class TradingModel(nn.Module):
         h = self.encoder(h, mask=mask)
         context = h[:, -1, :]
 
-        # Gate from context (gradient flows to encoder)
-        gate_logit = self.gate_head(context).squeeze(-1)
-        # Direction from context (DIR_W=0.3 limits gradient contribution to encoder)
-        direction_logit = self.direction_head(context).squeeze(-1)  # >0 = put
-
-        # Strike scores from context + contract features
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
-        contract_scores = self.strike_head(combined).squeeze(-1)
-
+        contract_scores = self.score_head(combined).squeeze(-1)
+        no_trade_score = self.no_trade_head(context).squeeze(-1)
         valid_mask = contracts[:, :, 0] > 0.5
         return {
-            "gate_logit": gate_logit,
-            "direction_logit": direction_logit,
             "contract_scores": contract_scores,
+            "no_trade_score": no_trade_score,
             "valid_mask": valid_mask,
         }
 
@@ -196,8 +173,7 @@ class TradeDataset(Dataset):
 def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
     device = outputs["contract_scores"].device
     scores = outputs["contract_scores"]
-    gate_logit = outputs["gate_logit"]
-    dir_logit = outputs["direction_logit"]
+    no_trade = outputs["no_trade_score"]
     valid_mask = outputs["valid_mask"]
     labels = targets["contract_labels"].to(device)
     best_idx = targets["best_idx"].to(device)
@@ -208,10 +184,15 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     supervised_rows = label_trade_valid
     trade_rows = supervised_rows & label_trade & (best_idx >= 0)
 
-    # --- A. Gate loss: balanced BCE on trade/no-trade ---
+    # --- A. Gate loss: balanced BCE ---
     gate_loss = torch.tensor(0.0, device=device)
     if supervised_rows.any():
+        masked_scores = scores.clone()
+        masked_scores[~valid_mask] = -1e9
+        best_contract_score, _ = masked_scores.max(dim=-1)
+        gate_logit = best_contract_score - no_trade
         gate_target = label_trade.float()
+        # Balanced sampling: match minority class count
         sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
         sup_trade = label_trade[sup_idx]
         n_pos = sup_trade.sum().item()
@@ -235,23 +216,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Direction loss: BCE on oracle direction (call=0, put=1) ---
-    dir_loss = torch.tensor(0.0, device=device)
-    dir_acc = 0.0
-    if trade_rows.any():
-        tr_contracts = contracts_full[trade_rows]
-        tr_best_idx = best_idx[trade_rows]
-        rows_range = torch.arange(tr_contracts.size(0), device=device)
-        oracle_is_put = (tr_contracts[rows_range, tr_best_idx, 2] > 0.5).float()
-        dir_loss = F.binary_cross_entropy_with_logits(
-            dir_logit[trade_rows],
-            oracle_is_put,
-            reduction="mean",
-        )
-        pred_put = (dir_logit[trade_rows] > 0).float()
-        dir_acc = (pred_put == oracle_is_put).float().mean().item()
-
-    # --- C. Strike selection: KL only over contracts matching oracle direction ---
+    # --- B. Selection loss: direction-conditioned KL (oracle direction at train time) ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
@@ -260,6 +225,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         tr_contracts = contracts_full[trade_rows]
         tr_best_idx = best_idx[trade_rows]
 
+        # Mask to oracle direction only — halves ranking space
         rows_range = torch.arange(tr_contracts.size(0), device=device)
         oracle_is_put = tr_contracts[rows_range, tr_best_idx, 2] > 0.5
         contract_is_put = tr_contracts[:, :, 2] > 0.5
@@ -277,19 +243,32 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         log_probs = F.log_softmax(logits_for_sel, dim=-1)
         sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
-    total = GATE_W * gate_loss + DIR_W * dir_loss + SEL_W * sel_loss
+    total = GATE_W * gate_loss + SEL_W * sel_loss
 
     # --- Metrics ---
-    pred_trade = (gate_logit > 0).detach()
+    masked_scores_eval = scores.detach().clone()
+    masked_scores_eval[~valid_mask] = -1e9
+    best_eval, pred_contract = masked_scores_eval.max(dim=-1)
+    pred_trade = best_eval > no_trade.detach()
+
     gate_acc = (
         (pred_trade[supervised_rows] == label_trade[supervised_rows]).float().mean().item()
         if supervised_rows.any() else 0.0
     )
     trade_rate = pred_trade[supervised_rows].float().mean().item() if supervised_rows.any() else 0.0
 
+    dir_acc = 0.0
+    if trade_rows.any():
+        trade_contracts = contracts_full[trade_rows]
+        pred_idx = pred_contract[trade_rows]
+        true_idx = best_idx[trade_rows]
+        rows = torch.arange(trade_contracts.size(0), device=device)
+        pred_put = (trade_contracts[rows, pred_idx, 2] > 0.5).long()
+        true_put = (trade_contracts[rows, true_idx, 2] > 0.5).long()
+        dir_acc = (pred_put == true_put).float().mean().item() if len(pred_put) else 0.0
+
     return total, {
         "gate": float(gate_loss.item()),
-        "dir": float(dir_loss.item()),
         "sel": float(sel_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
@@ -394,9 +373,9 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate={avg_val.get('gate', 0):.4f} dir={avg_val.get('dir', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
-            f"g_acc={avg_val.get('gate_acc', 0):.3f} "
-            f"d_acc={avg_val.get('dir_acc', 0):.3f} trd={avg_val.get('trade_rate', 0):.3f}"
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
+            f"gate={avg_val.get('gate_acc', 0):.3f} "
+            f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
 
         val_total = avg_val.get("total", float("inf"))
