@@ -97,7 +97,50 @@ The single `score_head` output per contract is trained by three conflicting loss
 - **WR 36.2%**: model picks wrong contracts (dir_acc ~0.49, random on side)
 - **DD 104%**: consequence of overtrading + wrong contracts
 
-### Current hypotheses
+## Diagnostic Investigation (2026-04-10)
+
+Before running more experiments, ran two local diagnostics to determine if the problem is the model, the evaluation, or the data.
+
+### Diagnostic 1: Oracle Replay (perfect contract selection)
+
+| Window | Score | WR | DD | C/P | Trades |
+|--------|-------|-----|-----|-----|--------|
+| Test (60d) | **6.000** | 100% | 0% | 267/268 | 535 |
+| Train (846d) | **6.000** | 100% | 0% | 3746/3718 | 7464 |
+
+**Verdict: Evaluation gates are achievable.** Perfect contract selection scores 6.0 (max) on both windows. 100% WR, zero drawdown, balanced direction. The problem is purely in model training, not the evaluation harness.
+
+### Diagnostic 2: Direction Signal (logistic regression)
+
+| Features | Train acc | Test acc | Baseline |
+|----------|-----------|----------|----------|
+| Current bar (47 features) | 61.1% | **60.9%** | 52.6% |
+| Window mean/std (lb=30, 141 features) | 62.6% | 60.2% | 52.6% |
+| Window mean/std (lb=60, 141 features) | 62.4% | 60.5% | 52.6% |
+| Window mean/std (lb=90, 141 features) | 62.4% | 60.9% | 52.6% |
+
+**Verdict: Direction signal EXISTS and is LEARNABLE.** A simple logistic regression achieves 60.9% test accuracy on call/put prediction, 8 points above baseline. Longer lookback windows don't help — the signal is in the current bar's features, not in temporal patterns.
+
+Top predictive features for direction:
+1. Feature 46 (put_call_txn_ratio): strongest predictor
+2. Feature 27 (trend_5min): directional momentum
+3. Feature 9 (gamma): options market structure
+4. Feature 16 (rsi_7): momentum oscillator
+
+### Implications
+
+1. **The evaluation is fine** — oracle achieves perfect score, so gates are not too tight
+2. **Direction is learnable** — 61% accuracy from simple logistic regression means a transformer should do better
+3. **Lookback doesn't matter** — current-bar features already capture the direction signal (no benefit from 60 or 90 bars)
+4. **The bottleneck is the model architecture** — specifically how direction learning interacts with contract scoring in the single score_head
+
+### Current hypotheses (updated)
+
+The direction signal is real (61% learnable) and the evaluation is achievable (oracle=6.0). The model's architecture prevents it from exploiting the signal because:
+
+1. PNL regression dominates and overrides direction learning
+2. Without PNL regression, scores drift and the gate can't calibrate
+3. The KL loss doesn't explicitly teach direction — it teaches ranking which may not propagate direction gradient effectively
 
 **H-score-reg**: L2 regularization on scores (SCORE_REG_W=0.01) to prevent magnitude drift and stabilize gate — queued as exp_089, not yet run.
 
