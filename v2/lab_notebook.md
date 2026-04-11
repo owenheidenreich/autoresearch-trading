@@ -67,6 +67,7 @@ Top predictive features:
 | 091 | focal gate BCE (`alpha=0.25`, `gamma=2.0`) | 405C/6P | 32.1% | 411 | 100% | focal gate worsened behavior into severe call-side collapse; hard gate failed on direction balance with score `-0.3` |
 | 092 | `tanh` on contract score head output | 549C/1P | 28.4% | 550 | 101% | tanh saturation killed selection gradients; total direction collapse into all-calls; score `-0.3` |
 | 093 | `LOOKBACK=1` current-bar-only | 357C/1P | 33.0% | 358 | 102% | removing temporal context caused call collapse; lookback provides useful direction signal despite diagnostic; score `-0.3` |
+| 094 | `SOFT_TEMP=0.10` | 315C/66P | 32.5% | 381 | 101% | matched baseline score `-0.2`; fewer trades, lower DD, gate starting to learn late; but direction balance worse (83% calls) |
 
 ## Current Live Baseline
 
@@ -88,8 +89,8 @@ Top predictive features:
 
 ## Hypothesis Queue
 
-1. `exp_094`: `SOFT_TEMP=0.10` — tighter selection targets to strengthen gate gradients
-2. `exp_095`: reduced model capacity (`D_MODEL=48`, `DEPTH=2`) to prevent overfitting majority class
+1. `exp_095`: balanced gate sampling — subsample trade-class rows to match no-trade count in gate loss
+2. `exp_096`: reduced model capacity (`D_MODEL=48`) to prevent overfitting majority class
 3. Defer detached two-stage side models until simpler replay-compatible changes are exhausted
 
 ## Active Experiment Kickoff
@@ -174,3 +175,22 @@ Top predictive features:
 - Decision: revert
 - Takeaway: removing temporal context caused call-side collapse despite the diagnostic showing current-bar features alone have 60.9% direction accuracy. The transformer's temporal attention provides something the logistic regression diagnostic doesn't capture — likely ordering/momentum cues needed for balanced call/put selection. The LOOKBACK=30 window is load-bearing for direction balance.
 - Next step: move to `exp_094` with `SOFT_TEMP=0.10` to tighten selection targets
+
+### `exp_094` — SOFT_TEMP=0.10 (2026-04-10)
+
+- Type: screening run
+- Code change: `SOFT_TEMP` default from 0.20 to 0.10
+- Purpose: tighter KL targets to create more differentiated contract scores and strengthen gate gradient signal
+- Result:
+  - score: `-0.200` (matched baseline)
+  - gate failure: `excessive_drawdown (100.5% > 20%)`
+  - trades: `381` (down from 423 baseline)
+  - direction balance: `315C / 66P` (worse than baseline's 179C/244P)
+  - win rate: `32.5%`
+  - profit factor: `0.637` (best screening PF so far)
+  - positive day rate: `26.7%`
+  - beats: ATM, ATM-trailing
+  - training note: trade_rate dropped from 0.937 to 0.870 by epoch 15 — gate was finally starting to learn the minority class but ran out of time
+- Decision: revert (same score as baseline, worse direction balance)
+- Takeaway: SOFT_TEMP=0.10 showed the gate can start learning with tighter selection, but 93.7% trade-class imbalance remains the fundamental bottleneck. Direction balance is highly sensitive to training dynamics rather than a smooth function of temperature.
+- Next step: exp_095 — address the class imbalance directly with balanced gate sampling

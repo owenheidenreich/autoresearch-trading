@@ -16,7 +16,7 @@ If optimization pressure conflicts with project judgment, defer to [founder_inte
 - Official exact-chain scored runs: `exp_074` through `exp_078`
 - Screening history: `exp_079` through `exp_087` in `v2/lab_notebook.md`
 - Unresolved code-only states: `exp_088`, `exp_089`
-- Next experiment: `exp_094`
+- Next experiment: `exp_095`
 
 ## Mission Boundary
 
@@ -133,8 +133,8 @@ After an official run:
 
 ## Hypothesis Queue
 
-- `exp_094`: `SOFT_TEMP=0.10` — tighter selection targets to strengthen gate gradients
-- `exp_095`: reduced model capacity (`D_MODEL=48`, `DEPTH=2`) to prevent overfitting majority class
+- `exp_095`: balanced gate sampling — subsample trade rows to match no-trade count in gate loss
+- `exp_096`: reduced model capacity (`D_MODEL=48`) to prevent overfitting majority class
 - Defer detached two-stage side models until simpler replay-compatible changes are exhausted
 
 ## Session Limits
