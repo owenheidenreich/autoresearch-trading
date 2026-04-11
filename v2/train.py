@@ -32,11 +32,12 @@ LR = float(os.environ.get("TRAIN_LR", 3e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.03))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
-PNL_W = float(os.environ.get("WEIGHT_PNL", 0.1))
+PNL_W = float(os.environ.get("WEIGHT_PNL", 0.0))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
+SIDE_W = float(os.environ.get("WEIGHT_SIDE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-NO_TRADE_W = float(os.environ.get("NO_TRADE_W", 3.0))
+NO_TRADE_W = float(os.environ.get("NO_TRADE_W", 1.0))
 
 
 class PositionalEncoding(nn.Module):
@@ -96,6 +97,14 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d // 2, 1),
         )
+        # Auxiliary side head: predict call(0) vs put(1) from context
+        # Bottleneck (d//4) + dropout to prevent overfitting (exp_079g lesson)
+        self.side_head = nn.Sequential(
+            nn.Linear(d, d // 4),
+            nn.GELU(),
+            nn.Dropout(0.3),
+            nn.Linear(d // 4, 1),
+        )
 
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         B, T, _ = x.shape
@@ -111,10 +120,12 @@ class TradingModel(nn.Module):
         combined = torch.cat([context_exp, contract_emb], dim=-1)
         contract_scores = self.score_head(combined).squeeze(-1)
         no_trade_score = self.no_trade_head(context).squeeze(-1)
+        side_logit = self.side_head(context).squeeze(-1)  # >0 → put, <0 → call
         valid_mask = contracts[:, :, 0] > 0.5
         return {
             "contract_scores": contract_scores,
             "no_trade_score": no_trade_score,
+            "side_logit": side_logit,
             "valid_mask": valid_mask,
         }
 
@@ -239,7 +250,16 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         # KL divergence: target * (log_target - log_probs)
         sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss + PNL_W * pnl_loss
+    # --- D. Auxiliary side loss: BCE on oracle direction (trade rows only) ---
+    side_loss = torch.tensor(0.0, device=device)
+    side_logit = outputs["side_logit"]
+    if trade_rows.any():
+        true_side = targets_contract_field(targets, trade_rows, best_idx[trade_rows], 2)
+        side_loss = F.binary_cross_entropy_with_logits(
+            side_logit[trade_rows], true_side, reduction="mean"
+        )
+
+    total = GATE_W * gate_loss + SEL_W * sel_loss + PNL_W * pnl_loss + SIDE_W * side_loss
 
     # --- Metrics ---
     # Predict: trade if max(contract_scores) > no_trade_score (matches replay gate)
@@ -266,6 +286,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         "pnl": float(pnl_loss.item()),
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
+        "side": float(side_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -363,7 +384,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/model.pt", train_
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | pnl={avg_val.get('pnl', 0):.4f} "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} side={avg_val.get('side', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
