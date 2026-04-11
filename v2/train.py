@@ -202,24 +202,14 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
-        tr_contracts = contracts_full[trade_rows]
-        tr_best_idx = best_idx[trade_rows]
-
-        # Direction-conditioned selection: only rank contracts matching oracle direction
-        rows_range = torch.arange(tr_contracts.size(0), device=device)
-        oracle_is_put = tr_contracts[rows_range, tr_best_idx, 2] > 0.5  # (B,)
-        contract_is_put = tr_contracts[:, :, 2] > 0.5  # (B, K)
-        dir_match = contract_is_put == oracle_is_put.unsqueeze(1)  # (B, K)
 
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
-        pnl_for_target[~dir_match] = -1e9  # mask opposite direction
         soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
         logits_for_sel = tr_scores.clone()
         logits_for_sel[~tr_valid] = -1e9
-        logits_for_sel[~dir_match] = -1e9  # mask opposite direction
         log_probs = F.log_softmax(logits_for_sel, dim=-1)
         sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
