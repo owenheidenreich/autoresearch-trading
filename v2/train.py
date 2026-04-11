@@ -103,7 +103,7 @@ class TradingModel(nn.Module):
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
-        contract_scores = torch.tanh(self.score_head(combined).squeeze(-1))
+        contract_scores = self.score_head(combined).squeeze(-1)
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         valid_mask = contracts[:, :, 0] > 0.5
         return {
