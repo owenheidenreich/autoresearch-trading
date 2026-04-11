@@ -31,9 +31,9 @@ class DecisionPolicy:
     max_concurrent: int = 1
     qty: int = 1
 
-    # Session restrictions
-    no_trade_before_bar: int = 30
-    no_trade_after_bar: int = 270
+    # Session restrictions — model has edge only in morning window (bars 60-120)
+    no_trade_before_bar: int = 60
+    no_trade_after_bar: int = 120
 
     # Execution
     order_style: str = "MKT"
