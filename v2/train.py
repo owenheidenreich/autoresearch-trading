@@ -36,6 +36,7 @@ PNL_W = float(os.environ.get("WEIGHT_PNL", 0.0))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
+NO_TRADE_W = float(os.environ.get("NO_TRADE_W", 3.0))
 
 
 class PositionalEncoding(nn.Module):
@@ -207,9 +208,11 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         best_contract_score, _ = masked_scores.max(dim=-1)
         gate_logit = best_contract_score - no_trade
         gate_target = label_trade.float()
-        gate_bce = F.binary_cross_entropy_with_logits(
-            gate_logit[supervised_rows], gate_target[supervised_rows], reduction="mean"
-        )
+        # Weight no-trade samples higher to reduce overtrading
+        gate_w = torch.where(gate_target[supervised_rows] > 0.5, 1.0, NO_TRADE_W)
+        gate_bce = (gate_w * F.binary_cross_entropy_with_logits(
+            gate_logit[supervised_rows], gate_target[supervised_rows], reduction="none"
+        )).mean()
         gate_loss = gate_bce
 
     # --- C. Soft selection: KL divergence with temperature-scaled P&L targets ---
