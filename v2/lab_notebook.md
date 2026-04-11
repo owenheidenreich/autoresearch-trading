@@ -112,6 +112,7 @@ Top predictive features:
 | 093 | `LOOKBACK=1` current-bar-only | 357C/1P | 33.0% | 358 | 102% | removing temporal context caused call collapse; lookback provides useful direction signal despite diagnostic; score `-0.3` |
 | 094 | `SOFT_TEMP=0.10` | 315C/66P | 32.5% | 381 | 101% | matched baseline score `-0.2`; fewer trades, lower DD, gate starting to learn late; but direction balance worse (83% calls) |
 | 095 | balanced gate sampling | 156C/205P | 34.6% | 361 | 102% | **best screening result**: gate actually learning (trd_rate 0.52-0.71), best PF 0.652, best +day_rate 31.2%, balanced direction; still score `-0.2` |
+| 096 | `SOFT_TEMP=0.05` + balanced gate | 458C/22P | 33.5% | 480 | 101% | peaked temp caused call collapse even with balanced gate; direction balance requires `SOFT_TEMP=0.20`; score `-0.3` |
 
 ## Current Live Baseline
 

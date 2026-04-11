@@ -30,7 +30,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.05))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
 
 
 class PositionalEncoding(nn.Module):
@@ -224,6 +224,16 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
+
+        # Filter noisy bars: skip rows where top margin < 0.01
+        top2, _ = pnl_for_target.topk(2, dim=-1)
+        margin = top2[:, 0] - top2[:, 1]
+        clear_signal = margin >= 0.01
+        if clear_signal.any():
+            pnl_for_target = pnl_for_target[clear_signal]
+            tr_scores = tr_scores[clear_signal]
+            tr_valid = tr_valid[clear_signal]
+
         soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
         logits_for_sel = tr_scores.clone()
