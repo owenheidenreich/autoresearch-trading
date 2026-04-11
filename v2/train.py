@@ -32,7 +32,7 @@ LR = float(os.environ.get("TRAIN_LR", 3e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.03))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
-PNL_W = float(os.environ.get("WEIGHT_PNL", 1.0))
+PNL_W = float(os.environ.get("WEIGHT_PNL", 0.0))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
@@ -176,7 +176,7 @@ class TradeDataset(Dataset):
         return window, self.all_contracts[idx], target
 
 
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.05))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
 
 
 def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
