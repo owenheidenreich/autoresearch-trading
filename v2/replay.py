@@ -12,7 +12,8 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from v2.core.chain_data import describe_contract, extract_contract_series, load_sidecar_cached, padded_snapshot
+from v2.core.chain_data import describe_contract, extract_contract_series, load_sidecar_cached, padded_snapshot, QUALITY_PARTIAL
+from v2.core.decision_trace import DecisionTrace, build_trace_for_bar, save_traces, print_trace_summary
 from v2.core.metrics import ReplayMetrics, compute_metrics
 from v2.core.policy import DEFAULT_POLICY, DecisionPolicy
 from v2.core.schema import TradeIntent
@@ -21,7 +22,7 @@ from v2.train import LOOKBACK, TradingModel
 
 
 BATCH_SIZE = 2048
-BASELINE_CACHE_PATH = "v2/.baseline_cache.json"
+BASELINE_CACHE_PATH = "v2/state/baseline_cache.json"
 
 
 def load_model_from_path(path: str, device: str = "cpu") -> TradingModel:
@@ -50,9 +51,13 @@ def load_best_model(device: str = "cpu", current_dataset_fingerprint: str | None
         except (RuntimeError, ValueError, FileNotFoundError) as exc:
             artifact_errors.append(f"{artifact_dir}: {exc}")
 
-    for fallback_path in ("v2/model_best.pt", "v2/model.pt"):
+    for fallback_path in ("v2/models/model_best.pt", "v2/models/model.pt"):
         if os.path.exists(fallback_path):
-            model = load_model_from_path(fallback_path, device=device)
+            try:
+                model = load_model_from_path(fallback_path, device=device)
+            except RuntimeError as exc:
+                artifact_errors.append(f"{fallback_path}: incompatible raw checkpoint ({exc})")
+                continue
             print(f"WARNING: no compatible artifact bundle found; using raw checkpoint {fallback_path}")
             return model, DEFAULT_POLICY, {"experiment_id": os.path.basename(fallback_path), "score": float("nan"), "raw_checkpoint_fallback": True}
 
@@ -70,7 +75,9 @@ def _build_day_index(dates) -> dict[str, list[int]]:
 
 def model_to_intent(
     *,
-    no_trade_score: torch.Tensor,
+    no_trade_score: torch.Tensor = None,
+    gate_logit: torch.Tensor = None,
+    direction_logit: torch.Tensor = None,
     contract_scores: torch.Tensor,
     contract_labels: torch.Tensor,
     valid_mask: torch.Tensor,
@@ -81,13 +88,43 @@ def model_to_intent(
     spot_price: float,
     policy: DecisionPolicy,
 ) -> TradeIntent:
-    scores = contract_scores.clone()
-    scores[~valid_mask] = -float("inf")
-    best_row = int(scores.argmax().item()) if valid_mask.any() else -1
-    best_score = float(scores[best_row].item()) if best_row >= 0 else -float("inf")
-    abstain_score = float(no_trade_score.item())
+    # Hierarchical decision: gate → direction → strike
+    # Support both old (no_trade_score) and new (gate_logit + direction_logit) models
+    has_direction = direction_logit is not None and gate_logit is not None
 
-    if best_row < 0 or best_score <= max(policy.gate_threshold, abstain_score):
+    if has_direction:
+        # New hierarchical model: explicit gate and direction heads
+        gate_score = float(gate_logit.item())
+        if gate_score <= policy.gate_threshold:
+            return TradeIntent.no_trade(
+                bar_index=local_bar,
+                timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
+                reason_codes=("gate_reject",),
+                no_trade_score=-gate_score,
+            )
+        # Direction: mask contracts to predicted direction
+        pred_put = float(direction_logit.item()) > 0
+        is_put = contract_features[:, 2] > 0.5  # right_is_put
+        dir_mask = (is_put == pred_put)
+        scores = contract_scores.clone()
+        scores[~valid_mask] = -float("inf")
+        quality_flags = contract_features[:, 14]
+        scores[quality_flags < QUALITY_PARTIAL] = -float("inf")
+        scores[~dir_mask] = -float("inf")  # mask opposite direction
+        best_row = int(scores.argmax().item()) if (valid_mask & dir_mask).any() else -1
+        best_score = float(scores[best_row].item()) if best_row >= 0 and torch.isfinite(scores[best_row]) else -float("inf")
+        abstain_score = -gate_score
+    else:
+        # Legacy model: gate from score comparison
+        scores = contract_scores.clone()
+        scores[~valid_mask] = -float("inf")
+        quality_flags = contract_features[:, 14]
+        scores[quality_flags < QUALITY_PARTIAL] = -float("inf")
+        best_row = int(scores.argmax().item()) if valid_mask.any() else -1
+        best_score = float(scores[best_row].item()) if best_row >= 0 else -float("inf")
+        abstain_score = float(no_trade_score.item()) if no_trade_score is not None else 0.0
+
+    if best_row < 0 or (not has_direction and best_score <= max(policy.gate_threshold, abstain_score)):
         return TradeIntent.no_trade(
             bar_index=local_bar,
             timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
@@ -146,7 +183,9 @@ def replay_validation(
     max_days: int | None = None,
     policy: DecisionPolicy = DEFAULT_POLICY,
     device: str = "cpu",
-) -> tuple[ReplayMetrics, list]:
+    collect_traces: bool = False,
+    trace_path: str | None = None,
+) -> tuple[ReplayMetrics, list, list[DecisionTrace] | None]:
     features = data["X"].numpy()
     sim_features = data["X_sim"].numpy() if "X_sim" in data else features
     mask = data[mask_key].numpy()
@@ -158,7 +197,7 @@ def replay_validation(
 
     mask_indices = np.where(mask)[0]
     if len(mask_indices) == 0:
-        return ReplayMetrics(), []
+        return ReplayMetrics(), [], [] if collect_traces else None
 
     eval_dates = sorted(set(dates[i] for i in mask_indices))
     if max_days is not None:
@@ -181,7 +220,7 @@ def replay_validation(
             snapshots.append((contracts, labels, contract_indices))
 
     if not eligible:
-        return ReplayMetrics(), []
+        return ReplayMetrics(), [], [] if collect_traces else None
 
     window_indices = np.array([bar_idx for _, bar_idx, _ in eligible], dtype=np.int32)
     offsets = np.arange(-LOOKBACK, 0).reshape(1, -1)
@@ -206,7 +245,10 @@ def replay_validation(
     all_outputs = {k: torch.cat([o[k] for o in outputs_all], dim=0) for k in outputs_all[0]}
     print(f"  Inference: {time.time() - t_inf:.1f}s ({len(eligible)} bars)")
 
+    from v2.core.features import _FEAT_IDX
+
     trades = []
+    traces: list[DecisionTrace] = [] if collect_traces else []
     current_day = None
     in_trade = False
     trade_exit_bar = -1
@@ -215,6 +257,7 @@ def replay_validation(
     daily_loss_cap_hit = False
     cumulative_equity = policy.starting_equity
     num_days = 0
+    vix_idx = _FEAT_IDX.get("vix_regime", 14)
 
     for i, (day, global_bar, local_bar) in enumerate(eligible):
         if day != current_day:
@@ -226,30 +269,69 @@ def replay_validation(
             daily_dollar_pnl = 0.0
             daily_loss_cap_hit = False
 
+        # --- Skip checks with trace capture ---
+        outputs_i = {k: v[i] for k, v in all_outputs.items()}
+        c_scores_np = outputs_i["contract_scores"].numpy()
+        v_mask_np = outputs_i["valid_mask"].numpy().astype(bool)
+        if "no_trade_score" in outputs_i:
+            no_trade_val = float(outputs_i["no_trade_score"].item())
+        elif "gate_logit" in outputs_i:
+            no_trade_val = -float(outputs_i["gate_logit"].item())
+        else:
+            no_trade_val = 0.0
+        vix_val = float(features[global_bar, vix_idx]) if global_bar < len(features) else 0.0
+
+        def _make_trace(decision: str, skip_reason: str = "",
+                        sel_strike: float = 0.0, sel_right: str = "",
+                        sel_mid: float = 0.0, sel_idx: int = -1) -> DecisionTrace:
+            return build_trace_for_bar(
+                date=day, bar_of_day=local_bar, global_bar_idx=global_bar,
+                spot_price=float(spot_prices[global_bar]),
+                vix_regime=vix_val,
+                no_trade_score=no_trade_val,
+                contract_scores=c_scores_np, valid_mask=v_mask_np,
+                contract_features=all_contracts[i],
+                contract_labels=all_contract_labels[i],
+                contract_indices=all_contract_indices[i],
+                decision=decision, skip_reason=skip_reason,
+                selected_strike=sel_strike, selected_right=sel_right,
+                selected_mid=sel_mid, selected_contract_idx=sel_idx,
+            )
+
         if cumulative_equity <= 0 or daily_loss_cap_hit:
+            if collect_traces:
+                reason = "equity_zero" if cumulative_equity <= 0 else "loss_cap"
+                traces.append(_make_trace("no_trade", skip_reason=reason))
             continue
         if in_trade and global_bar <= trade_exit_bar:
+            if collect_traces:
+                traces.append(_make_trace("no_trade", skip_reason="in_position"))
             continue
         if global_bar - last_stop_bar < policy.cooldown_bars:
+            if collect_traces:
+                traces.append(_make_trace("no_trade", skip_reason="cooldown"))
             continue
 
         sidecar = load_sidecar_cached(os.path.join(sidecar_dir, f"{day}.pt"))
-        contract_features = torch.from_numpy(all_contracts[i])
-        contract_indices = torch.from_numpy(all_contract_indices[i])
-        outputs_i = {k: v[i] for k, v in all_outputs.items()}
+        contract_features_t = torch.from_numpy(all_contracts[i])
+        contract_indices_t = torch.from_numpy(all_contract_indices[i])
         intent = model_to_intent(
-            no_trade_score=outputs_i["no_trade_score"],
+            no_trade_score=outputs_i.get("no_trade_score"),
+            gate_logit=outputs_i.get("gate_logit"),
+            direction_logit=outputs_i.get("direction_logit"),
             contract_scores=outputs_i["contract_scores"],
             contract_labels=torch.from_numpy(all_contract_labels[i]),
             valid_mask=outputs_i["valid_mask"],
-            contract_features=contract_features,
-            contract_indices=contract_indices,
+            contract_features=contract_features_t,
+            contract_indices=contract_indices_t,
             sidecar=sidecar,
             local_bar=local_bar,
             spot_price=float(spot_prices[global_bar]),
             policy=policy,
         )
         if not intent.trade:
+            if collect_traces:
+                traces.append(_make_trace("no_trade", skip_reason="gate"))
             continue
 
         series = extract_contract_series(sidecar, intent.contract_index)["mid"].astype(np.float32)
@@ -261,7 +343,16 @@ def replay_validation(
             dates=[day] * len(day_to_bars[day]),
             global_entry_bar=local_bar,
         )
+
         if trade is None:
+            if collect_traces:
+                traces.append(_make_trace(
+                    "no_trade", skip_reason="fill_failed",
+                    sel_strike=intent.strike or 0.0,
+                    sel_right=intent.right or "",
+                    sel_mid=intent.entry_ref_price or 0.0,
+                    sel_idx=intent.contract_index,
+                ))
             continue
 
         trade.trade_date = day
@@ -276,8 +367,32 @@ def replay_validation(
         if trade.exit_reason == "STOP_LOSS":
             last_stop_bar = trade_exit_bar
 
+        # Backfill trace with realized outcome
+        if collect_traces:
+            t = _make_trace(
+                "trade",
+                sel_strike=intent.strike or 0.0,
+                sel_right=intent.right or "",
+                sel_mid=intent.entry_ref_price or 0.0,
+                sel_idx=intent.contract_index,
+            )
+            t.model_pnl = trade.net_pnl_pct
+            t.exit_reason = trade.exit_reason
+            t.bars_held = trade.bars_held
+            if np.isfinite(t.oracle_pnl):
+                t.delta_pnl = t.model_pnl - t.oracle_pnl
+            traces.append(t)
+
     metrics = compute_metrics(trades, num_days=max(num_days, 1), starting_equity=policy.starting_equity, contract_multiplier=policy.contract_multiplier)
-    return metrics, trades
+
+    # Save and summarize traces
+    if collect_traces:
+        if trace_path:
+            save_traces(traces, trace_path)
+            print(f"  Traces saved: {trace_path} ({len(traces)} bars)")
+        print_trace_summary(traces)
+
+    return metrics, trades, traces if collect_traces else None
 
 
 def _baseline_cache_key(data: dict, mask_key: str, policy: DecisionPolicy, max_days: int | None) -> str:
@@ -561,6 +676,7 @@ def main():
     parser.add_argument("--days", type=int, default=None)
     parser.add_argument("--mask", type=str, default="promote", choices=["val", "promote", "shadow"])
     parser.add_argument("--baselines", action="store_true")
+    parser.add_argument("--traces", action="store_true", help="Collect per-bar decision traces")
     parser.add_argument("--gate", type=float, default=None)
     args = parser.parse_args()
 
@@ -595,7 +711,12 @@ def main():
         if args.gate is None:
             policy = artifact_policy
 
-    metrics, trades = replay_validation(model, data, mask_key=mask_key, max_days=args.days, policy=policy)
+    trace_flag = getattr(args, "traces", False)
+    trace_out = f"v2/artifacts/replay_traces.csv" if trace_flag else None
+    metrics, trades, _ = replay_validation(
+        model, data, mask_key=mask_key, max_days=args.days, policy=policy,
+        collect_traces=trace_flag, trace_path=trace_out,
+    )
     print_metrics("Model Replay", metrics)
     print(f"\n--- BASELINES (on {mask_key}) ---")
     b_random, b_atm, b_rules, b_trailing = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
