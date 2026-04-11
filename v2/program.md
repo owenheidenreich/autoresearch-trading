@@ -16,7 +16,8 @@ If optimization pressure conflicts with project judgment, defer to [founder_inte
 - Official exact-chain scored runs: `exp_074` through `exp_078`
 - Screening history: `exp_079` through `exp_087` in `v2/lab_notebook.md`
 - Unresolved code-only states: `exp_088`, `exp_089`
-- Next experiment: `exp_095`
+- Next experiment: `exp_096`
+- Session status: **6 no-improve streak fired** (exp_090–095 all scored -0.2 or -0.3)
 
 ## Mission Boundary
 
@@ -133,8 +134,9 @@ After an official run:
 
 ## Hypothesis Queue
 
-- `exp_095`: balanced gate sampling — subsample trade rows to match no-trade count in gate loss
-- `exp_096`: reduced model capacity (`D_MODEL=48`) to prevent overfitting majority class
+- `exp_096`: balanced gate sampling + `SOFT_TEMP=0.10` (combining the two best individual changes)
+- `exp_097`: balanced gate sampling + reduced capacity (`D_MODEL=48`)
+- `exp_098`: balanced gate sampling + longer training (`TIME_BUDGET=600`)
 - Defer detached two-stage side models until simpler replay-compatible changes are exhausted
 
 ## Session Limits

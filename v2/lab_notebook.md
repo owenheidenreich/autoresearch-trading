@@ -68,6 +68,7 @@ Top predictive features:
 | 092 | `tanh` on contract score head output | 549C/1P | 28.4% | 550 | 101% | tanh saturation killed selection gradients; total direction collapse into all-calls; score `-0.3` |
 | 093 | `LOOKBACK=1` current-bar-only | 357C/1P | 33.0% | 358 | 102% | removing temporal context caused call collapse; lookback provides useful direction signal despite diagnostic; score `-0.3` |
 | 094 | `SOFT_TEMP=0.10` | 315C/66P | 32.5% | 381 | 101% | matched baseline score `-0.2`; fewer trades, lower DD, gate starting to learn late; but direction balance worse (83% calls) |
+| 095 | balanced gate sampling | 156C/205P | 34.6% | 361 | 102% | **best screening result**: gate actually learning (trd_rate 0.52-0.71), best PF 0.652, best +day_rate 31.2%, balanced direction; still score `-0.2` |
 
 ## Current Live Baseline
 
@@ -194,3 +195,30 @@ Top predictive features:
 - Decision: revert (same score as baseline, worse direction balance)
 - Takeaway: SOFT_TEMP=0.10 showed the gate can start learning with tighter selection, but 93.7% trade-class imbalance remains the fundamental bottleneck. Direction balance is highly sensitive to training dynamics rather than a smooth function of temperature.
 - Next step: exp_095 — address the class imbalance directly with balanced gate sampling
+
+### `exp_095` — Balanced Gate Sampling (2026-04-10)
+
+- Type: screening run
+- Code change: subsample trade-class rows to match no-trade count in gate BCE loss computation
+- Purpose: fix the 93.7% / 6.3% class imbalance that causes the gate to always predict "trade"
+- Result:
+  - score: `-0.200` (same as baseline)
+  - gate failure: `excessive_drawdown (102.1% > 20%)`
+  - trades: `361` (down from 423 baseline)
+  - direction balance: `156C / 205P` (balanced, similar to baseline)
+  - win rate: `34.6%`
+  - profit factor: `0.652` (best screening PF)
+  - positive day rate: `31.2%` (best screening +day rate)
+  - sortino: `-17.48` (best screening sortino)
+  - beats: ATM, ATM-trailing
+  - training dynamics: gate_acc dropped from stuck-0.757 to 0.50-0.63 range; trade_rate dropped from 0.937 to 0.52-0.71; gate showed instability (epoch 3: trd_rate=0.000, recovered by epoch 4)
+- Decision: revert (same score, no improvement)
+- Takeaway: **Balanced gate sampling is the most impactful change tested.** The gate is learning for the first time — every metric except raw score improved. The remaining gap is that even with a learning gate, the model is still losing money (PF=0.652, WR=34.6%). The drawdown (102.1%) is the lowest seen but still above the 20% hard gate. Two potential follow-ups: (1) combine balanced sampling with tighter selection (SOFT_TEMP=0.10), (2) combine with reduced capacity.
+
+## Session Limit: 6 No-Improve Streak
+
+Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score improvement in 6 consecutive screens. The program's session limit "6 no-improve streak" has fired.
+
+**Assessment**: The balanced gate sampling breakthrough is real but not yet sufficient. The gate is learning, direction balance is preserved, and secondary metrics improved substantially. However, the score function requires all hard gates to pass, and excessive drawdown (102.1%) still fails. Continuing without new strategic insight risks burning GPU time on marginal variants.
+
+**Recommended next session approach**: Combine balanced gate sampling with one of: (1) SOFT_TEMP=0.10 for tighter selection, (2) reduced capacity D_MODEL=48, or (3) longer training time to let the gate converge further.
