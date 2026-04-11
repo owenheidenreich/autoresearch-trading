@@ -127,7 +127,7 @@ def dates_to_mask(all_dates: list[str], selected_dates: set[str]) -> torch.Tenso
 
 def run_walkforward(
     data_path: str = "v2/data.pt",
-    model_path: str = "v2/model.pt",
+    model_path: str = "v2/models/model.pt",
     n_folds: int = 5,
     test_window: int = 60,
     val_window: int = 40,
@@ -200,7 +200,7 @@ def run_walkforward(
         fold_seed = base_seed + fold.fold_idx
         os.environ["TRAIN_SEED"] = str(fold_seed)
 
-        fold_model_path = f"v2/model_fold{fold.fold_idx}.pt"
+        fold_model_path = f"v2/models/model_fold{fold.fold_idx}.pt"
 
         print(f"\n--- TRAINING (seed={fold_seed}) ---")
         t_train = time.time()
@@ -264,15 +264,18 @@ def run_walkforward(
         print(f"  Fold {fold.fold_idx} score: {metrics.score:.4f}")
 
     # 5. Copy last fold's model to canonical path (most training data)
-    last_fold_model = f"v2/model_fold{folds[-1].fold_idx}.pt"
+    last_fold_model = f"v2/models/model_fold{folds[-1].fold_idx}.pt"
     if os.path.exists(last_fold_model):
         import shutil
+        os.makedirs(os.path.dirname(model_path), exist_ok=True)
         shutil.copy2(last_fold_model, model_path)
         print(f"\nProduction model: {last_fold_model} -> {model_path}")
+    else:
+        print(f"\nWARNING: Expected fold model {last_fold_model} not found — no production model saved")
 
     # Clean up fold models
     for fold in folds:
-        fp = f"v2/model_fold{fold.fold_idx}.pt"
+        fp = f"v2/models/model_fold{fold.fold_idx}.pt"
         if os.path.exists(fp) and fp != model_path:
             os.remove(fp)
 

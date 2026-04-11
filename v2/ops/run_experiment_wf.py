@@ -1,13 +1,9 @@
-"""Run a single ART² experiment using walk-forward cross-validation.
-
-Drop-in replacement for run_experiment.py. Same CLI, same output format.
-Internally runs 5 walk-forward folds instead of a single train+replay.
+"""Run a single ART² exact-chain experiment using walk-forward cross-validation.
 
 Usage:
     python -m v2.ops.run_experiment_wf [--data v2/data.pt] [--id exp_001]
 
-Output: same structured key:value lines + RESULTS_JSON as run_experiment.py,
-plus per-fold breakdown.
+Output: structured key:value lines plus RESULTS_JSON and per-fold breakdown.
 """
 from __future__ import annotations
 
@@ -29,7 +25,7 @@ from v2.ops.artifact import save_artifact
 
 def run_experiment(
     data_path: str = "v2/data.pt",
-    model_path: str = "v2/model.pt",
+    model_path: str = "v2/models/model.pt",
     experiment_id: str | None = None,
     policy: DecisionPolicy = DEFAULT_POLICY,
     save_artifacts: bool = True,
@@ -42,6 +38,10 @@ def run_experiment(
     print(f"\n{'='*60}")
     print(f"  EXPERIMENT: {experiment_id}  (n_folds={n_folds or 'all'})")
     print(f"{'='*60}")
+
+    # Guard: n_folds=None from CLI means "use default 5"
+    if n_folds is None:
+        n_folds = 5
 
     try:
         wf = run_walkforward(
@@ -132,7 +132,7 @@ def run_experiment(
 
 
 def _print_results(results: dict) -> None:
-    """Print results in structured format (same as run_experiment.py)."""
+    """Print results in the structured format consumed by deploy.sh."""
     print(f"\n---")
     for key in [
         "score", "min_fold_score", "max_fold_score", "std_fold_score",
@@ -165,7 +165,7 @@ def _print_results(results: dict) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Run ART2 walk-forward experiment")
     parser.add_argument("--data", type=str, default="v2/data.pt")
-    parser.add_argument("--model", type=str, default="v2/model.pt")
+    parser.add_argument("--model", type=str, default="v2/models/model.pt")
     parser.add_argument("--id", type=str, default=None, help="Experiment ID")
     parser.add_argument("--no-artifacts", action="store_true")
     parser.add_argument("--n-folds", type=int, default=None,
