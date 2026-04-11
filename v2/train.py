@@ -89,8 +89,9 @@ class TradingModel(nn.Module):
             nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
+        # Input: [context; contract_emb; context * contract_emb] = 3d
         self.score_head = nn.Sequential(
-            nn.Linear(d * 2, d),
+            nn.Linear(d * 3, d),
             nn.GELU(),
             nn.Dropout(dr),
             nn.Linear(d, d // 2),
@@ -117,7 +118,8 @@ class TradingModel(nn.Module):
 
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
-        combined = torch.cat([context_exp, contract_emb], dim=-1)
+        interaction = context_exp * contract_emb
+        combined = torch.cat([context_exp, contract_emb, interaction], dim=-1)
         contract_scores = self.score_head(combined).squeeze(-1)
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         side_logit = self.side_head(context).squeeze(-1)  # >0 → put, <0 → call
@@ -188,7 +190,7 @@ class TradeDataset(Dataset):
         return window, self.all_contracts[idx], target
 
 
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 1.0))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
 
 
 def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
