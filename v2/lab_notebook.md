@@ -119,7 +119,8 @@ Top predictive features:
 | 101 | 3-head detached direction | 144C/111P | 34.9% | 255 | 100% | detach fixed divergence; dir_acc still 52%; best balance since exp_095; PF 0.653; score `-0.2` |
 | 102 | 3-head DIR_W=0.3 live gradient | 374C/94P | 35.9% | 468 | 103% | best WR/PF but extreme call bias (80%); direction head still can't learn; score `-0.2` |
 | 103 | balanced gate + dir-conditioned KL | 42C/157P | 29.6% | 199 | 100% | **worst**: dir-conditioned training without inference mask created uncalibrated cross-direction scores; extreme put bias; score `-0.2` |
-| 104 | balanced gate + standard KL (exp_095 replay) | — | — | — | — | official 5-fold run in progress; best known config for trade visualization |
+| 104 | balanced gate + standard KL (5-fold official) | 131C/153P | 29.9% | 1697 | 101% | official baseline with balanced gate; aggregate score `-0.240`; model.pt obtained for trade analysis |
+| 105 | **morning window only (bars 60-120)** | **79C/81P** | **36.9%** | 160 | **39%** | **best result ever**: PF 0.789, +DayRate 42.6%, DD 38.7%, lost only $2,899 instead of $10k; near-perfect C/P balance; still fails DD gate (38.7% > 20%) |
 
 ## Current Live Baseline
 
