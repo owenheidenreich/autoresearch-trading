@@ -89,11 +89,12 @@ class TradingModel(nn.Module):
         )
 
         # Head 2: Direction (call=0 / put=1) from context
+        # Uses detached context to prevent direction overfitting from corrupting encoder
         self.direction_head = nn.Sequential(
-            nn.Linear(d, d // 2),
+            nn.Linear(d, d // 4),
             nn.GELU(),
-            nn.Dropout(dr),
-            nn.Linear(d // 2, 1),
+            nn.Dropout(0.3),
+            nn.Linear(d // 4, 1),
         )
 
         # Head 3: Strike selection (context + contract → score)
@@ -115,9 +116,10 @@ class TradingModel(nn.Module):
         h = self.encoder(h, mask=mask)
         context = h[:, -1, :]
 
-        # Gate and direction from context alone
+        # Gate from context (gradient flows to encoder)
         gate_logit = self.gate_head(context).squeeze(-1)
-        direction_logit = self.direction_head(context).squeeze(-1)  # >0 = put
+        # Direction from detached context (prevents overfitting from corrupting encoder)
+        direction_logit = self.direction_head(context.detach()).squeeze(-1)  # >0 = put
 
         # Strike scores from context + contract features
         contract_emb = self.contract_proj(contracts)
