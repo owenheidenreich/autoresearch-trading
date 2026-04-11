@@ -1,34 +1,54 @@
 # ART2 v2 Program
 
-This is the definitive operating protocol for the current exact-chain recovery.
+This is the definitive operating protocol for the current exact-chain reset.
 Read this file first, then [COMMANDS.md](COMMANDS.md), then [current_state.md](docs/current_state.md).
+
+If optimization pressure conflicts with project judgment, defer to [founder_intent.md](docs/founder_intent.md).
 
 ## Current Status
 
-- **v4 exact-chain recovery phase.**
-- The active manifest is `v2/data.pt`.
-- Current dataset version: `v4_exact_chain`
+- **v4 exact-chain reset and baseline re-establishment phase**
+- Active manifest: `v2/data.pt`
+- Dataset version: `v4_exact_chain`
 - Dataset fingerprint: `46f2d184e186496f`
 - Unique days: 986
 - Per-day sidecars: `v2/data_sidecars/`
-- All exact-chain experiments so far (exp_074 through exp_078) failed
-- Next experiment: `exp_079`
+- Official exact-chain scored runs: `exp_074` through `exp_078`
+- Screening history: `exp_079` through `exp_087` in `v2/lab_notebook.md`
+- Unresolved code-only states: `exp_088`, `exp_089`
+- Next experiment: `exp_093`
 
-## Compute Rules
+## Mission Boundary
 
-- All model training runs on the Akash H100 GPU via `./v2/ops/deploy.sh`.
-- Never train locally on the MacBook.
-- Local work is for editing, committing, replay/evaluation, plotting, data rebuilds, and documentation.
-- Every experiment trains from scratch. `deploy.sh start` clears the remote `v2/model.pt` before the next run.
+- The current mission is not live trading.
+- The current mission is a trustworthy exact-chain research system.
 
-## Current System Summary
+## Established Facts
+
+- Oracle replay scores `6.0`, so the evaluation harness is achievable
+- Logistic regression reaches `60.9%` test direction accuracy from current-bar features
+- Longer lookback windows did not improve that diagnostic
+- The current bottleneck is model architecture and training, not the frozen exact-chain dataset or replay harness
+
+## Current Live Baseline
 
 - Model: exact-chain contract scorer
 - Inputs: 30-bar windows of 47 normalized context features plus the current executable contract snapshot
-- Output: one `NO_TRADE` score plus one score per executable contract
-- Risk management: policy-driven fixed stop / target / max-hold in `v2/core/policy.py`
-- Evaluation: 5-fold walk-forward CV over 300 test days plus 20 shadow days
-- Artifact rule: only promoted artifacts are eligible for default replay and they must match the current dataset fingerprint
+- Outputs: `NO_TRADE` plus one score per executable contract
+- Loss: gate BCE plus soft KL selection only
+- `SOFT_TEMP=0.20`
+- No direct PnL regression
+- No auxiliary side head
+- No gate reweighting
+- No score regularization
+- Risk remains policy-driven in `v2/core/policy.py`
+
+## Compute Rules
+
+- All model training runs on the Akash H100 GPU via `./v2/ops/deploy.sh`
+- Never train locally on the MacBook
+- Local work is for editing, replay/evaluation, plotting, data rebuilds, and documentation
+- Every experiment trains from scratch
 
 ## Mutable Surface
 
@@ -37,70 +57,84 @@ During the normal experiment loop, only these two files are mutable:
 - `v2/train.py`
 - `v2/core/policy.py`
 
-Everything else is the frozen evaluation harness unless you are doing explicit infrastructure, data, or documentation work.
+Everything else is frozen harness, data, ops, or documentation unless the work is explicitly infrastructure, archive, or docs cleanup.
 
-## Two-Tier Experiment Workflow
+## Required Pre-GPU Gate
 
-### Screening Run (provisional)
+Before any GPU run, the local gate must pass:
+
+- Command: `python3 -m v2.ops.pre_run_gate --data v2/data.pt`
+- `./v2/ops/deploy.sh run_screen ...` and `run_one ...` run this automatically
+
+The gate fails on:
+
+- failing `harness_eval`
+- log/doc/code disagreement in the live exact-chain surface
+- legacy runner or old-head references in live files
+- non-official rows in `v2/results.tsv`
+- mismatch between `v2/train.py` and `v2/docs/how_training_works.md`
+
+## Experiment Workflow
+
+### Screening Run
 
 - Command: `./v2/ops/deploy.sh run_screen exp_NNN`
 - Runs 1 fold only
-- No artifacts saved, no model downloaded, no `results.tsv` entry
-- Log a short note in `lab_notebook.md` only
-- Screening never drives keep/revert decisions
+- No artifacts saved
+- No model downloaded
+- No `results.tsv` entry
+- Screening notes go to `v2/lab_notebook.md` only
 
-Screening reject rules:
-- Gate failure
-- Zero trades
-- Score <= 0
-- Minority direction balance < 15%
-- Fully one-sided behavior
+Reject a screening run on:
 
-### Official Run (scored)
+- hard gate failure
+- zero trades
+- score `<= 0`
+- minority direction balance `< 15%`
+- fully one-sided behavior
+
+### Official Run
 
 - Command: `./v2/ops/deploy.sh run_one exp_NNN`
 - Runs all 5 folds
-- Saves artifacts, downloads model_candidate.pt
-- Entries go to both `results.tsv` and `lab_notebook.md`
+- Saves artifacts and downloads `v2/models/model_candidate.pt`
 - Official runs are the only scored runs
+- Official runs append to both `v2/results.tsv` and `v2/lab_notebook.md`
 
-Official keep rules:
-- Aggregate 5-fold score beats the current exact-chain best in `results.tsv`
-- Beats all four baselines
-- No hard-gate failure
+Keep only if the aggregate result:
+
+- beats the current exact-chain best in `v2/results.tsv`
+- beats all four baselines
+- has no hard-gate failure
 
 ### Post-Official Workflow
 
 After an official run:
+
 1. KEEP or REVERT:
    - `python3 v2/ops/model_manage.py keep`
    - or: `git checkout HEAD~1 -- v2/train.py v2/core/policy.py` then `python3 v2/ops/model_manage.py revert`
 2. Regenerate plots:
-   - `python3 -m v2.plot_trades --model v2/model.pt`
+   - `python3 -m v2.plot_trades`
    - `python3 v2/plot_progress.py`
 3. Run `python3 -m v2.analysis.analyze_losses`
-4. Update `results.tsv` and `lab_notebook.md`
-5. Check session limits before next experiment
+4. Update `v2/lab_notebook.md`
+5. Check session limits before the next experiment
 
-## Setup
+## Abandoned Or Parked Approaches
 
-1. Work from a clean branch.
-2. Verify the active dataset:
-   - `python3 -m v2.analysis.harness_eval --data v2/data.pt`
-3. Boot the GPU:
-   - `./v2/ops/deploy.sh boot`
-4. Upload code, `data.pt`, and chain sidecars:
-   - `./v2/ops/deploy.sh start`
+- direct PnL regression in the live loss stack
+- shared auxiliary side heads
+- gate BCE reweighting
+- score regularization as the live baseline
+- treating `exp_088` or `exp_089` as scored evidence
+- tanh-bounded score head (gradient saturation kills selection)
 
-## Hard Protocol Rules
+## Hypothesis Queue
 
-- Screening is provisional and never drives keep/revert
-- Official 5-fold runs are the only scored runs
-- Infrastructure/doc/archive changes are not experiments
-- Screening notes go to `lab_notebook.md` only
-- Official runs go to `results.tsv` and `lab_notebook.md`
-- Plots and `analyze_losses` are required after official runs only
-- After 3 consecutive official reverts, analyze trade-level failure before another structural model change
+- `exp_093`: current-bar-only / `LOOKBACK=1` architecture test
+- `exp_094`: consider a replay-compatible follow-up based on `exp_093` results
+- Defer detached two-stage side models until simpler replay-compatible changes are exhausted
 
 ## Session Limits
 
@@ -111,19 +145,6 @@ After an official run:
 - 3 crashes
 
 Stop when any limit fires.
-
-## Harness Eval Suite
-
-- `core_regression`: non-negotiable invariants, zero tolerated regressions
-- `optimization`: cases used while repairing the harness
-- `holdout`: unseen tagged cases used to verify harness generalization
-
-If an experiment exposes a harness bug:
-
-1. stop the loop
-2. add a harness eval case
-3. repair the harness on a dedicated branch
-4. re-freeze before resuming experiments
 
 ## Score
 
@@ -147,6 +168,8 @@ The model must also beat all four baselines:
 
 ## Source Of Truth
 
-See `v2/docs/README.md` for the full live documentation index.
+See `v2/docs/README.md` for the live documentation index.
+
+For founder voice, anti-goals, and standards, see `v2/docs/founder_intent.md`.
 
 Do not read `archive/` unless the human asks for historical context.
