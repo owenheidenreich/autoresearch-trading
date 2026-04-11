@@ -236,10 +236,19 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
 
-        # Build soft targets from realized P&L (only valid contracts)
+        # Build soft targets from realized P&L (only valid, same-side contracts)
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9  # invalid contracts get zero probability
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
+
+        # Mask wrong-side contracts: concentrate target on oracle's side
+        tr_contracts = targets["contracts_full"][trade_rows].to(device)
+        contract_is_put = tr_contracts[:, :, 2]  # field 2 = right_is_put
+        oracle_idx = best_idx[trade_rows]
+        oracle_is_put = targets_contract_field(targets, trade_rows, oracle_idx, 2)
+        wrong_side = (contract_is_put > 0.5) != (oracle_is_put.unsqueeze(1) > 0.5)
+        pnl_for_target[wrong_side] = -1e9
+
         soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
         # Model log-probs (mask invalid contracts)
