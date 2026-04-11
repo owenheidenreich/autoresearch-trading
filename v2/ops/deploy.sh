@@ -82,6 +82,66 @@ scp_cmd() {
         -P "$SSH_PORT" "$@"
 }
 
+# Auto-append official experiment results to results.tsv from RESULTS_JSON output.
+# Usage: _append_results_tsv <exp_id> <run_output> <run_type>
+_append_results_tsv() {
+    local exp_id="$1"
+    local output="$2"
+    local run_type="${3:-official}"
+    local results_file="$PROJECT_ROOT/v2/results.tsv"
+
+    # Ensure header exists
+    if [[ ! -f "$results_file" ]]; then
+        echo -e "experiment\tscore\tstatus\tdescription" > "$results_file"
+    fi
+
+    # Extract RESULTS_JSON line from output
+    local results_json
+    results_json=$(echo "$output" | grep '^RESULTS_JSON:' | sed 's/^RESULTS_JSON://' | tail -1)
+    if [[ -z "$results_json" ]]; then
+        log "WARNING: No RESULTS_JSON in output — appending placeholder to results.tsv"
+        echo -e "${exp_id}\t0.000000\tunknown\t${run_type}: no RESULTS_JSON captured" >> "$results_file"
+        return
+    fi
+
+    # Parse score and build description using python3
+    local tsv_line
+    tsv_line=$(python3 -c "
+import json, sys
+r = json.loads(sys.argv[1])
+score = r.get('score', 0.0)
+folds = r.get('per_fold_scores', r.get('fold_scores', []))
+gate = r.get('gate_failure', False)
+error = r.get('error', '')
+run_type = sys.argv[2]
+
+parts = [f'{run_type}:']
+if error:
+    parts.append(f'ERROR={error}')
+elif gate:
+    parts.append('GATE_FAILURE')
+if folds:
+    parts.append(f'folds=[{\",\".join(f\"{f:.2f}\" for f in folds)}]')
+
+# Include any extra metrics from the results
+for key in ('trades', 'win_rate', 'profit_factor', 'max_drawdown_pct', 'positive_day_rate'):
+    if key in r and r[key] is not None:
+        parts.append(f'{key}={r[key]}')
+
+desc = ' '.join(parts)
+status = 'revert'  # default until Claude runs model_manage.py keep
+print(f'{sys.argv[3]}\t{score:.6f}\t{status}\t{desc}')
+" "$results_json" "$run_type" "$exp_id" 2>/dev/null)
+
+    if [[ -n "$tsv_line" ]]; then
+        echo "$tsv_line" >> "$results_file"
+        log "Auto-appended $exp_id to results.tsv (score=$(echo "$tsv_line" | cut -f2))"
+    else
+        log "WARNING: Failed to parse RESULTS_JSON — appending raw placeholder"
+        echo -e "${exp_id}\t0.000000\tunknown\t${run_type}: parse failed" >> "$results_file"
+    fi
+}
+
 wait_for_ssh() {
     log "Waiting for SSH..."
     for _ in $(seq 1 60); do
@@ -93,6 +153,12 @@ wait_for_ssh() {
         printf "."
     done
     die "SSH not available after 5 minutes"
+}
+
+run_local_pre_run_gate() {
+    [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
+    log "Running local pre-GPU integrity gate..."
+    python3 -m v2.ops.pre_run_gate --data "$DATA_PT"
 }
 
 # ===================================================================
@@ -390,7 +456,7 @@ cmd_start() {
     log "Uploading workspace snapshot ($(du -h "$bundle" | cut -f1), sha256=$bundle_sha)..."
     scp_cmd "$bundle" "root@$SSH_HOST:/root/v2-workspace.tgz"
     rm -f "$bundle"
-    ssh_cmd "rm -rf /root/v2 && mkdir -p /root && tar -xzf /root/v2-workspace.tgz -C /root && rm -f /root/v2-workspace.tgz"
+    ssh_cmd "rm -rf /root/v2 && mkdir -p /root && tar -xzf /root/v2-workspace.tgz -C /root && mkdir -p /root/v2/models /root/v2/state /root/v2/output && rm -f /root/v2-workspace.tgz"
 
     # Integrity check: confirm remote train.py matches local snapshot.
     local local_train_sha remote_train_sha
@@ -449,8 +515,8 @@ PY
 
     # Experiments always train from scratch. Keep the remote model path empty
     # until run_experiment_wf writes a fresh checkpoint for this harness era.
-    ssh_cmd "rm -f /root/v2/model.pt"
-    log "Remote v2/model.pt cleared (training from scratch; no warm-start upload)"
+    ssh_cmd "mkdir -p /root/v2/models && rm -f /root/v2/models/model.pt"
+    log "Remote v2/models/model.pt cleared (training from scratch; no warm-start upload)"
 
     # Verify files on remote
     log "Files on remote GPU node:"
@@ -572,7 +638,7 @@ if gpu:
 else:
     print("  GPU:  unavailable")
 
-pid = run("pgrep -f 'run_experiment_wf|run_experiment.py|v2\\.ops\\.run_experiment_wf|v2\\.ops\\.run_experiment'")
+pid = run("pgrep -f '^python3 -m v2\\.ops\\.run_experiment_wf'")
 if pid:
     pid_line = pid.split("\n")[0]
     uptime = run(f"ps -o etime= -p {pid_line}").strip()
@@ -645,8 +711,9 @@ cmd_download() {
 
     # Download model.pt to staging (never overwrite best directly)
     log "Downloading model_candidate.pt..."
-    scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt" 2>/dev/null || \
-        log "  WARNING: model.pt not found on remote"
+    mkdir -p "$PROJECT_ROOT/v2/models" "$PROJECT_ROOT/v2/state"
+    scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || \
+        log "  WARNING: v2/models/model.pt not found on remote"
 
     # Download artifacts/
     log "Downloading artifacts/..."
@@ -662,18 +729,18 @@ cmd_download() {
 
     # Download .best_score
     log "Downloading .best_score..."
-    scp_cmd "root@$SSH_HOST:/root/v2/.best_score" "$PROJECT_ROOT/v2/.best_score" 2>/dev/null || \
+    scp_cmd "root@$SSH_HOST:/root/v2/.best_score" "$PROJECT_ROOT/v2/state/best_score.txt" 2>/dev/null || \
         log "  WARNING: .best_score not found on remote"
 
     # Download .inner_loop_state.json
     log "Downloading .inner_loop_state.json..."
-    scp_cmd "root@$SSH_HOST:/root/v2/.inner_loop_state.json" "$PROJECT_ROOT/v2/.inner_loop_state.json" 2>/dev/null || \
+    scp_cmd "root@$SSH_HOST:/root/v2/.inner_loop_state.json" "$PROJECT_ROOT/v2/state/inner_loop_state.json" 2>/dev/null || \
         log "  WARNING: .inner_loop_state.json not found on remote"
 
     # Validate: best artifact model.pt exists locally
-    if [[ -f "$PROJECT_ROOT/v2/.inner_loop_state.json" ]]; then
+    if [[ -f "$PROJECT_ROOT/v2/state/inner_loop_state.json" ]]; then
         local best_id
-        best_id=$(python3 -c "import json; print(json.load(open('$PROJECT_ROOT/v2/.inner_loop_state.json')).get('best_artifact_id',''))" 2>/dev/null)
+        best_id=$(python3 -c "import json; print(json.load(open('$PROJECT_ROOT/v2/state/inner_loop_state.json')).get('best_artifact_id',''))" 2>/dev/null)
         if [[ -n "$best_id" ]]; then
             local best_model="$PROJECT_ROOT/v2/artifacts/$best_id/model.pt"
             if [[ -f "$best_model" ]]; then
@@ -744,7 +811,8 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
         if [[ "$last_kept" -eq -1 ]]; then
             if [[ "$best_experiment_num" -gt 0 ]]; then
                 log "* Initial sync: best is exp #$best_experiment_num (score=$best_score) -- downloading..."
-                scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt" 2>/dev/null || true
+                mkdir -p "$PROJECT_ROOT/v2/models"
+                scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
                 mkdir -p "$PROJECT_ROOT/v2/artifacts"
                 scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
             fi
@@ -758,7 +826,8 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
         # --- New improvement: download model + artifacts ---
         if [[ "$best_experiment_num" -gt "$last_kept" ]]; then
             log "* IMPROVEMENT at exp #$best_experiment_num (score=$best_score) — syncing model + artifacts..."
-            scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt" 2>/dev/null || true
+            mkdir -p "$PROJECT_ROOT/v2/models"
+            scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
             mkdir -p "$PROJECT_ROOT/v2/artifacts"
             scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
             last_kept=$best_experiment_num
@@ -824,9 +893,10 @@ cmd_run_one() {
     [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_one <exp_id>"
 
     log "=== EXPERIMENT: $exp_id ==="
+    run_local_pre_run_gate
 
-    # 1. Upload mutable code files (model trains from scratch every time)
-    for f in v2/train.py v2/core/policy.py; do
+    # 1. Upload mutable code files + harness files that may have bug fixes
+    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py; do
         scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
     done
 
@@ -847,14 +917,21 @@ cmd_run_one() {
     fi
     log "Code uploaded. Training..."
 
-    # 2. Run experiment (blocking, ~5 min)
-    ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1"
+    # 2. Run experiment (blocking, ~5 min) — capture output to parse results
+    local run_output
+    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1") || true
+    echo "$run_output"  # still show output to Claude
 
-    # 3. Download new model.pt to staging (never overwrite model_best.pt directly)
-    scp_cmd "root@$SSH_HOST:/root/v2/model.pt" "$PROJECT_ROOT/v2/model_candidate.pt"
+    # 3. Download new model.pt to staging (never overwrite the promoted model directly)
+    mkdir -p "$PROJECT_ROOT/v2/models"
+    scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt"
     mkdir -p "$PROJECT_ROOT/v2/artifacts"
     scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/$exp_id" "$PROJECT_ROOT/v2/artifacts/"
-    log "Done. model_candidate.pt synced (run model_manage.py keep to promote)."
+
+    # 4. Auto-append to results.tsv from RESULTS_JSON (can't be forgotten)
+    _append_results_tsv "$exp_id" "$run_output" "official"
+
+    log "Done. v2/models/model_candidate.pt synced (run model_manage.py keep to promote)."
 }
 
 # ===================================================================
@@ -868,9 +945,10 @@ cmd_run_screen() {
 
     local screen_id="${exp_id}_screen"
     log "=== SCREENING: $screen_id (1-fold, no artifacts) ==="
+    run_local_pre_run_gate
 
-    # 1. Upload mutable code files
-    for f in v2/train.py v2/core/policy.py; do
+    # 1. Upload mutable code files + harness files that may have bug fixes
+    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py; do
         scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
     done
 
@@ -891,11 +969,13 @@ cmd_run_screen() {
     fi
     log "Code uploaded. Screening (1-fold)..."
 
-    # 2. Run 1-fold screening (no artifacts saved)
-    ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1"
+    # 2. Run 1-fold screening (no artifacts saved) — capture output to parse results
+    local run_output
+    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1") || true
+    echo "$run_output"  # still show output to Claude
 
-    # 3. No model download, no artifact download for screening
-    log "Screening complete. No model or artifacts downloaded."
+    # 3. No model download, no artifact download, and no results.tsv entry for screening
+    log "Screening complete. No model, artifacts, or results.tsv entry were written."
     log "If screening passes, run: ./deploy.sh run_one $exp_id"
 }
 
@@ -922,17 +1002,17 @@ cmd_stop() {
     fi
 
     log "Killing experiment process..."
-    ssh_cmd "pkill -f 'run_experiment_wf|run_experiment.py|v2\\.ops\\.run_experiment_wf|v2\\.ops\\.run_experiment' 2>/dev/null || true" || true
+    ssh_cmd "pkill -f '^python3 -m v2\\.ops\\.run_experiment_wf' 2>/dev/null || true" || true
 
     # Wait for process to actually die (up to 30s) — prevents partial file downloads
     for _ in $(seq 1 30); do
-        if ! ssh_cmd "pgrep -f 'run_experiment_wf|run_experiment.py|v2\\.ops\\.run_experiment_wf|v2\\.ops\\.run_experiment'" &>/dev/null; then
+        if ! ssh_cmd "pgrep -f '^python3 -m v2\\.ops\\.run_experiment_wf'" &>/dev/null; then
             break
         fi
         sleep 1
     done
     # Force kill if still alive
-    ssh_cmd "pkill -9 -f run_experiment.py 2>/dev/null || true" 2>/dev/null || true
+    ssh_cmd "pkill -9 -f '^python3 -m v2\\.ops\\.run_experiment_wf' 2>/dev/null || true" 2>/dev/null || true
     sleep 3  # let filesystem flush before downloading
 
     log "Downloading results before closing..."
