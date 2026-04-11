@@ -66,6 +66,7 @@ Top predictive features:
 | 090 | no-change reset baseline re-screen | 179C/244P | 36.2% | 423 | 104% | post-reset baseline reproduced the old failure mode; hard gate failed on excessive drawdown with score `-0.2` |
 | 091 | focal gate BCE (`alpha=0.25`, `gamma=2.0`) | 405C/6P | 32.1% | 411 | 100% | focal gate worsened behavior into severe call-side collapse; hard gate failed on direction balance with score `-0.3` |
 | 092 | `tanh` on contract score head output | 549C/1P | 28.4% | 550 | 101% | tanh saturation killed selection gradients; total direction collapse into all-calls; score `-0.3` |
+| 093 | `LOOKBACK=1` current-bar-only | 357C/1P | 33.0% | 358 | 102% | removing temporal context caused call collapse; lookback provides useful direction signal despite diagnostic; score `-0.3` |
 
 ## Current Live Baseline
 
@@ -83,11 +84,12 @@ Top predictive features:
 - gate BCE reweighting
 - treating `exp_088` or `exp_089` as scored evidence
 - tanh-bounded score head (gradient saturation kills selection)
+- LOOKBACK=1 current-bar-only (temporal context needed for direction balance)
 
 ## Hypothesis Queue
 
-1. `exp_093`: current-bar-only / `LOOKBACK=1` architecture test
-2. `exp_094`: consider a replay-compatible follow-up based on 093 results
+1. `exp_094`: `SOFT_TEMP=0.10` — tighter selection targets to strengthen gate gradients
+2. `exp_095`: reduced model capacity (`D_MODEL=48`, `DEPTH=2`) to prevent overfitting majority class
 3. Defer detached two-stage side models until simpler replay-compatible changes are exhausted
 
 ## Active Experiment Kickoff
@@ -150,3 +152,25 @@ Top predictive features:
 - Decision: revert
 - Takeaway: tanh saturation killed selection gradients — the model couldn't differentiate contracts within the [-1, 1] range and collapsed into all-calls. Training metrics showed gate_acc and trade_rate completely flat across all 14 epochs (0.757, 0.937), confirming the gate never learned. Bounded score approaches that saturate are not viable.
 - Next step: move to `exp_093` with `LOOKBACK=1` architecture test
+
+### `exp_093` — LOOKBACK=1 Current-Bar-Only (2026-04-10)
+
+- Type: screening run
+- Code change: `LOOKBACK` default changed from 30 to 1
+- Purpose: test whether the 30-bar transformer window adds noise, since diagnostic showed current-bar features alone achieve 60.9% test direction accuracy
+- Constant parts:
+  - same loss function
+  - same selection KL target
+  - same replay policy
+  - same `SOFT_TEMP=0.20`
+- Result:
+  - score: `-0.300`
+  - gate failure: `direction_collapse (balance=0.00 < 0.15)`
+  - trades: `358`
+  - direction balance: `357C / 1P`
+  - win rate: `33.0%`
+  - profit factor: `0.625` (better than baseline's ~0.40 range)
+  - baseline comparison: failed all four baselines
+- Decision: revert
+- Takeaway: removing temporal context caused call-side collapse despite the diagnostic showing current-bar features alone have 60.9% direction accuracy. The transformer's temporal attention provides something the logistic regression diagnostic doesn't capture — likely ordering/momentum cues needed for balanced call/put selection. The LOOKBACK=30 window is load-bearing for direction balance.
+- Next step: move to `exp_094` with `SOFT_TEMP=0.10` to tighten selection targets

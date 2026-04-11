@@ -16,7 +16,7 @@ If optimization pressure conflicts with project judgment, defer to [founder_inte
 - Official exact-chain scored runs: `exp_074` through `exp_078`
 - Screening history: `exp_079` through `exp_087` in `v2/lab_notebook.md`
 - Unresolved code-only states: `exp_088`, `exp_089`
-- Next experiment: `exp_093`
+- Next experiment: `exp_094`
 
 ## Mission Boundary
 
@@ -129,11 +129,12 @@ After an official run:
 - score regularization as the live baseline
 - treating `exp_088` or `exp_089` as scored evidence
 - tanh-bounded score head (gradient saturation kills selection)
+- LOOKBACK=1 current-bar-only (temporal context needed for direction balance)
 
 ## Hypothesis Queue
 
-- `exp_093`: current-bar-only / `LOOKBACK=1` architecture test
-- `exp_094`: consider a replay-compatible follow-up based on `exp_093` results
+- `exp_094`: `SOFT_TEMP=0.10` — tighter selection targets to strengthen gate gradients
+- `exp_095`: reduced model capacity (`D_MODEL=48`, `DEPTH=2`) to prevent overfitting majority class
 - Defer detached two-stage side models until simpler replay-compatible changes are exhausted
 
 ## Session Limits
