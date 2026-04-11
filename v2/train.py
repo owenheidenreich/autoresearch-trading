@@ -38,6 +38,7 @@ GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SIDE_W = float(os.environ.get("WEIGHT_SIDE", 0.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 NO_TRADE_W = float(os.environ.get("NO_TRADE_W", 1.0))
+SCORE_REG_W = float(os.environ.get("SCORE_REG_W", 0.01))
 
 
 class PositionalEncoding(nn.Module):
@@ -89,9 +90,8 @@ class TradingModel(nn.Module):
             nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
-        # Input: [context; contract_emb; context * contract_emb] = 3d
         self.score_head = nn.Sequential(
-            nn.Linear(d * 3, d),
+            nn.Linear(d * 2, d),
             nn.GELU(),
             nn.Dropout(dr),
             nn.Linear(d, d // 2),
@@ -118,8 +118,7 @@ class TradingModel(nn.Module):
 
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
-        interaction = context_exp * contract_emb
-        combined = torch.cat([context_exp, contract_emb, interaction], dim=-1)
+        combined = torch.cat([context_exp, contract_emb], dim=-1)
         contract_scores = self.score_head(combined).squeeze(-1)
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         side_logit = self.side_head(context).squeeze(-1)  # >0 → put, <0 → call
@@ -261,7 +260,10 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             side_logit[trade_rows], true_side, reduction="mean"
         )
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss + PNL_W * pnl_loss + SIDE_W * side_loss
+    # L2 regularization on scores: keep magnitudes near zero so gate has stable target
+    score_reg = (scores[valid_mask] ** 2).mean() if valid_mask.any() else torch.tensor(0.0, device=device)
+
+    total = GATE_W * gate_loss + SEL_W * sel_loss + PNL_W * pnl_loss + SIDE_W * side_loss + SCORE_REG_W * score_reg
 
     # --- Metrics ---
     # Predict: trade if max(contract_scores) > no_trade_score (matches replay gate)
