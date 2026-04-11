@@ -191,53 +191,35 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         best_contract_score, _ = masked_scores.max(dim=-1)
         gate_logit = best_contract_score - no_trade
         gate_target = label_trade.float()
-        # Balanced gate sampling: subsample majority class to match minority
-        sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
-        sup_trade = label_trade[sup_idx]
-        n_pos = sup_trade.sum().item()
-        n_neg = len(sup_trade) - n_pos
-        n_min = int(min(n_pos, n_neg))
-        if n_min > 0:
-            pos_idx = sup_idx[sup_trade.bool()]
-            neg_idx = sup_idx[~sup_trade.bool()]
-            pos_sel = pos_idx[torch.randperm(len(pos_idx), device=device)[:n_min]]
-            neg_sel = neg_idx[torch.randperm(len(neg_idx), device=device)[:n_min]]
-            balanced_idx = torch.cat([pos_sel, neg_sel])
-            gate_loss = F.binary_cross_entropy_with_logits(
-                gate_logit[balanced_idx],
-                gate_target[balanced_idx],
-                reduction="mean",
-            )
-        else:
-            gate_loss = F.binary_cross_entropy_with_logits(
-                gate_logit[sup_idx],
-                gate_target[sup_idx],
-                reduction="mean",
-            )
+        gate_loss = F.binary_cross_entropy_with_logits(
+            gate_logit[supervised_rows],
+            gate_target[supervised_rows],
+            reduction="mean",
+        )
 
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
+        tr_contracts = contracts_full[trade_rows]
+        tr_best_idx = best_idx[trade_rows]
+
+        # Direction-conditioned selection: only rank contracts matching oracle direction
+        rows_range = torch.arange(tr_contracts.size(0), device=device)
+        oracle_is_put = tr_contracts[rows_range, tr_best_idx, 2] > 0.5  # (B,)
+        contract_is_put = tr_contracts[:, :, 2] > 0.5  # (B, K)
+        dir_match = contract_is_put == oracle_is_put.unsqueeze(1)  # (B, K)
 
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
-
-        # Filter noisy bars: skip rows where top margin < 0.01
-        top2, _ = pnl_for_target.topk(2, dim=-1)
-        margin = top2[:, 0] - top2[:, 1]
-        clear_signal = margin >= 0.01
-        if clear_signal.any():
-            pnl_for_target = pnl_for_target[clear_signal]
-            tr_scores = tr_scores[clear_signal]
-            tr_valid = tr_valid[clear_signal]
-
+        pnl_for_target[~dir_match] = -1e9  # mask opposite direction
         soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
         logits_for_sel = tr_scores.clone()
         logits_for_sel[~tr_valid] = -1e9
+        logits_for_sel[~dir_match] = -1e9  # mask opposite direction
         log_probs = F.log_softmax(logits_for_sel, dim=-1)
         sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 

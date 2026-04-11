@@ -113,6 +113,7 @@ Top predictive features:
 | 094 | `SOFT_TEMP=0.10` | 315C/66P | 32.5% | 381 | 101% | matched baseline score `-0.2`; fewer trades, lower DD, gate starting to learn late; but direction balance worse (83% calls) |
 | 095 | balanced gate sampling | 156C/205P | 34.6% | 361 | 102% | **best screening result**: gate actually learning (trd_rate 0.52-0.71), best PF 0.652, best +day_rate 31.2%, balanced direction; still score `-0.2` |
 | 096 | `SOFT_TEMP=0.05` + balanced gate | 458C/22P | 33.5% | 480 | 101% | peaked temp caused call collapse even with balanced gate; direction balance requires `SOFT_TEMP=0.20`; score `-0.3` |
+| 097 | balanced gate + noise filter (margin<0.01) | 65C/161P | 33.6% | 226 | 100% | fewer trades but worse quality (PF 0.540); direction balanced but all trades still losers; entire $10k account wiped; score `-0.2` |
 
 ## Current Live Baseline
 
