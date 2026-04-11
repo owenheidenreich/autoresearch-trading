@@ -896,7 +896,7 @@ cmd_run_one() {
     run_local_pre_run_gate
 
     # 1. Upload mutable code files + harness files that may have bug fixes
-    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py; do
+    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py v2/replay.py v2/ops/pre_run_gate.py; do
         scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
     done
 
@@ -948,7 +948,7 @@ cmd_run_screen() {
     run_local_pre_run_gate
 
     # 1. Upload mutable code files + harness files that may have bug fixes
-    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py; do
+    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py v2/replay.py v2/ops/pre_run_gate.py; do
         scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
     done
 
