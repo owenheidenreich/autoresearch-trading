@@ -63,16 +63,52 @@ All five experiments failed. The model fires too few trades (gate collapse) or f
 - Still fails on drawdown (102.9%) and WR (27.1%)
 - Temperature 0.05 may be too sharp — try 0.1 or 0.2
 
-## Current Hypotheses (Recovery Plan, Updated)
+## Screening Session 2 (2026-04-10, exp_080–089)
 
-### H1: Tune soft KL selection (exp_079j+)
-The soft KL approach works — it teaches both side AND within-side ranking simultaneously. Next steps:
-- Try higher temperature (0.1, 0.2) to soften the target distribution and reduce winner-take-all
-- Try SEL_W=2.0 or 3.0 to emphasize selection over PnL regression
-- If direction balance improves, gate calibration may solve the drawdown issue
+### Root cause diagnosis
+The single `score_head` output per contract is trained by three conflicting losses: PNL regression (pushes scores toward realized P&L, mostly negative), soft KL selection (ranks contracts), and gate BCE (decides trade/no-trade). PNL regression dominates and causes direction collapse. Supervised gate labels are 80/20 skewed toward trade, making "always trade" the BCE-optimal strategy.
 
-### H2: Gate BCE reweighting (exp_080, conditional)
-Only after soft KL selection produces positive scores. `no_trade_weight = 3.0` to reduce overtrading.
+### Screening results
 
-### Abandoned: Side CE approach
-The side CE (exp_079-079h) is fundamentally limited: it requires either a global bias (can't work for ~50/50 targets) or a learned head (overfits immediately). Soft KL selection supersedes it by teaching side and ranking together through a single, well-conditioned loss.
+| Screen | Change | Dir Balance | WR | Trades | DD | Key Finding |
+|--------|--------|-------------|-----|--------|-----|-------------|
+| 080 | PNL_W=0, TEMP=0.20 | **179C/244P (42%)** | **36.2%** | 423 | 104% | **Best config.** Removing PNL regression fixed direction |
+| 081 | + NO_TRADE_W=3.0 | 62C/143P (30%) | 32.2% | 205 | 103% | Gate oscillated, unstable |
+| 082 | + PNL_W=0.1 | 25C/197P (11%) | 28.8% | 222 | 102% | Even 0.1 PNL_W reimposed direction collapse |
+| 083 | + side_head (d//4, drop=0.3) | 568C/7P (1%) | 31.3% | 575 | 101% | Side head corrupted shared context encoder |
+| 084 | GATE_W=3.0 | 86C/277P (24%) | 33.9% | 363 | 101% | No effect on trade rate (still 93.7%) |
+| 085 | gate_threshold=0.0 | 228C/132P (63%) | 32.2% | 360 | 102% | Filtered good trades, not bad ones |
+| 086 | side-masked KL targets | 316C/84P (79%) | 30.5% | 400 | 103% | Lost side signal, call-biased |
+| 087 | SOFT_TEMP=1.0 | 250C/106P (70%) | 31.7% | 356 | 100% | Too soft, direction worsened |
+| 088 | context*contract interaction | 191C/28P (87%) | 31.1% | 219 | 100% | dir_acc improved (0.47→0.53) but call-biased |
+| 089 | L2 score regularization | — | — | — | — | Not yet run |
+
+### Key findings from session 2
+
+1. **PNL regression at ANY weight causes direction collapse** (exp_082 confirmed at PNL_W=0.1)
+2. **Gate label skew is 80/20 trade/no-trade** among supervised rows — "always trade" is BCE-optimal regardless of GATE_W
+3. **Auxiliary heads corrupt shared context** (exp_083 side_head destroyed direction)
+4. **KL temperature has diminishing returns** — 0.20 is best; 0.05 too sharp, 1.0 too soft
+5. **Score magnitudes drift with PNL_W=0** — KL is scale-invariant, so scores grow unbounded, gate can't learn stable threshold
+6. **Multiplicative interaction improved dir_acc trending** (exp_088: 0.47→0.53) but created systematic call bias
+
+### Remaining blockers (exp_080 baseline)
+- **Trade rate 93.7%**: gate always says trade (80/20 label skew)
+- **WR 36.2%**: model picks wrong contracts (dir_acc ~0.49, random on side)
+- **DD 104%**: consequence of overtrading + wrong contracts
+
+### Current hypotheses
+
+**H-score-reg**: L2 regularization on scores (SCORE_REG_W=0.01) to prevent magnitude drift and stabilize gate — queued as exp_089, not yet run.
+
+**H-interaction-normed**: Multiplicative interaction (exp_088) showed dir_acc improvement — retry with layer normalization on the interaction to prevent call bias.
+
+**H-two-stage**: Decompose selection into explicit side classification + within-side KL ranking. Requires careful architecture to avoid exp_083's context corruption.
+
+### Abandoned approaches
+- Side CE (exp_079-079h): fundamentally limited
+- PNL regression at any weight: causes direction collapse
+- Gate reweighting (NO_TRADE_W): destabilizes training
+- Gate threshold tuning: filters randomly, not by quality
+- Side-masked KL: loses side signal
+- Auxiliary side head: corrupts context
