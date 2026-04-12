@@ -452,4 +452,20 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
   - drawdown: `30.2%`
   - training dynamics: `dir_acc` stuck at `~0.49` (random), identical to max version
 - Decision: **kill the cross-side calibration auxiliary loss family**
-- Takeaway: three experiments (exp_111/112/113), two formulations (max/logsumexp), three weights (0.10/0.30/0.50) all failed to move `dir_acc` above random. The auxiliary loss approach cannot overcome the dominant near-uniform KL gradient. The root cause is the selection TARGET, not a missing loss term. Next: modify the KL target to be side-aware (hierarchical softmax)
+- Takeaway: three experiments (exp_111/112/113), two formulations (max/logsumexp), three weights (0.10/0.30/0.50) all failed to move `dir_acc` above random. The auxiliary loss approach cannot overcome the dominant near-uniform KL gradient
+
+### `exp_114` — Hierarchical Side-Aware KL Selection Target
+
+- Type: screening run
+- Code change: replace flat `softmax(pnl/0.20)` KL target with hierarchical `P(side) * P(contract|side)` using best-per-side PnL for side probabilities; removed auxiliary side loss entirely
+- Result:
+  - score: `-0.300`
+  - gate failure: `direction_collapse (balance=0.00 < 0.15)`
+  - trades: `166`
+  - direction balance: `166C / 0P`
+  - win rate: `36.7%`
+  - profit factor: `0.699`
+  - drawdown: `40.0%`
+  - training dynamics: `dir_acc` stuck at `~0.49` (random); `sel_loss` higher (1.07-1.29) than baseline (~0.98), consistent with more peaked targets being harder to match
+- Decision: revert; kill the hierarchical target idea for now
+- Takeaway: even with a strongly side-peaked target, the model can't learn to differentiate calls from puts in 20 epochs. The call bias appears structural in the model's early training dynamics. **Key gap found**: `SOFT_TEMP=0.10 + balanced gate` was never tested together; exp_094 (temp=0.10, no balanced gate) got 17% puts, and exp_095 (temp=0.20, balanced gate) got the best balance ever. Next: exp_115 tests this untried combination

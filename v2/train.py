@@ -1,4 +1,4 @@
-"""ART² v4 Training Loop -- balanced gate + standard KL selection."""
+"""ART² v4 Training Loop -- balanced gate + direction-conditioned selection."""
 from __future__ import annotations
 
 import json
@@ -30,7 +30,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
 
 
 class PositionalEncoding(nn.Module):
@@ -48,7 +48,7 @@ class PositionalEncoding(nn.Module):
 
 
 class TradingModel(nn.Module):
-    """Exact-chain contract scorer with balanced gate training."""
+    """Contract scorer with balanced gate + direction-conditioned training."""
 
     def __init__(self, d_model: int | None = None, depth: int | None = None, n_heads: int | None = None, dropout: float | None = None):
         super().__init__()
@@ -216,71 +216,22 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Selection loss: hierarchical KL with side-aware target ---
+    # --- B. Selection loss: standard KL over all valid contracts ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
-        tr_contracts = contracts_full[trade_rows]
 
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
+        soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
-        # Hierarchical target: P(side) * P(contract | side)
-        is_put = tr_contracts[:, :, 2] > 0.5
-        call_mask = ~is_put & tr_valid
-        put_mask = is_put & tr_valid
-        both_present = call_mask.any(dim=1) & put_mask.any(dim=1)
-
-        if both_present.any():
-            bp_pnl = pnl_for_target[both_present]
-            bp_call = call_mask[both_present]
-            bp_put = put_mask[both_present]
-
-            # Best PnL per side → side probabilities
-            call_pnl_for_side = bp_pnl.clone()
-            call_pnl_for_side[~bp_call] = -1e9
-            best_call_pnl, _ = call_pnl_for_side.max(dim=-1)
-
-            put_pnl_for_side = bp_pnl.clone()
-            put_pnl_for_side[~bp_put] = -1e9
-            best_put_pnl, _ = put_pnl_for_side.max(dim=-1)
-
-            side_logits = torch.stack([best_call_pnl, best_put_pnl], dim=-1) / SOFT_TEMP
-            side_probs = F.softmax(side_logits, dim=-1)  # [N, 2]
-
-            # Within-side probabilities
-            call_within = bp_pnl.clone()
-            call_within[~bp_call] = -1e9
-            call_within_probs = F.softmax(call_within / SOFT_TEMP, dim=-1)
-
-            put_within = bp_pnl.clone()
-            put_within[~bp_put] = -1e9
-            put_within_probs = F.softmax(put_within / SOFT_TEMP, dim=-1)
-
-            # Combine: target_i = P(side_i) * P(contract_i | side_i)
-            hier_target = torch.zeros_like(bp_pnl)
-            hier_target += bp_call.float() * call_within_probs * side_probs[:, 0:1]
-            hier_target += bp_put.float() * put_within_probs * side_probs[:, 1:2]
-            # Zero out invalid contracts
-            hier_target[~(bp_call | bp_put)] = 0.0
-
-            # KL on hierarchical-target rows
-            bp_scores = tr_scores[both_present]
-            bp_valid = tr_valid[both_present]
-            logits_bp = bp_scores.clone()
-            logits_bp[~bp_valid] = -1e9
-            log_probs_bp = F.log_softmax(logits_bp, dim=-1)
-            sel_loss = F.kl_div(log_probs_bp, hier_target, reduction="batchmean")
-        else:
-            # Fallback: standard flat target
-            soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
-            logits_for_sel = tr_scores.clone()
-            logits_for_sel[~tr_valid] = -1e9
-            log_probs = F.log_softmax(logits_for_sel, dim=-1)
-            sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
+        logits_for_sel = tr_scores.clone()
+        logits_for_sel[~tr_valid] = -1e9
+        log_probs = F.log_softmax(logits_for_sel, dim=-1)
+        sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
     total = GATE_W * gate_loss + SEL_W * sel_loss
 
