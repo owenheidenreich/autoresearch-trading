@@ -7,16 +7,16 @@ If optimization pressure conflicts with project judgment, defer to [founder_inte
 
 ## Current Status
 
-- **v4 exact-chain — first profitable model (exp_139)**
+- **v4 exact-chain — profitable model with optimized exit policy (exp_140)**
 - Active manifest: `v2/data.pt`
 - Dataset version: `v4_exact_chain`
 - Dataset fingerprint: `46f2d184e186496f`
 - Unique days: 986
 - Per-day sidecars: `v2/data_sidecars/`
-- Official exact-chain scored runs: `exp_074`–`exp_078`, `exp_099`, `exp_104`, `exp_106`, `exp_122`, `exp_125`, `exp_133`, `exp_137`, `exp_139`
-- Current official baseline artifact: **`exp_139`** (`score=-0.121`, PF 1.142, DD 17.5%, first profitable model)
-- Current working code: exp_139 (contract feature normalization + greek sign alignment + learned put bias)
-- Next experiment: `exp_140`
+- Official exact-chain scored runs: `exp_074`–`exp_078`, `exp_099`, `exp_104`, `exp_106`, `exp_122`, `exp_125`, `exp_133`, `exp_137`, `exp_139`, `exp_140`
+- Current official baseline artifact: **`exp_140`** (`score=0.150`, PF 1.201, DD 12.4%, Sortino 3.87, +$2,678)
+- Current working code: exp_140 (exp_139 architecture + breakeven_trigger_pct 0.15)
+- Next experiment: `exp_141`
 - Session status: **profitable; optimizing**
 
 ## Mission Boundary
@@ -227,12 +227,12 @@ If the official run is not promotable but traces show a targeted failure-mode im
 
 ## Hypothesis Queue
 
-Current queue after exp_139 promotion (first profitable model):
+Current queue after exp_140 promotion (optimized exit policy):
 
-1. Improve selection accuracy (7.5% → higher) — most direct lever for higher PF
-2. Policy-level trailing stop optimization — 21 whipsaw trades lost -$4,260; lower breakeven trigger could save ~$1,500
+1. Improve selection accuracy (7.4% → higher) — most direct lever for higher PF
+2. Reduce fold variance — 3/5 folds still at -0.200; fold 0 improved to +0.076 with tighter trailing
 3. Fix theta formula for puts in data pipeline (`v2/pipeline/compute_features.py`) — requires sidecar rebuild
-4. Reduce fold variance — 4/5 folds at -0.200 means the model isn't consistently profitable across all market regimes
+4. Explore further trailing tier optimization — intermediate tiers between 15% and 50%
 5. Audit decision: keep `v4_exact_chain` frozen unless the anomaly track reaches the explicit trigger
 
 ## Session Limits

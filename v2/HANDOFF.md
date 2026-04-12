@@ -2,7 +2,26 @@
 
 Read this file, then [founder_intent.md](docs/founder_intent.md), then [program.md](program.md), then [current_state.md](docs/current_state.md).
 
-## What Changed (2026-04-12 Late)
+## What Changed (2026-04-12 exp_140)
+
+**exp_140 PROMOTED: optimized exit policy.** Lowered breakeven trailing trigger from 30% to 15%. DD 17.5%→12.4%, Sortino 1.88→3.87, whipsaw losses -$4,260→-$163.
+
+### Phase 8: Exit Policy Optimization (exp_140)
+
+**Root cause**: exp_139 trade analysis showed 21 "whipsaw" trades — stop-loss exits where MFE exceeded 15% before reversal. These trades reached the profit zone but the trailing stop didn't engage until +30%, so they reversed to the -30% hard stop. Total whipsaw losses: -$4,260.
+
+**exp_140 — Lower breakeven trigger (0.30 → 0.15)**: Wired the dead `breakeven_trigger_pct` policy field through to `simulate_trade()` via `_build_trailing_tiers()`. Training labels unchanged (labels.py uses original `TRAILING_TIERS`). **PROMOTED.**
+
+| Metric | exp_139 | exp_140 | Change |
+|--------|---------|---------|--------|
+| Score | -0.121 | **0.150** | +0.271 |
+| PF | 1.142 | **1.201** | +5.2% |
+| DD | 17.5% | **12.4%** | -29% |
+| Sortino | 1.88 | **3.87** | +106% |
+| Net P&L | +$1,334 | **+$2,678** | +101% |
+| Whipsaw losses | -$4,260 | **-$163** | -96% |
+
+### Phase 7: Contract Feature Normalization (exp_134–139) — BREAKTHROUGH
 
 **First profitable model: exp_139.** Contract feature normalization + greek sign alignment + learned put bias.
 
@@ -227,10 +246,16 @@ ATM source:          dynamic_nearest_per_bar
 - Noise filter: skip bars where top label margin `< 0.01`
 - Inactive auxiliary losses: SIDE_SEL_W=0.0, EXACT_W=0.0
 
-**`v2/core/policy.py`** (morning window):
+**`v2/core/policy.py`** (morning window + tighter trailing):
 - `no_trade_before_bar = 60`
 - `no_trade_after_bar = 105`
+- `breakeven_trigger_pct = 0.15` (was 0.30, now wired through to simulator)
 - All other policy params unchanged (stop=30%, target=50%, hold=120, trailing exit)
+
+**`v2/core/simulator.py`** (trailing tiers):
+- `TRAILING_TIERS` constant preserved for label computation
+- `_build_trailing_tiers(breakeven_trigger_pct)` builds custom tiers for evaluation
+- `simulate_trade()` accepts `breakeven_trigger_pct` parameter (None = use original tiers)
 
 **Separate audit tooling**
 - `v2/core/data_integrity.py` now supports:
@@ -242,42 +267,44 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Research Position
 
-- Official scored runs in `v2/results.tsv`: exp_074–078, exp_099, exp_104, exp_106, exp_122, exp_125, exp_133, exp_137, **exp_139**
-- **exp_139 is the first profitable model**: score=-0.121, PF 1.142, DD 17.5%, WR 45.3%, 136C/25P
-- `v2/models/model.pt` and `v2/models/model_best.pt` are the exp_139 promoted artifact
-- `v2/artifacts/exp_139/` is the current official artifact bundle
-- **Current live code: exp_139 (contract normalization + greek sign + learned put bias)**
-- Next experiment ID: `exp_140`
+- Official scored runs in `v2/results.tsv`: exp_074–078, exp_099, exp_104, exp_106, exp_122, exp_125, exp_133, exp_137, exp_139, **exp_140**
+- **exp_140 is the current best**: score=0.150, PF 1.201, DD 12.4%, Sortino 3.87, WR 39.2%, 151C/25P, +$2,678
+- `v2/models/model.pt` and `v2/models/model_best.pt` are the exp_140 promoted artifact
+- `v2/artifacts/exp_140/` is the current official artifact bundle
+- **Current live code: exp_140 (exp_139 architecture + breakeven_trigger_pct 0.15)**
+- Next experiment ID: `exp_141`
 
-## Key Finding: Contract Feature Normalization Made The Model Profitable
+## Key Findings
 
-1. **340,000x feature scale mismatch was the root cause**: strike (~6860) dominated contract_proj, making the model blind to greeks, IV, spread, and volume. Selection was near-random (6.1% accuracy).
-2. **Per-bar z-score normalization fixes it**: all 11 continuous features now contribute equally. Selection accuracy improved to 7.5%, WR to 45.3%, average P&L to +2.2% per trade.
-3. **Greek sign alignment matters**: negating delta/moneyness/distance for puts before normalization aligns the embedding space. Without it (exp_137), direction balance improved but economics suffered.
-4. **Learned put bias solves the centering interaction**: centering alone over-equalizes sides (43% random puts); the learned bias (-0.011) lets the model discount puts appropriately.
+1. **340,000x feature scale mismatch was the root cause** (exp_139): strike (~6860) dominated contract_proj, making the model blind to greeks, IV, spread, and volume. Per-bar z-score normalization fixes it.
+2. **Exit policy was the second bottleneck** (exp_140): the 30% breakeven trailing trigger was too generous. 21 trades reached 15-25% MFE then reversed to stop-loss. Lowering to 15% eliminated 96% of whipsaw losses.
+3. **Greek sign alignment matters**: negating delta/moneyness/distance for puts before normalization aligns the embedding space.
+4. **Learned put bias solves the centering interaction**: centering alone over-equalizes sides; the learned bias lets the model discount puts appropriately.
 
 ## Current Performance
 
-| Metric | exp_139 |
-|--------|---------|
-| PF | 1.142 |
-| DD | 17.5% |
-| WR | 45.3% |
-| Net P&L | +$1,334 |
-| Sortino | +1.88 |
-| Selection accuracy | 7.5% |
-| Gate accuracy | 20.9% |
-| Trades | 161 (136C/25P) |
-| Baselines beaten | All 4 |
-| Gate failure | None |
+| Metric | exp_139 | exp_140 |
+|--------|---------|---------|
+| Score | -0.121 | **0.150** |
+| PF | 1.142 | **1.201** |
+| DD | 17.5% | **12.4%** |
+| WR | 45.3% | 39.2% |
+| Net P&L | +$1,334 | **+$2,678** |
+| Sortino | +1.88 | **+3.87** |
+| Selection accuracy | 7.5% | 7.4% |
+| Gate accuracy | 20.9% | 21.2% |
+| Trades | 161 (136C/25P) | 176 (151C/25P) |
+| Baselines beaten | All 4 | All 4 |
+| Gate failure | None | None |
+| Whipsaw losses | -$4,260 | **-$163** |
 
 ## Remaining Improvement Opportunities
 
-1. **Selection accuracy is still only 7.5%** — the oracle picks 1 of ~285 contracts, the model gets it right 7.5% of the time. Improving this is the most direct lever for higher PF.
-2. **Gate accuracy 20.9%** — nearly 4 in 5 trade decisions are wrong (model trades when it shouldn't, or doesn't trade when it should). But trace analysis showed 67.5% of losses are contract-selection errors, not timing errors.
-3. **4/5 folds still hit the -0.200 floor** — the model is profitable on the aggregate promote mask but not consistently across all folds. Fold variance is high.
-4. **Put quality** — 25 puts is healthy but the learned bias is slightly negative (-0.011), meaning the model naturally discounts puts. Further put quality improvement depends on better features or data pipeline fixes (theta formula for puts is wrong in compute_features.py).
-5. **Known data pipeline issue**: theta formula in `v2/pipeline/compute_features.py` uses call formula for all contracts. Put theta has wrong sign on the interest-rate term (~4% error for 0DTE). Not fixed in exp_139 to avoid confounding.
+1. **Selection accuracy is still only 7.4%** — the oracle picks 1 of ~285 contracts, the model gets it right 7.4% of the time. Improving this is the most direct lever for higher PF.
+2. **Gate accuracy 21.2%** — nearly 4 in 5 trade decisions are wrong. But trace analysis showed 67.5% of losses are contract-selection errors, not timing errors.
+3. **3/5 folds still hit the -0.200 floor** — fold 0 improved from -0.200 to +0.076 with the tighter trailing stop, but folds 1-3 remain stuck. Fold variance is high.
+4. **Put quality** — 25 puts is healthy and puts are actually more profitable per-trade (WR 48%, avg +8.54%) than calls (WR 37.7%, avg +1.59%). But only 14.2% of trades are puts.
+5. **Known data pipeline issue**: theta formula in `v2/pipeline/compute_features.py` uses call formula for all contracts. Put theta has wrong sign on the interest-rate term (~4% error for 0DTE). Not fixed to avoid confounding.
 
 ## Infrastructure Fixes Made This Session
 
@@ -292,11 +319,11 @@ ATM source:          dynamic_nearest_per_bar
 - `v2/results.tsv` as official exact-chain scored runs only
 - `v2/lab_notebook.md` as the live screening log
 - `v2/program.md`, `v2/docs/current_state.md`, and `v2/docs/decision_log.md` as the live protocol/state documents
-- `v2/output/trades.html` and `equity.html` as the exp_139 trade visualization (promoted model)
-- `v2/output/trades.csv` as the 161-trade exp_139 analysis dataset
-- `v2/models/model.pt` and `v2/models/model_best.pt` as the exp_139 promoted model
-- `v2/artifacts/exp_139/` as the current official artifact bundle
-- `v2/artifacts/replay_traces.csv` as the exp_139 promote trace
+- `v2/output/trades.html` and `equity.html` as the exp_140 trade visualization (promoted model)
+- `v2/output/trades.csv` as the 176-trade exp_140 analysis dataset
+- `v2/models/model.pt` and `v2/models/model_best.pt` as the exp_140 promoted model
+- `v2/artifacts/exp_140/` is the current official artifact bundle
+- `v2/artifacts/replay_traces.csv` as the exp_140 promote trace
 - `v2/core/data_integrity.py` anomaly and side-bias reports as the separate audit track
 
 ## What Not To Trust
@@ -313,10 +340,11 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Hypothesis Queue
 
-1. Improve selection accuracy (7.5% → higher) via training-side changes — this is the most direct lever for higher PF
-2. Fix theta formula for puts in data pipeline (`v2/pipeline/compute_features.py`) — requires sidecar rebuild
-3. Reduce fold variance — 4/5 folds at -0.200 means the model isn't consistently profitable
-4. Keep the separate audit track alive; do not rebuild dataset unless trigger fires
+1. Improve selection accuracy (7.4% → higher) via training-side changes — this is the most direct lever for higher PF
+2. Reduce fold variance — 3/5 folds at -0.200 means the model isn't consistently profitable
+3. Fix theta formula for puts in data pipeline (`v2/pipeline/compute_features.py`) — requires sidecar rebuild
+4. Explore further trailing tier optimization — intermediate tiers between 15% and 50%
+5. Keep the separate audit track alive; do not rebuild dataset unless trigger fires
 
 ## Abandoned Approaches
 

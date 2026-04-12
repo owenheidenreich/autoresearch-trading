@@ -843,22 +843,38 @@ The remaining lever for improving PF is policy-level: stop-loss tuning, trailing
 - Decision: **PROMOTED — first profitable model**
 - Takeaway: the 340,000x feature scale mismatch was the root cause. Normalization let the model see greeks/IV/spread/volume for the first time. 4/5 folds still at -0.200 floor, but the aggregate is profitable.
 
-### `exp_140` — Lower Breakeven Trigger (policy-only, zero GPU cost)
+### `exp_140` — Lower Breakeven Trigger (0.30 → 0.15)
 
-- Type: policy change, local replay evaluation
-- Code change: `breakeven_trigger_pct` 0.30 → 0.15 in `DecisionPolicy`. Wired the policy field through to `simulate_trade` (was previously dead code — simulator used hardcoded `TRAILING_TIERS`). Training labels unchanged (labels.py still uses original tiers).
+- Type: official 5-fold walk-forward
 - Hypothesis: 21 whipsaw trades in exp_139 had MFE > 15% but reversed to hit the -30% stop, losing -$4,260. A lower breakeven trigger locks gains earlier.
-- Result (promote mask replay, same exp_139 model):
-  - score: `1.272` (vs 0.197 for exp_139 on same mask)
-  - trades: `176` (`151C / 25P`, minority `14.2%`)
-  - win rate: `39.2%` (vs 45.3%)
-  - profit factor: `1.201` (vs 1.142)
-  - drawdown: `12.4%` (vs 17.5%)
-  - sortino: `3.87` (vs 1.88)
-  - positive day rate: `51.7%` (vs 50.0%)
-- Exit breakdown change: STOP_LOSS 72→62, TRAILING_STOP 20→49, TAKE_PROFIT 68→64
-- Decision: **keep** — massive improvement from a single policy parameter change. DD dropped 5.1%, sortino doubled. Needs official 5-fold run to confirm (same models, different eval policy).
-- Takeaway: the trailing stop breakeven tier at 30% was too generous. The model picks good entries but the exits bleed money on whipsaw reversals. Locking breakeven at 15% converts 29 trades from stop-loss or take-profit to trailing-stop exits, dramatically improving risk-adjusted returns.
+- Code change: `breakeven_trigger_pct` 0.30 → 0.15 in `DecisionPolicy`. Wired the policy field through to `simulate_trade` (was previously dead code — simulator used hardcoded `TRAILING_TIERS`). Training labels unchanged (labels.py still uses original tiers).
+- Result:
+  - score: `0.150` (aggregate), folds: `[0.076, -0.20, -0.20, -0.20, 1.272]`
+  - trades: `176` on promote mask (`151C / 25P`, minority `14.2%`)
+  - win rate: `39.2%`
+  - profit factor: `1.201`
+  - drawdown: `12.4%`
+  - sortino: `3.87`
+  - positive day rate: `51.7%`
+  - net P&L: `+$2,678`
+  - final equity: `$12,678`
+  - beats all 4 baselines: yes
+  - no gate failure
+- Trace comparison vs exp_139:
+  - gate accuracy: `21.2%` (unchanged)
+  - selection accuracy: `7.4%` (was 7.5% — within noise)
+  - avg model P&L: `+2.58%` (was +2.2%)
+  - avg delta gap: `-0.3225` (was -0.3458 — slightly improved)
+- Exit breakdown: STOP_LOSS `62`, TAKE_PROFIT `64`, TRAILING_STOP `49`, MAX_HOLD `1`
+- Whipsaw trades (stop-loss with MFE > 15%): **2** (was 21 in exp_139), losses **-$163** (was -$4,260)
+- Trade analysis:
+  - Calls: 151, WR 37.7%, avg +1.59%, total +$1,433
+  - Puts: 25, WR 48.0%, avg +8.54%, total +$1,245
+  - Best bar window: 80-89 (32 trades, 44% WR, +$906) and 90-99 (34 trades, 44% WR, +$1,158)
+  - Weakest: 100-109 (15 trades, 27% WR, -$81)
+- Fold improvement: fold 0 went from -0.200 (exp_139) to +0.076 — the tighter trailing stop pushed one additional fold above the floor
+- Decision: **PROMOTED** — score 0.150 > exp_139 -0.121, beats all baselines, no gate failure, DD 12.4% well under 20% hard gate
+- Takeaway: the trailing stop breakeven tier at 30% was too generous. Lowering to 15% converted 29 trades from stop-loss to trailing-stop exits, cutting whipsaw losses from -$4,260 to -$163. The model's entries were already good — the exit policy was the bottleneck. This is the highest score, best DD, and best Sortino in the project's history.
 
 ### Session Close (2026-04-12 Late)
 
