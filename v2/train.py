@@ -101,6 +101,7 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d // 2, 1),
         )
+        self.put_bias = nn.Parameter(torch.tensor(0.0))
 
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         _, seq_len, _ = x.shape
@@ -111,17 +112,41 @@ class TradingModel(nn.Module):
         h = self.encoder(h, mask=mask)
         context = h[:, -1, :]
 
-        contract_emb = self.contract_proj(contracts)
+        # --- Contract feature normalization ---
+        c = contracts.clone()
+        valid_mask = contracts[:, :, 0] > 0.5
+        is_put = contracts[:, :, 2] > 0.5
+
+        # Step 1: Greek sign normalization — align puts with calls
+        # delta(8), moneyness_pct(11), distance_points(12) flip sign for puts
+        put_flip = is_put.float()
+        for fidx in (8, 11, 12):
+            c[:, :, fidx] = c[:, :, fidx] * (1.0 - 2.0 * put_flip)
+
+        # Step 2: Per-bar z-score on continuous features
+        # Skip: 0 (contract_valid), 2 (right_is_put), 13 (minutes_to_close), 14 (quality)
+        valid_f = valid_mask.float()
+        count = valid_f.sum(dim=1, keepdim=True).clamp(min=1)
+        for fidx in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12):
+            feat = c[:, :, fidx]
+            masked = feat * valid_f
+            mean = masked.sum(dim=1, keepdim=True) / count
+            diff = (feat - mean) * valid_f
+            std = (diff.pow(2).sum(dim=1, keepdim=True) / count).sqrt().clamp(min=1e-6)
+            c[:, :, fidx] = (feat - mean) / std
+
+        # Step 3: Zero out invalid contracts
+        c = c * valid_f.unsqueeze(-1)
+
+        contract_emb = self.contract_proj(c)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
 
         # Route each contract through its side-specific score head
-        is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
-        valid_mask = contracts[:, :, 0] > 0.5
         call_scores = self.call_score_head(combined).squeeze(-1)
         put_scores = self.put_score_head(combined).squeeze(-1)
 
-        # Per-bar mean centering: remove global offset so sides compete fairly
+        # Per-bar mean centering with learned put bias
         call_valid = (~is_put) & valid_mask
         put_valid = is_put & valid_mask
         call_count = call_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
@@ -131,7 +156,7 @@ class TradingModel(nn.Module):
         call_scores_centered = call_scores - call_mean
         put_scores_centered = put_scores - put_mean
 
-        contract_scores = torch.where(is_put, put_scores_centered, call_scores_centered)
+        contract_scores = torch.where(is_put, put_scores_centered + self.put_bias, call_scores_centered)
 
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         return {
