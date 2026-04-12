@@ -11,3 +11,4 @@ exp_122	0.190734	revert	official: GATE_FAILURE folds=[-0.20,-0.37,1.93,-0.20,-0.
 exp_125	-0.200000	revert	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.36666666666666664 profit_factor=0.8732881294224357 positive_day_rate=0.3684210526315789
 exp_133	-0.161284	keep	official: folds=[-0.20,-0.20,-0.20,-0.20,-0.01] win_rate=0.40816326530612246 profit_factor=0.9974354328070411 positive_day_rate=0.543859649122807
 exp_137	0.183903	revert	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,1.72,-0.20] win_rate=0.34959349593495936 profit_factor=0.7051802972899948 positive_day_rate=0.4339622641509434
+exp_139	-0.120514	keep	official: folds=[-0.20,-0.20,-0.20,-0.20,0.20] win_rate=0.453416149068323 profit_factor=1.1417033184456553 positive_day_rate=0.5
