@@ -83,16 +83,20 @@ def plot_spx_trades(trades: list, data: dict, mask_key: str, output: Path):
     day_boundaries = []  # (seq_x, date_str) for vertical separators
     seq_counter = 0
 
-    bar_to_seq = {}  # global_bar_idx -> sequential x
+    bar_to_seq = {}      # global_bar_idx -> sequential x
+    day_bod_to_seq = {}  # (date, bar_of_day) -> sequential x
+    day_bod_to_spx = {}  # (date, bar_of_day) -> spot price
 
     for day in eval_dates:
         bars = sorted(day_bars[day])
         day_boundaries.append((seq_counter, day))
         for bar_idx in bars:
+            bod = int(bar_of_day[bar_idx])
             bar_to_seq[bar_idx] = seq_counter
+            day_bod_to_seq[(day, bod)] = seq_counter
+            day_bod_to_spx[(day, bod)] = float(spot_prices[bar_idx])
             seq_x.append(seq_counter)
             seq_spx.append(float(spot_prices[bar_idx]))
-            bod = int(bar_of_day[bar_idx])
             h, m = divmod(9 * 60 + 30 + bod, 60)
             seq_labels.append(f"{day} {h:02d}:{m:02d}")
             seq_counter += 1
@@ -126,8 +130,10 @@ def plot_spx_trades(trades: list, data: dict, mask_key: str, output: Path):
     connector_y = []
 
     for i, t in enumerate(trades):
-        entry_seq = bar_to_seq.get(t.entry_fill_bar)
-        exit_seq = bar_to_seq.get(t.exit_bar)
+        # Trade bars are bar-of-day indices (not global), so look up by (date, bod)
+        day = t.trade_date
+        entry_seq = day_bod_to_seq.get((day, t.entry_fill_bar))
+        exit_seq = day_bod_to_seq.get((day, t.exit_bar))
         if entry_seq is None:
             continue
 
@@ -136,8 +142,8 @@ def plot_spx_trades(trades: list, data: dict, mask_key: str, output: Path):
         prefix = 'win' if is_win else 'loss'
         direction = 'call' if is_call else 'put'
 
-        entry_spx = float(spot_prices[t.entry_fill_bar])
-        exit_spx = float(spot_prices[t.exit_bar]) if t.exit_bar < len(spot_prices) else entry_spx
+        entry_spx = day_bod_to_spx.get((day, t.entry_fill_bar), 0.0)
+        exit_spx = day_bod_to_spx.get((day, t.exit_bar), entry_spx)
 
         entry_key = f'{prefix}_{direction}_entry'
         batches[entry_key]['x'].append(entry_seq)
