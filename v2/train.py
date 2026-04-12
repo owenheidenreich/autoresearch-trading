@@ -31,7 +31,7 @@ SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
-SIDE_W = float(os.environ.get("WEIGHT_SIDE", 0.10))
+SIDE_W = float(os.environ.get("SIDE_CAL_W", 0.10))
 
 
 class PositionalEncoding(nn.Module):
@@ -273,10 +273,10 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             put_scores[~s_put] = -1e9
             max_put, _ = put_scores.max(dim=-1)
 
-            side_logit = max_call - max_put
+            cal_logit = max_call - max_put
             rows_idx = torch.arange(s_contracts.size(0), device=device)
             oracle_is_call = (s_contracts[rows_idx, s_best, 2] < 0.5).float()
-            side_loss = F.binary_cross_entropy_with_logits(side_logit, oracle_is_call, reduction="mean")
+            side_loss = F.binary_cross_entropy_with_logits(cal_logit, oracle_is_call, reduction="mean")
 
     total = GATE_W * gate_loss + SEL_W * sel_loss + SIDE_W * side_loss
 
