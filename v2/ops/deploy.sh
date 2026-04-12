@@ -918,8 +918,9 @@ cmd_run_one() {
     log "Code uploaded. Training..."
 
     # 2. Run experiment (blocking, ~5 min) — capture output to parse results
+    ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1") || true
+    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1 | tee /root/run.log") || true
     echo "$run_output"  # still show output to Claude
 
     # 3. Download new model.pt to staging (never overwrite the promoted model directly)
@@ -970,8 +971,9 @@ cmd_run_screen() {
     log "Code uploaded. Screening (1-fold)..."
 
     # 2. Run 1-fold screening (no artifacts saved) — capture output to parse results
+    ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1") || true
+    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1 | tee /root/run.log") || true
     echo "$run_output"  # still show output to Claude
 
     # 3. No model download, no artifact download, and no results.tsv entry for screening
