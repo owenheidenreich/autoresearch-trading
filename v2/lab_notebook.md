@@ -596,3 +596,51 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
 - `exp_121` is now the recorded rejected screen for the ranking-loss wipeout.
 - The working tree is reset to the `exp_119` KL baseline so the next official run starts from a trustworthy, documented state.
 - Direction collapse is no longer an automatic score failure; it remains a required diagnostic to review on every run.
+
+## Official Rebaseline (2026-04-11)
+
+### `exp_122` — Official 5-Fold Rebaseline of exp_119 Family
+
+- Type: official run (5-fold walk-forward)
+- Code: restored exp_119 base — `SOFT_TEMP=0.10`, `NOISE_MARGIN=0.01`, soft KL, morning window (bars 60-120)
+- No code changes from exp_119; this is a clean rebaseline under the current scorer
+
+**Per-fold results:**
+
+| Fold | Score | Trades | Direction | WR | PF | DD | +DayRate |
+|------|-------|--------|-----------|-----|------|------|----------|
+| 0 | -0.200 | 133 | 66C/67P | 33.8% | 0.879 | 51.3% | 43.1% |
+| 1 | -0.375 | 75 | 75C/0P | 37.3% | 0.750 | 11.6% | 37.5% |
+| 2 | +1.929 | 38 | 38C/0P | 44.7% | 1.057 | 3.7% | 52.9% |
+| 3 | -0.200 | 173 | 173C/0P | 29.5% | 0.378 | 22.7% | 20.7% |
+| 4 | -0.200 | 176 | 175C/1P | 31.8% | 0.568 | 57.9% | 25.9% |
+
+- Aggregate score: **+0.191** (first positive aggregate in the project)
+- Gate failure: excessive drawdown (57.9% > 20%)
+- Beats all 4 baselines: yes
+- Dataset fingerprint: `46f2d184e186496f`
+
+**Decision trace (promote mask = fold 4 window):**
+- Gate accuracy: 21.3%
+- Selection accuracy: 1.1%
+- Avg model P&L: -0.0827 vs oracle +0.3407
+- Delta gap: -0.4234
+- Direction: 175C / 1P (near-total call collapse)
+- Exits: 56% stop-loss, 28% take-profit, 15% trailing, 1% max-hold
+- Noisy bars: 42.5%
+
+**Decision: REVERT**
+
+Positive aggregate is entirely carried by fold 2 (38 trades, 17 traded days, all calls, lucky window). The promote trace is worse than exp_106 on every diagnostic:
+- Selection accuracy 1.1% vs 6.8%
+- Delta gap -0.4234 vs -0.3458
+- Gate accuracy unchanged at ~21%
+- Call collapse returned (4/5 folds are 0% puts)
+
+Only fold 0 achieved direction balance (66C/67P) — and it was the only fold with reasonable PF (0.879) despite failing the DD gate. This is a strong signal that **direction balance and economics are correlated**.
+
+**Key observations for next hypothesis:**
+1. Fold 0 (balanced direction) had the best PF among negative folds — direction balance matters for economics
+2. The exp_119 screening result (119C/34P) was from a single fold; across 5 folds, the call collapse dominates
+3. Selection accuracy degraded from exp_106 (6.8% → 1.1%) — the noise filter may be too loose for the full walk-forward
+4. 42.5% noisy bars on the promote mask — nearly half the evaluation window has no clear best contract

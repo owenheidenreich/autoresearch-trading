@@ -7,3 +7,4 @@ exp_078	-0.740000	revert	score=-0.740 folds=[-1,-0.5,-1,-1,-0.2] PNL_W=5.0 stron
 exp_099	-0.260000	revert	official: GATE_FAILURE folds=[-0.30,-0.30,-0.20,-0.30,-0.20] win_rate=0.3472727272727273 profit_factor=0.6947861161199185 positive_day_rate=0.13333333333333333
 exp_104	-0.240000	revert	official: GATE_FAILURE folds=[-0.20,-0.30,-0.30,-0.20,-0.20] win_rate=0.2992957746478873 profit_factor=0.5481179775061845 positive_day_rate=0.25
 exp_106	-0.260000	revert	official: GATE_FAILURE folds=[-0.20,-0.30,-0.20,-0.30,-0.30] win_rate=0.387434554973822 profit_factor=0.8899458399379755 positive_day_rate=0.5
+exp_122	0.190734	revert	official: GATE_FAILURE folds=[-0.20,-0.37,1.93,-0.20,-0.20] win_rate=0.3181818181818182 profit_factor=0.5683619403799742 positive_day_rate=0.25925925925925924
