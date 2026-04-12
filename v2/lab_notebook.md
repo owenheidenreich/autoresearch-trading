@@ -127,14 +127,17 @@ Top predictive features:
 
 ## Current Live Baseline
 
+- Working code reset to the `exp_119` family
 - Balanced gate BCE plus soft KL selection only
-- `SOFT_TEMP=0.20`
+- `SOFT_TEMP=0.10`
+- `NOISE_MARGIN=0.01`
 - Morning-only policy window in `v2/core/policy.py` (`bar 60` through `120`)
 - No direct PnL regression
 - No auxiliary side head
 - No gate reweighting
-- No score regularization
-- No temporal embeddings or flow dropout active; `exp_107` through `exp_109` were reverted after screening
+- No pairwise ranking loss active
+- Official scored baseline artifact remains `exp_106`
+- Direction mix is now a diagnostic output, not a hard score gate
 
 ## Abandoned Or Parked Approaches
 
@@ -147,9 +150,10 @@ Top predictive features:
 
 ## Hypothesis Queue
 
-1. `exp_110`: choose the next trace-targeted modeling hypothesis after the rejected Kronos standalone screens
+1. `exp_122`: run the official 5-fold rebaseline of the restored `exp_119` family under the side-diagnostic scorer
 2. Keep the raw/sidecar audit track active, but do not rebuild `v4_exact_chain` unless the explicit trigger fires
-3. Continue deferring stop/contract-filter policy work until a training-side change improves the traced failure mode
+3. Use the side-bias audit plus promote traces to choose the next conditional side-calibration hypothesis after the rebaseline
+4. Continue deferring stop/contract-filter policy work until a training-side change improves the traced failure mode
 
 ## Active Experiment Kickoff
 
@@ -565,3 +569,30 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
   - baseline comparison: beat `ATM` and `ATM-trailing`
 - Decision: **family alive** — best combined direction + economics result
 - Takeaway: noise bar filtering materially improves selection quality at SOFT_TEMP=0.10. WR jumped from 32.7% to 37.3%, PF from 0.596 to 0.813. DD still too high (55.2%) but trending in the right direction. This is the strongest screening result of the project with direction balance present.
+
+### `exp_120` — NOISE_MARGIN=0.03 (Code-Only State)
+
+- Type: code-only state
+- Code change: increase `NOISE_MARGIN` from `0.01` to `0.03`
+- Status: a git commit exists, but there is no trustworthy local screening record or artifact bundle attached to this id
+- Decision: do not treat `exp_120` as live evidence; it remains code history only
+- Takeaway: mixed-state cleanup matters. A named commit without notebook evidence is not a scored result.
+
+### `exp_121` — Pairwise Ranking Loss Under Clean Morning Policy
+
+- Type: screening run
+- Code change: replace the soft-KL selection loss with pairwise ranking (`best_score > other_score`) while keeping the clean morning policy
+- Result:
+  - direction balance: `17C / 94P (85% puts)`
+  - drawdown: `100.2%`
+  - outcome: total account wipe
+- Decision: reject and revert to the `exp_119` family
+- Takeaway: the side-collapse problem survives a loss-family change. Ranking loss made the put collapse even more extreme, which means the main issue is not “KL specifically causes put bias.” The executable targets themselves are not put-majority; the model is still learning an unstable side shortcut instead of the conditional side decision.
+
+## Mixed-State Reconciliation (2026-04-11 Late)
+
+- Git history had already advanced through `exp_120` and `exp_121`, but the notebook and handoff still described the repo as if `exp_119` were the newest state.
+- `exp_120` is now explicitly marked as code history only because there is no authoritative local result for it.
+- `exp_121` is now the recorded rejected screen for the ranking-loss wipeout.
+- The working tree is reset to the `exp_119` KL baseline so the next official run starts from a trustworthy, documented state.
+- Direction collapse is no longer an automatic score failure; it remains a required diagnostic to review on every run.

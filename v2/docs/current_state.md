@@ -1,11 +1,11 @@
 # Current v2 State
 
-Last refreshed: 2026-04-10
+Last refreshed: 2026-04-11 (late)
 
 ## Mission And Phase
 
 - Mission: build a trustworthy exact-chain research system for SPX 0DTE long-options training and replay
-- Current phase: exact-chain reset and baseline re-establishment
+- Current phase: side-collapse protocol reset plus `exp_119` working rebaseline
 - Live trading: not implemented and not part of the live `v2/` surface
 - The current mission is not live trading. It is a trustworthy exact-chain research system.
 
@@ -16,10 +16,12 @@ Last refreshed: 2026-04-10
 - Dataset fingerprint: `46f2d184e186496f`
 - Per-day sidecars: `v2/data_sidecars/*.pt`
 - Unique days: 986
-- Official exact-chain scored runs: `exp_074` through `exp_078`
-- Screening history: `exp_079` through `exp_087`
-- Unresolved code-only states: `exp_088`, `exp_089`
-- Next experiment: `exp_092`
+- Official exact-chain scored runs: `exp_074` through `exp_078`, `exp_099`, `exp_104`, `exp_106`
+- Screening history: `exp_079` through `exp_119`, plus rejected `exp_121`
+- Current official baseline: `exp_106` (morning-window policy, `score=-0.260`)
+- Current working code: restored `exp_119` family (`SOFT_TEMP=0.10`, `NOISE_MARGIN=0.01`, soft KL)
+- Code-only state: `exp_120` exists in git history but has no authoritative local result
+- Next experiment: `exp_122`
 - Archived non-live surfaces now live under `archive/v2_historical/`
 
 ## End-To-End Flow
@@ -49,13 +51,23 @@ raw SPX/SPY/VIX pickles + full-chain SPXW pickles
 ### Training
 
 - Training is from scratch every experiment.
-- The mutable research surface remains:
+- The default mutable research surface remains:
   - `v2/train.py`
   - `v2/core/policy.py`
+- The approved expanded mutable surface for the current Kronos-inspired block is:
+  - `v2/train.py`
+  - `v2/core/metrics.py`
+  - `v2/replay.py`
+  - `v2/core/data_integrity.py`
+  - `v2/ops/pre_run_gate.py`
+  - live docs that must stay in sync with the active protocol
 - The current live baseline scores:
   - `NO_TRADE`
   - each executable contract on the current bar
-- The live loss stack is gate BCE plus soft KL selection only.
+- The live loss stack is balanced gate BCE plus soft KL selection only.
+- The working config uses `SOFT_TEMP=0.10` and `NOISE_MARGIN=0.01`.
+- The current official policy window is morning-only (`bar 60` through `120`).
+- Direction mix is now diagnostic output, not a hard score gate.
 - Risk is policy-driven, not learned, in the frozen v4 harness.
 
 ### Replay
@@ -86,12 +98,13 @@ raw SPX/SPY/VIX pickles + full-chain SPXW pickles
 
 ### For Each Experiment
 
-1. Form one hypothesis.
-2. Edit `v2/train.py` and/or `v2/core/policy.py`.
+1. Form one hypothesis from trace or audit evidence.
+2. Edit the approved mutable surface for that hypothesis.
 3. Commit.
 4. Screen first: `./v2/ops/deploy.sh run_screen exp_NNN`
-5. If screening passes: `./v2/ops/deploy.sh run_one exp_NNN`
-6. KEEP or REVERT.
-7. Update `v2/lab_notebook.md` and required plots after official runs.
+5. If screening passes or justifies a same-family follow-up: `./v2/ops/deploy.sh run_one exp_NNN`
+6. Run the side-bias audit alongside the decision trace for meaningful candidates.
+7. Official promotion still requires score, baselines, and hard gates.
+8. KEEP or REVERT, then update `v2/lab_notebook.md` and required plots.
 
 See `v2/program.md` for the definitive workflow and decision rules.

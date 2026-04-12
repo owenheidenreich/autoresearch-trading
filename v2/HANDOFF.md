@@ -147,14 +147,15 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Live Code
 
-**`v2/train.py`** (current `exp_106` baseline code):
+**`v2/train.py`** (restored `exp_119` working base):
 - Model: same architecture as original baseline (encoder + contract_proj + no_trade_head + score_head)
 - Gate loss: balanced BCE (subsample majority class to match minority)
-- Selection loss: standard KL over all valid contracts at SOFT_TEMP=0.20
-- No temporal embeddings or flow dropout active
+- Selection loss: standard KL over all valid contracts at `SOFT_TEMP=0.10`
+- Noise filter: skip bars where top label margin `< 0.01`
 - No direction head, no direction conditioning
+- No pairwise ranking loss active
 
-**`v2/core/policy.py`** (kept `exp_105/106` morning window):
+**`v2/core/policy.py`** (kept clean morning window):
 - `no_trade_before_bar = 60` (was 30)
 - `no_trade_after_bar = 120` (was 270)
 - All other policy params unchanged (stop=30%, target=50%, hold=120, trailing exit)
@@ -163,38 +164,37 @@ ATM source:          dynamic_nearest_per_bar
 - `v2/core/data_integrity.py` now supports:
   - raw minute-bar anomaly audit
   - full sidecar date audit
+  - side-bias audit against executable snapshot labels and model outputs
   - optional replay-trace overlap reporting
 - This is audit-only infrastructure. It does not mutate `v2/data.pt`.
 
 ## Current Research Position
 
 - Official scored runs in `v2/results.tsv`: exp_074–078 (all failed), exp_099 (`-0.260`), exp_104 (`-0.240`), exp_106 (`-0.260`)
-- `exp_107` through `exp_116` screened and all reverted
+- `exp_107` through `exp_119` screened and reverted or parked; `exp_119` is the strongest surviving family
+- `exp_120` exists as a code commit (`NOISE_MARGIN=0.03`) but has no authoritative local result and does not count as live evidence
+- `exp_121` rejected the pairwise ranking branch after a clean-policy wipeout (`17C / 94P`, `100.2%` drawdown)
 - `v2/models/model_candidate.pt` is the `exp_106` morning-window official artifact
-- The revised Kronos-era protocol is active (`program.md`, `decision_log.md`, `current_state.md`)
-- **Current live code: `SOFT_TEMP=0.10`** (exp_115 config, the direction balance breakthrough)
-- Next experiment ID: `exp_117`
+- The revised side-collapse protocol is active (`program.md`, `decision_log.md`, `current_state.md`)
+- **Current live code: restored `exp_119`**
+- Next experiment ID: `exp_122`
 
-## Key Finding: Temperature Controls Direction Balance
+## Key Finding: Side Collapse Survives Loss-Family Changes
 
-The autonomous session (exp_111–116) discovered that `SOFT_TEMP` has a sharp threshold for direction awareness:
+Two important facts now coexist:
 
-| SOFT_TEMP | Direction | DD | Puts % |
-|-----------|-----------|------|--------|
-| 0.05 | 458C/22P | — | 5% (collapsed) |
-| **0.10** | **120C/42P** | **61.7%** | **26%** |
-| 0.15 | 69C/0P | 9.3% | 0% |
-| 0.20 | 191C/0P | varies | 0% |
+1. `SOFT_TEMP=0.10` plus noise filtering (`exp_119`) is the best side-aware economics the project has produced so far: `119C / 34P`, PF `0.813`, WR `37.3%`, DD `55.2%`.
+2. Replacing KL with pairwise ranking (`exp_121`) did **not** solve the collapse. It produced `17C / 94P` and a total wipe, so the problem is not “KL alone creates put bias.”
 
-At `SOFT_TEMP=0.10`, the KL target is peaked enough to teach the model side awareness. At 0.15+, the target is too uniform and the model defaults to calls. The cliff between 0.10 and 0.15 is sharp.
+The side-bias audit is now the authority for this question. It shows that the executable labels and KL target mass are roughly side-neutral to slightly call-favored, while the model still collapses to one side. The failure mode is unstable shortcut learning, not a simple raw-label majority.
 
 ## Remaining Gap to Profitability
 
-1. **Direction collapse is solved at SOFT_TEMP=0.10** — `exp_115` traded `120C / 42P` (26% puts), passing the 15% direction gate.
-2. **Excessive drawdown is the new gate failure** — DD `61.7%` at SOFT_TEMP=0.10 (vs 20% limit).
-3. **Gate quality and selection quality remain poor** — not yet measured at SOFT_TEMP=0.10.
+1. **The best economics still fail the drawdown gate** — `exp_119` improved DD to `55.2%`, but that is still far from the `20%` limit.
+2. **Side collapse remains unresolved** — calls collapse under some KL settings, puts collapse under ranking, and neither behavior is economically acceptable.
+3. **The repo had drifted out of sync** — code history advanced to `exp_121` while the notebook/handoff still described earlier states. That mixed state is now explicitly resolved.
 
-The next hypothesis must reduce DD while preserving the direction balance from SOFT_TEMP=0.10.
+The next hypothesis must start from the restored `exp_119` base and target conditional side calibration directly, not broad architecture churn.
 
 ## Infrastructure Fixes Made This Session
 
@@ -208,29 +208,29 @@ The next hypothesis must reduce DD while preserving the direction balance from S
 - `v2/data.pt` and `v2/data_sidecars/` as the canonical exact-chain dataset
 - `v2/results.tsv` as official exact-chain scored runs only
 - `v2/lab_notebook.md` as the live screening log
+- `v2/program.md`, `v2/docs/current_state.md`, and `v2/docs/decision_log.md` as the live protocol/state documents
 - `v2/output/trades.html` and `equity.html` as the earlier exp_104 trade visualization (useful for the morning-window discovery)
 - `v2/output/trades.csv` as the 259-trade analysis dataset
 - `v2/models/model_candidate.pt` as the `exp_106` official model (fingerprint `46f2d184e186496f`)
 - `v2/artifacts/exp_106/` as the current official artifact bundle
-- `v2/core/data_integrity.py` anomaly reports as the separate audit track
+- `v2/core/data_integrity.py` anomaly and side-bias reports as the separate audit track
 
 ## What Not To Trust
 
 - Any pre-exact-chain score as a current baseline
 - `exp_088` or `exp_089` as scored evidence
+- `exp_120` as evidence; it is a code-only state with no trustworthy local result
 - The hierarchical direction head approach (exp_100–103) — direction doesn't decompose
 - Policy-window-only supervision as a standalone fix (exp_107)
 - Explicit temporal embeddings as a standalone fix (exp_108)
 - Flow-feature dropout at 5% as a standalone fix (exp_109)
-- Any model checkpoint not from this session (Apr 11) — older ones are from different code
+- Pairwise ranking as the live baseline; `exp_121` was rejected
+- Any unlogged code state as if it were an experiment result
 
 ## Hypothesis Queue
 
-1. `exp_117`: run `SOFT_TEMP=0.10` as an official 5-fold to get aggregate direction balance and DD numbers across all folds
-2. If direction balance holds across folds but DD is still too high, explore DD reduction:
-   - Stronger gate (higher `GATE_W` or gate threshold tuning) to reduce trade count
-   - Noise bar filtering combined with SOFT_TEMP=0.10 (exp_097 failed alone, but temp=0.10 changes the dynamics)
-   - Policy-side adjustments (stop loss, hold duration) are now less risky since direction is fixed
+1. `exp_122`: run the official 5-fold rebaseline of the restored `exp_119` family under the side-diagnostic scorer
+2. Use the side-bias audit plus promote traces from that run to choose the next conditional side-calibration hypothesis
 3. Keep the separate audit track alive, but do not rebuild or relabel the dataset unless the explicit migration trigger fires
 
 ## Abandoned Approaches
@@ -247,3 +247,4 @@ All previous items plus:
 - **Auxiliary side-calibration losses (exp_111–113)**: max-BCE and logsumexp-BCE at weights 0.10/0.30/0.50 all failed; `dir_acc` stuck at random regardless of formulation or weight
 - **Hierarchical side-aware KL target (exp_114)**: restructured selection target with P(side)*P(contract|side); still 0% puts
 - **SOFT_TEMP=0.15 (exp_116)**: back to 0% puts; the direction awareness cliff is between 0.10 and 0.15
+- **Pairwise ranking loss (exp_121)**: turned the side collapse into an 85%-put wipeout; not a solution

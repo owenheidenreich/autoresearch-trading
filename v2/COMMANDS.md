@@ -15,7 +15,7 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
   `./v2/ops/deploy.sh run_one exp_NNN`
 
 - `begin experiment loop`
-  Use the full loop from `v2/program.md`: hypothesis, edit `train.py` and/or `core/policy.py`, commit, screen first, then if screening passes run official, then keep or revert.
+  Use the full loop from `v2/program.md`: form one hypothesis, edit the approved mutable surface for that hypothesis, commit, screen first, then if screening passes or justifies a same-family follow-up run official, then keep or revert.
 
 ## Evaluation
 
@@ -35,7 +35,15 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
   Run:
   `python3 -m v2.analysis.analyze_losses`
 
-- `audit dataset`
+- `audit dataset` or `audit anomalies`
+  Run the separate raw/sidecar anomaly track with trace overlap:
+  `.venv/bin/python3 -m v2.core.data_integrity --data v2/data.pt --raw-audit --sidecar-audit --trace-path v2/artifacts/replay_traces.csv`
+
+- `audit side bias`
+  Run the standard side-bias audit against the executable snapshot labels and a model checkpoint:
+  `.venv/bin/python3 -m v2.core.data_integrity --data v2/data.pt --side-bias-audit --model v2/models/model_candidate.pt`
+
+- `harness eval`
   Run:
   `python3 -m v2.analysis.harness_eval --data v2/data.pt`
 

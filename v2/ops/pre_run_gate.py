@@ -46,8 +46,8 @@ CODE_LEGACY_PATTERNS = (
     re.compile(rf"\b{re.escape(_parts('targets_', 'contract_', 'field'))}\b"),
 )
 DOC_REQUIRED_PHRASES = (
-    "Gate BCE on supervised rows",
-    "Pairwise ranking selection loss",
+    "Balanced gate BCE on supervised rows",
+    "Soft KL selection loss",
     "No direct PnL regression",
     "No auxiliary side head",
 )
@@ -198,6 +198,8 @@ def check_doc_sync(errors: list[str]) -> None:
     train_text = TRAIN_PATH.read_text()
     expected_train_tokens = (
         "sel_loss",
+        "SOFT_TEMP",
+        "NOISE_MARGIN",
     )
     for token in expected_train_tokens:
         if token not in train_text:

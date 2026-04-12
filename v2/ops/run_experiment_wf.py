@@ -110,6 +110,10 @@ def run_experiment(
         "gate_failure": m.gate_failure if m else None,
         "call_count": m.call_count if m else 0,
         "put_count": m.put_count if m else 0,
+        "call_pct": m.call_pct if m else 0,
+        "put_pct": m.put_pct if m else 0,
+        "minority_side_share": m.minority_side_share if m else 0,
+        "direction_balance": m.direction_balance if m else 0,
         "beats_random": wf.aggregate_score > wf.aggregate_baselines.get("random", 999),
         "beats_atm": wf.aggregate_score > wf.aggregate_baselines.get("atm", 999),
         "beats_rules": wf.aggregate_score > wf.aggregate_baselines.get("rules", 999),
@@ -138,7 +142,8 @@ def _print_results(results: dict) -> None:
         "score", "min_fold_score", "max_fold_score", "std_fold_score",
         "daily_sortino", "positive_day_rate", "max_account_drawdown",
         "net_pnl_dollars", "total_trades", "traded_days", "profit_factor",
-        "win_rate", "trades_per_day", "beats_random", "beats_atm",
+        "win_rate", "trades_per_day", "call_count", "put_count",
+        "minority_side_share", "direction_balance", "beats_random", "beats_atm",
         "beats_rules", "beats_trailing", "training_seconds", "status",
     ]:
         if key in results:

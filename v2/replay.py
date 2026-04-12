@@ -14,7 +14,7 @@ import torch
 
 from v2.core.chain_data import describe_contract, extract_contract_series, load_sidecar_cached, padded_snapshot, QUALITY_PARTIAL
 from v2.core.decision_trace import DecisionTrace, build_trace_for_bar, save_traces, print_trace_summary
-from v2.core.metrics import ReplayMetrics, compute_metrics
+from v2.core.metrics import ReplayMetrics, compute_metrics, score_config_fingerprint
 from v2.core.policy import DEFAULT_POLICY, DecisionPolicy
 from v2.core.schema import TradeIntent
 from v2.core.simulator import simulate_trade
@@ -397,7 +397,8 @@ def replay_validation(
 
 def _baseline_cache_key(data: dict, mask_key: str, policy: DecisionPolicy, max_days: int | None) -> str:
     dataset_fp = data.get("metadata", {}).get("fingerprint", "unknown")
-    return hashlib.md5("|".join([dataset_fp, mask_key, policy.fingerprint(), str(max_days)]).encode()).hexdigest()
+    parts = [dataset_fp, mask_key, policy.fingerprint(), score_config_fingerprint(), str(max_days)]
+    return hashlib.md5("|".join(parts).encode()).hexdigest()
 
 
 def _load_cached_baselines(cache_key: str) -> dict | None:
@@ -636,6 +637,10 @@ def print_metrics(name: str, m: ReplayMetrics):
     print(f"  Score={m.score:.4f}  PF={m.profit_factor:.3f}  WR={m.win_rate:.1%}")
     print(f"  Trades={m.total_trades}  TPD={m.trades_per_day:.2f}  Days={m.num_days}  Traded={m.traded_days}")
     print(f"  Sortino={m.daily_sortino:.2f}  +DayRate={m.positive_day_rate:.1%}  AcctDD={m.max_account_drawdown:.1%}")
+    print(
+        f"  Direction={m.call_count}C / {m.put_count}P  "
+        f"Minority={m.minority_side_share:.1%}  Balance={m.direction_balance:.2f}"
+    )
     if m.gate_failure:
         print(f"  GATE FAILURE: {m.gate_failure}")
 

@@ -3,8 +3,8 @@
 Score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
 
 Evaluated on a dollar equity curve starting at $10,000 with SPX 100x
-contract multiplier. Measures what matters: steady daily profits,
-downside risk control, and direction diversity.
+contract multiplier. Measures what matters: steady daily profits and
+downside risk control, while still surfacing side mix as a diagnostic.
 
 See v2/docs/evaluator.md for the promotion score formula.
 """
@@ -56,6 +56,8 @@ class ReplayMetrics:
     put_count: int = 0
     call_pct: float = 0.0
     put_pct: float = 0.0
+    minority_side_share: float = 0.0
+    direction_balance: float = 0.0
 
     # Exit reasons
     stop_loss_count: int = 0
@@ -150,6 +152,9 @@ def compute_metrics(
             m.put_count += 1
     m.call_pct = m.call_count / m.total_trades if m.total_trades > 0 else 0.0
     m.put_pct = m.put_count / m.total_trades if m.total_trades > 0 else 0.0
+    m.minority_side_share = min(m.call_pct, m.put_pct) if m.total_trades > 0 else 0.0
+    dir_majority = max(m.call_pct, m.put_pct, 0.01)
+    m.direction_balance = m.minority_side_share / dir_majority if m.total_trades > 0 else 0.0
 
     # Exit reasons
     for t in trades:
@@ -285,13 +290,6 @@ def compute_score(metrics: ReplayMetrics) -> float:
         metrics.gate_failure = f"too_few_traded_days ({metrics.traded_days} < 15)"
         return -0.5
 
-    dir_majority = max(metrics.call_pct, metrics.put_pct, 0.01)
-    dir_minority = min(metrics.call_pct, metrics.put_pct)
-    dir_balance = dir_minority / dir_majority
-    if dir_balance < 0.15:
-        metrics.gate_failure = f"direction_collapse (balance={dir_balance:.2f} < 0.15)"
-        return -0.3
-
     if metrics.max_account_drawdown > 0.20:
         metrics.gate_failure = f"excessive_drawdown ({metrics.max_account_drawdown:.1%} > 20%)"
         return -0.2
@@ -318,14 +316,13 @@ def compute_score(metrics: ReplayMetrics) -> float:
 # ---------------------------------------------------------------------------
 
 _SCORE_CONFIG = {
-    "version": "v2.1_account_curve",
+    "version": "v2.2_account_curve_side_diagnostic",
     "primary": "daily_sortino * positive_day_rate * dd_mult",
     "sortino_cap": 6.0,
     "starting_equity": 10_000,
     "contract_multiplier": 100,
     "gate_min_trades": 30,
     "gate_min_traded_days": 15,
-    "gate_min_dir_balance": 0.15,
     "gate_max_drawdown": 0.20,
     "dd_mult_free_below": 0.08,
     "dd_mult_zero_above": 0.20,

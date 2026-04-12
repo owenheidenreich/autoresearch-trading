@@ -12,8 +12,9 @@ OUTER LOOP
     if screening passes or justifies a trace-informed follow-up:
         official: deploy.sh run_one exp_NNN (5 folds)
         DECISION TRACE: replay --traces (mandatory before keep/revert)
+        SIDE-BIAS AUDIT: data_integrity --side-bias-audit (standard after important runs)
         analyze trace: gate accuracy, selection accuracy, P&L gap
-        keep or revert (informed by trace, not score alone)
+        keep or revert (promotion by score, continuation may use traces)
         form next hypothesis from trace failure modes
 
 INNER LOOP
@@ -32,17 +33,6 @@ Inputs:
 - `(batch, 30, 47)` context window
 - `(batch, max_contracts_per_bar, contract_features)` current executable snapshot
 
-Optional context wiring for future Kronos-inspired experiments:
-
-- learned temporal embeddings may be added on top of the 30-bar context window
-- if temporal IDs are needed at inference, replay must pass the same IDs the trainer used
-- train-only masking of the flow feature slice may be used to reduce brittleness to noisy auxiliary volume inputs
-- exact-chain contract scoring semantics must remain unchanged
-
-Optional training-side calibration for future trace-targeted experiments:
-
-- a small cross-side ranking term may be added on traded rows to force the oracle side to outrank the opposite side without adding a separate direction head or inference-time side mask
-
 Outputs:
 
 - `no_trade_score`
@@ -53,10 +43,12 @@ The model does not emit a synthetic strike class, direction head, or learned ris
 
 ## Current Baseline Loss
 
-The live reset baseline is intentionally minimal and replay-aligned:
+The live working baseline is the restored `exp_119` family:
 
-- Gate BCE on supervised rows, with balanced subsampling when both classes are present
-- Pairwise ranking selection loss (oracle best contract must outscore all other valid contracts)
+- Balanced gate BCE on supervised rows
+- Soft KL selection loss
+- `SOFT_TEMP=0.10`
+- `NOISE_MARGIN=0.01`
 - No direct PnL regression
 - No auxiliary side head
 
@@ -64,11 +56,12 @@ Details:
 
 - `gate_loss` compares `max(contract_scores) - no_trade_score` against `label_trade`
 - when both gate classes are present, the BCE is computed on a class-balanced subset so the trade-majority class does not dominate the gate gradient
-- `sel_loss` uses a pairwise BPR formulation: `-log(sigmoid(best_score - other_score))` averaged over all valid (oracle_best, other) pairs
+- `sel_loss` builds a soft target from sidecar `row_labels` with `softmax(pnl / SOFT_TEMP)`
+- invalid or unlabeled contracts receive zero target mass
 - noise bars where the top PnL margin is below `NOISE_MARGIN` are excluded from the selection loss
 - total loss is `GATE_W * gate_loss + SEL_W * sel_loss`
 
-The pairwise ranking loss replaced the previous soft KL selection loss (`softmax(pnl / SOFT_TEMP)`) because the KL target had a structural put bias: the softmax exponentially amplified asymmetric put PnL margins, causing the model to systematically favor puts regardless of architecture or hyperparameters.
+The rejected `exp_121` ranking-loss screen is an important finding, but not the live baseline. It showed that side collapse survives a loss-family change; it did not prove that the executable KL targets are inherently put-biased.
 
 ## Risk Policy
 
@@ -105,3 +98,18 @@ The current official baseline policy is morning-only: entries are allowed from b
 4. runs `python3 -m v2.ops.run_experiment_wf --id exp_NNN_screen --n-folds 1 --no-artifacts`
 5. does not download a model or artifact
 6. prints results to stdout only; screening notes belong in `v2/lab_notebook.md`
+
+## Standard Diagnostics
+
+After meaningful screening or official runs, the standard local diagnostics are:
+
+- `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote --traces`
+- `.venv/bin/python3 -m v2.core.data_integrity --data v2/data.pt --side-bias-audit --model v2/models/model_candidate.pt`
+
+The side-bias audit is the canonical way to separate:
+
+- label-side structure
+- valid contract availability by side
+- soft-target side mass
+- model traded-side share
+- side-conditioned accuracy and selected-label P&L

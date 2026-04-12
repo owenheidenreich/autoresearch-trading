@@ -1,4 +1,4 @@
-"""ART² v4 Training Loop -- balanced gate + soft KL contract selection."""
+"""ART² v4 Training Loop -- balanced gate + direction-conditioned selection."""
 from __future__ import annotations
 
 import json
@@ -30,8 +30,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
-NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
 
 
 class PositionalEncoding(nn.Module):
@@ -49,7 +48,7 @@ class PositionalEncoding(nn.Module):
 
 
 class TradingModel(nn.Module):
-    """Contract scorer with balanced gate + soft KL selection training."""
+    """Contract scorer with balanced gate + direction-conditioned training."""
 
     def __init__(self, d_model: int | None = None, depth: int | None = None, n_heads: int | None = None, dropout: float | None = None):
         super().__init__()
@@ -217,7 +216,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Selection loss: KL over valid contracts, skip noise bars ---
+    # --- B. Selection loss: standard KL over all valid contracts ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
@@ -227,27 +226,12 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
+        soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
-        # Filter out noise bars (top margin < NOISE_MARGIN)
-        if NOISE_MARGIN > 0:
-            top2_vals, _ = pnl_for_target.topk(2, dim=-1)
-            clear_bars = (top2_vals[:, 0] - top2_vals[:, 1]) > NOISE_MARGIN
-            if clear_bars.any():
-                tr_scores = tr_scores[clear_bars]
-                tr_valid = tr_valid[clear_bars]
-                pnl_for_target = pnl_for_target[clear_bars]
-            else:
-                tr_scores = tr_scores[:0]
-                tr_valid = tr_valid[:0]
-                pnl_for_target = pnl_for_target[:0]
-
-        if tr_scores.size(0) > 0:
-            soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
-
-            logits_for_sel = tr_scores.clone()
-            logits_for_sel[~tr_valid] = -1e9
-            log_probs = F.log_softmax(logits_for_sel, dim=-1)
-            sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
+        logits_for_sel = tr_scores.clone()
+        logits_for_sel[~tr_valid] = -1e9
+        log_probs = F.log_softmax(logits_for_sel, dim=-1)
+        sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
     total = GATE_W * gate_loss + SEL_W * sel_loss
 
