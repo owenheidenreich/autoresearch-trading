@@ -131,6 +131,11 @@ class TradingModel(nn.Module):
 
         contract_scores = torch.where(is_put, put_scores_centered, call_scores_centered)
 
+        # exp_134: suppress put contracts at inference — put head still trains
+        # but its scores never win the argmax at decision time
+        if not self.training:
+            contract_scores = contract_scores.masked_fill(is_put, float("-inf"))
+
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         return {
             "contract_scores": contract_scores,
