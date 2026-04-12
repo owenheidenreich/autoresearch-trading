@@ -32,6 +32,7 @@ GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
+DIR_W = float(os.environ.get("WEIGHT_DIR", 0.10))
 
 
 class PositionalEncoding(nn.Module):
@@ -292,7 +293,44 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             if side_kls:
                 sel_loss = sum(side_kls) / len(side_kls)
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss
+    # --- C. Cross-side margin loss: oracle side's best score should beat other side ---
+    dir_loss = torch.tensor(0.0, device=device)
+    if trade_rows.any() and DIR_W > 0:
+        tr_scores_d = scores[trade_rows]
+        tr_valid_d = valid_mask[trade_rows]
+        tr_is_put_d = is_put[trade_rows]
+        tr_best_idx = best_idx[trade_rows]
+
+        # Determine oracle side: is the oracle's best contract a put?
+        rows_d = torch.arange(tr_scores_d.size(0), device=device)
+        oracle_is_put = contracts_full[trade_rows][rows_d, tr_best_idx, 2] > 0.5
+
+        # Best call score per bar
+        call_mask_d = tr_valid_d & ~tr_is_put_d
+        call_scores_d = tr_scores_d.clone()
+        call_scores_d[~call_mask_d] = -1e9
+        best_call, _ = call_scores_d.max(dim=-1)
+
+        # Best put score per bar
+        put_mask_d = tr_valid_d & tr_is_put_d
+        put_scores_d = tr_scores_d.clone()
+        put_scores_d[~put_mask_d] = -1e9
+        best_put, _ = put_scores_d.max(dim=-1)
+
+        # Only on bars that have both sides available
+        has_both = call_mask_d.any(dim=-1) & put_mask_d.any(dim=-1)
+        if has_both.any():
+            bc = best_call[has_both]
+            bp = best_put[has_both]
+            oc_is_put = oracle_is_put[has_both]
+            # Hinge: oracle side should beat wrong side by margin 0
+            # oracle=call: loss = max(0, best_put - best_call)
+            # oracle=put:  loss = max(0, best_call - best_put)
+            margin_call = F.relu(bp - bc)  # fires when puts score higher but calls are correct
+            margin_put = F.relu(bc - bp)   # fires when calls score higher but puts are correct
+            dir_loss = torch.where(oc_is_put, margin_put, margin_call).mean()
+
+    total = GATE_W * gate_loss + SEL_W * sel_loss + DIR_W * dir_loss
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -319,6 +357,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
+        "dir": float(dir_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -422,7 +461,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} dir_l={avg_val.get('dir', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
