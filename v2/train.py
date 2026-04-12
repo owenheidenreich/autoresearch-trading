@@ -28,9 +28,9 @@ WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.03))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
-GATE_W = float(os.environ.get("WEIGHT_GATE", 2.0))
+GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.12))
 
 
 class PositionalEncoding(nn.Module):
