@@ -32,7 +32,6 @@ GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
-DIR_W = float(os.environ.get("WEIGHT_DIR", 0.10))
 
 
 class PositionalEncoding(nn.Module):
@@ -116,12 +115,23 @@ class TradingModel(nn.Module):
 
         # Route each contract through its side-specific score head
         is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
+        valid_mask = contracts[:, :, 0] > 0.5
         call_scores = self.call_score_head(combined).squeeze(-1)
         put_scores = self.put_score_head(combined).squeeze(-1)
-        contract_scores = torch.where(is_put, put_scores, call_scores)
+
+        # Per-bar mean centering: remove global offset so sides compete fairly
+        call_valid = (~is_put) & valid_mask
+        put_valid = is_put & valid_mask
+        call_count = call_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
+        put_count = put_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
+        call_mean = (call_scores * call_valid.float()).sum(dim=-1, keepdim=True) / call_count
+        put_mean = (put_scores * put_valid.float()).sum(dim=-1, keepdim=True) / put_count
+        call_scores_centered = call_scores - call_mean
+        put_scores_centered = put_scores - put_mean
+
+        contract_scores = torch.where(is_put, put_scores_centered, call_scores_centered)
 
         no_trade_score = self.no_trade_head(context).squeeze(-1)
-        valid_mask = contracts[:, :, 0] > 0.5
         return {
             "contract_scores": contract_scores,
             "no_trade_score": no_trade_score,
@@ -233,14 +243,12 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Selection loss: side-split KL (call KL + put KL), skip noise bars ---
+    # --- B. Selection loss: KL over valid contracts, skip noise bars ---
     sel_loss = torch.tensor(0.0, device=device)
-    is_put = outputs["is_put"].to(device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
-        tr_is_put = is_put[trade_rows]
 
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
@@ -254,83 +262,20 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 tr_scores = tr_scores[clear_bars]
                 tr_valid = tr_valid[clear_bars]
                 pnl_for_target = pnl_for_target[clear_bars]
-                tr_is_put = tr_is_put[clear_bars]
             else:
                 tr_scores = tr_scores[:0]
                 tr_valid = tr_valid[:0]
                 pnl_for_target = pnl_for_target[:0]
-                tr_is_put = tr_is_put[:0]
 
         if tr_scores.size(0) > 0:
-            side_kls = []
-            for side_mask, _name in [(~tr_is_put, "call"), (tr_is_put, "put")]:
-                # Mask: only contracts of this side that are valid
-                s_valid = tr_valid & side_mask
-                # Need at least 2 contracts of this side per bar for meaningful KL
-                bars_with_side = s_valid.sum(dim=-1) >= 2
-                if not bars_with_side.any():
-                    continue
-                s_scores = tr_scores[bars_with_side]
-                s_pnl = pnl_for_target[bars_with_side]
-                s_vmask = s_valid[bars_with_side]
+            soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
-                # Mask out contracts not of this side
-                s_logits = s_scores.clone()
-                s_logits[~s_vmask] = -1e9
-                s_pnl_masked = s_pnl.clone()
-                s_pnl_masked[~s_vmask] = -1e9
+            logits_for_sel = tr_scores.clone()
+            logits_for_sel[~tr_valid] = -1e9
+            log_probs = F.log_softmax(logits_for_sel, dim=-1)
+            sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
-                s_target = F.softmax(s_pnl_masked / SOFT_TEMP, dim=-1)
-                s_log_probs = F.log_softmax(s_logits, dim=-1)
-                # Use reduction='none' and manually mask to avoid numerical issues
-                kl_elements = F.kl_div(s_log_probs, s_target, reduction="none")
-                kl_elements = kl_elements * s_vmask.float()
-                kl_elements = torch.nan_to_num(kl_elements, nan=0.0, posinf=0.0, neginf=0.0)
-                # batchmean: sum all, divide by number of bars
-                s_kl = kl_elements.sum() / kl_elements.size(0)
-                side_kls.append(s_kl)
-
-            if side_kls:
-                sel_loss = sum(side_kls) / len(side_kls)
-
-    # --- C. Cross-side margin loss: oracle side's best score should beat other side ---
-    dir_loss = torch.tensor(0.0, device=device)
-    if trade_rows.any() and DIR_W > 0:
-        tr_scores_d = scores[trade_rows]
-        tr_valid_d = valid_mask[trade_rows]
-        tr_is_put_d = is_put[trade_rows]
-        tr_best_idx = best_idx[trade_rows]
-
-        # Determine oracle side: is the oracle's best contract a put?
-        rows_d = torch.arange(tr_scores_d.size(0), device=device)
-        oracle_is_put = contracts_full[trade_rows][rows_d, tr_best_idx, 2] > 0.5
-
-        # Best call score per bar
-        call_mask_d = tr_valid_d & ~tr_is_put_d
-        call_scores_d = tr_scores_d.clone()
-        call_scores_d[~call_mask_d] = -1e9
-        best_call, _ = call_scores_d.max(dim=-1)
-
-        # Best put score per bar
-        put_mask_d = tr_valid_d & tr_is_put_d
-        put_scores_d = tr_scores_d.clone()
-        put_scores_d[~put_mask_d] = -1e9
-        best_put, _ = put_scores_d.max(dim=-1)
-
-        # Only on bars that have both sides available
-        has_both = call_mask_d.any(dim=-1) & put_mask_d.any(dim=-1)
-        if has_both.any():
-            bc = best_call[has_both]
-            bp = best_put[has_both]
-            oc_is_put = oracle_is_put[has_both]
-            # Hinge: oracle side should beat wrong side by margin 0
-            # oracle=call: loss = max(0, best_put - best_call)
-            # oracle=put:  loss = max(0, best_call - best_put)
-            margin_call = F.relu(bp - bc)  # fires when puts score higher but calls are correct
-            margin_put = F.relu(bc - bp)   # fires when calls score higher but puts are correct
-            dir_loss = torch.where(oc_is_put, margin_put, margin_call).mean()
-
-    total = GATE_W * gate_loss + SEL_W * sel_loss + DIR_W * dir_loss
+    total = GATE_W * gate_loss + SEL_W * sel_loss
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -357,7 +302,6 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
-        "dir": float(dir_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -461,7 +405,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} dir_l={avg_val.get('dir', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
