@@ -31,7 +31,6 @@ SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
-SIDE_W = float(os.environ.get("SIDE_CAL_W", 0.30))
 
 
 class PositionalEncoding(nn.Module):
@@ -217,68 +216,73 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Selection loss: standard KL over all valid contracts ---
+    # --- B. Selection loss: hierarchical KL with side-aware target ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
+        tr_contracts = contracts_full[trade_rows]
 
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
-        soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
-        logits_for_sel = tr_scores.clone()
-        logits_for_sel[~tr_valid] = -1e9
-        log_probs = F.log_softmax(logits_for_sel, dim=-1)
-        sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
-
-    # --- C. Side calibration loss: soft BCE on aggregated call vs put scores ---
-    side_loss = torch.tensor(0.0, device=device)
-    if trade_rows.any() and SIDE_W > 0:
-        tr_scores_side = scores[trade_rows]
-        tr_valid_side = valid_mask[trade_rows]
-        tr_contracts = contracts_full[trade_rows]
-        tr_best_idx = best_idx[trade_rows]
-        tr_labels_side = labels[trade_rows]
-
+        # Hierarchical target: P(side) * P(contract | side)
         is_put = tr_contracts[:, :, 2] > 0.5
-        is_call = ~is_put & tr_valid_side
+        call_mask = ~is_put & tr_valid
+        put_mask = is_put & tr_valid
+        both_present = call_mask.any(dim=1) & put_mask.any(dim=1)
 
-        call_valid = is_call & tr_valid_side
-        put_valid = is_put & tr_valid_side
-        both_sides = call_valid.any(dim=1) & put_valid.any(dim=1)
+        if both_present.any():
+            bp_pnl = pnl_for_target[both_present]
+            bp_call = call_mask[both_present]
+            bp_put = put_mask[both_present]
 
-        # Filter to clear-label bars (oracle top margin > 0.01)
-        pnl_clear = tr_labels_side.clone()
-        pnl_clear[~tr_valid_side] = -1e9
-        pnl_clear[~torch.isfinite(pnl_clear)] = -1e9
-        top2, _ = pnl_clear.topk(2, dim=-1)
-        clear_label = (top2[:, 0] - top2[:, 1]) > 0.01
-        side_rows = both_sides & clear_label
+            # Best PnL per side → side probabilities
+            call_pnl_for_side = bp_pnl.clone()
+            call_pnl_for_side[~bp_call] = -1e9
+            best_call_pnl, _ = call_pnl_for_side.max(dim=-1)
 
-        if side_rows.any():
-            s_scores = tr_scores_side[side_rows]
-            s_call = call_valid[side_rows]
-            s_put = put_valid[side_rows]
-            s_best = tr_best_idx[side_rows]
-            s_contracts = tr_contracts[side_rows]
+            put_pnl_for_side = bp_pnl.clone()
+            put_pnl_for_side[~bp_put] = -1e9
+            best_put_pnl, _ = put_pnl_for_side.max(dim=-1)
 
-            call_scores_m = s_scores.clone()
-            call_scores_m[~s_call] = -1e9
-            lse_call = torch.logsumexp(call_scores_m, dim=-1)
+            side_logits = torch.stack([best_call_pnl, best_put_pnl], dim=-1) / SOFT_TEMP
+            side_probs = F.softmax(side_logits, dim=-1)  # [N, 2]
 
-            put_scores_m = s_scores.clone()
-            put_scores_m[~s_put] = -1e9
-            lse_put = torch.logsumexp(put_scores_m, dim=-1)
+            # Within-side probabilities
+            call_within = bp_pnl.clone()
+            call_within[~bp_call] = -1e9
+            call_within_probs = F.softmax(call_within / SOFT_TEMP, dim=-1)
 
-            cal_logit = lse_call - lse_put
-            rows_idx = torch.arange(s_contracts.size(0), device=device)
-            oracle_is_call = (s_contracts[rows_idx, s_best, 2] < 0.5).float()
-            side_loss = F.binary_cross_entropy_with_logits(cal_logit, oracle_is_call, reduction="mean")
+            put_within = bp_pnl.clone()
+            put_within[~bp_put] = -1e9
+            put_within_probs = F.softmax(put_within / SOFT_TEMP, dim=-1)
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss + SIDE_W * side_loss
+            # Combine: target_i = P(side_i) * P(contract_i | side_i)
+            hier_target = torch.zeros_like(bp_pnl)
+            hier_target += bp_call.float() * call_within_probs * side_probs[:, 0:1]
+            hier_target += bp_put.float() * put_within_probs * side_probs[:, 1:2]
+            # Zero out invalid contracts
+            hier_target[~(bp_call | bp_put)] = 0.0
+
+            # KL on hierarchical-target rows
+            bp_scores = tr_scores[both_present]
+            bp_valid = tr_valid[both_present]
+            logits_bp = bp_scores.clone()
+            logits_bp[~bp_valid] = -1e9
+            log_probs_bp = F.log_softmax(logits_bp, dim=-1)
+            sel_loss = F.kl_div(log_probs_bp, hier_target, reduction="batchmean")
+        else:
+            # Fallback: standard flat target
+            soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
+            logits_for_sel = tr_scores.clone()
+            logits_for_sel[~tr_valid] = -1e9
+            log_probs = F.log_softmax(logits_for_sel, dim=-1)
+            sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
+
+    total = GATE_W * gate_loss + SEL_W * sel_loss
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -305,7 +309,6 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
-        "side": float(side_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -409,7 +412,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} side={avg_val.get('side', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )

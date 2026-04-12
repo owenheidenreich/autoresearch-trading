@@ -436,4 +436,20 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
   - baseline comparison: failed all four baselines
   - training dynamics: `dir_acc` stuck at `~0.49` (random) throughout; `side_loss` `0.68 → 0.65` (minimal learning)
 - Decision: kill the max-based BCE family
-- Takeaway: at 5x weight the model went BACK to 0 puts but traded more selectively (92 trades, WR 37%, DD 21.3% — nearly passing). The core problem: `max` pooling in the side loss only sends gradient through the single highest-scoring contract on each side, preventing general side learning. The `dir_acc` metric confirmed this — stuck at random throughout training at both weights. Next: try `logsumexp` instead of `max` to get dense gradient across all contracts on each side
+- Takeaway: at 5x weight the model went BACK to 0 puts but traded more selectively (92 trades, WR 37%, DD 21.3% — nearly passing). The core problem: `max` pooling in the side loss only sends gradient through the single highest-scoring contract on each side, preventing general side learning
+
+### `exp_113` — Logsumexp Side-Calibration (SIDE_W=0.30)
+
+- Type: screening run
+- Code change: replace `max` with `logsumexp` in side calibration loss to provide dense gradient to all contracts per side
+- Result:
+  - score: `-0.300`
+  - gate failure: `direction_collapse (balance=0.00 < 0.15)`
+  - trades: `125`
+  - direction balance: `125C / 0P`
+  - win rate: `34.4%`
+  - profit factor: `0.692`
+  - drawdown: `30.2%`
+  - training dynamics: `dir_acc` stuck at `~0.49` (random), identical to max version
+- Decision: **kill the cross-side calibration auxiliary loss family**
+- Takeaway: three experiments (exp_111/112/113), two formulations (max/logsumexp), three weights (0.10/0.30/0.50) all failed to move `dir_acc` above random. The auxiliary loss approach cannot overcome the dominant near-uniform KL gradient. The root cause is the selection TARGET, not a missing loss term. Next: modify the KL target to be side-aware (hierarchical softmax)
