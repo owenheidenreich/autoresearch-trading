@@ -119,17 +119,23 @@ class TradingModel(nn.Module):
         call_scores = self.call_score_head(combined).squeeze(-1)
         put_scores = self.put_score_head(combined).squeeze(-1)
 
-        # Per-bar mean centering: remove global offset so sides compete fairly
+        # Per-bar z-score normalization: equalize both level and spread between sides
         call_valid = (~is_put) & valid_mask
         put_valid = is_put & valid_mask
-        call_count = call_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
-        put_count = put_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
-        call_mean = (call_scores * call_valid.float()).sum(dim=-1, keepdim=True) / call_count
-        put_mean = (put_scores * put_valid.float()).sum(dim=-1, keepdim=True) / put_count
-        call_scores_centered = call_scores - call_mean
-        put_scores_centered = put_scores - put_mean
+        call_vf = call_valid.float()
+        put_vf = put_valid.float()
+        call_count = call_vf.sum(dim=-1, keepdim=True).clamp(min=1)
+        put_count = put_vf.sum(dim=-1, keepdim=True).clamp(min=1)
+        call_mean = (call_scores * call_vf).sum(dim=-1, keepdim=True) / call_count
+        put_mean = (put_scores * put_vf).sum(dim=-1, keepdim=True) / put_count
+        call_centered = call_scores - call_mean
+        put_centered = put_scores - put_mean
+        call_std = ((call_centered ** 2 * call_vf).sum(dim=-1, keepdim=True) / call_count).sqrt().clamp(min=1e-6)
+        put_std = ((put_centered ** 2 * put_vf).sum(dim=-1, keepdim=True) / put_count).sqrt().clamp(min=1e-6)
+        call_normed = call_centered / call_std
+        put_normed = put_centered / put_std
 
-        contract_scores = torch.where(is_put, put_scores_centered, call_scores_centered)
+        contract_scores = torch.where(is_put, put_normed, call_normed)
 
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         return {
