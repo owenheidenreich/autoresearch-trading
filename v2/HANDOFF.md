@@ -2,6 +2,23 @@
 
 Read this file, then [founder_intent.md](docs/founder_intent.md), then [program.md](program.md), then [current_state.md](docs/current_state.md).
 
+## What Changed (2026-04-12 Late)
+
+**First profitable model: exp_139.** Contract feature normalization + greek sign alignment + learned put bias.
+
+### Phase 7: Contract Feature Normalization (exp_134–139) — BREAKTHROUGH
+
+**Root cause discovery**: The 15 per-contract features had 340,000x scale differences (strike ~6860 vs gamma ~0.008). The `contract_proj` Linear(15, 96) was completely dominated by strike — the model was blind to greeks, IV, spread, and volume. Additionally, delta/moneyness/distance flip sign for puts, confusing the shared embedding.
+
+**exp_134/134b — Per-side ranking KL**: Proved put head CAN rank but best-ranked puts still lose. Feature-bound.
+**exp_135 — Exact-oracle CE**: Impossible task (285 classes), pulled capacity toward unlearnable objective.
+**exp_136 — Multiplicative interaction**: More expressiveness → more confident bad puts.
+**exp_137 — Greek sign normalization only**: First positive score (+0.184), first dir_acc movement (0.55 vs stuck at 0.49), but DD 48.7%. Centering over-equalized.
+**exp_138 — Sign norm without centering**: Put head dominated without normalization. Centering needed.
+**exp_139 — Full normalization + sign fix + learned put bias**: **PROMOTED. First profitable model.**
+
+### Phase 6 (earlier same day): Side-Specific Score Heads (exp_123–133)
+
 ## What Changed (2026-04-12)
 
 Separate call/put score heads with per-bar mean centering broke the all-call collapse.
@@ -198,17 +215,21 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Live Code
 
-**`v2/train.py`** (exp_125 architecture):
-- Model: encoder + contract_proj + no_trade_head + **call_score_head + put_score_head** (separate heads)
-- Forward: per-bar mean centering of each side's scores before merging via `torch.where`
+**`v2/train.py`** (exp_139 architecture):
+- Model: encoder + contract_proj + no_trade_head + **call_score_head + put_score_head** + **learned put_bias**
+- Forward preprocessing:
+  1. **Greek sign normalization**: negate delta(8), moneyness_pct(11), distance_points(12) for puts
+  2. **Per-bar z-score**: normalize 11 continuous features across valid contracts per bar
+  3. Zero out invalid contracts after normalization
+- Forward scoring: per-bar mean centering + learned `put_bias` on put centered scores
 - Gate loss: balanced BCE (subsample majority class to match minority)
 - Selection loss: unified KL over all valid contracts at `SOFT_TEMP=0.10`
 - Noise filter: skip bars where top label margin `< 0.01`
-- No margin loss, no direction head, no pairwise ranking
+- Inactive auxiliary losses: SIDE_SEL_W=0.0, EXACT_W=0.0
 
-**`v2/core/policy.py`** (kept clean morning window):
-- `no_trade_before_bar = 60` (was 30)
-- `no_trade_after_bar = 120` (was 270)
+**`v2/core/policy.py`** (morning window):
+- `no_trade_before_bar = 60`
+- `no_trade_after_bar = 105`
 - All other policy params unchanged (stop=30%, target=50%, hold=120, trailing exit)
 
 **Separate audit tooling**
@@ -221,30 +242,42 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Research Position
 
-- Official scored runs in `v2/results.tsv`: exp_074–078, exp_099, exp_104, exp_106, exp_122, **exp_125**
-- `exp_125` is the new strongest result: score=-0.200, PF 0.873, DD 28.9%, 164C/16P
-- `exp_123`–`exp_132` screened and analyzed; margin loss, temp, noise, and gate-weight directions exhausted
-- `v2/models/model_candidate.pt` is the `exp_125` official artifact
-- `v2/artifacts/exp_125/` is the current official artifact bundle
-- **Current live code: exp_125 (separate heads + mean centering)**
-- Next experiment ID: `exp_133`
+- Official scored runs in `v2/results.tsv`: exp_074–078, exp_099, exp_104, exp_106, exp_122, exp_125, exp_133, exp_137, **exp_139**
+- **exp_139 is the first profitable model**: score=-0.121, PF 1.142, DD 17.5%, WR 45.3%, 136C/25P
+- `v2/models/model.pt` and `v2/models/model_best.pt` are the exp_139 promoted artifact
+- `v2/artifacts/exp_139/` is the current official artifact bundle
+- **Current live code: exp_139 (contract normalization + greek sign + learned put bias)**
+- Next experiment ID: `exp_140`
 
-## Key Finding: Side Collapse Partially Solved, Put Quality Is The New Bottleneck
+## Key Finding: Contract Feature Normalization Made The Model Profitable
 
-1. **Separate call/put heads + per-bar mean centering broke the all-call collapse**: exp_125 produces 164C/16P in a 5-fold official run, the first puts ever in an official result.
-2. **Direction balance vs economics is monotonic**: every mechanism that forces more puts (margin loss, SEL_W reduction, SOFT_TEMP change) degrades PF/DD proportionally. The model's put selections are systematically worse than its call selections.
-3. **The side collapse is no longer the blocking issue**: the new bottleneck is put contract quality. The model can be forced to pick puts, but they lose money.
+1. **340,000x feature scale mismatch was the root cause**: strike (~6860) dominated contract_proj, making the model blind to greeks, IV, spread, and volume. Selection was near-random (6.1% accuracy).
+2. **Per-bar z-score normalization fixes it**: all 11 continuous features now contribute equally. Selection accuracy improved to 7.5%, WR to 45.3%, average P&L to +2.2% per trade.
+3. **Greek sign alignment matters**: negating delta/moneyness/distance for puts before normalization aligns the embedding space. Without it (exp_137), direction balance improved but economics suffered.
+4. **Learned put bias solves the centering interaction**: centering alone over-equalizes sides (43% random puts); the learned bias (-0.011) lets the model discount puts appropriately.
 
-## Remaining Gap to Profitability
+## Current Performance
 
-1. **DD 28.9% vs 20% hard gate** — the best official result (exp_125) is 8.9 percentage points from passing. This is the closest the project has been.
-2. **Put selection quality** — the trace now shows the put failure mode clearly: half the put trades are wrong-side bars, and the other half are usually weaker strike picks than the oracle.
-3. **Baselines not beaten** — no configuration has beaten all four baselines yet.
+| Metric | exp_139 |
+|--------|---------|
+| PF | 1.142 |
+| DD | 17.5% |
+| WR | 45.3% |
+| Net P&L | +$1,334 |
+| Sortino | +1.88 |
+| Selection accuracy | 7.5% |
+| Gate accuracy | 20.9% |
+| Trades | 161 (136C/25P) |
+| Baselines beaten | All 4 |
+| Gate failure | None |
 
-The next session should:
-1. Test a gate/selectivity hypothesis that suppresses the worst late-window trades (`105-119`) without trying to force more puts
-2. If the next hypothesis stays training-side, target put strike calibration on oracle-put bars instead of adding another generic side-balance loss
-3. Keep treating direction mix as diagnostic; the trace evidence says the missing piece is put quality, not raw put count
+## Remaining Improvement Opportunities
+
+1. **Selection accuracy is still only 7.5%** — the oracle picks 1 of ~285 contracts, the model gets it right 7.5% of the time. Improving this is the most direct lever for higher PF.
+2. **Gate accuracy 20.9%** — nearly 4 in 5 trade decisions are wrong (model trades when it shouldn't, or doesn't trade when it should). But trace analysis showed 67.5% of losses are contract-selection errors, not timing errors.
+3. **4/5 folds still hit the -0.200 floor** — the model is profitable on the aggregate promote mask but not consistently across all folds. Fold variance is high.
+4. **Put quality** — 25 puts is healthy but the learned bias is slightly negative (-0.011), meaning the model naturally discounts puts. Further put quality improvement depends on better features or data pipeline fixes (theta formula for puts is wrong in compute_features.py).
+5. **Known data pipeline issue**: theta formula in `v2/pipeline/compute_features.py` uses call formula for all contracts. Put theta has wrong sign on the interest-rate term (~4% error for 0DTE). Not fixed in exp_139 to avoid confounding.
 
 ## Infrastructure Fixes Made This Session
 
@@ -259,11 +292,11 @@ The next session should:
 - `v2/results.tsv` as official exact-chain scored runs only
 - `v2/lab_notebook.md` as the live screening log
 - `v2/program.md`, `v2/docs/current_state.md`, and `v2/docs/decision_log.md` as the live protocol/state documents
-- `v2/output/trades.html` and `equity.html` as the earlier exp_104 trade visualization (useful for the morning-window discovery)
-- `v2/output/trades.csv` as the 259-trade analysis dataset
-- `v2/models/model_candidate.pt` as the `exp_125` official model (fingerprint `46f2d184e186496f`)
-- `v2/artifacts/exp_125/` as the current official artifact bundle
-- `v2/artifacts/analysis/exp_106_promote_traces.csv` and `v2/artifacts/analysis/exp_125_promote_traces.csv` as the current side-by-side trace-analysis inputs
+- `v2/output/trades.html` and `equity.html` as the exp_139 trade visualization (promoted model)
+- `v2/output/trades.csv` as the 161-trade exp_139 analysis dataset
+- `v2/models/model.pt` and `v2/models/model_best.pt` as the exp_139 promoted model
+- `v2/artifacts/exp_139/` as the current official artifact bundle
+- `v2/artifacts/replay_traces.csv` as the exp_139 promote trace
 - `v2/core/data_integrity.py` anomaly and side-bias reports as the separate audit track
 
 ## What Not To Trust
@@ -280,9 +313,9 @@ The next session should:
 
 ## Hypothesis Queue
 
-1. Use the `exp_125` trace evidence to test a gate/selectivity hypothesis against the `105-119` late-window loss cluster
-2. If staying on the training surface, target same-side put strike calibration; do not keep forcing raw direction balance with generic losses
-3. Revisit whether the remaining DD gap is more approachable through selectivity than side balance only after one targeted late-window screen
+1. Improve selection accuracy (7.5% → higher) via training-side changes — this is the most direct lever for higher PF
+2. Fix theta formula for puts in data pipeline (`v2/pipeline/compute_features.py`) — requires sidecar rebuild
+3. Reduce fold variance — 4/5 folds at -0.200 means the model isn't consistently profitable
 4. Keep the separate audit track alive; do not rebuild dataset unless trigger fires
 
 ## Abandoned Approaches

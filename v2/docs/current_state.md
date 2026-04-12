@@ -1,11 +1,11 @@
 # Current v2 State
 
-Last refreshed: 2026-04-11 (late)
+Last refreshed: 2026-04-12 (late)
 
 ## Mission And Phase
 
 - Mission: build a trustworthy exact-chain research system for SPX 0DTE long-options training and replay
-- Current phase: side-collapse protocol reset plus `exp_119` working rebaseline
+- Current phase: **first profitable model achieved (exp_139); optimizing**
 - Live trading: not implemented and not part of the live `v2/` surface
 - The current mission is not live trading. It is a trustworthy exact-chain research system.
 
@@ -16,12 +16,10 @@ Last refreshed: 2026-04-11 (late)
 - Dataset fingerprint: `46f2d184e186496f`
 - Per-day sidecars: `v2/data_sidecars/*.pt`
 - Unique days: 986
-- Official exact-chain scored runs: `exp_074` through `exp_078`, `exp_099`, `exp_104`, `exp_106`
-- Screening history: `exp_079` through `exp_119`, plus rejected `exp_121`
-- Current official baseline: `exp_106` (morning-window policy, `score=-0.260`)
-- Current working code: restored `exp_119` family (`SOFT_TEMP=0.10`, `NOISE_MARGIN=0.01`, soft KL)
-- Code-only state: `exp_120` exists in git history but has no authoritative local result
-- Next experiment: `exp_122`
+- Official exact-chain scored runs: `exp_074`–`exp_139`
+- **Current official baseline: `exp_139`** (PF 1.142, DD 17.5%, WR 45.3%, first profitable model)
+- Current working code: exp_139 (contract feature normalization + greek sign alignment + learned put bias)
+- Next experiment: `exp_140`
 - Archived non-live surfaces now live under `archive/v2_historical/`
 
 ## End-To-End Flow

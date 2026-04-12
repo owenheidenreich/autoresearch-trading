@@ -7,19 +7,17 @@ If optimization pressure conflicts with project judgment, defer to [founder_inte
 
 ## Current Status
 
-- **v4 exact-chain side-collapse reset and `exp_119` rebaseline phase**
+- **v4 exact-chain — first profitable model (exp_139)**
 - Active manifest: `v2/data.pt`
 - Dataset version: `v4_exact_chain`
 - Dataset fingerprint: `46f2d184e186496f`
 - Unique days: 986
 - Per-day sidecars: `v2/data_sidecars/`
-- Official exact-chain scored runs: `exp_074` through `exp_078`, `exp_099`, `exp_104`, `exp_106`
-- Screening history: `exp_079` through `exp_119`, plus rejected `exp_121`, in `v2/lab_notebook.md`
-- Code-only state: `exp_120` exists in git history but has no authoritative local result and is not live evidence
-- Current official baseline artifact: `exp_106` (`score=-0.260`, morning-window policy, call-side collapse on promote trace)
-- Current working code: restored `exp_119` family (`SOFT_TEMP=0.10`, `NOISE_MARGIN=0.01`, soft KL)
-- Next experiment: `exp_122`
-- Session status: **mixed-state resolved; side-bias audit track active**
+- Official exact-chain scored runs: `exp_074`–`exp_078`, `exp_099`, `exp_104`, `exp_106`, `exp_122`, `exp_125`, `exp_133`, `exp_137`, `exp_139`
+- Current official baseline artifact: **`exp_139`** (`score=-0.121`, PF 1.142, DD 17.5%, first profitable model)
+- Current working code: exp_139 (contract feature normalization + greek sign alignment + learned put bias)
+- Next experiment: `exp_140`
+- Session status: **profitable; optimizing**
 
 ## Mission Boundary
 
