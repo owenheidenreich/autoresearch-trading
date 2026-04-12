@@ -130,20 +130,40 @@ Top predictive features:
 | 124 | separate heads + cross-side margin loss (DIR_W=0.10) | 165C/0P | 38.2% | 165 | 26% | **best economics** (PF 0.825, DD 25.7%, -$1,660) but 100% calls; margin loss satisfied per-bar but global call offset persists |
 | **125** | **separate heads + per-bar mean centering + unified KL** | **163C/21P** | **38.0%** | 184 | **29%** | **first puts from separate-head family!** PF 0.816, DD 29.3%, -$1,175, sortino -1.74; 11.4% minority share |
 | 126 | separate heads + z-score normalization | crash | — | — | — | z-score causes nan from near-zero std at initialization; reverted to exp_125 |
+| 127 | centering + cross-side margin (DIR_W=0.10) | 91C/94P | 31.4% | 185 | 103% | **near-perfect direction balance** but economics collapsed; margin overcorrects |
+| 128 | centering + margin (DIR_W=0.03) | 123C/78P | 35.3% | 201 | 48% | more direction = worse DD; direction-economics tradeoff is monotonic |
+| 129 | centering + margin (DIR_W=0.01) | 181C/24P | 33.2% | 205 | 55% | even minimal margin degrades economics vs exp_125 |
+| 130 | NOISE_MARGIN=0.03, no margin | 136C/55P | 28.8% | 191 | 90% | higher noise filter removed useful bars; much worse than exp_125 |
+| 131 | SOFT_TEMP=0.07, no margin | 167C/40P | 32.4% | 207 | 60% | lower temp degrades economics with separate heads |
+| 132 | SEL_W=0.5, no margin | 90C/92P | 30.2% | 182 | 81% | near-perfect balance but worst PF (0.644); gate emphasis hurts economics |
+
+## Session Limit: 6 No-Improve Streak (2026-04-12)
+
+Experiments exp_127 through exp_132 all scored -0.200 with worse economics than exp_125. The program's "6 no-improve streak" limit has fired.
+
+### Key Finding: Direction Balance vs Economics Is A Monotonic Tradeoff
+
+The separate call/put heads + mean centering architecture discovered in exp_125 is the first approach to produce puts in an official 5-fold run (164C/16P). However, every attempt to improve direction balance (margin loss, lower SEL_W, different SOFT_TEMP, higher NOISE_MARGIN) degrades economics proportionally. The model's put selections are systematically worse than its call selections — forcing more puts through any mechanism just adds losing trades.
+
+| Direction Method | Minority% | PF | DD |
+|---|---|---|---|
+| No margin (exp_125) | 11.4% | 0.816 | 29.3% |
+| DIR_W=0.01 | 11.7% | 0.711 | 54.8% |
+| DIR_W=0.03 | 38.8% | 0.852 | 48.0% |
+| DIR_W=0.10 | 49.2% | 0.707 | 103.1% |
+| SEL_W=0.5 | 49.5% | 0.644 | 80.9% |
+
+**Implication**: The direction problem can't be solved by forcing balance through loss functions. The model genuinely doesn't know how to pick winning put contracts. The next session should investigate WHY put selections are losers — possibly through trace analysis of the exp_125 artifact, comparing call vs put trade P&L distributions.
 
 ## Current Live Baseline
 
-- Working code reset to the `exp_119` family
-- Balanced gate BCE plus soft KL selection only
-- `SOFT_TEMP=0.10`
+- Working code: **exp_125** (separate call/put score heads + per-bar mean centering)
+- Unified KL over all contracts at `SOFT_TEMP=0.10`
 - `NOISE_MARGIN=0.01`
 - Morning-only policy window in `v2/core/policy.py` (`bar 60` through `120`)
-- No direct PnL regression
-- No auxiliary side head
-- No gate reweighting
-- No pairwise ranking loss active
-- Official scored baseline artifact remains `exp_106`
-- Direction mix is now a diagnostic output, not a hard score gate
+- No margin loss, no direction head, no pairwise ranking
+- Official scored baseline: **exp_125** (score=-0.200, PF 0.873, DD 28.9%, 164C/16P)
+- Direction mix is diagnostic, not a hard score gate
 
 ## Abandoned Or Parked Approaches
 

@@ -2,6 +2,45 @@
 
 Read this file, then [founder_intent.md](docs/founder_intent.md), then [program.md](program.md), then [current_state.md](docs/current_state.md).
 
+## What Changed (2026-04-12)
+
+Separate call/put score heads with per-bar mean centering broke the all-call collapse.
+
+### Phase 5: Side-Specific Score Heads (exp_123–132)
+
+**Motivation**: The single `score_head` ranks calls and puts on the same axis. Since contract features have zero predictive power for oracle selection, the model takes a global side-bias shortcut. The v1 archive showed separate call/put heads solved this.
+
+**exp_123 — Side-split KL only**
+- Split `score_head` into `call_score_head` and `put_score_head`, KL computed separately per side
+- Result: 36C/0P, dir_acc stuck at 0.489 — separate KL removes ALL cross-side gradient
+
+**exp_124 — Separate heads + cross-side margin loss (DIR_W=0.10)**
+- Added hinge margin loss to push oracle side's best score higher
+- Result: **165C/0P but best single-fold economics ever** (PF 0.825, DD 25.7%, -$1,660)
+- The margin works per-bar but the global call_score_head offset dominates at inference
+
+**exp_125 — Separate heads + per-bar mean centering + unified KL** ← BEST
+- Center each side's scores to zero mean per bar before merging
+- No margin loss; unified KL over all contracts provides cross-side comparison
+- Screening: **163C/21P** (first puts!), PF 0.816, DD 29.3%, sortino -1.74
+- **Official 5-fold: score=-0.200, 164C/16P, PF 0.873, DD 28.9%**
+- First official run with puts in the separate-head family
+
+**exp_126 — Z-score normalization**: CRASH, nan from near-zero std
+
+**exp_127–129 — Margin loss sweep (DIR_W=0.01/0.03/0.10)**
+- All improved direction balance but degraded economics monotonically
+- 91C/94P at DIR_W=0.10 but DD 103%; 123C/78P at DIR_W=0.03 but DD 48%
+- The put selections introduced by margin loss are systematically losers
+
+**exp_130 — NOISE_MARGIN=0.03**: 136C/55P, DD 89.7% — higher filter removed useful bars
+
+**exp_131 — SOFT_TEMP=0.07**: 167C/40P, DD 60.2% — lower temp degrades economics
+
+**exp_132 — SEL_W=0.5**: 90C/92P, DD 80.9% — gate emphasis also forces bad puts
+
+**Key finding**: Direction balance vs economics is a monotonic tradeoff. Every mechanism that forces more puts degrades PF/DD proportionally. The model genuinely doesn't know how to pick winning put contracts.
+
 ## What Changed (2026-04-11)
 
 Major architecture exploration and a trade-analysis-driven breakthrough.
@@ -147,13 +186,13 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Live Code
 
-**`v2/train.py`** (restored `exp_119` working base):
-- Model: same architecture as original baseline (encoder + contract_proj + no_trade_head + score_head)
+**`v2/train.py`** (exp_125 architecture):
+- Model: encoder + contract_proj + no_trade_head + **call_score_head + put_score_head** (separate heads)
+- Forward: per-bar mean centering of each side's scores before merging via `torch.where`
 - Gate loss: balanced BCE (subsample majority class to match minority)
-- Selection loss: standard KL over all valid contracts at `SOFT_TEMP=0.10`
+- Selection loss: unified KL over all valid contracts at `SOFT_TEMP=0.10`
 - Noise filter: skip bars where top label margin `< 0.01`
-- No direction head, no direction conditioning
-- No pairwise ranking loss active
+- No margin loss, no direction head, no pairwise ranking
 
 **`v2/core/policy.py`** (kept clean morning window):
 - `no_trade_before_bar = 60` (was 30)
@@ -170,31 +209,30 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Research Position
 
-- Official scored runs in `v2/results.tsv`: exp_074–078 (all failed), exp_099 (`-0.260`), exp_104 (`-0.240`), exp_106 (`-0.260`)
-- `exp_107` through `exp_119` screened and reverted or parked; `exp_119` is the strongest surviving family
-- `exp_120` exists as a code commit (`NOISE_MARGIN=0.03`) but has no authoritative local result and does not count as live evidence
-- `exp_121` rejected the pairwise ranking branch after a clean-policy wipeout (`17C / 94P`, `100.2%` drawdown)
-- `v2/models/model_candidate.pt` is the `exp_106` morning-window official artifact
-- The revised side-collapse protocol is active (`program.md`, `decision_log.md`, `current_state.md`)
-- **Current live code: restored `exp_119`**
-- Next experiment ID: `exp_122`
+- Official scored runs in `v2/results.tsv`: exp_074–078, exp_099, exp_104, exp_106, exp_122, **exp_125**
+- `exp_125` is the new strongest result: score=-0.200, PF 0.873, DD 28.9%, 164C/16P
+- `exp_123`–`exp_132` screened and analyzed; margin loss, temp, noise, and gate-weight directions exhausted
+- `v2/models/model_candidate.pt` is the `exp_125` official artifact
+- `v2/artifacts/exp_125/` is the current official artifact bundle
+- **Current live code: exp_125 (separate heads + mean centering)**
+- Next experiment ID: `exp_133`
 
-## Key Finding: Side Collapse Survives Loss-Family Changes
+## Key Finding: Side Collapse Partially Solved, Put Quality Is The New Bottleneck
 
-Two important facts now coexist:
-
-1. `SOFT_TEMP=0.10` plus noise filtering (`exp_119`) is the best side-aware economics the project has produced so far: `119C / 34P`, PF `0.813`, WR `37.3%`, DD `55.2%`.
-2. Replacing KL with pairwise ranking (`exp_121`) did **not** solve the collapse. It produced `17C / 94P` and a total wipe, so the problem is not “KL alone creates put bias.”
-
-The side-bias audit is now the authority for this question. It shows that the executable labels and KL target mass are roughly side-neutral to slightly call-favored, while the model still collapses to one side. The failure mode is unstable shortcut learning, not a simple raw-label majority.
+1. **Separate call/put heads + per-bar mean centering broke the all-call collapse**: exp_125 produces 164C/16P in a 5-fold official run, the first puts ever in an official result.
+2. **Direction balance vs economics is monotonic**: every mechanism that forces more puts (margin loss, SEL_W reduction, SOFT_TEMP change) degrades PF/DD proportionally. The model's put selections are systematically worse than its call selections.
+3. **The side collapse is no longer the blocking issue**: the new bottleneck is put contract quality. The model can be forced to pick puts, but they lose money.
 
 ## Remaining Gap to Profitability
 
-1. **The best economics still fail the drawdown gate** — `exp_119` improved DD to `55.2%`, but that is still far from the `20%` limit.
-2. **Side collapse remains unresolved** — calls collapse under some KL settings, puts collapse under ranking, and neither behavior is economically acceptable.
-3. **The repo had drifted out of sync** — code history advanced to `exp_121` while the notebook/handoff still described earlier states. That mixed state is now explicitly resolved.
+1. **DD 28.9% vs 20% hard gate** — the best official result (exp_125) is 8.9 percentage points from passing. This is the closest the project has been.
+2. **Put selection quality** — the model picks winning calls (WR ~38%) but losing puts. Trace analysis of the exp_125 artifact should reveal whether puts lose from bad strike selection, bad timing, or the put market being inherently harder.
+3. **Baselines not beaten** — no configuration has beaten all four baselines yet.
 
-The next hypothesis must start from the restored `exp_119` base and target conditional side calibration directly, not broad architecture churn.
+The next session should:
+1. Run trace analysis on exp_125's model_candidate to compare call vs put P&L distributions
+2. Investigate whether the put side needs different features, different scoring, or simply has less signal
+3. Consider whether the 20% DD gate can be closed through gate selectivity improvements rather than direction balance
 
 ## Infrastructure Fixes Made This Session
 
@@ -229,9 +267,10 @@ The next hypothesis must start from the restored `exp_119` base and target condi
 
 ## Hypothesis Queue
 
-1. `exp_122`: run the official 5-fold rebaseline of the restored `exp_119` family under the side-diagnostic scorer
-2. Use the side-bias audit plus promote traces from that run to choose the next conditional side-calibration hypothesis
-3. Keep the separate audit track alive, but do not rebuild or relabel the dataset unless the explicit migration trigger fires
+1. Run trace analysis on exp_125 artifact: compare call vs put trade P&L, identify WHY puts lose
+2. Investigate gate selectivity improvements to reduce trades without architecture change
+3. Consider whether the remaining DD gap (28.9% → 20%) is more approachable via policy tuning (stop/target) than training-side changes
+4. Keep the separate audit track alive; do not rebuild dataset unless trigger fires
 
 ## Abandoned Approaches
 
@@ -248,3 +287,9 @@ All previous items plus:
 - **Hierarchical side-aware KL target (exp_114)**: restructured selection target with P(side)*P(contract|side); still 0% puts
 - **SOFT_TEMP=0.15 (exp_116)**: back to 0% puts; the direction awareness cliff is between 0.10 and 0.15
 - **Pairwise ranking loss (exp_121)**: turned the side collapse into an 85%-put wipeout; not a solution
+- **Side-split KL without centering (exp_123)**: removes all cross-side gradient, model defaults to initial bias
+- **Cross-side margin loss at any weight (exp_124/127–129)**: improves direction balance but degrades economics monotonically; put selections are systematically losers
+- **Z-score normalization (exp_126)**: nan from near-zero std at initialization
+- **NOISE_MARGIN=0.03 with separate heads (exp_130)**: removes useful training bars
+- **SOFT_TEMP=0.07 with separate heads (exp_131)**: degrades economics
+- **SEL_W=0.5 with separate heads (exp_132)**: near-perfect balance but worst PF; gate emphasis can't overcome bad put quality
