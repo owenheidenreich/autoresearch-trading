@@ -281,7 +281,12 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
 
                 s_target = F.softmax(s_pnl_masked / SOFT_TEMP, dim=-1)
                 s_log_probs = F.log_softmax(s_logits, dim=-1)
-                s_kl = F.kl_div(s_log_probs, s_target, reduction="batchmean")
+                # Use reduction='none' and manually mask to avoid numerical issues
+                kl_elements = F.kl_div(s_log_probs, s_target, reduction="none")
+                kl_elements = kl_elements * s_vmask.float()
+                kl_elements = torch.nan_to_num(kl_elements, nan=0.0, posinf=0.0, neginf=0.0)
+                # batchmean: sum all, divide by number of bars
+                s_kl = kl_elements.sum() / kl_elements.size(0)
                 side_kls.append(s_kl)
 
             if side_kls:
