@@ -754,3 +754,40 @@ Only fold 0 achieved direction balance (66C/67P) — and it was the only fold wi
   5. Better within-side ranking makes the put head MORE confident at picking wrong, which is WORSE than an underconfident put head that rarely fires
   6. This confirms the exp_127-132 finding on a completely different loss surface: the model genuinely cannot pick winning puts with the current feature set
 - Reverted to exp_133 baseline (SIDE_SEL_W=0.0)
+
+### `exp_135` — Exact-Oracle Cross-Entropy (EXACT_W=0.5)
+
+- Type: screening run
+- Code change: added cross-entropy auxiliary loss using the oracle contract index as target class. Intended to improve within-neighborhood contract discrimination.
+- Result:
+  - score: `-0.200`
+  - trades: `149` (`122C / 27P`, minority `18.1%`)
+  - win rate: `34.2%`
+  - profit factor: `0.726`
+  - drawdown: `58.5%`
+  - `dir_acc`: `0.492` (random)
+- Decision: **kill** — exact contract selection from ~285 classes is near-impossible when contract features have zero predictive power. CE loss magnitude (~3.3) dominated the total loss and pulled capacity toward an unlearnable task.
+- Gate analysis finding: score_delta carries zero information about trade outcome. 67.5% of losses occur on bars where oracle was profitable — the model picks the wrong contract, not the wrong time.
+
+### `exp_136` — Multiplicative Context-Contract Interaction
+
+- Type: screening run
+- Code change: added element-wise product `context * contract_emb` to score head input. Score heads take `d*3` instead of `d*2`. No loss changes.
+- Result:
+  - score: `-0.200`
+  - trades: `165` (`97C / 68P`, minority `41.2%`)
+  - win rate: `30.9%`
+  - profit factor: `0.603`
+  - drawdown: `90.0%`
+  - `dir_acc`: `0.490` (random)
+- Decision: **kill** — same pattern as per-side KL. More model expressiveness gives the put head more capacity to compete, but it competes with random direction accuracy, producing more losing puts.
+
+### Cross-Experiment Finding: dir_acc Is Random Everywhere
+
+Across exp_134/134b/135/136, `dir_acc` is stuck at `0.47-0.51` (random). The model CANNOT learn direction from the ranking gradient. The established fact says 61% direction accuracy is achievable (logistic regression on 47 features), but the neural network trained with KL ranking loss doesn't learn direction.
+
+**Why**: The KL target is peaked on the oracle contract (one specific call or put). The gradient pushes that contract up and all ~284 others down. The model can't distinguish "this contract is bad because wrong side" from "this contract is bad because wrong strike." The direction signal is buried and the model learns a strike-proximity heuristic instead.
+
+**Implication**: exp_133 works because the natural call bias in the centering constrains puts to ~9%. Every mechanism that disrupts this bias (per-side KL, wider architecture, interaction features) lets more random puts through, degrading economics. Training-side improvements to direction accuracy likely require a different loss surface (e.g., explicit direction component) or different features — both of which have been tried and failed within the current paradigm (exp_100-103, exp_107-113).
+
+The remaining lever for improving PF is policy-level: stop-loss tuning, trailing exit parameters, or bar-level selectivity within the existing model.
