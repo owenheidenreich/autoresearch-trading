@@ -32,6 +32,30 @@
 
 **Full layout:** `v2/LAYOUT.md`
 
+## Experiment Pipeline (read this before running anything)
+
+An **experiment** (exp_NNN) means: code change → commit → train from scratch on GPU → evaluate. A local replay is NOT an experiment.
+
+**The pipeline:**
+1. **Edit** `v2/train.py` and/or `v2/core/policy.py` (the mutable surface)
+2. **Compile check**: `python -m py_compile v2/train.py`
+3. **Commit** the code change with the experiment ID in the message
+4. **Pre-GPU gate**: `python3 -m v2.ops.pre_run_gate --data v2/data.pt`
+5. **Boot GPU**: `./v2/ops/deploy.sh boot` then `./v2/ops/deploy.sh start`
+6. **Screen** (1-fold): `./v2/ops/deploy.sh run_screen exp_NNN`
+7. **If screening passes**, run official (5-fold): `./v2/ops/deploy.sh run_one exp_NNN`
+8. **Post-run checklist** (see COMMANDS.md "Post-Run Checklists"): validate, trace, keep/revert, plot, analyze, document, commit
+
+**What local replay is for:**
+- Validating a promoted model: `python3 -m v2.replay --model v2/models/model.pt --mask promote`
+- Generating traces: add `--traces` flag
+- Comparing baselines: baselines are computed automatically during replay
+- Policy sweeps (testing a policy change without retraining): useful for quick directional signal, but NOT an official result
+
+**Critical: policy changes still require a full GPU run.** Changing `policy.py` affects how trades are executed during evaluation, but the model was trained under the OLD policy. For a fair evaluation, you must retrain from scratch so the training labels and evaluation policy are consistent. A local replay with changed policy is a useful preview but cannot be promoted.
+
+**Label consistency warning:** Oracle labels in `v2/data_sidecars/` are computed by `build_v2_dataset.py` using `simulate_trade()` with whatever policy was active at build time. If you change trailing tiers, stop percentages, or trade windows in `policy.py` or `simulator.py`, the training labels no longer match the evaluation policy. This is acceptable for small policy tweaks (the model learns general contract quality, not policy-specific P&L), but large policy changes may require a sidecar rebuild.
+
 ## Hard Rules
 
 - **Default mutable surface:** `v2/train.py` and `v2/core/policy.py`.
