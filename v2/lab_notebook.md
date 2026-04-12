@@ -486,4 +486,31 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
   - baseline comparison: beat `ATM` and `ATM-trailing`
   - training dynamics: `dir_acc` showed movement (`0.45-0.51` range vs stuck at `0.49` in exp_111-114); `sel_loss` higher (~1.38-1.60) due to peaked targets
 - Decision: **family alive** — first experiment to break call collapse via selection temperature tuning with balanced gate
-- Takeaway: the key to side awareness is NOT auxiliary losses or target restructuring — it's making the KL target peaked enough that the model gets meaningful gradient to differentiate contracts. `SOFT_TEMP=0.10` with balanced gate produces 26% puts, passing the 15% direction gate. The remaining problem is excessive drawdown (61.7%). This may improve at 5-fold or with a slightly different temperature
+- Takeaway: the key to side awareness is NOT auxiliary losses or target restructuring — it's making the KL target peaked enough that the model gets meaningful gradient to differentiate contracts. `SOFT_TEMP=0.10` with balanced gate produces 26% puts, passing the 15% direction gate. The remaining problem is excessive drawdown (61.7%).
+
+### `exp_116` — SOFT_TEMP=0.15 Midpoint Test
+
+- Type: screening run
+- Code change: `SOFT_TEMP` from `0.10` to `0.15`
+- Purpose: find midpoint between direction-aware 0.10 and economics-good 0.20
+- Result:
+  - score: `-0.300`
+  - gate failure: `direction_collapse (balance=0.00 < 0.15)`
+  - trades: `69`
+  - direction balance: `69C / 0P` (back to full call collapse)
+  - win rate: `36.2%`
+  - profit factor: `0.641`
+  - drawdown: **`9.3%`** (passes the 20% DD gate!)
+  - net PnL: `-$599`
+  - baseline comparison: failed all four baselines
+- Decision: revert; confirms the temperature cliff
+- Takeaway: direction awareness has a sharp threshold between `SOFT_TEMP=0.10` (26% puts) and `SOFT_TEMP=0.15` (0% puts). At 0.15, the target is just soft enough that the model can satisfy the KL loss without side awareness. The amazing DD (9.3%) at 0.15 shows the model can trade very selectively. The research challenge is now: how to keep the direction awareness of 0.10 while improving the economics.
+
+### Session Temperature Sensitivity Map
+
+| SOFT_TEMP | Direction | DD | Puts % | Key |
+|-----------|-----------|------|--------|-----|
+| 0.05 | 458C/22P | — | 5% | collapsed (exp_096) |
+| 0.10 | **120C/42P** | 61.7% | **26%** | **breakthrough** (exp_115) |
+| 0.15 | 69C/0P | 9.3% | 0% | direction cliff (exp_116) |
+| 0.20 | 191C/0P | varies | 0% | fold-dependent (exp_106) |

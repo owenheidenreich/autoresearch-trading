@@ -2,7 +2,7 @@
 
 Read this file, then [founder_intent.md](docs/founder_intent.md), then [program.md](program.md), then [current_state.md](docs/current_state.md).
 
-## What Changed (2026-04-11 overnight session)
+## What Changed (2026-04-11)
 
 Major architecture exploration and a trade-analysis-driven breakthrough.
 
@@ -83,6 +83,55 @@ Other findings:
 
 Still fails the 20% DD hard gate (38.7% > 20%), but the account survived with $7,101 remaining instead of zero.
 
+### Phase 4: Official Baseline Lock + Kronos-Inspired Block (exp_106–109)
+
+**exp_106 — Morning-window baseline lock (official 5-fold run)**
+- Promoted the exp_105 morning-only policy into the official evidence set with no model change
+- 5-fold aggregate score: `-0.260`, WR `38.7%`, PF `0.890`, +day rate `50.0%`, trades `784`
+- Mandatory promote trace exposed the remaining failure mode clearly:
+  - gate accuracy `21.2%`
+  - selection accuracy `6.8%`
+  - average model P&L `-0.0179` vs oracle `0.3279`
+  - delta gap `-0.3458`
+  - promote replay direction collapse: `191C / 0P`
+- Key conclusion: the morning window improved economics materially, but the underlying scorer still collapses to calls on the promote trace
+
+**Revised research rules now active**
+- The default live loop is still `v2/train.py` plus `v2/core/policy.py`
+- The approved expanded surface for the current block is `v2/train.py`, `v2/replay.py`, `v2/core/data_integrity.py`, and `v2/ops/pre_run_gate.py`
+- The operative unit is one hypothesis, not one file change
+- Promotion remains score- and baseline-gated; traces can justify continuing a hypothesis family but not promoting it
+- A separate raw/sidecar anomaly audit track is now part of the live operating system, with an explicit dataset-migration trigger
+
+**exp_107 — Policy-window-aligned supervision**
+- Applied supervision only on rows inside the live morning policy window
+- Result: score `-0.200`, trades `160`, direction `25C / 135P`, WR `30.6%`, DD `68.9%`
+- Outcome: reverted; this fixed the all-call collapse but made the economics materially worse
+
+**exp_108 — Learned temporal embeddings**
+- Threaded explicit `bar_of_day` / weekday IDs through training and replay, then added learned temporal embeddings
+- Result: score `-0.300`, trades `162`, direction `162C / 0P`, WR `35.2%`, PF `0.771`
+- Outcome: reverted; explicit temporal IDs did not help as a standalone hypothesis and reintroduced full call-side collapse
+
+**exp_109 — Train-only flow-feature dropout**
+- Zeroed the context flow slice `X[..., 39:47]` for 5% of training samples
+- Result: score `-0.300`, trades `143`, direction `129C / 14P`, WR `30.8%`, PF `0.564`
+- Outcome: reverted; this was the only Kronos-inspired change that nudged direction balance toward sanity, but it still failed the 15% minority-direction hard gate and worsened economics
+
+**exp_110 — Cross-side calibration loss**
+- Added a small training-only margin term so the oracle side's best score had to beat the opposite side on traded rows
+- Result: score `-0.200`, trades `162`, direction `35C / 127P`, WR `34.0%`, PF `0.619`, DD `82.5%`
+- Outcome: reverted; this broke the full call-collapse pattern but overcorrected into puts and still failed the economics and baseline gates
+
+**Separate audit track**
+- Raw-input audit flagged 4 anomaly dates:
+  - `2024-05-30` in SPX for a 71-bar stagnant close run
+  - `2024-08-05`, `2025-04-07`, and `2025-04-09` in VIX for structural breaks
+- Sidecar audit flagged 59 dates, including 9 recurring short-session schema-break days:
+  - `2022-11-25`, `2023-07-03`, `2023-11-24`, `2024-07-03`, `2024-11-29`, `2024-12-24`, `2025-07-03`, `2025-11-28`, `2025-12-24`
+- Trace overlap with the worst promote-trace days was `0` for both the raw audit and the sidecar audit
+- Key conclusion: the audit found real anomalies, but it did not fire the dataset-migration trigger; `v4_exact_chain` remains the live authority
+
 ## Canonical State
 
 ```text
@@ -98,30 +147,54 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Live Code
 
-**`v2/train.py`** (exp_104 config):
+**`v2/train.py`** (current `exp_106` baseline code):
 - Model: same architecture as original baseline (encoder + contract_proj + no_trade_head + score_head)
 - Gate loss: balanced BCE (subsample majority class to match minority)
 - Selection loss: standard KL over all valid contracts at SOFT_TEMP=0.20
+- No temporal embeddings or flow dropout active
 - No direction head, no direction conditioning
 
-**`v2/core/policy.py`** (exp_105 change):
+**`v2/core/policy.py`** (kept `exp_105/106` morning window):
 - `no_trade_before_bar = 60` (was 30)
 - `no_trade_after_bar = 120` (was 270)
 - All other policy params unchanged (stop=30%, target=50%, hold=120, trailing exit)
 
+**Separate audit tooling**
+- `v2/core/data_integrity.py` now supports:
+  - raw minute-bar anomaly audit
+  - full sidecar date audit
+  - optional replay-trace overlap reporting
+- This is audit-only infrastructure. It does not mutate `v2/data.pt`.
+
 ## Current Research Position
 
-- Official scored runs in `v2/results.tsv`: exp_074–078 (all failed), exp_099 (-0.260), exp_104 (-0.240)
-- exp_105 is a screening result only (no official 5-fold run yet)
-- `v2/models/model_candidate.pt` is the exp_104 model (balanced gate, full-day window)
-- Next experiment ID: `exp_106`
+- Official scored runs in `v2/results.tsv`: exp_074–078 (all failed), exp_099 (`-0.260`), exp_104 (`-0.240`), exp_106 (`-0.260`)
+- `exp_107` through `exp_116` screened and all reverted
+- `v2/models/model_candidate.pt` is the `exp_106` morning-window official artifact
+- The revised Kronos-era protocol is active (`program.md`, `decision_log.md`, `current_state.md`)
+- **Current live code: `SOFT_TEMP=0.10`** (exp_115 config, the direction balance breakthrough)
+- Next experiment ID: `exp_117`
+
+## Key Finding: Temperature Controls Direction Balance
+
+The autonomous session (exp_111–116) discovered that `SOFT_TEMP` has a sharp threshold for direction awareness:
+
+| SOFT_TEMP | Direction | DD | Puts % |
+|-----------|-----------|------|--------|
+| 0.05 | 458C/22P | — | 5% (collapsed) |
+| **0.10** | **120C/42P** | **61.7%** | **26%** |
+| 0.15 | 69C/0P | 9.3% | 0% |
+| 0.20 | 191C/0P | varies | 0% |
+
+At `SOFT_TEMP=0.10`, the KL target is peaked enough to teach the model side awareness. At 0.15+, the target is too uniform and the model defaults to calls. The cliff between 0.10 and 0.15 is sharp.
 
 ## Remaining Gap to Profitability
 
-The model needs to either:
-1. **Improve WR from 36.9% to ~42%** — the breakeven WR for 30% stop / 50% target is `0.30 / (0.30 + 0.50) = 37.5%`. Current WR is 36.9%, just below breakeven. A 1-2pp improvement could flip the sign.
-2. **Reduce stop loss size** — wider stops give trades more room but increase per-loss magnitude. The current 30% stop on cheap OTM contracts is ~$0.75-1.50 per contract.
-3. **Shift to higher-delta contracts** — calls had 36% WR vs puts at 28%. The model picks too many cheap OTM puts. Higher-delta (closer to ATM) contracts have more predictable behavior.
+1. **Direction collapse is solved at SOFT_TEMP=0.10** — `exp_115` traded `120C / 42P` (26% puts), passing the 15% direction gate.
+2. **Excessive drawdown is the new gate failure** — DD `61.7%` at SOFT_TEMP=0.10 (vs 20% limit).
+3. **Gate quality and selection quality remain poor** — not yet measured at SOFT_TEMP=0.10.
+
+The next hypothesis must reduce DD while preserving the direction balance from SOFT_TEMP=0.10.
 
 ## Infrastructure Fixes Made This Session
 
@@ -135,27 +208,42 @@ The model needs to either:
 - `v2/data.pt` and `v2/data_sidecars/` as the canonical exact-chain dataset
 - `v2/results.tsv` as official exact-chain scored runs only
 - `v2/lab_notebook.md` as the live screening log
-- `v2/output/trades.html` and `equity.html` as the exp_104 trade visualization (val mask)
+- `v2/output/trades.html` and `equity.html` as the earlier exp_104 trade visualization (useful for the morning-window discovery)
 - `v2/output/trades.csv` as the 259-trade analysis dataset
-- `v2/models/model_candidate.pt` as the exp_104 official model (fingerprint `46f2d184e186496f`)
+- `v2/models/model_candidate.pt` as the `exp_106` official model (fingerprint `46f2d184e186496f`)
+- `v2/artifacts/exp_106/` as the current official artifact bundle
+- `v2/core/data_integrity.py` anomaly reports as the separate audit track
 
 ## What Not To Trust
 
 - Any pre-exact-chain score as a current baseline
 - `exp_088` or `exp_089` as scored evidence
 - The hierarchical direction head approach (exp_100–103) — direction doesn't decompose
+- Policy-window-only supervision as a standalone fix (exp_107)
+- Explicit temporal embeddings as a standalone fix (exp_108)
+- Flow-feature dropout at 5% as a standalone fix (exp_109)
 - Any model checkpoint not from this session (Apr 11) — older ones are from different code
 
 ## Hypothesis Queue
 
-1. `exp_106`: Run exp_105 (morning window) as official 5-fold `run_one` to get a proper model.pt and visualize its morning-only trades
-2. `exp_107`: Widen stops from 30% to 40% — the exp_104 trade analysis showed 13% of losses had MFE >= 30% (reached profit zone then reversed). Wider stops may convert these to winners.
-3. `exp_108`: Restrict to higher-delta contracts (entry price > $3) at replay time — calls WR 36% vs puts 28%, and cheap OTM (<$1) trades have 39% WR while $1-3 trades have only 24% WR.
+1. `exp_117`: run `SOFT_TEMP=0.10` as an official 5-fold to get aggregate direction balance and DD numbers across all folds
+2. If direction balance holds across folds but DD is still too high, explore DD reduction:
+   - Stronger gate (higher `GATE_W` or gate threshold tuning) to reduce trade count
+   - Noise bar filtering combined with SOFT_TEMP=0.10 (exp_097 failed alone, but temp=0.10 changes the dynamics)
+   - Policy-side adjustments (stop loss, hold duration) are now less risky since direction is fixed
+3. Keep the separate audit track alive, but do not rebuild or relabel the dataset unless the explicit migration trigger fires
 
 ## Abandoned Approaches
 
 All previous items plus:
 - Separate direction head (exp_100–102): never learns, 52% accuracy across all configs
 - Direction-conditioned KL without inference masking (exp_103): creates uncalibrated cross-direction scores
-- SOFT_TEMP below 0.20 with balanced gate (exp_096): peaked temp causes direction collapse
+- SOFT_TEMP=0.05 with balanced gate (exp_096): too peaked, causes call collapse at the other extreme
 - Noise bar filtering (exp_097): reduces trades without improving quality
+- Policy-window-only supervision as a standalone fix (exp_107): changes direction mix but worsens economics
+- Explicit temporal embeddings as a standalone fix (exp_108): full call collapse
+- Flow-feature dropout at 5% as a standalone fix (exp_109): slight balance improvement, still non-promotable
+- Cross-side calibration with the initial margin weight (exp_110): fixes the all-call collapse but overshoots into put bias
+- **Auxiliary side-calibration losses (exp_111–113)**: max-BCE and logsumexp-BCE at weights 0.10/0.30/0.50 all failed; `dir_acc` stuck at random regardless of formulation or weight
+- **Hierarchical side-aware KL target (exp_114)**: restructured selection target with P(side)*P(contract|side); still 0% puts
+- **SOFT_TEMP=0.15 (exp_116)**: back to 0% puts; the direction awareness cliff is between 0.10 and 0.15
