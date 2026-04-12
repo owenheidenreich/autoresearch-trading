@@ -55,10 +55,10 @@ The single source of truth for the gate threshold is:
 The model is being asked to learn:
 
 - whether to trade at all (gate)
-- which specific contract to select (hard selection from ~38 candidates)
-- predicted P&L per contract (regression)
+- which specific contract to select from the executable snapshot
+- a soft ranking target derived from realized forward P&L
 
-The recovery plan changes this to: side first, then soft within-side ranking, then gate calibration.
+The live reset baseline does not perform direct score-to-P&L regression. It uses `row_labels` only to build the KL target distribution over executable contracts.
 
 ## What Is No Longer True
 

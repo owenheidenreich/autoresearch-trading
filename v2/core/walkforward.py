@@ -230,7 +230,7 @@ def run_walkforward(
         wf_key = f"_wf_test_{fold.fold_idx}"
         data[wf_key] = test_mask
 
-        metrics, trades = replay_validation(
+        metrics, trades, _ = replay_validation(
             model, data, mask_key=wf_key, policy=policy,
         )
         print_metrics(f"Fold {fold.fold_idx}", metrics)

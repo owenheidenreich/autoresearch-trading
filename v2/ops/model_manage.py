@@ -1,7 +1,8 @@
 """Model management for ART² experiment loop.
 
-deploy.sh downloads to model_candidate.pt (never overwrites model.pt directly).
-This script promotes or discards the candidate based on keep/revert decision.
+deploy.sh downloads to v2/models/model_candidate.pt (never overwrites the
+promoted checkpoint directly). This script promotes or discards the candidate
+based on keep/revert decision.
 
 Usage:
     python v2/ops/model_manage.py keep     # candidate -> model.pt + model_best.pt
@@ -16,9 +17,10 @@ from pathlib import Path
 
 from v2.ops.artifact import ARTIFACTS_DIR, _file_fingerprint, mark_promoted, mark_reverted
 
-MODEL_PT = Path("v2/model.pt")
-MODEL_BEST = Path("v2/model_best.pt")
-MODEL_CANDIDATE = Path("v2/model_candidate.pt")
+MODEL_DIR = Path("v2/models")
+MODEL_PT = MODEL_DIR / "model.pt"
+MODEL_BEST = MODEL_DIR / "model_best.pt"
+MODEL_CANDIDATE = MODEL_DIR / "model_candidate.pt"
 
 
 def _find_candidate_artifact_dir() -> Path | None:
@@ -47,6 +49,7 @@ def keep():
     if not MODEL_CANDIDATE.exists():
         print(f"ERROR: {MODEL_CANDIDATE} not found (did run_one finish?)")
         sys.exit(1)
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
     artifact_dir = _find_candidate_artifact_dir()
     shutil.copy2(MODEL_CANDIDATE, MODEL_BEST)
     shutil.copy2(MODEL_CANDIDATE, MODEL_PT)

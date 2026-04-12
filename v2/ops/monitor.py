@@ -29,11 +29,18 @@ import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
+import re
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DEPLOY_STATE = PROJECT_ROOT / ".deploy-state"
 SSH_PASS = os.environ.get("DEPLOY_SSH_PASS", "autoresearch2026")
 RESULTS_TSV = PROJECT_ROOT / "v2" / "results.tsv"
 LAB_NOTEBOOK = PROJECT_ROOT / "v2" / "lab_notebook.md"
+ARTIFACTS_DIR = PROJECT_ROOT / "v2" / "artifacts"
+CURRENT_STATE_MD = PROJECT_ROOT / "v2" / "docs" / "current_state.md"
+LIVE_EXACT_CHAIN_MIN_EXP = 74
+
+_last_repair_time = 0.0  # throttle auto-repair to once per 60s
 
 # Self-restart on source change
 _SELF_PATH = Path(__file__).resolve()
@@ -70,6 +77,9 @@ _state: dict = {
     "poll_count": 0,
     "ssh_ok": False,
     "lab_notebook": None,
+    "warnings": [],
+    "last_gpu_time": 0,       # epoch when GPU data was last successfully fetched
+    "ssh_fail_count": 0,      # consecutive SSH failures (resets on success)
 }
 
 
@@ -125,7 +135,7 @@ def _ssh_cmd(host: str, port: int, cmd: str, timeout: int = 20) -> str | None:
 # Data fetching
 # ---------------------------------------------------------------------------
 
-def fetch_remote_data(host: str, port: int) -> dict:
+def fetch_remote_data(host: str, port: int, timeout: int = 25) -> dict:
     """Fetch all dashboard data from the Akash GPU in one SSH call."""
     remote_script = (
         # GPU info
@@ -133,16 +143,16 @@ def fetch_remote_data(host: str, port: int) -> dict:
         '--format=csv,noheader,nounits 2>/dev/null; '
         'echo "---SEP---"; '
 
-        # Training process (Claude drives the loop, run_experiment.py is what runs)
-        'PID=$(pgrep -f "[r]un_experiment" | head -1); '
+        # Training process (walk-forward runner on the remote GPU)
+        'PID=$(pgrep -f "[r]un_experiment_wf" | head -1); '
         'if [ -n "$PID" ]; then '
         '  UPTIME=$(ps -o etime= -p $PID 2>/dev/null | tr -d " "); '
         '  echo "running|$PID|$UPTIME"; '
         'else echo "idle||"; fi; '
         'echo "---SEP---"; '
 
-        # Results TSV (remote copy, may lag behind local)
-        'cat /root/v2/results.tsv 2>/dev/null || echo ""; '
+        # List remote artifact directories (lightweight — just names)
+        'ls -1 /root/v2/artifacts/ 2>/dev/null || echo ""; '
         'echo "---SEP---"; '
 
         # Log tail
@@ -153,7 +163,7 @@ def fetch_remote_data(host: str, port: int) -> dict:
         'cat /root/v2/train.py 2>/dev/null || echo ""; '
     )
 
-    raw = _ssh_cmd(host, port, remote_script, timeout=25)
+    raw = _ssh_cmd(host, port, remote_script, timeout=timeout)
     if not raw:
         return {"ssh_ok": False}
 
@@ -176,9 +186,9 @@ def fetch_remote_data(host: str, port: int) -> dict:
     else:
         data["process"] = {"status": "unknown", "pid": "", "uptime": ""}
 
-    # Parse results TSV (now part index 2, no more session state section)
-    tsv_raw = parts[2].strip() if len(parts) > 2 else ""
-    data["experiments"] = _parse_results_tsv(tsv_raw)
+    # Parse remote artifact directory listing
+    dir_raw = parts[2].strip() if len(parts) > 2 else ""
+    data["remote_experiments"] = _parse_remote_dir_listing(dir_raw)
 
     # Log tail
     data["log_tail"] = parts[3].strip() if len(parts) > 3 else None
@@ -208,6 +218,222 @@ def _parse_gpu_csv(text: str) -> dict | None:
         return None
 
 
+def _normalize_experiment_id(raw: str) -> str:
+    raw = raw.strip()
+    match = re.search(r"exp_(\d+)", raw)
+    if match:
+        return f"exp_{int(match.group(1)):03d}"
+    if raw.isdigit():
+        return f"exp_{int(raw):03d}"
+    match = re.search(r"(\d+)", raw)
+    if match:
+        return f"exp_{int(match.group(1)):03d}"
+    return raw
+
+
+def _exp_num(exp_id: str) -> int | None:
+    match = re.search(r"exp_(\d+)", exp_id)
+    return int(match.group(1)) if match else None
+
+
+def _is_live_exact_chain_experiment(exp_id: str) -> bool:
+    exp_num = _exp_num(exp_id)
+    return exp_num is not None and exp_num >= LIVE_EXACT_CHAIN_MIN_EXP
+
+
+def _load_declared_next_experiment() -> str | None:
+    if not CURRENT_STATE_MD.exists():
+        return None
+    try:
+        text = CURRENT_STATE_MD.read_text()
+    except OSError:
+        return None
+    match = re.search(r"- Next experiment: `([^`]+)`", text)
+    return _normalize_experiment_id(match.group(1)) if match else None
+
+
+def _append_state_drift_warning(experiments: list[dict], warnings: list[str]) -> None:
+    declared_next = _load_declared_next_experiment()
+    declared_num = _exp_num(declared_next or "")
+    completed_nums = [
+        _exp_num(record.get("experiment", ""))
+        for record in experiments
+        if record.get("status") in ("keep", "revert", "crash", "screen")
+    ]
+    completed_nums = [num for num in completed_nums if num is not None]
+    if declared_num is None or not completed_nums:
+        return
+    max_completed = max(completed_nums)
+    if declared_num <= max_completed:
+        warnings.append(
+            f"current_state.md says next {declared_next}, but completed tests already reach exp_{max_completed:03d}"
+        )
+
+
+def _parse_float(text: str) -> float | None:
+    text = text.strip()
+    if not text or text in {"—", "-", "?"}:
+        return None
+    text = text.rstrip("%")
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _parse_int(text: str) -> int | None:
+    text = text.strip().replace(",", "")
+    if not text or text in {"—", "-", "?"}:
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
+def _parse_score_from_text(text: str) -> float | None:
+    match = re.search(r"score[^-\d]*`?(-?\d+(?:\.\d+)?)`?", text, flags=re.IGNORECASE)
+    if not match:
+        return None
+    try:
+        return float(match.group(1))
+    except ValueError:
+        return None
+
+
+def _parse_markdown_table_section(text: str, section_prefix: str) -> list[dict[str, str]]:
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if not line.startswith(section_prefix):
+            continue
+
+        table_lines: list[str] = []
+        for candidate in lines[i + 1 :]:
+            if candidate.startswith("|"):
+                table_lines.append(candidate)
+            elif table_lines:
+                break
+        if len(table_lines) < 2:
+            return []
+
+        headers = [cell.strip() for cell in table_lines[0].strip("|").split("|")]
+        rows: list[dict[str, str]] = []
+        for row_line in table_lines[2:]:
+            cells = [cell.strip() for cell in row_line.strip("|").split("|")]
+            if len(cells) != len(headers):
+                continue
+            rows.append(dict(zip(headers, cells)))
+        return rows
+    return []
+
+
+def _parse_lab_screening_history(text: str) -> list[dict]:
+    rows = _parse_markdown_table_section(text, "## Screening History")
+    records: list[dict] = []
+    for row in rows:
+        exp_id = _normalize_experiment_id(row.get("Exp", ""))
+        if not _is_live_exact_chain_experiment(exp_id):
+            continue
+
+        win_rate = _parse_float(row.get("WR", ""))
+        trades = _parse_int(row.get("Trades", ""))
+        dd = _parse_float(row.get("DD", ""))
+        score_num = _parse_score_from_text(row.get("Key Finding", ""))
+        balance = row.get("Direction Balance", "")
+        change = row.get("Change", "")
+        finding = row.get("Key Finding", "")
+        desc_parts = [f"screening: {change}"]
+        if balance:
+            desc_parts.append(f"balance={balance}")
+        if win_rate is not None:
+            desc_parts.append(f"wr={win_rate:.1f}%")
+        if trades is not None:
+            desc_parts.append(f"trades={trades}")
+        if dd is not None:
+            desc_parts.append(f"dd={dd:.1f}%")
+        if finding:
+            desc_parts.append(finding)
+        records.append({
+            "experiment": exp_id,
+            "score": f"{score_num:.6f}" if score_num is not None else "?",
+            "score_num": score_num if score_num is not None else -999.0,
+            "status": "screen",
+            "description": " | ".join(desc_parts),
+            "timestamp": None,
+            "win_rate": win_rate,
+            "metric_trades": trades,
+            "metric_drawdown": dd,
+            "metric_direction_balance": balance,
+            "_from_notebook": True,
+        })
+    return records
+
+
+def _parse_lab_active_experiments(text: str) -> list[dict]:
+    records: list[dict] = []
+    pattern = re.compile(r"### `(?P<exp>exp_\d+)`.*?(?=\n### `exp_\d+`|\n## |\Z)", re.DOTALL)
+    for match in pattern.finditer(text):
+        exp_id = _normalize_experiment_id(match.group("exp"))
+        if not _is_live_exact_chain_experiment(exp_id):
+            continue
+        block = match.group(0)
+        if "Type: screening run" not in block:
+            continue
+
+        score_match = re.search(r"- score:\s*`([^`]+)`", block)
+        win_rate_match = re.search(r"- win rate:\s*`([^`]+)%`", block)
+        trades_match = re.search(r"- trades:\s*`([^`]+)", block)
+        gate_failure_match = re.search(r"- gate failure:\s*`([^`]+)`", block)
+        decision_match = re.search(r"- Decision: (.+)", block)
+        takeaway_match = re.search(r"- Takeaway: (.+)", block)
+
+        score = _parse_float(score_match.group(1)) if score_match else None
+        win_rate = _parse_float(win_rate_match.group(1)) if win_rate_match else None
+        trades = _parse_int(trades_match.group(1).split("`")[0]) if trades_match else None
+        desc_parts = []
+        if gate_failure_match:
+            desc_parts.append(f"gate_failure={gate_failure_match.group(1)}")
+        if takeaway_match:
+            desc_parts.append(takeaway_match.group(1).strip())
+        elif decision_match:
+            desc_parts.append(decision_match.group(1).strip())
+
+        records.append({
+            "experiment": exp_id,
+            "score": f"{score:.6f}" if score is not None else "?",
+            "score_num": score if score is not None else -999.0,
+            "status": "screen",
+            "description": " | ".join(desc_parts) if desc_parts else "screening result",
+            "timestamp": None,
+            "win_rate": win_rate,
+            "metric_trades": trades,
+            "_from_notebook": True,
+        })
+    return records
+
+
+def _merge_records(base: list[dict], updates: list[dict]) -> list[dict]:
+    by_id: dict[str, dict] = {record.get("experiment", ""): dict(record) for record in base}
+    for update in updates:
+        exp_id = update.get("experiment", "")
+        if not exp_id:
+            continue
+        if exp_id not in by_id:
+            by_id[exp_id] = dict(update)
+            continue
+        merged = dict(by_id[exp_id])
+        for key, value in update.items():
+            if key == "experiment":
+                continue
+            if value in (None, "", "?", -999.0):
+                continue
+            merged[key] = value
+        by_id[exp_id] = merged
+    records = list(by_id.values())
+    records.sort(key=lambda r: _exp_sort_key(r.get("experiment", "")))
+    return records
+
+
 def _parse_results_tsv(text: str) -> list[dict]:
     rows = []
     lines = text.strip().split("\n")
@@ -219,33 +445,81 @@ def _parse_results_tsv(text: str) -> list[dict]:
         row = {}
         for i, col in enumerate(header):
             row[col] = parts[i] if i < len(parts) else ""
+        row["experiment"] = _normalize_experiment_id(row.get("experiment", ""))
         # Parse score as float
         try:
             row["score_num"] = float(row.get("score", "-999"))
         except (ValueError, TypeError):
             row["score_num"] = -999.0
-        # Parse win rate from description (e.g. "wr=53.6%")
-        import re
-        wr_match = re.search(r'wr=([\d.]+)%', row.get("description", ""))
-        row["win_rate"] = float(wr_match.group(1)) if wr_match else None
-        rows.append(row)
+        # Generic key=value metric extraction (adapts to any format)
+        desc = row.get("description", "")
+        for m in re.finditer(r'(\w+)=([\d.]+)%?', desc):
+            key, val = m.group(1).lower(), m.group(2)
+            try:
+                row[f"metric_{key}"] = float(val)
+            except ValueError:
+                pass
+        # Backward-compat: win_rate from WR= or wr= metric
+        row["win_rate"] = row.get("metric_wr") or row.get("metric_WR")
+        if _is_live_exact_chain_experiment(row["experiment"]):
+            rows.append(row)
     return rows
+
+
+def _parse_remote_dir_listing(text: str) -> list[dict]:
+    """Parse `ls -1` output of remote artifacts directory.
+
+    Each line is a directory name like 'exp_079'. We create placeholder
+    records so the dashboard knows these experiments exist on the GPU.
+    """
+    records = []
+    if not text.strip():
+        return records
+    for line in text.strip().split("\n"):
+        name = line.strip()
+        if not name.startswith("exp_"):
+            continue
+        records.append({
+            "experiment": name,
+            "score": "?",
+            "score_num": -999.0,
+            "status": "unknown",
+            "description": "[on GPU, not yet downloaded]",
+            "timestamp": None,
+            "win_rate": None,
+            "_from_remote": True,
+        })
+    records.sort(key=lambda r: _exp_sort_key(r["experiment"]))
+    return records
+
+
+def _merge_remote_into_local(local_exps: list[dict], remote_exps: list[dict]) -> list[dict]:
+    """Merge remote GPU experiments into local experiment list.
+
+    Local data wins when both exist (richer metadata).
+    Remote fills gaps for experiments not yet downloaded.
+    """
+    local_ids = {e.get("experiment", "") for e in local_exps}
+    merged = list(local_exps)
+    for rexp in remote_exps:
+        if rexp.get("experiment", "") not in local_ids:
+            merged.append(rexp)
+    merged.sort(key=lambda r: _exp_sort_key(r.get("experiment", "")))
+    return merged
 
 
 def _enrich_timestamps(experiments: list[dict]) -> None:
     """Add timestamps from manifest.json inside each artifact directory."""
-    from datetime import datetime, timezone, timedelta
-    artifacts_dir = PROJECT_ROOT / "v2" / "artifacts"
+    from datetime import datetime
     for exp in experiments:
         exp_name = exp.get("experiment", "")
-        manifest = artifacts_dir / exp_name / "manifest.json"
+        manifest = ARTIFACTS_DIR / exp_name / "manifest.json"
         if manifest.is_file():
             try:
                 data = json.loads(manifest.read_text())
                 ts_str = data.get("timestamp")
                 if ts_str:
-                    # GPU records local time ~1hr behind UTC; correct to true UTC
-                    dt = datetime.fromisoformat(ts_str).replace(tzinfo=timezone(timedelta(hours=-1)))
+                    dt = datetime.fromisoformat(ts_str)
                     exp["timestamp"] = dt.timestamp()
                 else:
                     exp["timestamp"] = None
@@ -253,6 +527,235 @@ def _enrich_timestamps(experiments: list[dict]) -> None:
                 exp["timestamp"] = None
         else:
             exp["timestamp"] = None
+
+
+def _exp_sort_key(exp_id: str) -> int:
+    """Extract numeric suffix from experiment ID for sorting."""
+    m = re.search(r'(\d+)', exp_id)
+    return int(m.group(1)) if m else 0
+
+
+def scan_artifacts(warnings: list[str]) -> list[dict]:
+    """Scan v2/artifacts/*/manifest.json and build experiment records.
+
+    Artifacts survive git reverts (they're gitignored), making them the
+    ground truth for experiment history.
+    """
+    from datetime import datetime
+    records = []
+    if not ARTIFACTS_DIR.is_dir():
+        return records
+
+    for entry in sorted(ARTIFACTS_DIR.iterdir()):
+        if not entry.is_dir() or not entry.name.startswith("exp_"):
+            continue
+        manifest_path = entry / "manifest.json"
+        if not manifest_path.is_file():
+            warnings.append(f"Artifact {entry.name} has no manifest.json")
+            continue
+        try:
+            data = json.loads(manifest_path.read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            warnings.append(f"Corrupt manifest in {entry.name}: {e}")
+            continue
+
+        exp_id = _normalize_experiment_id(data.get("experiment_id", entry.name))
+        if not _is_live_exact_chain_experiment(exp_id):
+            continue
+        score = data.get("score", -999.0)
+        extra = data.get("extra", {})
+        folds = extra.get("per_fold_scores", [])
+        std = extra.get("std_fold_score")
+        promoted = data.get("promoted")
+
+        # Infer status from promoted flag
+        if promoted is True:
+            status = "keep"
+        elif promoted is False:
+            status = "revert"
+        else:
+            status = "unknown"
+
+        # Auto-generate description from manifest metrics
+        parts = [f"score={score:.3f}"]
+        if folds:
+            parts.append(f"folds=[{','.join(f'{f:.2f}' for f in folds)}]")
+        if std is not None:
+            parts.append(f"std={std:.2f}")
+        description = " ".join(parts) + " [from artifact]"
+
+        # Timestamp
+        ts = None
+        ts_str = data.get("timestamp")
+        if ts_str:
+            try:
+                ts = datetime.fromisoformat(ts_str).timestamp()
+            except ValueError:
+                pass
+
+        records.append({
+            "experiment": exp_id,
+            "score": str(score),
+            "score_num": float(score) if score != -999.0 else -999.0,
+            "status": status,
+            "description": description,
+            "timestamp": ts,
+            "win_rate": None,
+            "_from_artifact": True,
+        })
+
+    records.sort(key=lambda r: _exp_sort_key(r["experiment"]))
+    return records
+
+
+def merge_experiments(artifact_exps: list[dict], tsv_exps: list[dict]) -> list[dict]:
+    """Merge artifact-based records with TSV-based records.
+
+    Artifacts provide: score, timestamp, fold scores, promoted status.
+    TSV provides: human-written description, status override.
+    TSV wins for description/status when present (human-authored).
+    Artifacts fill gaps for experiments missing from TSV.
+    """
+    tsv_by_id = {e.get("experiment", ""): e for e in tsv_exps}
+    artifact_by_id = {e.get("experiment", ""): e for e in artifact_exps}
+    all_ids = list(dict.fromkeys(
+        [e.get("experiment", "") for e in tsv_exps] +
+        [e.get("experiment", "") for e in artifact_exps]
+    ))
+    all_ids.sort(key=_exp_sort_key)
+
+    merged = []
+    for exp_id in all_ids:
+        tsv_rec = tsv_by_id.get(exp_id)
+        art_rec = artifact_by_id.get(exp_id)
+
+        if tsv_rec and art_rec:
+            # TSV wins for description and status (human-authored)
+            # Artifact wins for score/timestamp (structured data)
+            rec = dict(art_rec)
+            rec["description"] = tsv_rec.get("description") or rec["description"]
+            # TSV status wins only if it's a real decision (not "unknown")
+            tsv_status = tsv_rec.get("status", "")
+            if tsv_status in ("keep", "revert", "crash"):
+                rec["status"] = tsv_status
+            rec["win_rate"] = tsv_rec.get("win_rate") or rec.get("win_rate")
+            # Carry forward any metrics parsed from TSV description
+            for k, v in tsv_rec.items():
+                if k.startswith("metric_"):
+                    rec[k] = v
+            rec.pop("_from_artifact", None)
+        elif tsv_rec:
+            rec = dict(tsv_rec)
+        else:
+            rec = dict(art_rec)
+            rec.pop("_from_artifact", None)
+
+        merged.append(rec)
+
+    return merged
+
+
+def auto_repair_results_tsv(merged: list[dict], tsv_ids: set[str]) -> None:
+    """Do not mutate results.tsv from the monitor.
+
+    The exact-chain reset treats results.tsv as official evidence only.
+    Missing history can be shown in the monitor UI from artifacts or git, but
+    it must not be written back into the live log automatically.
+    """
+    return
+
+
+def scan_git_commits(warnings: list[str]) -> list[dict]:
+    """Scan git commit messages for experiment entries.
+
+    This is the last-resort data source — git history never disappears,
+    even when artifacts aren't downloaded and results.tsv is wiped.
+    """
+    try:
+        r = subprocess.run(
+            ["git", "log", "--oneline", "--all", "--format=%H\t%aI\t%s"],
+            capture_output=True, text=True, timeout=5,
+            cwd=str(PROJECT_ROOT),
+        )
+        if r.returncode != 0:
+            return []
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return []
+
+    from datetime import datetime
+    seen: dict[str, dict] = {}  # exp_id -> record (keep first/newest commit)
+    for line in r.stdout.strip().split("\n"):
+        parts = line.split("\t", 2)
+        if len(parts) < 3:
+            continue
+        sha, date_str, subject = parts
+        # Match "exp_NNN:" or "exp_NNNx:" at start of commit message
+        m = re.match(r'(exp_\d+\w*)\s*:', subject)
+        if not m:
+            continue
+        exp_id = m.group(1)
+        # Normalize sub-experiments (exp_079b -> exp_079) for display
+        base_id = re.match(r'(exp_\d+)', exp_id).group(1)
+        if base_id in seen:
+            continue  # keep newest (first in git log)
+        ts = None
+        try:
+            ts = datetime.fromisoformat(date_str).timestamp()
+        except ValueError:
+            pass
+        seen[base_id] = {
+            "experiment": base_id,
+            "score": "?",
+            "score_num": -999.0,
+            "status": "unknown",
+            "description": subject,
+            "timestamp": ts,
+            "win_rate": None,
+            "_from_git": True,
+        }
+    records = list(seen.values())
+    records.sort(key=lambda r: _exp_sort_key(r["experiment"]))
+    return records
+
+
+def load_all_experiments(warnings: list[str]) -> list[dict]:
+    """Load live exact-chain experiment history.
+
+    Source of truth:
+      1. official scored runs from results.tsv
+      2. screening history from lab_notebook.md
+      3. detailed screening result blocks from lab_notebook.md
+
+    Artifacts only enrich timestamps for experiments already present in the
+    live history. Historical pre-reset artifacts and git commits are excluded.
+    """
+    tsv_exps: list[dict] = []
+    if RESULTS_TSV.exists():
+        try:
+            tsv_exps = _parse_results_tsv(RESULTS_TSV.read_text())
+        except Exception as e:
+            warnings.append(f"results.tsv parse failed: {e}")
+
+    notebook_text = load_lab_notebook() or ""
+    notebook_screen_exps: list[dict] = []
+    notebook_active_exps: list[dict] = []
+    if notebook_text:
+        try:
+            notebook_screen_exps = _parse_lab_screening_history(notebook_text)
+        except Exception as e:
+            warnings.append(f"lab_notebook screening parse failed: {e}")
+        try:
+            notebook_active_exps = _parse_lab_active_experiments(notebook_text)
+        except Exception as e:
+            warnings.append(f"lab_notebook active experiment parse failed: {e}")
+
+    merged = _merge_records(tsv_exps, notebook_screen_exps)
+    merged = _merge_records(merged, notebook_active_exps)
+
+    # Enrich timestamps for entries missing them
+    _enrich_timestamps([e for e in merged if e.get("timestamp") is None])
+
+    return merged
 
 
 def fetch_local_gpu() -> dict | None:
@@ -273,12 +776,10 @@ def fetch_local_gpu() -> dict | None:
 def fetch_local_fallback() -> dict:
     """Read local files when SSH is unavailable."""
     data: dict = {"ssh_ok": False}
+    warnings: list[str] = []
 
-    # Local results.tsv
-    if RESULTS_TSV.exists():
-        data["experiments"] = _parse_results_tsv(RESULTS_TSV.read_text())
-    else:
-        data["experiments"] = []
+    # Unified experiment loader (artifact-first)
+    data["experiments"] = load_all_experiments(warnings)
 
     # Local train.py
     train_path = PROJECT_ROOT / "v2" / "train.py"
@@ -292,47 +793,54 @@ def fetch_local_fallback() -> dict:
     # Local GPU
     data["gpu"] = fetch_local_gpu()
 
-    data["session"] = {}
+    data["session"] = derive_session_from_experiments(data["experiments"])
+    _append_state_drift_warning(data["experiments"], warnings)
     data["log_tail"] = None
     data["process"] = {"status": "unknown", "pid": "", "uptime": ""}
+    data["warnings"] = warnings
 
     return data
 
 
 def derive_session_from_experiments(experiments: list[dict]) -> dict:
-    """Derive session stats from results.tsv rows (replaces .inner_loop_state.json)."""
+    """Derive session stats from experiment records."""
     if not experiments:
         return {}
 
-    total = len(experiments)
-    kept = sum(1 for e in experiments if e.get("status") == "keep")
-    reverted = total - kept
+    completed = [e for e in experiments if e.get("status") in ("keep", "revert", "crash", "screen")]
+    total = len(completed)
+    kept = sum(1 for e in completed if e.get("status") == "keep")
+    reverted = sum(1 for e in completed if e.get("status") in ("revert", "crash"))
+    screened = sum(1 for e in completed if e.get("status") == "screen")
 
-    scores = [e["score_num"] for e in experiments if e.get("score_num", -999) > -999]
-    best_score = max(scores) if scores else None
-
-    # Find which experiment had the best score
-    best_exp = ""
-    if best_score is not None:
-        for e in experiments:
-            if e.get("score_num") == best_score:
-                best_exp = e.get("experiment", "")
+    scored = [e for e in completed if e.get("score_num", -999.0) > -999.0]
+    if scored:
+        best_entry = max(scored, key=lambda e: e.get("score_num", -999.0))
+        best_score = best_entry.get("score_num")
+        best_exp = best_entry.get("experiment", "")
+        streak = 0
+        for e in reversed(completed):
+            if e.get("experiment") == best_exp and e.get("score_num", -999.0) == best_score:
                 break
+            streak += 1
+    else:
+        best_score = None
+        best_exp = ""
+        streak = total
 
-    # No-improve streak: count consecutive non-keep from end
-    streak = 0
-    for e in reversed(experiments):
-        if e.get("status") == "keep":
-            break
-        streak += 1
+    # Session start from earliest timestamp
+    timestamps = [e["timestamp"] for e in experiments if e.get("timestamp")]
+    session_start = min(timestamps) if timestamps else None
 
     return {
         "experiment_count": total,
         "kept_count": kept,
         "reverted_count": reverted,
+        "screened_count": screened,
         "best_score": best_score,
         "best_experiment_num": best_exp,
         "no_improve_streak": streak,
+        "session_start": session_start,
     }
 
 
@@ -353,6 +861,9 @@ def poller_loop(host: str | None, port: int, local_only: bool, interval: int,
                 host_pinned: bool = False):
     mode = f"Remote: {host}:{port}" if host else "Local"
     set_state(mode=mode)
+    ssh_fail_count = 0
+    last_good_gpu = None       # keep last-known GPU data across failures
+    last_gpu_time = 0.0        # epoch of last successful GPU fetch
 
     while True:
         _check_self_restart()
@@ -365,12 +876,18 @@ def poller_loop(host: str | None, port: int, local_only: bool, interval: int,
                 ds = load_deploy_state()
                 if ds:
                     new_host = ds.get("SSH_HOST")
-                    new_port = int(ds.get("SSH_PORT", 22))
+                    try:
+                        new_port = int(ds.get("SSH_PORT", 22))
+                    except (ValueError, TypeError):
+                        print(f"[monitor] WARNING: Invalid SSH_PORT in .deploy-state, defaulting to 22", flush=True)
+                        new_port = 22
                 else:
                     new_host, new_port = None, 22
                 if new_host != host or new_port != port:
                     print(f"[monitor] Deployment changed: {host}:{port} -> {new_host}:{new_port}", flush=True)
                     host, port = new_host, new_port
+                    # Reset fail count on host change so we give the new host full timeouts
+                    ssh_fail_count = 0
                 new_mode = f"Remote: {host}:{port}" if host else "Local"
                 if new_mode != mode:
                     mode = new_mode
@@ -382,13 +899,10 @@ def poller_loop(host: str | None, port: int, local_only: bool, interval: int,
             train_py = None
             train_py_source = ""
             process = {"status": "unknown", "pid": "", "uptime": ""}
+            poll_warnings: list[str] = []
 
-            # Local results.tsv is authoritative (Claude drives the loop locally)
-            if RESULTS_TSV.exists():
-                experiments = _parse_results_tsv(RESULTS_TSV.read_text())
-                _enrich_timestamps(experiments)
-            else:
-                experiments = []
+            # Unified experiment loader: artifacts (ground truth) + TSV (supplementary)
+            experiments = load_all_experiments(poll_warnings)
 
             # Local train.py is authoritative (Claude edits it locally)
             train_path = PROJECT_ROOT / "v2" / "train.py"
@@ -396,21 +910,43 @@ def poller_loop(host: str | None, port: int, local_only: bool, interval: int,
                 train_py = train_path.read_text()
                 train_py_source = "local: v2/train.py"
 
-            # Try remote for GPU stats, process status, and log tail
+            # Try remote for GPU stats, process status, log tail, and remote experiments
+            # Use shorter timeout after consecutive failures for faster poll cycles
             if host and not local_only:
-                remote = fetch_remote_data(host, port)
+                ssh_timeout = 15 if ssh_fail_count >= 3 else 25
+                remote = fetch_remote_data(host, port, timeout=ssh_timeout)
                 ssh_ok = remote.get("ssh_ok", False)
                 if ssh_ok:
+                    ssh_fail_count = 0
                     log_tail = remote.get("log_tail")
                     gpu = remote.get("gpu")
+                    if gpu:
+                        last_good_gpu = gpu
+                        last_gpu_time = time.time()
+                    # Merge remote experiments (covers GPU-only experiments not downloaded)
+                    remote_exps = remote.get("remote_experiments", [])
+                    if remote_exps:
+                        experiments = _merge_remote_into_local(experiments, remote_exps)
                     process = remote.get("process", process)
+                else:
+                    ssh_fail_count += 1
+                    if ssh_fail_count <= 3:
+                        print(f"[monitor] SSH fail #{ssh_fail_count} to {host}:{port}", flush=True)
+                    elif ssh_fail_count == 4:
+                        print(f"[monitor] SSH failing repeatedly, using shorter timeouts", flush=True)
 
             # Local GPU fallback (MacBook won't have one, but just in case)
             if not gpu:
                 gpu = fetch_local_gpu()
 
+            # If still no live GPU data, preserve last-known data so gauges stay populated
+            if not gpu and last_good_gpu:
+                gpu = dict(last_good_gpu)
+                gpu["_stale"] = True
+
             # Derive session stats from results.tsv
             session = derive_session_from_experiments(experiments)
+            _append_state_drift_warning(experiments, poll_warnings)
 
             # Classify run state
             if process.get("status") == "running":
@@ -442,11 +978,16 @@ def poller_loop(host: str | None, port: int, local_only: bool, interval: int,
                 poll_count=poll_count,
                 ssh_ok=ssh_ok,
                 lab_notebook=lab_notebook,
+                warnings=poll_warnings,
+                last_gpu_time=last_gpu_time,
+                ssh_fail_count=ssh_fail_count,
             )
         except Exception as e:
             print(f"[poller] Error: {e}", file=sys.stderr)
 
-        time.sleep(interval)
+        # Poll faster when SSH is failing to recover quickly on reconnect
+        sleep_time = max(3, interval // 2) if ssh_fail_count > 0 and not local_only else interval
+        time.sleep(sleep_time)
 
 
 # ---------------------------------------------------------------------------
@@ -646,6 +1187,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   tr.kept td { color: var(--green); }
   tr.crash td { color: var(--red); }
   tr.reverted td { color: var(--text-dim); }
+  tr.screened td { color: var(--yellow); }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   td.desc { white-space: normal; max-width: 300px; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); font-size: 11px; }
 
@@ -727,6 +1269,16 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     animation: pulse 2s ease-in-out infinite;
   }
 
+  .warnings-bar {
+    background: rgba(210,169,34,0.15);
+    color: var(--yellow);
+    padding: 4px 12px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+    display: none;
+  }
+  .warnings-bar.visible { display: block; }
+
   /* Lab notebook */
   .notebook-view {
     background: var(--bg);
@@ -770,6 +1322,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <span id="header-stale"></span>
   </div>
 </header>
+<div class="warnings-bar" id="warnings-bar"></div>
 
 <div class="grid">
   <!-- Row 1: GPU (compact) + Session -->
@@ -1018,6 +1571,16 @@ async function update() {
     document.getElementById('header-poll').textContent = `poll #${data.poll_count}`;
     document.getElementById('header-fetch').textContent = `fetch: ${data.fetch_time.toFixed(1)}s`;
 
+    // Warnings bar
+    const wBar = document.getElementById('warnings-bar');
+    const warns = data.warnings || [];
+    if (warns.length > 0) {
+      wBar.textContent = warns.join(' | ');
+      wBar.classList.add('visible');
+    } else {
+      wBar.classList.remove('visible');
+    }
+
     // Run state badge
     const runState = data.run_state || 'unknown';
     const badge = document.getElementById('run-state-badge');
@@ -1045,11 +1608,18 @@ async function update() {
       document.getElementById('process-info').textContent = '';
     }
 
-    // GPU
+    // GPU — always show data (live or last-known stale) with staleness indicator
     if (data.gpu) {
       const g = data.gpu;
-      document.getElementById('gpu-name').textContent = g.name;
-      document.getElementById('gpu-content').style.opacity = '1';
+      const isStale = g._stale === true;
+      const gpuAge = data.last_gpu_time > 0 ? Math.round((Date.now()/1000) - data.last_gpu_time) : 0;
+      let nameLabel = g.name;
+      if (isStale && gpuAge > 0) {
+        const ageStr = gpuAge < 60 ? gpuAge + 's' : Math.round(gpuAge/60) + 'm';
+        nameLabel += ` (stale ${ageStr} ago)`;
+      }
+      document.getElementById('gpu-name').textContent = nameLabel;
+      document.getElementById('gpu-content').style.opacity = isStale ? '0.5' : '1';
       const memPct = g.mem_total_mb > 0 ? (g.mem_used_mb / g.mem_total_mb * 100) : 0;
       const powerPct = g.power_limit_w > 0 ? (g.power_w / g.power_limit_w * 100) : 0;
       setGauge('gpu-util', g.util_pct, g.util_pct.toFixed(0) + '%');
@@ -1057,7 +1627,9 @@ async function update() {
       setGauge('gpu-temp', Math.min(g.temp_c, 100), g.temp_c.toFixed(0) + 'C');
       setGauge('gpu-power', powerPct, `${g.power_w.toFixed(0)}/${g.power_limit_w.toFixed(0)}W`);
     } else {
-      document.getElementById('gpu-name').textContent = data.ssh_ok ? 'waiting...' : '(no GPU data)';
+      const failCount = data.ssh_fail_count || 0;
+      let label = data.ssh_ok ? 'waiting...' : (failCount > 0 ? `reconnecting (${failCount})...` : '(no GPU data)');
+      document.getElementById('gpu-name').textContent = label;
       document.getElementById('gpu-content').style.opacity = '0.3';
     }
 
@@ -1065,7 +1637,7 @@ async function update() {
     const session = data.session || {};
     const expCount = session.experiment_count || 0;
     const kept = session.kept_count || 0;
-    const reverted = expCount - kept;
+    const reverted = session.reverted_count || 0;
     const bestScore = session.best_score;
     const bestExp = session.best_experiment_num || 0;
     const streak = session.no_improve_streak || 0;
@@ -1074,8 +1646,8 @@ async function update() {
     document.getElementById('stat-reverted').textContent = reverted;
     document.getElementById('stat-total').textContent = expCount;
     document.getElementById('stat-best').textContent = (bestScore != null && bestScore > -5) ? bestScore.toFixed(4) : '--';
-    document.getElementById('stat-streak').textContent = streak + '/8';
-    document.getElementById('stat-best-exp').textContent = bestExp > 0 ? '#' + bestExp : '--';
+    document.getElementById('stat-streak').textContent = streak;
+    document.getElementById('stat-best-exp').textContent = bestExp ? bestExp : '--';
 
     // Progress bar (experiments out of 50)
     const pct = Math.min(100, Math.max(0, expCount / 50 * 100));
@@ -1110,19 +1682,27 @@ async function update() {
       drawChart('chart-winrate', winRates, '#bc8cff', {decimals: 1, min: Math.min(...winRates) - 1, max: Math.max(...winRates) + 1});
     }
 
-    // Experiments table
-    if (exps.length !== lastExpCount) {
-      lastExpCount = exps.length;
+    // Experiments table — re-render when content changes (not just count)
+    const expHash = exps.map(e => e.experiment + '|' + e.score_num).join(',');
+    if (expHash !== lastExpCount) {
+      lastExpCount = expHash;
       document.getElementById('exp-count').textContent = `(${exps.length})`;
       const tbody = document.getElementById('exp-tbody');
       tbody.innerHTML = '';
       for (let i = exps.length - 1; i >= 0; i--) {
         const e = exps[i];
         const tr = document.createElement('tr');
+        const isGitOnly = e._from_git || false;
         const status = e.status || '?';
-        tr.className = status === 'keep' ? 'kept' : status === 'crash' ? 'crash' : 'reverted';
-        const statusDisplay = status === 'keep' ? '+ KEEP' : status === 'crash' ? 'x CRASH' : '~ revert';
-        const scoreDisplay = e.score_num > -999 ? e.score_num.toFixed(4) : 'FAIL';
+        tr.className = isGitOnly ? '' : status === 'keep' ? 'kept' : status === 'crash' ? 'crash' : status === 'screen' ? 'screened' : status === 'revert' ? 'reverted' : '';
+        const statusDisplay =
+          isGitOnly ? '? pending' :
+          status === 'keep' ? '+ KEEP' :
+          status === 'crash' ? 'x CRASH' :
+          status === 'screen' ? '~ SCREEN' :
+          status === 'revert' ? '~ REVERT' :
+          '?';
+        const scoreDisplay = e.score_num > -999 ? e.score_num.toFixed(4) : '—';
         const timeDisplay = e.timestamp ? new Date(e.timestamp * 1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
         tr.innerHTML = `
           <td class="num">${escapeHtml(e.experiment || '?')}</td>
@@ -1225,7 +1805,11 @@ def main():
         state = load_deploy_state()
         if state:
             remote_host = state.get("SSH_HOST")
-            remote_port = int(state.get("SSH_PORT", 22))
+            try:
+                remote_port = int(state.get("SSH_PORT", 22))
+            except (ValueError, TypeError):
+                print(f"[monitor] WARNING: Invalid SSH_PORT in .deploy-state, defaulting to 22", flush=True)
+                remote_port = 22
 
     # Start background poller
     poller = threading.Thread(

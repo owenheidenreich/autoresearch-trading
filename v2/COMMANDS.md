@@ -21,7 +21,7 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 
 - `evaluate model`
   Run:
-  `python3 -m v2.replay --model v2/model.pt --data v2/data.pt --mask promote`
+  `python3 -m v2.replay --data v2/data.pt --mask promote`
 
 - `evaluate promoted artifact`
   Run:
@@ -38,6 +38,23 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 - `audit dataset`
   Run:
   `python3 -m v2.analysis.harness_eval --data v2/data.pt`
+
+## Decision Traces
+
+- `trace model` or `decision trace`
+  Generate per-bar decision trace for the candidate model (mandatory before keep/revert):
+  `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote --traces`
+  Output: `v2/artifacts/replay_traces.csv` + printed summary with gate accuracy, selection accuracy, P&L gap, failure modes.
+
+- `trace artifact` or `trace exp_NNN`
+  Trace a specific artifact:
+  `python3 -m v2.replay --artifact v2/artifacts/exp_NNN --data v2/data.pt --mask promote --traces`
+
+## Data Integrity
+
+- `validate data` or `check data`
+  Run the full data integrity pipeline (manifest, features, sidecars):
+  `python3 -m v2.core.data_integrity --data v2/data.pt`
 
 ## Data
 
@@ -71,10 +88,14 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 
 ## Monitoring
 
+- `project status`
+  Run:
+  `python3 -m v2.ops.status_report`
+
 - `plot progress`
   Run:
   `python3 v2/plot_progress.py`
 
 - `plot trades`
   Run:
-  `python3 -m v2.plot_trades --model v2/model.pt`
+  `python3 -m v2.plot_trades`

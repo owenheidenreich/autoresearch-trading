@@ -7,7 +7,7 @@ from v2.replay import load_best_model, replay_validation
 data = torch.load("v2/data.pt", map_location="cpu", weights_only=False)
 model, policy, manifest = load_best_model()
 
-metrics, trades = replay_validation(model, data, mask_key="promote_mask", policy=policy)
+metrics, trades, _ = replay_validation(model, data, mask_key="promote_mask", policy=policy)
 
 # Group trades by day
 day_trades = defaultdict(list)

@@ -4,9 +4,9 @@ Loads the best model from the artifact system, runs replay, and generates
 interactive Plotly HTML charts and a CSV trade log for analysis.
 
 Usage:
-    python -m v2.plot_trades                         # promote_mask (default)
-    python -m v2.plot_trades --mask shadow            # shadow_mask
-    python -m v2.plot_trades --model v2/model.pt      # specific model
+    python -m v2.plot_trades                           # promote_mask (default)
+    python -m v2.plot_trades --mask shadow             # shadow_mask
+    python -m v2.plot_trades --model /path/to/model.pt # specific checkpoint
 """
 from __future__ import annotations
 
@@ -23,33 +23,29 @@ import torch
 # Data loading
 # ---------------------------------------------------------------------------
 
-BEST_MODEL_PATH = "v2/model_best.pt"
-
-
 def load_trades(mask_key: str, model_path: str | None = None) -> tuple[list, dict, object]:
     """Load model, run replay, return (trades, data_dict, metrics).
 
-    Default: loads v2/model_best.pt (canonical best from experiment loop).
-    Falls back to v2/model.pt if model_best.pt doesn't exist.
+    Default: loads the best compatible promoted artifact from the artifact system.
+    If `model_path` is provided, that checkpoint is loaded directly.
     """
-    from v2.replay import load_model_from_path, replay_validation
-    from v2.core.policy import DEFAULT_POLICY
-    from pathlib import Path
+    from v2.replay import load_best_model, load_model_from_path, replay_validation
 
     data = torch.load("v2/data.pt", map_location="cpu", weights_only=False)
+    dataset_fp = data.get("metadata", {}).get("fingerprint")
 
     if model_path:
         resolved = model_path
-    elif Path(BEST_MODEL_PATH).exists():
-        resolved = BEST_MODEL_PATH
+        model = load_model_from_path(resolved)
+        from v2.core.policy import DEFAULT_POLICY
+        policy = DEFAULT_POLICY
+        print(f"Loaded model from {resolved}")
     else:
-        resolved = "v2/model.pt"
+        model, policy, manifest = load_best_model(current_dataset_fingerprint=dataset_fp)
+        resolved = manifest.get("experiment_id", "best_artifact")
+        print(f"Loaded best compatible artifact for plotting: {resolved}")
 
-    model = load_model_from_path(resolved)
-    policy = DEFAULT_POLICY
-    print(f"Loaded model from {resolved}")
-
-    metrics, trades = replay_validation(model, data, mask_key=mask_key, policy=policy)
+    metrics, trades, _ = replay_validation(model, data, mask_key=mask_key, policy=policy)
 
     print(f"Replay: {len(trades)} trades on {mask_key}")
     print(f"  Score: {metrics.score:.3f}  WR: {metrics.win_rate:.1%}  "

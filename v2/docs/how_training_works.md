@@ -4,14 +4,17 @@
 
 ```text
 OUTER LOOP
-    hypothesis
+    hypothesis (informed by previous trace analysis)
     edit train.py and/or core/policy.py
     commit
+    pre-run gate: v2.ops.pre_run_gate (includes data integrity)
     screen: deploy.sh run_screen exp_NNN (1 fold)
     if screening passes:
         official: deploy.sh run_one exp_NNN (5 folds)
-        read walk-forward score
-        keep or revert
+        DECISION TRACE: replay --traces (mandatory before keep/revert)
+        analyze trace: gate accuracy, selection accuracy, P&L gap
+        keep or revert (informed by trace, not score alone)
+        form next hypothesis from trace failure modes
 
 INNER LOOP
     for each fold:
@@ -24,7 +27,7 @@ INNER LOOP
 
 The current model is an exact-chain contract scorer.
 
-Input:
+Inputs:
 
 - `(batch, 30, 47)` context window
 - `(batch, max_contracts_per_bar, contract_features)` current executable snapshot
@@ -33,37 +36,34 @@ Outputs:
 
 - `no_trade_score`
 - `contract_scores`
+- `valid_mask`
 
-The model does not emit a synthetic strike class. It scores the actual contracts visible on the current bar.
+The model does not emit a synthetic strike class, direction head, or learned risk head. It scores the actual contracts visible on the current bar.
 
-## Current Loss (exp_079 recovery)
+## Current Baseline Loss
 
-The exact-chain recovery plan replaces hard contract selection with staged supervision:
+The live reset baseline is intentionally minimal and replay-aligned:
 
-### Stage 1: Side supervision through contract_scores (exp_079)
-- **Side CE**: 2-class call/put cross-entropy derived from `contract_scores`
-  - `best_call_score = max(scores where right_is_put < 0.5)`
-  - `best_put_score = max(scores where right_is_put >= 0.5)`
-  - BCE on `(best_put_score - best_call_score)` vs oracle side
-  - Applied on trade rows with both call and put contracts present
-- **PnL regression**: Huber loss on per-contract P&L for valid rows (unchanged)
-- **Gate BCE**: binary CE on supervised rows (unchanged)
+- Gate BCE on supervised rows
+- Soft KL selection with `SOFT_TEMP=0.20`
+- No direct PnL regression
+- No auxiliary side head
 
-### Stage 2: Soft within-side ranking (exp_080, planned)
-- Restrict to oracle side on trade rows
-- Build target distribution as `softmax(oracle_side_pnl / 0.05)`
-- KL divergence between target probs and model side-contract logits
-- Keeps side CE from stage 1
+Details:
 
-### Stage 3: Gate calibration (exp_081, conditional)
-- Only if overtrading remains after stage 2
-- `no_trade_weight = 3.0` via manual sample weighting on `gate_target == 0`
+- `gate_loss` compares `max(contract_scores) - no_trade_score` against `label_trade`
+- `sel_loss` builds a soft target from sidecar `row_labels` with `softmax(pnl / SOFT_TEMP)`
+- invalid or unlabeled contracts receive zero target mass
+- selection loss is weighted by label quality (top margin between best and second-best contract)
+  - bars with margin >= 0.05 get full weight; margin 0 gets zero weight
+  - this downweights the 30.6% of bars where the oracle answer is ambiguous noise
+- total loss is `GATE_W * gate_loss + SEL_W * sel_loss`
 
-Explicitly forbidden: "auxiliary head not used by replay" as the primary recovery path. Every loss term must flow through `contract_scores` and `no_trade_score` which replay actually reads.
+`row_labels` are still used, but only to build the KL target distribution. The live baseline does not regress score magnitudes directly to realized P&L.
 
 ## Risk Policy
 
-The first frozen v4 harness keeps risk policy-driven:
+The frozen v4 harness keeps risk policy-driven:
 
 - fixed stop
 - fixed target
@@ -76,19 +76,22 @@ Those live in `v2/core/policy.py` and are part of the mutable surface.
 
 `./v2/ops/deploy.sh run_one exp_NNN`:
 
-1. uploads `v2/train.py` and `v2/core/policy.py`
-2. uploads `v2/data.pt`
-3. uploads `v2/data_sidecars/` when referenced by the manifest
-4. runs `python3 -m v2.ops.run_experiment_wf --id exp_NNN`
-5. downloads `v2/model_candidate.pt`
-6. downloads the matching artifact bundle
+1. runs the local pre-GPU integrity gate
+2. uploads `v2/train.py` and `v2/core/policy.py`
+3. uploads `v2/data.pt`
+4. uploads `v2/data_sidecars/` when referenced by the manifest
+5. runs `python3 -m v2.ops.run_experiment_wf --id exp_NNN`
+6. downloads `v2/models/model_candidate.pt`
+7. downloads the matching artifact bundle
+8. appends official results to `v2/results.tsv`
 
 ## What `run_screen` Does
 
 `./v2/ops/deploy.sh run_screen exp_NNN`:
 
-1. uploads `v2/train.py` and `v2/core/policy.py`
-2. syncs data if needed
-3. runs `python3 -m v2.ops.run_experiment_wf --id exp_NNN_screen --n-folds 1 --no-artifacts`
-4. no model or artifact download
-5. results printed to stdout only — does not modify `results.tsv`
+1. runs the local pre-GPU integrity gate
+2. uploads `v2/train.py` and `v2/core/policy.py`
+3. syncs data if needed
+4. runs `python3 -m v2.ops.run_experiment_wf --id exp_NNN_screen --n-folds 1 --no-artifacts`
+5. does not download a model or artifact
+6. prints results to stdout only; screening notes belong in `v2/lab_notebook.md`

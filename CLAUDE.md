@@ -3,8 +3,9 @@
 ## First Steps
 
 1. Read `v2/HANDOFF.md` — current state and trust boundaries.
-2. Read `v2/program.md` — the definitive protocol.
-3. Read `v2/COMMANDS.md` — what the human can ask you to do.
+2. Read `v2/docs/founder_intent.md` — founder voice, standards, anti-goals.
+3. Read `v2/program.md` — the definitive protocol.
+4. Read `v2/COMMANDS.md` — what the human can ask you to do.
 
 ## Hard Rules
 

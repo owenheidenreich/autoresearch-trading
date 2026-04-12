@@ -80,6 +80,30 @@ The gate fails on:
 - legacy runner or old-head references in live files
 - non-official rows in `v2/results.tsv`
 - mismatch between `v2/train.py` and `v2/docs/how_training_works.md`
+- data integrity errors (manifest, features, sidecars)
+
+## Required Post-Run Trace
+
+After every official run, a decision trace **must** be generated before the keep/revert decision:
+
+- Command: `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote --traces`
+- Output: `v2/artifacts/replay_traces.csv` + printed summary
+- The trace captures every eligible bar: model scores, oracle answer, realized P&L, skip reasons
+- The trace summary reports: gate accuracy, selection accuracy, P&L gap vs oracle, noisy bar %, exit reason breakdown
+
+The keep/revert decision must be informed by trace analysis, not score alone. A model with a higher score but worse gate accuracy or selection accuracy than the baseline should be investigated before keeping.
+
+### Trace-Informed Hypothesis Formation
+
+When forming the next hypothesis after a keep or revert:
+
+1. Load the traces: `v2/artifacts/replay_traces.csv`
+2. Identify the top failure mode by category:
+   - **Gate false positives** (traded when shouldn't have): filter `decision=trade` where `oracle_pnl < 0`
+   - **Gate false negatives** (skipped a winner): filter `skip_reason=gate` where `oracle_pnl > 0.04`
+   - **Selection misses** (traded but picked wrong contract): filter `decision=trade` where `delta_pnl < -0.05`
+   - **Timing misses** (right idea, wrong bar): cluster by `bar_of_day` and `vix_regime`
+3. The next hypothesis should target the largest failure cluster
 
 ## Experiment Workflow
 
@@ -118,15 +142,20 @@ Keep only if the aggregate result:
 
 After an official run:
 
-1. KEEP or REVERT:
+1. **DECISION TRACE** (mandatory before keep/revert):
+   - `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote --traces`
+   - Review trace summary: gate accuracy, selection accuracy, P&L gap, failure modes
+   - Compare against baseline traces if available
+2. KEEP or REVERT (informed by trace analysis, not score alone):
    - `python3 v2/ops/model_manage.py keep`
    - or: `git checkout HEAD~1 -- v2/train.py v2/core/policy.py` then `python3 v2/ops/model_manage.py revert`
-2. Regenerate plots:
+3. Regenerate plots:
    - `python3 -m v2.plot_trades`
    - `python3 v2/plot_progress.py`
-3. Run `python3 -m v2.analysis.analyze_losses`
-4. Update `v2/lab_notebook.md`
-5. Check session limits before the next experiment
+4. Run `python3 -m v2.analysis.analyze_losses`
+5. Update `v2/lab_notebook.md` with trace insights
+6. **FORM NEXT HYPOTHESIS from traces** (see "Trace-Informed Hypothesis Formation" above)
+7. Check session limits before the next experiment
 
 ## Abandoned Or Parked Approaches
 

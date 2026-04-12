@@ -1,91 +1,120 @@
-# ART² -- Autonomous Research Trader
+# ART2
 
-SPX 0DTE options trading system. A neural network learns complete trading decisions (entry, direction, strike, risk management) from minute-bar market data.
+ART2 is an autoresearch-inspired system for developing and validating SPX 0DTE options models inside a frozen exact-chain historical environment.
 
-Built on Karpathy's autoresearch pattern: the AI proposes hypotheses, trains models on GPU, evaluates against held-out data, keeps what improves, reverts what doesn't. Humans program the research organization, not the research itself.
+The current mission is not live trading. The current mission is to build a trustworthy exact-chain research system.
 
-## How It Works
+## What This Project Is
 
-```
-1. AI edits v2/train.py (model architecture, loss, hyperparams)
-2. Trains on 859 days of historical SPX data (55 features, honest labels)
-3. Replays on 60 held-out days the model never saw
-4. Scores the equity curve: Sortino * consistency * drawdown guard
-5. Score improved? KEEP. Otherwise REVERT. Repeat.
-```
+This repo is a disciplined research loop for SPX 0DTE long-options trading ideas:
 
-## Data Pipeline
+- freeze a known dataset and replay harness
+- make one small training change at a time
+- train from scratch
+- evaluate under fixed replay rules
+- keep or revert based on score
+- write down the result so the repo, not the model, carries the research memory
 
-- **Wide-grid option data**: 82 contracts per day (ATM +/- 100pt) from Polygon flat files
-- **55 features**: 39 market (SPX, VIX, volume, Greeks) + 16 option-enriched (moneyness, per-strike volume, flow ratio, spread proxy)
-- **Honest labels**: Risk-grid search (64 stop/target/hold combos), gate=True only when profitable, 28% of signal bars are no-trade
-- **Real-time SPX**: estimated via call-put parity (not fixed opening ATM)
-- **Forward-filled**: matches live IBKR behavior (stale quotes, not missing data)
+The project is inspired by Karpathy's autoresearch pattern, but it is intentionally tighter and more gated than a generic autonomous loop.
 
-## Project Structure
+ART2 is not "let the AI roam and improve itself."
 
-```
-v2/                     # The active system
-  program.md            # Protocol (read this first)
-  COMMANDS.md           # What you can tell the AI to do
-  train.py              # Model + training loop (MUTABLE)
-  core/
-    policy.py           # Trading parameters (MUTABLE)
-    schema.py           # TradeIntent contract
-    simulator.py        # Trade simulation engine
-    metrics.py          # Score formula
-    features.py         # 55-feature spec (39 market + 16 enriched)
-    labels.py           # Label generation
-  replay.py             # Evaluation harness
-  ops/
-    deploy.sh           # Akash H100 GPU lifecycle
-    run_experiment.py   # Train + replay + score (one command)
-    inner_loop.py       # Keep/revert + session limits
-    monitor.py          # Human oversight dashboard
-  pipeline/
-    download_wide_grid.py  # Download 82 contracts/day from Polygon
-    build_v2_dataset.py    # Build data with enriched features + honest labels
-    extract_raw.py         # Extract OHLCV from raw Polygon cache
-  live/                 # IBKR execution (stubs)
-  docs/                 # Design specs + domain knowledge
+ART2 is:
 
-archive/                # Frozen v1 system (reference only)
+- autoresearch-inspired
+- experiment-driven
+- replay-constrained
+- documentation-backed
+- operator-auditable
+
+## What This Project Is Not
+
+- not a live trading bot
+- not a broker execution system
+- not a place to trust stale scores or historical shortcuts
+- not a system that relies on model memory instead of written research memory
+
+Live trading may come later if the research system becomes trustworthy enough. That is not the current phase.
+
+## Design In One View
+
+```text
+clean data + exact-chain sidecars
+    -> frozen dataset
+    -> one-hypothesis training change
+    -> train from scratch
+    -> replay evaluation
+    -> keep or revert by score
+    -> log the outcome
+    -> update durable project memory
 ```
 
-## Scoring
+## Trust Boundaries
 
-Models are evaluated on a $10,000 equity curve with SPX $100 multiplier:
+- The live experiment surface is intentionally small.
+- The evaluation harness is treated as immutable during normal research.
+- Official evidence lives in `v2/results.tsv`.
+- Screening notes and diagnostics live in `v2/lab_notebook.md`.
+- Historical material is preserved under `archive/`, but it is not part of the live default context.
 
-```
-score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
-```
+## How To Understand The Project
 
-Hard gates: 30+ trades, 15+ traded days, both directions, max 20% drawdown. Must beat random, ATM-always, and simple-rules baselines.
+Start here:
 
-## Quick Start
+1. [v2/HANDOFF.md](v2/HANDOFF.md)
+2. [v2/docs/founder_intent.md](v2/docs/founder_intent.md)
+3. [v2/program.md](v2/program.md)
+4. [v2/docs/README.md](v2/docs/README.md)
+
+Then run:
 
 ```bash
-# Download wide-grid option data from Polygon (first time, ~10 min)
-python -m v2.pipeline.download_wide_grid
-
-# Build dataset with enriched features + honest labels (~30 sec)
-python -m v2.pipeline.build_v2_dataset
-
-# Boot Akash H100 and upload
-./v2/ops/deploy.sh boot
-./v2/ops/deploy.sh start
-
-# Run experiment on GPU
-ssh root@<gpu> "python v2/ops/run_experiment.py --id baseline"
-
-# Monitor
-python v2/ops/monitor.py
+python3 -m v2.ops.status_report
 ```
 
-## Safety
+That command is the fastest way to see whether the repo is healthy, what phase the project is in, which dataset is live, what the next experiment is, and what blockers still exist.
 
-- Paper trading only. No real money.
-- 1 SPX contract max. Long calls/puts only. 0DTE only.
-- Dynamic stop-loss (30-60% range), learned by model risk head.
-- 5% daily loss cap. 5-bar cooldown after stops.
-- EOD flatten at 15:59 ET.
+## Core Research Loop
+
+1. Verify the repo is healthy and the live docs agree.
+2. Form one hypothesis.
+3. Change only the allowed training surface.
+4. Run the pre-GPU integrity gate.
+5. Train on the remote GPU from scratch.
+6. Replay and score the model under the frozen exact-chain harness.
+7. Keep or revert based on official score and baseline rules.
+8. Log the result and update the research memory.
+
+## Repo Structure
+
+```text
+v2/
+  HANDOFF.md              current state and trust boundaries
+  program.md              definitive operating protocol
+  COMMANDS.md             supported operator commands
+  train.py                live mutable training surface
+  core/policy.py          live mutable policy surface
+  docs/                   live documentation and founder memory
+  ops/                    gates, deployment, monitoring, status reporting
+  pipeline/               live data-building pipeline
+  analysis/               live evaluation helpers
+  models/                 local checkpoint storage
+  state/                  local runtime state
+  output/                 generated local outputs
+  artifacts/              experiment artifacts
+
+archive/
+  historical material preserved outside the live path
+```
+
+## Professional Framing
+
+If you need a one-paragraph description of the project, use this:
+
+> ART2 is an autoresearch-inspired research system for SPX 0DTE options. It combines curated data, a fixed exact-chain replay harness, disciplined experiment management, and explicit research memory so model progress can be measured honestly and reproducibly. The current mission is not live trading; it is building a trustworthy exact-chain research system.
+
+## Current Standard
+
+If the code, docs, artifacts, and results disagree, that disagreement is a bug.
+
+If a result cannot be defended from current data, current code, and current artifacts, it is not evidence.

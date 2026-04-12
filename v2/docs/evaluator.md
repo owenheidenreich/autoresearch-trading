@@ -50,6 +50,19 @@ Replay compares against four baselines on the same exact-chain harness:
 3. Simple-Rules
 4. ATM-Trailing
 
+## Baseline Cache
+
+Replay caches baseline outputs in:
+
+- `v2/state/baseline_cache.json`
+
+The cache key includes:
+
+- dataset fingerprint
+- mask key
+- policy fingerprint
+- optional `max_days`
+
 ## Score
 
 ```python

@@ -1,0 +1,10 @@
+# GPU dependencies for v3 PPO training on Akash H100.
+# Keep this aligned with the project pyproject when adding new packages.
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.4.1
+numpy
+pandas
+pyarrow
+scipy
+pytest
+

@@ -39,4 +39,4 @@ Each day sidecar provides:
 
 ## Important Limitation
 
-The contract scoring space is large (~38 contracts per bar median). Hard one-hot selection CE across this many classes provides weak gradient. The recovery plan replaces hard selection with side CE plus soft within-side ranking.
+The contract scoring space is large (~38 contracts per bar median). Hard one-hot selection CE across this many classes provides weak gradient. The live reset baseline uses gate BCE plus soft KL selection; more complex side-decomposition ideas are deferred until the baseline is re-established.
