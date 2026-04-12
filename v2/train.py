@@ -32,7 +32,7 @@ GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
-SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.5))
+SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.1))
 
 
 class PositionalEncoding(nn.Module):
