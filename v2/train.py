@@ -31,7 +31,7 @@ SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
-NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.03))
+NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 
 
 class PositionalEncoding(nn.Module):
@@ -217,32 +217,40 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Selection loss: KL over valid contracts, skip noise bars ---
+    # --- B. Selection loss: pairwise ranking (oracle best > all others) ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
-
-        pnl_for_target = tr_labels.clone()
-        pnl_for_target[~tr_valid] = -1e9
-        pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
+        tr_best = best_idx[trade_rows]
 
         # Filter out noise bars (top margin < NOISE_MARGIN)
         if NOISE_MARGIN > 0:
-            top2_vals, _ = pnl_for_target.topk(2, dim=-1)
+            pnl_for_filter = tr_labels.clone()
+            pnl_for_filter[~tr_valid] = -1e9
+            pnl_for_filter[~torch.isfinite(pnl_for_filter)] = -1e9
+            top2_vals, _ = pnl_for_filter.topk(2, dim=-1)
             clear_bars = (top2_vals[:, 0] - top2_vals[:, 1]) > NOISE_MARGIN
             if clear_bars.any():
                 tr_scores = tr_scores[clear_bars]
                 tr_valid = tr_valid[clear_bars]
-                pnl_for_target = pnl_for_target[clear_bars]
+                tr_best = tr_best[clear_bars]
 
-        soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
+        # Oracle best contract score vs all other valid contracts
+        batch_idx = torch.arange(tr_scores.size(0), device=device)
+        best_scores = tr_scores[batch_idx, tr_best].unsqueeze(1)  # (B, 1)
 
-        logits_for_sel = tr_scores.clone()
-        logits_for_sel[~tr_valid] = -1e9
-        log_probs = F.log_softmax(logits_for_sel, dim=-1)
-        sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
+        # Mask: valid contracts excluding the oracle best
+        other_mask = tr_valid.clone()
+        other_mask[batch_idx, tr_best] = False
+
+        # Pairwise BPR: -log(sigmoid(best_score - other_score))
+        diffs = best_scores - tr_scores  # (B, max_contracts)
+        pair_loss = -F.logsigmoid(diffs)
+        pair_loss[~other_mask] = 0.0
+        n_pairs = other_mask.sum().clamp(min=1)
+        sel_loss = pair_loss.sum() / n_pairs
 
     total = GATE_W * gate_loss + SEL_W * sel_loss
 

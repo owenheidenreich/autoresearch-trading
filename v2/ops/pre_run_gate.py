@@ -47,7 +47,7 @@ CODE_LEGACY_PATTERNS = (
 )
 DOC_REQUIRED_PHRASES = (
     "Gate BCE on supervised rows",
-    "Soft KL selection with `SOFT_TEMP=0.20`",
+    "Pairwise ranking selection loss",
     "No direct PnL regression",
     "No auxiliary side head",
 )
@@ -197,7 +197,7 @@ def check_doc_sync(errors: list[str]) -> None:
 
     train_text = TRAIN_PATH.read_text()
     expected_train_tokens = (
-        "soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)",
+        "sel_loss",
     )
     for token in expected_train_tokens:
         if token not in train_text:
