@@ -73,7 +73,7 @@ The frozen v4 harness keeps risk policy-driven:
 - configured exit policy
 
 Those live in `v2/core/policy.py` and are part of the mutable surface.
-The current official baseline policy is morning-only: entries are allowed from bar `60` through `120`.
+The current official baseline policy is morning-only: entries are allowed from bar `60` through `105`.
 
 ## What `run_one` Does
 

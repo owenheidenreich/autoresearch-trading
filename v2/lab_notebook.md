@@ -160,7 +160,7 @@ The separate call/put heads + mean centering architecture discovered in exp_125 
 - Working code: **exp_125** (separate call/put score heads + per-bar mean centering)
 - Unified KL over all contracts at `SOFT_TEMP=0.10`
 - `NOISE_MARGIN=0.01`
-- Morning-only policy window in `v2/core/policy.py` (`bar 60` through `120`)
+- Morning-only policy window in `v2/core/policy.py` (`bar 60` through `105`)
 - No margin loss, no direction head, no pairwise ranking
 - Official scored baseline: **exp_125** (score=-0.200, PF 0.873, DD 28.9%, 164C/16P)
 - Direction mix is diagnostic, not a hard score gate
@@ -670,3 +670,56 @@ Only fold 0 achieved direction balance (66C/67P) — and it was the only fold wi
 2. The exp_119 screening result (119C/34P) was from a single fold; across 5 folds, the call collapse dominates
 3. Selection accuracy degraded from exp_106 (6.8% → 1.1%) — the noise filter may be too loose for the full walk-forward
 4. 42.5% noisy bars on the promote mask — nearly half the evaluation window has no clear best contract
+
+## Promote Trace Analysis (2026-04-12 Late)
+
+### `exp_125` vs `exp_106` — Why The Puts Lose
+
+- Type: trace analysis only, no code changes
+- Artifacts replayed on the promote mask:
+  - `v2/artifacts/exp_125/`
+  - `v2/artifacts/exp_106/` replayed from `train.py.snapshot` because the saved evaluator fingerprint is older
+- Saved traces:
+  - `v2/artifacts/analysis/exp_125_promote_traces.csv`
+  - `v2/artifacts/analysis/exp_106_promote_traces.csv`
+
+**Top findings**
+
+1. `exp_125` fixed the full call collapse without improving the core trace diagnostics:
+   - `exp_106`: `191C / 0P`, gate accuracy `21.2%`, selection accuracy `6.8%`, DD `34.5%`
+   - `exp_125`: `164C / 16P`, gate accuracy `21.2%`, selection accuracy `6.1%`, DD `28.9%`
+2. The put trades are a real economic drag, not just a cosmetic direction issue:
+   - `16` put trades lost `-$1,635`
+   - `164` call trades lost `-$1,258`
+   - On the promote slice, removing puts alone drops DD from `28.9%` to `19.7%`
+3. Half the put trades are still wrong-side decisions:
+   - traded-side confusion for `exp_125`: `94 (C->C)`, `70 (C->P)`, `8 (P->P)`, `8 (P->C)`
+   - `8/16` selected puts occurred on oracle-call bars
+   - `5` of those `8` wrong-side put trades missed oracle call winners above `+30%`
+4. The other half are mostly strike-calibration misses, not proof that put signal is absent:
+   - same-side put exact-match rate: `0%`
+   - same-side put median strike gap vs oracle: `25` points
+   - same-side put signed distance from spot: selected `+9.9` vs oracle `+30.6`
+   - representative misses:
+     - `2026-01-08 bar 63`: selected `P6920` vs oracle `P6895`, model `-2.1%` vs oracle `+32.8%`
+     - `2026-01-15 bar 74`: selected `P6965` vs oracle `P6960`, model `-2.0%` vs oracle `+38.6%`
+     - `2026-02-03 bar 61`: selected `P6935` vs oracle `P6870`, model `+22.7%` vs oracle `+71.7%`
+5. There is real put opportunity in the trace:
+   - profitable oracle-call bars: `1,578`, avg oracle P&L `44.7%`, avg label quality `0.0645`
+   - profitable oracle-put bars: `1,248`, avg oracle P&L `45.2%`, avg label quality `0.0451`
+   - `exp_125` converts only `6/1,248` profitable oracle-put bars into same-side put trades; `54` are still traded as calls and `1,188` are skipped
+6. Timing still matters beyond side balance:
+   - put trades at bars `60-74`: `8` trades, `+$91`
+   - put trades at bars `75-89`: `4` trades, `-$1,347`
+   - put trades at bars `105-119`: `4` trades, `-$379`
+   - call trades at bars `105-119`: `29` trades, `-$1,979`
+   - on the promote slice, removing bars `105-119` alone drops DD from `28.9%` to `19.8%`
+   - removing both puts and late-window trades drops DD to `11.7%` and P&L to `+$721` on the same slice
+
+**Decision / next-hypothesis implication**
+
+- The bottleneck is not "there are no profitable put bars." The bottleneck is conditional side calibration on a subset of bars plus weak put strike calibration when the model does choose puts.
+- The next hypothesis should target one of these, not both:
+  1. gate/selectivity against the late-window loss cluster (`105-119`)
+  2. training-side put strike calibration on oracle-put bars
+- Do **not** keep forcing direction balance with generic margin or gate-weight losses; that family is exhausted.

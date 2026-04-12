@@ -66,7 +66,7 @@ raw SPX/SPY/VIX pickles + full-chain SPXW pickles
   - each executable contract on the current bar
 - The live loss stack is balanced gate BCE plus soft KL selection only.
 - The working config uses `SOFT_TEMP=0.10` and `NOISE_MARGIN=0.01`.
-- The current official policy window is morning-only (`bar 60` through `120`).
+- The current official policy window is morning-only (`bar 60` through `105`).
 - Direction mix is now diagnostic output, not a hard score gate.
 - Risk is policy-driven, not learned, in the frozen v4 harness.
 

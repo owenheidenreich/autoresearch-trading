@@ -41,6 +41,18 @@ Separate call/put score heads with per-bar mean centering broke the all-call col
 
 **Key finding**: Direction balance vs economics is a monotonic tradeoff. Every mechanism that forces more puts degrades PF/DD proportionally. The model genuinely doesn't know how to pick winning put contracts.
 
+### Promote Trace Follow-Up (2026-04-12 Late)
+
+Promote-trace comparison of `exp_125` vs `exp_106` clarified that the remaining bottleneck is not "no put signal"; it is conditional side calibration plus put strike quality.
+
+- Replayed both artifacts on the promote mask and saved traces to `v2/artifacts/analysis/exp_106_promote_traces.csv` and `v2/artifacts/analysis/exp_125_promote_traces.csv`
+- `exp_125` improved promote drawdown from `34.5%` to `28.9%`, but gate accuracy stayed flat at `21.2%` and selection accuracy slipped from `6.8%` to `6.1%`
+- The `16` put trades in `exp_125` lost `-$1,635`, versus `-$1,258` from `164` call trades; on the promote slice, removing puts alone brings DD from `28.9%` to `19.7%`
+- `8/16` selected puts were outright wrong-side bars where the oracle was a call; `5` of those missed call winners above `+30%`
+- The other `8/16` puts were on oracle-put bars, but put strike calibration was poor: exact-match rate `0%`, median strike gap `25` points, and selected puts sat much closer to spot than the oracle (`+9.9` vs `+30.6` signed points from spot)
+- Real put opportunity does exist in the data: the promote trace contains `1,248` profitable oracle-put bars vs `1,578` profitable oracle-call bars, with similar average oracle P&L (`45.2%` vs `44.7%`), though put label quality is weaker (`0.045` vs `0.065`)
+- Timing still matters on the call side too: on the promote slice, removing bars `105-119` alone also drops DD to `19.8%`; removing both puts and late-window trades drops DD to `11.7%` and turns P&L positive
+
 ## What Changed (2026-04-11)
 
 Major architecture exploration and a trade-analysis-driven breakthrough.
@@ -180,7 +192,7 @@ Dataset version:     v4_exact_chain
 Dataset fingerprint: 46f2d184e186496f
 Unique days:         986
 Features:            47
-Trade window:        bar 60-120  (was 30-270, changed in exp_105)
+Trade window:        bar 60-105  (was 60-120, narrowed in exp_133)
 ATM source:          dynamic_nearest_per_bar
 ```
 
@@ -226,13 +238,13 @@ ATM source:          dynamic_nearest_per_bar
 ## Remaining Gap to Profitability
 
 1. **DD 28.9% vs 20% hard gate** — the best official result (exp_125) is 8.9 percentage points from passing. This is the closest the project has been.
-2. **Put selection quality** — the model picks winning calls (WR ~38%) but losing puts. Trace analysis of the exp_125 artifact should reveal whether puts lose from bad strike selection, bad timing, or the put market being inherently harder.
+2. **Put selection quality** — the trace now shows the put failure mode clearly: half the put trades are wrong-side bars, and the other half are usually weaker strike picks than the oracle.
 3. **Baselines not beaten** — no configuration has beaten all four baselines yet.
 
 The next session should:
-1. Run trace analysis on exp_125's model_candidate to compare call vs put P&L distributions
-2. Investigate whether the put side needs different features, different scoring, or simply has less signal
-3. Consider whether the 20% DD gate can be closed through gate selectivity improvements rather than direction balance
+1. Test a gate/selectivity hypothesis that suppresses the worst late-window trades (`105-119`) without trying to force more puts
+2. If the next hypothesis stays training-side, target put strike calibration on oracle-put bars instead of adding another generic side-balance loss
+3. Keep treating direction mix as diagnostic; the trace evidence says the missing piece is put quality, not raw put count
 
 ## Infrastructure Fixes Made This Session
 
@@ -249,8 +261,9 @@ The next session should:
 - `v2/program.md`, `v2/docs/current_state.md`, and `v2/docs/decision_log.md` as the live protocol/state documents
 - `v2/output/trades.html` and `equity.html` as the earlier exp_104 trade visualization (useful for the morning-window discovery)
 - `v2/output/trades.csv` as the 259-trade analysis dataset
-- `v2/models/model_candidate.pt` as the `exp_106` official model (fingerprint `46f2d184e186496f`)
-- `v2/artifacts/exp_106/` as the current official artifact bundle
+- `v2/models/model_candidate.pt` as the `exp_125` official model (fingerprint `46f2d184e186496f`)
+- `v2/artifacts/exp_125/` as the current official artifact bundle
+- `v2/artifacts/analysis/exp_106_promote_traces.csv` and `v2/artifacts/analysis/exp_125_promote_traces.csv` as the current side-by-side trace-analysis inputs
 - `v2/core/data_integrity.py` anomaly and side-bias reports as the separate audit track
 
 ## What Not To Trust
@@ -267,9 +280,9 @@ The next session should:
 
 ## Hypothesis Queue
 
-1. Run trace analysis on exp_125 artifact: compare call vs put trade P&L, identify WHY puts lose
-2. Investigate gate selectivity improvements to reduce trades without architecture change
-3. Consider whether the remaining DD gap (28.9% → 20%) is more approachable via policy tuning (stop/target) than training-side changes
+1. Use the `exp_125` trace evidence to test a gate/selectivity hypothesis against the `105-119` late-window loss cluster
+2. If staying on the training surface, target same-side put strike calibration; do not keep forcing raw direction balance with generic losses
+3. Revisit whether the remaining DD gap is more approachable through selectivity than side balance only after one targeted late-window screen
 4. Keep the separate audit track alive; do not rebuild dataset unless trigger fires
 
 ## Abandoned Approaches
