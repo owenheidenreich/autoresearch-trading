@@ -83,7 +83,15 @@ class TradingModel(nn.Module):
             nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
-        self.score_head = nn.Sequential(
+        self.call_score_head = nn.Sequential(
+            nn.Linear(d * 2, d),
+            nn.GELU(),
+            nn.Dropout(dr),
+            nn.Linear(d, d // 2),
+            nn.GELU(),
+            nn.Linear(d // 2, 1),
+        )
+        self.put_score_head = nn.Sequential(
             nn.Linear(d * 2, d),
             nn.GELU(),
             nn.Dropout(dr),
@@ -104,13 +112,20 @@ class TradingModel(nn.Module):
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
-        contract_scores = self.score_head(combined).squeeze(-1)
+
+        # Route each contract through its side-specific score head
+        is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
+        call_scores = self.call_score_head(combined).squeeze(-1)
+        put_scores = self.put_score_head(combined).squeeze(-1)
+        contract_scores = torch.where(is_put, put_scores, call_scores)
+
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         valid_mask = contracts[:, :, 0] > 0.5
         return {
             "contract_scores": contract_scores,
             "no_trade_score": no_trade_score,
             "valid_mask": valid_mask,
+            "is_put": is_put,
         }
 
 
@@ -217,12 +232,14 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Selection loss: KL over valid contracts, skip noise bars ---
+    # --- B. Selection loss: side-split KL (call KL + put KL), skip noise bars ---
     sel_loss = torch.tensor(0.0, device=device)
+    is_put = outputs["is_put"].to(device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
+        tr_is_put = is_put[trade_rows]
 
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
@@ -236,18 +253,39 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 tr_scores = tr_scores[clear_bars]
                 tr_valid = tr_valid[clear_bars]
                 pnl_for_target = pnl_for_target[clear_bars]
+                tr_is_put = tr_is_put[clear_bars]
             else:
                 tr_scores = tr_scores[:0]
                 tr_valid = tr_valid[:0]
                 pnl_for_target = pnl_for_target[:0]
+                tr_is_put = tr_is_put[:0]
 
         if tr_scores.size(0) > 0:
-            soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
+            side_kls = []
+            for side_mask, _name in [(~tr_is_put, "call"), (tr_is_put, "put")]:
+                # Mask: only contracts of this side that are valid
+                s_valid = tr_valid & side_mask
+                # Need at least 2 contracts of this side per bar for meaningful KL
+                bars_with_side = s_valid.sum(dim=-1) >= 2
+                if not bars_with_side.any():
+                    continue
+                s_scores = tr_scores[bars_with_side]
+                s_pnl = pnl_for_target[bars_with_side]
+                s_vmask = s_valid[bars_with_side]
 
-            logits_for_sel = tr_scores.clone()
-            logits_for_sel[~tr_valid] = -1e9
-            log_probs = F.log_softmax(logits_for_sel, dim=-1)
-            sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
+                # Mask out contracts not of this side
+                s_logits = s_scores.clone()
+                s_logits[~s_vmask] = -1e9
+                s_pnl_masked = s_pnl.clone()
+                s_pnl_masked[~s_vmask] = -1e9
+
+                s_target = F.softmax(s_pnl_masked / SOFT_TEMP, dim=-1)
+                s_log_probs = F.log_softmax(s_logits, dim=-1)
+                s_kl = F.kl_div(s_log_probs, s_target, reduction="batchmean")
+                side_kls.append(s_kl)
+
+            if side_kls:
+                sel_loss = sum(side_kls) / len(side_kls)
 
     total = GATE_W * gate_loss + SEL_W * sel_loss
 
