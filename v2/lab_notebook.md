@@ -92,6 +92,9 @@ Top predictive features:
 | 076 | -0.040 | [0,0,0,-0.2,0] | revert | gate threshold disabled — one fold fired |
 | 077 | -0.300 | [-0.3,-0.3,-0.3,-0.3,-0.3] | revert | selection-only variant still negative |
 | 078 | -0.740 | [-1,-0.5,-1,-1,-0.2] | revert | stronger direct PnL regression worsened edge |
+| 099 | -0.260 | [-0.3,-0.3,-0.2,-0.3,-0.2] | revert | first official exact-chain baseline after reset |
+| 104 | -0.240 | [-0.2,-0.3,-0.3,-0.2,-0.2] | revert | balanced gate + standard KL official baseline |
+| 106 | -0.260 | [-0.2,-0.3,-0.2,-0.3,-0.3] | revert | morning-window official baseline lock |
 
 ## Screening History (2026-04-10)
 
@@ -124,12 +127,14 @@ Top predictive features:
 
 ## Current Live Baseline
 
-- Gate BCE plus soft KL selection only
+- Balanced gate BCE plus soft KL selection only
 - `SOFT_TEMP=0.20`
+- Morning-only policy window in `v2/core/policy.py` (`bar 60` through `120`)
 - No direct PnL regression
 - No auxiliary side head
 - No gate reweighting
 - No score regularization
+- No temporal embeddings or flow dropout active; `exp_107` through `exp_109` were reverted after screening
 
 ## Abandoned Or Parked Approaches
 
@@ -142,9 +147,9 @@ Top predictive features:
 
 ## Hypothesis Queue
 
-1. `exp_095`: balanced gate sampling — subsample trade-class rows to match no-trade count in gate loss
-2. `exp_096`: reduced model capacity (`D_MODEL=48`) to prevent overfitting majority class
-3. Defer detached two-stage side models until simpler replay-compatible changes are exhausted
+1. `exp_110`: choose the next trace-targeted modeling hypothesis after the rejected Kronos standalone screens
+2. Keep the raw/sidecar audit track active, but do not rebuild `v4_exact_chain` unless the explicit trigger fires
+3. Continue deferring stop/contract-filter policy work until a training-side change improves the traced failure mode
 
 ## Active Experiment Kickoff
 
@@ -274,3 +279,142 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
 **Assessment**: The balanced gate sampling breakthrough is real but not yet sufficient. The gate is learning, direction balance is preserved, and secondary metrics improved substantially. However, the score function requires all hard gates to pass, and excessive drawdown (102.1%) still fails. Continuing without new strategic insight risks burning GPU time on marginal variants.
 
 **Recommended next session approach**: Combine balanced gate sampling with one of: (1) SOFT_TEMP=0.10 for tighter selection, (2) reduced capacity D_MODEL=48, or (3) longer training time to let the gate converge further.
+
+## Morning-Window Baseline Lock And Kronos Block (2026-04-11)
+
+### `exp_106` — Official Morning-Window Baseline Lock
+
+- Type: official 5-fold run
+- Code change: none beyond the kept morning-only policy from `exp_105`
+- Purpose: turn the best screening result into the official baseline artifact before starting the Kronos-inspired block
+- Result:
+  - score: `-0.260`
+  - folds: `[-0.20, -0.30, -0.20, -0.30, -0.30]`
+  - gate failure: `direction_collapse (balance=0.00 < 0.15)`
+  - trades: `784`
+  - win rate: `38.7%`
+  - profit factor: `0.890`
+  - positive day rate: `50.0%`
+- Mandatory promote trace:
+  - gate accuracy: `21.2%`
+  - selection accuracy: `6.8%`
+  - average model P&L: `-0.0179`
+  - average oracle P&L: `0.3279`
+  - average delta gap: `-0.3458`
+  - noisy bars `< 0.01`: `42.5%`
+  - promote replay direction balance: `191C / 0P`
+- Decision: keep the artifact as the official baseline reference, but do not treat the behavior as promotable
+- Takeaway: the morning window improved economics versus `exp_104`, but the scorer still collapsed entirely to calls on the promote trace
+
+### Revised Protocol Notes (2026-04-11)
+
+- The active research unit is now one hypothesis, not one file change
+- The default mutable surface remains `v2/train.py` plus `v2/core/policy.py`
+- The approved expanded surface for the current block is:
+  - `v2/train.py`
+  - `v2/replay.py`
+  - `v2/core/data_integrity.py`
+  - `v2/ops/pre_run_gate.py`
+- Promotion remains score- and baseline-gated
+- A separate audit track now exists for raw-minute and full-sidecar anomaly checks; dataset migration still requires an explicit trigger
+
+### `exp_107` — Policy-Window-Aligned Supervision
+
+- Type: screening run
+- Code change: apply gate and selection supervision only on rows inside the live morning policy window
+- Result:
+  - score: `-0.200`
+  - gate failure: `excessive_drawdown (68.9% > 20%)`
+  - trades: `160`
+  - direction balance: `25C / 135P`
+  - win rate: `30.6%`
+  - baseline comparison: beat `ATM` and `ATM-trailing`, failed to beat `random` and `simple-rules`
+- Decision: revert
+- Takeaway: this removed the all-call collapse, but the economics got materially worse; supervision-window alignment alone is not enough
+
+### `exp_108` — Learned Temporal Embeddings
+
+- Type: screening run
+- Code change: thread explicit `bar_of_day` / weekday IDs through training and replay, then add learned temporal embeddings to the context encoder
+- Result:
+  - score: `-0.300`
+  - trades: `162`
+  - direction balance: `162C / 0P`
+  - win rate: `35.2%`
+  - profit factor: `0.771`
+  - baseline comparison: failed all four baselines
+- Decision: revert
+- Takeaway: explicit temporal IDs did not help as a standalone hypothesis and reintroduced full call-side collapse
+
+### `exp_109` — Flow-Feature Dropout
+
+- Type: screening run
+- Code change: train-only 5% sample-level masking of the context flow slice `X[..., 39:47]`
+- Result:
+  - score: `-0.300`
+  - trades: `143`
+  - direction balance: `129C / 14P`
+  - minority-direction share: `0.11`
+  - win rate: `30.8%`
+  - profit factor: `0.564`
+  - baseline comparison: failed all four baselines
+- Decision: revert
+- Takeaway: this was the only Kronos-inspired change that partially improved direction balance, but it still missed the `0.15` hard gate and the economics worsened
+
+### `exp_110` — Cross-Side Calibration Loss
+
+- Type: screening run
+- Code change: add a small cross-side ranking term on traded rows so the oracle side's best score must beat the opposite side without adding a separate direction head or inference mask
+- Result:
+  - score: `-0.200`
+  - gate failure: `excessive_drawdown (82.5% > 20%)`
+  - trades: `162`
+  - direction balance: `35C / 127P`
+  - win rate: `34.0%`
+  - profit factor: `0.619`
+  - baseline comparison: beat `ATM` and `ATM-trailing`, failed to beat `random` and `simple-rules`
+- Decision: revert
+- Takeaway: the hypothesis successfully broke the full call-collapse failure mode, but it overcorrected into a strong put bias and still lost badly on economics. This supports the idea that cross-side calibration is the right failure surface, but the current margin term is too blunt as a standalone fix.
+
+### Separate Audit Track
+
+- Command:
+  - `.venv/bin/python3 -m v2.core.data_integrity --data v2/data.pt --raw-audit --sidecar-audit --trace-path v2/artifacts/replay_traces.csv`
+- Raw audit findings:
+  - SPX flagged `2024-05-30` for a 71-bar stagnant close run
+  - VIX flagged `2024-08-05`, `2025-04-07`, and `2025-04-09` for structural breaks
+  - SPY flagged no dates
+- Sidecar audit findings:
+  - 59 flagged dates total
+  - 9 recurring schema-break dates on holiday-adjacent sessions:
+    - `2022-11-25`
+    - `2023-07-03`
+    - `2023-11-24`
+    - `2024-07-03`
+    - `2024-11-29`
+    - `2024-12-24`
+    - `2025-07-03`
+    - `2025-11-28`
+    - `2025-12-24`
+- Trace overlap:
+  - raw audit overlap with worst trace days: `0`
+  - sidecar audit overlap with worst trace days: `0`
+- Decision: keep `v4_exact_chain` frozen; the audit found real anomalies, but it did not fire the explicit dataset-migration trigger
+
+### `exp_111` — Soft Side-Calibration BCE Loss (SIDE_W=0.10)
+
+- Type: screening run
+- Code change: added a BCE auxiliary loss on `max_call_score - max_put_score` vs oracle side label, at `SIDE_W=0.10`, applied only on clear-label traded rows with both sides present
+- Purpose: break the complete call-side collapse (191C/0P) without the overcorrection seen in exp_110's margin approach
+- Result:
+  - score: `-0.300`
+  - gate failure: `direction_collapse (balance=0.03 < 0.15)`
+  - trades: `176`
+  - direction balance: `171C / 5P`
+  - win rate: `32.4%`
+  - profit factor: `0.582`
+  - drawdown: `46.9%`
+  - baseline comparison: failed all four baselines
+  - training dynamics: side_loss dropped from `0.674` to `0.645` over 19 epochs; dir_acc stuck at `~0.49`; gate showed typical instability (trd_rate oscillating 0.0–0.79)
+- Decision: do not promote, but continue the family
+- Takeaway: the BCE side-calibration mechanism works (5 puts vs 0 in baseline) but at `SIDE_W=0.10` the gradient is ~10x weaker than gate/sel losses and gets drowned out. The formulation is fundamentally different from exp_110's hard margin — higher weight may not overcorrect the same way. Next: `exp_112` with `SIDE_W=0.50`
