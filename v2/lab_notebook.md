@@ -513,4 +513,55 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
 | 0.05 | 458C/22P | — | 5% | collapsed (exp_096) |
 | 0.10 | **120C/42P** | 61.7% | **26%** | **breakthrough** (exp_115) |
 | 0.15 | 69C/0P | 9.3% | 0% | direction cliff (exp_116) |
+| 0.12 | 184C/0P | 40.3% | 0% | cliff confirmed (exp_118) |
+| 0.15 | 69C/0P | 9.3% | 0% | direction cliff (exp_116) |
 | 0.20 | 191C/0P | varies | 0% | fold-dependent (exp_106) |
+
+### `exp_117` — GATE_W=2.0 + SOFT_TEMP=0.10
+
+- Type: screening run
+- Code change: double `GATE_W` from `1.0` to `2.0` with `SOFT_TEMP=0.10`
+- Purpose: reduce DD by training a more selective gate
+- Result:
+  - score: `-0.200`
+  - gate failure: `excessive_drawdown (75.4% > 20%)`
+  - trades: `143`
+  - direction balance: **`85C / 58P (40% puts)`** — best balance without overcorrection
+  - win rate: `30.8%`
+  - profit factor: `0.690`
+  - drawdown: `75.4%` (worse than exp_115!)
+  - net PnL: `-$6,296`
+- Decision: revert GATE_W back to 1.0
+- Takeaway: stronger gate improved direction balance (40% puts) but worsened DD. The DD problem is from low-quality selections, not overtrading.
+
+### `exp_118` — SOFT_TEMP=0.12 Fine Probe
+
+- Type: screening run
+- Code change: `SOFT_TEMP` from `0.10` to `0.12`, `GATE_W` back to `1.0`
+- Result:
+  - score: `-0.300`
+  - gate failure: `direction_collapse (balance=0.00 < 0.15)`
+  - trades: `184`
+  - direction balance: `184C / 0P`
+  - drawdown: `40.3%`
+- Decision: revert; cliff is between 0.10 and 0.12
+- Takeaway: even 0.12 collapses to all calls. The direction cliff is razor-thin.
+
+### `exp_119` — SOFT_TEMP=0.10 + Noise Bar Filtering
+
+- Type: screening run
+- Code change: skip bars where top PnL margin < `0.01` from the selection KL loss (30.6% of training bars are noise)
+- Purpose: improve selection quality at SOFT_TEMP=0.10 by removing ambiguous training signal
+- Result:
+  - score: `-0.200`
+  - gate failure: `excessive_drawdown (55.2% > 20%)`
+  - trades: `153`
+  - direction balance: `119C / 34P (22% puts)` — direction preserved
+  - win rate: **`37.3%`** (best since morning window)
+  - profit factor: **`0.813`** (best screening PF since exp_106)
+  - drawdown: `55.2%` (improved from 61.7%)
+  - +day rate: `42.9%`
+  - net PnL: `-$5,518`
+  - baseline comparison: beat `ATM` and `ATM-trailing`
+- Decision: **family alive** — best combined direction + economics result
+- Takeaway: noise bar filtering materially improves selection quality at SOFT_TEMP=0.10. WR jumped from 32.7% to 37.3%, PF from 0.596 to 0.813. DD still too high (55.2%) but trending in the right direction. This is the strongest screening result of the project with direction balance present.
