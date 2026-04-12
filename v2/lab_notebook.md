@@ -815,3 +815,32 @@ The remaining lever for improving PF is policy-level: stop-loss tuning, trailing
 - Decision: **revert** — DD 48.7% fails hard gate; trace diagnostics worse on every metric except direction balance; positive score entirely carried by fold 3's lucky run
 - **Family alive**: the greek normalization is addressing a genuine data issue. `dir_acc` movement and meaningful direction balance are new. But the centering + normalization combination pushes too many puts through when the model isn't consistent enough across folds.
 - Next hypothesis: try greek normalization WITHOUT per-bar mean centering. exp_124 (separate heads, no centering) had the best single-fold economics ever (PF 0.825, DD 25.7%) but 0 puts. Normalized features might produce a few quality puts without centering forcing parity.
+
+### `exp_138` — Greek Normalization Without Centering
+
+- Type: screening run
+- Code change: removed per-bar mean centering; kept greek normalization from exp_137. Raw head scores compete directly.
+- Result:
+  - score: `-0.200`
+  - trades: `130` (`56C / 74P`, minority `43.1%` — puts dominate)
+  - win rate: `34.6%`
+  - profit factor: `0.786`
+  - drawdown: `71.8%`
+- Decision: **kill** — without centering, the put head produces systematically higher raw scores, flipping the bias from all-calls to majority-puts. The heads need some normalization to be comparable; centering is necessary, just over-equalizes with normalized features.
+
+### Session Close (2026-04-12 Late)
+
+**6 consecutive no-improve experiments** (exp_134, 134b, 135, 136, 137-reverted, 138) — session limit reached.
+
+**What we learned this session:**
+
+1. **Put quality is feature-bound**: per-side ranking KL (exp_134/134b) proved the put head CAN rank puts, but "best ranked put" is still a bad trade. The model's features don't support good put selection.
+2. **Score_delta carries zero information**: gate tightening is not a viable lever. 67.5% of losses are contract-selection errors, not timing errors.
+3. **dir_acc is random (~0.49) in every configuration** except exp_137 where it showed movement (~0.55). The KL ranking gradient buries the direction signal.
+4. **Greek normalization is the right structural fix**: negating delta/moneyness/distance for puts before embedding produced the first positive aggregate score (+0.184) and genuine direction balance (43% puts). But it needs calibration — centering over-equalizes, no centering under-normalizes.
+5. **The centering-normalization interaction** is the open problem: centering is needed for head calibration but pushes too many puts through with normalized features.
+
+**Where to go next session:**
+1. Try a PARTIAL centering: instead of subtracting the full per-side mean, subtract a fraction (e.g., 0.5 * mean). This gives partial normalization without full equalization.
+2. Try centering with a learned per-side bias: `contract_scores = torch.where(is_put, put_centered + learned_put_bias, call_centered)`. The bias can learn the right discount for puts.
+3. Keep the greek normalization as the base — it's the only change that moved dir_acc and produced a positive score.

@@ -111,28 +111,27 @@ class TradingModel(nn.Module):
         h = self.encoder(h, mask=mask)
         context = h[:, -1, :]
 
-        # Normalize sign-inverted features for puts before embedding:
-        # delta(8), moneyness_pct(11), distance_points(12) flip sign for puts.
-        # Negating them aligns put embeddings with calls so the score heads
-        # learn one strike-quality mapping that works for both sides.
-        is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
-        contracts_normed = contracts.clone()
-        put_flip = is_put.unsqueeze(-1).float()  # (batch, n_contracts, 1)
-        for fidx in (8, 11, 12):  # delta, moneyness_pct, distance_points
-            contracts_normed[:, :, fidx] = contracts[:, :, fidx] * (1 - 2 * put_flip.squeeze(-1))
-
-        contract_emb = self.contract_proj(contracts_normed)
+        contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
 
         # Route each contract through its side-specific score head
+        is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
         valid_mask = contracts[:, :, 0] > 0.5
         call_scores = self.call_score_head(combined).squeeze(-1)
         put_scores = self.put_score_head(combined).squeeze(-1)
 
-        # No centering — with normalized greek features, the heads can
-        # compete on raw scores. The unified KL calibrates relative levels.
-        contract_scores = torch.where(is_put, put_scores, call_scores)
+        # Per-bar mean centering: remove global offset so sides compete fairly
+        call_valid = (~is_put) & valid_mask
+        put_valid = is_put & valid_mask
+        call_count = call_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
+        put_count = put_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
+        call_mean = (call_scores * call_valid.float()).sum(dim=-1, keepdim=True) / call_count
+        put_mean = (put_scores * put_valid.float()).sum(dim=-1, keepdim=True) / put_count
+        call_scores_centered = call_scores - call_mean
+        put_scores_centered = put_scores - put_mean
+
+        contract_scores = torch.where(is_put, put_scores_centered, call_scores_centered)
 
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         return {
