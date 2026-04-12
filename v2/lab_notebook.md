@@ -791,3 +791,27 @@ Across exp_134/134b/135/136, `dir_acc` is stuck at `0.47-0.51` (random). The mod
 **Implication**: exp_133 works because the natural call bias in the centering constrains puts to ~9%. Every mechanism that disrupts this bias (per-side KL, wider architecture, interaction features) lets more random puts through, degrading economics. Training-side improvements to direction accuracy likely require a different loss surface (e.g., explicit direction component) or different features — both of which have been tried and failed within the current paradigm (exp_100-103, exp_107-113).
 
 The remaining lever for improving PF is policy-level: stop-loss tuning, trailing exit parameters, or bar-level selectivity within the existing model.
+
+### `exp_137` — Greek Sign Normalization (Official 5-Fold)
+
+- Type: **official run**
+- Code change: negate delta(8), moneyness_pct(11), distance_points(12) for put contracts before `contract_proj`. Aligns put embedding space with calls so score heads learn one coherent strike-quality mapping.
+- Motivation: user insight that puts have fundamentally inverted greeks — delta, moneyness, and distance all flip sign. The shared `contract_proj` learns "higher delta = better" which is correct for calls but backwards for puts.
+- **Result (5-fold official)**:
+  - score: **`+0.184`** ← first positive aggregate score ever
+  - per-fold: `[-0.20, -0.20, -0.20, +1.72, -0.20]`
+  - trades: `658` (`70C / 53P` on promote mask, minority `43.1%`)
+  - win rate: `34.9%`
+  - profit factor: `0.705`
+  - drawdown: `48.7%`
+  - beats baselines: **all 4** ✓
+  - gate failure: DD 48.7% > 20%
+- Promote trace:
+  - gate accuracy: `19.9%` (worse than exp_133's `21.2%`)
+  - selection accuracy: `5.7%` (worse than exp_133's `6.1%`)
+  - delta gap: `-0.399` (worse than exp_133's `-0.346`)
+  - direction: `70C / 53P` (43% puts) — genuine balance
+  - `dir_acc` showed movement during training (`0.55` in fold 1, vs stuck at `0.49` in all prior experiments)
+- Decision: **revert** — DD 48.7% fails hard gate; trace diagnostics worse on every metric except direction balance; positive score entirely carried by fold 3's lucky run
+- **Family alive**: the greek normalization is addressing a genuine data issue. `dir_acc` movement and meaningful direction balance are new. But the centering + normalization combination pushes too many puts through when the model isn't consistent enough across folds.
+- Next hypothesis: try greek normalization WITHOUT per-bar mean centering. exp_124 (separate heads, no centering) had the best single-fold economics ever (PF 0.825, DD 25.7%) but 0 puts. Normalized features might produce a few quality puts without centering forcing parity.
