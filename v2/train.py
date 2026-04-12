@@ -32,6 +32,7 @@ GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
+SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.5))
 
 
 class PositionalEncoding(nn.Module):
@@ -137,6 +138,8 @@ class TradingModel(nn.Module):
             "no_trade_score": no_trade_score,
             "valid_mask": valid_mask,
             "is_put": is_put,
+            "call_scores_raw": call_scores,
+            "put_scores_raw": put_scores,
         }
 
 
@@ -275,7 +278,63 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             log_probs = F.log_softmax(logits_for_sel, dim=-1)
             sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss
+    # --- C. Per-side ranking KL: teach each head to rank within its own side ---
+    side_sel_loss = torch.tensor(0.0, device=device)
+    if SIDE_SEL_W > 0 and trade_rows.any():
+        is_put = outputs["is_put"]
+        call_raw = outputs["call_scores_raw"]
+        put_raw = outputs["put_scores_raw"]
+
+        tr_is_put = is_put[trade_rows]
+        tr_call_raw = call_raw[trade_rows]
+        tr_put_raw = put_raw[trade_rows]
+        tr_valid_side = valid_mask[trade_rows]
+        tr_labels_side = labels[trade_rows]
+        tr_best_idx = best_idx[trade_rows]
+
+        # Determine oracle side per row from the oracle contract
+        rows_arange = torch.arange(tr_best_idx.size(0), device=device)
+        oracle_is_put = tr_is_put[rows_arange, tr_best_idx]
+
+        # Filter noise bars same as section B
+        pnl_side = tr_labels_side.clone()
+        pnl_side[~tr_valid_side] = -1e9
+        pnl_side[~torch.isfinite(pnl_side)] = -1e9
+        if NOISE_MARGIN > 0:
+            top2_side, _ = pnl_side.topk(2, dim=-1)
+            clear_side = (top2_side[:, 0] - top2_side[:, 1]) > NOISE_MARGIN
+        else:
+            clear_side = torch.ones(pnl_side.size(0), dtype=torch.bool, device=device)
+
+        # Call-oracle rows: KL over call contracts only
+        call_oracle_mask = (~oracle_is_put) & clear_side
+        if call_oracle_mask.any():
+            co_scores = tr_call_raw[call_oracle_mask]
+            co_valid = tr_valid_side[call_oracle_mask] & (~tr_is_put[call_oracle_mask])
+            co_pnl = pnl_side[call_oracle_mask].clone()
+            co_pnl[tr_is_put[call_oracle_mask]] = -1e9  # mask puts from target
+            co_pnl[~co_valid] = -1e9
+            co_target = F.softmax(co_pnl / SOFT_TEMP, dim=-1)
+            co_logits = co_scores.clone()
+            co_logits[~co_valid] = -1e9
+            co_log_probs = F.log_softmax(co_logits, dim=-1)
+            side_sel_loss = side_sel_loss + F.kl_div(co_log_probs, co_target, reduction="batchmean")
+
+        # Put-oracle rows: KL over put contracts only
+        put_oracle_mask = oracle_is_put & clear_side
+        if put_oracle_mask.any():
+            po_scores = tr_put_raw[put_oracle_mask]
+            po_valid = tr_valid_side[put_oracle_mask] & tr_is_put[put_oracle_mask]
+            po_pnl = pnl_side[put_oracle_mask].clone()
+            po_pnl[~tr_is_put[put_oracle_mask]] = -1e9  # mask calls from target
+            po_pnl[~po_valid] = -1e9
+            po_target = F.softmax(po_pnl / SOFT_TEMP, dim=-1)
+            po_logits = po_scores.clone()
+            po_logits[~po_valid] = -1e9
+            po_log_probs = F.log_softmax(po_logits, dim=-1)
+            side_sel_loss = side_sel_loss + F.kl_div(po_log_probs, po_target, reduction="batchmean")
+
+    total = GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -302,6 +361,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
+        "side_sel": float(side_sel_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -405,7 +465,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} side_sel={avg_val.get('side_sel', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
