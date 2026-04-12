@@ -30,7 +30,8 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.12))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
+NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 
 
 class PositionalEncoding(nn.Module):
@@ -216,7 +217,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- B. Selection loss: standard KL over all valid contracts ---
+    # --- B. Selection loss: KL over valid contracts, skip noise bars ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
@@ -226,6 +227,16 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         pnl_for_target = tr_labels.clone()
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
+
+        # Filter out noise bars (top margin < NOISE_MARGIN)
+        if NOISE_MARGIN > 0:
+            top2_vals, _ = pnl_for_target.topk(2, dim=-1)
+            clear_bars = (top2_vals[:, 0] - top2_vals[:, 1]) > NOISE_MARGIN
+            if clear_bars.any():
+                tr_scores = tr_scores[clear_bars]
+                tr_valid = tr_valid[clear_bars]
+                pnl_for_target = pnl_for_target[clear_bars]
+
         soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
         logits_for_sel = tr_scores.clone()
