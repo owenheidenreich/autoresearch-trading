@@ -7,6 +7,31 @@
 3. Read `v2/program.md` — the definitive protocol.
 4. Read `v2/COMMANDS.md` — what the human can ask you to do.
 
+## Key File Map (read this before searching the codebase)
+
+**Training & model:**
+- `v2/train.py` — model architecture (`TradingModel`), `forward()`, `compute_loss()`, training loop
+- `v2/core/policy.py` — `DecisionPolicy` dataclass (stops, targets, trade window, trailing exit params)
+
+**Trade simulation (NOT in replay.py):**
+- `v2/core/simulator.py` — `simulate_trade()`, `TRAILING_TIERS`, stop/TP/trailing exit logic, MFE tracking, spread cost model
+- `v2/core/schema.py` — `TradeIntent`, `SimulatedTrade`, `OpenPosition` dataclasses
+
+**Replay & evaluation:**
+- `v2/replay.py` — orchestrates replay: loads model, runs inference, calls `simulator.simulate_trade()`, computes baselines, collects traces
+- `v2/core/metrics.py` — score formula, hard gates, baseline computation
+
+**Data pipeline:**
+- `v2/core/chain_data.py` — `CONTRACT_FEATURE_FIELDS` (15 features), `build_contract_row()`, `padded_snapshot()`
+- `v2/pipeline/compute_features.py` — `bs_greeks_vec()` (Black-Scholes greeks), 47 context features
+- `v2/pipeline/build_v2_dataset.py` — builds `data.pt` + sidecar `.pt` files, oracle label computation
+
+**Operations:**
+- `v2/ops/deploy.sh` — GPU lifecycle: boot/start/run_screen/run_one/stop
+- `v2/ops/model_manage.py` — keep/revert promoted model
+
+**Full layout:** `v2/LAYOUT.md`
+
 ## Hard Rules
 
 - **Default mutable surface:** `v2/train.py` and `v2/core/policy.py`.
