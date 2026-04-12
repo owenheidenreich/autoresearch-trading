@@ -417,4 +417,23 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
   - baseline comparison: failed all four baselines
   - training dynamics: side_loss dropped from `0.674` to `0.645` over 19 epochs; dir_acc stuck at `~0.49`; gate showed typical instability (trd_rate oscillating 0.0–0.79)
 - Decision: do not promote, but continue the family
-- Takeaway: the BCE side-calibration mechanism works (5 puts vs 0 in baseline) but at `SIDE_W=0.10` the gradient is ~10x weaker than gate/sel losses and gets drowned out. The formulation is fundamentally different from exp_110's hard margin — higher weight may not overcorrect the same way. Next: `exp_112` with `SIDE_W=0.50`
+- Takeaway: the BCE side-calibration mechanism works (5 puts vs 0 in baseline) but at `SIDE_W=0.10` the gradient is ~10x weaker than gate/sel losses and gets drowned out
+
+### `exp_112` — Side-Calibration BCE at SIDE_W=0.50
+
+- Type: screening run
+- Code change: increase `SIDE_W` from `0.10` to `0.50`
+- Purpose: test whether the BCE side-calibration needs more weight to overcome the gate/sel gradient
+- Result:
+  - score: `-0.300`
+  - gate failure: `direction_collapse (balance=0.00 < 0.15)`
+  - trades: `92`
+  - direction balance: `92C / 0P`
+  - win rate: `37.0%`
+  - profit factor: `0.679`
+  - drawdown: `21.3%`
+  - net PnL: `-$1,860`
+  - baseline comparison: failed all four baselines
+  - training dynamics: `dir_acc` stuck at `~0.49` (random) throughout; `side_loss` `0.68 → 0.65` (minimal learning)
+- Decision: kill the max-based BCE family
+- Takeaway: at 5x weight the model went BACK to 0 puts but traded more selectively (92 trades, WR 37%, DD 21.3% — nearly passing). The core problem: `max` pooling in the side loss only sends gradient through the single highest-scoring contract on each side, preventing general side learning. The `dir_acc` metric confirmed this — stuck at random throughout training at both weights. Next: try `logsumexp` instead of `max` to get dense gradient across all contracts on each side
