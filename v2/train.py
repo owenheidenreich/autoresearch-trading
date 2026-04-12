@@ -86,7 +86,7 @@ class TradingModel(nn.Module):
             nn.Linear(d // 2, 1),
         )
         self.call_score_head = nn.Sequential(
-            nn.Linear(d * 3, d),
+            nn.Linear(d * 2, d),
             nn.GELU(),
             nn.Dropout(dr),
             nn.Linear(d, d // 2),
@@ -94,7 +94,7 @@ class TradingModel(nn.Module):
             nn.Linear(d // 2, 1),
         )
         self.put_score_head = nn.Sequential(
-            nn.Linear(d * 3, d),
+            nn.Linear(d * 2, d),
             nn.GELU(),
             nn.Dropout(dr),
             nn.Linear(d, d // 2),
@@ -113,9 +113,7 @@ class TradingModel(nn.Module):
 
         contract_emb = self.contract_proj(contracts)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
-        # Multiplicative interaction enables "this context × this contract" patterns
-        interaction = context_exp * contract_emb
-        combined = torch.cat([context_exp, contract_emb, interaction], dim=-1)
+        combined = torch.cat([context_exp, contract_emb], dim=-1)
 
         # Route each contract through its side-specific score head
         is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
