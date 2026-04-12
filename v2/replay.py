@@ -342,6 +342,7 @@ def replay_validation(
             bar_of_day=np.arange(len(day_to_bars[day]), dtype=np.int32),
             dates=[day] * len(day_to_bars[day]),
             global_entry_bar=local_bar,
+            breakeven_trigger_pct=policy.breakeven_trigger_pct,
         )
 
         if trade is None:
@@ -502,6 +503,7 @@ def _compute_baseline_common(data: dict, mask_key: str, policy: DecisionPolicy, 
             np.arange(len(bars), dtype=np.int32),
             [day] * len(bars),
             local_bar,
+            breakeven_trigger_pct=policy.breakeven_trigger_pct,
         )
         if trade:
             trade.trade_date = day
@@ -559,6 +561,7 @@ def compute_baseline_random(data: dict, mask_key: str = "promote_mask", n_seeds:
                 np.arange(len(bars), dtype=np.int32),
                 [day] * len(bars),
                 local_bar,
+                breakeven_trigger_pct=policy.breakeven_trigger_pct,
             )
             if trade:
                 trade.trade_date = day

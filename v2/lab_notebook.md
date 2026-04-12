@@ -828,6 +828,38 @@ The remaining lever for improving PF is policy-level: stop-loss tuning, trailing
   - drawdown: `71.8%`
 - Decision: **kill** — without centering, the put head produces systematically higher raw scores, flipping the bias from all-calls to majority-puts. The heads need some normalization to be comparable; centering is necessary, just over-equalizes with normalized features.
 
+### `exp_139` — Full Normalization + Greek Sign + Learned Put Bias
+
+- Type: official 5-fold walk-forward
+- Code change: per-bar z-score normalization of 11 continuous contract features + negate delta/moneyness/distance for puts + learned `put_bias` scalar on put centered scores
+- Result:
+  - score: `-0.121` (aggregate), folds: `[-0.20, -0.20, -0.20, -0.20, 0.20]`
+  - trades: `161` (`136C / 25P`, minority `15.5%`)
+  - win rate: `45.3%`
+  - profit factor: `1.142`
+  - drawdown: `17.5%`
+  - sortino: `1.88`
+  - positive day rate: `50.0%`
+- Decision: **PROMOTED — first profitable model**
+- Takeaway: the 340,000x feature scale mismatch was the root cause. Normalization let the model see greeks/IV/spread/volume for the first time. 4/5 folds still at -0.200 floor, but the aggregate is profitable.
+
+### `exp_140` — Lower Breakeven Trigger (policy-only, zero GPU cost)
+
+- Type: policy change, local replay evaluation
+- Code change: `breakeven_trigger_pct` 0.30 → 0.15 in `DecisionPolicy`. Wired the policy field through to `simulate_trade` (was previously dead code — simulator used hardcoded `TRAILING_TIERS`). Training labels unchanged (labels.py still uses original tiers).
+- Hypothesis: 21 whipsaw trades in exp_139 had MFE > 15% but reversed to hit the -30% stop, losing -$4,260. A lower breakeven trigger locks gains earlier.
+- Result (promote mask replay, same exp_139 model):
+  - score: `1.272` (vs 0.197 for exp_139 on same mask)
+  - trades: `176` (`151C / 25P`, minority `14.2%`)
+  - win rate: `39.2%` (vs 45.3%)
+  - profit factor: `1.201` (vs 1.142)
+  - drawdown: `12.4%` (vs 17.5%)
+  - sortino: `3.87` (vs 1.88)
+  - positive day rate: `51.7%` (vs 50.0%)
+- Exit breakdown change: STOP_LOSS 72→62, TRAILING_STOP 20→49, TAKE_PROFIT 68→64
+- Decision: **keep** — massive improvement from a single policy parameter change. DD dropped 5.1%, sortino doubled. Needs official 5-fold run to confirm (same models, different eval policy).
+- Takeaway: the trailing stop breakeven tier at 30% was too generous. The model picks good entries but the exits bleed money on whipsaw reversals. Locking breakeven at 15% converts 29 trades from stop-loss or take-profit to trailing-stop exits, dramatically improving risk-adjusted returns.
+
 ### Session Close (2026-04-12 Late)
 
 **6 consecutive no-improve experiments** (exp_134, 134b, 135, 136, 137-reverted, 138) — session limit reached.

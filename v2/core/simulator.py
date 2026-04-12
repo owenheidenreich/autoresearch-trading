@@ -16,12 +16,28 @@ from v2.core.features import (
 
 
 # Trailing stop tiers: (unrealized_pct_threshold, lock_pct)
+# Used by labels.py for oracle label computation — do NOT change without
+# also recomputing training labels.
 TRAILING_TIERS = [
     (1.20, 0.80),  # +120% unrealized -> lock +80%
     (0.80, 0.50),  # +80% -> lock +50%
     (0.50, 0.25),  # +50% -> lock +25%
     (0.30, 0.00),  # +30% -> lock breakeven
 ]
+
+
+def _build_trailing_tiers(breakeven_trigger_pct: float) -> list[tuple[float, float]]:
+    """Build trailing tiers with a custom breakeven trigger threshold.
+
+    The upper tiers (120%->80%, 80%->50%, 50%->25%) are fixed.
+    The lowest tier (breakeven lock) uses the provided threshold.
+    """
+    return [
+        (1.20, 0.80),
+        (0.80, 0.50),
+        (0.50, 0.25),
+        (breakeven_trigger_pct, 0.00),
+    ]
 
 
 def _compute_spread_cost(
@@ -60,6 +76,7 @@ def simulate_trade(
     bar_of_day: np.ndarray,
     dates: list[str],
     global_entry_bar: int,
+    breakeven_trigger_pct: float | None = None,
 ) -> SimulatedTrade | None:
     """Simulate a single TradeIntent against historical price data.
 
@@ -70,6 +87,8 @@ def simulate_trade(
         bar_of_day: (N,) array of bar-of-day indices (0-389)
         dates: list of date strings per bar
         global_entry_bar: global index where intent was emitted
+        breakeven_trigger_pct: override the lowest trailing tier threshold
+            (default None uses TRAILING_TIERS as-is, i.e. 0.30)
 
     Returns:
         SimulatedTrade or None if entry fill fails
@@ -164,7 +183,8 @@ def simulate_trade(
 
         # 3. Trailing stop (if exit_policy is TRAILING)
         if intent.exit_policy == "TRAILING":
-            for tier_threshold, lock_pct in TRAILING_TIERS:
+            _tiers = _build_trailing_tiers(breakeven_trigger_pct) if breakeven_trigger_pct is not None else TRAILING_TIERS
+            for tier_threshold, lock_pct in _tiers:
                 if unrealized >= tier_threshold:
                     new_floor = lock_pct
                     if new_floor > trailing_stop:
@@ -234,6 +254,7 @@ def simulate_day(
     daily_loss_cap_pct: float = 0.05,
     starting_equity: float = 10_000.0,
     contract_multiplier: int = 100,
+    breakeven_trigger_pct: float | None = None,
 ) -> list[SimulatedTrade]:
     """Simulate a day of trading from a list of (bar_index, TradeIntent) pairs.
 
@@ -298,6 +319,7 @@ def simulate_day(
             bar_of_day=bar_of_day,
             dates=dates,
             global_entry_bar=global_bar,
+            breakeven_trigger_pct=breakeven_trigger_pct,
         )
 
         if trade is None:

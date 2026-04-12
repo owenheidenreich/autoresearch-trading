@@ -24,7 +24,7 @@ class DecisionPolicy:
     target_pct: float = 0.50
     max_hold_bars: int = 120
     exit_policy: str = "TRAILING"
-    breakeven_trigger_pct: float = 0.30
+    breakeven_trigger_pct: float = 0.15
 
     # Position management
     cooldown_bars: int = 5
