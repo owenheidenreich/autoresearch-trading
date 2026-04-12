@@ -1,4 +1,4 @@
-"""ART² v4 Training Loop -- balanced gate + direction-conditioned selection."""
+"""ART² v4 Training Loop -- balanced gate + standard KL selection."""
 from __future__ import annotations
 
 import json
@@ -31,6 +31,7 @@ SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.20))
+SIDE_W = float(os.environ.get("WEIGHT_SIDE", 0.10))
 
 
 class PositionalEncoding(nn.Module):
@@ -48,7 +49,7 @@ class PositionalEncoding(nn.Module):
 
 
 class TradingModel(nn.Module):
-    """Contract scorer with balanced gate + direction-conditioned training."""
+    """Exact-chain contract scorer with balanced gate training."""
 
     def __init__(self, d_model: int | None = None, depth: int | None = None, n_heads: int | None = None, dropout: float | None = None):
         super().__init__()
@@ -233,7 +234,51 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         log_probs = F.log_softmax(logits_for_sel, dim=-1)
         sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss
+    # --- C. Side calibration loss: soft BCE on aggregated call vs put scores ---
+    side_loss = torch.tensor(0.0, device=device)
+    if trade_rows.any() and SIDE_W > 0:
+        tr_scores_side = scores[trade_rows]
+        tr_valid_side = valid_mask[trade_rows]
+        tr_contracts = contracts_full[trade_rows]
+        tr_best_idx = best_idx[trade_rows]
+        tr_labels_side = labels[trade_rows]
+
+        is_put = tr_contracts[:, :, 2] > 0.5
+        is_call = ~is_put & tr_valid_side
+
+        call_valid = is_call & tr_valid_side
+        put_valid = is_put & tr_valid_side
+        both_sides = call_valid.any(dim=1) & put_valid.any(dim=1)
+
+        # Filter to clear-label bars (oracle top margin > 0.01)
+        pnl_clear = tr_labels_side.clone()
+        pnl_clear[~tr_valid_side] = -1e9
+        pnl_clear[~torch.isfinite(pnl_clear)] = -1e9
+        top2, _ = pnl_clear.topk(2, dim=-1)
+        clear_label = (top2[:, 0] - top2[:, 1]) > 0.01
+        side_rows = both_sides & clear_label
+
+        if side_rows.any():
+            s_scores = tr_scores_side[side_rows]
+            s_call = call_valid[side_rows]
+            s_put = put_valid[side_rows]
+            s_best = tr_best_idx[side_rows]
+            s_contracts = tr_contracts[side_rows]
+
+            call_scores = s_scores.clone()
+            call_scores[~s_call] = -1e9
+            max_call, _ = call_scores.max(dim=-1)
+
+            put_scores = s_scores.clone()
+            put_scores[~s_put] = -1e9
+            max_put, _ = put_scores.max(dim=-1)
+
+            side_logit = max_call - max_put
+            rows_idx = torch.arange(s_contracts.size(0), device=device)
+            oracle_is_call = (s_contracts[rows_idx, s_best, 2] < 0.5).float()
+            side_loss = F.binary_cross_entropy_with_logits(side_logit, oracle_is_call, reduction="mean")
+
+    total = GATE_W * gate_loss + SEL_W * sel_loss + SIDE_W * side_loss
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -260,6 +305,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
+        "side": float(side_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -363,7 +409,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} side={avg_val.get('side', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
