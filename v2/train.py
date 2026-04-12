@@ -33,6 +33,7 @@ SEED = int(os.environ.get("TRAIN_SEED", 123))
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.0))
+EXACT_W = float(os.environ.get("EXACT_W", 0.5))
 
 
 class PositionalEncoding(nn.Module):
@@ -278,6 +279,20 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             log_probs = F.log_softmax(logits_for_sel, dim=-1)
             sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
 
+    # --- B2. Exact-oracle cross-entropy: push exact oracle contract above neighbors ---
+    exact_loss = torch.tensor(0.0, device=device)
+    if EXACT_W > 0 and trade_rows.any():
+        ex_scores = scores[trade_rows]
+        ex_valid = valid_mask[trade_rows]
+        ex_best = best_idx[trade_rows]
+
+        # Mask invalid contracts
+        ex_logits = ex_scores.clone()
+        ex_logits[~ex_valid] = -1e9
+
+        # Cross-entropy with oracle contract as target class
+        exact_loss = F.cross_entropy(ex_logits, ex_best, reduction="mean")
+
     # --- C. Per-side ranking KL: teach each head to rank within its own side ---
     side_sel_loss = torch.tensor(0.0, device=device)
     if SIDE_SEL_W > 0 and trade_rows.any():
@@ -334,7 +349,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             po_log_probs = F.log_softmax(po_logits, dim=-1)
             side_sel_loss = side_sel_loss + F.kl_div(po_log_probs, po_target, reduction="batchmean")
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss
+    total = GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss + EXACT_W * exact_loss
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -362,6 +377,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
         "side_sel": float(side_sel_loss.item()),
+        "exact": float(exact_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
@@ -465,7 +481,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} side_sel={avg_val.get('side_sel', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} exact={avg_val.get('exact', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
