@@ -111,12 +111,21 @@ class TradingModel(nn.Module):
         h = self.encoder(h, mask=mask)
         context = h[:, -1, :]
 
-        contract_emb = self.contract_proj(contracts)
+        # Normalize sign-inverted features for puts before embedding:
+        # delta(8), moneyness_pct(11), distance_points(12) flip sign for puts.
+        # Negating them aligns put embeddings with calls so the score heads
+        # learn one strike-quality mapping that works for both sides.
+        is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
+        contracts_normed = contracts.clone()
+        put_flip = is_put.unsqueeze(-1).float()  # (batch, n_contracts, 1)
+        for fidx in (8, 11, 12):  # delta, moneyness_pct, distance_points
+            contracts_normed[:, :, fidx] = contracts[:, :, fidx] * (1 - 2 * put_flip.squeeze(-1))
+
+        contract_emb = self.contract_proj(contracts_normed)
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
 
         # Route each contract through its side-specific score head
-        is_put = contracts[:, :, 2] > 0.5  # right_is_put is feature index 2
         valid_mask = contracts[:, :, 0] > 0.5
         call_scores = self.call_score_head(combined).squeeze(-1)
         put_scores = self.put_score_head(combined).squeeze(-1)
