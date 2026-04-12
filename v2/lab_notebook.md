@@ -723,3 +723,34 @@ Only fold 0 achieved direction balance (66C/67P) — and it was the only fold wi
   1. gate/selectivity against the late-window loss cluster (`105-119`)
   2. training-side put strike calibration on oracle-put bars
 - Do **not** keep forcing direction balance with generic margin or gate-weight losses; that family is exhausted.
+
+### `exp_134` / `exp_134b` — Per-Side Ranking KL (SIDE_SEL_W sweep)
+
+- Type: screening runs (1-fold each)
+- Code change: added auxiliary per-side ranking KL loss. On call-oracle bars, KL over call contracts using call_score_head; on put-oracle bars, KL over put contracts using put_score_head. Unified KL unchanged.
+- Purpose: teach each score head to rank correctly within its own side, addressing the root cause that the put head gets diluted gradient from the unified KL
+- Hypothesis: the put head is undertrained because on call-oracle bars (~55%), the "be lower" signal is spread across ~135 put contracts (~0.003 gradient each). Per-side KL gives concentrated ranking signal.
+
+**exp_134 (SIDE_SEL_W=0.5)**:
+  - score: `-0.200`
+  - trades: `138` (`85C / 53P`, minority `38.4%`)
+  - win rate: `29.7%`
+  - profit factor: `0.594`
+  - drawdown: `103.5%`
+
+**exp_134b (SIDE_SEL_W=0.1)**:
+  - score: `-0.200`
+  - trades: `171` (`104C / 67P`, minority `39.2%`)
+  - win rate: `29.2%`
+  - profit factor: `0.626`
+  - drawdown: `70.5%`
+
+- Decision: **kill the per-side ranking KL family**
+- Key findings:
+  1. Direction balance improved dramatically (8.9% → 38-39% puts) at both weights, confirming the mechanism works mechanically
+  2. But economics degraded catastrophically at both weights — more puts = more losing trades
+  3. The put head IS learning to rank puts better (it becomes more confident), but "best ranked put" is still a bad trade
+  4. Root cause is feature-bound: the 15 contract features and 47 context features don't support good put strike selection. The put head has an ATM bias (picks strikes ~20pts too close to spot vs oracle's +30.6pts from spot)
+  5. Better within-side ranking makes the put head MORE confident at picking wrong, which is WORSE than an underconfident put head that rarely fires
+  6. This confirms the exp_127-132 finding on a completely different loss surface: the model genuinely cannot pick winning puts with the current feature set
+- Reverted to exp_133 baseline (SIDE_SEL_W=0.0)
