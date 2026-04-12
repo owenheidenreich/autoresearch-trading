@@ -124,6 +124,12 @@ Top predictive features:
 | 103 | balanced gate + dir-conditioned KL | 42C/157P | 29.6% | 199 | 100% | **worst**: dir-conditioned training without inference mask created uncalibrated cross-direction scores; extreme put bias; score `-0.2` |
 | 104 | balanced gate + standard KL (5-fold official) | 131C/153P | 29.9% | 1697 | 101% | official baseline with balanced gate; aggregate score `-0.240`; model.pt obtained for trade analysis |
 | 105 | **morning window only (bars 60-120)** | **79C/81P** | **36.9%** | 160 | **39%** | **best result ever**: PF 0.789, +DayRate 42.6%, DD 38.7%, lost only $2,899 instead of $10k; near-perfect C/P balance; still fails DD gate (38.7% > 20%) |
+| 122 | official 5-fold rebaseline of exp_119 | — | 31.8% | — | — | score 0.191; fold 2 had 1.93 but others negative; overall GATE_FAILURE |
+| 123 | split score_head into call/put heads + side-split KL | 130C/0P | 33.1% | 130 | 89% | sel_loss exploded to 5.6M (fixed with reduction='none' masking); still 100% calls; side-split KL alone doesn't prevent collapse |
+| 123b | same but with numerical fix | 36C/0P | 16.7% | 36 | 102% | sel loss normal (~0.7) but dir_acc stuck at 0.489; separate KL removes ALL cross-side gradient |
+| 124 | separate heads + cross-side margin loss (DIR_W=0.10) | 165C/0P | 38.2% | 165 | 26% | **best economics** (PF 0.825, DD 25.7%, -$1,660) but 100% calls; margin loss satisfied per-bar but global call offset persists |
+| **125** | **separate heads + per-bar mean centering + unified KL** | **163C/21P** | **38.0%** | 184 | **29%** | **first puts from separate-head family!** PF 0.816, DD 29.3%, -$1,175, sortino -1.74; 11.4% minority share |
+| 126 | separate heads + z-score normalization | crash | — | — | — | z-score causes nan from near-zero std at initialization; reverted to exp_125 |
 
 ## Current Live Baseline
 
