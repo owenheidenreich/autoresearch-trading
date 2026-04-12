@@ -468,4 +468,22 @@ Experiments exp_090 through exp_095 have all scored -0.200 or -0.300. No score i
   - drawdown: `40.0%`
   - training dynamics: `dir_acc` stuck at `~0.49` (random); `sel_loss` higher (1.07-1.29) than baseline (~0.98), consistent with more peaked targets being harder to match
 - Decision: revert; kill the hierarchical target idea for now
-- Takeaway: even with a strongly side-peaked target, the model can't learn to differentiate calls from puts in 20 epochs. The call bias appears structural in the model's early training dynamics. **Key gap found**: `SOFT_TEMP=0.10 + balanced gate` was never tested together; exp_094 (temp=0.10, no balanced gate) got 17% puts, and exp_095 (temp=0.20, balanced gate) got the best balance ever. Next: exp_115 tests this untried combination
+- Takeaway: even with a strongly side-peaked target, the model can't learn to differentiate calls from puts in 20 epochs. The call bias appears structural in the model's early training dynamics
+
+### `exp_115` — SOFT_TEMP=0.10 + Balanced Gate (Untested Combination)
+
+- Type: screening run
+- Code change: revert to baseline, lower `SOFT_TEMP` from `0.20` to `0.10`
+- Purpose: test the combination of peaked selection targets (from exp_094) with balanced gate sampling (from exp_095), which was never tested together
+- Result:
+  - score: **`-0.200`** (best screening score in this session)
+  - gate failure: `excessive_drawdown (61.7% > 20%)`
+  - trades: `162`
+  - direction balance: **`120C / 42P (26% puts)`** — first meaningful puts since exp_110
+  - win rate: `32.7%`
+  - profit factor: `0.596`
+  - drawdown: `61.7%`
+  - baseline comparison: beat `ATM` and `ATM-trailing`
+  - training dynamics: `dir_acc` showed movement (`0.45-0.51` range vs stuck at `0.49` in exp_111-114); `sel_loss` higher (~1.38-1.60) due to peaked targets
+- Decision: **family alive** — first experiment to break call collapse via selection temperature tuning with balanced gate
+- Takeaway: the key to side awareness is NOT auxiliary losses or target restructuring — it's making the KL target peaked enough that the model gets meaningful gradient to differentiate contracts. `SOFT_TEMP=0.10` with balanced gate produces 26% puts, passing the 15% direction gate. The remaining problem is excessive drawdown (61.7%). This may improve at 5-fold or with a slightly different temperature
