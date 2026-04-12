@@ -170,22 +170,41 @@ Do not promote an official run solely because traces improved. Promotion remains
 
 ### Post-Official Workflow
 
-After an official run:
+After an official run, complete ALL steps below before reporting to the user. Do not skip any.
 
-1. **DECISION TRACE** (mandatory before keep/revert):
-   - `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote --traces`
-   - Review trace summary: gate accuracy, selection accuracy, P&L gap, failure modes
-   - Compare against baseline traces if available
-2. KEEP or REVERT (informed by trace analysis, not score alone):
-   - `python3 v2/ops/model_manage.py keep`
-   - or: `git checkout HEAD~1 -- v2/train.py v2/core/policy.py` then `python3 v2/ops/model_manage.py revert`
-3. Regenerate plots:
-   - `python3 -m v2.plot_trades`
-   - `python3 v2/plot_progress.py`
-4. Run `python3 -m v2.analysis.analyze_losses`
-5. Update `v2/lab_notebook.md` with trace insights
-6. **FORM NEXT HYPOTHESIS from traces** (see "Trace-Informed Hypothesis Formation" above)
-7. Check session limits before the next experiment
+1. **VALIDATE MODEL LOCALLY** (confirm numbers match remote):
+   `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote`
+
+2. **DECISION TRACE** (mandatory before keep/revert):
+   `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote --traces`
+   Compare trace diagnostics vs current best: gate accuracy, selection accuracy, delta gap, direction balance.
+
+3. **KEEP or REVERT** (informed by trace analysis, not score alone):
+   - Keep: `python3 -m v2.ops.model_manage keep`
+   - Revert: `python3 -m v2.ops.model_manage revert` (optionally `git checkout HEAD~1 -- v2/train.py v2/core/policy.py`)
+
+4. **REGENERATE VISUALIZATIONS:**
+   `python3 -m v2.plot_trades` → trades.html, equity.html, trades.csv
+   `python3 v2/plot_progress.py` → progress.png
+
+5. **ANALYZE TRADES** from `v2/output/trades.csv`:
+   Report exit breakdown, direction split, bar-of-day profitability, average P&L per trade.
+
+6. **UPDATE LAB NOTEBOOK** (`v2/lab_notebook.md`):
+   Full entry: hypothesis, results table, trace summary, keep/revert decision, next direction.
+
+7. **IF PROMOTING, UPDATE LIVE DOCS:**
+   - `v2/HANDOFF.md` (current live code, research position, key findings)
+   - `v2/program.md` (current status section)
+   - `v2/docs/current_state.md` (snapshot section)
+
+8. **COMMIT EVERYTHING** in one clean commit: code, artifacts, models, docs, lab notebook.
+
+9. **FORM NEXT HYPOTHESIS** from trace analysis (see "Trace-Informed Hypothesis Formation" above).
+
+10. **CHECK SESSION LIMITS** before the next experiment.
+
+**Present to user:** results table, trace comparison vs baseline, trade analysis summary, what docs were updated, proposed next hypothesis. One complete message.
 
 If the official run is not promotable but traces show a targeted failure-mode improvement, it is valid to continue the same hypothesis family into the next experiment instead of abandoning it immediately.
 
@@ -208,12 +227,13 @@ If the official run is not promotable but traces show a targeted failure-mode im
 
 ## Hypothesis Queue
 
-Current queue after the mixed-state reset:
+Current queue after exp_139 promotion (first profitable model):
 
-- `exp_122`: run the official 5-fold rebaseline of the restored `exp_119` family under the side-diagnostic scorer
-- use the side-bias audit plus promote traces to choose the next conditional side-calibration hypothesis only after the rebaseline
-- Audit decision: keep `v4_exact_chain` frozen unless the anomaly track reaches the explicit trigger (>= 5 flagged raw sessions or overlap with the worst trace days)
-- Defer the stop/contract-filter policy queue until a training-side improvement clears the current direction-collapse and economics issues
+1. Improve selection accuracy (7.5% → higher) — most direct lever for higher PF
+2. Policy-level trailing stop optimization — 21 whipsaw trades lost -$4,260; lower breakeven trigger could save ~$1,500
+3. Fix theta formula for puts in data pipeline (`v2/pipeline/compute_features.py`) — requires sidecar rebuild
+4. Reduce fold variance — 4/5 folds at -0.200 means the model isn't consistently profitable across all market regimes
+5. Audit decision: keep `v4_exact_chain` frozen unless the anomaly track reaches the explicit trigger
 
 ## Session Limits
 

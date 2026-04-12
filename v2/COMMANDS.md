@@ -94,6 +94,54 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
   Run:
   `./v2/ops/deploy.sh status`
 
+## Post-Run Checklists
+
+These are **mandatory**. Do not report results to the user until every step is complete.
+
+### After every screening run (`run_screen`)
+
+1. Review output: direction balance, gate failure, score, trade count, WR, PF, DD
+2. Log to `v2/lab_notebook.md`: hypothesis tested, result table, decision (promote to official / kill / continue family)
+3. Commit the lab notebook update
+4. If promoting to official: `./v2/ops/deploy.sh run_one exp_NNN`
+
+### After every official run (`run_one`)
+
+1. **Validate model locally:**
+   `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote`
+   Confirm numbers match remote output.
+
+2. **Run promote trace:**
+   `python3 -m v2.replay --model v2/models/model_candidate.pt --data v2/data.pt --mask promote --traces`
+   Compare trace diagnostics (gate acc, selection acc, delta gap, direction) vs current best.
+
+3. **Keep or revert** (informed by trace, not score alone):
+   `python3 -m v2.ops.model_manage keep` or `python3 -m v2.ops.model_manage revert`
+
+4. **Regenerate visualizations:**
+   `python3 -m v2.plot_trades` → trades.html, equity.html, trades.csv
+   `python3 v2/plot_progress.py` → progress.png
+
+5. **Analyze trades:** read `v2/output/trades.csv` and report:
+   - Exit reason breakdown (stop-loss, take-profit, trailing, max-hold)
+   - Direction split (calls/puts, WR per side)
+   - Bar-of-day profitability
+   - Average P&L per trade
+
+6. **Update lab notebook** (`v2/lab_notebook.md`):
+   Full entry with hypothesis, results table, trace summary, keep/revert decision, next direction.
+
+7. **If promoting, update live docs:**
+   - `v2/HANDOFF.md` (current live code, research position, key findings)
+   - `v2/program.md` (current status section)
+   - `v2/docs/current_state.md` (snapshot section)
+
+8. **Commit everything** in one clean commit: code, artifacts, models, docs, lab notebook.
+
+9. **Form next hypothesis** from trace analysis (see program.md Trace-Informed Hypothesis Formation).
+
+**Present to user in one message:** results table, trace comparison vs baseline, trade analysis summary, what docs were updated, proposed next hypothesis.
+
 ## Monitoring
 
 - `project status`
