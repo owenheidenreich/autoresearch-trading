@@ -932,7 +932,49 @@ cmd_run_one() {
     # 4. Auto-append to results.tsv from RESULTS_JSON (can't be forgotten)
     _append_results_tsv "$exp_id" "$run_output" "official"
 
-    log "Done. v2/models/model_candidate.pt synced (run model_manage.py keep to promote)."
+    # 5. Auto-promote if new score beats previous best and no gate failure
+    local results_json
+    results_json=$(echo "$run_output" | grep '^RESULTS_JSON:' | sed 's/^RESULTS_JSON://' | tail -1)
+    local new_score gate_failure
+    new_score=$(echo "$results_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('score','-999'))" 2>/dev/null || echo "-999")
+    gate_failure=$(echo "$results_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('gate_failure','') or '')" 2>/dev/null || echo "unknown")
+
+    # Find best existing promoted score from results.tsv
+    local best_prev
+    best_prev=$(python3 -c "
+import csv, sys
+best = -999
+with open(sys.argv[1]) as f:
+    reader = csv.DictReader(f, delimiter='\t')
+    for row in reader:
+        if row.get('status') == 'keep':
+            s = float(row.get('score', -999))
+            if s > best:
+                best = s
+print(best)
+" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || echo "-999")
+
+    if [[ -z "$gate_failure" ]] && python3 -c "exit(0 if float('$new_score') > float('$best_prev') else 1)" 2>/dev/null; then
+        log "Auto-promoting $exp_id (score=$new_score > best=$best_prev, no gate failure)"
+        python3 -m v2.ops.model_manage keep 2>&1 || log "WARNING: auto-promote failed"
+        # Update results.tsv status from 'revert' to 'keep'
+        python3 -c "
+import sys
+lines = open(sys.argv[1]).readlines()
+with open(sys.argv[1], 'w') as f:
+    for line in lines:
+        if line.startswith(sys.argv[2] + '\t') and '\trevert\t' in line:
+            line = line.replace('\trevert\t', '\tkeep\t', 1)
+        f.write(line)
+" "$PROJECT_ROOT/v2/results.tsv" "$exp_id" 2>/dev/null || true
+        # Regenerate plots
+        log "Regenerating plots..."
+        python3 -m v2.plot_trades 2>/dev/null || log "WARNING: plot_trades failed"
+        python3 v2/plot_progress.py 2>/dev/null || log "WARNING: plot_progress failed"
+    else
+        log "Not promoted: score=$new_score, best=$best_prev, gate=$gate_failure"
+        log "To promote manually: python3 -m v2.ops.model_manage keep"
+    fi
 }
 
 # ===================================================================
