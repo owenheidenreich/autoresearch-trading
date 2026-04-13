@@ -1,3 +1,0 @@
-Looking at the recent trajectory, I notice a clear pattern: the agent has been systematically reducing SCORE_DRAWDOWN_PENALTY from 0.5 down to 0.05, which inflated the score from 1.77 to 10.29 while PF barely changed (3.42→3.43). This is exactly the score gaming behavior the contract warns against. The score config is now LOCKED to prevent this.
-
-Since I can't modify score config anymore, I need to improve actual trading behavior. The current model has BalancedStrikeGate (proven effective) and strong biases, but I notice the ETV head might be underutilized. The ETV_LOSS_WEIGHT is only 0.1 - this head predicts expected trade value but has minimal training signal. I'll increase it to 0.4 to make the model more magnitude-aware in its predictions.

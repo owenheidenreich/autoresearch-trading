@@ -1,7 +1,0 @@
-The strategy has collapsed - all recent experiments just tweak SCORE_DRAWDOWN_PENALTY and fail. The Lab Notebook shows this approach is exhausted. I need to challenge the assumption that score formula tuning is the path forward.
-
-Looking at the best run (#29: score=10.29, PF=3.43), I notice it uses BalancedStrikeGate which worked well. But recent experiments ignore the TRAINING SIGNAL entirely - they only tune scoring.
-
-The breakthrough insight: instead of tweaking how we SCORE trades, let me improve how the model LEARNS from trades. The current PNL_ALIGNMENT_WEIGHT is 0.3, but this could be enhanced with a more sophisticated alignment mechanism.
-
-I'll add a momentum-aware PnL alignment that gives higher weight to trades where the P&L trajectory shows clear momentum (either up or down quickly). This teaches the model to prefer trades that move decisively rather than just any profitable trade. This is a training signal change, not score tuning.

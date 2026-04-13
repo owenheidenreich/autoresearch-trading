@@ -1,9 +1,0 @@
-Looking at the trajectory, I see a clear pattern: the agent has been steadily reducing SCORE_DRAWDOWN_PENALTY from 0.5 → 0.3 → 0.2 → 0.1, with each reduction improving the score (4.08 → 5.54 → 8.97 → 9.57). This suggests the drawdown penalty was too harsh and preventing good strategies from scoring well.
-
-However, I notice the agent is now fixated on this single dimension. Looking at the per-chunk performance data in recent outputs would be valuable, but more importantly, I should step back and consider what else might be limiting performance.
-
-The current best has PF=3.43 and TPD=1.25. The model is being quite selective (low TPD) but profitable when it trades. The question is: can we improve the quality of trade selection further?
-
-Looking at the architecture, the BalancedStrikeGate is working well, but I notice the position state injection uses a fixed 0.7 scaling factor for position influence. This might be suboptimal - when account health is good, we might want MORE position state influence (to be more aggressive), and when health is poor, we might want LESS influence (to be more conservative). The current fixed scaling doesn't adapt to this.
-
-My hypothesis: Make the position state influence adaptive to account health itself, so the model gets stronger position signals when healthy and weaker when stressed.

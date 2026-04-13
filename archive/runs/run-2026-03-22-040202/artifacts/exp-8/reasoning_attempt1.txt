@@ -1,7 +1,0 @@
-Looking at the trajectory, experiment #6 achieved the best score (2.53) by implementing `_get_stopped_or_raw()` function that uses stopped P&L consistently throughout training. This aligns training with evaluation reality where trades get stopped out.
-
-However, I need to identify the model's biggest weakness. From the lab notebook, the critical issue is "Chunk 1 (Feb-May 2025) has PF=0.22" - the model loses badly in early validation dates. This suggests temporal overfitting where the model learns patterns from later training data that don't generalize to earlier validation periods.
-
-The current approach uses VIX regime balancing and temporal chunk consistency, but these are regularizers that try to make the model behave similarly across regimes. Instead, I should address the root cause: the model needs to learn more robust, fundamental patterns rather than regime-specific quirks.
-
-My hypothesis: Implement **feature noise injection** during training to force the model to learn more robust patterns that generalize across time periods. By adding small amounts of noise to input features, the model will be forced to rely on stronger, more consistent signals rather than overfitting to specific market conditions in the training period.

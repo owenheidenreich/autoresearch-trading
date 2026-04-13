@@ -1,5 +1,0 @@
-Looking at the recent trajectory, experiment #2 achieved the best score (1.203071) by increasing PNL_ALIGNMENT_WEIGHT from 0.3 to 0.5. However, it was reverted due to "secondary_regression:score_inflation_suspected" - the score increased but profit factor dropped from 3.42 to 2.45 (-7.1%). This suggests the PNL alignment term may be overpowering the core gate/direction losses.
-
-The model's current weakness appears to be balancing PNL optimization with fundamental trading discipline. The PNL alignment term should guide the model toward profitable trades, but if too strong, it can cause the model to chase signals that don't generalize well.
-
-My hypothesis: The optimal PNL_ALIGNMENT_WEIGHT is between the current 0.3 and the reverted 0.5. I'll try 0.35 to get some benefit from enhanced PNL alignment while maintaining the strong profit factor performance. Additionally, I'll slightly reduce the FALSE_ENTRY_PENALTY from 2.0 to 1.7 to allow the model more flexibility in taking trades when PNL signals are strong.

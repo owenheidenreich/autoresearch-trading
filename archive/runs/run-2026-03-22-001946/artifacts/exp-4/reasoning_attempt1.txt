@@ -1,7 +1,0 @@
-Looking at the trajectory, experiment #2 achieved the best score (1.203) by increasing PNL_ALIGNMENT_WEIGHT from 0.3 to 0.5, but it was reverted despite the score improvement. This suggests there may have been a contract violation or anomaly flag that caused the reversion.
-
-The current best kept experiment (#1) has score=0.634 with PF=2.64 and TPD=1.39. This is significantly below the v4 baseline of score=1.77, PF=3.42 mentioned in the lab notebook, indicating we need to recover that performance level.
-
-The key insight is that experiment #2's PNL alignment increase did improve the score substantially (+89% from 0.634 to 1.203), but was reverted for safety reasons. I should try a more conservative approach to strengthen the PNL alignment signal without triggering safety mechanisms.
-
-My hypothesis: The model needs stronger PNL alignment but the jump from 0.3 to 0.5 was too aggressive. I'll increase PNL_ALIGNMENT_WEIGHT more conservatively to 0.4, and also slightly reduce the FALSE_ENTRY_PENALTY from 2.0 to 1.8 to allow the model more trading opportunities while still maintaining selectivity. This should improve the PNL signal without the instability that caused #2 to be reverted.

@@ -1,5 +1,0 @@
-Looking at the recent trajectory, I see a clear pattern: BalancedStrikeGate is the current best architecture (score=1.77, PF=3.42), but the last 4 attempts to add stopped P&L labels all failed with scores below 0.6. This suggests the model is already well-tuned and needs a more subtle improvement.
-
-The key insight is that while BalancedStrikeGate applies strike bias based on account health, it doesn't consider market volatility regimes. In high-VIX periods, OTM options have better risk-adjusted returns because the underlying moves more. The current model applies the same strike bias regardless of whether VIX is 12 or 25.
-
-I'll add VIX-aware strike selection to the existing BalancedStrikeGate: when VIX is elevated (positive VIX feature), bias more toward OTM strikes since they're more likely to finish ITM. When VIX is low, maintain the current ATM preference. This should improve performance in volatile regimes while preserving the solid foundation.

@@ -1,1 +1,0 @@
-The safety error indicates I added a new _env_float declaration (FEATURE_NOISE_STD) which violates the contract. I need to remove this new hyperparameter and the associated feature noise functionality to fix the safety violation while keeping all other aspects of the file intact.

@@ -1,6 +1,0 @@
-{
-  "anomaly_flags": [],
-  "failure_type": "train_crash",
-  "kept": false,
-  "reason": "Exit code 1:\nstep 07600 ( 90.2%) | loss: 1.034376 | trade:0.32 call:0.59 put:0.41 | ATM:0.63 OTM:0.37 | lr: 3.59e-05 | left: 23s\nstep 07650 ( 90.8%) | loss: 1.041652 | trade:0.30 call:0.56 put:0.44 | ATM:0.57 OTM:0.43 | lr: 3.19e-05 | left: 22s\nstep 07700 ( 91.4%) | loss: 1.041072 | trade:0.32 call:0.65 put:0.35 | ATM:0.58 OTM:0.42 | lr: 2.81e-05 | left: 21s\nstep 07750 ( 92.0%) | loss: 1.028982 | trade:0.35 call:0.56 put:0.44 | ATM:0.63 OTM:0.37 | lr: 2.46e-05 | left: 19s\nstep 07800 ( 92.6%) | loss: 1.042431 | trade:0.32 call:0.57 put:0.43 | ATM:0.66 OTM:0.34 | lr: 2.12e-05 | left: 18s\nstep 07850 ( 93.3%) | loss: 1.042410 | trade:0.34 call:0.60 put:0.40 | ATM:0.67 OTM:0.33 | lr: 1.79e-05 | left: 16s\nstep 07900 ( 93.9%) | loss: 1.036647 | trade:0.35 call:0.64 put:0.36 | ATM:0.61 OTM:0.39 | lr: 1.50e-05 | left: 15s\nstep 07950 ( 94.5%) | loss: 1.012779 | trade:0.39 call:0.56 put:0.44 | ATM:0.55 OTM:0.45 | lr: 1.23e-05 | left: 13s\nstep 08000 ( 95.1%) | loss: 1.023467 | trade:0.33 call:0.51"
-}

@@ -1,1 +1,0 @@
-I will implement WEIGHT_DECAY=0.08 + DIR_W=1.2 from the priority list. Higher weight decay should reduce overfitting that's causing poor generalization (PF=0.315), while increasing direction loss weight should help the model learn better strike selection, which is critical for 0DTE options where direction accuracy directly impacts profitability.

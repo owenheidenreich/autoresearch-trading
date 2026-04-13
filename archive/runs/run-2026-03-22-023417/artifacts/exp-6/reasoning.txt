@@ -1,5 +1,0 @@
-Looking at experiment #5's success with VIX regime robustness (score 0.92, PF 2.80), I want to address the biggest remaining weakness: temporal consistency across validation chunks. The lab notebook shows Chunk 1 (Feb-May 2025) has PF=0.22 while later chunks perform much better, indicating the model degrades on early validation data.
-
-The VIX regime balancing helped, but I suspect we need stronger temporal robustness. Since sequential batching was tried in #3 and failed (score 0.16), I'll try a different approach: temporal consistency regularization that encourages similar predictions for similar market conditions across different time periods, without changing the batching structure.
-
-This should improve trading behavior by making the model more robust to regime changes and reducing the dramatic performance cliff in early validation periods.

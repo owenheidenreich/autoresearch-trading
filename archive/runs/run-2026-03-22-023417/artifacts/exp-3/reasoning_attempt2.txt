@@ -1,1 +1,0 @@
-The error is that the day-sequential dataloader function tries to access 'train_start_idx' and 'train_end_idx' from the data dict, but these keys don't exist. Looking at the original working code, it uses 'train_end_idx' and 'val_start_idx'/'val_end_idx'. I need to fix the key names and also handle the case where we're looking for training data (which starts at index 0).

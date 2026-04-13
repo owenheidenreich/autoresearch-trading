@@ -1,1 +1,0 @@
-The direction collapse indicates the direction head is stuck in a local minimum. I'll reduce the initial direction bias magnitudes from ±0.15/±0.10 to ±0.05/±0.03 to allow more learning flexibility, and increase DIR_LOSS_WEIGHT from 1.0 to 2.0 to give the direction head stronger training signal relative to the gate head.

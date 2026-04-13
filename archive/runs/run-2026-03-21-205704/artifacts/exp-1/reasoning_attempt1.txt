@@ -1,5 +1,0 @@
-Looking at the trajectory, the BalancedStrikeGate achieved the best score of 1.77 with PF=3.42 and TPD=1.29. The pattern shows consistent improvement through bias tuning and gating modules that preserve capital when the account is stressed.
-
-The current best model uses BalancedStrikeGate which applies strike bias when account_health < 0.7, but the bias adjustments are quite conservative (-0.15 ATM penalty, +0.10/+0.15 OTM bonuses). Given that OTM trades historically performed poorly (-601% cumulative in backtest), but the model needs some OTM exposure for diversification, I want to make the strike bias more adaptive to actual account stress levels.
-
-My hypothesis: Replace the binary threshold (account_health < 0.7) with a smooth gradient that scales bias strength based on how stressed the account actually is. When account_health is high (>0.8), apply minimal bias. As it drops toward 0.5, progressively strengthen the OTM bias. This should provide better risk management while maintaining ATM viability when the account is healthy.

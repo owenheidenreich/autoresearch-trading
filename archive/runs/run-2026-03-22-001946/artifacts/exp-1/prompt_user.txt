@@ -1,4 +1,0 @@
-## This is the FIRST experiment. Run baseline as-is or make one small improvement.
-
-Remember: First write <reasoning>your hypothesis</reasoning>, then output the complete modified train.py code.
-The current train.py is in the system prompt above — modify THAT code.

@@ -446,12 +446,12 @@ cmd_start() {
     source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
     source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
     log "Packaging v2 workspace snapshot..."
-    tar -czf "$bundle" -C "$PROJECT_ROOT" \
+    tar -h -czf "$bundle" -C "$PROJECT_ROOT" \
         --no-mac-metadata --no-xattrs \
         --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
         --exclude='*.pt' --exclude='results' --exclude='archive' \
         --exclude='v2/artifacts' \
-        v2 pyproject.toml CLAUDE.md
+        v2 shared pyproject.toml CLAUDE.md
     bundle_sha=$(shasum -a 256 "$bundle" | awk '{print $1}')
     log "Uploading workspace snapshot ($(du -h "$bundle" | cut -f1), sha256=$bundle_sha)..."
     scp_cmd "$bundle" "root@$SSH_HOST:/root/v2-workspace.tgz"

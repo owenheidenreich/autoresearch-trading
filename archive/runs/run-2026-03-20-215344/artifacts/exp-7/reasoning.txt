@@ -1,1 +1,0 @@
-The error is in the StopLossPredictor.forward method. The issue is with tensor indexing when applying the exit_mask. The code tries to use exit_mask.squeeze(-1) as a boolean index but it's causing shape mismatches. I need to fix the tensor operations to properly handle the batch dimensions and boolean masking.

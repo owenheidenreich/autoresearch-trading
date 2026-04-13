@@ -1,1 +1,0 @@
-The direction head is performing poorly (50% accuracy = random). I'll add a direction confidence penalty that penalizes the model when it makes low-confidence direction predictions but still trades. This should force the gate to say NO_TRADE when direction is uncertain, improving both direction accuracy and reducing bad trades that hit stops.

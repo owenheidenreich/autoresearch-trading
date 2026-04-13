@@ -1,5 +1,0 @@
-Looking at the trajectory, the BalancedStrikeGate approach achieved the best score (1.77) with strong profit factor (3.42) but relatively low trade frequency (1.29 TPD). The progression shows that account-aware modules work well - CapitalPreservationGate, SelectiveStrikeGate, and BalancedStrikeGate all improved scores significantly.
-
-The current model appears to be conservative (low TPD) but profitable when it trades. However, I need to improve the trading behavior to increase frequency while maintaining quality. Looking at the BalancedStrikeGate implementation, it applies health modulation to the gate head and strike bias to direction head.
-
-My hypothesis: The current BalancedStrikeGate is too conservative in its health_multiplier (range [0.5, 1.0]), causing it to miss good trades when account health is moderate. I'll modify it to be less aggressive in reducing trading signals, allowing for more frequent but still quality trades by adjusting the health gate formula and making the strike bias more nuanced.

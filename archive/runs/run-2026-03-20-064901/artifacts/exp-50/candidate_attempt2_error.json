@@ -1,4 +1,0 @@
-{
-  "error": "SAFETY: Could not parse FEATURE_GROUPS as explicit literal ranges. Keep FEATURE_GROUPS as a literal dict with max end index = 32.",
-  "failure_type": "safety"
-}

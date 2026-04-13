@@ -1,7 +1,0 @@
-Looking at the trajectory, experiment #18 achieved the highest score (5.54) by enhancing the hold bonus from 0.15 to 0.25. The pattern shows that score formula tuning has been highly effective - experiments #13, #16, and #18 all made significant gains through score parameter adjustments rather than model architecture changes.
-
-However, I notice a potential issue: the recent experiments have focused heavily on score formula tuning, but I should examine the actual trading performance. The per-chunk PF data from recent outputs isn't visible in this summary, but the diversity nudge suggests checking temporal consistency.
-
-The current approach has been successful but may be reaching diminishing returns on score formula tuning. The simplest high-impact change would be to examine the training signal itself. Looking at the loss function, I notice that the PNL_ALIGNMENT_WEIGHT is quite low at 0.1. This component directly aligns model predictions with actual option profitability.
-
-My hypothesis: Increasing the PNL alignment weight will better connect the model's predictions to actual trading outcomes, potentially improving both profitability and temporal consistency. This addresses the training signal directly rather than just the scoring formula.

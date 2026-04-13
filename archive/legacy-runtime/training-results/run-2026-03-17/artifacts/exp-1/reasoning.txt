@@ -1,5 +1,0 @@
-This is the first experiment, so I should run the baseline model as-is to establish a performance benchmark. The current model already has a sophisticated Greeks-adaptive loss system that dynamically adjusts loss weights based on market conditions (gamma_theta_ratio, theta acceleration, etc.). 
-
-However, I notice one small improvement opportunity: the model has a hardcoded negative bias on the NO_TRADE gate (-0.1) which might be limiting trading frequency. Given that the scoring function heavily penalizes zero-trade models (score = -10) and has a curriculum penalty for very low trade frequency, I should remove this bias and let the model learn the optimal trade frequency naturally from the Greeks-adaptive loss function.
-
-This is a minimal, safe change that preserves all the sophisticated loss mechanics while potentially improving the trade frequency to get out of any potential DO_NOTHING trap.

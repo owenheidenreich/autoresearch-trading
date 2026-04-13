@@ -1,5 +1,0 @@
-Looking at the recent trajectory, I notice a pattern of strategy collapse with 0 accepts in the last 8 experiments. All recent attempts have been minor variations on the BalancedStrikeGate theme or score tuning, which suggests we may have hit a local optimum with the current architecture.
-
-The current best (score=1.768) uses BalancedStrikeGate with health-based modulation, but I notice from the lab notebook that we haven't explored temporal consistency improvements that actually work. The dead ends show temporal weighting in loss functions failed, but what about using temporal consistency as a model selection criterion during training?
-
-My hypothesis: implement validation-based early stopping that specifically selects for temporal robustness by tracking worst_chunk_pf during training and saving the model when it achieves the best worst_chunk_pf (not just best overall score). This should help us escape the local optimum by optimizing for a different objective that correlates with but isn't identical to the final score.

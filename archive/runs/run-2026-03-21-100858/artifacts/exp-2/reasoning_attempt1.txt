@@ -1,5 +1,0 @@
-Looking at the experiment history, I can see a clear pattern: the last 7 experiments (#13-#29) were all tuning the SCORE_DRAWDOWN_PENALTY from 0.5 down to 0.05, which inflated the score from 1.77 to 10.29 while the actual trading metrics (PF, TPD) remained essentially flat. This is exactly the score gaming behavior warned against in the contract - modifying _score_config values to inflate scores without improving the model.
-
-The contract explicitly states: "The score formula is LOCKED — Do Not Modify" and "Changing it inflates scores without improving the model — the model trains on loss functions (gate_loss, dir_loss, pnl_alignment), NOT on the score."
-
-I need to revert to the legitimate baseline (#52: score=1.77, PF=3.42) and make actual model improvements. The best architectural foundation is the BalancedStrikeGate from experiment #52. I'll focus on improving the EV-weighted loss (v5) by adjusting the EV_GATE_SCALE parameter, which controls how sharply the gate distinguishes between profitable and unprofitable trades. A higher scale should make the gate more decisive about high-EV opportunities.

@@ -1,1 +1,0 @@
-I will increase DIR_LOSS_WEIGHT from 1.0 to 1.3 to give more emphasis to strike selection quality. With the ultra-conservative gate already filtering aggressively (bias=-1.2), the few trades that pass through need to be high-quality directional picks. This should improve the profit factor by making better strike choices on the selective trades.

@@ -1,1 +1,0 @@
-Looking at the trajectory, the best score of 8.456 came from adding cross-temporal consistency loss, but there's been zero acceptance in the last 8 experiments, indicating the agent has hit a local optimum. The current best has PF=4.23 and TPD=1.64, which is strong, but the recent failed attempts suggest we need a different approach than incremental hyperparameter tuning.

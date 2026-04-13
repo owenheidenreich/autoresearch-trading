@@ -1,5 +1,0 @@
-Looking at the trajectory, experiment #2 achieved the highest score (1.203) but was reverted due to "score_inflation_suspected" - the score increased +0.57 but PF decreased -7.1% while TPD stayed flat. This suggests the model became less profitable but the score formula rewarded it anyway.
-
-However, the key insight is that PNL_ALIGNMENT_WEIGHT=0.5 was moving in the right direction - it's teaching the model to better align its predictions with actual P&L outcomes. The issue might be that we increased it too aggressively from 0.3 to 0.5 (+67%).
-
-I'll make a smaller, more conservative increase from 0.3 to 0.35 (+17%) to get the benefits of better P&L alignment without the dramatic behavioral shift that caused the PF regression. This should improve the model's ability to predict profitable trades while maintaining the solid trading patterns that achieved PF=2.64 in experiment #1.

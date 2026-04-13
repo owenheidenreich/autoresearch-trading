@@ -1,1 +1,0 @@
-I'll remove the cross-temporal consistency loss entirely and reduce temporal chunking weight from 0.5 back to 0.25 to let the model focus more on fundamental trading signals. Instead, I'll increase the direction-side loss weight from 0.4 to 0.8 to address potential direction collapse, which is a more fundamental issue than temporal consistency.

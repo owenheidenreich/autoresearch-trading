@@ -1,1 +1,0 @@
-I'll increase PNL_ALIGNMENT_WEIGHT from 0.3 to 0.5 to strengthen the model's signal detection while maintaining the proven conservative gate bias. This should help the model identify more profitable opportunities without sacrificing selectivity, potentially increasing TPD while preserving the strong profit factor.

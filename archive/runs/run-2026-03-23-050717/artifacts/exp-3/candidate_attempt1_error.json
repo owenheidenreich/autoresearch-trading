@@ -1,4 +1,0 @@
-{
-  "error": "SAFETY: New loss function(s) added: {'def _compute_loss('}. The loss function is FROZEN per program.md \u2014 tune existing hyperparameter values only.",
-  "failure_type": "safety"
-}

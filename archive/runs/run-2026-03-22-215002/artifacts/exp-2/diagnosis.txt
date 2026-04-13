@@ -1,1 +1,0 @@
-Looking at the diagnostic summary, the biggest weakness appears to be the stop-loss rate of 28.2% and direction collapse of 0.5%. This suggests the model is making trades that hit dynamic stops frequently and may be defaulting to certain directions. The current best has excellent PF=4.23 but could be improved by reducing these poor-quality trades that get stopped out.

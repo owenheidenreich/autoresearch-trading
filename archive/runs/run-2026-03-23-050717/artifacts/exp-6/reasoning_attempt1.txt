@@ -1,1 +1,0 @@
-I'll remove the ETV regression head and EV-weighted loss complexity, reverting to a simpler binary gate target based on whether the best option return exceeds a threshold. This eliminates the competing objectives and lets the model focus purely on trade timing. I'll also increase the gate loss weight to strengthen the trade/no-trade signal.

@@ -1,5 +1,0 @@
-Looking at the search-space review questions and diversity nudge, I need to try something FUNDAMENTALLY DIFFERENT. The current best score is 0.80 with capital preservation gate, but I notice a key pattern: all models are still hitting ruin or getting close (min_equity_frac around 0.03-0.06). The capital preservation gate helped but isn't enough.
-
-The BIGGEST gap is that the model trades too aggressively early in sequences when the account is healthy, then gets conservative too late. Instead of just gating at the model level, I should implement a POSITION SIZING strategy that scales trade intensity based on account health throughout training. This is fundamentally different from architectural changes - it's a training curriculum that teaches capital preservation from the start.
-
-I'll implement a dynamic position sizing curriculum where the model learns to trade smaller when account health is low, directly in the loss function. This teaches conservative behavior as a core skill rather than an add-on gate.

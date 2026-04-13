@@ -1,1 +1,0 @@
-I need to make the gate bias MORE aggressively pro-trade to force the model to learn trading behavior first, then selectivity. I'll increase the gate bias from [−0.5, +0.5] to [−1.0, +1.0] and reduce gate loss weight further to 0.3 to give the model more room to learn direction and PNL patterns before being penalized for trading.

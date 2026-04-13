@@ -1,4 +1,0 @@
-{
-  "error": "SAFETY: Do NOT merge gate+dir into single head outputting 4 logits. Keep two-head architecture.",
-  "failure_type": "safety"
-}

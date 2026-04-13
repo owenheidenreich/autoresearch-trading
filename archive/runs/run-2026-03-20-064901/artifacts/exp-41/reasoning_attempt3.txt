@@ -1,1 +1,0 @@
-The error shows a mismatch in the ConservativeSelectiveGate.forward() method call. The model is calling self.selective_gate(gate_input, last, account_health) but the method signature only expects (gate_input, dir_input, account_health). I need to fix this parameter mismatch by passing the correct arguments.

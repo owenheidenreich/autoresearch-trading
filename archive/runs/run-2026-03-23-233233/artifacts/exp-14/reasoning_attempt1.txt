@@ -1,1 +1,0 @@
-The best model has excellent selectivity (PF=2.30) but trades too infrequently (TPD=1.0). I'll try reducing GATE_LOSS_WEIGHT from 0.5 to 0.3 to weaken the gate's resistance to trading, while simultaneously increasing WEIGHT_DECAY from 0.05 to 0.08 to prevent overfitting. This should encourage more trading while maintaining quality through better regularization.

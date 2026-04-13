@@ -1,5 +1,0 @@
-Looking at the trajectory, I see a clear pattern of diminishing returns from just tuning SCORE_DRAWDOWN_PENALTY. The best score (10.29) was achieved at 0.05, but going to 0.0 actually hurt performance. This suggests we've hit a local optimum with score formula tuning alone.
-
-The diversity nudge is telling me to step back and think differently. Looking at the per-chunk details that are now visible in training output, I should focus on temporal consistency. The current approach optimizes aggregate validation performance but may be unstable across time periods.
-
-My hypothesis: Instead of further score formula tweaking, I'll implement chunk-aware training that explicitly optimizes for consistent performance across time periods. This addresses the fundamental problem that a model with PF=7 on early chunks and PF=0.5 on late chunks has regime brittleness even if aggregate score is high. I'll add a temporal consistency loss term that penalizes variance in performance across date chunks during training.

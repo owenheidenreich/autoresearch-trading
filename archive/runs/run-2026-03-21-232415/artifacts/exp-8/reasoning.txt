@@ -1,7 +1,0 @@
-Looking at the results, the best model (#52) has excellent performance with PF=3.42 and score=1.77, but I notice it has relatively low TPD=1.29. The progression shows that bias tuning and the BalancedStrikeGate module work well together. 
-
-The main weakness I see is likely in exit timing - the model may be holding onto losing trades too long or exiting winning trades too early. The current model uses the gate head for exits, but it's not explicitly trained on the stopped P&L labels that account for realistic stop-losses.
-
-My hypothesis: Incorporate the stopped P&L labels into the loss function to teach the model about realistic trade outcomes under dynamic stops. This should improve exit timing by showing the model what actually happens when trades hit their dynamic stops, leading to better risk management and potentially higher win rates.
-
-I'll add a small STOPPED_PNL_WEIGHT to blend the stopped P&L targets with the raw P&L targets in the loss function, keeping the change minimal and focused on improving exit behavior.

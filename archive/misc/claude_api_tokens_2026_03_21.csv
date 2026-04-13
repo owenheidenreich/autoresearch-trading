@@ -1,5 +1,0 @@
-usage_date_utc,model_version,api_key,workspace,usage_type,context_window,usage_input_tokens_no_cache,usage_input_tokens_cache_write_5m,usage_input_tokens_cache_write_1h,usage_input_tokens_cache_read,usage_output_tokens,web_search_count,inference_geo,speed
-2026-03-21 01:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,150519,0,19799,43955,141667,0,not_available,
-2026-03-21 02:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,264989,0,32130,127872,268554,0,not_available,
-2026-03-21 03:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,306756,0,155202,236789,409867,0,not_available,
-2026-03-21 04:00,claude-sonnet-4-20250514,autoresearch-trader v5,Default,standard,≤ 200k,312176,0,189508,147377,377870,0,not_available,

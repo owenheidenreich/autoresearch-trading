@@ -1,9 +1,0 @@
-Looking at the current best experiment (#run-2026-03-22-001946#1) with score=0.634, PF=2.64, TPD=1.39, I need to diagnose the key weaknesses:
-
-1. The model's biggest weakness appears to be temporal inconsistency - based on the lab notebook, Chunk 1 (Feb-May 2025) has PF=0.22, meaning the model loses badly in early validation dates.
-
-2. The stop rate equals win rate at 34%, meaning every loss is a stop-loss hit. The model never exits losing trades early via the gate head - it's not learning proper exit timing.
-
-3. The lab notebook shows OTM trades are hemorrhaging money (PUT_OTM5 alone lost $1,521 in backtest) while ATM trades are profitable.
-
-My hypothesis: The model needs stronger temporal robustness and better exit timing. I'll implement day-sequential batching (mentioned as available in data.pt but not enabled) to improve temporal generalization, and increase EXIT_LOSS_WEIGHT to teach the model to cut losses before hitting stops. This should improve the worst_chunk_pf and reduce the stop_loss_rate.

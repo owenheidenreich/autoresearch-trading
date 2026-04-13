@@ -809,13 +809,13 @@ def derive_session_from_experiments(experiments: list[dict]) -> dict:
 
     completed = [e for e in experiments if e.get("status") in ("keep", "revert", "crash", "screen")]
     total = len(completed)
-    kept = sum(1 for e in completed if e.get("status") == "keep")
+    kept_count = sum(1 for e in completed if e.get("status") == "keep")
     reverted = sum(1 for e in completed if e.get("status") in ("revert", "crash"))
     screened = sum(1 for e in completed if e.get("status") == "screen")
 
-    scored = [e for e in completed if e.get("score_num", -999.0) > -999.0]
-    if scored:
-        best_entry = max(scored, key=lambda e: e.get("score_num", -999.0))
+    kept_scored = [e for e in completed if e.get("status") == "keep" and e.get("score_num", -999.0) > -999.0]
+    if kept_scored:
+        best_entry = max(kept_scored, key=lambda e: e.get("score_num", -999.0))
         best_score = best_entry.get("score_num")
         best_exp = best_entry.get("experiment", "")
         streak = 0
@@ -834,7 +834,7 @@ def derive_session_from_experiments(experiments: list[dict]) -> dict:
 
     return {
         "experiment_count": total,
-        "kept_count": kept,
+        "kept_count": kept_count,
         "reverted_count": reverted,
         "screened_count": screened,
         "best_score": best_score,

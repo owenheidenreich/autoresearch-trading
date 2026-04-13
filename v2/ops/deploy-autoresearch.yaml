@@ -19,7 +19,9 @@ services:
       - |
         apt-get update -qq && apt-get install -y -qq openssh-server tini > /dev/null 2>&1
         mkdir -p /run/sshd
-        echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+        sed -i 's/^#*PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+        sed -i 's/^#*PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        rm -f /etc/ssh/sshd_config.d/*.conf
         echo "root:autoresearch2026" | chpasswd
         /usr/sbin/sshd
         /opt/conda/bin/pip install -q anthropic pandas scipy 2>/dev/null

@@ -1,1 +1,0 @@
-The model is close to breakeven (PF=0.894) but needs to be more selective about entries rather than more conservative. I'll reduce GATE_LOSS_WEIGHT from 2.0 to 1.0 to allow the gate head more flexibility to learn profitable entry patterns, while keeping the successful LR and warmup settings from the current best experiment.

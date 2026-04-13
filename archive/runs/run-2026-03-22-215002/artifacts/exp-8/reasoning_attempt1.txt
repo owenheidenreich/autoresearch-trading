@@ -1,1 +1,0 @@
-I'll tune the learning rate to 1.2e-4 (reduced from 1.5e-4) for more stable convergence, and slightly reduce CROSS_TEMPORAL_CONSISTENCY_WEIGHT from 0.3 to 0.2 to allow more adaptive behavior while maintaining temporal robustness. This should improve the model's ability to find profitable trades while preserving the strong foundation established by the current best experiment.

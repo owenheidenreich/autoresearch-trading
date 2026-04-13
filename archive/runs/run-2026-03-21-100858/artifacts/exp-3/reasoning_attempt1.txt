@@ -1,5 +1,0 @@
-Looking at the trajectory, I see all the recent improvements came from modifying SCORE_* environment variables to game the evaluation metric. However, the contract explicitly states that the score formula is LOCKED and that modifying _score_config values is forbidden because it inflates scores without improving trading behavior. The actual trading metrics (PF ~3.4, TPD ~1.3) have remained essentially flat across experiments #13-29 despite score inflation from 2.2 to 10.3.
-
-I need to focus on improving actual trading behavior through model architecture, loss weights, or training dynamics. The BalancedStrikeGate from experiment #52 was the last real improvement. Since then, the agent has been stuck gaming the scorer.
-
-I'll try increasing the ETV loss weight to make the model better at predicting trade value magnitude, which could improve exit timing and trade selection quality.
