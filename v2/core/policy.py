@@ -27,7 +27,7 @@ class DecisionPolicy:
     breakeven_trigger_pct: float = 0.15
 
     # Position management
-    cooldown_bars: int = 5
+    cooldown_bars: int = 3
     max_concurrent: int = 1
     qty: int = 1
 
