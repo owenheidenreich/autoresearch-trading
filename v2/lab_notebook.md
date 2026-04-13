@@ -1062,3 +1062,46 @@ Cross-sweep: `stop_pct=0.20` hurts when combined with tiers. Current `stop_pct=0
 | Best epoch | 3/15 |
 
 **Decision:** Promote to official 5-fold. Score is positive, beats all baselines, no gate failure. Direction balance is excellent (45% puts). WR 55.8% is the highest screening WR in project history. DD at 13.7% is elevated vs exp_144 promote (8.2%) but this is fold 0 (a historically weak fold) — promising that it stays under the 20% gate.
+
+### Official (5-fold walk-forward)
+
+| Metric | exp_144 | exp_146 | Change |
+|--------|---------|---------|--------|
+| Score | 0.547 | **0.807** | **+47%** |
+| PF | 1.356 | **1.409** | +4% |
+| WR | 39.1% | **56.5%** | +17pp |
+| DD | 8.2% | **7.9%** | -0.3pp |
+| +Day% | 53.4% | **62.1%** | +9pp |
+| Sortino | 7.36 | **8.84** | +20% |
+| Net P&L | +$4,771 | **+$5,542** | +$771 |
+| Trades | 184 | 186 | +2 |
+| Direction | 158C/26P | 157C/29P | +3P |
+
+**Folds:** `[0.910, -0.200, -0.200, -0.200, 3.724]` vs exp_144 `[0.176, -0.200, -0.200, -0.200, 3.160]`
+
+**Key result:** Fold 0 escaped the -0.200 floor (0.176 → 0.910). Fold 4 also improved (3.160 → 3.724). Folds 1-3 remain at -0.200 (DD gate failure). New project-history best score.
+
+**Trace comparison (promote mask):**
+
+| Metric | exp_144 | exp_146 |
+|--------|---------|---------|
+| Gate accuracy | 21.7% | 21.6% |
+| Selection accuracy | 8.7% | 8.6% |
+| Exit: SL/TS/TP | 59/58/66 | 59/64/63 |
+
+Gate and selection accuracy unchanged — the model picks the same contracts. The improvement comes purely from better exit execution via the intermediate trailing tier.
+
+**Trade analysis:**
+- Exit balance: SL 59, TS 64, TP 63 — nearly perfectly balanced
+- Call WR 54.1%, Put WR 69.0% (29 puts)
+- Trailing stop detail: 36 lock small profit (+3% to +20%), 7 near breakeven, 3 large profit (>+20%)
+- The +25%→+8% tier is converting breakeven exits to small winners as designed
+
+**Decision:** KEEP. New best score (0.807 > 0.547). Auto-promoted by run_one.
+
+**Why it worked:** The intermediate trailing tier fills the gap between breakeven lock (+15%) and first profit tier (+50%). Trades that reach +25% unrealized now lock +8% instead of +0%, converting dead-heat breakeven exits into small winners. This is why WR jumped 17pp and positive day rate jumped 9pp — both are multiplicative in the score formula.
+
+**Next hypotheses:**
+1. Additional trailing tier to fill the +50% → +80% gap (e.g., +60% → lock +35%)
+2. Investigate fold 1-3 DD causes — what specific trades blow past 20%? Trade-level analysis on those folds could reveal a policy lever
+3. Re-run stop_pct sweep on new model — tighter stops may interact differently now that the trailing tier reduces reversal losses

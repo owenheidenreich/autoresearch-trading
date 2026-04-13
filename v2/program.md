@@ -7,16 +7,16 @@ If optimization pressure conflicts with project judgment, defer to [founder_inte
 
 ## Current Status
 
-- **v4 exact-chain — profitable model with optimized execution policy (exp_144)**
+- **v4 exact-chain — profitable model with optimized execution policy (exp_146)**
 - Active manifest: `v2/data.pt`
 - Dataset version: `v4_exact_chain`
 - Dataset fingerprint: `46f2d184e186496f`
 - Unique days: 986
 - Per-day sidecars: `v2/data_sidecars/`
-- Official exact-chain scored runs: `exp_074`–`exp_078`, `exp_099`, `exp_104`, `exp_106`, `exp_122`, `exp_125`, `exp_133`, `exp_137`, `exp_139`, `exp_140`, `exp_142`, `exp_143`, `exp_144`
-- Current official baseline artifact: **`exp_144`** (`score=0.547`, PF 1.356, DD 8.2%, Sortino 7.36, +$4,771)
-- Current working code: exp_144 (exp_139 architecture + breakeven_trigger_pct 0.15 + cooldown_bars 3)
-- Next experiment: `exp_145`
+- Official exact-chain scored runs: `exp_074`–`exp_078`, `exp_099`, `exp_104`, `exp_106`, `exp_122`, `exp_125`, `exp_133`, `exp_137`, `exp_139`, `exp_140`, `exp_142`–`exp_146`
+- Current official baseline artifact: **`exp_146`** (`score=0.807`, PF 1.409, DD 7.9%, Sortino 8.84, +$5,542)
+- Current working code: exp_146 (exp_139 architecture + breakeven_trigger_pct 0.15 + cooldown_bars 3 + extra_trailing_tiers ((0.25, 0.08),))
+- Next experiment: `exp_147`
 - Session status: **profitable; optimizing**
 
 ## Mission Boundary
