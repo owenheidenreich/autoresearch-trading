@@ -1220,4 +1220,19 @@ New: `(0.5 * min(sortino, 10.0) + 0.5 * min(PF, 4.0)) * PDR * dd_mult` (dd gate:
 
 **Analysis:** This is expected as a rough baseline. The model hasn't been tuned for the 4 new contract features (vega, charm, momentum). The spread widening also adds cost. Training budget was 319s / 24 epochs — standard.
 
-**Next:** Try exp_148 with more training capacity. The model has 4 more contract features to learn from — increase EPOCHS from 24 to 36 and TIME_BUDGET from 300 to 450 to give it more learning time.
+**Next:** Try exp_148 with more training capacity.
+
+### exp_148: screening — longer training budget (FAILED, identical to exp_147)
+
+**Hypothesis:** More training time (EPOCHS 24→36, TIME_BUDGET 300→450) lets the model learn the new features.
+
+| Metric | exp_148 screen |
+|--------|---------------|
+| Score | -0.200 (GATE) |
+| All metrics | Identical to exp_147 |
+
+**Why:** Best epoch was 1. Val loss diverged immediately (2.13 → 3.60 by epoch 22). The model overfits from the start — more epochs just makes it worse. gate_acc ~55% (barely above random), dir_acc ~50% (literally random).
+
+**Root cause:** The problem is not training time but model capacity and regularization. With 19 contract features (up from 15) pushed through the same 96-dim bottleneck, the model can't separate signal from noise. The 4 new features (vega, charm, momentum) may also be correlated with existing features (delta, theta, IV), adding redundancy that confuses the small network.
+
+**Next:** exp_149 — increase D_MODEL 96→128 and DROPOUT 0.05→0.10. Larger capacity to handle richer features + more regularization to prevent overfitting. Revert epochs/budget to standard (24/300).
