@@ -277,7 +277,11 @@ def _compute_account_curve(
 def compute_score(metrics: ReplayMetrics) -> float:
     """Compute the promotion score.
 
-    score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
+    score = (0.5 * sortino_term + 0.5 * pf_term) * positive_day_rate * dd_mult
+
+    Composite of sortino (risk-adjusted consistency) and profit factor
+    (magnitude of winners vs losers). This rewards both steady returns AND
+    big wins, instead of penalizing profitable volatility.
 
     Hard gates return negative scores on failure.
     """
@@ -290,24 +294,25 @@ def compute_score(metrics: ReplayMetrics) -> float:
         metrics.gate_failure = f"too_few_traded_days ({metrics.traded_days} < 15)"
         return -0.5
 
-    if metrics.max_account_drawdown > 0.20:
-        metrics.gate_failure = f"excessive_drawdown ({metrics.max_account_drawdown:.1%} > 20%)"
+    if metrics.max_account_drawdown > 0.25:
+        metrics.gate_failure = f"excessive_drawdown ({metrics.max_account_drawdown:.1%} > 25%)"
         return -0.2
 
     metrics.gate_failure = None
 
     # --- Ranking ---
-    sortino = min(metrics.daily_sortino, 6.0)
+    sortino_term = min(metrics.daily_sortino, 10.0)
+    pf_term = min(metrics.profit_factor, 4.0)
     pdr = metrics.positive_day_rate
 
-    # DD multiplier: 1.0 at <= 8%, linear decay to 0.0 at 20%
+    # DD multiplier: 1.0 at <= 12%, linear decay to 0.0 at 25%
     dd = metrics.max_account_drawdown
-    if dd <= 0.08:
+    if dd <= 0.12:
         dd_mult = 1.0
     else:
-        dd_mult = max(0.0, 1.0 - (dd - 0.08) / 0.12)
+        dd_mult = max(0.0, 1.0 - (dd - 0.12) / 0.13)
 
-    score = sortino * pdr * dd_mult
+    score = (0.5 * sortino_term + 0.5 * pf_term) * pdr * dd_mult
     return round(score, 6)
 
 
@@ -316,16 +321,17 @@ def compute_score(metrics: ReplayMetrics) -> float:
 # ---------------------------------------------------------------------------
 
 _SCORE_CONFIG = {
-    "version": "v2.2_account_curve_side_diagnostic",
-    "primary": "daily_sortino * positive_day_rate * dd_mult",
-    "sortino_cap": 6.0,
+    "version": "v3.0_composite_pf_sortino",
+    "primary": "(0.5*sortino + 0.5*pf) * positive_day_rate * dd_mult",
+    "sortino_cap": 10.0,
+    "pf_cap": 4.0,
     "starting_equity": 10_000,
     "contract_multiplier": 100,
     "gate_min_trades": 30,
     "gate_min_traded_days": 15,
-    "gate_max_drawdown": 0.20,
-    "dd_mult_free_below": 0.08,
-    "dd_mult_zero_above": 0.20,
+    "gate_max_drawdown": 0.25,
+    "dd_mult_free_below": 0.12,
+    "dd_mult_zero_above": 0.25,
 }
 
 

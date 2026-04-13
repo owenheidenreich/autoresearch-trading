@@ -55,17 +55,34 @@ def _compute_spread_cost(
     vix_regime_exit: float,
     is_otm: bool,
     entry_px: float | None = None,
+    entry_bar_range: float = 0.0,
+    exit_bar_range: float = 0.0,
+    avg_bar_range: float = 1.0,
 ) -> float:
     """Compute round-trip spread cost as a fraction (not bps).
 
     Enforces a minimum-tick dollar floor: SPX options have $0.05 minimum
     tick for options under $3.00. The BPS model alone severely understates
     spread costs on cheap options.
+
+    Spread widening: when bar_range > 2x average, spreads widen. On fast
+    0DTE moves, real bid-ask can be 1.5-2x normal. This penalizes trades
+    entered/exited during volatile bars.
     """
     mtc_entry = BARS_PER_DAY - entry_bar_of_day
     mtc_exit = BARS_PER_DAY - exit_bar_of_day
     entry_spread_frac = compute_adaptive_spread_bps(mtc_entry, vix_regime_entry, is_otm) / 10000.0
     exit_spread_frac = compute_adaptive_spread_bps(mtc_exit, vix_regime_exit, is_otm) / 10000.0
+
+    # Spread widening during fast moves
+    if avg_bar_range > 0:
+        entry_ratio = entry_bar_range / avg_bar_range
+        exit_ratio = exit_bar_range / avg_bar_range
+        # Widening kicks in above 2x average, capped at 2x spread multiplier
+        if entry_ratio > 2.0:
+            entry_spread_frac *= min(entry_ratio / 2.0 + 0.5, 2.0)
+        if exit_ratio > 2.0:
+            exit_spread_frac *= min(exit_ratio / 2.0 + 0.5, 2.0)
 
     # Floor: minimum tick is $0.05 per side for options under $3.00
     if entry_px is not None and entry_px > 0:
@@ -228,7 +245,30 @@ def simulate_trade(
     raw_pnl = (exit_price - entry_px) / entry_px
     exit_bod = int(bar_of_day[min(exit_bar, N - 1)])
     vix_exit = float(features[min(exit_bar, len(features) - 1), vix_idx])
-    spread_cost = _compute_spread_cost(entry_bod, exit_bod, vix_entry, vix_exit, is_otm, entry_px=entry_px)
+
+    # Bar range for spread widening: use bar_range feature if available
+    bar_range_idx = _FEAT_IDX.get('bar_range', -1)
+    avg_range_idx = _FEAT_IDX.get('range_ratio', -1)
+    entry_bar_range = 0.0
+    exit_bar_range = 0.0
+    avg_bar_range = 1.0
+    if bar_range_idx >= 0 and fill_bar < len(features):
+        entry_bar_range = abs(float(features[fill_bar, bar_range_idx]))
+        exit_bar_range = abs(float(features[min(exit_bar, len(features) - 1), bar_range_idx]))
+        # Use range_ratio as proxy for avg (range_ratio = bar_range / rolling_mean)
+        # so bar_range / range_ratio ≈ rolling_mean
+        if avg_range_idx >= 0:
+            rr = float(features[fill_bar, avg_range_idx])
+            if rr > 0 and entry_bar_range > 0:
+                avg_bar_range = entry_bar_range / rr
+
+    spread_cost = _compute_spread_cost(
+        entry_bod, exit_bod, vix_entry, vix_exit, is_otm,
+        entry_px=entry_px,
+        entry_bar_range=entry_bar_range,
+        exit_bar_range=exit_bar_range,
+        avg_bar_range=avg_bar_range,
+    )
     # Commission: $0.65/leg, 2 legs per round-trip, as fraction of entry premium
     commission_frac = (2 * 0.65) / (entry_px * 100)
     net_pnl = raw_pnl - spread_cost - commission_frac
