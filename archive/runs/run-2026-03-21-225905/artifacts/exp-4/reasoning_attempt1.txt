@@ -1,5 +1,0 @@
-Looking at the trajectory, the BalancedStrikeGate approach achieved the best score (1.77) with strong profit factor (3.42) but relatively low trade frequency (1.29 TPD). The model is being selective, which is good, but I want to examine if we can improve the exit timing to capture more profits from the trades we do take.
-
-The current model relies heavily on the gate head for exits (gate=NO_TRADE while holding), but the EXIT loss weight is only 0.5. Given that 0DTE options have extreme time decay in the final 2 hours, better exit timing could be the key to improving performance. I'll increase EXIT_LOSS_WEIGHT from 0.5 to 1.0 to give the model stronger signal about when to exit trades optimally.
-
-This targets a specific trading behavior: better exit timing to capture more profit from existing trades rather than trying to trade more frequently.

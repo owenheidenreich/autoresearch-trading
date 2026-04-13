@@ -1,5 +1,0 @@
-Looking at the trajectory, the temporal chunk consistency approach (#9) scored 1.215 and was kept, but experiment #1 with increased TEMPORAL_CHUNK_WEIGHT=0.25 scored higher (1.228) but was blocked for "worst_chunk_pf_below_threshold" and "stop_loss_rate_above_threshold". This suggests the temporal consistency is working but needs refinement.
-
-The key insight is that temporal chunking helped but may be too aggressive at 0.25. The model needs to maintain performance across time periods without over-constraining its behavior. Rather than just tuning the weight, I'll address the specific failure modes: worst chunk performance and stop-loss rate.
-
-I hypothesize that adding a chunk-aware loss scaling will help the model perform more consistently across time periods while maintaining overall profitability. Instead of just penalizing inconsistency, I'll weight the loss to give more attention to underperforming temporal regions during training.

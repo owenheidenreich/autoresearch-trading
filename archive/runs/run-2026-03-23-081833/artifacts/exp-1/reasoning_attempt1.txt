@@ -1,1 +1,0 @@
-The direction collapse indicates the direction head needs stronger training signal. I'll increase DIR_LOSS_WEIGHT from 1.0 to 2.0 to give the direction head more influence during training, helping it learn to distinguish between call and put opportunities rather than collapsing to a single direction.

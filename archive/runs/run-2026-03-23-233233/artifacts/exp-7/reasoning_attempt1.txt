@@ -1,1 +1,0 @@
-I'll reduce the gate bias from [-0.3, +0.3] to [-0.2, +0.4] to make the model more willing to trade initially while keeping selectivity learning. I'll also increase DAY_SEQ_RATIO from 0.7 to 0.8 to give more exposure to realistic position state dynamics, which should help the model learn better entry/exit timing and reduce direction collapse.

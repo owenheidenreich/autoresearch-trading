@@ -1,1 +1,0 @@
-The error is a device mismatch: the batch_indices tensor is on GPU but data tensors are on CPU. In the make_day_sequential_dataloader function, batch_indices is created on device but then used to index CPU tensors. Need to move batch_indices to CPU before indexing, then move results to device.

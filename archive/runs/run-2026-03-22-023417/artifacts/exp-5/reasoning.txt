@@ -1,7 +1,0 @@
-Looking at the recent experiments, I see a concerning pattern: the best score is only 0.634, and the profit factor is 2.64, which is significantly below the historical best of 3.42. The model is struggling with temporal robustness, particularly in early validation chunks.
-
-From the lab notebook, I can see that Chunk 1 (Feb-May 2025) has PF=0.22, meaning the model loses badly in early validation periods. The core issue appears to be that the model is overfitting to later training data patterns and failing to generalize to earlier market regimes.
-
-The key insight is that 0DTE options behave differently across VIX regimes and market conditions. A model trained on one regime may fail catastrophically when VIX normalizes or volatility patterns shift. 
-
-My hypothesis: Add VIX-regime-aware training by weighting the loss function based on VIX levels in the training data. This will force the model to learn robust patterns that work across different volatility environments rather than overfitting to the dominant regime in the training set. Specifically, I'll upweight training samples from low-VIX periods (which are underrepresented but critical for validation performance) and add a VIX regime consistency regularizer that penalizes the model for having dramatically different behaviors across VIX levels.

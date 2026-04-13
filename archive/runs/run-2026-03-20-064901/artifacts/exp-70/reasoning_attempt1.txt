@@ -1,3 +1,0 @@
-Looking at the search-space review questions and the diversity nudge, I need to try something FUNDAMENTALLY DIFFERENT. The current best model (#52, score=1.77) uses BalancedStrikeGate, but all recent experiments are small tweaks that get rejected. 
-
-The biggest gap is that the model still hits account ruin frequently (min_equity_frac around 3-6%). Instead of incremental strike bias adjustments, I'll try a completely different approach: **position sizing based on account health**. Rather than just biasing strike selection, I'll make the model less likely to trade at all when the account is stressed, implementing a dynamic "risk budget" that shrinks as account health deteriorates. This is the opposite of strike biasing - it's trade frequency modulation.

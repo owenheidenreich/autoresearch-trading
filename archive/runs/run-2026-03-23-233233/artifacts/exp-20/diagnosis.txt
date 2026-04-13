@@ -1,1 +1,0 @@
-The current best model (score=3.88, PF=2.30, TPD=1.0) has only 5 total trades with 80% direction collapse, indicating the model is being overly conservative and not diversifying across different market conditions. The 0/8 recent accept rate suggests the model has learned a very narrow strategy that works in specific conditions but fails to generalize.

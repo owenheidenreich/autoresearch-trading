@@ -1,1 +1,0 @@
-The failure is due to SCORE_* environment variable usage, which is forbidden. I need to remove all SCORE_* _env_float calls and replace them with hardcoded values in the _score_config dictionary. The score formula is locked to prevent gaming the evaluation metric.

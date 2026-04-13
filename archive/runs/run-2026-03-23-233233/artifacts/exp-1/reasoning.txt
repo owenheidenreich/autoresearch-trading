@@ -1,1 +1,0 @@
-The failure is due to adding 2 new _env_float declarations (DIR_LOSS_START and DIR_LOSS_DECAY_RATIO) which violates the frozen loss function contract. I need to remove these new hyperparameters and implement direction loss scheduling using existing values only. I'll use a simple fixed schedule based on training progress without new environment variables.

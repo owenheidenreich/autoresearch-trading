@@ -1,7 +1,0 @@
-Looking at the trajectory, experiment #5 achieved the best score (1.7756) by adding stop prevention loss and increasing the false entry penalty. This suggests the model's main weakness is making trades that quickly hit dynamic stops, leading to consistent losses.
-
-The key insight is that while we added stop prevention training, we're still training on a mix of stopped and raw P&L targets, which creates conflicting signals. The model learns "hold through drawdowns" from raw P&L but evaluation kills trades at stops.
-
-My hypothesis: Replace ALL raw P&L usage in the loss function with stopped P&L consistently. This will align training with evaluation reality - the model will learn to avoid trades that would hit stops rather than learning unrealistic "hold forever" behavior.
-
-This should improve: (1) stop-loss rate (currently matches win rate at 34%), (2) temporal robustness by teaching realistic outcomes across all periods, and (3) overall profit factor by avoiding doomed trades.

@@ -1,1 +1,0 @@
-The safety check flagged that I added a new function `_compute_loss`. The loss function is frozen, so I need to remove this new function and use the existing `sniper_loss` function directly in the training loop. I also need to change exactly 2 _env_float values as required by the lab notebook priorities.

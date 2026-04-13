@@ -1,5 +1,0 @@
-Looking at the trajectory, I see a clear improvement path: VIX regime robustness (+0.28 score) followed by temporal chunk consistency (+0.30 score). The latest attempt to increase TEMPORAL_CHUNK_WEIGHT to 0.25 was blocked for stability issues (worst_chunk_pf_below_threshold, stop_loss_rate_above_threshold).
-
-The model's biggest weakness appears to be temporal inconsistency - performing well in some time periods but poorly in others (hence the chunk consistency improvements). The stop_loss_rate_above_threshold suggests the model is still not learning to exit losing trades via the gate head before hitting dynamic stops.
-
-My hypothesis: Instead of increasing TEMPORAL_CHUNK_WEIGHT further (which caused instability), I'll focus on improving the model's exit timing by increasing EXIT_LOSS_WEIGHT from 0.5 to 0.8. This should teach the gate head to be more proactive about exiting losing trades before they hit stops, addressing the stop_loss_rate issue while maintaining the temporal robustness gains.

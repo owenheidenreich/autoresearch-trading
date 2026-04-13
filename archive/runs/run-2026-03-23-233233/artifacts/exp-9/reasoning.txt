@@ -1,1 +1,0 @@
-I'll reduce DROPOUT from 0.15 to 0.10 to give the model slightly more capacity to learn diverse trading patterns, while keeping the successful DIR_W=2.0. Lower dropout should help reduce direction collapse and increase trade frequency by allowing the model to learn more nuanced strike selection patterns without being overly regularized.

@@ -1,5 +1,0 @@
-The error shows a feature dimension mismatch - the checkpoint has 60 features but the current model expects 64. Looking at the code, I can see the issue: the model is using `NUM_FEATURES` from prepare.py (which is 64) but the actual data only has 60 features according to the phase lock documentation.
-
-The feature contract explicitly states we're in a "60 features" phase (indices 0-59), but the model is initializing with NUM_FEATURES=64 from prepare.py. This creates an architecture mismatch when trying to load the warm-start weights.
-
-My hypothesis: Fix the feature dimension mismatch by explicitly setting the model to use 60 features instead of NUM_FEATURES (64). This will allow warm-start to work and the model can build on previous learned weights. I'll also ensure the feature groups are correctly defined for 60 features and add some basic improvements to the loss function to encourage better entry quality.

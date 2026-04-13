@@ -1,7 +1,0 @@
-Looking at the current best experiment #5 with VIX regime robustness improvements, I can see it scored 0.92 with PF=2.80. The VIX consistency and regime weighting approach is working well.
-
-However, I notice from the lab notebook that there's still a critical weakness: "Chunk 1 (Feb-May 2025) has PF=0.22. The model loses badly in early val dates." This suggests temporal instability - the model works well in later periods but fails in earlier validation chunks.
-
-The current approach uses VIX regime balancing, but I think the issue might be deeper: the model is learning patterns from later training data that don't generalize to earlier validation periods. I want to try a different approach - adding temporal robustness through gradient penalty that encourages consistent predictions across time periods within each batch.
-
-My hypothesis: Add a temporal consistency regularizer that penalizes the model when it makes dramatically different predictions for similar market conditions across different time periods. This should improve temporal robustness without requiring new modules or complex architectures.

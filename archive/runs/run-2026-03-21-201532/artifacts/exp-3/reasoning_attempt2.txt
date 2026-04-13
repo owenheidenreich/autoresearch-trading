@@ -1,1 +1,0 @@
-The safety checker detected forbidden SCORE_* env vars. I need to remove all _env_float calls for SCORE_* variables and hardcode the values instead. The score config is locked to prevent gaming the evaluation metric.

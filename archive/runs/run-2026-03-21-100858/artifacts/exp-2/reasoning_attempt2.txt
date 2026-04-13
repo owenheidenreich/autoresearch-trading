@@ -1,1 +1,0 @@
-The failure is clear: the day-sequential loader requires 'day_boundaries' in data.pt but it's missing. The error occurs when trying to use day_seq_loader. I need to disable day-sequential batching by setting DAY_SEQ_RATIO to 0.0, which will make _use_day_seq = False and skip the day_seq_loader entirely, falling back to pure random batching.

@@ -1,1 +1,0 @@
-This is the first experiment with the new account-aware scoring regime. The lab notebook shows all prior experiments hit ruin (min_equity_frac 3-6%). The model needs to learn capital preservation. I'll add a simple account-aware gating mechanism: when the account health (position_state[3]) drops below 0.5, apply a strong bias toward NO_TRADE to preserve remaining capital.

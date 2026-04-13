@@ -1,1 +1,0 @@
-The safety checker rejected the code because it contains "_env_float('SCORE_..." calls in the score tuning section. The contract states that score config is LOCKED and cannot use environment variable readers. I need to remove all SCORE_* _env_float calls and use only hardcoded values as shown in the contract example.

@@ -1,23 +1,30 @@
-# v2 Live Documentation Index
+# Documentation Index
 
-This is the index of current, accurate documentation for the v2 system. Do not read `archive/` unless the human asks for historical context.
+Single source of truth for all project documentation. If it's not listed here, it's either in `archive/` (historical) or doesn't exist.
 
-The live documentation set is intentionally small. If a topic is not listed here, assume it is historical, generated, or out of scope for the current exact-chain reset.
+## Domain Knowledge
+
+Core trading knowledge extracted from books and practitioner journals. Read these to understand WHY the system makes certain decisions.
+
+- [0DTE Domain Knowledge](domain/0dte-domain-knowledge.md) — Greeks behavior, volatility concepts, dealer mechanics, risk rules, key formulas
+- [Pickles Trading Knowledge](domain/pickles-trading-knowledge.md) — Practitioner journal: entry/exit rules, VWAP framework, time-of-day rules, anti-patterns
+- [Sinclair Volatility Extract](domain/sinclair-volatility-trading-extract.md) — Volatility trading theory, realized vs implied, regime detection
+- [Douglas Trading Zone](domain/douglas-trading-zone-extraction.md) — Trading psychology, zone theory
+- [Book Knowledge Synthesis](domain/book-knowledge-synthesis.md) — Cross-book synthesis of actionable trading knowledge
 
 ## Protocol & Operations
 
 - [program.md](../program.md) — definitive operator protocol
 - [COMMANDS.md](../COMMANDS.md) — command phrases the agent should honor
 - [HANDOFF.md](../HANDOFF.md) — current state snapshot and trust boundaries
-- [LAYOUT.md](../LAYOUT.md) — directory map and "where to look when X fails"
 
-## Founder Memory
+## Project Strategy
 
 - [founder_intent.md](founder_intent.md) — founder voice, standards, anti-goals, and current mission boundary
 - [decision_log.md](decision_log.md) — durable project decisions that should outlive experiments
-- [open_questions.md](open_questions.md) — active unresolved questions for the current phase
+- [open_questions.md](open_questions.md) — active unresolved questions
 
-## System Documentation
+## System Documentation (Supervised Approach)
 
 - [current_state.md](current_state.md) — detailed system overview, end-to-end flow
 - [how_training_works.md](how_training_works.md) — training loop, model architecture, loss
@@ -25,22 +32,18 @@ The live documentation set is intentionally small. If a topic is not listed here
 - [feature_schema.md](feature_schema.md) — 47 normalized features
 - [labeling.md](labeling.md) — exact-chain sidecar labels
 - [contracts.md](contracts.md) — contract selection and TradeIntent schema
-- [evaluator.md](evaluator.md) — scoring formula, baselines, hard gates, and baseline cache behavior
+- [evaluator.md](evaluator.md) — scoring formula, baselines, hard gates
+- [harness-rebuild.md](harness-rebuild.md) — harness rebuild guide
+
+## RL Approach Documentation
+
+- [rl_overview.md](rl_overview.md) — v3 pure-RL project overview and architecture
 
 ## Research Logs
 
-- [results.tsv](../results.tsv) — official exact-chain experiment scores
-- [lab_notebook.md](../lab_notebook.md) — diagnosis, hypotheses, experiment notes
-
-## Observability
-
-- `python3 -m v2.replay --traces` — decision trace: per-bar model decision log with oracle comparison (mandatory before keep/revert)
-- `python3 -m v2.core.data_integrity` — data integrity validation (manifest, features, sidecars)
-
-## Health Command
-
-- `python3 -m v2.ops.status_report` — prints the current repo health, dataset fingerprint, experiment state, artifact compatibility status, and active blockers
+- Supervised: `supervised/results.tsv`, `supervised/lab_notebook.md`
+- RL: `rl/results.tsv`, `rl/lab_notebook.md`
 
 ## Historical Context
 
-Historical documentation is archived in `archive/v2_historical/`. Only consult it when the human explicitly asks for pre-exact-chain context.
+Historical documentation is archived in `archive/`. Only consult when you need pre-current context.

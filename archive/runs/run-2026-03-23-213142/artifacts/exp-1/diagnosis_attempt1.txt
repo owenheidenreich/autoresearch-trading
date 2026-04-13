@@ -1,5 +1,0 @@
-The single biggest weakness is the 80% direction collapse - the model is making only PUT trades despite having 6 direction options. This severely limits diversification and adaptability across market regimes. The model has learned a strong PUT bias but isn't exploring the full action space, which caps profit potential and creates regime risk.
-
-I haven't tried adjusting the direction head bias initialization to be more balanced. Currently ATM strikes get +0.15 bias and OTM get -0.10 penalty, but the PUT vs CALL bias is symmetric. The 80% direction collapse suggests the model is finding PUTs more profitable in the training data, but this could be overfitting to a specific regime.
-
-Reducing the ATM bias from +0.15 to +0.05 and making the CALL vs PUT bias slightly asymmetric (+0.05 for CALLs, +0.10 for PUTs to acknowledge the PUT preference while not being extreme) should encourage more balanced exploration during early training, leading to better diversification and higher trade frequency.

@@ -1,5 +1,0 @@
-Looking at the recent trajectory, the BalancedStrikeGate module achieved the highest score (1.77) with strong profit factor (3.42) but moderate trade frequency (1.29 TPD). The progression shows consistent improvements through bias tuning and learning rate optimization, culminating in the BalancedStrikeGate architecture.
-
-However, I notice the model may be overly conservative - only 1.29 trades per day suggests it's missing profitable opportunities. The score formula penalizes low frequency (freq_center=2.5), so increasing trade frequency while maintaining profitability could significantly boost the score.
-
-My hypothesis: The current BalancedStrikeGate applies stress-based position sizing too aggressively, causing the model to miss profitable setups when account health is even slightly below perfect. I'll reduce the health threshold from 0.7 to 0.5 and soften the strike bias adjustments, allowing the model to be more opportunistic while still preserving capital during true stress periods. This should increase trade frequency while maintaining the proven profit factor edge.

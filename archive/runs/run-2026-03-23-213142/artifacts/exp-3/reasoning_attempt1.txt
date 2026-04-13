@@ -1,1 +1,0 @@
-I'll increase PNL_ALIGNMENT_WEIGHT from 0.3 to 0.5 to strengthen the alignment between model predictions and actual P&L outcomes. This should help reduce direction collapse by providing stronger feedback for diversified trading decisions while maintaining the successful DIR_W=2.0 setting from the current best run.

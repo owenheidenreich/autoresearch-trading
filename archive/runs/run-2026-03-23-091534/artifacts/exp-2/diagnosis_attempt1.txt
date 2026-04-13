@@ -1,1 +1,0 @@
-The single biggest weakness is direction collapse: 1.0 means the model is predicting the same direction (probably CALL_ATM based on the bias initialization) for every trade, ignoring market conditions. The model is trading (tpd=1.0) but with poor directional accuracy (pf=0.894). The direction head is not learning meaningful distinctions between call/put opportunities.

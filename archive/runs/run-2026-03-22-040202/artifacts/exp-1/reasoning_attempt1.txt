@@ -1,5 +1,0 @@
-Looking at the trajectory, the model is steadily improving through VIX regime robustness (#5) and temporal chunk consistency (#9). The current best has score=1.22 with PF=3.13 and TPD=1.34.
-
-However, I notice a critical issue from the Lab Notebook: "Chunk 1 (Feb-May 2025) has PF=0.22" - the model is catastrophically failing in early validation dates. The temporal chunk consistency loss is helping but may not be aggressive enough.
-
-My hypothesis: The model needs stronger temporal robustness penalties. The current TEMPORAL_CHUNK_WEIGHT=0.15 is too weak to overcome the temporal overfitting. I'll increase it to 0.25 and also add a stronger penalty specifically for low-performing chunks by incorporating a "chunk performance balance" term that heavily penalizes models that work well on some chunks but fail on others.

@@ -1,7 +1,0 @@
-Looking at the experiment trajectory, the BalancedStrikeGate module achieved the best score (1.77) with PF=3.42 and TPD=1.29. The recent attempts to add stopped P&L weighting have all failed, suggesting the model is already learning good exit timing through the existing gate+exit loss structure.
-
-The key insight from the successful experiments is that account-aware strike selection works. The BalancedStrikeGate reduces trading signal strength when account health is low and applies softer strike biases toward cheaper options when stressed.
-
-However, I notice the current implementation may be too conservative - TPD dropped from 1.37 to 1.29 between experiments #27 and #52. The model might be over-penalizing trades when account health dips slightly below the 0.7 threshold.
-
-My hypothesis: The current 0.7 health threshold for strike bias is too high, and the 0.15 bias adjustments are too aggressive. I'll lower the threshold to 0.5 (truly stressed accounts) and reduce the bias magnitudes to maintain ATM viability while still nudging toward cheaper options when genuinely at risk.

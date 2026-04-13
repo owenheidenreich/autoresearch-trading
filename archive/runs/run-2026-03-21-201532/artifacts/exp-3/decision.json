@@ -1,5 +1,0 @@
-{
-  "failure_type": "train_crash",
-  "kept": false,
-  "reason": "Exit code 1:\nLoading data from: /root/.cache/autoresearch-trading/features/data.pt\nLoaded 384870 1-min bars, 32 features, 8 actions\n  ~986 trading days\nTraining:   up to idx 269189\nValidation: idx 269190-384869\n  Option P&L coverage: 297877/384870 (77%)\nParameters: 146,265\nArchitecture: v4 simplified two-head (gate+dir) + enhanced balanced strike gating with improved capital preservation\nTraining from scratch (v4: no warm-start).\n\nBudget: 240s | Batch: 128 | Lookback: 120\nLR: 0.00015 | Depth: 3 | d_model: 64 | ff_mult: 3\nDropout: 0.15 | Weight decay: 0.05\nFalse entry penalty: 2.0x\nLabel smoothing: gate=0.05 dir=0.05\nLoss weights: gate=1.0, dir=1.0, pnl=0.3, exit=0.5\nScore tuning: R:R bonus=0.3, hold bonus=0.0, freq center=2.5, drawdown penalty=0.5\n\n/opt/conda/lib/python3.11/site-packages/torch/nn/modules/transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True\n  warnings.warn(\nTraceback (most recent cal"
-}

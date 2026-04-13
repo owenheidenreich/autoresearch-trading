@@ -1,7 +1,0 @@
-Looking at the trajectory, experiment #2 achieved the highest score (1.203071) by simply increasing PNL_ALIGNMENT_WEIGHT from 0.3 to 0.5, but was reverted for unknown reasons. The current best kept experiment (#1) has a much lower score (0.634455). This suggests the validation gate may be too conservative or there's an evaluation inconsistency.
-
-Analyzing the pattern: all recent experiments focused on tuning PNL_ALIGNMENT_WEIGHT and other loss weights, but none beat the baseline. The model seems stuck in local optimization around loss weight tuning.
-
-For creative exploration, I notice the model uses stopped P&L for training but the lab notebook mentions this was a recent change. What if the model needs more aggressive position sizing control? The current BalancedStrikeGate only modulates strike selection when account_health < 0.7, but what if we made the gate head itself more selective during stressed periods?
-
-My hypothesis: Make the gate head more conservative during account stress by directly scaling down the TRADE logit when account health is low. This should reduce trading frequency during drawdown periods, improving risk management without requiring new modules.

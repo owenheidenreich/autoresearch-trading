@@ -1,1 +1,0 @@
-The error is clear: the day-sequential loader is trying to access 'day_boundaries' which doesn't exist in data.pt. The fix is to disable day-sequential batching by setting DAY_SEQ_RATIO to 0.0, which will make _use_day_seq=False and skip the day_seq_loader creation entirely.

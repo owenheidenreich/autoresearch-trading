@@ -1,1 +1,0 @@
-This is the first experiment, so I should establish a baseline by running the current v4 architecture as-is. The current model has BalancedStrikeGate and trains on stopped P&L, which aligns training with evaluation. I'll run it unchanged to get a baseline score to compare future improvements against.

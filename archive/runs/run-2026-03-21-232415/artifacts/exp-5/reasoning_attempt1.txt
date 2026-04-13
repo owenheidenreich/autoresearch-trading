@@ -1,5 +1,0 @@
-Looking at the trajectory, the BalancedStrikeGate has achieved the best score (1.77) but I need to examine what trading behaviors could be improved. The model has a good profit factor (3.42) and reasonable trade frequency (1.29 TPD), but there's likely room for improvement in exit timing and risk management.
-
-From the lab notebook, I see that stopped P&L labels are available but not yet used in the loss function. This is a key unexplored direction - the model currently trains on unstopped P&L (full trade trajectories) but doesn't learn about realistic stop-out scenarios. Adding stopped P&L awareness could improve the model's understanding of when to exit before hitting dynamic stops.
-
-My hypothesis: Train the model on both unstopped P&L (for learning full trade potential) AND stopped P&L (for learning realistic exit timing under stops). This dual-target approach should improve exit timing by teaching the model to anticipate when trades might hit stops, leading to better voluntary exits through the gate head.

@@ -1,4 +1,0 @@
-{
-  "error": "SAFETY: SCORE_* env vars are forbidden. The score formula is locked to prevent gaming. Improve the model, not the scorer.",
-  "failure_type": "safety"
-}

@@ -1,8 +1,0 @@
-Looking at the trajectory, experiment #6 achieved the best score (2.53) by implementing full stopped P&L consistency - using stopped P&L throughout training instead of raw P&L. This is a major breakthrough that aligns training with evaluation reality.
-
-However, I need to examine the fundamental trading weaknesses. The Lab Notebook mentions:
-1. Chunk 1 weakness (PF=0.22) - model fails on early validation dates
-2. Stop rate = Win rate = 34% - every loss hits the stop, model never exits losers early
-3. OTM trades hemorrhaging money while ATM is profitable
-
-The current model trains on stopped P&L but may still be too aggressive in taking trades that will hit stops. I propose adding a "confidence threshold" mechanism - only trade when the gate head is VERY confident (probability > 0.7) rather than just >0.5. This should improve trade selectivity and reduce marginal trades that hit stops.

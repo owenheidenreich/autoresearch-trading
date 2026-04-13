@@ -1,1 +1,0 @@
-The error is on line 546: `print(f"\nBudget: {TIME_BUDGET}s | Batch: {BATCH_SIZE} | Lookback: {lookback}")` - the variable `lookback` is undefined. It should be `LOOKBACK` (the constant defined at the top). This is a simple variable name fix.

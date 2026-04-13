@@ -115,7 +115,7 @@ def run(cmd: list[str], cwd: Path | None = None) -> tuple[int, str]:
 
 
 def iter_live_text_files() -> list[Path]:
-    files = [PROJECT_ROOT / "AGENTS.md", PROJECT_ROOT / "CLAUDE.md"]
+    files = [PROJECT_ROOT / "CLAUDE.md"]
     for path in (PROJECT_ROOT / "v2").rglob("*"):
         if not path.is_file():
             continue

@@ -1,1 +1,0 @@
-The error shows that data.pt is missing the 'day_boundaries' field required by make_day_sequential_loader. The code tries to use day-sequential batching but fails when the loader can't find this field. I need to gracefully handle this by disabling day-sequential batching when day_boundaries is missing, falling back to random batching only.

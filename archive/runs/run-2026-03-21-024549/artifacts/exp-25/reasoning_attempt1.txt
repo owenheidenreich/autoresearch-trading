@@ -1,5 +1,0 @@
-Looking at the trajectory, I see a clear pattern: the best improvements have come from tuning the score formula bonuses rather than architectural changes. Experiment #20 achieved the best score (7.09) by combining SCORE_HOLD_BONUS=0.25 with enhanced PNL_ALIGNMENT_WEIGHT=0.3.
-
-However, this is a diversity nudge - I need to think differently. Looking at the per-chunk details that are now visible, I should check if there's temporal inconsistency. The current approach focuses heavily on score formula tuning, but what if the core issue is that the model isn't learning robust trading patterns?
-
-My hypothesis: The model might benefit from stronger regularization on the direction head specifically. The gate head has learned good selectivity (NO_TRADE bias +0.5), but the direction head might be overfitting to training patterns that don't generalize across time periods. I'll add direction-specific dropout and reduce the direction head capacity to force it to learn simpler, more robust patterns.
