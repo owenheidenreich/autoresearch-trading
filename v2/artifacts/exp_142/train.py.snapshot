@@ -101,7 +101,11 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d // 2, 1),
         )
-        self.put_bias = nn.Parameter(torch.tensor(0.0))
+        self.direction_proj = nn.Sequential(
+            nn.Linear(d, d // 4),
+            nn.GELU(),
+            nn.Linear(d // 4, 1),
+        )
 
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         _, seq_len, _ = x.shape
@@ -156,7 +160,8 @@ class TradingModel(nn.Module):
         call_scores_centered = call_scores - call_mean
         put_scores_centered = put_scores - put_mean
 
-        contract_scores = torch.where(is_put, put_scores_centered + self.put_bias, call_scores_centered)
+        direction_shift = self.direction_proj(context)  # (B, 1)
+        contract_scores = torch.where(is_put, put_scores_centered + direction_shift, call_scores_centered)
 
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         return {
@@ -166,6 +171,7 @@ class TradingModel(nn.Module):
             "is_put": is_put,
             "call_scores_raw": call_scores,
             "put_scores_raw": put_scores,
+            "direction_shift": direction_shift.squeeze(-1),
         }
 
 
@@ -398,6 +404,8 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         true_put = (trade_contracts[rows, true_idx, 2] > 0.5).long()
         dir_acc = (pred_put == true_put).float().mean().item() if len(pred_put) else 0.0
 
+    dir_shift_mean = float(outputs["direction_shift"].mean().item()) if "direction_shift" in outputs else 0.0
+
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
@@ -406,6 +414,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
+        "dir_shift": dir_shift_mean,
         "trade_rate": trade_rate,
     }
 
@@ -508,7 +517,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             f"val={avg_val.get('total', 0):.4f} | "
             f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} exact={avg_val.get('exact', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
-            f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
+            f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f} "
+            f"dshift={avg_val.get('dir_shift', 0):.4f}"
         )
 
         val_total = avg_val.get("total", float("inf"))

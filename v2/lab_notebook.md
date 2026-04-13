@@ -876,6 +876,39 @@ The remaining lever for improving PF is policy-level: stop-loss tuning, trailing
 - Decision: **PROMOTED** — score 0.150 > exp_139 -0.121, beats all baselines, no gate failure, DD 12.4% well under 20% hard gate
 - Takeaway: the trailing stop breakeven tier at 30% was too generous. Lowering to 15% converted 29 trades from stop-loss to trailing-stop exits, cutting whipsaw losses from -$4,260 to -$163. The model's entries were already good — the exit policy was the bottleneck. This is the highest score, best DD, and best Sortino in the project's history.
 
+### `exp_141` — Lower SOFT_TEMP (0.10 → 0.05)
+
+- Type: screening only (1-fold)
+- Hypothesis: KL selection target at 0.10 gives only 22% probability to the oracle contract (median). At 0.05 this doubles to 32%. Prior test at lower temp (exp_131) failed pre-normalization.
+- Code change: `SOFT_TEMP = 0.05` (one line)
+- Result (fold 0 screening):
+  - score: `-0.200` (gate failure: DD 32.4%)
+  - trades: `156` (`74C / 82P`, minority `47.4%` — best balance ever)
+  - win rate: `29.5%`
+  - profit factor: `0.885`
+- Decision: **kill** — excellent direction balance (47.4% puts) but worse economics than exp_140. The peaked target pushes the model toward oracle direction but into bad contracts. WR dropped from 34.6% to 29.5%.
+- Takeaway: lower temp helps direction balance but hurts contract quality. The model needs the broader target to learn general contract quality alongside direction.
+
+### `exp_142` — Context-Dependent Direction Projection
+
+- Type: official 5-fold walk-forward
+- Hypothesis: replace the static `put_bias` scalar with a small MLP (`direction_proj`: 96→24→1) that takes the context embedding and outputs a per-bar put-preference shift. This gives the KL loss a pathway to teach WHEN to prefer puts vs calls.
+- Code change: replaced `put_bias = nn.Parameter(torch.tensor(0.0))` with `direction_proj = nn.Sequential(Linear(96,24), GELU, Linear(24,1))`. Added `direction_shift` monitoring.
+- Result:
+  - score: `-0.135` (aggregate), folds: `[0.127, -0.20, -0.20, -0.20, -0.20]`
+  - trades: `178` on fold 4 (`147C / 31P`, minority `17.4%`)
+  - win rate: `36.0%` (fold 4), `33.1%` (fold 0)
+  - profit factor: `1.081` (fold 4), `0.993` (fold 0)
+  - drawdown: `23.1%` (fold 4) — gate failure
+  - net P&L: `+$2,248`
+  - beats all 4 baselines
+  - gate failure: `excessive_drawdown (23.1% > 20%)`
+- Direction balance improved: fold 0 went from 27% puts (exp_140) to 42.5% puts
+- Direction_shift oscillated between -0.25 and +0.15 across epochs — the model is trying different context-dependent side preferences
+- Fold shift: fold 0 became the winner (was fold 4 in exp_140). The direction_proj changed which market regime the model is best at.
+- Decision: **revert** — score -0.135 < exp_140's 0.150, gate failure, lower PF
+- Takeaway: direction_proj improves direction balance (fold 0: 27%→42.5% puts) but doesn't translate to better economics. The model trades more puts but the puts it picks aren't consistently profitable. The direction signal exists (direction_shift is learning) but the model needs to improve put CONTRACT QUALITY, not just put FREQUENCY.
+
 ### Session Close (2026-04-12 Late)
 
 **6 consecutive no-improve experiments** (exp_134, 134b, 135, 136, 137-reverted, 138) — session limit reached.
