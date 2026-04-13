@@ -1167,3 +1167,35 @@ Created `v2/analysis/fold_diagnosis.py` to replay production model against each 
 1. VIX regime gating (reduce trade frequency when model is in hostile regime)
 2. Regime-conditioned training (weight loss by fold difficulty during training)
 3. Test stop_pct=0.35 impact on fold-level DD (does wider stop help folds 1-3?)
+
+---
+
+### 2026-04-13: Wave 1 — Foundation Overhaul (no GPU)
+
+Full system audit identified the core problem: the model is a hardcoded backtester that ranks contracts by historical PnL, not an intelligent trader that understands greeks, price action, and options mechanics. Five areas addressed in Wave 1:
+
+#### 1. Contract Feature Enrichment (15 → 19 features)
+- **vega**: IV sensitivity — was already computed by `bs_greeks_vec()` but discarded. Now passed through.
+- **charm** (dDelta/dTime): Most important 0DTE second-order Greek. Drives afternoon dealer hedging flows. Sign-flipped for puts like delta.
+- **mid_chg_5, mid_chg_10**: Contract price momentum (% change over 5/10 bars). Trader sees "$5 and rising" vs "$5 and falling" — model previously only saw "$5".
+
+#### 2. Context Feature Enrichment (47 → 49 features)
+- **aggregate_charm**: Net charm across the full options chain, volume-weighted by side. Predicts upcoming dealer hedging pressure direction.
+- **vwap_slope**: 5-bar rate of change of session VWAP. Not just "distance from VWAP" but "is VWAP rising or falling?" — directional flow signal.
+
+#### 3. Simulation Realism
+- **Spread widening during fast moves**: When bar_range exceeds 2x rolling average, spread cost multiplied up to 2x. Models real 0DTE bid-ask behavior where spreads blow out on volatile bars.
+
+#### 4. Score Formula v3.0
+Old: `min(sortino, 6.0) * PDR * dd_mult` (dd gate: 20%, penalty-free: ≤8%)
+New: `(0.5 * min(sortino, 10.0) + 0.5 * min(PF, 4.0)) * PDR * dd_mult` (dd gate: 25%, penalty-free: ≤12%)
+
+**Why:** Old formula penalized big wins (sortino measures variance including upside) and was too harsh on drawdown (a 15% DD model scored near zero). New formula rewards profit factor (magnitude of winners vs losers) equally with sortino. A strategy with 2.8 PF and 18% DD now scores 0.78 (was 0.23 under old formula).
+
+#### 5. Data Pipeline (rebuild pending)
+- Rebuilding all 986 days of sidecars + data.pt with enriched features
+- Labels recomputed with stop_pct=0.35, new spread widening model
+
+**Data limitations confirmed (permanent):**
+- Open interest: NOT available in Polygon minute_aggs flat files
+- Bid/Ask: NOT available — only OHLC + volume + transactions per bar
