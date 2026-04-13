@@ -1025,3 +1025,40 @@ Key metrics: PF 1.166, WR 36.5%, DD 12.9%, trades 816 (4.4x explosion), directio
 1. SIDE_SEL_W at much lower weight (0.05-0.10) to reduce gradient interference
 2. Intermediate trailing tier (+15% → lock +5%) — pure policy change, sweep locally
 3. Soft time weighting instead of hard session window cutoff
+
+---
+
+## exp_146: Intermediate Trailing Tier (+25% → lock +8%)
+
+**Date:** 2026-04-13
+**Hypothesis:** Adding an intermediate trailing tier at +25% unrealized → lock +8% profit fills the 35-point gap between breakeven (+15%) and the first profit-lock tier (+50% → +25%). This should convert breakeven exits to small winners, boosting WR, positive day rate, and reducing drawdown — the key factors that could lift folds 0-3 above the -0.200 DD floor.
+
+**Code change:** Policy-only. Added `extra_trailing_tiers` field to `DecisionPolicy` with default `((0.25, 0.08),)`. Threaded through `simulator.py` → `_build_trailing_tiers()` and all `replay.py` call sites.
+
+**Local sweep results (promote mask, existing exp_144 model):**
+
+| Config | Score | PF | DD | WR | +Day% | Net P&L |
+|--------|-------|-----|------|------|-------|---------|
+| Baseline (no tier) | 3.160 | 1.356 | 8.2% | 39.1% | 53.4% | +$4,771 |
+| +25%→+8% | **3.724** | 1.409 | 7.9% | **56.5%** | **62.1%** | +$5,542 |
+| +30%→+10% | 3.621 | 1.378 | 7.7% | 50.3% | 60.3% | +$5,329 |
+| +35%→+10% | 3.310 | 1.337 | 7.8% | 47.0% | 55.2% | +$4,881 |
+
+Cross-sweep: `stop_pct=0.20` hurts when combined with tiers. Current `stop_pct=0.30` remains optimal.
+
+### Screening (1-fold, fold 0)
+
+| Metric | Value |
+|--------|-------|
+| Score | 1.149 |
+| PF | 1.171 |
+| WR | 55.8% |
+| DD | 13.7% |
+| +Day% | 56.1% |
+| Sortino | 3.89 |
+| Trades | 172 (95C/77P) |
+| Put% | 44.8% |
+| Beats baselines | All 4 |
+| Best epoch | 3/15 |
+
+**Decision:** Promote to official 5-fold. Score is positive, beats all baselines, no gate failure. Direction balance is excellent (45% puts). WR 55.8% is the highest screening WR in project history. DD at 13.7% is elevated vs exp_144 promote (8.2%) but this is fold 0 (a historically weak fold) — promising that it stays under the 20% gate.
