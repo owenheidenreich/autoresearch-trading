@@ -451,7 +451,7 @@ cmd_start() {
         --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
         --exclude='*.pt' --exclude='results' --exclude='archive' \
         --exclude='v2/artifacts' \
-        v2 shared pyproject.toml CLAUDE.md
+        v2 pyproject.toml CLAUDE.md
     bundle_sha=$(shasum -a 256 "$bundle" | awk '{print $1}')
     log "Uploading workspace snapshot ($(du -h "$bundle" | cut -f1), sha256=$bundle_sha)..."
     scp_cmd "$bundle" "root@$SSH_HOST:/root/v2-workspace.tgz"
