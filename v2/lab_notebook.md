@@ -909,6 +909,25 @@ The remaining lever for improving PF is policy-level: stop-loss tuning, trailing
 - Decision: **revert** — score -0.135 < exp_140's 0.150, gate failure, lower PF
 - Takeaway: direction_proj improves direction balance (fold 0: 27%→42.5% puts) but doesn't translate to better economics. The model trades more puts but the puts it picks aren't consistently profitable. The direction signal exists (direction_shift is learning) but the model needs to improve put CONTRACT QUALITY, not just put FREQUENCY.
 
+### `exp_143` — Additive Direction Proj (Residual on Put Bias)
+
+- Type: official 5-fold walk-forward
+- Hypothesis: keep `put_bias` as stable baseline + add `direction_proj` MLP (96→24→1) as residual adjustment. exp_142 removed put_bias entirely, destabilizing fold 4. This design falls back to exp_140 if direction_proj outputs ~0.
+- Code change: added `direction_proj` alongside existing `put_bias`. Score = `put_scores_centered + put_bias + direction_proj(context)`.
+- Result:
+  - score: `-0.095` (aggregate), folds: `[0.325, -0.20, -0.20, -0.20, -0.20]`
+  - fold 0: PF `1.046`, `101C/77P` (43.3% puts), score `0.325` — best fold 0 ever
+  - fold 3: PF `0.980`, `94C/66P` (41.2% puts) — nearly break-even
+  - fold 4: PF `1.051`, `154C/26P` (14.4% puts), DD `30.3%` — gate failure
+  - beats all 4 baselines
+  - gate failure: `excessive_drawdown (30.3% > 20%)`
+- Comparison vs exp_142 (direction_proj only, no put_bias):
+  - fold 0 improved: score 0.127 → 0.325 (residual design helps)
+  - fold 3 improved: PF 0.885 → 0.980
+  - fold 4 still fails: DD 23.1% → 30.3% (worse)
+- Decision: **revert** — score -0.095 < exp_140's 0.150, gate failure. The direction_proj consistently helps folds 0 and 3 but hurts fold 4.
+- Takeaway: **fold 4 profits specifically from call-heavy trading in its low-vol test period (Dec'25-Mar'26). Any mechanism that adds puts degrades fold 4.** The direction_proj family (exp_142, exp_143) improves the model's weakest folds and direction balance but can't beat the aggregate score because the scoring is dominated by fold 4's exceptional call-only result. The underlying issue: put contract quality is poor — the model can learn WHEN to trade puts but can't pick WINNING puts.
+
 ### Session Close (2026-04-12 Late)
 
 **6 consecutive no-improve experiments** (exp_134, 134b, 135, 136, 137-reverted, 138) — session limit reached.
