@@ -245,17 +245,21 @@ Current queue after exp_140 promotion (optimized exit policy):
 
 Stop when any limit fires.
 
-## Score
+## Score (v3.0)
 
 ```python
-score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
+score = (0.5 * min(daily_sortino, 10.0) + 0.5 * min(profit_factor, 4.0)) * positive_day_rate * dd_mult
 ```
+
+Composite of risk-adjusted consistency (sortino) and win magnitude (profit factor). Rewards strategies with big wins, not just small consistent ones.
 
 Hard gates:
 
 - Minimum 30 trades
 - Minimum 15 traded days
-- Maximum 20% account drawdown
+- Maximum 25% account drawdown
+
+DD multiplier: 1.0 at ≤12% DD, linear decay to 0.0 at 25% DD.
 
 Direction diagnostics:
 

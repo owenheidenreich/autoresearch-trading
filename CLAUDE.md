@@ -48,8 +48,8 @@ root/
 - `v2/core/metrics.py` — score formula, hard gates, baseline computation
 
 **Data pipeline:**
-- `v2/core/chain_data.py` — `CONTRACT_FEATURE_FIELDS` (15 features), `build_contract_row()`, `padded_snapshot()`
-- `v2/pipeline/compute_features.py` — `bs_greeks_vec()` (Black-Scholes greeks), 47 context features
+- `v2/core/chain_data.py` — `CONTRACT_FEATURE_FIELDS` (19 features), `build_contract_row()`, `padded_snapshot()`
+- `v2/pipeline/compute_features.py` — `bs_greeks_vec()` (Black-Scholes greeks + charm), 49 context features
 - `v2/pipeline/build_v2_dataset.py` — builds `data.pt` + sidecar `.pt` files, oracle label computation
 
 **Visualization:**

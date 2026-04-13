@@ -1,25 +1,25 @@
 # Current v2 State
 
-Last refreshed: 2026-04-13 (exp_146 promotion)
+Last refreshed: 2026-04-13 (Wave 1 overhaul — scoring reset)
 
 ## Mission And Phase
 
 - Mission: build a trustworthy exact-chain research system for SPX 0DTE long-options training and replay
-- Current phase: **profitable model with optimized execution policy (exp_146); optimizing**
+- Current phase: **Wave 1 overhaul complete; fresh slate for model improvements**
 - Live trading: not implemented and not part of the live `v2/` surface
 - The current mission is not live trading. It is a trustworthy exact-chain research system.
 
 ## Snapshot
 
-- Active manifest: `v2/data.pt`
+- Active manifest: `v2/data.pt` (rebuilt 2026-04-13 with enriched features)
 - Dataset version: `v4_exact_chain`
-- Dataset fingerprint: `46f2d184e186496f`
-- Per-day sidecars: `v2/data_sidecars/*.pt`
+- Context features: 49 (was 47) — added aggregate_charm, vwap_slope
+- Contract features: 19 (was 15) — added vega, charm, mid_chg_5, mid_chg_10
+- Per-day sidecars: `v2/data_sidecars/*.pt` (rebuilt)
 - Unique days: 986
-- Official exact-chain scored runs: `exp_074`–`exp_146`
-- **Current official baseline: `exp_146`** (PF 1.409, DD 7.9%, WR 56.5%, Sortino 8.84, +$5,542)
-- Current working code: exp_146 (exp_139 architecture + breakeven_trigger_pct 0.15 + cooldown_bars 3 + extra_trailing_tiers ((0.25, 0.08),))
-- Next experiment: `exp_147`
+- Scoring: v3.0 composite PF/sortino (DD gate 25%, penalty-free ≤12%)
+- **results.tsv: RESET** — old scores (exp_074–exp_146) not comparable under new scoring
+- Next experiment: `exp_147` — first experiment under new feature set + scoring
 - Archived non-live surfaces now live under `archive/v2_historical/`
 
 ## End-To-End Flow
