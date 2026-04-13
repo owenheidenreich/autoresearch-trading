@@ -70,9 +70,9 @@ def _bs_iv(price: float, S: float, K: float, T: float, r: float,
 
 
 def _bs_greeks(S: float, K: float, T: float, r: float, sigma: float):
-    """Returns (delta, gamma, theta_per_bar, vega). NaN on bad inputs."""
+    """Returns (delta, gamma, theta_per_bar, vega, charm_per_bar). NaN on bad inputs."""
     if T <= 1e-10 or sigma <= 0 or S <= 0:
-        return np.nan, np.nan, np.nan, np.nan
+        return np.nan, np.nan, np.nan, np.nan, np.nan
     sqrt_T = math.sqrt(T)
     d1 = _bs_d1(S, K, T, r, sigma)
     d2 = d1 - sigma * sqrt_T
@@ -84,8 +84,10 @@ def _bs_greeks(S: float, K: float, T: float, r: float, sigma: float):
                     - r * K * math.exp(-r * T) * _norm_dist.cdf(d2))
     theta_per_bar = theta_annual / (252.0 * BARS_PER_DAY)
     vega = S * npdf_d1 * sqrt_T / 100.0
+    charm_annual = -npdf_d1 * (2.0 * r * T - d2 * sigma * sqrt_T) / (2.0 * T * sigma * sqrt_T)
+    charm_per_bar = charm_annual / (252.0 * BARS_PER_DAY)
 
-    return delta, gamma, theta_per_bar, vega
+    return delta, gamma, theta_per_bar, vega, charm_per_bar
 
 
 # ---------------------------------------------------------------------------
@@ -156,16 +158,22 @@ def bs_iv_vec(prices, S, K, T, r, is_call, n_iter=12, tol=1e-6):
 
 
 def bs_greeks_vec(S, K, T, r, sigma, is_call):
-    """Vectorized Greeks. Returns (delta, gamma, theta_per_bar, vega) arrays."""
+    """Vectorized Greeks. Returns (delta, gamma, theta_per_bar, vega, charm) arrays.
+
+    charm = -dDelta/dT (per bar). Measures how delta decays with time
+    independent of price movement. Critical for 0DTE — drives dealer
+    hedging flows in the afternoon.
+    """
     n = len(S)
     delta = np.full(n, np.nan)
     gamma = np.full(n, np.nan)
     theta = np.full(n, np.nan)
     vega = np.full(n, np.nan)
+    charm = np.full(n, np.nan)
 
     ok = (T > 1e-10) & (sigma > 0) & (S > 0) & np.isfinite(sigma)
     if not ok.any():
-        return delta, gamma, theta, vega
+        return delta, gamma, theta, vega, charm
 
     s, k, t, sig = S[ok], K[ok], T[ok], sigma[ok]
     sqrt_t = np.sqrt(t)
@@ -181,7 +189,14 @@ def bs_greeks_vec(S, K, T, r, sigma, is_call):
     theta[ok] = theta_annual / (252.0 * BARS_PER_DAY)
     vega[ok] = s * npdf_d1 * sqrt_t / 100.0
 
-    return delta, gamma, theta, vega
+    # Charm (call) = -npdf(d1) * (2*r*T - d2*sigma*sqrt(T)) / (2*T*sigma*sqrt(T))
+    # For puts: charm_put = charm_call + r*exp(-r*T)  (but we store per-bar)
+    charm_annual = -npdf_d1 * (2.0 * r * t - d2 * sig * sqrt_t) / (2.0 * t * sig * sqrt_t)
+    charm_per_bar_call = charm_annual / (252.0 * BARS_PER_DAY)
+    put_adj = r * np.exp(-r * t) / (252.0 * BARS_PER_DAY)
+    charm[ok] = np.where(is_call[ok], charm_per_bar_call, charm_per_bar_call + put_adj)
+
+    return delta, gamma, theta, vega, charm
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +271,7 @@ def compute_price_features(
     import pandas as pd
 
     n = len(spx_close)
-    N_FEAT = 28
+    N_FEAT = 29
     feat = np.zeros((n, N_FEAT), dtype=np.float64)
     day_ends = day_starts[1:] + [n]
     day_starts_arr = np.array(day_starts)
@@ -724,6 +739,17 @@ def compute_price_features(
     feat[:, fi] = trend_5m_arr
     fi += 1
 
+    # [28] vwap_slope: rate of change of session VWAP (5-bar lookback)
+    vwap_slope = np.zeros(n, dtype=np.float64)
+    for ds, de in day_slices:
+        v = vwap_arr[ds:de]
+        v5 = np.roll(v, 5)
+        v5[:5] = np.nan
+        safe = np.where((~np.isnan(v5)) & (v5 > 0), v5, np.nan)
+        vwap_slope[ds:de] = np.where(np.isfinite(safe), (v - safe) / safe, 0.0)
+    feat[:, fi] = vwap_slope
+    fi += 1
+
     assert fi == N_FEAT, f"Expected {N_FEAT} features, assigned {fi}"
     return feat
 
@@ -798,15 +824,18 @@ def compute_option_features(
     gamma_val = np.nan
     theta_val = np.nan
     if np.isfinite(atm_iv) and T > 1e-10:
-        _, gamma_val, theta_val, _ = _bs_greeks(spx_current, near_atm, T, RISK_FREE_RATE, atm_iv)
+        _, gamma_val, theta_val, _, _ = _bs_greeks(spx_current, near_atm, T, RISK_FREE_RATE, atm_iv)
     features['atm_gamma'] = gamma_val
 
     # [4] atm_theta_per_bar
     features['atm_theta_per_bar'] = theta_val
 
     # [5] gamma_pressure: sum(gamma_i * volume_i * sign_i) across chain
+    # Also compute aggregate charm across chain for dealer hedging signal
     gex = 0.0
     gex_valid = False
+    agg_charm = 0.0
+    charm_valid = False
     if T > 1e-10:
         for strike, sdata in bar_data.items():
             for side, sign, is_call in [('call', 1.0, True), ('put', -1.0, False)]:
@@ -817,11 +846,15 @@ def compute_option_features(
                 iv = _bs_iv(px, spx_current, strike, T, RISK_FREE_RATE, is_call=is_call)
                 if not np.isfinite(iv):
                     continue
-                _, g, _, _ = _bs_greeks(spx_current, strike, T, RISK_FREE_RATE, iv)
+                _, g, _, _, ch = _bs_greeks(spx_current, strike, T, RISK_FREE_RATE, iv)
                 if np.isfinite(g):
                     gex += g * sv * sign
                     gex_valid = True
+                if np.isfinite(ch):
+                    agg_charm += ch * sv * sign
+                    charm_valid = True
     features['gamma_pressure'] = gex if gex_valid else np.nan
+    features['aggregate_charm'] = agg_charm if charm_valid else np.nan
 
     # [6] option_spread_pct: (high - low) / mid for nearest ATM call
     call_high = near_data.get('call_high', np.nan) or np.nan
@@ -859,6 +892,7 @@ def _default_option_features() -> dict:
         'atm_gamma': np.nan,
         'atm_theta_per_bar': np.nan,
         'gamma_pressure': np.nan,
+        'aggregate_charm': np.nan,
         'option_spread_pct': np.nan,
         'iv_skew_pct': np.nan,
         'current_moneyness_pct': np.nan,
@@ -938,12 +972,12 @@ PRICE_FEATURE_NAMES = [
     'minutes_to_close', 'vix_regime', 'bollinger_position', 'rsi_7',
     'session_range_position', 'poc_dist', 'va_position', 'ib_break',
     'atr_14', 'bar_delta', 'session_cum_delta', 'macdh_slope',
-    'force_index_2', 'effort_vs_result', 'trend_5min',
+    'force_index_2', 'effort_vs_result', 'trend_5min', 'vwap_slope',
 ]
 
 OPTION_FEATURE_NAMES = [
     'atm_iv', 'vrp', 'iv_percentile', 'atm_gamma', 'atm_theta_per_bar',
-    'gamma_pressure', 'option_spread_pct', 'iv_skew_pct',
+    'gamma_pressure', 'aggregate_charm', 'option_spread_pct', 'iv_skew_pct',
     'current_moneyness_pct', 'near_atm_moneyness_pct', 'theta_acceleration',
 ]
 

@@ -48,17 +48,17 @@ FEATURE_NAMES = [
     'minutes_to_close', 'vix_regime', 'bollinger_position', 'rsi_7',
     'session_range_position', 'poc_dist', 'va_position', 'ib_break',
     'atr_14', 'bar_delta', 'session_cum_delta', 'macdh_slope',
-    'force_index_2', 'effort_vs_result', 'trend_5min',
-    # Option/Greeks (11)
+    'force_index_2', 'effort_vs_result', 'trend_5min', 'vwap_slope',
+    # Option/Greeks (12)
     'atm_iv', 'vrp', 'iv_percentile', 'atm_gamma', 'atm_theta_per_bar',
-    'gamma_pressure', 'option_spread_pct', 'iv_skew_pct',
+    'gamma_pressure', 'aggregate_charm', 'option_spread_pct', 'iv_skew_pct',
     'current_moneyness_pct', 'near_atm_moneyness_pct', 'theta_acceleration',
     # Volume/flow (8)
     'log_near_call_volume', 'log_near_put_volume', 'call_put_flow_ratio',
     'log_total_volume', 'chain_call_put_ratio', 'log_chain_volume',
     'log_near_transactions', 'put_call_txn_ratio',
 ]
-NUM_FEATURES = len(FEATURE_NAMES)  # 47
+NUM_FEATURES = len(FEATURE_NAMES)  # 49
 
 # Fast name -> index lookup
 _FEAT_IDX = {name: idx for idx, name in enumerate(FEATURE_NAMES)}

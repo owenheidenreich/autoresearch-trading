@@ -203,6 +203,8 @@ def _fill_chain_matrices(
         "delta": np.full((n_contracts, n_bars), np.nan, dtype=np.float32),
         "gamma": np.full((n_contracts, n_bars), np.nan, dtype=np.float32),
         "theta": np.full((n_contracts, n_bars), np.nan, dtype=np.float32),
+        "vega": np.full((n_contracts, n_bars), np.nan, dtype=np.float32),
+        "charm": np.full((n_contracts, n_bars), np.nan, dtype=np.float32),
         "volume": np.zeros((n_contracts, n_bars), dtype=np.float32),
         "transactions": np.zeros((n_contracts, n_bars), dtype=np.float32),
         "spread": np.ones((n_contracts, n_bars), dtype=np.float32),
@@ -266,11 +268,13 @@ def _fill_chain_matrices(
                     g_T = p_T[iv_ok]
                     g_iv = iv_arr[iv_ok]
                     g_is_call = p_is_call[iv_ok]
-                    delta, gamma, theta, _ = bs_greeks_vec(g_spot, g_strikes, g_T, 0.05, g_iv, g_is_call)
+                    delta, gamma, theta, vega, charm = bs_greeks_vec(g_spot, g_strikes, g_T, 0.05, g_iv, g_is_call)
                     ok = np.isfinite(delta)
                     mats["delta"][g_idx[ok], local_i] = delta[ok].astype(np.float32)
                     mats["gamma"][g_idx[ok], local_i] = gamma[ok].astype(np.float32)
                     mats["theta"][g_idx[ok], local_i] = theta[ok].astype(np.float32)
+                    mats["vega"][g_idx[ok], local_i] = vega[ok].astype(np.float32)
+                    mats["charm"][g_idx[ok], local_i] = charm[ok].astype(np.float32)
 
         labeled = int(np.isfinite(mats["iv"][:, local_i]).sum()) if seen_idxs else 0
         bar_quality.append({"observed_contracts": len(seen_idxs), "greeked_contracts": labeled})
@@ -358,6 +362,20 @@ def _label_day_sidecar(
                 continue
             any_visible = True
             quality = int(chain_mats["quality"][contract_idx, local_i])
+
+            # Contract price momentum: % change over last 5 and 10 bars
+            mid_chg_5 = 0.0
+            mid_chg_10 = 0.0
+            mid_series = chain_mats["mid"][contract_idx]
+            if local_i >= 5:
+                prev5 = float(mid_series[local_i - 5])
+                if np.isfinite(prev5) and prev5 > 0:
+                    mid_chg_5 = (mid_now - prev5) / prev5
+            if local_i >= 10:
+                prev10 = float(mid_series[local_i - 10])
+                if np.isfinite(prev10) and prev10 > 0:
+                    mid_chg_10 = (mid_now - prev10) / prev10
+
             row = build_contract_row(
                 strike=float(contract_strike[contract_idx]),
                 right="P" if int(contract_right[contract_idx]) == 1 else "C",
@@ -373,6 +391,10 @@ def _label_day_sidecar(
                 minutes_to_close=max(BARS_PER_DAY - bod, 1),
                 quality=quality,
                 is_executable=True,
+                vega=float(chain_mats["vega"][contract_idx, local_i]),
+                charm=float(chain_mats["charm"][contract_idx, local_i]),
+                mid_chg_5=mid_chg_5,
+                mid_chg_10=mid_chg_10,
             )
 
             row_features.append(row)
@@ -496,7 +518,7 @@ def _process_one_day(args: dict) -> dict:
     else:
         chain_mats = {k: np.zeros((0, n_bars_day), dtype=np.float32) for k in
                       ("mid", "bid", "ask", "quality", "iv", "delta", "gamma",
-                       "theta", "volume", "transactions", "spread")}
+                       "theta", "vega", "charm", "volume", "transactions", "spread")}
         chain_mats["contract_strike"] = np.zeros(0, dtype=np.float32)
         chain_mats["contract_right"] = np.zeros(0, dtype=np.int8)
 

@@ -16,7 +16,7 @@ from v2.core.chain_data import NUM_CONTRACT_FEATURES, padded_snapshot
 from v2.core.metrics import score_config_fingerprint
 
 
-NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 47))
+NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 49))
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
 D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 96))
 N_HEADS = 4
@@ -118,16 +118,16 @@ class TradingModel(nn.Module):
         is_put = contracts[:, :, 2] > 0.5
 
         # Step 1: Greek sign normalization — align puts with calls
-        # delta(8), moneyness_pct(11), distance_points(12) flip sign for puts
+        # delta(8), moneyness_pct(11), distance_points(12), charm(16) flip sign for puts
         put_flip = is_put.float()
-        for fidx in (8, 11, 12):
+        for fidx in (8, 11, 12, 16):
             c[:, :, fidx] = c[:, :, fidx] * (1.0 - 2.0 * put_flip)
 
         # Step 2: Per-bar z-score on continuous features
         # Skip: 0 (contract_valid), 2 (right_is_put), 13 (minutes_to_close), 14 (quality)
         valid_f = valid_mask.float()
         count = valid_f.sum(dim=1, keepdim=True).clamp(min=1)
-        for fidx in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12):
+        for fidx in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18):
             feat = c[:, :, fidx]
             masked = feat * valid_f
             mean = masked.sum(dim=1, keepdim=True) / count
