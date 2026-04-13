@@ -26,18 +26,26 @@ TRAILING_TIERS = [
 ]
 
 
-def _build_trailing_tiers(breakeven_trigger_pct: float) -> list[tuple[float, float]]:
+def _build_trailing_tiers(
+    breakeven_trigger_pct: float,
+    extra_tiers: list[tuple[float, float]] | None = None,
+) -> list[tuple[float, float]]:
     """Build trailing tiers with a custom breakeven trigger threshold.
 
     The upper tiers (120%->80%, 80%->50%, 50%->25%) are fixed.
     The lowest tier (breakeven lock) uses the provided threshold.
+    Extra tiers are inserted and the list is sorted descending by threshold.
     """
-    return [
+    tiers = [
         (1.20, 0.80),
         (0.80, 0.50),
         (0.50, 0.25),
         (breakeven_trigger_pct, 0.00),
     ]
+    if extra_tiers:
+        tiers.extend(extra_tiers)
+        tiers.sort(key=lambda t: -t[0])
+    return tiers
 
 
 def _compute_spread_cost(
@@ -77,6 +85,7 @@ def simulate_trade(
     dates: list[str],
     global_entry_bar: int,
     breakeven_trigger_pct: float | None = None,
+    extra_trailing_tiers: tuple[tuple[float, float], ...] = (),
 ) -> SimulatedTrade | None:
     """Simulate a single TradeIntent against historical price data.
 
@@ -89,6 +98,7 @@ def simulate_trade(
         global_entry_bar: global index where intent was emitted
         breakeven_trigger_pct: override the lowest trailing tier threshold
             (default None uses TRAILING_TIERS as-is, i.e. 0.30)
+        extra_trailing_tiers: additional (threshold, lock_pct) tiers to insert
 
     Returns:
         SimulatedTrade or None if entry fill fails
@@ -183,7 +193,7 @@ def simulate_trade(
 
         # 3. Trailing stop (if exit_policy is TRAILING)
         if intent.exit_policy == "TRAILING":
-            _tiers = _build_trailing_tiers(breakeven_trigger_pct) if breakeven_trigger_pct is not None else TRAILING_TIERS
+            _tiers = _build_trailing_tiers(breakeven_trigger_pct, list(extra_trailing_tiers) or None) if breakeven_trigger_pct is not None else TRAILING_TIERS
             for tier_threshold, lock_pct in _tiers:
                 if unrealized >= tier_threshold:
                     new_floor = lock_pct
@@ -255,6 +265,7 @@ def simulate_day(
     starting_equity: float = 10_000.0,
     contract_multiplier: int = 100,
     breakeven_trigger_pct: float | None = None,
+    extra_trailing_tiers: tuple[tuple[float, float], ...] = (),
 ) -> list[SimulatedTrade]:
     """Simulate a day of trading from a list of (bar_index, TradeIntent) pairs.
 
@@ -273,6 +284,7 @@ def simulate_day(
         daily_loss_cap_pct: max daily loss as fraction of starting_equity
         starting_equity: account size for loss cap computation
         contract_multiplier: option multiplier (100 for SPX)
+        extra_trailing_tiers: additional (threshold, lock_pct) tiers to insert
     """
     trades: list[SimulatedTrade] = []
     in_position = False
@@ -320,6 +332,7 @@ def simulate_day(
             dates=dates,
             global_entry_bar=global_bar,
             breakeven_trigger_pct=breakeven_trigger_pct,
+            extra_trailing_tiers=extra_trailing_tiers,
         )
 
         if trade is None:

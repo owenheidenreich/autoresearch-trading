@@ -25,6 +25,7 @@ class DecisionPolicy:
     max_hold_bars: int = 120
     exit_policy: str = "TRAILING"
     breakeven_trigger_pct: float = 0.15
+    extra_trailing_tiers: tuple[tuple[float, float], ...] = ((0.25, 0.08),)
 
     # Position management
     cooldown_bars: int = 3
@@ -57,7 +58,13 @@ class DecisionPolicy:
         import dataclasses
 
         known = {f.name for f in dataclasses.fields(cls)}
-        return cls(**{k: v for k, v in d.items() if k in known})
+        filtered = {k: v for k, v in d.items() if k in known}
+        # Ensure extra_trailing_tiers is tuple-of-tuples (JSON gives lists)
+        if "extra_trailing_tiers" in filtered:
+            filtered["extra_trailing_tiers"] = tuple(
+                tuple(t) for t in filtered["extra_trailing_tiers"]
+            )
+        return cls(**filtered)
 
     @classmethod
     def from_json(cls, s: str) -> "DecisionPolicy":
