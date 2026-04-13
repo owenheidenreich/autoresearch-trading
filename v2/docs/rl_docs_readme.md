@@ -26,7 +26,7 @@ This directory is the live documentation surface for the `v3/` pure reinforcemen
 - `v3/core/schema.py` — runtime contracts
 - `v3/core/metrics.py` — v3 evaluation contract
 - `v3/core/artifact.py` — artifact save/load helpers
-- `v3/ops/run_experiment.py` — one-command local experiment runner
+- `v3/ops/run_experiment_wf.py` — one-command local experiment runner
 - `v3/ops/pre_run_gate.py` — readiness checks before a real run
 - `v3/ops/status_report.py` — operator-facing dataset and launch status
 - `v3/ops/deploy.sh` — Akash GPU wrapper for `v3`
