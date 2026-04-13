@@ -26,21 +26,25 @@ QUALITY_PARTIAL = 1
 QUALITY_CORRUPT = 0
 
 CONTRACT_FEATURE_FIELDS = [
-    "contract_valid",
-    "strike",
-    "right_is_put",
-    "mid",
-    "spread_fraction",
-    "log_volume",
-    "log_transactions",
-    "iv",
-    "delta",
-    "gamma",
-    "theta",
-    "moneyness_pct",
-    "distance_points",
-    "minutes_to_close_frac",
-    "quality_flag",
+    "contract_valid",       # 0
+    "strike",               # 1
+    "right_is_put",         # 2
+    "mid",                  # 3
+    "spread_fraction",      # 4
+    "log_volume",           # 5
+    "log_transactions",     # 6
+    "iv",                   # 7
+    "delta",                # 8
+    "gamma",                # 9
+    "theta",                # 10
+    "moneyness_pct",        # 11
+    "distance_points",      # 12
+    "minutes_to_close_frac",# 13
+    "quality_flag",         # 14
+    "vega",                 # 15  IV sensitivity
+    "charm",                # 16  dDelta/dTime — 0DTE dealer hedging signal
+    "mid_chg_5",            # 17  contract price momentum (5-bar mid change %)
+    "mid_chg_10",           # 18  contract price momentum (10-bar mid change %)
 ]
 NUM_CONTRACT_FEATURES = len(CONTRACT_FEATURE_FIELDS)
 
@@ -210,6 +214,10 @@ def build_contract_row(
     minutes_to_close: int,
     quality: int,
     is_executable: bool,
+    vega: float = 0.0,
+    charm: float = 0.0,
+    mid_chg_5: float = 0.0,
+    mid_chg_10: float = 0.0,
 ) -> np.ndarray:
     """Build one numeric row for the scorer."""
 
@@ -230,6 +238,10 @@ def build_contract_row(
         row[12] = float(strike - spot)
     row[13] = float(max(1, minutes_to_close)) / 390.0
     row[14] = float(quality)
+    row[15] = float(vega) if np.isfinite(vega) else 0.0
+    row[16] = float(charm) if np.isfinite(charm) else 0.0
+    row[17] = float(mid_chg_5) if np.isfinite(mid_chg_5) else 0.0
+    row[18] = float(mid_chg_10) if np.isfinite(mid_chg_10) else 0.0
     return row
 
 
