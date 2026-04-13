@@ -6,35 +6,36 @@ For domain knowledge: [docs/domain/](docs/domain/) contains 0DTE options knowled
 
 ## Current Model
 
-**exp_144** — promoted 2026-04-12. Best result in project history.
+**exp_146** — promoted 2026-04-13. Best result in project history.
 
 | Metric | Value |
 |--------|-------|
-| Score | 0.547 |
-| PF | 1.356 |
-| DD | 8.2% |
-| Sortino | 7.36 |
-| Net P&L | +$4,771 |
-| Final Equity | $14,771 |
-| WR | 39.1% |
-| Trades | 184 (158C/26P) |
-| Selection Accuracy | 8.7% |
-| Gate Accuracy | 21.7% |
+| Score | 0.807 |
+| PF | 1.409 |
+| DD | 7.9% |
+| Sortino | 8.84 |
+| Net P&L | +$5,542 |
+| Final Equity | $15,542 |
+| WR | 56.5% |
+| Trades | 186 (157C/29P) |
+| Selection Accuracy | 8.6% |
+| Gate Accuracy | 21.6% |
 
-Folds: `[0.176, -0.200, -0.200, -0.200, 3.160]` — 3 folds hit -0.200 floor. All 4 baselines also fail on those folds (hard market regimes, not model failure).
+Folds: `[0.910, -0.200, -0.200, -0.200, 3.724]` — fold 0 escaped -0.200 floor (was 0.176 in exp_144). Folds 1-3 still at floor.
 
 ## What Made It Profitable
 
-Three consecutive execution improvements, no model architecture changes since exp_139:
+Four consecutive execution improvements, no model architecture changes since exp_139:
 
 1. **Contract feature normalization** (exp_139): Per-bar z-score of 11 continuous contract features + Greek sign flip for puts. Fixed 340,000x scale mismatch where strike dominated contract_proj. First profitable model.
 2. **Breakeven trailing trigger 0.30 → 0.15** (exp_140): Locks breakeven earlier on trades that reach +15% unrealized. Eliminated 96% of whipsaw losses.
 3. **Cooldown bars 5 → 3** (exp_144): Faster re-entry after stop-loss. The 5-bar cooldown was blocking 172 profitable bars.
+4. **Intermediate trailing tier +25% → lock +8%** (exp_146): Fills 35-point gap between breakeven lock (+15%) and first profit tier (+50%). Converts breakeven exits to small winners. WR 39.1% → 56.5%, +day% 53.4% → 62.1%.
 
 ## Live Code
 
 - `v2/train.py` — TradingModel: encoder + contract_proj + call/put score heads + put_bias + no_trade_head
-- `v2/core/policy.py` — DecisionPolicy: stop=30%, target=50%, hold=120, trailing exit, breakeven=0.15, cooldown=3, window bars 60-105
+- `v2/core/policy.py` — DecisionPolicy: stop=30%, target=50%, hold=120, trailing exit, breakeven=0.15, cooldown=3, window bars 60-105, extra_trailing_tiers=((0.25, 0.08),)
 - `v2/core/simulator.py` — simulate_trade(), TRAILING_TIERS, _build_trailing_tiers()
 - `v2/replay.py` — replay_validation(), baselines, traces
 
@@ -50,8 +51,8 @@ Three consecutive execution improvements, no model architecture changes since ex
 - `v2/data.pt` and `v2/data_sidecars/` as the canonical dataset
 - `v2/results.tsv` as official scored runs
 - `v2/lab_notebook.md` as the experiment log
-- `v2/artifacts/exp_144/` as the current promoted artifact
-- `v2/models/model.pt` as the production model
+- `v2/artifacts/exp_146/` as the current promoted artifact
+- `v2/models/model.pt` as the production model (exp_146)
 
 ## What Not To Trust
 
@@ -69,3 +70,4 @@ Three consecutive execution improvements, no model architecture changes since ex
 - SOFT_TEMP=0.05 (exp_141): great direction balance but call selection collapsed
 - direction_proj replacing put_bias (exp_142): improved weak folds but degraded fold 4
 - direction_proj as residual (exp_143): same pattern
+- SIDE_SEL_W=0.30 (exp_145): screening fooled by fold-4 bias, 5-fold score collapsed to 0.075
