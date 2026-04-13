@@ -4,71 +4,68 @@ Read this file, then [docs/founder_intent.md](docs/founder_intent.md), then [pro
 
 For domain knowledge: [docs/domain/](docs/domain/) contains 0DTE options knowledge and practitioner trading journals. Read these to understand the instrument before making architecture decisions.
 
-## Current Model
+## FRESH SLATE — Scoring & Data Reset (2026-04-13)
 
-**exp_146** — promoted 2026-04-13. Best result in project history.
+All prior scores in results.tsv are invalidated. The scoring formula, feature set, and simulation model have been overhauled. Comparisons to exp_074–exp_146 are not meaningful under the new system. The next experiment (exp_147) starts the new era.
 
-| Metric | Value |
-|--------|-------|
-| Score | 0.807 |
-| PF | 1.409 |
-| DD | 7.9% |
-| Sortino | 8.84 |
-| Net P&L | +$5,542 |
-| Final Equity | $15,542 |
-| WR | 56.5% |
-| Trades | 186 (157C/29P) |
-| Selection Accuracy | 8.6% |
-| Gate Accuracy | 21.6% |
+### What Changed
 
-Folds: `[0.910, -0.200, -0.200, -0.200, 3.724]` — fold 0 escaped -0.200 floor (was 0.176 in exp_144). Folds 1-3 still at floor.
+1. **Scoring v3.0**: `(0.5*sortino + 0.5*PF) * PDR * dd_mult` — rewards profit factor alongside sortino. DD gate raised 20%→25%, penalty-free zone 8%→12%, sortino cap 6→10.
+2. **Contract features 15→19**: Added vega, charm (dDelta/dTime), contract price momentum (5-bar, 10-bar mid change).
+3. **Context features 47→49**: Added aggregate_charm (chain-wide dealer hedging signal), vwap_slope (VWAP direction).
+4. **Simulation realism**: Spread widening on fast moves (bar_range > 2x avg → up to 2x spread cost).
+5. **Data rebuilt**: Sidecars and data.pt rebuilt with all new features and stop_pct=0.35 in labels.
 
-## What Made It Profitable
+## Previous Best (old scoring, for reference only)
 
-Five consecutive execution improvements, no model architecture changes since exp_139:
-
-1. **Contract feature normalization** (exp_139): Per-bar z-score of 11 continuous contract features + Greek sign flip for puts. Fixed 340,000x scale mismatch where strike dominated contract_proj. First profitable model.
-2. **Breakeven trailing trigger 0.30 → 0.15** (exp_140): Locks breakeven earlier on trades that reach +15% unrealized. Eliminated 96% of whipsaw losses.
-3. **Cooldown bars 5 → 3** (exp_144): Faster re-entry after stop-loss. The 5-bar cooldown was blocking 172 profitable bars.
-4. **Intermediate trailing tier +25% → lock +8%** (exp_146): Fills 35-point gap between breakeven lock (+15%) and first profit tier (+50%). Converts breakeven exits to small winners. WR 39.1% → 56.5%, +day% 53.4% → 62.1%.
-5. **Wider stop 30% → 35%** (policy sweep 2026-04-13): Avoids premature stop-outs on recovering trades. Score 3.724 → 3.931 (+5.6%), DD 7.9% → 7.2%, WR 58.3%, +day% 65.5%.
+exp_146 under old scoring: 0.807 (old formula). Not comparable to new scores.
 
 ## Live Code
 
-- `v2/train.py` — TradingModel: encoder + contract_proj + call/put score heads + put_bias + no_trade_head
+- `v2/train.py` — TradingModel: 49-feature encoder + 19-feature contract_proj + call/put score heads + put_bias + no_trade_head
 - `v2/core/policy.py` — DecisionPolicy: stop=35%, target=50%, hold=120, trailing exit, breakeven=0.15, cooldown=3, window bars 60-105, extra_trailing_tiers=((0.25, 0.08),)
-- `v2/core/simulator.py` — simulate_trade(), TRAILING_TIERS, _build_trailing_tiers()
+- `v2/core/simulator.py` — simulate_trade(), TRAILING_TIERS, _build_trailing_tiers(), spread widening
+- `v2/core/metrics.py` — compute_score() v3.0 composite PF/sortino
 - `v2/replay.py` — replay_validation(), baselines, traces
 
 ## Dataset
 
-- `v2/data.pt` — v4_exact_chain, fingerprint 46f2d184e186496f, 986 days, 47 features
+- `v2/data.pt` — v4_exact_chain, 986 days, 49 context features, 19 contract features
 - `v2/data_sidecars/*.pt` — per-day contract snapshots and labels
-- Labels computed with: stop=30%, target=50%, hold=120, TRAILING_TIERS (breakeven at 0.30 original)
-- Trade window in labels: bars 30-270 (broader than eval window 60-105)
+- Labels computed with: stop=35%, target=50%, hold=120, TRAILING exit, breakeven=0.15, extra_tiers=((0.25, 0.08),)
+- Trade window in labels: bars 60-105
+- New contract features: vega, charm, mid_chg_5, mid_chg_10
+- New context features: aggregate_charm, vwap_slope
 
 ## What To Trust
 
-- `v2/data.pt` and `v2/data_sidecars/` as the canonical dataset
-- `v2/results.tsv` as official scored runs
-- `v2/lab_notebook.md` as the experiment log
-- `v2/artifacts/exp_146/` as the current promoted artifact
-- `v2/models/model.pt` as the production model (exp_146)
+- `v2/data.pt` and `v2/data_sidecars/` as the canonical dataset (rebuilt 2026-04-13)
+- `v2/results.tsv` — empty, fresh start
+- `v2/lab_notebook.md` as the experiment log (historical entries are context, not baselines)
+- `v2/models/model.pt` — stale from exp_146 era, will be replaced by exp_147
 
 ## What Not To Trust
 
-- Any pre-exact-chain score (before exp_074)
-- `v2/state/inner_loop_state.json` — stale, references exp_008 from old GPU session
-- Experiment conclusions from previous Claude sessions — form your own from the code and data
-- Archive docs that reference specific feature priorities or model changes — these are opinions, not facts
+- Any score from exp_074–exp_146 — computed under old scoring formula
+- `v2/models/model.pt` — trained on old 15-feature contracts, will fail on 19-feature data
+- `v2/state/` files — reset to clean slate
+- Archive docs that reference specific feature priorities or model changes
 
-## Abandoned Approaches
+## Abandoned Approaches (still valid under new system)
 
-- Hierarchical direction head (exp_100-103): direction doesn't decompose, 52% accuracy = random
-- Direction-conditioned KL (exp_103): uncalibrated cross-direction scores
-- Auxiliary side-calibration losses (exp_111-113): dir_acc stuck at random
-- Pairwise ranking loss (exp_121): collapsed to 85% puts
-- SOFT_TEMP=0.05 (exp_141): great direction balance but call selection collapsed
-- direction_proj replacing put_bias (exp_142): improved weak folds but degraded fold 4
-- direction_proj as residual (exp_143): same pattern
-- SIDE_SEL_W=0.30 (exp_145): screening fooled by fold-4 bias, 5-fold score collapsed to 0.075
+- Hierarchical direction head (exp_100-103): direction didn't decompose at 52% accuracy. **May revisit** — the new feature set (charm, momentum) may help.
+- SOFT_TEMP=0.05 (exp_141): call selection collapsed. **Sweep SOFT_TEMP** is planned for Wave 2.
+- SIDE_SEL_W=0.30 (exp_145): screening fooled by fold-4 bias. Not re-attempted yet.
+
+## Next Steps (Wave 2 — GPU experiments)
+
+1. **exp_147**: Train from scratch with enriched features (19 contract, 49 context). Establishes new baseline under scoring v3.0.
+2. **Directional prediction head**: Auxiliary loss that teaches the model to predict SPX direction/magnitude. The core architecture change.
+3. **SOFT_TEMP sweep**: 0.10 vs 0.25 vs 0.50 — stop hyper-focusing on exact oracle strike.
+4. **Contract cross-attention**: Let contracts see each other (chain-level patterns).
+5. **LOOKBACK 30→60**: See the full opening range.
+
+## Data Limitations (permanent)
+
+- **No open interest**: Polygon minute_aggs flat files don't include OI
+- **No bid/ask**: Only OHLC + volume + transactions per contract per bar

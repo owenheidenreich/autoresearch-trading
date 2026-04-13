@@ -1,13 +1,1 @@
-{
-  "experiment_count": 15,
-  "session_start": 1775517260.8645852,
-  "best_score": 4.758621,
-  "best_artifact_id": "exp_008",
-  "best_experiment_num": 8,
-  "no_improve_streak": 7,
-  "crash_streak": 0,
-  "last_improve_time": 1775520168.1761212,
-  "kept_count": 3,
-  "stopped": false,
-  "stop_reason": ""
-}
+{}
