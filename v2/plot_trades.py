@@ -462,7 +462,7 @@ def main():
                         help="Data mask: promote_mask, shadow_mask, val_mask")
     parser.add_argument("--model", default=None,
                         help="Path to model.pt (default: load from artifact system)")
-    parser.add_argument("--output-dir", default="output", help="Output directory")
+    parser.add_argument("--output-dir", default="v2/output", help="Output directory")
     args = parser.parse_args()
 
     mask_key = args.mask

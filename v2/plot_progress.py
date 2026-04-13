@@ -19,8 +19,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-RESULTS_PATH = Path("supervised/results.tsv")
-OUTPUT_PATH = Path("output/progress.png")
+RESULTS_PATH = Path("v2/results.tsv")
+OUTPUT_PATH = Path("v2/output/progress.png")
 
 
 def parse_results(path: Path, from_exp: str | None = None) -> list[dict]:
