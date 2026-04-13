@@ -24,6 +24,12 @@ TIER_CONFIGS: list[tuple[str, tuple[tuple[float, float], ...]]] = [
     ("+30%→+15%",     ((0.30, 0.15),)),
     ("+35%→+10%",     ((0.35, 0.10),)),
     ("+25%→+8%",      ((0.25, 0.08),)),
+    # H1: mid-gap tiers filling +50% → +80% gap (standalone)
+    ("+65%→+38%",     ((0.65, 0.38),)),
+    ("+60%→+35%",     ((0.60, 0.35),)),
+    # H1: mid-gap tiers combined with exp_146 tier
+    ("+25%+65%",      ((0.25, 0.08), (0.65, 0.38))),
+    ("+25%+60%",      ((0.25, 0.08), (0.60, 0.35))),
 ]
 
 
@@ -34,7 +40,7 @@ def main():
 
     # --- Parameter grid (single-param sweeps) ---
     grid = {
-        "stop_pct":              [0.20, 0.25, 0.30],
+        "stop_pct":              [0.20, 0.25, 0.30, 0.35, 0.40],
         "target_pct":            [0.30, 0.40, 0.50],
         "max_hold_bars":         [30, 45, 120],
         "cooldown_bars":         [1, 3, 5],
@@ -152,7 +158,7 @@ def main():
     print(f"  TRAILING TIER x STOP_PCT CROSS-SWEEP")
     print(f"{'='*80}")
 
-    stop_values = [0.20, 0.25, 0.30]
+    stop_values = [0.20, 0.25, 0.30, 0.35, 0.40]
     cross_results = []
 
     for label, extra_tiers in TIER_CONFIGS:
