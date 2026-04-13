@@ -1199,3 +1199,25 @@ New: `(0.5 * min(sortino, 10.0) + 0.5 * min(PF, 4.0)) * PDR * dd_mult` (dd gate:
 **Data limitations confirmed (permanent):**
 - Open interest: NOT available in Polygon minute_aggs flat files
 - Bid/Ask: NOT available — only OHLC + volume + transactions per bar
+
+---
+
+### exp_147: screening — enriched features baseline (FAILED)
+
+**Hypothesis:** Same model architecture with enriched features (49 ctx, 19 contract) under scoring v3.0 establishes a new baseline.
+
+| Metric | exp_147 screen |
+|--------|---------------|
+| Score | -0.200 (GATE) |
+| PF | 0.851 |
+| DD | 35.5% |
+| WR | 51.9% |
+| Sortino | -4.92 |
+| Trades | 154 (116C/38P) |
+| Net P&L | -$3,548 |
+
+**Why it failed:** DD 35.5% exceeds the 25% gate. WR is above 50% but PF < 1 — wins are smaller than losses. The model trades actively (2.96/day) but picks contracts that lose more when wrong than they gain when right.
+
+**Analysis:** This is expected as a rough baseline. The model hasn't been tuned for the 4 new contract features (vega, charm, momentum). The spread widening also adds cost. Training budget was 319s / 24 epochs — standard.
+
+**Next:** Try exp_148 with more training capacity. The model has 4 more contract features to learn from — increase EPOCHS from 24 to 36 and TIME_BUDGET from 300 to 450 to give it more learning time.
