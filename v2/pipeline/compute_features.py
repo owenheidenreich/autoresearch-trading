@@ -741,7 +741,7 @@ def compute_price_features(
 
     # [28] vwap_slope: rate of change of session VWAP (5-bar lookback)
     vwap_slope = np.zeros(n, dtype=np.float64)
-    for ds, de in day_slices:
+    for ds, de in zip(day_starts, day_ends):
         v = vwap_arr[ds:de]
         v5 = np.roll(v, 5)
         v5[:5] = np.nan
