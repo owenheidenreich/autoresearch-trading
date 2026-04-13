@@ -18,12 +18,12 @@ from v2.core.metrics import score_config_fingerprint
 
 NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 49))
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
-D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 128))
+D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 96))
 N_HEADS = 4
 DEPTH = int(os.environ.get("TRAIN_DEPTH", 3))
-DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.10))
+DROPOUT = float(os.environ.get("TRAIN_DROPOUT", 0.05))
 BATCH_SIZE = int(os.environ.get("TRAIN_BATCH_SIZE", 1024))
-LR = float(os.environ.get("TRAIN_LR", 3e-4))
+LR = float(os.environ.get("TRAIN_LR", 1e-4))
 WEIGHT_DECAY = float(os.environ.get("TRAIN_WEIGHT_DECAY", 0.03))
 EPOCHS = int(os.environ.get("TRAIN_EPOCHS", 24))
 TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
