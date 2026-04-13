@@ -979,3 +979,49 @@ Systematic sweep of 5 parameters × 3 values each on promote mask:
 1. Try a PARTIAL centering: instead of subtracting the full per-side mean, subtract a fraction (e.g., 0.5 * mean). This gives partial normalization without full equalization.
 2. Try centering with a learned per-side bias: `contract_scores = torch.where(is_put, put_centered + learned_put_bias, call_centered)`. The bias can learn the right discount for puts.
 3. Keep the greek normalization as the base — it's the only change that moved dir_acc and produced a positive score.
+
+---
+
+## Session: 2026-04-12 (Night)
+
+### Phase A: Gate Threshold Sweep (Local)
+
+Swept `gate_threshold` from -100 to 2.0 against exp_144 promoted model.
+
+**Result: Zero discriminative value.** Thresholds -100 through 1.5 produce identical results (184 trades, 39.1% WR, score 3.16). At 2.0, kills 2 trades and degrades. The no_trade_head produces scores that never compete with contract scores — the gate is effectively dead in the current architecture.
+
+### exp_145: Enable Per-Side Ranking KL (SIDE_SEL_W=0.30) — REVERTED
+
+**Hypothesis:** Teaching call/put heads to rank contracts within their own side will improve selection accuracy (8.7%).
+
+**Change:** `SIDE_SEL_W` default 0.0 → 0.30 in train.py (code already existed, just enabled).
+
+**Screening (1-fold):** Looked very promising:
+- Score 1.55, PF 1.196, WR 40.2%, direction 87C/82P (48.5% puts)
+- Massive direction balance improvement vs exp_144's 14.1% puts
+- Beat all 4 baselines, no gate failure
+
+**Official (5-fold): REVERTED** — score 0.075 vs exp_144's 0.547.
+
+| Fold | exp_144 | exp_145 | Delta |
+|------|---------|---------|-------|
+| 0 | +0.18 | -0.05 | worse |
+| 1 | -0.20 | -0.20 | same |
+| 2 | -0.20 | -0.20 | same |
+| 3 | -0.20 | -0.20 | same |
+| 4 | +3.16 | +1.02 | -68% |
+
+Key metrics: PF 1.166, WR 36.5%, DD 12.9%, trades 816 (4.4x explosion), direction 160C/21P (no put improvement in official).
+
+**Why it failed:**
+1. **Screening was misleading**: 1-fold screening used fold 4's test period (Dec 2025–Mar 2026) with maximum training data (906d). The balanced 87C/82P direction was a single-fold artifact — in official 5-fold, direction reverted to 88% calls.
+2. **Fold 4 collapsed** (3.16 → 1.02): Same pattern as exp_142/143. Any gradient that competes with the main selection signal degrades the high-opportunity fold.
+3. **Trade count explosion** (184 → 816): Side-sel loss made the model less selective, taking 4.4x more trades at lower quality.
+4. **Side-sel doesn't generalize across folds**: The per-side ranking works mechanically (proven in screening and exp_134/134b) but the gradient interferes with the primary selection signal when averaged across diverse fold regimes.
+
+**Lesson:** Per-side ranking at weight 0.30 is too strong — it overwhelms the main selection gradient on folds where one side dominates. The 13%-of-total-loss calculation was wrong because the side_sel gradient is concentrated on fewer samples (only call-oracle or put-oracle rows), making its effective per-sample gradient much larger than 13%.
+
+**Next hypotheses to consider:**
+1. SIDE_SEL_W at much lower weight (0.05-0.10) to reduce gradient interference
+2. Intermediate trailing tier (+15% → lock +5%) — pure policy change, sweep locally
+3. Soft time weighting instead of hard session window cutoff
