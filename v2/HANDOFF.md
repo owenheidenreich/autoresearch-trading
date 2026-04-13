@@ -25,17 +25,18 @@ Folds: `[0.910, -0.200, -0.200, -0.200, 3.724]` — fold 0 escaped -0.200 floor 
 
 ## What Made It Profitable
 
-Four consecutive execution improvements, no model architecture changes since exp_139:
+Five consecutive execution improvements, no model architecture changes since exp_139:
 
 1. **Contract feature normalization** (exp_139): Per-bar z-score of 11 continuous contract features + Greek sign flip for puts. Fixed 340,000x scale mismatch where strike dominated contract_proj. First profitable model.
 2. **Breakeven trailing trigger 0.30 → 0.15** (exp_140): Locks breakeven earlier on trades that reach +15% unrealized. Eliminated 96% of whipsaw losses.
 3. **Cooldown bars 5 → 3** (exp_144): Faster re-entry after stop-loss. The 5-bar cooldown was blocking 172 profitable bars.
 4. **Intermediate trailing tier +25% → lock +8%** (exp_146): Fills 35-point gap between breakeven lock (+15%) and first profit tier (+50%). Converts breakeven exits to small winners. WR 39.1% → 56.5%, +day% 53.4% → 62.1%.
+5. **Wider stop 30% → 35%** (policy sweep 2026-04-13): Avoids premature stop-outs on recovering trades. Score 3.724 → 3.931 (+5.6%), DD 7.9% → 7.2%, WR 58.3%, +day% 65.5%.
 
 ## Live Code
 
 - `v2/train.py` — TradingModel: encoder + contract_proj + call/put score heads + put_bias + no_trade_head
-- `v2/core/policy.py` — DecisionPolicy: stop=30%, target=50%, hold=120, trailing exit, breakeven=0.15, cooldown=3, window bars 60-105, extra_trailing_tiers=((0.25, 0.08),)
+- `v2/core/policy.py` — DecisionPolicy: stop=35%, target=50%, hold=120, trailing exit, breakeven=0.15, cooldown=3, window bars 60-105, extra_trailing_tiers=((0.25, 0.08),)
 - `v2/core/simulator.py` — simulate_trade(), TRAILING_TIERS, _build_trailing_tiers()
 - `v2/replay.py` — replay_validation(), baselines, traces
 

@@ -20,7 +20,7 @@ class DecisionPolicy:
     require_volume_or_transactions: bool = True
 
     # Fixed risk policy for the first frozen exact-chain harness
-    stop_pct: float = 0.30
+    stop_pct: float = 0.35
     target_pct: float = 0.50
     max_hold_bars: int = 120
     exit_policy: str = "TRAILING"

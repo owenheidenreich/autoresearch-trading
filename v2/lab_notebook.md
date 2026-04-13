@@ -1105,3 +1105,65 @@ Gate and selection accuracy unchanged — the model picks the same contracts. Th
 1. Additional trailing tier to fill the +50% → +80% gap (e.g., +60% → lock +35%)
 2. Investigate fold 1-3 DD causes — what specific trades blow past 20%? Trade-level analysis on those folds could reveal a policy lever
 3. Re-run stop_pct sweep on new model — tighter stops may interact differently now that the trailing tier reduces reversal losses
+
+---
+
+### 2026-04-13: Post-exp_146 Research — Three Hypotheses
+
+Investigated all three hypotheses from exp_146 via local replay (zero GPU cost).
+
+#### H1: Mid-gap trailing tier (+50% → +80%) — CLOSED, no impact
+
+Added tier configs (+65%→+38%, +60%→+35%) to policy sweep, both standalone and combined with exp_146's +25%→+8% tier.
+
+| Config | Score | PF | WR | Net P&L |
+|--------|-------|-----|------|---------|
+| none | 3.160 | 1.356 | 39.1% | +$4,771 |
+| +65%→+38% (standalone) | 3.160 | 1.362 | 39.1% | +$4,820 |
+| +60%→+35% (standalone) | 3.160 | 1.360 | 38.7% | +$4,800 |
+| +25%→+8% (baseline) | 3.724 | 1.409 | 56.5% | +$5,542 |
+| +25%+65% (combined) | 3.724 | 1.409 | 56.5% | +$5,542 |
+| +25%+60% (combined) | 3.724 | 1.412 | 56.1% | +$5,555 |
+
+**Why no impact:** MFE pre-check showed 31/35 trades reaching 50-80% MFE already exit at take profit (target_pct=0.50). The upper tier never fires. Hypothesis dead unless target_pct is raised above 80%.
+
+#### H3: stop_pct sweep — WINNER: stop_pct=0.35
+
+| stop_pct | Score | PF | DD | WR | +Day | Net P&L |
+|----------|-------|-----|------|------|------|---------|
+| 0.20 | 1.157 | 1.178 | 12.6% | 44.7% | 60.3% | +$2,562 |
+| 0.25 | 2.590 | 1.276 | 9.9% | 49.5% | 65.5% | +$3,485 |
+| **0.30** | **3.724** | **1.409** | **7.9%** | **56.5%** | **62.1%** | **+$5,542** |
+| **0.35** | **3.931** | **1.412** | **7.2%** | **58.3%** | **65.5%** | **+$5,284** |
+| 0.40 | 0.877 | 1.180 | 13.8% | 58.1% | 62.1% | +$2,379 |
+
+Cross-sweep confirms +25%→+8% tier with stop=0.35 is best combination (score 3.931).
+
+**Why it works:** Wider stop (35% vs 30%) avoids premature stop-outs on trades that would have recovered. 6 fewer trades (180 vs 186) but higher WR (58.3% vs 56.5%) and lower DD (7.2% vs 7.9%). The score gain comes from DD multiplier improvement (1.0 at ≤8% in both cases, but the cushion matters for daily sortino stability).
+
+**Decision:** PROMOTED stop_pct=0.35 in policy.py. Replay validated: score 3.931, beats all 4 baselines.
+
+#### H2: Fold 1-3 DD investigation — STRUCTURAL (distributed regime mismatch)
+
+Created `v2/analysis/fold_diagnosis.py` to replay production model against each fold's test mask.
+
+| Fold | Test Period | Score | DD | Trades | WR | PF | SL/TS/TP | Net P&L | VIX avg |
+|------|-------------|-------|----|--------|----|----|----------|---------|---------|
+| 0 | Dec'24-Mar'25 | 0.335 | 13.8% | 180 | 47.2% | 1.028 | 64/62/54 | +$951 | -0.16 |
+| 1 | Mar'25-Jun'25 | -0.200 | **28.3%** | 129 | 45.7% | 0.937 | 50/43/35 | -$1,648 | +0.07 |
+| 2 | Jun'25-Sep'25 | -0.083 | **19.1%** | 164 | 45.1% | 0.901 | 65/59/39 | -$1,866 | -0.44 |
+| 3 | Sep'25-Dec'25 | -0.200 | **30.8%** | 184 | 44.6% | 0.801 | 76/60/47 | -$1,286 | -0.22 |
+| 4 | Dec'25-Mar'26 | 3.724 | 7.9% | 186 | 56.5% | 1.409 | 59/64/63 | +$5,542 | -0.32 |
+
+**Key findings:**
+1. **Distributed losses, not concentrated:** Fold 3 DD spans 49 days (155 trades), daily losses $-1 to $-6. Fold 1 similar: 50 days, $-1 to $-7/day. No single catastrophic trade.
+2. **SL dominance in losing folds:** Fold 3 SL:TP ratio = 1.6:1, Fold 1 = 1.4:1. Fold 4 = 0.94:1 (balanced). Losing folds hit stop far more than take profit.
+3. **Fold 2 borderline:** DD=19.1%, just under 20% gate. Still negative score due to PF<1.
+4. **VIX not the sole driver:** Fold 2 has lowest VIX (avg -0.44) but still loses. Regime mismatch is about market structure, not just vol level.
+
+**Root cause:** Model generalizes poorly to non-fold-4 regimes. It picks losing contracts in spring-through-fall periods regardless of VIX. This is NOT fixable by policy levers — needs model architecture improvements.
+
+**Next hypotheses:**
+1. VIX regime gating (reduce trade frequency when model is in hostile regime)
+2. Regime-conditioned training (weight loss by fold difficulty during training)
+3. Test stop_pct=0.35 impact on fold-level DD (does wider stop help folds 1-3?)
