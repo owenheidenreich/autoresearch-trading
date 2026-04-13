@@ -1262,4 +1262,21 @@ Result: -0.200, DD 36.1%, PF 0.833, WR 50.3%. Best epoch 1. Identical failure pa
 
 **Analysis:** Still net negative P&L, but the gap from -$3,548 to -$250 is massive. PF 0.89 is approaching 1.0. The model needs even slower/longer training to find the profit zone.
 
-**Next:** exp_151 — LR 5e-5 with EPOCHS 48 and TIME_BUDGET 600. Even slower convergence to push PF above 1.0.
+**Next:** exp_151 — LR 5e-5 with EPOCHS 48 and TIME_BUDGET 600.
+
+### exp_151: screening — PROFITABLE (promote to official)
+
+**Hypothesis:** LR 5e-5, EPOCHS 48, TIME_BUDGET 600. Even slower training on enriched features.
+
+| Metric | exp_150 | exp_151 |
+|--------|---------|---------|
+| Score | 0.024 | **0.228** |
+| PF | 0.894 | **1.037** |
+| DD | 22.4% | **14.2%** |
+| WR | 53.9% | **54.4%** |
+| Net P&L | -$250 | **+$42** |
+| Best epoch | 2 | **4** |
+
+**Why it works:** LR 5e-5 with 48 epochs gives the model room to converge properly on 19 contract features + 49 context features. Best epoch 4 means the model is actually learning useful patterns. Val loss converged at 2.13 (vs immediate divergence at LR=3e-4).
+
+**Decision:** Promote to official 5-fold run.
