@@ -1235,4 +1235,31 @@ New: `(0.5 * min(sortino, 10.0) + 0.5 * min(PF, 4.0)) * PDR * dd_mult` (dd gate:
 
 **Root cause:** The problem is not training time but model capacity and regularization. With 19 contract features (up from 15) pushed through the same 96-dim bottleneck, the model can't separate signal from noise. The 4 new features (vega, charm, momentum) may also be correlated with existing features (delta, theta, IV), adding redundancy that confuses the small network.
 
-**Next:** exp_149 — increase D_MODEL 96→128 and DROPOUT 0.05→0.10. Larger capacity to handle richer features + more regularization to prevent overfitting. Revert epochs/budget to standard (24/300).
+**Next:** exp_149 — increase D_MODEL 96→128 and DROPOUT 0.05→0.10.
+
+### exp_149: screening — larger model (FAILED)
+
+**Hypothesis:** D_MODEL 96→128, DROPOUT 0.05→0.10. More capacity + regularization.
+
+Result: -0.200, DD 36.1%, PF 0.833, WR 50.3%. Best epoch 1. Identical failure pattern.
+
+### exp_150: screening — lower LR (BREAKTHROUGH)
+
+**Hypothesis:** LR 3e-4→1e-4. Slower learning may stabilize on richer features.
+
+| Metric | exp_150 screen |
+|--------|---------------|
+| Score | 0.024 |
+| PF | 0.894 |
+| DD | 22.4% |
+| WR | 53.9% |
+| Sortino | -0.43 |
+| Trades | 165 (136C/29P) |
+| Net P&L | -$250 |
+| Baselines | **Beats all 4** |
+
+**Why it works:** Lower LR prevented the model from overfitting immediately. Best epoch moved to 2 (was 1 in all prior attempts). Val loss converged instead of diverging. The model escaped the DD gate for the first time.
+
+**Analysis:** Still net negative P&L, but the gap from -$3,548 to -$250 is massive. PF 0.89 is approaching 1.0. The model needs even slower/longer training to find the profit zone.
+
+**Next:** exp_151 — LR 5e-5 with EPOCHS 48 and TIME_BUDGET 600. Even slower convergence to push PF above 1.0.
