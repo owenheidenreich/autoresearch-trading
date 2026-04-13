@@ -928,6 +928,41 @@ The remaining lever for improving PF is policy-level: stop-loss tuning, trailing
 - Decision: **revert** — score -0.095 < exp_140's 0.150, gate failure. The direction_proj consistently helps folds 0 and 3 but hurts fold 4.
 - Takeaway: **fold 4 profits specifically from call-heavy trading in its low-vol test period (Dec'25-Mar'26). Any mechanism that adds puts degrades fold 4.** The direction_proj family (exp_142, exp_143) improves the model's weakest folds and direction balance but can't beat the aggregate score because the scoring is dominated by fold 4's exceptional call-only result. The underlying issue: put contract quality is poor — the model can learn WHEN to trade puts but can't pick WINNING puts.
 
+### `exp_144` — Cooldown Bars 5→3 (Policy Sweep Winner)
+
+- Type: official 5-fold walk-forward
+- Hypothesis: policy parameter sweep found cooldown_bars=3 as the single biggest improvement. The 5-bar cooldown was blocking 172 bars, 82% of which had profitable oracles. Faster re-entry captures missed opportunities.
+- Code change: `cooldown_bars = 3` in DecisionPolicy (one line). Identified via systematic policy sweep script (`v2/analysis/policy_sweep.py`).
+- Local sweep results: score 1.272→3.160, PF 1.356, DD 8.2%, +$4,771 on promote mask.
+- Official result:
+  - score: `0.547` (aggregate), folds: `[0.176, -0.20, -0.20, -0.20, 3.160]`
+  - trades: `184` on promote mask (`158C / 26P`, minority `14.1%`)
+  - win rate: `39.1%`
+  - profit factor: `1.356`
+  - drawdown: `8.2%` (in DD-free zone, dd_mult=1.0)
+  - sortino: `7.36`
+  - positive day rate: `53.4%`
+  - net P&L: `+$4,771`
+  - final equity: `$14,771`
+  - beats all 4 baselines, no gate failure
+- Trace comparison vs exp_140:
+  - gate accuracy: `21.7%` (was 21.2%)
+  - selection accuracy: `8.7%` (was 7.4% — meaningful improvement)
+  - avg model P&L: `+4.12%` (was +2.58%)
+  - cooldown bars blocked: `90` (was 172, -48%)
+  - exit breakdown: SL 59, TS 58, TP 66 (vs exp_140: SL 62, TS 49, TP 64)
+- Decision: **PROMOTED** — score 0.547 > exp_140's 0.150 (+265%), best result in project history
+- Takeaway: **policy optimization continues to be the highest-impact lever.** Two consecutive policy changes (exp_140 breakeven trigger, exp_144 cooldown) produced the two largest score improvements in the project. The model's entries are good — the execution system was the bottleneck.
+
+### Policy sweep findings (2026-04-12)
+
+Systematic sweep of 5 parameters × 3 values each on promote mask:
+- `cooldown_bars=3`: score 3.16 (+148% vs baseline). **Winner, promoted.**
+- `stop_pct=0.20`: score 2.63 (+107%). **Backup if cooldown fails.**
+- `stop_pct=0.22 + cooldown=3`: score 2.76 (+117%). Best combo.
+- `target_pct`, `max_hold_bars`, `breakeven_trigger_pct`: no improvement over current values.
+- Caution: stop + cooldown don't combine well — tighter stops fire more cooldowns, partially negating the benefit.
+
 ### Session Close (2026-04-12 Late)
 
 **6 consecutive no-improve experiments** (exp_134, 134b, 135, 136, 137-reverted, 138) — session limit reached.

@@ -1,11 +1,11 @@
 # Current v2 State
 
-Last refreshed: 2026-04-12 (exp_140 promotion)
+Last refreshed: 2026-04-12 (exp_144 promotion)
 
 ## Mission And Phase
 
 - Mission: build a trustworthy exact-chain research system for SPX 0DTE long-options training and replay
-- Current phase: **profitable model with optimized exit policy (exp_140); optimizing**
+- Current phase: **profitable model with optimized execution policy (exp_144); optimizing**
 - Live trading: not implemented and not part of the live `v2/` surface
 - The current mission is not live trading. It is a trustworthy exact-chain research system.
 
@@ -16,10 +16,10 @@ Last refreshed: 2026-04-12 (exp_140 promotion)
 - Dataset fingerprint: `46f2d184e186496f`
 - Per-day sidecars: `v2/data_sidecars/*.pt`
 - Unique days: 986
-- Official exact-chain scored runs: `exp_074`–`exp_140`
-- **Current official baseline: `exp_140`** (PF 1.201, DD 12.4%, WR 39.2%, Sortino 3.87, +$2,678)
-- Current working code: exp_140 (exp_139 architecture + tighter breakeven trailing trigger 0.15)
-- Next experiment: `exp_141`
+- Official exact-chain scored runs: `exp_074`–`exp_144`
+- **Current official baseline: `exp_144`** (PF 1.356, DD 8.2%, WR 39.1%, Sortino 7.36, +$4,771)
+- Current working code: exp_144 (exp_139 architecture + breakeven_trigger_pct 0.15 + cooldown_bars 3)
+- Next experiment: `exp_145`
 - Archived non-live surfaces now live under `archive/v2_historical/`
 
 ## End-To-End Flow

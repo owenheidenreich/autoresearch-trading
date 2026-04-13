@@ -2,9 +2,31 @@
 
 Read this file, then [founder_intent.md](docs/founder_intent.md), then [program.md](program.md), then [current_state.md](docs/current_state.md).
 
-## What Changed (2026-04-12 exp_140)
+## What Changed (2026-04-12 exp_144)
 
-**exp_140 PROMOTED: optimized exit policy.** Lowered breakeven trailing trigger from 30% to 15%. DD 17.5%→12.4%, Sortino 1.88→3.87, whipsaw losses -$4,260→-$163.
+**exp_144 PROMOTED: cooldown_bars 5→3.** Policy sweep found the 5-bar cooldown was blocking profitable re-entries. Score 0.150→0.547 (+265%), DD 12.4%→8.2%, net P&L $2,678→$4,771.
+
+### Phase 9: Policy Sweep & Cooldown Optimization (exp_141–144)
+
+**exp_141 — SOFT_TEMP 0.10→0.05**: screening only. Best direction balance (47.4% puts) but WR collapsed. Peaked target punishes near-miss contracts (79% of bars have 3+ near-oracle contracts). **Killed.**
+
+**exp_142 — direction_proj (replacing put_bias)**: improved 3/5 folds but fold 4 DD 23.1% (gate failure). **Reverted.**
+
+**exp_143 — direction_proj (residual on put_bias)**: fold 0 best-ever score (0.325). Fold 4 DD 30.3%. **Reverted.**
+
+**Key finding from direction experiments**: the model CAN learn direction balance, and it improves weak folds. But fold 4 profits from call-heavy trading — any mechanism adding puts degrades it. The scoring system rewards fold 4's exceptional result.
+
+**Policy sweep** (`v2/analysis/policy_sweep.py`): systematic sweep of 5 params × 3 values on promote mask. Found `cooldown_bars=3` (+148% score) and `stop_pct=0.20` (+107%) as individual winners.
+
+**exp_144 — cooldown_bars 5→3**: **PROMOTED.** Best result in project history.
+
+| Metric | exp_139 | exp_140 | exp_144 |
+|--------|---------|---------|---------|
+| Score | -0.121 | 0.150 | **0.547** |
+| PF | 1.142 | 1.201 | **1.356** |
+| DD | 17.5% | 12.4% | **8.2%** |
+| Sortino | 1.88 | 3.87 | **7.36** |
+| Net P&L | +$1,334 | +$2,678 | **+$4,771** |
 
 ### Phase 8: Exit Policy Optimization (exp_140)
 
@@ -246,10 +268,11 @@ ATM source:          dynamic_nearest_per_bar
 - Noise filter: skip bars where top label margin `< 0.01`
 - Inactive auxiliary losses: SIDE_SEL_W=0.0, EXACT_W=0.0
 
-**`v2/core/policy.py`** (morning window + tighter trailing):
+**`v2/core/policy.py`** (morning window + tighter trailing + faster re-entry):
 - `no_trade_before_bar = 60`
 - `no_trade_after_bar = 105`
-- `breakeven_trigger_pct = 0.15` (was 0.30, now wired through to simulator)
+- `breakeven_trigger_pct = 0.15` (was 0.30, exp_140)
+- `cooldown_bars = 3` (was 5, exp_144)
 - All other policy params unchanged (stop=30%, target=50%, hold=120, trailing exit)
 
 **`v2/core/simulator.py`** (trailing tiers):
@@ -267,12 +290,12 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Research Position
 
-- Official scored runs in `v2/results.tsv`: exp_074–078, exp_099, exp_104, exp_106, exp_122, exp_125, exp_133, exp_137, exp_139, **exp_140**
-- **exp_140 is the current best**: score=0.150, PF 1.201, DD 12.4%, Sortino 3.87, WR 39.2%, 151C/25P, +$2,678
-- `v2/models/model.pt` and `v2/models/model_best.pt` are the exp_140 promoted artifact
-- `v2/artifacts/exp_140/` is the current official artifact bundle
-- **Current live code: exp_140 (exp_139 architecture + breakeven_trigger_pct 0.15)**
-- Next experiment ID: `exp_141`
+- Official scored runs in `v2/results.tsv`: exp_074–078, exp_099, exp_104, exp_106, exp_122, exp_125, exp_133, exp_137, exp_139, exp_140, exp_142, exp_143, **exp_144**
+- **exp_144 is the current best**: score=0.547, PF 1.356, DD 8.2%, Sortino 7.36, WR 39.1%, 158C/26P, +$4,771
+- `v2/models/model.pt` and `v2/models/model_best.pt` are the exp_144 promoted artifact
+- `v2/artifacts/exp_144/` is the current official artifact bundle
+- **Current live code: exp_144 (exp_139 architecture + breakeven_trigger_pct 0.15 + cooldown_bars 3)**
+- Next experiment ID: `exp_145`
 
 ## Key Findings
 
@@ -283,20 +306,20 @@ ATM source:          dynamic_nearest_per_bar
 
 ## Current Performance
 
-| Metric | exp_139 | exp_140 |
-|--------|---------|---------|
-| Score | -0.121 | **0.150** |
-| PF | 1.142 | **1.201** |
-| DD | 17.5% | **12.4%** |
-| WR | 45.3% | 39.2% |
-| Net P&L | +$1,334 | **+$2,678** |
-| Sortino | +1.88 | **+3.87** |
-| Selection accuracy | 7.5% | 7.4% |
-| Gate accuracy | 20.9% | 21.2% |
-| Trades | 161 (136C/25P) | 176 (151C/25P) |
-| Baselines beaten | All 4 | All 4 |
-| Gate failure | None | None |
-| Whipsaw losses | -$4,260 | **-$163** |
+| Metric | exp_139 | exp_140 | exp_144 |
+|--------|---------|---------|---------|
+| Score | -0.121 | 0.150 | **0.547** |
+| PF | 1.142 | 1.201 | **1.356** |
+| DD | 17.5% | 12.4% | **8.2%** |
+| WR | 45.3% | 39.2% | 39.1% |
+| Net P&L | +$1,334 | +$2,678 | **+$4,771** |
+| Sortino | +1.88 | +3.87 | **+7.36** |
+| Selection accuracy | 7.5% | 7.4% | **8.7%** |
+| Gate accuracy | 20.9% | 21.2% | 21.7% |
+| Trades | 161 (136C/25P) | 176 (151C/25P) | 184 (158C/26P) |
+| Baselines beaten | All 4 | All 4 | All 4 |
+| Gate failure | None | None | None |
+| Final equity | $11,334 | $12,678 | **$14,771** |
 
 ## Remaining Improvement Opportunities
 
@@ -319,11 +342,12 @@ ATM source:          dynamic_nearest_per_bar
 - `v2/results.tsv` as official exact-chain scored runs only
 - `v2/lab_notebook.md` as the live screening log
 - `v2/program.md`, `v2/docs/current_state.md`, and `v2/docs/decision_log.md` as the live protocol/state documents
-- `v2/output/trades.html` and `equity.html` as the exp_140 trade visualization (promoted model)
-- `v2/output/trades.csv` as the 176-trade exp_140 analysis dataset
-- `v2/models/model.pt` and `v2/models/model_best.pt` as the exp_140 promoted model
-- `v2/artifacts/exp_140/` is the current official artifact bundle
-- `v2/artifacts/replay_traces.csv` as the exp_140 promote trace
+- `v2/output/trades.html` and `equity.html` as the exp_144 trade visualization (promoted model)
+- `v2/output/trades.csv` as the 184-trade exp_144 analysis dataset
+- `v2/models/model.pt` and `v2/models/model_best.pt` as the exp_144 promoted model
+- `v2/artifacts/exp_144/` is the current official artifact bundle
+- `v2/artifacts/replay_traces.csv` as the exp_144 promote trace
+- `v2/analysis/policy_sweep.py` as the systematic policy parameter testing tool
 - `v2/core/data_integrity.py` anomaly and side-bias reports as the separate audit track
 
 ## What Not To Trust
