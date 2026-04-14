@@ -43,12 +43,17 @@ TIME_BUDGET = int(os.environ.get("SEQ_TIME_BUDGET", 600))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
 
 
+ORACLE_SIDE_LOCKOUT = int(os.environ.get("ORACLE_SIDE_LOCKOUT", 5))  # bars before side flip allowed
+ORACLE_MAX_ENTRIES = int(os.environ.get("ORACLE_MAX_ENTRIES", 4))   # max entries per day
+
+
 def _compute_oracle_actions(env: TradingEnv, day: str) -> list[dict]:
     """Generate oracle action labels for one day using path library.
 
-    For each bar, determine the ideal action:
-    - If strict opportunity exists and we're flat: ENTER (call or put based on oracle side)
-    - If in position and unrealized PnL is bad: EXIT
+    Thesis-persistence rules (controlled intervention, not destination):
+    - Side-commitment: after entering a side, cannot flip for ORACLE_SIDE_LOCKOUT bars
+    - Daily entry cap: max ORACLE_MAX_ENTRIES entries per day, then HOLD when flat
+    - If in position and unrealized PnL < -10%: EXIT
     - Otherwise: HOLD
     """
     obs = env.reset(day)
@@ -57,6 +62,11 @@ def _compute_oracle_actions(env: TradingEnv, day: str) -> list[dict]:
 
     sidecar = env._sidecar
     trajectory = []
+
+    # Thesis-persistence state
+    committed_side = 0       # 1=call, -1=put, 0=uncommitted
+    bars_since_commit = 999  # bars since last entry (start high = unlocked)
+    entries_today = 0
 
     for step_idx in range(len(env._eligible_bars)):
         gi, local_bar = env._eligible_bars[step_idx]
@@ -84,7 +94,7 @@ def _compute_oracle_actions(env: TradingEnv, day: str) -> list[dict]:
         contracts_np, _, _ = padded_snapshot(sidecar, local_bar, env.max_contracts)
         session_state = obs.session_state.copy()
 
-        # Determine oracle action
+        # Determine oracle action with thesis-persistence rules
         if env._in_position:
             # In position: hold or exit based on path quality
             unrealized = env._get_unrealized(local_bar)
@@ -93,11 +103,26 @@ def _compute_oracle_actions(env: TradingEnv, day: str) -> list[dict]:
             else:
                 oracle_action = ACT_HOLD
         else:
-            # Flat: enter or skip
+            # Flat: enter or skip, subject to persistence rules
+            oracle_action = ACT_HOLD
+
             if strict_pos and oracle_side != 0:
-                oracle_action = ACT_ENTER_CALL if oracle_side == 1 else ACT_ENTER_PUT
-            else:
-                oracle_action = ACT_HOLD
+                # Check daily entry cap
+                if entries_today >= ORACLE_MAX_ENTRIES:
+                    oracle_action = ACT_HOLD  # exhausted budget
+                # Check side-commitment lockout
+                elif committed_side != 0 and oracle_side != committed_side and bars_since_commit < ORACLE_SIDE_LOCKOUT:
+                    oracle_action = ACT_HOLD  # too soon to flip thesis
+                else:
+                    oracle_action = ACT_ENTER_CALL if oracle_side == 1 else ACT_ENTER_PUT
+
+        # Update thesis-persistence state
+        if oracle_action in (ACT_ENTER_CALL, ACT_ENTER_PUT):
+            committed_side = 1 if oracle_action == ACT_ENTER_CALL else -1
+            bars_since_commit = 0
+            entries_today += 1
+        else:
+            bars_since_commit += 1
 
         trajectory.append({
             "window": window,
