@@ -37,6 +37,10 @@ SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.0))
 EXACT_W = float(os.environ.get("EXACT_W", 0.0))
 OPP_W = float(os.environ.get("OPP_W", 0.5))
 SIDE_W = float(os.environ.get("SIDE_W", 0.3))
+AGG_W = float(os.environ.get("AGG_W", 0.2))
+# Moneyness bucket boundaries for aggression head
+AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
+AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
 
 
 class PositionalEncoding(nn.Module):
@@ -122,6 +126,13 @@ class TradingModel(nn.Module):
             nn.Linear(d // 2, 1),
         )
 
+        # Aggression head: predict moneyness bucket (ATM / near-OTM / far-OTM)
+        self.aggression_head = nn.Sequential(
+            nn.Linear(d, d // 2),
+            nn.GELU(),
+            nn.Linear(d // 2, 3),
+        )
+
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         _, seq_len, _ = x.shape
         h = self.input_proj(x)
@@ -180,6 +191,7 @@ class TradingModel(nn.Module):
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         opportunity_logit = self.opportunity_head(context).squeeze(-1)
         side_logit = self.side_head(context).squeeze(-1)
+        aggression_logits = self.aggression_head(context)  # (B, 3)
         return {
             "contract_scores": contract_scores,
             "no_trade_score": no_trade_score,
@@ -189,6 +201,7 @@ class TradingModel(nn.Module):
             "put_scores_raw": put_scores,
             "opportunity_logit": opportunity_logit,
             "side_logit": side_logit,
+            "aggression_logits": aggression_logits,
         }
 
 
@@ -332,6 +345,23 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             reduction="mean",
         )
 
+    # --- A4. Aggression loss: predict moneyness bucket from context (trade rows only) ---
+    agg_loss = torch.tensor(0.0, device=device)
+    aggression_logits = outputs["aggression_logits"]
+    if AGG_W > 0 and trade_rows.any():
+        tr_best_a = best_idx[trade_rows]
+        tr_contracts_a = contracts_full[trade_rows]
+        rows_a = torch.arange(tr_best_a.size(0), device=device)
+        # moneyness_pct is at index 11 in contract features
+        oracle_moneyness = tr_contracts_a[rows_a, tr_best_a, 11].abs()
+        # Bucket: 0=ATM, 1=near-OTM, 2=far-OTM
+        agg_target = torch.where(
+            oracle_moneyness < AGG_ATM_THRESH, torch.tensor(0, device=device),
+            torch.where(oracle_moneyness < AGG_NEAR_THRESH, torch.tensor(1, device=device),
+                        torch.tensor(2, device=device))
+        )
+        agg_loss = F.cross_entropy(aggression_logits[trade_rows], agg_target, reduction="mean")
+
     # --- B. Selection loss: KL over valid contracts, skip noise bars ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
@@ -446,7 +476,8 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             side_sel_loss = side_sel_loss + F.kl_div(po_log_probs, po_target, reduction="batchmean")
 
     total = (GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss
-             + EXACT_W * exact_loss + OPP_W * opp_loss + SIDE_W * side_loss)
+             + EXACT_W * exact_loss + OPP_W * opp_loss + SIDE_W * side_loss
+             + AGG_W * agg_loss)
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -471,6 +502,22 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         true_put = (trade_contracts[rows, true_idx, 2] > 0.5).long()
         dir_acc = (pred_put == true_put).float().mean().item() if len(pred_put) else 0.0
 
+    # Aggression bucket accuracy
+    agg_acc = 0.0
+    if trade_rows.any():
+        with torch.no_grad():
+            pred_bucket = aggression_logits[trade_rows].detach().argmax(dim=-1)
+            tr_best_aa = best_idx[trade_rows]
+            tr_contracts_aa = contracts_full[trade_rows]
+            rows_aa = torch.arange(tr_best_aa.size(0), device=device)
+            oracle_m = tr_contracts_aa[rows_aa, tr_best_aa, 11].abs()
+            true_bucket = torch.where(
+                oracle_m < AGG_ATM_THRESH, torch.tensor(0, device=device),
+                torch.where(oracle_m < AGG_NEAR_THRESH, torch.tensor(1, device=device),
+                            torch.tensor(2, device=device))
+            )
+            agg_acc = (pred_bucket == true_bucket).float().mean().item()
+
     # Side prediction accuracy
     side_acc = 0.0
     if trade_rows.any():
@@ -490,10 +537,12 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         "exact": float(exact_loss.item()),
         "opp": float(opp_loss.item()),
         "side": float(side_loss.item()),
+        "agg": float(agg_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
         "side_acc": side_acc,
+        "agg_acc": agg_acc,
         "trade_rate": trade_rate,
     }
 
