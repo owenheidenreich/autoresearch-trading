@@ -687,8 +687,15 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         )
 
         val_total = avg_val.get("total", float("inf"))
-        if val_total < best_val_loss:
-            best_val_loss = val_total
+        # Checkpoint on opportunity loss when using strict label,
+        # because total loss is dominated by KL selection which
+        # rewards contract ranking, not abstention behavior.
+        if OPP_LABEL == "strict" and OPP_W > 0:
+            val_criterion = avg_val.get("opp", float("inf"))
+        else:
+            val_criterion = val_total
+        if val_criterion < best_val_loss:
+            best_val_loss = val_criterion
             best_epoch = epoch
             best_metrics = {
                 "gate_accuracy": avg_val.get("gate_acc", 0.0),
