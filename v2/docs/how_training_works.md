@@ -30,36 +30,43 @@ The current model is an exact-chain contract scorer.
 
 Inputs:
 
-- `(batch, 30, 47)` context window
-- `(batch, max_contracts_per_bar, contract_features)` current executable snapshot
+- `(batch, 30, 52)` context window (49 market + 3 intraday phase features)
+- `(batch, max_contracts_per_bar, 22)` current executable snapshot (19 base + 3 economic)
 
 Outputs:
 
 - `no_trade_score`
 - `contract_scores`
 - `valid_mask`
+- `opportunity_logit` — independent trade/no-trade gate from context alone
+- `side_logit` — P(call is better) from context alone
+- `aggression_logits` — moneyness bucket prediction (ATM / near-OTM / far-OTM)
 
-The model does not emit a synthetic strike class, direction head, or learned risk head. It scores the actual contracts visible on the current bar.
+The model scores the actual contracts visible on the current bar, with a layered decision process: opportunity quality → side → aggression → contract ranking.
 
 ## Current Baseline Loss
 
 The live working baseline is the restored `exp_119` family:
 
 - Balanced gate BCE on supervised rows
-- Soft KL selection loss
-- `SOFT_TEMP=0.10`
-- `NOISE_MARGIN=0.01`
+- Opportunity head for independent gating (context-only, BCE, OPP_W=0.5)
+- Side prediction head (P(call better), BCE on oracle side, SIDE_W=0.3)
+- Aggression bucket head (ATM/near-OTM/far-OTM, cross-entropy, AGG_W=0.2)
+- Soft KL selection loss with softer targets
+- `SOFT_TEMP=0.25` (softened from 0.10)
+- `NOISE_MARGIN=0.01` with soft ambiguous bar handling (AMBIG_WEIGHT=0.3)
 - No direct PnL regression
-- No auxiliary side head
 
 Details:
 
 - `gate_loss` compares `max(contract_scores) - no_trade_score` against `label_trade`
-- when both gate classes are present, the BCE is computed on a class-balanced subset so the trade-majority class does not dominate the gate gradient
+- `opp_loss` supervises `opportunity_logit` (context-only) with balanced BCE on `label_trade`
+- `side_loss` supervises `side_logit` with BCE on oracle side (trade rows only)
+- `agg_loss` supervises `aggression_logits` with cross-entropy on oracle moneyness bucket
+- when both gate classes are present, the BCE is computed on a class-balanced subset
 - `sel_loss` builds a soft target from sidecar `row_labels` with `softmax(pnl / SOFT_TEMP)`
-- invalid or unlabeled contracts receive zero target mass
-- noise bars where the top PnL margin is below `NOISE_MARGIN` are excluded from the selection loss
-- total loss is `GATE_W * gate_loss + SEL_W * sel_loss`
+- ambiguous bars (top PnL margin < `NOISE_MARGIN`) use uniform target at reduced weight instead of being dropped
+- total loss is `GATE_W * gate + SEL_W * sel + OPP_W * opp + SIDE_W * side + AGG_W * agg`
 
 The rejected `exp_121` ranking-loss screen is an important finding, but not the live baseline. It showed that side collapse survives a loss-family change; it did not prove that the executable KL targets are inherently put-biased.
 

@@ -41,15 +41,15 @@ CODE_LEGACY_PATTERNS = (
     re.compile(rf"\b{re.escape(_parts('WEIGHT', '_SIDE'))}\b"),
     re.compile(rf"\b{re.escape(_parts('NO', '_TRADE_W'))}\b"),
     re.compile(rf"\b{re.escape(_parts('SCORE', '_REG_W'))}\b"),
-    re.compile(rf"\b{re.escape(_parts('side', '_head'))}\b"),
-    re.compile(rf"\b{re.escape(_parts('side', '_logit'))}\b"),
+    # side_head and side_logit are now part of the wave 1 architecture
+    # (opportunity + side + aggression heads). Removed from legacy patterns.
     re.compile(rf"\b{re.escape(_parts('targets_', 'contract_', 'field'))}\b"),
 )
 DOC_REQUIRED_PHRASES = (
     "Balanced gate BCE on supervised rows",
     "Soft KL selection loss",
     "No direct PnL regression",
-    "No auxiliary side head",
+    "Opportunity head for independent gating",
 )
 DOC_FORBIDDEN_PHRASES = (
     "Stage 1:",
