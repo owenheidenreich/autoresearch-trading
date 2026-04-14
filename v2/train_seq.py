@@ -309,16 +309,296 @@ def train_behavioral_cloning(
     print(f"\nMETRICS_JSON:{json.dumps({'best_epoch': best_epoch, 'val_loss': best_val_loss})}")
 
 
+ENTRY_COST = float(os.environ.get("RL_ENTRY_COST", 0.005))   # per-entry penalty
+KL_COEFF = float(os.environ.get("RL_KL_COEFF", 0.1))        # anchor to BC policy
+
+
+def train_reinforce(
+    data_path: str = "v2/data.pt",
+    model_path: str = "v2/models/model.pt",
+    bc_checkpoint: str = "v2/models/seq_agent.pt",
+    output_path: str = "v2/models/seq_agent_rl.pt",
+):
+    """REINFORCE fine-tuning from BC checkpoint.
+
+    Goal: test whether the agent can learn day-level selectivity
+    (not always filling its entry budget) while preserving low-flip behavior.
+
+    Reward = env reward - entry_cost per entry - kl_coeff * KL(pi || pi_bc)
+    """
+    t_start = time.time()
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
+
+    print("Loading data and encoder...")
+    data = torch.load(data_path, map_location="cpu", weights_only=False)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # Load frozen encoder
+    encoder = TradingModel()
+    if os.path.exists(model_path):
+        try:
+            ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
+            if "model_state_dict" in ckpt:
+                encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+            print(f"  Loaded encoder from {model_path}")
+        except RuntimeError as e:
+            print(f"  WARNING: Could not load {model_path} ({e}), using random encoder")
+    encoder = encoder.to(device)
+    encoder.eval()
+
+    # Load BC agent as anchor
+    agent = SequentialAgent(encoder, context_dim=D_MODEL, freeze_encoder=True).to(device)
+    if os.path.exists(bc_checkpoint):
+        bc_ckpt = torch.load(bc_checkpoint, map_location="cpu", weights_only=False)
+        agent.load_state_dict(bc_ckpt["agent_state_dict"], strict=False)
+        print(f"  Loaded BC checkpoint from {bc_checkpoint}")
+    else:
+        print(f"  WARNING: No BC checkpoint at {bc_checkpoint}, starting from scratch")
+
+    # Freeze a copy of BC policy for KL anchor
+    bc_agent = SequentialAgent(encoder, context_dim=D_MODEL, freeze_encoder=True).to(device)
+    bc_agent.load_state_dict(agent.state_dict())
+    bc_agent.eval()
+    for p in bc_agent.parameters():
+        p.requires_grad = False
+
+    optimizer = torch.optim.Adam(
+        [p for p in agent.parameters() if p.requires_grad],
+        lr=RL_LR,
+    )
+
+    # Train/val split
+    all_days = sorted(set(data["dates"]))
+    n_val = 60
+    train_days = all_days[:-n_val]
+    val_days = all_days[-n_val:]
+    print(f"  Train days: {len(train_days)}, Val days: {len(val_days)}")
+
+    env = TradingEnv(data, DEFAULT_POLICY, "v2/data_sidecars", encoder, device, LOOKBACK)
+
+    best_val_metric = -float("inf")
+    best_epoch = 0
+
+    for epoch in range(1, RL_EPOCHS + 1):
+        if time.time() - t_start > TIME_BUDGET:
+            print(f"Time budget reached at epoch {epoch}")
+            break
+
+        agent.train()
+        np.random.shuffle(train_days)
+        epoch_days = train_days[:100]  # sample 100 days per epoch for speed
+
+        epoch_returns = []
+        epoch_entries = []
+        epoch_flips = []
+        total_policy_loss = 0.0
+        total_value_loss = 0.0
+        total_kl = 0.0
+        n_episodes = 0
+
+        for day in epoch_days:
+            obs = env.reset(day)
+            if env._done:
+                continue
+
+            # Collect trajectory
+            log_probs = []
+            values = []
+            rewards = []
+            entropies = []
+            kl_terms = []
+            actions_taken = []
+
+            while not env._done:
+                gi, local_bar = env._eligible_bars[env._step_idx]
+                window = torch.from_numpy(
+                    env.features[gi - env.lookback: gi].numpy()
+                ).float().to(device)
+                contracts_np, _, _ = padded_snapshot(env._sidecar, local_bar, env.max_contracts)
+                contracts_t = torch.from_numpy(contracts_np).float().to(device)
+                session_t = torch.from_numpy(obs.session_state).float().to(device)
+
+                # Forward pass (stochastic)
+                out = agent.forward(
+                    window.unsqueeze(0), contracts_t.unsqueeze(0), session_t.unsqueeze(0)
+                )
+                logits = out["action_logits"][0]
+                value = out["value"][0]
+
+                dist = torch.distributions.Categorical(logits=logits)
+                action_t = dist.sample()
+                action = int(action_t.item())
+
+                log_probs.append(dist.log_prob(action_t))
+                values.append(value)
+                entropies.append(dist.entropy())
+
+                # KL against BC policy
+                with torch.no_grad():
+                    bc_out = bc_agent.forward(
+                        window.unsqueeze(0), contracts_t.unsqueeze(0), session_t.unsqueeze(0)
+                    )
+                    bc_logits = bc_out["action_logits"][0]
+                bc_probs = F.softmax(bc_logits, dim=-1)
+                pi_probs = F.softmax(logits, dim=-1)
+                kl = (pi_probs * (pi_probs.log() - bc_probs.log())).sum()
+                kl_terms.append(kl)
+
+                obs, reward, done, info = env.step(action)
+
+                # Add entry cost
+                if action in (ACT_ENTER_CALL, ACT_ENTER_PUT):
+                    reward -= ENTRY_COST
+
+                rewards.append(reward)
+                actions_taken.append(action)
+
+            if not rewards:
+                continue
+
+            # Compute returns-to-go
+            returns = []
+            G = 0.0
+            for r in reversed(rewards):
+                G = r + GAMMA * G
+                returns.insert(0, G)
+            returns_t = torch.tensor(returns, dtype=torch.float32, device=device)
+
+            # Normalize returns
+            if len(returns_t) > 1:
+                returns_t = (returns_t - returns_t.mean()) / (returns_t.std() + 1e-8)
+
+            values_t = torch.stack(values)
+            log_probs_t = torch.stack(log_probs)
+            entropies_t = torch.stack(entropies)
+            kl_t = torch.stack(kl_terms)
+
+            # Advantage = returns - value baseline
+            advantages = returns_t - values_t.detach()
+
+            # Losses
+            policy_loss = -(log_probs_t * advantages).mean()
+            value_loss = F.mse_loss(values_t, returns_t.detach())
+            entropy_bonus = -entropies_t.mean()
+            kl_penalty = kl_t.mean()
+
+            loss = (policy_loss
+                    + VALUE_COEFF * value_loss
+                    + ENTROPY_COEFF * entropy_bonus
+                    + KL_COEFF * kl_penalty)
+
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(agent.parameters(), 0.5)
+            optimizer.step()
+
+            total_policy_loss += policy_loss.item()
+            total_value_loss += value_loss.item()
+            total_kl += kl_penalty.item()
+            n_episodes += 1
+
+            day_return = sum(rewards)
+            day_entries = sum(1 for a in actions_taken if a in (ACT_ENTER_CALL, ACT_ENTER_PUT))
+            epoch_returns.append(day_return)
+            epoch_entries.append(day_entries)
+            epoch_flips.append(_count_side_flips_list(actions_taken))
+
+        if n_episodes == 0:
+            continue
+
+        avg_return = np.mean(epoch_returns)
+        avg_entries = np.mean(epoch_entries)
+        avg_flips = np.mean(epoch_flips)
+
+        # Validation: deterministic replay on val days (sample 30 for speed)
+        agent.eval()
+        val_returns = []
+        val_entries = []
+        val_flips = []
+        val_sample = val_days[:30]
+
+        with torch.no_grad():
+            for day in val_sample:
+                obs = env.reset(day)
+                if env._done:
+                    continue
+                day_reward = 0.0
+                day_actions = []
+                while not env._done:
+                    gi, local_bar = env._eligible_bars[env._step_idx]
+                    window = torch.from_numpy(
+                        env.features[gi - env.lookback: gi].numpy()
+                    ).float().to(device)
+                    contracts_np, _, _ = padded_snapshot(env._sidecar, local_bar, env.max_contracts)
+                    contracts_t = torch.from_numpy(contracts_np).float().to(device)
+                    session_t = torch.from_numpy(obs.session_state).float().to(device)
+
+                    action, _, _ = agent.act(window, contracts_t, session_t, deterministic=True)
+                    obs, reward, done, info = env.step(action)
+                    day_reward += reward
+                    day_actions.append(action)
+
+                val_returns.append(day_reward)
+                val_entries.append(sum(1 for a in day_actions if a in (ACT_ENTER_CALL, ACT_ENTER_PUT)))
+                val_flips.append(_count_side_flips_list(day_actions))
+
+        val_avg_return = np.mean(val_returns) if val_returns else 0.0
+        val_avg_entries = np.mean(val_entries) if val_entries else 0.0
+        val_avg_flips = np.mean(val_flips) if val_flips else 0.0
+
+        print(f"Epoch {epoch:3d} | ret={avg_return:.4f} ent={avg_entries:.1f} flip={avg_flips:.2f} "
+              f"kl={total_kl/n_episodes:.4f} | "
+              f"val_ret={val_avg_return:.4f} val_ent={val_avg_entries:.1f} val_flip={val_avg_flips:.2f}")
+
+        # Track best by: positive return + low entries + low flips
+        # Composite: return - 0.01 * entries - 0.05 * flips
+        val_metric = val_avg_return - 0.01 * val_avg_entries - 0.05 * val_avg_flips
+        if val_metric > best_val_metric:
+            best_val_metric = val_metric
+            best_epoch = epoch
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            torch.save({
+                "agent_state_dict": agent.state_dict(),
+                "epoch": epoch,
+                "val_metric": val_metric,
+                "val_return": val_avg_return,
+                "val_entries": val_avg_entries,
+                "val_flips": val_avg_flips,
+            }, output_path)
+
+    print(f"\nBest epoch: {best_epoch}, val_metric: {best_val_metric:.4f}")
+    print(f"Training completed in {time.time() - t_start:.1f}s")
+    print(f"\nMETRICS_JSON:{json.dumps({'best_epoch': best_epoch, 'val_metric': best_val_metric})}")
+
+
+def _count_side_flips_list(actions: list[int]) -> int:
+    last_side = None
+    flips = 0
+    for a in actions:
+        if a == ACT_ENTER_CALL:
+            if last_side == "put":
+                flips += 1
+            last_side = "call"
+        elif a == ACT_ENTER_PUT:
+            if last_side == "call":
+                flips += 1
+            last_side = "put"
+    return flips
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", default="v2/data.pt")
     parser.add_argument("--model", default="v2/models/model.pt")
     parser.add_argument("--output", default="v2/models/seq_agent.pt")
+    parser.add_argument("--bc-checkpoint", default="v2/models/seq_agent.pt",
+                        help="BC checkpoint to fine-tune from (for RL mode)")
     parser.add_argument("--mode", default="bc", choices=["bc", "rl"])
     args = parser.parse_args()
 
     if args.mode == "bc":
         train_behavioral_cloning(args.data, args.model, args.output)
     else:
-        print("RL training not yet implemented. Use --mode bc")
+        train_reinforce(args.data, args.model, args.bc_checkpoint, args.output)
