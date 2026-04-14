@@ -516,14 +516,15 @@ def replay_sequential(
 
 def _count_side_flips(actions: list[int]) -> int:
     """Count how many times the agent flips between call and put entries within a day."""
+    # Action constants: 1=ENTER_CALL, 2=ENTER_PUT
     last_side = None
     flips = 0
     for a in actions:
-        if a == ACT_ENTER_CALL:
+        if a == 1:  # ENTER_CALL
             if last_side == "put":
                 flips += 1
             last_side = "call"
-        elif a == ACT_ENTER_PUT:
+        elif a == 2:  # ENTER_PUT
             if last_side == "call":
                 flips += 1
             last_side = "put"

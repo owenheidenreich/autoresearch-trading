@@ -135,10 +135,13 @@ def train_behavioral_cloning(
     # Load frozen encoder
     encoder = TradingModel()
     if os.path.exists(model_path):
-        ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
-        if "model_state_dict" in ckpt:
-            encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
-        print(f"  Loaded encoder from {model_path}")
+        try:
+            ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
+            if "model_state_dict" in ckpt:
+                encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+            print(f"  Loaded encoder from {model_path}")
+        except RuntimeError as e:
+            print(f"  WARNING: Could not load {model_path} ({e}), using random encoder")
     else:
         print(f"  WARNING: No pretrained model at {model_path}, using random encoder")
     encoder = encoder.to(device)
@@ -215,7 +218,15 @@ def train_behavioral_cloning(
 
             out = agent.forward(windows, contracts, sessions)
             logits = out["action_logits"]
-            loss = F.cross_entropy(logits, actions)
+            # Class-weighted CE: upweight rare actions (enter/exit) vs dominant HOLD
+            # Compute inverse-frequency weights
+            if not hasattr(train_behavioral_cloning, '_class_weights'):
+                counts = torch.bincount(torch.tensor([t["oracle_action"] for t in train_trajectories]), minlength=NUM_ACTIONS).float()
+                counts = counts.clamp(min=1)
+                weights = (1.0 / counts)
+                weights = weights / weights.sum() * NUM_ACTIONS  # normalize to mean=1
+                train_behavioral_cloning._class_weights = weights.to(device)
+            loss = F.cross_entropy(logits, actions, weight=train_behavioral_cloning._class_weights)
 
             optimizer.zero_grad()
             loss.backward()
