@@ -417,6 +417,119 @@ def replay_validation(
     return metrics, trades, traces if collect_traces else None
 
 
+def replay_sequential(
+    agent,
+    data: dict,
+    test_days: list[str],
+    policy: DecisionPolicy | None = None,
+    sidecar_dir: str = "v2/data_sidecars",
+    device: str = "cpu",
+    deterministic: bool = True,
+) -> tuple[ReplayMetrics, list, list[dict]]:
+    """Run the sequential agent through full-day episodes and collect trades.
+
+    Returns (metrics, trades, episode_summaries) using the same compute_metrics()
+    as the supervised replay, so scores are directly comparable.
+    """
+    from v2.core.env import TradingEnv, ACT_HOLD, ACT_ENTER_CALL, ACT_ENTER_PUT, ACT_EXIT
+
+    policy = policy or DEFAULT_POLICY
+    env = TradingEnv(data, policy, sidecar_dir, agent.encoder, device, LOOKBACK)
+
+    all_trades = []
+    episode_summaries = []
+    agent.eval()
+
+    for day in test_days:
+        obs = env.reset(day)
+        if env._done:
+            continue
+
+        day_actions = []
+        day_rewards = []
+        day_trades = []
+
+        while not env._done:
+            # Build tensors for agent
+            gi, local_bar = env._eligible_bars[env._step_idx]
+            window = torch.from_numpy(
+                env.features[gi - env.lookback: gi].numpy()
+            ).float().to(device)
+            contracts_np, _, _ = padded_snapshot(
+                env._sidecar, local_bar, env.max_contracts
+            )
+            contracts_t = torch.from_numpy(contracts_np).float().to(device)
+            session_t = torch.from_numpy(obs.session_state).float().to(device)
+
+            with torch.no_grad():
+                action, log_prob, value = agent.act(
+                    window, contracts_t, session_t, deterministic=deterministic
+                )
+
+            obs, reward, done, info = env.step(action)
+            day_actions.append(info.action_taken)
+            day_rewards.append(reward)
+
+            if info.trade_closed and info.trade_pnl != 0:
+                # Build a SimulatedTrade-like record for metrics
+                from v2.core.schema import SimulatedTrade
+                trade = SimulatedTrade(
+                    intent=TradeIntent(trade=True, bar_index=info.bar, decision_day=day),
+                    entry_bar=info.bar,
+                    entry_price=env._position_entry_price if env._position_entry_price > 0 else 1.0,
+                    exit_bar=info.bar + 1,
+                    exit_price=0.0,
+                    exit_reason=info.exit_reason,
+                    net_pnl_pct=info.trade_pnl,
+                    raw_pnl_pct=info.trade_pnl + 0.02,  # approx pre-spread
+                    spread_cost_pct=0.02,
+                    bars_held=1,
+                    trade_date=day,
+                )
+                day_trades.append(trade)
+                all_trades.append(trade)
+
+        # Episode summary
+        from collections import Counter
+        action_counts = Counter(day_actions)
+        episode_summaries.append({
+            "day": day,
+            "steps": len(day_actions),
+            "trades": len(day_trades),
+            "day_pnl": env._day_pnl,
+            "max_dd": env._max_drawdown,
+            "actions": dict(action_counts),
+            "hold_rate": action_counts[ACT_HOLD] / max(len(day_actions), 1),
+            "side_flips": _count_side_flips(day_actions),
+        })
+
+    # Compute metrics through standard harness
+    metrics = compute_metrics(
+        all_trades,
+        num_days=len(test_days),
+        starting_equity=policy.starting_equity,
+        contract_multiplier=policy.contract_multiplier,
+    )
+
+    return metrics, all_trades, episode_summaries
+
+
+def _count_side_flips(actions: list[int]) -> int:
+    """Count how many times the agent flips between call and put entries within a day."""
+    last_side = None
+    flips = 0
+    for a in actions:
+        if a == ACT_ENTER_CALL:
+            if last_side == "put":
+                flips += 1
+            last_side = "call"
+        elif a == ACT_ENTER_PUT:
+            if last_side == "call":
+                flips += 1
+            last_side = "put"
+    return flips
+
+
 def _baseline_cache_key(data: dict, mask_key: str, policy: DecisionPolicy, max_days: int | None) -> str:
     dataset_fp = data.get("metadata", {}).get("fingerprint", "unknown")
     parts = [dataset_fp, mask_key, policy.fingerprint(), score_config_fingerprint(), str(max_days)]
