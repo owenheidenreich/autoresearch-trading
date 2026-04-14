@@ -31,7 +31,7 @@ from v2.core.chain_data import (
     to_wide_bar,
 )
 from v2.core.dataset_fingerprint import compute_dataset_fingerprint
-from v2.core.policy import DEFAULT_POLICY
+from v2.core.policy import DEFAULT_POLICY, SHORT_POLICY, EOD_POLICY
 from v2.core.simulator import simulate_trade
 from v2.core.schema import TradeIntent
 from v2.core.features import (
@@ -154,6 +154,14 @@ def _empty_sidecar(day: str, expiry: str, n_bars: int, bar_timestamps: np.ndarra
         "bar_label_trade": np.zeros(n_bars, dtype=bool),
         "bar_labelable": np.zeros(n_bars, dtype=bool),
         "bar_quality": np.full(n_bars, QUALITY_CORRUPT, dtype=np.int8),
+        # Path library fields
+        "row_raw_returns": np.zeros((0, N_HORIZONS), dtype=np.float32),
+        "row_mfe": np.zeros((0, N_HORIZONS), dtype=np.float32),
+        "row_mae": np.zeros((0, N_HORIZONS), dtype=np.float32),
+        "row_bars_to_breakeven": np.zeros((0,), dtype=np.float32),
+        "row_impulse_fraction": np.zeros((0,), dtype=np.float32),
+        "row_labels_short": np.zeros((0,), dtype=np.float32),
+        "row_labels_eod": np.zeros((0,), dtype=np.float32),
     }
 
 
@@ -281,6 +289,157 @@ def _fill_chain_matrices(
     return mats, bar_quality
 
 
+RAW_RETURN_HORIZONS = [5, 10, 15, 30, 60]
+N_HORIZONS = len(RAW_RETURN_HORIZONS)
+
+
+def _compute_path_metrics(
+    series: np.ndarray,
+    entry_bar: int,
+    entry_mid: float,
+    spread_cost_est: float,
+    n_bars: int,
+) -> dict:
+    """Compute raw forward returns, MFE, MAE at each horizon.
+
+    Returns dict with:
+      raw_returns: (N_HORIZONS,) raw price returns at [5,10,15,30,60] bars
+      mfe: (N_HORIZONS,) max favorable excursion at each horizon
+      mae: (N_HORIZONS,) max adverse excursion at each horizon
+      bars_to_breakeven: first bar where unrealized >= spread cost (or NaN)
+      impulse_fraction: fraction of 30-bar terminal PnL achieved in first 5 bars
+    """
+    fill_bar = entry_bar + 1
+    raw_returns = np.full(N_HORIZONS, np.nan, dtype=np.float32)
+    mfe = np.full(N_HORIZONS, np.nan, dtype=np.float32)
+    mae = np.full(N_HORIZONS, np.nan, dtype=np.float32)
+    bars_to_breakeven = np.float32(np.nan)
+    impulse_fraction = np.float32(np.nan)
+
+    if fill_bar >= n_bars or not np.isfinite(series[fill_bar]) or series[fill_bar] <= 0:
+        return {
+            "raw_returns": raw_returns, "mfe": mfe, "mae": mae,
+            "bars_to_breakeven": bars_to_breakeven,
+            "impulse_fraction": impulse_fraction,
+        }
+
+    fill_px = float(series[fill_bar])
+
+    # Walk forward computing unrealized returns bar by bar
+    max_horizon = max(RAW_RETURN_HORIZONS)
+    end_bar = min(n_bars, fill_bar + max_horizon + 1)
+    path_slice = series[fill_bar:end_bar]
+
+    if len(path_slice) == 0:
+        return {
+            "raw_returns": raw_returns, "mfe": mfe, "mae": mae,
+            "bars_to_breakeven": bars_to_breakeven,
+            "impulse_fraction": impulse_fraction,
+        }
+
+    # Unrealized returns from fill price
+    valid = np.isfinite(path_slice) & (path_slice > 0)
+    unrealized = np.where(valid, (path_slice - fill_px) / fill_px, np.nan)
+
+    # Raw returns at each horizon
+    for hi, h in enumerate(RAW_RETURN_HORIZONS):
+        if h < len(unrealized) and np.isfinite(unrealized[h]):
+            raw_returns[hi] = unrealized[h]
+
+    # MFE and MAE at each horizon (cumulative max/min up to that bar)
+    running_max = np.float64(-np.inf)
+    running_min = np.float64(np.inf)
+    horizon_idx = 0
+    found_breakeven = False
+    for bar_offset in range(len(unrealized)):
+        u = unrealized[bar_offset]
+        if not np.isfinite(u):
+            continue
+        if u > running_max:
+            running_max = u
+        if u < running_min:
+            running_min = u
+        if not found_breakeven and u >= spread_cost_est:
+            bars_to_breakeven = np.float32(bar_offset)
+            found_breakeven = True
+        # Check if we've reached the next horizon boundary
+        while horizon_idx < N_HORIZONS and bar_offset >= RAW_RETURN_HORIZONS[horizon_idx]:
+            mfe[horizon_idx] = np.float32(max(running_max, 0.0))
+            mae[horizon_idx] = np.float32(min(running_min, 0.0))
+            horizon_idx += 1
+    # Fill remaining horizons that we reached
+    while horizon_idx < N_HORIZONS:
+        mfe[horizon_idx] = np.float32(max(running_max, 0.0))
+        mae[horizon_idx] = np.float32(min(running_min, 0.0))
+        horizon_idx += 1
+
+    # Impulse fraction: how much of 30-bar terminal PnL was in first 5 bars
+    ret_5_idx = RAW_RETURN_HORIZONS.index(5)
+    ret_30_idx = RAW_RETURN_HORIZONS.index(30)
+    if np.isfinite(raw_returns[ret_30_idx]) and abs(raw_returns[ret_30_idx]) > 1e-6:
+        if np.isfinite(raw_returns[ret_5_idx]):
+            impulse_fraction = np.float32(
+                raw_returns[ret_5_idx] / raw_returns[ret_30_idx]
+            )
+
+    return {
+        "raw_returns": raw_returns, "mfe": mfe, "mae": mae,
+        "bars_to_breakeven": bars_to_breakeven,
+        "impulse_fraction": impulse_fraction,
+    }
+
+
+def _simulate_under_policy(
+    policy,
+    expiry: str,
+    contract_strike: float,
+    right: str,
+    mid_now: float,
+    series: np.ndarray,
+    feature_context: np.ndarray,
+    n_bars: int,
+    local_i: int,
+    day: str,
+    timestamps: np.ndarray,
+) -> float:
+    """Simulate a trade under a specific policy, return net_pnl_pct or NaN."""
+    max_hold = min(policy.max_hold_bars, n_bars - local_i - 1)
+    if max_hold < 2:
+        return np.nan
+    intent = TradeIntent(
+        trade=True,
+        expiry=expiry,
+        strike=contract_strike,
+        right=right,
+        qty=policy.qty,
+        entry_ref_price=mid_now,
+        order_style=policy.order_style,
+        tif=policy.tif,
+        stop_price=mid_now * (1.0 - policy.stop_pct),
+        take_profit_price=mid_now * (1.0 + policy.target_pct),
+        max_hold_bars=max_hold,
+        exit_policy=policy.exit_policy,
+        confidence=0.5,
+        reason_codes=("dataset_label",),
+        bar_index=local_i,
+        timestamp=str(int(timestamps[local_i])) if len(timestamps) else "",
+        underlying_price=0.0,
+    )
+    trade = simulate_trade(
+        intent=intent,
+        option_prices=series.astype(np.float32),
+        features=feature_context,
+        bar_of_day=np.arange(n_bars, dtype=np.int32),
+        dates=[day] * n_bars,
+        global_entry_bar=local_i,
+        breakeven_trigger_pct=policy.breakeven_trigger_pct if policy.breakeven_trigger_pct > 0 else None,
+        extra_trailing_tiers=policy.extra_trailing_tiers,
+    )
+    if trade is None:
+        return np.nan
+    return float(trade.net_pnl_pct)
+
+
 def _forward_path_complete(series: np.ndarray, start_bar: int, max_hold: int, n_bars: int) -> bool:
     fill_bar = start_bar + 1
     if fill_bar >= n_bars:
@@ -327,6 +486,13 @@ def _label_day_sidecar(
 
     row_features: list[np.ndarray] = []
     row_labels: list[float] = []
+    row_labels_short: list[float] = []
+    row_labels_eod: list[float] = []
+    row_raw_returns: list[np.ndarray] = []
+    row_mfe: list[np.ndarray] = []
+    row_mae: list[np.ndarray] = []
+    row_bars_to_breakeven: list[float] = []
+    row_impulse_fraction: list[float] = []
     row_contract_idx: list[int] = []
     bar_ptrs = [0]
     bar_best_contract_idx = np.full(n_bars, -1, dtype=np.int32)
@@ -399,48 +565,56 @@ def _label_day_sidecar(
 
             row_features.append(row)
             row_labels.append(np.nan)
+            row_labels_short.append(np.nan)
+            row_labels_eod.append(np.nan)
             row_contract_idx.append(contract_idx)
 
             series = chain_mats["mid"][contract_idx]
+
+            # --- Path library: raw returns + MFE/MAE (policy-free) ---
+            spread_est = float(spread_frac) * 0.5  # conservative half-spread
+            path_m = _compute_path_metrics(
+                series, local_i, mid_now, spread_est, n_bars,
+            )
+            row_raw_returns.append(path_m["raw_returns"])
+            row_mfe.append(path_m["mfe"])
+            row_mae.append(path_m["mae"])
+            row_bars_to_breakeven.append(float(path_m["bars_to_breakeven"]))
+            row_impulse_fraction.append(float(path_m["impulse_fraction"]))
+
             if not _forward_path_complete(series, local_i, DEFAULT_POLICY.max_hold_bars, n_bars):
                 continue
 
             right = "P" if int(contract_right[contract_idx]) == 1 else "C"
-            intent = TradeIntent(
-                trade=True,
-                expiry=expiry,
-                strike=float(contract_strike[contract_idx]),
-                right=right,
-                qty=DEFAULT_POLICY.qty,
-                entry_ref_price=mid_now,
-                order_style=DEFAULT_POLICY.order_style,
-                tif=DEFAULT_POLICY.tif,
-                stop_price=mid_now * (1.0 - DEFAULT_POLICY.stop_pct),
-                take_profit_price=mid_now * (1.0 + DEFAULT_POLICY.target_pct),
-                max_hold_bars=DEFAULT_POLICY.max_hold_bars,
-                exit_policy=DEFAULT_POLICY.exit_policy,
-                confidence=0.5,
-                reason_codes=("dataset_label",),
-                bar_index=bod,
-                timestamp=str(int(timestamps[local_i])) if len(timestamps) else "",
-                underlying_price=spot,
+            c_strike = float(contract_strike[contract_idx])
+
+            # --- Long policy (current default) ---
+            pnl_long = _simulate_under_policy(
+                DEFAULT_POLICY, expiry, c_strike, right, mid_now,
+                series, feature_context, n_bars, local_i, day, timestamps,
             )
-            trade = simulate_trade(
-                intent=intent,
-                option_prices=series.astype(np.float32),
-                features=feature_context,
-                bar_of_day=np.arange(n_bars, dtype=np.int32),
-                dates=[day] * n_bars,
-                global_entry_bar=local_i,
-            )
-            if trade is None:
+            if not np.isfinite(pnl_long):
                 continue
 
             any_labelable = True
-            pnl = float(trade.net_pnl_pct)
-            row_labels[-1] = pnl
-            if pnl > best_pnl:
-                best_pnl = pnl
+            row_labels[-1] = pnl_long
+
+            # --- Short policy overlay ---
+            pnl_short = _simulate_under_policy(
+                SHORT_POLICY, expiry, c_strike, right, mid_now,
+                series, feature_context, n_bars, local_i, day, timestamps,
+            )
+            row_labels_short[-1] = pnl_short
+
+            # --- EOD policy overlay ---
+            pnl_eod = _simulate_under_policy(
+                EOD_POLICY, expiry, c_strike, right, mid_now,
+                series, feature_context, n_bars, local_i, day, timestamps,
+            )
+            row_labels_eod[-1] = pnl_eod
+
+            if pnl_long > best_pnl:
+                best_pnl = pnl_long
                 best_local = len(row_labels) - bar_ptrs[-1] - 1
 
         if any_labelable:
@@ -476,6 +650,14 @@ def _label_day_sidecar(
         "bar_label_trade": bar_label_trade,
         "bar_labelable": bar_labelable,
         "bar_quality": bar_quality,
+        # Path library: environment truth + policy overlays
+        "row_raw_returns": np.asarray(row_raw_returns, dtype=np.float32).reshape(-1, N_HORIZONS) if row_raw_returns else np.zeros((0, N_HORIZONS), dtype=np.float32),
+        "row_mfe": np.asarray(row_mfe, dtype=np.float32).reshape(-1, N_HORIZONS) if row_mfe else np.zeros((0, N_HORIZONS), dtype=np.float32),
+        "row_mae": np.asarray(row_mae, dtype=np.float32).reshape(-1, N_HORIZONS) if row_mae else np.zeros((0, N_HORIZONS), dtype=np.float32),
+        "row_bars_to_breakeven": np.asarray(row_bars_to_breakeven, dtype=np.float32),
+        "row_impulse_fraction": np.asarray(row_impulse_fraction, dtype=np.float32),
+        "row_labels_short": np.asarray(row_labels_short, dtype=np.float32),
+        "row_labels_eod": np.asarray(row_labels_eod, dtype=np.float32),
     }
 
 

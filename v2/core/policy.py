@@ -76,3 +76,27 @@ class DecisionPolicy:
 
 
 DEFAULT_POLICY = DecisionPolicy()
+
+# ---------------------------------------------------------------------------
+# Multi-horizon policy overlays (convenience views, not canonical ontology).
+# Raw forward returns remain the primary truth.  These policies let us see
+# how different management styles would have captured those returns.
+# ---------------------------------------------------------------------------
+
+SHORT_POLICY = DecisionPolicy(
+    stop_pct=0.20,
+    target_pct=0.30,
+    max_hold_bars=30,
+    exit_policy="TRAILING",
+    breakeven_trigger_pct=0.10,
+    extra_trailing_tiers=(),
+)
+
+EOD_POLICY = DecisionPolicy(
+    stop_pct=0.50,
+    target_pct=999.0,  # no target — hold to close or stop
+    max_hold_bars=390,  # effectively unlimited (full day)
+    exit_policy="STOP_TP_TIME",
+    breakeven_trigger_pct=0.0,
+    extra_trailing_tiers=(),
+)

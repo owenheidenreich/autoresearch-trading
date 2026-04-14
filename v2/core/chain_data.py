@@ -19,7 +19,7 @@ import numpy as np
 import torch
 
 
-CHAIN_SCHEMA_VERSION = "v4_exact_chain_v1"
+CHAIN_SCHEMA_VERSION = "v4_exact_chain_v2_paths"
 SIDECAR_DIR_DEFAULT = os.path.join("v2", "data_sidecars")
 QUALITY_VALID = 2
 QUALITY_PARTIAL = 1
@@ -45,6 +45,9 @@ CONTRACT_FEATURE_FIELDS = [
     "charm",                # 16  dDelta/dTime — 0DTE dealer hedging signal
     "mid_chg_5",            # 17  contract price momentum (5-bar mid change %)
     "mid_chg_10",           # 18  contract price momentum (10-bar mid change %)
+    "theta_to_premium",     # 19  |theta_per_bar| / mid — decay rate relative to price
+    "breakeven_bars_est",   # 20  mid / |theta_per_bar| clamped [1,200] — time budget
+    "gamma_dollar",         # 21  gamma * spot^2 * 0.01 — dollar gamma per 1% move
 ]
 NUM_CONTRACT_FEATURES = len(CONTRACT_FEATURE_FIELDS)
 
@@ -242,6 +245,18 @@ def build_contract_row(
     row[16] = float(charm) if np.isfinite(charm) else 0.0
     row[17] = float(mid_chg_5) if np.isfinite(mid_chg_5) else 0.0
     row[18] = float(mid_chg_10) if np.isfinite(mid_chg_10) else 0.0
+    # Derived economic features
+    theta_val = row[10]  # theta_per_bar (already per-bar from bs_greeks_vec)
+    mid_val = row[3]
+    gamma_val = row[9]
+    abs_theta = abs(theta_val) if np.isfinite(theta_val) else 0.0
+    # [19] theta_to_premium: how fast this contract decays relative to price
+    row[19] = abs_theta / max(mid_val, 1e-6) if mid_val > 0 and abs_theta > 0 else 0.0
+    # [20] breakeven_bars_est: how many bars before theta eats the premium
+    row[20] = min(200.0, max(1.0, mid_val / max(abs_theta, 1e-8))) if mid_val > 0 and abs_theta > 1e-8 else 200.0
+    # [21] gamma_dollar: dollar gamma per 1% move in underlying
+    spot_val = float(spot)
+    row[21] = gamma_val * spot_val * spot_val * 0.01 if np.isfinite(gamma_val) and spot_val > 0 else 0.0
     return row
 
 

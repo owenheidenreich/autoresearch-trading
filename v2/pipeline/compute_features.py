@@ -271,7 +271,7 @@ def compute_price_features(
     import pandas as pd
 
     n = len(spx_close)
-    N_FEAT = 29
+    N_FEAT = 32
     feat = np.zeros((n, N_FEAT), dtype=np.float64)
     day_ends = day_starts[1:] + [n]
     day_starts_arr = np.array(day_starts)
@@ -750,6 +750,29 @@ def compute_price_features(
     feat[:, fi] = vwap_slope
     fi += 1
 
+    # [29] intraday_sin: smooth cyclical time encoding
+    phase_angle = 2.0 * np.pi * bod / BARS_PER_DAY
+    feat[:, fi] = np.sin(phase_angle)
+    fi += 1
+
+    # [30] intraday_cos: smooth cyclical time encoding
+    feat[:, fi] = np.cos(phase_angle)
+    fi += 1
+
+    # [31] intraday_phase: discrete session phase (0-6)
+    #   0: pre-open/auction (0-29), 1: opening discovery (30-59),
+    #   2: mid-morning (60-119), 3: lunch compression (120-209),
+    #   4: afternoon (210-299), 5: power hour (300-359), 6: close (360-389)
+    phase = np.zeros(n, dtype=np.float64)
+    phase[bod >= 30] = 1.0
+    phase[bod >= 60] = 2.0
+    phase[bod >= 120] = 3.0
+    phase[bod >= 210] = 4.0
+    phase[bod >= 300] = 5.0
+    phase[bod >= 360] = 6.0
+    feat[:, fi] = phase / 6.0  # normalize to [0, 1]
+    fi += 1
+
     assert fi == N_FEAT, f"Expected {N_FEAT} features, assigned {fi}"
     return feat
 
@@ -973,6 +996,7 @@ PRICE_FEATURE_NAMES = [
     'session_range_position', 'poc_dist', 'va_position', 'ib_break',
     'atr_14', 'bar_delta', 'session_cum_delta', 'macdh_slope',
     'force_index_2', 'effort_vs_result', 'trend_5min', 'vwap_slope',
+    'intraday_sin', 'intraday_cos', 'intraday_phase',
 ]
 
 OPTION_FEATURE_NAMES = [
@@ -988,4 +1012,4 @@ FLOW_FEATURE_NAMES = [
 ]
 
 ALL_FEATURE_NAMES = PRICE_FEATURE_NAMES + OPTION_FEATURE_NAMES + FLOW_FEATURE_NAMES
-NUM_FEATURES = len(ALL_FEATURE_NAMES)  # 47
+NUM_FEATURES = len(ALL_FEATURE_NAMES)  # 52 (32 price + 12 option + 8 flow)

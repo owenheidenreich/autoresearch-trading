@@ -49,6 +49,7 @@ FEATURE_NAMES = [
     'session_range_position', 'poc_dist', 'va_position', 'ib_break',
     'atr_14', 'bar_delta', 'session_cum_delta', 'macdh_slope',
     'force_index_2', 'effort_vs_result', 'trend_5min', 'vwap_slope',
+    'intraday_sin', 'intraday_cos', 'intraday_phase',
     # Option/Greeks (12)
     'atm_iv', 'vrp', 'iv_percentile', 'atm_gamma', 'atm_theta_per_bar',
     'gamma_pressure', 'aggregate_charm', 'option_spread_pct', 'iv_skew_pct',
@@ -58,7 +59,7 @@ FEATURE_NAMES = [
     'log_total_volume', 'chain_call_put_ratio', 'log_chain_volume',
     'log_near_transactions', 'put_call_txn_ratio',
 ]
-NUM_FEATURES = len(FEATURE_NAMES)  # 49
+NUM_FEATURES = len(FEATURE_NAMES)  # 52
 
 # Fast name -> index lookup
 _FEAT_IDX = {name: idx for idx, name in enumerate(FEATURE_NAMES)}
@@ -87,6 +88,10 @@ _NO_NORMALIZE = {
     'call_put_flow_ratio',    # [0, 1]
     'chain_call_put_ratio',   # [0, 1]
     'put_call_txn_ratio',     # [0, 1]
+    # Intraday phase features (already bounded)
+    'intraday_sin',           # [-1, 1]
+    'intraday_cos',           # [-1, 1]
+    'intraday_phase',         # [0, 1] (normalized phase / 6)
 }
 
 
