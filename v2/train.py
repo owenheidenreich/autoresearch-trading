@@ -36,8 +36,8 @@ AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
 SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.0))
 EXACT_W = float(os.environ.get("EXACT_W", 0.0))
 OPP_W = float(os.environ.get("OPP_W", 0.5))
-SIDE_W = float(os.environ.get("SIDE_W", 0.3))
-AGG_W = float(os.environ.get("AGG_W", 0.2))
+SIDE_W = float(os.environ.get("SIDE_W", 0.0))
+AGG_W = float(os.environ.get("AGG_W", 0.0))
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
