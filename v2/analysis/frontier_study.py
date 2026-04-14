@@ -134,6 +134,8 @@ def run_frontier_study(
         # Add balanced agent if it exists
         if os.path.exists("v2/models/seq_agent_balanced.pt"):
             agent_paths["Balanced (side-fix)"] = "v2/models/seq_agent_balanced.pt"
+        if os.path.exists("v2/models/seq_agent_exitfix.pt"):
+            agent_paths["Exit-fix (decay)"] = "v2/models/seq_agent_exitfix.pt"
 
     print("Loading data...")
     data = torch.load(data_path, map_location="cpu", weights_only=False)
