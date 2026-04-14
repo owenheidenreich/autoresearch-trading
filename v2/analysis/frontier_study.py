@@ -131,6 +131,9 @@ def run_frontier_study(
             "RL-v1 (profitable)": "v2/models/seq_agent_rl.pt",
             "Stable (disciplined)": "v2/models/seq_agent_stable.pt",
         }
+        # Add balanced agent if it exists
+        if os.path.exists("v2/models/seq_agent_balanced.pt"):
+            agent_paths["Balanced (side-fix)"] = "v2/models/seq_agent_balanced.pt"
 
     print("Loading data...")
     data = torch.load(data_path, map_location="cpu", weights_only=False)
