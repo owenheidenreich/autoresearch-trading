@@ -312,6 +312,7 @@ def train_behavioral_cloning(
 ENTRY_COST_BASE = float(os.environ.get("RL_ENTRY_COST", 0.01))  # base per-entry penalty
 ENTRY_COST_ESCALATION = float(os.environ.get("RL_ENTRY_ESCALATION", 0.015))  # additional cost per prior entry
 KL_COEFF = float(os.environ.get("RL_KL_COEFF", 0.03))        # anchor to BC policy (relaxed)
+SIDE_IMBALANCE_COEFF = float(os.environ.get("RL_SIDE_IMBALANCE", 0.03))  # episode-end side-skew penalty
 
 
 def train_reinforce(
@@ -404,6 +405,8 @@ def train_reinforce(
         total_value_loss = 0.0
         total_kl = 0.0
         n_episodes = 0
+        train_reinforce._epoch_calls = 0
+        train_reinforce._epoch_puts = 0
 
         for day in epoch_days:
             obs = env.reset(day)
@@ -467,6 +470,14 @@ def train_reinforce(
             if not rewards:
                 continue
 
+            # Side-imbalance penalty: discourage collapsing onto one side
+            calls_today = sum(1 for a in actions_taken if a == ACT_ENTER_CALL)
+            puts_today = sum(1 for a in actions_taken if a == ACT_ENTER_PUT)
+            total_entries_today = calls_today + puts_today
+            if total_entries_today >= 2 and SIDE_IMBALANCE_COEFF > 0:
+                imbalance = abs(calls_today - puts_today) / total_entries_today
+                rewards[-1] -= SIDE_IMBALANCE_COEFF * imbalance
+
             # Compute returns-to-go
             returns = []
             G = 0.0
@@ -509,10 +520,15 @@ def train_reinforce(
             n_episodes += 1
 
             day_return = sum(rewards)
-            day_entries = sum(1 for a in actions_taken if a in (ACT_ENTER_CALL, ACT_ENTER_PUT))
+            day_calls = sum(1 for a in actions_taken if a == ACT_ENTER_CALL)
+            day_puts = sum(1 for a in actions_taken if a == ACT_ENTER_PUT)
             epoch_returns.append(day_return)
-            epoch_entries.append(day_entries)
+            epoch_entries.append(day_calls + day_puts)
             epoch_flips.append(_count_side_flips_list(actions_taken))
+            epoch_calls = getattr(train_reinforce, '_epoch_calls', 0) + day_calls
+            epoch_puts = getattr(train_reinforce, '_epoch_puts', 0) + day_puts
+            train_reinforce._epoch_calls = epoch_calls
+            train_reinforce._epoch_puts = epoch_puts
 
         if n_episodes == 0:
             continue
@@ -520,6 +536,9 @@ def train_reinforce(
         avg_return = np.mean(epoch_returns)
         avg_entries = np.mean(epoch_entries)
         avg_flips = np.mean(epoch_flips)
+        ec = train_reinforce._epoch_calls
+        ep = train_reinforce._epoch_puts
+        call_pct = 100 * ec / max(ec + ep, 1)
 
         # Validation: deterministic replay on val days (sample 30 for speed)
         agent.eval()
@@ -560,7 +579,7 @@ def train_reinforce(
         val_single_days = sum(1 for e in val_entries if e == 1)
         val_n = max(len(val_entries), 1)
 
-        print(f"Epoch {epoch:3d} | ret={avg_return:.4f} ent={avg_entries:.1f} flip={avg_flips:.2f} "
+        print(f"Epoch {epoch:3d} | ret={avg_return:.4f} ent={avg_entries:.1f} flip={avg_flips:.2f} C%={call_pct:.0f} "
               f"kl={total_kl/n_episodes:.4f} | "
               f"val_ret={val_avg_return:.4f} val_ent={val_avg_entries:.1f} val_flip={val_avg_flips:.2f} "
               f"0day={val_zero_days} 1day={val_single_days}")
