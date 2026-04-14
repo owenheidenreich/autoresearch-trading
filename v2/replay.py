@@ -89,11 +89,12 @@ def model_to_intent(
     policy: DecisionPolicy,
 ) -> TradeIntent:
     # Hierarchical decision: gate → direction → strike
-    # Support both old (no_trade_score) and new (gate_logit + direction_logit) models
+    # Support: (1) opportunity_logit gate, (2) gate_logit + direction_logit, (3) legacy no_trade_score
     has_direction = direction_logit is not None and gate_logit is not None
+    has_opportunity_gate = (not has_direction) and gate_logit is not None
 
     if has_direction:
-        # New hierarchical model: explicit gate and direction heads
+        # Hierarchical model: explicit gate and direction heads
         gate_score = float(gate_logit.item())
         if gate_score <= policy.gate_threshold:
             return TradeIntent.no_trade(
@@ -114,6 +115,23 @@ def model_to_intent(
         best_row = int(scores.argmax().item()) if (valid_mask & dir_mask).any() else -1
         best_score = float(scores[best_row].item()) if best_row >= 0 and torch.isfinite(scores[best_row]) else -float("inf")
         abstain_score = -gate_score
+    elif has_opportunity_gate:
+        # Opportunity-gated model: independent gate from context, rank all contracts
+        gate_score = float(gate_logit.item())
+        if gate_score <= policy.gate_threshold:
+            return TradeIntent.no_trade(
+                bar_index=local_bar,
+                timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
+                reason_codes=("opportunity_reject",),
+                no_trade_score=-gate_score,
+            )
+        scores = contract_scores.clone()
+        scores[~valid_mask] = -float("inf")
+        quality_flags = contract_features[:, 14]
+        scores[quality_flags < QUALITY_PARTIAL] = -float("inf")
+        best_row = int(scores.argmax().item()) if valid_mask.any() else -1
+        best_score = float(scores[best_row].item()) if best_row >= 0 else -float("inf")
+        abstain_score = -gate_score
     else:
         # Legacy model: gate from score comparison
         scores = contract_scores.clone()
@@ -124,7 +142,7 @@ def model_to_intent(
         best_score = float(scores[best_row].item()) if best_row >= 0 else -float("inf")
         abstain_score = float(no_trade_score.item()) if no_trade_score is not None else 0.0
 
-    if best_row < 0 or (not has_direction and best_score <= max(policy.gate_threshold, abstain_score)):
+    if best_row < 0 or (not has_direction and not has_opportunity_gate and best_score <= max(policy.gate_threshold, abstain_score)):
         return TradeIntent.no_trade(
             bar_index=local_bar,
             timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
@@ -315,9 +333,11 @@ def replay_validation(
         sidecar = load_sidecar_cached(os.path.join(sidecar_dir, f"{day}.pt"))
         contract_features_t = torch.from_numpy(all_contracts[i])
         contract_indices_t = torch.from_numpy(all_contract_indices[i])
+        # Use opportunity_logit as primary gate when available
+        gate_logit_val = outputs_i.get("opportunity_logit", outputs_i.get("gate_logit"))
         intent = model_to_intent(
             no_trade_score=outputs_i.get("no_trade_score"),
-            gate_logit=outputs_i.get("gate_logit"),
+            gate_logit=gate_logit_val,
             direction_logit=outputs_i.get("direction_logit"),
             contract_scores=outputs_i["contract_scores"],
             contract_labels=torch.from_numpy(all_contract_labels[i]),

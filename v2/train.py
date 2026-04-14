@@ -30,10 +30,13 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.10))
+SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.25))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
+AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
 SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.0))
 EXACT_W = float(os.environ.get("EXACT_W", 0.0))
+OPP_W = float(os.environ.get("OPP_W", 0.5))
+SIDE_W = float(os.environ.get("SIDE_W", 0.3))
 
 
 class PositionalEncoding(nn.Module):
@@ -103,6 +106,22 @@ class TradingModel(nn.Module):
         )
         self.put_bias = nn.Parameter(torch.tensor(0.0))
 
+        # Independent opportunity-quality head: "should I trade this bar?"
+        # Decides from context alone, before seeing any contracts.
+        self.opportunity_head = nn.Sequential(
+            nn.Linear(d, d // 2),
+            nn.GELU(),
+            nn.Dropout(dr),
+            nn.Linear(d // 2, 1),
+        )
+
+        # Side prediction head: P(call side is better) from context alone
+        self.side_head = nn.Sequential(
+            nn.Linear(d, d // 2),
+            nn.GELU(),
+            nn.Linear(d // 2, 1),
+        )
+
     def forward(self, x: torch.Tensor, contracts: torch.Tensor) -> dict[str, torch.Tensor]:
         _, seq_len, _ = x.shape
         h = self.input_proj(x)
@@ -159,6 +178,8 @@ class TradingModel(nn.Module):
         contract_scores = torch.where(is_put, put_scores_centered + self.put_bias, call_scores_centered)
 
         no_trade_score = self.no_trade_head(context).squeeze(-1)
+        opportunity_logit = self.opportunity_head(context).squeeze(-1)
+        side_logit = self.side_head(context).squeeze(-1)
         return {
             "contract_scores": contract_scores,
             "no_trade_score": no_trade_score,
@@ -166,6 +187,8 @@ class TradingModel(nn.Module):
             "is_put": is_put,
             "call_scores_raw": call_scores,
             "put_scores_raw": put_scores,
+            "opportunity_logit": opportunity_logit,
+            "side_logit": side_logit,
         }
 
 
@@ -239,8 +262,10 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
 
     supervised_rows = label_trade_valid
     trade_rows = supervised_rows & label_trade & (best_idx >= 0)
+    opportunity_logit = outputs["opportunity_logit"]
+    side_logit = outputs["side_logit"]
 
-    # --- A. Gate loss: balanced BCE ---
+    # --- A. Gate loss: balanced BCE (uses max(scores)-no_trade for backward compat) ---
     gate_loss = torch.tensor(0.0, device=device)
     if supervised_rows.any():
         masked_scores = scores.clone()
@@ -272,6 +297,41 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
+    # --- A2. Opportunity loss: independent gate from context alone ---
+    opp_loss = torch.tensor(0.0, device=device)
+    if OPP_W > 0 and supervised_rows.any():
+        sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
+        opp_target = label_trade[sup_idx].float()
+        n_pos = opp_target.sum().item()
+        n_neg = len(opp_target) - n_pos
+        n_min = int(min(n_pos, n_neg))
+        if n_min > 0:
+            pos_idx = sup_idx[opp_target.bool()]
+            neg_idx = sup_idx[~opp_target.bool()]
+            pos_sel = pos_idx[torch.randperm(len(pos_idx), device=device)[:n_min]]
+            neg_sel = neg_idx[torch.randperm(len(neg_idx), device=device)[:n_min]]
+            balanced_opp = torch.cat([pos_sel, neg_sel])
+            opp_loss = F.binary_cross_entropy_with_logits(
+                opportunity_logit[balanced_opp],
+                label_trade[balanced_opp].float(),
+                reduction="mean",
+            )
+
+    # --- A3. Side loss: predict call vs put from context alone (trade rows only) ---
+    side_loss = torch.tensor(0.0, device=device)
+    if SIDE_W > 0 and trade_rows.any():
+        tr_best = best_idx[trade_rows]
+        tr_contracts = contracts_full[trade_rows]
+        rows_arange = torch.arange(tr_best.size(0), device=device)
+        oracle_is_put = (tr_contracts[rows_arange, tr_best, 2] > 0.5).float()
+        # side_logit > 0 means "call is better" (sigmoid=1), put -> target=0
+        side_target = 1.0 - oracle_is_put  # 1.0 = call oracle, 0.0 = put oracle
+        side_loss = F.binary_cross_entropy_with_logits(
+            side_logit[trade_rows],
+            side_target,
+            reduction="mean",
+        )
+
     # --- B. Selection loss: KL over valid contracts, skip noise bars ---
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
@@ -283,26 +343,37 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         pnl_for_target[~tr_valid] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
 
-        # Filter out noise bars (top margin < NOISE_MARGIN)
-        if NOISE_MARGIN > 0:
-            top2_vals, _ = pnl_for_target.topk(2, dim=-1)
-            clear_bars = (top2_vals[:, 0] - top2_vals[:, 1]) > NOISE_MARGIN
-            if clear_bars.any():
-                tr_scores = tr_scores[clear_bars]
-                tr_valid = tr_valid[clear_bars]
-                pnl_for_target = pnl_for_target[clear_bars]
-            else:
-                tr_scores = tr_scores[:0]
-                tr_valid = tr_valid[:0]
-                pnl_for_target = pnl_for_target[:0]
-
         if tr_scores.size(0) > 0:
+            # Soft ambiguous bar handling: instead of dropping ambiguous bars,
+            # weight them down and use uniform target for unclear cases.
+            top2_vals, _ = pnl_for_target.topk(min(2, pnl_for_target.size(-1)), dim=-1)
+            if top2_vals.size(-1) >= 2:
+                margin = top2_vals[:, 0] - top2_vals[:, 1]
+                clear_bars = margin > NOISE_MARGIN
+            else:
+                clear_bars = torch.ones(tr_scores.size(0), dtype=torch.bool, device=device)
+
+            # Clear bars: PnL-derived soft target
             soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
+
+            # Ambiguous bars: uniform target over valid contracts
+            n_valid_per_bar = tr_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
+            uniform_target = tr_valid.float() / n_valid_per_bar
+
+            # Blend: clear bars use soft_target, ambiguous use uniform
+            target = torch.where(
+                clear_bars.unsqueeze(-1).expand_as(soft_target),
+                soft_target,
+                uniform_target,
+            )
+            # Per-bar weight: clear=1.0, ambiguous=AMBIG_WEIGHT
+            bar_weight = torch.where(clear_bars, 1.0, AMBIG_WEIGHT)
 
             logits_for_sel = tr_scores.clone()
             logits_for_sel[~tr_valid] = -1e9
             log_probs = F.log_softmax(logits_for_sel, dim=-1)
-            sel_loss = F.kl_div(log_probs, soft_target, reduction="batchmean")
+            per_bar_kl = F.kl_div(log_probs, target, reduction="none").sum(dim=-1)
+            sel_loss = (per_bar_kl * bar_weight).mean()
 
     # --- B2. Exact-oracle cross-entropy: push exact oracle contract above neighbors ---
     exact_loss = torch.tensor(0.0, device=device)
@@ -374,13 +445,15 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             po_log_probs = F.log_softmax(po_logits, dim=-1)
             side_sel_loss = side_sel_loss + F.kl_div(po_log_probs, po_target, reduction="batchmean")
 
-    total = GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss + EXACT_W * exact_loss
+    total = (GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss
+             + EXACT_W * exact_loss + OPP_W * opp_loss + SIDE_W * side_loss)
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
     masked_scores_eval[~valid_mask] = -1e9
     best_eval, pred_contract = masked_scores_eval.max(dim=-1)
-    pred_trade = best_eval > no_trade.detach()
+    # Use opportunity_logit as primary gate (independent of contract ranking)
+    pred_trade = opportunity_logit.detach() > 0
 
     gate_acc = (
         (pred_trade[supervised_rows] == label_trade[supervised_rows]).float().mean().item()
@@ -398,14 +471,29 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         true_put = (trade_contracts[rows, true_idx, 2] > 0.5).long()
         dir_acc = (pred_put == true_put).float().mean().item() if len(pred_put) else 0.0
 
+    # Side prediction accuracy
+    side_acc = 0.0
+    if trade_rows.any():
+        with torch.no_grad():
+            tr_best_s = best_idx[trade_rows]
+            tr_contracts_s = contracts_full[trade_rows]
+            rows_s = torch.arange(tr_best_s.size(0), device=device)
+            true_is_put = tr_contracts_s[rows_s, tr_best_s, 2] > 0.5
+            pred_is_call = side_logit[trade_rows].detach() > 0
+            true_is_call = ~true_is_put
+            side_acc = (pred_is_call == true_is_call).float().mean().item()
+
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
         "side_sel": float(side_sel_loss.item()),
         "exact": float(exact_loss.item()),
+        "opp": float(opp_loss.item()),
+        "side": float(side_loss.item()),
         "total": float(total.item()),
         "gate_acc": gate_acc,
         "dir_acc": dir_acc,
+        "side_acc": side_acc,
         "trade_rate": trade_rate,
     }
 
@@ -506,9 +594,9 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} exact={avg_val.get('exact', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} opp={avg_val.get('opp', 0):.4f} side_l={avg_val.get('side', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
-            f"dir={avg_val.get('dir_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
+            f"dir={avg_val.get('dir_acc', 0):.3f} side={avg_val.get('side_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
 
         val_total = avg_val.get("total", float("inf"))
@@ -518,6 +606,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             best_metrics = {
                 "gate_accuracy": avg_val.get("gate_acc", 0.0),
                 "direction_accuracy": avg_val.get("dir_acc", 0.0),
+                "side_accuracy": avg_val.get("side_acc", 0.0),
             }
             dataset_fp = data.get("metadata", {}).get("fingerprint", "unknown")
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
