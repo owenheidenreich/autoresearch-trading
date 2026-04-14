@@ -207,11 +207,13 @@ class TradingEnv:
                     reward = (unrealized - prev_unrealized) * 0.01  # small shaping
 
                     # Decay-aware holding penalty for stagnating losers
-                    bars_held = local_bar - self._position_entry_bar
-                    if (bars_held > 5
-                            and unrealized < -0.03
-                            and self._position_mfe < 0.02):
-                        reward -= 0.002 * (bars_held - 5)
+                    decay_coeff = float(os.environ.get("ENV_DECAY_COEFF", 0.002))
+                    if decay_coeff > 0:
+                        bars_held = local_bar - self._position_entry_bar
+                        if (bars_held > 5
+                                and unrealized < -0.03
+                                and self._position_mfe < 0.02):
+                            reward -= decay_coeff * (bars_held - 5)
         else:
             if action in (ACT_ENTER_CALL, ACT_ENTER_PUT):
                 # Try to open position
