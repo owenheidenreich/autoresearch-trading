@@ -309,8 +309,9 @@ def train_behavioral_cloning(
     print(f"\nMETRICS_JSON:{json.dumps({'best_epoch': best_epoch, 'val_loss': best_val_loss})}")
 
 
-ENTRY_COST = float(os.environ.get("RL_ENTRY_COST", 0.005))   # per-entry penalty
-KL_COEFF = float(os.environ.get("RL_KL_COEFF", 0.1))        # anchor to BC policy
+ENTRY_COST_BASE = float(os.environ.get("RL_ENTRY_COST", 0.01))  # base per-entry penalty
+ENTRY_COST_ESCALATION = float(os.environ.get("RL_ENTRY_ESCALATION", 0.015))  # additional cost per prior entry
+KL_COEFF = float(os.environ.get("RL_KL_COEFF", 0.03))        # anchor to BC policy (relaxed)
 
 
 def train_reinforce(
@@ -377,6 +378,13 @@ def train_reinforce(
 
     env = TradingEnv(data, DEFAULT_POLICY, "v2/data_sidecars", encoder, device, LOOKBACK)
 
+    # Show entry cost schedule
+    print(f"  Entry cost schedule: entry 1={ENTRY_COST_BASE:.3f}, "
+          f"entry 2={ENTRY_COST_BASE+ENTRY_COST_ESCALATION:.3f}, "
+          f"entry 3={ENTRY_COST_BASE+2*ENTRY_COST_ESCALATION:.3f}, "
+          f"entry 4={ENTRY_COST_BASE+3*ENTRY_COST_ESCALATION:.3f}")
+    print(f"  KL coeff: {KL_COEFF}")
+
     best_val_metric = -float("inf")
     best_epoch = 0
 
@@ -409,6 +417,7 @@ def train_reinforce(
             entropies = []
             kl_terms = []
             actions_taken = []
+            entries_so_far = 0
 
             while not env._done:
                 gi, local_bar = env._eligible_bars[env._step_idx]
@@ -447,9 +456,10 @@ def train_reinforce(
 
                 obs, reward, done, info = env.step(action)
 
-                # Add entry cost
+                # Escalating entry cost: 1st entry costs base, each subsequent costs more
                 if action in (ACT_ENTER_CALL, ACT_ENTER_PUT):
-                    reward -= ENTRY_COST
+                    reward -= (ENTRY_COST_BASE + entries_so_far * ENTRY_COST_ESCALATION)
+                    entries_so_far += 1
 
                 rewards.append(reward)
                 actions_taken.append(action)
@@ -546,14 +556,19 @@ def train_reinforce(
         val_avg_return = np.mean(val_returns) if val_returns else 0.0
         val_avg_entries = np.mean(val_entries) if val_entries else 0.0
         val_avg_flips = np.mean(val_flips) if val_flips else 0.0
+        val_zero_days = sum(1 for e in val_entries if e == 0)
+        val_single_days = sum(1 for e in val_entries if e == 1)
+        val_n = max(len(val_entries), 1)
 
         print(f"Epoch {epoch:3d} | ret={avg_return:.4f} ent={avg_entries:.1f} flip={avg_flips:.2f} "
               f"kl={total_kl/n_episodes:.4f} | "
-              f"val_ret={val_avg_return:.4f} val_ent={val_avg_entries:.1f} val_flip={val_avg_flips:.2f}")
+              f"val_ret={val_avg_return:.4f} val_ent={val_avg_entries:.1f} val_flip={val_avg_flips:.2f} "
+              f"0day={val_zero_days} 1day={val_single_days}")
 
-        # Track best by: positive return + low entries + low flips
-        # Composite: return - 0.01 * entries - 0.05 * flips
-        val_metric = val_avg_return - 0.01 * val_avg_entries - 0.05 * val_avg_flips
+        # Participation-aware metric: reward selectivity, not just quality
+        # Bonus for zero-trade and single-entry days, penalty for high entries and flips
+        selectivity_bonus = 0.02 * (val_zero_days + val_single_days) / val_n
+        val_metric = val_avg_return - 0.02 * val_avg_entries - 0.05 * val_avg_flips + selectivity_bonus
         if val_metric > best_val_metric:
             best_val_metric = val_metric
             best_epoch = epoch
