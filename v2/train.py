@@ -30,6 +30,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
+OPP_LABEL = os.environ.get("OPP_LABEL", "strict")  # "old", "strict", "survival"
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.25))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
@@ -205,6 +206,40 @@ class TradingModel(nn.Module):
         }
 
 
+def _compute_strict_opportunity(sc: dict, local_bar: int) -> bool:
+    """Strict opportunity: at least one contract has clean, survivable path.
+
+    Requires ALL of:
+      raw_return_10bar > 0.12   (clears friction with margin)
+      mae_10bar > -0.08         (bounded adverse excursion)
+      bars_to_breakeven < 5     (quick confirmation)
+      mfe_5bar > 0.03           (early momentum)
+    """
+    bar_ptrs = sc["bar_ptrs"]
+    start = int(bar_ptrs[local_bar])
+    end = int(bar_ptrs[local_bar + 1])
+    if end <= start:
+        return False
+    raw_returns = sc.get("row_raw_returns")
+    mfe = sc.get("row_mfe")
+    mae = sc.get("row_mae")
+    btbe = sc.get("row_bars_to_breakeven")
+    if raw_returns is None or mfe is None or mae is None or btbe is None:
+        return bool(sc["bar_label_trade"][local_bar])  # fallback to old
+    IDX_5, IDX_10 = 0, 1
+    for ro in range(start, end):
+        r10 = float(raw_returns[ro, IDX_10])
+        m10 = float(mae[ro, IDX_10])
+        m5 = float(mfe[ro, IDX_5])
+        bb = float(btbe[ro])
+        if (np.isfinite(r10) and r10 > 0.12 and
+            np.isfinite(m10) and m10 > -0.08 and
+            np.isfinite(bb) and bb < 5 and
+            np.isfinite(m5) and m5 > 0.03):
+            return True
+    return False
+
+
 class TradeDataset(Dataset):
     def __init__(self, data: dict, mask: torch.Tensor, lookback: int = LOOKBACK):
         self.features = data["X"]
@@ -243,7 +278,10 @@ class TradeDataset(Dataset):
             self.all_contracts[j] = torch.from_numpy(contracts)
             self.all_labels[j] = torch.from_numpy(labels)
             self.all_best_idx[j] = int(sc["bar_best_contract_idx"][local_bar])
-            self.all_label_trade[j] = bool(sc["bar_label_trade"][local_bar])
+            if OPP_LABEL == "strict":
+                self.all_label_trade[j] = _compute_strict_opportunity(sc, local_bar)
+            else:
+                self.all_label_trade[j] = bool(sc["bar_label_trade"][local_bar])
             self.all_label_trade_valid[j] = bool(sc["bar_labelable"][local_bar])
         print(f"  Dataset materialized: {n:,} samples, {len(sidecar_cache)} days, {time.time() - t0:.1f}s")
 
