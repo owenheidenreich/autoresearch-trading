@@ -16,7 +16,7 @@ from v2.core.chain_data import NUM_CONTRACT_FEATURES, padded_snapshot
 from v2.core.metrics import score_config_fingerprint
 
 
-NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 49))
+NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 52))
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
 D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 96))
 N_HEADS = 4
@@ -127,7 +127,7 @@ class TradingModel(nn.Module):
         # Skip: 0 (contract_valid), 2 (right_is_put), 13 (minutes_to_close), 14 (quality)
         valid_f = valid_mask.float()
         count = valid_f.sum(dim=1, keepdim=True).clamp(min=1)
-        for fidx in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18):
+        for fidx in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18, 19, 20, 21):
             feat = c[:, :, fidx]
             masked = feat * valid_f
             mean = masked.sum(dim=1, keepdim=True) / count
