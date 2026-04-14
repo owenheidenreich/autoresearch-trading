@@ -425,11 +425,14 @@ def replay_sequential(
     sidecar_dir: str = "v2/data_sidecars",
     device: str = "cpu",
     deterministic: bool = True,
+    zero_state: bool = False,
 ) -> tuple[ReplayMetrics, list, list[dict]]:
     """Run the sequential agent through full-day episodes and collect trades.
 
     Returns (metrics, trades, episode_summaries) using the same compute_metrics()
     as the supervised replay, so scores are directly comparable.
+
+    If zero_state=True, session state is zeroed before each agent call (ablation).
     """
     from v2.core.env import TradingEnv, ACT_HOLD, ACT_ENTER_CALL, ACT_ENTER_PUT, ACT_EXIT
 
@@ -463,7 +466,8 @@ def replay_sequential(
                 env._sidecar, local_bar, env.max_contracts
             )
             contracts_t = torch.from_numpy(contracts_np).float().to(device)
-            session_t = torch.from_numpy(obs.session_state).float().to(device)
+            session_state = obs.session_state if not zero_state else np.zeros_like(obs.session_state)
+            session_t = torch.from_numpy(session_state).float().to(device)
 
             with torch.no_grad():
                 action, log_prob, value = agent.act(
@@ -849,6 +853,8 @@ def main():
     parser.add_argument("--sequential", action="store_true", help="Run sequential agent replay")
     parser.add_argument("--seq-model", type=str, default="v2/models/seq_agent.pt",
                         help="Path to sequential agent checkpoint")
+    parser.add_argument("--zero-state", action="store_true",
+                        help="Ablation: zero session state to test if agent uses it")
     args = parser.parse_args()
 
     mask_key = f"{args.mask}_mask"
@@ -904,11 +910,14 @@ def main():
         if args.days:
             test_days = test_days[:args.days]
 
-        print(f"Sequential replay on {len(test_days)} days ({mask_key})")
+        mode_label = "Sequential Agent (ZERO STATE)" if args.zero_state else "Sequential Agent"
+        print(f"Sequential replay on {len(test_days)} days ({mask_key})"
+              + (" [SESSION STATE ABLATION]" if args.zero_state else ""))
         metrics, trades, episode_summaries = replay_sequential(
             agent, data, test_days, policy=policy, deterministic=True,
+            zero_state=args.zero_state,
         )
-        print_metrics("Sequential Agent", metrics)
+        print_metrics(mode_label, metrics)
         return
 
     if args.baselines:
