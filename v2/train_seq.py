@@ -582,6 +582,18 @@ def train_reinforce(
                 "val_flips": val_avg_flips,
             }, output_path)
 
+        # Always save latest for participation analysis
+        latest_path = output_path.replace(".pt", "_latest.pt")
+        os.makedirs(os.path.dirname(latest_path), exist_ok=True)
+        torch.save({
+            "agent_state_dict": agent.state_dict(),
+            "epoch": epoch,
+            "val_metric": val_metric,
+            "val_return": val_avg_return,
+            "val_entries": val_avg_entries,
+            "val_flips": val_avg_flips,
+        }, latest_path)
+
     print(f"\nBest epoch: {best_epoch}, val_metric: {best_val_metric:.4f}")
     print(f"Training completed in {time.time() - t_start:.1f}s")
     print(f"\nMETRICS_JSON:{json.dumps({'best_epoch': best_epoch, 'val_metric': best_val_metric})}")
