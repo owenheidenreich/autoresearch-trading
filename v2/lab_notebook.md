@@ -1280,3 +1280,21 @@ Result: -0.200, DD 36.1%, PF 0.833, WR 50.3%. Best epoch 1. Identical failure pa
 **Why it works:** LR 5e-5 with 48 epochs gives the model room to converge properly on 19 contract features + 49 context features. Best epoch 4 means the model is actually learning useful patterns. Val loss converged at 2.13 (vs immediate divergence at LR=3e-4).
 
 **Decision:** Promote to official 5-fold run.
+
+### exp_151: official 5-fold — ALL FOLDS FAILED
+
+| Fold | Score | Trades |
+|------|-------|--------|
+| 0 | -0.200 | 174 |
+| 1 | -0.200 | 116 |
+| 2 | -0.200 | 149 |
+| 3 | -0.200 | 175 |
+| 4 | -0.200 | 190 |
+
+Aggregate: -0.200, DD 50.8%, PF 0.714. All 5 folds gated on DD.
+
+**Why screening passed but official failed:** The `--n-folds 1` screening runs only fold 0, which uses the MOST training data (all 900+ days). The 5-fold walk-forward trains each fold on progressively less data. Earlier folds with less training data + harder regimes all collapsed.
+
+**Key insight:** LR=5e-5 worked on a single fold with maximum data but is too slow for folds with less data. The model underfits on smaller training sets.
+
+**Next:** exp_152 — LR=1e-4 (which showed screening score 0.024), standard 24 epochs, go directly to 5-fold official to see the fold-level picture.
