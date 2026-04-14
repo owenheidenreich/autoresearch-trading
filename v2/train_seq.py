@@ -565,11 +565,32 @@ def train_reinforce(
               f"val_ret={val_avg_return:.4f} val_ent={val_avg_entries:.1f} val_flip={val_avg_flips:.2f} "
               f"0day={val_zero_days} 1day={val_single_days}")
 
-        # Participation-aware metric: reward selectivity, not just quality
-        # Bonus for zero-trade and single-entry days, penalty for high entries and flips
-        selectivity_bonus = 0.02 * (val_zero_days + val_single_days) / val_n
-        val_metric = val_avg_return - 0.02 * val_avg_entries - 0.05 * val_avg_flips + selectivity_bonus
-        if val_metric > best_val_metric:
+        # Behavioral band checkpoint selection:
+        # Target: entries/day in [1.0, 3.0], flips < 1.5, some selective days
+        # In-band checkpoints ranked by return. Out-of-band only if nothing in-band yet.
+        in_band = (1.0 <= val_avg_entries <= 3.0
+                   and val_avg_flips < 1.5)
+        selective_days = val_zero_days + val_single_days
+        val_metric = val_avg_return  # within band, prefer higher return
+
+        save_this = False
+        if in_band:
+            if not getattr(train_reinforce, '_has_in_band', False):
+                save_this = True  # first in-band checkpoint
+                train_reinforce._has_in_band = True
+            elif val_metric > best_val_metric:
+                save_this = True  # better in-band checkpoint
+        elif not getattr(train_reinforce, '_has_in_band', False):
+            # No in-band yet — save closest to target
+            dist = abs(val_avg_entries - 2.0) + max(0, val_avg_flips - 1.0)
+            if not hasattr(train_reinforce, '_best_dist') or dist < train_reinforce._best_dist:
+                train_reinforce._best_dist = dist
+                save_this = True
+
+        band_label = "IN-BAND" if in_band else "out-of-band"
+        print(f"         [{band_label}] sel_days={selective_days} metric={val_metric:.4f}")
+
+        if save_this:
             best_val_metric = val_metric
             best_epoch = epoch
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -580,6 +601,8 @@ def train_reinforce(
                 "val_return": val_avg_return,
                 "val_entries": val_avg_entries,
                 "val_flips": val_avg_flips,
+                "in_band": in_band,
+                "selective_days": selective_days,
             }, output_path)
 
         # Always save latest for participation analysis
