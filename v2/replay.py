@@ -446,8 +446,12 @@ def replay_sequential(
             continue
 
         day_actions = []
+        day_bars = []
         day_rewards = []
         day_trades = []
+        day_exit_reasons = []  # list of (step_idx, exit_reason) in sequence
+        day_entry_sides = []  # track side of each entry for post-stop analysis
+        step_counter = 0
 
         while not env._done:
             # Build tensors for agent
@@ -468,9 +472,14 @@ def replay_sequential(
 
             obs, reward, done, info = env.step(action)
             day_actions.append(info.action_taken)
+            day_bars.append(local_bar)
             day_rewards.append(reward)
 
+            if info.trade_opened:
+                day_entry_sides.append("call" if info.action_taken == ACT_ENTER_CALL else "put")
+
             if info.trade_closed and info.trade_pnl != 0:
+                day_exit_reasons.append((step_counter, info.exit_reason))
                 # Build a SimulatedTrade-like record for metrics
                 from v2.core.schema import SimulatedTrade
                 trade = SimulatedTrade(
@@ -489,9 +498,12 @@ def replay_sequential(
                 day_trades.append(trade)
                 all_trades.append(trade)
 
-        # Episode summary
+            step_counter += 1
+
+        # Episode summary with extended behavioral data
         from collections import Counter
         action_counts = Counter(day_actions)
+        exit_reason_counts = Counter(r for _, r in day_exit_reasons)
         episode_summaries.append({
             "day": day,
             "steps": len(day_actions),
@@ -501,6 +513,12 @@ def replay_sequential(
             "actions": dict(action_counts),
             "hold_rate": action_counts[ACT_HOLD] / max(len(day_actions), 1),
             "side_flips": _count_side_flips(day_actions),
+            # Extended behavioral fields
+            "actions_sequence": list(day_actions),
+            "bars": list(day_bars),
+            "exit_reasons": dict(exit_reason_counts),
+            "exit_events": list(day_exit_reasons),  # [(step_idx, reason), ...]
+            "entry_sides": list(day_entry_sides),
         })
 
     # Compute metrics through standard harness
@@ -510,6 +528,11 @@ def replay_sequential(
         starting_equity=policy.starting_equity,
         contract_multiplier=policy.contract_multiplier,
     )
+
+    # Print behavioral report if we have episodes
+    if episode_summaries:
+        from v2.analysis.behavioral_report import print_behavioral_report
+        print_behavioral_report(episode_summaries, all_trades, metrics)
 
     return metrics, all_trades, episode_summaries
 
@@ -823,6 +846,9 @@ def main():
     parser.add_argument("--baselines", action="store_true")
     parser.add_argument("--traces", action="store_true", help="Collect per-bar decision traces")
     parser.add_argument("--gate", type=float, default=None)
+    parser.add_argument("--sequential", action="store_true", help="Run sequential agent replay")
+    parser.add_argument("--seq-model", type=str, default="v2/models/seq_agent.pt",
+                        help="Path to sequential agent checkpoint")
     args = parser.parse_args()
 
     mask_key = f"{args.mask}_mask"
@@ -833,6 +859,58 @@ def main():
         policy = DecisionPolicy(gate_threshold=args.gate)
 
     day_to_bars = _build_day_index(data["dates"])
+
+    # --- Sequential agent replay mode ---
+    if args.sequential:
+        from v2.seq_agent import SequentialAgent
+        from v2.train import TradingModel, D_MODEL
+
+        model_path = args.model or "v2/models/model.pt"
+        encoder = TradingModel()
+        if os.path.exists(model_path):
+            try:
+                ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
+                if "model_state_dict" in ckpt:
+                    encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+                print(f"Encoder loaded from {model_path}")
+            except RuntimeError as e:
+                print(f"WARNING: Could not load {model_path} ({e}), using random encoder")
+        else:
+            print(f"WARNING: No encoder at {model_path}, using random encoder")
+        encoder.eval()
+
+        agent = SequentialAgent(encoder, context_dim=D_MODEL, freeze_encoder=True)
+        if os.path.exists(args.seq_model):
+            seq_ckpt = torch.load(args.seq_model, map_location="cpu", weights_only=False)
+            agent.load_state_dict(seq_ckpt["agent_state_dict"], strict=False)
+            print(f"Sequential agent loaded from {args.seq_model}")
+        else:
+            print(f"WARNING: No seq agent at {args.seq_model}, using untrained agent")
+
+        # Determine test days from mask
+        all_days = sorted(set(data["dates"]))
+        if mask_key in data:
+            mask = data[mask_key]
+            test_day_set = set()
+            dates = data["dates"]
+            for i in range(len(dates)):
+                if mask[i]:
+                    test_day_set.add(dates[i])
+            test_days = sorted(test_day_set)
+        else:
+            # Fallback: last 60 days
+            test_days = all_days[-60:]
+
+        if args.days:
+            test_days = test_days[:args.days]
+
+        print(f"Sequential replay on {len(test_days)} days ({mask_key})")
+        metrics, trades, episode_summaries = replay_sequential(
+            agent, data, test_days, policy=policy, deterministic=True,
+        )
+        print_metrics("Sequential Agent", metrics)
+        return
+
     if args.baselines:
         b_random, b_atm, b_rules, b_trailing = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
         print_metrics("Random", b_random)
