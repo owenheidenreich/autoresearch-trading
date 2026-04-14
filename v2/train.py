@@ -203,6 +203,7 @@ class TradingModel(nn.Module):
             "opportunity_logit": opportunity_logit,
             "side_logit": side_logit,
             "aggression_logits": aggression_logits,
+            "context": context,
         }
 
 
