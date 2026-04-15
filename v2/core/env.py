@@ -7,6 +7,7 @@ extractor and the existing simulator for trade execution.
 from __future__ import annotations
 
 import os
+from collections import deque
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -19,7 +20,7 @@ from v2.core.chain_data import (
 )
 from v2.core.policy import DEFAULT_POLICY, DecisionPolicy
 from v2.core.schema import TradeIntent
-from v2.core.simulator import simulate_trade
+from v2.core.simulator import simulate_trade, _compute_spread_cost
 
 
 # Actions
@@ -30,6 +31,9 @@ ACT_EXIT = 3
 NUM_ACTIONS = 4
 
 SESSION_STATE_DIM = 13
+SESSION_HISTORY_K = int(os.environ.get("SESSION_HISTORY_K", 1))  # 1 = no history (backward compat)
+ANTI_LOCKIN = os.environ.get("ANTI_LOCKIN", "0") == "1"          # add 5 anti-lock-in features
+ANTI_LOCKIN_DIM = 5  # consecutive_stops, call_wr, put_wr, recovery, last_trade_pnl
 
 BARS_PER_DAY = 390
 
@@ -56,6 +60,8 @@ class StepInfo:
     trade_pnl: float = 0.0
     exit_reason: str = ""
     in_position: bool = False
+    closed_intent: TradeIntent | None = None   # intent of the trade that just closed (saved before reset)
+    closed_entry_price: float = 0.0            # entry price of the trade that just closed
 
 
 class TradingEnv:
@@ -113,6 +119,8 @@ class TradingEnv:
         self._position_mae: float = 0.0
         self._position_series: np.ndarray = np.array([])
         self._position_intent: TradeIntent | None = None
+        self._last_closed_intent: TradeIntent | None = None
+        self._last_closed_entry_price: float = 0.0
 
         # Session state
         self._day_pnl: float = 0.0
@@ -123,6 +131,16 @@ class TradingEnv:
         self._max_drawdown: float = 0.0
         self._peak_equity: float = 0.0
         self._cumulative_equity: float = 0.0
+
+        # Session history buffer for temporal context
+        self._history_k = SESSION_HISTORY_K
+        self._session_history: deque = deque(maxlen=self._history_k)
+
+        # Anti-lock-in memory tracking
+        self._anti_lockin = ANTI_LOCKIN
+        self._consecutive_stops: int = 0
+        self._side_results: dict = {"call_wins": 0, "call_losses": 0, "put_wins": 0, "put_losses": 0}
+        self._last_trade_pnl: float = 0.0
 
     def reset(self, day: str) -> Observation:
         """Start a new trading day episode."""
@@ -161,6 +179,10 @@ class TradingEnv:
         self._cumulative_equity = self._starting_equity
         self._peak_equity = self._starting_equity
         self._max_drawdown = 0.0
+        self._session_history.clear()
+        self._consecutive_stops = 0
+        self._side_results = {"call_wins": 0, "call_losses": 0, "put_wins": 0, "put_losses": 0}
+        self._last_trade_pnl = 0.0
 
         if self._done:
             return self._empty_obs()
@@ -315,21 +337,48 @@ class TradingEnv:
         best_put = float(np.max(scores[put_mask])) if put_mask.any() else 0.0
         session[12] = best_call - best_put
 
+        # Anti-lock-in features (5 dims appended after base 13)
+        if self._anti_lockin:
+            ext = np.zeros(ANTI_LOCKIN_DIM, dtype=np.float32)
+            ext[0] = min(self._consecutive_stops / 3.0, 1.0)
+            cw, cl = self._side_results["call_wins"], self._side_results["call_losses"]
+            ext[1] = cw / max(cw + cl, 1) if (cw + cl) > 0 else 0.5
+            pw, pl = self._side_results["put_wins"], self._side_results["put_losses"]
+            ext[2] = pw / max(pw + pl, 1) if (pw + pl) > 0 else 0.5
+            ext[3] = self._cumulative_equity / max(self._peak_equity, 1.0)
+            ext[4] = max(-1.0, min(1.0, self._last_trade_pnl * 10.0))
+            session = np.concatenate([session, ext])
+
+        # Build session history (stacked recent states)
+        base_dim = len(session)  # 13 or 18 depending on anti-lock-in
+        self._session_history.append(session.copy())
+        if self._history_k > 1:
+            # Stack K recent states: oldest first, zero-padded at episode start
+            history = np.zeros(self._history_k * base_dim, dtype=np.float32)
+            for i, s in enumerate(self._session_history):
+                offset = i * base_dim
+                history[offset:offset + base_dim] = s
+            obs_session = history
+        else:
+            obs_session = session
+
         return Observation(
             context=context,
             contract_scores=scores,
             valid_mask=valid,
             is_put=is_put,
-            session_state=session,
+            session_state=obs_session,
         )
 
     def _empty_obs(self) -> Observation:
+        base_dim = SESSION_STATE_DIM + (ANTI_LOCKIN_DIM if self._anti_lockin else 0)
+        session_dim = self._history_k * base_dim if self._history_k > 1 else base_dim
         return Observation(
             context=np.zeros(96, dtype=np.float32),
             contract_scores=np.zeros(self.max_contracts, dtype=np.float32),
             valid_mask=np.zeros(self.max_contracts, dtype=bool),
             is_put=np.zeros(self.max_contracts, dtype=bool),
-            session_state=np.zeros(SESSION_STATE_DIM, dtype=np.float32),
+            session_state=np.zeros(session_dim, dtype=np.float32),
         )
 
     def _open_position(self, local_bar: int, is_put: bool) -> bool:
@@ -413,6 +462,22 @@ class TradingEnv:
             self._position_mae = pnl
         return pnl
 
+    def _estimate_spread_cost(self, exit_bar: int) -> float:
+        """Estimate spread cost using the simulator's adaptive model.
+
+        Uses available info from the env's position state. Falls back to
+        conservative defaults for fields not readily available (VIX regime,
+        bar range).
+        """
+        return _compute_spread_cost(
+            entry_bar_of_day=self._position_entry_bar,
+            exit_bar_of_day=exit_bar,
+            vix_regime_entry=0.33,   # mid-range default
+            vix_regime_exit=0.33,
+            is_otm=True,             # conservative: OTM spreads are wider
+            entry_px=self._position_entry_price if self._position_entry_price > 0 else None,
+        )
+
     def _close_position(self, local_bar: int) -> tuple[float, float, str]:
         """Close position at next bar (market order)."""
         exit_bar = local_bar + 1
@@ -423,8 +488,7 @@ class TradingEnv:
             exit_price = self._position_entry_price
 
         raw_pnl = (exit_price - self._position_entry_price) / self._position_entry_price
-        # Estimate spread cost
-        spread_cost = 0.02  # conservative 2% round-trip
+        spread_cost = self._estimate_spread_cost(exit_bar)
         net_pnl = raw_pnl - spread_cost
 
         self._apply_trade_result(net_pnl, "AGENT_EXIT")
@@ -438,7 +502,7 @@ class TradingEnv:
             exit_price = self._position_entry_price
 
         raw_pnl = (exit_price - self._position_entry_price) / self._position_entry_price
-        spread_cost = 0.02
+        spread_cost = self._estimate_spread_cost(eod_bar)
         net_pnl = raw_pnl - spread_cost
 
         self._apply_trade_result(net_pnl, "EOD")
@@ -456,21 +520,23 @@ class TradingEnv:
         if bars_held < 2:
             return False, 0.0, ""
 
+        spread_cost = self._estimate_spread_cost(local_bar)
+
         # Stop loss
         if unrealized <= -self.policy.stop_pct:
-            pnl = unrealized - 0.02  # spread cost
+            pnl = unrealized - spread_cost
             self._apply_trade_result(pnl, "STOP_LOSS")
             return True, pnl, "STOP_LOSS"
 
         # Take profit
         if unrealized >= self.policy.target_pct:
-            pnl = unrealized - 0.02
+            pnl = unrealized - spread_cost
             self._apply_trade_result(pnl, "TAKE_PROFIT")
             return True, pnl, "TAKE_PROFIT"
 
         # Max hold
         if bars_held >= self.policy.max_hold_bars:
-            pnl = unrealized - 0.02
+            pnl = unrealized - spread_cost
             self._apply_trade_result(pnl, "MAX_HOLD")
             return True, pnl, "MAX_HOLD"
 
@@ -492,6 +558,22 @@ class TradingEnv:
             gi, _ = self._eligible_bars[self._step_idx]
             self._last_stop_bar = gi
             self._num_stops += 1
+
+        # Anti-lock-in tracking
+        self._last_trade_pnl = net_pnl
+        if net_pnl >= 0:
+            key = "call_wins" if self._position_side == 1 else "put_wins"
+        else:
+            key = "call_losses" if self._position_side == 1 else "put_losses"
+        self._side_results[key] += 1
+        if exit_reason == "STOP_LOSS":
+            self._consecutive_stops += 1
+        else:
+            self._consecutive_stops = 0
+
+        # Save closed trade info before clearing (used by replay to build SimulatedTrade)
+        self._last_closed_intent = self._position_intent
+        self._last_closed_entry_price = self._position_entry_price
 
         self._in_position = False
         self._position_side = 0

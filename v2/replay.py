@@ -488,12 +488,23 @@ def replay_sequential(
 
             if info.trade_closed and info.trade_pnl != 0:
                 day_exit_reasons.append((step_counter, info.exit_reason))
-                # Build a SimulatedTrade-like record for metrics
+                # Build a SimulatedTrade record for metrics.
+                # Use the env's last-closed TradeIntent (has qty, strike, right, etc.)
+                # Saved by env._apply_trade_result before clearing position state.
                 from v2.core.schema import SimulatedTrade
+                closed_intent = env._last_closed_intent
+                if closed_intent is not None:
+                    intent = closed_intent
+                else:
+                    intent = TradeIntent(
+                        trade=True, bar_index=info.bar, decision_day=day,
+                        qty=policy.qty,
+                    )
+                closed_entry = env._last_closed_entry_price
                 trade = SimulatedTrade(
-                    intent=TradeIntent(trade=True, bar_index=info.bar, decision_day=day),
+                    intent=intent,
                     entry_bar=info.bar,
-                    entry_price=env._position_entry_price if env._position_entry_price > 0 else 1.0,
+                    entry_price=closed_entry if closed_entry > 0 else 1.0,
                     exit_bar=info.bar + 1,
                     exit_price=0.0,
                     exit_reason=info.exit_reason,
@@ -864,6 +875,16 @@ def main():
     mask_key = f"{args.mask}_mask"
     data = torch.load(args.data, map_location="cpu", weights_only=False)
     dataset_fp = data.get("metadata", {}).get("fingerprint")
+
+    # --- Load-time validation: check dataset matches RuntimeConfig ---
+    from v2.core.config import RUNTIME_CONFIG
+    meta = data.get("metadata", {})
+    config_errors = RUNTIME_CONFIG.validate_dataset_metadata(meta)
+    if config_errors:
+        print("WARNING: Dataset metadata does not match RuntimeConfig:")
+        for e in config_errors:
+            print(f"  - {e}")
+
     policy = DEFAULT_POLICY
     if args.gate is not None:
         policy = DecisionPolicy(gate_threshold=args.gate)
@@ -960,6 +981,36 @@ def main():
     print_metrics("ATM-Always", b_atm)
     print_metrics("Simple-Rules", b_rules)
     print_metrics("ATM-Trailing", b_trailing)
+
+    # --- Generate EvalReport with stored trades ---
+    from v2.core.eval_report import EvalReport
+    try:
+        from v2.core.config import RUNTIME_CONFIG
+        cfg_fp = RUNTIME_CONFIG.fingerprint()
+    except Exception:
+        cfg_fp = "unknown"
+
+    report = EvalReport.from_replay(
+        metrics=metrics,
+        trades=trades,
+        experiment_id=getattr(args, "artifact", "") or "",
+        model_fingerprint=dataset_fp or "unknown",
+        dataset_fingerprint=dataset_fp or "unknown",
+        config_fingerprint=cfg_fp,
+    )
+    report.baselines = {
+        "random": b_random.score,
+        "atm_always": b_atm.score,
+        "simple_rules": b_rules.score,
+        "atm_trailing": b_trailing.score,
+    }
+    report.beats_all_baselines = all(
+        metrics.score > bs for bs in report.baselines.values()
+    )
+
+    report_path = "v2/output/eval_report.json"
+    report.to_json(report_path)
+    print(f"\nEvalReport saved to {report_path} ({len(report.trades)} trades stored)")
 
 
 if __name__ == "__main__":

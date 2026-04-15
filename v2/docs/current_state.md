@@ -1,26 +1,27 @@
 # Current v2 State
 
-Last refreshed: 2026-04-13 (Wave 1 overhaul — scoring reset)
+Last refreshed: 2026-04-15 (pipeline integrity fix — dollar-weighted PF, stage contracts)
 
 ## Mission And Phase
 
 - Mission: build a trustworthy exact-chain research system for SPX 0DTE long-options training and replay
-- Current phase: **Wave 1 overhaul complete; fresh slate for model improvements**
-- Live trading: not implemented and not part of the live `v2/` surface
+- Current phase: **AWAC RL regime — pipeline integrity fixes applied, awaiting fresh evaluation**
+- Live trading: deferred until pipeline is clean and working
 - The current mission is not live trading. It is a trustworthy exact-chain research system.
 
 ## Snapshot
 
 - Active manifest: `v2/data.pt` (rebuilt 2026-04-13 with enriched features)
 - Dataset version: `v4_exact_chain`
-- Context features: 49 (was 47) — added aggregate_charm, vwap_slope
-- Contract features: 19 (was 15) — added vega, charm, mid_chg_5, mid_chg_10
-- Per-day sidecars: `v2/data_sidecars/*.pt` (rebuilt)
+- Context features: 52 (32 price/market + 12 option/greeks + 8 flow)
+- Contract features: 22 (19 base + 3 economic: theta_to_premium, breakeven_bars_est, gamma_dollar)
+- Per-day sidecars: `v2/data_sidecars/*.pt` (schema `v4_exact_chain_v2_paths`)
 - Unique days: 986
-- Scoring: v3.0 composite PF/sortino (DD gate 25%, penalty-free ≤12%)
-- **results.tsv: RESET** — old scores (exp_074–exp_146) not comparable under new scoring
-- Next experiment: `exp_147` — first experiment under new feature set + scoring
-- Archived non-live surfaces now live under `archive/v2_historical/`
+- Scoring: **v4.0 dollar-weighted PF/sortino** (DD gate 25%, penalty-free ≤12%)
+- Previous scoring (v3.0 percentage-weighted PF) was found to mask an 81.5% portfolio loss as near-breakeven. See `docs/incidents/2026-04-15-pf-metric-bug.md`.
+- **All prior experiment scores are stale** — evaluator fingerprint changed
+- Current model.pt is stale (trained on older 15-feature contract schema)
+- exp_146 (supervised baseline) archived — found to be guessing random trades
 
 ## End-To-End Flow
 
@@ -41,7 +42,7 @@ raw SPX/SPY/VIX pickles + full-chain SPXW pickles
 
 ### Data
 
-- The manifest stores 47 normalized market-context features in `X`, raw replay features in `X_sim`, plus bar metadata and split masks.
+- The manifest stores 52 normalized market-context features in `X`, raw replay features in `X_sim`, plus bar metadata and split masks.
 - Exact contracts do not live inside the manifest tensor payload.
 - Each day sidecar stores exact contract identities, executable snapshots, and per-contract forward P&L labels under the fixed policy.
 - Hard or incomplete market days are retained. Missing forward paths are flagged at the contract/bar level instead of dropping whole days.

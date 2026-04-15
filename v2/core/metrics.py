@@ -1,11 +1,12 @@
 """Replay scoring: computes performance metrics from simulated trades.
 
-Score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
+Score = (0.5*sortino + 0.5*dollar_pf) * positive_day_rate * dd_mult
 
-Evaluated on a dollar equity curve starting at $10,000 with SPX 100x
-contract multiplier. Measures what matters: steady daily profits and
-downside risk control, while still surfacing side mix as a diagnostic.
+All P&L metrics are DOLLAR-WEIGHTED (entry_price * contract_multiplier * qty).
+This was fixed 2026-04-15 after discovering that percentage-weighted PF
+masked an 81.5% portfolio loss as near-breakeven (PF 0.974 vs real 0.830).
 
+See v2/docs/incidents/2026-04-15-pf-metric-bug.md for the full diagnosis.
 See v2/docs/evaluator.md for the promotion score formula.
 """
 from __future__ import annotations
@@ -24,17 +25,23 @@ from v2.core.schema import SimulatedTrade
 class ReplayMetrics:
     """Aggregate metrics from a set of simulated trades."""
 
-    # Core
-    profit_factor: float = 0.0
+    # Core (dollar-weighted — the primary economic truth)
+    profit_factor: float = 0.0          # dollar-weighted PF (PRIMARY)
     win_rate: float = 0.0
     total_trades: int = 0
     trades_per_day: float = 0.0
     num_days: int = 0
 
-    # P&L (per-trade percentages)
-    gross_profit: float = 0.0
-    gross_loss: float = 0.0
-    net_pnl: float = 0.0
+    # Dollar P&L (primary)
+    gross_profit: float = 0.0           # sum of winning dollar P&Ls
+    gross_loss: float = 0.0             # abs(sum of losing dollar P&Ls)
+    net_pnl: float = 0.0               # net dollar P&L
+
+    # Percentage P&L (secondary diagnostic)
+    pct_profit_factor: float = 0.0      # unweighted percentage PF (diagnostic only)
+    pct_gross_profit: float = 0.0
+    pct_gross_loss: float = 0.0
+    pct_net_pnl: float = 0.0
     avg_win: float = 0.0
     avg_loss: float = 0.0
 
@@ -103,29 +110,58 @@ def compute_metrics(
     m.total_trades = len(trades)
     m.trades_per_day = m.total_trades / m.num_days
 
-    pnls = [t.net_pnl_pct for t in trades]
-    wins = [p for p in pnls if p > 0]
-    losses = [p for p in pnls if p <= 0]
+    # --- Validate qty on every trade (prevent silent zeroing) ---
+    for i, t in enumerate(trades):
+        if t.intent.qty < 1:
+            import warnings
+            warnings.warn(
+                f"Trade {i} has intent.qty={t.intent.qty} — using qty=1 as fallback. "
+                f"This is a bug in the caller; fix the TradeIntent construction.",
+                stacklevel=2,
+            )
 
-    m.gross_profit = sum(wins) if wins else 0.0
-    m.gross_loss = abs(sum(losses)) if losses else 0.0
-    m.net_pnl = sum(pnls)
+    # --- Dollar P&L (PRIMARY — the economic truth) ---
+    dollar_pnls = [
+        t.net_pnl_pct * t.entry_price * contract_multiplier * max(t.intent.qty, 1)
+        for t in trades
+    ]
+    dollar_wins = [p for p in dollar_pnls if p > 0]
+    dollar_losses = [p for p in dollar_pnls if p <= 0]
 
-    m.win_rate = len(wins) / m.total_trades if m.total_trades > 0 else 0.0
-    m.avg_win = float(np.mean(wins)) if wins else 0.0
-    m.avg_loss = float(np.mean(losses)) if losses else 0.0
+    m.gross_profit = sum(dollar_wins) if dollar_wins else 0.0
+    m.gross_loss = abs(sum(dollar_losses)) if dollar_losses else 0.0
+    m.net_pnl = sum(dollar_pnls)
 
-    # Profit factor
     if m.gross_loss > 0:
         m.profit_factor = m.gross_profit / m.gross_loss
     elif m.gross_profit > 0:
-        m.profit_factor = 10.0  # cap at 10 when no losses
+        m.profit_factor = 10.0
     else:
         m.profit_factor = 0.0
 
-    # Per-trade equity curve drawdown (legacy)
+    # --- Percentage P&L (secondary diagnostic) ---
+    pct_pnls = [t.net_pnl_pct for t in trades]
+    pct_wins = [p for p in pct_pnls if p > 0]
+    pct_losses = [p for p in pct_pnls if p <= 0]
+
+    m.pct_gross_profit = sum(pct_wins) if pct_wins else 0.0
+    m.pct_gross_loss = abs(sum(pct_losses)) if pct_losses else 0.0
+    m.pct_net_pnl = sum(pct_pnls)
+
+    if m.pct_gross_loss > 0:
+        m.pct_profit_factor = m.pct_gross_profit / m.pct_gross_loss
+    elif m.pct_gross_profit > 0:
+        m.pct_profit_factor = 10.0
+    else:
+        m.pct_profit_factor = 0.0
+
+    m.win_rate = len(pct_wins) / m.total_trades if m.total_trades > 0 else 0.0
+    m.avg_win = float(np.mean(pct_wins)) if pct_wins else 0.0
+    m.avg_loss = float(np.mean(pct_losses)) if pct_losses else 0.0
+
+    # Per-trade equity curve drawdown (legacy, uses percentage returns)
     equity = [1.0]
-    for p in pnls:
+    for p in pct_pnls:
         equity.append(equity[-1] * (1.0 + p))
     peak = equity[0]
     max_dd = 0.0
@@ -135,9 +171,9 @@ def compute_metrics(
         max_dd = max(max_dd, dd)
     m.max_drawdown = max_dd
 
-    # Sharpe (annualized from per-trade returns)
-    if len(pnls) > 1:
-        arr = np.array(pnls)
+    # Sharpe (annualized from per-trade percentage returns)
+    if len(pct_pnls) > 1:
+        arr = np.array(pct_pnls)
         mean_ret = float(np.mean(arr))
         std_ret = float(np.std(arr, ddof=1))
         if std_ret > 0:
@@ -175,19 +211,14 @@ def compute_metrics(
     m.avg_mfe = float(np.mean([t.mfe_pct for t in trades]))
     m.avg_mae = float(np.mean([t.mae_pct for t in trades]))
 
-    # Dollar-weighted metrics: each trade weighted by notional (entry_price * multiplier * qty)
-    notionals = np.array([t.entry_price * contract_multiplier * t.intent.qty for t in trades])
-    dollar_pnls = np.array([t.net_pnl_pct * n for t, n in zip(trades, notionals)])
+    # Dollar-weighted metrics (now consistent with primary PF above)
+    notionals = np.array([t.entry_price * contract_multiplier * max(t.intent.qty, 1) for t in trades])
+    dw_pnls = np.array([t.net_pnl_pct * n for t, n in zip(trades, notionals)])
     total_notional = notionals.sum()
     if total_notional > 0:
         win_notional = sum(n for t, n in zip(trades, notionals) if t.net_pnl_pct > 0)
         m.dollar_weighted_win_rate = win_notional / total_notional
-        dollar_wins = dollar_pnls[dollar_pnls > 0].sum()
-        dollar_losses = abs(dollar_pnls[dollar_pnls <= 0].sum())
-        if dollar_losses > 0:
-            m.dollar_weighted_profit_factor = min(dollar_wins / dollar_losses, 10.0)
-        elif dollar_wins > 0:
-            m.dollar_weighted_profit_factor = 10.0
+    m.dollar_weighted_profit_factor = m.profit_factor  # now identical to primary
 
     # --- Account curve (dollar-based) ---
     _compute_account_curve(m, trades, starting_equity, contract_multiplier)
@@ -216,7 +247,7 @@ def _compute_account_curve(
         if not date:
             continue
         # Dollar P&L = pnl_pct * entry_price * contract_multiplier * qty
-        dollar_pnl = t.net_pnl_pct * t.entry_price * contract_multiplier * t.intent.qty
+        dollar_pnl = t.net_pnl_pct * t.entry_price * contract_multiplier * max(t.intent.qty, 1)
         daily_pnl[date] += dollar_pnl
 
     if not daily_pnl:
@@ -321,8 +352,8 @@ def compute_score(metrics: ReplayMetrics) -> float:
 # ---------------------------------------------------------------------------
 
 _SCORE_CONFIG = {
-    "version": "v3.0_composite_pf_sortino",
-    "primary": "(0.5*sortino + 0.5*pf) * positive_day_rate * dd_mult",
+    "version": "v4.0_dollar_weighted_pf",
+    "primary": "(0.5*sortino + 0.5*dollar_pf) * positive_day_rate * dd_mult",
     "sortino_cap": 10.0,
     "pf_cap": 4.0,
     "starting_equity": 10_000,

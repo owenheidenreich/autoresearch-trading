@@ -1,1 +1,2 @@
 experiment	score	status	description
+exp_151	-0.200000	revert	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.4631578947368421 profit_factor=0.7136981871453023 positive_day_rate=0.38596491228070173

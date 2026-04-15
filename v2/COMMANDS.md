@@ -142,6 +142,16 @@ These are **mandatory**. Do not report results to the user until every step is c
 
 **Present to user in one message:** results table, trace comparison vs baseline, trade analysis summary, what docs were updated, proposed next hypothesis.
 
+## Health Checks
+
+- `health check` or `check health`
+  Full pipeline integrity check (config + data + model + smoke test):
+  `python3 -m v2.ops.health`
+
+- `quick health` or `health quick`
+  Fast check (config + data + model only, < 5 seconds):
+  `python3 -m v2.ops.health quick`
+
 ## Monitoring
 
 - `project status`
@@ -155,3 +165,19 @@ These are **mandatory**. Do not report results to the user until every step is c
 - `plot trades`
   Run:
   `python3 -m v2.plot_trades`
+
+## Analysis Utilities
+
+These are **diagnostic tools**, not canonical pipeline steps. Use for investigation.
+
+**Canonical (used by pipeline/gates):**
+- `harness_eval.py` — regression test harness (called by pre_run_gate)
+- `policy_sweep.py` — parameter sweep over DecisionPolicy
+- `frontier_study.py` — agent frontier analysis (imported by autoresearch.py)
+
+**Manual diagnostics (run when investigating):**
+- `fold_diagnosis.py` — per-fold drawdown and metric breakdown
+- `flip_day_study.py` — side-flip forensics for sequential agent
+- `analyze_losses.py` — losing-day deep dive
+- `behavioral_report.py` — trade behavior summary (pure numpy, no v2 imports)
+- `grid_study.py` — hyperparameter grid search (subprocess-based)

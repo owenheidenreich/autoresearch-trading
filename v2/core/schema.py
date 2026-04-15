@@ -59,6 +59,13 @@ class TradeIntent:
 
     policy_version: str = "v4.0.0"
 
+    def __post_init__(self) -> None:
+        if self.trade and self.qty < 1:
+            raise ValueError(
+                f"TradeIntent with trade=True must have qty >= 1, got qty={self.qty}. "
+                f"This is a bug in the caller — every trade intent must specify a position size."
+            )
+
     def validate(self) -> list[str]:
         errors: list[str] = []
         if not self.trade:

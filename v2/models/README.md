@@ -1,9 +1,19 @@
 # v2 Models
 
-This directory holds the local checkpoint files used by the exact-chain workflow.
+This directory holds the current operational checkpoint. The GPU node trains from scratch each run.
 
-- `model.pt` — current promoted local checkpoint
-- `model_best.pt` — best promoted checkpoint kept on disk
-- `model_candidate.pt` — latest downloaded official-run checkpoint awaiting keep/revert
+## Convention
 
-These files are local runtime artifacts. The GPU node trains from scratch each run.
+`model.pt` is the **current operational default** — the checkpoint that replay, plotting, and health checks use. It is not necessarily the milestone-best model. It may be:
+
+- **validated**: passed all promotion gates under the current evaluator
+- **provisional**: promoted under a prior evaluator, not yet re-evaluated
+- **stale**: trained on an incompatible dataset or config
+
+Run `python -m v2.ops.health model` to check which state it's in.
+
+Run `python -m v2.ops.health model` to check status.
+
+## Other checkpoints
+
+After a GPU training run, `model_candidate.pt` appears here pending keep/revert. Once promoted, it becomes `model.pt`.

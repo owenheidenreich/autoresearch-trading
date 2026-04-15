@@ -450,6 +450,7 @@ cmd_start() {
         --no-mac-metadata --no-xattrs \
         --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
         --exclude='*.pt' --exclude='results' --exclude='archive' \
+        --exclude='archive_quarantine' \
         --exclude='v2/artifacts' \
         v2 pyproject.toml CLAUDE.md
     bundle_sha=$(shasum -a 256 "$bundle" | awk '{print $1}')
