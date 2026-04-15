@@ -26,6 +26,9 @@ from v2.core.env import (
     ACT_EXIT,
     NUM_ACTIONS,
     SESSION_STATE_DIM,
+    SESSION_HISTORY_K,
+    ANTI_LOCKIN,
+    ANTI_LOCKIN_DIM,
 )
 from v2.core.policy import DEFAULT_POLICY
 from v2.seq_agent import SequentialAgent
@@ -157,23 +160,30 @@ def train_behavioral_cloning(
     data = torch.load(data_path, map_location="cpu", weights_only=False)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Load frozen encoder
+    # Load frozen encoder (hard failure if missing -- random encoder produces
+    # plausible-looking but meaningless models)
     encoder = TradingModel()
-    if os.path.exists(model_path):
-        try:
-            ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
-            if "model_state_dict" in ckpt:
-                encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
-            print(f"  Loaded encoder from {model_path}")
-        except RuntimeError as e:
-            print(f"  WARNING: Could not load {model_path} ({e}), using random encoder")
-    else:
-        print(f"  WARNING: No pretrained model at {model_path}, using random encoder")
+    if not os.path.exists(model_path):
+        raise RuntimeError(
+            f"Encoder checkpoint not found: {model_path}\n"
+            f"Sequential training requires a pretrained encoder. "
+            f"Train the supervised model first (python -m v2.train)."
+        )
+    ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
+    if "model_state_dict" not in ckpt:
+        raise RuntimeError(
+            f"Checkpoint {model_path} missing 'model_state_dict' key. "
+            f"Expected a supervised training checkpoint."
+        )
+    encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+    print(f"  Loaded encoder from {model_path}")
     encoder = encoder.to(device)
     encoder.eval()
 
-    # Create agent
-    agent = SequentialAgent(encoder, context_dim=D_MODEL, freeze_encoder=True).to(device)
+    # Create agent (session dim scales with history K and anti-lock-in features)
+    base_dim = SESSION_STATE_DIM + (ANTI_LOCKIN_DIM if ANTI_LOCKIN else 0)
+    session_dim = base_dim * SESSION_HISTORY_K
+    agent = SequentialAgent(encoder, context_dim=D_MODEL, session_dim=session_dim, freeze_encoder=True).to(device)
     optimizer = torch.optim.Adam(
         [p for p in agent.parameters() if p.requires_grad],
         lr=BC_LR,
@@ -336,30 +346,43 @@ def train_reinforce(
     data = torch.load(data_path, map_location="cpu", weights_only=False)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Load frozen encoder
+    # Load frozen encoder (hard failure -- same rationale as BC phase)
     encoder = TradingModel()
-    if os.path.exists(model_path):
-        try:
-            ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
-            if "model_state_dict" in ckpt:
-                encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
-            print(f"  Loaded encoder from {model_path}")
-        except RuntimeError as e:
-            print(f"  WARNING: Could not load {model_path} ({e}), using random encoder")
+    if not os.path.exists(model_path):
+        raise RuntimeError(
+            f"Encoder checkpoint not found: {model_path}\n"
+            f"RL training requires a pretrained encoder."
+        )
+    ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
+    if "model_state_dict" not in ckpt:
+        raise RuntimeError(
+            f"Checkpoint {model_path} missing 'model_state_dict' key."
+        )
+    encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+    print(f"  Loaded encoder from {model_path}")
     encoder = encoder.to(device)
     encoder.eval()
 
-    # Load BC agent as anchor
-    agent = SequentialAgent(encoder, context_dim=D_MODEL, freeze_encoder=True).to(device)
+    # Load BC agent as anchor (detect session dim from checkpoint)
+    base_dim = SESSION_STATE_DIM + (ANTI_LOCKIN_DIM if ANTI_LOCKIN else 0)
+    session_dim = base_dim * SESSION_HISTORY_K
     if os.path.exists(bc_checkpoint):
         bc_ckpt = torch.load(bc_checkpoint, map_location="cpu", weights_only=False)
+        ckpt_dim = bc_ckpt["agent_state_dict"].get("session_proj.0.weight", torch.empty(0)).shape
+        if len(ckpt_dim) == 2:
+            session_dim = ckpt_dim[1]  # use checkpoint's dim
+    else:
+        bc_ckpt = None
+
+    agent = SequentialAgent(encoder, context_dim=D_MODEL, session_dim=session_dim, freeze_encoder=True).to(device)
+    if bc_ckpt is not None:
         agent.load_state_dict(bc_ckpt["agent_state_dict"], strict=False)
-        print(f"  Loaded BC checkpoint from {bc_checkpoint}")
+        print(f"  Loaded BC checkpoint from {bc_checkpoint} (session_dim={session_dim})")
     else:
         print(f"  WARNING: No BC checkpoint at {bc_checkpoint}, starting from scratch")
 
     # Freeze a copy of BC policy for KL anchor
-    bc_agent = SequentialAgent(encoder, context_dim=D_MODEL, freeze_encoder=True).to(device)
+    bc_agent = SequentialAgent(encoder, context_dim=D_MODEL, session_dim=session_dim, freeze_encoder=True).to(device)
     bc_agent.load_state_dict(agent.state_dict())
     bc_agent.eval()
     for p in bc_agent.parameters():

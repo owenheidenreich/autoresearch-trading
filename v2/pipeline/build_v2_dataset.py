@@ -71,6 +71,28 @@ SHADOW_DAYS = 20
 BARS_PER_DAY = 390
 
 
+def _get_config_fingerprint() -> str:
+    """Get RuntimeConfig fingerprint for dataset provenance."""
+    try:
+        from v2.core.config import RUNTIME_CONFIG
+        return RUNTIME_CONFIG.fingerprint()
+    except Exception:
+        return "unknown"
+
+
+def _get_git_sha() -> str:
+    """Get current git SHA for dataset provenance."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return result.stdout.strip() if result.returncode == 0 else "unknown"
+    except Exception:
+        return "unknown"
+
+
 def _fallback_python() -> str | None:
     candidates = [
         os.path.join(os.getcwd(), ".venv", "bin", "python"),
@@ -733,6 +755,8 @@ def _process_one_day(args: dict) -> dict:
         if np.isfinite(atm_iv_val) and rv_val > 0:
             X_opt_day[local_i, vrp_idx] = atm_iv_val ** 2 - rv_val ** 2
 
+    # NaN audit: count per-feature NaNs before zeroing (observability)
+    nan_counts_opt = np.isnan(X_opt_day).sum(axis=0).tolist()  # per option feature
     X_opt_day = np.nan_to_num(X_opt_day, nan=0.0)
 
     X_day_context = np.concatenate(
@@ -790,6 +814,7 @@ def _process_one_day(args: dict) -> dict:
         "signal_bars": signal_bars,
         "trade_bars": trade_bars,
         "bar_info": bar_info,
+        "nan_counts_opt": nan_counts_opt,
     }
 
 
@@ -867,6 +892,8 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
     max_contracts_per_bar = 0
     total_signal_bars = 0
     total_trade_bars = 0
+    # NaN audit accumulators (per option feature)
+    nan_counts_opt_total = np.zeros(n_opt, dtype=np.int64)
     best_contract_pnl = np.zeros(N, dtype=np.float32)
     best_contract_strike = np.zeros(N, dtype=np.float32)
     best_contract_right = np.full(N, -1, dtype=np.int32)
@@ -897,6 +924,7 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
             gi = result["global_indices"]
             X_opt[gi] = result["X_opt_day"]
             X_flow[gi] = result["X_flow_day"]
+            nan_counts_opt_total += np.array(result["nan_counts_opt"], dtype=np.int64)
             sidecar_paths.append(result["sidecar_path"])
             max_contracts_per_bar = max(max_contracts_per_bar, result["max_contracts"])
             total_signal_bars += result["signal_bars"]
@@ -964,6 +992,11 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
                 "max_spread_fraction": DEFAULT_POLICY.max_spread_fraction,
                 "require_volume_or_transactions": DEFAULT_POLICY.require_volume_or_transactions,
             },
+            # Stage contract fields (added 2026-04-15)
+            "config_fingerprint": _get_config_fingerprint(),
+            "lookback": 30,  # must match LOOKBACK in train.py
+            "build_git_sha": _get_git_sha(),
+            "feature_names": list(ALL_FEATURE_NAMES),
         },
     }
     dataset["metadata"]["fingerprint"] = compute_dataset_fingerprint(dataset)
@@ -978,6 +1011,125 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
     print(f"  sidecars: {len(sidecar_paths)} days in {sidecar_dir}")
     print(f"  max_contracts_per_bar: {max_contracts_per_bar}")
     print(f"  elapsed: {time.time() - t0:.1f}s")
+
+    # --- Build report (observability) ---
+    _save_build_report(
+        dataset=dataset,
+        X_combined=X_combined,
+        train_mask=train_mask,
+        label_trade=label_trade,
+        label_trade_valid=label_trade_valid,
+        nan_counts_opt_total=nan_counts_opt_total,
+        feature_names=list(ALL_FEATURE_NAMES),
+        option_feature_names=list(OPTION_FEATURE_NAMES),
+        n_price=X_price.shape[1],
+        n_opt=n_opt,
+        dates_list=dates_list,
+        elapsed=time.time() - t0,
+    )
+
+
+def _save_build_report(
+    *,
+    dataset: dict,
+    X_combined: np.ndarray,
+    train_mask: np.ndarray,
+    label_trade: np.ndarray,
+    label_trade_valid: np.ndarray,
+    nan_counts_opt_total: np.ndarray,
+    feature_names: list[str],
+    option_feature_names: list[str],
+    n_price: int,
+    n_opt: int,
+    dates_list: list[str],
+    elapsed: float,
+) -> None:
+    """Save build_report.json: NaN audit, feature stats, label quality."""
+    import json as _json
+    from v2.core.observability import schema_header, identity_block
+
+    meta = dataset["metadata"]
+    dataset_fp = meta["fingerprint"]
+    report_dir = os.path.join("v2", "build_reports")
+    os.makedirs(report_dir, exist_ok=True)
+    report_path = os.path.join(report_dir, f"{dataset_fp}.json")
+
+    # NaN audit: option features (price features are computed, not from raw data;
+    # flow features are initialized to 0.0 so they don't have NaN)
+    nan_audit = {}
+    for i, name in enumerate(option_feature_names):
+        nan_audit[name] = int(nan_counts_opt_total[i])
+    total_opt_cells = X_combined.shape[0]  # bars * 1 (per feature)
+    nan_warnings = []
+    for name, count in sorted(nan_audit.items(), key=lambda x: -x[1])[:5]:
+        rate = count / total_opt_cells if total_opt_cells > 0 else 0
+        if rate > 0.20:
+            nan_warnings.append(f"{name}: {rate:.1%} NaN ({count}/{total_opt_cells})")
+
+    # Feature stats on train_mask (unnormalized X_combined)
+    train_idx = train_mask.numpy() if hasattr(train_mask, 'numpy') else train_mask
+    X_train = X_combined[train_idx.astype(bool)]
+    feature_stats = {}
+    for i, name in enumerate(feature_names):
+        col = X_train[:, i]
+        feature_stats[name] = {
+            "mean": float(np.nanmean(col)),
+            "std": float(np.nanstd(col)),
+            "min": float(np.nanmin(col)) if len(col) > 0 else 0.0,
+            "max": float(np.nanmax(col)) if len(col) > 0 else 0.0,
+            "pct_zero": float((col == 0).mean()) if len(col) > 0 else 0.0,
+        }
+
+    # Label quality
+    n_bars = len(label_trade)
+    n_labelable = int(label_trade_valid.sum())
+    n_trade = int(label_trade.sum())
+    label_quality = {
+        "total_bars": n_bars,
+        "labelable_bars": n_labelable,
+        "labelable_rate": n_labelable / n_bars if n_bars > 0 else 0,
+        "trade_bars": n_trade,
+        "trade_rate": n_trade / n_bars if n_bars > 0 else 0,
+    }
+    label_warnings = []
+    if label_quality["trade_rate"] < 0.15:
+        label_warnings.append(f"Low trade rate: {label_quality['trade_rate']:.1%}")
+    if label_quality["trade_rate"] > 0.60:
+        label_warnings.append(f"High trade rate: {label_quality['trade_rate']:.1%}")
+
+    # Day coverage
+    unique_days = sorted(set(dates_list))
+    day_coverage = {
+        "total_days": len(unique_days),
+        "date_range": [unique_days[0], unique_days[-1]] if unique_days else [],
+        "total_bars": n_bars,
+    }
+
+    report = {
+        **schema_header("build_report", "1.0", "v2.pipeline.build_v2_dataset"),
+        **identity_block(
+            run_id=f"build_{dataset_fp[:8]}",
+            stage="dataset_build",
+            dataset_fingerprint=dataset_fp,
+            config_fingerprint=meta.get("config_fingerprint", ""),
+        ),
+        "dataset_fingerprint": dataset_fp,
+        "nan_audit": nan_audit,
+        "nan_warnings": nan_warnings,
+        "feature_stats": feature_stats,
+        "label_quality": label_quality,
+        "label_warnings": label_warnings,
+        "day_coverage": day_coverage,
+        "build_elapsed_seconds": round(elapsed, 1),
+    }
+
+    with open(report_path, "w") as f:
+        f.write(_json.dumps(report, indent=2, default=str))
+    print(f"  build report: {report_path}")
+    if nan_warnings:
+        print(f"  WARNING: NaN rate >20%: {'; '.join(nan_warnings)}")
+    if label_warnings:
+        print(f"  WARNING: {'; '.join(label_warnings)}")
 
 
 def main():

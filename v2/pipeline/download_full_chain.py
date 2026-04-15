@@ -8,12 +8,17 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import json
 import os
 import pickle
+import time
+import traceback
 from collections import defaultdict
 from datetime import datetime
 
 import numpy as np
+
+from v2.core.observability import file_sha256, schema_header
 
 
 CACHE_DIR = os.path.expanduser("~/.cache/autoresearch-trading/data")
@@ -103,8 +108,8 @@ def download_day(s3, day_str: str) -> dict | None:
     try:
         obj = s3.get_object(Bucket="flatfiles", Key=s3_key)
         raw = gzip.decompress(obj["Body"].read())
-    except Exception:
-        return None
+    except Exception as e:
+        return {"error": f"S3 fetch failed: {e}"}
 
     prefix_spxw = f"O:SPXW{yymmdd}"
     prefix_spx = f"O:SPX{yymmdd}"
@@ -163,6 +168,29 @@ def download_day(s3, day_str: str) -> dict | None:
     }
 
 
+MANIFEST_PATH = os.path.join(CACHE_DIR, "download_manifest.json")
+
+
+def _load_manifest() -> dict:
+    """Load existing manifest or return empty structure."""
+    if os.path.exists(MANIFEST_PATH):
+        try:
+            with open(MANIFEST_PATH) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, Exception):
+            pass
+    return {
+        **schema_header("download_manifest", "1.0", "v2.pipeline.download_full_chain"),
+        "status": "started",
+        "days": {},
+    }
+
+
+def _save_manifest(manifest: dict) -> None:
+    with open(MANIFEST_PATH, "w") as f:
+        json.dump(manifest, f, indent=2)
+
+
 def run_download(max_days: int | None = None, force: bool = False) -> None:
     s3 = _s3_client()
     if s3 is None:
@@ -186,24 +214,94 @@ def run_download(max_days: int | None = None, force: bool = False) -> None:
         print("All days already cached.")
         return
 
+    # Load prior manifest for sha256 comparison
+    manifest = _load_manifest()
+    manifest["status"] = "started"
+    manifest["started_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    prior_days = dict(manifest.get("days", {}))
+    _save_manifest(manifest)
+
     ok = 0
     failed = 0
+    thin_days = []
+    sha256_changed = []
+
     for i, day in enumerate(needed, start=1):
         result = download_day(s3, day)
         cache_path = os.path.join(FULL_CHAIN_DIR, f"{day}.pkl")
-        if result is None:
+
+        # Handle error returns from download_day
+        if isinstance(result, dict) and "error" in result:
             failed += 1
-            print(f"  {i}/{len(needed)} {day}: FAILED")
+            manifest["days"][day] = {
+                "status": "failed",
+                "error_msg": result["error"],
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            }
+            _save_manifest(manifest)
+            print(f"  {i}/{len(needed)} {day}: FAILED ({result['error']})")
             continue
+
+        if result is None or not result.get("bars"):
+            failed += 1
+            manifest["days"][day] = {
+                "status": "failed",
+                "error_msg": "no bars returned (empty result)",
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            }
+            _save_manifest(manifest)
+            print(f"  {i}/{len(needed)} {day}: FAILED (no bars)")
+            continue
+
         with open(cache_path, "wb") as f:
             pickle.dump(result, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # Compute checksum
+        sha = file_sha256(cache_path)
+        file_size = os.path.getsize(cache_path)
+        n_contracts = len(result["contracts"])
+        n_bars = len(result["timestamps"])
+
+        # Check for sha256 change vs prior manifest
+        if day in prior_days and prior_days[day].get("sha256") and prior_days[day]["sha256"] != sha:
+            sha256_changed.append(day)
+
+        # Flag thin days
+        if n_contracts < 50:
+            thin_days.append(day)
+
+        manifest["days"][day] = {
+            "status": "ok",
+            "sha256": sha,
+            "file_size_bytes": file_size,
+            "contract_count": n_contracts,
+            "bar_count": n_bars,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        _save_manifest(manifest)
+
         ok += 1
         print(
-            f"  {i}/{len(needed)} {day}: {len(result['contracts'])} contracts, "
-            f"{len(result['timestamps'])} bars"
+            f"  {i}/{len(needed)} {day}: {n_contracts} contracts, "
+            f"{n_bars} bars"
         )
 
+    manifest["status"] = "completed"
+    manifest["completed_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    manifest["summary"] = {
+        "total_requested": len(needed),
+        "ok": ok,
+        "failed": failed,
+        "thin_days": thin_days,
+        "sha256_changed": sha256_changed,
+    }
+    _save_manifest(manifest)
+
     print(f"Done: {ok} downloaded, {failed} failed")
+    if thin_days:
+        print(f"  WARNING: {len(thin_days)} thin days (<50 contracts): {thin_days[:5]}")
+    if sha256_changed:
+        print(f"  WARNING: {len(sha256_changed)} days with changed sha256: {sha256_changed[:5]}")
 
 
 def main():
