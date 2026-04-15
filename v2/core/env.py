@@ -29,7 +29,7 @@ ACT_ENTER_PUT = 2
 ACT_EXIT = 3
 NUM_ACTIONS = 4
 
-SESSION_STATE_DIM = 12
+SESSION_STATE_DIM = 13
 
 BARS_PER_DAY = 390
 
@@ -308,6 +308,12 @@ class TradingEnv:
         session[9] = min(bars_since_trade / 10.0, 1.0)
         session[10] = float(np.max(scores[valid])) if valid.any() else 0.0
         session[11] = float(self._position_side)
+        # Side-score difference: positive = calls score higher, negative = puts score higher
+        call_mask = valid & ~is_put.astype(bool)
+        put_mask = valid & is_put.astype(bool)
+        best_call = float(np.max(scores[call_mask])) if call_mask.any() else 0.0
+        best_put = float(np.max(scores[put_mask])) if put_mask.any() else 0.0
+        session[12] = best_call - best_put
 
         return Observation(
             context=context,
