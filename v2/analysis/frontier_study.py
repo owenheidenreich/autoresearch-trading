@@ -21,6 +21,7 @@ from v2.core.metrics import compute_metrics
 from v2.core.policy import DEFAULT_POLICY
 from v2.core.walkforward import generate_folds
 from v2.replay import replay_sequential
+from v2.core.env import SESSION_STATE_DIM
 from v2.seq_agent import SequentialAgent
 from v2.train import TradingModel, D_MODEL, LOOKBACK
 
@@ -36,9 +37,18 @@ def _load_agent(encoder_path: str, agent_path: str, device: str = "cpu"):
             encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
     encoder.eval()
 
-    agent = SequentialAgent(encoder, context_dim=D_MODEL, freeze_encoder=True)
+    # Detect session_dim from checkpoint to handle 12→13 migration
+    session_dim = SESSION_STATE_DIM  # current default (13)
     if os.path.exists(agent_path):
         seq_ckpt = torch.load(agent_path, map_location="cpu", weights_only=False)
+        ckpt_dim = seq_ckpt["agent_state_dict"].get("session_proj.0.weight", torch.empty(0)).shape
+        if len(ckpt_dim) == 2 and ckpt_dim[1] != SESSION_STATE_DIM:
+            session_dim = ckpt_dim[1]  # use checkpoint's dim
+    else:
+        seq_ckpt = None
+
+    agent = SequentialAgent(encoder, context_dim=D_MODEL, session_dim=session_dim, freeze_encoder=True)
+    if seq_ckpt is not None:
         agent.load_state_dict(seq_ckpt["agent_state_dict"], strict=False)
 
     return agent
@@ -136,6 +146,8 @@ def run_frontier_study(
             agent_paths["Balanced (side-fix)"] = "v2/models/seq_agent_balanced.pt"
         if os.path.exists("v2/models/seq_agent_exitfix.pt"):
             agent_paths["Exit-fix (decay)"] = "v2/models/seq_agent_exitfix.pt"
+        if os.path.exists("v2/models/seq_agent_side13_rl.pt"):
+            agent_paths["Side13 (structural)"] = "v2/models/seq_agent_side13_rl.pt"
 
     print("Loading data...")
     data = torch.load(data_path, map_location="cpu", weights_only=False)

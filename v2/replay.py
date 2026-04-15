@@ -467,6 +467,10 @@ def replay_sequential(
             )
             contracts_t = torch.from_numpy(contracts_np).float().to(device)
             session_state = obs.session_state if not zero_state else np.zeros_like(obs.session_state)
+            # Truncate session state to match agent's expected dim (handles 12→13 migration)
+            agent_dim = agent.session_proj[0].in_features
+            if len(session_state) > agent_dim:
+                session_state = session_state[:agent_dim]
             session_t = torch.from_numpy(session_state).float().to(device)
 
             with torch.no_grad():
