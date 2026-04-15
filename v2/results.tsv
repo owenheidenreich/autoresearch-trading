@@ -1,2 +1,3 @@
-experiment	score	status	description
-exp_151	-0.200000	revert	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.4631578947368421 profit_factor=0.7136981871453023 positive_day_rate=0.38596491228070173
+experiment	score	status	regime	description
+exp_151	-0.200000	revert	window_60_105	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.4631578947368421 profit_factor=0.7136981871453023 positive_day_rate=0.38596491228070173
+exp_152	-0.200000	revert	window_60_105	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.45098039215686275 profit_factor=0.5693757959145973 positive_day_rate=0.3620689655172414

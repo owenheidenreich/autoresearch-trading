@@ -32,9 +32,9 @@ class DecisionPolicy:
     max_concurrent: int = 1
     qty: int = 1
 
-    # Session restrictions — model has edge only in early morning window (bars 60-105)
-    no_trade_before_bar: int = 60
-    no_trade_after_bar: int = 105
+    # Session restrictions — full supervised day (30-269), aligned with simulator boundary
+    no_trade_before_bar: int = 30
+    no_trade_after_bar: int = 270
 
     # Execution
     order_style: str = "MKT"

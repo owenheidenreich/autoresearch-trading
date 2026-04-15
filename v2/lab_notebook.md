@@ -3,6 +3,26 @@
 Pre-exact-chain history lives in `archive/v2_historical/logs/lab_notebook_pre_exact_chain.md`.
 The full mixed-state notebook before this reset lives in `archive/v2_historical/logs/lab_notebook_pre_reset_mixed_state_2026-04-10.md`.
 
+## Regime Change: Full-Day Window Reset (2026-04-15)
+
+**Change:** Policy window widened from bars 60-105 (45 min) to bars 30-270 (full supervised day, 240 bars).
+
+**Why:** Window audit (`v2/artifacts/window_audit/`) proved bars 60-105 was a legacy filtering choice:
+- Oracle edge does not concentrate in 60-105; PF is 41-113 across the entire day
+- The current window ranked 17th/20 among random windows of the same width
+- Progressive narrowing control showed smooth mechanical PF improvement — no structural breakpoint
+- The window excluded 88.5% of the trading day and ~81% of oracle opportunities
+
+**What changed:**
+- `v2/core/policy.py`: `no_trade_before_bar` 60→30, `no_trade_after_bar` 105→270
+- Sidecars and data.pt rebuilt with full-day labels
+- Baseline cache invalidated
+- All experiments below this line are `regime: window_60_105`; experiments after rebuild are `regime: full_day_30_270`
+
+**What did NOT change:** Evaluator formula, hard gates, baselines (random, atm_always, simple_rules, atm_trailing), model architecture, risk policy, feature set, promotion path. See regime reset plan for full frozen-component list.
+
+**Deferred:** Bars 0-29 and 270-389 excluded based on execution-quality concerns, not yet audited.
+
 ## Post-Reset Diagnostic (2026-04-10)
 
 ### Why The Score Dropped from 5.4 to -0.2
@@ -160,7 +180,7 @@ The separate call/put heads + mean centering architecture discovered in exp_125 
 - Working code: **exp_125** (separate call/put score heads + per-bar mean centering)
 - Unified KL over all contracts at `SOFT_TEMP=0.10`
 - `NOISE_MARGIN=0.01`
-- Morning-only policy window in `v2/core/policy.py` (`bar 60` through `105`)
+- Full-day policy window in `v2/core/policy.py` (`bar 30` through `270`) — widened from 60-105 on 2026-04-15
 - No margin loss, no direction head, no pairwise ranking
 - Official scored baseline: **exp_125** (score=-0.200, PF 0.873, DD 28.9%, 164C/16P)
 - Direction mix is diagnostic, not a hard score gate
@@ -1298,3 +1318,41 @@ Aggregate: -0.200, DD 50.8%, PF 0.714. All 5 folds gated on DD.
 **Key insight:** LR=5e-5 worked on a single fold with maximum data but is too slow for folds with less data. The model underfits on smaller training sets.
 
 **Next:** exp_152 — LR=1e-4 (which showed screening score 0.024), standard 24 epochs, go directly to 5-fold official to see the fold-level picture.
+
+### exp_152: official 5-fold — LOOP PROOF-OF-LIFE (all folds gated)
+
+**Purpose:** First experiment through the hardened ART² loop (baseline fix, replay diagnostics, triage index, promotion artifact gate). Not a model hypothesis test — a harness validation run.
+
+**Config:** Default LR=1e-4, 24 epochs (time-budgeted to 17-24), 5-fold walk-forward. No changes to train.py or policy.py from current main.
+
+| Fold | Score | Trades | DD | PF | WR | Direction |
+|------|-------|--------|-----|------|------|-----------|
+| 0 | -0.200 | 195 | 33.5% | 0.810 | 48.7% | 156C/39P |
+| 1 | -0.200 | 164 | 37.8% | 0.747 | 47.0% | 122C/42P |
+| 2 | -0.200 | 189 | 68.7% | 0.445 | 36.0% | 162C/27P |
+| 3 | -0.200 | 197 | 44.2% | 0.703 | 42.1% | 177C/20P |
+| 4 | -0.200 | 204 | 58.9% | 0.569 | 45.1% | 142C/62P |
+
+Aggregate: score=-0.200, PF=0.569, WR=45.1%, DD=58.9%, net PnL=-$5,895.
+
+**Baselines (from local replay with fixed ATM baselines):**
+- Random: -0.200 (DD 273%)
+- ATM-Always: -0.200 (DD 25.5%) — now produces 57 trades (was 0 before BUG-001 fix)
+- Simple-Rules: -0.200 (DD 43.7%)
+- ATM-Trailing: **0.632** (PF 1.128, DD 13.9%) — the real bar to clear
+
+**Decision traces:** Gate accuracy 14.3%, selection accuracy 2.9%. Model barely better than random. Best epoch was 1-2 on every fold — immediate overfitting.
+
+**Artifacts produced:**
+- `v2/output/eval_report.json` (report_id: 91edb760)
+- `v2/output/replay_diagnostics.json` (linked by report_id)
+- `v2/output/triage_index.json` (verdict: fail)
+- `v2/artifacts/exp_152/` (manifest, model, code snapshot)
+- `v2/artifacts/replay_traces.csv` (2700 bars)
+- Artifact linkage verified
+
+**Decision:** REVERT. Executed via `python3 -m v2.ops.model_manage revert`.
+
+**Harness findings:** The hardened loop worked end-to-end. All artifacts generated, linked, and verified. ATM baselines are now meaningful. ATM-Trailing at 0.632 is the real benchmark — a simple trailing-stop strategy on ATM calls beats the trained model by a wide margin. The promotion artifact gate and revert path both functioned correctly.
+
+**Pipeline findings documented separately in `v2/docs/pipeline_proof_run_findings.md`.**

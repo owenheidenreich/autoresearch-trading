@@ -311,10 +311,14 @@ def validate_sidecar(sidecar: dict, date: str) -> DataQualityReport:
     r.stats["price_violations"] = price_violations
     r.stats["ordering_violations"] = ordering_violations
 
-    # Chain completeness: count executable contracts per bar
+    # Chain completeness: count executable contracts per bar in the policy window
+    from v2.core.policy import DEFAULT_POLICY
+    trade_start = DEFAULT_POLICY.no_trade_before_bar
+    trade_end = DEFAULT_POLICY.no_trade_after_bar
+
     thin_bars = 0
     total_checked = 0
-    for bar in range(30, 270):
+    for bar in range(trade_start, trade_end):
         feats, labels, _ = contract_snapshot(sidecar, bar)
         n_exec = int((feats[:, 0] > 0.5).sum()) if len(feats) > 0 else 0
         total_checked += 1
@@ -324,7 +328,19 @@ def validate_sidecar(sidecar: dict, date: str) -> DataQualityReport:
     thin_pct = thin_bars / max(total_checked, 1)
     r.stats["thin_bar_pct"] = thin_pct
     if thin_pct > 0.50:
-        r.warnings.append(f"{thin_pct:.0%} of supervised bars have < 5 executable contracts")
+        r.warnings.append(f"{thin_pct:.0%} of training-window bars ({trade_start}-{trade_end}) have < 5 executable contracts")
+
+    # Training-window hard gate: fail if too many bars have almost no contracts
+    zero_bars = 0
+    for bar in range(trade_start, trade_end):
+        feats, _, _ = contract_snapshot(sidecar, bar)
+        n_exec = int((feats[:, 0] > 0.5).sum()) if len(feats) > 0 else 0
+        if n_exec < 2:
+            zero_bars += 1
+    zero_pct = zero_bars / max(total_checked, 1)
+    r.stats["train_window_starved_pct"] = zero_pct
+    if zero_pct > 0.30:
+        r.errors.append(f"{zero_pct:.0%} of training bars ({trade_start}-{trade_end}) have < 2 executable contracts — training signal starved")
 
     # Label consistency
     if "bar_best_contract_idx" in sidecar and "bar_labelable" in sidecar:
@@ -332,7 +348,7 @@ def validate_sidecar(sidecar: dict, date: str) -> DataQualityReport:
         best_idx = sidecar["bar_best_contract_idx"]
         label_issues = 0
         n_labelable = 0
-        for bar in range(30, 270):
+        for bar in range(trade_start, trade_end):
             if not labelable[bar]:
                 continue
             n_labelable += 1
@@ -344,13 +360,25 @@ def validate_sidecar(sidecar: dict, date: str) -> DataQualityReport:
         if label_issues > 0:
             r.warnings.append(f"{label_issues} bars with invalid best_contract_idx")
 
-    # NaN in row_labels for labelable bars
+    # NaN in row_labels — report executable-contract rate separately
     if "row_labels" in sidecar:
         rl = sidecar["row_labels"]
         nan_rate = float(np.isnan(rl).sum()) / max(len(rl), 1)
         r.stats["row_labels_nan_rate"] = nan_rate
-        if nan_rate > 0.30:
-            r.warnings.append(f"row_labels NaN rate is {nan_rate:.0%} (> 30%)")
+
+        # Executable-contract NaN rate (the actionable metric)
+        if "row_features" in sidecar:
+            rf = sidecar["row_features"]
+            exec_mask = rf[:, 0] > 0.5
+            if exec_mask.any():
+                exec_labels = rl[exec_mask]
+                exec_nan_rate = float(np.isnan(exec_labels).sum()) / len(exec_labels)
+                r.stats["exec_contract_nan_rate"] = exec_nan_rate
+                if exec_nan_rate > 0.50:
+                    r.warnings.append(f"executable contracts: {exec_nan_rate:.0%} have NaN labels (forward path incomplete)")
+            else:
+                r.stats["exec_contract_nan_rate"] = 1.0
+                r.warnings.append("no executable contracts found in sidecar")
 
     return r
 
