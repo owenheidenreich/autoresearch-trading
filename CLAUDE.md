@@ -8,11 +8,16 @@
 4. Read `v2/COMMANDS.md` — what the human can ask you to do.
 5. Before making architecture decisions, read `v2/docs/domain/` — 0DTE options domain knowledge. Understand the instrument.
 
+## Naming
+
+`v2/` is the **current canonical system**. The name is historical (it replaced a v1 prototype). The GitHub repo references "v4 exact chain" which describes the *data schema version*, not a separate system. There is only one active system and it lives in `v2/`.
+
 ## Project Structure
 
 ```
 root/
 ├── CLAUDE.md              ← you are here
+├── ARCHIVE_POLICY.md      ← explains archive/ vs archive_quarantine/
 ├── v2/                    ← the working system (all code, data, docs)
 │   ├── train.py           ← model architecture, training loop
 │   ├── replay.py          ← evaluation, baselines, traces
@@ -28,7 +33,8 @@ root/
 │   ├── models/            ← active model checkpoints
 │   ├── artifacts/         ← experiment artifacts (exp_NNN/)
 │   ├── output/            ← trades.html, equity.html, progress.png, trades.csv
-│   ├── HANDOFF.md, COMMANDS.md, program.md, lab_notebook.md, results.tsv
+│   ├── HANDOFF.md, COMMANDS.md, program.md, PIPELINE.md
+│   ├── lab_notebook.md, results.tsv
 │   └── __init__.py
 └── archive/               ← historical reference only, do not read unless asked
 ```
@@ -47,9 +53,13 @@ root/
 - `v2/replay.py` — orchestrates replay: loads model, runs inference, calls `simulator.simulate_trade()`, computes baselines, collects traces
 - `v2/core/metrics.py` — score formula, hard gates, baseline computation
 
+**Stage contracts:**
+- `v2/core/config.py` — `RuntimeConfig` (single source of truth for shared constants)
+- `v2/core/eval_report.py` — `EvalReport` (durable eval artifact with stored trades)
+
 **Data pipeline:**
-- `v2/core/chain_data.py` — `CONTRACT_FEATURE_FIELDS` (19 features), `build_contract_row()`, `padded_snapshot()`
-- `v2/pipeline/compute_features.py` — `bs_greeks_vec()` (Black-Scholes greeks + charm), 49 context features
+- `v2/core/chain_data.py` — `CONTRACT_FEATURE_FIELDS` (22 features), `build_contract_row()`, `padded_snapshot()`
+- `v2/pipeline/compute_features.py` — `bs_greeks_vec()` (Black-Scholes greeks + charm), 52 context features
 - `v2/pipeline/build_v2_dataset.py` — builds `data.pt` + sidecar `.pt` files, oracle label computation
 
 **Visualization:**
@@ -60,6 +70,7 @@ root/
 **Operations:**
 - `v2/ops/deploy.sh` — GPU lifecycle: boot/start/run_screen/run_one/stop
 - `v2/ops/model_manage.py` — keep/revert promoted model
+- `v2/ops/health.py` — pipeline health checks: `python -m v2.ops.health`
 
 **Domain knowledge (read for trading context):**
 - `v2/docs/domain/` — 0DTE Greeks, dealer mechanics, Pickles practitioner journal, volatility trading theory

@@ -1,0 +1,17 @@
+[
+    {
+        "name": "anti_lockin_base",
+        "env": {"ANTI_LOCKIN": "1", "SESSION_HISTORY_K": "1"},
+        "hypothesis": "Anti-lock-in features alone (18-dim) help agent revise failing thesis without blunt history stacking"
+    },
+    {
+        "name": "anti_lockin_k2",
+        "env": {"ANTI_LOCKIN": "1", "SESSION_HISTORY_K": "2"},
+        "hypothesis": "Anti-lock-in + K=2 short history: revision signals plus minimal temporal context (36-dim)"
+    },
+    {
+        "name": "k2_only",
+        "env": {"ANTI_LOCKIN": "0", "SESSION_HISTORY_K": "2"},
+        "hypothesis": "K=2 history without anti-lock-in: is moderate stacking (26-dim) better than K=1 or K=4?"
+    }
+]

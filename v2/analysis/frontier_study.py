@@ -148,6 +148,8 @@ def run_frontier_study(
             agent_paths["Exit-fix (decay)"] = "v2/models/seq_agent_exitfix.pt"
         if os.path.exists("v2/models/seq_agent_side13_rl.pt"):
             agent_paths["Side13 (structural)"] = "v2/models/seq_agent_side13_rl.pt"
+        if os.path.exists("v2/models/seq_agent_awac_fold0.pt"):
+            agent_paths["AWAC (offline)"] = "v2/models/seq_agent_awac_fold0.pt"
 
     print("Loading data...")
     data = torch.load(data_path, map_location="cpu", weights_only=False)
