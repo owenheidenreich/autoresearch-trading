@@ -43,6 +43,30 @@ AGG_W = float(os.environ.get("AGG_W", 0.0))
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
 
+# All env vars that shape training — captured in checkpoint for provenance
+_TRAINING_ENV_VARS = [
+    "NUM_FEATURES", "TRAIN_LOOKBACK", "TRAIN_D_MODEL", "TRAIN_DEPTH",
+    "TRAIN_DROPOUT", "TRAIN_BATCH_SIZE", "TRAIN_LR", "TRAIN_WEIGHT_DECAY",
+    "TRAIN_EPOCHS", "TIME_BUDGET", "WEIGHT_SEL", "WEIGHT_GATE", "TRAIN_SEED",
+    "OPP_LABEL", "SOFT_TEMP", "NOISE_MARGIN", "AMBIG_WEIGHT",
+    "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W",
+    "SESSION_HISTORY_K", "ANTI_LOCKIN",
+    "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
+]
+
+
+def _capture_env_overrides() -> dict:
+    """Capture all training-relevant env vars that are set."""
+    return {k: os.environ[k] for k in _TRAINING_ENV_VARS if k in os.environ}
+
+
+def _get_config_fingerprint() -> str:
+    try:
+        from v2.core.config import RUNTIME_CONFIG
+        return RUNTIME_CONFIG.fingerprint()
+    except Exception:
+        return "unknown"
+
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, max_len: int = 500):
@@ -599,6 +623,17 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
     np.random.seed(seed)
 
     data = load_dataset(data_path)
+
+    # --- Load-time validation: check dataset matches RuntimeConfig ---
+    from v2.core.config import RUNTIME_CONFIG
+    meta = data.get("metadata", {})
+    config_errors = RUNTIME_CONFIG.validate_dataset_metadata(meta)
+    if config_errors:
+        raise RuntimeError(
+            f"Dataset metadata does not match RuntimeConfig:\n" +
+            "\n".join(f"  - {e}" for e in config_errors)
+        )
+
     train_mask = train_mask_override if train_mask_override is not None else data["train_mask"]
     val_mask = val_mask_override if val_mask_override is not None else data["val_mask"]
 
@@ -644,6 +679,31 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
     best_epoch = 0
     best_metrics = {"gate_accuracy": 0.0, "direction_accuracy": 0.0}
 
+    # --- Training log (observability: survives lease death) ---
+    from v2.core.observability import (
+        generate_run_id, ensure_run_dir, identity_block,
+        write_jsonl_header, append_jsonl, write_jsonl_summary,
+    )
+    _run_id = generate_run_id(
+        experiment_id=os.environ.get("EXPERIMENT_ID"),
+        stage="train",
+    )
+    _run_dir = ensure_run_dir(_run_id)
+    _log_path = _run_dir / "training_log.jsonl"
+    _identity = identity_block(
+        run_id=_run_id,
+        stage="train",
+        dataset_fingerprint=meta.get("fingerprint", "unknown"),
+    )
+    write_jsonl_header(
+        _log_path,
+        schema_name="training_log",
+        schema_version="1.0",
+        producer="v2.train",
+        identity=_identity,
+        epochs_planned=EPOCHS,
+    )
+
     for epoch in range(1, EPOCHS + 1):
         if time.time() - t_start > TIME_BUDGET:
             print(f"Time budget reached at epoch {epoch}")
@@ -651,6 +711,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
 
         model.train()
         train_stats = []
+        _pre_clip_norm = None
         for batch_x, batch_c, batch_y in train_loader:
             batch_x = batch_x.to(device)
             batch_c = batch_c.to(device)
@@ -660,7 +721,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             outputs = model(batch_x, batch_c)
             loss, metrics = compute_loss(outputs, batch_y)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            _pre_clip_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             train_stats.append(metrics)
 
@@ -686,6 +747,27 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} side={avg_val.get('side_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
         )
+
+        # --- Append training log line (flush immediately) ---
+        _epoch_wall = time.time() - t_start
+        append_jsonl(_log_path, {
+            "record_type": "epoch",
+            "epoch": epoch,
+            "train_loss": avg_train.get("total", 0),
+            "val_loss": avg_val.get("total", 0),
+            "gate_loss": avg_val.get("gate", 0),
+            "sel_loss": avg_val.get("sel", 0),
+            "opp_loss": avg_val.get("opp", 0),
+            "side_loss": avg_val.get("side", 0),
+            "gate_acc": avg_val.get("gate_acc", 0),
+            "dir_acc": avg_val.get("dir_acc", 0),
+            "side_acc": avg_val.get("side_acc", 0),
+            "trade_rate": avg_val.get("trade_rate", 0),
+            "pre_clip_grad_norm": float(_pre_clip_norm) if _pre_clip_norm is not None else None,
+            "lr": optimizer.param_groups[0]["lr"],
+            "wall_seconds": round(_epoch_wall, 1),
+            "is_best": False,  # updated below if this becomes best
+        })
 
         val_total = avg_val.get("total", float("inf"))
         # Checkpoint on opportunity loss when using strict label,
@@ -722,6 +804,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
                     },
                     "score_config_fingerprint": score_config_fingerprint(),
                     "dataset_fingerprint": dataset_fp,
+                    "config_fingerprint": _get_config_fingerprint(),
+                    "env_overrides": _capture_env_overrides(),
                 },
                 model_path,
             )
@@ -735,6 +819,20 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
     }
     print(f"\nMETRICS_JSON:{json.dumps(metrics)}")
     print(f"Best epoch: {best_epoch}, val_loss: {best_val_loss:.4f}")
+
+    # --- Training log summary ---
+    _convergence_flag = "early_best" if best_epoch <= max(1, EPOCHS * 0.2) else "normal"
+    write_jsonl_summary(
+        _log_path,
+        status="completed",
+        best_epoch=best_epoch,
+        total_epochs=min(epoch, EPOCHS),
+        best_val_loss=best_val_loss,
+        convergence_flag=_convergence_flag,
+        run_dir=str(_run_dir),
+    )
+    print(f"Training log: {_log_path}")
+
     return model, metrics
 
 
