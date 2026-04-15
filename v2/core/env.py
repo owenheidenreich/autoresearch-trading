@@ -183,11 +183,24 @@ class TradingEnv:
         if self._day_pnl < 0 and abs(self._day_pnl) / self._starting_equity >= self.policy.daily_loss_cap_pct:
             action = ACT_HOLD  # forced hold after loss cap
 
+        # --- Late-session policy constraints (configurable) ---
+        late_entry_bar = int(os.environ.get("ENV_LATE_ENTRY_BAR", 999))   # block entries after this bar
+        late_exit_bar = int(os.environ.get("ENV_LATE_EXIT_BAR", 999))     # force-close zombies after this bar
+
         # --- Execute action ---
         if self._in_position:
             # Update mark-to-market
             unrealized = self._get_unrealized(local_bar)
-            if action == ACT_EXIT:
+
+            # Late-session forced exit: close zombie positions after late_exit_bar
+            if (local_bar > late_exit_bar
+                    and unrealized < 0
+                    and self._position_mfe < 0.02):
+                reward, exit_pnl, exit_reason = self._close_position(local_bar)
+                info.trade_closed = True
+                info.trade_pnl = exit_pnl
+                info.exit_reason = "LATE_EXIT"
+            elif action == ACT_EXIT:
                 # Agent-initiated exit
                 reward, exit_pnl, exit_reason = self._close_position(local_bar)
                 info.trade_closed = True
@@ -215,6 +228,10 @@ class TradingEnv:
                                 and self._position_mfe < 0.02):
                             reward -= decay_coeff * (bars_held - 5)
         else:
+            if action in (ACT_ENTER_CALL, ACT_ENTER_PUT) and local_bar > late_entry_bar:
+                # Late-session entry block
+                action = ACT_HOLD
+                info.action_taken = ACT_HOLD
             if action in (ACT_ENTER_CALL, ACT_ENTER_PUT):
                 # Try to open position
                 is_put = (action == ACT_ENTER_PUT)
