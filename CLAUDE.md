@@ -2,11 +2,22 @@
 
 ## First Steps
 
-1. Read `v2/HANDOFF.md` — current state, live code, what to trust.
+1. Read `v2/ART2_LOOP.md` — the canonical hill-climbing protocol. This is the operating loop definition.
 2. Read `v2/docs/founder_intent.md` — founder voice, standards, anti-goals.
-3. Read `v2/program.md` — the definitive protocol.
+3. Read `v2/docs/current_state.md` — current system state snapshot.
 4. Read `v2/COMMANDS.md` — what the human can ask you to do.
 5. Before making architecture decisions, read `v2/docs/domain/` — 0DTE options domain knowledge. Understand the instrument.
+
+## Document Precedence (when docs disagree)
+
+1. **Code** (`metrics.py`, `config.py`, `simulator.py`, etc.) — ground truth
+2. `v2/ART2_LOOP.md` — operating loop definition
+3. `v2/docs/current_state.md` — current system state
+4. `v2/docs/evaluator.md` — scoring and evaluation rules
+5. `v2/COMMANDS.md` — command reference
+6. `v2/PIPELINE.md` — system map
+7. `v2/program.md` — historical protocol (reference only, not current operating truth)
+8. Everything else — reference/history
 
 ## Naming
 
@@ -33,7 +44,7 @@ root/
 │   ├── models/            ← active model checkpoints
 │   ├── artifacts/         ← experiment artifacts (exp_NNN/)
 │   ├── output/            ← trades.html, equity.html, progress.png, trades.csv
-│   ├── HANDOFF.md, COMMANDS.md, program.md, PIPELINE.md
+│   ├── ART2_LOOP.md, COMMANDS.md, program.md, PIPELINE.md
 │   ├── lab_notebook.md, results.tsv
 │   └── __init__.py
 └── archive/               ← historical reference only, do not read unless asked

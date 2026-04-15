@@ -753,7 +753,9 @@ def compute_baseline_random(data: dict, mask_key: str = "promote_mask", n_seeds:
 
 def compute_baseline_atm_always(data: dict, mask_key: str = "promote_mask", max_days: int | None = None, policy: DecisionPolicy = DEFAULT_POLICY, day_to_bars: dict[str, list[int]] | None = None) -> ReplayMetrics:
     def chooser(_data, sidecar, _day, bars, pol):
-        local_bar = 30
+        local_bar = pol.no_trade_before_bar
+        if local_bar >= len(bars):
+            return None
         choice = _select_snapshot_row(sidecar, local_bar, "atm", right="C")
         if choice is None:
             return None
@@ -793,7 +795,9 @@ def compute_baseline_simple_rules(data: dict, mask_key: str = "promote_mask", ma
 
 def compute_baseline_atm_trailing(data: dict, mask_key: str = "promote_mask", max_days: int | None = None, policy: DecisionPolicy = DEFAULT_POLICY, day_to_bars: dict[str, list[int]] | None = None) -> ReplayMetrics:
     def chooser(_data, sidecar, _day, bars, pol):
-        local_bar = 30
+        local_bar = pol.no_trade_before_bar
+        if local_bar >= len(bars):
+            return None
         choice = _select_snapshot_row(sidecar, local_bar, "atm", right="C")
         if choice is None:
             return None
@@ -1011,6 +1015,80 @@ def main():
     report_path = "v2/output/eval_report.json"
     report.to_json(report_path)
     print(f"\nEvalReport saved to {report_path} ({len(report.trades)} trades stored)")
+
+    # --- Generate replay_diagnostics.json ---
+    from datetime import datetime, timezone
+    contract_mult = policy.contract_multiplier
+
+    def _dollar_pnl(t):
+        return t.net_pnl_pct * t.entry_price * contract_mult * max(t.intent.qty, 1)
+
+    sorted_trades = sorted(trades, key=_dollar_pnl)
+    worst_5 = [
+        {**t.to_dict(), "_dollar_pnl": round(_dollar_pnl(t), 2)}
+        for t in sorted_trades[:5]
+    ]
+
+    diagnostics = {
+        "schema_name": "replay_diagnostics",
+        "schema_version": "1.0",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "report_id": report.report_id,
+        "score": metrics.score,
+        "gate_failure": metrics.gate_failure,
+        "per_fold": report.per_fold,
+        "worst_trades": worst_5,
+        "exit_reasons": {
+            "stop_loss": metrics.stop_loss_count,
+            "take_profit": metrics.take_profit_count,
+            "trailing_stop": metrics.trailing_stop_count,
+            "eod": metrics.eod_count,
+            "max_hold": metrics.max_hold_count,
+        },
+        "direction_balance": {
+            "call_count": metrics.call_count,
+            "put_count": metrics.put_count,
+            "minority_side_share": metrics.minority_side_share,
+        },
+        "baselines": report.baselines,
+        "beats_all_baselines": report.beats_all_baselines,
+    }
+
+    diag_path = "v2/output/replay_diagnostics.json"
+    with open(diag_path, "w") as f:
+        json.dump(diagnostics, f, indent=2, default=str)
+    print(f"Replay diagnostics saved to {diag_path}")
+
+    # --- Write triage_index.json ---
+    from v2.core.observability import write_triage_index
+
+    verdict = "pass" if report.beats_all_baselines and metrics.score > 0 else "fail"
+    write_triage_index(
+        run_dir="v2/output",
+        run_id=report.report_id,
+        identity={
+            "model_fingerprint": report.model_fingerprint,
+            "dataset_fingerprint": report.dataset_fingerprint,
+            "config_fingerprint": report.config_fingerprint,
+            "evaluator_fingerprint": report.evaluator_fingerprint,
+        },
+        verdict=verdict,
+        score=metrics.score,
+        gate_failure=metrics.gate_failure,
+        artifacts={
+            "eval_report": "eval_report.json",
+            "replay_diagnostics": "replay_diagnostics.json",
+        },
+    )
+    print(f"Triage index saved to v2/output/triage_index.json (verdict={verdict})")
+
+    # --- Artifact self-check: no silent missing artifacts ---
+    _er = json.load(open("v2/output/eval_report.json"))
+    _rd = json.load(open("v2/output/replay_diagnostics.json"))
+    _ti = json.load(open("v2/output/triage_index.json"))
+    assert _rd["report_id"] == _er["report_id"], \
+        f"report_id mismatch: eval_report={_er['report_id']} vs diagnostics={_rd['report_id']}"
+    print("Artifact linkage verified: eval_report <-> replay_diagnostics <-> triage_index")
 
 
 if __name__ == "__main__":

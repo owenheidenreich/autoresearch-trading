@@ -51,6 +51,18 @@ def keep():
         sys.exit(1)
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     artifact_dir = _find_candidate_artifact_dir()
+
+    # --- Artifact gate: validate required observability artifacts ---
+    if artifact_dir is not None:
+        from v2.core.observability import validate_artifact_presence
+        errors = validate_artifact_presence(artifact_dir)
+        if errors:
+            print("ERROR: Cannot promote — missing or malformed artifacts:")
+            for e in errors:
+                print(f"  - {e}")
+            print("Fix artifacts or use 'revert' to discard candidate.")
+            sys.exit(1)
+
     shutil.copy2(MODEL_CANDIDATE, MODEL_BEST)
     shutil.copy2(MODEL_CANDIDATE, MODEL_PT)
     if artifact_dir is not None:

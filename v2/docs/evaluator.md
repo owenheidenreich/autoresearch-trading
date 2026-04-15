@@ -63,15 +63,25 @@ The cache key includes:
 - policy fingerprint
 - optional `max_days`
 
-## Score
+## Score (v4.0 -- dollar-weighted)
+
+Source of truth: `v2/core/metrics.py` (`compute_score()` + `_SCORE_CONFIG`)
 
 ```python
-score = min(daily_sortino, 6.0) * positive_day_rate * dd_mult
+score = (0.5 * sortino_term + 0.5 * pf_term) * positive_day_rate * dd_mult
+
+where:
+  sortino_term = min(daily_sortino, 10.0)
+  pf_term      = min(profit_factor, 4.0)    # dollar-weighted PF (PRIMARY)
+  dd_mult      = 1.0 if dd <= 12%, linear decay to 0.0 at 25%
 ```
+
+Score config fingerprint: `score_config_fingerprint()` -- SHA-256 of the config dict. Changes reset all best_score tracking.
 
 Hard gates:
 
-- fewer than 30 trades -> `-1.0`
-- fewer than 15 traded days -> `-0.5`
-- direction balance below `0.15` -> `-0.3`
-- account drawdown above `20%` -> `-0.2`
+- fewer than 30 trades -> `-1.0` (`too_few_trades`)
+- fewer than 15 traded days -> `-0.5` (`too_few_traded_days`)
+- account drawdown above `25%` -> `-0.2` (`excessive_drawdown`)
+
+Direction balance is diagnostic only -- NOT a hard gate.

@@ -1,7 +1,6 @@
 # ART2 v2 Program
 
-This is the definitive operating protocol for the current exact-chain side-collapse reset.
-Read this file first, then [COMMANDS.md](COMMANDS.md), then [current_state.md](docs/current_state.md).
+> **Status: Historical reference.** The canonical operating loop is now defined in [ART2_LOOP.md](ART2_LOOP.md). This file is preserved for context on how decisions were made, established facts, and abandoned approaches. When this file contradicts `ART2_LOOP.md`, the loop doc wins.
 
 If optimization pressure conflicts with project judgment, defer to [founder_intent.md](docs/founder_intent.md).
 

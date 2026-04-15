@@ -1,6 +1,8 @@
 # Current v2 State
 
-Last refreshed: 2026-04-15 (pipeline integrity fix — dollar-weighted PF, stage contracts)
+Last refreshed: 2026-04-15
+
+This file is a state snapshot -- what IS true right now. For the operating loop, see `v2/ART2_LOOP.md`. For commands, see `v2/COMMANDS.md`.
 
 ## Mission And Phase
 
@@ -20,7 +22,7 @@ Last refreshed: 2026-04-15 (pipeline integrity fix — dollar-weighted PF, stage
 - Scoring: **v4.0 dollar-weighted PF/sortino** (DD gate 25%, penalty-free ≤12%)
 - Previous scoring (v3.0 percentage-weighted PF) was found to mask an 81.5% portfolio loss as near-breakeven. See `docs/incidents/2026-04-15-pf-metric-bug.md`.
 - **All prior experiment scores are stale** — evaluator fingerprint changed
-- Current model.pt is stale (trained on older 15-feature contract schema)
+- Current model.pt is a verification stub (epoch-1 only, not a real trained model; 22-feature contract schema)
 - exp_146 (supervised baseline) archived — found to be guessing random trades
 
 ## End-To-End Flow
@@ -87,23 +89,6 @@ raw SPX/SPY/VIX pickles + full-chain SPXW pickles
 - `optimization` cases are used during harness repair.
 - `holdout` cases verify that harness fixes generalize.
 
-## Operational Workflow
+## Operating Loop
 
-### Before A Training Run
-
-1. `python3 -m v2.ops.pre_run_gate --data v2/data.pt`
-2. `./v2/ops/deploy.sh boot`
-3. `./v2/ops/deploy.sh start`
-
-### For Each Experiment
-
-1. Form one hypothesis from trace or audit evidence.
-2. Edit the approved mutable surface for that hypothesis.
-3. Commit.
-4. Screen first: `./v2/ops/deploy.sh run_screen exp_NNN`
-5. If screening passes or justifies a same-family follow-up: `./v2/ops/deploy.sh run_one exp_NNN`
-6. Run the side-bias audit alongside the decision trace for meaningful candidates.
-7. Official promotion still requires score, baselines, and hard gates.
-8. KEEP or REVERT, then update `v2/lab_notebook.md` and required plots.
-
-See `v2/program.md` for the definitive workflow and decision rules.
+See [ART2_LOOP.md](../ART2_LOOP.md) for the canonical hill-climbing protocol (preconditions, training, validation, promotion, paper-trading readiness).

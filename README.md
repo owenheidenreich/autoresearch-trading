@@ -46,11 +46,10 @@ python -m v2.plot_trades
 
 | Doc | Purpose |
 |-----|---------|
-| [v2/HANDOFF.md](v2/HANDOFF.md) | Current state, session bootstrap |
+| [v2/ART2_LOOP.md](v2/ART2_LOOP.md) | Canonical hill-climbing protocol |
+| [v2/docs/current_state.md](v2/docs/current_state.md) | Current system state snapshot |
 | [v2/COMMANDS.md](v2/COMMANDS.md) | Command reference |
-| [v2/program.md](v2/program.md) | Operating protocol |
-
-| [v2/PIPELINE.md](v2/PIPELINE.md) | System overview for humans |
+| [v2/PIPELINE.md](v2/PIPELINE.md) | System overview |
 | [v2/docs/founder_intent.md](v2/docs/founder_intent.md) | Non-negotiable project standards |
 | [v2/docs/README.md](v2/docs/README.md) | Full documentation index |
 

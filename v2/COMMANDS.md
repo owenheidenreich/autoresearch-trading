@@ -1,6 +1,6 @@
 # v2 Commands
 
-When the human says one of these, do it. Read [program.md](program.md) for the full protocol.
+When the human says one of these, do it. Read [ART2_LOOP.md](ART2_LOOP.md) for the full protocol.
 
 All training runs are remote on the Akash H100. Local commands are for replay, analysis, plotting, data rebuilds, commits, and docs.
 
@@ -15,7 +15,7 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
   `./v2/ops/deploy.sh run_one exp_NNN`
 
 - `begin experiment loop`
-  Use the full loop from `v2/program.md`: form one hypothesis, edit the approved mutable surface for that hypothesis, commit, screen first, then if screening passes or justifies a same-family follow-up run official, then keep or revert.
+  Use the full loop from `v2/ART2_LOOP.md`: form one hypothesis, edit the approved mutable surface for that hypothesis, commit, screen first, then if screening passes or justifies a same-family follow-up run official, then keep or revert.
 
 ## Evaluation
 
@@ -132,13 +132,11 @@ These are **mandatory**. Do not report results to the user until every step is c
    Full entry with hypothesis, results table, trace summary, keep/revert decision, next direction.
 
 7. **If promoting, update live docs:**
-   - `v2/HANDOFF.md` (current live code, research position, key findings)
-   - `v2/program.md` (current status section)
    - `v2/docs/current_state.md` (snapshot section)
 
 8. **Commit everything** in one clean commit: code, artifacts, models, docs, lab notebook.
 
-9. **Form next hypothesis** from trace analysis (see program.md Trace-Informed Hypothesis Formation).
+9. **Form next hypothesis** from trace analysis (see ART2_LOOP.md).
 
 **Present to user in one message:** results table, trace comparison vs baseline, trade analysis summary, what docs were updated, proposed next hypothesis.
 
