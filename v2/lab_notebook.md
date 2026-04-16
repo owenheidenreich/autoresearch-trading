@@ -23,6 +23,34 @@ The full mixed-state notebook before this reset lives in `archive/v2_historical/
 
 **Deferred:** Bars 0-29 and 270-389 excluded based on execution-quality concerns, not yet audited.
 
+## exp_153 / exp_154: First Full-Day Screening (2026-04-15)
+
+**Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
+
+exp_153 ran pre-audit; exp_154 ran post-audit as a confirmation screen. Results are **bit-for-bit identical** — the audit hardened the validation surface, not the training semantics.
+
+| Metric | Value |
+|--------|-------|
+| Trades | 673 |
+| Trades/day | 12.9 |
+| Traded days | 52/60 |
+| PF | 0.745 |
+| Win rate | 45.8% |
+| Direction | 513C / 160P (76%/24%) |
+| DD | 108.1% (gate failure) |
+| Net P&L | -$10,805 |
+| Beats baselines | No (all 4 also gate-failed) |
+| Best epoch | 3/17 |
+| Gate accuracy | 53.5% |
+
+**Interpretation:** The model engages with the full-day opportunity set — it does not collapse, abstain, or degenerate to one-sided behavior. The core problem is overtrading (12.9 TPD) without selectivity. The old 60-105 regime masked this by restricting the opportunity window. PF 0.745 with 45.8% WR shows the model finds some winners but not enough to overcome the volume of slightly-losing trades.
+
+**Provenance:** Git `a6b87d0`, dataset `bbf868bbb4d4b23e`, policy `abc7545f4a4f975a`, scorer `e45320cc6094cd1e`.
+
+**Not promoted.** Gate failure: excessive drawdown (108.1% > 25%).
+
+**Next step:** The behavioral weakness is identified (overtrading, not collapse). The question is whether the supervised model family can learn selectivity on the full-day regime, or whether this requires a different training objective.
+
 ## Post-Reset Diagnostic (2026-04-10)
 
 ### Why The Score Dropped from 5.4 to -0.2
