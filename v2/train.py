@@ -35,7 +35,7 @@ SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.08))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
 SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.0))
-EXACT_W = float(os.environ.get("EXACT_W", 0.5))
+EXACT_W = float(os.environ.get("EXACT_W", 0.0))
 OPP_W = float(os.environ.get("OPP_W", 0.5))
 SIDE_W = float(os.environ.get("SIDE_W", 0.0))
 AGG_W = float(os.environ.get("AGG_W", 0.0))
@@ -836,10 +836,10 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         })
 
         val_total = avg_val.get("total", float("inf"))
-        # Checkpoint on opportunity loss when using non-default label,
-        # because total loss is dominated by KL selection which
-        # rewards contract ranking, not abstention behavior.
-        if OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
+        # Checkpoint on total val loss — the combined ranking + gate signal
+        # produces better models than gate-only checkpointing when gate
+        # accuracy is near-random (~54%).
+        if False:  # was: OPP_LABEL in ("strict", ...) and OPP_W > 0
             val_criterion = avg_val.get("opp", float("inf"))
         else:
             val_criterion = val_total
