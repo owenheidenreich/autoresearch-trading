@@ -134,6 +134,26 @@ Three experiments tested: consensus label (exp_160), gate-disabled consensus (ex
 
 **All reverted.** train.py reset to baseline defaults (strict, GATE_W=1.0, OPP_W=0.5).
 
+## exp_166 Series: Threshold & Cooldown Fine-Tuning (2026-04-16)
+
+**Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
+
+Attempted to improve on exp_165 (PF 0.854, DD 53.5%) by fine-tuning gate threshold and cooldown.
+
+| Attempt | Exp ID | Change vs exp_165 | PF | Trades | DD | WR |
+|---------|--------|-------------------|-----|--------|-----|-----|
+| ref | exp_165 | — | **0.854** | 482 | **53.5%** | 49.6% |
+| 1 | exp_166 | gate_threshold 0.0→0.05 | 0.814 | 439 | 56.1% | 50.1% |
+| 2 | exp_166b | cooldown_bars 3→6 | 0.666 | 432 | 100% | 47.0% |
+
+**Both regress.** gate_threshold=0.0 is the exact optimum — even +0.05 cuts good trades faster than bad. cooldown=6 prevents recovery trades after stops, increasing DD from 53%→100%.
+
+**Conclusion: exp_165 is the supervised ceiling.** Over 17 screening runs across exp_163–166, every variation from the exp_165 config (gate_threshold=0.0, SOFT_TEMP=0.08) has regressed. The remaining DD gap (53.5% vs 25% gate) cannot be closed by hyperparameter or policy-level changes. It requires trajectory-level risk management: daily loss limits, dynamic position sizing, or a sequential agent architecture.
+
+**Code reverted to exp_165 defaults.** cooldown_bars=3, gate_threshold=0.0.
+
+**Provenance:** Git `1b6ebbd` through `d9224f2`, dataset `bbf868bbb4d4b23e`.
+
 ## exp_165 Series: Compound Levers (2026-04-16)
 
 **Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.

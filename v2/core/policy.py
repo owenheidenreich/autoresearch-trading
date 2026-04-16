@@ -28,7 +28,7 @@ class DecisionPolicy:
     extra_trailing_tiers: tuple[tuple[float, float], ...] = ((0.25, 0.08),)
 
     # Position management
-    cooldown_bars: int = 6
+    cooldown_bars: int = 3
     max_concurrent: int = 1
     qty: int = 1
 
