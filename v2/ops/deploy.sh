@@ -208,12 +208,16 @@ print(int(uakt / uact) + 2)  # +2 for spread/rounding safety
 " 2>/dev/null || echo "8")
         local _mint_uakt=$(( _mint_act * _akt_per_act * 1000000 ))
         log "ACT balance insufficient ($((_act_bal/1000000)) ACT < ${DEPOSIT_ACT} ACT). Minting ${_mint_act} ACT from $((_mint_uakt/1000000)) AKT..."
-        local _mint_out
+        local _mint_out _mint_exit _mint_code
         _mint_out=$(provider-services tx bme mint-act "${_mint_uakt}uakt" \
             --from "$AKASH_FROM" --yes --output json 2>&1)
-        local _mint_code
+        _mint_exit=$?
+        if [[ $_mint_exit -ne 0 ]]; then
+            log "WARNING: provider-services mint-act exited with code $_mint_exit"
+            echo "$_mint_out"
+        fi
         _mint_code=$(echo "$_mint_out" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',1))" 2>/dev/null || echo "1")
-        [[ "$_mint_code" == "0" ]] || { echo "$_mint_out"; die "ACT mint failed (code=$_mint_code)"; }
+        [[ "$_mint_code" == "0" ]] || { echo "$_mint_out"; die "ACT mint failed (exit=$_mint_exit, tx_code=$_mint_code). Raw output above."; }
         log "Minted ${_mint_act} ACT — waiting 10s for chain confirmation..."
         sleep 10
     fi
@@ -492,8 +496,11 @@ cmd_start() {
         log "WARNING: No data.pt.sha256 sidecar — skipping integrity check"
     fi
 
-    # Upload exact-chain sidecars when the dataset manifest references them.
-    local sidecar_rel sidecar_abs sidecar_bundle remote_sidecar_dir
+    # Upload training-stripped sidecars (drops replay-only fields: contract_mid/
+    # bid/ask/quality, alternative labels, metadata). Reduces ~3.5GB → ~600MB.
+    # Full sidecars remain on disk for replay and analysis.
+    # See v2/ops/strip_sidecars.py for the field list.
+    local sidecar_rel sidecar_abs sidecar_bundle remote_sidecar_dir stripped_dir
     sidecar_rel=$(python3 - <<'PY' "$DATA_PT"
 import sys, torch
 d = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
@@ -505,12 +512,22 @@ PY
         sidecar_abs="$PROJECT_ROOT/$sidecar_rel"
         remote_sidecar_dir="/root/$sidecar_rel"
         [[ -d "$sidecar_abs" ]] || die "Dataset expects sidecar dir but it is missing: $sidecar_abs"
+
+        stripped_dir="/tmp/autoresearch-stripped-sidecars-$$"
         sidecar_bundle="/tmp/autoresearch-v2-sidecars-$$.tgz"
-        log "Uploading chain sidecars from $sidecar_rel..."
-        tar -czf "$sidecar_bundle" -C "$PROJECT_ROOT" "$sidecar_rel"
+        log "Stripping sidecars for training-only upload..."
+        python3 -m v2.ops.strip_sidecars "$sidecar_abs" "$stripped_dir" || die "Sidecar stripping failed"
+
+        log "Packaging stripped sidecars..."
+        tar -czf "$sidecar_bundle" -C "$(dirname "$stripped_dir")" "$(basename "$stripped_dir")"
+        rm -rf "$stripped_dir"
+
+        log "Uploading stripped sidecars ($(du -sh "$sidecar_bundle" | cut -f1))..."
         scp_cmd "$sidecar_bundle" "root@$SSH_HOST:/root/v2-sidecars.tgz"
         rm -f "$sidecar_bundle"
-        ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")' && tar -xzf /root/v2-sidecars.tgz -C /root && rm -f /root/v2-sidecars.tgz"
+
+        # Unpack on GPU, renaming the stripped dir to the expected sidecar path
+        ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")' && tar -xzf /root/v2-sidecars.tgz -C /tmp && mv /tmp/autoresearch-stripped-sidecars-* '$remote_sidecar_dir' && rm -f /root/v2-sidecars.tgz"
         ssh_cmd "test -d '$remote_sidecar_dir'" || die "Remote sidecar upload failed: $remote_sidecar_dir missing"
     fi
 
@@ -643,7 +660,19 @@ pid = run("pgrep -f '^python3 -m v2\\.ops\\.run_experiment_wf'")
 if pid:
     pid_line = pid.split("\n")[0]
     uptime = run(f"ps -o etime= -p {pid_line}").strip()
-    print(f"  Experiment: RUNNING (PID {pid_line}, uptime {uptime})")
+    # Fold progress from checkpoint files
+    import glob
+    fold_files = sorted(glob.glob("/root/v2/models/model_fold*.pt"))
+    n_folds_done = len(fold_files)
+    fold_info = f", folds={n_folds_done}/5" if n_folds_done > 0 else ""
+    print(f"  Experiment: RUNNING (PID {pid_line}, uptime {uptime}{fold_info})")
+    # Last training output from run.log
+    log_tail = run("tail -3 /root/run.log 2>/dev/null")
+    if log_tail:
+        for line in log_tail.strip().split("\n")[-2:]:
+            line = line.strip()
+            if line and not line.startswith("warning") and "UserWarning" not in line:
+                print(f"  Latest: {line[:72]}")
 else:
     print(f"  Experiment: NOT RUNNING")
 
@@ -921,7 +950,7 @@ cmd_run_one() {
     # 2. Run experiment (blocking, ~5 min) — capture output to parse results
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "cd /root && PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1 | tee /root/run.log") || true
     echo "$run_output"  # still show output to Claude
 
     # 3. Download new model.pt to staging (never overwrite the promoted model directly)
@@ -1016,7 +1045,7 @@ cmd_run_screen() {
     # 2. Run 1-fold screening (no artifacts saved) — capture output to parse results
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "cd /root && PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1 | tee /root/run.log") || true
     echo "$run_output"  # still show output to Claude
 
     # 3. No model download, no artifact download, and no results.tsv entry for screening

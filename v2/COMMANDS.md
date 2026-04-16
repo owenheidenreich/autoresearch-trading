@@ -85,6 +85,7 @@ All training runs are remote on the Akash H100. Local commands are for replay, a
 - `start gpu`
   Run:
   `./v2/ops/deploy.sh start`
+  Uploads code, data.pt, and training-stripped sidecars (replay-only fields removed, ~880MB vs ~3.5GB full). Full sidecars remain local for replay/analysis.
 
 - `stop gpu`
   Run:
