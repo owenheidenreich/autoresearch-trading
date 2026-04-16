@@ -30,7 +30,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-OPP_LABEL = os.environ.get("OPP_LABEL", "strict")  # "old", "strict", "survival"
+OPP_LABEL = os.environ.get("OPP_LABEL", "consensus")  # "old", "strict", "consensus", "high_threshold"
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.25))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
@@ -265,6 +265,57 @@ def _compute_strict_opportunity(sc: dict, local_bar: int) -> bool:
     return False
 
 
+def _compute_consensus_opportunity(sc: dict, local_bar: int) -> bool:
+    """Consensus opportunity: at least one contract profitable under all 3 policies.
+
+    Requires the same contract to have net_pnl > 4% under DEFAULT, SHORT, and EOD
+    exit policies simultaneously. This filters for bars where opportunity is
+    robust to exit timing — a stronger signal that correlates with market
+    conditions (high vol, trending) rather than path-dependent luck.
+    """
+    bar_ptrs = sc["bar_ptrs"]
+    start = int(bar_ptrs[local_bar])
+    end = int(bar_ptrs[local_bar + 1])
+    if end <= start:
+        return False
+    labels_default = sc.get("row_labels")
+    labels_short = sc.get("row_labels_short")
+    labels_eod = sc.get("row_labels_eod")
+    if labels_default is None or labels_short is None or labels_eod is None:
+        return bool(sc["bar_label_trade"][local_bar])  # fallback
+    for ro in range(start, end):
+        d = float(labels_default[ro])
+        s = float(labels_short[ro])
+        e = float(labels_eod[ro])
+        if (np.isfinite(d) and d > 0.04 and
+            np.isfinite(s) and s > 0.04 and
+            np.isfinite(e) and e > 0.04):
+            return True
+    return False
+
+
+def _compute_frac_profitable(sc: dict, local_bar: int) -> float:
+    """Fraction of executable contracts with positive PnL at this bar.
+
+    Continuous [0, 1] target. Correlates with context features at r≈0.12
+    (atm_iv, vrp, atm_gamma) — 2x stronger than any binary label variant.
+    """
+    bar_ptrs = sc["bar_ptrs"]
+    start = int(bar_ptrs[local_bar])
+    end = int(bar_ptrs[local_bar + 1])
+    if end <= start:
+        return 0.0
+    labels = sc["row_labels"][start:end]
+    valid = []
+    for l in labels:
+        lf = float(l)
+        if np.isfinite(lf):
+            valid.append(lf)
+    if not valid:
+        return 0.0
+    return sum(1 for v in valid if v > 0) / len(valid)
+
+
 class TradeDataset(Dataset):
     def __init__(self, data: dict, mask: torch.Tensor, lookback: int = LOOKBACK):
         self.features = data["X"]
@@ -285,6 +336,7 @@ class TradeDataset(Dataset):
         self.all_best_idx = torch.zeros(n, dtype=torch.long)
         self.all_label_trade = torch.zeros(n, dtype=torch.bool)
         self.all_label_trade_valid = torch.zeros(n, dtype=torch.bool)
+        self.all_label_quality = torch.zeros(n, dtype=torch.float32)
 
         t0 = time.time()
         sidecar_cache: dict[str, dict] = {}
@@ -305,9 +357,15 @@ class TradeDataset(Dataset):
             self.all_best_idx[j] = int(sc["bar_best_contract_idx"][local_bar])
             if OPP_LABEL == "strict":
                 self.all_label_trade[j] = _compute_strict_opportunity(sc, local_bar)
+            elif OPP_LABEL == "consensus":
+                self.all_label_trade[j] = _compute_consensus_opportunity(sc, local_bar)
+            elif OPP_LABEL == "high_threshold":
+                bp = sc.get("bar_best_pnl")
+                self.all_label_trade[j] = bp is not None and float(bp[local_bar]) > 0.20
             else:
                 self.all_label_trade[j] = bool(sc["bar_label_trade"][local_bar])
             self.all_label_trade_valid[j] = bool(sc["bar_labelable"][local_bar])
+            self.all_label_quality[j] = _compute_frac_profitable(sc, local_bar)
         print(f"  Dataset materialized: {n:,} samples, {len(sidecar_cache)} days, {time.time() - t0:.1f}s")
 
     def __len__(self) -> int:
@@ -321,6 +379,7 @@ class TradeDataset(Dataset):
             "best_idx": self.all_best_idx[idx],
             "label_trade": self.all_label_trade[idx],
             "label_trade_valid": self.all_label_trade_valid[idx],
+            "label_quality": self.all_label_quality[idx],
         }
         return window, self.all_contracts[idx], target
 
@@ -651,6 +710,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             "best_idx": torch.stack([t["best_idx"] for t in targets_list]),
             "label_trade": torch.stack([t["label_trade"] for t in targets_list]),
             "label_trade_valid": torch.stack([t["label_trade_valid"] for t in targets_list]),
+            "label_quality": torch.stack([t["label_quality"] for t in targets_list]),
         }
         return windows, contracts, targets
 
@@ -770,10 +830,10 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         })
 
         val_total = avg_val.get("total", float("inf"))
-        # Checkpoint on opportunity loss when using strict label,
+        # Checkpoint on opportunity loss when using non-default label,
         # because total loss is dominated by KL selection which
         # rewards contract ranking, not abstention behavior.
-        if OPP_LABEL == "strict" and OPP_W > 0:
+        if OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
             val_criterion = avg_val.get("opp", float("inf"))
         else:
             val_criterion = val_total

@@ -86,6 +86,28 @@ Controlled search over the allowed hyperparameter space to improve selectivity v
 
 **All reverted.** train.py reset to baseline defaults after search.
 
+## Opportunity Label Diagnostic (2026-04-15)
+
+**Purpose:** Determine why the opportunity head can't learn, and whether a better label exists.
+
+**Root cause confirmed:** The strict opportunity label depends on contract-level forward-path metrics (raw_return, mae, mfe, breakeven) that the opportunity head cannot observe. It sees only 52 context features. This is a supervision mismatch — the label requires information the head can't access.
+
+**Key findings from diagnostic:**
+
+| Label definition | Class balance (trade%) | Max |r| with context | Mean |r| |
+|-----------------|----------------------|-------------------|----------|
+| Old (best_pnl > 4%) | 85.0% | 0.063 | 0.017 |
+| Strict opportunity | 57.0% | 0.070 | 0.023 |
+| Consensus (3-policy) | 16.6% | 0.050 | 0.019 |
+| High threshold (>20%) | 63.3% | 0.050 | 0.013 |
+| **Frac profitable** (continuous) | — | **0.126** | **0.035** |
+
+- Median `bar_best_pnl` is 33% — the 4% threshold is trivially easy (85% pass)
+- Consensus bars (profitable under all 3 policies) average 41% PnL and 43% frac profitable — these are genuinely strong
+- `frac_profitable` correlates 2x stronger with context features (atm_iv r=0.126, vrp r=0.119, atm_gamma r=-0.110)
+
+**Decision:** Implement consensus label as `OPP_LABEL="consensus"` for first test. Also wired up frac_profitable as continuous target for follow-up. Updated `strip_sidecars.py` to preserve `row_labels_short`, `row_labels_eod`, `bar_best_pnl` in GPU uploads.
+
 ## Post-Reset Diagnostic (2026-04-10)
 
 ### Why The Score Dropped from 5.4 to -0.2

@@ -6,8 +6,10 @@ experiments. Training needs contract features and labels; replay also
 needs chain price matrices and contract metadata for trade simulation.
 
 Fields dropped (unused by both training and replay):
-  schema_version, n_bars, bar_quality, bar_best_pnl,
-  row_labels_short, row_labels_eod, row_impulse_fraction
+  schema_version, n_bars, bar_quality, row_impulse_fraction
+
+Fields preserved for opportunity label variants (consensus, quality):
+  bar_best_pnl, row_labels_short, row_labels_eod
 
 Float32 fields are downcast to float16 for transfer. Training upcasts
 back to float32 on load (train.py materializes all contract data into
@@ -37,9 +39,6 @@ DROP_FIELDS = {
     "schema_version",
     "n_bars",
     "bar_quality",
-    "bar_best_pnl",
-    "row_labels_short",
-    "row_labels_eod",
     "row_impulse_fraction",
 }
 
@@ -47,10 +46,13 @@ DROP_FIELDS = {
 DOWNCAST_F16_FIELDS = {
     "row_features",
     "row_labels",
+    "row_labels_short",
+    "row_labels_eod",
     "row_raw_returns",
     "row_mfe",
     "row_mae",
     "row_bars_to_breakeven",
+    "bar_best_pnl",
     "contract_mid",
     "contract_bid",
     "contract_ask",
