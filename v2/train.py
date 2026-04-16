@@ -40,6 +40,8 @@ OPP_W = float(os.environ.get("OPP_W", 0.5))
 SIDE_W = float(os.environ.get("SIDE_W", 0.0))
 AGG_W = float(os.environ.get("AGG_W", 0.0))
 QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss by frac_profitable
+COMP_W = float(os.environ.get("COMP_W", 0.0))       # competence head weight (replaces OPP_W when > 0)
+COMP_MODE = os.environ.get("COMP_MODE", "frozen")    # "frozen", "live", or "quality"
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
@@ -51,6 +53,7 @@ _TRAINING_ENV_VARS = [
     "TRAIN_EPOCHS", "TIME_BUDGET", "WEIGHT_SEL", "WEIGHT_GATE", "TRAIN_SEED",
     "OPP_LABEL", "SOFT_TEMP", "NOISE_MARGIN", "AMBIG_WEIGHT",
     "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
+    "COMP_W", "COMP_MODE", "COMP_TEACHER",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
     "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
 ]
@@ -385,7 +388,68 @@ class TradeDataset(Dataset):
         return window, self.all_contracts[idx], target
 
 
-def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
+def _compute_competence_label(
+    scores: torch.Tensor,
+    labels: torch.Tensor,
+    valid_mask: torch.Tensor,
+    device: torch.device,
+    teacher_outputs: dict | None = None,
+    comp_mode: str = "frozen",
+    label_quality: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Compute composite competence label from ranking outcomes.
+
+    Returns (label_binary, label_continuous, comp_valid) where:
+      label_binary: thresholded at 0.5 for balanced BCE
+      label_continuous: 0.5*win + 0.3*top5 + 0.2*norm_rank in [0, 1]
+      comp_valid: mask of bars with finite chosen PnL
+    """
+    B = labels.size(0)
+
+    if comp_mode == "quality" and label_quality is not None:
+        label_cont = label_quality.clamp(0, 1)
+        label_bin = (label_cont > 0.5).float()
+        comp_valid = torch.ones(B, dtype=torch.bool, device=device)
+        return label_bin, label_cont, comp_valid
+
+    with torch.no_grad():
+        if comp_mode == "frozen" and teacher_outputs is not None:
+            det_scores = teacher_outputs["contract_scores"].detach().clone()
+            det_valid = teacher_outputs["valid_mask"]
+            det_scores[~det_valid] = -1e9
+        else:  # live
+            det_scores = scores.detach().clone()
+            det_scores[~valid_mask] = -1e9
+
+        model_chosen = det_scores.argmax(dim=-1)
+        rows = torch.arange(B, device=device)
+        chosen_pnl = labels[rows, model_chosen]
+
+        # Rank of chosen contract among valid contracts
+        valid_pnl = labels.clone()
+        valid_pnl[~valid_mask] = -1e9
+        valid_pnl[~torch.isfinite(valid_pnl)] = -1e9
+        chosen_rank = (valid_pnl > chosen_pnl.unsqueeze(-1)).sum(dim=-1) + 1
+        n_valid = valid_mask.sum(dim=-1).float().clamp(min=1)
+
+        # Composite: weighted combination of three signals
+        win = (chosen_pnl > 0.04).float()                     # friction-aware win
+        top5 = (chosen_rank <= 5).float()                      # good rank
+        norm_rank = (1.0 - chosen_rank.float() / n_valid)      # continuous [0, 1]
+        label_cont = (0.5 * win + 0.3 * top5 + 0.2 * norm_rank).clamp(0, 1)
+        label_bin = (label_cont > 0.5).float()
+
+        comp_valid = torch.isfinite(chosen_pnl)
+        label_bin[~comp_valid] = 0.0
+
+    return label_bin, label_cont, comp_valid
+
+
+def compute_loss(
+    outputs: dict[str, torch.Tensor],
+    targets: dict[str, torch.Tensor],
+    teacher_outputs: dict[str, torch.Tensor] | None = None,
+) -> tuple[torch.Tensor, dict[str, float]]:
     device = outputs["contract_scores"].device
     scores = outputs["contract_scores"]
     no_trade = outputs["no_trade_score"]
@@ -434,9 +498,36 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
                 reduction="mean",
             )
 
-    # --- A2. Opportunity loss: independent gate from context alone ---
+    # --- A2. Competence loss: predict model's ranking quality ---
+    comp_loss = torch.tensor(0.0, device=device)
+    if COMP_W > 0 and supervised_rows.any():
+        label_comp_bin, label_comp_cont, comp_valid_mask = _compute_competence_label(
+            scores, labels, valid_mask, device,
+            teacher_outputs=teacher_outputs,
+            comp_mode=COMP_MODE, label_quality=label_quality,
+        )
+        comp_eligible = supervised_rows & comp_valid_mask
+        if comp_eligible.any():
+            comp_idx = comp_eligible.nonzero(as_tuple=True)[0]
+            comp_target = label_comp_bin[comp_idx]
+            n_pos = comp_target.sum().item()
+            n_neg = len(comp_target) - n_pos
+            n_min = int(min(n_pos, n_neg))
+            if n_min > 0:
+                pos_idx = comp_idx[comp_target.bool()]
+                neg_idx = comp_idx[~comp_target.bool()]
+                pos_sel = pos_idx[torch.randperm(len(pos_idx), device=device)[:n_min]]
+                neg_sel = neg_idx[torch.randperm(len(neg_idx), device=device)[:n_min]]
+                balanced_comp = torch.cat([pos_sel, neg_sel])
+                comp_loss = F.binary_cross_entropy_with_logits(
+                    opportunity_logit[balanced_comp],
+                    label_comp_bin[balanced_comp],
+                    reduction="mean",
+                )
+
+    # --- A2b. Original opportunity loss (only active when COMP_W == 0) ---
     opp_loss = torch.tensor(0.0, device=device)
-    if OPP_W > 0 and supervised_rows.any():
+    if COMP_W == 0 and OPP_W > 0 and supervised_rows.any():
         sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
         opp_target = label_trade[sup_idx].float()
         n_pos = opp_target.sum().item()
@@ -604,8 +695,9 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             side_sel_loss = side_sel_loss + F.kl_div(po_log_probs, po_target, reduction="batchmean")
 
     total = (GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss
-             + EXACT_W * exact_loss + OPP_W * opp_loss + SIDE_W * side_loss
-             + AGG_W * agg_loss)
+             + EXACT_W * exact_loss
+             + (COMP_W * comp_loss if COMP_W > 0 else OPP_W * opp_loss)
+             + SIDE_W * side_loss + AGG_W * agg_loss)
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
@@ -658,12 +750,37 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             true_is_call = ~true_is_put
             side_acc = (pred_is_call == true_is_call).float().mean().item()
 
+    # Competence accuracy + opportunity_logit distribution diagnostics
+    comp_acc = 0.0
+    opp_pass_rate = 0.0
+    opp_mean = 0.0
+    opp_std = 0.0
+    if supervised_rows.any():
+        with torch.no_grad():
+            opp_vals = opportunity_logit[supervised_rows].detach()
+            opp_pass_rate = (opp_vals > 0).float().mean().item()
+            opp_mean = opp_vals.mean().item()
+            opp_std = opp_vals.std().item() if opp_vals.numel() > 1 else 0.0
+    if COMP_W > 0 and supervised_rows.any():
+        with torch.no_grad():
+            label_cb, _, cv = _compute_competence_label(
+                scores, labels, valid_mask, device,
+                teacher_outputs=teacher_outputs,
+                comp_mode=COMP_MODE, label_quality=label_quality,
+            )
+            finite = supervised_rows & cv
+            if finite.any():
+                actual = label_cb[finite]
+                pred = (opportunity_logit[finite].detach() > 0).float()
+                comp_acc = (pred == actual).float().mean().item()
+
     return total, {
         "gate": float(gate_loss.item()),
         "sel": float(sel_loss.item()),
         "side_sel": float(side_sel_loss.item()),
         "exact": float(exact_loss.item()),
         "opp": float(opp_loss.item()),
+        "comp": float(comp_loss.item()),
         "side": float(side_loss.item()),
         "agg": float(agg_loss.item()),
         "total": float(total.item()),
@@ -671,7 +788,11 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
         "dir_acc": dir_acc,
         "side_acc": side_acc,
         "agg_acc": agg_acc,
+        "comp_acc": comp_acc,
         "trade_rate": trade_rate,
+        "opp_pass_rate": opp_pass_rate,
+        "opp_mean": opp_mean,
+        "opp_std": opp_std,
     }
 
 
@@ -741,9 +862,31 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
+    # --- Frozen teacher for competence label (COMP_MODE=frozen) ---
+    global COMP_MODE  # may be reassigned to "live" if teacher not found
+    teacher = None
+    if COMP_W > 0 and COMP_MODE == "frozen":
+        teacher_path = os.environ.get("COMP_TEACHER", "v2/models/model.pt")
+        if os.path.exists(teacher_path):
+            teacher_ckpt = torch.load(teacher_path, map_location=device, weights_only=False)
+            hp = teacher_ckpt.get("hyperparams", {})
+            teacher = TradingModel(
+                d_model=hp.get("d_model", D_MODEL),
+                depth=hp.get("depth", DEPTH),
+            ).to(device)
+            teacher.load_state_dict(teacher_ckpt["model_state_dict"])
+            teacher.eval()
+            for p in teacher.parameters():
+                p.requires_grad_(False)
+            print(f"  Frozen teacher loaded from {teacher_path}")
+        else:
+            print(f"  WARNING: teacher {teacher_path} not found, falling back to live mode")
+            COMP_MODE = "live"
+
     best_val_loss = float("inf")
     best_epoch = 0
     best_metrics = {"gate_accuracy": 0.0, "direction_accuracy": 0.0}
+    _best_sel = float("inf")  # track best selection loss for checkpoint guardrail
 
     # --- Training log (observability: survives lease death) ---
     from v2.core.observability import (
@@ -784,8 +927,12 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             batch_y = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch_y.items()}
 
             optimizer.zero_grad()
+            teacher_outputs = None
+            if teacher is not None and COMP_W > 0:
+                with torch.no_grad():
+                    teacher_outputs = teacher(batch_x, batch_c)
             outputs = model(batch_x, batch_c)
-            loss, metrics = compute_loss(outputs, batch_y)
+            loss, metrics = compute_loss(outputs, batch_y, teacher_outputs=teacher_outputs)
             loss.backward()
             _pre_clip_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
@@ -800,18 +947,27 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
                 batch_x = batch_x.to(device)
                 batch_c = batch_c.to(device)
                 batch_y = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch_y.items()}
+                teacher_outputs_v = None
+                if teacher is not None and COMP_W > 0:
+                    teacher_outputs_v = teacher(batch_x, batch_c)
                 outputs = model(batch_x, batch_c)
-                _, metrics = compute_loss(outputs, batch_y)
+                _, metrics = compute_loss(outputs, batch_y, teacher_outputs=teacher_outputs_v)
                 val_stats.append(metrics)
 
         avg_train = {k: float(np.mean([d[k] for d in train_stats])) for k in train_stats[0]} if train_stats else {}
         avg_val = {k: float(np.mean([d[k] for d in val_stats])) for k in val_stats[0]} if val_stats else {}
+        _comp_line = ""
+        if COMP_W > 0:
+            _comp_line = (f" | comp={avg_val.get('comp', 0):.4f} comp_acc={avg_val.get('comp_acc', 0):.3f}"
+                          f" opp_pass={avg_val.get('opp_pass_rate', 0):.3f}"
+                          f" opp_μ={avg_val.get('opp_mean', 0):.3f} opp_σ={avg_val.get('opp_std', 0):.3f}")
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
             f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} opp={avg_val.get('opp', 0):.4f} side_l={avg_val.get('side', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} side={avg_val.get('side_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
+            f"{_comp_line}"
         )
 
         # --- Append training log line (flush immediately) ---
@@ -829,6 +985,11 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             "dir_acc": avg_val.get("dir_acc", 0),
             "side_acc": avg_val.get("side_acc", 0),
             "trade_rate": avg_val.get("trade_rate", 0),
+            "comp_loss": avg_val.get("comp", 0),
+            "comp_acc": avg_val.get("comp_acc", 0),
+            "opp_pass_rate": avg_val.get("opp_pass_rate", 0),
+            "opp_mean": avg_val.get("opp_mean", 0),
+            "opp_std": avg_val.get("opp_std", 0),
             "pre_clip_grad_norm": float(_pre_clip_norm) if _pre_clip_norm is not None else None,
             "lr": optimizer.param_groups[0]["lr"],
             "wall_seconds": round(_epoch_wall, 1),
@@ -836,10 +997,14 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         })
 
         val_total = avg_val.get("total", float("inf"))
-        # Checkpoint on opportunity loss when using non-default label,
-        # because total loss is dominated by KL selection which
-        # rewards contract ranking, not abstention behavior.
-        if OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
+        # Checkpoint criterion: comp loss with sel_loss guardrail, else opp, else total
+        if COMP_W > 0:
+            comp_val = avg_val.get("comp", float("inf"))
+            sel_val = avg_val.get("sel", float("inf"))
+            _best_sel = min(_best_sel, sel_val)
+            sel_ok = sel_val <= _best_sel * 1.2  # sel must not regress >20%
+            val_criterion = comp_val if sel_ok else float("inf")
+        elif OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
             val_criterion = avg_val.get("opp", float("inf"))
         else:
             val_criterion = val_total
