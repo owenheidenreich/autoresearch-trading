@@ -134,6 +134,46 @@ Three experiments tested: consensus label (exp_160), gate-disabled consensus (ex
 
 **All reverted.** train.py reset to baseline defaults (strict, GATE_W=1.0, OPP_W=0.5).
 
+## exp_165 Series: Compound Levers (2026-04-16)
+
+**Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
+
+Built on exp_164c discovery (gate_threshold=0.0). Tested combinations with other levers.
+
+| Attempt | Exp ID | Changes vs baseline | PF | Trades | TPD | DD | WR | +DayRate |
+|---------|--------|---------------------|-----|--------|-----|-----|-----|----------|
+| baseline | exp_154 | — | 0.745 | 673 | 12.9 | 108% | 45.8% | 30.8% |
+| **1** | **exp_165** | **gate=0.0 + SOFT_TEMP=0.08** | **0.854** | **482** | **9.3** | **53.5%** | **49.6%** | **42.3%** |
+| 2 | exp_165b | + OPP_W=2.0 | 0.832 | 520 | 10.0 | 59.4% | 48.8% | 44.2% |
+| 3 | exp_165c | gate=0.15 + SOFT_TEMP=0.08 | 0.739 | 297 | 7.2 | 59.0% | 48.8% | 31.7% |
+| 4 | exp_165d | + EXACT_W=0.5 | **0.869** | 403 | 7.8 | 58.0% | 47.6% | **46.2%** |
+| 5 | exp_165e | total loss checkpoint | 0.687 | 421 | 8.6 | 100% | 47.3% | 38.8% |
+
+**Best config: exp_165 (gate_threshold=0.0 + SOFT_TEMP=0.08)**
+
+| Metric | Baseline | exp_165 | Improvement |
+|--------|----------|---------|-------------|
+| PF | 0.745 | **0.854** | +14.6% |
+| Trades | 673 | 482 | -28.4% |
+| DD | 108.1% | **53.5%** | -50.7% |
+| WR | 45.8% | **49.6%** | +3.8pp |
+| Net P&L | -$10,805 | **-$4,618** | -57.3% |
+| +DayRate | 30.8% | **42.3%** | +11.5pp |
+
+**Findings:**
+1. **gate_threshold + SOFT_TEMP compound** — DD dropped from 108%→53.5%, PF improved 0.745→0.854. The gate filters marginal trades while sharper temperature improves contract ranking.
+2. **OPP_W=2.0 regresses** — dominates loss, picks earlier checkpoint, weakens ranking
+3. **gate_threshold=0.15 over-filters** — too many good trades removed (297 total)
+4. **EXACT_W=0.5 is interesting** — best PF (0.869) and +DayRate (46.2%) but DD slightly worse (58% vs 53.5%). Worth investigating further.
+5. **Total loss checkpoint is harmful** — picks epoch 5 which overfits, DD goes back to 100%
+6. **opp_loss checkpoint is correct** — despite only 54% accuracy, it selects the right model
+
+**Still fails 25% DD gate (53.5% > 25%).** The supervised model's ceiling has been raised significantly but the gap remains structural — the model has no mechanism for daily loss limits or trajectory-level risk management.
+
+**Provenance:** Git `64df644` through `264285f`, dataset `bbf868bbb4d4b23e`.
+
+**Best config retained:** gate_threshold=0.0, SOFT_TEMP=0.08. All other changes reverted.
+
 ## exp_164 Series: Gate Threshold Discovery (2026-04-16)
 
 **Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.

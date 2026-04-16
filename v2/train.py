@@ -836,10 +836,10 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         })
 
         val_total = avg_val.get("total", float("inf"))
-        # Checkpoint on total val loss — the combined ranking + gate signal
-        # produces better models than gate-only checkpointing when gate
-        # accuracy is near-random (~54%).
-        if False:  # was: OPP_LABEL in ("strict", ...) and OPP_W > 0
+        # Checkpoint on opportunity loss when using non-default label,
+        # because total loss is dominated by KL selection which
+        # rewards contract ranking, not abstention behavior.
+        if OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
             val_criterion = avg_val.get("opp", float("inf"))
         else:
             val_criterion = val_total
