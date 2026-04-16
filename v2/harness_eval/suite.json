@@ -8803,10 +8803,10 @@
       ]
     },
     {
-      "bar_of_day": 134,
-      "case_id": "2025-12-24-b134-trade",
-      "date": "2025-12-24",
-      "notes": "C 6920",
+      "bar_of_day": 206,
+      "case_id": "2025-07-03-b206-trade",
+      "date": "2025-07-03",
+      "notes": "P 6285",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -8815,9 +8815,10 @@
         "direction",
         "time_of_day",
         "midday",
-        "call",
+        "put",
         "market_regime",
         "chop",
+        "wide_vs_tight",
         "eod_exit"
       ]
     },
@@ -15260,8 +15261,8 @@
       ]
     },
     {
-      "bar_of_day": 378,
-      "case_id": "2025-07-08-b378-partial",
+      "bar_of_day": 379,
+      "case_id": "2025-07-08-b379-partial",
       "date": "2025-07-08",
       "notes": "no executable contract rows",
       "tags": [
@@ -15272,8 +15273,8 @@
       ]
     },
     {
-      "bar_of_day": 270,
-      "case_id": "2025-07-09-b270-partial",
+      "bar_of_day": 271,
+      "case_id": "2025-07-09-b271-partial",
       "date": "2025-07-09",
       "notes": "no executable contract rows",
       "tags": [
@@ -15284,10 +15285,10 @@
       ]
     },
     {
-      "bar_of_day": 34,
-      "case_id": "2025-07-10-b034-trade",
+      "bar_of_day": 35,
+      "case_id": "2025-07-10-b035-trade",
       "date": "2025-07-10",
-      "notes": "C 6275",
+      "notes": "C 6260",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15298,12 +15299,13 @@
         "open",
         "call",
         "market_regime",
-        "chop"
+        "chop",
+        "otm_to_itm"
       ]
     },
     {
-      "bar_of_day": 371,
-      "case_id": "2025-07-10-b371-partial",
+      "bar_of_day": 372,
+      "case_id": "2025-07-10-b372-partial",
       "date": "2025-07-10",
       "notes": "no executable contract rows",
       "tags": [
@@ -15314,8 +15316,8 @@
       ]
     },
     {
-      "bar_of_day": 277,
-      "case_id": "2025-07-11-b277-partial",
+      "bar_of_day": 278,
+      "case_id": "2025-07-11-b278-partial",
       "date": "2025-07-11",
       "notes": "no executable contract rows",
       "tags": [
@@ -15326,10 +15328,10 @@
       ]
     },
     {
-      "bar_of_day": 136,
-      "case_id": "2025-07-21-b136-trade",
+      "bar_of_day": 137,
+      "case_id": "2025-07-21-b137-trade",
       "date": "2025-07-21",
-      "notes": "P 6340",
+      "notes": "P 6325",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15344,10 +15346,10 @@
       ]
     },
     {
-      "bar_of_day": 181,
-      "case_id": "2025-07-21-b181-trade",
+      "bar_of_day": 182,
+      "case_id": "2025-07-21-b182-trade",
       "date": "2025-07-21",
-      "notes": "C 6330",
+      "notes": "C 6335",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15364,70 +15366,10 @@
       ]
     },
     {
-      "bar_of_day": 236,
-      "case_id": "2025-07-21-b236-trade",
+      "bar_of_day": 237,
+      "case_id": "2025-07-21-b237-trade",
       "date": "2025-07-21",
-      "notes": "P 6335",
-      "tags": [
-        "contract_identity",
-        "spot_alignment",
-        "execution_fidelity",
-        "risk_management",
-        "direction",
-        "time_of_day",
-        "midday",
-        "put",
-        "market_regime",
-        "chop"
-      ]
-    },
-    {
-      "bar_of_day": 334,
-      "case_id": "2025-07-21-b334-partial",
-      "date": "2025-07-21",
-      "notes": "no executable contract rows",
-      "tags": [
-        "chain_completeness",
-        "partially_observed",
-        "time_of_day",
-        "late_day"
-      ]
-    },
-    {
-      "bar_of_day": 273,
-      "case_id": "2025-07-23-b273-partial",
-      "date": "2025-07-23",
-      "notes": "no executable contract rows",
-      "tags": [
-        "chain_completeness",
-        "partially_observed",
-        "time_of_day",
-        "late_day"
-      ]
-    },
-    {
-      "bar_of_day": 95,
-      "case_id": "2025-07-24-b095-trade",
-      "date": "2025-07-24",
-      "notes": "P 6355",
-      "tags": [
-        "contract_identity",
-        "spot_alignment",
-        "execution_fidelity",
-        "risk_management",
-        "direction",
-        "time_of_day",
-        "midday",
-        "put",
-        "market_regime",
-        "chop"
-      ]
-    },
-    {
-      "bar_of_day": 116,
-      "case_id": "2025-07-24-b116-trade",
-      "date": "2025-07-24",
-      "notes": "P 6375",
+      "notes": "P 6330",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15443,9 +15385,9 @@
       ]
     },
     {
-      "bar_of_day": 328,
-      "case_id": "2025-07-29-b328-partial",
-      "date": "2025-07-29",
+      "bar_of_day": 335,
+      "case_id": "2025-07-21-b335-partial",
+      "date": "2025-07-21",
       "notes": "no executable contract rows",
       "tags": [
         "chain_completeness",
@@ -15455,22 +15397,22 @@
       ]
     },
     {
-      "bar_of_day": 18,
-      "case_id": "2025-08-07-b018-partial",
-      "date": "2025-08-07",
+      "bar_of_day": 274,
+      "case_id": "2025-07-23-b274-partial",
+      "date": "2025-07-23",
       "notes": "no executable contract rows",
       "tags": [
         "chain_completeness",
         "partially_observed",
         "time_of_day",
-        "open"
+        "late_day"
       ]
     },
     {
-      "bar_of_day": 209,
-      "case_id": "2025-08-07-b209-trade",
-      "date": "2025-08-07",
-      "notes": "P 6320",
+      "bar_of_day": 96,
+      "case_id": "2025-07-24-b096-trade",
+      "date": "2025-07-24",
+      "notes": "P 6380",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15485,10 +15427,10 @@
       ]
     },
     {
-      "bar_of_day": 208,
-      "case_id": "2025-08-12-b208-trade",
-      "date": "2025-08-12",
-      "notes": "C 6435",
+      "bar_of_day": 117,
+      "case_id": "2025-07-24-b117-trade",
+      "date": "2025-07-24",
+      "notes": "P 6380",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15497,14 +15439,56 @@
         "direction",
         "time_of_day",
         "midday",
-        "call",
+        "put",
         "market_regime",
         "chop"
       ]
     },
     {
-      "bar_of_day": 226,
-      "case_id": "2025-08-12-b226-trade",
+      "bar_of_day": 329,
+      "case_id": "2025-07-29-b329-partial",
+      "date": "2025-07-29",
+      "notes": "no executable contract rows",
+      "tags": [
+        "chain_completeness",
+        "partially_observed",
+        "time_of_day",
+        "late_day"
+      ]
+    },
+    {
+      "bar_of_day": 19,
+      "case_id": "2025-08-07-b019-partial",
+      "date": "2025-08-07",
+      "notes": "no executable contract rows",
+      "tags": [
+        "chain_completeness",
+        "partially_observed",
+        "time_of_day",
+        "open"
+      ]
+    },
+    {
+      "bar_of_day": 210,
+      "case_id": "2025-08-07-b210-trade",
+      "date": "2025-08-07",
+      "notes": "P 6305",
+      "tags": [
+        "contract_identity",
+        "spot_alignment",
+        "execution_fidelity",
+        "risk_management",
+        "direction",
+        "time_of_day",
+        "midday",
+        "put",
+        "market_regime",
+        "chop"
+      ]
+    },
+    {
+      "bar_of_day": 209,
+      "case_id": "2025-08-12-b209-trade",
       "date": "2025-08-12",
       "notes": "C 6430",
       "tags": [
@@ -15521,8 +15505,26 @@
       ]
     },
     {
-      "bar_of_day": 347,
-      "case_id": "2025-08-12-b347-partial",
+      "bar_of_day": 227,
+      "case_id": "2025-08-12-b227-trade",
+      "date": "2025-08-12",
+      "notes": "C 6430",
+      "tags": [
+        "contract_identity",
+        "spot_alignment",
+        "execution_fidelity",
+        "risk_management",
+        "direction",
+        "time_of_day",
+        "midday",
+        "call",
+        "market_regime",
+        "chop"
+      ]
+    },
+    {
+      "bar_of_day": 348,
+      "case_id": "2025-08-12-b348-partial",
       "date": "2025-08-12",
       "notes": "no executable contract rows",
       "tags": [
@@ -15533,20 +15535,8 @@
       ]
     },
     {
-      "bar_of_day": 389,
-      "case_id": "2025-08-14-b389-partial",
-      "date": "2025-08-14",
-      "notes": "no executable contract rows",
-      "tags": [
-        "chain_completeness",
-        "partially_observed",
-        "time_of_day",
-        "late_day"
-      ]
-    },
-    {
-      "bar_of_day": 25,
-      "case_id": "2025-08-15-b025-partial",
+      "bar_of_day": 0,
+      "case_id": "2025-08-15-b000-partial",
       "date": "2025-08-15",
       "notes": "no executable contract rows",
       "tags": [
@@ -15557,8 +15547,20 @@
       ]
     },
     {
-      "bar_of_day": 7,
-      "case_id": "2025-08-18-b007-partial",
+      "bar_of_day": 26,
+      "case_id": "2025-08-15-b026-partial",
+      "date": "2025-08-15",
+      "notes": "no executable contract rows",
+      "tags": [
+        "chain_completeness",
+        "partially_observed",
+        "time_of_day",
+        "open"
+      ]
+    },
+    {
+      "bar_of_day": 8,
+      "case_id": "2025-08-18-b008-partial",
       "date": "2025-08-18",
       "notes": "no executable contract rows",
       "tags": [
@@ -15569,10 +15571,29 @@
       ]
     },
     {
-      "bar_of_day": 66,
-      "case_id": "2025-08-18-b066-trade",
+      "bar_of_day": 67,
+      "case_id": "2025-08-18-b067-trade",
       "date": "2025-08-18",
-      "notes": "P 6430",
+      "notes": "P 6455",
+      "tags": [
+        "contract_identity",
+        "spot_alignment",
+        "execution_fidelity",
+        "risk_management",
+        "direction",
+        "time_of_day",
+        "midday",
+        "put",
+        "market_regime",
+        "chop",
+        "wide_vs_tight"
+      ]
+    },
+    {
+      "bar_of_day": 174,
+      "case_id": "2025-08-18-b174-trade",
+      "date": "2025-08-18",
+      "notes": "P 6455",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15587,26 +15608,8 @@
       ]
     },
     {
-      "bar_of_day": 173,
-      "case_id": "2025-08-18-b173-trade",
-      "date": "2025-08-18",
-      "notes": "P 6435",
-      "tags": [
-        "contract_identity",
-        "spot_alignment",
-        "execution_fidelity",
-        "risk_management",
-        "direction",
-        "time_of_day",
-        "midday",
-        "put",
-        "market_regime",
-        "chop"
-      ]
-    },
-    {
-      "bar_of_day": 203,
-      "case_id": "2025-08-18-b203-trade",
+      "bar_of_day": 204,
+      "case_id": "2025-08-18-b204-trade",
       "date": "2025-08-18",
       "notes": "C 6440",
       "tags": [
@@ -15619,16 +15622,14 @@
         "midday",
         "call",
         "market_regime",
-        "chop",
-        "otm_to_itm",
-        "wide_vs_tight"
+        "chop"
       ]
     },
     {
-      "bar_of_day": 249,
-      "case_id": "2025-08-26-b249-trade",
+      "bar_of_day": 250,
+      "case_id": "2025-08-26-b250-trade",
       "date": "2025-08-26",
-      "notes": "P 6455",
+      "notes": "P 6430",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15644,8 +15645,8 @@
       ]
     },
     {
-      "bar_of_day": 317,
-      "case_id": "2025-08-26-b317-partial",
+      "bar_of_day": 318,
+      "case_id": "2025-08-26-b318-partial",
       "date": "2025-08-26",
       "notes": "no executable contract rows",
       "tags": [
@@ -15656,8 +15657,8 @@
       ]
     },
     {
-      "bar_of_day": 360,
-      "case_id": "2025-08-29-b360-partial",
+      "bar_of_day": 361,
+      "case_id": "2025-08-29-b361-partial",
       "date": "2025-08-29",
       "notes": "no executable contract rows",
       "tags": [
@@ -15668,8 +15669,8 @@
       ]
     },
     {
-      "bar_of_day": 36,
-      "case_id": "2025-09-03-b036-trade",
+      "bar_of_day": 37,
+      "case_id": "2025-09-03-b037-trade",
       "date": "2025-09-03",
       "notes": "P 6450",
       "tags": [
@@ -15687,8 +15688,8 @@
       ]
     },
     {
-      "bar_of_day": 241,
-      "case_id": "2025-09-04-b241-trade",
+      "bar_of_day": 242,
+      "case_id": "2025-09-04-b242-trade",
       "date": "2025-09-04",
       "notes": "C 6470",
       "tags": [
@@ -15706,8 +15707,8 @@
       ]
     },
     {
-      "bar_of_day": 301,
-      "case_id": "2025-09-09-b301-partial",
+      "bar_of_day": 302,
+      "case_id": "2025-09-09-b302-partial",
       "date": "2025-09-09",
       "notes": "no executable contract rows",
       "tags": [
@@ -15718,8 +15719,8 @@
       ]
     },
     {
-      "bar_of_day": 341,
-      "case_id": "2025-09-10-b341-partial",
+      "bar_of_day": 342,
+      "case_id": "2025-09-10-b342-partial",
       "date": "2025-09-10",
       "notes": "no executable contract rows",
       "tags": [
@@ -15730,10 +15731,10 @@
       ]
     },
     {
-      "bar_of_day": 131,
-      "case_id": "2025-09-11-b131-trade",
+      "bar_of_day": 132,
+      "case_id": "2025-09-11-b132-trade",
       "date": "2025-09-11",
-      "notes": "P 6590",
+      "notes": "C 6575",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15742,16 +15743,16 @@
         "direction",
         "time_of_day",
         "midday",
-        "put",
+        "call",
         "market_regime",
         "chop"
       ]
     },
     {
-      "bar_of_day": 62,
-      "case_id": "2025-09-12-b062-trade",
+      "bar_of_day": 63,
+      "case_id": "2025-09-12-b063-trade",
       "date": "2025-09-12",
-      "notes": "P 6595",
+      "notes": "C 6605",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15760,15 +15761,15 @@
         "direction",
         "time_of_day",
         "midday",
-        "put",
+        "call",
         "market_regime",
         "chop",
         "wide_vs_tight"
       ]
     },
     {
-      "bar_of_day": 343,
-      "case_id": "2025-09-12-b343-partial",
+      "bar_of_day": 344,
+      "case_id": "2025-09-12-b344-partial",
       "date": "2025-09-12",
       "notes": "no executable contract rows",
       "tags": [
@@ -15779,8 +15780,8 @@
       ]
     },
     {
-      "bar_of_day": 338,
-      "case_id": "2025-09-19-b338-partial",
+      "bar_of_day": 339,
+      "case_id": "2025-09-19-b339-partial",
       "date": "2025-09-19",
       "notes": "no executable contract rows",
       "tags": [
@@ -15791,8 +15792,8 @@
       ]
     },
     {
-      "bar_of_day": 140,
-      "case_id": "2025-09-24-b140-trade",
+      "bar_of_day": 141,
+      "case_id": "2025-09-24-b141-trade",
       "date": "2025-09-24",
       "notes": "P 6650",
       "tags": [
@@ -15809,8 +15810,8 @@
       ]
     },
     {
-      "bar_of_day": 321,
-      "case_id": "2025-09-30-b321-partial",
+      "bar_of_day": 322,
+      "case_id": "2025-09-30-b322-partial",
       "date": "2025-09-30",
       "notes": "no executable contract rows",
       "tags": [
@@ -15821,8 +15822,8 @@
       ]
     },
     {
-      "bar_of_day": 319,
-      "case_id": "2025-10-20-b319-partial",
+      "bar_of_day": 320,
+      "case_id": "2025-10-20-b320-partial",
       "date": "2025-10-20",
       "notes": "no executable contract rows",
       "tags": [
@@ -15833,10 +15834,10 @@
       ]
     },
     {
-      "bar_of_day": 53,
-      "case_id": "2025-10-21-b053-trade",
+      "bar_of_day": 54,
+      "case_id": "2025-10-21-b054-trade",
       "date": "2025-10-21",
-      "notes": "P 6725",
+      "notes": "P 6745",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15851,8 +15852,8 @@
       ]
     },
     {
-      "bar_of_day": 339,
-      "case_id": "2025-10-23-b339-partial",
+      "bar_of_day": 340,
+      "case_id": "2025-10-23-b340-partial",
       "date": "2025-10-23",
       "notes": "no executable contract rows",
       "tags": [
@@ -15863,8 +15864,8 @@
       ]
     },
     {
-      "bar_of_day": 182,
-      "case_id": "2025-10-24-b182-trade",
+      "bar_of_day": 183,
+      "case_id": "2025-10-24-b183-trade",
       "date": "2025-10-24",
       "notes": "P 6805",
       "tags": [
@@ -15877,12 +15878,13 @@
         "midday",
         "put",
         "market_regime",
-        "chop"
+        "chop",
+        "wide_vs_tight"
       ]
     },
     {
-      "bar_of_day": 272,
-      "case_id": "2025-10-24-b272-partial",
+      "bar_of_day": 273,
+      "case_id": "2025-10-24-b273-partial",
       "date": "2025-10-24",
       "notes": "no executable contract rows",
       "tags": [
@@ -15893,8 +15895,8 @@
       ]
     },
     {
-      "bar_of_day": 291,
-      "case_id": "2025-10-24-b291-partial",
+      "bar_of_day": 292,
+      "case_id": "2025-10-24-b292-partial",
       "date": "2025-10-24",
       "notes": "no executable contract rows",
       "tags": [
@@ -15905,8 +15907,8 @@
       ]
     },
     {
-      "bar_of_day": 270,
-      "case_id": "2025-10-27-b270-partial",
+      "bar_of_day": 271,
+      "case_id": "2025-10-27-b271-partial",
       "date": "2025-10-27",
       "notes": "no executable contract rows",
       "tags": [
@@ -15917,10 +15919,10 @@
       ]
     },
     {
-      "bar_of_day": 162,
-      "case_id": "2025-10-29-b162-trade",
+      "bar_of_day": 163,
+      "case_id": "2025-10-29-b163-trade",
       "date": "2025-10-29",
-      "notes": "C 6900",
+      "notes": "C 6925",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15931,15 +15933,14 @@
         "midday",
         "call",
         "market_regime",
-        "chop",
-        "itm_to_far_otm"
+        "chop"
       ]
     },
     {
-      "bar_of_day": 99,
-      "case_id": "2025-10-30-b099-trade",
+      "bar_of_day": 100,
+      "case_id": "2025-10-30-b100-trade",
       "date": "2025-10-30",
-      "notes": "P 6820",
+      "notes": "P 6875",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15954,10 +15955,10 @@
       ]
     },
     {
-      "bar_of_day": 71,
-      "case_id": "2025-11-03-b071-trade",
+      "bar_of_day": 72,
+      "case_id": "2025-11-03-b072-trade",
       "date": "2025-11-03",
-      "notes": "C 6875",
+      "notes": "C 6850",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15972,10 +15973,10 @@
       ]
     },
     {
-      "bar_of_day": 247,
-      "case_id": "2025-11-04-b247-trade",
+      "bar_of_day": 248,
+      "case_id": "2025-11-04-b248-trade",
       "date": "2025-11-04",
-      "notes": "C 6770",
+      "notes": "C 6795",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -15991,10 +15992,10 @@
       ]
     },
     {
-      "bar_of_day": 112,
-      "case_id": "2025-11-07-b112-trade",
+      "bar_of_day": 113,
+      "case_id": "2025-11-07-b113-trade",
       "date": "2025-11-07",
-      "notes": "P 6670",
+      "notes": "P 6590",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16005,13 +16006,12 @@
         "midday",
         "put",
         "market_regime",
-        "trend",
-        "itm_to_far_otm"
+        "chop"
       ]
     },
     {
-      "bar_of_day": 363,
-      "case_id": "2025-11-07-b363-partial",
+      "bar_of_day": 364,
+      "case_id": "2025-11-07-b364-partial",
       "date": "2025-11-07",
       "notes": "no executable contract rows",
       "tags": [
@@ -16022,10 +16022,10 @@
       ]
     },
     {
-      "bar_of_day": 268,
-      "case_id": "2025-11-11-b268-trade",
+      "bar_of_day": 269,
+      "case_id": "2025-11-11-b269-trade",
       "date": "2025-11-11",
-      "notes": "P 6860",
+      "notes": "P 6855",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16041,8 +16041,8 @@
       ]
     },
     {
-      "bar_of_day": 26,
-      "case_id": "2025-11-26-b026-partial",
+      "bar_of_day": 27,
+      "case_id": "2025-11-26-b027-partial",
       "date": "2025-11-26",
       "notes": "no executable contract rows",
       "tags": [
@@ -16053,8 +16053,8 @@
       ]
     },
     {
-      "bar_of_day": 307,
-      "case_id": "2025-11-26-b307-partial",
+      "bar_of_day": 308,
+      "case_id": "2025-11-26-b308-partial",
       "date": "2025-11-26",
       "notes": "no executable contract rows",
       "tags": [
@@ -16065,10 +16065,10 @@
       ]
     },
     {
-      "bar_of_day": 144,
-      "case_id": "2025-12-03-b144-trade",
+      "bar_of_day": 145,
+      "case_id": "2025-12-03-b145-trade",
       "date": "2025-12-03",
-      "notes": "P 6835",
+      "notes": "C 6835",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16077,17 +16077,17 @@
         "direction",
         "time_of_day",
         "midday",
-        "put",
+        "call",
         "market_regime",
         "chop",
         "otm_to_itm"
       ]
     },
     {
-      "bar_of_day": 244,
-      "case_id": "2025-12-05-b244-trade",
+      "bar_of_day": 245,
+      "case_id": "2025-12-05-b245-trade",
       "date": "2025-12-05",
-      "notes": "P 6875",
+      "notes": "P 6880",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16099,13 +16099,12 @@
         "put",
         "market_regime",
         "chop",
-        "late_day_gamma",
-        "otm_to_itm"
+        "late_day_gamma"
       ]
     },
     {
-      "bar_of_day": 335,
-      "case_id": "2025-12-05-b335-partial",
+      "bar_of_day": 336,
+      "case_id": "2025-12-05-b336-partial",
       "date": "2025-12-05",
       "notes": "no executable contract rows",
       "tags": [
@@ -16116,8 +16115,8 @@
       ]
     },
     {
-      "bar_of_day": 43,
-      "case_id": "2025-12-09-b043-trade",
+      "bar_of_day": 44,
+      "case_id": "2025-12-09-b044-trade",
       "date": "2025-12-09",
       "notes": "C 6850",
       "tags": [
@@ -16134,10 +16133,10 @@
       ]
     },
     {
-      "bar_of_day": 246,
-      "case_id": "2025-12-09-b246-trade",
+      "bar_of_day": 247,
+      "case_id": "2025-12-09-b247-trade",
       "date": "2025-12-09",
-      "notes": "P 6850",
+      "notes": "P 6830",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16149,13 +16148,12 @@
         "put",
         "market_regime",
         "chop",
-        "late_day_gamma",
-        "otm_to_itm"
+        "late_day_gamma"
       ]
     },
     {
-      "bar_of_day": 278,
-      "case_id": "2025-12-09-b278-partial",
+      "bar_of_day": 279,
+      "case_id": "2025-12-09-b279-partial",
       "date": "2025-12-09",
       "notes": "no executable contract rows",
       "tags": [
@@ -16166,40 +16164,10 @@
       ]
     },
     {
-      "bar_of_day": 208,
-      "case_id": "2025-12-19-b208-trade",
+      "bar_of_day": 209,
+      "case_id": "2025-12-19-b209-trade",
       "date": "2025-12-19",
-      "notes": "P 6845",
-      "tags": [
-        "contract_identity",
-        "spot_alignment",
-        "execution_fidelity",
-        "risk_management",
-        "direction",
-        "time_of_day",
-        "midday",
-        "put",
-        "market_regime",
-        "chop"
-      ]
-    },
-    {
-      "bar_of_day": 281,
-      "case_id": "2025-12-19-b281-partial",
-      "date": "2025-12-19",
-      "notes": "no executable contract rows",
-      "tags": [
-        "chain_completeness",
-        "partially_observed",
-        "time_of_day",
-        "late_day"
-      ]
-    },
-    {
-      "bar_of_day": 122,
-      "case_id": "2025-12-22-b122-trade",
-      "date": "2025-12-22",
-      "notes": "C 6870",
+      "notes": "C 6825",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16214,10 +16182,40 @@
       ]
     },
     {
-      "bar_of_day": 121,
-      "case_id": "2025-12-23-b121-trade",
+      "bar_of_day": 282,
+      "case_id": "2025-12-19-b282-partial",
+      "date": "2025-12-19",
+      "notes": "no executable contract rows",
+      "tags": [
+        "chain_completeness",
+        "partially_observed",
+        "time_of_day",
+        "late_day"
+      ]
+    },
+    {
+      "bar_of_day": 123,
+      "case_id": "2025-12-22-b123-trade",
+      "date": "2025-12-22",
+      "notes": "C 6865",
+      "tags": [
+        "contract_identity",
+        "spot_alignment",
+        "execution_fidelity",
+        "risk_management",
+        "direction",
+        "time_of_day",
+        "midday",
+        "call",
+        "market_regime",
+        "chop"
+      ]
+    },
+    {
+      "bar_of_day": 122,
+      "case_id": "2025-12-23-b122-trade",
       "date": "2025-12-23",
-      "notes": "C 6895",
+      "notes": "C 6900",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16233,8 +16231,8 @@
       ]
     },
     {
-      "bar_of_day": 359,
-      "case_id": "2025-12-23-b359-partial",
+      "bar_of_day": 360,
+      "case_id": "2025-12-23-b360-partial",
       "date": "2025-12-23",
       "notes": "no executable contract rows",
       "tags": [
@@ -16245,10 +16243,10 @@
       ]
     },
     {
-      "bar_of_day": 111,
-      "case_id": "2025-12-24-b111-trade",
+      "bar_of_day": 112,
+      "case_id": "2025-12-24-b112-trade",
       "date": "2025-12-24",
-      "notes": "C 6915",
+      "notes": "C 6930",
       "tags": [
         "contract_identity",
         "spot_alignment",
@@ -16259,7 +16257,9 @@
         "midday",
         "call",
         "market_regime",
-        "chop"
+        "chop",
+        "otm_to_itm",
+        "wide_vs_tight"
       ]
     },
     {
@@ -16277,8 +16277,7 @@
         "midday",
         "call",
         "market_regime",
-        "chop",
-        "eod_exit"
+        "chop"
       ]
     },
     {

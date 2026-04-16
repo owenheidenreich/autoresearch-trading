@@ -326,6 +326,8 @@ def build_suite(data_path: str = "v2/data.pt", suite_path: str = SUITE_PATH) -> 
                 np.arange(len(bars), dtype=np.int32),
                 [day] * len(bars),
                 local_bar,
+                breakeven_trigger_pct=DEFAULT_POLICY.breakeven_trigger_pct,
+                extra_trailing_tiers=DEFAULT_POLICY.extra_trailing_tiers,
             )
             if trade is not None and trade.exit_reason == "EOD":
                 tags.append("eod_exit")
@@ -426,6 +428,8 @@ def _evaluate_case_with_context(case: dict, sidecar: dict, day_indices: np.ndarr
         np.arange(n_day_bars, dtype=np.int32),
         [day] * n_day_bars,
         local_bar,
+        breakeven_trigger_pct=DEFAULT_POLICY.breakeven_trigger_pct,
+        extra_trailing_tiers=DEFAULT_POLICY.extra_trailing_tiers,
     )
 
     expected = float(labels[best_local])

@@ -24,7 +24,7 @@ class RuntimeConfig:
     num_features: int = 52
     num_contract_features: int = 22
     lookback: int = 30
-    max_contracts_per_bar: int = 100
+    max_contracts_per_bar: int = 285  # observed max from data.pt metadata; training uses metadata value
 
     # --- Trading constants ---
     strike_grid: float = 5.0

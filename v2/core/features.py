@@ -41,7 +41,7 @@ SPX_MULTIPLIER = 100
 
 # Canonical feature names (must match v2/pipeline/compute_features.py order)
 FEATURE_NAMES = [
-    # Price/market structure (28)
+    # Price/market structure (29)
     'ret_6', 'ret_12', 'volume_ratio', 'bar_range', 'realized_vol',
     'range_ratio', 'vwap_dist', 'session_range_pct', 'prev_high_dist',
     'ema_cross', 'consec_direction', 'speed_estimate', 'vix_roc',
