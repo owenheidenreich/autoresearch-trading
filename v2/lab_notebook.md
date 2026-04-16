@@ -134,6 +134,35 @@ Three experiments tested: consensus label (exp_160), gate-disabled consensus (ex
 
 **All reverted.** train.py reset to baseline defaults (strict, GATE_W=1.0, OPP_W=0.5).
 
+## exp_163 Series: Task Shaping + Replay Bug Discovery (2026-04-16)
+
+**Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
+
+Five screening attempts on the H100. All failed, but attempt 5 uncovered and fixed a critical replay.py bug.
+
+| Attempt | Exp ID | Changes | PF | Trades | DD | WR | Direction |
+|---------|--------|---------|-----|--------|-----|-----|-----------|
+| 1 | exp_163 | GATE_W=1, gate_thresh=0, OPP_W=0.5, SIDE_W=0.5 | 0.578 | 307 | 101% | 41.7% | 47C/53P |
+| 2 | exp_163b | SOFT_TEMP=0.08, SIDE_W=0.5, GATE_W=0, OPP_W=0 | 0.536 | 285 | 101% | 35.1% | 32C/68P |
+| 3 | exp_163c | DROPOUT=0.15, WD=0.08, SIDE_W=0.5 | 0.573 | 316 | 101% | 36.1% | 42C/58P |
+| 4 | exp_163d | baseline reproduction (exact exp_154 config) | 0.524 | 342 | 100% | 40.6% | 78C/22P |
+| 5 | exp_163e | baseline + replay.py fix | **0.745** | 673 | 108% | 45.8% | 76C/24P |
+
+**Critical bug found (attempt 4→5):** The replay.py change from the exp_163 prep commit (git `4fd0acc`) hardwired `side_logit` as `direction_logit` and `opportunity_logit` as `gate_logit`, removing the fallback. When SIDE_W=0, the side head is untrained (random), so direction filtering was random. This caused the exp_154 baseline to degrade from PF=0.745→0.524, and made ALL configurations appear to fail regardless of hyperparameters.
+
+**Fix (git `3c790d0`):** Only use `side_logit` for direction when SIDE_W > 0; otherwise pass None so `model_to_intent` falls into the opportunity-gated ranking path (no direction filtering).
+
+**Also fixed:** macOS `._*` resource fork files caused sidecar count mismatch in deploy.sh (git `e8a71b5`).
+
+**Key findings:**
+1. All SIDE_W=0.5 variants (attempts 1-3) produced worse PF than baseline even with the bug fixed — the side head at 0.5 weight is actively harmful
+2. The baseline (PF=0.745) reproduces exactly when replay.py is correct, confirming the supervised architecture is stable but ceiling-limited
+3. The 8+ consecutive regressions from exp_155-162 were NOT caused by this bug — those used the pre-change replay.py code
+
+**Provenance:** Git `4fd0acc` through `3c790d0`, dataset `bbf868bbb4d4b23e`.
+
+**train.py reverted to baseline defaults.** replay.py and deploy.sh fixes kept.
+
 ## Post-Reset Diagnostic (2026-04-10)
 
 ### Why The Score Dropped from 5.4 to -0.2
