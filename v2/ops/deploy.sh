@@ -33,11 +33,6 @@ DATA_PT="${V2_DATA_PATH:-$PROJECT_ROOT/v2/data.pt}"
 STATE_FILE="$PROJECT_ROOT/.deploy-state"
 
 SSH_PASS="${DEPLOY_SSH_PASS:-autoresearch2026}"
-# Auto-source .env if ANTHROPIC_API_KEY is not already set
-if [[ -z "${ANTHROPIC_API_KEY:-}" && -f "$PROJECT_ROOT/.env" ]]; then
-    set -a; source "$PROJECT_ROOT/.env"; set +a
-fi
-ANTHROPIC_KEY="${ANTHROPIC_API_KEY:-}"
 # Optional override to force a specific provider for bidding.
 AKASH_PROVIDER_OVERRIDE="${AKASH_PROVIDER_OVERRIDE:-}"
 # Preferred GPU model order (comma separated) for provider selection.
@@ -165,7 +160,6 @@ run_local_pre_run_gate() {
 # BOOT — deploy H100 on Akash, wait until SSH is accessible
 # ===================================================================
 cmd_boot() {
-    [[ -n "$ANTHROPIC_KEY" ]] || die "Set ANTHROPIC_API_KEY environment variable before deploying"
     log "=== BOOT: Creating Akash GPU Deployment ==="
     [[ -f "$SDL_FILE" ]] || die "SDL not found: $SDL_FILE"
 
@@ -475,7 +469,6 @@ print('')
 # START — upload v2 codebase + data, prepare for experiments
 # ===================================================================
 cmd_start() {
-    [[ -n "$ANTHROPIC_KEY" ]] || die "Set ANTHROPIC_API_KEY environment variable before deploying"
     load_state
     log "=== START: Uploading v2 codebase + data ==="
 
@@ -998,10 +991,24 @@ cmd_run_one() {
     fi
     log "Code uploaded. Training..."
 
+    # Upload frozen teacher model if COMP_MODE=frozen and COMP_W is set
+    if [[ -n "${COMP_W:-}" ]] && [[ "${COMP_MODE:-frozen}" == "frozen" ]]; then
+        local teacher_path="${COMP_TEACHER:-$PROJECT_ROOT/v2/models/model.pt}"
+        if [[ -f "$teacher_path" ]]; then
+            log "Uploading frozen teacher from $teacher_path..."
+            ssh_cmd "mkdir -p /root/v2/models"
+            scp_cmd "$teacher_path" "root@$SSH_HOST:/root/v2/models/model.pt"
+        else
+            log "WARNING: teacher not found at $teacher_path"
+        fi
+    fi
+
     # 2. Run experiment (blocking, ~5 min) — capture output to parse results
+    # TRAIN_ENV: space-separated KEY=VALUE pairs forwarded to the remote command
+    local env_prefix="${TRAIN_ENV:-}"
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1 | tee /root/run.log") || true
     echo "$run_output"  # still show output to Claude
 
     # 3. Download new model.pt to staging (never overwrite the promoted model directly)
@@ -1093,10 +1100,24 @@ cmd_run_screen() {
     fi
     log "Code uploaded. Screening (1-fold)..."
 
+    # Upload frozen teacher model if COMP_MODE=frozen and COMP_W is set
+    if [[ -n "${COMP_W:-}" ]] && [[ "${COMP_MODE:-frozen}" == "frozen" ]]; then
+        local teacher_path="${COMP_TEACHER:-$PROJECT_ROOT/v2/models/model.pt}"
+        if [[ -f "$teacher_path" ]]; then
+            log "Uploading frozen teacher from $teacher_path..."
+            ssh_cmd "mkdir -p /root/v2/models"
+            scp_cmd "$teacher_path" "root@$SSH_HOST:/root/v2/models/model.pt"
+        else
+            log "WARNING: teacher not found at $teacher_path"
+        fi
+    fi
+
     # 2. Run 1-fold screening (no artifacts saved) — capture output to parse results
+    # TRAIN_ENV: space-separated KEY=VALUE pairs forwarded to the remote command
+    local env_prefix="${TRAIN_ENV:-}"
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1 | tee /root/run.log") || true
     echo "$run_output"  # still show output to Claude
 
     # 3. No model download, no artifact download, and no results.tsv entry for screening

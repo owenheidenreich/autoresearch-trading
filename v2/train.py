@@ -397,11 +397,15 @@ def _compute_competence_label(
     comp_mode: str = "frozen",
     label_quality: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Compute composite competence label from ranking outcomes.
+    """Compute competence label: can the ranker land in the top 5 contracts?
+
+    Target: rank<=5 (absolute rank, not percentile).
+    AUC 0.697, 32.8% positive rate, lift@10 2.0 — the most learnable
+    competence signal available from context features.
 
     Returns (label_binary, label_continuous, comp_valid) where:
-      label_binary: thresholded at 0.5 for balanced BCE
-      label_continuous: 0.5*win + 0.3*top5 + 0.2*norm_rank in [0, 1]
+      label_binary: 1 if chosen contract rank <= 5, else 0
+      label_continuous: normalized rank (1 = best, 0 = worst) for diagnostics
       comp_valid: mask of bars with finite chosen PnL
     """
     B = labels.size(0)
@@ -432,12 +436,10 @@ def _compute_competence_label(
         chosen_rank = (valid_pnl > chosen_pnl.unsqueeze(-1)).sum(dim=-1) + 1
         n_valid = valid_mask.sum(dim=-1).float().clamp(min=1)
 
-        # Composite: weighted combination of three signals
-        win = (chosen_pnl > 0.04).float()                     # friction-aware win
-        top5 = (chosen_rank <= 5).float()                      # good rank
-        norm_rank = (1.0 - chosen_rank.float() / n_valid)      # continuous [0, 1]
-        label_cont = (0.5 * win + 0.3 * top5 + 0.2 * norm_rank).clamp(0, 1)
-        label_bin = (label_cont > 0.5).float()
+        # Primary target: absolute top-5 rank
+        label_bin = (chosen_rank <= 5).float()
+        # Continuous diagnostic: normalized rank
+        label_cont = (1.0 - chosen_rank.float() / n_valid).clamp(0, 1)
 
         comp_valid = torch.isfinite(chosen_pnl)
         label_bin[~comp_valid] = 0.0
