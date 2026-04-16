@@ -531,11 +531,10 @@ PY
         ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")' && zstd -d /root/v2-sidecars.tar.zst -o /root/v2-sidecars.tar && tar -xf /root/v2-sidecars.tar -C /tmp && mv /tmp/autoresearch-stripped-sidecars-* '$remote_sidecar_dir' && rm -f /root/v2-sidecars.tar.zst /root/v2-sidecars.tar"
         ssh_cmd "test -d '$remote_sidecar_dir'" || die "Remote sidecar upload failed: $remote_sidecar_dir missing"
 
-        # Verify sidecar count matches local
-        local local_count
-        local_count=$(find "$stripped_dir" -name '*.pt' | wc -l | tr -d ' ')
-        local remote_count
-        remote_count=$(ssh_cmd "find '$remote_sidecar_dir' -name '*.pt' | wc -l" | tr -d ' ')
+        # Verify sidecar count matches local (use source dir — stripped dir is already cleaned up)
+        local local_count remote_count
+        local_count=$(find "$sidecar_abs" -name '*.pt' 2>/dev/null | wc -l | tr -d ' ')
+        remote_count=$(ssh_cmd "find '$remote_sidecar_dir' -name '*.pt' 2>/dev/null | wc -l" | tr -d ' ')
         if [ "$local_count" != "$remote_count" ]; then
             die "Sidecar count mismatch: local=$local_count remote=$remote_count"
         fi
