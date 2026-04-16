@@ -108,6 +108,32 @@ Controlled search over the allowed hyperparameter space to improve selectivity v
 
 **Decision:** Implement consensus label as `OPP_LABEL="consensus"` for first test. Also wired up frac_profitable as continuous target for follow-up. Updated `strip_sidecars.py` to preserve `row_labels_short`, `row_labels_eod`, `bar_best_pnl` in GPU uploads.
 
+## exp_160–162: Opportunity Label Redesign Results (2026-04-15)
+
+**Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
+
+Three experiments tested: consensus label (exp_160), gate-disabled consensus (exp_161), and a pure contract ranker ablation (exp_162). All regressed from the exp_154 baseline.
+
+| Exp | Change | PF | Trades | DD | Direction | Best Ep |
+|-----|--------|-----|--------|-----|-----------|---------|
+| 154 | baseline | 0.745 | 673 | 108% | 76C/24P | 3 |
+| 160 | consensus label (3-policy) | 0.585 | 485 | 100% | 91C/9P | 1 |
+| 161 | consensus + OPP_W=0 | 0.577 | 442 | 101% | 89C/11P | 1 |
+| 162 | no gates at all | 0.698 | 573 | 101% | 82C/18P | 5 |
+
+**Findings:**
+1. Consensus label (16.6% trade rate) is too aggressive — the model can't learn from it (best epoch 1, immediate overfit)
+2. Removing the opportunity head (exp_161) doesn't help — same regression
+3. Removing ALL gate mechanisms (exp_162) makes PF *worse* (0.698 vs 0.745) — the existing gate provides mild regularization benefit even though it can't learn selectivity
+4. All binary opportunity labels have max |r| ≈ 0.05 with context features — fundamentally unlearnable
+5. Only `frac_profitable` (continuous) has meaningful signal (max |r|=0.126), but hasn't been tested as a training target yet
+
+**Conclusion:** Direction #1 (rebuild opportunity target) is partially exhausted for binary labels. The consensus, high-threshold, and no-gate configurations all regress. The remaining untested avenue is continuous quality scoring (frac_profitable with MSE loss), which has 2x stronger context correlation. However, the broader pattern — 8 consecutive screening regressions from exp_154 baseline — suggests the supervised architecture has reached its ceiling on the full-day regime.
+
+**Provenance:** Git `8a0d49c` through `a339cfe`, dataset `bbf868bbb4d4b23e`.
+
+**All reverted.** train.py reset to baseline defaults (strict, GATE_W=1.0, OPP_W=0.5).
+
 ## Post-Reset Diagnostic (2026-04-10)
 
 ### Why The Score Dropped from 5.4 to -0.2
