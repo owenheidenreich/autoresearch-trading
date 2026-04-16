@@ -39,7 +39,7 @@ EXACT_W = float(os.environ.get("EXACT_W", 0.0))
 OPP_W = float(os.environ.get("OPP_W", 0.5))
 SIDE_W = float(os.environ.get("SIDE_W", 0.0))
 AGG_W = float(os.environ.get("AGG_W", 0.0))
-QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss by frac_profitable
+QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 1))  # 1 = weight selection loss by frac_profitable
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
