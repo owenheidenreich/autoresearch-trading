@@ -1,24 +1,24 @@
-"""Build a training-only copy of sidecars, stripping replay-only fields
-and downcast float32 → float16 for upload.
+"""Build a GPU-upload copy of sidecars: drop unused fields, downcast
+float32 → float16 where safe.
 
-Training (train.py) reads only these sidecar fields:
-  bar_ptrs, row_features, row_labels, row_contract_idx,
-  bar_best_contract_idx, bar_label_trade, bar_labelable,
-  row_raw_returns, row_mfe, row_mae, row_bars_to_breakeven
+Both training (train.py) and replay (replay.py) run on GPU during
+experiments. Training needs contract features and labels; replay also
+needs chain price matrices and contract metadata for trade simulation.
 
-The remaining fields (contract_mid/bid/ask/quality, row_labels_short,
-row_labels_eod, row_impulse_fraction, bar_timestamps, bar_quality,
-bar_best_pnl, contract_strike, contract_right, schema_version, date,
-expiry, n_bars) are used only by replay, analysis, and simulation.
+Fields dropped (unused by both training and replay):
+  schema_version, n_bars, bar_quality, bar_best_pnl,
+  row_labels_short, row_labels_eod, row_impulse_fraction
 
-Float32 training fields are downcast to float16 for transfer. Training
-upcasts back to float32 on load (train.py materializes all contract
-data into float32 tensors via padded_snapshot). Verified: max relative
-error is 0.05% on features, 0.05% on labels, zero strict-opportunity
-mismatches across 4800+ bars.
+Float32 fields are downcast to float16 for transfer. Training upcasts
+back to float32 on load (train.py materializes all contract data into
+float32 tensors via padded_snapshot). Replay reads chain matrices for
+simulation — float16 prices introduce < 0.1% error on contracts > $0.50.
+
+Verified: zero strict-opportunity mismatches across 4800+ bars, max
+feature relative error 2.97% (charm only), max label error 0.0003.
 
 Full sidecars remain on disk. This script creates a temporary directory
-of stripped, compressed copies for GPU upload only.
+of compressed copies for GPU upload only.
 
 Usage:
     python -m v2.ops.strip_sidecars v2/data_sidecars /tmp/stripped_sidecars
@@ -32,23 +32,18 @@ from pathlib import Path
 import numpy as np
 import torch
 
-TRAINING_FIELDS = {
-    "bar_ptrs",
-    "row_features",
-    "row_labels",
-    "row_contract_idx",
-    "bar_best_contract_idx",
-    "bar_label_trade",
-    "bar_labelable",
-    # Strict opportunity mode (OPP_LABEL == "strict")
-    "row_raw_returns",
-    "row_mfe",
-    "row_mae",
-    "row_bars_to_breakeven",
+# Fields unused by both training and replay — safe to drop entirely.
+DROP_FIELDS = {
+    "schema_version",
+    "n_bars",
+    "bar_quality",
+    "bar_best_pnl",
+    "row_labels_short",
+    "row_labels_eod",
+    "row_impulse_fraction",
 }
 
 # Float32 fields to downcast to float16 for transfer size reduction.
-# Training upcasts back to float32 on load via padded_snapshot → torch.from_numpy.
 DOWNCAST_F16_FIELDS = {
     "row_features",
     "row_labels",
@@ -56,14 +51,17 @@ DOWNCAST_F16_FIELDS = {
     "row_mfe",
     "row_mae",
     "row_bars_to_breakeven",
+    "contract_mid",
+    "contract_bid",
+    "contract_ask",
 }
 
 
 def strip_sidecar(src: dict) -> dict:
-    """Return a new dict with only training fields, float32 downcast to float16."""
+    """Return a new dict dropping unused fields, float32 downcast to float16."""
     out = {}
     for k, v in src.items():
-        if k not in TRAINING_FIELDS:
+        if k in DROP_FIELDS:
             continue
         arr = np.asarray(v)
         if k in DOWNCAST_F16_FIELDS and arr.dtype == np.float32:
