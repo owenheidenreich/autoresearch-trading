@@ -371,8 +371,15 @@ PY
         --provider "$PROVIDER" --from "$AKASH_FROM" \
         --yes --output json 2>&1)
     LEASE_HASH=$(echo "$LEASE_TX" | grep -o '"txhash":"[^"]*"' | head -1 | cut -d'"' -f4)
+    [[ -n "$LEASE_HASH" ]] || { echo "$LEASE_TX"; die "No lease txhash returned"; }
     log "Lease TX: $LEASE_HASH"
     sleep 8
+
+    # 5b. Verify lease TX succeeded (prevents silent failures)
+    LEASE_RESULT=$(provider-services query tx "$LEASE_HASH" --node "$AKASH_NODE" --output json 2>&1)
+    LEASE_CODE=$(echo "$LEASE_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',1))" 2>/dev/null || echo "1")
+    [[ "$LEASE_CODE" == "0" ]] || { echo "$LEASE_RESULT" | head -30; die "Lease TX failed (code=$LEASE_CODE). Provider may have rejected."; }
+    log "Lease confirmed"
 
     # 6. Send manifest (retry 3x)
     log "Sending manifest..."
@@ -422,8 +429,39 @@ print('')
 
     save_state
 
-    # 8. Wait for SSH + verify GPU
-    wait_for_ssh
+    # 8. Wait for SSH + verify GPU (auto-retry: close and re-deploy if SSH fails)
+    log "Waiting for SSH (will auto-retry boot once if SSH fails)..."
+    local ssh_ok=false
+    for _ in $(seq 1 90); do
+        if ssh_cmd "echo OK" &>/dev/null; then
+            ssh_ok=true
+            break
+        fi
+        sleep 5
+        printf "."
+    done
+
+    if [[ "$ssh_ok" != "true" ]]; then
+        log ""
+        log "WARNING: SSH not available after 7.5 minutes — closing deployment and retrying boot..."
+        provider-services tx deployment close \
+            --dseq "$DSEQ" --from "$AKASH_FROM" \
+            --gas auto --gas-adjustment 1.5 --gas-prices 0.025uakt \
+            --yes --output json 2>&1 || true
+        rm -f "$STATE_FILE"
+        sleep 10
+        # Guard against infinite recursion: only retry once
+        if [[ "${_BOOT_RETRY:-0}" -ge 1 ]]; then
+            die "SSH failed after retry. Check Akash Console or try a different provider."
+        fi
+        export _BOOT_RETRY=1
+        log "Retrying boot (attempt 2)..."
+        cmd_boot
+        return
+    fi
+
+    log ""
+    log "SSH ready!"
     GPU=$(ssh_cmd "nvidia-smi --query-gpu=name,memory.total --format=csv,noheader" 2>/dev/null || echo "unknown")
     log ""
     log "=== GPU READY ==="
