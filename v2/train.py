@@ -39,6 +39,7 @@ EXACT_W = float(os.environ.get("EXACT_W", 0.0))
 OPP_W = float(os.environ.get("OPP_W", 0.5))
 SIDE_W = float(os.environ.get("SIDE_W", 0.0))
 AGG_W = float(os.environ.get("AGG_W", 0.0))
+QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss by frac_profitable
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
@@ -49,7 +50,7 @@ _TRAINING_ENV_VARS = [
     "TRAIN_DROPOUT", "TRAIN_BATCH_SIZE", "TRAIN_LR", "TRAIN_WEIGHT_DECAY",
     "TRAIN_EPOCHS", "TIME_BUDGET", "WEIGHT_SEL", "WEIGHT_GATE", "TRAIN_SEED",
     "OPP_LABEL", "SOFT_TEMP", "NOISE_MARGIN", "AMBIG_WEIGHT",
-    "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W",
+    "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
     "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
 ]
@@ -395,6 +396,7 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
     label_trade_valid = targets["label_trade_valid"].to(device)
     contracts_full = targets["contracts_full"].to(device)
 
+    label_quality = targets["label_quality"].to(device)
     supervised_rows = label_trade_valid
     trade_rows = supervised_rows & label_trade & (best_idx >= 0)
     opportunity_logit = outputs["opportunity_logit"]
@@ -525,6 +527,10 @@ def compute_loss(outputs: dict[str, torch.Tensor], targets: dict[str, torch.Tens
             logits_for_sel[~tr_valid] = -1e9
             log_probs = F.log_softmax(logits_for_sel, dim=-1)
             per_bar_kl = F.kl_div(log_probs, target, reduction="none").sum(dim=-1)
+            # Quality weighting: emphasize bars with many profitable contracts
+            if QUALITY_SEL:
+                q_weight = label_quality[trade_rows].clamp(min=0.05)
+                bar_weight = bar_weight * q_weight
             sel_loss = (per_bar_kl * bar_weight).mean()
 
     # --- B2. Exact-oracle cross-entropy: push exact oracle contract above neighbors ---
