@@ -134,6 +134,41 @@ Three experiments tested: consensus label (exp_160), gate-disabled consensus (ex
 
 **All reverted.** train.py reset to baseline defaults (strict, GATE_W=1.0, OPP_W=0.5).
 
+## exp_164 Series: Gate Threshold Discovery (2026-04-16)
+
+**Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
+
+Five screening attempts exploring quality-weighted loss and gate threshold tuning. Gate threshold activation produced the best improvement seen in the full-day regime.
+
+| Attempt | Exp ID | Changes | PF | Trades | TPD | DD | WR | +DayRate |
+|---------|--------|---------|-----|--------|-----|-----|-----|----------|
+| baseline | exp_154 | — | 0.745 | 673 | 12.9 | 108% | 45.8% | 30.8% |
+| 1 | exp_164 | QUALITY_SEL=1 (not activated on GPU) | 0.745 | 673 | 12.9 | 108% | 45.8% | 30.8% |
+| 2 | exp_164b | QUALITY_SEL=1 (actually active) | 0.738 | 720 | 13.8 | 106% | 45.8% | 32.7% |
+| **3** | **exp_164c** | **gate_threshold=0.0** | **0.774** | **511** | **9.8** | **76%** | **47.6%** | **38.5%** |
+| 4 | exp_164d | gate_threshold=1.0 | — | 0 | 0 | 0% | — | — |
+| 5 | exp_164e | gate_threshold=0.5 | 0.331 | 3 | 0.05 | 2.4% | 33.3% | 50% |
+
+**Key discovery: gate_threshold=0.0 is the best single-lever improvement found.**
+
+The opportunity head (OPP_W=0.5, 54% accuracy) was trained but its output was never used at eval time (threshold=-100). Raising threshold to 0.0 activates it as a filter:
+- PF: 0.745 → **0.774** (+3.9%)
+- Trades: 673 → **511** (-24%)
+- DD: 108% → **76.2%** (-30pp)
+- WR: 45.8% → **47.6%**
+- Net P&L: -$10,805 → **-$7,616** (+30%)
+- Positive day rate: 30.8% → **38.5%**
+
+The gate preferentially filters bad trades even with only 54% accuracy. However, the opportunity_logit distribution is very tight: threshold=0.5 kills almost all trades (3 out of 60 days), threshold=1.0 kills everything. The usable range is approximately [0.0, 0.3].
+
+**Quality-weighted selection loss (QUALITY_SEL):** No meaningful effect. Reduces loss magnitude (sel_loss 0.56→0.22) but doesn't change what the model learns. The val checkpoint criterion (opp_loss) is unaffected.
+
+**Remaining gap:** Even with the best config (gate=0.0), DD=76% is still 3x above the 25% gate. The supervised model cannot solve drawdown through filtering alone — it lacks trajectory-level risk management.
+
+**Provenance:** Git `310c413` through `b18d3be`, dataset `bbf868bbb4d4b23e`.
+
+**Best config retained:** gate_threshold=0.0 in policy.py. QUALITY_SEL reverted to 0.
+
 ## exp_163 Series: Task Shaping + Replay Bug Discovery (2026-04-16)
 
 **Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
