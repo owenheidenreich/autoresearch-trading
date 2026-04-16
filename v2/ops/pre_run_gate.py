@@ -242,6 +242,93 @@ def check_harness_eval(data_path: str, errors: list[str]) -> None:
         errors.append(f"harness_eval failed:\n{output}")
 
 
+def check_data_provenance(data_path: str, errors: list[str]) -> None:
+    """Verify dataset fingerprint, config fingerprint, sidecar digest, and build SHA."""
+    import glob
+    from v2.core.config import RUNTIME_CONFIG
+    from v2.core.chain_data import manifest_sidecar_digest
+    from v2.core.dataset_fingerprint import compute_dataset_fingerprint
+
+    data = torch.load(data_path, map_location="cpu", weights_only=False)
+    meta = data.get("metadata", {})
+
+    # 1. Config field-level check (label-affecting fields only)
+    # max_contracts_per_bar is observational (derived from data, not prescribed),
+    # so changes to it don't invalidate labels. Only check fields that affect
+    # feature computation, label simulation, or schema interpretation.
+    LABEL_AFFECTING_FIELDS = {
+        "num_features", "num_contract_features", "lookback",
+        "bars_per_day", "strike_grid", "chain_schema_version",
+    }
+    stored_cfg = meta.get("config_snapshot", {})
+    if not stored_cfg:
+        # Older builds stored config_fingerprint but not config_snapshot.
+        # Fall back to fingerprint comparison with a softer message.
+        stored_cfg_fp = meta.get("config_fingerprint", "")
+        current_cfg_fp = RUNTIME_CONFIG.fingerprint()
+        if stored_cfg_fp and stored_cfg_fp != current_cfg_fp:
+            print(f"  WARNING: config fingerprint mismatch: data={stored_cfg_fp} current={current_cfg_fp}")
+            print(f"  This may be due to non-label-affecting changes (e.g., max_contracts_per_bar).")
+            print(f"  Checking individual label-affecting fields instead...")
+            # Check the fields we can verify from metadata
+            if meta.get("n_features") and meta["n_features"] != RUNTIME_CONFIG.num_features:
+                errors.append(f"label-affecting config: n_features data={meta['n_features']} != config={RUNTIME_CONFIG.num_features}")
+            csv_ = meta.get("chain_schema_version", "")
+            if csv_ and csv_ != RUNTIME_CONFIG.chain_schema_version:
+                errors.append(f"label-affecting config: chain_schema_version data={csv_} != config={RUNTIME_CONFIG.chain_schema_version}")
+
+    # 2. Schema + feature validation
+    meta_errors = RUNTIME_CONFIG.validate_dataset_metadata(meta)
+    for e in meta_errors:
+        errors.append(f"metadata validation: {e}")
+
+    # 3. Dataset fingerprint (content-based)
+    stored_fp = meta.get("fingerprint", "")
+    if stored_fp:
+        computed_fp = compute_dataset_fingerprint(data)
+        if computed_fp != stored_fp:
+            errors.append(
+                f"dataset fingerprint mismatch: stored={stored_fp} computed={computed_fp} "
+                f"— data.pt contents have been modified since build"
+            )
+
+    # 4. Sidecar digest — recompute from files and compare to stored
+    sidecar_dir = meta.get("chain_sidecar_dir", "v2/data_sidecars")
+    stored_digest = meta.get("chain_sidecar_digest", "")
+    if stored_digest and os.path.isdir(sidecar_dir):
+        sidecar_files = sorted(glob.glob(os.path.join(sidecar_dir, "*.pt")))
+        if sidecar_files:
+            current_digest = manifest_sidecar_digest(sidecar_files)
+            if current_digest != stored_digest:
+                errors.append(
+                    f"sidecar digest mismatch: stored={stored_digest} computed={current_digest} "
+                    f"— sidecars have been modified since dataset build, rebuild required"
+                )
+            print(f"  Sidecar digest verified: {current_digest} ({len(sidecar_files)} files)")
+        else:
+            errors.append(f"sidecar directory {sidecar_dir} exists but contains no .pt files")
+    elif not os.path.isdir(sidecar_dir):
+        errors.append(f"sidecar directory not found: {sidecar_dir}")
+
+    # 5. Build SHA warning (non-blocking, but logged)
+    build_sha = meta.get("build_git_sha", "")
+    if build_sha:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT),
+        )
+        current_sha = result.stdout.strip()[:7] if result.returncode == 0 else "unknown"
+        if current_sha != "unknown" and build_sha[:7] != current_sha[:7]:
+            # Count commits since build
+            result2 = subprocess.run(
+                ["git", "rev-list", "--count", f"{build_sha}..HEAD"],
+                capture_output=True, text=True, cwd=str(PROJECT_ROOT),
+            )
+            n_commits = result2.stdout.strip() if result2.returncode == 0 else "?"
+            print(f"  WARNING: data built at {build_sha[:7]}, current HEAD is {current_sha} ({n_commits} commits ahead)")
+            print(f"  Pipeline code may have changed. Verify no label-affecting changes before training.")
+
+
 def check_data_integrity(data_path: str, errors: list[str]) -> None:
     """Run data integrity validation on manifest and sampled sidecars."""
     from v2.core.data_integrity import run_full_validation, print_validation_summary
@@ -268,6 +355,7 @@ def main() -> int:
     check_live_text_patterns(errors)
     check_doc_sync(errors)
     check_train_smoke(data_path, errors)
+    check_data_provenance(data_path, errors)
     check_data_integrity(data_path, errors)
     check_harness_eval(data_path, errors)
 
