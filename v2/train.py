@@ -36,7 +36,7 @@ NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
 SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.0))
 EXACT_W = float(os.environ.get("EXACT_W", 0.0))
-OPP_W = float(os.environ.get("OPP_W", 2.0))
+OPP_W = float(os.environ.get("OPP_W", 0.5))
 SIDE_W = float(os.environ.get("SIDE_W", 0.0))
 AGG_W = float(os.environ.get("AGG_W", 0.0))
 QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss by frac_profitable
