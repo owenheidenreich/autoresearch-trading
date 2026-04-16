@@ -11,7 +11,7 @@ class DecisionPolicy:
     """All parameters that materially shape trading decisions."""
 
     # Entry gate
-    gate_threshold: float = 0.0
+    gate_threshold: float = 0.05
     label_gate_min_pnl: float = 0.04
 
     # Executability filters
