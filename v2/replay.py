@@ -9,6 +9,8 @@ import time
 import uuid
 from collections import defaultdict
 
+import random as _random
+
 import numpy as np
 import torch
 
@@ -277,6 +279,12 @@ def replay_validation(
     num_days = 0
     vix_idx = _FEAT_IDX.get("vix_regime", 14)
 
+    # Session-aware overlay counters
+    daily_trades = 0
+    daily_consecutive_stops = 0
+    effective_gate_boost = 0.0
+    blocked_trades: list[dict] = []  # counterfactual tracking
+
     for i, (day, global_bar, local_bar) in enumerate(eligible):
         if day != current_day:
             current_day = day
@@ -286,6 +294,9 @@ def replay_validation(
             last_stop_bar = -policy.cooldown_bars - 1
             daily_dollar_pnl = 0.0
             daily_loss_cap_hit = False
+            daily_trades = 0
+            daily_consecutive_stops = 0
+            effective_gate_boost = 0.0
 
         # --- Skip checks with trace capture ---
         outputs_i = {k: v[i] for k, v in all_outputs.items()}
@@ -330,11 +341,54 @@ def replay_validation(
                 traces.append(_make_trace("no_trade", skip_reason="cooldown"))
             continue
 
+        # --- Session-aware overlay checks ---
+        # Helper: estimate counterfactual outcome for blocked bars using oracle labels
+        def _blocked_outcome() -> dict:
+            """Check what would have happened if we traded this bar."""
+            scores = c_scores_np.copy()
+            mask_valid = v_mask_np.copy()
+            scores[~mask_valid] = -1e9
+            best_row = int(np.argmax(scores)) if mask_valid.any() else -1
+            if best_row >= 0:
+                oracle_pnl = float(all_contract_labels[i][best_row])
+                if np.isfinite(oracle_pnl):
+                    return {"day": day, "bar": local_bar, "oracle_pnl": oracle_pnl,
+                            "would_have_won": oracle_pnl > 0}
+            return {"day": day, "bar": local_bar, "oracle_pnl": float("nan"),
+                    "would_have_won": False}
+
+        if daily_trades >= policy.max_daily_trades:
+            outcome = _blocked_outcome()
+            outcome["reason"] = "max_daily_trades"
+            blocked_trades.append(outcome)
+            if collect_traces:
+                traces.append(_make_trace("no_trade", skip_reason="max_daily_trades"))
+            continue
+        if daily_consecutive_stops >= policy.max_consecutive_stops:
+            outcome = _blocked_outcome()
+            outcome["reason"] = "consecutive_stops"
+            blocked_trades.append(outcome)
+            if collect_traces:
+                traces.append(_make_trace("no_trade", skip_reason="consecutive_stops"))
+            continue
+        if policy.random_skip_pct > 0 and _random.random() < policy.random_skip_pct:
+            outcome = _blocked_outcome()
+            outcome["reason"] = "random_skip"
+            blocked_trades.append(outcome)
+            if collect_traces:
+                traces.append(_make_trace("no_trade", skip_reason="random_skip"))
+            continue
+
         sidecar = load_sidecar_cached(os.path.join(sidecar_dir, f"{day}.pt"))
         contract_features_t = torch.from_numpy(all_contracts[i])
         contract_indices_t = torch.from_numpy(all_contract_indices[i])
         # Use opportunity_logit as gate; side_logit for direction only if side head was trained
         from v2.train import SIDE_W as _side_w
+        # Apply gate tightening overlay if active
+        import dataclasses as _dc
+        effective_policy = policy
+        if effective_gate_boost > 0:
+            effective_policy = _dc.replace(policy, gate_threshold=policy.gate_threshold + effective_gate_boost)
         intent = model_to_intent(
             no_trade_score=outputs_i.get("no_trade_score"),
             gate_logit=outputs_i.get("opportunity_logit"),
@@ -347,11 +401,16 @@ def replay_validation(
             sidecar=sidecar,
             local_bar=local_bar,
             spot_price=float(spot_prices[global_bar]),
-            policy=policy,
+            policy=effective_policy,
         )
         if not intent.trade:
+            skip_reason = "gate_tightened" if effective_gate_boost > 0 else "gate"
             if collect_traces:
-                traces.append(_make_trace("no_trade", skip_reason="gate"))
+                traces.append(_make_trace("no_trade", skip_reason=skip_reason))
+            if effective_gate_boost > 0:
+                outcome = _blocked_outcome()
+                outcome["reason"] = "gate_tightened"
+                blocked_trades.append(outcome)
             continue
 
         series = extract_contract_series(sidecar, intent.contract_index)["mid"].astype(np.float32)
@@ -388,6 +447,11 @@ def replay_validation(
             daily_loss_cap_hit = True
         if trade.exit_reason == "STOP_LOSS":
             last_stop_bar = trade_exit_bar
+            daily_consecutive_stops += 1
+            effective_gate_boost += policy.gate_tighten_after_loss
+        else:
+            daily_consecutive_stops = 0
+        daily_trades += 1
 
         # Backfill trace with realized outcome
         if collect_traces:
@@ -406,6 +470,7 @@ def replay_validation(
             traces.append(t)
 
     metrics = compute_metrics(trades, num_days=max(num_days, 1), starting_equity=policy.starting_equity, contract_multiplier=policy.contract_multiplier)
+    metrics.blocked_trades = blocked_trades  # attach overlay diagnostic data
 
     # Save and summarize traces
     if collect_traces:

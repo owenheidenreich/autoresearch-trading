@@ -134,6 +134,64 @@ Three experiments tested: consensus label (exp_160), gate-disabled consensus (ex
 
 **All reverted.** train.py reset to baseline defaults (strict, GATE_W=1.0, OPP_W=0.5).
 
+## Risk Overlay Diagnostic (2026-04-16)
+
+**Type:** Local replay analysis (no GPU). **Regime:** `full_day_30_270`.
+
+Isolated tests of three risk overlay hypotheses against locally-trained exp_165-config model. Each overlay tested alone, plus a random-skip control.
+
+### Summary Table
+
+| Test | Trades | TPD | PF | DD | WR | +Day% | Blocked |
+|------|--------|-----|-----|-----|-----|-------|---------|
+| Baseline | 466 | 7.8 | 0.747 | 91.5% | 47.0% | 36.5% | — |
+| Control (random 20%) | 394 | 6.6 | 0.678 | 100.1% | 47.2% | 38.8% | 969 |
+| **A1: MaxTrades=4** | **189** | **3.1** | **0.929** | **23.7%** | **52.9%** | **51.9%** | 6979 |
+| A2: MaxTrades=6 | 259 | 4.3 | 0.833 | 41.1% | 50.6% | 48.1% | 4745 |
+| B1: ConsStops=1 | 131 | 2.2 | 0.749 | 28.4% | 52.7% | 38.5% | 8805 |
+| B2: ConsStops=2 | 312 | 5.2 | 0.756 | 59.9% | 47.8% | 36.5% | 4191 |
+| C1: GateTight=0.1 | 263 | 4.4 | 0.830 | 39.7% | 50.2% | 53.8% | 5755 |
+
+### Key Findings
+
+1. **A1 (MaxTrades=4) passes the 25% DD gate: DD=23.7%, PF=0.929.** The model has a real edge on its best ~4 trades/day but dilutes it by overtrading. This is primarily a participation rate problem.
+
+2. **Control (random skip) makes things worse** (PF 0.678 vs 0.747). Random trade reduction is not helpful — this is not a mechanical variance problem. The overlays are finding real structure.
+
+3. **Gate tightening (C1) is second-best** — PF 0.830, DD 39.7%, +DayRate 53.8%. The model has exploitable confidence ordering that improves with adaptive backing-off.
+
+4. **Consecutive-stop kill switch (B1) reduces DD (28.4%) but not PF (0.749)**. It prevents damage but doesn't improve trade quality. The problem is not specifically post-failure clustering.
+
+5. **All overlays block more losers than winners** (~53% losers vs ~42% winners). Late-day entries are net negative by oracle measure.
+
+### Post-Stop Behavior
+
+| Position in day | Avg P&L |
+|----------------|---------|
+| First trade of day | -$42.70 |
+| After 1st stop-loss | -$12.70 |
+| After 2nd stop-loss | -$21.60 |
+| % of daily loss coming after first loser | 135.6% |
+| % of red-early days that recover | 24.0% |
+
+The model's first trades of day are consistently the worst (-$42.70). More than 100% of daily losses come after the first losing trade (early winners are offset by later cascading losses). Only 24% of days that start red eventually recover.
+
+### Causal Interpretation
+
+**The primary problem is participation rate, not session-awareness.** The entry cap (A1) outperforms both the kill switch (B1) and gate tightening (C1), and the random control confirms this is not mechanical variance reduction. The model's edge exists but is thin — it works on ~4 high-quality entries per day and degrades on subsequent entries.
+
+**However, gate tightening (C1) shows the model has exploitable confidence structure** — adaptive selectivity produces the best +DayRate (53.8%) and second-best PF (0.830). This supports Path 2 (session-state supervised) as a worthwhile direction.
+
+**B1 (kill switch) is a blunt instrument** — it reduces DD to 28.4% but at PF 0.749 (baseline level). It amputates both losses and recoveries equally.
+
+### Next Steps
+
+- **Immediate:** Set max_daily_trades=4 as the operational policy and re-screen on GPU (5-fold) to verify the DD<25% result holds across folds
+- **If 5-fold confirms:** This is a promotable model. First promotable result in the full-day regime.
+- **Architecture direction:** Gate tightening's strong showing justifies exploring session-state features (Path 2). The model could learn to be more selective after losses rather than relying on a hard cap.
+
+**Provenance:** Local replay on CPU-trained model with exp_165 config (SOFT_TEMP=0.08, gate_threshold=0.0). Dataset `382920 bars, 986 days`.
+
 ## exp_166 Series: Threshold & Cooldown Fine-Tuning (2026-04-16)
 
 **Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.

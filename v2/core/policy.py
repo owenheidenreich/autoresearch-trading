@@ -43,6 +43,12 @@ class DecisionPolicy:
     # Risk limits
     daily_loss_cap_pct: float = 0.05
 
+    # Session-aware risk overlays (disabled by default — 999 = inactive)
+    max_daily_trades: int = 999
+    max_consecutive_stops: int = 999
+    gate_tighten_after_loss: float = 0.0
+    random_skip_pct: float = 0.0  # control condition: randomly skip this fraction of entries
+
     # Account
     starting_equity: float = 10_000.0
     contract_multiplier: int = 100
