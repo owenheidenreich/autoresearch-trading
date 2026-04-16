@@ -496,10 +496,10 @@ cmd_start() {
         log "WARNING: No data.pt.sha256 sidecar — skipping integrity check"
     fi
 
-    # Upload training-stripped sidecars (drops replay-only fields: contract_mid/
-    # bid/ask/quality, alternative labels, metadata). Reduces ~3.5GB → ~600MB.
-    # Full sidecars remain on disk for replay and analysis.
-    # See v2/ops/strip_sidecars.py for the field list.
+    # Upload training-stripped sidecars (drops replay-only fields + float16
+    # downcast). 3.5GB full → 518MB compressed bundle. Uses zstd (better
+    # than gzip on numeric data). See v2/ops/strip_sidecars.py for field
+    # list and precision verification. Full sidecars stay on disk for replay.
     local sidecar_rel sidecar_abs sidecar_bundle remote_sidecar_dir stripped_dir
     sidecar_rel=$(python3 - <<'PY' "$DATA_PT"
 import sys, torch
@@ -514,20 +514,21 @@ PY
         [[ -d "$sidecar_abs" ]] || die "Dataset expects sidecar dir but it is missing: $sidecar_abs"
 
         stripped_dir="/tmp/autoresearch-stripped-sidecars-$$"
-        sidecar_bundle="/tmp/autoresearch-v2-sidecars-$$.tgz"
-        log "Stripping sidecars for training-only upload..."
+        sidecar_bundle="/tmp/autoresearch-v2-sidecars-$$.tar.zst"
+        log "Stripping sidecars for training-only upload (field strip + float16 downcast)..."
         python3 -m v2.ops.strip_sidecars "$sidecar_abs" "$stripped_dir" || die "Sidecar stripping failed"
 
-        log "Packaging stripped sidecars..."
-        tar -czf "$sidecar_bundle" -C "$(dirname "$stripped_dir")" "$(basename "$stripped_dir")"
+        log "Packaging stripped sidecars (zstd)..."
+        tar -cf - -C "$(dirname "$stripped_dir")" "$(basename "$stripped_dir")" | zstd -3 -T0 -o "$sidecar_bundle"
         rm -rf "$stripped_dir"
 
         log "Uploading stripped sidecars ($(du -sh "$sidecar_bundle" | cut -f1))..."
-        scp_cmd "$sidecar_bundle" "root@$SSH_HOST:/root/v2-sidecars.tgz"
+        scp_cmd "$sidecar_bundle" "root@$SSH_HOST:/root/v2-sidecars.tar.zst"
         rm -f "$sidecar_bundle"
 
-        # Unpack on GPU, renaming the stripped dir to the expected sidecar path
-        ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")' && tar -xzf /root/v2-sidecars.tgz -C /tmp && mv /tmp/autoresearch-stripped-sidecars-* '$remote_sidecar_dir' && rm -f /root/v2-sidecars.tgz"
+        # Unpack on GPU — install zstd if needed, rename stripped dir to expected path
+        ssh_cmd "command -v zstd >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq zstd >/dev/null 2>&1)"
+        ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")' && zstd -d /root/v2-sidecars.tar.zst -o /root/v2-sidecars.tar && tar -xf /root/v2-sidecars.tar -C /tmp && mv /tmp/autoresearch-stripped-sidecars-* '$remote_sidecar_dir' && rm -f /root/v2-sidecars.tar.zst /root/v2-sidecars.tar"
         ssh_cmd "test -d '$remote_sidecar_dir'" || die "Remote sidecar upload failed: $remote_sidecar_dir missing"
     fi
 

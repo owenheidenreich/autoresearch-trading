@@ -16,7 +16,8 @@ One-page map of the SPX 0DTE research system. For detailed docs see [docs/README
  ├─────────────────────────────────────────────────────────────────┤
  │  3. TRAINING (Akash H100 GPU)                                  │
  │     deploy.sh start strips sidecars for upload (training-only  │
- │     fields, ~880MB vs ~3.5GB full). See v2/ops/strip_sidecars. │
+ │     fields + float16 + zstd, ~518MB vs ~3.5GB full).           │
+ │     See v2/ops/strip_sidecars.py.                              │
  │     Supervised:  python -m v2.train                            │
  │     Seq BC:      python -m v2.train_seq                        │
  │     AWAC RL:     python -m v2.train_awac                       │
