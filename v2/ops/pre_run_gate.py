@@ -151,15 +151,23 @@ def check_results_tsv(errors: list[str]) -> None:
     if not rows:
         errors.append("results.tsv is empty")
         return
-    if rows[0] != ["experiment", "score", "status", "description"]:
-        errors.append("results.tsv header is not the canonical four-column header")
+    valid_headers = [
+        ["experiment", "score", "status", "description"],
+        ["experiment", "score", "status", "regime", "description"],
+    ]
+    if rows[0] not in valid_headers:
+        errors.append("results.tsv header is not a recognized format")
         return
 
+    desc_col = rows[0].index("description")
+    status_col = rows[0].index("status")
     for row in rows[1:]:
-        if len(row) < 4:
+        if len(row) <= desc_col:
             errors.append(f"results.tsv malformed row: {row}")
             continue
-        exp_id, _, status, description = row[:4]
+        exp_id = row[0]
+        status = row[status_col]
+        description = row[desc_col]
         if status == "unknown" or description.startswith("screening:"):
             errors.append(f"results.tsv contains non-official row: {exp_id}")
         if exp_id.startswith("exp_"):
