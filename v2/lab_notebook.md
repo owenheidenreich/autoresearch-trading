@@ -51,6 +51,41 @@ exp_153 ran pre-audit; exp_154 ran post-audit as a confirmation screen. Results 
 
 **Next step:** The behavioral weakness is identified (overtrading, not collapse). The question is whether the supervised model family can learn selectivity on the full-day regime, or whether this requires a different training objective.
 
+## exp_155–159: Supervised Selectivity Search (2026-04-15)
+
+**Type:** Screening (1-fold, fold 0). **Regime:** `full_day_30_270`.
+
+Controlled search over the allowed hyperparameter space to improve selectivity vs exp_154 baseline. Five candidates tested, none promoted.
+
+| Exp | Changes | Trades | TPD | PF | DD | WR | Direction | Best Ep |
+|-----|---------|--------|-----|-----|-----|-----|-----------|---------|
+| 154 | baseline | 673 | 12.9 | 0.745 | 108% | 45.8% | 76C/24P | 3 |
+| 155 | OPP_W 1.5, GATE_W 2.0 | 694 | 13.1 | 0.761 | 100% | 45.7% | 74C/26P | 3 |
+| 156 | SOFT_TEMP 0.08 | 702 | 11.7 | 0.795 | 96.5% | 46.0% | 87C/13P | 3 |
+| 157 | +DROPOUT 0.15, WD 0.08 | 625 | 12.0 | 0.751 | 101% | 47.0% | 80C/20P | 10 |
+| 158 | SEL_W 0.3, NOISE 0.05 | 448 | 12.8 | 0.589 | 100% | 41.7% | 76C/24P | 3 |
+| 159 | SIDE_W 0.5, TEMP 0.10 | 695 | 12.2 | 0.778 | 100% | 48.2% | 84C/16P | 3 |
+
+**Key invariant:** Opportunity loss stuck at 0.649±0.001 across all configs. Gate accuracy 51-54% (near random). DD always 96-108%.
+
+**What worked (partially):**
+- Lower SOFT_TEMP improves PF by sharpening KL targets (+0.05 at 0.08)
+- Higher regularization moves best epoch from 3→10 (slower overfitting)
+- Side head improves WR to 48.2%
+
+**What didn't work:**
+- Gate/opportunity weight increases have zero effect on selectivity
+- Selection weight suppression collapses trade quality
+- No configuration reduces DD below 96% or TPD below 11.7
+
+**Structural diagnosis:** The opportunity head cannot learn when to trade. The strict opportunity labels don't contain a learnable signal extractable from context features. The gate loss is a dead gradient — no amount of reweighting can teach selectivity from a near-random target.
+
+**Conclusion:** Supervised hyperparameter tuning is exhausted for the full-day regime. The architecture needs a fundamentally different abstention mechanism. Potential directions: RL/AWAC for learned selectivity, restructured opportunity labels, or a sequential agent with trajectory-level optimization.
+
+**Provenance:** Git `c0c839d` through `7d1ac03`, dataset `bbf868bbb4d4b23e`.
+
+**All reverted.** train.py reset to baseline defaults after search.
+
 ## Post-Reset Diagnostic (2026-04-10)
 
 ### Why The Score Dropped from 5.4 to -0.2
