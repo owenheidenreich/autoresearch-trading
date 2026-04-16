@@ -333,11 +333,12 @@ def replay_validation(
         sidecar = load_sidecar_cached(os.path.join(sidecar_dir, f"{day}.pt"))
         contract_features_t = torch.from_numpy(all_contracts[i])
         contract_indices_t = torch.from_numpy(all_contract_indices[i])
-        # Hierarchical decision: opportunity_logit gates, side_logit directs
+        # Use opportunity_logit as gate; side_logit for direction only if side head was trained
+        from v2.train import SIDE_W as _side_w
         intent = model_to_intent(
             no_trade_score=outputs_i.get("no_trade_score"),
             gate_logit=outputs_i.get("opportunity_logit"),
-            direction_logit=outputs_i.get("side_logit"),
+            direction_logit=outputs_i.get("side_logit") if _side_w > 0 else None,
             contract_scores=outputs_i["contract_scores"],
             contract_labels=torch.from_numpy(all_contract_labels[i]),
             valid_mask=outputs_i["valid_mask"],
