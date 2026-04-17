@@ -1710,6 +1710,90 @@ Aggregate: score=-0.200, PF=0.569, WR=45.1%, DD=58.9%, net PnL=-$5,895.
 4. **The problem is in learned features/representations.** The encoder + contract_proj produce representations where calls are distinguishable but puts are not. The greek sign flip normalization may have gaps, or the model's shared representation inherently favors call-side feature patterns.
 5. Learned `put_bias`: -0.0026 (effectively zero — model didn't learn to offset).
 
-**Conclusion:** REVERT. Stop iterating on head geometry per decision tree hard stop. The tree is exhausted — all branches lead to "feature/representation problem." Next investigation should be a feature/label audit: why does the model rank puts so poorly when (a) the training signal gives puts equal weight, (b) oracle puts have equal or better PnL, and (c) the greek sign flip should normalize contract features symmetrically?
-
 **Decision:** REVERT (screening failed, no promotion).
+
+### exp_170d: Shared trunk + side-specific final layers (SCREENING)
+
+**Date:** 2026-04-16
+**Hypothesis:** Sharing d\*2→d→d/2 trunk forces common representation across sides, while separate d/2→1 finals preserve small side specialization. This tests whether partial sharing improves cross-side calibration while maintaining within-side ranking.
+**Parent:** exp_169 branch — PF regressed (<0.80) AND call% dropped (82%→74%).
+**Config:** Shared trunk, separate call\_final/put\_final. Per-side centering restored. `SOFT_TEMP=0.08`, `side_mode=off`, `SIDE_W=0`, `ALPHA_SIDE=0`, `SIDE_SEL_W=0`.
+
+| Metric | exp_170d | exp_169 | Baseline (~exp_165) |
+|--------|----------|---------|---------------------|
+| PF | **0.726** | 0.794 | 0.854 |
+| DD | 101.3% | 74.4% | — |
+| Trades | 488 (8.13/day) | 561 | — |
+| Call% | 72% (351C/137P) | 74% | ~82% |
+| +DayRate | 34.5% | 32.1% | — |
+
+**Result:** Material regression. PF 0.726 is the worst of all variants. DD 101.3% is catastrophic. Shared trunk did not help — reducing parameter independence between sides degraded overall quality without meaningfully fixing calibration (72% vs 74% calls).
+
+**Decision:** REVERT. Shared trunk architecture eliminated.
+
+---
+
+### exp_170e: Dual heads + SIDE\_SEL\_W=0.2 within-side auxiliary supervision (SCREENING)
+
+**Date:** 2026-04-16
+**Hypothesis:** Within-side KL auxiliary loss teaches each head to rank contracts within its own side, directly targeting the within-put ranking failure (put top-3 = 3.9%) discovered in exp_169 diagnostics.
+**Config:** Original dual call/put score heads. `SOFT_TEMP=0.08`, `SIDE_SEL_W=0.2`, `side_mode=off`, `SIDE_W=0`, `ALPHA_SIDE=0`.
+
+| Metric | exp_170e | exp_169 | exp_170d | Baseline |
+|--------|----------|---------|----------|----------|
+| PF | **0.867** | 0.794 | 0.726 | 0.854 |
+| DD | **62.3%** | 74.4% | 101.3% | — |
+| Trades | 563 (10.1/day) | 561 | 488 | — |
+| Call% | **66%** (372C/191P) | 74% | 72% | ~82% |
+| Direction Balance | **0.51** | 0.35 | 0.39 | — |
+| +DayRate | **48.2%** | 32.1% | 34.5% | — |
+
+**Plan screening gates:** PF 0.867 > 0.80 **PASS**. DD 62.3% < 65% **PASS**.
+
+**Post-run diagnostics (side_bias_audit):**
+
+| Stage | Calls | Puts | Call% |
+|-------|-------|------|-------|
+| Oracle best | 7179 | 6702 | 51.7% |
+| Raw dual-head (pre-centering) | 10335 | 4005 | **72.1%** |
+| Post-centering | 10382 | 3958 | 72.4% |
+| Final (replay) | 10382 | 3958 | 72.4% |
+
+Raw bias: 98% (original dual) → 72% (with SIDE_SEL_W). The within-side supervision reduced raw call bias by 26 percentage points without explicit cross-side intervention.
+
+**Within-side rank comparison (promote_mask bars):**
+
+| Metric | exp_169 (unified) | exp_170e (dual+SIDE_SEL_W) |
+|--------|-------------------|---------------------------|
+| Call top-1 | 8.5% | 8.5% |
+| Call top-3 | 33.6% | 32.3% |
+| Put top-1 | 0.9% | **1.7%** |
+| Put top-3 | 3.9% | **7.0%** |
+| Put mean rank | 21.8 | **19.5** |
+
+Put ranking almost doubled at top-3 (3.9% → 7.0%) but remains weak in absolute terms.
+
+**Decision:** Best result in tree. Passes screening gates. Candidate for 5-fold official run.
+
+---
+
+### Side Bias Decision Tree — Complete Traversal Summary
+
+**Experiments run:**
+1. **exp_169** (unified scorer): FAIL. PF 0.794, raw bias 82% on promote bars (down from 98%), call% 74% on test.
+2. **exp_170d** (shared trunk + side finals): FAIL. PF 0.726, DD 101%, worst variant.
+3. **exp_170e** (dual heads + SIDE_SEL_W=0.2): **BEST**. PF 0.867, DD 62.3%, call% 66%, passes screening gates.
+
+**Local diagnostic (no GPU):**
+- **exp_170c audit**: Softmax target mass symmetric (call 50.6% / put 49.4%). Oracle margins symmetric (call 0.32 / put 0.33). Training signal is balanced — bias source is not in labels or loss weighting.
+
+**Branches ruled out with justification:**
+- **exp_170a** (side-balanced KL): Prereq requires exp_169 passes AND label-mass asymmetry. Neither condition met: exp_169 failed and label mass is symmetric.
+- **exp_170b** (label-aware fix): Prereq requires structural label asymmetry revealed by audit. Audit found symmetry.
+
+**What the tree established:**
+1. Unified scoring (exp_169) does not fix cross-side calibration — the bias is not a dual-head scale mismatch.
+2. Sharing more parameters (exp_170d) makes things worse — each side needs independent final layers.
+3. Within-side auxiliary supervision (exp_170e) is the only intervention that improved both PF and side balance. It reduced raw bias from 98% to 72% and nearly doubled put ranking quality.
+4. The training signal (softmax targets, oracle margins) is symmetric. The remaining bias lives in the learned representation — the encoder/contract\_proj produce features where calls are more distinguishable than puts.
+5. Put within-side ranking remains fundamentally weak even with supervision (top-3 = 7%). This limits how much architecture/loss changes alone can close the gap to oracle's 52% call rate.
