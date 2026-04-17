@@ -27,11 +27,16 @@ def run_experiment(
     data_path: str = "v2/data.pt",
     model_path: str = "v2/models/model.pt",
     experiment_id: str | None = None,
-    policy: DecisionPolicy = DEFAULT_POLICY,
+    policy: DecisionPolicy | None = None,
     save_artifacts: bool = True,
     n_folds: int | None = None,
 ) -> dict:
     """Run walk-forward CV experiment."""
+    if policy is None:
+        # Build policy from env — ensures SIDE_MODE/ALPHA_SIDE reach fold replays
+        _side_mode = os.environ.get("SIDE_MODE", "off")
+        _alpha_side = float(os.environ.get("ALPHA_SIDE", "0.0"))
+        policy = DecisionPolicy(side_mode=_side_mode, alpha_side=_alpha_side)
     if experiment_id is None:
         experiment_id = f"exp_{int(time.time())}"
 

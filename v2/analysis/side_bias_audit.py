@@ -170,7 +170,10 @@ def audit(model_path: str):
     cent_total = centered_call_chosen + centered_put_chosen
     cent_call_pct = 100 * centered_call_chosen / cent_total if cent_total > 0 else 0
 
-    # ── 3. Final chosen (with quality filter, matching replay) ────────
+    # ── 3. Final chosen (effective_inference_scores, matching replay) ──
+    from v2.replay import effective_inference_scores
+    _side_mode = os.environ.get("SIDE_MODE", "off")
+    _alpha_side = float(os.environ.get("ALPHA_SIDE", "0.0"))
     final_call_chosen = 0
     final_put_chosen = 0
 
@@ -178,13 +181,13 @@ def audit(model_path: str):
         vm = valid_mask[i]
         if not vm.any():
             continue
-        # Apply quality filter like replay does
-        quality = all_contracts[i, :, 14]
-        cs = contract_scores[i].copy()
-        cs[~vm] = -1e9
-        cs[quality < QUALITY_PARTIAL] = -1e9
-        best = int(np.argmax(cs))
-        if cs[best] <= -1e8:
+        side_val = float(outputs["side_logit"][i]) if "side_logit" in outputs else 0.0
+        eff = effective_inference_scores(
+            contract_scores[i], vm, all_contracts[i],
+            side_logit=side_val, side_mode=_side_mode, alpha_side=_alpha_side,
+        )
+        best = int(np.argmax(eff))
+        if eff[best] <= -1e8:
             continue
         if is_put[i][best]:
             final_put_chosen += 1
@@ -276,7 +279,8 @@ def audit(model_path: str):
     print(f"{'Raw + put_bias (pre-center)':<40} {raw_bias_call_chosen:>6} {raw_bias_put_chosen:>6} {raw_bias_call_pct:>6.1f}%")
     print(f"{'Per-bar: which side has higher max raw':<40} {raw_call_max_wins:>6} {raw_put_max_wins:>6} {raw_max_call_pct:>6.1f}%")
     print(f"{'Post-centering argmax':<40} {centered_call_chosen:>6} {centered_put_chosen:>6} {cent_call_pct:>6.1f}%")
-    print(f"{'Final (+ quality filter)':<40} {final_call_chosen:>6} {final_put_chosen:>6} {final_call_pct:>6.1f}%")
+    final_label = f"Final (replay, side_mode={_side_mode})"
+    print(f"{final_label:<40} {final_call_chosen:>6} {final_put_chosen:>6} {final_call_pct:>6.1f}%")
 
     print(f"\n{'Score distributions':<25} {'Mean':>8} {'Std':>8} {'Max-mean':>10} {'Max-std':>10}")
     print("-" * 65)
