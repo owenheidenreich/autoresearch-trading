@@ -1797,3 +1797,49 @@ Put ranking almost doubled at top-3 (3.9% → 7.0%) but remains weak in absolute
 3. Within-side auxiliary supervision (exp_170e) is the only intervention that improved both PF and side balance. It reduced raw bias from 98% to 72% and nearly doubled put ranking quality.
 4. The training signal (softmax targets, oracle margins) is symmetric. The remaining bias lives in the learned representation — the encoder/contract\_proj produce features where calls are more distinguishable than puts.
 5. Put within-side ranking remains fundamentally weak even with supervision (top-3 = 7%). This limits how much architecture/loss changes alone can close the gap to oracle's 52% call rate.
+
+---
+
+### exp_170e: 5-fold official — SIDE\_SEL\_W mechanism validation
+
+**Date:** 2026-04-17
+**Purpose:** Validate whether SIDE_SEL_W=0.2 structural improvements replicate across folds (mechanism validation, not promotion candidate).
+**Config:** Same as screening. Official 5-fold walk-forward.
+
+**Per-fold results:**
+
+| Fold | PF | DD | Trades | Call/Put | Call% | +DayRate | Best Epoch |
+|------|-----|------|--------|----------|-------|----------|------------|
+| 0 | 0.752 | 101.4% | 584 | 444C/140P | 76% | 33.9% | 2 |
+| 1 | 0.693 | 100.5% | 392 | 181C/211P | 46% | 26.1% | 6 |
+| 2 | 0.715 | 59.1% | 379 | 326C/53P | 86% | 39.6% | 1 |
+| 3 | 0.833 | 68.5% | 665 | 562C/103P | 85% | 35.6% | 4 |
+| 4 | **1.006** | **28.6%** | 518 | 360C/158P | 69% | **50.9%** | 8 |
+
+**Aggregate:** PF=1.006, WR=53.1%, DD=28.6%, net PnL=+$204, Sortino=0.18, +DayRate=50.9%, total trades=2538.
+
+**Per-fold call% analysis:** 76%, 46%, 86%, 85%, 69%. Range = 40 percentage points. Not consistent.
+
+**Raw-bias audit on fold-4 checkpoint:**
+
+| Stage | Calls | Puts | Call% |
+|-------|-------|------|-------|
+| Oracle best | 7179 | 6702 | 51.7% |
+| Raw dual-head (pre-centering) | 7012 | 7328 | **48.9%** |
+| Raw + put_bias | 7207 | 7133 | 50.3% |
+| Post-centering | 10636 | 3704 | **74.2%** |
+
+**Critical finding:** Raw dual-head bias = 48.9% (nearly oracle-balanced). Per-side centering re-amplifies to 74.2%. The SIDE_SEL_W mechanism eliminates the raw scoring bias, but per-side centering discards the cross-side calibration signal. Call head has higher peakiness (1.65 vs 1.28), so after independent centering, call extreme values dominate the argmax.
+
+**Evaluation against user's gates:**
+
+1. **Aggregate PF vs exp_165 baseline:** PF 1.006 is net positive. Does not fall below baseline. However, fold 4 dominates — folds 0-3 are all losing.
+2. **Do structural improvements replicate?** Side balance does NOT replicate (46%-86% call range). PF does not replicate (0.693-1.006 range). Only fold 4 is breakeven.
+3. **Is it one-fold noise?** Partially. Fold 4 carries the aggregate. But the raw-bias finding (48.9%) is a structural insight from the model weights, not fold-specific noise.
+4. **DD improvement:** Aggregate DD 28.6% is close to the 25% gate. But per-fold DD is catastrophic on folds 0-1 (101%).
+
+**Verdict:** SIDE_SEL_W=0.2 validates as a mechanism — it provably eliminates raw dual-head bias (98% → 49%). But the per-fold PF and side balance are too inconsistent to adopt the line. The critical blocker is the per-side centering step, which re-introduces the bias that SIDE_SEL_W worked to eliminate.
+
+**Actionable finding:** The next experiment should keep SIDE_SEL_W=0.2 as the new base AND switch from per-side centering to global centering (matching exp_169's centering scheme). This would preserve the balanced raw scores (48.9% calls) through to the final output, instead of having centering erase them.
+
+**Decision:** REVERT. SIDE_SEL_W validated as mechanism but not as production improvement. Per-side centering is the identified blocker.
