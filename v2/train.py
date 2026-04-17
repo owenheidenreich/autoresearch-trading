@@ -4,7 +4,9 @@ from __future__ import annotations
 import json
 import math
 import os
+import shutil
 import time
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -42,6 +44,7 @@ AGG_W = float(os.environ.get("AGG_W", 0.0))
 QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss by frac_profitable
 COMP_W = float(os.environ.get("COMP_W", 0.0))       # competence head weight (replaces OPP_W when > 0)
 COMP_MODE = os.environ.get("COMP_MODE", "frozen")    # "frozen", "live", or "quality"
+CKPT_SELECTION_MODE = os.environ.get("CKPT_SELECTION_MODE", "loss_proxy")
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
@@ -54,6 +57,7 @@ _TRAINING_ENV_VARS = [
     "OPP_LABEL", "SOFT_TEMP", "NOISE_MARGIN", "AMBIG_WEIGHT",
     "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
     "COMP_W", "COMP_MODE", "COMP_TEACHER", "SIDE_MODE", "ALPHA_SIDE",
+    "CKPT_SELECTION_MODE",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
     "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
 ]
@@ -70,6 +74,91 @@ def _get_config_fingerprint() -> str:
         return RUNTIME_CONFIG.fingerprint()
     except Exception:
         return "unknown"
+
+
+@dataclass
+class CheckpointCandidate:
+    epoch: int
+    proxy_criterion: float
+    val_total: float
+    val_metrics: dict[str, float]
+    checkpoint_path: str
+
+
+def _compute_checkpoint_proxy(avg_val: dict[str, float], best_sel_so_far: float) -> tuple[float, float]:
+    """Current loss-based proxy used to decide which epochs are replay-worthy."""
+    val_total = avg_val.get("total", float("inf"))
+    if COMP_W > 0:
+        comp_val = avg_val.get("comp", float("inf"))
+        sel_val = avg_val.get("sel", float("inf"))
+        next_best_sel = min(best_sel_so_far, sel_val)
+        sel_ok = sel_val <= next_best_sel * 1.2  # sel must not regress >20%
+        return (comp_val if sel_ok else float("inf")), next_best_sel
+    if OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
+        return avg_val.get("opp", float("inf")), best_sel_so_far
+    return val_total, best_sel_so_far
+
+
+def _save_training_checkpoint(
+    *,
+    model: nn.Module,
+    model_path: str,
+    epoch: int,
+    val_total: float,
+    data: dict,
+) -> None:
+    """Serialize a training checkpoint with full provenance."""
+    dataset_fp = data.get("metadata", {}).get("fingerprint", "unknown")
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "model_class": "TradingModel",
+            "epoch": epoch,
+            "val_loss": val_total,
+            "hyperparams": {
+                "lookback": LOOKBACK,
+                "d_model": D_MODEL,
+                "depth": DEPTH,
+                "n_heads": N_HEADS,
+                "dropout": DROPOUT,
+                "contract_features": NUM_CONTRACT_FEATURES,
+                "max_contracts_per_bar": int(data["metadata"]["max_contracts_per_bar"]),
+            },
+            "score_config_fingerprint": score_config_fingerprint(),
+            "dataset_fingerprint": dataset_fp,
+            "config_fingerprint": _get_config_fingerprint(),
+            "env_overrides": _capture_env_overrides(),
+            "checkpoint_selection_mode": CKPT_SELECTION_MODE,
+        },
+        model_path,
+    )
+
+
+def _replay_selection_key(metrics) -> tuple[float, ...]:
+    """Order validation-replay candidates by economic usefulness, not loss."""
+    gate_pass = 1.0 if metrics.gate_failure is None else 0.0
+    return (
+        gate_pass,
+        float(metrics.score) if gate_pass else 0.0,
+        float(metrics.profit_factor),
+        -float(metrics.max_account_drawdown),
+        float(metrics.win_rate),
+        float(metrics.positive_day_rate),
+        -float(metrics.trades_per_day),
+    )
+
+
+def _build_replay_selection_policy():
+    """Mirror the inference policy used by the current training env."""
+    import dataclasses as _dc
+    from v2.core.policy import DEFAULT_POLICY
+
+    side_mode = os.environ.get("SIDE_MODE", DEFAULT_POLICY.side_mode)
+    alpha_side = float(os.environ.get("ALPHA_SIDE", str(DEFAULT_POLICY.alpha_side)))
+    if side_mode == DEFAULT_POLICY.side_mode and alpha_side == DEFAULT_POLICY.alpha_side:
+        return DEFAULT_POLICY
+    return _dc.replace(DEFAULT_POLICY, side_mode=side_mode, alpha_side=alpha_side)
 
 
 class PositionalEncoding(nn.Module):
@@ -893,6 +982,8 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
     best_epoch = 0
     best_metrics = {"gate_accuracy": 0.0, "direction_accuracy": 0.0}
     _best_sel = float("inf")  # track best selection loss for checkpoint guardrail
+    _candidate_dir = None
+    _replay_candidates: list[CheckpointCandidate] = []
 
     # --- Training log (observability: survives lease death) ---
     from v2.core.observability import (
@@ -918,6 +1009,9 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         identity=_identity,
         epochs_planned=EPOCHS,
     )
+    if CKPT_SELECTION_MODE == "val_replay":
+        _candidate_dir = _run_dir / "checkpoint_candidates"
+        _candidate_dir.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(1, EPOCHS + 1):
         if time.time() - t_start > TIME_BUDGET:
@@ -1003,55 +1097,133 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         })
 
         val_total = avg_val.get("total", float("inf"))
-        # Checkpoint criterion: comp loss with sel_loss guardrail, else opp, else total
-        if COMP_W > 0:
-            comp_val = avg_val.get("comp", float("inf"))
-            sel_val = avg_val.get("sel", float("inf"))
-            _best_sel = min(_best_sel, sel_val)
-            sel_ok = sel_val <= _best_sel * 1.2  # sel must not regress >20%
-            val_criterion = comp_val if sel_ok else float("inf")
-        elif OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
-            val_criterion = avg_val.get("opp", float("inf"))
+        val_criterion, _best_sel = _compute_checkpoint_proxy(avg_val, _best_sel)
+        _is_proxy_best = val_criterion < best_val_loss
+
+        if CKPT_SELECTION_MODE == "loss_proxy":
+            if _is_proxy_best:
+                best_val_loss = val_criterion
+                best_epoch = epoch
+                best_metrics = {
+                    "gate_accuracy": avg_val.get("gate_acc", 0.0),
+                    "direction_accuracy": avg_val.get("dir_acc", 0.0),
+                    "side_accuracy": avg_val.get("side_acc", 0.0),
+                }
+                _save_training_checkpoint(
+                    model=model,
+                    model_path=model_path,
+                    epoch=epoch,
+                    val_total=val_total,
+                    data=data,
+                )
+        elif CKPT_SELECTION_MODE == "val_replay":
+            if _is_proxy_best:
+                best_val_loss = val_criterion
+                candidate_path = str(_candidate_dir / f"epoch_{epoch:03d}.pt")
+                _save_training_checkpoint(
+                    model=model,
+                    model_path=candidate_path,
+                    epoch=epoch,
+                    val_total=val_total,
+                    data=data,
+                )
+                _replay_candidates.append(CheckpointCandidate(
+                    epoch=epoch,
+                    proxy_criterion=val_criterion,
+                    val_total=val_total,
+                    val_metrics=dict(avg_val),
+                    checkpoint_path=candidate_path,
+                ))
         else:
-            val_criterion = val_total
-        if val_criterion < best_val_loss:
-            best_val_loss = val_criterion
-            best_epoch = epoch
-            best_metrics = {
-                "gate_accuracy": avg_val.get("gate_acc", 0.0),
-                "direction_accuracy": avg_val.get("dir_acc", 0.0),
-                "side_accuracy": avg_val.get("side_acc", 0.0),
-            }
-            dataset_fp = data.get("metadata", {}).get("fingerprint", "unknown")
-            os.makedirs(os.path.dirname(model_path), exist_ok=True)
-            torch.save(
-                {
-                    "model_state_dict": model.state_dict(),
-                    "model_class": "TradingModel",
-                    "epoch": epoch,
-                    "val_loss": val_total,
-                    "hyperparams": {
-                        "lookback": LOOKBACK,
-                        "d_model": D_MODEL,
-                        "depth": DEPTH,
-                        "n_heads": N_HEADS,
-                        "dropout": DROPOUT,
-                        "contract_features": NUM_CONTRACT_FEATURES,
-                        "max_contracts_per_bar": int(data["metadata"]["max_contracts_per_bar"]),
-                    },
-                    "score_config_fingerprint": score_config_fingerprint(),
-                    "dataset_fingerprint": dataset_fp,
-                    "config_fingerprint": _get_config_fingerprint(),
-                    "env_overrides": _capture_env_overrides(),
-                },
-                model_path,
+            raise ValueError(
+                f"Unknown CKPT_SELECTION_MODE={CKPT_SELECTION_MODE!r}. "
+                f"Expected 'loss_proxy' or 'val_replay'."
             )
+
+    if CKPT_SELECTION_MODE == "val_replay":
+        if not _replay_candidates:
+            raise RuntimeError("No replay-aligned checkpoint candidates were captured during training.")
+
+        final_candidate = _replay_candidates[-1]
+        if final_candidate.epoch != epoch:
+            final_candidate_path = str(_candidate_dir / f"epoch_{epoch:03d}.pt")
+            _save_training_checkpoint(
+                model=model,
+                model_path=final_candidate_path,
+                epoch=epoch,
+                val_total=avg_val.get("total", float("inf")),
+                data=data,
+            )
+            _replay_candidates.append(CheckpointCandidate(
+                epoch=epoch,
+                proxy_criterion=float("inf"),
+                val_total=avg_val.get("total", float("inf")),
+                val_metrics=dict(avg_val),
+                checkpoint_path=final_candidate_path,
+            ))
+
+        print(f"\n--- VALIDATION REPLAY CHECKPOINT SELECTION ({len(_replay_candidates)} candidates) ---")
+        from v2.replay import load_model_from_path, replay_validation
+
+        _val_replay_key = "_val_replay_ckpt_select"
+        data[_val_replay_key] = val_mask
+        _selection_policy = _build_replay_selection_policy()
+        _best_candidate = None
+        _best_replay_metrics = None
+        try:
+            for cand in _replay_candidates:
+                cand_model = load_model_from_path(cand.checkpoint_path, device=device)
+                replay_metrics, _, _ = replay_validation(
+                    cand_model,
+                    data,
+                    mask_key=_val_replay_key,
+                    policy=_selection_policy,
+                    device=device,
+                )
+                print(
+                    f"  epoch={cand.epoch:03d} proxy={cand.proxy_criterion:.4f} "
+                    f"PF={replay_metrics.profit_factor:.3f} DD={replay_metrics.max_account_drawdown:.1%} "
+                    f"score={replay_metrics.score:.4f} gate={replay_metrics.gate_failure or 'pass'}"
+                )
+                if (
+                    _best_candidate is None
+                    or _replay_selection_key(replay_metrics) > _replay_selection_key(_best_replay_metrics)
+                ):
+                    _best_candidate = cand
+                    _best_replay_metrics = replay_metrics
+        finally:
+            del data[_val_replay_key]
+
+        if _best_candidate is None or _best_replay_metrics is None:
+            raise RuntimeError("Validation replay checkpoint selection produced no valid candidate.")
+
+        shutil.copy2(_best_candidate.checkpoint_path, model_path)
+        best_epoch = _best_candidate.epoch
+        best_val_loss = _best_candidate.val_total
+        best_metrics = {
+            "gate_accuracy": _best_candidate.val_metrics.get("gate_acc", 0.0),
+            "direction_accuracy": _best_candidate.val_metrics.get("dir_acc", 0.0),
+            "side_accuracy": _best_candidate.val_metrics.get("side_acc", 0.0),
+            "val_replay_score": _best_replay_metrics.score,
+            "val_replay_profit_factor": _best_replay_metrics.profit_factor,
+            "val_replay_drawdown": _best_replay_metrics.max_account_drawdown,
+            "val_replay_win_rate": _best_replay_metrics.win_rate,
+            "val_replay_gate_failure": _best_replay_metrics.gate_failure or "",
+        }
+        print(
+            f"Selected epoch {best_epoch} by validation replay: "
+            f"PF={_best_replay_metrics.profit_factor:.3f} "
+            f"DD={_best_replay_metrics.max_account_drawdown:.1%} "
+            f"score={_best_replay_metrics.score:.4f} "
+            f"gate={_best_replay_metrics.gate_failure or 'pass'}"
+        )
 
     metrics = {
         "val_loss": best_val_loss,
         "best_epoch": best_epoch,
         "epochs_run": min(epoch, EPOCHS),
         "score_config_fingerprint": score_config_fingerprint(),
+        "checkpoint_selection_mode": CKPT_SELECTION_MODE,
         **best_metrics,
     }
     print(f"\nMETRICS_JSON:{json.dumps(metrics)}")
@@ -1065,6 +1237,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         best_epoch=best_epoch,
         total_epochs=min(epoch, EPOCHS),
         best_val_loss=best_val_loss,
+        checkpoint_selection_mode=CKPT_SELECTION_MODE,
         convergence_flag=_convergence_flag,
         run_dir=str(_run_dir),
     )
