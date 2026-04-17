@@ -1649,3 +1649,67 @@ Aggregate: score=-0.200, PF=0.569, WR=45.1%, DD=58.9%, net PnL=-$5,895.
 **Harness findings:** The hardened loop worked end-to-end. All artifacts generated, linked, and verified. ATM baselines are now meaningful. ATM-Trailing at 0.632 is the real benchmark — a simple trailing-stop strategy on ATM calls beats the trained model by a wide margin. The promotion artifact gate and revert path both functioned correctly.
 
 **Pipeline findings documented separately in `v2/docs/pipeline_proof_run_findings.md`.**
+
+---
+
+### exp_169: Unified scorer — single head replaces dual call/put heads (SCREENING)
+
+**Date:** 2026-04-16
+**Hypothesis:** A single score head eliminates the 98% raw call bias from dual-head scale mismatch by forcing calls and puts onto one learned scale.
+**Config:** Unified `score_head` (Linear d*2→d→GELU→d/2→GELU→1), learned `put_bias` offset, global centering. `SOFT_TEMP=0.08`, `side_mode=off`, `SIDE_W=0`, `ALPHA_SIDE=0`. SIDE_SEL_W block skipped (requires separate heads).
+
+| Metric | Value | Gate |
+|--------|-------|------|
+| Score | -0.200 | FAIL |
+| PF | 0.794 | < 0.80 gate |
+| DD | 74.4% | > 25% gate |
+| Trades | 561 (9.35/day) | — |
+| Direction | 415C / 146P (74%/26%) | — |
+| WR | 49.9% | — |
+| +DayRate | 32.1% | — |
+
+**Post-run diagnostics (side_bias_audit + per-side analysis):**
+
+| Stage | Calls | Puts | Call% |
+|-------|-------|------|-------|
+| Oracle best | 7179 | 6702 | 51.7% |
+| Unified raw argmax | 11772 | 2568 | **82.1%** |
+| Post-centering | 11792 | 2548 | 82.2% |
+| Final (replay) | 11792 | 2548 | 82.2% |
+
+**Within-side rank (model pick rank among same-side oracle rankings):**
+
+| Metric | Call-oracle bars | Put-oracle bars |
+|--------|-----------------|-----------------|
+| Bars | 7179 | 6702 |
+| Mean rank | 7.22 | **21.76** |
+| Median rank | 5.0 | **22.0** |
+| Top-1 rate | 8.5% | **0.9%** |
+| Top-3 rate | 33.6% | **3.9%** |
+
+**exp_170c diagnostic: Softmax target mass by side (SOFT_TEMP=0.08):**
+- Call target mass: 0.5061 (50.5% of bars dominated)
+- Put target mass: 0.4939 (49.5% of bars dominated)
+- Ratio: **1.025** — effectively symmetric
+- Call mass > 0.9: 42.4% bars; Put mass > 0.9: 40.5% bars
+
+**Per-side oracle margin:**
+- Call-oracle: mean best PnL 0.3225
+- Put-oracle: mean best PnL 0.3332 (puts slightly better!)
+- Ratio: 0.968 — symmetric
+
+**Decision tree navigation:**
+1. Raw bias barely changed (82.1% → 82.1%, still >80%) → **exp_170c branch**
+2. exp_170c result: softmax target mass symmetric (1.025 ratio) → **"problem is in learned features, not loss"**
+3. No further experiment branch defined → **ENDPOINT REACHED**
+
+**Key findings:**
+1. **Architecture is NOT the bottleneck.** Merging dual heads into a unified scorer did not reduce raw call bias at all (82% → 82%).
+2. **Training signal is NOT the bottleneck.** Softmax target mass is symmetric (50.6%/49.4%), oracle margins balanced (0.32/0.33).
+3. **Within-put ranking is catastrophically bad.** On put-oracle bars, the model's top pick ranks 22nd on average; top-3 rate is 3.9% vs 33.6% for calls.
+4. **The problem is in learned features/representations.** The encoder + contract_proj produce representations where calls are distinguishable but puts are not. The greek sign flip normalization may have gaps, or the model's shared representation inherently favors call-side feature patterns.
+5. Learned `put_bias`: -0.0026 (effectively zero — model didn't learn to offset).
+
+**Conclusion:** REVERT. Stop iterating on head geometry per decision tree hard stop. The tree is exhausted — all branches lead to "feature/representation problem." Next investigation should be a feature/label audit: why does the model rank puts so poorly when (a) the training signal gives puts equal weight, (b) oracle puts have equal or better PnL, and (c) the greek sign flip should normalize contract features symmetrically?
+
+**Decision:** REVERT (screening failed, no promotion).
