@@ -673,7 +673,8 @@ def _flush_side_bias_batch(
 
     if "gate_logit" in outputs and "direction_logit" in outputs:
         gate_trade = outputs["gate_logit"].detach().cpu() > DEFAULT_POLICY.gate_threshold
-        pred_put = outputs["direction_logit"].detach().cpu() > 0
+        # Sign convention: positive direction_logit = call preferred → pred_put when negative
+        pred_put = outputs["direction_logit"].detach().cpu() < 0
         replay_valid = replay_valid & (is_put == pred_put.unsqueeze(1))
         masked_scores = scores.clone()
         masked_scores[~replay_valid] = -1e9

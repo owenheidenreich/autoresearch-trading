@@ -147,15 +147,20 @@ def run_full_replay_with_diagnostics(
 
         # Extract model signals
         opp_logit = float(outputs_i["opportunity_logit"].item()) if "opportunity_logit" in outputs_i else 0.0
-        side_logit = float(outputs_i["side_logit"].item()) if "side_logit" in outputs_i else 0.0
+        side_logit_val = float(outputs_i["side_logit"].item()) if "side_logit" in outputs_i else 0.0
         no_trade_score = float(outputs_i["no_trade_score"].item()) if "no_trade_score" in outputs_i else 0.0
 
-        # Contract ranking
-        scores = c_scores_np.copy()
-        scores[~v_mask_np] = -1e9
+        # Contract ranking — use effective_inference_scores for consistency with replay
+        from v2.replay import effective_inference_scores
+        eff_scores = effective_inference_scores(
+            c_scores_np, v_mask_np, all_contracts[i],
+            side_logit=side_logit_val,
+            side_mode=policy.side_mode,
+            alpha_side=policy.alpha_side,
+        )
         n_valid = int(v_mask_np.sum())
-        best_model_row = int(np.argmax(scores)) if v_mask_np.any() else -1
-        best_model_score = float(scores[best_model_row]) if best_model_row >= 0 else float("nan")
+        best_model_row = int(np.argmax(eff_scores)) if v_mask_np.any() else -1
+        best_model_score = float(eff_scores[best_model_row]) if best_model_row >= 0 and eff_scores[best_model_row] > -1e8 else float("nan")
 
         # Oracle best
         oracle_labels = all_contract_labels[i].copy()
@@ -310,7 +315,7 @@ def _build_intent(outputs_i, contract_labels, contracts, contract_indices,
     return model_to_intent(
         no_trade_score=outputs_i.get("no_trade_score"),
         gate_logit=outputs_i.get("opportunity_logit"),
-        direction_logit=outputs_i.get("side_logit") if side_w > 0 else None,
+        side_logit=outputs_i.get("side_logit"),
         contract_scores=outputs_i["contract_scores"],
         contract_labels=torch.from_numpy(contract_labels),
         valid_mask=outputs_i["valid_mask"],

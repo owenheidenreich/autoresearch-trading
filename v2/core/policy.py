@@ -49,6 +49,13 @@ class DecisionPolicy:
     gate_tighten_after_loss: float = 0.0
     random_skip_pct: float = 0.0  # control condition: randomly skip this fraction of entries
 
+    # Side prior: how to use the side_logit during inference
+    # "off"  = ignore side_logit entirely (default, current behavior)
+    # "soft" = additive prior: calls get +alpha*logit, puts get -alpha*logit
+    # "hard" = mask to predicted side (legacy, sign convention: positive = call preferred)
+    side_mode: str = "off"
+    alpha_side: float = 0.0  # strength of soft side prior (only used when side_mode="soft")
+
     # Account
     starting_equity: float = 10_000.0
     contract_multiplier: int = 100
