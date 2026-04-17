@@ -854,8 +854,8 @@ cmd_download() {
 
     # Stage the candidate only if run_final_train actually wrote one on remote.
     # Do NOT substitute /root/v2/models/model.pt (that is the deployed model, not
-    # the candidate). If the remote staged no candidate, leave the local slot
-    # empty and refuse to guess.
+    # the candidate). If the remote staged no candidate, CLEAR the local slot so
+    # a stale candidate from a prior cycle cannot be promoted by `model_manage keep`.
     log "Checking for staged FINAL_TRAIN candidate on remote..."
     if ssh_cmd "test -f /root/v2/models/model_candidate.pt" 2>/dev/null; then
         scp_cmd "root@$SSH_HOST:/root/v2/models/model_candidate.pt" \
@@ -864,6 +864,10 @@ cmd_download() {
     else
         log "  no /root/v2/models/model_candidate.pt on remote (expected if no run_final_train completed yet)"
         log "  — will NOT substitute /root/v2/models/model.pt; that is a deployed artifact, not a candidate"
+        # Clear any stale local candidate so it cannot be picked up by keep().
+        python3 -m v2.ops.candidate_staging \
+            --path "$PROJECT_ROOT/v2/models/model_candidate.pt" \
+            --reason "cmd_download: remote has no model_candidate.pt"
     fi
 
     # results.tsv: NOT downloaded. Claude appends results locally after each experiment.
@@ -959,10 +963,16 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
                 mkdir -p "$PROJECT_ROOT/v2/models"
                 # Only stage candidate if run_final_train wrote one. Never
                 # substitute /root/v2/models/model.pt — that is the deployed
-                # FINAL_TRAIN, not a candidate.
+                # FINAL_TRAIN, not a candidate. If the remote has none, clear
+                # any stale local candidate so keep() cannot promote it.
                 if ssh_cmd "test -f /root/v2/models/model_candidate.pt" 2>/dev/null; then
                     scp_cmd "root@$SSH_HOST:/root/v2/models/model_candidate.pt" \
                         "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
+                else
+                    python3 -m v2.ops.candidate_staging \
+                        --path "$PROJECT_ROOT/v2/models/model_candidate.pt" \
+                        --reason "_run_sync baseline: remote has no model_candidate.pt" \
+                        2>/dev/null || true
                 fi
                 mkdir -p "$PROJECT_ROOT/v2/artifacts"
                 scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
@@ -980,10 +990,16 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
             mkdir -p "$PROJECT_ROOT/v2/models"
             # Only stage candidate if run_final_train wrote one. Never
             # substitute /root/v2/models/model.pt — that is the deployed
-            # FINAL_TRAIN, not a candidate.
+            # FINAL_TRAIN, not a candidate. If the remote has none, clear
+            # any stale local candidate so keep() cannot promote it.
             if ssh_cmd "test -f /root/v2/models/model_candidate.pt" 2>/dev/null; then
                 scp_cmd "root@$SSH_HOST:/root/v2/models/model_candidate.pt" \
                     "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
+            else
+                python3 -m v2.ops.candidate_staging \
+                    --path "$PROJECT_ROOT/v2/models/model_candidate.pt" \
+                    --reason "_run_sync improvement: remote has no model_candidate.pt" \
+                    2>/dev/null || true
             fi
             mkdir -p "$PROJECT_ROOT/v2/artifacts"
             scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
