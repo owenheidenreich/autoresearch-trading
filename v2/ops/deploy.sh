@@ -749,17 +749,41 @@ if gpu:
 else:
     print("  GPU:  unavailable")
 
-pid = run("pgrep -f '^python3 -m v2\\.ops\\.run_experiment_wf'")
-if pid:
-    pid_line = pid.split("\n")[0]
+# Post-harness-integrity repair there are two remote run types: run_experiment_wf
+# (CV) and run_final_train (deploy). Report whichever is live.
+pid_cv = run("pgrep -f '^python3 -m v2\\.ops\\.run_experiment_wf'")
+pid_ft = run("pgrep -f '^python3 -m v2\\.ops\\.run_final_train'")
+if pid_cv:
+    pid_line = pid_cv.split("\n")[0]
     uptime = run(f"ps -o etime= -p {pid_line}").strip()
-    # Fold progress from checkpoint files
+    # CV fold progress: count fold checkpoints under the *newest* CV artifact.
     import glob
-    fold_files = sorted(glob.glob("/root/v2/models/model_fold*.pt"))
-    n_folds_done = len(fold_files)
-    fold_info = f", folds={n_folds_done}/5" if n_folds_done > 0 else ""
-    print(f"  Experiment: RUNNING (PID {pid_line}, uptime {uptime}{fold_info})")
-    # Last training output from run.log
+    fold_dirs = sorted(glob.glob("/root/v2/artifacts/*/folds/*/model.pt"))
+    # Group by parent experiment dir to get per-exp counts.
+    by_exp = {}
+    for p in fold_dirs:
+        parts = p.split("/")
+        # /root/v2/artifacts/<exp>/folds/<win>/model.pt
+        exp = parts[4] if len(parts) > 4 else "?"
+        by_exp.setdefault(exp, 0)
+        by_exp[exp] += 1
+    if by_exp:
+        latest_exp = sorted(by_exp.keys())[-1]
+        n_done = by_exp[latest_exp]
+        fold_info = f", {latest_exp}: folds={n_done}"
+    else:
+        fold_info = ""
+    print(f"  CV Experiment: RUNNING (PID {pid_line}, uptime {uptime}{fold_info})")
+    log_tail = run("tail -3 /root/run.log 2>/dev/null")
+    if log_tail:
+        for line in log_tail.strip().split("\n")[-2:]:
+            line = line.strip()
+            if line and not line.startswith("warning") and "UserWarning" not in line:
+                print(f"  Latest: {line[:72]}")
+elif pid_ft:
+    pid_line = pid_ft.split("\n")[0]
+    uptime = run(f"ps -o etime= -p {pid_line}").strip()
+    print(f"  FINAL_TRAIN: RUNNING (PID {pid_line}, uptime {uptime})")
     log_tail = run("tail -3 /root/run.log 2>/dev/null")
     if log_tail:
         for line in log_tail.strip().split("\n")[-2:]:
@@ -808,8 +832,6 @@ if os.path.exists(results_path):
         sys.stdout.write(_render_history(results_path))
     except Exception as _e:
         print(f"  ERROR rendering history: {_e}")
-    else:
-        print("  (no experiments yet)")
 else:
     print("  (no results.tsv yet)")
 
@@ -821,17 +843,28 @@ cmd_download() {
     load_state
     log "=== DOWNLOAD: Syncing v2 results ==="
 
-    # Download model.pt to staging (never overwrite best directly)
-    log "Downloading model_candidate.pt..."
-    mkdir -p "$PROJECT_ROOT/v2/models" "$PROJECT_ROOT/v2/state"
-    scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || \
-        log "  WARNING: v2/models/model.pt not found on remote"
+    mkdir -p "$PROJECT_ROOT/v2/models" "$PROJECT_ROOT/v2/state" "$PROJECT_ROOT/v2/artifacts"
 
-    # Download artifacts/
+    # Download artifacts/ first. Post-harness-integrity repair, CV_EVAL and
+    # FINAL_TRAIN artifacts carry everything the operator needs; /root/v2/models
+    # only ever holds the currently-deployed FINAL_TRAIN model, NOT a candidate.
     log "Downloading artifacts/..."
-    mkdir -p "$PROJECT_ROOT/v2/artifacts"
     scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || \
         log "  WARNING: artifacts/ not found on remote"
+
+    # Stage the candidate only if run_final_train actually wrote one on remote.
+    # Do NOT substitute /root/v2/models/model.pt (that is the deployed model, not
+    # the candidate). If the remote staged no candidate, leave the local slot
+    # empty and refuse to guess.
+    log "Checking for staged FINAL_TRAIN candidate on remote..."
+    if ssh_cmd "test -f /root/v2/models/model_candidate.pt" 2>/dev/null; then
+        scp_cmd "root@$SSH_HOST:/root/v2/models/model_candidate.pt" \
+            "$PROJECT_ROOT/v2/models/model_candidate.pt"
+        log "  staged candidate downloaded to v2/models/model_candidate.pt"
+    else
+        log "  no /root/v2/models/model_candidate.pt on remote (expected if no run_final_train completed yet)"
+        log "  — will NOT substitute /root/v2/models/model.pt; that is a deployed artifact, not a candidate"
+    fi
 
     # results.tsv: NOT downloaded. Claude appends results locally after each experiment.
     # Downloading would overwrite local entries with stale GPU copy.
@@ -924,7 +957,13 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
             if [[ "$best_experiment_num" -gt 0 ]]; then
                 log "* Initial sync: best is exp #$best_experiment_num (score=$best_score) -- downloading..."
                 mkdir -p "$PROJECT_ROOT/v2/models"
-                scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
+                # Only stage candidate if run_final_train wrote one. Never
+                # substitute /root/v2/models/model.pt — that is the deployed
+                # FINAL_TRAIN, not a candidate.
+                if ssh_cmd "test -f /root/v2/models/model_candidate.pt" 2>/dev/null; then
+                    scp_cmd "root@$SSH_HOST:/root/v2/models/model_candidate.pt" \
+                        "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
+                fi
                 mkdir -p "$PROJECT_ROOT/v2/artifacts"
                 scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
             fi
@@ -939,7 +978,13 @@ print(f'best_experiment_num={s.get(\"best_experiment_num\",0)}')
         if [[ "$best_experiment_num" -gt "$last_kept" ]]; then
             log "* IMPROVEMENT at exp #$best_experiment_num (score=$best_score) — syncing model + artifacts..."
             mkdir -p "$PROJECT_ROOT/v2/models"
-            scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
+            # Only stage candidate if run_final_train wrote one. Never
+            # substitute /root/v2/models/model.pt — that is the deployed
+            # FINAL_TRAIN, not a candidate.
+            if ssh_cmd "test -f /root/v2/models/model_candidate.pt" 2>/dev/null; then
+                scp_cmd "root@$SSH_HOST:/root/v2/models/model_candidate.pt" \
+                    "$PROJECT_ROOT/v2/models/model_candidate.pt" 2>/dev/null || true
+            fi
             mkdir -p "$PROJECT_ROOT/v2/artifacts"
             scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts" "$PROJECT_ROOT/v2/" 2>/dev/null || true
             last_kept=$best_experiment_num
@@ -1195,18 +1240,20 @@ cmd_stop() {
         log "Stopped background sync (PID $spid)"
     fi
 
-    log "Killing experiment process..."
-    ssh_cmd "pkill -f '^python3 -m v2\\.ops\\.run_experiment_wf' 2>/dev/null || true" || true
+    log "Killing experiment processes (CV and/or FINAL_TRAIN)..."
+    # Match both remote run types; pkill regex covers run_experiment_wf and run_final_train.
+    local _pkill_pat='^python3 -m v2\.ops\.(run_experiment_wf|run_final_train)'
+    ssh_cmd "pkill -f '$_pkill_pat' 2>/dev/null || true" || true
 
     # Wait for process to actually die (up to 30s) — prevents partial file downloads
     for _ in $(seq 1 30); do
-        if ! ssh_cmd "pgrep -f '^python3 -m v2\\.ops\\.run_experiment_wf'" &>/dev/null; then
+        if ! ssh_cmd "pgrep -f '$_pkill_pat'" &>/dev/null; then
             break
         fi
         sleep 1
     done
     # Force kill if still alive
-    ssh_cmd "pkill -9 -f '^python3 -m v2\\.ops\\.run_experiment_wf' 2>/dev/null || true" 2>/dev/null || true
+    ssh_cmd "pkill -9 -f '$_pkill_pat' 2>/dev/null || true" 2>/dev/null || true
     sleep 3  # let filesystem flush before downloading
 
     log "Downloading results before closing..."

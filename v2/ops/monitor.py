@@ -446,11 +446,16 @@ def _parse_results_tsv(text: str) -> list[dict]:
         for i, col in enumerate(header):
             row[col] = parts[i] if i < len(parts) else ""
         row["experiment"] = _normalize_experiment_id(row.get("experiment", ""))
-        # Parse score as float
+        # Post-harness-integrity repair, the canonical column is `stability_score`.
+        # Fall back to legacy `score` so pre-migration rows still render.
+        score_str = row.get("stability_score") or row.get("score") or "-999"
         try:
-            row["score_num"] = float(row.get("score", "-999"))
+            row["score_num"] = float(score_str)
         except (ValueError, TypeError):
             row["score_num"] = -999.0
+        # Keep `score` populated so downstream consumers that still reference it
+        # see the stability score and not a missing column.
+        row["score"] = score_str
         # Generic key=value metric extraction (adapts to any format)
         desc = row.get("description", "")
         for m in re.finditer(r'(\w+)=([\d.]+)%?', desc):

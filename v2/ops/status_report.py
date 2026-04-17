@@ -71,44 +71,84 @@ def load_state_summary() -> dict:
 
 
 def load_results_summary() -> dict:
+    """Parse the CVReport TSV schema by column name.
+
+    Accepts rows with screening_mode in {"full", "legacy"} as official-ish; full
+    is the canonical post-repair ledger entry, legacy is the historical entries
+    migrated from the pre-repair TSV. Non-"full" modes are non-official.
+    Everything is parsed via DictReader so schema drift fails loudly rather than
+    silently degrading numeric columns to zero.
+    """
+    from v2.core.cv_report import RESULTS_TSV_HEADER
+
     if not RESULTS_PATH.exists():
         return {
             "official_rows": [],
             "non_official_rows": [],
             "latest_official": None,
             "best_official": None,
+            "schema_error": None,
         }
 
     with RESULTS_PATH.open(newline="") as handle:
-        rows = list(csv.reader(handle, delimiter="\t"))
+        reader = csv.reader(handle, delimiter="\t")
+        header = next(reader, [])
+        if header != RESULTS_TSV_HEADER:
+            return {
+                "official_rows": [],
+                "non_official_rows": [],
+                "latest_official": None,
+                "best_official": None,
+                "schema_error": (
+                    f"results.tsv header does not match CVReport schema. "
+                    f"expected={RESULTS_TSV_HEADER}, got={header}. "
+                    f"Run the harness-integrity repair migration."
+                ),
+            }
+        raw_rows = [row for row in reader if row]
 
     official_rows: list[dict] = []
     non_official_rows: list[dict] = []
-    for row in rows[1:]:
-        if len(row) < 4:
+    for row in raw_rows:
+        if len(row) < len(header):
             continue
-        exp_id, score, status, description = row[:4]
+        record = dict(zip(header, row))
+        try:
+            stability = float(record.get("stability_score", "-999"))
+        except (TypeError, ValueError):
+            stability = -999.0
+        try:
+            pooled_pf = float(record.get("pooled_pf", "0"))
+        except (TypeError, ValueError):
+            pooled_pf = 0.0
         entry = {
-            "experiment": exp_id,
-            "score": float(score),
-            "status": status,
-            "description": description,
+            "experiment": record.get("experiment", ""),
+            "screening_mode": record.get("screening_mode", ""),
+            "stability_score": stability,
+            "pooled_pf": pooled_pf,
+            "status": record.get("status", ""),
+            "any_gate_failure": record.get("any_gate_failure", "") == "true",
+            "description": record.get("description", ""),
+            # back-compat alias so callers that still print `score` keep working
+            "score": stability,
         }
-        exp_num = exp_id[4:] if exp_id.startswith("exp_") else ""
-        is_exact_chain = exp_num.isdigit() and int(exp_num) >= 74
-        is_official = status != "unknown" and not description.startswith("screening:")
-        if is_exact_chain and is_official:
+        mode = entry["screening_mode"]
+        if mode == "full":
             official_rows.append(entry)
         else:
             non_official_rows.append(entry)
 
     latest_official = official_rows[-1] if official_rows else None
-    best_official = max(official_rows, key=lambda item: item["score"]) if official_rows else None
+    best_official = (
+        max(official_rows, key=lambda item: item["stability_score"])
+        if official_rows else None
+    )
     return {
         "official_rows": official_rows,
         "non_official_rows": non_official_rows,
         "latest_official": latest_official,
         "best_official": best_official,
+        "schema_error": None,
     }
 
 
@@ -190,8 +230,10 @@ def build_blockers(required_paths_ok: bool, results_summary: dict, artifact_summ
     blockers: list[str] = []
     if not required_paths_ok:
         blockers.append("Required operating-system docs or commands are missing.")
+    if results_summary.get("schema_error"):
+        blockers.append(f"results.tsv schema error: {results_summary['schema_error']}")
     if results_summary["non_official_rows"]:
-        blockers.append("results.tsv contains non-official or pre-exact-chain rows in the live log.")
+        blockers.append("results.tsv contains non-official rows (screening_mode != 'full').")
     if artifact_summary["compatible_total"] == 0:
         blockers.append("No compatible promoted artifact bundle exists for the current dataset and restored architecture.")
     if gate_summary["status"] == "fail":
@@ -230,14 +272,23 @@ def print_human_report(report: dict) -> None:
     print("Repo health:")
     print(f"  Pre-run gate: {report['gate']['status']} ({report['gate']['summary']})")
     print(f"  Required operating-system files present: {'yes' if report['required_paths_ok'] else 'no'}")
-    print(f"  Official exact-chain rows: {len(report['results']['official_rows'])}")
+    print(f"  Official CV rows (full mode): {len(report['results']['official_rows'])}")
     if report["results"]["latest_official"]:
         latest = report["results"]["latest_official"]
-        print(f"  Latest official run: {latest['experiment']} ({latest['score']:.3f}, {latest['status']})")
+        print(
+            f"  Latest CV run: {latest['experiment']} "
+            f"(stability={latest['stability_score']:.3f}, "
+            f"pooled_pf={latest['pooled_pf']:.2f}, status={latest['status']})"
+        )
     if report["results"]["best_official"]:
         best = report["results"]["best_official"]
-        print(f"  Best official score: {best['experiment']} ({best['score']:.3f})")
-    print(f"  Non-official live rows present: {len(report['results']['non_official_rows'])}")
+        print(
+            f"  Best CV stability: {best['experiment']} "
+            f"(stability={best['stability_score']:.3f}, pooled_pf={best['pooled_pf']:.2f})"
+        )
+    print(f"  Non-official rows present: {len(report['results']['non_official_rows'])}")
+    if report["results"].get("schema_error"):
+        print(f"  SCHEMA ERROR: {report['results']['schema_error']}")
     print()
     print("Artifacts:")
     print(f"  Promoted artifacts: {report['artifacts']['promoted_total']}")

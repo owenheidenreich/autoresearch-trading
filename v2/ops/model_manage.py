@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 from v2.core.artifact_kind import ArtifactKind, is_promotable
+from v2.core.cv_report import RESULTS_TSV_HEADER
 from v2.ops.artifact import (
     ARTIFACTS_DIR,
     _file_fingerprint,
@@ -34,6 +35,56 @@ MODEL_DIR = Path("v2/models")
 MODEL_PT = MODEL_DIR / "model.pt"
 MODEL_BEST = MODEL_DIR / "model_best.pt"
 MODEL_CANDIDATE = MODEL_DIR / "model_candidate.pt"
+RESULTS_TSV = Path("v2/results.tsv")
+
+
+def _set_results_tsv_status(experiment_id: str, new_status: str) -> bool:
+    """Flip the `status` column in results.tsv for the row matching experiment_id.
+
+    `experiment_id` here is the CV experiment (the row that was written by
+    `cmd_run_cv` via `_append_results_tsv`). The FINAL_TRAIN artifact stores
+    this value under `extra.source_experiment`; model_manage passes that
+    through so keep/revert flips the evidence ledger, not the final-train row
+    (which doesn't exist in results.tsv).
+
+    Returns True if a row was updated.
+    """
+    if not RESULTS_TSV.exists():
+        print(f"  WARNING: {RESULTS_TSV} missing — cannot reflect status update")
+        return False
+    raw = RESULTS_TSV.read_text().splitlines()
+    if not raw:
+        print(f"  WARNING: {RESULTS_TSV} is empty")
+        return False
+    header = raw[0].split("\t")
+    if header != RESULTS_TSV_HEADER:
+        print(
+            f"  WARNING: {RESULTS_TSV} header does not match CVReport schema "
+            f"({RESULTS_TSV_HEADER}); refusing to patch status blindly."
+        )
+        return False
+    exp_col = header.index("experiment")
+    status_col = header.index("status")
+    updated = False
+    out_lines = [raw[0]]
+    for line in raw[1:]:
+        if not line.strip():
+            out_lines.append(line)
+            continue
+        cols = line.split("\t")
+        if len(cols) < len(header):
+            out_lines.append(line)
+            continue
+        if cols[exp_col] == experiment_id and cols[status_col] != new_status:
+            cols[status_col] = new_status
+            updated = True
+        out_lines.append("\t".join(cols))
+    if updated:
+        RESULTS_TSV.write_text("\n".join(out_lines) + "\n")
+        print(f"  results.tsv: {experiment_id} status -> {new_status}")
+    else:
+        print(f"  results.tsv: no row matched experiment_id={experiment_id}")
+    return updated
 
 
 def _find_candidate_artifact_dir() -> Path | None:
@@ -123,6 +174,16 @@ def keep():
 
     mark_promoted(str(artifact_dir))
     print(f"  marked artifact promoted: {artifact_dir}")
+
+    # Reflect promotion into the evidence ledger. The results.tsv row is keyed
+    # by the *CV* experiment, not the FINAL_TRAIN experiment — the CV is what
+    # `_append_results_tsv` wrote. The source_experiment pointer is the one we
+    # want to flip.
+    source_exp = (manifest.get("extra") or {}).get("source_experiment") \
+        or manifest.get("experiment_id")
+    if source_exp:
+        _set_results_tsv_status(source_exp, "keep")
+
     MODEL_CANDIDATE.unlink()
     size_kb = MODEL_BEST.stat().st_size / 1024
     print(f"  model_best.pt + model.pt updated ({size_kb:.0f}K)")
@@ -131,7 +192,15 @@ def keep():
 def revert():
     """Discard candidate. model.pt and model_best.pt unchanged."""
     artifact_dir = _find_candidate_artifact_dir()
+    source_exp = None
     if artifact_dir is not None:
+        try:
+            with open(artifact_dir / "manifest.json") as f:
+                m = json.load(f)
+            source_exp = (m.get("extra") or {}).get("source_experiment") \
+                or m.get("experiment_id")
+        except Exception:
+            pass
         mark_reverted(str(artifact_dir))
         print(f"  marked artifact reverted: {artifact_dir}")
     else:
@@ -141,6 +210,10 @@ def revert():
         print(f"  model_candidate.pt discarded")
     else:
         print(f"  no candidate to discard")
+
+    # Reflect revert in results.tsv (idempotent: no-op if already "revert").
+    if source_exp:
+        _set_results_tsv_status(source_exp, "revert")
 
 
 def main():
