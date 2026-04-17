@@ -1,3 +1,4 @@
-experiment	score	status	regime	description
-exp_151	-0.200000	revert	window_60_105	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.4631578947368421 profit_factor=0.7136981871453023 positive_day_rate=0.38596491228070173
-exp_152	-0.200000	revert	window_60_105	official: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.45098039215686275 profit_factor=0.5693757959145973 positive_day_rate=0.3620689655172414
+experiment	screening_mode	status	stability_score	pooled_pf	pooled_dd	pooled_trades	pooled_traded_days	any_gate_failure	per_fold_scores	description
+exp_151	legacy	revert	-0.200000	0.7137	0.0000	0	0	true	[-0.200,-0.200,-0.200,-0.200,-0.200]	legacy: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.46 profit_factor=0.71 positive_day_rate=0.39 regime=window_60_105
+exp_152	legacy	revert	-0.200000	0.5694	0.0000	0	0	true	[-0.200,-0.200,-0.200,-0.200,-0.200]	legacy: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.45 profit_factor=0.57 positive_day_rate=0.36 regime=window_60_105
+exp_170e	legacy	revert	-0.200000	1.0060	0.0000	0	0	true	[-0.200,-0.200,-0.200,-0.200,-0.200]	legacy: GATE_FAILURE folds=[-0.20,-0.20,-0.20,-0.20,-0.20] win_rate=0.53 profit_factor=1.01 positive_day_rate=0.51

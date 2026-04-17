@@ -1,7 +1,10 @@
 """Plot experiment progress -- Karpathy-style autoresearch chart.
 
-Reads v2/results.tsv and plots score over experiments with kept/reverted markers
-and a running-best staircase line.
+Reads v2/results.tsv (post harness-integrity repair CVReport schema) and plots
+stability_score over experiments with kept/reverted markers and a running-best
+staircase line.
+
+Schema note: columns are scope-named and read directly. No regex parsing.
 
 Usage:
     python v2/plot_progress.py              # all experiments (default)
@@ -10,7 +13,6 @@ Usage:
 from __future__ import annotations
 
 import csv
-import re
 import sys
 from pathlib import Path
 
@@ -24,14 +26,13 @@ OUTPUT_PATH = Path("v2/output/progress.png")
 
 
 def parse_results(path: Path, from_exp: str | None = None) -> list[dict]:
-    """Parse results.tsv into a list of experiment dicts."""
+    """Parse the CVReport-shaped results.tsv into a list of experiment dicts."""
     rows = []
     with open(path, "r") as f:
         reader = csv.DictReader(f, delimiter="\t")
         for row in reader:
             rows.append(row)
 
-    # Optional: filter from a specific experiment onward
     if from_exp:
         start_idx = 0
         for i, r in enumerate(rows):
@@ -42,50 +43,58 @@ def parse_results(path: Path, from_exp: str | None = None) -> list[dict]:
 
     experiments = []
     for i, row in enumerate(rows):
-        score = float(row["score"])
+        score = _safe_float(row.get("stability_score"), default=0.0)
         desc = row.get("description", "")
+        mode = row.get("screening_mode", "")
+        pooled_pf = _safe_float(row.get("pooled_pf"), default=0.0)
+        pooled_trades = _safe_int(row.get("pooled_trades"), default=0)
+        any_gate = row.get("any_gate_failure", "false") == "true"
 
-        # Parse metrics from description
-        trades = _extract_int(r"trades=(\d+)", desc)
-        wr = _extract_float(r"wr=([\d.]+)%", desc)
-
-        # Extract label (what changed)
-        label = _extract_label(desc, row["experiment"])
+        label = _extract_label(desc, row["experiment"], mode)
 
         experiments.append({
             "seq": i + 1,
             "exp_id": row["experiment"],
             "score": score,
-            "status": row["status"],
+            "status": row.get("status", "unknown"),
+            "screening_mode": mode,
             "label": label,
-            "trades": trades,
-            "wr": wr,
+            "trades": pooled_trades,
+            "pooled_pf": pooled_pf,
+            "any_gate_failure": any_gate,
             "description": desc,
         })
 
     return experiments
 
 
-def _extract_int(pattern: str, text: str) -> int | None:
-    m = re.search(pattern, text)
-    return int(m.group(1)) if m else None
+def _safe_float(val: str | None, default: float = 0.0) -> float:
+    if val is None or val == "":
+        return default
+    try:
+        return float(val)
+    except ValueError:
+        return default
 
 
-def _extract_float(pattern: str, text: str) -> float | None:
-    m = re.search(pattern, text)
-    return float(m.group(1)) if m else None
+def _safe_int(val: str | None, default: int = 0) -> int:
+    if val is None or val == "":
+        return default
+    try:
+        return int(float(val))
+    except ValueError:
+        return default
 
 
-def _extract_label(desc: str, exp_id: str) -> str:
-    """Strip metric fields from description to get the 'what changed' label."""
+def _extract_label(desc: str, exp_id: str, mode: str) -> str:
     if desc.startswith("GATE_FAILURE"):
         return "GATE FAIL"
-    cleaned = desc
-    for pat in [r"WF_BASELINE\s*", r"score=\S+", r"trades=\S+", r"wr=\S+%?",
-                r"pdr=\S+%?", r"baselines=\S+", r"PF=\S+", r"NEW\s*(WF\s*)?BEST",
-                r"folds=\[[\d.,-]+\]", r"days=\d+", r"std=\S+"]:
-        cleaned = re.sub(pat, "", cleaned)
-    cleaned = cleaned.strip(" ()")
+    # Strip known prefixes / common noise; what remains is the hypothesis label
+    cleaned = desc.replace(f"mode={mode}", "").replace("legacy:", "").strip()
+    # drop the folds=[...] tail
+    idx = cleaned.find("folds=[")
+    if idx >= 0:
+        cleaned = cleaned[:idx].strip()
     return cleaned if cleaned else exp_id
 
 
@@ -100,14 +109,12 @@ def plot(experiments: list[dict], output: Path):
 
     ax_main = fig.add_subplot(gs[0, :])
     ax_trades = fig.add_subplot(gs[1, 0])
-    ax_wr = fig.add_subplot(gs[1, 1])
+    ax_pf = fig.add_subplot(gs[1, 1])
 
-    # -- Classify experiments --
     kept = [e for e in experiments if e["status"] == "keep"]
     reverted = [e for e in experiments if e["status"] == "revert" and e["score"] >= 0]
     crashed = [e for e in experiments if e["score"] < 0 or e["status"] == "crash"]
 
-    # Compute y-axis range from non-crash scores
     valid_scores = [e["score"] for e in experiments if e["score"] >= 0]
     if valid_scores:
         y_min = min(valid_scores) - 0.5
@@ -115,12 +122,8 @@ def plot(experiments: list[dict], output: Path):
     else:
         y_min, y_max = -1, 7
 
-    # Crash/gate-fail markers go at the bottom of the chart
     crash_y = y_min - 0.2
 
-    # -- Main chart: score vs experiment number --
-
-    # Reverted (gray)
     if reverted:
         ax_main.scatter(
             [e["seq"] for e in reverted],
@@ -128,7 +131,6 @@ def plot(experiments: list[dict], output: Path):
             c="#95a5a6", alpha=0.4, s=50, zorder=2, label="Discarded",
         )
 
-    # Crashed / gate fail (red X) -- pinned to bottom of chart
     if crashed:
         ax_main.scatter(
             [e["seq"] for e in crashed],
@@ -136,7 +138,6 @@ def plot(experiments: list[dict], output: Path):
             c="#e74c3c", marker="x", s=80, zorder=3, label="Crash/Gate Fail",
         )
 
-    # Kept (green)
     if kept:
         ax_main.scatter(
             [e["seq"] for e in kept],
@@ -144,28 +145,21 @@ def plot(experiments: list[dict], output: Path):
             c="#2ecc71", edgecolors="darkgreen", s=100, zorder=4, label="Kept",
         )
 
-    # Running best staircase
     if kept:
         best_x = [kept[0]["seq"]]
         best_y = [kept[0]["score"]]
         running_best = kept[0]["score"]
         for e in kept[1:]:
-            # Extend horizontal line to this experiment
             best_x.append(e["seq"])
             best_y.append(running_best)
-            # Step up if new best
             if e["score"] > running_best:
                 running_best = e["score"]
             best_x.append(e["seq"])
             best_y.append(running_best)
-
-        # Extend to end
         best_x.append(experiments[-1]["seq"])
         best_y.append(running_best)
-
         ax_main.plot(best_x, best_y, c="#27ae60", linewidth=2, zorder=1, label="Running best")
 
-    # Labels on kept experiments
     for e in kept:
         if e["label"]:
             ax_main.annotate(
@@ -182,36 +176,26 @@ def plot(experiments: list[dict], output: Path):
 
     n_total = len(experiments)
     n_kept = len(kept)
-    ax_main.set_title(f"Autoresearch Progress: {n_total} Experiments, {n_kept} Kept Improvements",
-                       fontsize=13, fontweight="bold")
+    ax_main.set_title(
+        f"Autoresearch Progress: {n_total} CV Experiments, {n_kept} Kept (stability_score)",
+        fontsize=13, fontweight="bold",
+    )
     ax_main.set_xlabel("Experiment #")
-    ax_main.set_ylabel("Score")
+    ax_main.set_ylabel("Stability score (mean fold)")
     ax_main.set_ylim(crash_y - 0.3, y_max)
     ax_main.legend(loc="upper left", fontsize=8)
     ax_main.grid(True, alpha=0.2)
 
-    # -- Bottom left: Trade count --
-    _plot_metric_panel(ax_trades, experiments, "trades", "Trade Count", "#3498db")
-
-    # -- Bottom right: Win rate --
-    _plot_metric_panel(ax_wr, experiments, "wr", "Win Rate %", "#e67e22")
+    _plot_metric_panel(ax_trades, experiments, "trades", "Pooled Trade Count", "#3498db")
+    _plot_metric_panel(ax_pf, experiments, "pooled_pf", "Pooled Profit Factor", "#e67e22")
 
     fig.tight_layout(rect=[0, 0, 1, 0.96])
     output.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output, dpi=150, bbox_inches="tight")
     print(f"Saved to {output}")
 
-    # Try to show interactively
-    try:
-        import matplotlib
-        matplotlib.use("macosx")
-        plt.show()
-    except Exception:
-        pass
-
 
 def _plot_metric_panel(ax, experiments: list[dict], key: str, title: str, color: str):
-    """Small scatter panel for a secondary metric."""
     kept = [(e["seq"], e[key]) for e in experiments if e["status"] == "keep" and e[key] is not None]
     reverted = [(e["seq"], e[key]) for e in experiments if e["status"] != "keep" and e[key] is not None]
 

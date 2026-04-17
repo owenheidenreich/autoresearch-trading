@@ -87,7 +87,7 @@ Use the expanded surface only when the hypothesis cannot be tested honestly insi
 Before any GPU run, the local gate must pass:
 
 - Command: `python3 -m v2.ops.pre_run_gate --data v2/data.pt`
-- `./v2/ops/deploy.sh run_screen ...` and `run_one ...` run this automatically
+- `./v2/ops/deploy.sh run_screen_latest ...`, `run_screen_mini ...`, `run_cv ...`, and `run_final_train ...` run this automatically
 
 The gate fails on:
 
@@ -123,25 +123,32 @@ When forming the next hypothesis after a keep or revert:
 
 ## Experiment Workflow
 
-### Screening Run
+The harness-integrity repair (2026-04-17) split the old single "official run"
+into two scope-separated steps: CV selects configs, and a separate final-train
+produces the deployable model. Only `FINAL_TRAIN` artifacts can be promoted.
 
-- Command: `./v2/ops/deploy.sh run_screen exp_NNN`
-- Runs 1 fold only
-- No artifacts saved
+### Screening Run — two modes
+
+Screening is for hypothesis triage, not promotion. Two modes replace the old
+`--n-folds 1` footgun:
+
+- `run_screen_latest exp_NNN` — single-fold parity debug (matches fold 4 of the
+  full CV). Use when you need exact parity with the latest official window.
+- `run_screen_mini exp_NNN` — 3-fold triage across early, mid, and late regimes
+  (folds 0, 2, 4). Use when you want regime stability signal before committing
+  to a full CV run.
+
+Both modes:
+- No artifact saved
 - No model downloaded
 - No `results.tsv` entry
-- Screening notes go to `v2/lab_notebook.md` only
-- Screening is for hypothesis triage, not promotion
+- Notes go to `v2/lab_notebook.md` only
+- The fold's `window_id` pins the seed, so the same calendar window always
+  receives the same seed regardless of screening mode
 
-Reject a screening run as a promotion candidate on:
-
-- hard gate failure
-- zero trades
-- score `<= 0`
-
-Direction mix is a required diagnostic on every screening run, but it is not an automatic rejection rule by itself.
-
-A screening run may still justify the next experiment in the same hypothesis family when it materially improves the targeted trace failure mode, even if it remains non-promotable on score or hard gates.
+Reject a screening run as a promotion candidate on hard gate failure, zero
+trades, or stability score ≤ 0. Direction mix is a required diagnostic but not
+an automatic rejection rule by itself.
 
 ### One Hypothesis, Not One File
 
@@ -149,23 +156,33 @@ A screening run may still justify the next experiment in the same hypothesis fam
 - A hypothesis may span up to a few coordinated edits when training, replay, or audit wiring are inseparable.
 - Do not bundle unrelated ideas into the same experiment just because the expanded mutable surface is available.
 
-### Official Run
+### CV Run (`run_cv`)
 
-- Command: `./v2/ops/deploy.sh run_one exp_NNN`
-- Runs all 5 folds
-- Saves artifacts and downloads `v2/models/model_candidate.pt`
-- Official runs are the only scored runs
-- Official runs append to both `v2/results.tsv` and `v2/lab_notebook.md`
+- Command: `./v2/ops/deploy.sh run_cv exp_NNN`
+- Runs all canonical folds
+- Emits a `CV_EVAL` artifact at `v2/artifacts/exp_NNN/` containing `cv_report.json`
+  and per-fold debug checkpoints under `folds/<window_id>/`
+- Writes a row to `v2/results.tsv` (CVReport TSV schema)
+- **The CV_EVAL artifact is NOT deployable.** `model_manage keep` refuses it by design.
 
-Keep only if the aggregate result:
+Consider the CV result a candidate for final-train only if:
+- `any_gate_failure` is false across all evaluated folds
+- `stability_score` (mean fold score) beats all four baselines
+- Per-fold distribution is acceptable (`std_fold_score`, `min_fold_score`)
+- Pooled economics (`pooled_profit_factor`, `pooled_max_account_drawdown`)
+  are consistent with the stability view — not driven by one lucky fold
 
-- beats the current exact-chain best in `v2/results.tsv`
-- beats all four baselines
-- has no hard-gate failure
+### Final Train (`run_final_train`)
 
-Call/put balance must still be reviewed on every official run, but it no longer overrides the economics as an automatic hard fail.
-
-Do not promote an official run solely because traces improved. Promotion remains score- and baseline-gated.
+- Command: `./v2/ops/deploy.sh run_final_train exp_NNN`
+- Reads the source CV_EVAL, lifts the config fingerprint, and trains a single
+  model on the full pre-shadow span using a named internal validation slice
+- Emits a `FINAL_TRAIN` artifact and stages `v2/models/model_candidate.pt`
+- Only this artifact is accepted by `python3 -m v2.ops.model_manage keep`
+- Promotion writes `v2/models/model.manifest.json` recording
+  `artifact_kind=FINAL_TRAIN`, source experiment, config fingerprint, training
+  span, and internal validation slice — so any replay/plot tool loading
+  `model.pt` can confirm at startup that it is a legitimate deploy artifact
 
 ### Post-Official Workflow
 

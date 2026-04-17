@@ -1141,7 +1141,6 @@ def main():
         "report_id": report.report_id,
         "score": metrics.score,
         "gate_failure": metrics.gate_failure,
-        "per_fold": report.per_fold,
         "worst_trades": worst_5,
         "exit_reasons": {
             "stop_loss": metrics.stop_loss_count,

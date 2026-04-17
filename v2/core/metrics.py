@@ -239,6 +239,23 @@ def _compute_account_curve(
 
     Groups trades by trade_date, computes dollar P&L per day,
     builds equity curve, derives Sortino and drawdown.
+
+    SCOPE WARNING (horizon-unaware by design — do not "fix" without a full
+    evaluator migration):
+
+        `positive_day_rate` and `daily_sortino` are computed over TRADED DAYS
+        ONLY. If a fold has 60 eval days but only 40 traded days, a
+        positive_day_rate of 0.6 means 24/40, not 24/60.
+
+        This affects pooled metrics too — a sparse strategy that stands down
+        in hostile regimes will score higher on positive_day_rate than an
+        always-engaged one, because inactive days are not counted as losses.
+
+        The harness-integrity repair (2026-04-17) chose to preserve this
+        behaviour rather than change the score formula and the fold schema in
+        the same patch. Migrating to horizon-aware metrics is a separate
+        evaluator change that must be gated by the score_config_fingerprint.
+        See /Users/gduby/.claude/plans/delightful-yawning-tiger.md Phase 2.
     """
     # Group trades by date
     daily_pnl: dict[str, float] = defaultdict(float)

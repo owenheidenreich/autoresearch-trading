@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 # ===========================================================================
-# Akash GPU — v2 Deployment
+# Akash GPU — v2 Deployment  (post harness-integrity repair 2026-04-17)
 # ===========================================================================
-# Autoresearch loop (Claude drives each experiment):
-#   ./deploy.sh boot        → Deploy GPU container on Akash, wait for SSH
-#   ./deploy.sh start       → Upload v2 codebase + data, install deps
-#   ./deploy.sh run_one ID  → Upload code + run experiment + download model
+# CV pipeline (Claude drives each experiment):
+#   ./deploy.sh boot                    → Deploy GPU container on Akash
+#   ./deploy.sh start                   → Upload v2 codebase + data, install deps
+#   ./deploy.sh run_screen_latest ID    → Single-fold parity debug (no artifact)
+#   ./deploy.sh run_screen_mini ID      → 3-fold regime triage (no artifact)
+#   ./deploy.sh run_cv ID               → Full 5-fold CV, emits CV_EVAL artifact
+#   ./deploy.sh run_final_train SRC_ID  → Train deployable model from chosen CV
+#                                          (only FINAL_TRAIN artifacts promotable)
+#
+# Promotion:
+#   python3 -m v2.ops.model_manage keep    (FINAL_TRAIN only; CV_EVAL rejected)
+#   python3 -m v2.ops.model_manage revert
 #
 # Utilities:
 #   ./deploy.sh ssh         → SSH into the H100
@@ -14,6 +22,7 @@
 #   ./deploy.sh stop        → Kill experiment + close Akash deployment
 # ===========================================================================
 set -euo pipefail
+trap '_rc=$?; log "FATAL: command failed (exit $_rc) at line ${LINENO}: ${BASH_COMMAND}"; exit $_rc' ERR
 
 # --- Config ---
 AKASH_NODE="https://akash-rpc.polkachu.com:443"
@@ -77,63 +86,78 @@ scp_cmd() {
         -P "$SSH_PORT" "$@"
 }
 
-# Auto-append official experiment results to results.tsv from RESULTS_JSON output.
-# Usage: _append_results_tsv <exp_id> <run_output> <run_type>
+scp_retry() {
+    local attempt
+    for attempt in 1 2 3; do
+        if scp_cmd "$@"; then return 0; fi
+        (( attempt < 3 )) || return 1
+        log "SCP attempt $attempt/3 failed — retrying in $((attempt * 10))s..."
+        sleep $((attempt * 10))
+    done
+}
+
+# Auto-append CV run results to results.tsv using the CVReport schema.
+# Usage: _append_results_tsv <exp_id> <run_output>
 _append_results_tsv() {
     local exp_id="$1"
     local output="$2"
-    local run_type="${3:-official}"
     local results_file="$PROJECT_ROOT/v2/results.tsv"
 
-    # Ensure header exists
+    # Ensure new-schema header exists
     if [[ ! -f "$results_file" ]]; then
-        echo -e "experiment\tscore\tstatus\tdescription" > "$results_file"
+        python3 -c "from v2.core.cv_report import header_line; print(header_line())" > "$results_file"
     fi
 
     # Extract RESULTS_JSON line from output
     local results_json
     results_json=$(echo "$output" | grep '^RESULTS_JSON:' | sed 's/^RESULTS_JSON://' | tail -1)
     if [[ -z "$results_json" ]]; then
-        log "WARNING: No RESULTS_JSON in output — appending placeholder to results.tsv"
-        echo -e "${exp_id}\t0.000000\tunknown\t${run_type}: no RESULTS_JSON captured" >> "$results_file"
+        log "WARNING: No RESULTS_JSON in output — skipping results.tsv append"
         return
     fi
 
-    # Parse score and build description using python3
+    # Build TSV row using scope-named fields from CVReport
     local tsv_line
     tsv_line=$(python3 -c "
 import json, sys
 r = json.loads(sys.argv[1])
-score = r.get('score', 0.0)
-folds = r.get('per_fold_scores', r.get('fold_scores', []))
-gate = r.get('gate_failure', False)
+exp_id = sys.argv[2]
+
+# Only 'full' mode writes to results.tsv as official CV
+mode = r.get('screening_mode', 'unknown')
+folds = r.get('per_fold_scores', [])
+pfs = ','.join(f'{x:.3f}' for x in folds)
+any_gate = r.get('any_fold_gate_failure', False)
 error = r.get('error', '')
-run_type = sys.argv[2]
 
-parts = [f'{run_type}:']
 if error:
-    parts.append(f'ERROR={error}')
-elif gate:
-    parts.append('GATE_FAILURE')
-if folds:
-    parts.append(f'folds=[{\",\".join(f\"{f:.2f}\" for f in folds)}]')
+    desc = f'ERROR={error}'
+elif any_gate:
+    desc = f'GATE_FAILURE mode={mode} folds=[{pfs}]'
+else:
+    desc = f'mode={mode} folds=[{pfs}]'
 
-# Include any extra metrics from the results
-for key in ('trades', 'win_rate', 'profit_factor', 'max_drawdown_pct', 'positive_day_rate'):
-    if key in r and r[key] is not None:
-        parts.append(f'{key}={r[key]}')
-
-desc = ' '.join(parts)
-status = 'revert'  # default until Claude runs model_manage.py keep
-print(f'{sys.argv[3]}\t{score:.6f}\t{status}\t{desc}')
-" "$results_json" "$run_type" "$exp_id" 2>/dev/null)
+cols = [
+    exp_id,
+    mode,
+    'revert',  # flipped to 'keep' only by model_manage.keep()
+    f\"{r.get('stability_score', -999.0):.6f}\",
+    f\"{r.get('pooled_profit_factor', 0.0):.4f}\",
+    f\"{r.get('pooled_max_account_drawdown', 0.0):.4f}\",
+    str(r.get('pooled_total_trades', 0)),
+    str(r.get('pooled_traded_days', 0)),
+    'true' if any_gate else 'false',
+    f'[{pfs}]',
+    desc,
+]
+print('\t'.join(cols))
+" "$results_json" "$exp_id" 2>/dev/null)
 
     if [[ -n "$tsv_line" ]]; then
         echo "$tsv_line" >> "$results_file"
-        log "Auto-appended $exp_id to results.tsv (score=$(echo "$tsv_line" | cut -f2))"
+        log "Appended $exp_id to results.tsv (stability_score=$(echo "$tsv_line" | cut -f4))"
     else
-        log "WARNING: Failed to parse RESULTS_JSON — appending raw placeholder"
-        echo -e "${exp_id}\t0.000000\tunknown\t${run_type}: parse failed" >> "$results_file"
+        log "WARNING: Failed to parse RESULTS_JSON — results.tsv not updated"
     fi
 }
 
@@ -202,10 +226,9 @@ print(int(uakt / uact) + 2)  # +2 for spread/rounding safety
 " 2>/dev/null || echo "8")
         local _mint_uakt=$(( _mint_act * _akt_per_act * 1000000 ))
         log "ACT balance insufficient ($((_act_bal/1000000)) ACT < ${DEPOSIT_ACT} ACT). Minting ${_mint_act} ACT from $((_mint_uakt/1000000)) AKT..."
-        local _mint_out _mint_exit _mint_code
+        local _mint_out _mint_exit=0 _mint_code
         _mint_out=$(provider-services tx bme mint-act "${_mint_uakt}uakt" \
-            --from "$AKASH_FROM" --yes --output json 2>&1)
-        _mint_exit=$?
+            --from "$AKASH_FROM" --yes --output json 2>&1) || _mint_exit=$?
         if [[ $_mint_exit -ne 0 ]]; then
             log "WARNING: provider-services mint-act exited with code $_mint_exit"
             echo "$_mint_out"
@@ -217,9 +240,11 @@ print(int(uakt / uact) + 2)  # +2 for spread/rounding safety
     fi
 
     log "Submitting deployment TX (deposit=${DEPOSIT_ACT} ACT ~\$${DEPOSIT_ACT} — use 'fund' to add more)..."
+    local _deploy_exit=0
     TX_OUTPUT=$(provider-services tx deployment create "$SDL_FILE" \
         --deposit "${DEPOSIT_UACT}uact" \
-        --from "$AKASH_FROM" --yes --output json 2>&1)
+        --from "$AKASH_FROM" --yes --output json 2>&1) || _deploy_exit=$?
+    [[ $_deploy_exit -eq 0 ]] || { echo "$TX_OUTPUT"; die "Deployment create failed (exit=$_deploy_exit)"; }
 
     TXHASH=$(echo "$TX_OUTPUT" | grep -o '"txhash":"[^"]*"' | head -1 | cut -d'"' -f4)
     [[ -n "$TXHASH" ]] || { echo "$TX_OUTPUT"; die "No txhash returned"; }
@@ -227,7 +252,9 @@ print(int(uakt / uact) + 2)  # +2 for spread/rounding safety
 
     # 2. Confirm TX
     sleep 8
-    TX_RESULT=$(provider-services query tx "$TXHASH" --node "$AKASH_NODE" --output json 2>&1)
+    local _tx_exit=0
+    TX_RESULT=$(provider-services query tx "$TXHASH" --node "$AKASH_NODE" --output json 2>&1) || _tx_exit=$?
+    [[ $_tx_exit -eq 0 ]] || { echo "$TX_RESULT" | head -30; die "TX query failed (exit=$_tx_exit)"; }
     TX_CODE=$(echo "$TX_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',1))" 2>/dev/null || echo "1")
     [[ "$TX_CODE" == "0" ]] || { echo "$TX_RESULT" | head -30; die "TX failed (code=$TX_CODE)"; }
     log "TX confirmed"
@@ -360,17 +387,21 @@ PY
 
     # 5. Create lease
     log "Creating lease..."
+    local _lease_exit=0
     LEASE_TX=$(provider-services tx market lease create \
         --dseq "$DSEQ" --gseq "$GSEQ" --oseq "$ASEQ" \
         --provider "$PROVIDER" --from "$AKASH_FROM" \
-        --yes --output json 2>&1)
+        --yes --output json 2>&1) || _lease_exit=$?
+    [[ $_lease_exit -eq 0 ]] || { echo "$LEASE_TX"; die "Lease create failed (exit=$_lease_exit)"; }
     LEASE_HASH=$(echo "$LEASE_TX" | grep -o '"txhash":"[^"]*"' | head -1 | cut -d'"' -f4)
     [[ -n "$LEASE_HASH" ]] || { echo "$LEASE_TX"; die "No lease txhash returned"; }
     log "Lease TX: $LEASE_HASH"
     sleep 8
 
     # 5b. Verify lease TX succeeded (prevents silent failures)
-    LEASE_RESULT=$(provider-services query tx "$LEASE_HASH" --node "$AKASH_NODE" --output json 2>&1)
+    local _lquery_exit=0
+    LEASE_RESULT=$(provider-services query tx "$LEASE_HASH" --node "$AKASH_NODE" --output json 2>&1) || _lquery_exit=$?
+    [[ $_lquery_exit -eq 0 ]] || { echo "$LEASE_RESULT" | head -30; die "Lease TX query failed (exit=$_lquery_exit)"; }
     LEASE_CODE=$(echo "$LEASE_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',1))" 2>/dev/null || echo "1")
     [[ "$LEASE_CODE" == "0" ]] || { echo "$LEASE_RESULT" | head -30; die "Lease TX failed (code=$LEASE_CODE). Provider may have rejected."; }
     log "Lease confirmed"
@@ -490,9 +521,10 @@ cmd_start() {
         v2 pyproject.toml CLAUDE.md
     bundle_sha=$(shasum -a 256 "$bundle" | awk '{print $1}')
     log "Uploading workspace snapshot ($(du -h "$bundle" | cut -f1), sha256=$bundle_sha)..."
-    scp_cmd "$bundle" "root@$SSH_HOST:/root/v2-workspace.tgz"
+    scp_retry "$bundle" "root@$SSH_HOST:/root/v2-workspace.tgz"
     rm -f "$bundle"
-    ssh_cmd "rm -rf /root/v2 && mkdir -p /root && tar -xzf /root/v2-workspace.tgz -C /root && mkdir -p /root/v2/models /root/v2/state /root/v2/output && rm -f /root/v2-workspace.tgz"
+    ssh_cmd "rm -rf /root/v2 && mkdir -p /root && tar -xzf /root/v2-workspace.tgz -C /root 2>/dev/null"
+    ssh_cmd "mkdir -p /root/v2/models /root/v2/state /root/v2/output && rm -f /root/v2-workspace.tgz"
 
     # Integrity check: confirm remote train.py matches local snapshot.
     local local_train_sha remote_train_sha
@@ -508,7 +540,7 @@ cmd_start() {
     # Upload the selected dataset artifact to v2/data.pt on the GPU node
     [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
     log "Uploading dataset $(basename "$DATA_PT") ($(du -h "$DATA_PT" | cut -f1))..."
-    scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
+    scp_retry "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
 
     # Verify data.pt upload integrity via SHA256 comparison
     if [[ -f "${DATA_PT}.sha256" ]]; then
@@ -550,16 +582,25 @@ PY
         python3 -m v2.ops.strip_sidecars "$sidecar_abs" "$stripped_dir" || die "Sidecar stripping failed"
 
         log "Packaging stripped sidecars (zstd)..."
-        tar -cf - -C "$(dirname "$stripped_dir")" "$(basename "$stripped_dir")" | zstd -3 -T0 -o "$sidecar_bundle"
+        tar --no-mac-metadata --no-xattrs -cf - -C "$(dirname "$stripped_dir")" "$(basename "$stripped_dir")" | zstd -3 -T0 -o "$sidecar_bundle"
         rm -rf "$stripped_dir"
 
         log "Uploading stripped sidecars ($(du -sh "$sidecar_bundle" | cut -f1))..."
-        scp_cmd "$sidecar_bundle" "root@$SSH_HOST:/root/v2-sidecars.tar.zst"
+        scp_retry "$sidecar_bundle" "root@$SSH_HOST:/root/v2-sidecars.tar.zst"
         rm -f "$sidecar_bundle"
 
-        # Unpack on GPU — install zstd if needed, rename stripped dir to expected path
-        ssh_cmd "command -v zstd >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq zstd >/dev/null 2>&1)"
-        ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")' && zstd -d /root/v2-sidecars.tar.zst -o /root/v2-sidecars.tar && tar -xf /root/v2-sidecars.tar -C /tmp && mv /tmp/autoresearch-stripped-sidecars-* '$remote_sidecar_dir' && rm -f /root/v2-sidecars.tar.zst /root/v2-sidecars.tar"
+        # Unpack on GPU — zstd installed by SDL command, rename stripped dir to expected path
+        ssh_cmd "command -v zstd >/dev/null 2>&1" || die "zstd not available on remote (SDL command may have failed)"
+        ssh_cmd "rm -rf '$remote_sidecar_dir' && mkdir -p '$(dirname "$remote_sidecar_dir")'"
+        log "Decompressing sidecars on remote..."
+        ssh_cmd "zstd -d /root/v2-sidecars.tar.zst -o /root/v2-sidecars.tar"
+        log "Extracting sidecar archive on remote..."
+        # Suppress stderr: macOS bsdtar embeds LIBARCHIVE.xattr metadata that GNU tar warns about.
+        # Warnings cause non-zero exit on some tar versions. Verify extraction below.
+        ssh_cmd "tar -xf /root/v2-sidecars.tar -C /tmp 2>/dev/null || true"
+        ssh_cmd "test -d /tmp/autoresearch-stripped-sidecars-*" || die "Sidecar tar extraction failed on remote"
+        ssh_cmd "mv /tmp/autoresearch-stripped-sidecars-* '$remote_sidecar_dir'"
+        ssh_cmd "rm -f /root/v2-sidecars.tar.zst /root/v2-sidecars.tar"
         ssh_cmd "test -d '$remote_sidecar_dir'" || die "Remote sidecar upload failed: $remote_sidecar_dir missing"
 
         # Clean up macOS AppleDouble resource fork files (._*) from extraction
@@ -584,20 +625,25 @@ PY
     log "Files on remote GPU node:"
     ssh_cmd "ls -lh /root/v2/train.py /root/v2/data.pt /root/deploy_source.json"
 
-    # Install GPU dependencies (torch, numpy, pandas) from pinned requirements
-    log "Installing GPU dependencies..."
-    # Bootstrap pip if not available (bare Ubuntu containers)
-    ssh_cmd "pip3 --version >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq python3-pip >/dev/null 2>&1)" \
-        || log "WARNING: pip bootstrap via apt failed, trying get-pip.py..."
-    ssh_cmd "pip3 --version >/dev/null 2>&1 || (python3 -c 'import ensurepip; ensurepip.bootstrap()' 2>/dev/null)" \
-        || log "WARNING: ensurepip failed too, trying get-pip.py..."
-    ssh_cmd "pip3 --version >/dev/null 2>&1 || (python3 <(curl -sS https://bootstrap.pypa.io/get-pip.py))" \
-        || true
-    ssh_cmd "pip3 install -q -r /root/v2/ops/requirements-gpu.txt" \
-        || ssh_cmd "pip install -q -r /root/v2/ops/requirements-gpu.txt" \
-        || ssh_cmd "python3 -m pip install -q -r /root/v2/ops/requirements-gpu.txt" \
-        || die "Failed to install GPU dependencies. Check requirements-gpu.txt."
-    log "Dependencies installed."
+    # Verify GPU dependencies (torch, numpy, pandas, scipy).
+    # These are installed by the SDL container command BEFORE sshd starts,
+    # so they should already be present. If not, attempt a one-shot install.
+    log "Verifying GPU dependencies..."
+    if ! ssh_cmd "python3 -c 'import torch, numpy, pandas, scipy; print(f\"torch={torch.__version__} numpy={numpy.__version__} pandas={pandas.__version__} scipy={scipy.__version__}\")'"; then
+        log "Dependencies missing — installing from requirements-gpu.txt..."
+        if ! ssh_cmd "pip3 --version >/dev/null 2>&1"; then
+            log "pip3 not found — installing..."
+            ssh_cmd "apt-get update -qq && apt-get install -y -qq python3-pip >/dev/null 2>&1" \
+                || log "WARNING: pip3 install failed (may not be needed if deps are pre-installed)"
+        fi
+        ssh_cmd "pip3 install -q numpy pandas scipy" \
+            || ssh_cmd "python3 -m pip install -q numpy pandas scipy" \
+            || die "Failed to install GPU dependencies."
+        # Verify again — fatal if still missing
+        ssh_cmd "python3 -c 'import torch, numpy, pandas, scipy'" \
+            || die "GPU dependencies still missing after install. Container image may be broken."
+    fi
+    log "Dependencies verified."
 
     # Pre-flight: verify GPU, Python, PyTorch, and data on remote node
     log "Running pre-flight checks on remote GPU node..."
@@ -610,7 +656,10 @@ PY
     log ""
     log "=== GPU READY ==="
     log ""
-    log "GPU READY. Run experiments with: ./v2/ops/deploy.sh run_one exp_NNN"
+    log "GPU READY. Run experiments with:"
+    log "  ./v2/ops/deploy.sh run_screen_latest exp_NNN   # single-fold triage"
+    log "  ./v2/ops/deploy.sh run_cv exp_NNN              # full 5-fold CV"
+    log "  ./v2/ops/deploy.sh run_final_train exp_NNN     # produce deployable model"
     log ""
     log "Status: ./deploy.sh status"
     log "SSH:    ./deploy.sh ssh"
@@ -751,25 +800,14 @@ else:
 bar("Experiment History")
 
 if os.path.exists(results_path):
-    with open(results_path) as f:
-        lines = f.readlines()
-    if len(lines) > 1:
-        header = lines[0].strip().split("\t")
-        print(f"  {'#':>3}  {'Score':>8}  {'Kept':>6}  Summary")
-        print(f"  {'---':>3}  {'-----':>8}  {'----':>6}  -------")
-        for line in lines[1:]:
-            cols = line.strip().split("\t")
-            if len(cols) >= len(header):
-                row = dict(zip(header, cols))
-                eid = row.get("experiment_id", "?")
-                score = row.get("score", "?")
-                kept_flag = row.get("status", "?")
-                summary = row.get("description", "")[:50]
-                try:
-                    score_f = float(score)
-                    print(f"  {eid:>3}  {score_f:>8.3f}  {kept_flag:>6}  {summary}")
-                except:
-                    print(f"  {eid:>3}  {score:>8}  {kept_flag:>6}  {summary}")
+    # Delegate to v2.ops.status_tsv so the parser stays testable and cannot
+    # silently drift out of sync with the CVReport schema.
+    try:
+        sys.path.insert(0, "/root")
+        from v2.ops.status_tsv import render as _render_history
+        sys.stdout.write(_render_history(results_path))
+    except Exception as _e:
+        print(f"  ERROR rendering history: {_e}")
     else:
         print("  (no experiments yet)")
 else:
@@ -955,22 +993,15 @@ cmd_sync() {
 }
 
 # ===================================================================
-# RUN_ONE — upload code + model, run single experiment, download model
+# Internal helper: upload mutable source to the GPU before any run.
 # ===================================================================
-# This is the autoresearch loop primitive. Claude calls this once per
-# experiment. It does push + train + pull in one shot.
-#
-# Usage: ./deploy.sh run_one exp_017
-cmd_run_one() {
-    load_state
-    local exp_id="${EXTRA_ARGS:-}"
-    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_one <exp_id>"
-
-    log "=== EXPERIMENT: $exp_id ==="
-    run_local_pre_run_gate
-
-    # 1. Upload mutable code files + harness files that may have bug fixes
-    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py v2/replay.py v2/ops/pre_run_gate.py; do
+_upload_mutable_sources() {
+    for f in v2/train.py v2/core/policy.py v2/core/walkforward.py \
+             v2/core/cv_report.py v2/core/artifact_kind.py \
+             v2/ops/run_experiment_wf.py v2/ops/run_final_train.py \
+             v2/ops/artifact.py v2/ops/model_manage.py \
+             v2/replay.py v2/ops/pre_run_gate.py; do
+        [[ -f "$PROJECT_ROOT/$f" ]] || continue
         scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
     done
 
@@ -980,149 +1011,166 @@ cmd_run_one() {
     remote_sha=$(ssh_cmd "sha256sum /root/v2/train.py | awk '{print \$1}'" 2>/dev/null)
     [[ "$remote_sha" == "$local_sha" ]] || die "train.py upload integrity check failed"
 
-    # If V2_DATA_PATH points at a staging dataset, keep the remote harness in sync.
+    # Sync dataset if needed
     [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
     local local_data_sha remote_data_sha
     local_data_sha=$(shasum -a 256 "$DATA_PT" | awk '{print $1}')
     remote_data_sha=$(ssh_cmd "sha256sum /root/v2/data.pt | awk '{print \$1}'" 2>/dev/null || true)
     if [[ "$remote_data_sha" != "$local_data_sha" ]]; then
         log "Syncing dataset $(basename "$DATA_PT") to remote v2/data.pt..."
-        scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
-    fi
-    log "Code uploaded. Training..."
-
-    # Upload frozen teacher model if COMP_MODE=frozen and COMP_W is set
-    if [[ -n "${COMP_W:-}" ]] && [[ "${COMP_MODE:-frozen}" == "frozen" ]]; then
-        local teacher_path="${COMP_TEACHER:-$PROJECT_ROOT/v2/models/model.pt}"
-        if [[ -f "$teacher_path" ]]; then
-            log "Uploading frozen teacher from $teacher_path..."
-            ssh_cmd "mkdir -p /root/v2/models"
-            scp_cmd "$teacher_path" "root@$SSH_HOST:/root/v2/models/model.pt"
-        else
-            log "WARNING: teacher not found at $teacher_path"
-        fi
+        scp_retry "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
     fi
 
-    # 2. Run experiment (blocking, ~5 min) — capture output to parse results
-    # TRAIN_ENV: space-separated KEY=VALUE pairs forwarded to the remote command
-    local env_prefix="${TRAIN_ENV:-}"
-    ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
-    local run_output
-    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $exp_id 2>&1 | tee /root/run.log") || true
-    echo "$run_output"  # still show output to Claude
-
-    # 3. Download new model.pt to staging (never overwrite the promoted model directly)
-    mkdir -p "$PROJECT_ROOT/v2/models"
-    scp_cmd "root@$SSH_HOST:/root/v2/models/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt"
-    mkdir -p "$PROJECT_ROOT/v2/artifacts"
-    scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/$exp_id" "$PROJECT_ROOT/v2/artifacts/"
-
-    # 4. Auto-append to results.tsv from RESULTS_JSON (can't be forgotten)
-    _append_results_tsv "$exp_id" "$run_output" "official"
-
-    # 5. Auto-promote if new score beats previous best and no gate failure
-    local results_json
-    results_json=$(echo "$run_output" | grep '^RESULTS_JSON:' | sed 's/^RESULTS_JSON://' | tail -1)
-    local new_score gate_failure
-    new_score=$(echo "$results_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('score','-999'))" 2>/dev/null || echo "-999")
-    gate_failure=$(echo "$results_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('gate_failure','') or '')" 2>/dev/null || echo "unknown")
-
-    # Find best existing promoted score from results.tsv
-    local best_prev
-    best_prev=$(python3 -c "
-import csv, sys
-best = -999
-with open(sys.argv[1]) as f:
-    reader = csv.DictReader(f, delimiter='\t')
-    for row in reader:
-        if row.get('status') == 'keep':
-            s = float(row.get('score', -999))
-            if s > best:
-                best = s
-print(best)
-" "$PROJECT_ROOT/v2/results.tsv" 2>/dev/null || echo "-999")
-
-    if [[ -z "$gate_failure" ]] && python3 -c "exit(0 if float('$new_score') > float('$best_prev') else 1)" 2>/dev/null; then
-        log "Auto-promoting $exp_id (score=$new_score > best=$best_prev, no gate failure)"
-        python3 -m v2.ops.model_manage keep 2>&1 || log "WARNING: auto-promote failed"
-        # Update results.tsv status from 'revert' to 'keep'
-        python3 -c "
-import sys
-lines = open(sys.argv[1]).readlines()
-with open(sys.argv[1], 'w') as f:
-    for line in lines:
-        if line.startswith(sys.argv[2] + '\t') and '\trevert\t' in line:
-            line = line.replace('\trevert\t', '\tkeep\t', 1)
-        f.write(line)
-" "$PROJECT_ROOT/v2/results.tsv" "$exp_id" 2>/dev/null || true
-        # Regenerate plots
-        log "Regenerating plots..."
-        python3 -m v2.plot_trades 2>/dev/null || log "WARNING: plot_trades failed"
-        python3 v2/plot_progress.py 2>/dev/null || log "WARNING: plot_progress failed"
-    else
-        log "Not promoted: score=$new_score, best=$best_prev, gate=$gate_failure"
-        log "To promote manually: python3 -m v2.ops.model_manage keep"
-    fi
+    # Verify dependencies
+    ssh_cmd "python3 -c 'import torch, numpy, pandas'" \
+        || die "Dependencies missing on remote. Re-run: ./deploy.sh start"
 }
 
 # ===================================================================
-# RUN_SCREEN — 1-fold screening run (no artifacts, no model download)
+# RUN_CV — upload code, run full 5-fold CV, download CV_EVAL artifact.
 # ===================================================================
-# Usage: ./deploy.sh run_screen exp_079
-cmd_run_screen() {
+# Produces a CV_EVAL artifact. NOT a deployable model. Promotion requires
+# a separate run_final_train pass followed by model_manage keep.
+#
+# Usage: ./deploy.sh run_cv exp_017
+cmd_run_cv() {
     load_state
     local exp_id="${EXTRA_ARGS:-}"
-    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_screen <exp_id>"
+    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_cv <exp_id>"
 
-    local screen_id="${exp_id}_screen"
-    log "=== SCREENING: $screen_id (1-fold, no artifacts) ==="
+    log "=== CV EXPERIMENT: $exp_id (screening_mode=full) ==="
     run_local_pre_run_gate
+    _upload_mutable_sources
+    log "Sources uploaded. Running full walk-forward CV..."
 
-    # 1. Upload mutable code files + harness files that may have bug fixes
-    for f in v2/train.py v2/core/policy.py v2/ops/run_experiment_wf.py v2/core/walkforward.py v2/replay.py v2/ops/pre_run_gate.py; do
-        scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
-    done
-
-    # Verify train.py integrity
-    local local_sha remote_sha
-    local_sha=$(shasum -a 256 "$PROJECT_ROOT/v2/train.py" | awk '{print $1}')
-    remote_sha=$(ssh_cmd "sha256sum /root/v2/train.py | awk '{print \$1}'" 2>/dev/null)
-    [[ "$remote_sha" == "$local_sha" ]] || die "train.py upload integrity check failed"
-
-    # Sync data if needed
-    [[ -f "$DATA_PT" ]] || die "data.pt not found: $DATA_PT"
-    local local_data_sha remote_data_sha
-    local_data_sha=$(shasum -a 256 "$DATA_PT" | awk '{print $1}')
-    remote_data_sha=$(ssh_cmd "sha256sum /root/v2/data.pt | awk '{print \$1}'" 2>/dev/null || true)
-    if [[ "$remote_data_sha" != "$local_data_sha" ]]; then
-        log "Syncing dataset $(basename "$DATA_PT") to remote v2/data.pt..."
-        scp_cmd "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
-    fi
-    log "Code uploaded. Screening (1-fold)..."
-
-    # Upload frozen teacher model if COMP_MODE=frozen and COMP_W is set
-    if [[ -n "${COMP_W:-}" ]] && [[ "${COMP_MODE:-frozen}" == "frozen" ]]; then
-        local teacher_path="${COMP_TEACHER:-$PROJECT_ROOT/v2/models/model.pt}"
-        if [[ -f "$teacher_path" ]]; then
-            log "Uploading frozen teacher from $teacher_path..."
-            ssh_cmd "mkdir -p /root/v2/models"
-            scp_cmd "$teacher_path" "root@$SSH_HOST:/root/v2/models/model.pt"
-        else
-            log "WARNING: teacher not found at $teacher_path"
-        fi
-    fi
-
-    # 2. Run 1-fold screening (no artifacts saved) — capture output to parse results
-    # TRAIN_ENV: space-separated KEY=VALUE pairs forwarded to the remote command
     local env_prefix="${TRAIN_ENV:-}"
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --n-folds 1 --no-artifacts 2>&1 | tee /root/run.log") || true
-    echo "$run_output"  # still show output to Claude
+    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $exp_id --screen-mode full 2>&1 | tee /root/run.log") || true
+    echo "$run_output"
 
-    # 3. No model download, no artifact download, and no results.tsv entry for screening
-    log "Screening complete. No model, artifacts, or results.tsv entry were written."
-    log "If screening passes, run: ./deploy.sh run_one $exp_id"
+    # Download the CV_EVAL artifact directory. Do NOT fetch v2/models/model.pt
+    # — walkforward no longer writes there.
+    mkdir -p "$PROJECT_ROOT/v2/artifacts"
+    scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/$exp_id" "$PROJECT_ROOT/v2/artifacts/" 2>/dev/null || \
+        log "WARNING: CV_EVAL artifact not found on remote (experiment may have crashed)"
+
+    # Append to results.tsv from RESULTS_JSON
+    _append_results_tsv "$exp_id" "$run_output"
+
+    log ""
+    log "CV complete: $exp_id"
+    log "Next: inspect artifact, then:"
+    log "  ./deploy.sh run_final_train $exp_id     # if CV passes all gates"
+    log "  python3 -m v2.ops.model_manage keep     # after final-train"
+}
+
+# ===================================================================
+# RUN_SCREEN_LATEST — single-fold parity debug (matches fold 4 of full CV).
+# ===================================================================
+# No artifact, no results.tsv entry. Exists for exact-parity debugging only.
+cmd_run_screen_latest() {
+    load_state
+    local exp_id="${EXTRA_ARGS:-}"
+    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_screen_latest <exp_id>"
+
+    local screen_id="${exp_id}_screen_latest"
+    log "=== SCREEN_LATEST: $screen_id (fold 4 only, no artifact) ==="
+    run_local_pre_run_gate
+    _upload_mutable_sources
+    log "Sources uploaded. Screening latest fold..."
+
+    local env_prefix="${TRAIN_ENV:-}"
+    ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
+    local run_output
+    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --screen-mode latest --no-artifacts 2>&1 | tee /root/run.log") || true
+    echo "$run_output"
+
+    log ""
+    log "screen_latest complete. Debug-only — no artifact or results.tsv write."
+    log "For hypothesis triage use: ./deploy.sh run_screen_mini $exp_id"
+    log "For official cross-validation: ./deploy.sh run_cv $exp_id"
+}
+
+# ===================================================================
+# RUN_SCREEN_MINI — 3-fold regime triage (folds 0, 2, 4).
+# ===================================================================
+cmd_run_screen_mini() {
+    load_state
+    local exp_id="${EXTRA_ARGS:-}"
+    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_screen_mini <exp_id>"
+
+    local screen_id="${exp_id}_screen_mini"
+    log "=== SCREEN_MINI: $screen_id (folds 0, 2, 4; no artifact) ==="
+    run_local_pre_run_gate
+    _upload_mutable_sources
+    log "Sources uploaded. Screening mini (early/mid/late regimes)..."
+
+    local env_prefix="${TRAIN_ENV:-}"
+    ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
+    local run_output
+    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --screen-mode mini --no-artifacts 2>&1 | tee /root/run.log") || true
+    echo "$run_output"
+
+    log ""
+    log "screen_mini complete. Debug-only — no artifact or results.tsv write."
+    log "For official cross-validation: ./deploy.sh run_cv $exp_id"
+}
+
+# ===================================================================
+# RUN_FINAL_TRAIN — produce a promotable FINAL_TRAIN artifact from CV.
+# ===================================================================
+# This is the only path that creates a deployable model. Takes the config
+# from a CV_EVAL artifact and trains one model on the full pre-shadow span.
+#
+# Usage: ./deploy.sh run_final_train exp_017       # produces exp_017_final
+#        ./deploy.sh run_final_train exp_017 exp_017_deploy
+cmd_run_final_train() {
+    load_state
+    local src_id final_id
+    # Parse two-positional extra args
+    set -- $EXTRA_ARGS
+    src_id="${1:-}"
+    final_id="${2:-}"
+    [[ -n "$src_id" ]] || die "Usage: deploy.sh run_final_train <source_cv_exp_id> [final_exp_id]"
+
+    [[ -n "$final_id" ]] || final_id="${src_id}_final"
+
+    log "=== FINAL TRAIN: $final_id (from CV $src_id) ==="
+    run_local_pre_run_gate
+    _upload_mutable_sources
+
+    # The source CV_EVAL artifact must exist on the remote
+    ssh_cmd "test -f /root/v2/artifacts/${src_id}/cv_report.json" \
+        || die "CV_EVAL artifact not found on remote: /root/v2/artifacts/${src_id}/cv_report.json"
+
+    log "Sources uploaded. Training final deployable model..."
+    # Intentional: TRAIN_ENV is NOT forwarded to run_final_train. The CV_EVAL
+    # artifact carries the exact env overrides used in the CV, and
+    # run_final_train replays them via os.environ. Forwarding an operator-set
+    # TRAIN_ENV here would let the deployed model diverge from the CV that
+    # selected it. If a knob needs to change, re-run CV under the new env.
+    if [[ -n "${TRAIN_ENV:-}" ]]; then
+        log "NOTE: TRAIN_ENV=$TRAIN_ENV is IGNORED for run_final_train. The source"
+        log "      CV artifact's env_overrides are authoritative."
+    fi
+    ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
+    local run_output
+    run_output=$(ssh_cmd "cd /root && PYTHONUNBUFFERED=1 python3 -m v2.ops.run_final_train --config-from $src_id --id $final_id 2>&1 | tee /root/run.log") || true
+    echo "$run_output"
+
+    # Pull the FINAL_TRAIN artifact directory and stage the candidate locally
+    mkdir -p "$PROJECT_ROOT/v2/artifacts"
+    scp_cmd -r "root@$SSH_HOST:/root/v2/artifacts/$final_id" "$PROJECT_ROOT/v2/artifacts/" \
+        || die "Failed to download FINAL_TRAIN artifact $final_id"
+    mkdir -p "$PROJECT_ROOT/v2/models"
+    cp "$PROJECT_ROOT/v2/artifacts/$final_id/model.pt" "$PROJECT_ROOT/v2/models/model_candidate.pt"
+
+    log ""
+    log "FINAL_TRAIN artifact downloaded: v2/artifacts/$final_id"
+    log "Candidate staged at: v2/models/model_candidate.pt"
+    log "Next: python3 -m v2.ops.model_manage keep"
+    log "  (or: python3 -m v2.ops.model_manage revert)"
 }
 
 cmd_stop() {
@@ -1190,32 +1238,44 @@ EXTRA_ARGS="$*"
 export EXTRA_ARGS
 
 case "$CMD" in
-    boot)       cmd_boot       ;;
-    start)      cmd_start      ;;
-    run_one)    cmd_run_one    ;;
-    run_screen) cmd_run_screen ;;
-    fund)       cmd_fund       ;;
-    ssh)        cmd_ssh        ;;
-    logs)       cmd_logs       ;;
-    status)     cmd_status     ;;
-    download)   cmd_download   ;;
-    stop)       cmd_stop       ;;
+    boot)              cmd_boot              ;;
+    start)             cmd_start             ;;
+    run_cv)            cmd_run_cv            ;;
+    run_screen_latest) cmd_run_screen_latest ;;
+    run_screen_mini)   cmd_run_screen_mini   ;;
+    run_final_train)   cmd_run_final_train   ;;
+    fund)              cmd_fund              ;;
+    ssh)               cmd_ssh               ;;
+    logs)              cmd_logs              ;;
+    status)            cmd_status            ;;
+    download)          cmd_download          ;;
+    stop)              cmd_stop              ;;
+    # --- Removed footguns (harness-integrity repair 2026-04-17) ---
+    run_one|run_screen)
+        die "Command '$CMD' was removed. Use: run_cv (full 5-fold), run_screen_latest (fold 4 only), run_screen_mini (folds 0,2,4), or run_final_train (deploy). See: ./deploy.sh with no arguments."
+        ;;
     *)
         echo "Usage: ./deploy.sh <command> [options]"
         echo ""
-        echo "Autoresearch loop (Claude drives):"
-        echo "  boot          Deploy H100 container on Akash (~2 min)"
-        echo "  start         Upload v2 code + data, install deps"
-        echo "  run_screen ID 1-fold screening run (no artifacts, no model download)"
-        echo "  run_one ID    Official 5-fold experiment + download model (~5 min)"
+        echo "CV pipeline (Claude drives):"
+        echo "  boot                     Deploy H100 container on Akash (~2 min)"
+        echo "  start                    Upload v2 code + data, install deps"
+        echo "  run_screen_latest ID     Single-fold parity debug (fold 4 only, no artifact)"
+        echo "  run_screen_mini   ID     3-fold regime triage (folds 0, 2, 4, no artifact)"
+        echo "  run_cv            ID     Full 5-fold CV, emits CV_EVAL artifact"
+        echo "  run_final_train  SRC_ID  Train deployable model from chosen CV"
+        echo ""
+        echo "Promotion:"
+        echo "  python3 -m v2.ops.model_manage keep   (FINAL_TRAIN only; rejects CV_EVAL)"
+        echo "  python3 -m v2.ops.model_manage revert"
         echo ""
         echo "Utilities:"
-        echo "  ssh           SSH into the H100"
-        echo "  logs          Tail run.log"
-        echo "  status        GPU + experiment dashboard"
-        echo "  download      Download all v2 results + artifacts"
-        echo "  fund          Add ACT to deployment escrow"
-        echo "  stop          Kill experiment + close Akash deployment"
+        echo "  ssh        SSH into the H100"
+        echo "  logs       Tail run.log"
+        echo "  status     GPU + experiment dashboard"
+        echo "  download   Download all v2 results + artifacts"
+        echo "  fund       Add ACT to deployment escrow"
+        echo "  stop       Kill experiment + close Akash deployment"
         exit 1
         ;;
 esac

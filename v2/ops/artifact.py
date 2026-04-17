@@ -22,6 +22,7 @@ import time
 
 import torch
 
+from v2.core.artifact_kind import ArtifactKind, is_promotable
 from v2.core.policy import DecisionPolicy, DEFAULT_POLICY
 from v2.core.metrics import score_config_fingerprint
 
@@ -58,10 +59,12 @@ def save_artifact(
     dataset_fingerprint: str = "unknown",
     train_source_path: str = "v2/train.py",
     extra_metadata: dict | None = None,
+    kind: ArtifactKind = ArtifactKind.FINAL_TRAIN,
 ) -> str:
-    """Save an experiment artifact bundle.
+    """Save an experiment artifact bundle with a deployable model.
 
-    Returns the artifact directory path.
+    The `kind` field determines promotability. Only FINAL_TRAIN artifacts may
+    be promoted to v2/models/model.pt via v2.ops.model_manage.keep().
     """
     artifact_dir = os.path.join(ARTIFACTS_DIR, experiment_id)
     os.makedirs(artifact_dir, exist_ok=True)
@@ -92,6 +95,7 @@ def save_artifact(
     # Build manifest
     manifest = {
         "experiment_id": experiment_id,
+        "artifact_kind": ArtifactKind(kind).value,
         "git_sha": _get_git_sha(),
         "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S'),
         "score": score,
@@ -112,6 +116,92 @@ def save_artifact(
         json.dump(manifest, f, indent=2, sort_keys=True)
 
     return artifact_dir
+
+
+def save_cv_eval_artifact(
+    experiment_id: str,
+    cv_report,  # CVReport (avoid circular import in type hints)
+    policy: DecisionPolicy = DEFAULT_POLICY,
+    train_source_path: str = "v2/train.py",
+    kind: ArtifactKind = ArtifactKind.CV_EVAL,
+) -> str:
+    """Save a walk-forward CV artifact.
+
+    CV_EVAL artifacts do NOT carry a top-level `model.pt` — there is no single
+    deployable model from walk-forward CV. Per-fold checkpoints remain under
+    {artifact_dir}/folds/<window_id>/model.pt as debug artifacts.
+
+    This artifact is not promotable. Running `model_manage keep` with a CV_EVAL
+    artifact is a hard error.
+    """
+    if kind == ArtifactKind.FINAL_TRAIN:
+        raise ValueError(
+            "save_cv_eval_artifact refuses FINAL_TRAIN kind. "
+            "Use save_artifact() for final-train outputs."
+        )
+
+    artifact_dir = os.path.join(ARTIFACTS_DIR, experiment_id)
+    os.makedirs(artifact_dir, exist_ok=True)
+
+    # Save the CVReport JSON alongside per-fold checkpoints
+    cv_path = os.path.join(artifact_dir, "cv_report.json")
+    cv_report.to_json(cv_path)
+
+    # Policy + source snapshots
+    with open(os.path.join(artifact_dir, "policy.json"), "w") as f:
+        f.write(policy.to_json())
+    if os.path.exists(train_source_path):
+        shutil.copy2(train_source_path, os.path.join(artifact_dir, "train.py.snapshot"))
+    policy_source_path = "v2/core/policy.py"
+    if os.path.exists(policy_source_path):
+        shutil.copy2(policy_source_path, os.path.join(artifact_dir, "policy.py.snapshot"))
+
+    manifest = {
+        "experiment_id": experiment_id,
+        "artifact_kind": ArtifactKind(kind).value,
+        "schema_version": cv_report.schema_version,
+        "screening_mode": cv_report.screening_mode,
+        "git_sha": _get_git_sha(),
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "score": cv_report.stability.mean_fold_score,
+        "promoted": False,
+        "dataset_fingerprint": cv_report.dataset_fingerprint,
+        "evaluator_fingerprint": cv_report.evaluator_fingerprint,
+        "policy_fingerprint": cv_report.policy_fingerprint,
+        "training_config_fingerprint": cv_report.training_config_fingerprint,
+        "training_env_overrides": cv_report.training_env_overrides,
+        "pooled_profit_factor": cv_report.pooled.profit_factor,
+        "pooled_max_account_drawdown": cv_report.pooled.max_account_drawdown,
+        "per_fold_scores": cv_report.stability.per_fold_scores,
+        "any_fold_gate_failure": cv_report.stability.any_fold_gate_failure,
+        "fold_window_ids": [fs.window_id for fs in cv_report.folds],
+    }
+    with open(os.path.join(artifact_dir, "manifest.json"), "w") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+
+    return artifact_dir
+
+
+def write_model_pt_manifest(model_pt_path: str, manifest: dict) -> None:
+    """Write a sibling manifest next to v2/models/model.pt.
+
+    Promotion interlock: replay / plot tools read this banner at load time.
+    If `artifact_kind != FINAL_TRAIN`, the tool should log a loud warning.
+    """
+    sibling = os.path.splitext(model_pt_path)[0] + ".manifest.json"
+    payload = {"timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"), **manifest}
+    if "artifact_kind" not in payload:
+        raise ValueError("Model manifest requires artifact_kind")
+    with open(sibling, "w") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+
+
+def read_model_pt_manifest(model_pt_path: str) -> dict | None:
+    sibling = os.path.splitext(model_pt_path)[0] + ".manifest.json"
+    if not os.path.exists(sibling):
+        return None
+    with open(sibling) as f:
+        return json.load(f)
 
 
 def load_artifact(

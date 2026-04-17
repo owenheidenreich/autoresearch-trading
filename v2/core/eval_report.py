@@ -57,9 +57,6 @@ class EvalReport:
     # Full metrics snapshot
     metrics: dict = field(default_factory=dict)
 
-    # Per-fold breakdown (for walk-forward)
-    per_fold: list[dict] = field(default_factory=list)
-
     # Baselines
     baselines: dict = field(default_factory=dict)
     beats_all_baselines: bool = False

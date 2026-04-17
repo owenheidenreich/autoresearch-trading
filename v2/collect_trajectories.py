@@ -177,14 +177,15 @@ def main():
                         help="Label for this source (e.g. 'bc', 'rl_ep5')")
     parser.add_argument("--output-dir", default="v2/trajectories")
     parser.add_argument("--fold", type=int, default=0, help="Which fold to collect for")
-    parser.add_argument("--n-folds", type=int, default=5)
+    parser.add_argument("--total-folds", type=int, default=5,
+                        help="Canonical fold count — must match v2.core.walkforward.CANONICAL_N_FOLDS.")
     args = parser.parse_args()
 
     print(f"Loading data from {args.data}...")
     data = torch.load(args.data, map_location="cpu", weights_only=False)
     all_days = sorted(set(data["dates"]))
 
-    folds = generate_folds(all_days, n_folds=args.n_folds)
+    folds = generate_folds(all_days, n_folds=args.total_folds)
     fold = folds[args.fold]
     print(f"Fold {args.fold}: {len(fold.train_days)} train days "
           f"({fold.train_days[0]} to {fold.train_days[-1]})")

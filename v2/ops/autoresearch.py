@@ -51,7 +51,10 @@ def _evaluate_fold0(agent_path: str, data_path: str, encoder_path: str,
     env = os.environ.copy()
     env.update(env_vars)
 
-    # Run evaluation inline to avoid subprocess overhead
+    # Run evaluation inline to avoid subprocess overhead. Uses the same
+    # screening-mode API as the rest of the harness: --screen-mode latest is
+    # the canonical single-fold triage window (fold 4 of the full CV set),
+    # not the earliest window.
     eval_code = f"""
 import os
 for k, v in {json.dumps(env_vars)}.items():
@@ -59,7 +62,7 @@ for k, v in {json.dumps(env_vars)}.items():
 
 import torch, numpy as np
 from collections import defaultdict
-from v2.core.walkforward import generate_folds
+from v2.core.walkforward import generate_folds, resolve_fold_indices
 from v2.core.features import _FEAT_IDX
 from v2.analysis.frontier_study import _load_agent, _day_regime
 from v2.replay import replay_sequential
@@ -67,10 +70,11 @@ from v2.replay import replay_sequential
 data = torch.load("{data_path}", map_location="cpu", weights_only=False)
 all_days = sorted(set(data["dates"]))
 folds = generate_folds(all_days)
-fold0 = folds[0]
+selected = resolve_fold_indices("latest", total_folds=len(folds))
+target_fold = next(f for f in folds if f.fold_idx == selected[0])
 
 agent = _load_agent("{encoder_path}", "{agent_path}")
-metrics, trades, episodes = replay_sequential(agent, data, fold0.test_days, deterministic=True)
+metrics, trades, episodes = replay_sequential(agent, data, target_fold.test_days, deterministic=True)
 
 entry_sides = []
 for ep in episodes:

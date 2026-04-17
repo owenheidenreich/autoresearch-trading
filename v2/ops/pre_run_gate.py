@@ -15,6 +15,9 @@ import torch
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_PATH = PROJECT_ROOT / "v2" / "results.tsv"
 TRAIN_PATH = PROJECT_ROOT / "v2" / "train.py"
+WALKFORWARD_PATH = PROJECT_ROOT / "v2" / "core" / "walkforward.py"
+MODEL_PT_PATH = PROJECT_ROOT / "v2" / "models" / "model.pt"
+MODEL_MANIFEST_PATH = PROJECT_ROOT / "v2" / "models" / "model.manifest.json"
 HOW_TRAINING_WORKS_PATH = PROJECT_ROOT / "v2" / "docs" / "how_training_works.md"
 REQUIRED_LIVE_PATHS = (
     PROJECT_ROOT / "v2" / "docs" / "founder_intent.md",
@@ -142,6 +145,9 @@ def check_required_paths(errors: list[str]) -> None:
 
 
 def check_results_tsv(errors: list[str]) -> None:
+    """Validate results.tsv has the post-harness-repair CVReport schema."""
+    from v2.core.cv_report import RESULTS_TSV_HEADER
+
     if not RESULTS_PATH.exists():
         errors.append("results.tsv is missing")
         return
@@ -151,29 +157,141 @@ def check_results_tsv(errors: list[str]) -> None:
     if not rows:
         errors.append("results.tsv is empty")
         return
-    valid_headers = [
-        ["experiment", "score", "status", "description"],
-        ["experiment", "score", "status", "regime", "description"],
-    ]
-    if rows[0] not in valid_headers:
-        errors.append("results.tsv header is not a recognized format")
+    if rows[0] != RESULTS_TSV_HEADER:
+        errors.append(
+            f"results.tsv header does not match current CVReport schema. "
+            f"Expected: {RESULTS_TSV_HEADER}, got: {rows[0]}. "
+            f"Run the migration in v2.ops.migrate_results_tsv or archive + reset."
+        )
         return
 
     desc_col = rows[0].index("description")
     status_col = rows[0].index("status")
     for row in rows[1:]:
-        if len(row) <= desc_col:
+        if len(row) < len(RESULTS_TSV_HEADER):
             errors.append(f"results.tsv malformed row: {row}")
             continue
         exp_id = row[0]
         status = row[status_col]
         description = row[desc_col]
-        if status == "unknown" or description.startswith("screening:"):
-            errors.append(f"results.tsv contains non-official row: {exp_id}")
+        if status == "unknown":
+            errors.append(f"results.tsv contains unknown-status row: {exp_id}")
         if exp_id.startswith("exp_"):
-            exp_num = exp_id[4:]
+            exp_num = exp_id[4:].split("_")[0]
             if exp_num.isdigit() and int(exp_num) < 74:
                 errors.append(f"results.tsv contains pre-exact-chain row: {exp_id}")
+
+
+def check_harness_integrity(errors: list[str]) -> None:
+    """Invariants that prevent the fold-as-deploy-model bug from returning.
+
+    See /Users/gduby/.claude/plans/delightful-yawning-tiger.md Appendix G.
+    """
+    # --- A.1 / Appendix G.2-3: walkforward.py must not write to v2/models/model.pt ---
+    if not WALKFORWARD_PATH.exists():
+        errors.append(f"walkforward.py missing at {WALKFORWARD_PATH}")
+    else:
+        wf_src = WALKFORWARD_PATH.read_text()
+        forbidden_substrings = [
+            "v2/models/model.pt",
+            "v2/models/model_fold",
+        ]
+        for needle in forbidden_substrings:
+            if needle in wf_src:
+                errors.append(
+                    f"walkforward.py contains forbidden path {needle!r} — "
+                    f"the promotion bypass has returned. Delete the write."
+                )
+        # walkforward must not call shutil.copy2 on anything that looks like a model path.
+        if "shutil.copy2" in wf_src:
+            errors.append(
+                "walkforward.py uses shutil.copy2 — walkforward must never "
+                "copy checkpoints. Fold checkpoints live under v2/artifacts/..."
+            )
+        # signature must not take model_path
+        try:
+            import importlib
+            import v2.core.walkforward as wf_mod
+            importlib.reload(wf_mod)
+            import inspect
+            sig = inspect.signature(wf_mod.run_walkforward)
+            if "model_path" in sig.parameters:
+                errors.append(
+                    "run_walkforward() still accepts a `model_path` parameter. "
+                    "Remove it — walkforward must never write to v2/models/."
+                )
+            if "screening_mode" not in sig.parameters:
+                errors.append(
+                    "run_walkforward() missing `screening_mode` parameter. "
+                    "Screening-mode API is required post-repair."
+                )
+        except Exception as exc:
+            errors.append(f"could not introspect run_walkforward(): {exc}")
+
+    # --- A.9 / Appendix G.6: --n-folds flag is deleted everywhere in v2/ ---
+    legacy_flag = "-" + "-n-folds"  # avoid self-matching inside this source
+    for path in iter_live_text_files():
+        if path.resolve() == Path(__file__).resolve():
+            continue
+        if path.suffix not in {".py", ".sh"}:
+            continue
+        if legacy_flag in path.read_text():
+            errors.append(
+                f"legacy flag '{legacy_flag}' still present in "
+                f"{path.relative_to(PROJECT_ROOT)}. Replace with --screen-mode."
+            )
+
+    # --- Appendix G.5: v2/models/model.pt must have a FINAL_TRAIN manifest ---
+    from v2.core.artifact_kind import ArtifactKind
+    if MODEL_PT_PATH.exists():
+        if not MODEL_MANIFEST_PATH.exists():
+            errors.append(
+                f"{MODEL_PT_PATH.relative_to(PROJECT_ROOT)} exists but has no sibling "
+                f"manifest at {MODEL_MANIFEST_PATH.relative_to(PROJECT_ROOT)}. "
+                f"Any model under v2/models/ must come from run_final_train + model_manage keep."
+            )
+        else:
+            try:
+                import json as _json
+                manifest = _json.loads(MODEL_MANIFEST_PATH.read_text())
+                kind = manifest.get("artifact_kind")
+                if kind != ArtifactKind.FINAL_TRAIN.value:
+                    errors.append(
+                        f"v2/models/model.pt has artifact_kind={kind!r} — only "
+                        f"{ArtifactKind.FINAL_TRAIN.value!r} is deployable. "
+                        f"Rerun run_final_train to replace."
+                    )
+            except Exception as exc:
+                errors.append(f"could not parse model.manifest.json: {exc}")
+
+    # --- Appendix G.8: CVReport schema version matches the tsv header ---
+    from v2.core.cv_report import RESULTS_TSV_HEADER, SCHEMA_VERSION
+    if not RESULTS_PATH.exists():
+        errors.append("results.tsv missing")
+    else:
+        first_line = RESULTS_PATH.read_text().splitlines()[0] if RESULTS_PATH.read_text() else ""
+        header_cols = first_line.split("\t") if first_line else []
+        if header_cols != RESULTS_TSV_HEADER:
+            errors.append(
+                f"results.tsv header does not match CVReport schema "
+                f"({SCHEMA_VERSION}). Migrate or reset results.tsv."
+            )
+
+    # --- Appendix G.7: autoresearch uses resolve_fold_indices, not folds[0] ---
+    ar_path = PROJECT_ROOT / "v2" / "ops" / "autoresearch.py"
+    if ar_path.exists():
+        ar_src = ar_path.read_text()
+        if "resolve_fold_indices" not in ar_src:
+            errors.append(
+                "autoresearch.py does not call resolve_fold_indices() — "
+                "must use the same screening-mode API as the rest of the harness."
+            )
+        # A hard-coded `folds[0]` selection would re-introduce the earliest-vs-latest split
+        if "folds[0]" in ar_src and "target_fold" not in ar_src:
+            errors.append(
+                "autoresearch.py uses folds[0] directly. Screen through "
+                "resolve_fold_indices so 'fold 0' means the same window everywhere."
+            )
 
 
 def check_live_text_patterns(errors: list[str]) -> None:
@@ -352,6 +470,7 @@ def main() -> int:
     check_required_paths(errors)
     check_removed_paths(errors)
     check_results_tsv(errors)
+    check_harness_integrity(errors)
     check_live_text_patterns(errors)
     check_doc_sync(errors)
     check_train_smoke(data_path, errors)
