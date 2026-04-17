@@ -1886,3 +1886,44 @@ Put ranking almost doubled at top-3 (3.9% → 7.0%) but remains weak in absolute
 - Global centering / raw+bias improves **both** checkpoints → centering IS the general blocker ✓
 - Per-side z-score is worst → the real issue is separate **means**, not separate **scale** ✓
 - Next training run: `SIDE_SEL_W=0.2 + global centering` (or equivalently, drop per-side centering entirely and use raw+bias) is justified
+
+---
+
+## exp_171 — post-harness-repair rebaseline of exp_165 config (2026-04-17)
+
+**Context.** First official full-CV run under the repaired harness (commits `6d94b18 -> e8ebffd -> 53ce87a`). Repair removed: last-fold-as-summary blending, `--n-folds 1` fold-ordinal seed confound, unconditional walkforward.py -> v2/models/model.pt promotion bypass, and auto-promote. Screening vs full CV, config selection, and deploy artifact are now three distinct boundaries.
+
+**Config identity.** Rebaseline of the `exp_165` family — the last trusted supervised reference before `exp_170e` and the AWAC experiments:
+- Dual call/put heads, per-side centering
+- `SOFT_TEMP=0.08`, `SIDE_SEL_W=0.0`, `SIDE_W=0.0`, `SIDE_MODE=off`, `ALPHA_SIDE=0.0`
+- Policy: defaults (`gate_threshold=0.0`, `cooldown_bars=3`)
+- `training_config_fingerprint=b0d03ba8cb1a5ed2`, `policy_fingerprint=1241343e315c7a17`, `evaluator_fingerprint=e45320cc6094cd1e`
+
+**Per-fold breakdown (5/5 gate-failed on excessive_drawdown):**
+
+| fold | window_id | seed | score | PF | WR | trades | TPD | Traded | AcctDD | Sortino | +DayRate | C/P split | Minority% |
+|------|-----------|------|-------|------|-------|--------|-----|--------|---------|---------|----------|-----------|-----------|
+| 0 | `09802c94` | 159395087 | -0.200 | 0.749 | 44.2% | 570 | 9.50 | 57 | 100.3% | -9.87 | 42.1% | 440/130 | 22.8% |
+| 1 | `cf38c16e` | 1329119721 | -0.200 | 0.730 | 45.1% | 472 | 7.87 | 58 | 101.8% | -11.87 | 25.9% | 225/247 | **47.7%** |
+| 2 | `e56a4d66` | 1701465569 | -0.200 | **0.572** | 41.7% | 374 | 6.23 | 57 | 95.8% | -12.42 | 40.4% | 338/36 | 9.6% |
+| 3 | `9b92333b` | 462566326 | -0.200 | **0.816** | 47.5% | 657 | 10.95 | 59 | **68.7%** | -5.21 | 40.7% | 508/149 | 22.7% |
+| 4 | `3b2f7c52` | 992967885 | -0.200 | 0.671 | 46.0% | 480 | 8.00 | 48 | 100.0% | -10.89 | 27.1% | 398/82 | 17.1% |
+
+**Pooled:** `PF=0.721`, `DD=456.8%` (concatenated equity view), `WR=45.2%`, `trades=2,553`, `traded_days=279/300`, `net_pnl=-$46,199` (on 5x$10K), `call_pct=74.8%`. Beats no baseline.
+
+**Stability:** `mean=min=max=-0.200`, `std=0.000`, `any_fold_gate_failure=true`.
+
+**Findings (no interpretation beyond what the data says):**
+1. **All 5 folds gate-failed.** Fold 4 was not seed-noise; the baseline is systematically insufficient under the repaired evaluator.
+2. **The old supervised reference was weaker than believed.** Pre-repair results had been flattered by scope-mixed reporting and/or fold-ordinal seed choice. The repair removed the distortion.
+3. **Side balance alone is not the binding constraint.** Fold 1 was nearly balanced (225C/247P, 47.7% minority) and still lost heavily (PF 0.730, DD 101.8%). "Fix call bias" is not sufficient.
+4. **PF spread is narrow (0.572-0.816).** No fold shows a meaningfully profitable regime for this config. Fold 3 has the least-bad DD (68.7%) but still gate-fails.
+5. **Call bias is global (74.8% pooled).** Fold 2 is most extreme at 90%; fold 1 is the one exception (balanced, still losing).
+
+**Decision:**
+- **`exp_171` is the new official baseline.** Any future claim of "better" must beat this under the same harness.
+- **Not promoted.** `run_final_train` refuses gate-failing CVs by design ([run_final_train.py:95-100](ops/run_final_train.py#L95-L100)); no `FINAL_TRAIN` artifact attempted.
+- **Next experiment:** Phase 4 (replay-aligned checkpoint selection). Same config, same policy, same dataset. Only change: checkpoint selected by validation-replay economics, not by the loss-based proxy currently used in `v2/train.py`. Smallest intervention that targets a known structural mismatch; does not bundle architecture / side supervision / evaluator changes.
+- **Score is no longer the useful readout** at this level — all folds pin at -0.2. Next-round readout emphasis: per-fold PF, per-fold DD, trades/traded-days, per-fold direction mix, gate-failure type.
+
+**Artifact:** `v2/artifacts/exp_171/` (CV_EVAL, not deployable). Contains `cv_report.json`, per-fold `folds/<window_id>/model.pt`, `policy.json`, `policy.py.snapshot`, `train.py.snapshot`, `manifest.json`. No `v2/models/model.pt` was written (interlock held).
