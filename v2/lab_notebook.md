@@ -1843,3 +1843,46 @@ Put ranking almost doubled at top-3 (3.9% → 7.0%) but remains weak in absolute
 **Actionable finding:** The next experiment should keep SIDE_SEL_W=0.2 as the new base AND switch from per-side centering to global centering (matching exp_169's centering scheme). This would preserve the balanced raw scores (48.9% calls) through to the final output, instead of having centering erase them.
 
 **Decision:** REVERT. SIDE_SEL_W validated as mechanism but not as production improvement. Per-side centering is the identified blocker.
+
+---
+
+### Centering ablation: frozen-checkpoint counterfactual replay
+
+**Date:** 2026-04-17
+**Purpose:** Test whether per-side centering is the general blocker, or fold-4 specific. No GPU needed — deterministic post-head transform tested on frozen checkpoints.
+
+**Method:** Same model, same promote_mask bars, 4 centering transforms:
+1. `per_side_mean` — current production (per-side mean subtract + put\_bias)
+2. `raw_plus_bias` — raw head scores + put\_bias only (no centering)
+3. `global_mean` — global mean centering across all valid contracts
+4. `per_side_zscore` — per-side z-score: (score - mean) / std
+
+**Results (fold-4 official checkpoint):**
+
+| Method | PF | Call% | DD | NetPnL |
+|--------|-----|-------|-----|--------|
+| per_side_mean | 0.594 | 73% | 25.1% | -$2,309 |
+| **raw_plus_bias** | **0.973** | 42% | **16.9%** | -$111 |
+| **global_mean** | **0.973** | 42% | **16.9%** | -$111 |
+| per_side_zscore | 0.479 | 44% | 38.1% | -$3,576 |
+
+**Results (screening checkpoint, different model):**
+
+| Method | PF | Call% | DD | NetPnL |
+|--------|-----|-------|-----|--------|
+| per_side_mean | 0.616 | 66% | 27.6% | -$1,687 |
+| **raw_plus_bias** | **1.053** | 73% | **12.1%** | +$149 |
+| **global_mean** | **1.053** | 73% | **12.1%** | +$149 |
+| per_side_zscore | 0.202 | 59% | 65.6% | -$5,936 |
+
+**Findings:**
+1. **Per-side centering is the blocker — confirmed on both checkpoints, not fold-4 specific.** Removing it improves PF by ~60% and DD by ~40-55% on both models.
+2. **The issue is separate means, not separate scale.** Per-side z-score (which normalizes both mean and variance separately) is the worst transform — strictly worse than even per-side mean centering. The call head's higher peakiness (spread) is information, not noise.
+3. **raw\_plus\_bias and global\_mean are identical** ��� expected since a global shift doesn't change argmax. Both are the best transforms.
+4. **Call% outcome is model-dependent.** Fold-4 model → 42% calls (balanced), screening model → 73% calls. The centering transform controls PF/DD quality, not side balance. Side balance depends on what the raw heads learned.
+5. **Limitation:** Only 2 checkpoints available (GPU was closed before per-fold models could be saved). Results are consistent across both, but this is not a 5-model validation.
+
+**Decision rule evaluation:**
+- Global centering / raw+bias improves **both** checkpoints → centering IS the general blocker ✓
+- Per-side z-score is worst → the real issue is separate **means**, not separate **scale** ✓
+- Next training run: `SIDE_SEL_W=0.2 + global centering` (or equivalently, drop per-side centering entirely and use raw+bias) is justified
