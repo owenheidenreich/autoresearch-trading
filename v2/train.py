@@ -121,18 +121,24 @@ class TradingModel(nn.Module):
             nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
-        # Shared-trunk scorer: shared representation with side-specific finals.
-        # Shares d*2→d→d/2 trunk to force common representation, but preserves
-        # small side specialization via separate d/2→1 final layers.
-        self.score_trunk = nn.Sequential(
+        # Dual score heads: independent call and put scoring.
+        # exp_170e: with SIDE_SEL_W=0.2 for within-side auxiliary supervision.
+        self.call_score_head = nn.Sequential(
             nn.Linear(d * 2, d),
             nn.GELU(),
             nn.Dropout(dr),
             nn.Linear(d, d // 2),
             nn.GELU(),
+            nn.Linear(d // 2, 1),
         )
-        self.call_final = nn.Linear(d // 2, 1)
-        self.put_final = nn.Linear(d // 2, 1)
+        self.put_score_head = nn.Sequential(
+            nn.Linear(d * 2, d),
+            nn.GELU(),
+            nn.Dropout(dr),
+            nn.Linear(d, d // 2),
+            nn.GELU(),
+            nn.Linear(d // 2, 1),
+        )
         self.put_bias = nn.Parameter(torch.tensor(0.0))
 
         # Independent opportunity-quality head: "should I trade this bar?"
@@ -197,12 +203,11 @@ class TradingModel(nn.Module):
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
 
-        # Shared trunk → side-specific final layers
-        trunk_out = self.score_trunk(combined)  # (B, C, d//2)
-        call_scores = self.call_final(trunk_out).squeeze(-1)  # (B, C)
-        put_scores = self.put_final(trunk_out).squeeze(-1)    # (B, C)
+        # Route each contract through its side-specific score head
+        call_scores = self.call_score_head(combined).squeeze(-1)
+        put_scores = self.put_score_head(combined).squeeze(-1)
 
-        # Per-side mean centering with learned put bias (same as original dual heads)
+        # Per-bar mean centering with learned put bias
         call_valid = (~is_put) & valid_mask
         put_valid = is_put & valid_mask
         call_count = call_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
