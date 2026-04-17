@@ -121,15 +121,9 @@ class TradingModel(nn.Module):
             nn.Dropout(dr),
             nn.Linear(d // 2, 1),
         )
-        self.call_score_head = nn.Sequential(
-            nn.Linear(d * 2, d),
-            nn.GELU(),
-            nn.Dropout(dr),
-            nn.Linear(d, d // 2),
-            nn.GELU(),
-            nn.Linear(d // 2, 1),
-        )
-        self.put_score_head = nn.Sequential(
+        # Unified scorer: single head for all contracts (calls and puts).
+        # Greek sign flip already normalizes put features to look like calls.
+        self.score_head = nn.Sequential(
             nn.Linear(d * 2, d),
             nn.GELU(),
             nn.Dropout(dr),
@@ -201,21 +195,18 @@ class TradingModel(nn.Module):
         context_exp = context.unsqueeze(1).expand(-1, contract_emb.size(1), -1)
         combined = torch.cat([context_exp, contract_emb], dim=-1)
 
-        # Route each contract through its side-specific score head
-        call_scores = self.call_score_head(combined).squeeze(-1)
-        put_scores = self.put_score_head(combined).squeeze(-1)
+        # Unified scorer: one head scores all contracts
+        raw_scores = self.score_head(combined).squeeze(-1)
 
-        # Per-bar mean centering with learned put bias
-        call_valid = (~is_put) & valid_mask
-        put_valid = is_put & valid_mask
-        call_count = call_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
-        put_count = put_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
-        call_mean = (call_scores * call_valid.float()).sum(dim=-1, keepdim=True) / call_count
-        put_mean = (put_scores * put_valid.float()).sum(dim=-1, keepdim=True) / put_count
-        call_scores_centered = call_scores - call_mean
-        put_scores_centered = put_scores - put_mean
-
-        contract_scores = torch.where(is_put, put_scores_centered + self.put_bias, call_scores_centered)
+        # Global centering with optional put bias
+        contract_scores_raw = raw_scores + torch.where(
+            is_put, self.put_bias.expand_as(raw_scores),
+            torch.zeros_like(raw_scores))
+        valid_f_score = valid_mask.float()
+        valid_count = valid_f_score.sum(dim=-1, keepdim=True).clamp(min=1)
+        all_mean = (contract_scores_raw * valid_f_score).sum(
+            dim=-1, keepdim=True) / valid_count
+        contract_scores = (contract_scores_raw - all_mean) * valid_f_score
 
         no_trade_score = self.no_trade_head(context).squeeze(-1)
         opportunity_logit = self.opportunity_head(context).squeeze(-1)
@@ -226,8 +217,8 @@ class TradingModel(nn.Module):
             "no_trade_score": no_trade_score,
             "valid_mask": valid_mask,
             "is_put": is_put,
-            "call_scores_raw": call_scores,
-            "put_scores_raw": put_scores,
+            "call_scores_raw": raw_scores,  # unified: same for both sides
+            "put_scores_raw": raw_scores,   # unified: same for both sides
             "opportunity_logit": opportunity_logit,
             "side_logit": side_logit,
             "aggression_logits": aggression_logits,
@@ -641,8 +632,10 @@ def compute_loss(
         exact_loss = F.cross_entropy(ex_logits, ex_best, reduction="mean")
 
     # --- C. Per-side ranking KL: teach each head to rank within its own side ---
+    # Requires separate call/put heads; skip when using unified scorer.
     side_sel_loss = torch.tensor(0.0, device=device)
-    if SIDE_SEL_W > 0 and trade_rows.any():
+    _unified_scorer = outputs["call_scores_raw"] is outputs["put_scores_raw"]
+    if SIDE_SEL_W > 0 and trade_rows.any() and not _unified_scorer:
         is_put = outputs["is_put"]
         call_raw = outputs["call_scores_raw"]
         put_raw = outputs["put_scores_raw"]
