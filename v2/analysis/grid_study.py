@@ -20,6 +20,8 @@ import sys
 import numpy as np
 import torch
 
+from v2.replay import load_model_from_path
+
 # Grid configurations: (side_coeff, decay_coeff, label)
 GRID = [
     (0.03, 0.001, "s03_d001"),
@@ -95,10 +97,7 @@ def eval_grid(data_path: str, encoder_path: str):
         return
 
     # Load encoder once
-    encoder = TradingModel()
-    ckpt = torch.load(encoder_path, map_location="cpu", weights_only=False)
-    if "model_state_dict" in ckpt:
-        encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+    encoder = load_model_from_path(encoder_path)
     encoder.eval()
 
     # Evaluate each config

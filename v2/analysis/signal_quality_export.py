@@ -148,8 +148,6 @@ def run_full_replay_with_diagnostics(
         # Extract model signals
         opp_logit = float(outputs_i["opportunity_logit"].item()) if "opportunity_logit" in outputs_i else 0.0
         side_logit_val = float(outputs_i["side_logit"].item()) if "side_logit" in outputs_i else 0.0
-        no_trade_score = float(outputs_i["no_trade_score"].item()) if "no_trade_score" in outputs_i else 0.0
-
         # Contract ranking — use effective_inference_scores for consistency with replay
         from v2.replay import effective_inference_scores
         eff_scores = effective_inference_scores(
@@ -284,7 +282,7 @@ def run_full_replay_with_diagnostics(
             "blocked_reason": skip_reason,
             "trade_number_within_day": trade_number_in_day if trade_taken else 0,
             "predicted_opportunity_logit": round(opp_logit, 6),
-            "predicted_side_logit": round(side_logit, 6),
+            "predicted_side_logit": round(side_logit_val, 6),
             "predicted_side": predicted_side,
             "chosen_contract_idx": chosen_idx,
             "chosen_strike": chosen_strike,
@@ -313,7 +311,6 @@ def _build_intent(outputs_i, contract_labels, contracts, contract_indices,
     """Build trade intent using model_to_intent logic."""
     from v2.replay import model_to_intent
     return model_to_intent(
-        no_trade_score=outputs_i.get("no_trade_score"),
         gate_logit=outputs_i.get("opportunity_logit"),
         side_logit=outputs_i.get("side_logit"),
         contract_scores=outputs_i["contract_scores"],

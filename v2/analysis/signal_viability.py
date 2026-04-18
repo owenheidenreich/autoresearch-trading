@@ -285,11 +285,8 @@ def analyze_fold(path: str) -> dict:
     pnls = [_float(r["model_pnl"]) for r in trades]
     rho = spearman(scores, pnls)
 
-    no_trade_scores = [_float(r["no_trade_score"]) for r in trades]
-    rho_gate = spearman(no_trade_scores, pnls)
-
-    score_deltas = [_float(r["score_delta"]) for r in trades]
-    rho_delta = spearman(score_deltas, pnls)
+    gate_logits = [_float(r["gate_logit"]) for r in trades]
+    rho_gate = spearman(gate_logits, pnls)
 
     return {
         "fold_id": fold_id,
@@ -299,7 +296,6 @@ def analyze_fold(path: str) -> dict:
         "tpd": len(trades) / max(1, len({r["date"] for r in trades})),
         "rho_contract_score_pnl": rho,
         "rho_gate_score_pnl": rho_gate,
-        "rho_score_delta_pnl": rho_delta,
         "deciles": decile_table(trades),
         "quantile_gate": quantile_gate(trades, [0.0, 0.3, 0.5, 0.7, 0.9]),
         "oracle_top_k": oracle_top_k(trades, [1, 2, 3, 5]),
@@ -314,12 +310,12 @@ def render(analyses: list[dict]) -> str:
 
     out.append("## Rank correlations (Spearman ρ with model_pnl)")
     out.append("")
-    out.append("| fold | window | n_trades | TPD | ρ(best_contract_score, pnl) | ρ(no_trade_score, pnl) | ρ(score_delta, pnl) |")
-    out.append("|---|---|---|---|---|---|---|")
+    out.append("| fold | window | n_trades | TPD | ρ(best_contract_score, pnl) | ρ(gate_logit, pnl) |")
+    out.append("|---|---|---|---|---|---|")
     for a in analyses:
         out.append(
             f"| {a['fold_id']} | {a['date_range']} | {a['n_trades']} | {a['tpd']:.2f} | "
-            f"{a['rho_contract_score_pnl']:+.3f} | {a['rho_gate_score_pnl']:+.3f} | {a['rho_score_delta_pnl']:+.3f} |"
+            f"{a['rho_contract_score_pnl']:+.3f} | {a['rho_gate_score_pnl']:+.3f} |"
         )
     out.append("")
 

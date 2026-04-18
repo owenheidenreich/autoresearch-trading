@@ -275,7 +275,6 @@ def run_ablation(model_path: str):
                 snapshot_row=best,
                 contract_index=contract_idx,
                 contract_score=float(cs[best]),
-                no_trade_score=-opp,
             )
 
             series = series_dict["mid"].astype(np.float32)

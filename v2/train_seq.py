@@ -31,6 +31,7 @@ from v2.core.env import (
     ANTI_LOCKIN_DIM,
 )
 from v2.core.policy import DEFAULT_POLICY
+from v2.replay import load_model_from_path
 from v2.seq_agent import SequentialAgent
 from v2.train import TradingModel, LOOKBACK, NUM_FEATURES, D_MODEL
 
@@ -162,20 +163,13 @@ def train_behavioral_cloning(
 
     # Load frozen encoder (hard failure if missing -- random encoder produces
     # plausible-looking but meaningless models)
-    encoder = TradingModel()
     if not os.path.exists(model_path):
         raise RuntimeError(
             f"Encoder checkpoint not found: {model_path}\n"
             f"Sequential training requires a pretrained encoder. "
             f"Train the supervised model first (python -m v2.train)."
         )
-    ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
-    if "model_state_dict" not in ckpt:
-        raise RuntimeError(
-            f"Checkpoint {model_path} missing 'model_state_dict' key. "
-            f"Expected a supervised training checkpoint."
-        )
-    encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+    encoder = load_model_from_path(model_path, device=device)
     print(f"  Loaded encoder from {model_path}")
     encoder = encoder.to(device)
     encoder.eval()
@@ -347,18 +341,12 @@ def train_reinforce(
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load frozen encoder (hard failure -- same rationale as BC phase)
-    encoder = TradingModel()
     if not os.path.exists(model_path):
         raise RuntimeError(
             f"Encoder checkpoint not found: {model_path}\n"
             f"RL training requires a pretrained encoder."
         )
-    ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
-    if "model_state_dict" not in ckpt:
-        raise RuntimeError(
-            f"Checkpoint {model_path} missing 'model_state_dict' key."
-        )
-    encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+    encoder = load_model_from_path(model_path, device=device)
     print(f"  Loaded encoder from {model_path}")
     encoder = encoder.to(device)
     encoder.eval()

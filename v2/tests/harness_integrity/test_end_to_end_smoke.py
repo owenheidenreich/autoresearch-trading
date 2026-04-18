@@ -70,9 +70,10 @@ class TestEndToEndSmoke(unittest.TestCase):
                     captured_env["ALPHA_SIDE"] = os.environ.get("ALPHA_SIDE", "<unset>")
                     # Write a minimal checkpoint the save_artifact path can load.
                     import torch
+                    model = _train_mod.TradingModel(d_model=64, depth=3, n_heads=4, dropout=0.1)
                     Path(model_path).parent.mkdir(parents=True, exist_ok=True)
                     torch.save({
-                        "model_state_dict": {},
+                        "model_state_dict": model.state_dict(),
                         "model_class": "TradingModel",
                         "epoch": 1,
                         "val_loss": 0.5,

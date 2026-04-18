@@ -670,22 +670,11 @@ def _flush_side_bias_batch(
 
     scores = outputs["contract_scores"].detach().cpu()
     replay_valid = outputs["valid_mask"].detach().cpu() & label_valid & (batch_c[:, :, 14].detach().cpu() >= QUALITY_PARTIAL)
-
-    if "gate_logit" in outputs and "direction_logit" in outputs:
-        gate_trade = outputs["gate_logit"].detach().cpu() > DEFAULT_POLICY.gate_threshold
-        # Sign convention: positive direction_logit = call preferred → pred_put when negative
-        pred_put = outputs["direction_logit"].detach().cpu() < 0
-        replay_valid = replay_valid & (is_put == pred_put.unsqueeze(1))
-        masked_scores = scores.clone()
-        masked_scores[~replay_valid] = -1e9
-        best_scores, pred_idx = masked_scores.max(dim=-1)
-        pred_trade = gate_trade & replay_valid.any(dim=-1) & torch.isfinite(best_scores)
-    else:
-        no_trade = outputs["no_trade_score"].detach().cpu()
-        masked_scores = scores.clone()
-        masked_scores[~replay_valid] = -1e9
-        best_scores, pred_idx = masked_scores.max(dim=-1)
-        pred_trade = best_scores > no_trade
+    gate_trade = outputs["opportunity_logit"].detach().cpu() > DEFAULT_POLICY.gate_threshold
+    masked_scores = scores.clone()
+    masked_scores[~replay_valid] = -1e9
+    best_scores, pred_idx = masked_scores.max(dim=-1)
+    pred_trade = gate_trade & replay_valid.any(dim=-1) & torch.isfinite(best_scores)
 
     summary.model_scored_rows += len(batch_items)
 

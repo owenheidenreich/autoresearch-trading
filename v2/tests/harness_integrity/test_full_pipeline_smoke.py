@@ -43,9 +43,10 @@ class TestFullPipelineSmoke(unittest.TestCase):
                     seen_env["SOFT_TEMP"] = os.environ.get("SOFT_TEMP", "<unset>")
                     seen_env["SIDE_MODE"] = os.environ.get("SIDE_MODE", "<unset>")
                     import torch
+                    model = _train_mod.TradingModel(d_model=64, depth=3, n_heads=4, dropout=0.1)
                     Path(model_path).parent.mkdir(parents=True, exist_ok=True)
                     torch.save({
-                        "model_state_dict": {},
+                        "model_state_dict": model.state_dict(),
                         "model_class": "TradingModel",
                         "epoch": 1, "val_loss": 0.3,
                         "hyperparams": {"lookback": 60, "d_model": 64, "depth": 3, "n_heads": 4, "dropout": 0.1},

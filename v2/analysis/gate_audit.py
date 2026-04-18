@@ -1,11 +1,10 @@
-"""Audit: gate signal distributions and selectivity content.
+"""Audit: live gate distributions and selectivity content.
 
 Runs model inference on promote-mask bars and measures:
 1. opportunity_logit distribution (the signal actually used at inference)
-2. gate_logit = max(contract_scores) - no_trade_score (trained with weight 1.0)
-3. Whether swapping to gate_logit would change behavior
-4. Contract ranking quality by bucket (ATM/OTM, call/put, time-of-day, vol regime)
-5. Supervision hardness: how many bars are learnable after costs/margins
+2. whether opportunity_logit carries selectivity signal
+3. contract ranking quality by bucket (ATM/OTM, call/put, time-of-day, vol regime)
+4. supervision hardness: how many bars are learnable after costs/margins
 
 Usage:
     python3 -m v2.analysis.gate_audit
@@ -72,8 +71,6 @@ def main():
     # Run inference in batches
     sidecar_cache = {}
     opp_logits = []
-    gate_logits = []  # max(contract_scores) - no_trade_score
-    no_trade_scores = []
     max_contract_scores = []
     oracle_pnls = []
     bar_of_days = []
@@ -118,7 +115,6 @@ def main():
 
         cs = outputs["contract_scores"]
         vm = outputs["valid_mask"]
-        nt = outputs["no_trade_score"]
         opp = outputs["opportunity_logit"]
 
         # Mask invalid contracts
@@ -133,9 +129,7 @@ def main():
             sc = sidecar_cache[day]
 
             opp_logits.append(float(opp[j].item()))
-            no_trade_scores.append(float(nt[j].item()))
             max_contract_scores.append(float(max_cs[j].item()))
-            gate_logits.append(float(max_cs[j].item()) - float(nt[j].item()))
             bar_of_days.append(local_bar)
 
             # Oracle PnL and rank
@@ -186,8 +180,6 @@ def main():
 
     # Convert to arrays
     opp = np.array(opp_logits)
-    gate = np.array(gate_logits)
-    nt = np.array(no_trade_scores)
     max_cs = np.array(max_contract_scores)
     oracle_pnl = np.array(oracle_pnls)
     bod = np.array(bar_of_days)
@@ -205,9 +197,6 @@ def main():
     print(f"\n--- 1. Gate Signal Distributions ---")
     print(f"  opportunity_logit:  mean={opp.mean():.3f}  std={opp.std():.3f}  "
           f"min={opp.min():.3f}  max={opp.max():.3f}")
-    print(f"  gate_logit (max_cs - no_trade):  mean={gate.mean():.3f}  std={gate.std():.3f}  "
-          f"min={gate.min():.3f}  max={gate.max():.3f}")
-    print(f"  no_trade_score:    mean={nt.mean():.3f}  std={nt.std():.3f}")
     print(f"  max_contract_score: mean={max_cs.mean():.3f}  std={max_cs.std():.3f}")
 
     # Pass rates at various thresholds
@@ -216,33 +205,26 @@ def main():
         rate = (opp > t).mean()
         print(f"    threshold {t:>6.1f}: {rate:.1%} pass ({int(rate * n):,} bars)")
 
-    print(f"\n  Pass rates (gate_logit > threshold):")
-    for t in [-1, 0, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0]:
-        rate = (gate > t).mean()
-        print(f"    threshold {t:>6.1f}: {rate:.1%} pass ({int(rate * n):,} bars)")
-
-    # --- 2. Does gate_logit carry selectivity signal? ---
+    # --- 2. Does opportunity_logit carry selectivity signal? ---
     print(f"\n--- 2. Gate Selectivity Signal ---")
-    # Split bars by gate_logit quartile, measure oracle PnL per quartile
     valid_mask = np.isfinite(oracle_pnl)
-    for signal_name, signal in [("opportunity_logit", opp), ("gate_logit", gate)]:
-        print(f"\n  {signal_name} quartile analysis (oracle PnL):")
-        sig_valid = signal[valid_mask]
-        pnl_valid = oracle_pnl[valid_mask]
-        pred_valid = pred_pnl[valid_mask]
-        quartiles = np.percentile(sig_valid, [25, 50, 75])
-        bins = [(-np.inf, quartiles[0]), (quartiles[0], quartiles[1]),
-                (quartiles[1], quartiles[2]), (quartiles[2], np.inf)]
-        for lo, hi in bins:
-            mask = (sig_valid >= lo) & (sig_valid < hi)
-            if mask.sum() == 0:
-                continue
-            q_oracle = pnl_valid[mask]
-            q_pred = pred_valid[mask]
-            q_pred_finite = q_pred[np.isfinite(q_pred)]
-            print(f"    [{lo:>7.2f}, {hi:>7.2f}): n={mask.sum():5d}  "
-                  f"oracle_pnl={q_oracle.mean():.4f}  "
-                  f"pred_pnl={q_pred_finite.mean():.4f}" if len(q_pred_finite) else "")
+    print(f"\n  opportunity_logit quartile analysis (oracle PnL):")
+    sig_valid = opp[valid_mask]
+    pnl_valid = oracle_pnl[valid_mask]
+    pred_valid = pred_pnl[valid_mask]
+    quartiles = np.percentile(sig_valid, [25, 50, 75])
+    bins = [(-np.inf, quartiles[0]), (quartiles[0], quartiles[1]),
+            (quartiles[1], quartiles[2]), (quartiles[2], np.inf)]
+    for lo, hi in bins:
+        mask = (sig_valid >= lo) & (sig_valid < hi)
+        if mask.sum() == 0:
+            continue
+        q_oracle = pnl_valid[mask]
+        q_pred = pred_valid[mask]
+        q_pred_finite = q_pred[np.isfinite(q_pred)]
+        print(f"    [{lo:>7.2f}, {hi:>7.2f}): n={mask.sum():5d}  "
+              f"oracle_pnl={q_oracle.mean():.4f}  "
+              f"pred_pnl={q_pred_finite.mean():.4f}" if len(q_pred_finite) else "")
 
     # --- 3. Contract ranking quality ---
     print(f"\n--- 3. Contract Ranking Quality ---")
@@ -317,11 +299,11 @@ def main():
         print(f"    margin 5-10%: {((margin >= 0.05) & (margin < 0.10)).mean():.1%}")
         print(f"    margin > 10%: {(margin >= 0.10).mean():.1%} (model far from oracle)")
 
-    # --- 6. Would gate_logit thresholding help? ---
-    print(f"\n--- 6. Hypothetical: gate_logit thresholding ---")
-    print(f"  If we used gate_logit > T instead of opportunity_logit > -100:")
-    for t in [0, 0.5, 1.0, 1.5, 2.0, 3.0]:
-        pass_mask = (gate > t) & np.isfinite(pred_pnl)
+    # --- 6. Would opportunity thresholding help? ---
+    print(f"\n--- 6. Opportunity thresholding ---")
+    print(f"  If we use opportunity_logit > T:")
+    for t in [-1.0, -0.5, 0.0, 0.5, 1.0, 1.5]:
+        pass_mask = (opp > t) & np.isfinite(pred_pnl)
         if pass_mask.sum() == 0:
             print(f"    T={t:.1f}: 0 trades")
             continue

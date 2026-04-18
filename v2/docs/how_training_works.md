@@ -35,21 +35,19 @@ Inputs:
 
 Outputs:
 
-- `no_trade_score`
 - `contract_scores`
 - `valid_mask`
-- `opportunity_logit` — independent trade/no-trade gate from context alone
+- `opportunity_logit` — the only live trade/no-trade gate
 - `side_logit` — P(call is better) from context alone
 - `aggression_logits` — moneyness bucket prediction (ATM / near-OTM / far-OTM)
 
-The model scores the actual contracts visible on the current bar, with a layered decision process: opportunity quality → side → aggression → contract ranking.
+The model scores the actual contracts visible on the current bar with a two-stage decision process: first gate the bar with `opportunity_logit`, then rank contracts with `contract_scores` plus any replay-time side adjustment from policy.
 
 ## Current Baseline Loss
 
 The live working baseline is the restored `exp_119` family:
 
-- Balanced gate BCE on supervised rows
-- Opportunity head for independent gating (context-only, BCE, OPP_W=0.5)
+- Balanced gate supervision on `opportunity_logit`
 - Side prediction head (P(call better), BCE on oracle side, SIDE_W=0.3)
 - Aggression bucket head (ATM/near-OTM/far-OTM, cross-entropy, AGG_W=0.2)
 - Soft KL selection loss with softer targets
@@ -59,14 +57,16 @@ The live working baseline is the restored `exp_119` family:
 
 Details:
 
-- `gate_loss` compares `max(contract_scores) - no_trade_score` against `label_trade`
-- `opp_loss` supervises `opportunity_logit` (context-only) with balanced BCE on `label_trade`
+- `gate_loss` supervises `opportunity_logit` directly
+  - `GATE_TARGET_MODE=binary`: balanced BCE on `label_trade`
+  - `GATE_TARGET_MODE=max_pnl`: MSE to `bar_max_pnl - GATE_PNL_THRESHOLD`
+- `comp_loss` optionally reuses `opportunity_logit` as a competence head when `COMP_W > 0`
 - `side_loss` supervises `side_logit` with BCE on oracle side (trade rows only)
 - `agg_loss` supervises `aggression_logits` with cross-entropy on oracle moneyness bucket
 - when both gate classes are present, the BCE is computed on a class-balanced subset
 - `sel_loss` builds a soft target from sidecar `row_labels` with `softmax(pnl / SOFT_TEMP)`
 - ambiguous bars (top PnL margin < `NOISE_MARGIN`) use uniform target at reduced weight instead of being dropped
-- total loss is `GATE_W * gate + SEL_W * sel + OPP_W * opp + SIDE_W * side + AGG_W * agg`
+- total loss is `GATE_W * gate + SEL_W * sel + SIDE_SEL_W * side_sel + EXACT_W * exact + COMP_W * comp + SIDE_W * side + AGG_W * agg`
 
 The rejected `exp_121` ranking-loss screen is an important finding, but not the live baseline. It showed that side collapse survives a loss-family change; it did not prove that the executable KL targets are inherently put-biased.
 

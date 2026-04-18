@@ -74,7 +74,10 @@ def load_model_from_path(path: str, device: str = "cpu") -> TradingModel:
         n_heads=hyperparams.get("n_heads", 4),
         dropout=hyperparams.get("dropout", 0.05),
     )
-    model.load_state_dict(checkpoint["model_state_dict"])
+    try:
+        model.load_state_dict(checkpoint["model_state_dict"])
+    except RuntimeError as exc:
+        raise RuntimeError(f"stale model artifact; retrain required ({exc})") from exc
     model.eval()
     return model
 
@@ -115,8 +118,7 @@ def _build_day_index(dates) -> dict[str, list[int]]:
 
 def model_to_intent(
     *,
-    no_trade_score: torch.Tensor = None,
-    gate_logit: torch.Tensor = None,
+    gate_logit: torch.Tensor,
     side_logit: torch.Tensor = None,
     contract_scores: torch.Tensor,
     contract_labels: torch.Tensor,
@@ -136,51 +138,31 @@ def model_to_intent(
       "hard" → mask to predicted side
     Sign convention: positive side_logit = call preferred (matches train.py).
     """
-    has_opportunity_gate = gate_logit is not None
-
-    if has_opportunity_gate:
-        gate_score = float(gate_logit.item())
-        if gate_score <= policy.gate_threshold:
-            return TradeIntent.no_trade(
-                bar_index=local_bar,
-                timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
-                reason_codes=("opportunity_reject",),
-                no_trade_score=-gate_score,
-            )
-        # Use shared helper for effective scores (quality filter + side adjustment)
-        side_val = float(side_logit.item()) if side_logit is not None else 0.0
-        eff_scores = effective_inference_scores(
-            contract_scores.numpy(),
-            valid_mask.numpy().astype(bool),
-            contract_features.numpy(),
-            side_logit=side_val,
-            side_mode=policy.side_mode,
-            alpha_side=policy.alpha_side,
-        )
-        best_row = int(np.argmax(eff_scores)) if valid_mask.any() else -1
-        best_score = float(eff_scores[best_row]) if best_row >= 0 and eff_scores[best_row] > -1e8 else -float("inf")
-        abstain_score = -gate_score
-    else:
-        # Legacy model: gate from score comparison
-        side_val = float(side_logit.item()) if side_logit is not None else 0.0
-        eff_scores = effective_inference_scores(
-            contract_scores.numpy(),
-            valid_mask.numpy().astype(bool),
-            contract_features.numpy(),
-            side_logit=side_val,
-            side_mode=policy.side_mode,
-            alpha_side=policy.alpha_side,
-        )
-        best_row = int(np.argmax(eff_scores)) if valid_mask.any() else -1
-        best_score = float(eff_scores[best_row]) if best_row >= 0 and eff_scores[best_row] > -1e8 else -float("inf")
-        abstain_score = float(no_trade_score.item()) if no_trade_score is not None else 0.0
-
-    if best_row < 0 or (not has_opportunity_gate and best_score <= max(policy.gate_threshold, abstain_score)):
+    gate_score = float(gate_logit.item())
+    if gate_score <= policy.gate_threshold:
         return TradeIntent.no_trade(
             bar_index=local_bar,
             timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
-            reason_codes=("no_trade",),
-            no_trade_score=abstain_score,
+            reason_codes=("opportunity_reject",),
+        )
+
+    side_val = float(side_logit.item()) if side_logit is not None else 0.0
+    eff_scores = effective_inference_scores(
+        contract_scores.numpy(),
+        valid_mask.numpy().astype(bool),
+        contract_features.numpy(),
+        side_logit=side_val,
+        side_mode=policy.side_mode,
+        alpha_side=policy.alpha_side,
+    )
+    best_row = int(np.argmax(eff_scores)) if valid_mask.any() else -1
+    best_score = float(eff_scores[best_row]) if best_row >= 0 and eff_scores[best_row] > -1e8 else -float("inf")
+
+    if best_row < 0:
+        return TradeIntent.no_trade(
+            bar_index=local_bar,
+            timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
+            reason_codes=("no_valid_contract",),
         )
 
     if not torch.isfinite(contract_labels[best_row]):
@@ -188,7 +170,6 @@ def model_to_intent(
             bar_index=local_bar,
             timestamp=str(int(sidecar["bar_timestamps"][local_bar])) if len(sidecar["bar_timestamps"]) else "",
             reason_codes=("unexecutable_history_gap",),
-            no_trade_score=abstain_score,
         )
 
     contract_idx = int(contract_indices[best_row].item())
@@ -223,7 +204,6 @@ def model_to_intent(
         snapshot_row=best_row,
         contract_index=contract_idx,
         contract_score=best_score,
-        no_trade_score=abstain_score,
     )
 
 
@@ -337,13 +317,8 @@ def replay_validation(
         outputs_i = {k: v[i] for k, v in all_outputs.items()}
         c_scores_np = outputs_i["contract_scores"].numpy()
         v_mask_np = outputs_i["valid_mask"].numpy().astype(bool)
+        gate_val = float(outputs_i["opportunity_logit"].item())
         _side_logit_val = float(outputs_i["side_logit"].item()) if "side_logit" in outputs_i else 0.0
-        if "no_trade_score" in outputs_i:
-            no_trade_val = float(outputs_i["no_trade_score"].item())
-        elif "gate_logit" in outputs_i:
-            no_trade_val = -float(outputs_i["gate_logit"].item())
-        else:
-            no_trade_val = 0.0
         vix_val = float(features[global_bar, vix_idx]) if global_bar < len(features) else 0.0
 
         # Effective scores: same adjustments model_to_intent will apply.
@@ -354,6 +329,7 @@ def replay_validation(
             side_mode=policy.side_mode,
             alpha_side=policy.alpha_side,
         )
+        effective_policy = policy
 
         def _make_trace(decision: str, skip_reason: str = "",
                         sel_strike: float = 0.0, sel_right: str = "",
@@ -362,7 +338,8 @@ def replay_validation(
                 date=day, bar_of_day=local_bar, global_bar_idx=global_bar,
                 spot_price=float(spot_prices[global_bar]),
                 vix_regime=vix_val,
-                no_trade_score=no_trade_val,
+                gate_logit=gate_val,
+                gate_threshold=effective_policy.gate_threshold,
                 contract_scores=eff_scores_np, valid_mask=v_mask_np,
                 contract_features=all_contracts[i],
                 contract_labels=all_contract_labels[i],
@@ -426,12 +403,10 @@ def replay_validation(
         contract_indices_t = torch.from_numpy(all_contract_indices[i])
         # Apply gate tightening overlay if active
         import dataclasses as _dc
-        effective_policy = policy
         if effective_gate_boost > 0:
             effective_policy = _dc.replace(policy, gate_threshold=policy.gate_threshold + effective_gate_boost)
         intent = model_to_intent(
-            no_trade_score=outputs_i.get("no_trade_score"),
-            gate_logit=outputs_i.get("opportunity_logit"),
+            gate_logit=outputs_i["opportunity_logit"],
             side_logit=outputs_i.get("side_logit"),
             contract_scores=outputs_i["contract_scores"],
             contract_labels=torch.from_numpy(all_contract_labels[i]),
@@ -1021,10 +996,10 @@ def main():
             try:
                 ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
                 if "model_state_dict" in ckpt:
-                    encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+                    encoder.load_state_dict(ckpt["model_state_dict"])
                 print(f"Encoder loaded from {model_path}")
             except RuntimeError as e:
-                print(f"WARNING: Could not load {model_path} ({e}), using random encoder")
+                raise RuntimeError(f"stale model artifact; retrain required ({e})") from e
         else:
             print(f"WARNING: No encoder at {model_path}, using random encoder")
         encoder.eval()

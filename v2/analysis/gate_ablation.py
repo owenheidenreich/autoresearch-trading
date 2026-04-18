@@ -1,13 +1,11 @@
-"""Gate ablation matrix: which gate signal, if any, carries selectivity?
+"""Gate ablation matrix: does the live gate carry selectivity?
 
-Same checkpoint, same promote-mask data, four gate modes × threshold sweep.
+Same checkpoint, same promote-mask data, live-gate threshold sweep.
 Measures P&L of the model's predicted contract at bars that pass each gate.
 
 Modes:
   A. opportunity_logit only (current inference path)
-  B. gate_logit only (max_contract_score - no_trade_score, trained with weight 1.0)
-  C. both (must pass both thresholds)
-  D. no gate (trade every eligible bar)
+  B. no gate (trade every eligible bar)
 
 For each mode × threshold, reports:
   - pass rate, trades/day estimate
@@ -79,7 +77,6 @@ def main():
     # --- Run inference ---
     sidecar_cache = {}
     opp_logits = []
-    gate_logits = []
     pred_pnls = []
     oracle_pnls = []
     oracle_ranks = []
@@ -122,7 +119,6 @@ def main():
 
         cs = outputs["contract_scores"]
         vm = outputs["valid_mask"]
-        nt = outputs["no_trade_score"]
         opp = outputs["opportunity_logit"]
 
         masked_cs = cs.clone()
@@ -134,7 +130,6 @@ def main():
             local_bar = int(bar_of_day[i])
 
             opp_logits.append(float(opp[j].item()))
-            gate_logits.append(float(max_cs[j].item()) - float(nt[j].item()))
             bar_of_days.append(local_bar)
             day_labels.append(day)
             vix_vals.append(float(features[i, 14]))
@@ -183,7 +178,6 @@ def main():
 
     # Convert
     opp = np.array(opp_logits)
-    gate = np.array(gate_logits)
     pred = np.array(pred_pnls)
     oracle = np.array(oracle_pnls)
     ranks = np.array(oracle_ranks)
@@ -226,7 +220,6 @@ def main():
 
     for mode_name, signal in [
         ("A: opportunity_logit", opp),
-        ("B: gate_logit", gate),
     ]:
         for threshold in [-100, -0.5, 0.0, 0.25, 0.5, 1.0, 1.5, 2.0]:
             mask = (signal > threshold) & valid_both
@@ -241,29 +234,14 @@ def main():
             print(f"  {mode_name:<30s} {threshold:>9.1f} {pass_rate:>5.1%} {tpd:>5.1f} "
                   f"{mpnl:>+8.4f} {wr:>6.1%} {mr:>5.1f} {opnl:>+8.4f}")
 
-    # Mode C: both must pass
-    print()
-    for opp_t, gate_t in [(0.0, 1.5), (0.0, 2.0), (0.25, 1.5), (0.25, 2.0), (-0.25, 1.5)]:
-        mask = (opp > opp_t) & (gate > gate_t) & valid_both
-        if mask.sum() < 10:
-            continue
-        pass_rate = mask.mean()
-        tpd = mask.sum() / n_days
-        mpnl = pred[mask].mean()
-        wr = (pred[mask] > 0).mean()
-        mr = ranks[mask].mean()
-        opnl = oracle[mask].mean()
-        print(f"  {'C: both':<30s} opp>{opp_t:.2f},gate>{gate_t:.1f}  "
-              f"{pass_rate:>5.1%} {tpd:>5.1f} {mpnl:>+8.4f} {wr:>6.1%} {mr:>5.1f} {opnl:>+8.4f}")
-
-    # Mode D: no gate
+    # Mode B: no gate
     mask_all = valid_both
     tpd = mask_all.sum() / n_days
     mpnl = pred[mask_all].mean()
     wr = (pred[mask_all] > 0).mean()
     mr = ranks[mask_all].mean()
     opnl = oracle[mask_all].mean()
-    print(f"\n  {'D: no gate':<30s} {'all':>9s} {mask_all.mean():>5.1%} {tpd:>5.1f} "
+    print(f"\n  {'B: no gate':<30s} {'all':>9s} {mask_all.mean():>5.1%} {tpd:>5.1f} "
           f"{mpnl:>+8.4f} {wr:>6.1%} {mr:>5.1f} {opnl:>+8.4f}")
 
     # --- Ranking learnability by bucket ---

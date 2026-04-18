@@ -38,11 +38,10 @@ NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
 SIDE_SEL_W = float(os.environ.get("SIDE_SEL_W", 0.0))
 EXACT_W = float(os.environ.get("EXACT_W", 0.0))
-OPP_W = float(os.environ.get("OPP_W", 0.5))
 SIDE_W = float(os.environ.get("SIDE_W", 0.0))
 AGG_W = float(os.environ.get("AGG_W", 0.0))
 QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss by frac_profitable
-COMP_W = float(os.environ.get("COMP_W", 0.0))       # competence head weight (replaces OPP_W when > 0)
+COMP_W = float(os.environ.get("COMP_W", 0.0))       # competence head weight on opportunity_logit
 COMP_MODE = os.environ.get("COMP_MODE", "frozen")    # "frozen", "live", or "quality"
 CKPT_SELECTION_MODE = os.environ.get("CKPT_SELECTION_MODE", "loss_proxy")
 SEL_TARGET_MODE = os.environ.get("SEL_TARGET_MODE", "default")  # "default", "strict_mask", or "soft_pnl"
@@ -63,7 +62,7 @@ _TRAINING_ENV_VARS = [
     "TRAIN_DROPOUT", "TRAIN_BATCH_SIZE", "TRAIN_LR", "TRAIN_WEIGHT_DECAY",
     "TRAIN_EPOCHS", "TIME_BUDGET", "WEIGHT_SEL", "WEIGHT_GATE", "TRAIN_SEED",
     "OPP_LABEL", "SOFT_TEMP", "NOISE_MARGIN", "AMBIG_WEIGHT",
-    "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
+    "SIDE_SEL_W", "EXACT_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
     "COMP_W", "COMP_MODE", "COMP_TEACHER", "SIDE_MODE", "ALPHA_SIDE",
     "CKPT_SELECTION_MODE", "SEL_TARGET_MODE", "GATE_TARGET_MODE",
     "GATE_PNL_THRESHOLD", "GATE_PNL_LOSS_SCALE",
@@ -103,8 +102,8 @@ def _compute_checkpoint_proxy(avg_val: dict[str, float], best_sel_so_far: float)
         next_best_sel = min(best_sel_so_far, sel_val)
         sel_ok = sel_val <= next_best_sel * 1.2  # sel must not regress >20%
         return (comp_val if sel_ok else float("inf")), next_best_sel
-    if OPP_LABEL in ("strict", "consensus", "high_threshold") and OPP_W > 0:
-        return avg_val.get("opp", float("inf")), best_sel_so_far
+    if GATE_W > 0:
+        return avg_val.get("gate", float("inf")), best_sel_so_far
     return val_total, best_sel_so_far
 
 
@@ -213,12 +212,6 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d, d),
         )
-        self.no_trade_head = nn.Sequential(
-            nn.Linear(d, d // 2),
-            nn.GELU(),
-            nn.Dropout(dr),
-            nn.Linear(d // 2, 1),
-        )
         # Dual score heads: independent call and put scoring.
         # exp_170e: with SIDE_SEL_W=0.2 for within-side auxiliary supervision.
         self.call_score_head = nn.Sequential(
@@ -317,13 +310,11 @@ class TradingModel(nn.Module):
 
         contract_scores = torch.where(is_put, put_scores_centered + self.put_bias, call_scores_centered)
 
-        no_trade_score = self.no_trade_head(context).squeeze(-1)
         opportunity_logit = self.opportunity_head(context).squeeze(-1)
         side_logit = self.side_head(context).squeeze(-1)
         aggression_logits = self.aggression_head(context)  # (B, 3)
         return {
             "contract_scores": contract_scores,
-            "no_trade_score": no_trade_score,
             "valid_mask": valid_mask,
             "is_put": is_put,
             "call_scores_raw": call_scores,
@@ -619,7 +610,6 @@ def compute_loss(
 ) -> tuple[torch.Tensor, dict[str, float]]:
     device = outputs["contract_scores"].device
     scores = outputs["contract_scores"]
-    no_trade = outputs["no_trade_score"]
     valid_mask = outputs["valid_mask"]
     labels = targets["contract_labels"].to(device)
     best_idx = targets["best_idx"].to(device)
@@ -636,15 +626,23 @@ def compute_loss(
     opportunity_logit = outputs["opportunity_logit"]
     side_logit = outputs["side_logit"]
 
-    # --- A. Gate loss: balanced BCE (uses max(scores)-no_trade for backward compat) ---
+    # --- A. Gate loss: the live gate is opportunity_logit ---
     gate_loss = torch.tensor(0.0, device=device)
-    if supervised_rows.any():
-        masked_scores = scores.clone()
-        masked_scores[~valid_mask] = -1e9
-        best_contract_score, _ = masked_scores.max(dim=-1)
-        gate_logit = best_contract_score - no_trade
+    if GATE_TARGET_MODE == "max_pnl" and supervised_rows.any():
+        pnl_for_max = labels.clone()
+        pnl_for_max = torch.where(valid_mask, pnl_for_max, torch.full_like(pnl_for_max, float("-inf")))
+        pnl_for_max[~torch.isfinite(pnl_for_max) & (pnl_for_max != float("-inf"))] = float("-inf")
+        bar_max_pnl, _ = pnl_for_max.max(dim=-1)
+        bar_max_pnl = torch.where(torch.isfinite(bar_max_pnl), bar_max_pnl, torch.zeros_like(bar_max_pnl))
+        gate_target_value = bar_max_pnl - GATE_PNL_THRESHOLD
+        sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
+        gate_loss = GATE_PNL_LOSS_SCALE * F.mse_loss(
+            opportunity_logit[sup_idx],
+            gate_target_value[sup_idx],
+            reduction="mean",
+        )
+    elif supervised_rows.any():
         gate_target = label_trade.float()
-        # Balanced sampling: match minority class count
         sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
         sup_trade = label_trade[sup_idx]
         n_pos = sup_trade.sum().item()
@@ -657,13 +655,13 @@ def compute_loss(
             neg_sel = neg_idx[torch.randperm(len(neg_idx), device=device)[:n_min]]
             balanced_idx = torch.cat([pos_sel, neg_sel])
             gate_loss = F.binary_cross_entropy_with_logits(
-                gate_logit[balanced_idx],
+                opportunity_logit[balanced_idx],
                 gate_target[balanced_idx],
                 reduction="mean",
             )
         else:
             gate_loss = F.binary_cross_entropy_with_logits(
-                gate_logit[sup_idx],
+                opportunity_logit[sup_idx],
                 gate_target[sup_idx],
                 reduction="mean",
             )
@@ -694,47 +692,6 @@ def compute_loss(
                     label_comp_bin[balanced_comp],
                     reduction="mean",
                 )
-
-    # --- A2b. Original opportunity loss (only active when COMP_W == 0) ---
-    opp_loss = torch.tensor(0.0, device=device)
-    if COMP_W == 0 and OPP_W > 0 and GATE_TARGET_MODE != "max_pnl" and supervised_rows.any():
-        sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
-        opp_target = label_trade[sup_idx].float()
-        n_pos = opp_target.sum().item()
-        n_neg = len(opp_target) - n_pos
-        n_min = int(min(n_pos, n_neg))
-        if n_min > 0:
-            pos_idx = sup_idx[opp_target.bool()]
-            neg_idx = sup_idx[~opp_target.bool()]
-            pos_sel = pos_idx[torch.randperm(len(pos_idx), device=device)[:n_min]]
-            neg_sel = neg_idx[torch.randperm(len(neg_idx), device=device)[:n_min]]
-            balanced_opp = torch.cat([pos_sel, neg_sel])
-            opp_loss = F.binary_cross_entropy_with_logits(
-                opportunity_logit[balanced_opp],
-                label_trade[balanced_opp].float(),
-                reduction="mean",
-            )
-
-    # --- A2c. exp_174: continuous gate — regress opp_logit on per-bar max(row_labels) ---
-    # Replaces both the binary competence BCE (A2) and the legacy opp BCE (A2b)
-    # when GATE_TARGET_MODE == "max_pnl". Provides continuous signal aligned with
-    # the bar-level oracle ceiling; loss flows into comp_loss slot (weight: OPP_W or COMP_W).
-    if GATE_TARGET_MODE == "max_pnl" and supervised_rows.any():
-        pnl_for_max = labels.clone()
-        pnl_for_max = torch.where(valid_mask, pnl_for_max, torch.full_like(pnl_for_max, float("-inf")))
-        pnl_for_max[~torch.isfinite(pnl_for_max) & (pnl_for_max != float("-inf"))] = float("-inf")
-        bar_max_pnl, _ = pnl_for_max.max(dim=-1)
-        # If a bar has zero valid contracts, max is -inf; clamp to 0 and rely on supervised_rows filter.
-        bar_max_pnl = torch.where(torch.isfinite(bar_max_pnl), bar_max_pnl, torch.zeros_like(bar_max_pnl))
-        # Center on threshold: target > 0 iff bar ceiling is meaningfully profitable.
-        # At inference, the gate checks opp_logit > 0, so signed target aligns with gate semantics.
-        gate_target_value = bar_max_pnl - GATE_PNL_THRESHOLD
-        sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
-        comp_loss = GATE_PNL_LOSS_SCALE * F.mse_loss(
-            opportunity_logit[sup_idx],
-            gate_target_value[sup_idx],
-            reduction="mean",
-        )
 
     # --- A3. Side loss: predict call vs put from context alone (trade rows only) ---
     side_loss = torch.tensor(0.0, device=device)
@@ -897,18 +854,9 @@ def compute_loss(
             po_log_probs = F.log_softmax(po_logits, dim=-1)
             side_sel_loss = side_sel_loss + F.kl_div(po_log_probs, po_target, reduction="batchmean")
 
-    if GATE_TARGET_MODE == "max_pnl":
-        # exp_174: comp_loss slot holds MSE on per-bar max(row_labels).
-        # Weight by OPP_W (0.5 default) — same intuition as "gate weight".
-        gate_head_term = OPP_W * comp_loss
-    elif COMP_W > 0:
-        gate_head_term = COMP_W * comp_loss
-    else:
-        gate_head_term = OPP_W * opp_loss
-
     total = (GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss
              + EXACT_W * exact_loss
-             + gate_head_term
+             + (COMP_W * comp_loss if COMP_W > 0 else 0.0)
              + SIDE_W * side_loss + AGG_W * agg_loss)
 
     # --- Metrics ---
@@ -964,15 +912,15 @@ def compute_loss(
 
     # Competence accuracy + opportunity_logit distribution diagnostics
     comp_acc = 0.0
-    opp_pass_rate = 0.0
-    opp_mean = 0.0
-    opp_std = 0.0
+    gate_pass_rate = 0.0
+    gate_mean = 0.0
+    gate_std = 0.0
     if supervised_rows.any():
         with torch.no_grad():
-            opp_vals = opportunity_logit[supervised_rows].detach()
-            opp_pass_rate = (opp_vals > 0).float().mean().item()
-            opp_mean = opp_vals.mean().item()
-            opp_std = opp_vals.std().item() if opp_vals.numel() > 1 else 0.0
+            gate_vals = opportunity_logit[supervised_rows].detach()
+            gate_pass_rate = (gate_vals > 0).float().mean().item()
+            gate_mean = gate_vals.mean().item()
+            gate_std = gate_vals.std().item() if gate_vals.numel() > 1 else 0.0
     if COMP_W > 0 and supervised_rows.any():
         with torch.no_grad():
             label_cb, _, cv = _compute_competence_label(
@@ -991,7 +939,6 @@ def compute_loss(
         "sel": float(sel_loss.item()),
         "side_sel": float(side_sel_loss.item()),
         "exact": float(exact_loss.item()),
-        "opp": float(opp_loss.item()),
         "comp": float(comp_loss.item()),
         "side": float(side_loss.item()),
         "agg": float(agg_loss.item()),
@@ -1002,9 +949,9 @@ def compute_loss(
         "agg_acc": agg_acc,
         "comp_acc": comp_acc,
         "trade_rate": trade_rate,
-        "opp_pass_rate": opp_pass_rate,
-        "opp_mean": opp_mean,
-        "opp_std": opp_std,
+        "gate_pass_rate": gate_pass_rate,
+        "gate_mean": gate_mean,
+        "gate_std": gate_std,
     }
 
 
@@ -1173,18 +1120,19 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
 
         avg_train = {k: float(np.mean([d[k] for d in train_stats])) for k in train_stats[0]} if train_stats else {}
         avg_val = {k: float(np.mean([d[k] for d in val_stats])) for k in val_stats[0]} if val_stats else {}
+        _gate_line = (f" gate_pass={avg_val.get('gate_pass_rate', 0):.3f}"
+                      f" gate_μ={avg_val.get('gate_mean', 0):.3f}"
+                      f" gate_σ={avg_val.get('gate_std', 0):.3f}")
         _comp_line = ""
         if COMP_W > 0:
-            _comp_line = (f" | comp={avg_val.get('comp', 0):.4f} comp_acc={avg_val.get('comp_acc', 0):.3f}"
-                          f" opp_pass={avg_val.get('opp_pass_rate', 0):.3f}"
-                          f" opp_μ={avg_val.get('opp_mean', 0):.3f} opp_σ={avg_val.get('opp_std', 0):.3f}")
+            _comp_line = f" | comp={avg_val.get('comp', 0):.4f} comp_acc={avg_val.get('comp_acc', 0):.3f}"
         print(
             f"Epoch {epoch:3d} | train={avg_train.get('total', 0):.4f} | "
             f"val={avg_val.get('total', 0):.4f} | "
-            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} opp={avg_val.get('opp', 0):.4f} side_l={avg_val.get('side', 0):.4f} | "
+            f"gate_l={avg_val.get('gate', 0):.4f} sel={avg_val.get('sel', 0):.4f} side_l={avg_val.get('side', 0):.4f} | "
             f"gate={avg_val.get('gate_acc', 0):.3f} "
             f"dir={avg_val.get('dir_acc', 0):.3f} side={avg_val.get('side_acc', 0):.3f} trd_rate={avg_val.get('trade_rate', 0):.3f}"
-            f"{_comp_line}"
+            f"{_gate_line}{_comp_line}"
         )
 
         # --- Append training log line (flush immediately) ---
@@ -1196,7 +1144,6 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             "val_loss": avg_val.get("total", 0),
             "gate_loss": avg_val.get("gate", 0),
             "sel_loss": avg_val.get("sel", 0),
-            "opp_loss": avg_val.get("opp", 0),
             "side_loss": avg_val.get("side", 0),
             "gate_acc": avg_val.get("gate_acc", 0),
             "dir_acc": avg_val.get("dir_acc", 0),
@@ -1204,9 +1151,9 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             "trade_rate": avg_val.get("trade_rate", 0),
             "comp_loss": avg_val.get("comp", 0),
             "comp_acc": avg_val.get("comp_acc", 0),
-            "opp_pass_rate": avg_val.get("opp_pass_rate", 0),
-            "opp_mean": avg_val.get("opp_mean", 0),
-            "opp_std": avg_val.get("opp_std", 0),
+            "gate_pass_rate": avg_val.get("gate_pass_rate", 0),
+            "gate_mean": avg_val.get("gate_mean", 0),
+            "gate_std": avg_val.get("gate_std", 0),
             "pre_clip_grad_norm": float(_pre_clip_norm) if _pre_clip_norm is not None else None,
             "lr": optimizer.param_groups[0]["lr"],
             "wall_seconds": round(_epoch_wall, 1),

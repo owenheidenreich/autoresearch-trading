@@ -31,9 +31,10 @@ class DecisionTrace:
     minutes_to_close: int = 0
 
     # --- Model outputs ---
-    no_trade_score: float = 0.0
+    gate_logit: float = 0.0
+    gate_threshold: float = 0.0
+    gate_pass: bool = False
     best_contract_score: float = float("-inf")
-    score_delta: float = 0.0          # best_contract - no_trade
     top_5_scores: str = ""            # serialized as "s1;s2;s3;s4;s5"
     top_5_strikes: str = ""           # "k1;k2;k3;k4;k5"
     top_5_rights: str = ""            # "C;P;C;C;P"
@@ -138,7 +139,8 @@ def build_trace_for_bar(
     global_bar_idx: int,
     spot_price: float,
     vix_regime: float,
-    no_trade_score: float,
+    gate_logit: float,
+    gate_threshold: float,
     contract_scores: np.ndarray,
     valid_mask: np.ndarray,
     contract_features: np.ndarray,
@@ -157,7 +159,6 @@ def build_trace_for_bar(
     )
 
     best_score = float(contract_scores[valid_mask].max()) if valid_mask.any() else float("-inf")
-    score_delta = best_score - no_trade_score
 
     oracle_idx, oracle_strike, oracle_pnl, oracle_right, lq, labelable = _extract_oracle(
         contract_labels, contract_features, contract_indices, valid_mask,
@@ -172,9 +173,10 @@ def build_trace_for_bar(
         spot_price=spot_price,
         vix_regime=vix_regime,
         minutes_to_close=mtc,
-        no_trade_score=no_trade_score,
+        gate_logit=gate_logit,
+        gate_threshold=gate_threshold,
+        gate_pass=gate_logit > gate_threshold,
         best_contract_score=best_score,
-        score_delta=score_delta,
         top_5_scores=scores_str,
         top_5_strikes=strikes_str,
         top_5_rights=rights_str,

@@ -23,26 +23,33 @@ import torch
 # Data loading
 # ---------------------------------------------------------------------------
 
-def load_trades(mask_key: str, model_path: str | None = None) -> tuple[list, dict, object]:
-    """Load model, run replay, return (trades, data_dict, metrics).
+def load_trades(mask_key: str, model_path: str | None = None) -> tuple[list, dict, object, str]:
+    """Load model, run replay, return (trades, data_dict, metrics, model_label).
 
     Default: loads the best compatible promoted artifact from the artifact system.
     If `model_path` is provided, that checkpoint is loaded directly.
+    model_label identifies which model produced these results.
     """
+    from datetime import datetime, timezone, timedelta
     from v2.replay import load_best_model, load_model_from_path, replay_validation
 
     data = torch.load("v2/data.pt", map_location="cpu", weights_only=False)
     dataset_fp = data.get("metadata", {}).get("fingerprint")
+    pst = timezone(timedelta(hours=-7))
+    generated_at = datetime.now(pst).strftime("%Y-%m-%d %I:%M %p PST")
 
     if model_path:
         resolved = model_path
         model = load_model_from_path(resolved)
         from v2.core.policy import DEFAULT_POLICY
         policy = DEFAULT_POLICY
+        model_label = f"{Path(resolved).name} | {generated_at}"
         print(f"Loaded model from {resolved}")
     else:
         model, policy, manifest = load_best_model(current_dataset_fingerprint=dataset_fp)
-        resolved = manifest.get("experiment_id", "best_artifact")
+        exp_id = manifest.get("experiment_id", "best_artifact")
+        resolved = exp_id
+        model_label = f"{exp_id} | {generated_at}"
         print(f"Loaded best compatible artifact for plotting: {resolved}")
 
     metrics, trades, _ = replay_validation(model, data, mask_key=mask_key, policy=policy)
@@ -51,14 +58,14 @@ def load_trades(mask_key: str, model_path: str | None = None) -> tuple[list, dic
     print(f"  Score: {metrics.score:.3f}  WR: {metrics.win_rate:.1%}  "
           f"PF: {metrics.profit_factor:.2f}  Trades/day: {metrics.trades_per_day:.1f}")
 
-    return trades, data, metrics
+    return trades, data, metrics, model_label
 
 
 # ---------------------------------------------------------------------------
 # Chart 1: SPX price with trade overlay
 # ---------------------------------------------------------------------------
 
-def plot_spx_trades(trades: list, data: dict, mask_key: str, output: Path):
+def plot_spx_trades(trades: list, data: dict, mask_key: str, output: Path, model_label: str = ""):
     """Plot SPX price with entry/exit markers for every trade."""
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
@@ -228,7 +235,8 @@ def plot_spx_trades(trades: list, data: dict, mask_key: str, output: Path):
     wr = n_wins / n_total * 100 if n_total else 0
 
     fig.update_layout(
-        title=dict(text=f"Trade Overlay: {n_total} trades, {wr:.0f}% win rate ({mask_key})",
+        title=dict(text=(f"Trade Overlay: {n_total} trades, {wr:.0f}% win rate ({mask_key})"
+                         + (f"<br><sub>{model_label}</sub>" if model_label else "")),
                    font=dict(size=16)),
         xaxis=dict(
             tickvals=tick_vals, ticktext=tick_text,
@@ -272,7 +280,7 @@ def _day_boundary_labels(trades: list) -> list[str]:
     return labels
 
 
-def plot_equity(trades: list, output: Path, starting_equity: float = 10_000.0):
+def plot_equity(trades: list, output: Path, starting_equity: float = 10_000.0, model_label: str = ""):
     """Plot equity curve with trade-by-trade P&L."""
     import plotly.graph_objects as go
 
@@ -359,7 +367,8 @@ def plot_equity(trades: list, output: Path, starting_equity: float = 10_000.0):
         title=dict(
             text=(f"Equity Curve: ${starting_equity:,.0f} -> ${ending_cash:,.0f} "
                   f"({total_return:+.1f}%) | WR {wr:.0f}% | "
-                  f"Max DD {max_dd:.1f}% | Edge Ratio {edge_ratio:.2f}"),
+                  f"Max DD {max_dd:.1f}% | Edge Ratio {edge_ratio:.2f}"
+                  + (f"<br><sub>{model_label}</sub>" if model_label else "")),
             font=dict(size=14),
         ),
         xaxis=dict(
@@ -472,14 +481,14 @@ def main():
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    trades, data, metrics = load_trades(mask_key, model_path=args.model)
+    trades, data, metrics, model_label = load_trades(mask_key, model_path=args.model)
 
     if not trades:
         print("No trades produced. Nothing to plot.")
         sys.exit(1)
 
-    plot_spx_trades(trades, data, mask_key, out_dir / "trades.html")
-    plot_equity(trades, out_dir / "equity.html")
+    plot_spx_trades(trades, data, mask_key, out_dir / "trades.html", model_label=model_label)
+    plot_equity(trades, out_dir / "equity.html", model_label=model_label)
     export_trades_csv(trades, out_dir / "trades.csv")
 
 

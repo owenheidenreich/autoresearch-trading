@@ -20,7 +20,7 @@ from v2.core.features import _FEAT_IDX
 from v2.core.metrics import compute_metrics
 from v2.core.policy import DEFAULT_POLICY
 from v2.core.walkforward import generate_folds
-from v2.replay import replay_sequential
+from v2.replay import load_model_from_path, replay_sequential
 from v2.core.env import SESSION_STATE_DIM
 from v2.seq_agent import SequentialAgent
 from v2.train import TradingModel, D_MODEL, LOOKBACK
@@ -30,11 +30,9 @@ IDX_TREND = _FEAT_IDX["trend_5min"]
 
 
 def _load_agent(encoder_path: str, agent_path: str, device: str = "cpu"):
-    encoder = TradingModel()
-    if os.path.exists(encoder_path):
-        ckpt = torch.load(encoder_path, map_location="cpu", weights_only=False)
-        if "model_state_dict" in ckpt:
-            encoder.load_state_dict(ckpt["model_state_dict"], strict=False)
+    if not os.path.exists(encoder_path):
+        raise FileNotFoundError(f"Encoder checkpoint not found: {encoder_path}")
+    encoder = load_model_from_path(encoder_path, device=device)
     encoder.eval()
 
     # Detect session_dim from checkpoint to handle 12→13 migration

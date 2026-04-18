@@ -55,7 +55,6 @@ class TradeIntent:
     snapshot_row: int = -1
     contract_index: int = -1
     contract_score: float = 0.0
-    no_trade_score: float = 0.0
 
     policy_version: str = "v4.0.0"
 
@@ -123,14 +122,12 @@ class TradeIntent:
         bar_index: int = 0,
         timestamp: str = "",
         reason_codes: tuple[str, ...] = (),
-        no_trade_score: float = 0.0,
     ) -> "TradeIntent":
         return cls(
             trade=False,
             bar_index=bar_index,
             timestamp=timestamp,
             reason_codes=reason_codes,
-            no_trade_score=no_trade_score,
             intent_id=str(uuid.uuid4()),
         )
 
