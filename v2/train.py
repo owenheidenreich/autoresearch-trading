@@ -14,11 +14,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
-from v2.core.chain_data import NUM_CONTRACT_FEATURES, padded_snapshot
+from v2.core.chain_data import (
+    NUM_CONTRACT_FEATURES,
+    SLICE_GATE_MIN_PNL,
+    padded_snapshot_with_slice,
+    snapshot_slice_mask,
+)
+from v2.core.features import FEATURE_NAMES, LEGACY_52_FEATURE_NAMES, NUM_FEATURES as FEATURE_COUNT
 from v2.core.metrics import score_config_fingerprint
 
 
-NUM_FEATURES = int(os.environ.get("NUM_FEATURES", 52))
+TRAIN_FEATURE_SET = os.environ.get("TRAIN_FEATURE_SET", "full79")
+ACTIVE_FEATURE_NAMES = list(LEGACY_52_FEATURE_NAMES) if TRAIN_FEATURE_SET == "legacy52" else list(FEATURE_NAMES)
+NUM_FEATURES = int(os.environ.get("NUM_FEATURES", len(ACTIVE_FEATURE_NAMES)))
 LOOKBACK = int(os.environ.get("TRAIN_LOOKBACK", 30))
 D_MODEL = int(os.environ.get("TRAIN_D_MODEL", 96))
 N_HEADS = 4
@@ -32,7 +40,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-OPP_LABEL = os.environ.get("OPP_LABEL", "strict")  # "old", "strict", "consensus", "high_threshold"
+OPP_LABEL = os.environ.get("OPP_LABEL", "slice")  # "slice", "old", "strict", "consensus", "high_threshold"
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.08))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
@@ -48,10 +56,11 @@ SEL_TARGET_MODE = os.environ.get("SEL_TARGET_MODE", "default")  # "default", "st
 GATE_TARGET_MODE = os.environ.get("GATE_TARGET_MODE", "binary")   # "binary" (BCE) or "max_pnl" (MSE on bar max row_labels)
 # Threshold shift for max_pnl gate: subtract from target so inference threshold 0 naturally gates
 # profitable (>threshold) vs marginal bars. Without this, all bars have positive target → all pass.
-GATE_PNL_THRESHOLD = float(os.environ.get("GATE_PNL_THRESHOLD", 0.2))
+GATE_PNL_THRESHOLD = float(os.environ.get("GATE_PNL_THRESHOLD", str(SLICE_GATE_MIN_PNL)))
 # Scale multiplier for max_pnl MSE loss — natural MSE scale ~0.05 is 10× smaller than BCE ~0.65,
 # so without scaling the gate head gets negligible gradient vs selection/gate BCE paths.
 GATE_PNL_LOSS_SCALE = float(os.environ.get("GATE_PNL_LOSS_SCALE", 10.0))
+LINEAR_SCORE_HEADS = int(os.environ.get("LINEAR_SCORE_HEADS", "1")) == 1
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
@@ -66,6 +75,8 @@ _TRAINING_ENV_VARS = [
     "COMP_W", "COMP_MODE", "COMP_TEACHER", "SIDE_MODE", "ALPHA_SIDE",
     "CKPT_SELECTION_MODE", "SEL_TARGET_MODE", "GATE_TARGET_MODE",
     "GATE_PNL_THRESHOLD", "GATE_PNL_LOSS_SCALE",
+    "LINEAR_SCORE_HEADS",
+    "TRAIN_FEATURE_SET",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
     "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
 ]
@@ -91,6 +102,48 @@ class CheckpointCandidate:
     val_total: float
     val_metrics: dict[str, float]
     checkpoint_path: str
+
+
+def _checkpoint_uses_linear_heads(checkpoint: dict) -> bool:
+    hp = checkpoint.get("hyperparams", {}) or {}
+    if "linear_score_heads" in hp:
+        return bool(hp["linear_score_heads"])
+    state = checkpoint.get("model_state_dict", {}) or {}
+    return "call_score_head.weight" in state and "put_score_head.weight" in state
+
+
+def _checkpoint_input_feature_names(checkpoint: dict) -> list[str]:
+    hp = checkpoint.get("hyperparams", {}) or {}
+    names = checkpoint.get("feature_names") or hp.get("feature_names")
+    if names:
+        return list(names)
+    state = checkpoint.get("model_state_dict", {}) or {}
+    input_w = state.get("input_proj.weight")
+    n_features = int(hp.get("num_features", input_w.shape[1] if input_w is not None else NUM_FEATURES))
+    if n_features == len(FEATURE_NAMES):
+        return list(FEATURE_NAMES)
+    if n_features == len(LEGACY_52_FEATURE_NAMES):
+        return list(LEGACY_52_FEATURE_NAMES)
+    return list(FEATURE_NAMES[:n_features])
+
+
+def _feature_indices_for_names(dataset_feature_names: list[str], desired_names: list[str]) -> list[int]:
+    name_to_idx = {name: idx for idx, name in enumerate(dataset_feature_names)}
+    missing = [name for name in desired_names if name not in name_to_idx]
+    if missing:
+        raise RuntimeError(f"dataset is missing required features for checkpoint: {missing[:5]}")
+    return [name_to_idx[name] for name in desired_names]
+
+
+def _adapt_windows_for_feature_names(
+    windows: torch.Tensor,
+    dataset_feature_names: list[str],
+    desired_names: list[str],
+) -> torch.Tensor:
+    if windows.size(-1) == len(desired_names) and list(dataset_feature_names[: len(desired_names)]) == list(desired_names):
+        return windows
+    idx = _feature_indices_for_names(dataset_feature_names, desired_names)
+    return windows[..., idx]
 
 
 def _compute_checkpoint_proxy(avg_val: dict[str, float], best_sel_so_far: float) -> tuple[float, float]:
@@ -130,9 +183,13 @@ def _save_training_checkpoint(
                 "depth": DEPTH,
                 "n_heads": N_HEADS,
                 "dropout": DROPOUT,
+                "linear_score_heads": LINEAR_SCORE_HEADS,
+                "num_features": NUM_FEATURES,
+                "feature_set": TRAIN_FEATURE_SET,
                 "contract_features": NUM_CONTRACT_FEATURES,
                 "max_contracts_per_bar": int(data["metadata"]["max_contracts_per_bar"]),
             },
+            "feature_names": list(ACTIVE_FEATURE_NAMES),
             "score_config_fingerprint": score_config_fingerprint(),
             "dataset_fingerprint": dataset_fp,
             "config_fingerprint": _get_config_fingerprint(),
@@ -186,14 +243,26 @@ class PositionalEncoding(nn.Module):
 class TradingModel(nn.Module):
     """Contract scorer with balanced gate + soft KL selection training."""
 
-    def __init__(self, d_model: int | None = None, depth: int | None = None, n_heads: int | None = None, dropout: float | None = None):
+    def __init__(
+        self,
+        d_model: int | None = None,
+        depth: int | None = None,
+        n_heads: int | None = None,
+        dropout: float | None = None,
+        linear_score_heads: bool | None = None,
+        num_features: int | None = None,
+    ):
         super().__init__()
         d = d_model or D_MODEL
         dep = depth or DEPTH
         nh = n_heads or N_HEADS
         dr = DROPOUT if dropout is None else dropout
+        self.linear_score_heads = LINEAR_SCORE_HEADS if linear_score_heads is None else bool(linear_score_heads)
+        self.num_input_features = NUM_FEATURES if num_features is None else int(num_features)
+        base_names = ACTIVE_FEATURE_NAMES if len(ACTIVE_FEATURE_NAMES) == self.num_input_features else FEATURE_NAMES
+        self.input_feature_names: list[str] = list(base_names[: self.num_input_features])
 
-        self.input_proj = nn.Linear(NUM_FEATURES, d)
+        self.input_proj = nn.Linear(self.num_input_features, d)
         self.input_norm = nn.LayerNorm(d)
         self.pos_enc = PositionalEncoding(d, max_len=LOOKBACK + 10)
         encoder_layer = nn.TransformerEncoderLayer(
@@ -212,24 +281,26 @@ class TradingModel(nn.Module):
             nn.GELU(),
             nn.Linear(d, d),
         )
-        # Dual score heads: independent call and put scoring.
-        # exp_170e: with SIDE_SEL_W=0.2 for within-side auxiliary supervision.
-        self.call_score_head = nn.Sequential(
-            nn.Linear(d * 2, d),
-            nn.GELU(),
-            nn.Dropout(dr),
-            nn.Linear(d, d // 2),
-            nn.GELU(),
-            nn.Linear(d // 2, 1),
-        )
-        self.put_score_head = nn.Sequential(
-            nn.Linear(d * 2, d),
-            nn.GELU(),
-            nn.Dropout(dr),
-            nn.Linear(d, d // 2),
-            nn.GELU(),
-            nn.Linear(d // 2, 1),
-        )
+        if self.linear_score_heads:
+            self.call_score_head = nn.Linear(d * 2, 1)
+            self.put_score_head = nn.Linear(d * 2, 1)
+        else:
+            self.call_score_head = nn.Sequential(
+                nn.Linear(d * 2, d),
+                nn.GELU(),
+                nn.Dropout(dr),
+                nn.Linear(d, d // 2),
+                nn.GELU(),
+                nn.Linear(d // 2, 1),
+            )
+            self.put_score_head = nn.Sequential(
+                nn.Linear(d * 2, d),
+                nn.GELU(),
+                nn.Dropout(dr),
+                nn.Linear(d, d // 2),
+                nn.GELU(),
+                nn.Linear(d // 2, 1),
+            )
         self.put_bias = nn.Parameter(torch.tensor(0.0))
 
         # Independent opportunity-quality head: "should I trade this bar?"
@@ -345,9 +416,12 @@ def _compute_strict_opportunity(sc: dict, local_bar: int) -> bool:
     mae = sc.get("row_mae")
     btbe = sc.get("row_bars_to_breakeven")
     if raw_returns is None or mfe is None or mae is None or btbe is None:
-        return bool(sc["bar_label_trade"][local_bar])  # fallback to old
+        return bool(sc.get("bar_slice_label_trade", sc["bar_label_trade"])[local_bar])
+    slice_mask = snapshot_slice_mask(sc, local_bar)
     IDX_5, IDX_10 = 0, 1
-    for ro in range(start, end):
+    for local_row, ro in enumerate(range(start, end)):
+        if local_row >= len(slice_mask) or not slice_mask[local_row]:
+            continue
         r10 = float(raw_returns[ro, IDX_10])
         m10 = float(mae[ro, IDX_10])
         m5 = float(mfe[ro, IDX_5])
@@ -379,9 +453,12 @@ def _compute_contract_strict_mask(sc: dict, local_bar: int, max_contracts: int) 
     btbe = sc.get("row_bars_to_breakeven")
     if raw_returns is None or mfe is None or mae is None or btbe is None:
         return mask
+    slice_mask = snapshot_slice_mask(sc, local_bar)
     idx_5, idx_10 = 0, 1
     use = min(end - start, max_contracts)
     for local_row, ro in enumerate(range(start, start + use)):
+        if local_row >= len(slice_mask) or not slice_mask[local_row]:
+            continue
         r10 = float(raw_returns[ro, idx_10])
         m10 = float(mae[ro, idx_10])
         m5 = float(mfe[ro, idx_5])
@@ -432,8 +509,11 @@ def _compute_consensus_opportunity(sc: dict, local_bar: int) -> bool:
     labels_short = sc.get("row_labels_short")
     labels_eod = sc.get("row_labels_eod")
     if labels_default is None or labels_short is None or labels_eod is None:
-        return bool(sc["bar_label_trade"][local_bar])  # fallback
-    for ro in range(start, end):
+        return bool(sc.get("bar_slice_label_trade", sc["bar_label_trade"])[local_bar])
+    slice_mask = snapshot_slice_mask(sc, local_bar)
+    for local_row, ro in enumerate(range(start, end)):
+        if local_row >= len(slice_mask) or not slice_mask[local_row]:
+            continue
         d = float(labels_default[ro])
         s = float(labels_short[ro])
         e = float(labels_eod[ro])
@@ -456,8 +536,11 @@ def _compute_frac_profitable(sc: dict, local_bar: int) -> float:
     if end <= start:
         return 0.0
     labels = sc["row_labels"][start:end]
+    slice_mask = snapshot_slice_mask(sc, local_bar)
     valid = []
-    for l in labels:
+    for local_row, l in enumerate(labels):
+        if local_row >= len(slice_mask) or not slice_mask[local_row]:
+            continue
         lf = float(l)
         if np.isfinite(lf):
             valid.append(lf)
@@ -483,6 +566,7 @@ class TradeDataset(Dataset):
         n = len(self.indices)
         self.all_contracts = torch.zeros(n, max_contracts, NUM_CONTRACT_FEATURES, dtype=torch.float32)
         self.all_labels = torch.full((n, max_contracts), float("nan"), dtype=torch.float32)
+        self.all_slice_mask = torch.zeros(n, max_contracts, dtype=torch.bool)
         self.all_best_idx = torch.zeros(n, dtype=torch.long)
         self.all_label_trade = torch.zeros(n, dtype=torch.bool)
         self.all_label_trade_valid = torch.zeros(n, dtype=torch.bool)
@@ -505,20 +589,23 @@ class TradeDataset(Dataset):
                     weights_only=False,
                 )
             sc = sidecar_cache[day]
-            contracts, labels, _ = padded_snapshot(sc, local_bar, max_contracts)
+            contracts, labels, _, slice_mask = padded_snapshot_with_slice(sc, local_bar, max_contracts)
             self.all_contracts[j] = torch.from_numpy(contracts)
             self.all_labels[j] = torch.from_numpy(labels)
-            self.all_best_idx[j] = int(sc["bar_best_contract_idx"][local_bar])
+            self.all_slice_mask[j] = torch.from_numpy(slice_mask)
+            self.all_best_idx[j] = int(sc.get("bar_slice_best_contract_idx", sc["bar_best_contract_idx"])[local_bar])
             if OPP_LABEL == "strict":
                 self.all_label_trade[j] = _compute_strict_opportunity(sc, local_bar)
             elif OPP_LABEL == "consensus":
                 self.all_label_trade[j] = _compute_consensus_opportunity(sc, local_bar)
             elif OPP_LABEL == "high_threshold":
-                bp = sc.get("bar_best_pnl")
-                self.all_label_trade[j] = bp is not None and float(bp[local_bar]) > 0.20
-            else:
+                bp = sc.get("bar_slice_best_pnl", sc.get("bar_best_pnl"))
+                self.all_label_trade[j] = bp is not None and float(bp[local_bar]) > max(0.20, SLICE_GATE_MIN_PNL)
+            elif OPP_LABEL == "old":
                 self.all_label_trade[j] = bool(sc["bar_label_trade"][local_bar])
-            self.all_label_trade_valid[j] = bool(sc["bar_labelable"][local_bar])
+            else:
+                self.all_label_trade[j] = bool(sc.get("bar_slice_label_trade", sc["bar_label_trade"])[local_bar])
+            self.all_label_trade_valid[j] = bool(sc.get("bar_slice_labelable", sc["bar_labelable"])[local_bar])
             self.all_label_quality[j] = _compute_frac_profitable(sc, local_bar)
             if self.all_contract_strict_mask is not None:
                 self.all_contract_strict_mask[j] = torch.from_numpy(
@@ -534,6 +621,7 @@ class TradeDataset(Dataset):
         window = self.features[i - self.lookback : i]
         target = {
             "contract_labels": self.all_labels[idx],
+            "contract_slice_mask": self.all_slice_mask[idx],
             "best_idx": self.all_best_idx[idx],
             "label_trade": self.all_label_trade[idx],
             "label_trade_valid": self.all_label_trade_valid[idx],
@@ -575,7 +663,7 @@ def _compute_competence_label(
     with torch.no_grad():
         if comp_mode == "frozen" and teacher_outputs is not None:
             det_scores = teacher_outputs["contract_scores"].detach().clone()
-            det_valid = teacher_outputs["valid_mask"]
+            det_valid = teacher_outputs["valid_mask"] & valid_mask
             det_scores[~det_valid] = -1e9
         else:  # live
             det_scores = scores.detach().clone()
@@ -616,13 +704,19 @@ def compute_loss(
     label_trade = targets["label_trade"].to(device)
     label_trade_valid = targets["label_trade_valid"].to(device)
     contracts_full = targets["contracts_full"].to(device)
+    slice_mask = targets.get("contract_slice_mask")
+    if slice_mask is not None:
+        slice_mask = slice_mask.to(device)
+        active_valid_mask = valid_mask & slice_mask
+    else:
+        active_valid_mask = valid_mask
     strict_contract_mask = targets.get("contract_strict_mask")
     if strict_contract_mask is not None:
         strict_contract_mask = strict_contract_mask.to(device)
 
     label_quality = targets["label_quality"].to(device)
     supervised_rows = label_trade_valid
-    trade_rows = supervised_rows & label_trade & (best_idx >= 0)
+    trade_rows = supervised_rows & label_trade & (best_idx >= 0) & active_valid_mask.any(dim=-1)
     opportunity_logit = outputs["opportunity_logit"]
     side_logit = outputs["side_logit"]
 
@@ -630,7 +724,7 @@ def compute_loss(
     gate_loss = torch.tensor(0.0, device=device)
     if GATE_TARGET_MODE == "max_pnl" and supervised_rows.any():
         pnl_for_max = labels.clone()
-        pnl_for_max = torch.where(valid_mask, pnl_for_max, torch.full_like(pnl_for_max, float("-inf")))
+        pnl_for_max = torch.where(active_valid_mask, pnl_for_max, torch.full_like(pnl_for_max, float("-inf")))
         pnl_for_max[~torch.isfinite(pnl_for_max) & (pnl_for_max != float("-inf"))] = float("-inf")
         bar_max_pnl, _ = pnl_for_max.max(dim=-1)
         bar_max_pnl = torch.where(torch.isfinite(bar_max_pnl), bar_max_pnl, torch.zeros_like(bar_max_pnl))
@@ -670,7 +764,7 @@ def compute_loss(
     comp_loss = torch.tensor(0.0, device=device)
     if COMP_W > 0 and GATE_TARGET_MODE != "max_pnl" and supervised_rows.any():
         label_comp_bin, label_comp_cont, comp_valid_mask = _compute_competence_label(
-            scores, labels, valid_mask, device,
+            scores, labels, active_valid_mask, device,
             teacher_outputs=teacher_outputs,
             comp_mode=COMP_MODE, label_quality=label_quality,
         )
@@ -729,7 +823,7 @@ def compute_loss(
     sel_loss = torch.tensor(0.0, device=device)
     if trade_rows.any():
         tr_scores = scores[trade_rows]
-        tr_valid = valid_mask[trade_rows]
+        tr_valid = active_valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
         tr_strict = strict_contract_mask[trade_rows] if strict_contract_mask is not None else None
 
@@ -786,7 +880,7 @@ def compute_loss(
     exact_loss = torch.tensor(0.0, device=device)
     if EXACT_W > 0 and trade_rows.any():
         ex_scores = scores[trade_rows]
-        ex_valid = valid_mask[trade_rows]
+        ex_valid = active_valid_mask[trade_rows]
         ex_best = best_idx[trade_rows]
 
         # Mask invalid contracts
@@ -808,7 +902,7 @@ def compute_loss(
         tr_is_put = is_put[trade_rows]
         tr_call_raw = call_raw[trade_rows]
         tr_put_raw = put_raw[trade_rows]
-        tr_valid_side = valid_mask[trade_rows]
+        tr_valid_side = active_valid_mask[trade_rows]
         tr_labels_side = labels[trade_rows]
         tr_best_idx = best_idx[trade_rows]
 
@@ -861,7 +955,7 @@ def compute_loss(
 
     # --- Metrics ---
     masked_scores_eval = scores.detach().clone()
-    masked_scores_eval[~valid_mask] = -1e9
+    masked_scores_eval[~active_valid_mask] = -1e9
     best_eval, pred_contract = masked_scores_eval.max(dim=-1)
     # Use opportunity_logit as primary gate (independent of contract ranking)
     pred_trade = opportunity_logit.detach() > 0
@@ -924,7 +1018,7 @@ def compute_loss(
     if COMP_W > 0 and supervised_rows.any():
         with torch.no_grad():
             label_cb, _, cv = _compute_competence_label(
-                scores, labels, valid_mask, device,
+                scores, labels, active_valid_mask, device,
                 teacher_outputs=teacher_outputs,
                 comp_mode=COMP_MODE, label_quality=label_quality,
             )
@@ -981,6 +1075,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
 
     train_mask = train_mask_override if train_mask_override is not None else data["train_mask"]
     val_mask = val_mask_override if val_mask_override is not None else data["val_mask"]
+    dataset_feature_names = list(meta.get("feature_names", FEATURE_NAMES))
 
     train_ds = TradeDataset(data, train_mask, lookback=LOOKBACK)
     val_ds = TradeDataset(data, val_mask, lookback=LOOKBACK)
@@ -993,11 +1088,14 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
         targets = {
             "contracts_full": contracts,
             "contract_labels": torch.stack([t["contract_labels"] for t in targets_list]),
+            "contract_slice_mask": torch.stack([t["contract_slice_mask"] for t in targets_list]),
             "best_idx": torch.stack([t["best_idx"] for t in targets_list]),
             "label_trade": torch.stack([t["label_trade"] for t in targets_list]),
             "label_trade_valid": torch.stack([t["label_trade_valid"] for t in targets_list]),
             "label_quality": torch.stack([t["label_quality"] for t in targets_list]),
         }
+        if "contract_strict_mask" in targets_list[0]:
+            targets["contract_strict_mask"] = torch.stack([t["contract_strict_mask"] for t in targets_list])
         return windows, contracts, targets
 
     train_loader = DataLoader(
@@ -1017,7 +1115,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = TradingModel().to(device)
+    model = TradingModel(linear_score_heads=LINEAR_SCORE_HEADS).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
@@ -1032,8 +1130,13 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             teacher = TradingModel(
                 d_model=hp.get("d_model", D_MODEL),
                 depth=hp.get("depth", DEPTH),
+                n_heads=hp.get("n_heads", N_HEADS),
+                dropout=hp.get("dropout", DROPOUT),
+                linear_score_heads=_checkpoint_uses_linear_heads(teacher_ckpt),
+                num_features=int(hp.get("num_features", teacher_ckpt["model_state_dict"]["input_proj.weight"].shape[1])),
             ).to(device)
             teacher.load_state_dict(teacher_ckpt["model_state_dict"])
+            teacher.input_feature_names = _checkpoint_input_feature_names(teacher_ckpt)
             teacher.eval()
             for p in teacher.parameters():
                 p.requires_grad_(False)
@@ -1089,13 +1192,15 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             batch_x = batch_x.to(device)
             batch_c = batch_c.to(device)
             batch_y = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch_y.items()}
+            model_x = _adapt_windows_for_feature_names(batch_x, dataset_feature_names, model.input_feature_names)
 
             optimizer.zero_grad()
             teacher_outputs = None
             if teacher is not None and COMP_W > 0:
                 with torch.no_grad():
-                    teacher_outputs = teacher(batch_x, batch_c)
-            outputs = model(batch_x, batch_c)
+                    teacher_x = _adapt_windows_for_feature_names(batch_x, dataset_feature_names, teacher.input_feature_names)
+                    teacher_outputs = teacher(teacher_x, batch_c)
+            outputs = model(model_x, batch_c)
             loss, metrics = compute_loss(outputs, batch_y, teacher_outputs=teacher_outputs)
             loss.backward()
             _pre_clip_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -1111,10 +1216,12 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
                 batch_x = batch_x.to(device)
                 batch_c = batch_c.to(device)
                 batch_y = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch_y.items()}
+                model_x = _adapt_windows_for_feature_names(batch_x, dataset_feature_names, model.input_feature_names)
                 teacher_outputs_v = None
                 if teacher is not None and COMP_W > 0:
-                    teacher_outputs_v = teacher(batch_x, batch_c)
-                outputs = model(batch_x, batch_c)
+                    teacher_x = _adapt_windows_for_feature_names(batch_x, dataset_feature_names, teacher.input_feature_names)
+                    teacher_outputs_v = teacher(teacher_x, batch_c)
+                outputs = model(model_x, batch_c)
                 _, metrics = compute_loss(outputs, batch_y, teacher_outputs=teacher_outputs_v)
                 val_stats.append(metrics)
 

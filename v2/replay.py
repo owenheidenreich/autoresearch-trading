@@ -14,13 +14,21 @@ import random as _random
 import numpy as np
 import torch
 
-from v2.core.chain_data import describe_contract, extract_contract_series, load_sidecar_cached, padded_snapshot, QUALITY_PARTIAL
-from v2.core.decision_trace import DecisionTrace, build_trace_for_bar, save_traces, print_trace_summary
+from v2.core.chain_data import (
+    QUALITY_PARTIAL,
+    describe_contract,
+    extract_contract_series,
+    load_sidecar_cached,
+    padded_snapshot,
+    padded_snapshot_with_slice,
+)
+from v2.core.decision_trace import DecisionTrace, build_trace_for_bar, save_traces, print_trace_summary, trace_summary
+from v2.core.features import FEATURE_NAMES, LEGACY_52_FEATURE_NAMES
 from v2.core.metrics import ReplayMetrics, compute_metrics, score_config_fingerprint
 from v2.core.policy import DEFAULT_POLICY, DecisionPolicy
 from v2.core.schema import TradeIntent
 from v2.core.simulator import simulate_trade
-from v2.train import LOOKBACK, TradingModel
+from v2.train import LOOKBACK, TradingModel, _checkpoint_uses_linear_heads
 
 
 BATCH_SIZE = 2048
@@ -31,6 +39,7 @@ def effective_inference_scores(
     contract_scores: np.ndarray,
     valid_mask: np.ndarray,
     contract_features: np.ndarray,
+    competition_mask: np.ndarray | None = None,
     side_logit: float = 0.0,
     side_mode: str = "off",
     alpha_side: float = 0.0,
@@ -48,6 +57,8 @@ def effective_inference_scores(
     """
     scores = contract_scores.copy()
     scores[~valid_mask] = -1e9
+    if competition_mask is not None:
+        scores[~competition_mask.astype(bool)] = -1e9
     if quality_filter:
         quality_flags = contract_features[:, 14]
         scores[quality_flags < QUALITY_PARTIAL] = -1e9
@@ -68,18 +79,46 @@ def effective_inference_scores(
 def load_model_from_path(path: str, device: str = "cpu") -> TradingModel:
     checkpoint = torch.load(path, map_location=device, weights_only=False)
     hyperparams = checkpoint.get("hyperparams", {})
+    n_features = int(hyperparams.get("num_features", checkpoint["model_state_dict"]["input_proj.weight"].shape[1]))
     model = TradingModel(
         d_model=hyperparams.get("d_model", 96),
         depth=hyperparams.get("depth", 3),
         n_heads=hyperparams.get("n_heads", 4),
         dropout=hyperparams.get("dropout", 0.05),
+        linear_score_heads=_checkpoint_uses_linear_heads(checkpoint),
+        num_features=n_features,
     )
+    names = checkpoint.get("feature_names") or hyperparams.get("feature_names")
+    if names:
+        model.input_feature_names = list(names)
+    elif n_features == len(LEGACY_52_FEATURE_NAMES):
+        model.input_feature_names = list(LEGACY_52_FEATURE_NAMES)
+    elif n_features == len(FEATURE_NAMES):
+        model.input_feature_names = list(FEATURE_NAMES)
+    else:
+        model.input_feature_names = list(FEATURE_NAMES[:n_features])
     try:
         model.load_state_dict(checkpoint["model_state_dict"])
     except RuntimeError as exc:
         raise RuntimeError(f"stale model artifact; retrain required ({exc})") from exc
     model.eval()
     return model
+
+
+def adapt_windows_for_model(
+    windows: np.ndarray,
+    dataset_feature_names: list[str],
+    model: TradingModel,
+) -> np.ndarray:
+    desired = list(getattr(model, "input_feature_names", FEATURE_NAMES[: windows.shape[-1]]))
+    if windows.shape[-1] == len(desired) and list(dataset_feature_names[: len(desired)]) == desired:
+        return windows
+    name_to_idx = {name: idx for idx, name in enumerate(dataset_feature_names)}
+    missing = [name for name in desired if name not in name_to_idx]
+    if missing:
+        raise RuntimeError(f"dataset missing required features for model: {missing[:5]}")
+    idx = [name_to_idx[name] for name in desired]
+    return windows[..., idx]
 
 
 def load_best_model(device: str = "cpu", current_dataset_fingerprint: str | None = None):
@@ -123,6 +162,7 @@ def model_to_intent(
     contract_scores: torch.Tensor,
     contract_labels: torch.Tensor,
     valid_mask: torch.Tensor,
+    slice_mask: torch.Tensor | None = None,
     contract_features: torch.Tensor,
     contract_indices: torch.Tensor,
     sidecar: dict,
@@ -147,15 +187,19 @@ def model_to_intent(
         )
 
     side_val = float(side_logit.item()) if side_logit is not None else 0.0
+    effective_mask = valid_mask.numpy().astype(bool)
+    if slice_mask is not None:
+        effective_mask &= slice_mask.numpy().astype(bool)
     eff_scores = effective_inference_scores(
         contract_scores.numpy(),
-        valid_mask.numpy().astype(bool),
+        effective_mask,
         contract_features.numpy(),
+        competition_mask=effective_mask,
         side_logit=side_val,
         side_mode=policy.side_mode,
         alpha_side=policy.alpha_side,
     )
-    best_row = int(np.argmax(eff_scores)) if valid_mask.any() else -1
+    best_row = int(np.argmax(eff_scores)) if effective_mask.any() else -1
     best_score = float(eff_scores[best_row]) if best_row >= 0 and eff_scores[best_row] > -1e8 else -float("inf")
 
     if best_row < 0:
@@ -226,6 +270,7 @@ def replay_validation(
     spot_prices = data["spot_prices"].numpy()
     sidecar_dir = data["metadata"]["chain_sidecar_dir"]
     max_contracts = int(data["metadata"]["max_contracts_per_bar"])
+    dataset_feature_names = list(data.get("metadata", {}).get("feature_names", FEATURE_NAMES))
 
     mask_indices = np.where(mask)[0]
     if len(mask_indices) == 0:
@@ -250,9 +295,9 @@ def replay_validation(
             if bod < policy.no_trade_before_bar or bod >= policy.no_trade_after_bar:
                 continue
             sidecar = load_sidecar_cached(os.path.join(sidecar_dir, f"{day}.pt"))
-            contracts, labels, contract_indices = padded_snapshot(sidecar, bod, max_contracts)
+            contracts, labels, contract_indices, slice_mask = padded_snapshot_with_slice(sidecar, bod, max_contracts)
             eligible.append((day, bar_idx, bod))
-            snapshots.append((contracts, labels, contract_indices))
+            snapshots.append((contracts, labels, contract_indices, slice_mask))
 
     if not eligible:
         return ReplayMetrics(), [], [] if collect_traces else None
@@ -261,9 +306,11 @@ def replay_validation(
     offsets = np.arange(-LOOKBACK, 0).reshape(1, -1)
     gather_idx = window_indices.reshape(-1, 1) + offsets
     all_windows = features[gather_idx]
+    all_windows = adapt_windows_for_model(all_windows, dataset_feature_names, model)
     all_contracts = np.stack([s[0] for s in snapshots]).astype(np.float32)
     all_contract_labels = np.stack([s[1] for s in snapshots]).astype(np.float32)
     all_contract_indices = np.stack([s[2] for s in snapshots]).astype(np.int32)
+    all_slice_masks = np.stack([s[3] for s in snapshots]).astype(bool)
 
     model = model.to(device)
     model.eval()
@@ -317,6 +364,8 @@ def replay_validation(
         outputs_i = {k: v[i] for k, v in all_outputs.items()}
         c_scores_np = outputs_i["contract_scores"].numpy()
         v_mask_np = outputs_i["valid_mask"].numpy().astype(bool)
+        slice_mask_np = all_slice_masks[i].astype(bool)
+        active_mask_np = v_mask_np & slice_mask_np
         gate_val = float(outputs_i["opportunity_logit"].item())
         _side_logit_val = float(outputs_i["side_logit"].item()) if "side_logit" in outputs_i else 0.0
         vix_val = float(features[global_bar, vix_idx]) if global_bar < len(features) else 0.0
@@ -324,7 +373,8 @@ def replay_validation(
         # Effective scores: same adjustments model_to_intent will apply.
         # Used for traces and blocked-trade counterfactuals.
         eff_scores_np = effective_inference_scores(
-            c_scores_np, v_mask_np, all_contracts[i],
+            c_scores_np, active_mask_np, all_contracts[i],
+            competition_mask=active_mask_np,
             side_logit=_side_logit_val,
             side_mode=policy.side_mode,
             alpha_side=policy.alpha_side,
@@ -334,19 +384,24 @@ def replay_validation(
         def _make_trace(decision: str, skip_reason: str = "",
                         sel_strike: float = 0.0, sel_right: str = "",
                         sel_mid: float = 0.0, sel_idx: int = -1) -> DecisionTrace:
+            sidecar_for_trace = load_sidecar_cached(os.path.join(sidecar_dir, f"{day}.pt"))
             return build_trace_for_bar(
                 date=day, bar_of_day=local_bar, global_bar_idx=global_bar,
                 spot_price=float(spot_prices[global_bar]),
                 vix_regime=vix_val,
                 gate_logit=gate_val,
                 gate_threshold=effective_policy.gate_threshold,
-                contract_scores=eff_scores_np, valid_mask=v_mask_np,
+                contract_scores=eff_scores_np, valid_mask=active_mask_np,
                 contract_features=all_contracts[i],
                 contract_labels=all_contract_labels[i],
                 contract_indices=all_contract_indices[i],
                 decision=decision, skip_reason=skip_reason,
                 selected_strike=sel_strike, selected_right=sel_right,
                 selected_mid=sel_mid, selected_contract_idx=sel_idx,
+                slice_atm_strike=float(sidecar_for_trace["bar_atm_strike"][local_bar]) if "bar_atm_strike" in sidecar_for_trace else 0.0,
+                slice_lo_strike=float(sidecar_for_trace["bar_slice_lo_strike"][local_bar]) if "bar_slice_lo_strike" in sidecar_for_trace else 0.0,
+                slice_hi_strike=float(sidecar_for_trace["bar_slice_hi_strike"][local_bar]) if "bar_slice_hi_strike" in sidecar_for_trace else 0.0,
+                slice_contract_count=int(sidecar_for_trace["bar_slice_contract_count"][local_bar]) if "bar_slice_contract_count" in sidecar_for_trace else int(active_mask_np.sum()),
             )
 
         if cumulative_equity <= 0 or daily_loss_cap_hit:
@@ -367,7 +422,7 @@ def replay_validation(
         # Helper: estimate counterfactual outcome for blocked bars using effective scores
         def _blocked_outcome() -> dict:
             """Check what would have happened if we traded this bar."""
-            best_row = int(np.argmax(eff_scores_np)) if v_mask_np.any() else -1
+            best_row = int(np.argmax(eff_scores_np)) if active_mask_np.any() else -1
             if best_row >= 0 and eff_scores_np[best_row] > -1e8:
                 oracle_pnl = float(all_contract_labels[i][best_row])
                 if np.isfinite(oracle_pnl):
@@ -411,6 +466,7 @@ def replay_validation(
             contract_scores=outputs_i["contract_scores"],
             contract_labels=torch.from_numpy(all_contract_labels[i]),
             valid_mask=outputs_i["valid_mask"],
+            slice_mask=torch.from_numpy(all_slice_masks[i]),
             contract_features=contract_features_t,
             contract_indices=contract_indices_t,
             sidecar=sidecar,
@@ -686,11 +742,16 @@ def _dict_to_replay_metrics(d: dict) -> ReplayMetrics:
 
 
 def _select_snapshot_row(sidecar: dict, local_bar: int, selector: str, right: str | None = None, rng: np.random.RandomState | None = None) -> tuple[int, int] | None:
-    feats, labels, contract_indices = padded_snapshot(sidecar, local_bar, int(sidecar["bar_ptrs"][local_bar + 1] - sidecar["bar_ptrs"][local_bar]))
+    feats, labels, contract_indices, slice_mask = padded_snapshot_with_slice(
+        sidecar,
+        local_bar,
+        int(sidecar["bar_ptrs"][local_bar + 1] - sidecar["bar_ptrs"][local_bar]),
+    )
     if len(contract_indices) == 0:
         return None
     valid = feats[:, 0] > 0.5
     valid &= np.isfinite(labels)
+    valid &= slice_mask
     if right is not None:
         valid &= ((feats[:, 2] > 0.5) if right == "P" else (feats[:, 2] < 0.5))
     rows = np.where(valid)[0]
@@ -699,6 +760,12 @@ def _select_snapshot_row(sidecar: dict, local_bar: int, selector: str, right: st
     if selector == "random":
         assert rng is not None
         row = int(rng.choice(rows))
+    elif selector == "gamma_dollar":
+        gamma_dollar = np.abs(feats[rows, 21])
+        row = int(rows[np.argmax(gamma_dollar)])
+    elif selector == "theta_efficiency":
+        theta_eff = np.abs(feats[rows, 19]) / np.maximum(1.0 + feats[rows, 4], 1e-6)
+        row = int(rows[np.argmax(theta_eff)])
     else:
         dists = np.abs(feats[rows, 12])
         row = int(rows[np.argmin(dists)])
@@ -890,6 +957,38 @@ def compute_baseline_atm_trailing(data: dict, mask_key: str = "promote_mask", ma
     return _compute_baseline_common(data, mask_key, policy, chooser)
 
 
+def compute_baseline_slice_gamma_dollar(data: dict, mask_key: str = "promote_mask", max_days: int | None = None, policy: DecisionPolicy = DEFAULT_POLICY, day_to_bars: dict[str, list[int]] | None = None) -> ReplayMetrics:
+    def chooser(_data, sidecar, _day, bars, pol):
+        local_bar = pol.no_trade_before_bar
+        if local_bar >= len(bars):
+            return None
+        choice = _select_snapshot_row(sidecar, local_bar, "gamma_dollar")
+        if choice is None:
+            return None
+        _, contract_idx = choice
+        spot_price = float(data["spot_prices"][bars[local_bar]])
+        intent = _trade_from_baseline(sidecar, contract_idx, local_bar, pol, "slice_gamma_dollar", spot_price)
+        return contract_idx, local_bar, intent
+
+    return _compute_baseline_common(data, mask_key, policy, chooser)
+
+
+def compute_baseline_slice_theta_efficiency(data: dict, mask_key: str = "promote_mask", max_days: int | None = None, policy: DecisionPolicy = DEFAULT_POLICY, day_to_bars: dict[str, list[int]] | None = None) -> ReplayMetrics:
+    def chooser(_data, sidecar, _day, bars, pol):
+        local_bar = pol.no_trade_before_bar
+        if local_bar >= len(bars):
+            return None
+        choice = _select_snapshot_row(sidecar, local_bar, "theta_efficiency")
+        if choice is None:
+            return None
+        _, contract_idx = choice
+        spot_price = float(data["spot_prices"][bars[local_bar]])
+        intent = _trade_from_baseline(sidecar, contract_idx, local_bar, pol, "slice_theta_efficiency", spot_price)
+        return contract_idx, local_bar, intent
+
+    return _compute_baseline_common(data, mask_key, policy, chooser)
+
+
 def dataclass_replace(intent: TradeIntent, **kwargs) -> TradeIntent:
     d = intent.to_dict()
     d.update(kwargs)
@@ -909,6 +1008,36 @@ def print_metrics(name: str, m: ReplayMetrics):
     )
     if m.gate_failure:
         print(f"  GATE FAILURE: {m.gate_failure}")
+
+
+def _coverage_curve_from_traces(traces: list[DecisionTrace]) -> list[dict]:
+    traded = [t for t in traces if t.decision == "trade" and np.isfinite(t.model_pnl)]
+    if not traded:
+        return []
+    gate_vals = np.array([t.gate_logit for t in traded], dtype=np.float64)
+    thresholds = sorted(set(float(x) for x in np.quantile(gate_vals, [0.0, 0.25, 0.5, 0.75, 0.9])))
+    curve = []
+    total = len(traded)
+    for thr in thresholds:
+        selected = [t for t in traded if t.gate_logit >= thr]
+        if not selected:
+            continue
+        pnls = np.array([t.model_pnl for t in selected], dtype=np.float64)
+        gross_profit = float(pnls[pnls > 0].sum()) if (pnls > 0).any() else 0.0
+        gross_loss = float(abs(pnls[pnls < 0].sum())) if (pnls < 0).any() else 0.0
+        pf = gross_profit / gross_loss if gross_loss > 1e-12 else (10.0 if gross_profit > 0 else 0.0)
+        equity = np.cumprod(1.0 + pnls)
+        peak = np.maximum.accumulate(np.maximum(equity, 1e-9))
+        dd = float(np.max((peak - equity) / peak)) if len(equity) else 0.0
+        curve.append({
+            "gate_threshold": round(thr, 6),
+            "coverage": round(len(selected) / total, 4),
+            "trades": len(selected),
+            "profit_factor_pct": round(pf, 4),
+            "avg_pnl_pct": round(float(pnls.mean()), 6),
+            "max_drawdown_pct": round(dd, 4),
+        })
+    return curve
 
 
 def _compute_all_baselines(data, mask_key, max_days, policy, day_to_bars):
@@ -995,6 +1124,14 @@ def main():
         if os.path.exists(model_path):
             try:
                 ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
+                hp = ckpt.get("hyperparams", {}) if isinstance(ckpt, dict) else {}
+                encoder = TradingModel(
+                    d_model=hp.get("d_model", D_MODEL),
+                    depth=hp.get("depth", 3),
+                    n_heads=hp.get("n_heads", 4),
+                    dropout=hp.get("dropout", 0.05),
+                    linear_score_heads=_checkpoint_uses_linear_heads(ckpt),
+                )
                 if "model_state_dict" in ckpt:
                     encoder.load_state_dict(ckpt["model_state_dict"])
                 print(f"Encoder loaded from {model_path}")
@@ -1041,10 +1178,14 @@ def main():
 
     if args.baselines:
         b_random, b_atm, b_rules, b_trailing = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
+        b_gamma = compute_baseline_slice_gamma_dollar(data, mask_key=mask_key, max_days=args.days, policy=policy, day_to_bars=day_to_bars)
+        b_theta = compute_baseline_slice_theta_efficiency(data, mask_key=mask_key, max_days=args.days, policy=policy, day_to_bars=day_to_bars)
         print_metrics("Random", b_random)
         print_metrics("ATM-Always", b_atm)
         print_metrics("Simple-Rules", b_rules)
         print_metrics("ATM-Trailing", b_trailing)
+        print_metrics("Slice-Gamma-Dollar", b_gamma)
+        print_metrics("Slice-Theta-Efficiency", b_theta)
         return
 
     if args.model:
@@ -1068,7 +1209,7 @@ def main():
     if args.date_range:
         lo, hi = args.date_range.split(":")
         date_range = (lo.strip(), hi.strip())
-    metrics, trades, _ = replay_validation(
+    metrics, trades, traces = replay_validation(
         model, data, mask_key=mask_key, max_days=args.days, policy=policy,
         collect_traces=trace_flag, trace_path=trace_out, date_range=date_range,
     )
@@ -1077,10 +1218,14 @@ def main():
         return
     print(f"\n--- BASELINES (on {mask_key}) ---")
     b_random, b_atm, b_rules, b_trailing = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
+    b_gamma = compute_baseline_slice_gamma_dollar(data, mask_key=mask_key, max_days=args.days, policy=policy, day_to_bars=day_to_bars)
+    b_theta = compute_baseline_slice_theta_efficiency(data, mask_key=mask_key, max_days=args.days, policy=policy, day_to_bars=day_to_bars)
     print_metrics("Random", b_random)
     print_metrics("ATM-Always", b_atm)
     print_metrics("Simple-Rules", b_rules)
     print_metrics("ATM-Trailing", b_trailing)
+    print_metrics("Slice-Gamma-Dollar", b_gamma)
+    print_metrics("Slice-Theta-Efficiency", b_theta)
 
     # --- Generate EvalReport with stored trades ---
     from v2.core.eval_report import EvalReport
@@ -1146,8 +1291,15 @@ def main():
             "minority_side_share": metrics.minority_side_share,
         },
         "baselines": report.baselines,
+        "diagnostic_baselines": {
+            "slice_gamma_dollar": b_gamma.score,
+            "slice_theta_efficiency": b_theta.score,
+        },
         "beats_all_baselines": report.beats_all_baselines,
     }
+    if traces:
+        diagnostics["trace_summary"] = trace_summary(traces)
+        diagnostics["coverage_curve"] = _coverage_curve_from_traces(traces)
 
     diag_path = "v2/output/replay_diagnostics.json"
     with open(diag_path, "w") as f:
