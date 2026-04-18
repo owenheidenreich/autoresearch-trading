@@ -1927,3 +1927,61 @@ Put ranking almost doubled at top-3 (3.9% → 7.0%) but remains weak in absolute
 - **Score is no longer the useful readout** at this level — all folds pin at -0.2. Next-round readout emphasis: per-fold PF, per-fold DD, trades/traded-days, per-fold direction mix, gate-failure type.
 
 **Artifact:** `v2/artifacts/exp_171/` (CV_EVAL, not deployable). Contains `cv_report.json`, per-fold `folds/<window_id>/model.pt`, `policy.json`, `policy.py.snapshot`, `train.py.snapshot`, `manifest.json`. No `v2/models/model.pt` was written (interlock held).
+
+---
+
+## exp_173 — strict-path contract selection target (2026-04-17)
+
+**Hypothesis.** The scorer is trained on the wrong oracle for 0DTE longs. Sidecar per-contract `row_labels` is eventual net PnL under the long trailing policy — which rewards slow, theta-tolerant winners. The domain edge for 0DTE is fast confirmation and clean early impulse. Audit motivation: best eventual-PnL vs. best strict-path contract disagreed on 21.9% of strict bars (9.9% side disagreement); best long-hold vs. best short-hold contract disagreed on 58.9% of bars (19.0% side disagreement). If the loss target is the wrong function, no amount of capacity or scheduler tuning will fix direction.
+
+**Intervention (minimum viable).** New env flag `SEL_TARGET_MODE`:
+- `default` (baseline behavior) — selection CE target mass = all valid contracts weighted by `row_labels`.
+- `strict_mask` — where at least one strict-path contract exists on a bar, target mass is restricted to the strict subset (fast-confirmation, clean-path). If no strict contract exists, falls back to the full valid pool. Logits still compete over all valid contracts; **no architecture change, no evaluator change, no sidecar rebuild**.
+- Strict mask rule implemented in [train.py:364](train.py#L364) `_compute_contract_strict_mask`; pool selection in [train.py:400](train.py#L400) `_selection_target_pool`.
+- Unit tests: [tests/harness_integrity/test_strict_selection_target.py](tests/harness_integrity/test_strict_selection_target.py) (5 cases, all pass).
+- Run command: `TRAIN_ENV='CKPT_SELECTION_MODE=val_replay SEL_TARGET_MODE=strict_mask' ./v2/ops/deploy.sh run_cv exp_173`.
+- Fingerprints vs. exp_171: training_config `b0d03ba8cb1a5ed2` (same), policy `1241343e315c7a17` (same), evaluator `e45320cc6094cd1e` (same). Only `SEL_TARGET_MODE` changes.
+
+**Per-fold breakdown (5/5 gate-failed on excessive_drawdown):**
+
+| fold | window_id | seed | PF | WR | trades | TPD | Traded | AcctDD | Sortino | +DayRate | Call% |
+|------|-----------|------|------|-------|--------|-----|--------|--------|---------|----------|-------|
+| 0 | `09802c94` | 159395087 | 0.749 | 44.2% | 570 | 10.00 | 57/60 | 100.3% | -9.87 | 42.1% | 77.2% |
+| 1 | `cf38c16e` | 1329119721 | **0.646** | 45.1% | 355 | 8.26 | 43/60 | 102.0% | -15.34 | 25.6% | 49.9% |
+| 2 | `e56a4d66` | 1701465569 | **0.572** | 41.7% | 374 | 6.56 | 57/60 | 95.8% | -12.42 | 40.4% | 90.4% |
+| 3 | `9b92333b` | 462566326 | 0.790 | 49.4% | 611 | 10.18 | 60/60 | 83.6% | -6.46 | 35.0% | 62.2% |
+| 4 | `3b2f7c52` | 992967885 | 0.728 | 46.6% | 470 | 8.87 | 53/60 | 100.7% | -11.13 | 32.1% | 69.6% |
+
+**Pooled:** `PF=0.712`, `AcctDD=471.3%`, `WR=45.8%`, `trades=2,380`, `traded_days=270/300`, `net_pnl=-$47,671`, `Sortino=-10.21`, `+DayRate=35.6%`, `call_pct=69.8%`. All four aggregate baselines also gate-fail (-0.2). `beats_all_baselines=false`.
+
+**Head-to-head vs. exp_171 baseline (same seeds, same config, only strict target differs):**
+
+| metric       | exp_171 | exp_173 | Δ |
+|--------------|---------|---------|---|
+| pooled PF    | 0.721   | 0.712   | -0.009 |
+| pooled DD    | 456.8%  | 471.3%  | +14.5pp (worse) |
+| pooled trades| 2,553   | 2,380   | -173 |
+| pooled call% | 74.8%   | 69.8%   | -5.0pp |
+| fold 0 PF    | 0.749   | 0.749   | 0 |
+| fold 1 PF    | 0.730   | **0.646** | -0.084 |
+| fold 2 PF    | 0.572   | 0.572   | 0 |
+| fold 3 PF    | 0.816   | 0.790   | -0.026 |
+| fold 4 PF    | 0.671   | 0.728   | +0.057 |
+
+**Findings:**
+1. **Hypothesis falsified at the CV gate.** Narrowing selection-CE target mass to strict-path contracts did not move the drawdown gate on any fold. All 5 still fail with DD between 83.6% and 102.0%. Pooled PF and DD are effectively identical to `exp_171` (−0.009 PF, +14.5pp DD).
+2. **Trade count dropped ~7% (2,553 → 2,380) but DD worsened.** Selectivity is not mechanically a DD fix under this config — removing trades did not help when the retained trades are still structurally unprofitable.
+3. **Call bias fell (74.8% → 69.8%) without fixing anything.** Consistent with the exp_171 finding that side balance alone is not the binding constraint — the more-balanced fold 1 actually got *worse* (PF 0.730 → 0.646).
+4. **Strict_mask changes the training target but not the inference target.** The model's selection logits still compete over all valid contracts at eval time. If the model did learn "prefer strict contracts" on training bars, there is no evidence it transferred to the out-of-sample test windows at a magnitude the evaluator can see.
+5. **Loss-target change does not escape the drawdown basin.** Three consecutive rebaseline-class experiments (`exp_171`/`exp_172`/`exp_173`) produce pooled PF in 0.71-0.74 with DD >430% and identical per-fold gate-failure patterns. The binding constraint is not the selection target shape.
+
+**Decision:**
+- **Not promoted.** Gate-failing CV cannot produce a `FINAL_TRAIN` artifact.
+- **Stop poking at the selection target as a standalone lever.** Further target-shaping experiments (different strict definitions, soft-weighted strict pool, strict+eventual mixture) would cost ACT without addressing the real constraint.
+- **Next direction — stop teaching, start filtering.** Three supervised runs with different pressures (exp_171 loss-proxy, exp_172 replay-aligned ckpt selection, exp_173 strict target) all land at the same `DD > 80%` regime. The common thread is: *the model is trading ~2,400-2,550 times over 270-279 traded days, entering on bars it has no business entering*. Candidates for the next hypothesis:
+  - A **competence-gated entry head** — bar-level abstention supervised by "could any contract have hit strict criteria here?" Tests whether the loss is selection quality or entry-timing quality.
+  - A **capital-aware reward** during training (penalize equity path variance, not just per-trade PnL), which may be the structural mismatch between training (IID trade MLE) and evaluation (sequenced capital).
+  - The `analysis/competence_score_analysis.py` work already on the branch was pointed at the same question and should be revisited before spending another ACT block.
+- **Baseline remains exp_171.** `exp_173` is recorded as a falsified hypothesis, not a new reference.
+
+**Artifact:** `v2/artifacts/exp_173/` (CV_EVAL, not deployable). Contains `cv_report.json`, per-fold `folds/<window_id>/model.pt`, `policy.json`, `policy.py.snapshot`, `train.py.snapshot`, `manifest.json`. `training_env_overrides={CKPT_SELECTION_MODE: val_replay, SEL_TARGET_MODE: strict_mask}` recorded in manifest.
