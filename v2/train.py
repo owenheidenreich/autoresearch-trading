@@ -45,7 +45,8 @@ QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss
 COMP_W = float(os.environ.get("COMP_W", 0.0))       # competence head weight (replaces OPP_W when > 0)
 COMP_MODE = os.environ.get("COMP_MODE", "frozen")    # "frozen", "live", or "quality"
 CKPT_SELECTION_MODE = os.environ.get("CKPT_SELECTION_MODE", "loss_proxy")
-SEL_TARGET_MODE = os.environ.get("SEL_TARGET_MODE", "default")  # "default" or "strict_mask"
+SEL_TARGET_MODE = os.environ.get("SEL_TARGET_MODE", "default")  # "default", "strict_mask", or "soft_pnl"
+GATE_TARGET_MODE = os.environ.get("GATE_TARGET_MODE", "binary")   # "binary" (BCE) or "max_pnl" (MSE on bar max row_labels)
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
@@ -58,7 +59,7 @@ _TRAINING_ENV_VARS = [
     "OPP_LABEL", "SOFT_TEMP", "NOISE_MARGIN", "AMBIG_WEIGHT",
     "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
     "COMP_W", "COMP_MODE", "COMP_TEACHER", "SIDE_MODE", "ALPHA_SIDE",
-    "CKPT_SELECTION_MODE", "SEL_TARGET_MODE",
+    "CKPT_SELECTION_MODE", "SEL_TARGET_MODE", "GATE_TARGET_MODE",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
     "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
 ]
@@ -662,7 +663,7 @@ def compute_loss(
 
     # --- A2. Competence loss: predict model's ranking quality ---
     comp_loss = torch.tensor(0.0, device=device)
-    if COMP_W > 0 and supervised_rows.any():
+    if COMP_W > 0 and GATE_TARGET_MODE != "max_pnl" and supervised_rows.any():
         label_comp_bin, label_comp_cont, comp_valid_mask = _compute_competence_label(
             scores, labels, valid_mask, device,
             teacher_outputs=teacher_outputs,
@@ -689,7 +690,7 @@ def compute_loss(
 
     # --- A2b. Original opportunity loss (only active when COMP_W == 0) ---
     opp_loss = torch.tensor(0.0, device=device)
-    if COMP_W == 0 and OPP_W > 0 and supervised_rows.any():
+    if COMP_W == 0 and OPP_W > 0 and GATE_TARGET_MODE != "max_pnl" and supervised_rows.any():
         sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
         opp_target = label_trade[sup_idx].float()
         n_pos = opp_target.sum().item()
@@ -706,6 +707,24 @@ def compute_loss(
                 label_trade[balanced_opp].float(),
                 reduction="mean",
             )
+
+    # --- A2c. exp_174: continuous gate — regress opp_logit on per-bar max(row_labels) ---
+    # Replaces both the binary competence BCE (A2) and the legacy opp BCE (A2b)
+    # when GATE_TARGET_MODE == "max_pnl". Provides continuous signal aligned with
+    # the bar-level oracle ceiling; loss flows into comp_loss slot (weight: OPP_W or COMP_W).
+    if GATE_TARGET_MODE == "max_pnl" and supervised_rows.any():
+        pnl_for_max = labels.clone()
+        pnl_for_max = torch.where(valid_mask, pnl_for_max, torch.full_like(pnl_for_max, float("-inf")))
+        pnl_for_max[~torch.isfinite(pnl_for_max) & (pnl_for_max != float("-inf"))] = float("-inf")
+        bar_max_pnl, _ = pnl_for_max.max(dim=-1)
+        # If a bar has zero valid contracts, max is -inf; clamp to 0 and rely on supervised_rows filter.
+        bar_max_pnl = torch.where(torch.isfinite(bar_max_pnl), bar_max_pnl, torch.zeros_like(bar_max_pnl))
+        sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
+        comp_loss = F.mse_loss(
+            opportunity_logit[sup_idx],
+            bar_max_pnl[sup_idx],
+            reduction="mean",
+        )
 
     # --- A3. Side loss: predict call vs put from context alone (trade rows only) ---
     side_loss = torch.tensor(0.0, device=device)
@@ -753,30 +772,38 @@ def compute_loss(
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
 
         if tr_scores.size(0) > 0:
-            # Soft ambiguous bar handling: instead of dropping ambiguous bars,
-            # weight them down and use uniform target for unclear cases.
-            top2_vals, _ = pnl_for_target.topk(min(2, pnl_for_target.size(-1)), dim=-1)
-            if top2_vals.size(-1) >= 2:
-                margin = top2_vals[:, 0] - top2_vals[:, 1]
-                clear_bars = margin > NOISE_MARGIN
+            if SEL_TARGET_MODE == "soft_pnl":
+                # exp_174: spread target mass across all valid contracts proportional
+                # to PnL at a higher effective temperature. No ambiguity filter, no
+                # uniform-target blend. Relies on SOFT_TEMP being raised via env
+                # (default 0.08 is effectively one-hot; use 0.5 or higher).
+                target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
+                bar_weight = torch.ones(tr_scores.size(0), device=device)
             else:
-                clear_bars = torch.ones(tr_scores.size(0), dtype=torch.bool, device=device)
+                # Soft ambiguous bar handling: instead of dropping ambiguous bars,
+                # weight them down and use uniform target for unclear cases.
+                top2_vals, _ = pnl_for_target.topk(min(2, pnl_for_target.size(-1)), dim=-1)
+                if top2_vals.size(-1) >= 2:
+                    margin = top2_vals[:, 0] - top2_vals[:, 1]
+                    clear_bars = margin > NOISE_MARGIN
+                else:
+                    clear_bars = torch.ones(tr_scores.size(0), dtype=torch.bool, device=device)
 
-            # Clear bars: PnL-derived soft target
-            soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
+                # Clear bars: PnL-derived soft target
+                soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
-            # Ambiguous bars: uniform target over the active target pool
-            n_valid_per_bar = target_pool.float().sum(dim=-1, keepdim=True).clamp(min=1)
-            uniform_target = target_pool.float() / n_valid_per_bar
+                # Ambiguous bars: uniform target over the active target pool
+                n_valid_per_bar = target_pool.float().sum(dim=-1, keepdim=True).clamp(min=1)
+                uniform_target = target_pool.float() / n_valid_per_bar
 
-            # Blend: clear bars use soft_target, ambiguous use uniform
-            target = torch.where(
-                clear_bars.unsqueeze(-1).expand_as(soft_target),
-                soft_target,
-                uniform_target,
-            )
-            # Per-bar weight: clear=1.0, ambiguous=AMBIG_WEIGHT
-            bar_weight = torch.where(clear_bars, 1.0, AMBIG_WEIGHT)
+                # Blend: clear bars use soft_target, ambiguous use uniform
+                target = torch.where(
+                    clear_bars.unsqueeze(-1).expand_as(soft_target),
+                    soft_target,
+                    uniform_target,
+                )
+                # Per-bar weight: clear=1.0, ambiguous=AMBIG_WEIGHT
+                bar_weight = torch.where(clear_bars, 1.0, AMBIG_WEIGHT)
 
             logits_for_sel = tr_scores.clone()
             logits_for_sel[~tr_valid] = -1e9
@@ -860,9 +887,18 @@ def compute_loss(
             po_log_probs = F.log_softmax(po_logits, dim=-1)
             side_sel_loss = side_sel_loss + F.kl_div(po_log_probs, po_target, reduction="batchmean")
 
+    if GATE_TARGET_MODE == "max_pnl":
+        # exp_174: comp_loss slot holds MSE on per-bar max(row_labels).
+        # Weight by OPP_W (0.5 default) — same intuition as "gate weight".
+        gate_head_term = OPP_W * comp_loss
+    elif COMP_W > 0:
+        gate_head_term = COMP_W * comp_loss
+    else:
+        gate_head_term = OPP_W * opp_loss
+
     total = (GATE_W * gate_loss + SEL_W * sel_loss + SIDE_SEL_W * side_sel_loss
              + EXACT_W * exact_loss
-             + (COMP_W * comp_loss if COMP_W > 0 else OPP_W * opp_loss)
+             + gate_head_term
              + SIDE_W * side_loss + AGG_W * agg_loss)
 
     # --- Metrics ---
