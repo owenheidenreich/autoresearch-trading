@@ -1061,10 +1061,17 @@ cmd_sync() {
 # Internal helper: upload mutable source to the GPU before any run.
 # ===================================================================
 _upload_mutable_sources() {
+    # Covers every Python source modified by the slice-first rebuild. Running
+    # run_screen_* / run_cv / run_final_train with a stale file on the remote
+    # silently trains against the wrong schema; keep this list in sync when
+    # new Python files become load-bearing for training/inference.
     for f in v2/train.py v2/core/policy.py v2/core/walkforward.py \
              v2/core/cv_report.py v2/core/artifact_kind.py \
+             v2/core/chain_data.py v2/core/config.py \
+             v2/core/decision_trace.py v2/core/features.py \
+             v2/pipeline/compute_features.py v2/pipeline/build_v2_dataset.py \
              v2/ops/run_experiment_wf.py v2/ops/run_final_train.py \
-             v2/ops/artifact.py v2/ops/model_manage.py \
+             v2/ops/artifact.py v2/ops/model_manage.py v2/ops/health.py \
              v2/replay.py v2/ops/pre_run_gate.py; do
         [[ -f "$PROJECT_ROOT/$f" ]] || continue
         scp_cmd "$PROJECT_ROOT/$f" "root@$SSH_HOST:/root/$f"
