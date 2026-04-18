@@ -39,6 +39,10 @@ class DecisionTrace:
     top_5_strikes: str = ""           # "k1;k2;k3;k4;k5"
     top_5_rights: str = ""            # "C;P;C;C;P"
     n_valid_contracts: int = 0
+    slice_atm_strike: float = 0.0
+    slice_lo_strike: float = 0.0
+    slice_hi_strike: float = 0.0
+    slice_contract_count: int = 0
 
     # --- Decision ---
     decision: str = ""                # "trade" or "no_trade"
@@ -63,6 +67,8 @@ class DecisionTrace:
     delta_pnl: float = float("nan")   # model_pnl - oracle_pnl
     exit_reason: str = ""
     bars_held: int = 0
+    selected_distance_strikes: float = 0.0
+    oracle_distance_strikes: float = 0.0
 
 
 def _extract_oracle(
@@ -152,6 +158,10 @@ def build_trace_for_bar(
     selected_right: str = "",
     selected_mid: float = 0.0,
     selected_contract_idx: int = -1,
+    slice_atm_strike: float = 0.0,
+    slice_lo_strike: float = 0.0,
+    slice_hi_strike: float = 0.0,
+    slice_contract_count: int = 0,
 ) -> DecisionTrace:
     """Build a DecisionTrace for one bar (before trade outcome is known)."""
     scores_str, strikes_str, rights_str, n_valid = _extract_top_k(
@@ -165,6 +175,8 @@ def build_trace_for_bar(
     )
 
     mtc = 390 - bar_of_day
+    selected_distance = ((selected_strike - slice_atm_strike) / 5.0) if slice_atm_strike else 0.0
+    oracle_distance = ((oracle_strike - slice_atm_strike) / 5.0) if slice_atm_strike else 0.0
 
     return DecisionTrace(
         date=date,
@@ -181,6 +193,10 @@ def build_trace_for_bar(
         top_5_strikes=strikes_str,
         top_5_rights=rights_str,
         n_valid_contracts=n_valid,
+        slice_atm_strike=slice_atm_strike,
+        slice_lo_strike=slice_lo_strike,
+        slice_hi_strike=slice_hi_strike,
+        slice_contract_count=slice_contract_count,
         decision=decision,
         skip_reason=skip_reason,
         selected_strike=selected_strike,
@@ -193,6 +209,8 @@ def build_trace_for_bar(
         oracle_pnl=oracle_pnl,
         label_quality=lq,
         bar_is_labelable=labelable,
+        selected_distance_strikes=selected_distance,
+        oracle_distance_strikes=oracle_distance,
     )
 
 
@@ -289,6 +307,31 @@ def trace_summary(traces: list[DecisionTrace]) -> dict[str, Any]:
     # Exit reason breakdown (traded bars only)
     exit_reasons = Counter(t.exit_reason for t in traded if t.exit_reason)
 
+    def _avg_pnl(items: list[DecisionTrace]) -> float:
+        vals = [t.model_pnl for t in items if np.isfinite(t.model_pnl)]
+        return float(np.mean(vals)) if vals else float("nan")
+
+    time_groups = {
+        "opening": [t for t in traded if t.bar_of_day < 90],
+        "midday": [t for t in traded if 90 <= t.bar_of_day < 210],
+        "afternoon": [t for t in traded if 210 <= t.bar_of_day < 300],
+        "power_hour": [t for t in traded if t.bar_of_day >= 300],
+    }
+    distance_groups = {
+        "atm_0_1": [t for t in traded if abs(t.selected_distance_strikes) <= 1],
+        "near_2_4": [t for t in traded if 1 < abs(t.selected_distance_strikes) <= 4],
+        "outer_5_plus": [t for t in traded if abs(t.selected_distance_strikes) > 4],
+    }
+    side_groups = {
+        "calls": [t for t in traded if t.selected_right == "C"],
+        "puts": [t for t in traded if t.selected_right == "P"],
+    }
+    vix_groups = {
+        "low": [t for t in traded if t.vix_regime < 0],
+        "mid": [t for t in traded if 0 <= t.vix_regime < 0.5],
+        "high": [t for t in traded if t.vix_regime >= 0.5],
+    }
+
     return {
         "n_bars": n_bars,
         "n_traded": n_traded,
@@ -303,6 +346,10 @@ def trace_summary(traces: list[DecisionTrace]) -> dict[str, Any]:
         "noisy_bars_pct": noisy_bars_pct,
         "avg_label_quality": float(np.mean(lq_values)) if lq_values else 0.0,
         "exit_reasons": dict(exit_reasons),
+        "time_buckets": {k: {"trades": len(v), "avg_model_pnl": _avg_pnl(v)} for k, v in time_groups.items()},
+        "distance_buckets": {k: {"trades": len(v), "avg_model_pnl": _avg_pnl(v)} for k, v in distance_groups.items()},
+        "side_breakdown": {k: {"trades": len(v), "avg_model_pnl": _avg_pnl(v)} for k, v in side_groups.items()},
+        "vix_buckets": {k: {"trades": len(v), "avg_model_pnl": _avg_pnl(v)} for k, v in vix_groups.items()},
     }
 
 
@@ -326,3 +373,11 @@ def print_trace_summary(traces: list[DecisionTrace]) -> None:
         print(f"  Skip reasons:       {s['skip_reasons']}")
     if s.get("exit_reasons"):
         print(f"  Exit reasons:       {s['exit_reasons']}")
+    if s.get("time_buckets"):
+        print(f"  Time buckets:       {s['time_buckets']}")
+    if s.get("distance_buckets"):
+        print(f"  Distance buckets:   {s['distance_buckets']}")
+    if s.get("side_breakdown"):
+        print(f"  Side breakdown:     {s['side_breakdown']}")
+    if s.get("vix_buckets"):
+        print(f"  VIX buckets:        {s['vix_buckets']}")
