@@ -47,6 +47,12 @@ COMP_MODE = os.environ.get("COMP_MODE", "frozen")    # "frozen", "live", or "qua
 CKPT_SELECTION_MODE = os.environ.get("CKPT_SELECTION_MODE", "loss_proxy")
 SEL_TARGET_MODE = os.environ.get("SEL_TARGET_MODE", "default")  # "default", "strict_mask", or "soft_pnl"
 GATE_TARGET_MODE = os.environ.get("GATE_TARGET_MODE", "binary")   # "binary" (BCE) or "max_pnl" (MSE on bar max row_labels)
+# Threshold shift for max_pnl gate: subtract from target so inference threshold 0 naturally gates
+# profitable (>threshold) vs marginal bars. Without this, all bars have positive target → all pass.
+GATE_PNL_THRESHOLD = float(os.environ.get("GATE_PNL_THRESHOLD", 0.2))
+# Scale multiplier for max_pnl MSE loss — natural MSE scale ~0.05 is 10× smaller than BCE ~0.65,
+# so without scaling the gate head gets negligible gradient vs selection/gate BCE paths.
+GATE_PNL_LOSS_SCALE = float(os.environ.get("GATE_PNL_LOSS_SCALE", 10.0))
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
@@ -60,6 +66,7 @@ _TRAINING_ENV_VARS = [
     "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
     "COMP_W", "COMP_MODE", "COMP_TEACHER", "SIDE_MODE", "ALPHA_SIDE",
     "CKPT_SELECTION_MODE", "SEL_TARGET_MODE", "GATE_TARGET_MODE",
+    "GATE_PNL_THRESHOLD", "GATE_PNL_LOSS_SCALE",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
     "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
 ]
@@ -719,10 +726,13 @@ def compute_loss(
         bar_max_pnl, _ = pnl_for_max.max(dim=-1)
         # If a bar has zero valid contracts, max is -inf; clamp to 0 and rely on supervised_rows filter.
         bar_max_pnl = torch.where(torch.isfinite(bar_max_pnl), bar_max_pnl, torch.zeros_like(bar_max_pnl))
+        # Center on threshold: target > 0 iff bar ceiling is meaningfully profitable.
+        # At inference, the gate checks opp_logit > 0, so signed target aligns with gate semantics.
+        gate_target_value = bar_max_pnl - GATE_PNL_THRESHOLD
         sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
-        comp_loss = F.mse_loss(
+        comp_loss = GATE_PNL_LOSS_SCALE * F.mse_loss(
             opportunity_logit[sup_idx],
-            bar_max_pnl[sup_idx],
+            gate_target_value[sup_idx],
             reduction="mean",
         )
 
