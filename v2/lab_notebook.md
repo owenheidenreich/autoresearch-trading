@@ -2269,3 +2269,40 @@ Either is a full training run; neither should be spent until the user confirms d
 
 exp_171 remains the official baseline. exp_174 and exp_174b are recorded as falsified hypothesis attempts. `v2/artifacts/exp_174_screen_mini/` contains the 3 fold models; `v2/artifacts/exp_174b_screen_latest/` contains the fold 4 model. No cv_report.json written (screening mode).
 
+---
+
+## exp_176 — soft side prior + gate 0.30 (policy-only, fresh train) — FALSIFIED (2026-04-17)
+
+Policy: `gate_threshold=0.30, side_mode=soft, alpha_side=0.20` (no training-time loss changes; SIDE_MODE/ALPHA_SIDE reach replay only since SIDE_W=0).
+
+Motivation: codex's local latest-fold sweep on the exp_171 fold-4 checkpoint showed a big lift from this replay-only policy — score 0.7559, PF 1.173, DD 15.1% on latest fold; score 2.2501, PF 1.449 on val_mask. If the same policy applied to a freshly trained model reproduced across folds, it would be a promotion candidate. 3-fold mini screen (folds 0, 2, 4).
+
+| Fold | Score | PF | Trades | TPD | Gate |
+|---|---|---|---|---|---|
+| 0 | -0.2000 | 0.601 | 244 | 5.67 | **FAIL (DD 89.9%)** |
+| 2 | -0.0251 | — | 36 | 2.40 | pass |
+| 4 | +0.7547 | — | 87 | 4.58 | pass |
+| **pooled** | — | **0.746** | 367 | — | **DD 92.2%, any_fail=True** |
+
+Stability mean=0.177, min=-0.200, std=0.415. **Not promotable.** `any_fold_gate_failure=true` + pooled DD > 25% disqualifies a 5-fold run.
+
+### Key observations
+
+- **Fold 4 reproduced codex's signal.** Score 0.7547 on this run ≈ 0.7559 from codex's replay-only sweep. The soft-side prior win on the latest regime is real and robust across training seeds.
+- **Fold 0 collapses.** 244 trades on fold 0 vs 87 on fold 4. The same policy that suppresses overtrading on late regimes *amplifies* it on early ones. DD 89.9% vs 15% codex saw on latest fold.
+- **Fold 2 stays restrained** (36 trades, -0.025 score) — neither the big win nor the collapse. High trade variance across regimes means the policy is picking up regime-specific signal rather than a general rule.
+- Per-fold early stopping chose epoch 1 (val_replay tied), so each fold saw ~5 min of training. Same convergence concern as exp_174b.
+
+### Falsification
+
+The screen falsifies the hypothesis that codex's latest-fold result generalizes to a promotable 5-fold policy. The latest-fold signal is real but the early-regime tail (especially fold 0) makes the policy unsafe as a general-purpose replay knob. Artifacts at [v2/artifacts/exp_176_gate030_side020_screen_mini/](artifacts/exp_176_gate030_side020_screen_mini/) (3 models, no traces — screening mode).
+
+### What this tells us
+
+The model's side_logit *has* useful information — amplifying it 0.20× produces +0.75 on the latest fold. But that same signal is miscalibrated on earlier folds, so a fixed `alpha_side` is the wrong shape. Two possible responses:
+
+1. **Regime-conditioned alpha_side** — compute the side_logit reliability per-bar (e.g. via a meta-predictor or calibration on val) and scale alpha_side by it. Not a simple one-line policy change.
+2. **Fix the underlying side bias in training** (not just at replay). If side_logit could be trained to be reliable across regimes, a fixed alpha_side would work. This is what SIDE_W and SIDE_SEL_W targeted pre-harness-repair (exp_170e centering ablation).
+
+Neither is cheap. For now: exp_176 closes out as a falsified single-ACT screen. exp_171 remains canonical baseline.
+

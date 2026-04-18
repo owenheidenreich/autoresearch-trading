@@ -1,0 +1,34 @@
+{
+  "any_fold_gate_failure": true,
+  "artifact_kind": "cv_eval",
+  "dataset_fingerprint": "bbf868bbb4d4b23e",
+  "evaluator_fingerprint": "e45320cc6094cd1e",
+  "experiment_id": "exp_172",
+  "fold_window_ids": [
+    "09802c942e02b9b6",
+    "cf38c16e2f55ddd9",
+    "e56a4d66770d7097",
+    "9b92333bccfcbbb7",
+    "3b2f7c5202c9ee35"
+  ],
+  "git_sha": "unknown",
+  "per_fold_scores": [
+    -0.2,
+    -0.2,
+    -0.2,
+    -0.2,
+    -0.2
+  ],
+  "policy_fingerprint": "1241343e315c7a17",
+  "pooled_max_account_drawdown": 4.35199085182383,
+  "pooled_profit_factor": 0.735116702290375,
+  "promoted": false,
+  "schema_version": "cv_report_v2",
+  "score": -0.2,
+  "screening_mode": "full",
+  "timestamp": "2026-04-17T23:26:01",
+  "training_config_fingerprint": "b0d03ba8cb1a5ed2",
+  "training_env_overrides": {
+    "CKPT_SELECTION_MODE": "val_replay"
+  }
+}
