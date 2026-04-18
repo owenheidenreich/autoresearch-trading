@@ -96,6 +96,10 @@ scp_retry() {
     done
 }
 
+remote_python_prefix() {
+    printf '%s' 'PYBIN=$(if [ -x /opt/conda/bin/python ]; then echo /opt/conda/bin/python; else echo python3; fi);'
+}
+
 # Auto-append CV run results to results.tsv using the CVReport schema.
 # Usage: _append_results_tsv <exp_id> <run_output>
 _append_results_tsv() {
@@ -629,7 +633,7 @@ PY
     # These are installed by the SDL container command BEFORE sshd starts,
     # so they should already be present. If not, attempt a one-shot install.
     log "Verifying GPU dependencies..."
-    if ! ssh_cmd "python3 -c 'import torch, numpy, pandas, scipy; print(f\"torch={torch.__version__} numpy={numpy.__version__} pandas={pandas.__version__} scipy={scipy.__version__}\")'"; then
+    if ! ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" -c 'import torch, numpy, pandas, scipy; print(f\"torch={torch.__version__} numpy={numpy.__version__} pandas={pandas.__version__} scipy={scipy.__version__}\")'"; then
         log "Dependencies missing — installing from requirements-gpu.txt..."
         if ! ssh_cmd "pip3 --version >/dev/null 2>&1"; then
             log "pip3 not found — installing..."
@@ -640,15 +644,14 @@ PY
             || ssh_cmd "python3 -m pip install -q numpy pandas scipy" \
             || die "Failed to install GPU dependencies."
         # Verify again — fatal if still missing
-        ssh_cmd "python3 -c 'import torch, numpy, pandas, scipy'" \
+        ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" -c 'import torch, numpy, pandas, scipy'" \
             || die "GPU dependencies still missing after install. Container image may be broken."
     fi
     log "Dependencies verified."
 
     # Pre-flight: verify GPU, Python, PyTorch, and data on remote node
     log "Running pre-flight checks on remote GPU node..."
-    if ! ssh_cmd "python3 /root/v2/ops/preflight.py" \
-        && ! ssh_cmd "/opt/conda/bin/python /root/v2/ops/preflight.py"; then
+    if ! ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" /root/v2/ops/preflight.py"; then
         die "Pre-flight failed on remote GPU node. Fix issues before running."
     fi
     log "Pre-flight passed!"
@@ -750,9 +753,10 @@ else:
     print("  GPU:  unavailable")
 
 # Post-harness-integrity repair there are two remote run types: run_experiment_wf
-# (CV) and run_final_train (deploy). Report whichever is live.
-pid_cv = run("pgrep -f '^python3 -m v2\\.ops\\.run_experiment_wf'")
-pid_ft = run("pgrep -f '^python3 -m v2\\.ops\\.run_final_train'")
+# (CV) and run_final_train (deploy). The remote node may launch them via either
+# system python3 or the container's conda python, so match both forms.
+pid_cv = run(r"pgrep -f '(^|/)(python3|python) -m v2\.ops\.run_experiment_wf'")
+pid_ft = run(r"pgrep -f '(^|/)(python3|python) -m v2\.ops\.run_final_train'")
 if pid_cv:
     pid_line = pid_cv.split("\n")[0]
     uptime = run(f"ps -o etime= -p {pid_line}").strip()
@@ -1083,7 +1087,7 @@ _upload_mutable_sources() {
     fi
 
     # Verify dependencies
-    ssh_cmd "python3 -c 'import torch, numpy, pandas'" \
+    ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" -c 'import torch, numpy, pandas'" \
         || die "Dependencies missing on remote. Re-run: ./deploy.sh start"
 }
 
@@ -1107,7 +1111,7 @@ cmd_run_cv() {
     local env_prefix="${TRAIN_ENV:-}"
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $exp_id --screen-mode full 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v2.ops.run_experiment_wf --id $exp_id --screen-mode full 2>&1 | tee /root/run.log") || true
     echo "$run_output"
 
     # Download the CV_EVAL artifact directory. Do NOT fetch v2/models/model.pt
@@ -1144,7 +1148,7 @@ cmd_run_screen_latest() {
     local env_prefix="${TRAIN_ENV:-}"
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --screen-mode latest --no-artifacts 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v2.ops.run_experiment_wf --id $screen_id --screen-mode latest --no-artifacts 2>&1 | tee /root/run.log") || true
     echo "$run_output"
 
     log ""
@@ -1170,7 +1174,7 @@ cmd_run_screen_mini() {
     local env_prefix="${TRAIN_ENV:-}"
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && $env_prefix PYTHONUNBUFFERED=1 python3 -m v2.ops.run_experiment_wf --id $screen_id --screen-mode mini --no-artifacts 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v2.ops.run_experiment_wf --id $screen_id --screen-mode mini --no-artifacts 2>&1 | tee /root/run.log") || true
     echo "$run_output"
 
     log ""
@@ -1217,7 +1221,7 @@ cmd_run_final_train() {
     fi
     ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
     local run_output
-    run_output=$(ssh_cmd "cd /root && PYTHONUNBUFFERED=1 python3 -m v2.ops.run_final_train --config-from $src_id --id $final_id 2>&1 | tee /root/run.log") || true
+    run_output=$(ssh_cmd "$(remote_python_prefix) cd /root && PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v2.ops.run_final_train --config-from $src_id --id $final_id 2>&1 | tee /root/run.log") || true
     echo "$run_output"
 
     # Pull the FINAL_TRAIN artifact directory and stage the candidate locally
@@ -1257,8 +1261,8 @@ cmd_stop() {
     fi
 
     log "Killing experiment processes (CV and/or FINAL_TRAIN)..."
-    # Match both remote run types; pkill regex covers run_experiment_wf and run_final_train.
-    local _pkill_pat='^python3 -m v2\.ops\.(run_experiment_wf|run_final_train)'
+    # Match both remote run types under either system python3 or conda python.
+    local _pkill_pat='(^|/)(python3|python) -m v2\.ops\.(run_experiment_wf|run_final_train)'
     ssh_cmd "pkill -f '$_pkill_pat' 2>/dev/null || true" || true
 
     # Wait for process to actually die (up to 30s) — prevents partial file downloads

@@ -280,6 +280,25 @@ class TestStopKillsBothRunTypes(unittest.TestCase):
         src = (PROJECT_ROOT / "v2" / "ops" / "deploy.sh").read_text()
         self.assertIn("run_experiment_wf|run_final_train", src,
                       "cmd_stop must kill both run types")
+        self.assertIn("(python3|python) -m v2\\.ops\\.", src,
+                      "cmd_stop regex must match both system python3 and conda python")
+
+
+class TestStatusDetectsBothPythonLaunchers(unittest.TestCase):
+    """cmd_status must detect runs launched under system python3 or conda python."""
+
+    def test_status_pgrep_matches_python3_or_python(self):
+        src = (PROJECT_ROOT / "v2" / "ops" / "deploy.sh").read_text()
+        self.assertIn(
+            "pid_cv = run(r\"pgrep -f '(^|/)(python3|python) -m v2\\.ops\\.run_experiment_wf'\")",
+            src,
+            "cmd_status must detect CV runs launched under either python3 or /opt/conda/bin/python",
+        )
+        self.assertIn(
+            "pid_ft = run(r\"pgrep -f '(^|/)(python3|python) -m v2\\.ops\\.run_final_train'\")",
+            src,
+            "cmd_status must detect FINAL_TRAIN runs launched under either python3 or /opt/conda/bin/python",
+        )
 
 
 class TestStatusHeredocHasNoElseAfterTry(unittest.TestCase):
