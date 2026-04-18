@@ -45,6 +45,7 @@ QUALITY_SEL = int(os.environ.get("QUALITY_SEL", 0))  # 1 = weight selection loss
 COMP_W = float(os.environ.get("COMP_W", 0.0))       # competence head weight (replaces OPP_W when > 0)
 COMP_MODE = os.environ.get("COMP_MODE", "frozen")    # "frozen", "live", or "quality"
 CKPT_SELECTION_MODE = os.environ.get("CKPT_SELECTION_MODE", "loss_proxy")
+SEL_TARGET_MODE = os.environ.get("SEL_TARGET_MODE", "default")  # "default" or "strict_mask"
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
 AGG_NEAR_THRESH = 1.5  # 0.5-1.5% = near-OTM, >1.5% = far-OTM
@@ -57,7 +58,7 @@ _TRAINING_ENV_VARS = [
     "OPP_LABEL", "SOFT_TEMP", "NOISE_MARGIN", "AMBIG_WEIGHT",
     "SIDE_SEL_W", "EXACT_W", "OPP_W", "SIDE_W", "AGG_W", "QUALITY_SEL",
     "COMP_W", "COMP_MODE", "COMP_TEACHER", "SIDE_MODE", "ALPHA_SIDE",
-    "CKPT_SELECTION_MODE",
+    "CKPT_SELECTION_MODE", "SEL_TARGET_MODE",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
     "ENV_DECAY_COEFF", "ENV_LATE_ENTRY_BAR", "ENV_LATE_EXIT_BAR",
 ]
@@ -360,6 +361,61 @@ def _compute_strict_opportunity(sc: dict, local_bar: int) -> bool:
     return False
 
 
+def _compute_contract_strict_mask(sc: dict, local_bar: int, max_contracts: int) -> np.ndarray:
+    """Per-contract strict tradability mask for one bar snapshot.
+
+    This mirrors `_compute_strict_opportunity`, but preserves *which* contracts
+    satisfy the fast/clean path constraints so the scorer can rank within that
+    subset instead of ranking all contracts by eventual long-hold PnL.
+    """
+    mask = np.zeros(max_contracts, dtype=bool)
+    bar_ptrs = sc["bar_ptrs"]
+    start = int(bar_ptrs[local_bar])
+    end = int(bar_ptrs[local_bar + 1])
+    if end <= start:
+        return mask
+    raw_returns = sc.get("row_raw_returns")
+    mfe = sc.get("row_mfe")
+    mae = sc.get("row_mae")
+    btbe = sc.get("row_bars_to_breakeven")
+    if raw_returns is None or mfe is None or mae is None or btbe is None:
+        return mask
+    idx_5, idx_10 = 0, 1
+    use = min(end - start, max_contracts)
+    for local_row, ro in enumerate(range(start, start + use)):
+        r10 = float(raw_returns[ro, idx_10])
+        m10 = float(mae[ro, idx_10])
+        m5 = float(mfe[ro, idx_5])
+        bb = float(btbe[ro])
+        if (
+            np.isfinite(r10) and r10 > 0.12 and
+            np.isfinite(m10) and m10 > -0.08 and
+            np.isfinite(bb) and bb < 5 and
+            np.isfinite(m5) and m5 > 0.03
+        ):
+            mask[local_row] = True
+    return mask
+
+
+def _selection_target_pool(
+    valid_mask: torch.Tensor,
+    strict_mask: torch.Tensor | None,
+    mode: str,
+) -> torch.Tensor:
+    """Which contracts should receive target mass for selection supervision.
+
+    `strict_mask` narrows the target to fast/clean contracts on bars where they
+    exist, but gracefully falls back to the full valid set otherwise. Logits are
+    still normalized over all valid contracts so non-strict contracts are
+    penalized if they steal probability mass.
+    """
+    if mode != "strict_mask" or strict_mask is None:
+        return valid_mask
+    strict_pool = valid_mask & strict_mask
+    any_strict = strict_pool.any(dim=-1, keepdim=True)
+    return torch.where(any_strict, strict_pool, valid_mask)
+
+
 def _compute_consensus_opportunity(sc: dict, local_bar: int) -> bool:
     """Consensus opportunity: at least one contract profitable under all 3 policies.
 
@@ -432,6 +488,10 @@ class TradeDataset(Dataset):
         self.all_label_trade = torch.zeros(n, dtype=torch.bool)
         self.all_label_trade_valid = torch.zeros(n, dtype=torch.bool)
         self.all_label_quality = torch.zeros(n, dtype=torch.float32)
+        self.all_contract_strict_mask = (
+            torch.zeros(n, max_contracts, dtype=torch.bool)
+            if SEL_TARGET_MODE == "strict_mask" else None
+        )
 
         t0 = time.time()
         sidecar_cache: dict[str, dict] = {}
@@ -461,6 +521,10 @@ class TradeDataset(Dataset):
                 self.all_label_trade[j] = bool(sc["bar_label_trade"][local_bar])
             self.all_label_trade_valid[j] = bool(sc["bar_labelable"][local_bar])
             self.all_label_quality[j] = _compute_frac_profitable(sc, local_bar)
+            if self.all_contract_strict_mask is not None:
+                self.all_contract_strict_mask[j] = torch.from_numpy(
+                    _compute_contract_strict_mask(sc, local_bar, max_contracts)
+                )
         print(f"  Dataset materialized: {n:,} samples, {len(sidecar_cache)} days, {time.time() - t0:.1f}s")
 
     def __len__(self) -> int:
@@ -476,6 +540,8 @@ class TradeDataset(Dataset):
             "label_trade_valid": self.all_label_trade_valid[idx],
             "label_quality": self.all_label_quality[idx],
         }
+        if self.all_contract_strict_mask is not None:
+            target["contract_strict_mask"] = self.all_contract_strict_mask[idx]
         return window, self.all_contracts[idx], target
 
 
@@ -552,6 +618,9 @@ def compute_loss(
     label_trade = targets["label_trade"].to(device)
     label_trade_valid = targets["label_trade_valid"].to(device)
     contracts_full = targets["contracts_full"].to(device)
+    strict_contract_mask = targets.get("contract_strict_mask")
+    if strict_contract_mask is not None:
+        strict_contract_mask = strict_contract_mask.to(device)
 
     label_quality = targets["label_quality"].to(device)
     supervised_rows = label_trade_valid
@@ -676,9 +745,11 @@ def compute_loss(
         tr_scores = scores[trade_rows]
         tr_valid = valid_mask[trade_rows]
         tr_labels = labels[trade_rows]
+        tr_strict = strict_contract_mask[trade_rows] if strict_contract_mask is not None else None
 
         pnl_for_target = tr_labels.clone()
-        pnl_for_target[~tr_valid] = -1e9
+        target_pool = _selection_target_pool(tr_valid, tr_strict, SEL_TARGET_MODE)
+        pnl_for_target[~target_pool] = -1e9
         pnl_for_target[~torch.isfinite(pnl_for_target)] = -1e9
 
         if tr_scores.size(0) > 0:
@@ -694,9 +765,9 @@ def compute_loss(
             # Clear bars: PnL-derived soft target
             soft_target = F.softmax(pnl_for_target / SOFT_TEMP, dim=-1)
 
-            # Ambiguous bars: uniform target over valid contracts
-            n_valid_per_bar = tr_valid.float().sum(dim=-1, keepdim=True).clamp(min=1)
-            uniform_target = tr_valid.float() / n_valid_per_bar
+            # Ambiguous bars: uniform target over the active target pool
+            n_valid_per_bar = target_pool.float().sum(dim=-1, keepdim=True).clamp(min=1)
+            uniform_target = target_pool.float() / n_valid_per_bar
 
             # Blend: clear bars use soft_target, ambiguous use uniform
             target = torch.where(
