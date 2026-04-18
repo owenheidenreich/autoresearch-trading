@@ -1985,3 +1985,220 @@ Put ranking almost doubled at top-3 (3.9% → 7.0%) but remains weak in absolute
 - **Baseline remains exp_171.** `exp_173` is recorded as a falsified hypothesis, not a new reference.
 
 **Artifact:** `v2/artifacts/exp_173/` (CV_EVAL, not deployable). Contains `cv_report.json`, per-fold `folds/<window_id>/model.pt`, `policy.json`, `policy.py.snapshot`, `train.py.snapshot`, `manifest.json`. `training_env_overrides={CKPT_SELECTION_MODE: val_replay, SEL_TARGET_MODE: strict_mask}` recorded in manifest.
+
+---
+
+## Phase A diagnostic — exp_171 DD decomposition (2026-04-17)
+
+**Tool:** [v2/analysis/dd_decomposition.py](analysis/dd_decomposition.py). Inputs only [v2/artifacts/exp_171/cv_report.json](artifacts/exp_171/cv_report.json). No GPU spend.
+
+### Per-fold attribution
+
+| fold | WR | avg_win | avg_loss | expectancy/trade | TPD | DD(rep) | worst-5 contrib | kurt | attribution |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | 0.442 | +0.262 | -0.265 | **-0.0322** | 9.50 | 100.3% | 27.9% | -0.19 | neg-expectancy×freq, long-loss-streak |
+| 1 | 0.451 | +0.257 | -0.275 | **-0.0351** | 7.87 | 101.8% | 22.9% | +0.44 | neg-expectancy×freq, long-loss-streak |
+| 2 | 0.417 | +0.238 | -0.283 | **-0.0657** | 6.23 | 95.8% | 27.0% | -0.56 | neg-expectancy×freq, long-loss-streak, loss-asym |
+| 3 | 0.475 | +0.256 | -0.295 | **-0.0332** | 10.95 | 68.7% | 35.1% | +5.15 | neg-expectancy×freq, loss-asym |
+| 4 | 0.460 | +0.244 | -0.283 | **-0.0402** | 8.00 | 100.0% | 30.9% | -0.04 | neg-expectancy×freq, long-loss-streak, loss-asym |
+
+### Exit-reason split
+
+| fold | SL | trail | TP | total |
+|---|---|---|---|---|
+| 0 | 216 | 193 | 160 | 570 |
+| 1 | 167 | 177 | 128 | 472 |
+| 2 | 157 | 122 | 95 | 374 |
+| 3 | 246 | 212 | 198 | 657 |
+| 4 | 178 | 168 | 134 | 480 |
+
+### Side bias (call %)
+
+Fold 0 77.2 · Fold 1 47.7 · Fold 2 90.4 · Fold 3 77.3 · Fold 4 82.9. Extreme call bias in fold 2 (90.4%) and fold 4 (82.9%).
+
+### Findings
+
+1. **Negative per-trade expectancy in 5/5 folds** — range -0.032 to -0.066. Symmetric |avg_win|≈|avg_loss|≈0.26-0.29 with WR 42-48% **guarantees** negative expectancy; compounded over 6-11 TPD this produces the observed 60-100% DD in a single fold-window (60 days).
+2. **DD is NOT tail-driven.** Worst-5-day contribution is 22.9-35.1% of total loss — none >50%. Kurtosis only one outlier (fold 3, +5.15). Capital-aware training (B2) targets fat tails, so **B2 does not address this failure mode**.
+3. **Long losing streaks (6-10 consecutive losing days)** in 4/5 folds — consistent with structural negative expectancy, not regime collapse.
+4. **Call bias in 4/5 folds** (up to 90% calls in fold 2). The side feature isn't a gate fix on its own, but directional miscalibration is a secondary problem.
+5. **Exit mix is balanced** (stop_loss 33-44% of trades, trailing 23-34%, take_profit 23-30%, eod ~0). No clear exit-reason asymmetry; trailing is not systematically wrong-sided.
+
+### Conclusion
+
+DD is dominated by **negative-expectancy × trade-frequency in 5/5 folds**. The model's trades are essentially coin-flips at house rake — every trade burns ~3% of capital in expectation, and 6-11 such trades per day compounds to 60-100% account DD inside 60 days. Removing trades ≠ fixing this unless the gated subset has positive expectancy.
+
+### Phase B is required
+
+The next question is whether the model's existing score has *any* ranking edge — i.e. whether a quantile subset of the model's own bar-level decisions would show positive expectancy. If yes → continuous-supervision retraining (B1) is viable. If no → signal/label audit (B3) is the only productive path and ACT spend is unjustified.
+
+
+---
+
+## Phase B diagnostic — exp_171 signal viability (2026-04-17)
+
+**Tool:** [v2/analysis/signal_viability.py](analysis/signal_viability.py). Inputs: 5 per-fold replay traces at [v2/artifacts/exp_171/folds/\<wid\>/replay_traces.csv](artifacts/exp_171/folds/), regenerated via patched [v2/replay.py](replay.py) (`--trace-out`, `--date-range`, `--skip-baselines`, `--mask train`).
+
+Full report: [v2/artifacts/exp_171/signal_viability.md](artifacts/exp_171/signal_viability.md).
+
+### Rank correlations (Spearman ρ)
+
+| fold | n_trades | ρ(best_contract_score, pnl) | ρ(no_trade_score, pnl) |
+|---|---|---|---|
+| fold0 | 573 | **-0.031** | -0.061 |
+| fold1 | 443 | **-0.039** | +0.011 |
+| fold2 | 374 | +0.043 | -0.027 |
+| fold3 | 656 | +0.072 | +0.043 |
+| fold4 | 467 | +0.071 | +0.043 |
+
+All 5 folds sit in |ρ| < 0.08. **The model's own score has essentially no rank correlation with realized PnL.** In 2 folds it's slightly *negative*.
+
+### Model-top-K per day (model's own ranking → PnL)
+
+| fold | model-top-1 PF | model-top-3 PF | all-trades PF (ref) |
+|---|---|---|---|
+| fold0 | **0.366** | 0.404 | 0.746 |
+| fold1 | **0.406** | 0.596 | 0.715 |
+| fold2 | **0.329** | 0.495 | 0.563 |
+| fold3 | 0.750 | 1.047 | 0.816 |
+| fold4 | **0.516** | 0.643 | 0.662 |
+
+**In 4/5 folds the model's top-1 pick per day has lower PF than its full trade set.** The model's highest-confidence picks are *anti-selected* — among the worst trades. This is not a weak gate; it is a reversed signal in most folds.
+
+### Oracle top-K per day — physics ceiling (hindsight by oracle_pnl)
+
+| fold | oracle-top-1 PF | oracle-top-3 PF | oracle-top-5 PF |
+|---|---|---|---|
+| fold0 | 0.895 | 0.872 | 0.910 |
+| fold1 | 0.775 | 1.083 | 0.967 |
+| fold2 | 0.546 | 0.666 | 0.545 |
+| fold3 | 0.998 | 1.226 | 1.085 |
+| fold4 | 0.990 | 0.978 | 0.938 |
+
+**Even perfect oracle selection of the top-1 bar per day produces PF<1 in 3/5 folds** (0, 2, 4). Only fold 3 achieves meaningful oracle-ceiling PF>1 (1.226 at K=3). Fold 1 is borderline. Fold 2 collapses to 0.546 even with hindsight.
+
+This is the decisive finding: **the problem is not the model's ranking head — it is that the instrument × policy × label triple does not admit a PF>1 strategy on most folds even with perfect foresight.** The ceiling itself is broken.
+
+### Quantile-gating lift
+
+At `q>=0.9` (keep only the 10% of trades with highest `best_contract_score`):
+- fold0 PF 0.849 · fold1 PF 0.973 · fold2 PF 0.834 · fold3 PF 1.169 · fold4 PF 1.465.
+
+Only folds 3 and 4 cross PF>1, and only at the top-decile cutoff with ~1 TPD remaining. This does not generalize — fold2 remains PF<0.85 even at the extreme cutoff, and the sample sizes (n≈45-66 trades per fold) are too small to trust.
+
+### Side bias × vix regime
+
+Calls dominate across all regimes in 4/5 folds (fold 1 is the outlier at 50.4% calls). In the highest-vix quartile within each fold, the call% drops only modestly (e.g. fold 2: 92% → 76% calls). The model does not learn to flip in regime-adverse conditions — another symptom of signal noise, not a standalone fix.
+
+### Conclusion
+
+1. **Model rank is noise.** ρ(score, pnl) ≈ 0 in all folds; model-top-K is anti-selected in 4/5 folds.
+2. **Oracle ceiling is broken in 3/5 folds.** Even hindsight cannot produce PF>1 by picking the best bar per day — the problem is upstream of any ranking head.
+3. **Quantile gating does not generalize.** It works at extreme q≥0.9 in folds 3 and 4 only, where the base model happens to have slightly positive ρ.
+
+## Phase C — branch decision
+
+Per the pre-committed decision rule ([plan](/Users/gduby/.claude/plans/composed-stargazing-dewdrop.md)):
+
+> *Oracle gate cannot reach DD<25% — OR — current head shows zero ranking → **B3: signal/label audit (no ACT)**.*
+
+Both conditions are met:
+- Current head shows zero ranking (ρ near 0, anti-selection at top-K).
+- Oracle ceiling already fails in 3/5 folds at PF<1 (with DD<10%).
+
+**Decision: B3. No GPU spend.** Any training experiment (B1 continuous opp supervision or B2 capital-aware reward) would burn ACT without addressing the real constraint — which is that the features/labels/policy triple does not admit a profitable strategy under current configuration, even under hindsight ranking.
+
+### B3 audit scope (local, no GPU)
+
+The next work is a targeted audit, not a training experiment:
+
+1. **Simulator/label consistency.** Are `oracle_pnl` labels (in sidecars) computed with the same `DecisionPolicy` (stops, trailing, trade window) that `simulate_trade` applies at replay time? Any divergence here means the model is trained to rank contracts under a different exit regime than what is evaluated. Primary suspects: trailing-tier thresholds, stop distance, TP distance, trade window bars.
+2. **Feature → PnL correlation audit.** Can *any* feature (raw or engineered) predict within-day oracle_pnl sign? If no feature has |ρ| > 0.1 with oracle_pnl, then no model architecture can learn the task — the problem is the input representation (missing features: open interest, realized intraday vol path, dealer positioning proxies, etc.) or the target itself is near-unpredictable.
+3. **Policy sensitivity.** Re-replay exp_171 fold 3 model (highest oracle ceiling) under a policy sweep: tighter/looser stops, different trailing tiers, no-trailing baseline. If the ceiling moves materially under policy changes → the policy is the binding constraint. If it stays flat → the labels/features are binding.
+4. **Per-regime oracle.** Compute oracle ceiling per vix quartile. If it's bounded PF<1 only in specific regimes, the strategy needs regime-conditional abstention, not a model retrain.
+
+Outputs should appear as scripts in [v2/analysis/](analysis/) with findings logged in this notebook. Only once the audit identifies a fixable constraint do we consider the next ACT spend.
+
+### Not promoted; no new baseline
+
+exp_171 remains the official baseline. No experiment ID is burned for this diagnostic (it's an audit, not a training run). When the B3 audit produces a testable hypothesis, that becomes exp_174 or later.
+
+
+---
+
+## B3 audit — exp_171 signal/label/feature forensics (2026-04-17)
+
+All local, no GPU spend. Follows Phase C decision.
+
+### B3.1 — Simulator/label consistency: VERIFIED
+
+Both label-build (`_simulate_under_policy` in [v2/pipeline/build_v2_dataset.py:614](pipeline/build_v2_dataset.py)) and replay (`simulate_trade` in [v2/replay.py:457](replay.py)) call the same function ([v2/core/simulator.py:97](core/simulator.py)) with the same `DEFAULT_POLICY` ([v2/core/policy.py:91](core/policy.py): stop_pct 0.35, target_pct 0.50, max_hold_bars 120, TRAILING, breakeven_trigger_pct 0.15, extra_trailing_tiers ((0.25, 0.08),)).
+
+Empirical confirmation: on 119 matched selections across 5 folds (bars where `selected_contract_idx == oracle_contract_idx`), **mean |Δ(model_pnl − oracle_pnl)| = 0.0000, max = 0.0000**. Zero label/sim divergence. Oracle labels in sidecars reflect exactly what the replay simulator produces at eval time.
+
+### B3.2 — True oracle ceiling is ENORMOUS
+
+Earlier "oracle top-K per day" in Phase B was wrongly restricted to bars the model chose to trade. The correct ceiling — trading the best contract at every eligible bar — is computed over 38,096 bars × 5 folds:
+
+| fold | n_eligible | oracle_mean_pnl | oracle_WR | oracle_PF | oracle_DD |
+|---|---|---|---|---|---|
+| fold0 | 6,901 | +0.3103 | 93.7% | 97.5 | 0.0% |
+| fold1 | 7,611 | +0.3134 | 93.3% | 67.3 | 0.0% |
+| fold2 | 9,664 | +0.3131 | 93.6% | 187.9 | 0.0% |
+| fold3 | 5,166 | +0.2978 | 92.0% | 34.4 | 0.0% |
+| fold4 | 8,754 | +0.3234 | 93.8% | 106.2 | 0.0% |
+
+**The instrument × policy × label triple admits PF 34-187 with 93-94% WR** if you select the right contract at each bar. The DD is ~0%. The "broken oracle" finding from Phase B was an artifact of measurement scope.
+
+### B3.3 — Per-regime oracle ceiling (via vix_regime quartiles)
+
+vix_regime is categorical (unique values: -1.0, -0.33, +0.33, +1.0):
+
+| vix_regime | n_bars | mean oracle | oracle WR | oracle PF | oracle call_frac |
+|---|---|---|---|---|---|
+| -1.0 | 5,333 | +0.3120 | 93.9% | 194.3 | 54.9% |
+| -0.33 | 24,889 | +0.3108 | 93.2% | 89.7 | 52.8% |
+| +0.33 | 6,558 | +0.3223 | 94.3% | 61.2 | 50.9% |
+| +1.0 | 1,316 | +0.3103 | 91.9% | 25.9 | 45.4% |
+
+Ceiling is uniform across regimes. Even the worst (high-vix) bucket has PF 26. Side preference mildly regime-conditioned (calls drop 55% → 45% from low to high vix) but nothing extreme.
+
+### B3.4 — Feature predictive power: signal is LEARNABLE
+
+52 context features vs oracle_pnl across all 5 folds (38,096 bars):
+- **No single feature has |ρ| > 0.05 with oracle_pnl**. The strongest are `prev_high_dist` (-0.050), `session_cum_delta` (-0.046), `bollinger_position` (-0.044).
+- **52-feature linear regression achieves ρ 0.113 with oracle_pnl, AUC 0.615 on oracle_pnl>0 binary, AUC 0.628 on oracle_side=Call**. R² is small (0.016), but AUCs meaningfully > 0.5.
+
+The signal is dilute but extractable from combined features.
+
+### Root cause
+
+**Training objective is the bottleneck, not features or architecture or labels.**
+
+- Labels are rich (per-contract PnL in `row_labels`, auxiliary MFE/MAE/impulse).
+- Features are weakly-but-jointly predictive (LR AUC 0.62 on both sign and side).
+- Simulator and labels agree perfectly.
+- Oracle ceiling is PF 26-194 across all folds and regimes.
+- Yet the trained model's rank signal is ρ ~ 0 — worse than a plain 52-feature linear regression.
+
+The current selection head uses **one-hot CE on `bar_best_contract_idx`** (contract-level) plus **BCE on `label_comp_bin`** (bar-level, |r|=0.05 with features — a dead gradient per exp_160-162). Both throw away the continuous signal that sits right next to them in `row_labels`. The model has been trained to pick THE-best contract in a field of 200+ contracts per bar, against a sparse one-hot target, while the actual PnL surface is dense and gradient-rich.
+
+### Proposed next experiment — exp_174: soft-label selection CE
+
+One narrow, falsifiable hypothesis:
+
+**Replace the one-hot selection CE target with a soft distribution derived from `row_labels`.** For each bar, build `target = softmax(row_labels[valid_contracts] / T)` over the valid contract mask. This is a listwise soft-teacher loss. The model's contract score distribution is pushed toward the PnL shape, not toward a single winner. Temperature T is a single hyperparameter (recommend T ∈ {0.25, 0.5, 1.0}, start at 0.5).
+
+Also: replace `label_comp_bin` BCE on the opportunity gate with regression on `max(row_labels[valid_contracts])` (the bar-level oracle_pnl ceiling). This gives the gate a continuous signal tied directly to the quantity the gate should predict (is this a high-ceiling bar?).
+
+**Falsifiable prediction before GPU boot:** if this hypothesis is correct, Spearman ρ(best_contract_score, model_pnl) on fold 0 rises from -0.031 to > +0.15 (roughly the LR ceiling of 0.113). Model-top-1-per-day PF rises from 0.366 to > 1.0. At least one fold's gate-failure flips. Pooled PF climbs from 0.721 toward 1.0+; DD drops below 100%.
+
+If any of these predictions fails, the hypothesis is falsified and we escalate to feature engineering or architecture change. If they all hit, exp_174 becomes the new baseline.
+
+**Why this and not capital-aware or strict target:** Capital-aware training (B2) was ruled out by DD decomposition (no tail concentration). Strict target (exp_173) was ruled out empirically. Continuous feature-based supervision (the |r|=0.126 `frac_profitable` target previously considered) is weaker than the `row_labels` signal (which is the raw PnL used to compute all downstream labels). Using `row_labels` directly is the most informative target on the shelf.
+
+**Code change surface — narrow:**
+- [v2/train.py](train.py): modify selection CE loss construction. Use `row_labels` + `valid_mask` to build soft target; apply `F.kl_div(log_softmax(scores), soft_target)` or symmetric CE. Replace opp_logit BCE with MSE on per-bar oracle_pnl.
+- Env flag: `SEL_TARGET_MODE=soft_pnl` (new mode), `SEL_TEMP=0.5`.
+- No change to [v2/core/policy.py](core/policy.py), sidecars, evaluator, or harness.
+

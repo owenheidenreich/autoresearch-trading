@@ -236,6 +236,7 @@ def replay_validation(
     device: str = "cpu",
     collect_traces: bool = False,
     trace_path: str | None = None,
+    date_range: tuple[str, str] | None = None,
 ) -> tuple[ReplayMetrics, list, list[DecisionTrace] | None]:
     features = data["X"].numpy()
     sim_features = data["X_sim"].numpy() if "X_sim" in data else features
@@ -251,6 +252,9 @@ def replay_validation(
         return ReplayMetrics(), [], [] if collect_traces else None
 
     eval_dates = sorted(set(dates[i] for i in mask_indices))
+    if date_range is not None:
+        lo, hi = date_range
+        eval_dates = [d for d in eval_dates if lo <= d <= hi]
     if max_days is not None:
         eval_dates = eval_dates[:max_days]
 
@@ -966,7 +970,7 @@ def main():
     parser.add_argument("--artifact", type=str, default=None)
     parser.add_argument("--data", type=str, default="v2/data.pt")
     parser.add_argument("--days", type=int, default=None)
-    parser.add_argument("--mask", type=str, default="promote", choices=["val", "promote", "shadow"])
+    parser.add_argument("--mask", type=str, default="promote", choices=["val", "promote", "shadow", "train"])
     parser.add_argument("--baselines", action="store_true")
     parser.add_argument("--traces", action="store_true", help="Collect per-bar decision traces")
     parser.add_argument("--gate", type=float, default=None)
@@ -975,6 +979,12 @@ def main():
                         help="Path to sequential agent checkpoint")
     parser.add_argument("--zero-state", action="store_true",
                         help="Ablation: zero session state to test if agent uses it")
+    parser.add_argument("--trace-out", type=str, default=None,
+                        help="Override trace output path (default: v2/artifacts/replay_traces.csv)")
+    parser.add_argument("--date-range", type=str, default=None,
+                        help="Filter eval to YYYY-MM-DD:YYYY-MM-DD inclusive")
+    parser.add_argument("--skip-baselines", action="store_true",
+                        help="Skip baseline computation after model replay")
     args = parser.parse_args()
 
     mask_key = f"{args.mask}_mask"
@@ -1078,12 +1088,18 @@ def main():
             policy = artifact_policy
 
     trace_flag = getattr(args, "traces", False)
-    trace_out = f"v2/artifacts/replay_traces.csv" if trace_flag else None
+    trace_out = (args.trace_out or "v2/artifacts/replay_traces.csv") if trace_flag else None
+    date_range = None
+    if args.date_range:
+        lo, hi = args.date_range.split(":")
+        date_range = (lo.strip(), hi.strip())
     metrics, trades, _ = replay_validation(
         model, data, mask_key=mask_key, max_days=args.days, policy=policy,
-        collect_traces=trace_flag, trace_path=trace_out,
+        collect_traces=trace_flag, trace_path=trace_out, date_range=date_range,
     )
     print_metrics("Model Replay", metrics)
+    if args.skip_baselines:
+        return
     print(f"\n--- BASELINES (on {mask_key}) ---")
     b_random, b_atm, b_rules, b_trailing = _compute_all_baselines(data, mask_key, args.days, policy, day_to_bars)
     print_metrics("Random", b_random)
