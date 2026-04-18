@@ -49,10 +49,10 @@ CODE_LEGACY_PATTERNS = (
     re.compile(rf"\b{re.escape(_parts('targets_', 'contract_', 'field'))}\b"),
 )
 DOC_REQUIRED_PHRASES = (
-    "Balanced gate BCE on supervised rows",
+    "Balanced gate supervision on `opportunity_logit`",
     "Soft KL selection loss",
     "No direct PnL regression",
-    "Opportunity head for independent gating",
+    "`opportunity_logit` — the only live trade/no-trade gate",
 )
 DOC_FORBIDDEN_PHRASES = (
     "Stage 1:",

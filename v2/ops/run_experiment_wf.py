@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from v2.core.artifact_kind import ArtifactKind
 from v2.core.cv_report import CVReport
-from v2.core.policy import DecisionPolicy
+from v2.core.policy import DecisionPolicy, DEFAULT_POLICY
 from v2.core.walkforward import run_walkforward, SCREENING_MODES
 from v2.ops.artifact import save_cv_eval_artifact
 
@@ -40,9 +40,7 @@ def run_experiment(
     is the saved CVReport JSON; the dict is a scannable summary only.
     """
     if policy is None:
-        _side_mode = os.environ.get("SIDE_MODE", "off")
-        _alpha_side = float(os.environ.get("ALPHA_SIDE", "0.0"))
-        policy = DecisionPolicy(side_mode=_side_mode, alpha_side=_alpha_side)
+        policy = _policy_from_env()
     if experiment_id is None:
         experiment_id = f"exp_{int(time.time())}"
 
@@ -50,6 +48,14 @@ def run_experiment(
     print(f"  EXPERIMENT: {experiment_id}  mode={screening_mode}  "
           f"fold_indices={fold_indices}")
     print(f"{'='*60}")
+    print(
+        "Policy:"
+        f" gate_threshold={policy.gate_threshold}"
+        f" side_mode={policy.side_mode}"
+        f" alpha_side={policy.alpha_side}"
+        f" max_daily_trades={policy.max_daily_trades}"
+        f" max_consecutive_stops={policy.max_consecutive_stops}"
+    )
 
     try:
         cv: CVReport = run_walkforward(
@@ -86,6 +92,34 @@ def run_experiment(
     results = _flatten_cv_for_deploy(cv, artifact_dir)
     _print_results(results)
     return results
+
+
+def _policy_from_env() -> DecisionPolicy:
+    """Build a DecisionPolicy from explicit policy env overrides.
+
+    Keep training-shaping env vars separate from policy-shaping env vars.
+    `SIDE_MODE` / `ALPHA_SIDE` remain supported for continuity because they
+    already flow through the experiment harness as policy knobs.
+    """
+    kwargs = DEFAULT_POLICY.to_dict()
+
+    if "POLICY_GATE_THRESHOLD" in os.environ:
+        kwargs["gate_threshold"] = float(os.environ["POLICY_GATE_THRESHOLD"])
+    if "POLICY_MAX_DAILY_TRADES" in os.environ:
+        kwargs["max_daily_trades"] = int(os.environ["POLICY_MAX_DAILY_TRADES"])
+    if "POLICY_MAX_CONSECUTIVE_STOPS" in os.environ:
+        kwargs["max_consecutive_stops"] = int(os.environ["POLICY_MAX_CONSECUTIVE_STOPS"])
+    if "POLICY_GATE_TIGHTEN_AFTER_LOSS" in os.environ:
+        kwargs["gate_tighten_after_loss"] = float(os.environ["POLICY_GATE_TIGHTEN_AFTER_LOSS"])
+    if "POLICY_RANDOM_SKIP_PCT" in os.environ:
+        kwargs["random_skip_pct"] = float(os.environ["POLICY_RANDOM_SKIP_PCT"])
+
+    if "SIDE_MODE" in os.environ:
+        kwargs["side_mode"] = os.environ["SIDE_MODE"]
+    if "ALPHA_SIDE" in os.environ:
+        kwargs["alpha_side"] = float(os.environ["ALPHA_SIDE"])
+
+    return DecisionPolicy(**kwargs)
 
 
 def _flatten_cv_for_deploy(cv: CVReport, artifact_dir: str | None) -> dict:

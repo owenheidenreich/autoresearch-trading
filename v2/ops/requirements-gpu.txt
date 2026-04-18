@@ -1,6 +1,6 @@
-# GPU node dependencies — pinned versions known to work with Akash H100
-# CUDA 12.4 compatible (driver 570.x)
---extra-index-url https://download.pytorch.org/whl/cu124
-torch==2.4.1
+# GPU node dependencies — installed in container via SDL command.
+# This file is used for verification only (cmd_start checks these are importable).
+# Do NOT pin torch — the container image (pytorch/pytorch:2.5.1) ships it.
 numpy
 pandas
+scipy

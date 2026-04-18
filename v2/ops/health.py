@@ -130,6 +130,9 @@ def check_model(model_path: str = "v2/models/model.pt") -> list[str]:
                 f"current evaluator is {current_score_fp[:8]} — scores not comparable"
             )
 
+        from v2.replay import load_model_from_path
+        load_model_from_path(model_path)
+
     except Exception as e:
         errors.append(f"model check failed: {e}")
     return errors
@@ -139,9 +142,8 @@ def check_smoke() -> list[str]:
     """Run a 1-day replay and verify basic sanity."""
     errors = []
     try:
-        from v2.train import TradingModel, LOOKBACK
         from v2.core.policy import DEFAULT_POLICY
-        from v2.replay import replay_validation
+        from v2.replay import load_model_from_path, replay_validation
 
         data = torch.load("v2/data.pt", map_location="cpu", weights_only=False)
         model_path = "v2/models/model.pt"
@@ -149,11 +151,7 @@ def check_smoke() -> list[str]:
             errors.append("smoke test skipped: no model.pt")
             return errors
 
-        ckpt = torch.load(model_path, map_location="cpu", weights_only=False)
-        model = TradingModel()
-        if "model_state_dict" in ckpt:
-            model.load_state_dict(ckpt["model_state_dict"], strict=False)
-        model.eval()
+        model = load_model_from_path(model_path)
 
         metrics, trades, _ = replay_validation(
             model, data, mask_key="promote_mask", max_days=1, policy=DEFAULT_POLICY,

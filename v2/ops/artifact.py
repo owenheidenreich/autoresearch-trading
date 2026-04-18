@@ -263,7 +263,10 @@ def load_artifact(
         n_heads=hyperparams.get('n_heads', 4),
         dropout=hyperparams.get('dropout', 0.1),
     )
-    model.load_state_dict(checkpoint['model_state_dict'])
+    try:
+        model.load_state_dict(checkpoint['model_state_dict'])
+    except RuntimeError as exc:
+        raise RuntimeError(f"stale model artifact; retrain required ({exc})") from exc
     model.eval()
 
     return {
