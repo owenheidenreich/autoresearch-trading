@@ -2498,3 +2498,68 @@ What is newly clear:
 The next logical step is therefore **not** another cheap replay tweak. It is:
 1. either align the dataset/runtime so canonical experiments are valid again, or
 2. if we intentionally stay on the 52-feature regime for triage, test a more structural gate-calibration change rather than more side-loss or static-policy changes.
+
+---
+
+## Slice-first rebuild (PLAN.md) — dataset + runtime alignment (2026-04-18)
+
+**Change:** Canonical tradable universe becomes the **dynamic ATM ± 10 strike slice**, refreshed every bar as spot moves. Training and replay now compete contracts only inside that slice; full-chain artifacts remain for diagnostics only.
+
+**Why:** `exp_171` → `exp_178` all hill-climbed the training objective on the same 52-feature, full-chain ranking problem. Post-refactor probes retired the two cheapest rescue paths (`SIDE_W` direct side loss, continuous `max_pnl` gate). The PLAN.md reframing argues the binding constraint is problem framing — we asked the model to rank the full chain when the real edge lives on a narrow, moving slice.
+
+### What shipped
+
+- **Data contract (schema `v5_exact_chain_v2_slice`, fingerprint `6162cf3d83db3586`):**
+  - `bar_atm_strike`, `bar_slice_lo_strike`, `bar_slice_hi_strike`, `bar_slice_contract_count` per bar
+  - `bar_slice_best_pnl`, `bar_slice_best_contract_idx`, `bar_slice_label_trade`, `bar_slice_labelable` mirror full-chain fields but anchored on the slice
+  - `slice_best_contract_pnl` / `slice_best_contract_strike` / `slice_label_trade` aggregated at the dataset level
+  - 151 262 slice trade bars / 231 725 slice labelable bars across 846 train + 60 val + 60 promote + 20 shadow days
+- **Features: 52 → 79.** `LEGACY_52_FEATURE_NAMES` preserved for ablations. New groups:
+  - 14 **session-structure**: opening_gap_pct, session_open_dist, first15_range_pct / first15_close_position / first15_acceptance, vwap_reclaim_state, ib_extension_pct, marker_10am / 11am / 1130am, lunch_flag, power_hour_flag, volume_climax_signal, breakout_confirmation
+  - 13 **local surface**: slice_call_iv_mean, slice_put_iv_mean, slice_iv_skew_slope, slice_iv_curvature, slice_gamma_concentration, slice_gamma_dollar_concentration, slice_theta_pressure, slice_dist_to_max_gamma, slice_dist_to_max_gamma_dollar, slice_call_put_gamma_imbalance, slice_mean_spread, slice_txn_center_share, slice_quality_share
+- **Training knobs:** `TRAIN_FEATURE_SET ∈ {legacy52, full79}`, `LINEAR_SCORE_HEADS=1` (single `nn.Linear(d*2,1)` call/put scorer), `OPP_LABEL=slice` (slice-derived gate target), `GATE_TARGET_MODE=max_pnl` still available for max-PnL gate supervision.
+- **Baselines:** `_select_snapshot_row` now respects the slice mask. `compute_baseline_atm_always / simple_rules / atm_trailing / slice_gamma_dollar / slice_theta_efficiency` all compete in-slice.
+- **Diagnostics:** `decision_trace` carries `slice_atm_strike / lo / hi / contract_count / selected_distance_strikes / oracle_distance_strikes` + time / distance / side / VIX bucket summaries. `slice_signal_diagnostic.py` + `encoder_signal_diagnostic.py` compare raw / encoder-context / model_top Spearman rho on slice oracle PnL.
+
+**Plan fidelity notes.** PLAN.md Phase 1 reserves "linear or 1-hidden-layer" specifically for the **contract scorer**; the gate head is only constrained to operate on context. Current impl: `LINEAR_SCORE_HEADS=1` collapses the scorer as required; `opportunity_head` stays a 2-layer MLP — consistent with the plan text, revisit if Phase 1 stalls.
+
+### Phase 0 slice audit (exp_171 fold checkpoints, rebuilt slice)
+
+Goal: before burning GPU, confirm whether narrowing the competition universe alone closes the fold-4 inversion. It does not.
+
+| Fold | `raw_lr` ρ_test | `ctx_lr` ρ_test | `model_top` ρ_test |
+|------|-----------------|------------------|---------------------|
+| 0 | +0.0350 | +0.0727 | +0.0379 |
+| 1 | +0.1427 | +0.1888 | +0.0044 |
+| 2 | −0.0547 | −0.0314 | −0.0081 |
+| 3 | +0.1122 | −0.0013 | +0.0051 |
+| 4 | −0.0803 | +0.0190 | **−0.1137** |
+
+Reading: on fold 4, encoder context already carries a slightly positive slice signal (`ctx_lr=+0.019`) while the scorer head inverts it (`model_top=−0.114`). On folds 1 and 3 the encoder preserves / loses signal that raw features have. This argues the **scorer** is the bottleneck on the inverted folds, not the candidate universe — consistent with PLAN.md's hypothesis that the learner, not the universe, was mis-specified.
+
+**Implication for the experiment ladder.** The PLAN.md mini-screen rule (folds 0/2/4, ≥ 2/3 with selected-trade PF > 1.0, no fold with rank ρ < −0.05, ≤ 3 trades/day, fold 4 not inverted) remains the bar. `exp_next_a` (legacy52 + linear scorer + slice gate) is the canonical phase-1 screen; `exp_next_b` adds the full79 feature surface as a clean ablation on the same rebuilt dataset.
+
+### Recommended next commands
+
+Full workspace sync is **required** before any screen — `_upload_mutable_sources` now covers the new `core.chain_data / core.config / core.features / core.decision_trace / pipeline.compute_features / pipeline.build_v2_dataset / ops.health` files, but the remote still needs the rebuilt `v2/data.pt` (260 MB) and `v2/data_sidecars/*.pt` (~7 GB). A fresh `./v2/ops/deploy.sh start` handles that end-to-end.
+
+```
+# Phase 0 local rerun (optional)
+python3 -m v2.analysis.slice_signal_diagnostic --all-171
+
+# Phase 1 mini-screen: legacy52 + linear scorer + slice gate
+TRAIN_ENV="TRAIN_FEATURE_SET=legacy52 LINEAR_SCORE_HEADS=1 OPP_LABEL=slice" \
+    ./v2/ops/deploy.sh run_screen_mini exp_next_a
+
+# Phase 2 mini-screen: full79 feature surface, same architecture
+TRAIN_ENV="TRAIN_FEATURE_SET=full79 LINEAR_SCORE_HEADS=1 OPP_LABEL=slice" \
+    ./v2/ops/deploy.sh run_screen_mini exp_next_b
+```
+
+Pass the mini-screen rule → `run_cv` for the full 5-fold official.
+
+### Known gaps carried forward
+
+- `coverage vs PF/DD curve` and `score monotonicity by gate threshold` diagnostics from PLAN.md §4 are **not** yet emitted as structured artifacts (trace-summary buckets only).
+- Paid-data extensions (ES volume, VIX term structure, OI / GEX) deferred per plan sequencing.
+- No Pickles-journal / book-extract review on the new phase-2 feature list — defer until phase-1 shows movement.
