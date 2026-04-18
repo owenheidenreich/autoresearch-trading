@@ -2202,3 +2202,70 @@ If any of these predictions fails, the hypothesis is falsified and we escalate t
 - Env flag: `SEL_TARGET_MODE=soft_pnl` (new mode), `SEL_TEMP=0.5`.
 - No change to [v2/core/policy.py](core/policy.py), sidecars, evaluator, or harness.
 
+
+---
+
+## exp_174 / exp_174b — continuous PnL supervision — FALSIFIED (2026-04-17)
+
+Two screening runs testing the B3-audit-derived hypothesis that replacing one-hot selection CE + binary opp BCE with continuous PnL supervision would lift rank ρ from ~0 toward the LR ceiling of 0.113.
+
+### v1 — soft_pnl + max_pnl (commit 6f90556, screen_mini 3-fold)
+
+Config: `SEL_TARGET_MODE=soft_pnl SOFT_TEMP=0.5 GATE_TARGET_MODE=max_pnl CKPT_SELECTION_MODE=val_replay`.
+
+| fold | PF | DD | trades | call% | ρ(score, pnl) |
+|---|---|---|---|---|---|
+| 0 | 0.646 | 100.4% | 482 | 60.6% | **-0.062** |
+| 2 | 0.686 | 100.2% | 490 | 72.1% | -0.049 |
+| 4 | 0.654 | 100.7% | 499 | 67.5% | +0.013 |
+| pooled | 0.654 | 297.4% | 1453 | 66.8% | — |
+
+All 3 folds gate-fail. Rank ρ *worse* than exp_171 (−0.031 / +0.043 / +0.071). **Falsified.**
+
+Root cause from training log: `comp_loss=0.053` (natural MSE scale ~13× smaller than BCE), so with `OPP_W=0.5` the gate head gradient was ~50× weaker than sel/gate BCE. opp_logit collapsed to predicting the global mean (`opp_mean=0.30 ≈ oracle mean +0.31`, `opp_std=0.03`). Also, raw `max_pnl` target is always positive, so inference gate threshold=0 let every bar through regardless of prediction.
+
+Secondary issue: the `soft_pnl` mode bypassed the NOISE_MARGIN / AMBIG_WEIGHT ambiguity filter. That filter was actually useful — clear bars get sharp target, ambiguous bars get uniform — and removing it reduced selection supervision quality.
+
+### v1b — scaled MSE + signed target (commit af49dbd, screen_latest fold 4 only)
+
+Config: `SEL_TARGET_MODE=default SOFT_TEMP=0.5 GATE_TARGET_MODE=max_pnl GATE_PNL_THRESHOLD=0.2 GATE_PNL_LOSS_SCALE=10.0 CKPT_SELECTION_MODE=val_replay`.
+
+Two code fixes: `GATE_PNL_THRESHOLD=0.2` subtracts from target so gate target is signed (inference threshold 0 now has meaning); `GATE_PNL_LOSS_SCALE=10` boosts MSE to restore gradient parity. Reverted the soft_pnl ambiguity bypass; kept SOFT_TEMP=0.5 on the default path.
+
+Training diagnostics improved:
+- `comp_loss=0.53` (vs 0.05 in v1) — scale fix worked.
+- `opp_mean=0.11` (vs 0.30) — threshold shift centered target near 0.
+- `opp_std` grew 0.03 → 0.05 across epochs — gate learning input-conditional variance.
+- `trade_rate` dropped 0.94 → 0.90 — some abstention emerging.
+
+Fold 4 replay:
+- PF=0.739 (train replay) / 0.695 (our re-replay) — vs exp_171 fold 4 PF=0.671. **Slight lift (+4-10%).**
+- DD=100.3% — no improvement.
+- **call_pct=65.0%** — vs exp_171 fold 4 call_pct=82.9%. **Major reduction in call bias (−17.9pp).**
+- Decile 10 (top score): avg_pnl=+0.043, PF=1.31 — positive expectancy appeared in top decile.
+- Decile 9: PF=0.19 — but rank is catastrophically non-monotonic.
+- **ρ(best_contract_score, model_pnl) = −0.002** — still zero. Falsified.
+
+### Conclusions
+
+Primary falsifiable prediction (rank ρ > +0.15) failed in both runs. But real secondary signal appeared in v1b:
+- Call-bias reduction (83% → 65%) is significant and reproducible. The gate/side learning IS responding to continuous supervision.
+- Top-decile positive expectancy (PF 1.31) in fold 4 shows the model's extreme-high-score picks DO differ from the rest — just not in a smoothly monotonic way.
+- Training convergence was early-stopped at epoch 1 by val_replay (the replay-score tied across epochs, ties picked earliest). Only ~5 min of training per fold. This is a confound.
+
+### Why loss-shape alone isn't closing the gap
+
+B3 showed a plain 52-feature linear regression achieves Spearman ρ ≈ 0.11 against `oracle_pnl`. The trained transformer with continuous supervision achieves ρ ≈ 0. **The transformer head has enough capacity in principle, but can't reach even the linear ceiling** under this optimization path in the available training budget.
+
+Two plausible next directions:
+
+1. **Training budget + optimizer.** Training saturated at ~5 min/fold (TIME_BUDGET=300). Rank signal with a dilute LR-ceiling AUC 0.615 may need 10-20x more gradient steps on the gate/selection heads specifically. Cheap to test: raise TIME_BUDGET to 1200 and re-run.
+
+2. **Architectural mismatch.** If the transformer's 30-bar lookback introduces enough noise that the dilute feature signal can't survive, the right move is a frozen-encoder + linear/shallow head that directly consumes the 52-feature context vector. This was Wave 1's "trained encoder causes overtrading" finding (2026-04-13 memory).
+
+Either is a full training run; neither should be spent until the user confirms direction. The exp_174 class of intervention (loss shape) is falsified as a standalone fix.
+
+### Not promoted; no new baseline
+
+exp_171 remains the official baseline. exp_174 and exp_174b are recorded as falsified hypothesis attempts. `v2/artifacts/exp_174_screen_mini/` contains the 3 fold models; `v2/artifacts/exp_174b_screen_latest/` contains the fold 4 model. No cv_report.json written (screening mode).
+
