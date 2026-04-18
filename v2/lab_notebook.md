@@ -2306,3 +2306,195 @@ The model's side_logit *has* useful information — amplifying it 0.20× produce
 
 Neither is cheap. For now: exp_176 closes out as a falsified single-ACT screen. exp_171 remains canonical baseline.
 
+---
+
+## exp_176 follow-up — post-refactor checkpoint audit and policy rescue sweeps (2026-04-18)
+
+After the gate-path cleanup (`opportunity_logit` is now the only live gate), I re-evaluated the locally synced `exp_176_gate030_side020_screen_mini` fold checkpoints directly under the new replay path instead of relying on the old launcher summaries.
+
+### 1. Fresh mini-fold readout under the current replay code
+
+Policy: `gate_threshold=0.30, side_mode=soft, alpha_side=0.20`
+
+| Fold | Score | PF | DD | Trades | Call% | Gate |
+|---|---|---|---|---|---|---|
+| 0 | -0.2000 | 0.612 | 88.2% | 242 | 51.2% | **FAIL (DD)** |
+| 2 | -0.0262 | 0.892 | 9.0% | 36 | 97.2% | pass |
+| 4 | +0.7559 | 1.173 | 15.1% | 87 | 71.3% | pass |
+
+The latest-fold win survives the refactor almost exactly, but the mini screen is still disqualified by fold 0. This is important because it means the gate-path cleanup did **not** erase the original latest-fold signal, yet it also did **not** make the policy 5-fold-safe by itself.
+
+### 2. Trace review: fold 0 is no longer a side-collapse story
+
+I generated fresh traces for:
+- `fold0_rescue`: fold 0 model with `gate_threshold=0.40, side_mode=soft, alpha_side=0.15`
+- `fold4_current`: fold 4 model with `gate_threshold=0.30, side_mode=soft, alpha_side=0.20`
+
+Fold 0 rescue trace summary:
+- 128 trades, score `+0.112`, PF `0.985`, DD `16.1%`
+- trade call share `53.9%`
+- oracle put share on traded rows `55.5%`
+- gate pass rate `5.17%`
+
+Fold 4 current trace summary:
+- 87 trades, score `+0.756`, PF `1.173`, DD `15.1%`
+- trade call share `71.3%`
+- oracle put share on traded rows `36.8%`
+- gate pass rate `4.28%`
+
+Takeaway: on fold 0, once the gate is tightened enough to survive, the trade mix is roughly balanced. The remaining problem is not “still picks calls instead of puts”; it is “the fixed gate is miscalibrated by regime.”
+
+### 3. No static threshold/alpha compromise exists on the mini set
+
+I swept the synced fold checkpoints with replay-only policy changes before spending more training:
+
+- `0.30 / soft / 0.20` keeps fold 4 strong but fold 0 fails at 88% DD.
+- `0.40 / soft / 0.15` rescues fold 0, but fold 2 and fold 4 gate-fail due to too few trades (`5` and `24` trades respectively).
+- Intermediate settings (`0.38`, `0.40`, alpha `0.0-0.20`) either still leave fold 0 failing or starve later folds.
+
+This is the key blocker: **a single static gate threshold that fixes fold 0 kills fold 2/4 trade count.**
+
+### 4. Session overlays also fail to make it 5-fold-ready
+
+I then kept the winning latest-fold policy shape (`0.30 / soft / 0.20`) and swept cheap session-risk overlays:
+- `max_daily_trades ∈ {2,3,4}`
+- `max_consecutive_stops ∈ {1,2,3}`
+- `gate_tighten_after_loss ∈ {0.0, 0.05}`
+
+Best observed overlay family:
+- `max_daily_trades=4, max_consecutive_stops=2, gate_tighten_after_loss=0.05`
+- fold 2 improved sharply (`score +1.445`, PF `1.268`)
+- fold 4 stayed near flat (`score -0.055`)
+- **fold 0 still failed** (`DD 69.3%`)
+
+I also pushed `gate_tighten_after_loss` harder on fold 0 up to `0.20` with `max_daily_trades` down to `3`. Result: fold 0 drawdown improved from ~88% into the mid-40% range, but **never** below the 25% gate-failure boundary. The same stronger adaptive gate also dragged fold 4 down from `+0.756` to roughly `+0.02 .. +0.16`.
+
+### 5. Decision
+
+As of `2026-04-18 11:11 PDT`, the post-refactor loop is **not** ready for a full 5-fold run.
+
+What is ruled out cheaply:
+- a static threshold/alpha retune
+- a simple session overlay retune
+- a mild adaptive gate-tighten-after-loss overlay
+
+What the evidence now points to:
+- the side prior is useful on late regimes
+- the remaining blocker is regime-dependent gate calibration, not just directional bias
+- the next meaningful experiment should change the *training-time* gate behavior or make the side prior/gate regime-aware, not just replay knobs
+
+---
+
+## 2026-04-18 — side/gate compatibility probes on fold 0 (post-follow-up)
+
+After the post-refactor `exp_176` review, I ran two smallest-possible **training-time** probes against the same old 52-feature data regime, because replay-only policy tuning was exhausted.
+
+Important context: the workspace is now in a mixed schema state.
+- Current [v2/core/features.py](core/features.py) declares **79** features.
+- Current [v2/data.pt](data.pt) still contains **52** features and reports `chain_schema_version=v4_exact_chain_v2_paths`.
+- Canonical training via [v2.ops.run_experiment_wf](ops/run_experiment_wf.py) now aborts immediately on that mismatch.
+
+To keep the loop moving without editing the repo, I used **compatibility probes only**: one-off in-process runs with `NUM_FEATURES=52` and a temporary runtime-config bypass. These are valid for triage, but **not promotable artifacts**.
+
+### A. Diagnostic before training: side_logit is genuinely weak, not just miscalibrated
+
+Using the synced `exp_176_gate030_side020_screen_mini` checkpoints under `NUM_FEATURES=52`, I measured context-only side prediction on all eligible fold bars by comparing `sign(side_logit)` to the oracle-best side.
+
+| Fold | oracle call% | predicted call% | side acc | top-10% |abs(logit)| side acc |
+|---|---:|---:|---:|---:|
+| 0 | 51.2% | 37.1% | 47.1% | 41.7% |
+| 2 | 52.3% | 99.8% | 52.3% | 64.7% |
+| 4 | 51.7% | 43.1% | 48.2% | 45.7% |
+
+Interpretation:
+- fold 0 and fold 4 are **worse than coin-flip** even when `|side_logit|` is largest.
+- fold 2 has a “confidence” effect only because the model predicts **almost all calls** there.
+
+Conclusion: the side head is not a trustworthy signal in its current trained form. The next cheap experiment should test **training-side fixes**, not more replay-only alpha-shaping.
+
+### B. `exp_177_sidew1_fold0_probe_compat` — direct side supervision on fold 0
+
+Config delta from baseline:
+- `SIDE_W=1.0`
+- `SIDE_MODE=soft`
+- `ALPHA_SIDE=0.20`
+- `CKPT_SELECTION_MODE=val_replay`
+- same fold-0 seed/window as the prior failure case
+
+Validation replay during training:
+- epoch 1: `PF=0.582`, `DD=69.3%`, `score=-0.2000`
+- epoch 2: identical
+- selected epoch 1 by val replay
+
+Fold-0 test replay from saved candidate checkpoint:
+- `PF=0.785`
+- `DD=94.9%`
+- `482` trades
+- `call_pct=54.4%`
+- `score=-0.2000`
+- gate failure: **excessive_drawdown**
+
+Side diagnostics on the test fold **did** improve:
+- overall side accuracy: **54.4%** (vs 47.1% baseline diagnostic)
+- top-10% `|side_logit|` side accuracy: **60.0%**
+
+But the economic result got worse:
+- more trades
+- much larger drawdown
+- still the same terminal gate-fail score bucket (`-0.2`)
+
+Conclusion: **SIDE_W helps the side classifier a bit, but not the actual trading outcome.** It should not be the next canonical rerun branch.
+
+Artifacts:
+- [training log](</Users/gduby/Documents/autoresearch-trading/v2/runs/exp_177_sidew1_fold0_probe_compat/training_log.jsonl>)
+- [candidate checkpoint](</Users/gduby/Documents/autoresearch-trading/v2/runs/exp_177_sidew1_fold0_probe_compat/checkpoint_candidates/epoch_001.pt>)
+- [test traces](</Users/gduby/Documents/autoresearch-trading/v2/artifacts/exp_177_sidew1_fold0_probe_compat/replay_traces.csv>)
+
+### C. `exp_178_gate_maxpnl_fold0_probe_compat` — continuous gate target on fold 0
+
+Config delta:
+- `GATE_TARGET_MODE=max_pnl`
+- `GATE_PNL_THRESHOLD=0.2`
+- `GATE_PNL_LOSS_SCALE=10.0`
+- `SIDE_W=0`
+- same replay policy: `gate_threshold=0.30`, `side_mode=soft`, `alpha_side=0.20`
+
+Validation replay during training:
+- epoch 1: `PF=0.531`, `DD=101.1%`, `score=-0.2000`
+- epoch 2: identical
+- selected epoch 1 by val replay
+
+Fold-0 test replay:
+- **0 trades**
+- all 14,340 eligible bars rejected by the gate
+- `score=0.0`
+- no gate failure only because nothing traded
+
+Interpretation:
+- on the validation slice, this gate target still produced catastrophic overtrading
+- on the held-out test slice, it collapsed the other way into total abstention at the live threshold
+
+Conclusion: **continuous gate supervision is not a usable rescue in this regime either.** It does not give a stable operating point.
+
+Artifacts:
+- [training log](</Users/gduby/Documents/autoresearch-trading/v2/runs/exp_178_gate_maxpnl_fold0_probe_compat/training_log.jsonl>)
+- [test traces](</Users/gduby/Documents/autoresearch-trading/v2/artifacts/exp_178_gate_maxpnl_fold0_probe_compat/replay_traces.csv>)
+
+### Net result of this loop
+
+The two cheapest post-refactor training branches are now explicitly retired for the current 52-feature regime:
+- direct side-head supervision (`SIDE_W`)
+- continuous `max_pnl` gate supervision
+
+What remains true:
+- replay-only soft side prior helps fold 4 a lot
+- fold 0 is still the blocker
+- fixed policy retunes are exhausted
+
+What is newly clear:
+- the current workspace is **not** in a canonical-run state because runtime config and dataset schema disagree
+- until the 79-feature / v5 runtime is aligned with a matching dataset, every new training result is necessarily a compatibility probe rather than a promotable experiment
+
+The next logical step is therefore **not** another cheap replay tweak. It is:
+1. either align the dataset/runtime so canonical experiments are valid again, or
+2. if we intentionally stay on the 52-feature regime for triage, test a more structural gate-calibration change rather than more side-loss or static-policy changes.
