@@ -29,6 +29,7 @@ BARS_PER_DAY = 390
 LOOKBACK = 60            # bars for rolling windows
 RISK_FREE_RATE = 0.05    # for BS pricing
 IB_BARS = 30             # Initial Balance = first 30 minutes
+FIRST15_BARS = 15
 
 # ---------------------------------------------------------------------------
 # Black-Scholes utilities (extracted from v1 prepare.py:300-353)
@@ -265,13 +266,13 @@ def compute_price_features(
 ) -> np.ndarray:
     """Compute 28 price/volume/market structure features for all bars.
 
-    Returns: (n_bars, 28) array of RAW features (not normalized).
+    Returns: (n_bars, 46) array of RAW features (not normalized).
     Uses vectorized numpy wherever possible for speed.
     """
     import pandas as pd
 
     n = len(spx_close)
-    N_FEAT = 32
+    N_FEAT = 46
     feat = np.zeros((n, N_FEAT), dtype=np.float64)
     day_ends = day_starts[1:] + [n]
     day_starts_arr = np.array(day_starts)
@@ -328,19 +329,46 @@ def compute_price_features(
     # --- Initial balance (first 30 bars per day) ---
     ib_high_arr = np.zeros(n, dtype=np.float64)
     ib_low_arr = np.zeros(n, dtype=np.float64)
+    first15_high_arr = np.zeros(n, dtype=np.float64)
+    first15_low_arr = np.zeros(n, dtype=np.float64)
+    first15_close_arr = np.zeros(n, dtype=np.float64)
+    session_open_arr = np.zeros(n, dtype=np.float64)
+    opening_gap_arr = np.zeros(n, dtype=np.float64)
     for ds, de in zip(day_starts, day_ends):
         ib_end = min(ds + IB_BARS, de)
         ib_h = np.max(h[ds:ib_end])
         ib_l = np.min(lo[ds:ib_end])
         ib_high_arr[ds:de] = ib_h
         ib_low_arr[ds:de] = ib_l
+        f15_end = min(ds + FIRST15_BARS, de)
+        f15_h = np.max(h[ds:f15_end])
+        f15_l = np.min(lo[ds:f15_end])
+        f15_c = float(c[f15_end - 1]) if f15_end > ds else float(c[ds])
+        first15_high_arr[ds:de] = f15_h
+        first15_low_arr[ds:de] = f15_l
+        first15_close_arr[ds:de] = f15_c
+        session_open = float(o[ds]) if np.isfinite(o[ds]) and o[ds] > 0 else float(c[ds])
+        session_open_arr[ds:de] = session_open
+    for di, (ds, de) in enumerate(zip(day_starts, day_ends)):
+        if di == 0:
+            continue
+        prev_close = float(c[ds - 1])
+        if np.isfinite(prev_close) and prev_close > 0:
+            opening_gap_arr[ds:de] = (session_open_arr[ds] - prev_close) / prev_close
 
     # --- Session running high/low (for session_range_pct and session_range_position) ---
     sess_high = np.zeros(n, dtype=np.float64)
     sess_low = np.zeros(n, dtype=np.float64)
+    prev_sess_high = np.zeros(n, dtype=np.float64)
+    prev_sess_low = np.zeros(n, dtype=np.float64)
     for ds, de in zip(day_starts, day_ends):
         sess_high[ds:de] = np.maximum.accumulate(h[ds:de])
         sess_low[ds:de] = np.minimum.accumulate(lo[ds:de])
+        prev_sess_high[ds] = h[ds]
+        prev_sess_low[ds] = lo[ds]
+        if de - ds > 1:
+            prev_sess_high[ds + 1:de] = sess_high[ds:de - 1]
+            prev_sess_low[ds + 1:de] = sess_low[ds:de - 1]
 
     # --- Volume profile: POC and Value Area (incremental, no look-ahead) ---
     # Each bar sees only the volume profile from bars [day_start .. current_bar].
@@ -773,6 +801,89 @@ def compute_price_features(
     feat[:, fi] = phase / 6.0  # normalize to [0, 1]
     fi += 1
 
+    # [32] opening_gap_pct
+    feat[:, fi] = opening_gap_arr
+    fi += 1
+
+    # [33] session_open_dist
+    feat[:, fi] = np.where((c > 0) & (session_open_arr > 0), (c - session_open_arr) / c, 0.0)
+    fi += 1
+
+    # [34] first15_range_pct
+    first15_range = first15_high_arr - first15_low_arr
+    feat[:, fi] = np.where(c > 0, first15_range / c, 0.0)
+    fi += 1
+
+    # [35] first15_close_position
+    feat[:, fi] = np.where(first15_range > 1e-10, (first15_close_arr - first15_low_arr) / first15_range, 0.5)
+    fi += 1
+
+    # [36] first15_acceptance
+    first15_mid = (first15_high_arr + first15_low_arr) * 0.5
+    half_range = np.maximum(first15_range * 0.5, 1e-6)
+    first15_accept = np.clip((c - first15_mid) / half_range, -1.0, 1.0)
+    first15_accept[c > first15_high_arr] = 1.0
+    first15_accept[c < first15_low_arr] = -1.0
+    feat[:, fi] = first15_accept
+    fi += 1
+
+    # [37] vwap_reclaim_state
+    vwap_reclaim = np.zeros(n, dtype=np.float64)
+    for ds, de in zip(day_starts, day_ends):
+        day_dist = c[ds:de] - vwap_arr[ds:de]
+        for offset in range(1, de - ds):
+            i = ds + offset
+            prev = day_dist[max(0, offset - 3):offset]
+            if not np.isfinite(day_dist[offset]) or len(prev) == 0:
+                continue
+            if day_dist[offset] > 0 and np.any(prev <= 0):
+                vwap_reclaim[i] = 1.0
+            elif day_dist[offset] < 0 and np.any(prev >= 0):
+                vwap_reclaim[i] = -1.0
+    feat[:, fi] = vwap_reclaim
+    fi += 1
+
+    # [38] ib_extension_pct
+    ib_extension = np.zeros(n, dtype=np.float64)
+    ib_extension[c > ib_high_arr] = np.where(c[c > ib_high_arr] > 0, (c[c > ib_high_arr] - ib_high_arr[c > ib_high_arr]) / c[c > ib_high_arr], 0.0)
+    ib_extension[c < ib_low_arr] = np.where(c[c < ib_low_arr] > 0, -(ib_low_arr[c < ib_low_arr] - c[c < ib_low_arr]) / c[c < ib_low_arr], 0.0)
+    feat[:, fi] = ib_extension
+    fi += 1
+
+    # [39] marker_10am
+    feat[:, fi] = np.clip(1.0 - np.abs(bod - 30) / 10.0, 0.0, 1.0)
+    fi += 1
+
+    # [40] marker_11am
+    feat[:, fi] = np.clip(1.0 - np.abs(bod - 90) / 10.0, 0.0, 1.0)
+    fi += 1
+
+    # [41] marker_1130am
+    feat[:, fi] = np.clip(1.0 - np.abs(bod - 120) / 10.0, 0.0, 1.0)
+    fi += 1
+
+    # [42] lunch_flag
+    feat[:, fi] = ((bod >= 120) & (bod < 210)).astype(np.float64)
+    fi += 1
+
+    # [43] power_hour_flag
+    feat[:, fi] = (bod >= 300).astype(np.float64)
+    fi += 1
+
+    # [44] volume_climax_signal
+    climax = np.maximum(feat[:, 2] - 1.25, 0.0)
+    feat[:, fi] = np.clip(climax * np.maximum(1.0 - np.abs(bar_delta_raw), 0.0), 0.0, 3.0)
+    fi += 1
+
+    # [45] breakout_confirmation
+    breakout = np.zeros(n, dtype=np.float64)
+    up_break = (c > np.maximum(prev_sess_high, ib_high_arr)) & (bar_delta_raw > 0) & (feat[:, 2] > 1.05)
+    dn_break = (c < np.minimum(prev_sess_low, ib_low_arr)) & (bar_delta_raw < 0) & (feat[:, 2] > 1.05)
+    breakout[up_break] = np.clip(feat[up_break, 2] - 1.0, 0.0, 2.0)
+    breakout[dn_break] = -np.clip(feat[dn_break, 2] - 1.0, 0.0, 2.0)
+    feat[:, fi] = breakout
+    fi += 1
+
     assert fi == N_FEAT, f"Expected {N_FEAT} features, assigned {fi}"
     return feat
 
@@ -999,10 +1110,27 @@ PRICE_FEATURE_NAMES = [
     'intraday_sin', 'intraday_cos', 'intraday_phase',
 ]
 
+SESSION_FEATURE_NAMES = [
+    'opening_gap_pct', 'session_open_dist', 'first15_range_pct',
+    'first15_close_position', 'first15_acceptance', 'vwap_reclaim_state',
+    'ib_extension_pct', 'marker_10am', 'marker_11am', 'marker_1130am',
+    'lunch_flag', 'power_hour_flag', 'volume_climax_signal',
+    'breakout_confirmation',
+]
+
 OPTION_FEATURE_NAMES = [
     'atm_iv', 'vrp', 'iv_percentile', 'atm_gamma', 'atm_theta_per_bar',
     'gamma_pressure', 'aggregate_charm', 'option_spread_pct', 'iv_skew_pct',
     'current_moneyness_pct', 'near_atm_moneyness_pct', 'theta_acceleration',
+]
+
+SURFACE_FEATURE_NAMES = [
+    'slice_call_iv_mean', 'slice_put_iv_mean', 'slice_iv_skew_slope',
+    'slice_iv_curvature', 'slice_gamma_concentration',
+    'slice_gamma_dollar_concentration', 'slice_theta_pressure',
+    'slice_dist_to_max_gamma', 'slice_dist_to_max_gamma_dollar',
+    'slice_call_put_gamma_imbalance', 'slice_mean_spread',
+    'slice_txn_center_share', 'slice_quality_share',
 ]
 
 FLOW_FEATURE_NAMES = [
@@ -1011,5 +1139,5 @@ FLOW_FEATURE_NAMES = [
     'log_near_transactions', 'put_call_txn_ratio',
 ]
 
-ALL_FEATURE_NAMES = PRICE_FEATURE_NAMES + OPTION_FEATURE_NAMES + FLOW_FEATURE_NAMES
-NUM_FEATURES = len(ALL_FEATURE_NAMES)  # 52 (32 price + 12 option + 8 flow)
+ALL_FEATURE_NAMES = PRICE_FEATURE_NAMES + SESSION_FEATURE_NAMES + OPTION_FEATURE_NAMES + SURFACE_FEATURE_NAMES + FLOW_FEATURE_NAMES
+NUM_FEATURES = len(ALL_FEATURE_NAMES)

@@ -14,6 +14,9 @@ import hashlib
 import json
 from dataclasses import dataclass, fields
 
+from v2.core.chain_data import CHAIN_SCHEMA_VERSION, NUM_CONTRACT_FEATURES
+from v2.core.features import NUM_FEATURES
+
 
 @dataclass(frozen=True)
 class RuntimeConfig:
@@ -21,8 +24,8 @@ class RuntimeConfig:
 
     # --- Dimensions ---
     bars_per_day: int = 390
-    num_features: int = 52
-    num_contract_features: int = 22
+    num_features: int = NUM_FEATURES
+    num_contract_features: int = NUM_CONTRACT_FEATURES
     lookback: int = 30
     max_contracts_per_bar: int = 285  # observed max from data.pt metadata; training uses metadata value
 
@@ -32,7 +35,7 @@ class RuntimeConfig:
     starting_equity: float = 10_000.0
 
     # --- Schema versioning ---
-    chain_schema_version: str = "v4_exact_chain_v2_paths"
+    chain_schema_version: str = CHAIN_SCHEMA_VERSION
 
     def fingerprint(self) -> str:
         """SHA-256[:16] of all config values. Changes invalidate downstream artifacts."""

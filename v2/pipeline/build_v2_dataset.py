@@ -21,6 +21,9 @@ from v2.core.chain_data import (
     QUALITY_VALID,
     QUALITY_PARTIAL,
     QUALITY_CORRUPT,
+    SLICE_GATE_MIN_PNL,
+    STRIKE_GRID,
+    dynamic_slice_bounds,
     build_contract_row,
     ensure_sidecar_dir,
     file_sha256,
@@ -46,6 +49,8 @@ from v2.pipeline.compute_features import (
     FLOW_FEATURE_NAMES,
     OPTION_FEATURE_NAMES,
     PRICE_FEATURE_NAMES,
+    SESSION_FEATURE_NAMES,
+    SURFACE_FEATURE_NAMES,
     _bs_greeks,
     _bs_iv,
     bs_greeks_vec,
@@ -153,14 +158,22 @@ else:
                 os.remove(out_path)
 
 
-def _empty_sidecar(day: str, expiry: str, n_bars: int, bar_timestamps: np.ndarray | None = None) -> dict:
+def _empty_sidecar(
+    day: str,
+    expiry: str,
+    n_bars: int,
+    bar_timestamps: np.ndarray | None = None,
+    spot_series: np.ndarray | None = None,
+) -> dict:
     ts = np.asarray(bar_timestamps, dtype=np.int64) if bar_timestamps is not None else np.zeros(n_bars, dtype=np.int64)
+    spot_arr = np.asarray(spot_series, dtype=np.float32) if spot_series is not None else np.zeros(n_bars, dtype=np.float32)
     return {
         "schema_version": CHAIN_SCHEMA_VERSION,
         "date": day,
         "expiry": expiry,
         "n_bars": n_bars,
         "bar_timestamps": ts,
+        "spot_series": spot_arr,
         "contract_strike": np.zeros(0, dtype=np.float32),
         "contract_right": np.zeros(0, dtype=np.int8),
         "contract_mid": np.zeros((0, n_bars), dtype=np.float32),
@@ -176,6 +189,14 @@ def _empty_sidecar(day: str, expiry: str, n_bars: int, bar_timestamps: np.ndarra
         "bar_label_trade": np.zeros(n_bars, dtype=bool),
         "bar_labelable": np.zeros(n_bars, dtype=bool),
         "bar_quality": np.full(n_bars, QUALITY_CORRUPT, dtype=np.int8),
+        "bar_atm_strike": np.zeros(n_bars, dtype=np.float32),
+        "bar_slice_lo_strike": np.zeros(n_bars, dtype=np.float32),
+        "bar_slice_hi_strike": np.zeros(n_bars, dtype=np.float32),
+        "bar_slice_contract_count": np.zeros(n_bars, dtype=np.int32),
+        "bar_slice_best_contract_idx": np.full(n_bars, -1, dtype=np.int32),
+        "bar_slice_best_pnl": np.zeros(n_bars, dtype=np.float32),
+        "bar_slice_label_trade": np.zeros(n_bars, dtype=bool),
+        "bar_slice_labelable": np.zeros(n_bars, dtype=bool),
         # Path library fields
         "row_raw_returns": np.zeros((0, N_HORIZONS), dtype=np.float32),
         "row_mfe": np.zeros((0, N_HORIZONS), dtype=np.float32),
@@ -211,6 +232,105 @@ def _build_masks(dates_list: list[str]) -> tuple[np.ndarray, np.ndarray, np.ndar
         "shadow_days": len(shadow_dates),
     }
     return train_mask, val_mask, promote_mask, shadow_mask, split_info
+
+
+def _default_surface_features() -> dict[str, float]:
+    return {name: 0.0 for name in SURFACE_FEATURE_NAMES}
+
+
+def _compute_surface_features_for_bar(
+    chain_mats: dict[str, np.ndarray],
+    local_i: int,
+    spot: float,
+) -> dict[str, float]:
+    features = _default_surface_features()
+    if chain_mats["mid"].shape[0] == 0 or not np.isfinite(spot) or spot <= 0:
+        return features
+
+    atm_strike, slice_lo, slice_hi = dynamic_slice_bounds(spot)
+    strikes = chain_mats["contract_strike"].astype(np.float64, copy=False)
+    rights = chain_mats["contract_right"].astype(np.int8, copy=False)
+    mid = chain_mats["mid"][:, local_i].astype(np.float64, copy=False)
+    iv = chain_mats["iv"][:, local_i].astype(np.float64, copy=False)
+    gamma = chain_mats["gamma"][:, local_i].astype(np.float64, copy=False)
+    theta = chain_mats["theta"][:, local_i].astype(np.float64, copy=False)
+    spread = chain_mats["spread"][:, local_i].astype(np.float64, copy=False)
+    txn = chain_mats["transactions"][:, local_i].astype(np.float64, copy=False)
+    quality = chain_mats["quality"][:, local_i].astype(np.int8, copy=False)
+
+    gamma_dollar = gamma * float(spot) * float(spot) * 0.01
+    in_slice = (
+        np.isfinite(strikes)
+        & (strikes >= slice_lo - 1e-6)
+        & (strikes <= slice_hi + 1e-6)
+        & np.isfinite(mid)
+        & (mid > 0)
+    )
+    if not in_slice.any():
+        return features
+
+    call_mask = in_slice & (rights == 0)
+    put_mask = in_slice & (rights == 1)
+    iv_valid = in_slice & np.isfinite(iv) & (iv > 0)
+    gamma_valid = in_slice & np.isfinite(gamma)
+    gamma_dollar_valid = in_slice & np.isfinite(gamma_dollar)
+    theta_valid = in_slice & np.isfinite(theta)
+    spread_valid = in_slice & np.isfinite(spread)
+    txn_valid = in_slice & np.isfinite(txn)
+
+    def _safe_mean(mask: np.ndarray, values: np.ndarray) -> float:
+        return float(np.mean(values[mask])) if mask.any() else 0.0
+
+    features["slice_call_iv_mean"] = _safe_mean(call_mask & np.isfinite(iv) & (iv > 0), iv)
+    features["slice_put_iv_mean"] = _safe_mean(put_mask & np.isfinite(iv) & (iv > 0), iv)
+
+    if iv_valid.sum() >= 2:
+        x = (strikes[iv_valid] - atm_strike) / STRIKE_GRID
+        y = iv[iv_valid]
+        w = np.sqrt(np.maximum(txn[iv_valid], 1.0))
+        if len(np.unique(x)) >= 2:
+            coeff1 = np.polyfit(x, y, deg=1, w=w)
+            features["slice_iv_skew_slope"] = float(coeff1[0])
+        if len(np.unique(x)) >= 3:
+            coeff2 = np.polyfit(x, y, deg=2, w=w)
+            features["slice_iv_curvature"] = float(coeff2[0])
+
+    abs_gamma = np.abs(gamma[gamma_valid])
+    if abs_gamma.size > 0 and abs_gamma.sum() > 1e-10:
+        features["slice_gamma_concentration"] = float(abs_gamma.max() / abs_gamma.sum())
+
+    abs_gamma_dollar = np.abs(gamma_dollar[gamma_dollar_valid])
+    if abs_gamma_dollar.size > 0 and abs_gamma_dollar.sum() > 1e-10:
+        features["slice_gamma_dollar_concentration"] = float(abs_gamma_dollar.max() / abs_gamma_dollar.sum())
+
+    if theta_valid.any():
+        features["slice_theta_pressure"] = float(np.abs(theta[theta_valid]).sum() / max(mid[in_slice].sum(), 1e-6))
+
+    if gamma_valid.any():
+        max_gamma_idx = np.where(gamma_valid)[0][np.argmax(np.abs(gamma[gamma_valid]))]
+        features["slice_dist_to_max_gamma"] = float((strikes[max_gamma_idx] - atm_strike) / STRIKE_GRID)
+
+    if gamma_dollar_valid.any():
+        max_gamma_dollar_idx = np.where(gamma_dollar_valid)[0][np.argmax(np.abs(gamma_dollar[gamma_dollar_valid]))]
+        features["slice_dist_to_max_gamma_dollar"] = float((strikes[max_gamma_dollar_idx] - atm_strike) / STRIKE_GRID)
+
+    call_gamma = np.abs(gamma[call_mask & np.isfinite(gamma)]).sum()
+    put_gamma = np.abs(gamma[put_mask & np.isfinite(gamma)]).sum()
+    gamma_total = call_gamma + put_gamma
+    if gamma_total > 1e-10:
+        features["slice_call_put_gamma_imbalance"] = float((call_gamma - put_gamma) / gamma_total)
+
+    if spread_valid.any():
+        features["slice_mean_spread"] = float(np.mean(spread[spread_valid]))
+
+    if txn_valid.any():
+        center_mask = in_slice & (np.abs(strikes - atm_strike) <= 2.0 * STRIKE_GRID) & np.isfinite(txn)
+        txn_total = float(np.maximum(txn[txn_valid], 0.0).sum())
+        if txn_total > 0:
+            features["slice_txn_center_share"] = float(np.maximum(txn[center_mask], 0.0).sum() / txn_total)
+
+    features["slice_quality_share"] = float((quality[in_slice] >= QUALITY_VALID).mean()) if in_slice.any() else 0.0
+    return features
 
 
 def _fill_chain_matrices(
@@ -504,7 +624,7 @@ def _label_day_sidecar(
     n_bars = len(global_indices)
     n_contracts = chain_mats["mid"].shape[0]
     if n_contracts == 0:
-        return _empty_sidecar(day, expiry, n_bars)
+        return _empty_sidecar(day, expiry, n_bars, bar_timestamps=timestamps, spot_series=spot_series)
 
     row_features: list[np.ndarray] = []
     row_labels: list[float] = []
@@ -522,11 +642,23 @@ def _label_day_sidecar(
     bar_label_trade = np.zeros(n_bars, dtype=bool)
     bar_labelable = np.zeros(n_bars, dtype=bool)
     bar_quality = np.full(n_bars, QUALITY_CORRUPT, dtype=np.int8)
+    bar_atm_strike = np.zeros(n_bars, dtype=np.float32)
+    bar_slice_lo_strike = np.zeros(n_bars, dtype=np.float32)
+    bar_slice_hi_strike = np.zeros(n_bars, dtype=np.float32)
+    bar_slice_contract_count = np.zeros(n_bars, dtype=np.int32)
+    bar_slice_best_contract_idx = np.full(n_bars, -1, dtype=np.int32)
+    bar_slice_best_pnl = np.zeros(n_bars, dtype=np.float32)
+    bar_slice_label_trade = np.zeros(n_bars, dtype=bool)
+    bar_slice_labelable = np.zeros(n_bars, dtype=bool)
     contract_strike = chain_mats["contract_strike"]
     contract_right = chain_mats["contract_right"]
 
     for local_i in range(n_bars):
         spot = float(spot_series[local_i])
+        atm_strike, slice_lo_strike, slice_hi_strike = dynamic_slice_bounds(spot)
+        bar_atm_strike[local_i] = atm_strike
+        bar_slice_lo_strike[local_i] = slice_lo_strike
+        bar_slice_hi_strike[local_i] = slice_hi_strike
         bod = local_i
         if bod < DEFAULT_POLICY.no_trade_before_bar or bod >= DEFAULT_POLICY.no_trade_after_bar:
             bar_ptrs.append(len(row_features))
@@ -534,8 +666,12 @@ def _label_day_sidecar(
 
         best_local = -1
         best_pnl = -float("inf")
+        slice_best_local = -1
+        slice_best_pnl = -float("inf")
         any_visible = False
         any_labelable = False
+        any_slice_labelable = False
+        slice_contract_count = 0
 
         for contract_idx in range(n_contracts):
             mid_now = float(chain_mats["mid"][contract_idx, local_i])
@@ -550,6 +686,10 @@ def _label_day_sidecar(
                 continue
             any_visible = True
             quality = int(chain_mats["quality"][contract_idx, local_i])
+            strike_now = float(contract_strike[contract_idx])
+            in_slice = slice_lo_strike - 1e-6 <= strike_now <= slice_hi_strike + 1e-6
+            if in_slice:
+                slice_contract_count += 1
 
             # Contract price momentum: % change over last 5 and 10 bars
             mid_chg_5 = 0.0
@@ -565,7 +705,7 @@ def _label_day_sidecar(
                     mid_chg_10 = (mid_now - prev10) / prev10
 
             row = build_contract_row(
-                strike=float(contract_strike[contract_idx]),
+                strike=strike_now,
                 right="P" if int(contract_right[contract_idx]) == 1 else "C",
                 mid=mid_now,
                 spread_frac=spread_frac,
@@ -638,18 +778,32 @@ def _label_day_sidecar(
             if pnl_long > best_pnl:
                 best_pnl = pnl_long
                 best_local = len(row_labels) - bar_ptrs[-1] - 1
+            if in_slice and pnl_long > slice_best_pnl:
+                slice_best_pnl = pnl_long
+                slice_best_local = len(row_labels) - bar_ptrs[-1] - 1
+                any_slice_labelable = True
+            elif in_slice:
+                any_slice_labelable = any_slice_labelable or np.isfinite(pnl_long)
 
         if any_labelable:
             bar_quality[local_i] = QUALITY_VALID
             bar_labelable[local_i] = True
         elif any_visible:
             bar_quality[local_i] = QUALITY_PARTIAL
+        if any_slice_labelable:
+            bar_slice_labelable[local_i] = True
+        bar_slice_contract_count[local_i] = slice_contract_count
         bar_ptrs.append(len(row_features))
         if best_local >= 0:
             bar_best_contract_idx[local_i] = best_local
             bar_best_pnl[local_i] = float(best_pnl)
             if best_pnl > DEFAULT_POLICY.label_gate_min_pnl:
                 bar_label_trade[local_i] = True
+        if slice_best_local >= 0:
+            bar_slice_best_contract_idx[local_i] = slice_best_local
+            bar_slice_best_pnl[local_i] = float(slice_best_pnl)
+            if slice_best_pnl >= SLICE_GATE_MIN_PNL:
+                bar_slice_label_trade[local_i] = True
 
     return {
         "schema_version": CHAIN_SCHEMA_VERSION,
@@ -657,6 +811,7 @@ def _label_day_sidecar(
         "expiry": expiry,
         "n_bars": n_bars,
         "bar_timestamps": timestamps.astype(np.int64),
+        "spot_series": spot_series.astype(np.float32),
         "contract_strike": contract_strike.astype(np.float32),
         "contract_right": contract_right.astype(np.int8),
         "contract_mid": chain_mats["mid"].astype(np.float32),
@@ -672,6 +827,14 @@ def _label_day_sidecar(
         "bar_label_trade": bar_label_trade,
         "bar_labelable": bar_labelable,
         "bar_quality": bar_quality,
+        "bar_atm_strike": bar_atm_strike,
+        "bar_slice_lo_strike": bar_slice_lo_strike,
+        "bar_slice_hi_strike": bar_slice_hi_strike,
+        "bar_slice_contract_count": bar_slice_contract_count,
+        "bar_slice_best_contract_idx": bar_slice_best_contract_idx,
+        "bar_slice_best_pnl": bar_slice_best_pnl.astype(np.float32),
+        "bar_slice_label_trade": bar_slice_label_trade,
+        "bar_slice_labelable": bar_slice_labelable,
         # Path library: environment truth + policy overlays
         "row_raw_returns": np.asarray(row_raw_returns, dtype=np.float32).reshape(-1, N_HORIZONS) if row_raw_returns else np.zeros((0, N_HORIZONS), dtype=np.float32),
         "row_mfe": np.asarray(row_mfe, dtype=np.float32).reshape(-1, N_HORIZONS) if row_mfe else np.zeros((0, N_HORIZONS), dtype=np.float32),
@@ -698,8 +861,10 @@ def _process_one_day(args: dict) -> dict:
 
     n_bars_day = len(global_indices)
     n_opt = len(OPTION_FEATURE_NAMES)
+    n_surface = len(SURFACE_FEATURE_NAMES)
     n_flow = len(FLOW_FEATURE_NAMES)
     X_opt_day = np.full((n_bars_day, n_opt), np.nan, dtype=np.float64)
+    X_surface_day = np.zeros((n_bars_day, n_surface), dtype=np.float64)
     X_flow_day = np.zeros((n_bars_day, n_flow), dtype=np.float64)
 
     cache_path = os.path.join(FULL_CHAIN_CACHE_DIR, f"{day}.pkl")
@@ -742,6 +907,10 @@ def _process_one_day(args: dict) -> dict:
         for j, name in enumerate(FLOW_FEATURE_NAMES):
             if name in flow_feats:
                 X_flow_day[local_i, j] = flow_feats[name]
+        surface_feats = _compute_surface_features_for_bar(chain_mats, local_i, float(day_spot[local_i]))
+        for j, name in enumerate(SURFACE_FEATURE_NAMES):
+            if name in surface_feats:
+                X_surface_day[local_i, j] = surface_feats[name]
         atm_iv_val = opt_feats.get("atm_iv", np.nan)
         if np.isfinite(atm_iv_val):
             iv_history.append(atm_iv_val)
@@ -758,9 +927,11 @@ def _process_one_day(args: dict) -> dict:
     # NaN audit: count per-feature NaNs before zeroing (observability)
     nan_counts_opt = np.isnan(X_opt_day).sum(axis=0).tolist()  # per option feature
     X_opt_day = np.nan_to_num(X_opt_day, nan=0.0)
+    nan_counts_surface = np.isnan(X_surface_day).sum(axis=0).tolist()
+    X_surface_day = np.nan_to_num(X_surface_day, nan=0.0)
 
     X_day_context = np.concatenate(
-        [day_X_price, X_opt_day, X_flow_day], axis=1,
+        [day_X_price, X_opt_day, X_surface_day, X_flow_day], axis=1,
     ).astype(np.float32)
 
     sc = _label_day_sidecar(
@@ -789,9 +960,15 @@ def _process_one_day(args: dict) -> dict:
             "best_pnl": float(sc["bar_best_pnl"][local_i]),
             "label_trade": bool(sc["bar_label_trade"][local_i]),
             "labelable": bool(sc["bar_labelable"][local_i]),
+            "slice_best_pnl": float(sc["bar_slice_best_pnl"][local_i]),
+            "slice_label_trade": bool(sc["bar_slice_label_trade"][local_i]),
+            "slice_labelable": bool(sc["bar_slice_labelable"][local_i]),
             "best_strike": 0.0,
             "best_right": -1,
+            "slice_best_strike": 0.0,
+            "slice_best_right": -1,
             "is_trade": False,
+            "is_slice_trade": False,
         }
         if sc["bar_best_contract_idx"][local_i] >= 0:
             start = int(sc["bar_ptrs"][local_i])
@@ -801,6 +978,13 @@ def _process_one_day(args: dict) -> dict:
             info["best_right"] = int(sc["contract_right"][cidx])
             info["is_trade"] = True
             trade_bars += 1
+        if sc["bar_slice_best_contract_idx"][local_i] >= 0:
+            start = int(sc["bar_ptrs"][local_i])
+            row_local = int(sc["bar_slice_best_contract_idx"][local_i])
+            cidx = int(sc["row_contract_idx"][start + row_local])
+            info["slice_best_strike"] = float(sc["contract_strike"][cidx])
+            info["slice_best_right"] = int(sc["contract_right"][cidx])
+            info["is_slice_trade"] = True
         signal_bars += 1
         bar_info.append(info)
 
@@ -808,6 +992,7 @@ def _process_one_day(args: dict) -> dict:
         "day": day,
         "global_indices": global_indices,
         "X_opt_day": X_opt_day,
+        "X_surface_day": X_surface_day,
         "X_flow_day": X_flow_day,
         "sidecar_path": path,
         "max_contracts": max_c,
@@ -815,6 +1000,7 @@ def _process_one_day(args: dict) -> dict:
         "trade_bars": trade_bars,
         "bar_info": bar_info,
         "nan_counts_opt": nan_counts_opt,
+        "nan_counts_surface": nan_counts_surface,
     }
 
 
@@ -881,8 +1067,10 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
     )
 
     n_opt = len(OPTION_FEATURE_NAMES)
+    n_surface = len(SURFACE_FEATURE_NAMES)
     n_flow = len(FLOW_FEATURE_NAMES)
     X_opt = np.full((N, n_opt), np.nan, dtype=np.float64)
+    X_surface = np.zeros((N, n_surface), dtype=np.float64)
     X_flow = np.zeros((N, n_flow), dtype=np.float64)
     spot_prices = spx_close.astype(np.float32)
     timestamps = [str(ts) for ts in spx_df["timestamp"]]
@@ -894,11 +1082,17 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
     total_trade_bars = 0
     # NaN audit accumulators (per option feature)
     nan_counts_opt_total = np.zeros(n_opt, dtype=np.int64)
+    nan_counts_surface_total = np.zeros(n_surface, dtype=np.int64)
     best_contract_pnl = np.zeros(N, dtype=np.float32)
     best_contract_strike = np.zeros(N, dtype=np.float32)
     best_contract_right = np.full(N, -1, dtype=np.int32)
     label_trade = np.zeros(N, dtype=bool)
     label_trade_valid = np.zeros(N, dtype=bool)
+    slice_best_contract_pnl = np.zeros(N, dtype=np.float32)
+    slice_best_contract_strike = np.zeros(N, dtype=np.float32)
+    slice_best_contract_right = np.full(N, -1, dtype=np.int32)
+    slice_label_trade = np.zeros(N, dtype=bool)
+    slice_label_trade_valid = np.zeros(N, dtype=bool)
 
     # Build per-day work items
     work_items: list[dict] = []
@@ -923,8 +1117,10 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
         for result in pool.imap_unordered(_process_one_day, work_items, chunksize=4):
             gi = result["global_indices"]
             X_opt[gi] = result["X_opt_day"]
+            X_surface[gi] = result["X_surface_day"]
             X_flow[gi] = result["X_flow_day"]
             nan_counts_opt_total += np.array(result["nan_counts_opt"], dtype=np.int64)
+            nan_counts_surface_total += np.array(result["nan_counts_surface"], dtype=np.int64)
             sidecar_paths.append(result["sidecar_path"])
             max_contracts_per_bar = max(max_contracts_per_bar, result["max_contracts"])
             total_signal_bars += result["signal_bars"]
@@ -934,14 +1130,20 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
                 best_contract_pnl[g] = info["best_pnl"]
                 label_trade[g] = info["label_trade"]
                 label_trade_valid[g] = info["labelable"]
+                slice_best_contract_pnl[g] = info["slice_best_pnl"]
+                slice_label_trade[g] = info["slice_label_trade"]
+                slice_label_trade_valid[g] = info["slice_labelable"]
                 if info["is_trade"]:
                     best_contract_strike[g] = info["best_strike"]
                     best_contract_right[g] = info["best_right"]
+                if info["is_slice_trade"]:
+                    slice_best_contract_strike[g] = info["slice_best_strike"]
+                    slice_best_contract_right[g] = info["slice_best_right"]
             done += 1
             if done % 100 == 0:
                 print(f"  {done}/{len(unique_dates)} days processed")
 
-    X_combined = np.concatenate([X_price, X_opt, X_flow], axis=1).astype(np.float32)
+    X_combined = np.concatenate([X_price, X_opt, X_surface, X_flow], axis=1).astype(np.float32)
     assert X_combined.shape[1] == NUM_FEATURES, f"expected {NUM_FEATURES}, got {X_combined.shape[1]}"
     print("Normalizing features...")
     X_normalized = normalize_features(X_combined, np.ones(N, dtype=bool), dates=dates_list)
@@ -958,6 +1160,11 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
         "best_contract_pnl": torch.from_numpy(best_contract_pnl.astype(np.float32)),
         "best_contract_strike": torch.from_numpy(best_contract_strike.astype(np.float32)),
         "best_contract_right": torch.from_numpy(best_contract_right.astype(np.int32)),
+        "slice_label_trade": torch.from_numpy(slice_label_trade),
+        "slice_label_trade_valid": torch.from_numpy(slice_label_trade_valid),
+        "slice_best_contract_pnl": torch.from_numpy(slice_best_contract_pnl.astype(np.float32)),
+        "slice_best_contract_strike": torch.from_numpy(slice_best_contract_strike.astype(np.float32)),
+        "slice_best_contract_right": torch.from_numpy(slice_best_contract_right.astype(np.int32)),
         "dates": dates_list,
         "bar_of_day": torch.from_numpy(bar_of_day),
         "train_mask": torch.from_numpy(train_mask),
@@ -965,13 +1172,14 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
         "promote_mask": torch.from_numpy(promote_mask),
         "shadow_mask": torch.from_numpy(shadow_mask),
         "metadata": {
-            "version": "v4_exact_chain",
+            "version": "v5_exact_chain_slice",
             "build_timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "fingerprint": "pending",
             "n_features": NUM_FEATURES,
             "normalization": "rolling_zscore_60day",
-            "label_scheme": "exact_contract_fixed_risk",
+            "label_scheme": "exact_contract_fixed_risk_dynamic_slice",
             "label_gate_min_pnl": DEFAULT_POLICY.label_gate_min_pnl,
+            "slice_gate_min_pnl": SLICE_GATE_MIN_PNL,
             "trade_window": f"bar {DEFAULT_POLICY.no_trade_before_bar}-{DEFAULT_POLICY.no_trade_after_bar}",
             "split": split_info,
             "chain_schema_version": CHAIN_SCHEMA_VERSION,
@@ -979,6 +1187,8 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
             "chain_sidecar_digest": sidecar_digest,
             "contract_feature_fields": CONTRACT_FEATURE_FIELDS,
             "max_contracts_per_bar": max_contracts_per_bar,
+            "slice_radius_strikes": 10,
+            "slice_width_points": 10 * STRIKE_GRID,
             "total_signal_bars": total_signal_bars,
             "total_trade_bars": total_trade_bars,
             "risk_policy": {
@@ -1017,11 +1227,11 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
         dataset=dataset,
         X_combined=X_combined,
         train_mask=train_mask,
-        label_trade=label_trade,
-        label_trade_valid=label_trade_valid,
-        nan_counts_opt_total=nan_counts_opt_total,
+        label_trade=slice_label_trade,
+        label_trade_valid=slice_label_trade_valid,
+        nan_counts_opt_total=np.concatenate([nan_counts_opt_total, nan_counts_surface_total]),
         feature_names=list(ALL_FEATURE_NAMES),
-        option_feature_names=list(OPTION_FEATURE_NAMES),
+        option_feature_names=list(OPTION_FEATURE_NAMES) + list(SURFACE_FEATURE_NAMES),
         n_price=X_price.shape[1],
         n_opt=n_opt,
         dates_list=dates_list,

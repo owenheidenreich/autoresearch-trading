@@ -50,6 +50,7 @@ def check_data() -> list[str]:
     """Verify dataset integrity: shapes, sidecar sampling, schema version."""
     errors = []
     try:
+        from v2.core.config import RUNTIME_CONFIG
         data_path = "v2/data.pt"
         if not os.path.exists(data_path):
             errors.append(f"data.pt not found at {data_path}")
@@ -66,8 +67,8 @@ def check_data() -> list[str]:
         X = data.get("X")
         if X is not None:
             n_bars, n_feat = X.shape
-            if n_feat != 52:
-                errors.append(f"X has {n_feat} features, expected 52")
+            if n_feat != RUNTIME_CONFIG.num_features:
+                errors.append(f"X has {n_feat} features, expected {RUNTIME_CONFIG.num_features}")
             if n_bars == 0:
                 errors.append("X has 0 bars")
 
@@ -86,12 +87,12 @@ def check_data() -> list[str]:
                     map_location="cpu", weights_only=False,
                 )
                 sv = sample.get("schema_version", "")
-                expected = meta.get("chain_schema_version", "v4_exact_chain_v2_paths")
+                expected = meta.get("chain_schema_version", RUNTIME_CONFIG.chain_schema_version)
                 if sv != expected:
                     errors.append(f"sidecar schema '{sv}' != expected '{expected}'")
 
         # Check schema version
-        if meta.get("chain_schema_version") != "v4_exact_chain_v2_paths":
+        if meta.get("chain_schema_version") != RUNTIME_CONFIG.chain_schema_version:
             errors.append(f"unexpected chain_schema_version: {meta.get('chain_schema_version')}")
 
     except Exception as e:
