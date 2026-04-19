@@ -1,0 +1,71 @@
+{
+  "acknowledged_by": "gduby",
+  "acknowledged_date": "2026-04-19",
+  "decision": "accept_inflated_ci",
+  "decision_summary": "Proceed with the pre-registered 60/20/20 chronological split. Do NOT rebalance splits, do NOT drop the val fold. Accept that val-fold and test-fold conclusions will be reported with wide bootstrap CIs reflecting the 3-positive minority count per fold.",
+  "triggers_at_time_of_decision": [
+    {
+      "name": "minority_count",
+      "split": "val",
+      "n_positive": 3,
+      "threshold": 5
+    },
+    {
+      "name": "minority_count",
+      "split": "test",
+      "n_positive": 3,
+      "threshold": 5
+    }
+  ],
+  "close_calls_not_triggered": [
+    {
+      "name": "late_positives",
+      "actual_fraction": 0.56,
+      "threshold": 0.60,
+      "note": "Just under trigger but material. Results doc must frame the task as partly detect / partly forecast."
+    }
+  ],
+  "rationale": [
+    "The pre-registered plan's three-way Phase 2 gate (advance / signal_of_life / null) was explicitly designed to distinguish 'not enough data to conclude' from 'no signal'. With 3 positives per minority fold and bootstrap 95% CIs, most conclusions will land in signal_of_life or null, which is the correct epistemic posture for a 25-positive labeled set.",
+    "Rebalancing splits after seeing the halt is a form of test-fold contamination — the plan explicitly forbids post-hoc split-ratio adjustment for the purpose of clearing a gate.",
+    "Dropping the val fold to train/test only would break chronological discipline because threshold selection would have to move to train-fold k-fold CV, which conflicts with the plan's 'no k-fold, no shuffling' rule.",
+    "Growing the labeled dataset is the correct remedy for a signal_of_life outcome, not a pre-registration change."
+  ],
+  "label_fixes_applied_during_preflight_audit": [
+    {
+      "date": "2023-10-30",
+      "old_label": 1,
+      "old_side": "call",
+      "old_first_qualifying_time_et": "16:50",
+      "new_label": 0,
+      "new_side": "",
+      "new_hedge_only": true,
+      "reason": "Journal lines 50-58 explicitly describe 0DTE LONGs as defending a breached/rolled CCS short strike — hedge_only=True per §N5 of label_rules.md. The proposer-extracted '16:50' was a PT->ET conversion of a 1:50 PM post-hoc recap timestamp, past the 16:00 market close.",
+      "recorded_in": "v2/fork_c/apply_human_overrides.py OVERRIDES dict"
+    }
+  ],
+  "data_quality_flags_not_fixed": [
+    {
+      "date": "2023-11-30",
+      "first_qualifying_time_et": "09:24",
+      "flag": "pre-open (before 09:30 ET)",
+      "impact": "The positive label is trivially detectable at the 10:00 ET cutoff because the qualifying event is already in the observable window. Classifier task is easy for this row; no label change recommended, but this bias should be noted."
+    },
+    {
+      "date": "2024-05-14",
+      "first_qualifying_time_et": "09:13",
+      "flag": "pre-open (before 09:30 ET)",
+      "impact": "Same as above — detectable at cutoff; no label change recommended."
+    }
+  ],
+  "split_boundaries_frozen": {
+    "train_start": "2023-10-23",
+    "train_end": "2024-04-03",
+    "val_start": "2024-04-04",
+    "val_end": "2024-05-15",
+    "test_start": "2024-05-16",
+    "test_end": "2024-07-03",
+    "note": "These boundaries are frozen by this acknowledgment. Any sensitivity rerun must filter a changed label set to exactly these calendar ranges — indices are NOT recomputed on a different row count."
+  },
+  "next_step": "Run train_tier1.py on the pre-registered 60/20/20 split."
+}

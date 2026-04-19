@@ -96,13 +96,13 @@
     "put_call_txn_ratio"
   ],
   "label_distribution": {
-    "0": 99,
-    "1": 26
+    "0": 100,
+    "1": 25
   },
   "label_rules_path": "v2/fork_c/label_rules.md",
   "label_rules_sha256": "29c02dd9bd083f38b0b397b6cdac962cfda1e0547c18a6f11ac1559ed39d63e5",
   "labels_path": "v2/fork_c/tier1_labels.csv",
-  "labels_sha256": "fa775cf3ff9ac601ac4173650424b13304ec990abaf14e550818c371705a314e",
+  "labels_sha256": "c2b209e11ada15773f922725864d124452e31ae3e57d2b55b48d2e789d7cda13",
   "n_aggregate_features": 5,
   "n_base_features": 79,
   "n_extracted": 125,

@@ -51,10 +51,32 @@ class Override:
 
 # ------------------------------------------------------------------------
 # Human override list — gduby review round 1 (2026-04-19)
+#
+# 2026-04-19 addendum: 2023-10-30 added after preflight-driven audit.
+# The proposer classified it label=1 side=call because of the "1:50 PM"
+# timestamp on a 0DTE-LONG line, but the full journal (lines 50-58) shows
+# the 0DTE longs were explicitly defending a breached/rolled CCS short
+# strike — hedge_only=True per §N5. Catching this late is consistent with
+# the plan's "curator authoritative" design; the override ledger is the
+# one place where this kind of catch is recorded and versioned.
 # ------------------------------------------------------------------------
 
 OVERRIDES: dict[str, Override] = {
     # Definite overrides ---------------------------------------------------
+    "2023-10-30": Override(
+        label=0, confidence="High", evidence_type="",
+        first_qualifying_time_et="", side="", hedge_only=True,
+        journal_ref="2023-10-30.txt:50-58",
+        notes=(
+            "Hedge-only per §N5. Journal is explicit: 'The 0DTE LONGs came "
+            "to defend the BREACHED & ROLLED CCS SHORT STRIKE and offset "
+            "the loss on the the trade.' The LONG SPX CALL added alongside "
+            "is a spread-repair entry, not a directional 0DTE long. Proposer "
+            "mis-labeled label=1 side=call with first_qualifying_time_et=16:50 "
+            "(a PT→ET conversion of the 1:50 PM post-hoc recap timestamp, "
+            "which is past the 16:00 ET close in any case)."
+        ),
+    ),
     "2024-03-22": Override(
         label=1, confidence="High", evidence_type="explicitly_claimed",
         first_qualifying_time_et="10:00", side="",

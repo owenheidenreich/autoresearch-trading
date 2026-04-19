@@ -1,0 +1,113 @@
+{
+  "dataset_path": "v2/fork_c/tier1_dataset.csv",
+  "dataset_sha256": "6f18d71b8b3597d80baa623b7e381f25ec66942d43c66048c3463ce8b2e3d626",
+  "halted": true,
+  "overall": {
+    "base_rate": 0.2,
+    "n": 125,
+    "n_negative": 100,
+    "n_positive": 25
+  },
+  "per_split": {
+    "test": {
+      "confidence": {
+        "High": 25
+      },
+      "date_end": "2024-07-03",
+      "date_start": "2024-05-16",
+      "evidence_type": {
+        "executed": 3,
+        "missing": 22
+      },
+      "n": 25,
+      "n_negative": 22,
+      "n_positive": 3,
+      "name": "test",
+      "positive_rate": 0.12,
+      "side": {
+        "empty": 22,
+        "put": 3
+      }
+    },
+    "train": {
+      "confidence": {
+        "High": 71,
+        "Medium": 4
+      },
+      "date_end": "2024-04-03",
+      "date_start": "2023-10-23",
+      "evidence_type": {
+        "executed": 18,
+        "explicitly_claimed": 3,
+        "missing": 54
+      },
+      "n": 75,
+      "n_negative": 56,
+      "n_positive": 19,
+      "name": "train",
+      "positive_rate": 0.25333333333333335,
+      "side": {
+        "call": 16,
+        "empty": 57,
+        "put": 2
+      }
+    },
+    "val": {
+      "confidence": {
+        "High": 24,
+        "Medium": 1
+      },
+      "date_end": "2024-05-15",
+      "date_start": "2024-04-04",
+      "evidence_type": {
+        "executed": 2,
+        "explicitly_claimed": 1,
+        "missing": 22
+      },
+      "n": 25,
+      "n_negative": 22,
+      "n_positive": 3,
+      "name": "val",
+      "positive_rate": 0.12,
+      "side": {
+        "call": 3,
+        "empty": 22
+      }
+    }
+  },
+  "positive_timing": {
+    "buckets": {
+      "10:01-11:00": 12,
+      "11:01-12:00": 1,
+      "12:01-close": 1,
+      "<=10:00": 11,
+      "missing": 0,
+      "other": 0
+    },
+    "late_positive_fraction": 0.56,
+    "n_late_positives": 14,
+    "n_positives": 25
+  },
+  "split_boundaries": {
+    "test_end": "2024-07-03",
+    "test_start": "2024-05-16",
+    "train_end": "2024-04-03",
+    "train_start": "2023-10-23",
+    "val_end": "2024-05-15",
+    "val_start": "2024-04-04"
+  },
+  "thresholds": {
+    "late_positive_fraction": 0.6,
+    "minimum_minority_per_split": 5
+  },
+  "triggers": [
+    {
+      "details": "Split 'val' has only 3 samples in the smaller class (pos=3, neg=22); threshold is 5. Choose: rebalance split ratios, reduce to train/test only, or accept inflated uncertainty.",
+      "name": "minority_count"
+    },
+    {
+      "details": "Split 'test' has only 3 samples in the smaller class (pos=3, neg=22); threshold is 5. Choose: rebalance split ratios, reduce to train/test only, or accept inflated uncertainty.",
+      "name": "minority_count"
+    }
+  ]
+}
