@@ -1,0 +1,286 @@
+{
+  "aggregate_names": [
+    "am_session_range_bps",
+    "am_session_end_vs_open_bps",
+    "ovn_proxy_direction",
+    "prior_session_end_ret",
+    "vwap_sigma_session_frac"
+  ],
+  "aggregate_window_bars": 31,
+  "confidence_distribution": {
+    "High": 120,
+    "Medium": 5
+  },
+  "cutoff_bar": 30,
+  "data_path": "/Users/gduby/Documents/autoresearch-trading/v2/data.pt",
+  "data_sha256": "f71ff9ef56cd3564c870599ac56777a98b22bf6e63f95e93f4e5559b3b1ad74f",
+  "feature_names_base": [
+    "ret_6",
+    "ret_12",
+    "volume_ratio",
+    "bar_range",
+    "realized_vol",
+    "range_ratio",
+    "vwap_dist",
+    "session_range_pct",
+    "prev_high_dist",
+    "ema_cross",
+    "consec_direction",
+    "speed_estimate",
+    "vix_roc",
+    "minutes_to_close",
+    "vix_regime",
+    "bollinger_position",
+    "rsi_7",
+    "session_range_position",
+    "poc_dist",
+    "va_position",
+    "ib_break",
+    "atr_14",
+    "bar_delta",
+    "session_cum_delta",
+    "macdh_slope",
+    "force_index_2",
+    "effort_vs_result",
+    "trend_5min",
+    "vwap_slope",
+    "intraday_sin",
+    "intraday_cos",
+    "intraday_phase",
+    "opening_gap_pct",
+    "session_open_dist",
+    "first15_range_pct",
+    "first15_close_position",
+    "first15_acceptance",
+    "vwap_reclaim_state",
+    "ib_extension_pct",
+    "marker_10am",
+    "marker_11am",
+    "marker_1130am",
+    "lunch_flag",
+    "power_hour_flag",
+    "volume_climax_signal",
+    "breakout_confirmation",
+    "atm_iv",
+    "vrp",
+    "iv_percentile",
+    "atm_gamma",
+    "atm_theta_per_bar",
+    "gamma_pressure",
+    "aggregate_charm",
+    "option_spread_pct",
+    "iv_skew_pct",
+    "current_moneyness_pct",
+    "near_atm_moneyness_pct",
+    "theta_acceleration",
+    "slice_call_iv_mean",
+    "slice_put_iv_mean",
+    "slice_iv_skew_slope",
+    "slice_iv_curvature",
+    "slice_gamma_concentration",
+    "slice_gamma_dollar_concentration",
+    "slice_theta_pressure",
+    "slice_dist_to_max_gamma",
+    "slice_dist_to_max_gamma_dollar",
+    "slice_call_put_gamma_imbalance",
+    "slice_mean_spread",
+    "slice_txn_center_share",
+    "slice_quality_share",
+    "log_near_call_volume",
+    "log_near_put_volume",
+    "call_put_flow_ratio",
+    "log_total_volume",
+    "chain_call_put_ratio",
+    "log_chain_volume",
+    "log_near_transactions",
+    "put_call_txn_ratio"
+  ],
+  "label_distribution": {
+    "0": 99,
+    "1": 26
+  },
+  "label_rules_path": "v2/fork_c/label_rules.md",
+  "label_rules_sha256": "29c02dd9bd083f38b0b397b6cdac962cfda1e0547c18a6f11ac1559ed39d63e5",
+  "labels_path": "v2/fork_c/tier1_labels.csv",
+  "labels_sha256": "fa775cf3ff9ac601ac4173650424b13304ec990abaf14e550818c371705a314e",
+  "n_aggregate_features": 5,
+  "n_base_features": 79,
+  "n_extracted": 125,
+  "n_label_rows": 167,
+  "n_skipped": 42,
+  "n_total_features": 84,
+  "nonfinite_feature_cells": [],
+  "skipped_by_reason": {
+    "date_not_in_manifest": 42
+  },
+  "skipped_rows": [
+    {
+      "date": "2023-10-22",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-11-19",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-11-26",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-12-03",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-12-10",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-12-16",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-12-17",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-12-25",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2023-12-30",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-01-01",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-01-07",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-01-13",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-01-14",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-01-21",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-01-28",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-02-03",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-02-04",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-02-11",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-02-18",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-02-19",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-02-24",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-02-25",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-03-03",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-03-10",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-03-17",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-03-23",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-03-24",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-03-31",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-04-06",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-04-07",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-04-14",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-04-21",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-05-04",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-05-05",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-05-12",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-05-19",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-05-27",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-06-02",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-06-09",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-06-16",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-06-23",
+      "reason": "date_not_in_manifest"
+    },
+    {
+      "date": "2024-06-30",
+      "reason": "date_not_in_manifest"
+    }
+  ]
+}
