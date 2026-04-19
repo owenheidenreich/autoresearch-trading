@@ -1,0 +1,175 @@
+{
+  "control_A": {
+    "dollar_gross_loss": 4343.882137603192,
+    "dollar_gross_profit": 3198.6758863182167,
+    "dollar_net_pnl": -1145.2062512849757,
+    "dollar_pf": 0.7363634152567359,
+    "mean_net_pct": -0.010182149922840698,
+    "mean_net_pct_stderr": 0.011678939362565527,
+    "n": 69,
+    "std_net_pct": 0.09701255640266002,
+    "stop_hit_frac": 0.463768115942029,
+    "target_hit_frac": 0.5217391304347826,
+    "time_stop_frac": 0.014492753623188406
+  },
+  "control_B": {
+    "dollar_gross_loss": 3320.6734029952436,
+    "dollar_gross_profit": 3632.1477806956673,
+    "dollar_net_pnl": 311.47437770042393,
+    "dollar_pf": 1.0937985582741965,
+    "mean_net_pct": 0.0009042068076122279,
+    "mean_net_pct_stderr": 0.014206128052038188,
+    "n": 62,
+    "std_net_pct": 0.11185916414096876,
+    "stop_hit_frac": 0.6451612903225806,
+    "target_hit_frac": 0.3548387096774194,
+    "time_stop_frac": 0.0
+  },
+  "per_fold": [
+    {
+      "control_A": {
+        "dollar_gross_loss": 1330.8024101687238,
+        "dollar_gross_profit": 728.9589367914867,
+        "dollar_net_pnl": -601.8434733772373,
+        "dollar_pf": 0.5477589544634704,
+        "mean_net_pct": -0.019950376095531977,
+        "mean_net_pct_stderr": 0.02975534612013459,
+        "n": 15,
+        "std_net_pct": 0.11524195998391874,
+        "stop_hit_frac": 0.4,
+        "target_hit_frac": 0.5333333333333333,
+        "time_stop_frac": 0.06666666666666667
+      },
+      "control_B": {
+        "dollar_gross_loss": 475.68019514345167,
+        "dollar_gross_profit": 785.1841484403609,
+        "dollar_net_pnl": 309.5039532969093,
+        "dollar_pf": 1.6506555380208159,
+        "mean_net_pct": 0.0037367885435598993,
+        "mean_net_pct_stderr": 0.04972331257467294,
+        "n": 9,
+        "std_net_pct": 0.14916993772401882,
+        "stop_hit_frac": 0.6666666666666666,
+        "target_hit_frac": 0.3333333333333333,
+        "time_stop_frac": 0.0
+      },
+      "fold_idx": 0
+    },
+    {
+      "control_A": {
+        "dollar_gross_loss": 1012.676047852993,
+        "dollar_gross_profit": 1032.826033192873,
+        "dollar_net_pnl": 20.14998533987992,
+        "dollar_pf": 1.0198977603771715,
+        "mean_net_pct": 0.005320232474145619,
+        "mean_net_pct_stderr": 0.02185113244758339,
+        "n": 18,
+        "std_net_pct": 0.09270650358174969,
+        "stop_hit_frac": 0.4444444444444444,
+        "target_hit_frac": 0.5555555555555556,
+        "time_stop_frac": 0.0
+      },
+      "control_B": {
+        "dollar_gross_loss": 644.3923196912766,
+        "dollar_gross_profit": 1383.4319756085777,
+        "dollar_net_pnl": 739.0396559173012,
+        "dollar_pf": 2.1468784362162623,
+        "mean_net_pct": 0.03217936536943473,
+        "mean_net_pct_stderr": 0.03200455747465282,
+        "n": 13,
+        "std_net_pct": 0.11539407302339502,
+        "stop_hit_frac": 0.6923076923076923,
+        "target_hit_frac": 0.3076923076923077,
+        "time_stop_frac": 0.0
+      },
+      "fold_idx": 1
+    },
+    {
+      "control_A": {
+        "dollar_gross_loss": 364.3643501308918,
+        "dollar_gross_profit": 210.49595031738278,
+        "dollar_net_pnl": -153.868399813509,
+        "dollar_pf": 0.5777073147846808,
+        "mean_net_pct": -0.018054768729625314,
+        "mean_net_pct_stderr": 0.036133106614191494,
+        "n": 7,
+        "std_net_pct": 0.09559921419733379,
+        "stop_hit_frac": 0.7142857142857143,
+        "target_hit_frac": 0.2857142857142857,
+        "time_stop_frac": 0.0
+      },
+      "control_B": {
+        "dollar_gross_loss": 112.60399627685548,
+        "dollar_gross_profit": 409.51187610626215,
+        "dollar_net_pnl": 296.9078798294067,
+        "dollar_pf": 3.6367437182194644,
+        "mean_net_pct": 0.03901002986580707,
+        "mean_net_pct_stderr": 0.02952227500956374,
+        "n": 9,
+        "std_net_pct": 0.08856682502869122,
+        "stop_hit_frac": 0.6666666666666666,
+        "target_hit_frac": 0.3333333333333333,
+        "time_stop_frac": 0.0
+      },
+      "fold_idx": 2
+    },
+    {
+      "control_A": {
+        "dollar_gross_loss": 842.9625665033102,
+        "dollar_gross_profit": 715.574908528986,
+        "dollar_net_pnl": -127.38765797432424,
+        "dollar_pf": 0.8488810025067419,
+        "mean_net_pct": -0.006312896579014523,
+        "mean_net_pct_stderr": 0.022175025783200228,
+        "n": 15,
+        "std_net_pct": 0.08588350556005457,
+        "stop_hit_frac": 0.4,
+        "target_hit_frac": 0.6,
+        "time_stop_frac": 0.0
+      },
+      "control_B": {
+        "dollar_gross_loss": 1051.4639273548128,
+        "dollar_gross_profit": 385.61996173858637,
+        "dollar_net_pnl": -665.8439656162262,
+        "dollar_pf": 0.36674578338478775,
+        "mean_net_pct": -0.02651292217588664,
+        "mean_net_pct_stderr": 0.024581285515022765,
+        "n": 16,
+        "std_net_pct": 0.09832514206009106,
+        "stop_hit_frac": 0.5,
+        "target_hit_frac": 0.5,
+        "time_stop_frac": 0.0
+      },
+      "fold_idx": 3
+    },
+    {
+      "control_A": {
+        "dollar_gross_loss": 793.0767629472732,
+        "dollar_gross_profit": 510.8200574874877,
+        "dollar_net_pnl": -282.25670545978556,
+        "dollar_pf": 0.6440991356109736,
+        "mean_net_pct": -0.01985714699893246,
+        "mean_net_pct_stderr": 0.027943857628288455,
+        "n": 14,
+        "std_net_pct": 0.10455634130984484,
+        "stop_hit_frac": 0.5,
+        "target_hit_frac": 0.5,
+        "time_stop_frac": 0.0
+      },
+      "control_B": {
+        "dollar_gross_loss": 1036.5329645288468,
+        "dollar_gross_profit": 668.3998188018799,
+        "dollar_net_pnl": -368.133145726967,
+        "dollar_pf": 0.6448418349200299,
+        "mean_net_pct": -0.021519035906720645,
+        "mean_net_pct_stderr": 0.02864080752058559,
+        "n": 15,
+        "std_net_pct": 0.11092537054916013,
+        "stop_hit_frac": 0.7333333333333333,
+        "target_hit_frac": 0.26666666666666666,
+        "time_stop_frac": 0.0
+      },
+      "fold_idx": 4
+    }
+  ]
+}

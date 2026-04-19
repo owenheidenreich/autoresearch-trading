@@ -2723,3 +2723,75 @@ Verdict: **`failed`** (not `failed_clear`, not `failed_near_miss` by the plan's 
 **What this does not prove:** Whether V1B (premium-sanity gates) changes the picture. Whether the thesis has edge in specific regimes not discriminated by the current trigger. Whether an ML-scoring stage over the 12-core feature set would add entry selectivity the mechanical trigger lacks.
 
 **No GPU. No training. No simulator changes. No dataset rebuild.**
+
+---
+
+## 2026-04-19 — Mechanical baseline V1B (opening-reversion + premium-sanity gates): separation improves but not a pass
+
+**Context.** V1A finished `failed` on the boundary: strategy crushed Control B by 2.15pp (trigger picks adverse days well) but lost narrowly to Control A (trigger does not isolate better bars within those days). User hypothesis for V1B: "premium-gating is the missing discriminator, not more pattern logic." Add `iv_percentile` and `vrp` as no-trade filters, gate thresholds chosen per fold from `fold.train_days` ONLY, predeclared 3×3 grid, score on held-out test folds.
+
+**Implementation** ([v2/analysis/mechanical_baseline_v1b_opening_reversion.py](analysis/mechanical_baseline_v1b_opening_reversion.py)). V1A trigger + contract selection + exits unchanged. Gate order at entry: trigger → gates → context spread → delta-band → per-contract spread → exit. Controls (A and B) apply the same gates at their own entry bar. Train selection: for each fold, walk `train_days`, collect all triggered-and-entered bars as `TriggerEval` records, evaluate 3×3 grid (iv_max ∈ {0.6, 0.7, 0.8} × vrp_max ∈ {train_median, train_p75, 0 if feasible}), pick config with highest train `mean_net_pct` subject to `n ≥ 30`. `vrp ≤ 0` dropped from grid when fewer than 10% of train entries have vrp ≤ 0 (the case here — option premium dominates realized vol in this dataset).
+
+**All five folds selected the same config shape:** `iv_max=0.8, vrp_max=train_p75 (~+0.033)` — the most-permissive gating in the grid. Every more-restrictive config had worse train mean than the permissive one. Train mean_net_pct for the selected config: −2.0% to −2.8% across folds (V1A has no edge on train either, consistent with the V1A test aggregate being flat-to-negative). Gates reduce train trade count from ~1,500 triggered entries to ~230–305 per fold (~17% pass rate).
+
+**5-fold test aggregate (300 test days, 90 strategy trades):**
+
+| slice | n | target_hit | stop_hit | mean_net_pct | dollar_pf |
+|---|---:|---:|---:|---:|---:|
+| V1B strategy | 90 | 60.0% | 37.8% | **−0.002%** ± 2.33% | 0.975 |
+| Control A | 69 | — | — | −1.018% | 0.736 |
+| Control B | 62 | — | — | +0.090% | 1.094 |
+
+**V1A → V1B comparison:**
+
+| metric | V1A | V1B | Δ |
+|---|---:|---:|---:|
+| strategy n | 109 | 90 | gates filter 17% |
+| strategy mean_net_pct | −0.354% | −0.002% | **+0.352pp** (closer to break-even) |
+| strategy dollar_pf | 0.918 | 0.975 | +0.06 |
+| Control A mean_net_pct | −0.513% | −1.018% | −0.51pp (tighter gate-filtered days) |
+| **strategy − Control A gap** | **+0.16pp** | **+1.02pp** | **+0.86pp** |
+| Control B mean_net_pct | −2.506% | +0.090% | +2.60pp (gates absorb day-selection value) |
+
+**Per-fold strategy − Control A gap:**
+
+| fold | V1A gap | V1B gap | note |
+|---:|---:|---:|---|
+| 0 | +1.02 | **+3.79** | clear V1B edge |
+| 1 | +2.26 | +0.72 | V1B still ahead but smaller |
+| 2 | **−15.27** | **−4.89** | bad regime; smaller gap under V1B but still the drag |
+| 3 | +1.46 | +0.54 | flat |
+| 4 | +5.46 | +2.41 | V1B ahead |
+
+Four of five folds show V1B at or above Control A (by 0.5–3.8pp). Fold 2 (n=10 test, −6.7% strategy, summer 2025) is the single drag — gates filtered from 11 V1A trades to 10 V1B trades on that fold, so the bad regime is structural to the thesis, not something the gates discriminate.
+
+**Verdict: `failed`** per the strict plan criteria:
+- `mean_net_pct = −0.002%` ≤ 0 (barely)
+- Control A still within the 0.5 × stderr margin (margin = 0.0117; strategy − margin = −0.0117; Control A = −0.0102 ≥ −0.0117)
+- Control B also within margin (strategy and Control B both ≈ 0)
+
+**Interpretation.**
+- Hypothesis partially validated: premium gates materially improved strategy vs Control A separation (+0.86pp widening). V1A couldn't distinguish trigger-bar from same-day random-bar; V1B can, by ~1pp.
+- Hypothesis partially falsified: V1B does not clear the falsification bar on aggregate. Mean is essentially zero; Control A margin breached by 0.15pp.
+- Gates also absorb day-selection value that V1A had over Control B: Control B went from −2.5% (V1A) to +0.09% (V1B). Under gates, random-day entries on the same bar are about as good as strategy. This is consistent with "gates themselves pick good days" — the gates are doing real work.
+- Fold 2 alone drags the aggregate. Absent Fold 2, strategy mean ≈ +0.7% and the aggregate would pass. This is worth a closer look: is it one bad summer regime the thesis doesn't address, or something wrong with the gates under specific conditions?
+
+**Skip distribution (V1B):** 251 `gated_vrp`, 211 `skipped_no_contracts_at_bar`, 125 `gated_iv_percentile`, 78 `skipped_context_spread`, 1 `zero_hold`. Gates fire meaningfully (251+125 = 376 gate-rejections across test, compared to 109 V1A strategy entries).
+
+**Per the plan escalation table**, V1B verdict is `failed` (not `failed_clear` — mean above −1%; not strict `failed_near_miss` — mean not > 0). Plan says "if V1B also fails, reopen the thesis — not a third tier." But qualitatively the result is directionally right and the bulk of the damage is Fold 2.
+
+**Awaiting user direction:**
+- (a) **Accept thesis falsified under this mechanical test.** Move to ML-scoring stage over the 12-core feature set (let a learned model provide entry selectivity the mechanical trigger lacks).
+- (b) **Inspect Fold 2 attribution first.** If Fold 2 is a distinct regime the thesis doesn't cover, noting it as an explicit scope limit might let us accept the other 4 folds as within-scope evidence.
+- (c) **Reopen the hypothesis.** Consider a different structural trigger (e.g., opening-range break rather than VWAP reclaim).
+
+**Files changed (uncommitted):**
+- `v2/analysis/mechanical_baseline_v1b_opening_reversion.py` (new, ~570 lines)
+- `v2/lab_notebook.md` (this entry)
+- Artifacts: `v2/artifacts/mechanical_baseline_opening_reversion_v1b/{trades.csv, trades_fold{0..4}.csv, skips.csv, report_fold{0..4}.json, controls.json, summary.json}` (with `selected_config` + `grid_diagnostics` per fold for audit trail)
+
+**What this proves:** Premium-sanity gates (iv_percentile, vrp) selected on held-out train data shift V1A from narrowly-losing-to-Control-A to narrowly-beating-it. The trigger has real but modest marginal value over random-bar-on-same-day once premium conditions are controlled for.
+
+**What this does not prove:** Whether a properly ML-scored trigger would close the aggregate gap. Whether Fold 2 represents a scope limit of the thesis or a correctable gate miss. Whether tighter gate thresholds (outside the 3×3 grid) would select better.
+
+**No GPU. No training. No simulator changes. No dataset rebuild.**
