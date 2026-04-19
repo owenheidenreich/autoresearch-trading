@@ -2670,3 +2670,58 @@ Plan pass bar: 50% MFE ≥ +30 bps. Actual best (random): 10.2%. Best Pickles ce
 **Next:** Fork C planning. R3 feasibility already confirmed Tier-1 95% High, Tier-3 93% Medium+. The Stage-1 finding that Pickles' qualifier layer *hurts* on SPX-only inputs is itself evidence that Pickles' decision process uses context SPX-only features can't capture — which is exactly what behavioral cloning on his journaled decisions encodes. Per user direction, start narrow: **Tier-1 day gate** and/or **Row-2 (MAGIC TIME) binary classifier** as the first supervised target; do *not* jump to full per-bar imitation as v1.
 
 **Files changed (uncommitted):** `v2/strategies/__init__.py`, `session_state.py`, `pickles_row1.py`, `fork_a1_stage1.py`, `fork_a1_random_control.py` (new package, 5 files). `v2/docs/fork_a1_row1_results.md` (new). `v2/lab_notebook.md` (this entry). Artifacts in `v2/artifacts/fork_a1_stage1/`. No modifications to existing files.
+
+## 2026-04-19 — Fork C Phase 1 tier-1 day-gate classifier: verdict `null`
+
+**Context.** Phase 1 of the Fork C plan (behavioral cloning of Pickles' journaled decisions). Target: `is_spx_long_0dte_day ∈ {0, 1}` per session. Pre-registered three-way gate (advance / signal_of_life / null) with chronological 60/20/20 split, val-fold top-30% threshold, bootstrap 95% CI on test metrics, sensitivity rerun with shadow labels. Isolated to clean worktree `/Users/gduby/Documents/autoresearch-trading-fork-c` on branch `codex/fork-c-phase1`; safety anchor `codex/pre-fork-c` at `41be6a5`.
+
+**Pipeline that landed (6 commits on fork branch):**
+
+1. `6cbddd3` — Label rules (Revision 3) + parser v1 + shortlist.
+2. `99c8831` — Parser Discord trailing-name format fix.
+3. `96d9392` — Deterministic proposer drafts label=? per row with audit trail.
+4. `79e70b3` — Canonical labels after 11 human overrides (round 1).
+5. `2e8ca2e` — Extractor at `bar_of_day == 30`, scope unit test passes.
+6. `2aded3c` — Preflight + round-1.1 override (2023-10-30 hedge-only fix).
+7. `<this commit>` — Training cascade + evaluation + results doc.
+
+**Dataset.** 125 trading-session rows × 91 cols (79 base + 5 agg) from [tier1_labels.csv](v2/fork_c/tier1_labels.csv). 25 positives (20.0 % base rate). 42 non-trading-day rows (38 weekends + 4 holidays) correctly dropped at extraction. 120 High / 5 Medium / 0 Low confidence.
+
+**Preflight HALT.** Val and test both landed at 3 positives (threshold 5). Late-positives fraction 56.0 % (under 60 % trigger but material). User acknowledged option (c): accept inflated CIs, freeze boundaries, proceed. See `v2/artifacts/fork_c_tier1/preflight_acknowledged.json`.
+
+**2023-10-30 label fix (round 1.1).** Preflight audit surfaced a proposer mislabel — `first_qualifying_time_et=16:50` was past market close, and journal lines 50-58 explicitly described the 0DTE longs as defending a breached/rolled CCS short strike. Relabeled `hedge_only=True` per §N5 via override #12.
+
+**Train cascade** (val fold, n=25, 3 pos):
+
+| model | val PR-AUC | val Brier | val P@30 | val R@30 |
+|---|---|---|---|---|
+| majority | 0.120 | 0.123 | 0.120 | 1.000 |
+| lr_all (84 feat) | 0.161 | 0.216 | 0.125 | 0.333 |
+| lr_curated (15 feat) | 0.190 | 0.211 | 0.125 | 0.333 |
+| hgbt_all | SKIPPED (lr_all val PR-AUC below 0.303 trigger) |
+
+**Test-fold verdict** (applied once, bootstrap 95% CI, 1000 resamples):
+
+| model | PR-AUC | Brier | P@30 | gate |
+|---|---|---|---|---|
+| majority | 0.120 [0.04, 0.24] | **0.123** | 0.120 [0.0, 0.24] | null |
+| lr_all | 0.128 [0.04, 0.36] | 0.301 [0.20, 0.42] | 0.143 [0.0, 0.33] | null |
+| lr_curated | 0.166 [0.04, 0.50] | 0.240 [0.18, 0.30] | 0.100 [0.0, 0.33] | null |
+
+Advance bar: 0.170. Majority-Brier: 0.123. `lr_curated` had one interesting top-20% lift of 1.67× — 1 of 3 test positives captured in its top 5 predictions — but PR-AUC CI crosses the advance bar and Brier is worse than majority, so the gate is still null.
+
+**Sensitivity rerun: SKIPPED.** Pre-registered as "primary vs primary + Low labels." After round-1 review rescued all Low candidates, shadow file is empty → sensitivity dataset identical to primary → rerun is a no-op. Not repurposed into a different experiment.
+
+**What this proves.** 125-row label set × 79+5 features at 10:00 ET cutoff does not separate label-1 from label-0 days at 5% margin over base rate with 95% CI. Both LR variants are worse-calibrated than constant-p majority (higher Brier). Three-way gate lands cleanly in `null`, not `signal_of_life`.
+
+**What this does NOT prove.** That the day-call is unlearnable in general. Different label definition / cutoff / feature set could clear. Does not falsify behavioral cloning broadly, Row-2 (MAGIC TIME) as an alternate target, or the broader 5-class taxonomy tested in R3.
+
+**Why it failed.** Two non-exclusive candidates:
+1. Train positive rate (25.3%) is double val/test (12.0%) — regime shift; LR applies train-regime confidence and takes a Brier penalty.
+2. 56% of positives have first-qualifying-event after 10:00 ET — for those days the cutoff can only forecast, and 30 min of features may not carry enough information.
+
+25 positives total is too small to distinguish these from plain "no signal."
+
+**Next (per plan §"null verdict"):** Row-3 as alternate target, ES/NQ/AD data acquisition, or honest project-frame reconsideration. No default selection made here — choice is for the researcher.
+
+**Files changed (this commit):** `v2/fork_c/train_tier1.py`, `v2/fork_c/eval_tier1.py` (new). `v2/docs/fork_c_tier1_results.md` (new). `v2/lab_notebook.md` (this entry). `v2/artifacts/fork_c_tier1/fitted_models.pkl`, `train_report.json`, `test_report.json` (new artifacts). Research-tier: these models are not deployable.

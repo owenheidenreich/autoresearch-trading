@@ -1,0 +1,335 @@
+{
+  "advance_bar": 0.16999999999999998,
+  "advance_margin": 0.05,
+  "dataset_path": "v2/fork_c/tier1_dataset.csv",
+  "evaluations": [
+    {
+      "brier": {
+        "ci_hi": 0.18257777777777778,
+        "ci_lo": 0.0641777777777778,
+        "point": 0.1233777777777778
+      },
+      "gate": {
+        "advance_bar": 0.16999999999999998,
+        "brier_clear": true,
+        "majority_brier_test": 0.1233777777777778,
+        "pr_auc_clear_ci": false,
+        "pr_auc_clear_point": false,
+        "precision_clear_ci": false,
+        "precision_clear_point": false,
+        "verdict": "null"
+      },
+      "lifts": {
+        "top_10": 0.0,
+        "top_20": 0.0,
+        "top_30": 0.0
+      },
+      "model": "majority",
+      "n_predicted_positive_test_at_threshold": 25,
+      "pr_auc": {
+        "ci_hi": 0.24,
+        "ci_lo": 0.04,
+        "point": 0.12
+      },
+      "precision_at_top30": {
+        "ci_hi": 0.24,
+        "ci_lo": 0.0,
+        "point": 0.12
+      },
+      "recall_at_top30": {
+        "ci_hi": 1.0,
+        "ci_lo": 1.0,
+        "point": 1.0
+      },
+      "reliability_deciles": [
+        {
+          "bin": 0,
+          "mean_actual": 0.0,
+          "mean_pred": 0.25333333333333335,
+          "n": 2
+        },
+        {
+          "bin": 1,
+          "mean_actual": 0.3333333333333333,
+          "mean_pred": 0.25333333333333335,
+          "n": 3
+        },
+        {
+          "bin": 2,
+          "mean_actual": 0.5,
+          "mean_pred": 0.25333333333333335,
+          "n": 2
+        },
+        {
+          "bin": 3,
+          "mean_actual": 0.3333333333333333,
+          "mean_pred": 0.25333333333333335,
+          "n": 3
+        },
+        {
+          "bin": 4,
+          "mean_actual": 0.0,
+          "mean_pred": 0.25333333333333335,
+          "n": 2
+        },
+        {
+          "bin": 5,
+          "mean_actual": 0.0,
+          "mean_pred": 0.25333333333333335,
+          "n": 3
+        },
+        {
+          "bin": 6,
+          "mean_actual": 0.0,
+          "mean_pred": 0.25333333333333335,
+          "n": 2
+        },
+        {
+          "bin": 7,
+          "mean_actual": 0.0,
+          "mean_pred": 0.25333333333333335,
+          "n": 3
+        },
+        {
+          "bin": 8,
+          "mean_actual": 0.0,
+          "mean_pred": 0.25333333333333335,
+          "n": 2
+        },
+        {
+          "bin": 9,
+          "mean_actual": 0.0,
+          "mean_pred": 0.25333333333333335,
+          "n": 3
+        }
+      ],
+      "threshold_val_top30": 0.25333333333333335
+    },
+    {
+      "brier": {
+        "ci_hi": 0.42116389733232407,
+        "ci_lo": 0.19765422021787524,
+        "point": 0.3012514594971447
+      },
+      "gate": {
+        "advance_bar": 0.16999999999999998,
+        "brier_clear": false,
+        "majority_brier_test": 0.1233777777777778,
+        "pr_auc_clear_ci": false,
+        "pr_auc_clear_point": false,
+        "precision_clear_ci": false,
+        "precision_clear_point": false,
+        "verdict": "null"
+      },
+      "lifts": {
+        "top_10": 0.0,
+        "top_20": 0.0,
+        "top_30": 0.0
+      },
+      "model": "lr_all",
+      "n_predicted_positive_test_at_threshold": 14,
+      "pr_auc": {
+        "ci_hi": 0.3617429653679653,
+        "ci_lo": 0.043478260869565216,
+        "point": 0.12813434552564987
+      },
+      "precision_at_top30": {
+        "ci_hi": 0.3333333333333333,
+        "ci_lo": 0.0,
+        "point": 0.14285714285714285
+      },
+      "recall_at_top30": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 0.6666666666666666
+      },
+      "reliability_deciles": [
+        {
+          "bin": 0,
+          "mean_actual": 0.0,
+          "mean_pred": 0.021113617211332668,
+          "n": 2
+        },
+        {
+          "bin": 1,
+          "mean_actual": 0.3333333333333333,
+          "mean_pred": 0.034967109985010375,
+          "n": 3
+        },
+        {
+          "bin": 2,
+          "mean_actual": 0.0,
+          "mean_pred": 0.05422874476380472,
+          "n": 2
+        },
+        {
+          "bin": 3,
+          "mean_actual": 0.0,
+          "mean_pred": 0.2422181859184164,
+          "n": 3
+        },
+        {
+          "bin": 4,
+          "mean_actual": 0.5,
+          "mean_pred": 0.38978054600633216,
+          "n": 2
+        },
+        {
+          "bin": 5,
+          "mean_actual": 0.0,
+          "mean_pred": 0.4380361666211307,
+          "n": 3
+        },
+        {
+          "bin": 6,
+          "mean_actual": 0.5,
+          "mean_pred": 0.474095989539414,
+          "n": 2
+        },
+        {
+          "bin": 7,
+          "mean_actual": 0.0,
+          "mean_pred": 0.648797112185684,
+          "n": 3
+        },
+        {
+          "bin": 8,
+          "mean_actual": 0.0,
+          "mean_pred": 0.8232243905171407,
+          "n": 2
+        },
+        {
+          "bin": 9,
+          "mean_actual": 0.0,
+          "mean_pred": 0.8622049194866062,
+          "n": 3
+        }
+      ],
+      "threshold_val_top30": 0.3977854753762411
+    },
+    {
+      "brier": {
+        "ci_hi": 0.3004177061286296,
+        "ci_lo": 0.18283305012723478,
+        "point": 0.2398684456787644
+      },
+      "gate": {
+        "advance_bar": 0.16999999999999998,
+        "brier_clear": false,
+        "majority_brier_test": 0.1233777777777778,
+        "pr_auc_clear_ci": false,
+        "pr_auc_clear_point": false,
+        "precision_clear_ci": false,
+        "precision_clear_point": false,
+        "verdict": "null"
+      },
+      "lifts": {
+        "top_10": 0.0,
+        "top_20": 1.6666666666666667,
+        "top_30": 1.0416666666666667
+      },
+      "model": "lr_curated",
+      "n_predicted_positive_test_at_threshold": 10,
+      "pr_auc": {
+        "ci_hi": 0.5003787878787875,
+        "ci_lo": 0.043478260869565216,
+        "point": 0.16570048309178745
+      },
+      "precision_at_top30": {
+        "ci_hi": 0.3333333333333333,
+        "ci_lo": 0.0,
+        "point": 0.1
+      },
+      "recall_at_top30": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 0.3333333333333333
+      },
+      "reliability_deciles": [
+        {
+          "bin": 0,
+          "mean_actual": 0.0,
+          "mean_pred": 0.2279680171465464,
+          "n": 2
+        },
+        {
+          "bin": 1,
+          "mean_actual": 0.3333333333333333,
+          "mean_pred": 0.2592470352464972,
+          "n": 3
+        },
+        {
+          "bin": 2,
+          "mean_actual": 0.0,
+          "mean_pred": 0.3048511457002814,
+          "n": 2
+        },
+        {
+          "bin": 3,
+          "mean_actual": 0.0,
+          "mean_pred": 0.33569129317978025,
+          "n": 3
+        },
+        {
+          "bin": 4,
+          "mean_actual": 0.0,
+          "mean_pred": 0.3839815576663126,
+          "n": 2
+        },
+        {
+          "bin": 5,
+          "mean_actual": 0.3333333333333333,
+          "mean_pred": 0.4464172538926252,
+          "n": 3
+        },
+        {
+          "bin": 6,
+          "mean_actual": 0.0,
+          "mean_pred": 0.5609612975603375,
+          "n": 2
+        },
+        {
+          "bin": 7,
+          "mean_actual": 0.0,
+          "mean_pred": 0.5982727128502784,
+          "n": 3
+        },
+        {
+          "bin": 8,
+          "mean_actual": 0.5,
+          "mean_pred": 0.6386964342042791,
+          "n": 2
+        },
+        {
+          "bin": 9,
+          "mean_actual": 0.0,
+          "mean_pred": 0.6900268287035584,
+          "n": 3
+        }
+      ],
+      "threshold_val_top30": 0.49422677394558073
+    }
+  ],
+  "majority_brier_test": 0.1233777777777778,
+  "n_bootstrap": 1000,
+  "overall_verdict": "null",
+  "per_model_verdicts": {
+    "lr_all": "null",
+    "lr_curated": "null"
+  },
+  "test": {
+    "base_rate": 0.12,
+    "n": 25,
+    "n_positive": 3
+  },
+  "train": {
+    "base_rate": 0.25333333333333335,
+    "n": 75,
+    "n_positive": 19
+  },
+  "val": {
+    "base_rate": 0.12,
+    "n": 25,
+    "n_positive": 3
+  }
+}
