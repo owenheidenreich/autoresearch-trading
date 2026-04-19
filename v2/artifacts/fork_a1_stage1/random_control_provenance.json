@@ -1,0 +1,22 @@
+{
+  "extra": {
+    "delta_grid": [
+      0.4,
+      0.5
+    ],
+    "elapsed_sec": 6.3,
+    "n_sessions": 986
+  },
+  "provenance": {
+    "cost_model_version": "5055b8aab91c1718",
+    "dataset_fingerprint": "6162cf3d83db3586",
+    "feature_set_id": "28553d8b594c3b57",
+    "git_commit": "dbc5f4412e7e4a6e03529f778e8e6eaa32c69310",
+    "label_mode": "928b21b3497859eb",
+    "research_tier": false,
+    "schema_version": 1,
+    "sidecar_schema_version": "v5_exact_chain_v2_slice",
+    "split_recipe": "d416a4cb62f43544"
+  },
+  "written_at": "2026-04-19T00:15:22-0700"
+}

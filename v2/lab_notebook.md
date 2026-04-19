@@ -2634,3 +2634,39 @@ AUC clears 0.60 on folds 0 and 4; lift caps at 1.46× (below the 1.5× bar). Thr
 **Next (awaiting user direction):** Either (a) add `--positive-ev-threshold` to the audit and sweep {0.05, 0.10, 0.20} on CPU — cheap and finishes the falsification of the "learnable bar-level PnL label" hypothesis; (b) add a session-structure conditional label (opening gap × VIX bucket × time-of-day) and audit it; (c) pivot to feature enrichment (sidecar pullup) — larger change, needs a new plan. Pre-plan rule stands: **do not spend GPU** until Gate A clears on some label.
 
 **Files changed (uncommitted):** `v2/core/provenance.py` (new), `v2/docs/metric_glossary.md` (new), `v2/analysis/bar_quality_signal_audit.py` (extended), `v2/ops/model_manage.py` (research-tier refusal), `v2/lab_notebook.md` (this entry). Provenance JSONs in `v2/artifacts/cpu_audits/`. MEMORY index updated with the `feedback_research_governance.md` pointer.
+
+---
+
+## 2026-04-19 — Fork A1 Stage 1 falsifies SPX-only proxy of Pickles Row 1
+
+**Context.** Plan-driven (see `~/.claude/plans/read-this-context-and-snappy-tide.md`) mechanical backtest of the SPX-only proxy of Pickles' Row 1 ("VWAP SUPPORT quick-in-out"). Stage 1 measures entry validity via forward MFE/MAE — no exits, no simulator contamination. Custom runner walks `v2/data.pt` bar-by-bar, respecting the Fork-A1 09:45-12:00 ET entry window (bars 15-150) which is wider than the default `NO_TRADE_BEFORE_BAR=30` mask and does not route through `simulate_day`. Delta grid `{0.40, 0.50}` (centered on evidence per Codex critique). 986 sessions, 2022-04-11 through 2026-04-01.
+
+**Governance outputs landed.**
+- `v2/strategies/__init__.py`, `session_state.py`, `pickles_row1.py`, `fork_a1_stage1.py`, `fork_a1_random_control.py` — new package for rule-based (non-ML) strategy backtests.
+- `v2/docs/fork_a1_row1_results.md` — full results writeup with scope-of-claim header.
+- `v2/artifacts/fork_a1_stage1/` — candidates + forward-metrics CSVs, summary JSON, provenance JSON for both Stage 1 and random control.
+
+**Trigger revision (documented in `pickles_row1.py` docstring).** Original strict operationalization ("prior bar > +10 bps above VWAP") fired zero candidates across 575 sessions. Smoke test on 2023-12-14 revealed the template day's entry fired at bar 38 when SPX was −11.64 bps *below* its own VWAP and bar_delta was −0.69 (bearish) — Pickles was tracking ES VWAP, not SPX VWAP. Trigger revised to "session saw SPX > +10 bps above VWAP within the prior 30 bars" — a session-local mean-reversion-after-rally shape that matches the intent of the rule without requiring ES microstructure. After revision, trigger fires 5,320 candidate records across 8 cells.
+
+**Stage 1 verdict: FAILED across every cell at every delta at every horizon.**
+
+| Cell × Δ | n | MFE ≥ +30 bps @ 30m | MAE ≤ −30 bps @ 30m | opt_end median @ 30m |
+|---|---|---|---|---|
+| P-open × 0.50 | 624 | 8.8% | 13.5% | −4.98% |
+| P-all × 0.50 | 162 | 6.8% | 17.9% | **−15.39%** |
+| **RANDOM** × 0.50 (one random bar/session) | 850 | **10.2%** | 10.9% | −4.74% |
+
+Plan pass bar: 50% MFE ≥ +30 bps. Actual best (random): 10.2%. Best Pickles cell: 9.0%.
+
+**Random control reveals the deeper story.** RANDOM outperforms every Pickles cell on favorable hit rate AND adverse hit rate. This means the Pickles qualifier layer, operationalized on SPX-only inputs, carries *no information* and marginally hurts. It also reveals that morning-window directional 0DTE long entries on SPX are themselves a negative-EV operation on this data — RANDOM × 0.50 at 30m has 43.5% positive option end rate with −4.74% median return. Theta burn + typical intraday move sizes make +30 bps SPX in 30 min a ~10% event; 0.50-delta calls need closer to +60 bps to break even on spread + commission.
+
+**Stage 2 not run.** Per plan's refined gating rule, Stage 2 fires only if Stage 1 passes at any delta. Plan allows one diagnostic cell when Stage 1 is marginal; here it is unambiguous. User (and Codex) concurred skipping Stage 2 — running exits on entries that are 8-9% MFE hit rate with −5% to −15% median option returns cannot produce a rescue; running it would create sunk-cost pressure and muddy the story.
+
+**What changed:** New `v2/strategies/` package (5 modules); new results doc; lab notebook entry; Fork-A1 Stage 1 + random control ran end-to-end with provenance.
+**What did not change:** No ML training, no GPU, no dataset rebuild, no changes to `v2/core/simulator.py` or `v2/core/policy.py`. No promoted model created or modified.
+**What this proves:** The SPX-only proxy of Row 1 (SPX VWAP substituted for ES/NQ VWAP; no A/D; no A/D volume) has no tradeable entry signal on this dataset under this cost model. Entry qualifiers derived from Pickles' stated rule do not outperform a random entry time in the same morning window. Directional 0DTE long calls in the morning window are a losing mode under the spread-plus-commission model used.
+**What this does not prove:** Whether Row 1 *as originally stated* (with ES/NQ/AD) has edge — that needs data we don't have. Whether Pickles' broader method has edge. Whether other 0DTE long setups (Row 3 supply-zone break, or behavioral cloning of Pickles' decisions via Fork C) can extract signal from the same data. Whether a further-iterated Row 1 operationalization on SPX could fire differently — per discipline we did not iterate (one revision was already needed to get any candidates at all; further tuning inside the same tract is close to p-hacking).
+
+**Next:** Fork C planning. R3 feasibility already confirmed Tier-1 95% High, Tier-3 93% Medium+. The Stage-1 finding that Pickles' qualifier layer *hurts* on SPX-only inputs is itself evidence that Pickles' decision process uses context SPX-only features can't capture — which is exactly what behavioral cloning on his journaled decisions encodes. Per user direction, start narrow: **Tier-1 day gate** and/or **Row-2 (MAGIC TIME) binary classifier** as the first supervised target; do *not* jump to full per-bar imitation as v1.
+
+**Files changed (uncommitted):** `v2/strategies/__init__.py`, `session_state.py`, `pickles_row1.py`, `fork_a1_stage1.py`, `fork_a1_random_control.py` (new package, 5 files). `v2/docs/fork_a1_row1_results.md` (new). `v2/lab_notebook.md` (this entry). Artifacts in `v2/artifacts/fork_a1_stage1/`. No modifications to existing files.
