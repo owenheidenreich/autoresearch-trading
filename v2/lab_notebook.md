@@ -2589,3 +2589,48 @@ Top-decile precision across all runs sits at the base rate (~0.09–0.16) — **
 **Durable outputs.**
 - `v2/analysis/bar_quality_signal_audit.py` — new CPU diagnostic, ~25s on mini-screen folds; exits non-zero when signal is below the learnability bar (default AUC≥0.60, top10_precision≥0.25).
 - Recommended policy: run this audit before any future gate-tuning GPU spend.
+
+---
+
+## 2026-04-18 — Gate A falsification under hardened governance (exp_next_d pivot)
+
+**Context.** Proposed hypothesis (plan `read-this-context-and-snappy-tide.md`): retarget the gate from `bar_quality ≥ 0.83` (unlearnable) to `slice_best_pnl > 0` (`positive_ev`), citing the 2026-04-17 B3 audit's AUC 0.615 on `oracle_pnl > 0` as prior evidence. Same plan wrapped the experiment in new research governance: seven-field provenance block, frozen metric glossary, canonical baseline panel, research-tier label separation, four-line durability entries.
+
+**Governance infrastructure landed (durable, survives this falsification):**
+- `v2/core/provenance.py` — `Provenance` dataclass + `build_provenance`, `write_provenance`, `compare_provenance`, `assert_comparable`. Self-test via `python3 -m v2.core.provenance`.
+- `v2/docs/metric_glossary.md` — "means / does not mean" for AUC, top-decile precision (& lift), realized-mean sweep, monotonicity, val loss, score components, direction balance, provenance-comparable, research-tier.
+- `v2/analysis/bar_quality_signal_audit.py` — extended with `--label-mode {bar_quality, positive_ev, oracle_side_call}`, precision lift, threshold sweep at `{0.05, 0.10, 0.20, 0.30, 0.50}` of realized `slice_best_pnl`, canonical baseline panel (always-on, random top-10%, prior bar_quality LR, trivial-5-feature LR), provenance emit to `v2/artifacts/cpu_audits/`.
+- `v2/ops/model_manage.py` — `keep` now refuses artifacts flagged `research_tier=True` (either in manifest `extra.research_tier` / `provenance.research_tier` or in sibling `provenance.json`). Promotion out of research tier requires renaming `OPP_LABEL` out of the `research_*` namespace — a visible git change, not implicit.
+
+**Gate A criteria (all four must hold on ≥ 2/3 of {0, 2, 4}):** AUC ≥ 0.60, top-decile precision lift ≥ 1.5×, monotone threshold sweep, realized mean @ 10% beats prior `bar_quality` LR **and** trivial-5-feature LR on the same fold.
+
+**Result — `positive_ev` (`slice_best_pnl > 0`): FAILED.**
+
+| Fold | Base rate | LR AUC | MLP AUC | LR top-10% lift | LR realized@10% vs prior_bq / trivial5 |
+|---|---|---|---|---|---|
+| 0 | 0.931 | 0.559 | 0.537 | 1.02× | +0.333 vs +0.310 / +0.304 (panel OK, AUC/lift fail) |
+| 2 | 0.930 | 0.548 | 0.527 | 1.02× | +0.318 vs +0.294 / +0.296 (panel OK, AUC/lift fail) |
+| 4 | 0.935 | 0.584 | 0.532 | 1.02× | +0.328 vs +0.318 / +0.301 (sweep non-monotone, AUC/lift fail) |
+
+Root cause: the `> 0` threshold is so permissive that **93% of eligible bars are positive** — there is almost no discrimination room. Lift ceiling is ~1.07× regardless of model. B3's 0.615 AUC on `oracle_pnl > 0` came from an earlier manifest (52-feat, pre-dynamic-slice rebuild) with a different base rate; the result did not transfer. The label is trivially satisfied on the current dataset.
+
+**Result — `oracle_side_call` (oracle's best contract is a call): FAILED (but signal is real).**
+
+| Fold | Base rate | LR AUC | MLP AUC | LR top-10% lift |
+|---|---|---|---|---|
+| 0 | 0.471 | 0.619 | 0.623 | 1.46× |
+| 2 | 0.573 | 0.599 | 0.586 | 1.24× |
+| 4 | 0.509 | 0.607 | 0.581 | 1.41× |
+
+AUC clears 0.60 on folds 0 and 4; lift caps at 1.46× (below the 1.5× bar). Threshold sweep is monotone but the realized-mean curve barely lifts above panel baselines, because side prediction is **orthogonal to PnL magnitude** — it says "call beats put" without saying "today is worth trading." Confirms call/put direction is weakly learnable from the 79-feature context (0.60–0.62 AUC), but this alone cannot power a gate.
+
+**Provenance.** Both audit runs emit comparable JSON under `v2/artifacts/cpu_audits/bar_quality_signal_1f27ae02_{positive_ev,oracle_side_call}.json`. Dataset fingerprint `6162cf3d83db3586`, sidecar schema `v5_exact_chain_v2_slice`, git commit `1f27ae0*` (uncommitted changes excluded from git_commit). Comparable with each other and with the bar-quality audit; re-scoring any of them after code change is a one-line `compare_provenance` call.
+
+- **What changed:** Added governance scaffolding (provenance module, metric glossary, expanded audit script, model_manage research-tier refusal). Ran Gate A on `positive_ev` and `oracle_side_call`.
+- **What did not change:** No model, dataset, or policy change. No GPU spend. `train.py` un-edited. `OPP_LABEL` space unchanged.
+- **What this proves:** On the current 79-feature × v5 slice dataset, `slice_best_pnl > 0` is an uninformative target (93% base rate) and `oracle_side_call` is weakly learnable but cannot ground a trade/no-trade gate. Governance additions compile, self-test, and run clean end-to-end. Signal audit is repeatable via a single command per label.
+- **What this does not prove:** That no per-bar label is learnable. A stricter positive-EV threshold (e.g. `slice_best_pnl > 0.10` / `> 0.20`) that compresses base rate toward 50% has not been tried. A session-structure conditional (gap × VIX × time-of-day) has not been tried. Feature enrichment (sidecar pullup of `bar_slice_gamma_concentration`, `slice_txn_center_share`, `row_impulse_fraction` into context tensor) has not been tried. The B3 audit's 0.615 AUC on the legacy 52-feature manifest also has not been re-validated on the current 79-feature manifest; the discrepancy between B3 and this run may be a label-definition difference, a manifest difference, or both.
+
+**Next (awaiting user direction):** Either (a) add `--positive-ev-threshold` to the audit and sweep {0.05, 0.10, 0.20} on CPU — cheap and finishes the falsification of the "learnable bar-level PnL label" hypothesis; (b) add a session-structure conditional label (opening gap × VIX bucket × time-of-day) and audit it; (c) pivot to feature enrichment (sidecar pullup) — larger change, needs a new plan. Pre-plan rule stands: **do not spend GPU** until Gate A clears on some label.
+
+**Files changed (uncommitted):** `v2/core/provenance.py` (new), `v2/docs/metric_glossary.md` (new), `v2/analysis/bar_quality_signal_audit.py` (extended), `v2/ops/model_manage.py` (research-tier refusal), `v2/lab_notebook.md` (this entry). Provenance JSONs in `v2/artifacts/cpu_audits/`. MEMORY index updated with the `feedback_research_governance.md` pointer.

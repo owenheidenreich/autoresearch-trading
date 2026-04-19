@@ -113,6 +113,30 @@ def _load_manifest(artifact_dir: Path) -> dict:
         return json.load(f)
 
 
+def _artifact_is_research_tier(artifact_dir: Path, manifest: dict) -> bool:
+    """Return True if the artifact is tagged research_tier. Inspects manifest
+    (extra.research_tier, provenance.research_tier) and any sibling
+    provenance.json. Absent flags are treated as False — enforcement is
+    additive, not retroactive."""
+    extra = manifest.get("extra") or {}
+    if bool(extra.get("research_tier")):
+        return True
+    manifest_prov = manifest.get("provenance") or {}
+    if bool(manifest_prov.get("research_tier")):
+        return True
+    sidecar = artifact_dir / "provenance.json"
+    if sidecar.exists():
+        try:
+            with open(sidecar) as f:
+                payload = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return False
+        block = payload.get("provenance", payload)
+        if bool(block.get("research_tier")):
+            return True
+    return False
+
+
 def keep():
     """Promote candidate to best. Only FINAL_TRAIN artifacts accepted."""
     if not MODEL_CANDIDATE.exists():
@@ -138,6 +162,16 @@ def keep():
         print("  Walk-forward CV produces CV_EVAL artifacts (NOT promotable).")
         print("  Run v2.ops.run_final_train --config-from <exp_id> to produce a")
         print("  FINAL_TRAIN artifact from the chosen CV config.")
+        sys.exit(1)
+
+    if _artifact_is_research_tier(artifact_dir, manifest):
+        print("ERROR: Cannot promote — artifact is flagged research_tier=True.")
+        print(f"  artifact_dir:   {artifact_dir}")
+        print("")
+        print("  Research-tier labels are diagnostic bridge targets (learnable != ")
+        print("  tradable). To promote, re-run training with the OPP_LABEL renamed")
+        print("  out of the research_* namespace — that code change makes the")
+        print("  promotion visible in git, not implicit in 'the screen looked fine'.")
         sys.exit(1)
 
     # --- Artifact gate: validate required observability artifacts ---
