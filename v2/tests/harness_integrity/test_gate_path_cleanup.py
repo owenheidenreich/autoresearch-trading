@@ -13,7 +13,7 @@ from v2 import train
 from v2.core.chain_data import dynamic_slice_bounds, padded_snapshot_with_slice
 from v2.core.decision_trace import build_trace_for_bar, save_traces
 from v2.core.policy import DEFAULT_POLICY
-from v2.replay import load_model_from_path, model_to_intent
+from v2.replay import _resolve_gate_threshold, load_model_from_path, model_to_intent
 
 
 class TestGatePathCleanup(unittest.TestCase):
@@ -30,6 +30,16 @@ class TestGatePathCleanup(unittest.TestCase):
             "GATE_TARGET_MODE": train.GATE_TARGET_MODE,
             "GATE_PNL_THRESHOLD": train.GATE_PNL_THRESHOLD,
             "GATE_PNL_LOSS_SCALE": train.GATE_PNL_LOSS_SCALE,
+            "GATE_POSITIVE_PNL": train.GATE_POSITIVE_PNL,
+            "GATE_POSITIVE_MAX_WINNERS": train.GATE_POSITIVE_MAX_WINNERS,
+            "BAR_QUALITY_PASS_THRESHOLD": train.BAR_QUALITY_PASS_THRESHOLD,
+            "BAR_QUALITY_MIN_PNL": train.BAR_QUALITY_MIN_PNL,
+            "BAR_QUALITY_TARGET_PNL": train.BAR_QUALITY_TARGET_PNL,
+            "BAR_QUALITY_MFE_TARGET": train.BAR_QUALITY_MFE_TARGET,
+            "BAR_QUALITY_MAX_MAE": train.BAR_QUALITY_MAX_MAE,
+            "BAR_QUALITY_BREAKEVEN_MAX": train.BAR_QUALITY_BREAKEVEN_MAX,
+            "BAR_QUALITY_LOSS_SCALE": train.BAR_QUALITY_LOSS_SCALE,
+            "RANK_WEIGHT_BY_BAR_QUALITY": train.RANK_WEIGHT_BY_BAR_QUALITY,
         }
         train.GATE_W = 1.0
         train.SEL_W = 0.0
@@ -55,6 +65,7 @@ class TestGatePathCleanup(unittest.TestCase):
             "label_trade_valid": torch.tensor([True, True]),
             "contracts_full": torch.zeros(batch, n_contracts, 22),
             "label_quality": torch.ones(batch),
+            "label_bar_quality": torch.tensor([0.8, 0.1], dtype=torch.float32),
         }
 
     def _outputs(self, scores: torch.Tensor, gate_logits: torch.Tensor) -> dict[str, torch.Tensor]:
@@ -62,6 +73,7 @@ class TestGatePathCleanup(unittest.TestCase):
         return {
             "contract_scores": scores,
             "valid_mask": torch.ones_like(scores, dtype=torch.bool),
+            "gate_logit": gate_logits,
             "opportunity_logit": gate_logits,
             "side_logit": torch.zeros(scores.size(0)),
             "aggression_logits": torch.zeros(scores.size(0), 3),
@@ -92,6 +104,8 @@ class TestGatePathCleanup(unittest.TestCase):
         train.GATE_TARGET_MODE = "max_pnl"
         train.GATE_PNL_THRESHOLD = 0.2
         train.GATE_PNL_LOSS_SCALE = 10.0
+        train.GATE_POSITIVE_PNL = 0.30
+        train.GATE_POSITIVE_MAX_WINNERS = 2
         labels = torch.tensor([[0.10, 0.35, float("nan")], [0.05, 0.12, 0.08]])
         targets = self._targets(labels)
         gate_logits = torch.tensor([0.1, -0.2])
@@ -126,6 +140,26 @@ class TestGatePathCleanup(unittest.TestCase):
         )
         self.assertAlmostEqual(loss.item(), expected.item(), places=6)
         self.assertAlmostEqual(metrics["gate"], expected.item(), places=6)
+
+    def test_bar_quality_gate_loss_ignores_contract_scores(self):
+        train.GATE_TARGET_MODE = "bar_quality"
+        train.BAR_QUALITY_PASS_THRESHOLD = 0.55
+        train.BAR_QUALITY_LOSS_SCALE = 5.0
+        labels = torch.tensor([[0.10, 0.35, float("nan")], [0.05, 0.12, 0.08]])
+        targets = self._targets(labels)
+        gate_logits = torch.tensor([0.2, -0.3])
+
+        loss_a, metrics_a = train.compute_loss(
+            self._outputs(torch.tensor([[0.1, 0.2, 0.3], [9.0, -5.0, 1.0]]), gate_logits),
+            targets,
+        )
+        loss_b, metrics_b = train.compute_loss(
+            self._outputs(torch.tensor([[7.0, -3.0, 5.0], [-1.0, 2.0, 4.0]]), gate_logits),
+            targets,
+        )
+
+        self.assertAlmostEqual(loss_a.item(), loss_b.item(), places=6)
+        self.assertAlmostEqual(metrics_a["gate"], metrics_b["gate"], places=6)
 
     def test_model_to_intent_rejects_only_on_live_gate(self):
         intent = model_to_intent(
@@ -231,6 +265,87 @@ class TestGatePathCleanup(unittest.TestCase):
         }
         _, _, _, slice_mask = padded_snapshot_with_slice(sidecar, 0, 4)
         self.assertEqual(slice_mask.tolist(), [True, False, True, False])
+
+    def test_sparse_high_conviction_gate_requires_strong_sparse_winner(self):
+        sidecar = {
+            "bar_ptrs": np.array([0, 4], dtype=np.int32),
+            "row_labels": np.array([0.31, -0.05, 0.00, np.nan], dtype=np.float32),
+            "row_features": np.array(
+                [
+                    [1.0, 5000.0] + [0.0] * 20,
+                    [1.0, 5005.0] + [0.0] * 20,
+                    [1.0, 5010.0] + [0.0] * 20,
+                    [0.0, 0.0] + [0.0] * 20,
+                ],
+                dtype=np.float32,
+            ),
+            "bar_slice_lo_strike": np.array([4995.0], dtype=np.float32),
+            "bar_slice_hi_strike": np.array([5015.0], dtype=np.float32),
+        }
+        self.assertTrue(train._compute_sparse_high_conviction_opportunity(sidecar, 0))
+
+    def test_sparse_high_conviction_gate_rejects_crowded_positive_slice(self):
+        sidecar = {
+            "bar_ptrs": np.array([0, 4], dtype=np.int32),
+            "row_labels": np.array([0.35, 0.12, 0.07, -0.03], dtype=np.float32),
+            "row_features": np.array(
+                [
+                    [1.0, 5000.0] + [0.0] * 20,
+                    [1.0, 5005.0] + [0.0] * 20,
+                    [1.0, 5010.0] + [0.0] * 20,
+                    [1.0, 5015.0] + [0.0] * 20,
+                ],
+                dtype=np.float32,
+            ),
+            "bar_slice_lo_strike": np.array([4995.0], dtype=np.float32),
+            "bar_slice_hi_strike": np.array([5020.0], dtype=np.float32),
+        }
+        self.assertFalse(train._compute_sparse_high_conviction_opportunity(sidecar, 0))
+
+    def test_bar_quality_prefers_clean_sparse_winner(self):
+        sidecar = {
+            "bar_ptrs": np.array([0, 4], dtype=np.int32),
+            "row_labels": np.array([0.42, -0.04, -0.06, np.nan], dtype=np.float32),
+            "row_features": np.array(
+                [
+                    [1.0, 5000.0] + [0.0] * 20,
+                    [1.0, 5005.0] + [0.0] * 20,
+                    [1.0, 5010.0] + [0.0] * 20,
+                    [0.0, 0.0] + [0.0] * 20,
+                ],
+                dtype=np.float32,
+            ),
+            "bar_slice_lo_strike": np.array([4995.0], dtype=np.float32),
+            "bar_slice_hi_strike": np.array([5015.0], dtype=np.float32),
+            "bar_slice_best_contract_idx": np.array([0], dtype=np.int32),
+            "row_raw_returns": np.array([[0.10, 0.28], [0.00, -0.02], [0.00, -0.03], [0.0, 0.0]], dtype=np.float32),
+            "row_mfe": np.array([[0.08, 0.30], [0.00, 0.01], [0.00, 0.01], [0.0, 0.0]], dtype=np.float32),
+            "row_mae": np.array([[-0.02, -0.04], [-0.06, -0.08], [-0.05, -0.09], [0.0, 0.0]], dtype=np.float32),
+            "row_bars_to_breakeven": np.array([2.0, 8.0, 10.0, 0.0], dtype=np.float32),
+        }
+        quality = train._compute_bar_opportunity_quality(sidecar, 0)
+        self.assertGreaterEqual(quality, train.BAR_QUALITY_PASS_THRESHOLD)
+
+    def test_linear_score_heads_build_both_linear_heads(self):
+        model = train.TradingModel(linear_score_heads=True)
+        self.assertIsInstance(model.call_score_head, torch.nn.Linear)
+        self.assertIsInstance(model.put_score_head, torch.nn.Linear)
+
+    def test_quantile_gate_threshold_hits_target_pass_rate(self):
+        policy = DEFAULT_POLICY.__class__(gate_threshold_mode="quantile", gate_target_pass_rate=0.25)
+        thr, pass_rate = _resolve_gate_threshold(policy, np.array([0.0, 1.0, 2.0, 3.0], dtype=np.float32))
+        self.assertAlmostEqual(thr, 2.25, places=6)
+        self.assertAlmostEqual(pass_rate, 0.25, places=6)
+
+    def test_quantile_gate_threshold_respects_floor(self):
+        policy = DEFAULT_POLICY.__class__(
+            gate_threshold_mode="quantile",
+            gate_target_pass_rate=0.50,
+            gate_threshold_floor=0.0,
+        )
+        thr, pass_rate = _resolve_gate_threshold(policy, np.array([-3.0, -2.0, -1.0, -0.5], dtype=np.float32))
+        self.assertEqual(thr, 0.0)
+        self.assertEqual(pass_rate, 0.0)
 
     def test_trace_schema_contains_live_gate_fields_only(self):
         trace = build_trace_for_bar(

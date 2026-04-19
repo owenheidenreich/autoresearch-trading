@@ -28,7 +28,7 @@ from v2.core.metrics import ReplayMetrics, compute_metrics, score_config_fingerp
 from v2.core.policy import DEFAULT_POLICY, DecisionPolicy
 from v2.core.schema import TradeIntent
 from v2.core.simulator import simulate_trade
-from v2.train import LOOKBACK, TradingModel, _checkpoint_uses_linear_heads
+from v2.train import LOOKBACK, TradingModel, _checkpoint_gate_arch, _checkpoint_uses_linear_heads
 
 
 BATCH_SIZE = 2048
@@ -87,6 +87,7 @@ def load_model_from_path(path: str, device: str = "cpu") -> TradingModel:
         dropout=hyperparams.get("dropout", 0.05),
         linear_score_heads=_checkpoint_uses_linear_heads(checkpoint),
         num_features=n_features,
+        gate_arch=_checkpoint_gate_arch(checkpoint),
     )
     names = checkpoint.get("feature_names") or hyperparams.get("feature_names")
     if names:
@@ -153,6 +154,34 @@ def _build_day_index(dates) -> dict[str, list[int]]:
     for i, d in enumerate(dates):
         day_to_bars[d].append(i)
     return day_to_bars
+
+
+def _resolve_gate_threshold(policy: DecisionPolicy, gate_logits: np.ndarray) -> tuple[float, float]:
+    """Resolve the live gate threshold from policy + observed logits."""
+
+    mode = getattr(policy, "gate_threshold_mode", "fixed")
+    finite = np.asarray(gate_logits, dtype=np.float64)
+    finite = finite[np.isfinite(finite)]
+    if finite.size == 0:
+        return float(policy.gate_threshold), 0.0
+    if mode != "quantile":
+        thr = float(policy.gate_threshold)
+        return thr, float((finite > thr).mean())
+
+    target = float(getattr(policy, "gate_target_pass_rate", 1.0))
+    floor = float(getattr(policy, "gate_threshold_floor", -float("inf")))
+    if target <= 0.0:
+        return float("inf"), 0.0
+    if target >= 1.0:
+        thr = -float("inf")
+        if np.isfinite(floor):
+            thr = max(thr, floor)
+        return thr, float((finite > thr).mean())
+    q = float(np.clip(1.0 - target, 0.0, 1.0))
+    thr = float(np.quantile(finite, q))
+    if np.isfinite(floor):
+        thr = max(thr, floor)
+    return thr, float((finite > thr).mean())
 
 
 def model_to_intent(
@@ -327,6 +356,23 @@ def replay_validation(
     all_outputs = {k: torch.cat([o[k] for o in outputs_all], dim=0) for k in outputs_all[0]}
     print(f"  Inference: {time.time() - t_inf:.1f}s ({len(eligible)} bars)")
 
+    import dataclasses as _dc
+
+    gate_tensor = all_outputs.get("gate_logit", all_outputs["opportunity_logit"])
+    resolved_gate_threshold, resolved_gate_pass_rate = _resolve_gate_threshold(
+        policy,
+        gate_tensor.numpy(),
+    )
+    base_policy = _dc.replace(policy, gate_threshold=resolved_gate_threshold)
+    if getattr(policy, "gate_threshold_mode", "fixed") == "quantile":
+        print(
+            "  Gate calibration:"
+            f" mode=quantile target={policy.gate_target_pass_rate:.1%}"
+            f" threshold={resolved_gate_threshold:.4f}"
+            f" floor={getattr(policy, 'gate_threshold_floor', -float('inf')):.4f}"
+            f" actual_pass={resolved_gate_pass_rate:.1%}"
+        )
+
     from v2.core.features import _FEAT_IDX
 
     trades = []
@@ -366,7 +412,7 @@ def replay_validation(
         v_mask_np = outputs_i["valid_mask"].numpy().astype(bool)
         slice_mask_np = all_slice_masks[i].astype(bool)
         active_mask_np = v_mask_np & slice_mask_np
-        gate_val = float(outputs_i["opportunity_logit"].item())
+        gate_val = float(outputs_i.get("gate_logit", outputs_i["opportunity_logit"]).item())
         _side_logit_val = float(outputs_i["side_logit"].item()) if "side_logit" in outputs_i else 0.0
         vix_val = float(features[global_bar, vix_idx]) if global_bar < len(features) else 0.0
 
@@ -379,7 +425,7 @@ def replay_validation(
             side_mode=policy.side_mode,
             alpha_side=policy.alpha_side,
         )
-        effective_policy = policy
+        effective_policy = base_policy
 
         def _make_trace(decision: str, skip_reason: str = "",
                         sel_strike: float = 0.0, sel_right: str = "",
@@ -457,11 +503,13 @@ def replay_validation(
         contract_features_t = torch.from_numpy(all_contracts[i])
         contract_indices_t = torch.from_numpy(all_contract_indices[i])
         # Apply gate tightening overlay if active
-        import dataclasses as _dc
         if effective_gate_boost > 0:
-            effective_policy = _dc.replace(policy, gate_threshold=policy.gate_threshold + effective_gate_boost)
+            effective_policy = _dc.replace(
+                base_policy,
+                gate_threshold=base_policy.gate_threshold + effective_gate_boost,
+            )
         intent = model_to_intent(
-            gate_logit=outputs_i["opportunity_logit"],
+            gate_logit=outputs_i.get("gate_logit", outputs_i["opportunity_logit"]),
             side_logit=outputs_i.get("side_logit"),
             contract_scores=outputs_i["contract_scores"],
             contract_labels=torch.from_numpy(all_contract_labels[i]),
@@ -542,6 +590,9 @@ def replay_validation(
 
     metrics = compute_metrics(trades, num_days=max(num_days, 1), starting_equity=policy.starting_equity, contract_multiplier=policy.contract_multiplier)
     metrics.blocked_trades = blocked_trades  # attach overlay diagnostic data
+    metrics.gate_threshold_mode = getattr(policy, "gate_threshold_mode", "fixed")
+    metrics.resolved_gate_threshold = float(resolved_gate_threshold)
+    metrics.resolved_gate_pass_rate = float(resolved_gate_pass_rate)
 
     # Save and summarize traces
     if collect_traces:
@@ -1003,6 +1054,10 @@ def print_metrics(name: str, m: ReplayMetrics):
     print(f"  Trades={m.total_trades}  TPD={m.trades_per_day:.2f}  Days={m.num_days}  Traded={m.traded_days}")
     print(f"  Sortino={m.daily_sortino:.2f}  +DayRate={m.positive_day_rate:.1%}  AcctDD={m.max_account_drawdown:.1%}")
     print(
+        f"  Gate={m.gate_threshold_mode}  threshold={m.resolved_gate_threshold:.4f}"
+        f"  pass={m.resolved_gate_pass_rate:.1%}"
+    )
+    print(
         f"  Direction={m.call_count}C / {m.put_count}P  "
         f"Minority={m.minority_side_share:.1%}  Balance={m.direction_balance:.2f}"
     )
@@ -1078,6 +1133,9 @@ def main():
     parser.add_argument("--baselines", action="store_true")
     parser.add_argument("--traces", action="store_true", help="Collect per-bar decision traces")
     parser.add_argument("--gate", type=float, default=None)
+    parser.add_argument("--gate-mode", choices=("fixed", "quantile"), default=None)
+    parser.add_argument("--gate-pass-rate", type=float, default=None)
+    parser.add_argument("--gate-min-threshold", type=float, default=None)
     parser.add_argument("--sequential", action="store_true", help="Run sequential agent replay")
     parser.add_argument("--seq-model", type=str, default="v2/models/seq_agent.pt",
                         help="Path to sequential agent checkpoint")
@@ -1110,6 +1168,12 @@ def main():
     policy_kwargs = {"side_mode": _side_mode, "alpha_side": _alpha_side}
     if args.gate is not None:
         policy_kwargs["gate_threshold"] = args.gate
+    if args.gate_mode is not None:
+        policy_kwargs["gate_threshold_mode"] = args.gate_mode
+    if args.gate_pass_rate is not None:
+        policy_kwargs["gate_target_pass_rate"] = args.gate_pass_rate
+    if args.gate_min_threshold is not None:
+        policy_kwargs["gate_threshold_floor"] = args.gate_min_threshold
     policy = DecisionPolicy(**policy_kwargs)
 
     day_to_bars = _build_day_index(data["dates"])
@@ -1131,6 +1195,7 @@ def main():
                     n_heads=hp.get("n_heads", 4),
                     dropout=hp.get("dropout", 0.05),
                     linear_score_heads=_checkpoint_uses_linear_heads(ckpt),
+                    gate_arch=_checkpoint_gate_arch(ckpt),
                 )
                 if "model_state_dict" in ckpt:
                     encoder.load_state_dict(ckpt["model_state_dict"])

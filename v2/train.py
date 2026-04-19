@@ -40,7 +40,7 @@ TIME_BUDGET = int(os.environ.get("TIME_BUDGET", 300))
 SEL_W = float(os.environ.get("WEIGHT_SEL", 1.0))
 GATE_W = float(os.environ.get("WEIGHT_GATE", 1.0))
 SEED = int(os.environ.get("TRAIN_SEED", 123))
-OPP_LABEL = os.environ.get("OPP_LABEL", "slice")  # "slice", "old", "strict", "consensus", "high_threshold"
+OPP_LABEL = os.environ.get("OPP_LABEL", "slice")  # "slice", "old", "strict", "consensus", "high_threshold", "bar_quality"
 SOFT_TEMP = float(os.environ.get("SOFT_TEMP", 0.08))
 NOISE_MARGIN = float(os.environ.get("NOISE_MARGIN", 0.01))
 AMBIG_WEIGHT = float(os.environ.get("AMBIG_WEIGHT", 0.3))
@@ -53,13 +53,24 @@ COMP_W = float(os.environ.get("COMP_W", 0.0))       # competence head weight on 
 COMP_MODE = os.environ.get("COMP_MODE", "frozen")    # "frozen", "live", or "quality"
 CKPT_SELECTION_MODE = os.environ.get("CKPT_SELECTION_MODE", "loss_proxy")
 SEL_TARGET_MODE = os.environ.get("SEL_TARGET_MODE", "default")  # "default", "strict_mask", or "soft_pnl"
-GATE_TARGET_MODE = os.environ.get("GATE_TARGET_MODE", "binary")   # "binary" (BCE) or "max_pnl" (MSE on bar max row_labels)
+GATE_TARGET_MODE = os.environ.get("GATE_TARGET_MODE", "binary")   # "binary", "max_pnl", or "bar_quality"
+GATE_ARCH = os.environ.get("GATE_ARCH", "shared_context")  # "shared_context" or "decoupled_mlp"
+GATE_POSITIVE_PNL = float(os.environ.get("GATE_POSITIVE_PNL", "0.30"))
+GATE_POSITIVE_MAX_WINNERS = int(os.environ.get("GATE_POSITIVE_MAX_WINNERS", "2"))
 # Threshold shift for max_pnl gate: subtract from target so inference threshold 0 naturally gates
 # profitable (>threshold) vs marginal bars. Without this, all bars have positive target → all pass.
 GATE_PNL_THRESHOLD = float(os.environ.get("GATE_PNL_THRESHOLD", str(SLICE_GATE_MIN_PNL)))
 # Scale multiplier for max_pnl MSE loss — natural MSE scale ~0.05 is 10× smaller than BCE ~0.65,
 # so without scaling the gate head gets negligible gradient vs selection/gate BCE paths.
 GATE_PNL_LOSS_SCALE = float(os.environ.get("GATE_PNL_LOSS_SCALE", 10.0))
+BAR_QUALITY_PASS_THRESHOLD = float(os.environ.get("BAR_QUALITY_PASS_THRESHOLD", "0.83"))
+BAR_QUALITY_MIN_PNL = float(os.environ.get("BAR_QUALITY_MIN_PNL", "0.20"))
+BAR_QUALITY_TARGET_PNL = float(os.environ.get("BAR_QUALITY_TARGET_PNL", "0.45"))
+BAR_QUALITY_MFE_TARGET = float(os.environ.get("BAR_QUALITY_MFE_TARGET", "0.08"))
+BAR_QUALITY_MAX_MAE = float(os.environ.get("BAR_QUALITY_MAX_MAE", "-0.10"))
+BAR_QUALITY_BREAKEVEN_MAX = float(os.environ.get("BAR_QUALITY_BREAKEVEN_MAX", "8.0"))
+BAR_QUALITY_LOSS_SCALE = float(os.environ.get("BAR_QUALITY_LOSS_SCALE", "5.0"))
+RANK_WEIGHT_BY_BAR_QUALITY = int(os.environ.get("RANK_WEIGHT_BY_BAR_QUALITY", "0")) == 1
 LINEAR_SCORE_HEADS = int(os.environ.get("LINEAR_SCORE_HEADS", "1")) == 1
 # Moneyness bucket boundaries for aggression head
 AGG_ATM_THRESH = 0.5   # |moneyness_pct| < 0.5% = ATM
@@ -75,6 +86,10 @@ _TRAINING_ENV_VARS = [
     "COMP_W", "COMP_MODE", "COMP_TEACHER", "SIDE_MODE", "ALPHA_SIDE",
     "CKPT_SELECTION_MODE", "SEL_TARGET_MODE", "GATE_TARGET_MODE",
     "GATE_PNL_THRESHOLD", "GATE_PNL_LOSS_SCALE",
+    "BAR_QUALITY_PASS_THRESHOLD", "BAR_QUALITY_MIN_PNL", "BAR_QUALITY_TARGET_PNL",
+    "BAR_QUALITY_MFE_TARGET", "BAR_QUALITY_MAX_MAE", "BAR_QUALITY_BREAKEVEN_MAX",
+    "BAR_QUALITY_LOSS_SCALE", "RANK_WEIGHT_BY_BAR_QUALITY",
+    "GATE_ARCH", "GATE_POSITIVE_PNL", "GATE_POSITIVE_MAX_WINNERS",
     "LINEAR_SCORE_HEADS",
     "TRAIN_FEATURE_SET",
     "SESSION_HISTORY_K", "ANTI_LOCKIN",
@@ -110,6 +125,11 @@ def _checkpoint_uses_linear_heads(checkpoint: dict) -> bool:
         return bool(hp["linear_score_heads"])
     state = checkpoint.get("model_state_dict", {}) or {}
     return "call_score_head.weight" in state and "put_score_head.weight" in state
+
+
+def _checkpoint_gate_arch(checkpoint: dict) -> str:
+    hp = checkpoint.get("hyperparams", {}) or {}
+    return str(hp.get("gate_arch", "shared_context"))
 
 
 def _checkpoint_input_feature_names(checkpoint: dict) -> list[str]:
@@ -184,6 +204,7 @@ def _save_training_checkpoint(
                 "n_heads": N_HEADS,
                 "dropout": DROPOUT,
                 "linear_score_heads": LINEAR_SCORE_HEADS,
+                "gate_arch": GATE_ARCH,
                 "num_features": NUM_FEATURES,
                 "feature_set": TRAIN_FEATURE_SET,
                 "contract_features": NUM_CONTRACT_FEATURES,
@@ -251,6 +272,7 @@ class TradingModel(nn.Module):
         dropout: float | None = None,
         linear_score_heads: bool | None = None,
         num_features: int | None = None,
+        gate_arch: str | None = None,
     ):
         super().__init__()
         d = d_model or D_MODEL
@@ -258,6 +280,7 @@ class TradingModel(nn.Module):
         nh = n_heads or N_HEADS
         dr = DROPOUT if dropout is None else dropout
         self.linear_score_heads = LINEAR_SCORE_HEADS if linear_score_heads is None else bool(linear_score_heads)
+        self.gate_arch = GATE_ARCH if gate_arch is None else str(gate_arch)
         self.num_input_features = NUM_FEATURES if num_features is None else int(num_features)
         base_names = ACTIVE_FEATURE_NAMES if len(ACTIVE_FEATURE_NAMES) == self.num_input_features else FEATURE_NAMES
         self.input_feature_names: list[str] = list(base_names[: self.num_input_features])
@@ -304,12 +327,25 @@ class TradingModel(nn.Module):
         self.put_bias = nn.Parameter(torch.tensor(0.0))
 
         # Independent opportunity-quality head: "should I trade this bar?"
-        # Decides from context alone, before seeing any contracts.
+        # Direction B can fully decouple this from the ranker by feeding a
+        # small summary MLP over the raw lookback window instead of ranker context.
+        self.gate_summary_norm = None
+        if self.gate_arch == "shared_context":
+            gate_in = d
+        elif self.gate_arch == "decoupled_mlp":
+            gate_in = self.num_input_features * 4
+            self.gate_summary_norm = nn.LayerNorm(gate_in)
+        else:
+            raise ValueError(f"Unknown GATE_ARCH={self.gate_arch!r}")
+        gate_hidden = max(d, 64)
+        gate_mid = max(d // 2, 32)
         self.opportunity_head = nn.Sequential(
-            nn.Linear(d, d // 2),
+            nn.Linear(gate_in, gate_hidden),
             nn.GELU(),
             nn.Dropout(dr),
-            nn.Linear(d // 2, 1),
+            nn.Linear(gate_hidden, gate_mid),
+            nn.GELU(),
+            nn.Linear(gate_mid, 1),
         )
 
         # Side prediction head: P(call side is better) from context alone
@@ -381,7 +417,18 @@ class TradingModel(nn.Module):
 
         contract_scores = torch.where(is_put, put_scores_centered + self.put_bias, call_scores_centered)
 
-        opportunity_logit = self.opportunity_head(context).squeeze(-1)
+        if self.gate_arch == "shared_context":
+            gate_input = context
+        else:
+            gate_last = x[:, -1, :]
+            gate_mean = x.mean(dim=1)
+            gate_std = x.std(dim=1, unbiased=False)
+            gate_delta = x[:, -1, :] - x[:, 0, :]
+            gate_input = torch.cat([gate_last, gate_mean, gate_std, gate_delta], dim=-1)
+            if self.gate_summary_norm is not None:
+                gate_input = self.gate_summary_norm(gate_input)
+
+        gate_logit = self.opportunity_head(gate_input).squeeze(-1)
         side_logit = self.side_head(context).squeeze(-1)
         aggression_logits = self.aggression_head(context)  # (B, 3)
         return {
@@ -390,7 +437,8 @@ class TradingModel(nn.Module):
             "is_put": is_put,
             "call_scores_raw": call_scores,
             "put_scores_raw": put_scores,
-            "opportunity_logit": opportunity_logit,
+            "gate_logit": gate_logit,
+            "opportunity_logit": gate_logit,
             "side_logit": side_logit,
             "aggression_logits": aggression_logits,
             "context": context,
@@ -549,6 +597,145 @@ def _compute_frac_profitable(sc: dict, local_bar: int) -> float:
     return sum(1 for v in valid if v > 0) / len(valid)
 
 
+def _slice_finite_labels(sc: dict, local_bar: int) -> np.ndarray:
+    """Return finite row_labels inside the dynamic slice for one bar."""
+
+    bar_ptrs = sc["bar_ptrs"]
+    start = int(bar_ptrs[local_bar])
+    end = int(bar_ptrs[local_bar + 1])
+    if end <= start:
+        return np.zeros((0,), dtype=np.float32)
+    labels = sc["row_labels"][start:end]
+    contract_features = sc["row_features"][start:end]
+    slice_mask = snapshot_slice_mask(sc, local_bar, contract_features=contract_features)
+    vals: list[float] = []
+    for local_row, label in enumerate(labels):
+        if local_row >= len(slice_mask) or not slice_mask[local_row]:
+            continue
+        val = float(label)
+        if np.isfinite(val):
+            vals.append(val)
+    if not vals:
+        return np.zeros((0,), dtype=np.float32)
+    return np.asarray(vals, dtype=np.float32)
+
+
+def _compute_sparse_high_conviction_opportunity(
+    sc: dict,
+    local_bar: int,
+    positive_pnl: float = GATE_POSITIVE_PNL,
+    max_profitable_contracts: int = GATE_POSITIVE_MAX_WINNERS,
+) -> bool:
+    """Positive only when the slice has a strong, sparse winner.
+
+    Direction B aims to teach abstention, not generic engagement. A bar is
+    positive if the best in-slice contract is materially good and the winner set
+    is sparse enough that the gate can learn "when opportunity exists" instead
+    of "something in the chain usually makes money."
+    """
+
+    vals = _slice_finite_labels(sc, local_bar)
+    if vals.size == 0:
+        return False
+    best_pnl = float(vals.max())
+    profitable = int((vals > 0.0).sum())
+    return best_pnl >= positive_pnl and profitable <= max_profitable_contracts
+
+
+def _clip01(value: float) -> float:
+    return float(min(1.0, max(0.0, value)))
+
+
+def _best_slice_row_index(sc: dict, local_bar: int) -> int | None:
+    """Return the global row index for the sidecar's best in-slice contract."""
+
+    bar_ptrs = sc["bar_ptrs"]
+    start = int(bar_ptrs[local_bar])
+    end = int(bar_ptrs[local_bar + 1])
+    if end <= start:
+        return None
+    best_idx_arr = sc.get("bar_slice_best_contract_idx")
+    if best_idx_arr is None:
+        best_idx_arr = sc.get("bar_best_contract_idx")
+    if best_idx_arr is None:
+        return None
+    best_local = int(best_idx_arr[local_bar])
+    if best_local < 0 or best_local >= (end - start):
+        return None
+    return start + best_local
+
+
+def _compute_bar_opportunity_quality(
+    sc: dict,
+    local_bar: int,
+    min_pnl: float = BAR_QUALITY_MIN_PNL,
+    target_pnl: float = BAR_QUALITY_TARGET_PNL,
+    max_profitable_contracts: int = GATE_POSITIVE_MAX_WINNERS,
+    mfe_target: float = BAR_QUALITY_MFE_TARGET,
+    max_mae: float = BAR_QUALITY_MAX_MAE,
+    max_breakeven: float = BAR_QUALITY_BREAKEVEN_MAX,
+) -> float:
+    """Continuous [0, 1] bar-quality target for the gate.
+
+    The gate should learn bar-level opportunity quality, not just whether some
+    contract in the slice barely crossed zero. We score a bar by combining:
+      - best realized in-slice net PnL,
+      - path cleanliness for that winner,
+      - sparsity of the profitable set.
+    """
+
+    vals = _slice_finite_labels(sc, local_bar)
+    if vals.size == 0:
+        return 0.0
+
+    best_pnl = float(vals.max())
+    if not np.isfinite(best_pnl) or best_pnl <= 0.0:
+        return 0.0
+
+    profitable = int((vals > 0.0).sum())
+    pnl_span = max(target_pnl - min_pnl, 1e-6)
+    pnl_score = _clip01((best_pnl - min_pnl) / pnl_span)
+
+    if profitable <= max(1, max_profitable_contracts):
+        sparsity_score = 1.0
+    else:
+        sparsity_score = _clip01(float(max_profitable_contracts) / float(max(profitable, 1)))
+
+    path_components: list[float] = []
+    row_idx = _best_slice_row_index(sc, local_bar)
+    raw_returns = sc.get("row_raw_returns")
+    mfe = sc.get("row_mfe")
+    mae = sc.get("row_mae")
+    btbe = sc.get("row_bars_to_breakeven")
+    if (
+        row_idx is not None
+        and raw_returns is not None and len(raw_returns) > row_idx
+        and mfe is not None and len(mfe) > row_idx
+        and mae is not None and len(mae) > row_idx
+        and btbe is not None and len(btbe) > row_idx
+    ):
+        idx_5 = 0
+        idx_10 = 1 if raw_returns.shape[1] > 1 else 0
+        raw10 = float(raw_returns[row_idx, idx_10])
+        mfe5 = float(mfe[row_idx, idx_5])
+        mae10 = float(mae[row_idx, idx_10])
+        bars_to_be = float(btbe[row_idx])
+        if np.isfinite(raw10):
+            path_components.append(_clip01((raw10 - min_pnl) / pnl_span))
+        if np.isfinite(mfe5):
+            path_components.append(_clip01(mfe5 / max(mfe_target, 1e-6)))
+        if np.isfinite(mae10):
+            mae_span = max(1e-6, 0.0 - max_mae)
+            path_components.append(_clip01((mae10 - max_mae) / mae_span))
+        if np.isfinite(bars_to_be):
+            be_span = max(1.0, max_breakeven - 1.0)
+            path_components.append(_clip01((max_breakeven - bars_to_be) / be_span))
+    path_score = float(np.mean(path_components)) if path_components else pnl_score
+
+    quality = 0.55 * pnl_score + 0.25 * path_score + 0.20 * sparsity_score
+    return _clip01(quality)
+
+
 class TradeDataset(Dataset):
     def __init__(self, data: dict, mask: torch.Tensor, lookback: int = LOOKBACK):
         self.features = data["X"]
@@ -571,6 +758,7 @@ class TradeDataset(Dataset):
         self.all_label_trade = torch.zeros(n, dtype=torch.bool)
         self.all_label_trade_valid = torch.zeros(n, dtype=torch.bool)
         self.all_label_quality = torch.zeros(n, dtype=torch.float32)
+        self.all_label_bar_quality = torch.zeros(n, dtype=torch.float32)
         self.all_contract_strict_mask = (
             torch.zeros(n, max_contracts, dtype=torch.bool)
             if SEL_TARGET_MODE == "strict_mask" else None
@@ -594,10 +782,16 @@ class TradeDataset(Dataset):
             self.all_labels[j] = torch.from_numpy(labels)
             self.all_slice_mask[j] = torch.from_numpy(slice_mask)
             self.all_best_idx[j] = int(sc.get("bar_slice_best_contract_idx", sc["bar_best_contract_idx"])[local_bar])
+            bar_quality = _compute_bar_opportunity_quality(sc, local_bar)
+            self.all_label_bar_quality[j] = bar_quality
             if OPP_LABEL == "strict":
                 self.all_label_trade[j] = _compute_strict_opportunity(sc, local_bar)
             elif OPP_LABEL == "consensus":
                 self.all_label_trade[j] = _compute_consensus_opportunity(sc, local_bar)
+            elif OPP_LABEL in {"sparse", "sparse_high_conviction"}:
+                self.all_label_trade[j] = _compute_sparse_high_conviction_opportunity(sc, local_bar)
+            elif OPP_LABEL in {"bar_quality", "two_stage_quality"}:
+                self.all_label_trade[j] = bar_quality >= BAR_QUALITY_PASS_THRESHOLD
             elif OPP_LABEL == "high_threshold":
                 bp = sc.get("bar_slice_best_pnl", sc.get("bar_best_pnl"))
                 self.all_label_trade[j] = bp is not None and float(bp[local_bar]) > max(0.20, SLICE_GATE_MIN_PNL)
@@ -611,7 +805,14 @@ class TradeDataset(Dataset):
                 self.all_contract_strict_mask[j] = torch.from_numpy(
                     _compute_contract_strict_mask(sc, local_bar, max_contracts)
                 )
-        print(f"  Dataset materialized: {n:,} samples, {len(sidecar_cache)} days, {time.time() - t0:.1f}s")
+        valid_gate = self.all_label_trade_valid
+        n_valid = int(valid_gate.sum().item()) if len(valid_gate) else 0
+        n_pos = int((self.all_label_trade & valid_gate).sum().item()) if n_valid else 0
+        pos_rate = n_pos / max(n_valid, 1)
+        print(
+            f"  Dataset materialized: {n:,} samples, {len(sidecar_cache)} days, {time.time() - t0:.1f}s"
+            f" | gate_mode={OPP_LABEL} positives={n_pos}/{n_valid} ({pos_rate:.1%})"
+        )
 
     def __len__(self) -> int:
         return len(self.indices)
@@ -626,6 +827,7 @@ class TradeDataset(Dataset):
             "label_trade": self.all_label_trade[idx],
             "label_trade_valid": self.all_label_trade_valid[idx],
             "label_quality": self.all_label_quality[idx],
+            "label_bar_quality": self.all_label_bar_quality[idx],
         }
         if self.all_contract_strict_mask is not None:
             target["contract_strict_mask"] = self.all_contract_strict_mask[idx]
@@ -704,6 +906,12 @@ def compute_loss(
     label_trade = targets["label_trade"].to(device)
     label_trade_valid = targets["label_trade_valid"].to(device)
     contracts_full = targets["contracts_full"].to(device)
+    label_quality = targets["label_quality"].to(device)
+    label_bar_quality = targets.get("label_bar_quality")
+    if label_bar_quality is None:
+        label_bar_quality = torch.zeros_like(label_quality)
+    else:
+        label_bar_quality = label_bar_quality.to(device)
     slice_mask = targets.get("contract_slice_mask")
     if slice_mask is not None:
         slice_mask = slice_mask.to(device)
@@ -714,15 +922,22 @@ def compute_loss(
     if strict_contract_mask is not None:
         strict_contract_mask = strict_contract_mask.to(device)
 
-    label_quality = targets["label_quality"].to(device)
     supervised_rows = label_trade_valid
     trade_rows = supervised_rows & label_trade & (best_idx >= 0) & active_valid_mask.any(dim=-1)
-    opportunity_logit = outputs["opportunity_logit"]
+    gate_logit = outputs.get("gate_logit", outputs["opportunity_logit"])
     side_logit = outputs["side_logit"]
 
-    # --- A. Gate loss: the live gate is opportunity_logit ---
+    # --- A. Gate loss: the live gate is gate_logit ---
     gate_loss = torch.tensor(0.0, device=device)
-    if GATE_TARGET_MODE == "max_pnl" and supervised_rows.any():
+    if GATE_TARGET_MODE == "bar_quality" and supervised_rows.any():
+        sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
+        gate_target_value = label_bar_quality.clamp(0.0, 1.0) - BAR_QUALITY_PASS_THRESHOLD
+        gate_loss = BAR_QUALITY_LOSS_SCALE * F.smooth_l1_loss(
+            gate_logit[sup_idx],
+            gate_target_value[sup_idx],
+            reduction="mean",
+        )
+    elif GATE_TARGET_MODE == "max_pnl" and supervised_rows.any():
         pnl_for_max = labels.clone()
         pnl_for_max = torch.where(active_valid_mask, pnl_for_max, torch.full_like(pnl_for_max, float("-inf")))
         pnl_for_max[~torch.isfinite(pnl_for_max) & (pnl_for_max != float("-inf"))] = float("-inf")
@@ -731,7 +946,7 @@ def compute_loss(
         gate_target_value = bar_max_pnl - GATE_PNL_THRESHOLD
         sup_idx = supervised_rows.nonzero(as_tuple=True)[0]
         gate_loss = GATE_PNL_LOSS_SCALE * F.mse_loss(
-            opportunity_logit[sup_idx],
+            gate_logit[sup_idx],
             gate_target_value[sup_idx],
             reduction="mean",
         )
@@ -749,13 +964,13 @@ def compute_loss(
             neg_sel = neg_idx[torch.randperm(len(neg_idx), device=device)[:n_min]]
             balanced_idx = torch.cat([pos_sel, neg_sel])
             gate_loss = F.binary_cross_entropy_with_logits(
-                opportunity_logit[balanced_idx],
+                gate_logit[balanced_idx],
                 gate_target[balanced_idx],
                 reduction="mean",
             )
         else:
             gate_loss = F.binary_cross_entropy_with_logits(
-                opportunity_logit[sup_idx],
+                gate_logit[sup_idx],
                 gate_target[sup_idx],
                 reduction="mean",
             )
@@ -782,7 +997,7 @@ def compute_loss(
                 neg_sel = neg_idx[torch.randperm(len(neg_idx), device=device)[:n_min]]
                 balanced_comp = torch.cat([pos_sel, neg_sel])
                 comp_loss = F.binary_cross_entropy_with_logits(
-                    opportunity_logit[balanced_comp],
+                    gate_logit[balanced_comp],
                     label_comp_bin[balanced_comp],
                     reduction="mean",
                 )
@@ -865,6 +1080,12 @@ def compute_loss(
                 )
                 # Per-bar weight: clear=1.0, ambiguous=AMBIG_WEIGHT
                 bar_weight = torch.where(clear_bars, 1.0, AMBIG_WEIGHT)
+
+            if RANK_WEIGHT_BY_BAR_QUALITY and OPP_LABEL in {"bar_quality", "two_stage_quality"}:
+                tr_bar_quality = label_bar_quality[trade_rows].clamp(0.0, 1.0)
+                denom = max(1e-6, 1.0 - BAR_QUALITY_PASS_THRESHOLD)
+                rank_weight = 0.5 + 0.5 * ((tr_bar_quality - BAR_QUALITY_PASS_THRESHOLD) / denom).clamp(0.0, 1.0)
+                bar_weight = bar_weight * rank_weight
 
             logits_for_sel = tr_scores.clone()
             logits_for_sel[~tr_valid] = -1e9
@@ -957,8 +1178,8 @@ def compute_loss(
     masked_scores_eval = scores.detach().clone()
     masked_scores_eval[~active_valid_mask] = -1e9
     best_eval, pred_contract = masked_scores_eval.max(dim=-1)
-    # Use opportunity_logit as primary gate (independent of contract ranking)
-    pred_trade = opportunity_logit.detach() > 0
+    # Use gate_logit as primary gate (independent of contract ranking)
+    pred_trade = gate_logit.detach() > 0
 
     gate_acc = (
         (pred_trade[supervised_rows] == label_trade[supervised_rows]).float().mean().item()
@@ -1009,12 +1230,18 @@ def compute_loss(
     gate_pass_rate = 0.0
     gate_mean = 0.0
     gate_std = 0.0
+    bar_quality_mean = 0.0
+    rank_bar_quality_mean = 0.0
     if supervised_rows.any():
         with torch.no_grad():
-            gate_vals = opportunity_logit[supervised_rows].detach()
+            gate_vals = gate_logit[supervised_rows].detach()
             gate_pass_rate = (gate_vals > 0).float().mean().item()
             gate_mean = gate_vals.mean().item()
             gate_std = gate_vals.std().item() if gate_vals.numel() > 1 else 0.0
+            bar_quality_mean = label_bar_quality[supervised_rows].detach().mean().item()
+    if trade_rows.any():
+        with torch.no_grad():
+            rank_bar_quality_mean = label_bar_quality[trade_rows].detach().mean().item()
     if COMP_W > 0 and supervised_rows.any():
         with torch.no_grad():
             label_cb, _, cv = _compute_competence_label(
@@ -1025,7 +1252,7 @@ def compute_loss(
             finite = supervised_rows & cv
             if finite.any():
                 actual = label_cb[finite]
-                pred = (opportunity_logit[finite].detach() > 0).float()
+                pred = (gate_logit[finite].detach() > 0).float()
                 comp_acc = (pred == actual).float().mean().item()
 
     return total, {
@@ -1046,6 +1273,8 @@ def compute_loss(
         "gate_pass_rate": gate_pass_rate,
         "gate_mean": gate_mean,
         "gate_std": gate_std,
+        "bar_quality_mean": bar_quality_mean,
+        "rank_bar_quality_mean": rank_bar_quality_mean,
     }
 
 
@@ -1093,6 +1322,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
             "label_trade": torch.stack([t["label_trade"] for t in targets_list]),
             "label_trade_valid": torch.stack([t["label_trade_valid"] for t in targets_list]),
             "label_quality": torch.stack([t["label_quality"] for t in targets_list]),
+            "label_bar_quality": torch.stack([t["label_bar_quality"] for t in targets_list]),
         }
         if "contract_strict_mask" in targets_list[0]:
             targets["contract_strict_mask"] = torch.stack([t["contract_strict_mask"] for t in targets_list])
@@ -1115,7 +1345,11 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = TradingModel(linear_score_heads=LINEAR_SCORE_HEADS).to(device)
+    model = TradingModel(
+        linear_score_heads=LINEAR_SCORE_HEADS,
+        num_features=len(ACTIVE_FEATURE_NAMES),
+        gate_arch=GATE_ARCH,
+    ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
@@ -1134,6 +1368,7 @@ def train(data_path: str = "v2/data.pt", model_path: str = "v2/models/model.pt",
                 dropout=hp.get("dropout", DROPOUT),
                 linear_score_heads=_checkpoint_uses_linear_heads(teacher_ckpt),
                 num_features=int(hp.get("num_features", teacher_ckpt["model_state_dict"]["input_proj.weight"].shape[1])),
+                gate_arch=_checkpoint_gate_arch(teacher_ckpt),
             ).to(device)
             teacher.load_state_dict(teacher_ckpt["model_state_dict"])
             teacher.input_feature_names = _checkpoint_input_feature_names(teacher_ckpt)

@@ -2563,3 +2563,29 @@ Pass the mini-screen rule → `run_cv` for the full 5-fold official.
 - `coverage vs PF/DD curve` and `score monotonicity by gate threshold` diagnostics from PLAN.md §4 are **not** yet emitted as structured artifacts (trace-summary buckets only).
 - Paid-data extensions (ES volume, VIX term structure, OI / GEX) deferred per plan sequencing.
 - No Pickles-journal / book-extract review on the new phase-2 feature list — defer until phase-1 shows movement.
+
+## Bar-quality signal audit — hypothesis-pivot evidence (2026-04-18)
+
+**Context.** Codex shipped a bar-quality two-stage target branch (OPP_LABEL=bar_quality, GATE_TARGET_MODE=bar_quality — see `v2/docs/handoff_bar_quality_branch_2026-04-18.md`). The partial GPU fold-0 readout from `exp_next_c1_screen_mini` had `val_replay` select epoch 1 with `PF=0.000` (abstain-everything) as best of 15 epochs; held-out replay then forced trading via quantile calibration (threshold −0.3155) and got `PF 0.559 / DD 87.7% / 288 trades / 4.8 TPD`. Codex proposed `POLICY_GATE_MIN_THRESHOLD=0.0` as the fix.
+
+**Open question before another GPU spend:** is the bar-quality target predictable from the 79-feature representation at all? If `val_replay` prefers abstain-everything, it may be doing so correctly — because the conditional mean of bar-quality given `x` is indistinguishable from its unconditional mean.
+
+**Audit.** New script `v2/analysis/bar_quality_signal_audit.py`. For each fold, fit `sklearn.LogisticRegression(class_weight="balanced")` and a 1-hidden-layer MLP (64 units, BCE with class-balanced `pos_weight`) on `(X, y)` where `y = bar_quality >= 0.83` and `X` is one of three representations of the same context features the model trains on. Train on the fold's non-val train days, evaluate on the fold's val days — the same split `val_replay` uses.
+
+| Representation | Dims | Fold 0 LR_AUC / MLP_AUC | Fold 2 LR_AUC / MLP_AUC | Fold 4 LR_AUC / MLP_AUC |
+|---|---|---|---|---|
+| `current` (last bar)      |   79 | 0.553 / 0.526 | 0.535 / 0.522 | 0.525 / 0.523 |
+| `pooled` (mean+std / 30)  |  158 | 0.544 / 0.525 | 0.536 / 0.539 | 0.532 / 0.523 |
+| `flat` (lookback flatten) | 2370 | 0.528 / 0.508 | 0.523 / 0.505 | 0.505 / 0.509 |
+
+Top-decile precision across all runs sits at the base rate (~0.09–0.16) — **no lift over random selection**.
+
+**Control: coarsen the label.** Re-running `pooled` with `BAR_QUALITY_PASS_THRESHOLD=0.50` (base rate ≈ 48%, closer to a directional problem than a quality problem) gives AUC 0.48–0.50 on all three folds — still at or below chance. The problem is not the strictness of the quality cut.
+
+**Conclusion.** Across the full 79-feature surface, at any representation (current / pooled lookback / flat lookback), at any threshold (coarse 0.50 or strict 0.83), the bar-quality label is **not learnable above chance**. The `val_replay` selection of PF=0.000 on fold 0 was correct Bayes behavior given the signal level the learner has to work with — not a calibration bug. Codex's `POLICY_GATE_MIN_THRESHOLD=0.0` fix is real but not the binding constraint; rerunning `exp_next_c1_floor0` is not justified.
+
+**Hypothesis of record.** The bottleneck is **features × target alignment**, not gate architecture. None of the gate / scorer / label tweaks since exp_171 could have worked, because the 79-feature representation is nearly orthogonal to bar-quality under the current definition. Future experiments must either (a) redefine bar-quality to something the current features *do* predict (e.g., low-VIX × open-gap-direction conditionals, IV-curvature regime labels), or (b) enrich the feature set with instruments that carry forward-looking edge (order-flow imbalance, options-flow-imbalance, ES tape momentum, GEX proxies). Another gate-calibration rerun cannot clear this.
+
+**Durable outputs.**
+- `v2/analysis/bar_quality_signal_audit.py` — new CPU diagnostic, ~25s on mini-screen folds; exits non-zero when signal is below the learnability bar (default AUC≥0.60, top10_precision≥0.25).
+- Recommended policy: run this audit before any future gate-tuning GPU spend.

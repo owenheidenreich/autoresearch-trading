@@ -51,6 +51,9 @@ def run_experiment(
     print(
         "Policy:"
         f" gate_threshold={policy.gate_threshold}"
+        f" gate_mode={policy.gate_threshold_mode}"
+        f" gate_pass={policy.gate_target_pass_rate:.1%}"
+        f" gate_floor={policy.gate_threshold_floor}"
         f" side_mode={policy.side_mode}"
         f" alpha_side={policy.alpha_side}"
         f" max_daily_trades={policy.max_daily_trades}"
@@ -105,6 +108,12 @@ def _policy_from_env() -> DecisionPolicy:
 
     if "POLICY_GATE_THRESHOLD" in os.environ:
         kwargs["gate_threshold"] = float(os.environ["POLICY_GATE_THRESHOLD"])
+    if "POLICY_GATE_THRESHOLD_MODE" in os.environ:
+        kwargs["gate_threshold_mode"] = os.environ["POLICY_GATE_THRESHOLD_MODE"]
+    if "POLICY_GATE_TARGET_PASS_RATE" in os.environ:
+        kwargs["gate_target_pass_rate"] = float(os.environ["POLICY_GATE_TARGET_PASS_RATE"])
+    if "POLICY_GATE_MIN_THRESHOLD" in os.environ:
+        kwargs["gate_threshold_floor"] = float(os.environ["POLICY_GATE_MIN_THRESHOLD"])
     if "POLICY_MAX_DAILY_TRADES" in os.environ:
         kwargs["max_daily_trades"] = int(os.environ["POLICY_MAX_DAILY_TRADES"])
     if "POLICY_MAX_CONSECUTIVE_STOPS" in os.environ:

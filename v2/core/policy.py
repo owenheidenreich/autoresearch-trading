@@ -12,6 +12,9 @@ class DecisionPolicy:
 
     # Entry gate
     gate_threshold: float = 0.0
+    gate_threshold_mode: str = "fixed"  # "fixed" or "quantile"
+    gate_target_pass_rate: float = 1.0
+    gate_threshold_floor: float = -float("inf")
     label_gate_min_pnl: float = 0.04
 
     # Executability filters
