@@ -2670,3 +2670,56 @@ Plan pass bar: 50% MFE ≥ +30 bps. Actual best (random): 10.2%. Best Pickles ce
 **Next:** Fork C planning. R3 feasibility already confirmed Tier-1 95% High, Tier-3 93% Medium+. The Stage-1 finding that Pickles' qualifier layer *hurts* on SPX-only inputs is itself evidence that Pickles' decision process uses context SPX-only features can't capture — which is exactly what behavioral cloning on his journaled decisions encodes. Per user direction, start narrow: **Tier-1 day gate** and/or **Row-2 (MAGIC TIME) binary classifier** as the first supervised target; do *not* jump to full per-bar imitation as v1.
 
 **Files changed (uncommitted):** `v2/strategies/__init__.py`, `session_state.py`, `pickles_row1.py`, `fork_a1_stage1.py`, `fork_a1_random_control.py` (new package, 5 files). `v2/docs/fork_a1_row1_results.md` (new). `v2/lab_notebook.md` (this entry). Artifacts in `v2/artifacts/fork_a1_stage1/`. No modifications to existing files.
+
+---
+
+## 2026-04-19 — Mechanical baseline V1A (opening-structure reversion): `failed`, on the boundary
+
+**Context.** Plan-driven implementation of [v2/docs/mechanical_baseline_plan_opening_reversion.md](docs/mechanical_baseline_plan_opening_reversion.md) — the V1A mechanical test of the opening-reversion thesis locked in the strategy card. CPU-only, no ML, spot-driven entries and exits with direct contract-mid PnL accounting. Reads `v2/data.pt` (unnormalized `X_sim` feature tensor) + per-day sidecars. Trigger: VWAP overextension (≥ 10 bps in prior 10 bars) + reclaim past VWAP + `first15_acceptance` aligned + `bar_delta` aligned. Contract: delta band `[0.45, 0.55]`, dual spread gate (context `option_spread_pct ≤ 0.20` + per-contract `spread_fraction ≤ 0.20`), `|delta − 0.50|`-nearest tiebreak. Exits: spot-driven (VWAP re-cross > first-15 boundary touch > 30-min / 11:30 time stop). One trade/day, test_days only per fold, two controls (A same-day random-bar strategy-side, B same-bar random-day strategy-side).
+
+**Aggregate result across 5 folds (300 test days, 2024-12-19 → 2026-03-04):**
+
+| slice | n | target_hit | stop_hit | mean_net_pct | dollar_pf |
+|---|---:|---:|---:|---:|---:|
+| Strategy | 109 | **62.4%** | 35.8% | −0.354% ± 2.28% | 0.918 |
+| Control A (random-bar, same day, same side) | 88 | — | — | −0.513% | 0.882 |
+| Control B (same-bar, random day, same side) | 97 | — | — | −2.506% | 0.497 |
+
+Verdict: **`failed`** (not `failed_clear`, not `failed_near_miss` by the plan's strict operational definition).
+- `mean_net_pct = −0.354%` — slightly negative, well above the `-1%` clear-fail threshold
+- Control A beats strategy by 0.16pp, within the 0.5 × stderr margin
+- Strategy crushes Control B by 2.15pp → the specific days on which the trigger fires are meaningfully worse than average; the trigger is picking adverse days
+- Target/stop ratio (62% vs 36%) shows the exit geometry is sound; the edge leak is on the entry side
+
+**Per-fold breakdown (3-of-5 folds positive, 2-of-5 negative):**
+
+| fold | n | target | stop | mean_net_pct | dollar_pf |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 23 | 0.652 | 0.304 | −2.08% | 0.578 |
+| 1 | 33 | 0.606 | 0.394 | +1.68% | 1.399 |
+| 2 | 11 | 0.545 | 0.455 | −7.03% | 0.225 |
+| 3 | 23 | 0.652 | 0.304 | −0.22% | 0.974 |
+| 4 | 19 | 0.632 | 0.368 | +1.92% | 0.997 |
+
+**Attribution diagnostics.** Skip-reason distribution: 348 `skipped_no_contracts_at_bar` (bars where sidecar has no executable contracts — a data-availability ceiling, not a strategy defect), 108 `skipped_context_spread` (context spread exceeded the 20% cap), 1 `skipped_no_delta_contract`, 1 `zero_hold`. Exit distribution: 68 target, 39 stop, 2 time_stop.
+
+**Interpretation.** The three-part hypothesis (overextension → reclaim/reject → executable premium) produces a coherent trade profile: target-hit dominates stop-hit, exits resolve cleanly, per-trade costs (~60-80 bps round-trip) are in range. But the aggregate edge is thin to negative, and the comparison against Control A — which preserves side and same-day opportunity set — shows that the trigger is *not materially better* than randomly picking a bar on the same day with the same side. Control B's collapse suggests the trigger *does* have information about which days are worse than average; it just doesn't isolate better-than-average bars within those days.
+
+**This is qualitatively on the boundary between `failed` and `failed_near_miss`:** mean is slightly negative (not the plan's `> 0` near-miss gate), but Control A's beat-margin is razor-thin, target/stop gap is decisive, and 3-of-5 folds are positive. The strict plan escalation is "do not build V1B on a clear fail", but this isn't a clear fail — it's a marginal loss that V1B's premium-sanity gates (`vrp`, `iv_percentile`) were specifically staged for.
+
+**Awaiting user direction** on which branch to take:
+- (a) **Build V1B.** Add `vrp` / `iv_percentile` ceilings as no-trade gates. Thresholds picked from V1A's attribution CSV. Fits the plan's intent.
+- (b) **Treat as clear fail.** Reopen the three-part hypothesis; specifically, condition 2 ("reclaim into opening structure") may not be discriminating strongly enough.
+- (c) **Inspect Fold 2 specifically.** n=11 at −7% is dragging the aggregate; a bad-regime small-sample fold may be inflating the failure. Worth an attribution pass before deciding (a) vs (b).
+
+**Files changed (uncommitted):**
+- `v2/analysis/mechanical_baseline_opening_reversion.py` (new, ~620 lines)
+- `v2/docs/mechanical_baseline_plan_opening_reversion.md` (new)
+- `v2/lab_notebook.md` (this entry)
+- Artifacts: `v2/artifacts/mechanical_baseline_opening_reversion/{trades.csv, trades_fold{0..4}.csv, skips.csv, report_fold{0..4}.json, controls.json, summary.json}`
+
+**What this proves:** The V1A mechanical baseline, run exactly as specified in the locked plan, does not clear the falsification bar on aggregate. The exit geometry and contract selection are sound; the entry trigger does not produce a clean edge against a same-side same-day random-bar control.
+
+**What this does not prove:** Whether V1B (premium-sanity gates) changes the picture. Whether the thesis has edge in specific regimes not discriminated by the current trigger. Whether an ML-scoring stage over the 12-core feature set would add entry selectivity the mechanical trigger lacks.
+
+**No GPU. No training. No simulator changes. No dataset rebuild.**
