@@ -154,7 +154,7 @@ def _looks_like_name_token(line: str) -> bool:
 def find_author_lines(lines: list[str]) -> dict[int, str]:
     """Return ``{line_idx: author_name}`` for lines that are true message-start names.
 
-    Two-phase test:
+    Two-phase forward test:
       1. Line passes ``_looks_like_name_token``.
       2. Within the next 4 lines (skipping blank/space-only), the first
          non-blank line is a FULL_TS. This matches the Discord export
@@ -180,6 +180,56 @@ def find_author_lines(lines: list[str]) -> dict[int, str]:
                 out[i] = ln
             break
     return out
+
+
+def find_trailing_author_for_ts(
+    lines: list[str],
+    ts_idx: int,
+    author_lines: dict[int, str],
+    assigned_ts: set[int],
+    max_scan: int = 60,
+) -> str | None:
+    """Discord exports sometimes use a *trailing-name* format: a FULL_TS
+    appears at the top of a block, content follows, and the author name
+    lives at the END of the block (below its own content) instead of above
+    it. Common on short single-message files like no-trade days
+    (2023-10-22 Sunday prep, 2023-10-24 personal-matters).
+
+    For a FULL_TS at ``ts_idx`` not already paired with a forward-pass
+    author (``ts_idx not in assigned_ts``), scan forward up to ``max_scan``
+    lines — stopping at any subsequent FULL_TS or already-confirmed
+    forward-author line — for a plausible trailing author. Prefer an exact
+    match to an already-confirmed author name elsewhere in the file
+    (strong signal); otherwise accept a name-token line with no later TS
+    in its own 4-line window (weaker, common at file tail).
+    """
+    n = len(lines)
+    known_authors = set(author_lines.values())
+    end = min(n, ts_idx + 1 + max_scan)
+    for k in range(ts_idx + 1, end):
+        if k in author_lines:
+            end = k
+            break
+        ln = lines[k].rstrip("\n")
+        if FULL_TS_RE.match(ln):
+            end = k
+            break
+
+    # Primary: exact match to a forward-pass author name in this file.
+    for k in range(ts_idx + 1, end):
+        ln = lines[k].rstrip("\n")
+        if ln in known_authors:
+            return ln
+    # Fallback: this corpus's primary journal author is "Pickles". Accept
+    # a trailing "Pickles" name-token line directly. Any other trailing
+    # name-like candidate is rejected — too many content lines pass the
+    # loose name-token test (e.g. "current weekend positions") and would
+    # falsely claim to be authors.
+    for k in range(ts_idx + 1, end):
+        ln = lines[k].rstrip("\n")
+        if ln == "Pickles":
+            return "Pickles"
+    return None
 
 
 def pt_to_et(pt_time: str, date_str: str) -> str:
@@ -254,54 +304,99 @@ def parse_journal(path: Path) -> tuple[str, list[dict]]:
     # name-like (e.g. "SPX LONG PUTS", "ES LEVELS").
     confirmed_author_names: set[str] = set(author_lines.values())
 
-    messages: list[dict] = []
-    for ai, aidx in enumerate(author_idx_sorted):
-        if author_lines[aidx] != "Pickles":
-            continue
-        end = author_idx_sorted[ai + 1] if ai + 1 < len(author_idx_sorted) else n
+    # ts_to_author_forward maps a FULL_TS line index to its forward-pass
+    # author name (if an author line precedes it within 4 lines).
+    ts_to_author_forward: dict[int, str] = {}
+    for a_idx in author_idx_sorted:
+        k = a_idx + 1
+        while k < n and k < a_idx + 5:
+            peek = lines[k].rstrip("\n")
+            if peek.strip() == "":
+                k += 1
+                continue
+            if FULL_TS_RE.match(peek):
+                ts_to_author_forward[k] = author_lines[a_idx]
+            break
 
-        # Walk within [aidx+1, end), split subsections on TS markers.
-        cur_ts: str | None = None
-        cur_start: int | None = None  # 0-indexed line after the TS
+    # Discover orphan FULL_TSes (no forward-author) and try trailing-name
+    # resolution. Populates ts_to_author_trailing for those cases.
+    ts_to_author_trailing: dict[int, str] = {}
+    for i in range(n):
+        if i in ts_to_author_forward:
+            continue
+        ln = lines[i].rstrip("\n")
+        if not FULL_TS_RE.match(ln):
+            continue
+        assigned = set(ts_to_author_forward.keys()) | set(ts_to_author_trailing.keys())
+        trailing = find_trailing_author_for_ts(lines, i, author_lines, assigned)
+        if trailing is not None:
+            ts_to_author_trailing[i] = trailing
+
+    # Build a combined TS -> author map. Forward-pass wins when both exist.
+    ts_to_author: dict[int, str] = dict(ts_to_author_trailing)
+    ts_to_author.update(ts_to_author_forward)
+
+    # Collect per-TS block extents. A block runs from TS+1 until the next
+    # FULL_TS (any author), next forward-author line, or EOF — whichever
+    # comes first. SHORT_TS markers inside a block create subsections
+    # under the same author. confirmed_author_names inside content is a
+    # reply-quote marker and flushes the current subsection.
+    messages: list[dict] = []
+    ts_sorted = sorted(ts_to_author.keys())
+    forward_author_idx_set = set(author_idx_sorted)
+
+    for ti, ts_idx in enumerate(ts_sorted):
+        author = ts_to_author[ts_idx]
+        if author != "Pickles":
+            continue
+        # Block end: next FULL_TS, next forward-author line, or EOF.
+        block_end = n
+        if ti + 1 < len(ts_sorted):
+            block_end = min(block_end, ts_sorted[ti + 1])
+        for fa in author_idx_sorted:
+            if fa > ts_idx:
+                block_end = min(block_end, fa)
+                break
+
+        # Within [ts_idx+1, block_end), split on SHORT_TS; the FULL_TS at
+        # ts_idx itself is the first subsection's stamp.
+        cur_ts: str = lines[ts_idx].rstrip("\n")
+        cur_start: int = ts_idx + 1  # 0-indexed line after the TS
         cur_content: list[str] = []
 
-        def _flush(end_line_exclusive: int) -> None:
-            if cur_ts and cur_content:
+        def _flush(end_exclusive: int) -> None:
+            if cur_content:
                 text = "".join(cur_content).strip()
                 if text:
                     messages.append({
                         "ts_pt": cur_ts,
                         "content": text,
-                        "line_start": (cur_start or 0) + 1,
-                        "line_end": end_line_exclusive,
+                        "line_start": cur_start + 1,
+                        "line_end": end_exclusive,
                     })
 
-        for j in range(aidx + 1, end):
+        for j in range(ts_idx + 1, block_end):
             ln = lines[j].rstrip("\n")
-            if FULL_TS_RE.match(ln) or SHORT_TS_RE.match(ln):
+            if SHORT_TS_RE.match(ln):
                 _flush(j)
                 cur_ts = ln
                 cur_start = j + 1
                 cur_content = []
                 continue
-            # Discord reply-quote marker: a line whose exact text is a
-            # confirmed author name (appears elsewhere in this file as a
-            # real author line) signals quote context for a reply. Stop
-            # collecting here. This tighter check avoids false positives
-            # on content lines that coincidentally pass the loose name
-            # token test (e.g. "SPX LONG PUTS", "ES LEVELS").
-            if cur_ts is not None and ln in confirmed_author_names:
+            # Reply-quote marker: line whose exact text is a confirmed
+            # author name elsewhere in this file. Flush and stop.
+            if ln in confirmed_author_names:
                 _flush(j)
-                cur_ts = None
-                cur_start = None
+                cur_ts = ""
+                cur_start = j
                 cur_content = []
-                continue
-            if cur_ts is None:
-                # Haven't hit the TS yet, or we've already flushed on a
-                # reply-quote marker. Skip.
-                continue
+                # Mark remainder of block as "don't capture"
+                break
             cur_content.append(lines[j])
-        _flush(end)
+        else:
+            _flush(block_end)
+            continue
+        # Broke out due to reply-quote: nothing more to capture in block.
 
     return date_str, messages
 
