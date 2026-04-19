@@ -1,0 +1,86 @@
+date,file,line_start,line_end,ts_pt,ts_et,patterns,excerpt
+2023-10-30,2023-10-30.txt,50,53,10/30/2023 1:50 PM,16:50,executed_long,ROLLED SHORT-CALL to higher STRIKE & further EXPIRY / added to LONG-CALL & a new LONG SPX CALL for tomorrow's EXPIRY /  / elected not to WRITE PUTS against position
+2023-10-31,2023-10-31.txt,60,72,10/31/2023 7:53 AM,10:53,spx_0dte_reference,"0DTE SPX PCS 4160 / 4145  /  / 3,540 - 1,500 = $2,040 CREDIT RECIEVED /  / ES made both a higher SWING LOW & and lower SWING HIGH - needs strength to break-out of this balance, 96% probability either OVN HIGH or LOW is re-auctioned in RTH, so if it were to occur today it's likely the HIGHs since we're much "
+2023-11-09,2023-11-09.txt,64,68,11/9/2023 8:00 AM,11:00,executed_long,"went LONG SPX CALLS on ES WEEKLY VWAP BOUNCE, if ES gets back up to VWAP we can see a bunch of BUYERS coming in to potentially make a stronger run back to OPENING PRICE, otherwise VWAP will act as a hard wall to push through"
+2023-11-10,2023-11-10.txt,118,122,8:22 AM,11:22,spx_0dte_reference,"0DTE SPX PCS --> $6,005 CREDIT /   /   /   / 1"
+2023-11-10,2023-11-10.txt,124,132,8:25 AM,11:25,spx_0dte_reference,"0DTE SPX CCS --> $6,000 CREDIT /   /   /   / 1 /   / 1"
+2023-11-10,2023-11-10.txt,152,158,11/10/2023 10:02 AM,13:02,executed_long|hedge_signal,"CCS got rekt, BACK RATIO'd into more SPX LONGS & ultimately CLOSED out of the SPX SHORT CALLS /  / the LONGS off-set the LOSS on the SHORTS, but I do not consider a trade where the DEFENSE had to come save the day a  / winning /  trade - I had to put more capital to dig myself out of the red, that's saving "
+2023-11-13,2023-11-13.txt,121,123,11/13/2023 6:50 AM,09:50,executed_long,LONG SPX off ES & NQ bounce off opening 15m candle
+2023-11-15,2023-11-15.txt,129,133,11/15/2023 8:25 AM,11:25,spx_0dte_reference,0DTE SPX CCS 4510 / 4495 /   / (edited)
+2023-11-16,2023-11-16.txt,110,114,7:23 AM,10:23,spx_0dte_reference,switching from FUTURES to SPX 0DTE on higher confidence in this trade: /  / 0DTE SPX CALLS on ES & NQ back above VWAP
+2023-11-16,2023-11-16.txt,118,120,11/16/2023 7:32 AM,10:32,explicitly_claimed,out of those SPX CALLS
+2023-11-17,2023-11-17.txt,90,90,7:17 AM,10:17,executed_long|spx_0dte_reference,"did not increase NQ, but went LONG SPX 0DTE 4510"
+2023-11-17,2023-11-17.txt,171,171,11/17/2023 9:22 AM,12:22,spx_0dte_reference,"SPX 0DTE PCS 4485 / 4500 --> $1,200 NET CREDIT"
+2023-11-17,2023-11-17.txt,173,176,9:26 AM,12:26,executed_long|spx_0dte_reference,"enter LONG SPX 4510 0DTE, COUNTER-TREND this dip, expecting a  / rip"
+2023-11-17,2023-11-17.txt,212,214,11/17/2023 9:43 AM,12:43,executed_long|explicitly_claimed,scaling out of SPX LONGS
+2023-11-20,2023-11-20.txt,73,73,7:28 AM,10:28,spx_0dte_reference,going to extend my LONG BIAS and LONG 0DTE 4525 SPX CALLS
+2023-11-20,2023-11-20.txt,83,83,11/20/2023 7:39 AM,10:39,executed_long|explicitly_claimed,adding to my SPX LONG CALLS
+2023-11-20,2023-11-20.txt,93,95,7:44 AM,10:44,explicitly_claimed,"will close out of SPX CALLS at HOD RE-TEST on ES, keeping ES & NQ /   / (edited)"
+2023-11-20,2023-11-20.txt,97,97,7:47 AM,10:47,explicitly_claimed,out of SPX CALLS
+2023-11-20,2023-11-20.txt,228,228,10:08 AM,13:08,executed_long,i'm about to LONG SPX CALLS if we have continuation here
+2023-11-20,2023-11-20.txt,230,234,10:13 AM,13:13,executed_long,went LONG SPX with a larger POSITION SIZE to follow potential CONTINUATION upwards
+2023-11-20,2023-11-20.txt,294,302,11/20/2023 10:59 AM,13:59,explicitly_claimed,out of those SPX CALLS /   /   /   / 2 /   / 2 /   / 1
+2023-11-21,2023-11-21.txt,117,119,11/21/2023 6:39 AM,09:39,executed_long|spx_0dte_reference,going to add to these LONGS with 0DTE SPX LONG CALLS
+2023-11-21,2023-11-21.txt,175,177,9:32 AM,12:32,executed_long,still in SPX LONGS - soon to be at BREAK-EVEN to CLOSE out of trade
+2023-11-21,2023-11-21.txt,183,189,11/21/2023 9:55 AM,12:55,executed_long|explicitly_claimed,"out of SPX LONGS, squeaked out a little profit. /  / I do not consider it a winning position when the DEFENSE is what makes the trade go green - that means either the ENTRY or THESIS was incorrect ( in this case the ENTRY ) /  / first loss since 16 NOV /   / 1"
+2023-11-22,2023-11-22.txt,95,95,11/22/2023 6:35 AM,09:35,executed_long|spx_0dte_reference,going to go LARGE 0DTE SPX LONG CALLS
+2023-11-22,2023-11-22.txt,97,97,6:36 AM,09:36,explicitly_claimed,OUT OF SPX CALLS
+2023-11-30,2023-11-30.txt,82,82,11/30/2023 6:24 AM,09:24,executed_long,going to set-up a lightning quick SPX LONG CALLS at market open. literally in & out less than 120 seconds
+2023-11-30,2023-11-30.txt,121,121,7:17 AM,10:17,executed_long|explicitly_claimed,looking for exit on my SPX LONGS
+2023-11-30,2023-11-30.txt,123,125,7:23 AM,10:23,spx_0dte_reference,"10x 0DTE SPX PCS under LOD for $2,900 NET CREDIT"
+2023-11-30,2023-11-30.txt,164,166,11/30/2023 7:51 AM,10:51,narrative_plan,looking at 4555 SPX CALLS should PRICE find a FLOOR
+2023-11-30,2023-11-30.txt,172,176,11/30/2023 7:58 AM,10:58,executed_long,"doubled entire PUT LADDER position for additional $10,750 CREDIT to go into SPX LONG CALLS 4555"
+2023-11-30,2023-11-30.txt,206,226,11/30/2023 11:29 AM,14:29,executed_long|explicitly_claimed,"spent all day averaging down into my SPX LONGS from this morning to force a win off this PM bull-run. I'll be the first one in line to say it's a horrible idea to throw in so many more contracts into an already failing position, but i had  / conviction /  that SPX would turn up, and spent every 30m cand"
+2023-12-04,2023-12-04.txt,64,66,12/4/2023 6:29 AM,09:29,executed_long,"SMALL SPX LONG when the bell rings, depending on how first 15m candle sets i'll scale higher or exit"
+2023-12-04,2023-12-04.txt,72,74,12/4/2023 6:34 AM,09:34,executed_long|explicitly_claimed,out of SPX LONGS
+2023-12-04,2023-12-04.txt,186,199,12/4/2023 8:34 AM,11:34,executed_long|explicitly_claimed,"~$18k was my NET CREDIT, i'm going to take about half of that and doubling down on the LONG BIAS with SPX LONG CALLS ( keeping remainder in defense ) /  / set TP on the SPX CALLS close to w/e my max loss is on the PUT LADDER /  / what just happened? /  / I got PAID to take those SPX CALLS from the CREDIT on the"
+2023-12-05,2023-12-05.txt,90,92,7:13 AM,10:13,executed_long,"waiting for another LONG set-up to occur, need to see separation from WEEKLY POC & WEEKLY VWAP and will go into SPX LONG CALLS instead of FUTURES"
+2023-12-05,2023-12-05.txt,96,98,12/5/2023 7:29 AM,10:29,executed_long,"1030 IB about to set, looking at SPX LONGS as a COUNTER TREND TRADE"
+2023-12-05,2023-12-05.txt,104,108,12/5/2023 7:31 AM,10:31,executed_long,LONG SPX CALLS
+2023-12-05,2023-12-05.txt,137,137,12/5/2023 8:28 AM,11:28,executed_long,going into SPX LONG CALLS into EURO CLOSE
+2023-12-05,2023-12-05.txt,152,156,12/5/2023 8:36 AM,11:36,executed_long,increased SPX LONG CALL exposure
+2023-12-06,2023-12-06.txt,130,132,7:14 AM,10:14,executed_long,going LONG SPX CALLS
+2023-12-12,2023-12-12.txt,62,64,12/12/2023 6:46 AM,09:46,executed_long,SPX LONG CALLS
+2023-12-12,2023-12-12.txt,76,76,6:51 AM,09:51,executed_long,NQ about to test it's AM HIGHS and breaks it --> back into SPX LONGS
+2023-12-12,2023-12-12.txt,78,88,6:57 AM,09:57,executed_long,back into more SPX LONGS /  / target is ES testing it's AM SESSION HIGH - NQ is smashing theirs /   /   /   / 1 /   / 1
+2023-12-12,2023-12-12.txt,116,122,12/12/2023 7:04 AM,10:04,executed_long|explicitly_claimed,out of SPX LONGS /   /   /   / 1 /   / 1
+2023-12-12,2023-12-12.txt,149,159,12/12/2023 7:41 AM,10:41,explicitly_claimed,"out of SPX CALLS /  / 3 for 3 on trades so far, going to take a break until EURO CLOSE /  / GL everyone /   /   /   / 1"
+2023-12-13,2023-12-13.txt,321,325,12/13/2023 8:28 AM,11:28,spx_0dte_reference,0DTE SPX /   / 1
+2023-12-13,2023-12-13.txt,1180,1186,12/13/2023 10:29 AM,13:29,executed_long,added to LONG PUTS on the PCS to BACK RATIO in event the SHORT STRIKE get's blown up ( 4640 SPX ) /   /   /   / 1
+2023-12-14,2023-12-14.txt,71,81,12/14/2023 6:04 AM,09:04,executed_long|hedge_signal,primary defense should SPX see above 4750 /  / LONG SPX CALLS 4750 with the FRI EXPIRY to counter DELTA the 4755 SHORT CALLS ( effectively turning the CCS side of the IC into a 5-wide CDS ) which would bring the PnL on the CALL-SIDE of the WEEKLY IC closer to it's BREAK-EVEN & likely still net profit wh
+2023-12-14,2023-12-14.txt,109,113,7:05 AM,10:05,executed_long|narrative_plan,ES needs to hold VWAP and will be looking at SPX LONG CALLS if that happens /  / ES fails VWAP and the lean changes to SHORTS --> go flat on acct and wait fo rmarket to show it's hand /   / 1
+2023-12-14,2023-12-14.txt,115,117,7:08 AM,10:08,executed_long,"LONG SPX CALLS on ES VWAP SUPPORT, quick in & out, not expecting a re-visit to AM HIGHS, TP at +1 VWAP / OPENING CANDLE HIGH"
+2023-12-14,2023-12-14.txt,137,153,12/14/2023 7:41 AM,10:41,executed_long|explicitly_claimed,ES was less than a full point from my TP /  / ES SL'd out /  / NQ SL'd out /  / SPX LONG CALLS SL'd out  /  / Pickles has a house rule of 3 losing trades --> log out of broker and come back tomorrow /  / GG & GL to anyone trading /   / 5 /   / 2
+2023-12-29,2023-12-29.txt,28,41,12/29/2023 2:28 PM,17:28,hedge_signal,JPM roll notes ( 'fund 1' DEC 2023 to MAR 2024 ROLL ):  / roll happened at 1412 EST size 39k vs 4768.71 SPOT / used 17k 4515c 0dte calls as COUNTER DELTA ( bought back part of their expiring short calls ) /  / SHORT CALLS 5015 SPX @ $33.99 / LONG PUTS 4510 SPX @ $40.07 / SHORT PUTS 3800 SPX @ $6.34 / no post mark
+2024-01-03,2024-01-03.txt,44,44,5:31 AM,08:31,hedge_signal,"if RTH turns out to be a TREND DOWN day, will convert the CCS into a CALL LADDER SPREAD and WRITE CALLS on the way down"
+2024-01-04,2024-01-04.txt,94,98,7:03 AM,10:03,executed_long,"going into LONG PUTS here /  / Green TICKS are weak on this run-up. small position size until red TICKS start to come in, then scale in more"
+2024-01-04,2024-01-04.txt,134,140,1/4/2024 9:32 AM,12:32,executed_long|explicitly_claimed,averaged down into these SPX LONG PUTS and finally closed out for profit after a very clenchy lunch session /   /   /   / 2
+2024-01-05,2024-01-05.txt,73,77,6:48 AM,09:48,executed_long,SPX LONG CALLS on push up through OVNH
+2024-01-05,2024-01-05.txt,111,115,1/5/2024 7:02 AM,10:02,explicitly_claimed,out of SPX CALLS /   /   /   / 1
+2024-01-19,2024-01-19.txt,109,115,1/19/2024 7:22 AM,10:22,executed_long,SPX LONG PUTS on NQ & ES struggling to hold above their VWAP /   /   /   / 2
+2024-02-16,2024-02-16.txt,32,42,2/16/2024 5:45 AM,08:45,hedge_signal,"There won't be much in terms of day-trading for me today, setting SLs on the WEEKLY RANGE SHORT STRIKES ( the LONGS are at 0 BID ) so if premium starts to creep back into the contracts, it'll trigger my closing order, otherwise allowing them to go the full 100% WORTHLESS for max gain. /  / TUES brought "
+2024-02-16,2024-02-16.txt,84,86,2/16/2024 7:03 AM,10:03,executed_long,LONG SPX for 1000 MAGIC TIME
+2024-02-16,2024-02-16.txt,257,263,2/16/2024 8:17 AM,11:17,explicitly_claimed,out of SPX CALLS /   /   /   / 2
+2024-02-22,2024-02-22.txt,44,66,2/22/2024 11:13 AM,14:13,executed_long|hedge_signal,"LONG SPX 4085 to effectively convert into a back ratio'd ( ~2:3 ) 10-wide CDS with the 4095 SHORT CALLS from the weekly range.  /  / The DELTA from the 4085's will out-pace the DELTA from the 4095's, the defense will result in profit from a range break / Closing below 4095 but above 4085 would be the best"
+2024-02-22,2024-02-22.txt,70,80,2/22/2024 11:37 AM,14:37,executed_long|explicitly_claimed,closed out of SPX LONG CALLS /  / $14.70 --> $17.70 = $3.00 x 15 contracts = $45 /  / will re-open on HH /   /   /   / 3
+2024-03-04,2024-03-04.txt,51,59,3/4/2024 5:27 AM,08:27,spx_0dte_reference,PCS & CCS 0DTE SPX to effectively make an IC /   /   /   / 1 /   / 1
+2024-03-18,2024-03-18.txt,58,60,3/18/2024 5:39 AM,08:39,spx_0dte_reference,0DTE SPX CCS just inside the PW HIGH
+2024-03-18,2024-03-18.txt,62,64,5:42 AM,08:42,spx_0dte_reference,0DTE SPX PCS just inside the GLOBEX OPEN
+2024-03-20,2024-03-20.txt,68,76,3:16 PM,18:16,hedge_signal,"first defense: convert the SHORT STRIKE of the CALL-SIDE of the IC into a CDS with FRI EXPIRY and BACK RATIO into positive DELTA to help offset the losses / second defense: close out of CALL-SIDE of the IC at a loss, the above CDS & PUT-SIDE of the IC will offset some / all of the losses  / third defens"
+2024-03-28,2024-03-28.txt,40,46,3/28/2024 12:13 PM,15:13,explicitly_claimed,"sold those SPX CALLS at 14.50 and scaled down to 12.20, AVG fill at 13.96 /   /   /   / 2"
+2024-04-30,2024-04-30.txt,79,116,4/30/2024 2:30 PM,17:30,executed_long,"I personally like to do DEBIT SPREADS as my primary method of DEFENSE for my RANGE /  / let's say SPX RANGE is 5000 - 5200 /  / SPX SPOT is 5100 on WEDS & I need to DEFEND the SHORT CALL at 5200 that's likely going to be challenged /  / Your ""x"" price can be anything as long as it follows some sort of logic -->"
+2024-04-30,2024-04-30.txt,164,166,2:46 PM,17:46,executed_long,"I am TOTALLY in favor of HEDGING a SHORT SPX POSITION by going LONG FUTURES /  / it's much, much better than the reverse ( LONG SPX & HEDGE with SHORT FUTURES )"
+2024-04-30,2024-04-30.txt,209,225,3:15 PM,18:15,hedge_signal,JPM roll notes (fund 2 April 2024 to July 2024 roll):  / roll happened at 2:24 PM size 9.2k vs 5072.22 spot  / size decreased from 9.7k  / 2.4k 4900c 0dte used as counter delta / -5365c $39 -> 32.4 / +4800p $47.5 -> 53.95 / -4050p $8.30 -> 8.9 / post market rolled entire collar down vs 5035.69 spot / -5325c $41.50 / 
+2024-05-09,2024-05-09.txt,37,39,5:38 AM,08:38,spx_0dte_reference|narrative_plan,if PS CLOSE doesn't hold in here or in RTH I'll be looking at 5200 SPX 0DTE LONGS /  / the 5200 SPX 15DTE LONGS I was aiming to get into never filled
+2024-05-09,2024-05-09.txt,144,148,5/9/2024 7:21 AM,10:21,executed_long,this ZONE tops out at 5222 ES /  / 5223 - 5225 and pickles is going into SPX LONG CALLS and TP on approach to entering 5240s on ES
+2024-05-14,2024-05-14.txt,46,54,5/14/2024 6:13 AM,09:13,executed_long|spx_0dte_reference,"snuck in a few SPX LONG 0DTE CALLS before the 15 minute cool-down window,  /  / will TP likely within OPENING DRIVE /   /   /   / 2"
+2024-05-14,2024-05-14.txt,68,72,6:32 AM,09:32,executed_long|explicitly_claimed,out of SPX LONG CALLS
+2024-05-14,2024-05-14.txt,76,78,5/14/2024 7:28 AM,10:28,spx_0dte_reference,looking for a 0DTE SPX PCS entry probably at / near the PPI bottom candle
+2024-05-16,2024-05-16.txt,184,188,7:10 AM,10:10,spx_0dte_reference,0DTE SPX PCS
+2024-06-10,2024-06-10.txt,57,59,6/10/2024 7:05 AM,10:05,spx_0dte_reference,0DTE SPX CCS
+2024-06-13,2024-06-13.txt,126,130,7:44 AM,10:44,executed_long,SPX LONG PUTS /   /   /   / 1
+2024-06-13,2024-06-13.txt,142,150,6/13/2024 8:20 AM,11:20,executed_long,"still in NQ SHORTS & SPX LONG PUTS.  /  / my SL & TPs are set, I'm feeling really tired so i'm going to lay down for a bit /  / GL everyone /   / 1"
+2024-06-13,2024-06-13.txt,183,185,6/13/2024 11:17 AM,14:17,executed_long|explicitly_claimed,out of SPX LONG PUTS
+2024-06-20,2024-06-20.txt,106,110,6/20/2024 6:40 AM,09:40,executed_long|spx_0dte_reference,0DTE SPX LONG PUTS /   /   /   / 2
+2024-06-21,2024-06-21.txt,53,55,6/21/2024 6:51 AM,09:51,spx_0dte_reference,LONG 0DTE SPX PUTS
+2024-06-28,2024-06-28.txt,70,87,6/28/2024 3:00 PM,18:00,hedge_signal,JPM COLLAR ROLL notes (fund 1 June 2024 to September 2024):  / roll happened at 1410 EST size 39.6k vs 5483.56 spot / Size increased from 37.5k / used 14.7k 5330c 0DTE as COUNTER DELTA /  / -5770c $34.42 --> 31.22 / +5185p $42.08 --> 43.85 / -4375p $7.61 --> 7.91 /  / POST-MARKET rolled entire COLLAR down by varying 
