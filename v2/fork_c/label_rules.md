@@ -217,7 +217,7 @@ Every row in `v2/fork_c/tier1_labels.csv` has these columns in this order:
 | `confidence` | `High` / `Medium` / `Low` | Per §5. Low goes to shadow file. |
 | `evidence_type` | `executed` / `explicitly_claimed` / `narrative_only` / empty | Per §4. Empty if no 0DTE-long mention. |
 | `first_qualifying_time_et` | `HH:MM` or empty | ET clock time (not PT). Empty iff label=0. |
-| `side` | `call` / `put` / `both` / empty | First qualifying side. Empty iff label=0. |
+| `side` | `call` / `put` / `both` / empty | First qualifying side. **Usually non-empty iff label=1**, but may be empty on a positive row when the side is genuinely unrecoverable from the journal (see Ex. 6: *"only trade i made today was during 1000 MAGIC TIME"* confirms label=1 but names no side). The preflight audit counts null-side positives separately so the downstream consumer can decide whether to drop them or treat them as "unknown-side positives". |
 | `hedge_only` | `True` / `False` | True forces label=0 per N5. |
 | `excerpt` | string | Verbatim journal quote (with journal's own timestamp). Required for High+Medium. |
 | `journal_ref` | `{filename}:{line_start}-{line_end}` | Locator inside the source file. |
@@ -462,6 +462,7 @@ flagged and removed — these exist only to document the target behavior.
 | 2026-04-19 | Initial version. | Lock-before-parse per plan §Step-1. |
 | 2026-04-19 | Revision 1: (a) Ex. 3 replaced — 2023-12-29 is JPM commentary, not Pickles' own trade; swapped for 2024-02-22 11:13 AM clean hedge-only case. (b) `explicitly_claimed` §2 examples relabeled as phrase-level with a pointer to Ex. 6 as the canonical day-level case. (c) §7 split into 7.a (real) and 7.b (synthetic); Ex. 8 and Ex. 11 moved to 7.b as S-1 and S-2. (d) N5 tightened: hedge_only=True only when SPX long is paired with an existing SPX short leg; futures-repair stays label=1. | Codex critique round 3. No curated labels affected (file pre-curation). |
 | 2026-04-19 | Revision 2: Timestamp handling section rewritten. Exported Discord timestamps are Pacific-localized display (must +3h → ET); explicit inline ET references (e.g. "1000 MAGIC TIME", "1030 IB") are already ET and must NOT be reconverted. Avoids the curation-mistake class Codex flagged. | Codex critique round 4. File pre-curation. |
+| 2026-04-19 | Revision 3: §6 curation template — `side` field rule updated to explicitly allow empty on positive rows when unrecoverable, per Ex. 6 precedent. Aligns template with the worked-example it already accepts. | User review of first-pass proposed labels flagged the inconsistency between §6 ("Empty iff label=0") and Ex. 6 (empty side on label=1). File during curation — no existing labeled rows invalidated (the existing Medium null-side rows now validate under the corrected rule). |
 
 Any future edit to this file invalidates all previously curated labels —
 re-review required.
