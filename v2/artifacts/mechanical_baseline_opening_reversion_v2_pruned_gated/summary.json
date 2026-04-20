@@ -1,0 +1,201 @@
+{
+  "aggregate": {
+    "gap_vs_A": 0.03269880507487087,
+    "gap_vs_B": 0.03693103872768776,
+    "n": 179,
+    "n_with_popB": 179,
+    "pop_ctrl_a_mean": -0.0029012750979952253,
+    "pop_ctrl_b_mean": -0.007133508750812114,
+    "stop_hit_frac": 0.4301675977653631,
+    "strategy_dollar_pf": 1.5400691797355714,
+    "strategy_mean_net_pct": 0.029797529976875643,
+    "target_hit_frac": 0.5083798882681564,
+    "time_stop_frac": 0.061452513966480445
+  },
+  "bootstrap": {
+    "gap_vs_A": {
+      "frac_gt_0": 0.991,
+      "mean": 0.03383032224848288,
+      "p2_5": 0.0066865972132956865,
+      "p50": 0.0333819620613702,
+      "p97_5": 0.06395947867040966
+    },
+    "gap_vs_B": {
+      "frac_gt_0": 0.991,
+      "mean": 0.03797151978391213,
+      "p2_5": 0.0067851676603748615,
+      "p50": 0.03714795451162692,
+      "p97_5": 0.07147590108501936
+    },
+    "strategy_dollar_pf": {
+      "frac_gt_0": 1.0,
+      "mean": 1.595246913601392,
+      "p2_5": 1.0424525240633271,
+      "p50": 1.5635461499473298,
+      "p97_5": 2.35464443365746
+    },
+    "strategy_mean_net_pct": {
+      "frac_gt_0": 0.975,
+      "mean": 0.030883333044123426,
+      "p2_5": 0.00024282863214267208,
+      "p50": 0.030332623461678095,
+      "p97_5": 0.06477666364495228
+    }
+  },
+  "coverage": {
+    "gate_pass_rate": 0.6933333333333334,
+    "n_all_test_days": 300,
+    "n_gate_passing_days": 208,
+    "n_gated_out": 92
+  },
+  "dataset_fingerprint": "6162cf3d83db3586",
+  "experiment_id": "mechbase_opening_reversion_v2_pruned_gated",
+  "gate_threshold_bps": 20,
+  "gate_threshold_fraction": 0.002,
+  "note": "Fixed pre-declared first15_range_pct gate, test-time only. Training pipeline unchanged from V2-pruned. Pop-A is RNG-free population mean over admissible same-day same-side bars.",
+  "per_fold": [
+    {
+      "aggregate": {
+        "gap_vs_A": -0.009910525381842934,
+        "gap_vs_B": -0.0138056008567017,
+        "n": 41,
+        "n_with_popB": 41,
+        "pop_ctrl_a_mean": -0.008829117392113237,
+        "pop_ctrl_b_mean": -0.004934041917254471,
+        "stop_hit_frac": 0.4634146341463415,
+        "strategy_dollar_pf": 0.78124188955556,
+        "strategy_mean_net_pct": -0.01873964277395617,
+        "target_hit_frac": 0.4634146341463415,
+        "time_stop_frac": 0.07317073170731707
+      },
+      "elapsed_sec": 11.175004243850708,
+      "fold_idx": 0,
+      "n_all_test_days": 60,
+      "n_gate_passing_days": 49,
+      "window_id": "09802c942e02b9b6"
+    },
+    {
+      "aggregate": {
+        "gap_vs_A": 0.08257622223445668,
+        "gap_vs_B": 0.09078251141615326,
+        "n": 38,
+        "n_with_popB": 38,
+        "pop_ctrl_a_mean": -0.0010849533205889307,
+        "pop_ctrl_b_mean": -0.009291242502285513,
+        "stop_hit_frac": 0.3684210526315789,
+        "strategy_dollar_pf": 3.536887170428396,
+        "strategy_mean_net_pct": 0.08149126891386775,
+        "target_hit_frac": 0.5789473684210527,
+        "time_stop_frac": 0.05263157894736842
+      },
+      "elapsed_sec": 8.362607955932617,
+      "fold_idx": 1,
+      "n_all_test_days": 60,
+      "n_gate_passing_days": 55,
+      "window_id": "cf38c16e2f55ddd9"
+    },
+    {
+      "aggregate": {
+        "gap_vs_A": 0.03882561902784871,
+        "gap_vs_B": 0.04107762208907301,
+        "n": 20,
+        "n_with_popB": 20,
+        "pop_ctrl_a_mean": 0.0038650128699278126,
+        "pop_ctrl_b_mean": 0.001613009808703509,
+        "stop_hit_frac": 0.45,
+        "strategy_dollar_pf": 1.4069696544389414,
+        "strategy_mean_net_pct": 0.04269063189777652,
+        "target_hit_frac": 0.5,
+        "time_stop_frac": 0.05
+      },
+      "elapsed_sec": 8.19663119316101,
+      "fold_idx": 2,
+      "n_all_test_days": 60,
+      "n_gate_passing_days": 21,
+      "window_id": "e56a4d66770d7097"
+    },
+    {
+      "aggregate": {
+        "gap_vs_A": -0.0015772518730110428,
+        "gap_vs_B": -0.006366988968009834,
+        "n": 36,
+        "n_with_popB": 36,
+        "pop_ctrl_a_mean": -0.006385271279289608,
+        "pop_ctrl_b_mean": -0.001595534184290816,
+        "stop_hit_frac": 0.5,
+        "strategy_dollar_pf": 1.0759000735034987,
+        "strategy_mean_net_pct": -0.00796252315230065,
+        "target_hit_frac": 0.4444444444444444,
+        "time_stop_frac": 0.05555555555555555
+      },
+      "elapsed_sec": 9.665786743164062,
+      "fold_idx": 3,
+      "n_all_test_days": 60,
+      "n_gate_passing_days": 37,
+      "window_id": "9b92333bccfcbbb7"
+    },
+    {
+      "aggregate": {
+        "gap_vs_A": 0.05458613388680716,
+        "gap_vs_B": 0.07124112033258972,
+        "n": 44,
+        "n_with_popB": 44,
+        "pop_ctrl_a_mean": 0.0008287114857669639,
+        "pop_ctrl_b_mean": -0.015826274960015603,
+        "stop_hit_frac": 0.38636363636363635,
+        "strategy_dollar_pf": 2.0362952632188764,
+        "strategy_mean_net_pct": 0.05541484537257412,
+        "target_hit_frac": 0.5454545454545454,
+        "time_stop_frac": 0.06818181818181818
+      },
+      "elapsed_sec": 10.443981170654297,
+      "fold_idx": 4,
+      "n_all_test_days": 60,
+      "n_gate_passing_days": 46,
+      "window_id": "3b2f7c5202c9ee35"
+    }
+  ],
+  "secondary_appendix_vix_mid": {
+    "bootstrap": {
+      "gap_vs_A": {
+        "frac_gt_0": 0.993,
+        "mean": 0.07613134487249315,
+        "p2_5": 0.016697877514673994,
+        "p50": 0.07481281333726827,
+        "p97_5": 0.1453015795837844
+      },
+      "gap_vs_B": {
+        "frac_gt_0": 0.984,
+        "mean": 0.0731499098956624,
+        "p2_5": 0.009076994950549958,
+        "p50": 0.0714400125535337,
+        "p97_5": 0.14834950830936683
+      },
+      "strategy_dollar_pf": {
+        "frac_gt_0": 1.0,
+        "mean": 2.6618744439817053,
+        "p2_5": 1.1154469017893494,
+        "p50": 2.4498646593132305,
+        "p97_5": 5.779344744833726
+      },
+      "strategy_mean_net_pct": {
+        "frac_gt_0": 0.987,
+        "mean": 0.07388343731735705,
+        "p2_5": 0.008716063775785609,
+        "p50": 0.07194657129447962,
+        "p97_5": 0.14952500445056943
+      }
+    },
+    "gap_vs_A": 0.07669528470311396,
+    "gap_vs_B": 0.07343536500531309,
+    "n": 47,
+    "n_with_popB": 47,
+    "pop_ctrl_a_mean": -0.0024662979647460605,
+    "pop_ctrl_b_mean": 0.0007936217330548002,
+    "stop_hit_frac": 0.3404255319148936,
+    "strategy_dollar_pf": 2.4516290710999167,
+    "strategy_mean_net_pct": 0.07422898673836789,
+    "target_hit_frac": 0.574468085106383,
+    "time_stop_frac": 0.0851063829787234
+  }
+}
