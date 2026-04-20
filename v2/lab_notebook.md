@@ -3309,6 +3309,120 @@ Filtering additionally to VIX 20-30 halves the sample (47 vs 179) but more than 
 
 **No GPU. No simulator changes. No dataset rebuild. No train-picked gate selection.** V2-pruned-gated is the current promotable mechanical baseline.
 
+---
+
+## 2026-04-20 — V2-pruned-gated-trained (gated-train-only retrain): FAILED; keep V2-pruned-gated
+
+**Context.** Narrow user-locked experiment after V2-pruned-gated promotion: retrain the RF on gate-passing train days only, keeping V1B gate selection, test-time gate, candidate universe, contract selection, exits, controls, and folds identical. Hypothesis: aligning the training distribution to the deployed regime reduces train/test regime-mismatch noise and sharpens the scorer.
+
+**Implementation** ([v2/analysis/mechanical_baseline_v2_pruned_gated_trained.py](analysis/mechanical_baseline_v2_pruned_gated_trained.py), ~290 lines). Only difference vs V2-pruned-gated: `collect_training_samples` is called with a filtered `fold_spec` where `train_days` is restricted to days with `first15_range_pct >= 0.002` at bar 15. V1B gate selection still runs on the original full `train_days` (per user spec). Everything downstream identical.
+
+### Sample accounting
+
+| fold | train days total | kept (gate-passing) | kept % | train samples (gated) | vs V2-pruned-gated train samples |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 666 | 487 | 73.1% | 66,193 | 90,390 (−27%) |
+| 1 | 726 | 536 | 73.8% | 72,598 | 98,600 (−26%) |
+| 2 | 786 | 591 | 75.2% | 80,966 | 107,826 (−25%) |
+| 3 | 846 | 612 | 72.3% | 83,729 | 116,341 (−28%) |
+| 4 | 906 | 649 | 71.6% | 88,677 | 124,531 (−29%) |
+
+~28% of training samples dropped across folds. Test universe unchanged (same test_days, same gate).
+
+### Primary end-to-end comparison
+
+| metric | V2-pruned-gated (baseline) | V2-pruned-gated-trained | Δ |
+|---|---:|---:|---:|
+| n | 179 | 183 | +4 |
+| strategy_mean_net_pct | **+2.98%** | +0.24% | **−2.74pp** |
+| dollar_pf | **1.540** | 0.991 | **−0.549** |
+| target_hit_frac | 50.8% | 43.7% | −7.1pp |
+| stop_hit_frac | 43.0% | 45.9% | +2.9pp |
+| time_stop_frac | 6.1% | 10.4% | +4.3pp |
+| pop_ctrl_a_mean | −0.29% | −0.20% | +0.09pp |
+| **gap_vs_A** | **+3.27pp** | **+0.44pp** | **−2.83pp** |
+| pop_ctrl_b_mean | −0.71% | −0.79% | −0.08pp |
+| gap_vs_B | +3.69pp | +1.04pp | −2.65pp |
+
+Every primary metric worse. Notably:
+- target_hit went from 50.8% to 43.7%, stop_hit from 43.0% to 45.9% — the ratio flipped. The retrained model is choosing bars that stop out more often than they hit targets.
+- dollar_pf went from 1.54 to 0.99 — essentially breakeven.
+- gap_vs_A collapsed from +3.27pp (99.1% bootstrap) to +0.44pp (60.4% bootstrap).
+
+### Bootstrap CIs (day-level, 1000 reps)
+
+| metric | p50 | 95% CI | frac>0 |
+|---|---:|---|---:|
+| strategy_mean_net_pct | +0.15% | [−2.56%, +3.00%] | 0.547 |
+| **gap_vs_A** | **+0.35pp** | **[−2.21%, +3.02%]** | 0.604 |
+| gap_vs_B | +0.96pp | [−1.86%, +3.84%] | 0.741 |
+| strategy_dollar_pf | 0.983 | [0.664, 1.426] | 1.000 |
+
+**gap_vs_A 95% CI now straddles zero** — it had been strictly positive [+0.67%, +6.40%] under V2-pruned-gated. The CI on the PF also drops to median 0.98 (barely positive). All primary comparators regress.
+
+### Per-fold breakdown
+
+| fold | n | mean_net_pct | gap_vs_A | PF | vs gated baseline |
+|---:|---:|---:|---:|---:|---|
+| 0 | 42 | −1.80% | −1.71pp | 0.77 | ≈ same (baseline was −1.87% / −0.99pp) |
+| 1 | 40 | +1.59% | +2.41pp | 1.09 | **much worse** (baseline +8.15% / +8.26pp) |
+| 2 | 20 | +3.79% | +3.10pp | 1.31 | ≈ same (baseline +4.27% / +3.88pp) |
+| 3 | 36 | −4.76% | −4.22pp | 0.61 | **much worse** (baseline −0.80% / −0.16pp) |
+| 4 | 45 | +3.38% | +3.23pp | 1.37 | slightly worse (baseline +5.54% / +5.46pp) |
+
+Folds 1 and 3 drive the aggregate collapse. Folds 0, 2, 4 are roughly stable or modestly worse.
+
+### Feature importance (averaged across folds)
+
+| feature | gated-trained mean | V2-pruned-gated reference (from stress test, V2) | direction |
+|---|---:|---:|---|
+| `opening_gap_pct` | **0.200** | 0.27 | ↓ concentration weakens |
+| `first15_close_position` | 0.133 | 0.15 | ~ same |
+| `first15_acceptance` | 0.129 | 0.09 | ↑ modestly |
+| `side_indicator` | 0.102 | n/a | — |
+| `session_open_dist` | 0.102 | below top 5 | ↑ promoted |
+| `vwap_dist` | 0.090 | 0.09 | ~ same |
+
+The learned story is **still centered on opening structure** — `opening_gap_pct`, `first15_close_position`, `first15_acceptance` remain the top three. But `opening_gap_pct`'s importance drops by ~27%, and the distribution flattens. The model's discriminative concentration weakens.
+
+### Interpretation
+
+Training on gate-passing days only produced a flatter, less confident RF. The counter-intuitive but clean explanation: **narrow-first-15 train samples provide contrast the RF uses to sharpen its predictions on wide-first-15 days.** When the model sees both regimes, it learns features that discriminate "good wide-day bars" from "good narrow-day bars" — and the wide-day signal stands out. When the model sees only wide-day samples, it has to discriminate within a more homogeneous set, and the dominant feature (`opening_gap_pct`) loses some of its edge.
+
+A larger training sample with full distribution diversity beats a smaller training sample matched to deployment distribution — at least for a `max_depth=5, n_estimators=200` RF on this feature surface.
+
+### Secondary appendix — wide AND vix_regime=mid (gated-trained)
+
+| metric | value |
+|---|---:|
+| n | 51 |
+| strategy_mean_net_pct | +2.36% |
+| dollar_pf | 1.315 |
+| gap_vs_A | +2.78pp |
+| bootstrap gap_vs_A 95% CI | [−2.65%, +9.24%] |
+| bootstrap frac>0 | 0.800 |
+
+Also materially worse than V2-pruned-gated's secondary appendix (which had gap +7.67pp, CI [+1.67%, +14.53%], frac>0 = 0.993).
+
+### Decision per user's tree
+
+> If gated-train-only retrain improves the held-out gated baseline materially, promote it. If flat or worse, keep current V2-pruned-gated as the baseline and then move to sizing.
+
+**Not met.** The retrain is clearly worse across every primary metric, per-fold pattern, and feature-importance sharpness. **Keep V2-pruned-gated as the promotable mechanical baseline.** Next branch should be sizing (per user's rule) or whatever the user calls.
+
+### Caveats / what this does not prove
+
+- Whether retraining on a less restrictive filter (e.g., some narrow days retained) would have worked better. The filter was pinned to match the deployment gate exactly — intentionally narrow.
+- Whether a different model class (e.g., linear or GBDT) would respond differently to the filtered training distribution. RF with these hparams benefits from the full universe; other classes might not.
+- Whether the feature-importance flattening is a symptom or cause. The RF lost confidence in `opening_gap_pct`; whether fixing that would restore performance is out of scope for this branch.
+
+**Files changed (uncommitted):**
+- `v2/analysis/mechanical_baseline_v2_pruned_gated_trained.py` (new, ~290 lines)
+- `v2/artifacts/mechanical_baseline_opening_reversion_v2_pruned_gated_trained/{trades.csv, skips.csv, summary.json}`
+- `v2/lab_notebook.md` (this entry)
+
+**No GPU. No simulator changes. No dataset rebuild.** V2-pruned-gated (train on all admissible, test with the gate) remains the current promotable mechanical baseline.
+
 ### What this does show (worth keeping)
 
 1. The OOB score is genuinely rank-ordering training signal. The learned model has discriminative information the hand-coded trigger lacks.
