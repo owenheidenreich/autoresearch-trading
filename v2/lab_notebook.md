@@ -3423,6 +3423,111 @@ Also materially worse than V2-pruned-gated's secondary appendix (which had gap +
 
 **No GPU. No simulator changes. No dataset rebuild.** V2-pruned-gated (train on all admissible, test with the gate) remains the current promotable mechanical baseline.
 
+---
+
+## 2026-04-20 — V2-pruned-gated fixed-fraction sizing audit: mechanically clean, but OOB-based train-side calibration systematically undersizes
+
+**Context.** User-locked narrow branch: apply fixed-fraction `equity_{t+1} = equity_t * (1 + f * net_pct_t)` sizing on top of the frozen V2-pruned-gated trade stream. No adaptive sizing, no score-based sizing, no regime multipliers, no Kelly as main rule. Predeclared grid `f ∈ {0.25%, 0.50%, 1.00%, 1.50%, 2.00%}`. Per-fold selection rule: highest train CAGR subject to max train DD ≤ 20%.
+
+**Implementation** ([v2/analysis/mechanical_baseline_v2_pruned_gated_sizing.py](analysis/mechanical_baseline_v2_pruned_gated_sizing.py), ~520 lines). Frozen pipeline. Train-side trade stream built from **OOB-argmax per gate-passing train day**: for each train day, the RF's out-of-bag predictions are computed for every (bar, side) sample; the argmax sample's label is that day's "train trade" outcome. This avoids in-sample optimism that a plain fit-and-predict would produce. Test-side trade stream is V2-pruned-gated's existing inference (unchanged).
+
+Metrics reported per f: total return, CAGR, max drawdown, Calmar, Ulcer index, worst 20-trade window DD.
+
+### Result: every fold selects f = 0.25%; test performs well but is clearly undersized
+
+**Per-fold selection:** all 5 folds select `f = 0.0025` via the train-CAGR-subject-to-DD rule, because **every f in every fold's train grid has negative CAGR**. The rule degenerates to "pick the smallest f" — the least-negative CAGR.
+
+**Aggregate test (per-fold f = 0.25% applied):**
+
+| metric | value |
+|---|---:|
+| n trades | 179 |
+| total return | +1.34% |
+| CAGR | +1.12% |
+| max drawdown | 0.35% |
+| Calmar | 3.22 |
+| worst 20-trade DD | 0.33% |
+| final equity | 1.013 |
+| test horizon | 300 calendar days (~1.2 years) |
+
+**Aggregate test grid (fixed f across folds — descriptive, not used for selection):**
+
+| f | total | CAGR | max DD | Calmar | ulcer | worst-20 DD |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0.25% | +1.34% | +1.12% | 0.35% | 3.22 | 0.0016 | 0.33% |
+| 0.50% | +2.69% | +2.26% | 0.70% | 3.23 | 0.0032 | 0.65% |
+| 1.00% | +5.43% | +4.54% | 1.39% | 3.26 | 0.0065 | 1.30% |
+| 1.50% | +8.22% | +6.86% | 2.09% | 3.29 | 0.0097 | 1.95% |
+| **2.00%** | **+11.07%** | **+9.22%** | **2.77%** | **3.32** | **0.0130** | **2.59%** |
+
+Calmar is nearly constant across the grid (3.22–3.32). Max DD scales approximately linearly with f. Worst-20-trade DD tracks max DD within ~5%. **Every f in the grid delivers a max DD comfortably below 5%, far below the 20% train DD cap.**
+
+### Kelly appendix (descriptive, clipped to [0, 2%])
+
+| slice | mean(net_pct) | var(net_pct) | kelly_raw = mean / var | clipped |
+|---|---:|---:|---:|---:|
+| test | +2.98% | 0.0478 | **+0.623** | 2.00% |
+| train (OOB-argmax) | −1.10% | 0.0299 | −0.368 | 0.00% |
+
+Test distribution implies Kelly ≈ 62% of equity per trade — hugely scaled, reflecting the test's strong per-trade mean relative to variance. Clipped to 2% cap, Kelly would recommend the top of the grid. Train OOB Kelly is negative (-37%).
+
+### Per-fold breakdown
+
+| fold | train trades | test trades | selected f | test total (at f) | test CAGR | test max DD | test Calmar |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 442 | 41 | 0.25% | −0.19% | −0.80% | 0.33% | −2.42 |
+| 1 | 480 | 38 | 0.25% | +0.78% | +3.30% | 0.07% | +47.20 |
+| 2 | 534 | 20 | 0.25% | +0.21% | +0.90% | 0.24% | +3.74 |
+| 3 | 553 | 36 | 0.25% | −0.07% | −0.30% | 0.34% | −0.88 |
+| 4 | 583 | 44 | 0.25% | +0.61% | +2.59% | 0.26% | +10.08 |
+
+Each fold's test total at f=0.0025 mirrors that fold's mean_net_pct in sign (folds 1, 2, 4 positive; folds 0, 3 negative). This reflects the underlying V2-pruned-gated per-fold performance; sizing doesn't change the sign of a fold's edge.
+
+### Why every train fold is negative — the OOB-argmax artifact
+
+Kelly appendix shows train OOB-argmax mean = **−1.10%** per trade, test deployed mean = **+2.98%** per trade. Same data universe, same model — the only difference is OOB vs full-forest prediction for within-day argmax.
+
+OOB predictions for a sample are averaged over ~37% of trees (the trees that did NOT bootstrap-include that sample). For n_estimators=200 and max_depth=5, OOB means ~74 trees per prediction. The within-day ranking under 74-tree OOB is materially noisier than the within-day ranking under 200-tree full-forest, so OOB-argmax picks a worse sample per day than full-forest argmax would.
+
+The net effect: **the train trade stream is systematically pessimistic about the selection mechanism's actual deployment behavior.** Train says "the model picks losing bars on average"; deployment says "the model picks winning bars on average (+3% per trade)."
+
+The selection rule "highest train CAGR subject to DD ≤ 20%" therefore degenerates when every train CAGR is negative: the smallest f "loses least" → always selected. This is a **selection-mechanism failure**, not a sizing failure.
+
+### Answer to the user's question
+
+> Given the current promotable baseline, what conservative fixed fraction of equity can we risk per trade while preserving a drawdown profile that still looks deployable?
+
+**On the test evidence (which we cannot use for selection), any f in the grid is deployable.** Max DD at f=2% is 2.77%; worst-20-trade DD is 2.59%; Calmar 3.32. Kelly-test would recommend the top of the grid (clipped at 2%).
+
+**On the train-based selection rule, we get f=0.25%** — which delivers +1.12% CAGR / 0.35% max DD on test. This is deployable but ~8× under the capacity the test distribution actually supports.
+
+**Does this "pass cleanly"?** Per the user's decision rule — "If this passes cleanly, next branch is integer-contract realism or small score-aware sizing":
+
+- Mechanically: yes. The overlay simulates cleanly, DD profile is well-behaved across the grid, no blow-ups.
+- Statistically: yes at f=0.25%. Calmar > 3, DD < 1%, positive total.
+- **Calibration: no.** The train-based selection rule systematically undersizes because the OOB-based train trade stream mispredicts deployment behavior.
+
+I would NOT call this a clean pass. Three paths forward (user's call):
+
+1. **Accept f=0.25% as ultra-conservative deployment.** Ship it. Positive expectancy, negligible DD, no calibration controversy. Leaves 8× growth on the table per the test evidence.
+2. **Fix the train-side calibration** with nested k-fold CV inside train (each train-day's "prediction" uses a model fit excluding a ±k-day block around it). More expensive but gives honest full-forest predictions on train. Likely shifts selection to f=2%.
+3. **Accept the OOB finding as a deployment floor and report a second selection rule** — e.g., "highest train Calmar regardless of CAGR sign" (which picks f=0.0025 anyway because Calmar is basically constant across the grid). Same result, less contorted narrative.
+
+None of these reopens trade selection, new features, sizing model class, or Fold 2 scope — all user constraints hold.
+
+### Caveats
+
+- The OOB-noise finding is specific to `RandomForestRegressor(n_estimators=200, max_depth=5, min_samples_leaf=20)`. Higher n_estimators would reduce OOB noise proportionally. But user rules forbid model-hparam changes in this branch.
+- The test grid reporting is descriptive, NOT for selection. It establishes an envelope but cannot inform deployment.
+- Per-fold test at f=0.25% shows folds 0 and 3 slightly negative, folds 1/2/4 positive — consistent with the V2-pruned-gated underlying per-fold pattern. Sizing doesn't change the sign of a fold's edge.
+
+**Files changed (uncommitted):**
+- `v2/analysis/mechanical_baseline_v2_pruned_gated_sizing.py` (new, ~520 lines)
+- `v2/artifacts/mechanical_baseline_opening_reversion_v2_pruned_gated_sized/{summary.json, test_trades.csv}`
+- `v2/lab_notebook.md` (this entry)
+
+**No GPU. No simulator changes. No dataset rebuild. Trade selection unchanged.** V2-pruned-gated remains the promotable baseline; deployment fraction is unresolved pending user decision on the three paths above.
+
 ### What this does show (worth keeping)
 
 1. The OOB score is genuinely rank-ordering training signal. The learned model has discriminative information the hand-coded trigger lacks.
