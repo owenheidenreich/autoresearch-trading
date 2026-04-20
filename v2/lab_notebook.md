@@ -3103,6 +3103,102 @@ Implication: **V2-pruned's edge over Control A is small (0-3pp) and the previous
 
 **Decision per your tree:** keep unthresholded V2-pruned as the baseline. Do not deploy thresholded. Consider regime-awareness next.
 
+---
+
+## 2026-04-20 — V2-pruned regime-awareness audit: edge concentrates in wide-first-15 regimes; promotable gate identified
+
+**Context.** User-requested next branch after thresholding failed to help. Hypothesis: V2-pruned's edge is heterogeneous across opening regimes; a coarse regime gate might generalize where score thresholding didn't. Frozen pipeline; diagnostic-only tooling added.
+
+**Implementation.** [v2/analysis/mechanical_baseline_v2_pruned_regime_audit.py](analysis/mechanical_baseline_v2_pruned_regime_audit.py).
+
+Two methodological upgrades vs prior runs:
+
+1. **Population-mean Control A** — for each strategy trade we enumerate ALL V1B-admissible same-day same-side bars and realize the trade at each, then take the mean. This is the RNG-free limit of "random-bar control" and eliminates the seed-variance that flipped gap_vs_A from +2.56pp → +0.31pp between the V2-pruned commit and the thresholding run.
+2. **Paired-delta bootstrap per bucket** — within a regime bucket, per-trade `delta = strategy_net_pct − pop_ctrl_a_mean`. Bootstrap those deltas over day-level resampling. Isolates strategy-vs-same-day-random-bar edge without mixing across days.
+
+**Regime axes (4 independent univariate slices, fixed thresholds, ex-ante — the audit is descriptive, not train-selected):**
+
+| axis | buckets | thresholds |
+|---|---|---|
+| `opening_gap_pct` | down / flat / up | ±30 bps |
+| `first15_close_position` | low / mid / high | 0.333, 0.667 |
+| `first15_range_pct` | narrow / wide | 20 bps |
+| `vix_regime` | calm / low / mid / high | native discrete {−1, −0.33, +0.33, +1} |
+
+**Decision rule — a bucket is "promotable" if:** gap > 0, bootstrap frac>0 ≥ 0.90, n ≥ 20, and ≥ 3 folds contribute.
+
+### Aggregate (no regime bucketing) — cleaner than prior point estimates
+
+| | n | strategy_mean | pop_ctrl_a_mean | gap | 95% CI | frac>0 |
+|---|---:|---:|---:|---:|---|---:|
+| V2-pruned (pop-A) | 266 | +1.37% | −0.51% | **+1.88pp** | [−0.13%, +4.22%] | **0.961** |
+
+The population-A gap of +1.88pp is between the two prior point estimates (+2.56pp single-seed on commit, +0.31pp on thresholding), which is exactly what the earlier stress-test bootstrap CI predicted. 96.1% bootstrap confidence that the aggregate edge is positive. This is the best calibration of V2-pruned's true edge to date.
+
+### Regime table — full 12-bucket audit
+
+| axis / bucket | n | strategy_mean | popA_mean | gap | 95% CI | frac>0 | folds | class |
+|---|---:|---:|---:|---:|---|---:|---:|---|
+| `first15_range_pct` / **wide** | **179** | **+2.98%** | −0.29% | **+3.27pp** | **[+0.63%, +6.29%]** | **0.996** | **5** | **promotable** |
+| `vix_regime` / **mid** | **48** | **+7.17%** | −0.27% | **+7.44pp** | **[+1.79%, +14.01%]** | **0.996** | **5** | **promotable** |
+| `first15_close_position` / high | 105 | +1.93% | −0.18% | **+2.11pp** | [−1.05%, +5.38%] | **0.913** | 5 | **promotable** |
+| `first15_close_position` / mid | 62 | +2.66% | −0.40% | +3.05pp | [−1.92%, +8.08%] | 0.899 | 5 | promising |
+| `opening_gap_pct` / up | 57 | +1.35% | −0.84% | +2.19pp | [−1.61%, +6.39%] | 0.853 | 5 | promising |
+| `opening_gap_pct` / flat | 161 | +1.25% | −0.57% | +1.82pp | [−0.92%, +4.48%] | 0.893 | 5 | promising |
+| `vix_regime` / low | 197 | +0.48% | −0.59% | +1.07pp | [−1.21%, +3.26%] | 0.831 | 5 | promising |
+| `opening_gap_pct` / down | 48 | +1.78% | +0.06% | +1.72pp | [−3.40%, +7.16%] | 0.753 | 5 | promising |
+| `first15_close_position` / low | 99 | −0.05% | −0.94% | +0.89pp | [−2.54%, +4.54%] | 0.665 | 5 | neutral |
+| `first15_range_pct` / **narrow** | **87** | **−1.96%** | −0.97% | **−0.99pp** | [−4.01%, +1.85%] | **0.235** | 5 | **adverse** |
+| `vix_regime` / calm | 20 | −3.73% | −0.27% | −3.46pp | [−11.41%, +5.00%] | 0.203 | 3 | adverse |
+| `vix_regime` / high | 1 | −0.72% | −1.17% | +0.45pp | n/a | — | 1 | (insufficient) |
+
+### The `first15_range_pct` wide/narrow split is the headline finding
+
+| first15_range_pct | n | gap | 95% CI | frac>0 | coverage |
+|---|---:|---:|---|---:|---:|
+| **wide** (≥ 20 bps) | 179 | **+3.27pp** | [+0.63%, +6.29%] | **0.996** | 67% of trades |
+| **narrow** (< 20 bps) | 87 | **−0.99pp** | [−4.01%, +1.85%] | 0.235 | 33% of trades |
+
+- 4.26pp spread between the two buckets.
+- All 5 folds contribute to BOTH sides of the split — this is not a single-regime artifact.
+- The bucket threshold (20 bps) is ex-ante and prospectively specifiable: just compute `(first15_high − first15_low) / close` at the entry bar.
+- Narrow is actively slightly adverse. V2-pruned is LOSING money (gap-wise) on tight-opening-range days.
+
+### Secondary findings
+
+- **`vix_regime` / mid** (VIX 20-30): strongest per-trade gap (+7.44pp) but smaller sample (n=48, 18% coverage). Would be a cumulative regime condition on top of `first15_range_pct` wide if both were used.
+- **`first15_close_position`** is monotone: low < mid < high. Promotable on high alone; mid is on the 0.90 edge (0.899).
+- **`opening_gap_pct`** has modest edge in all three buckets with no directional pattern. Not discriminating.
+- **`vix_regime` / calm** (VIX < 15): only n=20, but gap is −3.46pp and frac>0 is 20%. Adverse. Implies low-vol days favor the controls, not V2-pruned.
+
+### Answer to the user's question
+
+**Yes.** The edge clusters in thesis-native regimes in a way that looks prospectively specifiable:
+
+- Primary regime: `first15_range_pct ≥ 20 bps` — keep 67% of current trades, get gap ~2× aggregate with 99.6% bootstrap confidence, all 5 folds agree.
+- Exclusion zone: `first15_range_pct < 20 bps` — drop these; they are actively slightly adverse.
+- Optional secondary layer: `vix_regime = mid` picks a smaller, higher-edge subset if we want more selectivity and can afford fewer trades.
+
+### Decision per user's tree
+
+> If yes: next branch is a train-selected regime gate on top of V2-pruned.
+
+Committing to that branch next (not in this entry). The gate should be train-selected from these same axes and thresholds, applied to test. Design question to resolve before the next run: whether to use the binary `first15_range_pct` split (strongest signal) alone, or allow the train to pick between a few pre-declared candidate gates including `vix_regime` and `first15_close_position`.
+
+### Caveats to record
+
+- The audit used FIXED thresholds (20 bps on range, 0.333/0.667 on close position, native VIX buckets). A proper train-selected gate would re-choose thresholds from train only. The fixed thresholds here are for interpretation and should not be confused with a deployable rule.
+- The pop-A aggregate gap of +1.88pp is below V2-pruned's original +2.56pp point estimate. The true V2-pruned edge is smaller than the original commit message suggested — but the regime-conditional edge in `first15_range_pct`/wide (+3.27pp) is materially larger than the aggregate.
+- `vix_regime`/mid has only n=48, so +7.44pp is less robustly specified than the range-split finding. The wide bucket is the safer headline.
+- `vix_regime`/high has n=1 — the dataset has almost no VIX > 30 days in the test folds. The audit says nothing about that regime.
+
+**Files changed (uncommitted):**
+- `v2/analysis/mechanical_baseline_v2_pruned_regime_audit.py` (new, ~440 lines)
+- `v2/artifacts/mechanical_baseline_opening_reversion_v2_pruned_regime_audit/{regime_audit_summary.json, regime_trades.csv}`
+- `v2/lab_notebook.md` (this entry)
+
+**No GPU. No simulator changes. No dataset rebuild.** V2-pruned remains the committed baseline; the regime-gated variant is not yet built, only identified.
+
 ### What this does show (worth keeping)
 
 1. The OOB score is genuinely rank-ordering training signal. The learned model has discriminative information the hand-coded trigger lacks.
