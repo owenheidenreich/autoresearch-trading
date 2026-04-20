@@ -1,127 +1,166 @@
-# Agent Directives
+# CLAUDE.md — Agent Directives
 
-## First Steps
+This file is loaded into every Claude Code session. Keep it short. Detail lives in the linked live docs.
 
-1. Read `v2/ART2_LOOP.md` — the canonical hill-climbing protocol. This is the operating loop definition.
-2. Read `v2/docs/founder_intent.md` — founder voice, standards, anti-goals.
-3. Read `v2/docs/current_state.md` — current system state snapshot.
-4. Read `v2/COMMANDS.md` — what the human can ask you to do.
-5. Before making architecture decisions, read `v2/docs/domain/` — 0DTE options domain knowledge. Understand the instrument.
+## Mission
 
-## Document Precedence (when docs disagree)
+Build a **trustworthy exact-chain research system** for SPX 0DTE long options. Not a live trading bot. Not yet.
 
-1. **Code** (`metrics.py`, `config.py`, `simulator.py`, etc.) — ground truth
-2. `v2/ART2_LOOP.md` — operating loop definition
-3. `v2/docs/current_state.md` — current system state
-4. `v2/docs/evaluator.md` — scoring and evaluation rules
-5. `v2/COMMANDS.md` — command reference
-6. `v2/PIPELINE.md` — system map
-7. `v2/program.md` — historical protocol (reference only, not current operating truth)
+The things we refuse to fake:
+- Treating bad data as good because a score looks exciting.
+- Treating stale, pre-reset, or incompatible scores as live evidence.
+- Relying on model "memory" when information should be written down.
+- Letting documentation drift until nobody knows what's real.
+
+If a result cannot be defended from **current data, current code, and current artifacts**, it is not evidence. See [v2/docs/founder_intent.md](v2/docs/founder_intent.md) — when trade-offs are unclear, that file wins over convenience.
+
+## Start every session by reading
+
+1. [v2/ART2_LOOP.md](v2/ART2_LOOP.md) — canonical hill-climbing protocol (preconditions → training → validation → promotion). The operating loop definition.
+2. [v2/docs/current_state.md](v2/docs/current_state.md) — what IS true right now (dataset, evaluator, phase).
+3. [v2/COMMANDS.md](v2/COMMANDS.md) — the exact shell commands behind user requests.
+4. [v2/docs/founder_intent.md](v2/docs/founder_intent.md) — non-negotiable standards.
+
+Before any architecture or modeling decision, also read [v2/docs/domain/](v2/docs/domain/) — understand the instrument before changing how we trade it.
+
+## Document precedence (when docs disagree)
+
+1. **Code** (`v2/core/metrics.py`, `v2/core/config.py`, `v2/core/simulator.py`, `v2/train.py`) — ground truth
+2. [v2/ART2_LOOP.md](v2/ART2_LOOP.md) — operating loop
+3. [v2/docs/current_state.md](v2/docs/current_state.md) — current state snapshot
+4. [v2/docs/evaluator.md](v2/docs/evaluator.md) — scoring & evaluation
+5. [v2/COMMANDS.md](v2/COMMANDS.md) — command reference
+6. [v2/PIPELINE.md](v2/PIPELINE.md) — system map
+7. [v2/program.md](v2/program.md) — historical protocol (reference only)
 8. Everything else — reference/history
 
-## Naming
+If a doc contradicts the code, the code wins. Flag the drift.
 
-`v2/` is the **current canonical system**. The name is historical (it replaced a v1 prototype). The GitHub repo references "v4 exact chain" which describes the *data schema version*, not a separate system. There is only one active system and it lives in `v2/`.
+## Repo layout
 
-## Project Structure
+`v2/` is the **only live system.** The "v2" name is historical (it replaced a v1 prototype). "v4 exact chain" refers to the *data schema version*, not a separate system.
 
 ```
 root/
-├── CLAUDE.md              ← you are here
-├── ARCHIVE_POLICY.md      ← explains archive/ vs archive_quarantine/
-├── v2/                    ← the working system (all code, data, docs)
-│   ├── train.py           ← model architecture, training loop
-│   ├── replay.py          ← evaluation, baselines, traces
-│   ├── plot_trades.py     ← generates trades.html, equity.html, trades.csv
-│   ├── plot_progress.py   ← generates progress.png
-│   ├── core/              ← policy, simulator, metrics, schema, features, chain_data
-│   ├── ops/               ← deploy.sh, monitor.py, model_manage.py, pre_run_gate.py
+├── CLAUDE.md              ← this file
+├── ARCHIVE_POLICY.md      ← archive/ vs archive_quarantine/ rules
+├── v2/                    ← the working system
+│   ├── train.py, train_seq.py, train_awac.py
+│   ├── replay.py, seq_agent.py, collect_trajectories.py
+│   ├── plot_trades.py, plot_progress.py
+│   ├── core/              ← policy, simulator, metrics, schema, features, chain_data, config
+│   ├── ops/               ← deploy.sh, health.py, model_manage.py, pre_run_gate.py, monitor.py
 │   ├── pipeline/          ← build_v2_dataset.py, compute_features.py, download_full_chain.py
-│   ├── analysis/          ← harness_eval.py, policy_sweep.py
-│   ├── docs/              ← all documentation including domain knowledge
-│   ├── data.pt            ← canonical dataset
-│   ├── data_sidecars/     ← per-day contract snapshots and labels
-│   ├── models/            ← active model checkpoints
-│   ├── artifacts/         ← experiment artifacts (exp_NNN/)
+│   ├── analysis/          ← harness_eval.py, policy_sweep.py, analyze_losses.py, …
+│   ├── docs/              ← all live documentation (incl. domain/)
+│   ├── data.pt, data_sidecars/, data.pt.sha256
+│   ├── models/, artifacts/, runs/, trajectories/, build_reports/
 │   ├── output/            ← trades.html, equity.html, progress.png, trades.csv
-│   ├── ART2_LOOP.md, COMMANDS.md, program.md, PIPELINE.md
-│   ├── lab_notebook.md, results.tsv
-│   └── __init__.py
-└── archive/               ← historical reference only, do not read unless asked
+│   ├── ART2_LOOP.md, COMMANDS.md, PIPELINE.md, program.md, HANDOFF.md
+│   └── lab_notebook.md, results.tsv
+├── archive/               ← historical — DO NOT READ unless explicitly asked
+└── archive_quarantine/    ← see ARCHIVE_POLICY.md
 ```
 
-## Key File Map
+## Key file map (by purpose)
 
-**Training & model:**
-- `v2/train.py` — model architecture (`TradingModel`), `forward()`, `compute_loss()`, training loop
-- `v2/core/policy.py` — `DecisionPolicy` dataclass (stops, targets, trade window, trailing exit params)
+**Training & policy**
+- [v2/train.py](v2/train.py) — `TradingModel`, `forward()`, `compute_loss()`, supervised loop
+- [v2/train_seq.py](v2/train_seq.py) — sequential BC stage
+- [v2/train_awac.py](v2/train_awac.py) — AWAC RL stage (current regime)
+- [v2/core/policy.py](v2/core/policy.py) — `DecisionPolicy` (stops, TPs, trade window, trailing)
 
-**Trade simulation (NOT in replay.py):**
-- `v2/core/simulator.py` — `simulate_trade()`, `TRAILING_TIERS`, stop/TP/trailing exit logic, MFE tracking, spread cost model
-- `v2/core/schema.py` — `TradeIntent`, `SimulatedTrade` dataclasses
+**Trade simulation & replay**
+- [v2/core/simulator.py](v2/core/simulator.py) — `simulate_trade()`, `TRAILING_TIERS`, MFE, spread cost model
+- [v2/core/schema.py](v2/core/schema.py) — `TradeIntent`, `SimulatedTrade`
+- [v2/replay.py](v2/replay.py) — loads model, runs inference, calls simulator, baselines, traces
+- [v2/core/metrics.py](v2/core/metrics.py) — v4.0 dollar-weighted PF/Sortino score, hard gates, baselines
 
-**Replay & evaluation:**
-- `v2/replay.py` — orchestrates replay: loads model, runs inference, calls `simulator.simulate_trade()`, computes baselines, collects traces
-- `v2/core/metrics.py` — score formula, hard gates, baseline computation
+**Contracts & config**
+- [v2/core/config.py](v2/core/config.py) — `RuntimeConfig` (single source of truth for shared constants)
+- [v2/core/eval_report.py](v2/core/eval_report.py) — `EvalReport` (durable eval artifact with stored trades)
+- [v2/core/artifact_kind.py](v2/core/artifact_kind.py) — `cv_eval` / `fold_checkpoint` / `final_train`
 
-**Stage contracts:**
-- `v2/core/config.py` — `RuntimeConfig` (single source of truth for shared constants)
-- `v2/core/eval_report.py` — `EvalReport` (durable eval artifact with stored trades)
+**Data pipeline**
+- [v2/core/chain_data.py](v2/core/chain_data.py) — `CONTRACT_FEATURE_FIELDS` (22 features), `build_contract_row()`, `padded_snapshot()`
+- [v2/pipeline/compute_features.py](v2/pipeline/compute_features.py) — `bs_greeks_vec()`, 52 context features
+- [v2/pipeline/build_v2_dataset.py](v2/pipeline/build_v2_dataset.py) — builds `data.pt` + sidecars, oracle labels
+- [v2/core/data_integrity.py](v2/core/data_integrity.py) — manifest/feature/sidecar audits, side-bias audit
 
-**Data pipeline:**
-- `v2/core/chain_data.py` — `CONTRACT_FEATURE_FIELDS` (22 features), `build_contract_row()`, `padded_snapshot()`
-- `v2/pipeline/compute_features.py` — `bs_greeks_vec()` (Black-Scholes greeks + charm), 52 context features
-- `v2/pipeline/build_v2_dataset.py` — builds `data.pt` + sidecar `.pt` files, oracle label computation
+**Operations**
+- [v2/ops/deploy.sh](v2/ops/deploy.sh) — GPU lifecycle (boot/start/stop/status and all `run_*` variants)
+- [v2/ops/health.py](v2/ops/health.py) — pipeline health check (`python3 -m v2.ops.health`)
+- [v2/ops/pre_run_gate.py](v2/ops/pre_run_gate.py) — pre-GPU integrity gate
+- [v2/ops/model_manage.py](v2/ops/model_manage.py) — keep/revert (refuses non-`final_train` artifacts)
 
-**Visualization:**
-- `v2/plot_trades.py` — generates trades.html, equity.html, trades.csv
-- `v2/plot_progress.py` — generates progress.png
-- `v2/ops/monitor.py` — live monitoring dashboard
+## Experiment pipeline (current — post 2026-04-17 harness repair)
 
-**Operations:**
-- `v2/ops/deploy.sh` — GPU lifecycle: boot/start/run_screen/run_one/stop
-- `v2/ops/model_manage.py` — keep/revert promoted model
-- `v2/ops/health.py` — pipeline health checks: `python -m v2.ops.health`
+An **experiment** means: code change → commit → screen → (if justified) CV → (if passed) final-train → keep/revert. A local replay is **not** an experiment.
 
-**Domain knowledge (read for trading context):**
-- `v2/docs/domain/` — 0DTE Greeks, dealer mechanics, Pickles practitioner journal, volatility trading theory
+The old single-shot `run_screen` / `run_one` flow has been replaced by a scope-separated pipeline. Screens debug; CV selects configs; `final_train` produces the only promotable artifact.
 
-## Experiment Pipeline
+1. **Edit** `v2/train.py` and/or `v2/core/policy.py` (default mutable surface).
+2. **Compile check:** `python -m py_compile v2/train.py v2/core/policy.py`.
+3. **Harness eval + pre-run gate:**
+   `python3 -m v2.analysis.harness_eval --data v2/data.pt`
+   `python3 -m v2.ops.pre_run_gate --data v2/data.pt`
+4. **Commit** the code change with the experiment ID.
+5. **Boot GPU:** `./v2/ops/deploy.sh boot` then `./v2/ops/deploy.sh start`.
+6. **Screen** (no artifact):
+   - Parity debug: `./v2/ops/deploy.sh run_screen_latest exp_NNN` (fold 4 only)
+   - Regime triage: `./v2/ops/deploy.sh run_screen_mini exp_NNN` (folds 0, 2, 4)
+7. **Full CV** (emits a `CV_EVAL` artifact — NOT deployable):
+   `./v2/ops/deploy.sh run_cv exp_NNN`
+8. **Final train** (emits a `FINAL_TRAIN` — the only kind `keep` accepts):
+   `./v2/ops/deploy.sh run_final_train exp_NNN`
+9. **Validate → trace → keep/revert → plot → analyze → lab-notebook → commit.** Full post-run checklist lives in [v2/COMMANDS.md](v2/COMMANDS.md#post-run-checklists). Do not report results to the user until every step is complete.
 
-An **experiment** (exp_NNN) means: code change → commit → train from scratch on GPU → evaluate. A local replay is NOT an experiment.
+**Label consistency:** oracle labels in `v2/data_sidecars/` are computed with the policy active at build time. Small policy tweaks are acceptable; large changes require a sidecar rebuild.
 
-1. **Edit** `v2/train.py` and/or `v2/core/policy.py` (the mutable surface)
-2. **Compile check**: `python -m py_compile v2/train.py`
-3. **Commit** the code change with the experiment ID in the message
-4. **Pre-GPU gate**: `python3 -m v2.ops.pre_run_gate --data v2/data.pt`
-5. **Boot GPU**: `./v2/ops/deploy.sh boot` then `./v2/ops/deploy.sh start`
-6. **Screen** (1-fold): `./v2/ops/deploy.sh run_screen exp_NNN`
-7. **If screening passes**, run official (5-fold): `./v2/ops/deploy.sh run_one exp_NNN`
-8. **Post-run checklist** (see COMMANDS.md): validate, trace, keep/revert, plot, analyze, document, commit
+## Hard rules
 
-**Local replay** (not an experiment):
-- Validate model: `python3 -m v2.replay --model v2/models/model.pt --mask promote`
-- Policy sweeps: modify policy, replay, compare — useful signal but cannot be promoted
-
-**Label consistency warning:** Oracle labels in `v2/data_sidecars/` are computed with the policy active at build time. Small policy tweaks are acceptable (model learns general contract quality). Large policy changes may require a sidecar rebuild.
-
-## Hard Rules
-
-- **Default mutable surface:** `v2/train.py` and `v2/core/policy.py`.
-- **One hypothesis per experiment.** No bundling unrelated changes.
-- **Promotion is score-gated.** Must beat all four baselines with no gate failure.
+- **Default mutable surface:** `v2/train.py` and `v2/core/policy.py`. Expanded surfaces are enumerated in [v2/docs/current_state.md](v2/docs/current_state.md); don't silently widen it.
+- **One hypothesis per experiment.** No bundling.
 - **Every experiment trains from scratch.** No warm-starting.
-- **Log everything** in `v2/results.tsv` and `v2/lab_notebook.md`.
-- **All training runs on Akash H100 GPU, never locally.**
-- **Run harness eval before GPU spend.**
-- **Do not read `archive/` as default context.** Only consult when explicitly asked.
+- **Promotion is score-gated AND trace-reviewed.** Must beat all four baselines with no gate failure. Degenerate behavior (all-one-side, single-exit-type) gets reverted even if the score is green.
+- **Only `final_train` artifacts are deployable.** `cv_eval` and `fold_checkpoint` cannot be kept.
+- **All training runs on Akash H100. Never train locally.**
+- **Log every run** in `v2/lab_notebook.md` and (for official runs) `v2/results.tsv`.
+- **Harness eval before any GPU spend.** This is non-negotiable.
+- **Commit after every meaningful change.** Include the experiment ID in the message.
+- **Do not read `archive/` by default.** Only when explicitly asked.
+- **Use `deploy.sh` commands; don't manually SSH/SCP to replicate them.** If one fails, re-run it — don't open-code the steps.
 
-## Code Quality
+## Anti-patterns (things that have bitten this project)
 
-- Run `python -m py_compile <file>` on every changed file before reporting complete.
-- Commit every time a change is made.
-- Re-read files before editing (especially after 10+ messages).
+- **Reward hacking** — optimizing the score without a root-cause for the behavior change. Find *why* first.
+- **Regime gating / difficulty weighting** — the model must learn from data like a trader would. No hand-tuned regime switches.
+- **Silent policy/sidecar drift** — if you change labeling or schema, rebuild the dataset; do not run on stale artifacts.
+- **Mock databases / mock sidecars** — audit real artifacts; no stubs in the promotion path.
+- **Spamming GPU status checks** — once per minute maximum when waiting on training.
+- **Skipping harness eval** before deploying. Don't.
+- **Claiming completion before plots + lab notebook + commit.** Incomplete work presented as done is worse than no work.
 
-## Live Documentation
+## Code quality
 
-See `v2/docs/README.md` for the full documentation index.
+- Run `python -m py_compile <file>` on every file you change before reporting complete.
+- Use dedicated tools (Read, Edit, Grep, Glob) over Bash for file ops.
+- Re-read files before editing them after long conversations — state drifts.
+- Don't add speculative helpers, backwards-compat shims, or comments explaining *what* well-named code already says.
+
+## When to stop and ask
+
+Mandatory pause conditions (from [v2/ART2_LOOP.md](v2/ART2_LOOP.md)): evaluator fingerprint changed, dataset fingerprint changed, docs disagree on score/gates/stack, last promotion packet is incomplete, health checks failing, or 6 consecutive no-improve experiments. Do not start the next experiment under any of these — fix the foundation first.
+
+## Live documentation index
+
+Full index: [v2/docs/README.md](v2/docs/README.md).
+
+- Scoring & gates → [v2/docs/evaluator.md](v2/docs/evaluator.md)
+- Data structure & integrity → [v2/docs/data_contract.md](v2/docs/data_contract.md)
+- Feature schema (52 ctx) → [v2/docs/feature_schema.md](v2/docs/feature_schema.md)
+- Sidecar labels → [v2/docs/labeling.md](v2/docs/labeling.md)
+- Training internals → [v2/docs/how_training_works.md](v2/docs/how_training_works.md)
+- Open questions → [v2/docs/open_questions.md](v2/docs/open_questions.md)
+- Durable decisions → [v2/docs/decision_log.md](v2/docs/decision_log.md)
+- Incidents & post-mortems → [v2/docs/incidents/](v2/docs/incidents/)

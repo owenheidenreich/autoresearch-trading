@@ -19,6 +19,14 @@ step produces the only promotable artifact. See
   Regime triage across early/mid/late windows (folds 0, 2, 4). No artifact:
   `./v2/ops/deploy.sh run_screen_mini exp_NNN`
 
+- `audit direction b labels`
+  Check sparse gate-label density before spending GPU:
+  `python3 -m v2.analysis.gate_label_audit --mode sparse_high_conviction --screen-mode mini`
+
+- `screen mini direction b`
+  Run the current abstention-first screen with the Direction B bundle:
+  `TRAIN_ENV="TRAIN_FEATURE_SET=full79 LINEAR_SCORE_HEADS=0 GATE_ARCH=decoupled_mlp OPP_LABEL=sparse_high_conviction GATE_POSITIVE_PNL=0.30 GATE_POSITIVE_MAX_WINNERS=2 GATE_TARGET_MODE=binary SEL_TARGET_MODE=soft_pnl SOFT_TEMP=0.40 POLICY_GATE_THRESHOLD_MODE=quantile POLICY_GATE_TARGET_PASS_RATE=0.10 CKPT_SELECTION_MODE=val_replay" ./v2/ops/deploy.sh run_screen_mini exp_next_b1`
+
 - `run cv experiment exp_NNN`
   Full 5-fold CV. Emits a `CV_EVAL` artifact — NOT a deployable model:
   `./v2/ops/deploy.sh run_cv exp_NNN`

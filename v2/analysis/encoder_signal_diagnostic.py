@@ -38,7 +38,7 @@ import torch
 from v2.analysis.signal_viability import spearman
 from v2.core.chain_data import load_sidecar_cached, padded_snapshot
 from v2.core.policy import DEFAULT_POLICY
-from v2.train import LOOKBACK, TradingModel
+from v2.train import LOOKBACK, TradingModel, _checkpoint_gate_arch, _checkpoint_uses_linear_heads
 
 
 def load_model_lenient(path: str, device: str = "cpu") -> TradingModel:
@@ -55,6 +55,9 @@ def load_model_lenient(path: str, device: str = "cpu") -> TradingModel:
         depth=hp.get("depth", 3),
         n_heads=hp.get("n_heads", 4),
         dropout=hp.get("dropout", 0.05),
+        linear_score_heads=_checkpoint_uses_linear_heads(ckpt),
+        num_features=int(hp.get("num_features", ckpt["model_state_dict"]["input_proj.weight"].shape[1])),
+        gate_arch=_checkpoint_gate_arch(ckpt),
     )
     result = model.load_state_dict(ckpt["model_state_dict"], strict=False)
     if result.missing_keys:

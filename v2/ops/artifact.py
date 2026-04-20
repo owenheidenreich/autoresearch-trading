@@ -256,17 +256,26 @@ def load_artifact(
     # Reconstruct model from saved hyperparams
     hyperparams = manifest.get("hyperparams", checkpoint.get("hyperparams", {}))
 
-    from v2.train import TradingModel
+    from v2.train import (
+        TradingModel,
+        _checkpoint_gate_arch,
+        _checkpoint_input_feature_names,
+        _checkpoint_uses_linear_heads,
+    )
     model = TradingModel(
         d_model=hyperparams.get('d_model', 64),
         depth=hyperparams.get('depth', 3),
         n_heads=hyperparams.get('n_heads', 4),
         dropout=hyperparams.get('dropout', 0.1),
+        linear_score_heads=_checkpoint_uses_linear_heads(checkpoint),
+        num_features=int(hyperparams.get("num_features", checkpoint["model_state_dict"]["input_proj.weight"].shape[1])),
+        gate_arch=_checkpoint_gate_arch(checkpoint),
     )
     try:
         model.load_state_dict(checkpoint['model_state_dict'])
     except RuntimeError as exc:
         raise RuntimeError(f"stale model artifact; retrain required ({exc})") from exc
+    model.input_feature_names = _checkpoint_input_feature_names(checkpoint)
     model.eval()
 
     return {

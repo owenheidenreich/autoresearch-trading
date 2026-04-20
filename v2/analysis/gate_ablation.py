@@ -32,7 +32,7 @@ import torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from v2.core.chain_data import padded_snapshot
-from v2.train import TradingModel, LOOKBACK
+from v2.train import LOOKBACK, TradingModel, _checkpoint_gate_arch, _checkpoint_uses_linear_heads
 
 
 def main():
@@ -58,6 +58,9 @@ def main():
         depth=hp.get("depth", 3),
         n_heads=hp.get("n_heads", 4),
         dropout=0.0,
+        linear_score_heads=_checkpoint_uses_linear_heads(checkpoint),
+        num_features=int(hp.get("num_features", checkpoint["model_state_dict"]["input_proj.weight"].shape[1])),
+        gate_arch=_checkpoint_gate_arch(checkpoint),
     )
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()

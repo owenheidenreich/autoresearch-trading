@@ -87,6 +87,9 @@ class ReplayMetrics:
     # Promotion
     score: float = 0.0
     gate_failure: str | None = None
+    gate_threshold_mode: str = "fixed"
+    resolved_gate_threshold: float = 0.0
+    resolved_gate_pass_rate: float = 0.0
 
     def to_dict(self) -> dict:
         d = asdict(self)

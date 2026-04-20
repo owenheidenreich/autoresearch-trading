@@ -244,6 +244,31 @@ is feasible.
 
 ---
 
+## R4 fork decision
+
+**Selected fork: Fork A — mechanical backtest.**
+
+**Why Fork A wins under the priority rubric:**
+
+1. R1 already cleared the gating condition for Fork A:
+   - 6 canonical rows at Medium+
+   - 2 canonical rows at High (`Row 1` and `Row 3`)
+2. R3 shows Fork C is viable, but Fork C is explicitly lower priority when a
+   High-confidence mechanical candidate already exists.
+3. The missing screenshot PnL is a bigger problem for weighted supervision than
+   for mechanical testing. Fork A avoids that problem entirely because the v2
+   simulator supplies the payoff.
+
+**Operational reading of the decision:**
+
+- Backtest `Row 1` and `Row 3` first.
+- Keep Fork C as the fallback path if both mechanical candidates fail or prove
+  too brittle once executed on the full history.
+- Do not open Fork B unless both A and C fail and the journal independently
+  earns a compact Pickles-vocabulary state space.
+
+---
+
 ## R3 pass conditions — final check
 
 - [x] `v2/docs/journal_supervision_feasibility.md` exists.

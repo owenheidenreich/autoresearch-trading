@@ -47,11 +47,16 @@ def main():
     promote_mask = data["promote_mask"].numpy()
 
     hp = checkpoint.get("hyperparams", {})
+    from v2.train import _checkpoint_gate_arch, _checkpoint_uses_linear_heads
+
     model = TradingModel(
         d_model=hp.get("d_model", 96),
         depth=hp.get("depth", 3),
         n_heads=hp.get("n_heads", 4),
         dropout=0.0,
+        linear_score_heads=_checkpoint_uses_linear_heads(checkpoint),
+        num_features=int(hp.get("num_features", checkpoint["model_state_dict"]["input_proj.weight"].shape[1])),
+        gate_arch=_checkpoint_gate_arch(checkpoint),
     )
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()

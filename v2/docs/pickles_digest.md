@@ -391,8 +391,20 @@ During R1, four candidate theory prompts could be fired:
    level and time-of-day-gated; they are already defensible without needing Brooks'
    framework to formalize them. **Prompt not fired.**
 
-**R2 output:** No `options_theory_notes.md` is produced by R1 alone. If Fork A or
-B later needs theory support, we fire a prompt then.
+**R2 output:** Under the revised 2026-04-18 long-only research plan, this pass now
+includes a compact [options_theory_notes.md](options_theory_notes.md) primer tied
+to the selected reading stack:
+
+- `Option Volatility and Pricing` for near-expiry delta / gamma / theta / IV
+- `Hull` as the Greeks sanity-check reference
+- `TradingThe10OclockBulls` for the 1000 EST window
+- `Trading Price Action Trends` for reversal / retracement / continuation language
+- `TA_Multiple_Timeframes` for Pickles' 3m / 5m / 15m / 30m / 1hr stack
+
+No additional setup-specific theory prompt was required during R1 beyond that
+front-loaded primer. If Fork A later surfaces unresolved theta / IV / strike-
+selection ambiguities on Rows 1 or 3, extend `options_theory_notes.md` with a
+setup-specific addendum instead of reopening the entire library pass.
 
 ---
 

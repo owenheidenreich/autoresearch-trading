@@ -49,10 +49,10 @@ CODE_LEGACY_PATTERNS = (
     re.compile(rf"\b{re.escape(_parts('targets_', 'contract_', 'field'))}\b"),
 )
 DOC_REQUIRED_PHRASES = (
-    "Balanced gate supervision on `opportunity_logit`",
+    "Dynamic near-ATM slice",
     "Soft KL selection loss",
     "No direct PnL regression",
-    "`opportunity_logit` — the only live trade/no-trade gate",
+    "`gate_logit` / `opportunity_logit` — the live trade/no-trade gate",
 )
 DOC_FORBIDDEN_PHRASES = (
     "Stage 1:",
@@ -60,7 +60,6 @@ DOC_FORBIDDEN_PHRASES = (
     "Stage 3:",
     " ".join(("side", "supervision", "first")),
     " ".join(("soft", "within-side", "ranking")),
-    " ".join(("gate", "calibration")),
     " ".join(("exp_079", "recovery")),
 )
 REMOVED_LIVE_PATHS = (
@@ -326,6 +325,8 @@ def check_doc_sync(errors: list[str]) -> None:
         "sel_loss",
         "SOFT_TEMP",
         "NOISE_MARGIN",
+        "GATE_ARCH",
+        "sparse_high_conviction",
     )
     for token in expected_train_tokens:
         if token not in train_text:

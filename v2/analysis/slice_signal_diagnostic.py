@@ -21,7 +21,13 @@ from v2.analysis.signal_viability import spearman
 from v2.core.chain_data import load_sidecar_cached, padded_snapshot_with_slice
 from v2.core.policy import DEFAULT_POLICY
 from v2.replay import adapt_windows_for_model
-from v2.train import LOOKBACK, TradingModel, _checkpoint_input_feature_names, _checkpoint_uses_linear_heads
+from v2.train import (
+    LOOKBACK,
+    TradingModel,
+    _checkpoint_gate_arch,
+    _checkpoint_input_feature_names,
+    _checkpoint_uses_linear_heads,
+)
 
 BATCH_SIZE = 2048
 
@@ -45,6 +51,7 @@ def load_model_lenient(path: str, device: str = "cpu") -> TradingModel:
         dropout=hp.get("dropout", 0.05),
         linear_score_heads=_checkpoint_uses_linear_heads(ckpt),
         num_features=n_features,
+        gate_arch=_checkpoint_gate_arch(ckpt),
     )
     model.input_feature_names = _checkpoint_input_feature_names(ckpt)
     result = model.load_state_dict(ckpt["model_state_dict"], strict=False)

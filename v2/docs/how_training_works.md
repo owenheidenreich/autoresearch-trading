@@ -30,36 +30,36 @@ The current model is an exact-chain contract scorer.
 
 Inputs:
 
-- `(batch, 30, 52)` context window (49 market + 3 intraday phase features)
+- `(batch, 30, 79)` context window on the rebuilt slice-era dataset
 - `(batch, max_contracts_per_bar, 22)` current executable snapshot (19 base + 3 economic)
 
 Outputs:
 
 - `contract_scores`
 - `valid_mask`
-- `opportunity_logit` — the only live trade/no-trade gate
+- `gate_logit` / `opportunity_logit` — the live trade/no-trade gate
 - `side_logit` — P(call is better) from context alone
 - `aggression_logits` — moneyness bucket prediction (ATM / near-OTM / far-OTM)
 
-The model scores the actual contracts visible on the current bar with a two-stage decision process: first gate the bar with `opportunity_logit`, then rank contracts with `contract_scores` plus any replay-time side adjustment from policy.
+The model scores the actual contracts visible on the current bar with a two-stage decision process: first gate the bar, then rank contracts with `contract_scores` plus any replay-time side adjustment from policy. On the current Direction B path, the gate can be structurally decoupled from the ranker with `GATE_ARCH=decoupled_mlp`, and replay can calibrate that gate by quantile instead of a fixed zero threshold.
 
 ## Current Baseline Loss
 
-The live working baseline is the restored `exp_119` family:
+The active research path is now the slice-era supervised model with Direction B available:
 
-- Balanced gate supervision on `opportunity_logit`
-- Side prediction head (P(call better), BCE on oracle side, SIDE_W=0.3)
-- Aggression bucket head (ATM/near-OTM/far-OTM, cross-entropy, AGG_W=0.2)
-- Soft KL selection loss with softer targets
-- `SOFT_TEMP=0.25` (softened from 0.10)
-- `NOISE_MARGIN=0.01` with soft ambiguous bar handling (AMBIG_WEIGHT=0.3)
+- Dynamic near-ATM slice (ATM ±10 strikes) is the canonical competition set
+- Sparse gate supervision is available through `OPP_LABEL=sparse_high_conviction`
+- Gate path can be shared-context or decoupled (`GATE_ARCH=shared_context|decoupled_mlp`)
+- Soft KL selection loss remains the canonical contract-ranking objective over in-slice contracts
+- `SEL_TARGET_MODE=soft_pnl` and `SOFT_TEMP=0.40` are the recommended next-screen settings
 - No direct PnL regression
 
 Details:
 
-- `gate_loss` supervises `opportunity_logit` directly
+- `gate_loss` supervises `gate_logit` directly
   - `GATE_TARGET_MODE=binary`: balanced BCE on `label_trade`
   - `GATE_TARGET_MODE=max_pnl`: MSE to `bar_max_pnl - GATE_PNL_THRESHOLD`
+- `OPP_LABEL=sparse_high_conviction`: positive only when the slice has a strong winner and only a small number of profitable contracts
 - `comp_loss` optionally reuses `opportunity_logit` as a competence head when `COMP_W > 0`
 - `side_loss` supervises `side_logit` with BCE on oracle side (trade rows only)
 - `agg_loss` supervises `aggression_logits` with cross-entropy on oracle moneyness bucket
@@ -67,8 +67,9 @@ Details:
 - `sel_loss` builds a soft target from sidecar `row_labels` with `softmax(pnl / SOFT_TEMP)`
 - ambiguous bars (top PnL margin < `NOISE_MARGIN`) use uniform target at reduced weight instead of being dropped
 - total loss is `GATE_W * gate + SEL_W * sel + SIDE_SEL_W * side_sel + EXACT_W * exact + COMP_W * comp + SIDE_W * side + AGG_W * agg`
-
-The rejected `exp_121` ranking-loss screen is an important finding, but not the live baseline. It showed that side collapse survives a loss-family change; it did not prove that the executable KL targets are inherently put-biased.
+- replay gating can now use:
+  - fixed threshold: `POLICY_GATE_THRESHOLD`
+  - quantile threshold: `POLICY_GATE_THRESHOLD_MODE=quantile` and `POLICY_GATE_TARGET_PASS_RATE=<rate>`
 
 ## Risk Policy
 
