@@ -3528,6 +3528,124 @@ None of these reopens trade selection, new features, sizing model class, or Fold
 
 **No GPU. No simulator changes. No dataset rebuild. Trade selection unchanged.** V2-pruned-gated remains the promotable baseline; deployment fraction is unresolved pending user decision on the three paths above.
 
+---
+
+## 2026-04-20 — Nested block-CV sizing calibration: partial fix, but aggregate risk profile worse; accept f=0.25% floor
+
+**Context.** User-locked follow-on to the OOB-calibration artifact. Hypothesis: replace the OOB-based train trade stream with nested blocked-CV full-forest predictions; the honest pseudo-OOS calibration will raise the selected f above 0.25% while keeping the DD profile well-behaved.
+
+**Implementation** ([v2/analysis/mechanical_baseline_v2_pruned_gated_sizing_nested.py](analysis/mechanical_baseline_v2_pruned_gated_sizing_nested.py), ~430 lines). Frozen pipeline (V2-pruned-gated trade selection, gate, features, RF hparams, sizing grid, selection rule). For each outer fold:
+- Partition outer `train_days` into 5 contiguous inner blocks.
+- For each inner block: fit RF on (outer_train − block − ±5-day embargo) using the same hparams as the outer RF. Predict held-out block with full-forest scoring (not OOB).
+- Assemble one pseudo-OOS train trade stream over all train days, gate-filtered.
+- Compute sizing grid on this stream; select f from train the same way as before (highest train CAGR subject to max train DD ≤ 20%).
+
+Each outer fold runs 5 inner RF fits (~35-45s total per outer fold). Total runtime ~4.2 min.
+
+### Train-stream mean comparison (headline calibration improvement)
+
+| slice | mean(net_pct) | Kelly raw |
+|---|---:|---:|
+| Test (deployed, full forest) | **+2.98%** | **+0.623** |
+| OOB-argmax train | −1.10% | −0.368 |
+| **Block-CV-argmax train** | **−0.01%** | −0.014 |
+
+Block-CV moves train-stream expectancy from decisively negative (OOB) to **essentially neutral**. Test expectancy stays ~3pp above train under both calibrators — that's the generalization gap, not a calibration artifact.
+
+### Per-fold selection comparison
+
+| fold | f_OOB | f_bcv | OOB train mean | block-CV train mean | test mean |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 0.25% | **2.00%** | −0.96% | **+1.15%** | −1.87% |
+| 1 | 0.25% | 0.25% | −0.86% | −0.56% | +8.15% |
+| 2 | 0.25% | **2.00%** | −1.11% | **+0.39%** | +4.27% |
+| 3 | 0.25% | 0.25% | −0.92% | −0.33% | −0.80% |
+| 4 | 0.25% | 0.25% | −1.57% | −0.63% | +5.54% |
+
+Block-CV selects f=2% for folds 0 and 2 because their pseudo-OOS train CAGR crossed positive. Folds 1, 3, 4 still have negative block-CV train CAGR → still at f=0.25%.
+
+**Notable**: fold 1 has the strongest test expectancy (+8.15%) but block-CV still rejects upsizing because pseudo-OOS train is negative. Fold 0 has block-CV's best train read (+1.15%) but the WORST test mean (−1.87%). **The block-CV per-fold selection does not correlate positively with test outcome** — in fact folds 0 and 2 with upsized f=2% include fold 0 which has adverse test.
+
+### Aggregate test comparison
+
+| calibrator | n | total | CAGR | **max DD** | **Calmar** | worst-20 DD |
+|---|---:|---:|---:|---:|---:|---:|
+| OOB (f=0.25% in all 5 folds) | 179 | +1.34% | +1.12% | **0.35%** | **+3.22** | **0.33%** |
+| Block-CV (per-fold f) | 179 | +1.44% | +1.21% | **2.64%** | **+0.46** | 1.91% |
+
+**Block-CV raises aggregate CAGR by only 0.09pp but inflates max DD by 7.5×.** Calmar drops from 3.22 to 0.46. Worst-20-trade DD goes from 0.33% to 1.91%.
+
+The DD inflation comes almost entirely from fold 0 applying f=2% to a −1.87%-mean test window. That single fold's drawdown dominates the aggregate max-DD measurement.
+
+### Full test grid (descriptive, same as OOB run)
+
+| f | n | total | CAGR | max DD | Calmar | worst-20 DD |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0.25% | 179 | +1.34% | +1.12% | 0.35% | +3.22 | 0.33% |
+| 0.50% | 179 | +2.69% | +2.26% | 0.70% | +3.23 | 0.65% |
+| 1.00% | 179 | +5.43% | +4.54% | 1.39% | +3.26 | 1.30% |
+| 1.50% | 179 | +8.22% | +6.86% | 2.09% | +3.29 | 1.95% |
+| 2.00% | 179 | +11.07% | +9.22% | 2.77% | +3.32 | 2.59% |
+
+Full-grid Calmar is nearly constant (3.22–3.32) — the strategy's risk-adjusted return is approximately scale-invariant at all tested f. This says the sized aggregate under **any uniform fixed f** outperforms the per-fold block-CV mix, which spreads the aggregate across a fold-realization-dependent mix of fs.
+
+### Answer to the user's decision rule
+
+> If nested blocked CV materially raises selected f **and test remains well-behaved**, promote that sized baseline.
+> If it still selects 0.25% or **remains unstable**, accept 0.25% as the honest deployment floor.
+
+Block-CV did:
+- Materially raise f on 2 of 5 folds (0 and 2 → f=2%). Partial raise.
+- Fail to raise on 3 of 5 folds (block-CV train still negative there).
+- Produce aggregate test with 7.5× worse max DD and 7× worse Calmar than OOB-selected f=0.25%.
+
+The per-fold selection is **unstable** (2 folds at 2%, 3 at 0.25%) and the aggregate risk profile is **not well-behaved** (Calmar dropped below 1).
+
+**Decision: accept f = 0.25% as the honest deployment floor.** The calibration-mechanism fix partially worked (train mean moved from clearly negative to nearly neutral) but didn't move far enough to drive confident upsizing on the folds with the strongest test expectancy.
+
+### Why the partial fix wasn't enough — technical diagnosis
+
+Three findings stack to explain why block-CV didn't deliver full sizing recovery:
+
+1. **Pseudo-OOS train is systematically harder than deployment.** Inner models are fit on ~90% of outer train (minus ±5-day embargo); outer model is fit on 100% of outer train. Deployment uses the larger model. Even with full-forest inner predictions, the inner model has slightly less information and produces a lower-mean trade stream than the deployment model would on the same days.
+
+2. **Inner models see a different feature distribution than the outer model.** Each inner block excludes ~140 contiguous train days plus embargo. That's a chunk of the training distribution missing. Depending on the block's regime (high-IV summer, low-IV autumn, etc.), the inner model has regime holes the outer model doesn't.
+
+3. **Fold-to-fold variance in test realization dominates at n=20-44 trades per fold.** Block-CV correctly identified fold 0 as a "strong train" fold (pseudo-OOS CAGR +1.15%) but the held-out 41 trades happened to be adverse (−1.87% mean). At f=2% this creates a ~2.6% DD that dominates the aggregate. Under f=0.25% the same fold-0 test pattern barely registers.
+
+The third finding is the operative one: **at test-window sizes of 20-44 trades per fold, the fold-level realization variance swamps calibration-mechanism improvements.** The fix from OOB to block-CV is real (train mean went from −1.10% to −0.01%), but it isn't a big enough shift to overcome per-fold test noise.
+
+### Kelly appendix (descriptive only)
+
+| slice | mean | var | kelly_raw | clipped [0, 2%] |
+|---|---:|---:|---:|---:|
+| test | +2.98% | 0.0478 | +0.6228 | 2.00% |
+| OOB-train | −1.10% | 0.0299 | −0.3683 | 0.00% |
+| **block-CV-train** | **−0.01%** | 0.0311 | **−0.0135** | 0.00% |
+
+Block-CV Kelly is essentially zero — the pseudo-OOS train distribution has no clear edge in either direction. This is consistent with the train/test gap being a *generalization* issue, not a calibration one: the model's predictions on held-out train days do not rank-order realized trades well enough to produce a positive mean.
+
+### What to do next (per user's rule)
+
+User's rule: "If it still selects 0.25% or remains unstable, accept 0.25% as the honest deployment floor **and only then consider integer-contract realism**."
+
+- **V2-pruned-gated with f = 0.25% remains the promotable baseline.**
+- Deployment-fraction question is resolved at **f = 0.25% (conservative floor)**.
+- Next branch per user's rule: **integer-contract realism** (account size, discrete contract count, rounding at actual execution). Not run here.
+
+### Caveats / what this does not prove
+
+- Whether a different number of inner blocks (3 or 10 instead of 5) or a different embargo (0 or ±10 days) would change the result. The parameters were pre-declared; no sweep.
+- Whether a different sizing selection rule (e.g., shared-f across folds picked from pooled train, not per-fold) would escape the per-fold instability. Out of scope per freeze discipline.
+- Whether longer test windows would reduce the per-fold realization variance and let block-CV's partial fix translate into a promotable upsizing. Dataset fixed.
+
+**Files changed (uncommitted):**
+- `v2/analysis/mechanical_baseline_v2_pruned_gated_sizing_nested.py` (new, ~430 lines)
+- `v2/artifacts/mechanical_baseline_opening_reversion_v2_pruned_gated_sized_nested/summary.json`
+- `v2/lab_notebook.md` (this entry)
+
+**No GPU. No simulator changes. No dataset rebuild. Trade selection unchanged.** V2-pruned-gated at f = 0.25% is the current deployable mechanical baseline.
+
 ### What this does show (worth keeping)
 
 1. The OOB score is genuinely rank-ordering training signal. The learned model has discriminative information the hand-coded trigger lacks.

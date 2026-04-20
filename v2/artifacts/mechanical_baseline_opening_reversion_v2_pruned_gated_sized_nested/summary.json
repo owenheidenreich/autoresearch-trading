@@ -1,0 +1,1350 @@
+{
+  "aggregate_test_grid": {
+    "0.0025": {
+      "cagr": 0.011240844183499243,
+      "calmar": 3.2177123551953666,
+      "final_equity": 1.0133962402688403,
+      "max_dd": 0.0034934272994755445,
+      "n_calendar_days": 300,
+      "n_trades": 179,
+      "total_return": 0.013396240268840343,
+      "ulcer_index": 0.0016203083892131387,
+      "worst_20_trade_dd": 0.00326724953381119
+    },
+    "0.005": {
+      "cagr": 0.022561565428868446,
+      "calmar": 3.232398060911496,
+      "final_equity": 1.0269163711463778,
+      "max_dd": 0.006979822721000632,
+      "n_calendar_days": 300,
+      "n_trades": 179,
+      "total_return": 0.026916371146377793,
+      "ulcer_index": 0.0032409809646016955,
+      "worst_20_trade_dd": 0.006527199680863792
+    },
+    "0.01": {
+      "cagr": 0.04544243298953954,
+      "calmar": 3.2618537016479148,
+      "final_equity": 1.054329449775306,
+      "max_dd": 0.013931474905383297,
+      "n_calendar_days": 300,
+      "n_trades": 179,
+      "total_return": 0.05432944977530596,
+      "ulcer_index": 0.006483389088248407,
+      "worst_20_trade_dd": 0.01302521697266469
+    },
+    "0.015": {
+      "cagr": 0.06864209829643375,
+      "calmar": 3.291417867678898,
+      "final_equity": 1.0822413953067969,
+      "max_dd": 0.020854871990118967,
+      "n_calendar_days": 300,
+      "n_trades": 179,
+      "total_return": 0.08224139530679686,
+      "ulcer_index": 0.009727164424714106,
+      "worst_20_trade_dd": 0.019494082688562973
+    },
+    "0.02": {
+      "cagr": 0.09215990787934292,
+      "calmar": 3.3210859257295176,
+      "final_equity": 1.1106541538267736,
+      "max_dd": 0.027749931781454542,
+      "n_calendar_days": 300,
+      "n_trades": 179,
+      "total_return": 0.11065415382677357,
+      "ulcer_index": 0.012972245795833146,
+      "worst_20_trade_dd": 0.02593382843235852
+    }
+  },
+  "aggregate_test_selected_blockcv": {
+    "cagr": 0.012072345148871566,
+    "calmar": 0.4578458772013632,
+    "final_equity": 1.0143883099077,
+    "max_dd": 0.026367705269435198,
+    "n_calendar_days": 300,
+    "n_trades": 179,
+    "per_fold_f_applied_unique": [
+      0.0025,
+      0.02
+    ],
+    "total_return": 0.014388309907700014,
+    "ulcer_index": 0.013239149588426612,
+    "worst_20_trade_dd": 0.019087276872861735
+  },
+  "aggregate_test_selected_oob": {
+    "cagr": 0.011240844183499243,
+    "calmar": 3.2177123551953666,
+    "final_equity": 1.0133962402688403,
+    "max_dd": 0.0034934272994755445,
+    "n_calendar_days": 300,
+    "n_trades": 179,
+    "per_fold_f_applied_unique": [
+      0.0025
+    ],
+    "total_return": 0.013396240268840343,
+    "ulcer_index": 0.0016203083892131387,
+    "worst_20_trade_dd": 0.00326724953381119
+  },
+  "dataset_fingerprint": "6162cf3d83db3586",
+  "experiment_id": "mechbase_opening_reversion_v2_pruned_gated_sized_nested",
+  "gate_threshold_bps": 20,
+  "kelly_appendix": {
+    "test": {
+      "kelly_clipped": 0.02,
+      "kelly_raw": 0.6228421873117174,
+      "mean": 0.029797529976875643,
+      "var": 0.04784121978873391
+    },
+    "train_blockcv": {
+      "kelly_clipped": 0.0,
+      "kelly_raw": -0.013468707676905948,
+      "mean": -0.0004181837712992471,
+      "var": 0.03104854462141782
+    },
+    "train_oob": {
+      "kelly_clipped": 0.0,
+      "kelly_raw": -0.3683074845324052,
+      "mean": -0.011012372299321898,
+      "var": 0.02989994165690919
+    }
+  },
+  "max_dd_threshold_train": 0.2,
+  "nested_cv": {
+    "embargo_days": 5,
+    "n_blocks": 5
+  },
+  "per_fold": [
+    {
+      "block_cv_diag": {
+        "blocks": [
+          {
+            "block": 0,
+            "inner_train_days": 528,
+            "inner_train_samples": 75519,
+            "n_val_trades": 90,
+            "val_days_considered": 133,
+            "val_days_gate_passed": 133,
+            "val_days_total": 133,
+            "val_end_idx": 133,
+            "val_start_idx": 0
+          },
+          {
+            "block": 1,
+            "inner_train_days": 523,
+            "inner_train_samples": 69635,
+            "n_val_trades": 104,
+            "val_days_considered": 133,
+            "val_days_gate_passed": 113,
+            "val_days_total": 133,
+            "val_end_idx": 266,
+            "val_start_idx": 133
+          },
+          {
+            "block": 2,
+            "inner_train_days": 523,
+            "inner_train_samples": 69712,
+            "n_val_trades": 95,
+            "val_days_considered": 133,
+            "val_days_gate_passed": 98,
+            "val_days_total": 133,
+            "val_end_idx": 399,
+            "val_start_idx": 266
+          },
+          {
+            "block": 3,
+            "inner_train_days": 523,
+            "inner_train_samples": 70629,
+            "n_val_trades": 68,
+            "val_days_considered": 133,
+            "val_days_gate_passed": 72,
+            "val_days_total": 133,
+            "val_end_idx": 532,
+            "val_start_idx": 399
+          },
+          {
+            "block": 4,
+            "inner_train_days": 527,
+            "inner_train_samples": 70759,
+            "n_val_trades": 66,
+            "val_days_considered": 134,
+            "val_days_gate_passed": 71,
+            "val_days_total": 134,
+            "val_end_idx": 666,
+            "val_start_idx": 532
+          }
+        ],
+        "embargo_days": 5,
+        "n_blocks": 5
+      },
+      "blockcv_train_mean_net_pct": 0.011512634937333417,
+      "fold_idx": 0,
+      "oob_train_mean_net_pct": -0.009579428039168857,
+      "rationale_blockcv": "max_cagr_subject_to_dd_cap",
+      "rationale_oob": "max_cagr_subject_to_dd_cap",
+      "selected_f_blockcv": 0.02,
+      "selected_f_oob": 0.0025,
+      "test_grid": {
+        "0.0025": {
+          "cagr": -0.008048136058037336,
+          "calmar": -2.4257633755272106,
+          "final_equity": 0.9980778741481073,
+          "max_dd": 0.003317774577369143,
+          "n_calendar_days": 60,
+          "n_trades": 41,
+          "total_return": -0.0019221258518926643,
+          "ulcer_index": 0.001687603741956264,
+          "worst_20_trade_dd": 0.0023743776101712967
+        },
+        "0.005": {
+          "cagr": -0.01605763075920008,
+          "calmar": -2.4222073323544593,
+          "final_equity": 0.9961531440168092,
+          "max_dd": 0.006629337854242054,
+          "n_calendar_days": 60,
+          "n_trades": 41,
+          "total_return": -0.003846855983190789,
+          "ulcer_index": 0.003374172586655245,
+          "worst_20_trade_dd": 0.004744947000039099
+        },
+        "0.01": {
+          "cagr": -0.03196022696217515,
+          "calmar": -2.4150473545702456,
+          "final_equity": 0.9922959946976966,
+          "max_dd": 0.013233788936557906,
+          "n_calendar_days": 60,
+          "n_trades": 41,
+          "total_return": -0.007704005302303418,
+          "ulcer_index": 0.006744170704253466,
+          "worst_20_trade_dd": 0.009474668155460624
+        },
+        "0.015": {
+          "cagr": -0.04770689287955865,
+          "calmar": -2.4078251389139047,
+          "final_equity": 0.9884287992178865,
+          "max_dd": 0.019813271366158153,
+          "n_calendar_days": 60,
+          "n_trades": 41,
+          "total_return": -0.011571200782113489,
+          "ulcer_index": 0.010109925013667647,
+          "worst_20_trade_dd": 0.014189177634953897
+        },
+        "0.02": {
+          "cagr": -0.06329680022264494,
+          "calmar": -2.4005426174122575,
+          "final_equity": 0.9845518041191977,
+          "max_dd": 0.026367705269435198,
+          "n_calendar_days": 60,
+          "n_trades": 41,
+          "total_return": -0.015448195880802262,
+          "ulcer_index": 0.013471366848312603,
+          "worst_20_trade_dd": 0.018888489759462324
+        }
+      },
+      "test_trades_n": 41,
+      "train_grid_blockcv": {
+        "0.0025": {
+          "cagr": 0.0046017021839637184,
+          "calmar": 0.6361986107642621,
+          "final_equity": 1.0122076574339942,
+          "max_dd": 0.007233122025267734,
+          "n_calendar_days": 666,
+          "n_trades": 423,
+          "total_return": 0.012207657433994212,
+          "ulcer_index": 0.003014369611215018,
+          "worst_20_trade_dd": 0.003975045767498661
+        },
+        "0.005": {
+          "cagr": 0.00919339332972724,
+          "calmar": 0.6374158045000684,
+          "final_equity": 1.0244806691185204,
+          "max_dd": 0.0144229139987166,
+          "n_calendar_days": 666,
+          "n_trades": 423,
+          "total_return": 0.024480669118520426,
+          "ulcer_index": 0.006019890419893151,
+          "worst_20_trade_dd": 0.007936474447309229
+        },
+        "0.01": {
+          "cagr": 0.01834556637968232,
+          "calmar": 0.6398150149896393,
+          "final_equity": 1.0492182226307394,
+          "max_dd": 0.02867323515372548,
+          "n_calendar_days": 666,
+          "n_trades": 423,
+          "total_return": 0.04921822263073938,
+          "ulcer_index": 0.012004388367599797,
+          "worst_20_trade_dd": 0.01581863515652447
+        },
+        "0.015": {
+          "cagr": 0.02745416594923933,
+          "calmar": 0.6421663996690619,
+          "final_equity": 1.074203330470395,
+          "max_dd": 0.04275241738494529,
+          "n_calendar_days": 666,
+          "n_trades": 423,
+          "total_return": 0.07420333047039507,
+          "ulcer_index": 0.017953501608255245,
+          "worst_20_trade_dd": 0.023646790518630688
+        },
+        "0.02": {
+          "cagr": 0.036516838018570086,
+          "calmar": 0.6444688501825355,
+          "final_equity": 1.0994262406100255,
+          "max_dd": 0.056661913152555435,
+          "n_calendar_days": 666,
+          "n_trades": 423,
+          "total_return": 0.09942624061002547,
+          "ulcer_index": 0.023867241947004823,
+          "worst_20_trade_dd": 0.03142124759187888
+        }
+      },
+      "train_grid_oob": {
+        "0.0025": {
+          "cagr": -0.00396681985614622,
+          "calmar": -0.24330919119176542,
+          "final_equity": 0.989550393593451,
+          "max_dd": 0.01630361696044499,
+          "n_calendar_days": 666,
+          "n_trades": 437,
+          "total_return": -0.010449606406549017,
+          "ulcer_index": 0.009420843153407002,
+          "worst_20_trade_dd": 0.00590211297876119
+        },
+        "0.005": {
+          "cagr": -0.007947208292025776,
+          "calmar": -0.2455943950461747,
+          "final_equity": 0.9791335412590048,
+          "max_dd": 0.032359078433087225,
+          "n_calendar_days": 666,
+          "n_trades": 437,
+          "total_return": -0.020866458740995242,
+          "ulcer_index": 0.018733505879318785,
+          "worst_20_trade_dd": 0.01177187010957908
+        },
+        "0.01": {
+          "cagr": -0.015947408040981714,
+          "calmar": -0.2501971053803073,
+          "final_equity": 0.9584034969079318,
+          "max_dd": 0.06373937866603677,
+          "n_calendar_days": 666,
+          "n_trades": 437,
+          "total_return": -0.04159650309206819,
+          "ulcer_index": 0.03703975569980621,
+          "worst_20_trade_dd": 0.023414972268649737
+        },
+        "0.015": {
+          "cagr": -0.02399804088991664,
+          "calmar": -0.25484242099951965,
+          "final_equity": 0.9378204078878702,
+          "max_dd": 0.09416815613269454,
+          "n_calendar_days": 666,
+          "n_trades": 437,
+          "total_return": -0.062179592112129756,
+          "ulcer_index": 0.05492951744879858,
+          "worst_20_trade_dd": 0.03493060972326806
+        },
+        "0.02": {
+          "cagr": -0.03209656099159475,
+          "calmar": -0.25952976278468004,
+          "final_equity": 0.9173944047887774,
+          "max_dd": 0.12367198523671366,
+          "n_calendar_days": 666,
+          "n_trades": 437,
+          "total_return": -0.08260559521122257,
+          "ulcer_index": 0.07241330217998578,
+          "worst_20_trade_dd": 0.04632007357410395
+        }
+      },
+      "train_trades_blockcv_n": 423,
+      "train_trades_oob_n": 437,
+      "window_id": "09802c942e02b9b6"
+    },
+    {
+      "block_cv_diag": {
+        "blocks": [
+          {
+            "block": 0,
+            "inner_train_days": 576,
+            "inner_train_samples": 81785,
+            "n_val_trades": 103,
+            "val_days_considered": 145,
+            "val_days_gate_passed": 145,
+            "val_days_total": 145,
+            "val_end_idx": 145,
+            "val_start_idx": 0
+          },
+          {
+            "block": 1,
+            "inner_train_days": 571,
+            "inner_train_samples": 76113,
+            "n_val_trades": 107,
+            "val_days_considered": 145,
+            "val_days_gate_passed": 117,
+            "val_days_total": 145,
+            "val_end_idx": 290,
+            "val_start_idx": 145
+          },
+          {
+            "block": 2,
+            "inner_train_days": 571,
+            "inner_train_samples": 76386,
+            "n_val_trades": 98,
+            "val_days_considered": 145,
+            "val_days_gate_passed": 103,
+            "val_days_total": 145,
+            "val_end_idx": 435,
+            "val_start_idx": 290
+          },
+          {
+            "block": 3,
+            "inner_train_days": 571,
+            "inner_train_samples": 77056,
+            "n_val_trades": 78,
+            "val_days_considered": 145,
+            "val_days_gate_passed": 83,
+            "val_days_total": 145,
+            "val_end_idx": 580,
+            "val_start_idx": 435
+          },
+          {
+            "block": 4,
+            "inner_train_days": 575,
+            "inner_train_samples": 76896,
+            "n_val_trades": 78,
+            "val_days_considered": 146,
+            "val_days_gate_passed": 88,
+            "val_days_total": 146,
+            "val_end_idx": 726,
+            "val_start_idx": 580
+          }
+        ],
+        "embargo_days": 5,
+        "n_blocks": 5
+      },
+      "blockcv_train_mean_net_pct": -0.005638618903368701,
+      "fold_idx": 1,
+      "oob_train_mean_net_pct": -0.008643571581735881,
+      "rationale_blockcv": "max_cagr_subject_to_dd_cap",
+      "rationale_oob": "max_cagr_subject_to_dd_cap",
+      "selected_f_blockcv": 0.0025,
+      "selected_f_oob": 0.0025,
+      "test_grid": {
+        "0.0025": {
+          "cagr": 0.03302983286004868,
+          "calmar": 47.20342096440822,
+          "final_equity": 1.007767168578994,
+          "max_dd": 0.0006997338791388331,
+          "n_calendar_days": 60,
+          "n_trades": 38,
+          "total_return": 0.007767168578993955,
+          "ulcer_index": 0.00022856715614901318,
+          "worst_20_trade_dd": 0.0006997338791388331
+        },
+        "0.005": {
+          "cagr": 0.06711024677249999,
+          "calmar": 47.9549669586384,
+          "final_equity": 1.0155855141360612,
+          "max_dd": 0.0013994430823064312,
+          "n_calendar_days": 60,
+          "n_trades": 38,
+          "total_return": 0.01558551413606124,
+          "ulcer_index": 0.0004572523112938653,
+          "worst_20_trade_dd": 0.0013994430823064312
+        },
+        "0.01": {
+          "cagr": 0.13855220697183723,
+          "calmar": 49.50436891544316,
+          "final_equity": 1.0313768257658114,
+          "max_dd": 0.002798787460728847,
+          "n_calendar_days": 60,
+          "n_trades": 38,
+          "total_return": 0.031376825765811356,
+          "ulcer_index": 0.0009149770409248843,
+          "worst_20_trade_dd": 0.002798787460728847
+        },
+        "0.015": {
+          "cagr": 0.21459422658621907,
+          "calmar": 51.11780199719164,
+          "final_equity": 1.0473761243149597,
+          "max_dd": 0.004198033135266822,
+          "n_calendar_days": 60,
+          "n_trades": 38,
+          "total_return": 0.047376124314959744,
+          "ulcer_index": 0.0013731750319284559,
+          "worst_20_trade_dd": 0.004198033135266822
+        },
+        "0.02": {
+          "cagr": 0.29552056566653073,
+          "calmar": 52.79811620746714,
+          "final_equity": 1.0635856156578973,
+          "max_dd": 0.005597180105920821,
+          "n_calendar_days": 60,
+          "n_trades": 38,
+          "total_return": 0.06358561565789733,
+          "ulcer_index": 0.0018318471246645623,
+          "worst_20_trade_dd": 0.005597180105920821
+        }
+      },
+      "test_trades_n": 38,
+      "train_grid_blockcv": {
+        "0.0025": {
+          "cagr": -0.002281637758354327,
+          "calmar": -0.15120994542241603,
+          "final_equity": 0.9934408059523763,
+          "max_dd": 0.01508920429790782,
+          "n_calendar_days": 726,
+          "n_trades": 464,
+          "total_return": -0.006559194047623729,
+          "ulcer_index": 0.00800365389367026,
+          "worst_20_trade_dd": 0.0069342238153606035
+        },
+        "0.005": {
+          "cagr": -0.004585699122985787,
+          "calmar": -0.1529321983093524,
+          "final_equity": 0.9868457188577674,
+          "max_dd": 0.029985177573330895,
+          "n_calendar_days": 726,
+          "n_trades": 464,
+          "total_return": -0.013154281142232604,
+          "ulcer_index": 0.015926086540063895,
+          "worst_20_trade_dd": 0.013825399810754948
+        },
+        "0.01": {
+          "cagr": -0.009260292058944852,
+          "calmar": -0.1564109524028016,
+          "final_equity": 0.9735532525145513,
+          "max_dd": 0.05920488250143143,
+          "n_calendar_days": 726,
+          "n_trades": 464,
+          "total_return": -0.02644674748544873,
+          "ulcer_index": 0.031529937223246825,
+          "worst_20_trade_dd": 0.027479530595088557
+        },
+        "0.015": {
+          "cagr": -0.01402216667823375,
+          "calmar": -0.15993539785279198,
+          "final_equity": 0.9601333495524139,
+          "max_dd": 0.08767394126933711,
+          "n_calendar_days": 726,
+          "n_trades": 464,
+          "total_return": -0.03986665044758608,
+          "ulcer_index": 0.046816825130804894,
+          "worst_20_trade_dd": 0.04096422706986406
+        },
+        "0.02": {
+          "cagr": -0.018869693979741697,
+          "calmar": -0.1634755183765422,
+          "final_equity": 0.9465967087849637,
+          "max_dd": 0.11542825596844469,
+          "n_calendar_days": 726,
+          "n_trades": 464,
+          "total_return": -0.053403291215036286,
+          "ulcer_index": 0.06180655698899049,
+          "worst_20_trade_dd": 0.05428130833957579
+        }
+      },
+      "train_grid_oob": {
+        "0.0025": {
+          "cagr": -0.0036089348106221886,
+          "calmar": -0.25728571015256924,
+          "final_equity": 0.9896380824742097,
+          "max_dd": 0.01402695395901353,
+          "n_calendar_days": 726,
+          "n_trades": 480,
+          "total_return": -0.010361917525790298,
+          "ulcer_index": 0.007021416057769034,
+          "worst_20_trade_dd": 0.00526127187106068
+        },
+        "0.005": {
+          "cagr": -0.0072349340093930126,
+          "calmar": -0.25915747893521823,
+          "final_equity": 0.9792980233398043,
+          "max_dd": 0.027917133779502206,
+          "n_calendar_days": 726,
+          "n_trades": 480,
+          "total_return": -0.020701976660195687,
+          "ulcer_index": 0.014016632834652248,
+          "worst_20_trade_dd": 0.010498881237792409
+        },
+        "0.01": {
+          "cagr": -0.014536866143947669,
+          "calmar": -0.26293064410876604,
+          "final_equity": 0.9586901015474791,
+          "max_dd": 0.05528783528911993,
+          "n_calendar_days": 726,
+          "n_trades": 480,
+          "total_return": -0.041309898452520866,
+          "ulcer_index": 0.027926729001271914,
+          "worst_20_trade_dd": 0.020903459361263872
+        },
+        "0.015": {
+          "cagr": -0.02190328035900102,
+          "calmar": -0.2667433382550127,
+          "final_equity": 0.938189202973827,
+          "max_dd": 0.08211369214424763,
+          "n_calendar_days": 726,
+          "n_trades": 480,
+          "total_return": -0.06181079702617298,
+          "ulcer_index": 0.04172690938238486,
+          "worst_20_trade_dd": 0.03121442587490526
+        },
+        "0.02": {
+          "cagr": -0.029331665875300228,
+          "calmar": -0.2705955736193157,
+          "final_equity": 0.9178078523804118,
+          "max_dd": 0.10839669504928838,
+          "n_calendar_days": 726,
+          "n_trades": 480,
+          "total_return": -0.08219214761958815,
+          "ulcer_index": 0.05541395423373815,
+          "worst_20_trade_dd": 0.04143246860592656
+        }
+      },
+      "train_trades_blockcv_n": 464,
+      "train_trades_oob_n": 480,
+      "window_id": "cf38c16e2f55ddd9"
+    },
+    {
+      "block_cv_diag": {
+        "blocks": [
+          {
+            "block": 0,
+            "inner_train_days": 624,
+            "inner_train_samples": 88669,
+            "n_val_trades": 117,
+            "val_days_considered": 157,
+            "val_days_gate_passed": 156,
+            "val_days_total": 157,
+            "val_end_idx": 157,
+            "val_start_idx": 0
+          },
+          {
+            "block": 1,
+            "inner_train_days": 619,
+            "inner_train_samples": 83655,
+            "n_val_trades": 115,
+            "val_days_considered": 157,
+            "val_days_gate_passed": 122,
+            "val_days_total": 157,
+            "val_end_idx": 314,
+            "val_start_idx": 157
+          },
+          {
+            "block": 2,
+            "inner_train_days": 619,
+            "inner_train_samples": 83859,
+            "n_val_trades": 97,
+            "val_days_considered": 157,
+            "val_days_gate_passed": 103,
+            "val_days_total": 157,
+            "val_end_idx": 471,
+            "val_start_idx": 314
+          },
+          {
+            "block": 3,
+            "inner_train_days": 619,
+            "inner_train_samples": 84221,
+            "n_val_trades": 84,
+            "val_days_considered": 157,
+            "val_days_gate_passed": 91,
+            "val_days_total": 157,
+            "val_end_idx": 628,
+            "val_start_idx": 471
+          },
+          {
+            "block": 4,
+            "inner_train_days": 623,
+            "inner_train_samples": 85096,
+            "n_val_trades": 96,
+            "val_days_considered": 158,
+            "val_days_gate_passed": 119,
+            "val_days_total": 158,
+            "val_end_idx": 786,
+            "val_start_idx": 628
+          }
+        ],
+        "embargo_days": 5,
+        "n_blocks": 5
+      },
+      "blockcv_train_mean_net_pct": 0.00393493305707599,
+      "fold_idx": 2,
+      "oob_train_mean_net_pct": -0.011073694086493797,
+      "rationale_blockcv": "max_cagr_subject_to_dd_cap",
+      "rationale_oob": "max_cagr_subject_to_dd_cap",
+      "selected_f_blockcv": 0.02,
+      "selected_f_oob": 0.0025,
+      "test_grid": {
+        "0.0025": {
+          "cagr": 0.008983817274009764,
+          "calmar": 3.74125857557685,
+          "final_equity": 1.002131721957839,
+          "max_dd": 0.002401282106683734,
+          "n_calendar_days": 60,
+          "n_trades": 20,
+          "total_return": 0.00213172195783895,
+          "ulcer_index": 0.0010933429267023734,
+          "worst_20_trade_dd": 0.002401282106683734
+        },
+        "0.005": {
+          "cagr": 0.01800497216419439,
+          "calmar": 3.752473902491976,
+          "final_equity": 1.0042578012555925,
+          "max_dd": 0.00479816052877476,
+          "n_calendar_days": 60,
+          "n_trades": 20,
+          "total_return": 0.004257801255592497,
+          "ulcer_index": 0.0021857022825105786,
+          "worst_20_trade_dd": 0.00479816052877476
+        },
+        "0.01": {
+          "cagr": 0.0361578813853527,
+          "calmar": 3.774809767286263,
+          "final_equity": 1.0084928920342058,
+          "max_dd": 0.009578729423323192,
+          "n_calendar_days": 60,
+          "n_trades": 20,
+          "total_return": 0.008492892034205779,
+          "ulcer_index": 0.004367478923407939,
+          "worst_20_trade_dd": 0.009578729423323192
+        },
+        "0.015": {
+          "cagr": 0.05445584049543939,
+          "calmar": 3.7970142902955035,
+          "final_equity": 1.0127049938691464,
+          "max_dd": 0.014341752843706404,
+          "n_calendar_days": 60,
+          "n_trades": 20,
+          "total_return": 0.012704993869146364,
+          "ulcer_index": 0.0065453471038701095,
+          "worst_20_trade_dd": 0.014341752843706404
+        },
+        "0.02": {
+          "cagr": 0.07289586606384657,
+          "calmar": 3.8190815038414363,
+          "final_equity": 1.0168938302398043,
+          "max_dd": 0.01908727687286171,
+          "n_calendar_days": 60,
+          "n_trades": 20,
+          "total_return": 0.016893830239804286,
+          "ulcer_index": 0.008719323840827985,
+          "worst_20_trade_dd": 0.01908727687286171
+        }
+      },
+      "test_trades_n": 20,
+      "train_grid_blockcv": {
+        "0.0025": {
+          "cagr": 0.0015906526125990528,
+          "calmar": 0.1299690075883135,
+          "final_equity": 1.0049696876904304,
+          "max_dd": 0.012238707074209284,
+          "n_calendar_days": 786,
+          "n_trades": 509,
+          "total_return": 0.00496968769043038,
+          "ulcer_index": 0.005940517924586856,
+          "worst_20_trade_dd": 0.006181523252065689
+        },
+        "0.005": {
+          "cagr": 0.003151807640019433,
+          "calmar": 0.12943099935754648,
+          "final_equity": 1.0098635052973557,
+          "max_dd": 0.02435125785680389,
+          "n_calendar_days": 786,
+          "n_trades": 509,
+          "total_return": 0.00986350529735569,
+          "ulcer_index": 0.011855589766783768,
+          "worst_20_trade_dd": 0.012328160149196937
+        },
+        "0.01": {
+          "cagr": 0.006185169351183628,
+          "calmar": 0.12831851161358765,
+          "final_equity": 1.0194185553372461,
+          "max_dd": 0.04820169181676107,
+          "n_calendar_days": 786,
+          "n_trades": 509,
+          "total_return": 0.019418555337246124,
+          "ulcer_index": 0.023609059774114066,
+          "worst_20_trade_dd": 0.024517486373679606
+        },
+        "0.015": {
+          "cagr": 0.009099200065833424,
+          "calmar": 0.12715681895817432,
+          "final_equity": 1.0286553817677992,
+          "max_dd": 0.07155888406445919,
+          "n_calendar_days": 786,
+          "n_trades": 509,
+          "total_return": 0.02865538176779925,
+          "ulcer_index": 0.03525975753957823,
+          "worst_20_trade_dd": 0.03656939356106629
+        },
+        "0.02": {
+          "cagr": 0.011893056763946808,
+          "calmar": 0.12594523574423105,
+          "final_equity": 1.0375645181549802,
+          "max_dd": 0.09443038232981808,
+          "n_calendar_days": 786,
+          "n_trades": 509,
+          "total_return": 0.03756451815498019,
+          "ulcer_index": 0.04680706112298517,
+          "worst_20_trade_dd": 0.04848528370775514
+        }
+      },
+      "train_grid_oob": {
+        "0.0025": {
+          "cagr": -0.004746253729677075,
+          "calmar": -0.25311388831750053,
+          "final_equity": 0.9852705216692236,
+          "max_dd": 0.01875145516994894,
+          "n_calendar_days": 786,
+          "n_trades": 534,
+          "total_return": -0.014729478330776424,
+          "ulcer_index": 0.011321991163669184,
+          "worst_20_trade_dd": 0.007231152396576929
+        },
+        "0.005": {
+          "cagr": -0.009505306074346964,
+          "calmar": -0.25558906905620254,
+          "final_equity": 0.9706500222599231,
+          "max_dd": 0.037189798880862164,
+          "n_calendar_days": 786,
+          "n_trades": 534,
+          "total_return": -0.02934997774007686,
+          "ulcer_index": 0.0225004917394607,
+          "worst_20_trade_dd": 0.014413306199591493
+        },
+        "0.01": {
+          "cagr": -0.019060081528270212,
+          "calmar": -0.2605803003367898,
+          "final_equity": 0.9417427228220377,
+          "max_dd": 0.07314475232255012,
+          "n_calendar_days": 786,
+          "n_trades": 534,
+          "total_return": -0.05825727717796225,
+          "ulcer_index": 0.0444342532917479,
+          "worst_20_trade_dd": 0.02863185698134329
+        },
+        "0.015": {
+          "cagr": -0.02866089272579564,
+          "calmar": -0.2656255533748899,
+          "final_equity": 0.913290952973939,
+          "max_dd": 0.10789960665171834,
+          "n_calendar_days": 786,
+          "n_trades": 534,
+          "total_return": -0.08670904702606097,
+          "ulcer_index": 0.06581556474268024,
+          "worst_20_trade_dd": 0.042658112032485894
+        },
+        "0.02": {
+          "cagr": -0.03830433348247664,
+          "calmar": -0.27072422726676515,
+          "final_equity": 0.88530649610182,
+          "max_dd": 0.14148838421000448,
+          "n_calendar_days": 786,
+          "n_trades": 534,
+          "total_return": -0.11469350389818,
+          "ulcer_index": 0.08665841338571378,
+          "worst_20_trade_dd": 0.05649450210214109
+        }
+      },
+      "train_trades_blockcv_n": 509,
+      "train_trades_oob_n": 534,
+      "window_id": "e56a4d66770d7097"
+    },
+    {
+      "block_cv_diag": {
+        "blocks": [
+          {
+            "block": 0,
+            "inner_train_days": 672,
+            "inner_train_samples": 95368,
+            "n_val_trades": 127,
+            "val_days_considered": 169,
+            "val_days_gate_passed": 168,
+            "val_days_total": 169,
+            "val_end_idx": 169,
+            "val_start_idx": 0
+          },
+          {
+            "block": 1,
+            "inner_train_days": 667,
+            "inner_train_samples": 90226,
+            "n_val_trades": 119,
+            "val_days_considered": 169,
+            "val_days_gate_passed": 128,
+            "val_days_total": 169,
+            "val_end_idx": 338,
+            "val_start_idx": 169
+          },
+          {
+            "block": 2,
+            "inner_train_days": 667,
+            "inner_train_samples": 90777,
+            "n_val_trades": 104,
+            "val_days_considered": 169,
+            "val_days_gate_passed": 108,
+            "val_days_total": 169,
+            "val_end_idx": 507,
+            "val_start_idx": 338
+          },
+          {
+            "block": 3,
+            "inner_train_days": 667,
+            "inner_train_samples": 90890,
+            "n_val_trades": 87,
+            "val_days_considered": 169,
+            "val_days_gate_passed": 92,
+            "val_days_total": 169,
+            "val_end_idx": 676,
+            "val_start_idx": 507
+          },
+          {
+            "block": 4,
+            "inner_train_days": 671,
+            "inner_train_samples": 91947,
+            "n_val_trades": 94,
+            "val_days_considered": 170,
+            "val_days_gate_passed": 116,
+            "val_days_total": 170,
+            "val_end_idx": 846,
+            "val_start_idx": 676
+          }
+        ],
+        "embargo_days": 5,
+        "n_blocks": 5
+      },
+      "blockcv_train_mean_net_pct": -0.003301393025234157,
+      "fold_idx": 3,
+      "oob_train_mean_net_pct": -0.009166234452509876,
+      "rationale_blockcv": "max_cagr_subject_to_dd_cap",
+      "rationale_oob": "max_cagr_subject_to_dd_cap",
+      "selected_f_blockcv": 0.0025,
+      "selected_f_oob": 0.0025,
+      "test_grid": {
+        "0.0025": {
+          "cagr": -0.0030217111450121514,
+          "calmar": -0.8792778997935999,
+          "final_equity": 0.999279715307782,
+          "max_dd": 0.0034365826159414017,
+          "n_calendar_days": 60,
+          "n_trades": 36,
+          "total_return": -0.0007202846922179651,
+          "ulcer_index": 0.0019034341578359935,
+          "worst_20_trade_dd": 0.0032672495338106943
+        },
+        "0.005": {
+          "cagr": -0.006066995324977342,
+          "calmar": -0.8837681241612266,
+          "final_equity": 0.9985521267241302,
+          "max_dd": 0.006864917571829661,
+          "n_calendar_days": 60,
+          "n_trades": 36,
+          "total_return": -0.0014478732758698154,
+          "ulcer_index": 0.003804434874798786,
+          "worst_20_trade_dd": 0.006527199680863478
+        },
+        "0.01": {
+          "cagr": -0.012227186819263824,
+          "calmar": -0.892699453022419,
+          "final_equity": 0.9970751063726043,
+          "max_dd": 0.01369686827729775,
+          "n_calendar_days": 60,
+          "n_trades": 36,
+          "total_return": -0.002924893627395675,
+          "ulcer_index": 0.007599122923322635,
+          "worst_20_trade_dd": 0.013025216972664632
+        },
+        "0.015": {
+          "cagr": -0.018478369364826386,
+          "calmar": -0.9015641752647566,
+          "final_equity": 0.9955690772600585,
+          "max_dd": 0.02049590020521829,
+          "n_calendar_days": 60,
+          "n_trades": 36,
+          "total_return": -0.004430922739941501,
+          "ulcer_index": 0.011384038234658783,
+          "worst_20_trade_dd": 0.019494082688562342
+        },
+        "0.02": {
+          "cagr": -0.02481831763960729,
+          "calmar": -0.9103609757281155,
+          "final_equity": 0.9940341798234488,
+          "max_dd": 0.02726206230419462,
+          "n_calendar_days": 60,
+          "n_trades": 36,
+          "total_return": -0.005965820176551229,
+          "ulcer_index": 0.01515915524131169,
+          "worst_20_trade_dd": 0.02593382843235811
+        }
+      },
+      "test_trades_n": 36,
+      "train_grid_blockcv": {
+        "0.0025": {
+          "cagr": -0.0013193128894559703,
+          "calmar": -0.07664430852758007,
+          "final_equity": 0.9955777609083938,
+          "max_dd": 0.017213448914882207,
+          "n_calendar_days": 846,
+          "n_trades": 531,
+          "total_return": -0.004422239091606217,
+          "ulcer_index": 0.008774784303912129,
+          "worst_20_trade_dd": 0.006265231931222693
+        },
+        "0.005": {
+          "cagr": -0.0026662579833405253,
+          "calmar": -0.07799120317232879,
+          "final_equity": 0.9910770845687338,
+          "max_dd": 0.03418665022322045,
+          "n_calendar_days": 846,
+          "n_trades": 531,
+          "total_return": -0.00892291543126622,
+          "ulcer_index": 0.01746923777224652,
+          "worst_20_trade_dd": 0.012495913343989765
+        },
+        "0.01": {
+          "cagr": -0.005442536115952246,
+          "calmar": -0.08072446765204706,
+          "final_equity": 0.9818455405399881,
+          "max_dd": 0.06742114595802144,
+          "n_calendar_days": 846,
+          "n_trades": 531,
+          "total_return": -0.01815445946001193,
+          "ulcer_index": 0.03461898859956,
+          "worst_20_trade_dd": 0.024854266949390698
+        },
+        "0.015": {
+          "cagr": -0.008327796437681112,
+          "calmar": -0.08351080901648132,
+          "final_equity": 0.9723157658348975,
+          "max_dd": 0.09972118023713045,
+          "n_calendar_days": 846,
+          "n_trades": 531,
+          "total_return": -0.02768423416510246,
+          "ulcer_index": 0.051452944352759815,
+          "worst_20_trade_dd": 0.03707633979420189
+        },
+        "0.02": {
+          "cagr": -0.01132096841356256,
+          "calmar": -0.08635074452168463,
+          "final_equity": 0.9624983964871161,
+          "max_dd": 0.1311044679032224,
+          "n_calendar_days": 846,
+          "n_trades": 531,
+          "total_return": -0.037501603512883896,
+          "ulcer_index": 0.06797482576120924,
+          "worst_20_trade_dd": 0.04916340177050312
+        }
+      },
+      "train_grid_oob": {
+        "0.0025": {
+          "cagr": -0.0037838015512268175,
+          "calmar": -0.2553778944498815,
+          "final_equity": 0.9873537884369307,
+          "max_dd": 0.014816480335455962,
+          "n_calendar_days": 846,
+          "n_trades": 553,
+          "total_return": -0.012646211563069332,
+          "ulcer_index": 0.008256731101672419,
+          "worst_20_trade_dd": 0.004569805742878857
+        },
+        "0.005": {
+          "cagr": -0.007585516014193661,
+          "calmar": -0.2571661038692182,
+          "final_equity": 0.9747612232364739,
+          "max_dd": 0.029496562338757033,
+          "n_calendar_days": 846,
+          "n_trades": 553,
+          "total_return": -0.02523877676352615,
+          "ulcer_index": 0.016481646715111712,
+          "worst_20_trade_dd": 0.009121036888875845
+        },
+        "0.01": {
+          "cagr": -0.015241343193075463,
+          "calmar": -0.26077861917599787,
+          "final_equity": 0.9497454249704772,
+          "max_dd": 0.05844552456499195,
+          "n_calendar_days": 846,
+          "n_trades": 553,
+          "total_return": -0.0502545750295228,
+          "ulcer_index": 0.03283273934849043,
+          "worst_20_trade_dd": 0.018168039605690658
+        },
+        "0.015": {
+          "cagr": -0.022964801959985848,
+          "calmar": -0.26443945554812065,
+          "final_equity": 0.924968903120733,
+          "max_dd": 0.0868433264332103,
+          "n_calendar_days": 846,
+          "n_trades": 553,
+          "total_return": -0.07503109687926701,
+          "ulcer_index": 0.04904690618656457,
+          "worst_20_trade_dd": 0.027141534570942198
+        },
+        "0.02": {
+          "cagr": -0.030753215836852532,
+          "calmar": -0.2681488221982365,
+          "final_equity": 0.900447170960043,
+          "max_dd": 0.11468711883476915,
+          "n_calendar_days": 846,
+          "n_trades": 553,
+          "total_return": -0.09955282903995699,
+          "ulcer_index": 0.06511811433841466,
+          "worst_20_trade_dd": 0.036042044999736296
+        }
+      },
+      "train_trades_blockcv_n": 531,
+      "train_trades_oob_n": 553,
+      "window_id": "9b92333bccfcbbb7"
+    },
+    {
+      "block_cv_diag": {
+        "blocks": [
+          {
+            "block": 0,
+            "inner_train_days": 720,
+            "inner_train_samples": 101951,
+            "n_val_trades": 137,
+            "val_days_considered": 181,
+            "val_days_gate_passed": 180,
+            "val_days_total": 181,
+            "val_end_idx": 181,
+            "val_start_idx": 0
+          },
+          {
+            "block": 1,
+            "inner_train_days": 715,
+            "inner_train_samples": 96857,
+            "n_val_trades": 125,
+            "val_days_considered": 181,
+            "val_days_gate_passed": 135,
+            "val_days_total": 181,
+            "val_end_idx": 362,
+            "val_start_idx": 181
+          },
+          {
+            "block": 2,
+            "inner_train_days": 715,
+            "inner_train_samples": 97485,
+            "n_val_trades": 104,
+            "val_days_considered": 181,
+            "val_days_gate_passed": 108,
+            "val_days_total": 181,
+            "val_end_idx": 543,
+            "val_start_idx": 362
+          },
+          {
+            "block": 3,
+            "inner_train_days": 715,
+            "inner_train_samples": 97477,
+            "n_val_trades": 99,
+            "val_days_considered": 181,
+            "val_days_gate_passed": 111,
+            "val_days_total": 181,
+            "val_end_idx": 724,
+            "val_start_idx": 543
+          },
+          {
+            "block": 4,
+            "inner_train_days": 719,
+            "inner_train_samples": 98332,
+            "n_val_trades": 99,
+            "val_days_considered": 182,
+            "val_days_gate_passed": 115,
+            "val_days_total": 182,
+            "val_end_idx": 906,
+            "val_start_idx": 724
+          }
+        ],
+        "embargo_days": 5,
+        "n_blocks": 5
+      },
+      "blockcv_train_mean_net_pct": -0.006285571651219363,
+      "fold_idx": 4,
+      "oob_train_mean_net_pct": -0.01573173658931405,
+      "rationale_blockcv": "max_cagr_subject_to_dd_cap",
+      "rationale_oob": "max_cagr_subject_to_dd_cap",
+      "selected_f_blockcv": 0.0025,
+      "selected_f_oob": 0.0025,
+      "test_grid": {
+        "0.0025": {
+          "cagr": 0.02588729050011529,
+          "calmar": 10.08406674163369,
+          "final_equity": 1.0061037637969301,
+          "max_dd": 0.002567147874303078,
+          "n_calendar_days": 60,
+          "n_trades": 44,
+          "total_return": 0.006103763796930117,
+          "ulcer_index": 0.001300444023098792,
+          "worst_20_trade_dd": 0.002567147874303078
+        },
+        "0.005": {
+          "cagr": 0.05235280225757388,
+          "calmar": 10.205763035024678,
+          "final_equity": 1.0122237306578181,
+          "max_dd": 0.005129729357609692,
+          "n_calendar_days": 60,
+          "n_trades": 44,
+          "total_return": 0.012223730657818122,
+          "ulcer_index": 0.002600640324270249,
+          "worst_20_trade_dd": 0.005129729357609692
+        },
+        "0.01": {
+          "cagr": 0.1070607752810715,
+          "calmar": 10.4539174716646,
+          "final_equity": 1.0245119185605889,
+          "max_dd": 0.010241211064776464,
+          "n_calendar_days": 60,
+          "n_trades": 44,
+          "total_return": 0.024511918560588875,
+          "ulcer_index": 0.005200283367698715,
+          "worst_20_trade_dd": 0.010241211064776464
+        },
+        "0.015": {
+          "cagr": 0.16420985014814193,
+          "calmar": 10.708536570768894,
+          "final_equity": 1.0368638443835378,
+          "max_dd": 0.01533448095946049,
+          "n_calendar_days": 60,
+          "n_trades": 44,
+          "total_return": 0.03686384438353785,
+          "ulcer_index": 0.007798916161685255,
+          "worst_20_trade_dd": 0.01533448095946049
+        },
+        "0.02": {
+          "cagr": 0.22388814361102316,
+          "calmar": 10.96976025924455,
+          "final_equity": 1.0492787739280447,
+          "max_dd": 0.020409574896802857,
+          "n_calendar_days": 60,
+          "n_trades": 44,
+          "total_return": 0.049278773928044695,
+          "ulcer_index": 0.010396525446791725,
+          "worst_20_trade_dd": 0.020409574896802857
+        }
+      },
+      "test_trades_n": 44,
+      "train_grid_blockcv": {
+        "0.0025": {
+          "cagr": -0.0024791089536585487,
+          "calmar": -0.21515054272587147,
+          "final_equity": 0.9911156477990845,
+          "max_dd": 0.011522671159687668,
+          "n_calendar_days": 906,
+          "n_trades": 564,
+          "total_return": -0.008884352200915546,
+          "ulcer_index": 0.006242215231914978,
+          "worst_20_trade_dd": 0.005486345337499915
+        },
+        "0.005": {
+          "cagr": -0.004986041244955719,
+          "calmar": -0.2170662804014492,
+          "final_equity": 0.9821896682329144,
+          "max_dd": 0.022970132605277877,
+          "n_calendar_days": 906,
+          "n_trades": 564,
+          "total_return": -0.017810331767085574,
+          "ulcer_index": 0.012473197893367708,
+          "worst_20_trade_dd": 0.010948223152793719
+        },
+        "0.01": {
+          "cagr": -0.010082317373135696,
+          "calmar": -0.2209224338283146,
+          "final_equity": 0.964223366991219,
+          "max_dd": 0.045637363297251037,
+          "n_calendar_days": 906,
+          "n_trades": 564,
+          "total_return": -0.03577663300878098,
+          "ulcer_index": 0.02489962693843868,
+          "worst_20_trade_dd": 0.0217988945755232
+        },
+        "0.015": {
+          "cagr": -0.01528669558159168,
+          "calmar": -0.22481167740648592,
+          "final_equity": 0.9461220378903091,
+          "max_dd": 0.06799778266834218,
+          "n_calendar_days": 906,
+          "n_trades": 564,
+          "total_return": -0.05387796210969087,
+          "ulcer_index": 0.037275664792501065,
+          "worst_20_trade_dd": 0.03255264976977368
+        },
+        "0.02": {
+          "cagr": -0.020597018552063973,
+          "calmar": -0.22873421851135176,
+          "final_equity": 0.9279063763841172,
+          "max_dd": 0.09004782356620494,
+          "n_calendar_days": 906,
+          "n_trades": 564,
+          "total_return": -0.07209362361588278,
+          "ulcer_index": 0.04959777823286278,
+          "worst_20_trade_dd": 0.04321012228147955
+        }
+      },
+      "train_grid_oob": {
+        "0.0025": {
+          "cagr": -0.00637102116655075,
+          "calmar": -0.24722324247595515,
+          "final_equity": 0.9772833831486725,
+          "max_dd": 0.025770316345439866,
+          "n_calendar_days": 906,
+          "n_trades": 583,
+          "total_return": -0.02271661685132753,
+          "ulcer_index": 0.014432238579701658,
+          "worst_20_trade_dd": 0.0053824941510284136
+        },
+        "0.005": {
+          "cagr": -0.012728697923157783,
+          "calmar": -0.24973920904461755,
+          "final_equity": 0.9549880565688033,
+          "max_dd": 0.05096795962416826,
+          "n_calendar_days": 906,
+          "n_trades": 583,
+          "total_return": -0.045011943431196744,
+          "ulcer_index": 0.028660704373379736,
+          "worst_20_trade_dd": 0.010746020759931724
+        },
+        "0.01": {
+          "cagr": -0.025402961789215417,
+          "calmar": -0.2548317884621031,
+          "final_equity": 0.9116403263121736,
+          "max_dd": 0.09968521565743821,
+          "n_calendar_days": 906,
+          "n_trades": 583,
+          "total_return": -0.08835967368782638,
+          "ulcer_index": 0.05651550878788679,
+          "worst_20_trade_dd": 0.02141628699118895
+        },
+        "0.015": {
+          "cagr": -0.03802070874130847,
+          "calmar": -0.26000488132951133,
+          "final_equity": 0.8699148928245747,
+          "max_dd": 0.14623074977243902,
+          "n_calendar_days": 906,
+          "n_trades": 583,
+          "total_return": -0.13008510717542532,
+          "ulcer_index": 0.08358273912998704,
+          "worst_20_trade_dd": 0.0320110310574946
+        },
+        "0.02": {
+          "cagr": -0.05057990400555301,
+          "calmar": -0.2652579902026101,
+          "final_equity": 0.8297698545689841,
+          "max_dd": 0.19068192429158845,
+          "n_calendar_days": 906,
+          "n_trades": 583,
+          "total_return": -0.1702301454310159,
+          "ulcer_index": 0.10988061686983552,
+          "worst_20_trade_dd": 0.04253048703888871
+        }
+      },
+      "train_trades_blockcv_n": 564,
+      "train_trades_oob_n": 583,
+      "window_id": "3b2f7c5202c9ee35"
+    }
+  ],
+  "sizing_grid": [
+    0.0025,
+    0.005,
+    0.01,
+    0.015,
+    0.02
+  ]
+}
