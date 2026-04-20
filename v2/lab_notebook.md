@@ -3646,6 +3646,92 @@ User's rule: "If it still selects 0.25% or remains unstable, accept 0.25% as the
 
 **No GPU. No simulator changes. No dataset rebuild. Trade selection unchanged.** V2-pruned-gated at f = 0.25% is the current deployable mechanical baseline.
 
+---
+
+## 2026-04-20 — Integer-contract realism: $1M is the honest SPX deployment envelope at f = 0.25%
+
+**Context.** Last branch accepted `f = 0.25%` as the honest deployment floor. Before anything else: does that floor actually translate to discrete SPX contracts?
+
+**Implementation** ([v2/analysis/mechanical_baseline_v2_pruned_gated_integer_contract.py](analysis/mechanical_baseline_v2_pruned_gated_integer_contract.py), ~240 lines). Pure post-hoc analysis on the committed V2-pruned-gated trade stream (179 strategy trades from `v2/artifacts/mechanical_baseline_opening_reversion_v2_pruned_gated/trades.csv`). Position rule:
+
+    entry_cost_per_contract = entry_mid × 100
+    contracts = floor((equity × 0.0025) / entry_cost_per_contract)
+    if contracts == 0: skip (unaffordable), equity unchanged
+    trade_pnl = contracts × net_pnl_dollars (per-contract, from stored economics)
+    equity += trade_pnl
+
+The stored `net_pnl_dollars` already includes spread cost via the adaptive spread model — no new fill model invented.
+
+### Entry-cost distribution (per 1 contract, dollars)
+
+| percentile | min | p10 | p25 | p50 | p75 | p90 | p95 | max | mean | std |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| $ per contract | 460 | 910 | 1,078 | 1,350 | 1,695 | 2,034 | 2,157 | 2,870 | 1,420 | 441 |
+
+Reproduces the user's back-of-envelope numbers exactly. The 0DTE long-premium strategy runs on expensive contracts (mean $1,420 for a single-contract notional).
+
+### Min-viable account to afford each percentile trade (static, at f = 0.25%)
+
+| trade percentile | entry cost | account needed |
+|---:|---:|---:|
+| cheapest (p0) | $460 | **$184k** |
+| p10 | $910 | $364k |
+| p25 | $1,078 | **$431k** |
+| p50 | $1,350 | **$540k** |
+| p75 | $1,695 | $678k |
+| p90 | $2,034 | $814k |
+| p95 | $2,157 | $863k |
+| max (p100) | $2,870 | $1,148k |
+
+### Per-account integer-contract simulation (full dynamic sim over 179 chronological trades)
+
+| account | executed | skipped | participation | avg ct | max ct | total return | CAGR | max DD | Calmar | worst-20 DD |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| $100k | 0 | 179 | **0.0%** | 0.00 | 0 | 0.00% | 0.00% | 0.00% | 0.00 | 0.00% |
+| $250k | 2 | 177 | 1.1% | 1.00 | 1 | −0.09% | −0.08% | 0.10% | −0.75 | 0.10% |
+| $500k | 76 | 103 | **42.5%** | 1.03 | 2 | +0.58% | +0.49% | 0.20% | +2.47 | 0.20% |
+| **$1M** | **176** | 3 | **98.3%** | 1.49 | 5 | **+1.01%** | **+0.84%** | **0.28%** | **+2.98** | **0.24%** |
+| $2M | 179 | 0 | 100.0% | 3.39 | 10 | +1.04% | +0.88% | 0.33% | +2.69 | 0.31% |
+
+### Decision-question answer
+
+> At f = 0.25%, what account sizes make the SPX implementation actually tradeable in discrete contracts?
+
+- **< $250k: not tradeable.** At $100k the 0.25% budget ($250) cannot afford even the cheapest contract ($460 entry).
+- **$250k: effectively unusable.** Only 2 of 179 baseline trades are affordable (1.1% participation). Annualized return is slightly negative from spread / transaction effects on tiny sample.
+- **$500k: partial deployment.** 42.5% participation, CAGR +0.49%, Calmar 2.47. Meaningful but half of baseline trades skipped — closer to "partial deployment" than "meaningful participation."
+- **$1M: full practical deployment.** 98.3% participation (misses only 3 tail-expensive trades), CAGR +0.84%, max DD 0.28%, Calmar 2.98. This is the honest envelope.
+- **$2M: marginal improvement** (100% participation, CAGR +0.88%). Diminishing returns above $1M.
+
+**The honest verdict: this is an "only very large accounts" implementation.** $1M is the practical floor for full participation at f=0.25% with SPX contracts. $500k is a partial-deployment envelope that sacrifices ~half the trades.
+
+### Integer-rounding tax
+
+Continuous-fraction sizing at f=0.25% delivered +1.12% CAGR (committed, 2026-04-20 sizing audit). Integer-contract at $1M delivers +0.84% — a **28 bp lower CAGR** that comes from rounding-down: when contracts = 1, the position is typically below the 0.25% budget; you only get back to the budget at avg contracts ≥ ~1.5 (achieved at $1M+). At $2M avg contracts = 3.39 and CAGR recovers to +0.88% — still below continuous because the effective average f is still slightly under 0.25% due to integer boundaries.
+
+This tax is a real deployment cost that no amount of model or gate work will eliminate. It's structural to integer-contract sizing on expensive premium.
+
+### Interpretation vs the user's two-path framing
+
+User offered two interpretations:
+
+1. **"Only very large accounts"** → **yes, this is the accurate label.** $1M for full envelope, $500k for partial. Anything smaller is not tradeable.
+2. **"$500k+ is enough for meaningful participation"** → partially true, but "meaningful" is marginal here. $500k gets 42.5%, missing 58% of baseline trades. CAGR at $500k is +0.49%, roughly half of $1M's +0.84%.
+
+### What this does not resolve
+
+- Whether the same baseline on a **cheaper underlying** (XSP = SPX/10 notional, or SPY) would lower the minimum-account floor proportionally. XSP contracts would be ~10× cheaper, putting the $184k floor at $18.4k, opening deployment to ~$100k accounts.
+- Whether a **higher sizing floor** would improve the integer-rounding efficiency at smaller accounts at the cost of DD inflation. But the user has explicitly locked f = 0.25% for this branch.
+- Whether the current 179-trade dataset generalizes its cost distribution to future periods. Entry-mid distribution is a function of VIX regime, delta band, and time-of-day; all three are frozen by the strategy spec, but VIX regime varies across time.
+
+### Files changed (uncommitted)
+
+- `v2/analysis/mechanical_baseline_v2_pruned_gated_integer_contract.py` (new, ~240 lines)
+- `v2/artifacts/mechanical_baseline_opening_reversion_v2_pruned_gated_integer_contract/{summary.json, executed_*.csv}`
+- `v2/lab_notebook.md` (this entry)
+
+**No GPU. No simulator changes. No dataset rebuild. No trade-selection changes. No new fill model.** V2-pruned-gated at f=0.25% with integer SPX contracts is the current deployable baseline: **realistic minimum account $1M, partial-deployment option at $500k, unusable below $250k**.
+
 ### What this does show (worth keeping)
 
 1. The OOB score is genuinely rank-ordering training signal. The learned model has discriminative information the hand-coded trigger lacks.

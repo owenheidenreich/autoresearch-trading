@@ -1,0 +1,166 @@
+{
+  "account_grid_dollars": [
+    100000,
+    250000,
+    500000,
+    1000000,
+    2000000
+  ],
+  "decision_summary": {
+    "smallest_account_50pct_participation": 1000000,
+    "smallest_account_75pct_participation": 1000000,
+    "smallest_account_any_execution": 250000
+  },
+  "entry_cost_distribution": {
+    "p0": 459.99999046325684,
+    "p10": 910.0000381469727,
+    "p100": 2870.0000762939453,
+    "p25": 1077.5000095367432,
+    "p50": 1350.0,
+    "p75": 1694.9999809265137,
+    "p90": 2033.9999389648442,
+    "p95": 2157.000007629394
+  },
+  "entry_cost_mean": 1419.6648067602232,
+  "entry_cost_std": 440.52529754358795,
+  "experiment_id": "mechbase_opening_reversion_v2_pruned_gated_integer_contract",
+  "min_viable_diagnostics": {
+    "account_size_for_static_participation_rate": {
+      "10%": 364000.01525878906,
+      "100%": 1148000.0305175781,
+      "25%": 431000.00381469727,
+      "50%": 540000.0,
+      "75%": 677999.9923706055,
+      "90%": 813599.9755859376
+    },
+    "entry_cost_per_contract": {
+      "p0": 459.99999046325684,
+      "p10": 910.0000381469727,
+      "p100": 2870.0000762939453,
+      "p25": 1077.5000095367432,
+      "p50": 1350.0,
+      "p75": 1694.9999809265137,
+      "p90": 2033.9999389648442,
+      "p95": 2157.000007629394
+    },
+    "min_account_to_afford_that_percentile_trade": {
+      "p0": 183999.99618530273,
+      "p10": 364000.01525878906,
+      "p100": 1148000.0305175781,
+      "p25": 431000.00381469727,
+      "p50": 540000.0,
+      "p75": 677999.9923706055,
+      "p90": 813599.9755859376,
+      "p95": 862800.0030517576
+    },
+    "n_baseline_trades": 179
+  },
+  "n_baseline_trades": 179,
+  "note": "Additive-dollar integer-contract simulation. Each trade's per-contract net_pnl_dollars (including spread cost) is scaled by floor((equity*f)/(entry_mid*100)) integer contracts. Unaffordable trades (contracts==0) are skipped, equity unchanged.",
+  "per_account": [
+    {
+      "account_size": 100000,
+      "metrics": {
+        "account_size": 100000,
+        "avg_contracts_per_executed": 0.0,
+        "cagr": 0.0,
+        "calmar": 0.0,
+        "final_equity": 100000.0,
+        "max_contracts_per_trade": 0,
+        "max_dd": 0.0,
+        "median_contracts_per_trade": 0.0,
+        "n_baseline_trades": 179,
+        "n_executed": 0,
+        "n_skipped_affordability": 179,
+        "participation_rate": 0.0,
+        "total_return": 0.0,
+        "ulcer_index": 0.0,
+        "worst_20_trade_dd": 0.0
+      }
+    },
+    {
+      "account_size": 250000,
+      "metrics": {
+        "account_size": 250000,
+        "avg_contracts_per_executed": 1.0,
+        "cagr": -0.0007604230179949489,
+        "calmar": -0.7498874670402366,
+        "final_equity": 249773.70001907347,
+        "max_contracts_per_trade": 1,
+        "max_dd": 0.001014049509316772,
+        "median_contracts_per_trade": 1.0,
+        "n_baseline_trades": 179,
+        "n_executed": 2,
+        "n_skipped_affordability": 177,
+        "participation_rate": 0.0111731843575419,
+        "total_return": -0.0009051999237061246,
+        "ulcer_index": 0.00044071960000883104,
+        "worst_20_trade_dd": 0.001014049509316772
+      }
+    },
+    {
+      "account_size": 500000,
+      "metrics": {
+        "account_size": 500000,
+        "avg_contracts_per_executed": 1.0263157894736843,
+        "cagr": 0.004904402850864464,
+        "calmar": 2.4746035568469433,
+        "final_equity": 502920.6491689128,
+        "max_contracts_per_trade": 2,
+        "max_dd": 0.001981894367400607,
+        "median_contracts_per_trade": 1.0,
+        "n_baseline_trades": 179,
+        "n_executed": 76,
+        "n_skipped_affordability": 103,
+        "participation_rate": 0.4245810055865922,
+        "total_return": 0.005841298337825574,
+        "ulcer_index": 0.0009226310677596132,
+        "worst_20_trade_dd": 0.001981894367400607
+      }
+    },
+    {
+      "account_size": 1000000,
+      "metrics": {
+        "account_size": 1000000,
+        "avg_contracts_per_executed": 1.4943181818181819,
+        "cagr": 0.008444694336830816,
+        "calmar": 2.982089297801078,
+        "final_equity": 1010061.2745481274,
+        "max_contracts_per_trade": 5,
+        "max_dd": 0.0028318046488606946,
+        "median_contracts_per_trade": 1.0,
+        "n_baseline_trades": 179,
+        "n_executed": 176,
+        "n_skipped_affordability": 3,
+        "participation_rate": 0.9832402234636871,
+        "total_return": 0.010061274548127433,
+        "ulcer_index": 0.0013698085918588106,
+        "worst_20_trade_dd": 0.0024365552977401697
+      }
+    },
+    {
+      "account_size": 2000000,
+      "metrics": {
+        "account_size": 2000000,
+        "avg_contracts_per_executed": 3.3910614525139664,
+        "cagr": 0.008763421688450679,
+        "calmar": 2.6922093724775045,
+        "final_equity": 2020882.6631290573,
+        "max_contracts_per_trade": 10,
+        "max_dd": 0.003255104071042641,
+        "median_contracts_per_trade": 3.0,
+        "n_baseline_trades": 179,
+        "n_executed": 179,
+        "n_skipped_affordability": 0,
+        "participation_rate": 1.0,
+        "total_return": 0.010441331564528636,
+        "ulcer_index": 0.001602084962775527,
+        "worst_20_trade_dd": 0.0031317372752255853
+      }
+    }
+  ],
+  "sizing_fraction": 0.0025,
+  "source_trades": "v2/artifacts/mechanical_baseline_opening_reversion_v2_pruned_gated/trades.csv",
+  "spx_multiplier": 100,
+  "test_calendar_days": 300
+}
