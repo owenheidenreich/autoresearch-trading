@@ -1,16 +1,53 @@
 # Strategy Card — Opening-Structure Reversion
 
-## Hypothesis
+## Status — revised 2026-04-19 after V1 / V2 falsification sequence
 
-When the opening auction overextends away from fair value and fails to keep
-going, the best 0DTE opportunity is the **reclaim / reject back toward VWAP
-and opening structure**, expressed with SPX/SPXW same-day long premium.
+The hand-coded V1A / V1B mechanical triggers built around "reclaim back
+through VWAP" were **falsified** on held-out folds. V2 (a learned
+RandomForest scorer over the 12-core shortlist) then **passed**
+falsification with +2.28pp edge over a same-side same-day random-bar
+control, and V2 stress-test ablations revealed the learned model's edge
+is NOT driven by the reclaim event itself — the load-bearing features
+are overnight displacement (`opening_gap_pct`), first-15 settlement
+(`first15_close_position`), and first-15 acceptance
+(`first15_acceptance`). `vwap_reclaim_state` is actively slightly
+harmful to the learned baseline.
 
-This is a **reversion** thesis, not a breakout thesis:
+The reversion FAMILY survives; the central-event description has
+shifted. This card has been rewritten accordingly.
 
-- buy calls after failed downside extension and reclaim
-- buy puts after failed upside extension and reject
-- use higher-delta contracts because the hold is short and theta is expensive
+## Hypothesis (post V1/V2)
+
+When the opening auction displaces away from the prior-day close and
+fails to extend that move into the first 15 minutes of RTH, the session
+tends to accept back into the opening-range structure and offer a
+short-horizon 0DTE long-premium opportunity on the rejecting side.
+
+The predictive core of "which bar is a good entry" is:
+
+1. **Overnight / opening displacement** (`opening_gap_pct`).
+2. **First-15-minute settlement** (`first15_close_position`) — where the
+   opening auction's 15-minute close sat within its own range.
+3. **First-15 acceptance** (`first15_acceptance`) — whether current
+   price is being accepted back inside the opening 15 minutes, neutral,
+   or still pushing outside.
+
+The reclaim/reject event itself (`vwap_reclaim_state`) is **not** part
+of the predictive core. The original thesis writeup centered on that
+event; the V2 stress-test ablations refute it as a load-bearing signal
+for this dataset.
+
+This is a **reversion** thesis in the sense that the trade benefits
+when price accepts back into opening structure rather than continuing
+the pre-open displacement — but the operational definition is opening
+STRUCTURE-based, not a reclaim-through-VWAP event.
+
+- buy calls on days with a downside gap / low-settled first-15 that the
+  session does not push lower
+- buy puts on days with an upside gap / high-settled first-15 that the
+  session does not push higher
+- use higher-delta contracts because the hold is short and theta is
+  expensive
 
 ## Instrument and trade object
 
@@ -61,11 +98,15 @@ Required conditions:
 
 ## Mechanical baseline specification
 
-### Spot-side trigger
+### Historical: V1A / V1B hand-coded trigger (FALSIFIED)
 
-Use raw spot/session state, not the normalized `X` tensor.
+The original spot-side trigger below was falsified by the V1A / V1B
+runs. It is kept here for reference only; do not use it for new
+baselines. See `v2/analysis/mechanical_baseline_opening_reversion.py`
+and `v2/analysis/mechanical_baseline_v1b_opening_reversion.py` for the
+exact implementations that were tested.
 
-Bull call trigger:
+Bull call trigger (falsified):
 
 - `bar_of_day` between `15` and `120`
 - price had been at least `10 bps` below session VWAP within the prior `10`
@@ -74,14 +115,40 @@ Bull call trigger:
 - `first15_acceptance >= 0`
 - `bar_delta > 0`
 
-Bear put trigger:
+Bear put trigger (falsified): symmetric.
 
-- `bar_of_day` between `15` and `120`
-- price had been at least `10 bps` above session VWAP within the prior `10`
-  bars
-- current bar closes back below VWAP
-- `first15_acceptance <= 0`
-- `bar_delta < 0`
+V1A aggregate on held-out folds: mean_net_pct −0.354%, gap vs Control
+A +0.16pp (narrow loss). V1B (same trigger + `iv_percentile` / `vrp`
+gates) improved the gap to +1.02pp but still failed the bar.
+V2 stress-test ablation confirmed that removing the `vwap_reclaim_state`
+feature from the learned model improves it.
+
+### Current: V2 learned-scorer baseline (PROMOTED)
+
+Implementation: [v2/analysis/mechanical_baseline_v2_learned_scorer.py](../analysis/mechanical_baseline_v2_learned_scorer.py).
+Plan: [mechanical_baseline_v2_plan.md](mechanical_baseline_v2_plan.md).
+Stress test verdict: passed all three promotion gates (bootstrap
+gap_vs_A 95% CI [+0.19%, +4.92%], null p = 0.010 for gap_vs_A,
+ablation story intact). See [`../lab_notebook.md`](../lab_notebook.md)
+for the full stress-test entry.
+
+Pipeline (unchanged across V1A → V1B → V2 except for the bar-selection
+mechanism):
+
+1. **V1B premium gates.** Per fold from `train_days` only, 3×3 grid
+   over `iv_percentile ≤ {0.6, 0.7, 0.8}` × `vrp ≤ {median, p75, 0
+   if feasible}`. Every fold selected `iv ≤ 0.8, vrp ≤ p75`.
+2. **Candidate universe.** Every V1B-admissible bar (gates pass +
+   contract exists after the dual spread gate) in `[BAR_LO=15,
+   BAR_HI=120]`, both sides (C and P).
+3. **Learned scorer.** `sklearn.ensemble.RandomForestRegressor(
+   n_estimators=200, max_depth=5, min_samples_leaf=20)` over the
+   12-core shortlist features + side indicator. Trained on simulated
+   trade outcomes (realized `net_pct`) at every `train_days`
+   candidate.
+4. **Per-day selection.** Score every candidate on each test day,
+   take argmax. No threshold.
+5. **Exits and controls.** Unchanged from V1B.
 
 ### Contract selection
 

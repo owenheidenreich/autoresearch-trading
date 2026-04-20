@@ -21,24 +21,84 @@ The live artifact has **79 base features** (32 price + 14 session + 12 option
   table, point-in-time safety classification, and thesis tags. Whenever this
   file disagrees with the schema, the schema wins.
 
-## Core features
+## History note — the shortlist was revised by the V2 stress test
 
-Use these `12` as the first-pass core set.
+This file originally listed 12 core features built around the assumption
+that the **reclaim event itself** (`vwap_reclaim_state`) was the central
+signal. The V1A / V1B mechanical baselines (2026-04-19) built a hand-coded
+reclaim/reject trigger on that premise and failed their falsification
+bar. V2 (the learned RandomForest scorer over the same 12-core set)
+passed falsification with a +2.28pp gap vs Control A.
 
-| Feature | Purpose in the thesis | Source | Why it belongs |
-|---|---|---|---|
-| `vwap_dist` | Measures extension away from fair value | live base feature | Reversion starts with stretch away from VWAP |
-| `vwap_reclaim_state` | Detects reclaim / reject event | live base feature | Captures the actual reversal moment |
-| `vwap_slope` | Shows whether fair value is rising or falling | live base feature | Prevents taking reclaim signals against a sharply sloping VWAP blindly |
-| `opening_gap_pct` | Encodes overnight displacement | live base feature | Gap context changes whether the move is a fade or continuation risk |
-| `session_open_dist` | Measures snap-back versus the opening print | live base feature | Useful for gap-fade style reversions |
-| `first15_close_position` | Where the opening auction settled | live base feature | Tells whether early structure accepted high or low |
-| `first15_acceptance` | Whether current price is being accepted back into opening structure | live base feature | Distinguishes reclaim from ongoing expansion |
-| `bar_delta` | Immediate directional conviction of the signal bar | live base feature | Filters weak reclaims / rejects |
-| `volume_climax_signal` | Proxy for exhaustion and failed push | live base feature | Reversion often starts after an emotional/exhaustive move |
-| `atm_gamma` | Measures responsiveness of long premium | live base feature | High gamma makes the short reversion move worth expressing |
-| `atm_theta_per_bar` | Measures cost of being wrong or late | live base feature | Prevents ignoring the 0DTE decay tax |
-| `option_spread_pct` | Execution feasibility | live base feature | A good spot pattern can still be untradeable through wide premium |
+The V2 stress-test ablations (2026-04-19, committed same day) then
+revealed that the model's edge is concentrated in a *different* subset
+of the shortlist:
+
+- `first15_acceptance` is the single most load-bearing feature — removing
+  it alone flips strategy mean and gap_vs_A negative.
+- `opening_gap_pct` and `first15_close_position` are materially
+  important.
+- **`vwap_reclaim_state` is actively slightly harmful.** Ablating it
+  *improves* the learned strategy by +0.36pp mean and +0.30pp gap. The
+  original centerpiece of the shortlist is falsified for the learned
+  baseline.
+- `bar_delta` is useful (removing it drops gap by 0.79pp) but not the
+  centerpiece.
+
+The shortlist below has been reorganized to reflect what the model
+actually learned. The reversion thesis FAMILY survives; its central
+event has shifted from "reclaim back through VWAP" to "displacement +
+first-15 settlement + first-15 acceptance."
+
+## Core features (post-V2 stress test)
+
+These are the features that survive as load-bearing for the V2 learned
+scorer. Listed in decreasing order of measured importance / ablation
+impact.
+
+### Load-bearing (V2 collapses without these)
+
+| Feature | Role in the learned model | Why it belongs |
+|---|---|---|
+| `first15_acceptance` | First-15 acceptance state (bounded `[-1, +1]`) | Single most important feature in RF importance across all 5 folds. Ablation drops mean to −0.73%, gap to −0.51%. |
+| `opening_gap_pct` | Overnight displacement | #1 RF importance in every fold (24-32%). Ablation drops mean by 0.74pp, gap by 0.63pp. |
+| `first15_close_position` | Where the opening auction settled | Consistent #2 RF importance. Ablation drops gap by 1.24pp. |
+
+### Supporting (material but not catastrophic if removed)
+
+| Feature | Role | Ablation Δ gap |
+|---|---|---:|
+| `bar_delta` | Directional conviction of the current bar | −0.79pp |
+| `atm_theta_per_bar` | 0DTE decay cost at the candidate bar | (top-5 RF importance in 4 of 5 folds; not single-feature ablated) |
+| `atm_gamma` | Responsiveness of long premium to the spot move | (top-5 RF importance in 2 of 5 folds) |
+| `vwap_dist` | Distance from session VWAP | (top-5 RF importance in 3 of 5 folds) |
+
+### Execution-quality (kept for feasibility, not as signal)
+
+| Feature | Role |
+|---|---|
+| `option_spread_pct` | Context-level spread gate; rejected entries when the near-ATM call spread is > 20%. Not in the learned model's top features; kept because a good spot pattern is not tradeable through wide premium. |
+
+### Falsified as a core premise
+
+| Feature | Status | Evidence |
+|---|---|---|
+| **`vwap_reclaim_state`** | **Falsified as a core feature for this dataset.** Removing it *improves* V2 mean by +0.36pp and gap by +0.30pp. It is a minor drag on the learned scorer. | V2 stress test ablations, 2026-04-19 lab notebook entry. |
+
+The V1A/V1B hand-coded trigger was built around `vwap_reclaim_state`.
+The learned model finds the feature either uninformative or
+conflicting with the other signals; the pattern it identifies as
+"reclaim" does not coincide with the bars the scorer would choose to
+trade.
+
+### Note on `vwap_slope`, `session_open_dist`, `volume_climax_signal`
+
+These three were in the original core set but did not rank in the V2
+model's top-5 importance in any fold. They have not been stress-tested
+individually (ablation plan focused on the highest- and lowest-impact
+candidates). They stay in the model input set for now — they cost
+nothing — but should not be described as load-bearing without further
+evidence.
 
 *Tag note:* the 2026-04-19 audit tags `option_spread_pct` as
 `execution-quality`, not `reversion`. It stays in the core because a reversion
