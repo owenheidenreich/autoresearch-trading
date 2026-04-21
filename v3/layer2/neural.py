@@ -35,6 +35,23 @@ class Layer2SharedEncoder(nn.Module):
     MLPs relearn that structure per-head and overfit the smaller
     per-head signal. Forcing a shared representation should recover
     what the tree's implicit sharing provides.
+
+    Three optional diagnostic levers for risk-control follow-up:
+
+    - `detach_side=True` detaches the side head's backward path from the
+      trunk. The trunk is optimized by the entry loss only; the side head
+      becomes a linear probe on entry-optimized features. Tests whether
+      the multitask DD gap comes from the side head's gradient
+      corrupting the shared representation.
+    - `side_dropout` (if not None) applies an ADDITIONAL dropout layer
+      to the trunk's output before it reaches the side head. Trunk
+      dropout remains `dropout`. Tests whether higher regularisation
+      specifically on the side path reduces correlated errors.
+    - Wrong-side-alpha (applied in the loss, not here) scales side
+      loss by `alpha` when prediction and target disagree in sign.
+
+    All three are additive; defaults reproduce the original shared
+    encoder exactly.
     """
 
     def __init__(
@@ -43,6 +60,8 @@ class Layer2SharedEncoder(nn.Module):
         hidden_dim: int = 128,
         depth: int = 2,
         dropout: float = 0.10,
+        side_dropout: Optional[float] = None,
+        detach_side: bool = False,
     ) -> None:
         super().__init__()
         trunk_layers: list[nn.Module] = []
@@ -55,11 +74,16 @@ class Layer2SharedEncoder(nn.Module):
         self.trunk = nn.Sequential(*trunk_layers)
         self.entry_head = nn.Linear(hidden_dim, 1)
         self.side_head = nn.Linear(hidden_dim, 1)
+        self.side_extra_dropout = nn.Dropout(side_dropout) if side_dropout is not None else None
+        self.detach_side = bool(detach_side)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         h = self.trunk(x)
         entry = self.entry_head(h).squeeze(-1)
-        side = self.side_head(h).squeeze(-1)
+        h_side = h.detach() if self.detach_side else h
+        if self.side_extra_dropout is not None:
+            h_side = self.side_extra_dropout(h_side)
+        side = self.side_head(h_side).squeeze(-1)
         return entry, side
 
 
@@ -266,6 +290,8 @@ class SharedEncoderPredictor:
     dropout: float
     head: str  # "entry" or "side"
     device_hint: str = "cpu"
+    side_dropout: Optional[float] = None
+    detach_side: bool = False
 
     def _build_model(self, device: str = "cpu") -> Layer2SharedEncoder:
         model = Layer2SharedEncoder(
@@ -273,6 +299,8 @@ class SharedEncoderPredictor:
             hidden_dim=self.hidden_dim,
             depth=self.depth,
             dropout=self.dropout,
+            side_dropout=self.side_dropout,
+            detach_side=self.detach_side,
         )
         model.load_state_dict(self.state_dict)
         model.to(device)
@@ -307,15 +335,22 @@ def _multitask_huber(
     w_entry_loss: float,
     w_side_loss: float,
     delta: float = 1.0,
+    wrong_side_alpha: float = 1.0,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Weighted Huber on each head, summed with task-level weights.
 
-    Samples with per-head weight 0 contribute nothing to that head's loss;
-    weighted_huber_loss_internal clamps the denominator so all-zero weights
-    yield loss 0 instead of NaN.
+    Samples with per-head weight 0 contribute nothing to that head's loss.
+
+    `wrong_side_alpha` >= 1.0 multiplies the side loss elementwise where
+    prediction and target disagree in sign. `alpha=1.0` recovers the
+    symmetric Huber. `alpha=2.0` penalises wrong-side samples twice as
+    hard. Target magnitudes near zero fall in the "agree" bucket
+    mechanically (pred*target >= 0 when target == 0).
     """
     entry_loss = _weighted_huber(entry_pred, y_entry, w_entry, delta=delta)
-    side_loss = _weighted_huber(side_pred, y_side, w_side, delta=delta)
+    side_loss = _weighted_huber_asymmetric(
+        side_pred, y_side, w_side, delta=delta, wrong_side_alpha=wrong_side_alpha
+    )
     total = w_entry_loss * entry_loss + w_side_loss * side_loss
     return total, entry_loss.detach(), side_loss.detach()
 
@@ -328,6 +363,35 @@ def _weighted_huber(
     quadratic = torch.minimum(abs_err, torch.tensor(delta, device=pred.device))
     linear = abs_err - quadratic
     loss = 0.5 * quadratic.pow(2) + delta * linear
+    denom = torch.clamp(weight.sum(), min=1.0)
+    return (loss * weight).sum() / denom
+
+
+def _weighted_huber_asymmetric(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    weight: torch.Tensor,
+    delta: float = 1.0,
+    wrong_side_alpha: float = 1.0,
+) -> torch.Tensor:
+    """Same as `_weighted_huber` except elementwise losses where pred and
+    target have OPPOSITE signs are scaled by `wrong_side_alpha`.
+
+    For `wrong_side_alpha=1.0` this reduces exactly to `_weighted_huber`.
+    """
+    err = pred - target
+    abs_err = torch.abs(err)
+    quadratic = torch.minimum(abs_err, torch.tensor(delta, device=pred.device))
+    linear = abs_err - quadratic
+    loss = 0.5 * quadratic.pow(2) + delta * linear
+    if wrong_side_alpha != 1.0:
+        wrong_side = (pred * target) < 0.0
+        mult = torch.where(
+            wrong_side,
+            torch.full_like(loss, float(wrong_side_alpha)),
+            torch.ones_like(loss),
+        )
+        loss = loss * mult
     denom = torch.clamp(weight.sum(), min=1.0)
     return (loss * weight).sum() / denom
 
@@ -360,6 +424,9 @@ def train_multitask(
     batch_size: int,
     max_epochs: int,
     patience: int,
+    side_dropout: Optional[float] = None,
+    detach_side: bool = False,
+    wrong_side_alpha: float = 1.0,
 ) -> tuple[SharedEncoderPredictor, SharedEncoderPredictor, dict[str, float]]:
     """Train a Layer2SharedEncoder on entry + side targets simultaneously.
 
@@ -413,6 +480,8 @@ def train_multitask(
         hidden_dim=hidden_dim,
         depth=depth,
         dropout=dropout,
+        side_dropout=side_dropout,
+        detach_side=detach_side,
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
@@ -435,7 +504,8 @@ def train_multitask(
             optimizer.zero_grad()
             ep, sp = model(xb)
             total, _, _ = _multitask_huber(
-                ep, sp, yeb, ysb, web, wsb, w_entry_loss, w_side_loss
+                ep, sp, yeb, ysb, web, wsb, w_entry_loss, w_side_loss,
+                wrong_side_alpha=wrong_side_alpha,
             )
             total.backward()
             optimizer.step()
@@ -454,7 +524,8 @@ def train_multitask(
                 wsb = wsb.to(device)
                 ep, sp = model(xb)
                 total, el, sl = _multitask_huber(
-                    ep, sp, yeb, ysb, web, wsb, w_entry_loss, w_side_loss
+                    ep, sp, yeb, ysb, web, wsb, w_entry_loss, w_side_loss,
+                    wrong_side_alpha=wrong_side_alpha,
                 )
                 v_total.append(total.item())
                 v_entry.append(el.item())
@@ -487,6 +558,8 @@ def train_multitask(
         dropout=dropout,
         head="entry",
         device_hint="cuda" if device == "cuda" else "cpu",
+        side_dropout=side_dropout,
+        detach_side=detach_side,
     )
     predictor_side = SharedEncoderPredictor(
         state_dict=best_state,
@@ -498,6 +571,8 @@ def train_multitask(
         dropout=dropout,
         head="side",
         device_hint="cuda" if device == "cuda" else "cpu",
+        side_dropout=side_dropout,
+        detach_side=detach_side,
     )
     info = {
         "best_val_loss": float(best_val),

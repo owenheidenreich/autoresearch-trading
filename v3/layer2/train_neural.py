@@ -52,6 +52,26 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--w-entry", type=float, default=1.0, help="Multitask loss weight on the entry head.")
     p.add_argument("--w-side", type=float, default=1.0, help="Multitask loss weight on the side head.")
     p.add_argument(
+        "--side-dropout",
+        type=float,
+        default=None,
+        help="If set, applies an ADDITIONAL dropout layer on the trunk output before the side head. "
+             "Leaves trunk dropout = --dropout. Default None = no extra dropout.",
+    )
+    p.add_argument(
+        "--detach-side",
+        action="store_true",
+        help="Detach the side head's gradient from the trunk. Side head becomes a linear probe "
+             "on entry-optimized features. Default off.",
+    )
+    p.add_argument(
+        "--wrong-side-alpha",
+        type=float,
+        default=1.0,
+        help="Elementwise multiplier on side loss where prediction and target have OPPOSITE signs. "
+             "1.0 = symmetric Huber (default). >1.0 penalises wrong-side samples harder.",
+    )
+    p.add_argument(
         "--calibration-mode",
         default="search_mean_time_stop",
         choices=("search_mean_time_stop", "fixed_quantiles"),
@@ -221,6 +241,9 @@ def main() -> int:
             batch_size=args.batch_size,
             max_epochs=args.max_epochs,
             patience=args.patience,
+            side_dropout=args.side_dropout,
+            detach_side=args.detach_side,
+            wrong_side_alpha=args.wrong_side_alpha,
         )
         # Preserve the per-fold info dict shape the manifest/audit expect,
         # but split the multitask diagnostics into entry/side views.
@@ -370,6 +393,9 @@ def main() -> int:
         "patience": args.patience,
         "w_entry": args.w_entry,
         "w_side": args.w_side,
+        "side_dropout": args.side_dropout,
+        "detach_side": args.detach_side,
+        "wrong_side_alpha": args.wrong_side_alpha,
         "elapsed_seconds": time.time() - t0,
         "feature_names": feature_names,
         "fold_reports": fold_reports,
@@ -408,6 +434,9 @@ def main() -> int:
         "architecture": "shared_encoder",
         "w_entry": args.w_entry,
         "w_side": args.w_side,
+        "side_dropout": args.side_dropout,
+        "detach_side": args.detach_side,
+        "wrong_side_alpha": args.wrong_side_alpha,
     })
 
     print("Saved neural models + OOF audit")
