@@ -95,6 +95,12 @@ _NO_NORMALIZE = {
     'power_hour_flag',        # {0, 1}
     'volume_climax_signal',   # [0, 3]
     'breakout_confirmation',  # [-2, 2]
+    # v3 W2a additions — bounded / discrete by construction.
+    'sigma_pos',                # clipped to [-5, 5] in market_structure
+    'inside_first15',           # {0, 1}
+    'late_window_40_120_flag',  # {0, 1}
+    'omar_mid_pos_units',       # clipped to [-10, 10] by construction
+    'last10_break_state',       # {-1, 0, +1}
 }
 
 
@@ -154,7 +160,7 @@ def normalize_features(features: np.ndarray, valid: np.ndarray,
 # Feature Contract
 # ---------------------------------------------------------------------------
 
-FEATURE_CONTRACT_VERSION = "v2.1"
+FEATURE_CONTRACT_VERSION = "v2.2"  # W2a: +8 late-session market-structure features (81 -> 89)
 
 
 def validate_feature_shape(arr: np.ndarray) -> bool:

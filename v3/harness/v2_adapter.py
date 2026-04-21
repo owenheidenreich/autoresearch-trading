@@ -110,6 +110,21 @@ class V2Dataset:
             "atm_iv",
             "iv_percentile",
         }
+        # Optional features from W2a — present on FEATURE_CONTRACT_VERSION >= v2.2.
+        # v3's BarContext does not consume these directly (sigma_pos still comes
+        # from the shared helper so old and new data.pt both work). We track
+        # them in `idx` opportunistically so downstream research scripts can
+        # read them from the flat array without another feature_names lookup.
+        optional = {
+            "sigma_pos",
+            "omar_retest_dist_norm",
+            "omar_range_pct",
+            "last10_range_over_omar",
+            "inside_first15",
+            "late_window_40_120_flag",
+            "omar_mid_pos_units",
+            "last10_break_state",
+        }
         missing = required - set(names)
         if missing:
             raise RuntimeError(
@@ -117,6 +132,9 @@ class V2Dataset:
                 "Regenerate with the v3 compute_features.py."
             )
         idx = {name: names.index(name) for name in required}
+        for name in optional:
+            if name in names:
+                idx[name] = names.index(name)
 
         spx_df = pickle.load(open(spx_1min_path, "rb"))
         first15: dict[str, tuple[float, float]] = {}

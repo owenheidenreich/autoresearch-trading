@@ -20,6 +20,8 @@ import numpy as np
 from scipy.stats import norm as _norm_dist
 from scipy.optimize import brentq as _brentq
 
+from v2.core import market_structure
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -272,7 +274,7 @@ def compute_price_features(
     import pandas as pd
 
     n = len(spx_close)
-    N_FEAT = 48
+    N_FEAT = 56
     feat = np.zeros((n, N_FEAT), dtype=np.float64)
     day_ends = day_starts[1:] + [n]
     day_starts_arr = np.array(day_starts)
@@ -910,6 +912,71 @@ def compute_price_features(
     feat[:, fi] = breakout
     fi += 1
 
+    # -----------------------------------------------------------------------
+    # v3 W2a additions: late-session market-structure soft features.
+    # All share a single source of truth in v2.core.market_structure so the
+    # v3 teacher / adapter path and the v2 feature pipeline compute the same
+    # numbers for sigma_pos, OMAR, and last-10 state. See
+    # v3/reference/orc_direction_fix_2026_04_20.md and the layered
+    # implementation plan (W2a) for provenance.
+    # -----------------------------------------------------------------------
+
+    sigma_arr = market_structure.sigma_pos_arrays(c, spy_close, vol, day_starts)
+    omar = market_structure.omar_arrays(h, lo, day_starts)
+    last10 = market_structure.last10_arrays(h, lo, day_starts)
+
+    omar_range_safe = np.maximum(omar["range"], 1e-6)
+
+    # [48] sigma_pos (SPY-derived VWAP σ-position, SPX-scaled)
+    feat[:, fi] = sigma_arr
+    fi += 1
+
+    # [49] omar_retest_dist_norm
+    #   min distance from close to OMAR high/low/mid, divided by OMAR range.
+    d_high = np.abs(c - omar["high"])
+    d_low = np.abs(c - omar["low"])
+    d_mid = np.abs(c - omar["mid"])
+    feat[:, fi] = np.minimum(np.minimum(d_high, d_low), d_mid) / omar_range_safe
+    fi += 1
+
+    # [50] omar_range_pct — opening volatility unit (OMAR.range / close)
+    feat[:, fi] = np.where(c > 0, omar["range"] / np.maximum(c, 1e-6), 0.0)
+    fi += 1
+
+    # [51] last10_range_over_omar — the squeeze metric
+    feat[:, fi] = last10["range"] / omar_range_safe
+    fi += 1
+
+    # [52] inside_first15 — {0, 1}
+    inside_f15 = (
+        (c >= first15_low_arr)
+        & (c <= first15_high_arr)
+        & (first15_high_arr > 0)
+        & (first15_low_arr > 0)
+    ).astype(np.float64)
+    feat[:, fi] = inside_f15
+    fi += 1
+
+    # [53] late_window_40_120_flag — {0, 1}
+    feat[:, fi] = ((bod >= 40) & (bod <= 120)).astype(np.float64)
+    fi += 1
+
+    # [54] omar_mid_pos_units — signed (close − OMAR.mid) / OMAR.range
+    feat[:, fi] = np.clip((c - omar["mid"]) / omar_range_safe, -10.0, 10.0)
+    fi += 1
+
+    # [55] last10_break_state — {+1, 0, −1}
+    break_state = np.zeros(n, dtype=np.float64)
+    # Skip bar 0 of each day (no history): last10_arrays returns range=0 there,
+    # which would never satisfy either break condition because last10.high ==
+    # close and last10.low == close at ds.
+    above = c > last10["high"]
+    below = c < last10["low"]
+    break_state[above] = 1.0
+    break_state[below] = -1.0
+    feat[:, fi] = break_state
+    fi += 1
+
     assert fi == N_FEAT, f"Expected {N_FEAT} features, assigned {fi}"
     return feat
 
@@ -1144,6 +1211,10 @@ SESSION_FEATURE_NAMES = [
     'ib_extension_pct', 'marker_10am', 'marker_11am', 'marker_1130am',
     'lunch_flag', 'power_hour_flag', 'volume_climax_signal',
     'breakout_confirmation',
+    # v3 W2a additions — late-session market-structure soft features.
+    'sigma_pos', 'omar_retest_dist_norm', 'omar_range_pct',
+    'last10_range_over_omar', 'inside_first15',
+    'late_window_40_120_flag', 'omar_mid_pos_units', 'last10_break_state',
 ]
 
 OPTION_FEATURE_NAMES = [
