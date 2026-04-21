@@ -4,7 +4,7 @@
 # ===========================================================================
 # CV pipeline (Claude drives each experiment):
 #   ./deploy.sh boot                    → Deploy GPU container on Akash
-#   ./deploy.sh start                   → Upload v2 codebase + data, install deps
+#   ./deploy.sh start                   → Upload v2+v3 codebase + data + Layer-2 bundle, install deps
 #   ./deploy.sh run_screen_latest ID    → Single-fold parity debug (no artifact)
 #   ./deploy.sh run_screen_mini ID      → 3-fold regime triage (no artifact)
 #   ./deploy.sh run_cv ID               → Full 5-fold CV, emits CV_EVAL artifact
@@ -516,19 +516,36 @@ cmd_start() {
     source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
     source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
     log "Packaging v2 workspace snapshot..."
+    # v3/ is included for Layer-2 training paths when present. v3/artifacts
+    # is excluded because most of it is run outputs, not inputs; the one
+    # file v3 training actually needs (v3/artifacts/layer2_dataset.pkl) is
+    # uploaded separately below. Absent-v3 checkouts still work.
+    local tar_include=(v2 pyproject.toml CLAUDE.md)
+    [[ -d "$PROJECT_ROOT/v3" ]] && tar_include+=(v3)
     tar -h -czf "$bundle" -C "$PROJECT_ROOT" \
         --no-mac-metadata --no-xattrs \
         --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
         --exclude='*.pt' --exclude='results' --exclude='archive' \
         --exclude='archive_quarantine' \
-        --exclude='v2/artifacts' \
-        v2 pyproject.toml CLAUDE.md
+        --exclude='v2/artifacts' --exclude='v3/artifacts' \
+        "${tar_include[@]}"
     bundle_sha=$(shasum -a 256 "$bundle" | awk '{print $1}')
     log "Uploading workspace snapshot ($(du -h "$bundle" | cut -f1), sha256=$bundle_sha)..."
     scp_retry "$bundle" "root@$SSH_HOST:/root/v2-workspace.tgz"
     rm -f "$bundle"
-    ssh_cmd "rm -rf /root/v2 && mkdir -p /root && tar -xzf /root/v2-workspace.tgz -C /root 2>/dev/null"
+    ssh_cmd "rm -rf /root/v2 /root/v3 && mkdir -p /root && tar -xzf /root/v2-workspace.tgz -C /root 2>/dev/null"
     ssh_cmd "mkdir -p /root/v2/models /root/v2/state /root/v2/output && rm -f /root/v2-workspace.tgz"
+
+    # Upload the Layer-2 export bundle if it exists locally. Small (~50MB),
+    # required by v3.layer2.train_* / replay when running on remote.
+    local layer2_dataset="$PROJECT_ROOT/v3/artifacts/layer2_dataset.pkl"
+    if [[ -f "$layer2_dataset" ]]; then
+        log "Uploading Layer-2 export bundle ($(du -h "$layer2_dataset" | cut -f1))..."
+        ssh_cmd "mkdir -p /root/v3/artifacts"
+        scp_retry "$layer2_dataset" "root@$SSH_HOST:/root/v3/artifacts/layer2_dataset.pkl"
+    else
+        log "No local $layer2_dataset; skipping Layer-2 bundle upload."
+    fi
 
     # Integrity check: confirm remote train.py matches local snapshot.
     local local_train_sha remote_train_sha
@@ -546,21 +563,23 @@ cmd_start() {
     log "Uploading dataset $(basename "$DATA_PT") ($(du -h "$DATA_PT" | cut -f1))..."
     scp_retry "$DATA_PT" "root@$SSH_HOST:/root/v2/data.pt"
 
-    # Verify data.pt upload integrity via SHA256 comparison
-    if [[ -f "${DATA_PT}.sha256" ]]; then
-        local local_hash
-        local_hash=$(cat "${DATA_PT}.sha256" | tr -d '[:space:]')
-        local remote_hash
-        remote_hash=$(ssh_cmd "sha256sum /root/v2/data.pt | cut -d' ' -f1" 2>/dev/null | tr -d '[:space:]')
-        if [[ -n "$remote_hash" && "$local_hash" != "$remote_hash" ]]; then
-            die "data.pt upload CORRUPTED! Local: ${local_hash:0:16}  Remote: ${remote_hash:0:16}"
-        elif [[ -n "$remote_hash" ]]; then
-            log "data.pt integrity verified (hash: ${local_hash:0:16})"
-        else
-            log "WARNING: Could not verify data.pt hash on remote (sha256sum unavailable)"
-        fi
+    # Verify data.pt upload integrity via SHA256 comparison.
+    # Compute local hash LIVE from the actual file; never read a cached
+    # sidecar. An in-place torch.save to data.pt (common after metadata
+    # patches) does not refresh the .sha256 sidecar, and trusting the
+    # sidecar has caused false "CORRUPTED" aborts here. Also refresh the
+    # sidecar on disk so downstream tools that still read it stay in sync.
+    local local_hash
+    local_hash=$(shasum -a 256 "$DATA_PT" | awk '{print $1}')
+    echo "$local_hash" > "${DATA_PT}.sha256"
+    local remote_hash
+    remote_hash=$(ssh_cmd "sha256sum /root/v2/data.pt | cut -d' ' -f1" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$remote_hash" && "$local_hash" != "$remote_hash" ]]; then
+        die "data.pt upload CORRUPTED! Local: ${local_hash:0:16}  Remote: ${remote_hash:0:16}"
+    elif [[ -n "$remote_hash" ]]; then
+        log "data.pt integrity verified (hash: ${local_hash:0:16})"
     else
-        log "WARNING: No data.pt.sha256 sidecar — skipping integrity check"
+        log "WARNING: Could not verify data.pt hash on remote (sha256sum unavailable)"
     fi
 
     # Upload training-stripped sidecars (drops replay-only fields + float16
@@ -629,22 +648,23 @@ PY
     log "Files on remote GPU node:"
     ssh_cmd "ls -lh /root/v2/train.py /root/v2/data.pt /root/deploy_source.json"
 
-    # Verify GPU dependencies (torch, numpy, pandas, scipy).
-    # These are installed by the SDL container command BEFORE sshd starts,
-    # so they should already be present. If not, attempt a one-shot install.
+    # Verify GPU dependencies (torch, numpy, pandas, scipy, pyarrow).
+    # pyarrow is needed by v3.layer2 (pandas.to_parquet). The other four
+    # come from the SDL container image; pyarrow does not, so we install
+    # it here even if the import check passes for the others.
     log "Verifying GPU dependencies..."
-    if ! ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" -c 'import torch, numpy, pandas, scipy; print(f\"torch={torch.__version__} numpy={numpy.__version__} pandas={pandas.__version__} scipy={scipy.__version__}\")'"; then
-        log "Dependencies missing — installing from requirements-gpu.txt..."
+    if ! ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" -c 'import torch, numpy, pandas, scipy, pyarrow; print(f\"torch={torch.__version__} numpy={numpy.__version__} pandas={pandas.__version__} scipy={scipy.__version__} pyarrow={pyarrow.__version__}\")'"; then
+        log "Dependencies missing — installing..."
         if ! ssh_cmd "pip3 --version >/dev/null 2>&1"; then
             log "pip3 not found — installing..."
             ssh_cmd "apt-get update -qq && apt-get install -y -qq python3-pip >/dev/null 2>&1" \
                 || log "WARNING: pip3 install failed (may not be needed if deps are pre-installed)"
         fi
-        ssh_cmd "pip3 install -q numpy pandas scipy" \
-            || ssh_cmd "python3 -m pip install -q numpy pandas scipy" \
+        ssh_cmd "pip3 install -q numpy pandas scipy pyarrow" \
+            || ssh_cmd "python3 -m pip install -q numpy pandas scipy pyarrow" \
             || die "Failed to install GPU dependencies."
         # Verify again — fatal if still missing
-        ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" -c 'import torch, numpy, pandas, scipy'" \
+        ssh_cmd "$(remote_python_prefix) \"\$PYBIN\" -c 'import torch, numpy, pandas, scipy, pyarrow'" \
             || die "GPU dependencies still missing after install. Container image may be broken."
     fi
     log "Dependencies verified."
