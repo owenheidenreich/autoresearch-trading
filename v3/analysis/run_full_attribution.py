@@ -25,8 +25,82 @@ from v3.reporter.feasibility import build_report as build_feasibility_report
 from v3.reporter.feasibility import format_report as format_feasibility_report
 from v3.reporter.selection_quality import build_report as build_selquality_report
 from v3.reporter.selection_quality import format_report as format_selquality_report
+from v3.reporter import localization as loc
 from v3.teachers.failed_break import FailedBreakTeacher
 from v3.teachers.orc import ORCTeacher
+
+
+def _cohorts_from_attribution(attr: AttributionReport) -> dict[str, loc.LocalizationCohort]:
+    """Convert per-session attribution rows into localization cohorts. Avoids
+    re-parsing the JSON we just wrote."""
+    buckets: dict[str, list[tuple[str, int, str]]] = {}
+    for row in attr.per_session:
+        outcome = row.get("outcome")
+        direction = row.get("oracle_direction")
+        if outcome not in ("entered_right", "side_error", "abstention", "guardrail_suppression"):
+            continue
+        if direction not in ("call", "put"):
+            continue
+        buckets.setdefault(outcome, []).append(
+            (str(row["day"]), int(row["oracle_bar"]), direction)
+        )
+    return {name: loc.LocalizationCohort(name=name, entries=entries) for name, entries in buckets.items()}
+
+
+def _build_localization_section(ds: V2Dataset, attr: AttributionReport) -> str:
+    """Compact stratified-localization addendum for the attribution file.
+
+    Reports B∩C enrichment on the four outcome cohorts with MATCHED-direction
+    controls (replacing the tainted combined_confluence.py:190 1.92× number).
+    Stratified by the 3 default slices for the abstention cohort only.
+    """
+    cohorts = _cohorts_from_attribution(attr)
+    if not cohorts:
+        return "(no cohorts available; attribution had no per-session rows)\n"
+    omar_cache = loc.build_omar_cache()
+    b_and_c = loc.make_feature_b_and_c(omar_cache, omar_threshold=0.5)
+    slices = loc.default_slices(omar_cache)
+
+    lines: list[str] = []
+    lines.append("Feature: B∩C (sigma direction + OMAR retest), matched-direction controls.")
+    lines.append("(Replaces combined_confluence.py:190 — direction-hardcoded controls;")
+    lines.append(" any '1.92× / 39.6%' citation should be retracted in favor of the numbers below.)")
+    lines.append("")
+    for name in ("entered_right", "side_error", "abstention"):
+        cohort = cohorts.get(name)
+        if cohort is None:
+            continue
+        m = loc.measure_localization(
+            ds, cohort,
+            feature_name="B_and_C",
+            feature_fn=b_and_c,
+            control_strategy="matched",
+            control_multiplier=10,
+            binary_threshold=0.5,
+            binary_direction=">=",
+        )
+        lines.append(loc.format_measurement(m))
+        lines.append("")
+    abstention = cohorts.get("abstention")
+    if abstention is not None:
+        lines.append("--- Abstention stratified by default slices ---")
+        for slice_name, slice_fn in slices.items():
+            sub = loc.filter_cohort_by_slice(abstention, ds, slice_fn, suffix=slice_name)
+            if not sub.entries:
+                lines.append(f"{sub.name}: n=0")
+                continue
+            m = loc.measure_localization(
+                ds, sub,
+                feature_name="B_and_C",
+                feature_fn=b_and_c,
+                control_strategy="matched",
+                control_multiplier=10,
+                binary_threshold=0.5,
+                binary_direction=">=",
+            )
+            lines.append(loc.format_measurement(m))
+            lines.append("")
+    return "\n".join(lines)
 
 
 def main() -> int:
@@ -65,6 +139,9 @@ def main() -> int:
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"attribution_full_{stamp}.txt")
 
+    print("Building stratified localization addendum...")
+    localization_section = _build_localization_section(ds, attr)
+
     with open(out_path, "w") as f:
         f.write(f"# Full-dataset Stage 1 attribution — {stamp}\n\n")
         f.write(f"Sessions: {len(logs)} / {len(all_days)}\n")
@@ -79,6 +156,8 @@ def main() -> int:
         f.write(format_report(attr))
         f.write("\n\n## Selection quality (ALL teacher-entered bars)\n\n")
         f.write(format_selquality_report(selq))
+        f.write("\n\n## Localization (matched-direction controls)\n\n")
+        f.write(localization_section)
         f.write("\n\n## Per-session JSON (for downstream analysis)\n\n")
         for row in attr.per_session:
             f.write(json.dumps(row) + "\n")

@@ -52,6 +52,38 @@ block_060_090                  11448      6.84      0.00     51.53    287.17    
 block_090_120                   2248      8.13      0.00     46.89    922.85      0.12      0.05
 block_120_150                     58      4.21      0.00     20.15    145.75      0.10      0.02
 
+## Localization (matched-direction controls)
+
+Feature: B∩C (sigma direction + OMAR retest), matched-direction controls.
+(Replaces combined_confluence.py:190 — direction-hardcoded controls;
+ any '1.92× / 39.6%' citation should be retracted in favor of the numbers below.)
+
+entered_right                B_and_C                      n_co=   84 n_ct=   840
+  cohort median= +0.000 mean= +0.238  control median= +0.000 mean= +0.237
+  cohort_rate= 23.8% control_rate= 23.7% enrichment=1.01x (threshold=0.5 direction=<=)
+
+side_error                   B_and_C                      n_co=  176 n_ct=  1760
+  cohort median= +0.000 mean= +0.216  control median= +0.000 mean= +0.244
+  cohort_rate= 21.6% control_rate= 24.4% enrichment=0.88x (threshold=0.5 direction=<=)
+
+abstention                   B_and_C                      n_co=  726 n_ct=  7260
+  cohort median= +0.000 mean= +0.284  control median= +0.000 mean= +0.229
+  cohort_rate= 28.4% control_rate= 22.9% enrichment=1.24x (threshold=0.5 direction=<=)
+
+--- Abstention stratified by default slices ---
+abstention__late_session     B_and_C                      n_co=  546 n_ct=  5460
+  cohort median= +0.000 mean= +0.256  control median= +0.000 mean= +0.207
+  cohort_rate= 25.6% control_rate= 20.7% enrichment=1.24x (threshold=0.5 direction=<=)
+
+abstention__inside_first15   B_and_C                      n_co=  288 n_ct=  2880
+  cohort median= +1.000 mean= +0.597  control median= +0.000 mean= +0.236
+  cohort_rate= 59.7% control_rate= 23.6% enrichment=2.53x (threshold=0.5 direction=<=)
+
+abstention__near_omar        B_and_C                      n_co=  228 n_ct=  2280
+  cohort median= +1.000 mean= +0.904  control median= +0.000 mean= +0.241
+  cohort_rate= 90.4% control_rate= 24.1% enrichment=3.75x (threshold=0.5 direction=<=)
+
+
 ## Per-session JSON (for downstream analysis)
 
 {"day": "2022-04-11", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 1523.8951485819337, "outcome": "abstention"}
