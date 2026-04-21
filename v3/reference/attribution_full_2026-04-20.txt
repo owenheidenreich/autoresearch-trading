@@ -1,0 +1,1042 @@
+# Full-dataset Stage 1 attribution — 2026-04-20
+
+Sessions: 986 / 986
+Rails: cap=$1200 (4.8%), daily=$1500 (6.0%), max_losers=2
+
+## Feasibility
+
+stratum                       n_elig   n_sig     cov  cap_mean   cap_p95    supp   low_d_f  verdict
+---------------------------------------------------------------------------------------------------
+all                            89692   25954   0.993     0.349     0.456   0.008     0.002  within envelope
+teacher_failed_break            8203    8203   0.986     0.340     0.450   0.014     0.005  within envelope
+teacher_orc                    17025   17025   0.995     0.353     0.459   0.005     0.001  within envelope
+block_030_060                  29566   11622   0.988     0.358     0.464   0.011     0.003  within envelope
+block_060_090                  29564   11754   0.996     0.344     0.449   0.004     0.001  within envelope
+block_090_120                  29576    2494   0.996     0.329     0.448   0.010     0.004  within envelope
+block_120_150                    986      84   0.997     0.349     0.461   0.000     0.017  within envelope
+
+## Attribution
+
+Sessions processed:               986
+  with opportunity oracle entry:  986
+
+Outcome on oracle bar:
+  guardrail_suppression:          0
+  abstention (no teacher trig):   726
+  side_error (wrong direction):   176
+  entered (right bar+direction):  84
+
+Dollar totals (on right-bar+right-direction entries only):
+  oracle session PnL:                $   2,502,356
+  exit-headroom on actual selection: $     252,781
+  stop/target baseline (-35/+60):    $      64,287
+  time-stop baseline (hold to end):  $     149,330
+
+Gaps (positive = room for improvement):
+  selection_gap:       $           0   (oracle − exit-headroom: hindsight contract choice)
+  exit_gap vs hold:    $     103,450   (exit-headroom − time-stop: hindsight vs naive hold)
+  exit_gap vs -35/+60: $     188,494   (exit-headroom − stop/target: hindsight vs mechanical rule)
+  stop/target − hold:  $     -85,044   (does -35/+60 rule help or hurt vs naive hold?)
+
+## Selection quality (ALL teacher-entered bars)
+
+stratum                            n      mean    median       p95       max   %sub>$1  %sub>$50
+------------------------------------------------------------------------------------------------
+all                            24754      6.96      0.00     51.00   1378.55      0.14      0.05
+teacher_failed_break            8042      8.14      0.00     59.49    922.85      0.15      0.06
+teacher_orc                    16712      6.39      0.00     46.18   1378.55      0.13      0.05
+direction_call                 12912      6.29      0.00     43.41   1378.55      0.12      0.04
+direction_put                  11842      7.69      0.00     58.71    296.59      0.16      0.06
+block_030_060                  11000      6.87      0.00     50.89   1378.55      0.14      0.05
+block_060_090                  11448      6.84      0.00     51.53    287.17      0.15      0.05
+block_090_120                   2248      8.13      0.00     46.89    922.85      0.12      0.05
+block_120_150                     58      4.21      0.00     20.15    145.75      0.10      0.02
+
+## Per-session JSON (for downstream analysis)
+
+{"day": "2022-04-11", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 1523.8951485819337, "outcome": "abstention"}
+{"day": "2022-04-13", "oracle_bar": 40, "oracle_direction": "call", "oracle_pnl": 2545.5300303355607, "outcome": "abstention"}
+{"day": "2022-04-18", "oracle_bar": 55, "oracle_direction": "put", "oracle_pnl": 2383.079876063466, "outcome": "abstention"}
+{"day": "2022-04-20", "oracle_bar": 85, "oracle_direction": "put", "oracle_pnl": 1443.1999252691865, "outcome": "abstention"}
+{"day": "2022-04-22", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 4579.930424291779, "outcome": "abstention"}
+{"day": "2022-04-25", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 2693.566110281018, "outcome": "abstention"}
+{"day": "2022-04-27", "oracle_bar": 62, "oracle_direction": "call", "oracle_pnl": 3904.6700090765203, "outcome": "side_error"}
+{"day": "2022-04-29", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 4541.427756820035, "outcome": "side_error"}
+{"day": "2022-05-02", "oracle_bar": 61, "oracle_direction": "put", "oracle_pnl": 4704.696806791605, "outcome": "side_error"}
+{"day": "2022-05-04", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 1465.2628824807555, "outcome": "abstention"}
+{"day": "2022-05-06", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 3519.0881580190526, "outcome": "abstention"}
+{"day": "2022-05-09", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 2033.3393490812464, "outcome": "side_error"}
+{"day": "2022-05-11", "oracle_bar": 75, "oracle_direction": "put", "oracle_pnl": 5743.740213303119, "outcome": "abstention"}
+{"day": "2022-05-13", "oracle_bar": 75, "oracle_direction": "call", "oracle_pnl": 1246.0749991945922, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1797.7188532556543}
+{"day": "2022-05-16", "oracle_bar": 96, "oracle_direction": "call", "oracle_pnl": 1965.100039509684, "outcome": "abstention"}
+{"day": "2022-05-17", "oracle_bar": 75, "oracle_direction": "call", "oracle_pnl": 2027.6510975481626, "outcome": "abstention"}
+{"day": "2022-05-18", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 6077.39634522609, "outcome": "side_error"}
+{"day": "2022-05-19", "oracle_bar": 81, "oracle_direction": "call", "oracle_pnl": 2703.0500204030423, "outcome": "abstention"}
+{"day": "2022-05-20", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 8179.850040856376, "outcome": "abstention"}
+{"day": "2022-05-23", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 3291.825449161518, "outcome": "abstention"}
+{"day": "2022-05-24", "oracle_bar": 82, "oracle_direction": "call", "oracle_pnl": 2919.5544169361124, "outcome": "side_error"}
+{"day": "2022-05-25", "oracle_bar": 69, "oracle_direction": "put", "oracle_pnl": 1613.550020168349, "outcome": "side_error"}
+{"day": "2022-05-26", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 1836.5099019741267, "outcome": "abstention"}
+{"day": "2022-05-27", "oracle_bar": 92, "oracle_direction": "call", "oracle_pnl": 1191.8286095917224, "outcome": "abstention"}
+{"day": "2022-05-31", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 2522.6999817706646, "outcome": "side_error"}
+{"day": "2022-06-01", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 4895.909960450754, "outcome": "abstention"}
+{"day": "2022-06-03", "oracle_bar": 48, "oracle_direction": "put", "oracle_pnl": 2017.569918671921, "outcome": "abstention"}
+{"day": "2022-06-06", "oracle_bar": 82, "oracle_direction": "put", "oracle_pnl": 3773.8398737272623, "outcome": "side_error"}
+{"day": "2022-06-07", "oracle_bar": 49, "oracle_direction": "call", "oracle_pnl": 2643.8698416977377, "outcome": "side_error"}
+{"day": "2022-06-08", "oracle_bar": 109, "oracle_direction": "put", "oracle_pnl": 3282.989891372845, "outcome": "abstention"}
+{"day": "2022-06-09", "oracle_bar": 69, "oracle_direction": "put", "oracle_pnl": 1545.160015951991, "outcome": "abstention"}
+{"day": "2022-06-10", "oracle_bar": 80, "oracle_direction": "put", "oracle_pnl": 890.1499244307479, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1088.154928311656}
+{"day": "2022-06-13", "oracle_bar": 100, "oracle_direction": "call", "oracle_pnl": 2987.3964967474412, "outcome": "abstention"}
+{"day": "2022-06-14", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 1828.4138034707971, "outcome": "abstention"}
+{"day": "2022-06-15", "oracle_bar": 111, "oracle_direction": "call", "oracle_pnl": 964.7599626237154, "outcome": "abstention"}
+{"day": "2022-06-16", "oracle_bar": 63, "oracle_direction": "put", "oracle_pnl": 1363.0099781227857, "outcome": "abstention"}
+{"day": "2022-06-17", "oracle_bar": 42, "oracle_direction": "put", "oracle_pnl": 2604.7501136343926, "outcome": "abstention"}
+{"day": "2022-06-21", "oracle_bar": 89, "oracle_direction": "put", "oracle_pnl": 1007.3999621778727, "outcome": "side_error"}
+{"day": "2022-06-22", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2955.101968876884, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1077.4479180385051}
+{"day": "2022-06-23", "oracle_bar": 104, "oracle_direction": "put", "oracle_pnl": 3306.5399082355075, "outcome": "abstention"}
+{"day": "2022-06-24", "oracle_bar": 107, "oracle_direction": "call", "oracle_pnl": 605.4304659247398, "outcome": "abstention"}
+{"day": "2022-06-27", "oracle_bar": 118, "oracle_direction": "put", "oracle_pnl": 1512.7000015743076, "outcome": "abstention"}
+{"day": "2022-06-28", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 7326.097786967876, "outcome": "abstention"}
+{"day": "2022-06-29", "oracle_bar": 82, "oracle_direction": "put", "oracle_pnl": 1725.330008462146, "outcome": "side_error"}
+{"day": "2022-06-30", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 4368.080111047328, "outcome": "side_error"}
+{"day": "2022-07-01", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2847.666829362459, "outcome": "abstention"}
+{"day": "2022-07-05", "oracle_bar": 102, "oracle_direction": "call", "oracle_pnl": 2821.6800271567704, "outcome": "abstention"}
+{"day": "2022-07-06", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 1633.093158118982, "outcome": "abstention"}
+{"day": "2022-07-07", "oracle_bar": 51, "oracle_direction": "call", "oracle_pnl": 924.0468851950848, "outcome": "abstention"}
+{"day": "2022-07-08", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2807.239592467949, "outcome": "abstention"}
+{"day": "2022-07-11", "oracle_bar": 93, "oracle_direction": "call", "oracle_pnl": 1426.149962317571, "outcome": "abstention"}
+{"day": "2022-07-12", "oracle_bar": 58, "oracle_direction": "call", "oracle_pnl": 1173.3667090109652, "outcome": "abstention"}
+{"day": "2022-07-13", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 3664.181669636206, "outcome": "abstention"}
+{"day": "2022-07-14", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 2655.968277269658, "outcome": "side_error"}
+{"day": "2022-07-15", "oracle_bar": 51, "oracle_direction": "call", "oracle_pnl": 1130.110417842865, "outcome": "abstention"}
+{"day": "2022-07-18", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 2747.0000011622906, "outcome": "abstention"}
+{"day": "2022-07-19", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 3668.587974243497, "outcome": "abstention"}
+{"day": "2022-07-20", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 3218.5745213475248, "outcome": "side_error"}
+{"day": "2022-07-21", "oracle_bar": 56, "oracle_direction": "call", "oracle_pnl": 3926.6010508994177, "outcome": "abstention"}
+{"day": "2022-07-22", "oracle_bar": 85, "oracle_direction": "put", "oracle_pnl": 4353.045306189493, "outcome": "abstention"}
+{"day": "2022-07-25", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 1236.0267799516519, "outcome": "side_error"}
+{"day": "2022-07-26", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 1635.6457539433113, "outcome": "side_error"}
+{"day": "2022-07-27", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 662.7892421989019, "outcome": "side_error"}
+{"day": "2022-07-28", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 6152.766899454054, "outcome": "side_error"}
+{"day": "2022-07-29", "oracle_bar": 117, "oracle_direction": "call", "oracle_pnl": 1600.3812165589097, "outcome": "side_error"}
+{"day": "2022-08-01", "oracle_bar": 118, "oracle_direction": "put", "oracle_pnl": 2786.640061505735, "outcome": "abstention"}
+{"day": "2022-08-02", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 3316.0234748218604, "outcome": "side_error"}
+{"day": "2022-08-03", "oracle_bar": 66, "oracle_direction": "call", "oracle_pnl": 2881.487405785173, "outcome": "abstention"}
+{"day": "2022-08-04", "oracle_bar": 35, "oracle_direction": "put", "oracle_pnl": 1260.8243895414353, "outcome": "abstention"}
+{"day": "2022-08-05", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 2564.657058374188, "outcome": "abstention"}
+{"day": "2022-08-08", "oracle_bar": 74, "oracle_direction": "put", "oracle_pnl": 3722.6363638192415, "outcome": "abstention"}
+{"day": "2022-08-09", "oracle_bar": 96, "oracle_direction": "call", "oracle_pnl": 1116.5000007264316, "outcome": "abstention"}
+{"day": "2022-08-10", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 1771.704435217112, "outcome": "abstention"}
+{"day": "2022-08-11", "oracle_bar": 67, "oracle_direction": "put", "oracle_pnl": 2735.941926596417, "outcome": "abstention"}
+{"day": "2022-08-12", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 2131.7758575133325, "outcome": "abstention"}
+{"day": "2022-08-15", "oracle_bar": 103, "oracle_direction": "call", "oracle_pnl": 2564.250057378784, "outcome": "abstention"}
+{"day": "2022-08-16", "oracle_bar": 65, "oracle_direction": "call", "oracle_pnl": 2803.3181657956475, "outcome": "side_error"}
+{"day": "2022-08-17", "oracle_bar": 36, "oracle_direction": "put", "oracle_pnl": 1665.9397166003773, "outcome": "side_error"}
+{"day": "2022-08-18", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 1403.5999630257488, "outcome": "abstention"}
+{"day": "2022-08-19", "oracle_bar": 101, "oracle_direction": "call", "oracle_pnl": 981.4600350753963, "outcome": "abstention"}
+{"day": "2022-08-22", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 1456.2500771377236, "outcome": "side_error"}
+{"day": "2022-08-23", "oracle_bar": 44, "oracle_direction": "put", "oracle_pnl": 2096.1998691588637, "outcome": "side_error"}
+{"day": "2022-08-24", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 2001.3914088443505, "outcome": "side_error"}
+{"day": "2022-08-25", "oracle_bar": 76, "oracle_direction": "put", "oracle_pnl": 2155.9156702090054, "outcome": "abstention"}
+{"day": "2022-08-26", "oracle_bar": 49, "oracle_direction": "put", "oracle_pnl": 6860.498522092072, "outcome": "abstention"}
+{"day": "2022-08-29", "oracle_bar": 98, "oracle_direction": "call", "oracle_pnl": 2686.980107471794, "outcome": "abstention"}
+{"day": "2022-08-30", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 4207.70202855761, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1250.3045760062164}
+{"day": "2022-08-31", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 1445.0022344734978, "outcome": "abstention"}
+{"day": "2022-09-01", "oracle_bar": 90, "oracle_direction": "call", "oracle_pnl": 1536.0599774034322, "outcome": "abstention"}
+{"day": "2022-09-02", "oracle_bar": 72, "oracle_direction": "put", "oracle_pnl": 7353.500002134591, "outcome": "side_error"}
+{"day": "2022-09-06", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 2688.6099406791477, "outcome": "abstention"}
+{"day": "2022-09-07", "oracle_bar": 44, "oracle_direction": "call", "oracle_pnl": 3254.4999449513853, "outcome": "abstention"}
+{"day": "2022-09-08", "oracle_bar": 112, "oracle_direction": "put", "oracle_pnl": 3966.2443914713854, "outcome": "abstention"}
+{"day": "2022-09-09", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 929.5833362042904, "outcome": "abstention"}
+{"day": "2022-09-12", "oracle_bar": 55, "oracle_direction": "put", "oracle_pnl": 1710.6374380916354, "outcome": "abstention"}
+{"day": "2022-09-13", "oracle_bar": 49, "oracle_direction": "put", "oracle_pnl": 1376.395616216245, "outcome": "side_error"}
+{"day": "2022-09-14", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 2020.8205976299942, "outcome": "abstention"}
+{"day": "2022-09-15", "oracle_bar": 48, "oracle_direction": "put", "oracle_pnl": 3296.8701632424445, "outcome": "abstention"}
+{"day": "2022-09-16", "oracle_bar": 66, "oracle_direction": "put", "oracle_pnl": 1447.1496773327315, "outcome": "abstention"}
+{"day": "2022-09-19", "oracle_bar": 75, "oracle_direction": "put", "oracle_pnl": 1542.9249797210098, "outcome": "side_error"}
+{"day": "2022-09-20", "oracle_bar": 99, "oracle_direction": "put", "oracle_pnl": 2549.6000958994027, "outcome": "abstention"}
+{"day": "2022-09-21", "oracle_bar": 98, "oracle_direction": "call", "oracle_pnl": 694.0999781392514, "outcome": "abstention"}
+{"day": "2022-09-22", "oracle_bar": 44, "oracle_direction": "put", "oracle_pnl": 1205.8407524630584, "outcome": "side_error"}
+{"day": "2022-09-23", "oracle_bar": 115, "oracle_direction": "put", "oracle_pnl": 2082.0065776009496, "outcome": "abstention"}
+{"day": "2022-09-26", "oracle_bar": 55, "oracle_direction": "put", "oracle_pnl": 4298.745669580238, "outcome": "abstention"}
+{"day": "2022-09-27", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 5177.460000683516, "outcome": "abstention"}
+{"day": "2022-09-28", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 3321.2198803971705, "outcome": "abstention"}
+{"day": "2022-09-29", "oracle_bar": 67, "oracle_direction": "call", "oracle_pnl": 1705.5199556085468, "outcome": "abstention"}
+{"day": "2022-09-30", "oracle_bar": 117, "oracle_direction": "put", "oracle_pnl": 2946.2001907706263, "outcome": "abstention"}
+{"day": "2022-10-03", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1845.249965343985, "outcome": "abstention"}
+{"day": "2022-10-04", "oracle_bar": 118, "oracle_direction": "put", "oracle_pnl": 1978.540027613789, "outcome": "abstention"}
+{"day": "2022-10-05", "oracle_bar": 87, "oracle_direction": "call", "oracle_pnl": 4367.149850432203, "outcome": "abstention"}
+{"day": "2022-10-06", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 1407.3068012168962, "outcome": "abstention"}
+{"day": "2022-10-07", "oracle_bar": 93, "oracle_direction": "put", "oracle_pnl": 1968.2059764747562, "outcome": "side_error"}
+{"day": "2022-10-10", "oracle_bar": 58, "oracle_direction": "put", "oracle_pnl": 2909.5993578137204, "outcome": "side_error"}
+{"day": "2022-10-11", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 4945.999889098108, "outcome": "abstention"}
+{"day": "2022-10-12", "oracle_bar": 75, "oracle_direction": "call", "oracle_pnl": 1031.825036339623, "outcome": "abstention"}
+{"day": "2022-10-13", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 11568.500324528664, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 746.46009080574}
+{"day": "2022-10-14", "oracle_bar": 35, "oracle_direction": "put", "oracle_pnl": 2465.117823227896, "outcome": "abstention"}
+{"day": "2022-10-17", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 1336.8236551910402, "outcome": "side_error"}
+{"day": "2022-10-18", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 4417.559921773673, "outcome": "side_error"}
+{"day": "2022-10-19", "oracle_bar": 59, "oracle_direction": "put", "oracle_pnl": 3542.290023186282, "outcome": "side_error"}
+{"day": "2022-10-20", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 4777.2548446976225, "outcome": "abstention"}
+{"day": "2022-10-21", "oracle_bar": 95, "oracle_direction": "call", "oracle_pnl": 3980.560100088417, "outcome": "side_error"}
+{"day": "2022-10-24", "oracle_bar": 56, "oracle_direction": "call", "oracle_pnl": 2713.989911770983, "outcome": "abstention"}
+{"day": "2022-10-25", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 944.9323159385103, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 996.6823196868237}
+{"day": "2022-10-26", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 2979.2698995932187, "outcome": "abstention"}
+{"day": "2022-10-27", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 2684.7070794559045, "outcome": "abstention"}
+{"day": "2022-10-28", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 4818.153934714599, "outcome": "abstention"}
+{"day": "2022-10-31", "oracle_bar": 65, "oracle_direction": "call", "oracle_pnl": 1283.4749822010597, "outcome": "abstention"}
+{"day": "2022-11-01", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 2019.9998740300396, "outcome": "abstention"}
+{"day": "2022-11-02", "oracle_bar": 86, "oracle_direction": "put", "oracle_pnl": 631.5900618227571, "outcome": "side_error"}
+{"day": "2022-11-03", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2278.0778607845086, "outcome": "abstention"}
+{"day": "2022-11-04", "oracle_bar": 71, "oracle_direction": "put", "oracle_pnl": 6400.782050395761, "outcome": "side_error"}
+{"day": "2022-11-07", "oracle_bar": 118, "oracle_direction": "put", "oracle_pnl": 1297.3088971115649, "outcome": "abstention"}
+{"day": "2022-11-08", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 3146.1125555083154, "outcome": "abstention"}
+{"day": "2022-11-09", "oracle_bar": 52, "oracle_direction": "put", "oracle_pnl": 3149.4891944311535, "outcome": "abstention"}
+{"day": "2022-11-10", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 1850.1412654017918, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 629.2472011299587}
+{"day": "2022-11-11", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 2402.435408932862, "outcome": "abstention"}
+{"day": "2022-11-14", "oracle_bar": 108, "oracle_direction": "call", "oracle_pnl": 2304.8252210524474, "outcome": "abstention"}
+{"day": "2022-11-15", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 5434.025473186149, "outcome": "abstention"}
+{"day": "2022-11-16", "oracle_bar": 86, "oracle_direction": "call", "oracle_pnl": 968.3999058887363, "outcome": "abstention"}
+{"day": "2022-11-17", "oracle_bar": 102, "oracle_direction": "call", "oracle_pnl": 2901.019118244688, "outcome": "abstention"}
+{"day": "2022-11-18", "oracle_bar": 117, "oracle_direction": "put", "oracle_pnl": 1460.4200495313107, "outcome": "abstention"}
+{"day": "2022-11-21", "oracle_bar": 80, "oracle_direction": "call", "oracle_pnl": 1390.9001149110495, "outcome": "abstention"}
+{"day": "2022-11-22", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1335.0327866976522, "outcome": "abstention"}
+{"day": "2022-11-23", "oracle_bar": 113, "oracle_direction": "put", "oracle_pnl": 2191.2499446887523, "outcome": "abstention"}
+{"day": "2022-11-25", "oracle_bar": 96, "oracle_direction": "put", "oracle_pnl": 880.260034339279, "outcome": "abstention"}
+{"day": "2022-11-28", "oracle_bar": 49, "oracle_direction": "put", "oracle_pnl": 2795.519955832064, "outcome": "abstention"}
+{"day": "2022-11-29", "oracle_bar": 61, "oracle_direction": "put", "oracle_pnl": 2875.699925660342, "outcome": "side_error"}
+{"day": "2022-11-30", "oracle_bar": 84, "oracle_direction": "call", "oracle_pnl": 2688.1998693376777, "outcome": "abstention"}
+{"day": "2022-12-01", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 2398.4831557611124, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2070.75961034972}
+{"day": "2022-12-02", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 1878.9095338808727, "outcome": "abstention"}
+{"day": "2022-12-05", "oracle_bar": 102, "oracle_direction": "put", "oracle_pnl": 3856.018226065697, "outcome": "side_error"}
+{"day": "2022-12-06", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 3204.7192460105816, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 509.6109085188309}
+{"day": "2022-12-07", "oracle_bar": 95, "oracle_direction": "put", "oracle_pnl": 2047.5608468544042, "outcome": "abstention"}
+{"day": "2022-12-08", "oracle_bar": 112, "oracle_direction": "call", "oracle_pnl": 1234.824180285967, "outcome": "side_error"}
+{"day": "2022-12-09", "oracle_bar": 54, "oracle_direction": "call", "oracle_pnl": 1169.4534623682712, "outcome": "abstention"}
+{"day": "2022-12-12", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 1276.0060741334557, "outcome": "abstention"}
+{"day": "2022-12-13", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 6839.749699037522, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2300.999850347638}
+{"day": "2022-12-14", "oracle_bar": 68, "oracle_direction": "call", "oracle_pnl": 731.5400835900009, "outcome": "abstention"}
+{"day": "2022-12-15", "oracle_bar": 74, "oracle_direction": "put", "oracle_pnl": 2080.139883045703, "outcome": "abstention"}
+{"day": "2022-12-16", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 1658.3999061122538, "outcome": "abstention"}
+{"day": "2022-12-19", "oracle_bar": 59, "oracle_direction": "put", "oracle_pnl": 2762.1499626304953, "outcome": "abstention"}
+{"day": "2022-12-20", "oracle_bar": 68, "oracle_direction": "put", "oracle_pnl": 2006.7749652845005, "outcome": "abstention"}
+{"day": "2022-12-21", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 2228.399958333373, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 861.9000145480036}
+{"day": "2022-12-22", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 4868.142836402038, "outcome": "abstention"}
+{"day": "2022-12-23", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 2120.511362061213, "outcome": "abstention"}
+{"day": "2022-12-27", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1880.9583900285263, "outcome": "side_error"}
+{"day": "2022-12-28", "oracle_bar": 50, "oracle_direction": "put", "oracle_pnl": 3942.349831051752, "outcome": "abstention"}
+{"day": "2022-12-29", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 1612.248707893463, "outcome": "abstention"}
+{"day": "2022-12-30", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 2102.472729572192, "outcome": "abstention"}
+{"day": "2023-01-03", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 2875.0298568674175, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1724.5798191149531}
+{"day": "2023-01-04", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 3192.172646744003, "outcome": "abstention"}
+{"day": "2023-01-05", "oracle_bar": 114, "oracle_direction": "call", "oracle_pnl": 1383.7033880981116, "outcome": "abstention"}
+{"day": "2023-01-06", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 2932.0694422957167, "outcome": "abstention"}
+{"day": "2023-01-09", "oracle_bar": 116, "oracle_direction": "put", "oracle_pnl": 2897.6465581587945, "outcome": "abstention"}
+{"day": "2023-01-10", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 2132.8699026658387, "outcome": "side_error"}
+{"day": "2023-01-11", "oracle_bar": 87, "oracle_direction": "call", "oracle_pnl": 1775.8100538147241, "outcome": "abstention"}
+{"day": "2023-01-12", "oracle_bar": 92, "oracle_direction": "call", "oracle_pnl": 2078.7345685424793, "outcome": "abstention"}
+{"day": "2023-01-13", "oracle_bar": 108, "oracle_direction": "call", "oracle_pnl": 1327.5508282409683, "outcome": "abstention"}
+{"day": "2023-01-17", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 2083.350095703825, "outcome": "abstention"}
+{"day": "2023-01-18", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 6156.032268935728, "outcome": "abstention"}
+{"day": "2023-01-19", "oracle_bar": 119, "oracle_direction": "call", "oracle_pnl": 1762.8100231853873, "outcome": "abstention"}
+{"day": "2023-01-20", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2807.4022877622033, "outcome": "abstention"}
+{"day": "2023-01-23", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 3836.3028406964495, "outcome": "abstention"}
+{"day": "2023-01-24", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 1931.469956350252, "outcome": "abstention"}
+{"day": "2023-01-25", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 4421.89996297136, "outcome": "side_error"}
+{"day": "2023-01-26", "oracle_bar": 115, "oracle_direction": "call", "oracle_pnl": 1951.5574335245306, "outcome": "abstention"}
+{"day": "2023-01-27", "oracle_bar": 85, "oracle_direction": "call", "oracle_pnl": 1902.6350589478097, "outcome": "abstention"}
+{"day": "2023-01-30", "oracle_bar": 36, "oracle_direction": "put", "oracle_pnl": 1959.4199523682894, "outcome": "side_error"}
+{"day": "2023-01-31", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 1784.6094960410283, "outcome": "abstention"}
+{"day": "2023-02-01", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 669.2000014290213, "outcome": "side_error"}
+{"day": "2023-02-02", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 3260.9623341517326, "outcome": "abstention"}
+{"day": "2023-02-03", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 3289.998333153801, "outcome": "abstention"}
+{"day": "2023-02-06", "oracle_bar": 62, "oracle_direction": "call", "oracle_pnl": 1953.060838905346, "outcome": "abstention"}
+{"day": "2023-02-07", "oracle_bar": 58, "oracle_direction": "call", "oracle_pnl": 3761.4565358456875, "outcome": "side_error"}
+{"day": "2023-02-08", "oracle_bar": 49, "oracle_direction": "put", "oracle_pnl": 2585.2856939200847, "outcome": "abstention"}
+{"day": "2023-02-09", "oracle_bar": 51, "oracle_direction": "put", "oracle_pnl": 3480.6198386031565, "outcome": "abstention"}
+{"day": "2023-02-10", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1402.9519598411762, "outcome": "abstention"}
+{"day": "2023-02-13", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 1528.0803997899527, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 0.0}
+{"day": "2023-02-14", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 4451.998638745311, "outcome": "side_error"}
+{"day": "2023-02-15", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 1519.742154866457, "outcome": "side_error"}
+{"day": "2023-02-16", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2330.9999992847443, "outcome": "abstention"}
+{"day": "2023-02-17", "oracle_bar": 66, "oracle_direction": "put", "oracle_pnl": 1384.3868509719584, "outcome": "abstention"}
+{"day": "2023-02-21", "oracle_bar": 36, "oracle_direction": "put", "oracle_pnl": 1710.2854214883341, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 77.6491797037088}
+{"day": "2023-02-22", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 1718.594962219535, "outcome": "side_error"}
+{"day": "2023-02-23", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 4377.397361814907, "outcome": "abstention"}
+{"day": "2023-02-24", "oracle_bar": 85, "oracle_direction": "call", "oracle_pnl": 1627.7099589770285, "outcome": "abstention"}
+{"day": "2023-02-27", "oracle_bar": 48, "oracle_direction": "put", "oracle_pnl": 2250.8498869050295, "outcome": "abstention"}
+{"day": "2023-02-28", "oracle_bar": 85, "oracle_direction": "call", "oracle_pnl": 1599.3812998195447, "outcome": "abstention"}
+{"day": "2023-03-01", "oracle_bar": 110, "oracle_direction": "call", "oracle_pnl": 1883.3373970886696, "outcome": "abstention"}
+{"day": "2023-03-02", "oracle_bar": 52, "oracle_direction": "call", "oracle_pnl": 1836.2812017798424, "outcome": "side_error"}
+{"day": "2023-03-03", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 2509.3405463296917, "outcome": "side_error"}
+{"day": "2023-03-06", "oracle_bar": 109, "oracle_direction": "put", "oracle_pnl": 1898.6194854593202, "outcome": "abstention"}
+{"day": "2023-03-07", "oracle_bar": 67, "oracle_direction": "put", "oracle_pnl": 3273.490119518936, "outcome": "abstention"}
+{"day": "2023-03-08", "oracle_bar": 65, "oracle_direction": "put", "oracle_pnl": 1828.3716583735911, "outcome": "abstention"}
+{"day": "2023-03-09", "oracle_bar": 78, "oracle_direction": "put", "oracle_pnl": 5075.289885238782, "outcome": "side_error"}
+{"day": "2023-03-10", "oracle_bar": 119, "oracle_direction": "put", "oracle_pnl": 6211.288548378727, "outcome": "abstention"}
+{"day": "2023-03-13", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 2702.651740736042, "outcome": "abstention"}
+{"day": "2023-03-14", "oracle_bar": 115, "oracle_direction": "put", "oracle_pnl": 3417.424837936962, "outcome": "abstention"}
+{"day": "2023-03-15", "oracle_bar": 109, "oracle_direction": "put", "oracle_pnl": 1828.2556550269524, "outcome": "abstention"}
+{"day": "2023-03-16", "oracle_bar": 48, "oracle_direction": "call", "oracle_pnl": 6853.230312513634, "outcome": "abstention"}
+{"day": "2023-03-17", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 3432.0662960673026, "outcome": "side_error"}
+{"day": "2023-03-20", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 1799.0581943925145, "outcome": "abstention"}
+{"day": "2023-03-21", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 1455.8823253351404, "outcome": "side_error"}
+{"day": "2023-03-22", "oracle_bar": 58, "oracle_direction": "put", "oracle_pnl": 875.5293734047343, "outcome": "abstention"}
+{"day": "2023-03-23", "oracle_bar": 101, "oracle_direction": "put", "oracle_pnl": 3113.4998887069523, "outcome": "abstention"}
+{"day": "2023-03-24", "oracle_bar": 103, "oracle_direction": "call", "oracle_pnl": 2213.455841861446, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 714.2557165691519}
+{"day": "2023-03-27", "oracle_bar": 42, "oracle_direction": "put", "oracle_pnl": 1131.4705312565986, "outcome": "abstention"}
+{"day": "2023-03-28", "oracle_bar": 41, "oracle_direction": "put", "oracle_pnl": 1379.204974091287, "outcome": "abstention"}
+{"day": "2023-03-29", "oracle_bar": 90, "oracle_direction": "call", "oracle_pnl": 884.8300082498043, "outcome": "abstention"}
+{"day": "2023-03-30", "oracle_bar": 72, "oracle_direction": "put", "oracle_pnl": 1732.0899094472081, "outcome": "abstention"}
+{"day": "2023-03-31", "oracle_bar": 56, "oracle_direction": "call", "oracle_pnl": 1627.659985423237, "outcome": "abstention"}
+{"day": "2023-04-03", "oracle_bar": 52, "oracle_direction": "put", "oracle_pnl": 1925.734506417548, "outcome": "abstention"}
+{"day": "2023-04-04", "oracle_bar": 42, "oracle_direction": "put", "oracle_pnl": 3515.8500960949805, "outcome": "abstention"}
+{"day": "2023-04-05", "oracle_bar": 54, "oracle_direction": "put", "oracle_pnl": 1511.772986584857, "outcome": "side_error"}
+{"day": "2023-04-06", "oracle_bar": 90, "oracle_direction": "call", "oracle_pnl": 2292.1998692482707, "outcome": "abstention"}
+{"day": "2023-04-10", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1694.0015333465487, "outcome": "abstention"}
+{"day": "2023-04-11", "oracle_bar": 76, "oracle_direction": "call", "oracle_pnl": 1063.3222621439634, "outcome": "abstention"}
+{"day": "2023-04-12", "oracle_bar": 52, "oracle_direction": "put", "oracle_pnl": 2563.4999447502196, "outcome": "abstention"}
+{"day": "2023-04-13", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 2916.8929764140084, "outcome": "abstention"}
+{"day": "2023-04-14", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 3901.2116208876646, "outcome": "abstention"}
+{"day": "2023-04-17", "oracle_bar": 54, "oracle_direction": "put", "oracle_pnl": 1406.289981731251, "outcome": "abstention"}
+{"day": "2023-04-18", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 1249.3795636364282, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1066.507751386345}
+{"day": "2023-04-19", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 1366.6000955194236, "outcome": "abstention"}
+{"day": "2023-04-20", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1369.8161145668478, "outcome": "abstention"}
+{"day": "2023-04-21", "oracle_bar": 57, "oracle_direction": "put", "oracle_pnl": 1554.7960212805237, "outcome": "abstention"}
+{"day": "2023-04-24", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 1782.5998867541552, "outcome": "abstention"}
+{"day": "2023-04-25", "oracle_bar": 110, "oracle_direction": "put", "oracle_pnl": 3020.3000766195355, "outcome": "abstention"}
+{"day": "2023-04-26", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 1776.381619939025, "outcome": "abstention"}
+{"day": "2023-04-27", "oracle_bar": 102, "oracle_direction": "call", "oracle_pnl": 2980.401184439677, "outcome": "abstention"}
+{"day": "2023-04-28", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2155.0852158627613, "outcome": "abstention"}
+{"day": "2023-05-01", "oracle_bar": 115, "oracle_direction": "call", "oracle_pnl": 1240.1997206486674, "outcome": "abstention"}
+{"day": "2023-05-02", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 4897.337882436589, "outcome": "side_error"}
+{"day": "2023-05-03", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 949.5159478035318, "outcome": "abstention"}
+{"day": "2023-05-04", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 1590.6999253250658, "outcome": "abstention"}
+{"day": "2023-05-05", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 757.8236033916473, "outcome": "side_error"}
+{"day": "2023-05-08", "oracle_bar": 66, "oracle_direction": "call", "oracle_pnl": 617.7396751662959, "outcome": "abstention"}
+{"day": "2023-05-09", "oracle_bar": 111, "oracle_direction": "put", "oracle_pnl": 622.522975450467, "outcome": "abstention"}
+{"day": "2023-05-10", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 3484.963592210576, "outcome": "abstention"}
+{"day": "2023-05-11", "oracle_bar": 73, "oracle_direction": "call", "oracle_pnl": 1182.8736082308387, "outcome": "abstention"}
+{"day": "2023-05-12", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2605.465486647754, "outcome": "abstention"}
+{"day": "2023-05-15", "oracle_bar": 44, "oracle_direction": "call", "oracle_pnl": 2071.3299169094116, "outcome": "abstention"}
+{"day": "2023-05-16", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 811.1839370046578, "outcome": "abstention"}
+{"day": "2023-05-17", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 4261.909904049859, "outcome": "abstention"}
+{"day": "2023-05-18", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2199.5031323990993, "outcome": "abstention"}
+{"day": "2023-05-19", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 2422.300076574832, "outcome": "abstention"}
+{"day": "2023-05-22", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 1066.049337760018, "outcome": "abstention"}
+{"day": "2023-05-23", "oracle_bar": 117, "oracle_direction": "put", "oracle_pnl": 2188.3829710408054, "outcome": "abstention"}
+{"day": "2023-05-24", "oracle_bar": 117, "oracle_direction": "put", "oracle_pnl": 1226.5306687738848, "outcome": "side_error"}
+{"day": "2023-05-25", "oracle_bar": 53, "oracle_direction": "call", "oracle_pnl": 1435.0467766052868, "outcome": "abstention"}
+{"day": "2023-05-26", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1916.398112395724, "outcome": "side_error"}
+{"day": "2023-05-30", "oracle_bar": 51, "oracle_direction": "put", "oracle_pnl": 2043.3755318072008, "outcome": "side_error"}
+{"day": "2023-05-31", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 1489.9001149334013, "outcome": "abstention"}
+{"day": "2023-06-01", "oracle_bar": 55, "oracle_direction": "call", "oracle_pnl": 3752.682978267473, "outcome": "abstention"}
+{"day": "2023-06-02", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2949.2220450265354, "outcome": "abstention"}
+{"day": "2023-06-05", "oracle_bar": 45, "oracle_direction": "call", "oracle_pnl": 1240.2193371988997, "outcome": "abstention"}
+{"day": "2023-06-06", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 1200.450428483958, "outcome": "abstention"}
+{"day": "2023-06-07", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2369.6055395203994, "outcome": "abstention"}
+{"day": "2023-06-08", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2172.349715179836, "outcome": "abstention"}
+{"day": "2023-06-09", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 2575.672381298641, "outcome": "side_error"}
+{"day": "2023-06-12", "oracle_bar": 71, "oracle_direction": "call", "oracle_pnl": 1026.1682030221098, "outcome": "abstention"}
+{"day": "2023-06-13", "oracle_bar": 47, "oracle_direction": "call", "oracle_pnl": 1542.0159725573062, "outcome": "side_error"}
+{"day": "2023-06-14", "oracle_bar": 115, "oracle_direction": "put", "oracle_pnl": 947.9999243989587, "outcome": "abstention"}
+{"day": "2023-06-15", "oracle_bar": 68, "oracle_direction": "call", "oracle_pnl": 2318.560130158961, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 83.16001512497678}
+{"day": "2023-06-16", "oracle_bar": 61, "oracle_direction": "put", "oracle_pnl": 1254.735332623453, "outcome": "abstention"}
+{"day": "2023-06-20", "oracle_bar": 58, "oracle_direction": "call", "oracle_pnl": 2372.914580108348, "outcome": "side_error"}
+{"day": "2023-06-21", "oracle_bar": 109, "oracle_direction": "call", "oracle_pnl": 1011.0000568926334, "outcome": "abstention"}
+{"day": "2023-06-22", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 1153.4849002834103, "outcome": "abstention"}
+{"day": "2023-06-23", "oracle_bar": 117, "oracle_direction": "call", "oracle_pnl": 1645.428556576371, "outcome": "abstention"}
+{"day": "2023-06-26", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 2202.6601943896712, "outcome": "side_error"}
+{"day": "2023-06-27", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 3686.4007567013273, "outcome": "side_error"}
+{"day": "2023-06-28", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 2236.189117675315, "outcome": "abstention"}
+{"day": "2023-06-29", "oracle_bar": 77, "oracle_direction": "call", "oracle_pnl": 1720.4472050576994, "outcome": "abstention"}
+{"day": "2023-06-30", "oracle_bar": 80, "oracle_direction": "call", "oracle_pnl": 981.4754474858069, "outcome": "side_error"}
+{"day": "2023-07-03", "oracle_bar": 73, "oracle_direction": "call", "oracle_pnl": 770.8939565892679, "outcome": "abstention"}
+{"day": "2023-07-05", "oracle_bar": 98, "oracle_direction": "put", "oracle_pnl": 761.7000576399266, "outcome": "abstention"}
+{"day": "2023-07-06", "oracle_bar": 109, "oracle_direction": "call", "oracle_pnl": 2011.2499246615916, "outcome": "abstention"}
+{"day": "2023-07-07", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 2898.864152576421, "outcome": "abstention"}
+{"day": "2023-07-10", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 1689.9724792081674, "outcome": "abstention"}
+{"day": "2023-07-11", "oracle_bar": 44, "oracle_direction": "call", "oracle_pnl": 1508.1499823000281, "outcome": "side_error"}
+{"day": "2023-07-12", "oracle_bar": 71, "oracle_direction": "put", "oracle_pnl": 1996.3999624237417, "outcome": "abstention"}
+{"day": "2023-07-13", "oracle_bar": 104, "oracle_direction": "call", "oracle_pnl": 645.9899518045038, "outcome": "abstention"}
+{"day": "2023-07-14", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 1687.509901951775, "outcome": "side_error"}
+{"day": "2023-07-17", "oracle_bar": 71, "oracle_direction": "call", "oracle_pnl": 721.3467436235776, "outcome": "side_error"}
+{"day": "2023-07-18", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 1656.0299329154939, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 0.0}
+{"day": "2023-07-19", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 1348.6700848340242, "outcome": "abstention"}
+{"day": "2023-07-20", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 1310.8850671814382, "outcome": "abstention"}
+{"day": "2023-07-21", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 1291.4961754488813, "outcome": "abstention"}
+{"day": "2023-07-24", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 1049.7548003483166, "outcome": "abstention"}
+{"day": "2023-07-25", "oracle_bar": 85, "oracle_direction": "call", "oracle_pnl": 1343.1999252691865, "outcome": "side_error"}
+{"day": "2023-07-26", "oracle_bar": 48, "oracle_direction": "put", "oracle_pnl": 394.7999816581607, "outcome": "abstention"}
+{"day": "2023-07-27", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 2778.3000203974543, "outcome": "abstention"}
+{"day": "2023-07-28", "oracle_bar": 116, "oracle_direction": "put", "oracle_pnl": 2069.2067187184484, "outcome": "abstention"}
+{"day": "2023-07-31", "oracle_bar": 101, "oracle_direction": "put", "oracle_pnl": 1038.8500544387848, "outcome": "abstention"}
+{"day": "2023-08-01", "oracle_bar": 35, "oracle_direction": "put", "oracle_pnl": 1069.6183298061205, "outcome": "side_error"}
+{"day": "2023-08-02", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 2147.5201034727693, "outcome": "abstention"}
+{"day": "2023-08-03", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 2329.3096053574213, "outcome": "abstention"}
+{"day": "2023-08-04", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 2780.7144487385094, "outcome": "abstention"}
+{"day": "2023-08-07", "oracle_bar": 109, "oracle_direction": "call", "oracle_pnl": 1220.3274898299271, "outcome": "abstention"}
+{"day": "2023-08-08", "oracle_bar": 95, "oracle_direction": "call", "oracle_pnl": 1318.609970928505, "outcome": "abstention"}
+{"day": "2023-08-09", "oracle_bar": 77, "oracle_direction": "put", "oracle_pnl": 2905.8400422593954, "outcome": "abstention"}
+{"day": "2023-08-10", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 5247.473725819274, "outcome": "abstention"}
+{"day": "2023-08-11", "oracle_bar": 70, "oracle_direction": "put", "oracle_pnl": 1308.27775320732, "outcome": "abstention"}
+{"day": "2023-08-14", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1748.904948246976, "outcome": "abstention"}
+{"day": "2023-08-15", "oracle_bar": 66, "oracle_direction": "call", "oracle_pnl": 863.0156242015463, "outcome": "abstention"}
+{"day": "2023-08-16", "oracle_bar": 95, "oracle_direction": "put", "oracle_pnl": 2170.515745365744, "outcome": "abstention"}
+{"day": "2023-08-17", "oracle_bar": 84, "oracle_direction": "put", "oracle_pnl": 1273.7633716620007, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 316.6934088929494}
+{"day": "2023-08-18", "oracle_bar": 47, "oracle_direction": "call", "oracle_pnl": 1721.5413701022526, "outcome": "abstention"}
+{"day": "2023-08-21", "oracle_bar": 36, "oracle_direction": "put", "oracle_pnl": 2457.4211595086776, "outcome": "abstention"}
+{"day": "2023-08-22", "oracle_bar": 51, "oracle_direction": "put", "oracle_pnl": 1565.351886227329, "outcome": "side_error"}
+{"day": "2023-08-23", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2265.582381036225, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 87.84061276231387}
+{"day": "2023-08-24", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 4898.179537707178, "outcome": "side_error"}
+{"day": "2023-08-25", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 3543.7826094925404, "outcome": "side_error"}
+{"day": "2023-08-28", "oracle_bar": 59, "oracle_direction": "put", "oracle_pnl": 1493.3000200621784, "outcome": "abstention"}
+{"day": "2023-08-29", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 3114.886207772866, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 512.5250750616187}
+{"day": "2023-08-30", "oracle_bar": 44, "oracle_direction": "put", "oracle_pnl": 1874.2240235661639, "outcome": "abstention"}
+{"day": "2023-08-31", "oracle_bar": 65, "oracle_direction": "put", "oracle_pnl": 1597.0952066848056, "outcome": "abstention"}
+{"day": "2023-09-01", "oracle_bar": 43, "oracle_direction": "put", "oracle_pnl": 2614.149962585792, "outcome": "abstention"}
+{"day": "2023-09-05", "oracle_bar": 67, "oracle_direction": "call", "oracle_pnl": 1302.3999622896313, "outcome": "side_error"}
+{"day": "2023-09-06", "oracle_bar": 49, "oracle_direction": "put", "oracle_pnl": 2704.4959553227477, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1368.797568258384}
+{"day": "2023-09-07", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 1563.3234786304674, "outcome": "abstention"}
+{"day": "2023-09-08", "oracle_bar": 61, "oracle_direction": "put", "oracle_pnl": 1015.8999059446156, "outcome": "side_error"}
+{"day": "2023-09-11", "oracle_bar": 99, "oracle_direction": "call", "oracle_pnl": 1387.7899100827426, "outcome": "abstention"}
+{"day": "2023-09-12", "oracle_bar": 100, "oracle_direction": "call", "oracle_pnl": 1756.9886141281936, "outcome": "abstention"}
+{"day": "2023-09-13", "oracle_bar": 48, "oracle_direction": "call", "oracle_pnl": 1838.7873273820173, "outcome": "abstention"}
+{"day": "2023-09-14", "oracle_bar": 49, "oracle_direction": "call", "oracle_pnl": 2194.8440746291103, "outcome": "side_error"}
+{"day": "2023-09-15", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 3036.5257924885327, "outcome": "abstention"}
+{"day": "2023-09-18", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 1583.8093476178528, "outcome": "abstention"}
+{"day": "2023-09-19", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 1572.2187477871776, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1913.031248934567}
+{"day": "2023-09-20", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 476.20958422717104, "outcome": "abstention"}
+{"day": "2023-09-21", "oracle_bar": 51, "oracle_direction": "put", "oracle_pnl": 1293.400039142634, "outcome": "abstention"}
+{"day": "2023-09-22", "oracle_bar": 119, "oracle_direction": "put", "oracle_pnl": 2097.7000579528512, "outcome": "abstention"}
+{"day": "2023-09-25", "oracle_bar": 93, "oracle_direction": "call", "oracle_pnl": 1727.1119302389898, "outcome": "abstention"}
+{"day": "2023-09-26", "oracle_bar": 75, "oracle_direction": "put", "oracle_pnl": 1676.8594390769897, "outcome": "abstention"}
+{"day": "2023-09-27", "oracle_bar": 57, "oracle_direction": "put", "oracle_pnl": 3425.1516707126434, "outcome": "side_error"}
+{"day": "2023-09-28", "oracle_bar": 62, "oracle_direction": "call", "oracle_pnl": 3209.545492320538, "outcome": "side_error"}
+{"day": "2023-09-29", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 4169.722855548454, "outcome": "abstention"}
+{"day": "2023-10-02", "oracle_bar": 118, "oracle_direction": "put", "oracle_pnl": 2895.7914897873525, "outcome": "abstention"}
+{"day": "2023-10-03", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 3047.6417842462115, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 420.3144423542508}
+{"day": "2023-10-04", "oracle_bar": 91, "oracle_direction": "call", "oracle_pnl": 2365.0556465978148, "outcome": "abstention"}
+{"day": "2023-10-05", "oracle_bar": 97, "oracle_direction": "call", "oracle_pnl": 1844.984764921103, "outcome": "abstention"}
+{"day": "2023-10-06", "oracle_bar": 40, "oracle_direction": "call", "oracle_pnl": 7339.6099417743835, "outcome": "side_error"}
+{"day": "2023-10-09", "oracle_bar": 100, "oracle_direction": "call", "oracle_pnl": 3823.749945079908, "outcome": "abstention"}
+{"day": "2023-10-10", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2344.1177569266188, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1679.82356549909}
+{"day": "2023-10-11", "oracle_bar": 91, "oracle_direction": "put", "oracle_pnl": 1531.5213472726623, "outcome": "abstention"}
+{"day": "2023-10-12", "oracle_bar": 104, "oracle_direction": "put", "oracle_pnl": 3338.2400085797904, "outcome": "abstention"}
+{"day": "2023-10-13", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 3994.838408957126, "outcome": "abstention"}
+{"day": "2023-10-16", "oracle_bar": 38, "oracle_direction": "call", "oracle_pnl": 2001.8374724065884, "outcome": "abstention"}
+{"day": "2023-10-17", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 3776.4141790896956, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2972.3635982342366}
+{"day": "2023-10-18", "oracle_bar": 53, "oracle_direction": "put", "oracle_pnl": 2395.579819740802, "outcome": "abstention"}
+{"day": "2023-10-19", "oracle_bar": 111, "oracle_direction": "call", "oracle_pnl": 2482.099830722064, "outcome": "abstention"}
+{"day": "2023-10-20", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 1683.8399606844782, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1912.8399615487456}
+{"day": "2023-10-23", "oracle_bar": 66, "oracle_direction": "call", "oracle_pnl": 2518.276405760015, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1349.2522910990965}
+{"day": "2023-10-24", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 2979.3678850518927, "outcome": "abstention"}
+{"day": "2023-10-25", "oracle_bar": 95, "oracle_direction": "put", "oracle_pnl": 2926.0868472065304, "outcome": "abstention"}
+{"day": "2023-10-26", "oracle_bar": 83, "oracle_direction": "put", "oracle_pnl": 3490.681945197761, "outcome": "abstention"}
+{"day": "2023-10-27", "oracle_bar": 106, "oracle_direction": "put", "oracle_pnl": 3126.423509867948, "outcome": "abstention"}
+{"day": "2023-10-30", "oracle_bar": 115, "oracle_direction": "call", "oracle_pnl": 2117.3816928175324, "outcome": "abstention"}
+{"day": "2023-10-31", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 2280.730046330467, "outcome": "abstention"}
+{"day": "2023-11-01", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 1204.6849773682434, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1159.074426269721}
+{"day": "2023-11-02", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 2380.7068843355523, "outcome": "abstention"}
+{"day": "2023-11-03", "oracle_bar": 100, "oracle_direction": "call", "oracle_pnl": 1502.8247475787812, "outcome": "side_error"}
+{"day": "2023-11-06", "oracle_bar": 98, "oracle_direction": "put", "oracle_pnl": 1475.5900114568324, "outcome": "abstention"}
+{"day": "2023-11-07", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 1481.166686703968, "outcome": "abstention"}
+{"day": "2023-11-08", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 1790.011790440224, "outcome": "side_error"}
+{"day": "2023-11-09", "oracle_bar": 107, "oracle_direction": "put", "oracle_pnl": 2176.278815091348, "outcome": "abstention"}
+{"day": "2023-11-10", "oracle_bar": 70, "oracle_direction": "call", "oracle_pnl": 4500.570083177536, "outcome": "abstention"}
+{"day": "2023-11-13", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1928.2674971305814, "outcome": "abstention"}
+{"day": "2023-11-14", "oracle_bar": 105, "oracle_direction": "put", "oracle_pnl": 1245.60001924783, "outcome": "abstention"}
+{"day": "2023-11-15", "oracle_bar": 92, "oracle_direction": "put", "oracle_pnl": 1831.1192129515111, "outcome": "abstention"}
+{"day": "2023-11-16", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 1620.4924286625703, "outcome": "abstention"}
+{"day": "2023-11-17", "oracle_bar": 95, "oracle_direction": "call", "oracle_pnl": 1185.3789006705877, "outcome": "abstention"}
+{"day": "2023-11-20", "oracle_bar": 55, "oracle_direction": "call", "oracle_pnl": 1954.780050267726, "outcome": "side_error"}
+{"day": "2023-11-21", "oracle_bar": 62, "oracle_direction": "call", "oracle_pnl": 1076.139943857342, "outcome": "side_error"}
+{"day": "2023-11-22", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 1274.6459985545514, "outcome": "abstention"}
+{"day": "2023-11-24", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 443.8984488435361, "outcome": "abstention"}
+{"day": "2023-11-27", "oracle_bar": 96, "oracle_direction": "call", "oracle_pnl": 921.978880993165, "outcome": "abstention"}
+{"day": "2023-11-28", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 2163.250169161707, "outcome": "abstention"}
+{"day": "2023-11-29", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2648.3999063357714, "outcome": "side_error"}
+{"day": "2023-11-30", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 1433.8448235761036, "outcome": "abstention"}
+{"day": "2023-12-01", "oracle_bar": 60, "oracle_direction": "call", "oracle_pnl": 3119.717281222551, "outcome": "abstention"}
+{"day": "2023-12-04", "oracle_bar": 84, "oracle_direction": "call", "oracle_pnl": 1843.4900388235599, "outcome": "abstention"}
+{"day": "2023-12-05", "oracle_bar": 96, "oracle_direction": "put", "oracle_pnl": 1886.648703988753, "outcome": "abstention"}
+{"day": "2023-12-06", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 2152.939958514124, "outcome": "abstention"}
+{"day": "2023-12-07", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1596.8300847225637, "outcome": "abstention"}
+{"day": "2023-12-08", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 1869.3541846517471, "outcome": "abstention"}
+{"day": "2023-12-11", "oracle_bar": 111, "oracle_direction": "call", "oracle_pnl": 1308.5314429380091, "outcome": "abstention"}
+{"day": "2023-12-12", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1249.7116809179022, "outcome": "abstention"}
+{"day": "2023-12-13", "oracle_bar": 91, "oracle_direction": "put", "oracle_pnl": 708.0000569596887, "outcome": "abstention"}
+{"day": "2023-12-14", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2699.252886517081, "outcome": "abstention"}
+{"day": "2023-12-15", "oracle_bar": 86, "oracle_direction": "put", "oracle_pnl": 1389.9999610881011, "outcome": "abstention"}
+{"day": "2023-12-18", "oracle_bar": 86, "oracle_direction": "call", "oracle_pnl": 1141.6600720734893, "outcome": "abstention"}
+{"day": "2023-12-19", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 946.1735730203786, "outcome": "side_error"}
+{"day": "2023-12-20", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 673.7620062188357, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 739.4999996758997}
+{"day": "2023-12-21", "oracle_bar": 54, "oracle_direction": "put", "oracle_pnl": 2534.9001103661953, "outcome": "abstention"}
+{"day": "2023-12-22", "oracle_bar": 63, "oracle_direction": "put", "oracle_pnl": 1019.2999999009073, "outcome": "abstention"}
+{"day": "2023-12-26", "oracle_bar": 114, "oracle_direction": "call", "oracle_pnl": 502.0662275500193, "outcome": "abstention"}
+{"day": "2023-12-27", "oracle_bar": 116, "oracle_direction": "call", "oracle_pnl": 937.1415275305209, "outcome": "abstention"}
+{"day": "2023-12-28", "oracle_bar": 81, "oracle_direction": "put", "oracle_pnl": 768.2400995513797, "outcome": "abstention"}
+{"day": "2023-12-29", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 3065.599887134135, "outcome": "abstention"}
+{"day": "2024-01-02", "oracle_bar": 68, "oracle_direction": "call", "oracle_pnl": 1823.5911384226397, "outcome": "abstention"}
+{"day": "2024-01-03", "oracle_bar": 35, "oracle_direction": "put", "oracle_pnl": 1421.345487168364, "outcome": "abstention"}
+{"day": "2024-01-04", "oracle_bar": 116, "oracle_direction": "put", "oracle_pnl": 1867.4999446608124, "outcome": "abstention"}
+{"day": "2024-01-05", "oracle_bar": 105, "oracle_direction": "put", "oracle_pnl": 3018.6999818600716, "outcome": "abstention"}
+{"day": "2024-01-08", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2000.8517330758862, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 0.0}
+{"day": "2024-01-09", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 2470.0999697128714, "outcome": "abstention"}
+{"day": "2024-01-10", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 1249.3088589781787, "outcome": "abstention"}
+{"day": "2024-01-11", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2460.4319150901288, "outcome": "abstention"}
+{"day": "2024-01-12", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 1238.9751720950007, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1500.5764440935768}
+{"day": "2024-01-16", "oracle_bar": 85, "oracle_direction": "put", "oracle_pnl": 2009.0871457962576, "outcome": "abstention"}
+{"day": "2024-01-17", "oracle_bar": 116, "oracle_direction": "put", "oracle_pnl": 2202.30997759901, "outcome": "abstention"}
+{"day": "2024-01-18", "oracle_bar": 80, "oracle_direction": "put", "oracle_pnl": 1706.529932904318, "outcome": "side_error"}
+{"day": "2024-01-19", "oracle_bar": 38, "oracle_direction": "call", "oracle_pnl": 3522.8626048907636, "outcome": "abstention"}
+{"day": "2024-01-22", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 1427.1851716339588, "outcome": "abstention"}
+{"day": "2024-01-23", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 866.0000007376075, "outcome": "abstention"}
+{"day": "2024-01-24", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 1724.6699628084152, "outcome": "abstention"}
+{"day": "2024-01-25", "oracle_bar": 53, "oracle_direction": "put", "oracle_pnl": 1606.0300301008672, "outcome": "side_error"}
+{"day": "2024-01-26", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 1729.5988941861522, "outcome": "side_error"}
+{"day": "2024-01-29", "oracle_bar": 90, "oracle_direction": "call", "oracle_pnl": 935.6999814800918, "outcome": "abstention"}
+{"day": "2024-01-30", "oracle_bar": 85, "oracle_direction": "call", "oracle_pnl": 699.3060299144342, "outcome": "side_error"}
+{"day": "2024-01-31", "oracle_bar": 39, "oracle_direction": "put", "oracle_pnl": 719.8999058552087, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 642.5098830720037}
+{"day": "2024-02-01", "oracle_bar": 103, "oracle_direction": "call", "oracle_pnl": 3066.4099599925426, "outcome": "abstention"}
+{"day": "2024-02-02", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 3344.2516001584186, "outcome": "abstention"}
+{"day": "2024-02-05", "oracle_bar": 74, "oracle_direction": "call", "oracle_pnl": 2147.1384252650337, "outcome": "side_error"}
+{"day": "2024-02-06", "oracle_bar": 116, "oracle_direction": "put", "oracle_pnl": 829.8299167194217, "outcome": "abstention"}
+{"day": "2024-02-07", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 1906.0978847736008, "outcome": "abstention"}
+{"day": "2024-02-08", "oracle_bar": 119, "oracle_direction": "call", "oracle_pnl": 549.8000199168921, "outcome": "abstention"}
+{"day": "2024-02-09", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 896.1441146907612, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 201.45184793308954}
+{"day": "2024-02-12", "oracle_bar": 46, "oracle_direction": "call", "oracle_pnl": 1960.3999060675503, "outcome": "side_error"}
+{"day": "2024-02-13", "oracle_bar": 116, "oracle_direction": "put", "oracle_pnl": 1641.2199715922773, "outcome": "abstention"}
+{"day": "2024-02-14", "oracle_bar": 57, "oracle_direction": "put", "oracle_pnl": 2691.389796389863, "outcome": "abstention"}
+{"day": "2024-02-15", "oracle_bar": 99, "oracle_direction": "call", "oracle_pnl": 1764.0788728991843, "outcome": "abstention"}
+{"day": "2024-02-16", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1816.0089568174078, "outcome": "abstention"}
+{"day": "2024-02-20", "oracle_bar": 91, "oracle_direction": "put", "oracle_pnl": 1921.0703706670804, "outcome": "abstention"}
+{"day": "2024-02-21", "oracle_bar": 105, "oracle_direction": "put", "oracle_pnl": 1227.6000392302872, "outcome": "abstention"}
+{"day": "2024-02-22", "oracle_bar": 80, "oracle_direction": "call", "oracle_pnl": 1785.3500956591217, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 0.0}
+{"day": "2024-02-23", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 1918.6000394314528, "outcome": "abstention"}
+{"day": "2024-02-26", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 1712.5929156141103, "outcome": "side_error"}
+{"day": "2024-02-27", "oracle_bar": 88, "oracle_direction": "put", "oracle_pnl": 866.6000955194235, "outcome": "abstention"}
+{"day": "2024-02-28", "oracle_bar": 96, "oracle_direction": "put", "oracle_pnl": 960.5500762786717, "outcome": "abstention"}
+{"day": "2024-02-29", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 2233.2368438839912, "outcome": "abstention"}
+{"day": "2024-03-01", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 2727.5100566022097, "outcome": "abstention"}
+{"day": "2024-03-04", "oracle_bar": 45, "oracle_direction": "call", "oracle_pnl": 584.269846591546, "outcome": "abstention"}
+{"day": "2024-03-05", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 3088.0958785576663, "outcome": "abstention"}
+{"day": "2024-03-06", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 2233.493037596837, "outcome": "abstention"}
+{"day": "2024-03-07", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1548.3695453352152, "outcome": "abstention"}
+{"day": "2024-03-08", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 5787.490100797489, "outcome": "abstention"}
+{"day": "2024-03-11", "oracle_bar": 44, "oracle_direction": "call", "oracle_pnl": 1611.1795161686186, "outcome": "abstention"}
+{"day": "2024-03-12", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 2180.9298589546233, "outcome": "abstention"}
+{"day": "2024-03-13", "oracle_bar": 86, "oracle_direction": "call", "oracle_pnl": 818.1000954858958, "outcome": "abstention"}
+{"day": "2024-03-14", "oracle_bar": 67, "oracle_direction": "put", "oracle_pnl": 1615.3599966832996, "outcome": "abstention"}
+{"day": "2024-03-15", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 2151.604154764673, "outcome": "abstention"}
+{"day": "2024-03-18", "oracle_bar": 58, "oracle_direction": "put", "oracle_pnl": 1511.3582577479383, "outcome": "abstention"}
+{"day": "2024-03-19", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 3170.222752903097, "outcome": "abstention"}
+{"day": "2024-03-20", "oracle_bar": 58, "oracle_direction": "put", "oracle_pnl": 542.5000768862665, "outcome": "abstention"}
+{"day": "2024-03-21", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 681.2999435894192, "outcome": "abstention"}
+{"day": "2024-03-22", "oracle_bar": 87, "oracle_direction": "call", "oracle_pnl": 988.1900041060895, "outcome": "abstention"}
+{"day": "2024-03-25", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 442.69998132362963, "outcome": "abstention"}
+{"day": "2024-03-26", "oracle_bar": 115, "oracle_direction": "put", "oracle_pnl": 637.1799884398282, "outcome": "abstention"}
+{"day": "2024-03-27", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 954.6829346437007, "outcome": "abstention"}
+{"day": "2024-03-28", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 430.40003840476277, "outcome": "abstention"}
+{"day": "2024-04-01", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2750.6557056752204, "outcome": "abstention"}
+{"day": "2024-04-02", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 870.3570860603025, "outcome": "abstention"}
+{"day": "2024-04-03", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 1036.899982216209, "outcome": "abstention"}
+{"day": "2024-04-04", "oracle_bar": 109, "oracle_direction": "call", "oracle_pnl": 1067.5799520333112, "outcome": "abstention"}
+{"day": "2024-04-05", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 3555.118666635756, "outcome": "side_error"}
+{"day": "2024-04-08", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 1733.0699547886104, "outcome": "side_error"}
+{"day": "2024-04-09", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 3944.8498309958727, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2311.6498494599014}
+{"day": "2024-04-10", "oracle_bar": 69, "oracle_direction": "put", "oracle_pnl": 2184.5354755867593, "outcome": "side_error"}
+{"day": "2024-04-11", "oracle_bar": 46, "oracle_direction": "call", "oracle_pnl": 3659.9343087517623, "outcome": "side_error"}
+{"day": "2024-04-12", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 3369.8599033515866, "outcome": "abstention"}
+{"day": "2024-04-15", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 8501.869730549975, "outcome": "abstention"}
+{"day": "2024-04-16", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 1161.2567573896872, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1414.2184879481626}
+{"day": "2024-04-17", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 3615.4805157832902, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2809.405239539139}
+{"day": "2024-04-18", "oracle_bar": 107, "oracle_direction": "put", "oracle_pnl": 3613.494602269569, "outcome": "abstention"}
+{"day": "2024-04-19", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2381.673349840446, "outcome": "abstention"}
+{"day": "2024-04-22", "oracle_bar": 105, "oracle_direction": "call", "oracle_pnl": 5076.790580497303, "outcome": "abstention"}
+{"day": "2024-04-23", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1842.632656801492, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 20.715047796669978}
+{"day": "2024-04-24", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 2736.7358146099973, "outcome": "abstention"}
+{"day": "2024-04-25", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 4250.841545693797, "outcome": "side_error"}
+{"day": "2024-04-26", "oracle_bar": 113, "oracle_direction": "call", "oracle_pnl": 945.551243945295, "outcome": "abstention"}
+{"day": "2024-04-29", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 992.959978775084, "outcome": "abstention"}
+{"day": "2024-04-30", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 4091.5300660238413, "outcome": "abstention"}
+{"day": "2024-05-01", "oracle_bar": 87, "oracle_direction": "put", "oracle_pnl": 659.8999621219933, "outcome": "abstention"}
+{"day": "2024-05-02", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 2008.8951209374973, "outcome": "abstention"}
+{"day": "2024-05-03", "oracle_bar": 103, "oracle_direction": "call", "oracle_pnl": 1581.4391621876919, "outcome": "abstention"}
+{"day": "2024-05-06", "oracle_bar": 116, "oracle_direction": "call", "oracle_pnl": 579.768038762033, "outcome": "abstention"}
+{"day": "2024-05-07", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 869.2199513863027, "outcome": "abstention"}
+{"day": "2024-05-08", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 1133.2898023107898, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 703.7621470649331}
+{"day": "2024-05-09", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1427.050920174956, "outcome": "abstention"}
+{"day": "2024-05-10", "oracle_bar": 35, "oracle_direction": "put", "oracle_pnl": 1760.586953792721, "outcome": "abstention"}
+{"day": "2024-05-13", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 1557.673914484822, "outcome": "abstention"}
+{"day": "2024-05-14", "oracle_bar": 58, "oracle_direction": "put", "oracle_pnl": 1048.7122530200772, "outcome": "side_error"}
+{"day": "2024-05-15", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2364.310240285794, "outcome": "abstention"}
+{"day": "2024-05-16", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 1607.118534319669, "outcome": "abstention"}
+{"day": "2024-05-17", "oracle_bar": 77, "oracle_direction": "put", "oracle_pnl": 716.0500761557371, "outcome": "abstention"}
+{"day": "2024-05-20", "oracle_bar": 118, "oracle_direction": "put", "oracle_pnl": 1151.119917717874, "outcome": "abstention"}
+{"day": "2024-05-21", "oracle_bar": 114, "oracle_direction": "put", "oracle_pnl": 770.7000013954937, "outcome": "abstention"}
+{"day": "2024-05-22", "oracle_bar": 96, "oracle_direction": "put", "oracle_pnl": 1534.308813623306, "outcome": "abstention"}
+{"day": "2024-05-23", "oracle_bar": 70, "oracle_direction": "put", "oracle_pnl": 3181.738623571974, "outcome": "abstention"}
+{"day": "2024-05-24", "oracle_bar": 44, "oracle_direction": "call", "oracle_pnl": 1742.3799714137613, "outcome": "side_error"}
+{"day": "2024-05-28", "oracle_bar": 80, "oracle_direction": "put", "oracle_pnl": 986.826803744902, "outcome": "side_error"}
+{"day": "2024-05-29", "oracle_bar": 52, "oracle_direction": "call", "oracle_pnl": 752.135499349969, "outcome": "abstention"}
+{"day": "2024-05-30", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 1314.500000771135, "outcome": "abstention"}
+{"day": "2024-05-31", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 3515.359831753212, "outcome": "abstention"}
+{"day": "2024-06-03", "oracle_bar": 57, "oracle_direction": "put", "oracle_pnl": 4811.4354511565425, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2309.2805311479933}
+{"day": "2024-06-04", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 1446.292566246495, "outcome": "abstention"}
+{"day": "2024-06-05", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 2822.0418282161763, "outcome": "abstention"}
+{"day": "2024-06-06", "oracle_bar": 54, "oracle_direction": "put", "oracle_pnl": 1312.0732167479468, "outcome": "side_error"}
+{"day": "2024-06-07", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 1562.3229967248092, "outcome": "abstention"}
+{"day": "2024-06-10", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1668.93216190372, "outcome": "abstention"}
+{"day": "2024-06-11", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1415.7831051550004, "outcome": "abstention"}
+{"day": "2024-06-12", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 611.2000576511025, "outcome": "abstention"}
+{"day": "2024-06-13", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 1625.1499623399227, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1757.2500003967434}
+{"day": "2024-06-14", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 1357.3141120676892, "outcome": "abstention"}
+{"day": "2024-06-17", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 4752.623148160445, "outcome": "abstention"}
+{"day": "2024-06-18", "oracle_bar": 103, "oracle_direction": "call", "oracle_pnl": 997.0758712213261, "outcome": "abstention"}
+{"day": "2024-06-20", "oracle_bar": 98, "oracle_direction": "put", "oracle_pnl": 3551.8001330763104, "outcome": "abstention"}
+{"day": "2024-06-21", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 983.0320706383907, "outcome": "abstention"}
+{"day": "2024-06-24", "oracle_bar": 39, "oracle_direction": "put", "oracle_pnl": 2396.4998885020614, "outcome": "abstention"}
+{"day": "2024-06-25", "oracle_bar": 112, "oracle_direction": "put", "oracle_pnl": 1384.0100543943793, "outcome": "abstention"}
+{"day": "2024-06-26", "oracle_bar": 104, "oracle_direction": "call", "oracle_pnl": 1493.0800646674634, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 496.98004543080935}
+{"day": "2024-06-27", "oracle_bar": 69, "oracle_direction": "put", "oracle_pnl": 1523.9600352430343, "outcome": "abstention"}
+{"day": "2024-06-28", "oracle_bar": 44, "oracle_direction": "put", "oracle_pnl": 3524.8747078607703, "outcome": "abstention"}
+{"day": "2024-07-01", "oracle_bar": 35, "oracle_direction": "put", "oracle_pnl": 1823.416501847174, "outcome": "side_error"}
+{"day": "2024-07-02", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 1876.879169723019, "outcome": "abstention"}
+{"day": "2024-07-03", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 2114.7364226588898, "outcome": "abstention"}
+{"day": "2024-07-05", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 2307.320169120633, "outcome": "abstention"}
+{"day": "2024-07-08", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 1166.6000955194236, "outcome": "abstention"}
+{"day": "2024-07-09", "oracle_bar": 118, "oracle_direction": "call", "oracle_pnl": 793.1999813124537, "outcome": "abstention"}
+{"day": "2024-07-10", "oracle_bar": 91, "oracle_direction": "call", "oracle_pnl": 2562.318563850712, "outcome": "abstention"}
+{"day": "2024-07-11", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 5418.880627133165, "outcome": "abstention"}
+{"day": "2024-07-12", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 3916.4319794549447, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 428.38604509395554}
+{"day": "2024-07-15", "oracle_bar": 114, "oracle_direction": "put", "oracle_pnl": 3127.760111136138, "outcome": "abstention"}
+{"day": "2024-07-16", "oracle_bar": 46, "oracle_direction": "call", "oracle_pnl": 1395.365802268747, "outcome": "abstention"}
+{"day": "2024-07-17", "oracle_bar": 49, "oracle_direction": "put", "oracle_pnl": 1376.6812310427426, "outcome": "side_error"}
+{"day": "2024-07-18", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 5922.920183153748, "outcome": "abstention"}
+{"day": "2024-07-19", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 3552.106766981801, "outcome": "abstention"}
+{"day": "2024-07-22", "oracle_bar": 95, "oracle_direction": "put", "oracle_pnl": 2220.7500572334975, "outcome": "abstention"}
+{"day": "2024-07-23", "oracle_bar": 111, "oracle_direction": "put", "oracle_pnl": 1845.4932453854544, "outcome": "abstention"}
+{"day": "2024-07-24", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 1554.702142695859, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 337.6573654848337}
+{"day": "2024-07-25", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 6784.588694912434, "outcome": "abstention"}
+{"day": "2024-07-26", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 2835.319918833971, "outcome": "abstention"}
+{"day": "2024-07-29", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2370.1210663502047, "outcome": "abstention"}
+{"day": "2024-07-30", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 5789.959172401874, "outcome": "side_error"}
+{"day": "2024-07-31", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 955.1300837741047, "outcome": "abstention"}
+{"day": "2024-08-01", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 10505.823384484112, "outcome": "abstention"}
+{"day": "2024-08-02", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2342.906251806766, "outcome": "abstention"}
+{"day": "2024-08-05", "oracle_bar": 91, "oracle_direction": "call", "oracle_pnl": 3191.3410634609795, "outcome": "abstention"}
+{"day": "2024-08-06", "oracle_bar": 119, "oracle_direction": "call", "oracle_pnl": 2562.0001514716582, "outcome": "abstention"}
+{"day": "2024-08-07", "oracle_bar": 95, "oracle_direction": "put", "oracle_pnl": 6626.934305400774, "outcome": "abstention"}
+{"day": "2024-08-08", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 1270.452934900856, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 136.64953535444988}
+{"day": "2024-08-09", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 2058.9499254759403, "outcome": "abstention"}
+{"day": "2024-08-12", "oracle_bar": 102, "oracle_direction": "put", "oracle_pnl": 2518.791668653488, "outcome": "abstention"}
+{"day": "2024-08-13", "oracle_bar": 63, "oracle_direction": "call", "oracle_pnl": 2867.1938219135004, "outcome": "abstention"}
+{"day": "2024-08-14", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 2703.766928837082, "outcome": "abstention"}
+{"day": "2024-08-15", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 2077.156405786303, "outcome": "abstention"}
+{"day": "2024-08-16", "oracle_bar": 80, "oracle_direction": "call", "oracle_pnl": 1761.9900235088915, "outcome": "side_error"}
+{"day": "2024-08-19", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 2480.636098625979, "outcome": "abstention"}
+{"day": "2024-08-20", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2378.3941361170864, "outcome": "side_error"}
+{"day": "2024-08-21", "oracle_bar": 73, "oracle_direction": "put", "oracle_pnl": 2800.7001906700434, "outcome": "abstention"}
+{"day": "2024-08-22", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 5612.918664790739, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 111.82206521184162}
+{"day": "2024-08-23", "oracle_bar": 61, "oracle_direction": "put", "oracle_pnl": 3170.1299517721686, "outcome": "side_error"}
+{"day": "2024-08-26", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2506.035540662706, "outcome": "abstention"}
+{"day": "2024-08-27", "oracle_bar": 100, "oracle_direction": "put", "oracle_pnl": 1440.6199739958347, "outcome": "abstention"}
+{"day": "2024-08-28", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 5103.800020945072, "outcome": "abstention"}
+{"day": "2024-08-29", "oracle_bar": 52, "oracle_direction": "call", "oracle_pnl": 1670.4404057344987, "outcome": "abstention"}
+{"day": "2024-08-30", "oracle_bar": 72, "oracle_direction": "put", "oracle_pnl": 3607.054533939543, "outcome": "abstention"}
+{"day": "2024-09-03", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2573.915024007708, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 0.0}
+{"day": "2024-09-04", "oracle_bar": 94, "oracle_direction": "put", "oracle_pnl": 1940.9400653256475, "outcome": "abstention"}
+{"day": "2024-09-05", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 4784.4844826801, "outcome": "abstention"}
+{"day": "2024-09-06", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 4805.002365377069, "outcome": "abstention"}
+{"day": "2024-09-09", "oracle_bar": 107, "oracle_direction": "call", "oracle_pnl": 3292.100096067041, "outcome": "abstention"}
+{"day": "2024-09-10", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 3255.3161890671827, "outcome": "abstention"}
+{"day": "2024-09-11", "oracle_bar": 77, "oracle_direction": "call", "oracle_pnl": 8155.400198167563, "outcome": "side_error"}
+{"day": "2024-09-12", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 3382.004280182111, "outcome": "abstention"}
+{"day": "2024-09-13", "oracle_bar": 55, "oracle_direction": "put", "oracle_pnl": 886.8030169881654, "outcome": "abstention"}
+{"day": "2024-09-16", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 1593.421549922129, "outcome": "abstention"}
+{"day": "2024-09-17", "oracle_bar": 80, "oracle_direction": "put", "oracle_pnl": 4385.290023342744, "outcome": "abstention"}
+{"day": "2024-09-18", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 590.1999813795089, "outcome": "abstention"}
+{"day": "2024-09-19", "oracle_bar": 91, "oracle_direction": "call", "oracle_pnl": 1528.971829824035, "outcome": "abstention"}
+{"day": "2024-09-20", "oracle_bar": 106, "oracle_direction": "call", "oracle_pnl": 1995.6702091559769, "outcome": "abstention"}
+{"day": "2024-09-23", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 1202.5789465531707, "outcome": "abstention"}
+{"day": "2024-09-24", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 2305.04508662609, "outcome": "abstention"}
+{"day": "2024-09-25", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 2061.8500194434073, "outcome": "abstention"}
+{"day": "2024-09-26", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 2616.9180297985413, "outcome": "abstention"}
+{"day": "2024-09-27", "oracle_bar": 58, "oracle_direction": "put", "oracle_pnl": 1939.2787257680145, "outcome": "abstention"}
+{"day": "2024-09-30", "oracle_bar": 55, "oracle_direction": "call", "oracle_pnl": 909.7626556081034, "outcome": "abstention"}
+{"day": "2024-10-01", "oracle_bar": 107, "oracle_direction": "call", "oracle_pnl": 1979.530050273314, "outcome": "abstention"}
+{"day": "2024-10-02", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1373.4999445267022, "outcome": "abstention"}
+{"day": "2024-10-03", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 2571.9614066157774, "outcome": "abstention"}
+{"day": "2024-10-04", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 1573.2794389309026, "outcome": "abstention"}
+{"day": "2024-10-07", "oracle_bar": 110, "oracle_direction": "put", "oracle_pnl": 1125.0970682386599, "outcome": "abstention"}
+{"day": "2024-10-08", "oracle_bar": 45, "oracle_direction": "call", "oracle_pnl": 1243.7230165844526, "outcome": "side_error"}
+{"day": "2024-10-09", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2575.149906296656, "outcome": "abstention"}
+{"day": "2024-10-10", "oracle_bar": 93, "oracle_direction": "call", "oracle_pnl": 1477.8749822527172, "outcome": "abstention"}
+{"day": "2024-10-11", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2011.6788199478333, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1034.731533800175}
+{"day": "2024-10-14", "oracle_bar": 94, "oracle_direction": "call", "oracle_pnl": 985.6300532900542, "outcome": "abstention"}
+{"day": "2024-10-15", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 2920.9271822144, "outcome": "side_error"}
+{"day": "2024-10-16", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1484.4299553685635, "outcome": "abstention"}
+{"day": "2024-10-17", "oracle_bar": 94, "oracle_direction": "call", "oracle_pnl": 1373.5044083730036, "outcome": "abstention"}
+{"day": "2024-10-18", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 1243.773409017192, "outcome": "abstention"}
+{"day": "2024-10-21", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 3527.0126235774114, "outcome": "side_error"}
+{"day": "2024-10-22", "oracle_bar": 77, "oracle_direction": "call", "oracle_pnl": 2097.6401482230426, "outcome": "side_error"}
+{"day": "2024-10-23", "oracle_bar": 76, "oracle_direction": "put", "oracle_pnl": 4945.1999823853375, "outcome": "abstention"}
+{"day": "2024-10-24", "oracle_bar": 66, "oracle_direction": "put", "oracle_pnl": 2375.239977950454, "outcome": "abstention"}
+{"day": "2024-10-25", "oracle_bar": 55, "oracle_direction": "put", "oracle_pnl": 4922.400054602325, "outcome": "abstention"}
+{"day": "2024-10-28", "oracle_bar": 83, "oracle_direction": "put", "oracle_pnl": 1210.1699368915706, "outcome": "abstention"}
+{"day": "2024-10-29", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1632.5694316858053, "outcome": "abstention"}
+{"day": "2024-10-30", "oracle_bar": 119, "oracle_direction": "put", "oracle_pnl": 2061.6262359897055, "outcome": "abstention"}
+{"day": "2024-10-31", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 1725.4711546846343, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 380.58142295191897}
+{"day": "2024-11-01", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 2816.2414916830844, "outcome": "abstention"}
+{"day": "2024-11-04", "oracle_bar": 103, "oracle_direction": "put", "oracle_pnl": 3304.1698872728716, "outcome": "abstention"}
+{"day": "2024-11-05", "oracle_bar": 91, "oracle_direction": "call", "oracle_pnl": 1655.0558661709465, "outcome": "abstention"}
+{"day": "2024-11-06", "oracle_bar": 92, "oracle_direction": "call", "oracle_pnl": 2461.338860857003, "outcome": "abstention"}
+{"day": "2024-11-07", "oracle_bar": 47, "oracle_direction": "call", "oracle_pnl": 650.9999243319035, "outcome": "abstention"}
+{"day": "2024-11-08", "oracle_bar": 44, "oracle_direction": "call", "oracle_pnl": 1752.064526637654, "outcome": "abstention"}
+{"day": "2024-11-11", "oracle_bar": 91, "oracle_direction": "put", "oracle_pnl": 2246.999958744416, "outcome": "abstention"}
+{"day": "2024-11-12", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 3693.004543967445, "outcome": "abstention"}
+{"day": "2024-11-13", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 2624.617732728229, "outcome": "abstention"}
+{"day": "2024-11-14", "oracle_bar": 83, "oracle_direction": "put", "oracle_pnl": 2392.902356547667, "outcome": "abstention"}
+{"day": "2024-11-15", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2892.215984040141, "outcome": "abstention"}
+{"day": "2024-11-18", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2668.094249680414, "outcome": "abstention"}
+{"day": "2024-11-19", "oracle_bar": 52, "oracle_direction": "call", "oracle_pnl": 4187.793060869348, "outcome": "abstention"}
+{"day": "2024-11-20", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 1998.6675244439543, "outcome": "abstention"}
+{"day": "2024-11-21", "oracle_bar": 60, "oracle_direction": "call", "oracle_pnl": 4708.928408905933, "outcome": "abstention"}
+{"day": "2024-11-22", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 1465.5500201236457, "outcome": "side_error"}
+{"day": "2024-11-25", "oracle_bar": 60, "oracle_direction": "put", "oracle_pnl": 3281.976129824155, "outcome": "abstention"}
+{"day": "2024-11-26", "oracle_bar": 56, "oracle_direction": "call", "oracle_pnl": 1211.0470681104198, "outcome": "abstention"}
+{"day": "2024-11-27", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 2267.342570199892, "outcome": "abstention"}
+{"day": "2024-11-29", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2061.9193490025527, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 824.3520457449731}
+{"day": "2024-12-02", "oracle_bar": 92, "oracle_direction": "call", "oracle_pnl": 1016.886823461771, "outcome": "abstention"}
+{"day": "2024-12-03", "oracle_bar": 83, "oracle_direction": "call", "oracle_pnl": 927.4798981589079, "outcome": "side_error"}
+{"day": "2024-12-04", "oracle_bar": 45, "oracle_direction": "call", "oracle_pnl": 868.7949642004684, "outcome": "abstention"}
+{"day": "2024-12-05", "oracle_bar": 95, "oracle_direction": "call", "oracle_pnl": 1290.8699024870245, "outcome": "abstention"}
+{"day": "2024-12-06", "oracle_bar": 67, "oracle_direction": "put", "oracle_pnl": 1485.0000770539045, "outcome": "abstention"}
+{"day": "2024-12-09", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2473.7798377561767, "outcome": "abstention"}
+{"day": "2024-12-10", "oracle_bar": 75, "oracle_direction": "put", "oracle_pnl": 1362.670023798868, "outcome": "side_error"}
+{"day": "2024-12-11", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1569.100039420277, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 544.5000001229346}
+{"day": "2024-12-12", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 1455.6699369921535, "outcome": "side_error"}
+{"day": "2024-12-13", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 2664.063788876918, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1219.0615544034201}
+{"day": "2024-12-16", "oracle_bar": 51, "oracle_direction": "call", "oracle_pnl": 1787.9413833014892, "outcome": "abstention"}
+{"day": "2024-12-17", "oracle_bar": 65, "oracle_direction": "call", "oracle_pnl": 1424.4958717390896, "outcome": "abstention"}
+{"day": "2024-12-18", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 778.3700597259402, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 626.835104894787}
+{"day": "2024-12-19", "oracle_bar": 104, "oracle_direction": "call", "oracle_pnl": 1632.9555733495288, "outcome": "abstention"}
+{"day": "2024-12-20", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 9780.814586365022, "outcome": "abstention"}
+{"day": "2024-12-23", "oracle_bar": 84, "oracle_direction": "call", "oracle_pnl": 3275.6048289139226, "outcome": "abstention"}
+{"day": "2024-12-24", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 3091.482818592023, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 0.0}
+{"day": "2024-12-26", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 1823.6334769894431, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 997.4199669527095}
+{"day": "2024-12-27", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 3019.2789803199985, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2774.233798606}
+{"day": "2024-12-30", "oracle_bar": 58, "oracle_direction": "call", "oracle_pnl": 4641.60544609014, "outcome": "abstention"}
+{"day": "2024-12-31", "oracle_bar": 57, "oracle_direction": "put", "oracle_pnl": 3058.2084833520153, "outcome": "abstention"}
+{"day": "2025-01-02", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 7794.627436626802, "outcome": "abstention"}
+{"day": "2025-01-03", "oracle_bar": 51, "oracle_direction": "call", "oracle_pnl": 2901.7460685270376, "outcome": "side_error"}
+{"day": "2025-01-06", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 3423.389949156567, "outcome": "abstention"}
+{"day": "2025-01-07", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 2883.243737135332, "outcome": "abstention"}
+{"day": "2025-01-08", "oracle_bar": 113, "oracle_direction": "put", "oracle_pnl": 1616.859418657958, "outcome": "abstention"}
+{"day": "2025-01-10", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 2978.43717037457, "outcome": "abstention"}
+{"day": "2025-01-13", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 1973.2042152447843, "outcome": "abstention"}
+{"day": "2025-01-14", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 3686.8299325817084, "outcome": "abstention"}
+{"day": "2025-01-15", "oracle_bar": 49, "oracle_direction": "put", "oracle_pnl": 1885.9001150228082, "outcome": "side_error"}
+{"day": "2025-01-16", "oracle_bar": 99, "oracle_direction": "put", "oracle_pnl": 1874.3972730772773, "outcome": "abstention"}
+{"day": "2025-01-17", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 1762.754523280526, "outcome": "abstention"}
+{"day": "2025-01-21", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 2277.938045024222, "outcome": "side_error"}
+{"day": "2025-01-22", "oracle_bar": 102, "oracle_direction": "call", "oracle_pnl": 906.9157895975935, "outcome": "abstention"}
+{"day": "2025-01-23", "oracle_bar": 58, "oracle_direction": "call", "oracle_pnl": 1800.9898909705134, "outcome": "abstention"}
+{"day": "2025-01-24", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 2112.3399962930384, "outcome": "abstention"}
+{"day": "2025-01-27", "oracle_bar": 72, "oracle_direction": "put", "oracle_pnl": 1923.143753566731, "outcome": "abstention"}
+{"day": "2025-01-28", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 3518.749442034856, "outcome": "abstention"}
+{"day": "2025-01-29", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 2547.779861596674, "outcome": "abstention"}
+{"day": "2025-01-30", "oracle_bar": 104, "oracle_direction": "call", "oracle_pnl": 2675.138601653079, "outcome": "abstention"}
+{"day": "2025-01-31", "oracle_bar": 102, "oracle_direction": "put", "oracle_pnl": 4276.749888969585, "outcome": "abstention"}
+{"day": "2025-02-03", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 5772.046073398615, "outcome": "abstention"}
+{"day": "2025-02-04", "oracle_bar": 119, "oracle_direction": "put", "oracle_pnl": 1557.2080489465825, "outcome": "abstention"}
+{"day": "2025-02-05", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 2578.290983234243, "outcome": "side_error"}
+{"day": "2025-02-06", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 1090.018901307774, "outcome": "abstention"}
+{"day": "2025-02-07", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 3332.8694628434355, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 235.3609012919037}
+{"day": "2025-02-10", "oracle_bar": 78, "oracle_direction": "put", "oracle_pnl": 1316.7900684597344, "outcome": "side_error"}
+{"day": "2025-02-11", "oracle_bar": 84, "oracle_direction": "put", "oracle_pnl": 1328.2655034956017, "outcome": "abstention"}
+{"day": "2025-02-12", "oracle_bar": 42, "oracle_direction": "call", "oracle_pnl": 2987.897094804355, "outcome": "abstention"}
+{"day": "2025-02-13", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1469.1753074158705, "outcome": "abstention"}
+{"day": "2025-02-14", "oracle_bar": 100, "oracle_direction": "put", "oracle_pnl": 1194.6999252356588, "outcome": "abstention"}
+{"day": "2025-02-18", "oracle_bar": 102, "oracle_direction": "put", "oracle_pnl": 800.3299930021911, "outcome": "abstention"}
+{"day": "2025-02-19", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 1582.990099780485, "outcome": "abstention"}
+{"day": "2025-02-20", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 1154.0183695060266, "outcome": "abstention"}
+{"day": "2025-02-21", "oracle_bar": 41, "oracle_direction": "put", "oracle_pnl": 5245.839667003885, "outcome": "abstention"}
+{"day": "2025-02-24", "oracle_bar": 87, "oracle_direction": "call", "oracle_pnl": 3116.000113209323, "outcome": "side_error"}
+{"day": "2025-02-25", "oracle_bar": 118, "oracle_direction": "call", "oracle_pnl": 3428.9199174511427, "outcome": "abstention"}
+{"day": "2025-02-26", "oracle_bar": 104, "oracle_direction": "put", "oracle_pnl": 6199.309661850855, "outcome": "abstention"}
+{"day": "2025-02-27", "oracle_bar": 108, "oracle_direction": "put", "oracle_pnl": 2501.6751495458184, "outcome": "side_error"}
+{"day": "2025-02-28", "oracle_bar": 89, "oracle_direction": "put", "oracle_pnl": 4111.219880620688, "outcome": "abstention"}
+{"day": "2025-03-03", "oracle_bar": 74, "oracle_direction": "put", "oracle_pnl": 4959.785189799735, "outcome": "side_error"}
+{"day": "2025-03-04", "oracle_bar": 99, "oracle_direction": "call", "oracle_pnl": 4437.791816598426, "outcome": "abstention"}
+{"day": "2025-03-05", "oracle_bar": 117, "oracle_direction": "call", "oracle_pnl": 3341.3999064922336, "outcome": "abstention"}
+{"day": "2025-03-06", "oracle_bar": 101, "oracle_direction": "put", "oracle_pnl": 4820.909153621937, "outcome": "abstention"}
+{"day": "2025-03-07", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 3747.4999451078475, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 4638.149920795486}
+{"day": "2025-03-10", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 1599.607139916896, "outcome": "abstention"}
+{"day": "2025-03-11", "oracle_bar": 107, "oracle_direction": "put", "oracle_pnl": 2133.199925492704, "outcome": "side_error"}
+{"day": "2025-03-12", "oracle_bar": 106, "oracle_direction": "call", "oracle_pnl": 3141.5590113131875, "outcome": "abstention"}
+{"day": "2025-03-13", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 4422.139334247675, "outcome": "abstention"}
+{"day": "2025-03-14", "oracle_bar": 48, "oracle_direction": "call", "oracle_pnl": 2586.6206507230627, "outcome": "abstention"}
+{"day": "2025-03-17", "oracle_bar": 98, "oracle_direction": "call", "oracle_pnl": 1550.1800739955902, "outcome": "abstention"}
+{"day": "2025-03-18", "oracle_bar": 71, "oracle_direction": "put", "oracle_pnl": 1072.8370872235546, "outcome": "side_error"}
+{"day": "2025-03-19", "oracle_bar": 89, "oracle_direction": "call", "oracle_pnl": 1034.5000770650804, "outcome": "abstention"}
+{"day": "2025-03-20", "oracle_bar": 78, "oracle_direction": "put", "oracle_pnl": 3493.469880458638, "outcome": "side_error"}
+{"day": "2025-03-21", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 2231.887815476714, "outcome": "side_error"}
+{"day": "2025-03-24", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 1016.4076778266908, "outcome": "side_error"}
+{"day": "2025-03-25", "oracle_bar": 82, "oracle_direction": "put", "oracle_pnl": 1491.5402663654604, "outcome": "abstention"}
+{"day": "2025-03-26", "oracle_bar": 100, "oracle_direction": "put", "oracle_pnl": 4613.013427527994, "outcome": "abstention"}
+{"day": "2025-03-27", "oracle_bar": 109, "oracle_direction": "put", "oracle_pnl": 3026.257149833907, "outcome": "abstention"}
+{"day": "2025-03-28", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 5624.152995250842, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1021.3429934029818}
+{"day": "2025-03-31", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 2389.620106802434, "outcome": "abstention"}
+{"day": "2025-04-01", "oracle_bar": 50, "oracle_direction": "call", "oracle_pnl": 5648.847452465255, "outcome": "abstention"}
+{"day": "2025-04-02", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 4739.169390124207, "outcome": "side_error"}
+{"day": "2025-04-03", "oracle_bar": 97, "oracle_direction": "call", "oracle_pnl": 2350.1273473638703, "outcome": "abstention"}
+{"day": "2025-04-04", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 4252.37921587596, "outcome": "abstention"}
+{"day": "2025-04-07", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 12842.83068999283, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 11094.930727602616}
+{"day": "2025-04-08", "oracle_bar": 52, "oracle_direction": "put", "oracle_pnl": 10564.820007372946, "outcome": "side_error"}
+{"day": "2025-04-09", "oracle_bar": 93, "oracle_direction": "call", "oracle_pnl": 27180.90307098823, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 4483.7550436707825}
+{"day": "2025-04-10", "oracle_bar": 66, "oracle_direction": "put", "oracle_pnl": 10768.58368682133, "outcome": "abstention"}
+{"day": "2025-04-11", "oracle_bar": 114, "oracle_direction": "call", "oracle_pnl": 4499.900171870738, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1148.4002268522972}
+{"day": "2025-04-14", "oracle_bar": 84, "oracle_direction": "put", "oracle_pnl": 4757.540115046352, "outcome": "abstention"}
+{"day": "2025-04-15", "oracle_bar": 42, "oracle_direction": "put", "oracle_pnl": 1993.705920817659, "outcome": "abstention"}
+{"day": "2025-04-16", "oracle_bar": 119, "oracle_direction": "put", "oracle_pnl": 6584.839930642247, "outcome": "abstention"}
+{"day": "2025-04-17", "oracle_bar": 68, "oracle_direction": "call", "oracle_pnl": 2411.333163330952, "outcome": "abstention"}
+{"day": "2025-04-21", "oracle_bar": 71, "oracle_direction": "put", "oracle_pnl": 3851.1779475118633, "outcome": "abstention"}
+{"day": "2025-04-22", "oracle_bar": 46, "oracle_direction": "call", "oracle_pnl": 3870.2579656741445, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 4565.743496158346}
+{"day": "2025-04-23", "oracle_bar": 77, "oracle_direction": "put", "oracle_pnl": 5795.3732202569645, "outcome": "abstention"}
+{"day": "2025-04-24", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 2549.0543500995263, "outcome": "abstention"}
+{"day": "2025-04-25", "oracle_bar": 61, "oracle_direction": "call", "oracle_pnl": 3161.715423833858, "outcome": "side_error"}
+{"day": "2025-04-28", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 4339.206803480505, "outcome": "abstention"}
+{"day": "2025-04-29", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 2803.240958636505, "outcome": "side_error"}
+{"day": "2025-04-30", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 3585.125076904893, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 217.14386948272568}
+{"day": "2025-05-01", "oracle_bar": 108, "oracle_direction": "put", "oracle_pnl": 2824.173913419696, "outcome": "abstention"}
+{"day": "2025-05-02", "oracle_bar": 119, "oracle_direction": "call", "oracle_pnl": 1950.912119041338, "outcome": "abstention"}
+{"day": "2025-05-05", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 1290.3083547816796, "outcome": "abstention"}
+{"day": "2025-05-06", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 3123.618834923784, "outcome": "side_error"}
+{"day": "2025-05-07", "oracle_bar": 61, "oracle_direction": "put", "oracle_pnl": 1600.0000571385028, "outcome": "abstention"}
+{"day": "2025-05-08", "oracle_bar": 94, "oracle_direction": "call", "oracle_pnl": 4830.5788359521775, "outcome": "abstention"}
+{"day": "2025-05-09", "oracle_bar": 39, "oracle_direction": "put", "oracle_pnl": 2786.0001898155992, "outcome": "abstention"}
+{"day": "2025-05-12", "oracle_bar": 68, "oracle_direction": "call", "oracle_pnl": 2443.9456633660197, "outcome": "side_error"}
+{"day": "2025-05-13", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2130.813271727239, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1005.4131975062937}
+{"day": "2025-05-14", "oracle_bar": 96, "oracle_direction": "call", "oracle_pnl": 1300.4346553208322, "outcome": "abstention"}
+{"day": "2025-05-15", "oracle_bar": 65, "oracle_direction": "call", "oracle_pnl": 4139.177279148869, "outcome": "abstention"}
+{"day": "2025-05-16", "oracle_bar": 74, "oracle_direction": "call", "oracle_pnl": 2587.034059250584, "outcome": "abstention"}
+{"day": "2025-05-19", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2272.566622754094, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 977.6271468968137}
+{"day": "2025-05-20", "oracle_bar": 78, "oracle_direction": "put", "oracle_pnl": 914.8020847477019, "outcome": "abstention"}
+{"day": "2025-05-21", "oracle_bar": 114, "oracle_direction": "put", "oracle_pnl": 7007.046894520521, "outcome": "abstention"}
+{"day": "2025-05-22", "oracle_bar": 87, "oracle_direction": "call", "oracle_pnl": 1900.6827015774193, "outcome": "abstention"}
+{"day": "2025-05-23", "oracle_bar": 97, "oracle_direction": "call", "oracle_pnl": 1973.809865031913, "outcome": "abstention"}
+{"day": "2025-05-27", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 2776.069779992504, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 71.62629912132707}
+{"day": "2025-05-28", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 859.5171624571085, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 761.3965143291601}
+{"day": "2025-05-29", "oracle_bar": 88, "oracle_direction": "put", "oracle_pnl": 3144.1589850146734, "outcome": "abstention"}
+{"day": "2025-05-30", "oracle_bar": 69, "oracle_direction": "put", "oracle_pnl": 4432.000001497567, "outcome": "side_error"}
+{"day": "2025-06-02", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2612.2505427346514, "outcome": "abstention"}
+{"day": "2025-06-03", "oracle_bar": 38, "oracle_direction": "call", "oracle_pnl": 3309.5261548553935, "outcome": "abstention"}
+{"day": "2025-06-04", "oracle_bar": 101, "oracle_direction": "put", "oracle_pnl": 1238.866703212137, "outcome": "abstention"}
+{"day": "2025-06-05", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 3128.590042309687, "outcome": "abstention"}
+{"day": "2025-06-06", "oracle_bar": 97, "oracle_direction": "put", "oracle_pnl": 2125.111115448252, "outcome": "abstention"}
+{"day": "2025-06-09", "oracle_bar": 118, "oracle_direction": "call", "oracle_pnl": 1130.8399398362637, "outcome": "abstention"}
+{"day": "2025-06-10", "oracle_bar": 84, "oracle_direction": "put", "oracle_pnl": 1236.500077020377, "outcome": "side_error"}
+{"day": "2025-06-11", "oracle_bar": 94, "oracle_direction": "put", "oracle_pnl": 1956.7878790803709, "outcome": "abstention"}
+{"day": "2025-06-12", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1656.3026733025492, "outcome": "side_error"}
+{"day": "2025-06-13", "oracle_bar": 60, "oracle_direction": "call", "oracle_pnl": 3064.6600657327167, "outcome": "abstention"}
+{"day": "2025-06-16", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 1413.6779083115823, "outcome": "abstention"}
+{"day": "2025-06-17", "oracle_bar": 104, "oracle_direction": "put", "oracle_pnl": 3065.298514425303, "outcome": "abstention"}
+{"day": "2025-06-18", "oracle_bar": 69, "oracle_direction": "put", "oracle_pnl": 1266.1800468598306, "outcome": "side_error"}
+{"day": "2025-06-20", "oracle_bar": 51, "oracle_direction": "put", "oracle_pnl": 2737.259967917353, "outcome": "abstention"}
+{"day": "2025-06-23", "oracle_bar": 50, "oracle_direction": "put", "oracle_pnl": 4186.18743968755, "outcome": "abstention"}
+{"day": "2025-06-24", "oracle_bar": 44, "oracle_direction": "call", "oracle_pnl": 2097.780217879477, "outcome": "abstention"}
+{"day": "2025-06-25", "oracle_bar": 75, "oracle_direction": "put", "oracle_pnl": 1765.2542084111521, "outcome": "abstention"}
+{"day": "2025-06-26", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 1504.4569674791987, "outcome": "side_error"}
+{"day": "2025-06-27", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 1412.7099283923953, "outcome": "abstention"}
+{"day": "2025-06-30", "oracle_bar": 109, "oracle_direction": "call", "oracle_pnl": 588.8000762060285, "outcome": "abstention"}
+{"day": "2025-07-01", "oracle_bar": 105, "oracle_direction": "call", "oracle_pnl": 1909.2130061836426, "outcome": "abstention"}
+{"day": "2025-07-02", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1391.3421647751072, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 112.49911406709862}
+{"day": "2025-07-03", "oracle_bar": 46, "oracle_direction": "call", "oracle_pnl": 946.798722555704, "outcome": "abstention"}
+{"day": "2025-07-07", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 3307.75005752407, "outcome": "abstention"}
+{"day": "2025-07-08", "oracle_bar": 55, "oracle_direction": "call", "oracle_pnl": 1333.4511932393011, "outcome": "abstention"}
+{"day": "2025-07-09", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 2581.381992950612, "outcome": "abstention"}
+{"day": "2025-07-10", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 2683.450038132444, "outcome": "abstention"}
+{"day": "2025-07-11", "oracle_bar": 66, "oracle_direction": "put", "oracle_pnl": 974.9000385276973, "outcome": "abstention"}
+{"day": "2025-07-14", "oracle_bar": 63, "oracle_direction": "call", "oracle_pnl": 1613.3749259412289, "outcome": "abstention"}
+{"day": "2025-07-15", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 2235.3157355364715, "outcome": "side_error"}
+{"day": "2025-07-16", "oracle_bar": 104, "oracle_direction": "put", "oracle_pnl": 4591.71789205144, "outcome": "side_error"}
+{"day": "2025-07-17", "oracle_bar": 53, "oracle_direction": "call", "oracle_pnl": 1527.245152931374, "outcome": "side_error"}
+{"day": "2025-07-18", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 1745.7586027603343, "outcome": "abstention"}
+{"day": "2025-07-21", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 636.6082487404346, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 408.13534775307545}
+{"day": "2025-07-22", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 1546.0799307470024, "outcome": "abstention"}
+{"day": "2025-07-23", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2208.549854201417, "outcome": "abstention"}
+{"day": "2025-07-24", "oracle_bar": 104, "oracle_direction": "put", "oracle_pnl": 1047.4001147657632, "outcome": "abstention"}
+{"day": "2025-07-25", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 1744.1399151343476, "outcome": "abstention"}
+{"day": "2025-07-28", "oracle_bar": 47, "oracle_direction": "put", "oracle_pnl": 1345.199925224483, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 0.0}
+{"day": "2025-07-29", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 2679.9891147518156, "outcome": "side_error"}
+{"day": "2025-07-30", "oracle_bar": 104, "oracle_direction": "call", "oracle_pnl": 896.6577273690496, "outcome": "abstention"}
+{"day": "2025-07-31", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 4951.578986379652, "outcome": "abstention"}
+{"day": "2025-08-01", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 1897.437499674037, "outcome": "abstention"}
+{"day": "2025-08-04", "oracle_bar": 111, "oracle_direction": "call", "oracle_pnl": 951.7015420116685, "outcome": "abstention"}
+{"day": "2025-08-05", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 2800.0156101011903, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2845.8818093175328}
+{"day": "2025-08-06", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 3278.5851798056988, "outcome": "abstention"}
+{"day": "2025-08-07", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 5539.144604030375, "outcome": "abstention"}
+{"day": "2025-08-08", "oracle_bar": 65, "oracle_direction": "put", "oracle_pnl": 1398.6462923718361, "outcome": "abstention"}
+{"day": "2025-08-11", "oracle_bar": 97, "oracle_direction": "call", "oracle_pnl": 1685.0574533414745, "outcome": "abstention"}
+{"day": "2025-08-12", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 3262.9918685728276, "outcome": "abstention"}
+{"day": "2025-08-13", "oracle_bar": 36, "oracle_direction": "put", "oracle_pnl": 2264.543974036318, "outcome": "abstention"}
+{"day": "2025-08-14", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 2094.5937121920288, "outcome": "abstention"}
+{"day": "2025-08-15", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 1157.9357285377255, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1817.9066161844719}
+{"day": "2025-08-18", "oracle_bar": 56, "oracle_direction": "put", "oracle_pnl": 1100.539920578748, "outcome": "abstention"}
+{"day": "2025-08-19", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 4419.514563097821, "outcome": "abstention"}
+{"day": "2025-08-20", "oracle_bar": 84, "oracle_direction": "call", "oracle_pnl": 3171.475341635779, "outcome": "side_error"}
+{"day": "2025-08-21", "oracle_bar": 59, "oracle_direction": "put", "oracle_pnl": 2426.888799358987, "outcome": "abstention"}
+{"day": "2025-08-22", "oracle_bar": 53, "oracle_direction": "call", "oracle_pnl": 1410.8774656591079, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 798.7339447495458}
+{"day": "2025-08-25", "oracle_bar": 73, "oracle_direction": "call", "oracle_pnl": 968.7435713922364, "outcome": "abstention"}
+{"day": "2025-08-26", "oracle_bar": 119, "oracle_direction": "call", "oracle_pnl": 733.0049093578756, "outcome": "abstention"}
+{"day": "2025-08-27", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 898.7648972734556, "outcome": "side_error"}
+{"day": "2025-08-28", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 1668.7000379033386, "outcome": "abstention"}
+{"day": "2025-08-29", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 1218.9791471020628, "outcome": "abstention"}
+{"day": "2025-09-02", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 3161.3322395365412, "outcome": "side_error"}
+{"day": "2025-09-03", "oracle_bar": 96, "oracle_direction": "put", "oracle_pnl": 3047.534969896458, "outcome": "abstention"}
+{"day": "2025-09-04", "oracle_bar": 46, "oracle_direction": "call", "oracle_pnl": 2886.4760777100178, "outcome": "abstention"}
+{"day": "2025-09-05", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 5697.584449307503, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 1521.2872531130388}
+{"day": "2025-09-08", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 2034.424998961389, "outcome": "abstention"}
+{"day": "2025-09-09", "oracle_bar": 73, "oracle_direction": "call", "oracle_pnl": 1748.4702177390209, "outcome": "abstention"}
+{"day": "2025-09-10", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 1955.0585157359317, "outcome": "abstention"}
+{"day": "2025-09-11", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1314.2940622633141, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 301.4900476090319}
+{"day": "2025-09-12", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 857.8365126401186, "outcome": "abstention"}
+{"day": "2025-09-15", "oracle_bar": 85, "oracle_direction": "put", "oracle_pnl": 1124.6200738559662, "outcome": "abstention"}
+{"day": "2025-09-16", "oracle_bar": 53, "oracle_direction": "put", "oracle_pnl": 788.0000769868493, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 851.4000379577279}
+{"day": "2025-09-17", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 793.7400233580172, "outcome": "abstention"}
+{"day": "2025-09-18", "oracle_bar": 61, "oracle_direction": "put", "oracle_pnl": 1502.0465255485271, "outcome": "side_error"}
+{"day": "2025-09-19", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 1559.9165586731535, "outcome": "abstention"}
+{"day": "2025-09-22", "oracle_bar": 45, "oracle_direction": "call", "oracle_pnl": 2875.9532382581383, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 326.39092689938843}
+{"day": "2025-09-23", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 4307.122897169039, "outcome": "abstention"}
+{"day": "2025-09-24", "oracle_bar": 82, "oracle_direction": "put", "oracle_pnl": 3105.862313983776, "outcome": "side_error"}
+{"day": "2025-09-25", "oracle_bar": 86, "oracle_direction": "put", "oracle_pnl": 2293.609940567389, "outcome": "side_error"}
+{"day": "2025-09-26", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 2848.205102262557, "outcome": "side_error"}
+{"day": "2025-09-29", "oracle_bar": 78, "oracle_direction": "put", "oracle_pnl": 2386.050132869557, "outcome": "side_error"}
+{"day": "2025-09-30", "oracle_bar": 118, "oracle_direction": "call", "oracle_pnl": 1239.566591094931, "outcome": "abstention"}
+{"day": "2025-10-01", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2797.796621429622, "outcome": "abstention"}
+{"day": "2025-10-02", "oracle_bar": 35, "oracle_direction": "put", "oracle_pnl": 1765.3752030106903, "outcome": "abstention"}
+{"day": "2025-10-03", "oracle_bar": 84, "oracle_direction": "put", "oracle_pnl": 3587.9999276274893, "outcome": "abstention"}
+{"day": "2025-10-06", "oracle_bar": 40, "oracle_direction": "call", "oracle_pnl": 1990.7750746257602, "outcome": "side_error"}
+{"day": "2025-10-07", "oracle_bar": 41, "oracle_direction": "put", "oracle_pnl": 4126.447435125485, "outcome": "side_error"}
+{"day": "2025-10-08", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 1331.4319906731355, "outcome": "abstention"}
+{"day": "2025-10-09", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 1998.1284868817982, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 816.2593546993105}
+{"day": "2025-10-10", "oracle_bar": 79, "oracle_direction": "put", "oracle_pnl": 14357.46969179578, "outcome": "abstention"}
+{"day": "2025-10-13", "oracle_bar": 97, "oracle_direction": "call", "oracle_pnl": 2307.096662253282, "outcome": "abstention"}
+{"day": "2025-10-14", "oracle_bar": 33, "oracle_direction": "call", "oracle_pnl": 5586.618451346705, "outcome": "abstention"}
+{"day": "2025-10-15", "oracle_bar": 58, "oracle_direction": "put", "oracle_pnl": 9104.810244229213, "outcome": "side_error"}
+{"day": "2025-10-16", "oracle_bar": 74, "oracle_direction": "put", "oracle_pnl": 6879.379840037674, "outcome": "side_error"}
+{"day": "2025-10-17", "oracle_bar": 115, "oracle_direction": "call", "oracle_pnl": 1581.4957449315673, "outcome": "abstention"}
+{"day": "2025-10-20", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 1755.045530714772, "outcome": "abstention"}
+{"day": "2025-10-21", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 1407.9999996125698, "outcome": "side_error"}
+{"day": "2025-10-22", "oracle_bar": 37, "oracle_direction": "put", "oracle_pnl": 5922.452636446209, "outcome": "abstention"}
+{"day": "2025-10-23", "oracle_bar": 49, "oracle_direction": "call", "oracle_pnl": 2098.249886157612, "outcome": "abstention"}
+{"day": "2025-10-24", "oracle_bar": 60, "oracle_direction": "call", "oracle_pnl": 1093.79804903836, "outcome": "abstention"}
+{"day": "2025-10-27", "oracle_bar": 99, "oracle_direction": "call", "oracle_pnl": 781.4999443478882, "outcome": "abstention"}
+{"day": "2025-10-28", "oracle_bar": 120, "oracle_direction": "call", "oracle_pnl": 1504.3999622449278, "outcome": "abstention"}
+{"day": "2025-10-29", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 698.9001147322357, "outcome": "side_error"}
+{"day": "2025-10-30", "oracle_bar": 110, "oracle_direction": "put", "oracle_pnl": 1266.372412322573, "outcome": "abstention"}
+{"day": "2025-10-31", "oracle_bar": 109, "oracle_direction": "put", "oracle_pnl": 3916.1657845796008, "outcome": "abstention"}
+{"day": "2025-11-03", "oracle_bar": 61, "oracle_direction": "call", "oracle_pnl": 2132.5470203477234, "outcome": "abstention"}
+{"day": "2025-11-04", "oracle_bar": 70, "oracle_direction": "put", "oracle_pnl": 3422.217348419577, "outcome": "abstention"}
+{"day": "2025-11-05", "oracle_bar": 110, "oracle_direction": "call", "oracle_pnl": 2520.8611567075, "outcome": "abstention"}
+{"day": "2025-11-06", "oracle_bar": 55, "oracle_direction": "put", "oracle_pnl": 4114.813434011797, "outcome": "abstention"}
+{"day": "2025-11-07", "oracle_bar": 52, "oracle_direction": "put", "oracle_pnl": 2493.4188794987695, "outcome": "abstention"}
+{"day": "2025-11-10", "oracle_bar": 119, "oracle_direction": "call", "oracle_pnl": 3383.982630796104, "outcome": "abstention"}
+{"day": "2025-11-11", "oracle_bar": 86, "oracle_direction": "call", "oracle_pnl": 3160.7422204088252, "outcome": "side_error"}
+{"day": "2025-11-12", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 1676.8192308022426, "outcome": "side_error"}
+{"day": "2025-11-13", "oracle_bar": 45, "oracle_direction": "put", "oracle_pnl": 6693.439158860311, "outcome": "abstention"}
+{"day": "2025-11-14", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 4390.39582994394, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2131.137498887256}
+{"day": "2025-11-17", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 3198.7516844664046, "outcome": "abstention"}
+{"day": "2025-11-18", "oracle_bar": 92, "oracle_direction": "call", "oracle_pnl": 4576.914231410419, "outcome": "abstention"}
+{"day": "2025-11-19", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 5812.1937753573575, "outcome": "abstention"}
+{"day": "2025-11-20", "oracle_bar": 74, "oracle_direction": "put", "oracle_pnl": 18474.719563039256, "outcome": "side_error"}
+{"day": "2025-11-21", "oracle_bar": 95, "oracle_direction": "call", "oracle_pnl": 7185.362193868949, "outcome": "abstention"}
+{"day": "2025-11-24", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 2413.4209544065798, "outcome": "abstention"}
+{"day": "2025-11-25", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 4940.576684979436, "outcome": "side_error"}
+{"day": "2025-11-26", "oracle_bar": 30, "oracle_direction": "call", "oracle_pnl": 2536.0803728512656, "outcome": "side_error"}
+{"day": "2025-11-28", "oracle_bar": 117, "oracle_direction": "call", "oracle_pnl": 993.3880283524791, "outcome": "side_error"}
+{"day": "2025-12-01", "oracle_bar": 64, "oracle_direction": "call", "oracle_pnl": 1786.0070082935215, "outcome": "abstention"}
+{"day": "2025-12-02", "oracle_bar": 93, "oracle_direction": "put", "oracle_pnl": 3537.7500025331974, "outcome": "abstention"}
+{"day": "2025-12-03", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 1744.8921471881574, "outcome": "abstention"}
+{"day": "2025-12-04", "oracle_bar": 69, "oracle_direction": "put", "oracle_pnl": 1203.7574764879973, "outcome": "abstention"}
+{"day": "2025-12-05", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 2577.9541728637814, "outcome": "abstention"}
+{"day": "2025-12-08", "oracle_bar": 34, "oracle_direction": "put", "oracle_pnl": 3036.314179428726, "outcome": "abstention"}
+{"day": "2025-12-09", "oracle_bar": 109, "oracle_direction": "put", "oracle_pnl": 1433.6999815247952, "outcome": "abstention"}
+{"day": "2025-12-10", "oracle_bar": 92, "oracle_direction": "call", "oracle_pnl": 835.8350755378852, "outcome": "abstention"}
+{"day": "2025-12-11", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 3520.6504965815625, "outcome": "abstention"}
+{"day": "2025-12-12", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 6371.792545752228, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 3360.560402759986}
+{"day": "2025-12-15", "oracle_bar": 118, "oracle_direction": "put", "oracle_pnl": 2453.8512398869907, "outcome": "abstention"}
+{"day": "2025-12-16", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 3026.82867747734, "outcome": "side_error"}
+{"day": "2025-12-17", "oracle_bar": 53, "oracle_direction": "put", "oracle_pnl": 4629.140981324424, "outcome": "abstention"}
+{"day": "2025-12-18", "oracle_bar": 102, "oracle_direction": "put", "oracle_pnl": 4492.709015792811, "outcome": "abstention"}
+{"day": "2025-12-19", "oracle_bar": 91, "oracle_direction": "call", "oracle_pnl": 975.5419942328535, "outcome": "abstention"}
+{"day": "2025-12-22", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 1597.436411833104, "outcome": "abstention"}
+{"day": "2025-12-23", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 2371.923095184434, "outcome": "abstention"}
+{"day": "2025-12-24", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 2035.5998306438328, "outcome": "side_error"}
+{"day": "2025-12-26", "oracle_bar": 93, "oracle_direction": "put", "oracle_pnl": 1274.7000377692282, "outcome": "abstention"}
+{"day": "2025-12-29", "oracle_bar": 65, "oracle_direction": "put", "oracle_pnl": 1699.444304765238, "outcome": "abstention"}
+{"day": "2025-12-30", "oracle_bar": 73, "oracle_direction": "call", "oracle_pnl": 1298.2357344375748, "outcome": "abstention"}
+{"day": "2025-12-31", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 882.4049628940224, "outcome": "abstention"}
+{"day": "2026-01-02", "oracle_bar": 33, "oracle_direction": "put", "oracle_pnl": 5552.801279003918, "outcome": "side_error"}
+{"day": "2026-01-05", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 1031.069188456586, "outcome": "side_error"}
+{"day": "2026-01-06", "oracle_bar": 97, "oracle_direction": "call", "oracle_pnl": 2576.34170534216, "outcome": "side_error"}
+{"day": "2026-01-07", "oracle_bar": 47, "oracle_direction": "call", "oracle_pnl": 1872.9636705376886, "outcome": "abstention"}
+{"day": "2026-01-08", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 1235.4638989281852, "outcome": "abstention"}
+{"day": "2026-01-09", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 3298.58194534817, "outcome": "side_error"}
+{"day": "2026-01-12", "oracle_bar": 63, "oracle_direction": "call", "oracle_pnl": 1380.1356708529067, "outcome": "side_error"}
+{"day": "2026-01-13", "oracle_bar": 57, "oracle_direction": "call", "oracle_pnl": 1616.2226927243173, "outcome": "abstention"}
+{"day": "2026-01-14", "oracle_bar": 51, "oracle_direction": "put", "oracle_pnl": 2623.7800815346463, "outcome": "abstention"}
+{"day": "2026-01-15", "oracle_bar": 83, "oracle_direction": "call", "oracle_pnl": 1303.574868640254, "outcome": "abstention"}
+{"day": "2026-01-16", "oracle_bar": 72, "oracle_direction": "call", "oracle_pnl": 1795.8870962038636, "outcome": "abstention"}
+{"day": "2026-01-20", "oracle_bar": 101, "oracle_direction": "put", "oracle_pnl": 4829.800531286921, "outcome": "abstention"}
+{"day": "2026-01-21", "oracle_bar": 84, "oracle_direction": "put", "oracle_pnl": 5771.693391664706, "outcome": "abstention"}
+{"day": "2026-01-22", "oracle_bar": 37, "oracle_direction": "call", "oracle_pnl": 1923.3675037768483, "outcome": "abstention"}
+{"day": "2026-01-23", "oracle_bar": 93, "oracle_direction": "put", "oracle_pnl": 2274.8021455021576, "outcome": "abstention"}
+{"day": "2026-01-26", "oracle_bar": 39, "oracle_direction": "call", "oracle_pnl": 1200.958584311434, "outcome": "abstention"}
+{"day": "2026-01-27", "oracle_bar": 36, "oracle_direction": "call", "oracle_pnl": 1212.6554983549765, "outcome": "abstention"}
+{"day": "2026-01-28", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 1399.229162350297, "outcome": "side_error"}
+{"day": "2026-01-29", "oracle_bar": 97, "oracle_direction": "call", "oracle_pnl": 3778.925149448961, "outcome": "abstention"}
+{"day": "2026-01-30", "oracle_bar": 76, "oracle_direction": "put", "oracle_pnl": 4780.073834265935, "outcome": "abstention"}
+{"day": "2026-02-02", "oracle_bar": 31, "oracle_direction": "call", "oracle_pnl": 2308.504944052749, "outcome": "side_error"}
+{"day": "2026-02-03", "oracle_bar": 87, "oracle_direction": "put", "oracle_pnl": 6548.018762417883, "outcome": "abstention"}
+{"day": "2026-02-04", "oracle_bar": 55, "oracle_direction": "put", "oracle_pnl": 4938.263833676775, "outcome": "abstention"}
+{"day": "2026-02-05", "oracle_bar": 104, "oracle_direction": "call", "oracle_pnl": 2928.668736957054, "outcome": "abstention"}
+{"day": "2026-02-06", "oracle_bar": 45, "oracle_direction": "call", "oracle_pnl": 2602.7870286070456, "outcome": "abstention"}
+{"day": "2026-02-09", "oracle_bar": 32, "oracle_direction": "call", "oracle_pnl": 3093.506977842778, "outcome": "abstention"}
+{"day": "2026-02-10", "oracle_bar": 62, "oracle_direction": "put", "oracle_pnl": 2415.9550738887474, "outcome": "abstention"}
+{"day": "2026-02-11", "oracle_bar": 31, "oracle_direction": "put", "oracle_pnl": 3123.6318395125486, "outcome": "abstention"}
+{"day": "2026-02-12", "oracle_bar": 46, "oracle_direction": "put", "oracle_pnl": 9107.383203099916, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 2172.316228935867}
+{"day": "2026-02-13", "oracle_bar": 79, "oracle_direction": "call", "oracle_pnl": 1482.5170468548313, "outcome": "abstention"}
+{"day": "2026-02-17", "oracle_bar": 69, "oracle_direction": "call", "oracle_pnl": 5187.917314880942, "outcome": "abstention"}
+{"day": "2026-02-18", "oracle_bar": 97, "oracle_direction": "put", "oracle_pnl": 1678.6826473900157, "outcome": "abstention"}
+{"day": "2026-02-19", "oracle_bar": 108, "oracle_direction": "put", "oracle_pnl": 2246.0001124362734, "outcome": "abstention"}
+{"day": "2026-02-20", "oracle_bar": 92, "oracle_direction": "put", "oracle_pnl": 3115.294066178135, "outcome": "abstention"}
+{"day": "2026-02-23", "oracle_bar": 32, "oracle_direction": "put", "oracle_pnl": 3387.369283268864, "outcome": "abstention"}
+{"day": "2026-02-24", "oracle_bar": 34, "oracle_direction": "call", "oracle_pnl": 2621.484088311655, "outcome": "abstention"}
+{"day": "2026-02-25", "oracle_bar": 85, "oracle_direction": "call", "oracle_pnl": 1616.3089373368114, "outcome": "abstention"}
+{"day": "2026-02-26", "oracle_bar": 41, "oracle_direction": "put", "oracle_pnl": 3638.5217357203364, "outcome": "abstention"}
+{"day": "2026-02-27", "oracle_bar": 107, "oracle_direction": "put", "oracle_pnl": 1393.0575347753168, "outcome": "abstention"}
+{"day": "2026-03-02", "oracle_bar": 119, "oracle_direction": "call", "oracle_pnl": 2302.9409042449333, "outcome": "abstention"}
+{"day": "2026-03-03", "oracle_bar": 59, "oracle_direction": "call", "oracle_pnl": 7447.494937130232, "outcome": "side_error"}
+{"day": "2026-03-04", "oracle_bar": 35, "oracle_direction": "call", "oracle_pnl": 2039.2998551547525, "outcome": "abstention"}
+{"day": "2026-03-05", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 6724.684622990113, "outcome": "abstention"}
+{"day": "2026-03-06", "oracle_bar": 68, "oracle_direction": "put", "oracle_pnl": 1393.3119797286, "outcome": "abstention"}
+{"day": "2026-03-09", "oracle_bar": 43, "oracle_direction": "call", "oracle_pnl": 4944.480737972425, "outcome": "abstention"}
+{"day": "2026-03-10", "oracle_bar": 41, "oracle_direction": "call", "oracle_pnl": 4790.089903229103, "outcome": "abstention"}
+{"day": "2026-03-11", "oracle_bar": 90, "oracle_direction": "put", "oracle_pnl": 2549.3749032426213, "outcome": "abstention"}
+{"day": "2026-03-12", "oracle_bar": 44, "oracle_direction": "put", "oracle_pnl": 1599.2440958402924, "outcome": "abstention"}
+{"day": "2026-03-13", "oracle_bar": 30, "oracle_direction": "put", "oracle_pnl": 4437.5011079950245, "outcome": "abstention"}
+{"day": "2026-03-16", "oracle_bar": 40, "oracle_direction": "put", "oracle_pnl": 1874.2207574019787, "outcome": "abstention"}
+{"day": "2026-03-17", "oracle_bar": 86, "oracle_direction": "put", "oracle_pnl": 1887.9001149781047, "outcome": "abstention"}
+{"day": "2026-03-18", "oracle_bar": 38, "oracle_direction": "put", "oracle_pnl": 1458.5663899538988, "outcome": "abstention"}
+{"day": "2026-03-19", "oracle_bar": 106, "oracle_direction": "put", "oracle_pnl": 1617.6147561769506, "outcome": "abstention"}
+{"day": "2026-03-20", "oracle_bar": 65, "oracle_direction": "put", "oracle_pnl": 766.3385694735588, "outcome": "entered_right", "selection_gap": 0.0, "exit_gap_vs_time_stop": 753.7544202172102}
+{"day": "2026-03-23", "oracle_bar": 101, "oracle_direction": "put", "oracle_pnl": 6155.709960964506, "outcome": "abstention"}
+{"day": "2026-03-24", "oracle_bar": 55, "oracle_direction": "call", "oracle_pnl": 2447.998290162161, "outcome": "abstention"}
+{"day": "2026-03-25", "oracle_bar": 87, "oracle_direction": "put", "oracle_pnl": 2979.065336298465, "outcome": "abstention"}
+{"day": "2026-03-26", "oracle_bar": 64, "oracle_direction": "put", "oracle_pnl": 4712.603739343725, "outcome": "abstention"}
+{"day": "2026-03-27", "oracle_bar": 120, "oracle_direction": "put", "oracle_pnl": 2453.056322481934, "outcome": "abstention"}
+{"day": "2026-03-30", "oracle_bar": 94, "oracle_direction": "put", "oracle_pnl": 2693.313286807153, "outcome": "abstention"}
+{"day": "2026-03-31", "oracle_bar": 87, "oracle_direction": "call", "oracle_pnl": 7548.094681064167, "outcome": "abstention"}
+{"day": "2026-04-01", "oracle_bar": 66, "oracle_direction": "call", "oracle_pnl": 1959.4223504526524, "outcome": "abstention"}

@@ -272,7 +272,7 @@ def compute_price_features(
     import pandas as pd
 
     n = len(spx_close)
-    N_FEAT = 46
+    N_FEAT = 48
     feat = np.zeros((n, N_FEAT), dtype=np.float64)
     day_ends = day_starts[1:] + [n]
     day_starts_arr = np.array(day_starts)
@@ -827,7 +827,33 @@ def compute_price_features(
     feat[:, fi] = first15_accept
     fi += 1
 
-    # [37] vwap_reclaim_state
+    # [37] bars_since_break_above_first15
+    # [38] bars_since_break_below_first15
+    # -1 sentinel for "no such break yet this session." Counter starts at 0 on
+    # the break bar itself and increments by 1 per subsequent bar. Bars inside
+    # the first-15 window (i < ds + FIRST15_BARS) are skipped because the
+    # range is still accumulating at those bars — "break" isn't meaningful
+    # until the range is fully observed.
+    bars_above = np.full(n, -1.0, dtype=np.float64)
+    bars_below = np.full(n, -1.0, dtype=np.float64)
+    for ds, de in zip(day_starts, day_ends):
+        last_above = -1
+        last_below = -1
+        for i in range(ds + FIRST15_BARS, de):
+            if c[i] > first15_high_arr[i]:
+                last_above = i
+            if c[i] < first15_low_arr[i]:
+                last_below = i
+            if last_above >= 0:
+                bars_above[i] = float(i - last_above)
+            if last_below >= 0:
+                bars_below[i] = float(i - last_below)
+    feat[:, fi] = bars_above
+    fi += 1
+    feat[:, fi] = bars_below
+    fi += 1
+
+    # [39] vwap_reclaim_state
     vwap_reclaim = np.zeros(n, dtype=np.float64)
     for ds, de in zip(day_starts, day_ends):
         day_dist = c[ds:de] - vwap_arr[ds:de]
@@ -843,39 +869,39 @@ def compute_price_features(
     feat[:, fi] = vwap_reclaim
     fi += 1
 
-    # [38] ib_extension_pct
+    # [40] ib_extension_pct
     ib_extension = np.zeros(n, dtype=np.float64)
     ib_extension[c > ib_high_arr] = np.where(c[c > ib_high_arr] > 0, (c[c > ib_high_arr] - ib_high_arr[c > ib_high_arr]) / c[c > ib_high_arr], 0.0)
     ib_extension[c < ib_low_arr] = np.where(c[c < ib_low_arr] > 0, -(ib_low_arr[c < ib_low_arr] - c[c < ib_low_arr]) / c[c < ib_low_arr], 0.0)
     feat[:, fi] = ib_extension
     fi += 1
 
-    # [39] marker_10am
+    # [41] marker_10am
     feat[:, fi] = np.clip(1.0 - np.abs(bod - 30) / 10.0, 0.0, 1.0)
     fi += 1
 
-    # [40] marker_11am
+    # [42] marker_11am
     feat[:, fi] = np.clip(1.0 - np.abs(bod - 90) / 10.0, 0.0, 1.0)
     fi += 1
 
-    # [41] marker_1130am
+    # [43] marker_1130am
     feat[:, fi] = np.clip(1.0 - np.abs(bod - 120) / 10.0, 0.0, 1.0)
     fi += 1
 
-    # [42] lunch_flag
+    # [44] lunch_flag
     feat[:, fi] = ((bod >= 120) & (bod < 210)).astype(np.float64)
     fi += 1
 
-    # [43] power_hour_flag
+    # [45] power_hour_flag
     feat[:, fi] = (bod >= 300).astype(np.float64)
     fi += 1
 
-    # [44] volume_climax_signal
+    # [46] volume_climax_signal
     climax = np.maximum(feat[:, 2] - 1.25, 0.0)
     feat[:, fi] = np.clip(climax * np.maximum(1.0 - np.abs(bar_delta_raw), 0.0), 0.0, 3.0)
     fi += 1
 
-    # [45] breakout_confirmation
+    # [47] breakout_confirmation
     breakout = np.zeros(n, dtype=np.float64)
     up_break = (c > np.maximum(prev_sess_high, ib_high_arr)) & (bar_delta_raw > 0) & (feat[:, 2] > 1.05)
     dn_break = (c < np.minimum(prev_sess_low, ib_low_arr)) & (bar_delta_raw < 0) & (feat[:, 2] > 1.05)
@@ -1112,7 +1138,9 @@ PRICE_FEATURE_NAMES = [
 
 SESSION_FEATURE_NAMES = [
     'opening_gap_pct', 'session_open_dist', 'first15_range_pct',
-    'first15_close_position', 'first15_acceptance', 'vwap_reclaim_state',
+    'first15_close_position', 'first15_acceptance',
+    'bars_since_break_above_first15', 'bars_since_break_below_first15',
+    'vwap_reclaim_state',
     'ib_extension_pct', 'marker_10am', 'marker_11am', 'marker_1130am',
     'lunch_flag', 'power_hour_flag', 'volume_climax_signal',
     'breakout_confirmation',
