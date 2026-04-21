@@ -3750,3 +3750,74 @@ User offered two interpretations:
 - `v2/lab_notebook.md` (this entry)
 
 **No GPU. No simulator changes. No dataset rebuild.** V2-pruned (unthresholded) remains the current promotable baseline.
+
+---
+
+## exp_179 — v3 W2a late-session soft features screen (2026-04-21)
+
+**Context.** First v3-driven feature addition tested against the v2 training loop. W2a added 8 late-session market-structure soft features to the v2 feature schema (`v2.1 -> v2.2`, 81 -> 89 features). Rebuild cycle: `build_v2_dataset` (1999s local, 987 sidecars fresh), `pre_run_gate` PASS (after patching two stale metadata fields — see §Hygiene below), `ops.health` config/data PASS (model/smoke FAIL as expected; no v2.2-compatible model existed yet), `harness_eval` core_regression 40/40, optimization 481/500, holdout 473/500.
+
+**W2a features added (all in `SESSION_FEATURE_NAMES`, indices 48–55 of `compute_price_features`):**
+
+| idx | name | encoding |
+|---:|---|---|
+| 48 | `sigma_pos` | SPY-derived VWAP σ-position, SPX-scaled (shared helper = same formula as v3 ORC gate) |
+| 49 | `omar_retest_dist_norm` | min(\|close − omar.high\|, \|close − omar.low\|, \|close − omar.mid\|) / omar.range |
+| 50 | `omar_range_pct` | omar.range / close — opening volatility unit |
+| 51 | `last10_range_over_omar` | (last-10-bar SPX range) / omar.range — squeeze metric |
+| 52 | `inside_first15` | {0, 1} |
+| 53 | `late_window_40_120_flag` | {0, 1} — [40, 120] post-MAGIC window |
+| 54 | `omar_mid_pos_units` | signed (close − omar.mid) / omar.range |
+| 55 | `last10_break_state` | {+1, 0, −1} |
+
+Provenance: all computed through `v2.core.market_structure`, same helper v3 teachers / adapter use. No drift-surface between research and production σ-position / OMAR / last-10. See `v3/reference/orc_direction_fix_2026_04_20.md` for the A1 ship evidence and `v3/reference/w2a_handoff_2026_04_21.md` for the full W2a handoff.
+
+**Config identity.** No training-config change. `train.py` / `policy.py` untouched. Evaluator, hard gates, baselines, model architecture unchanged. Only the feature schema widened.
+
+**Screen mode.** `run_screen_latest exp_179` (fold 4 only, no artifact, no `results.tsv` write).
+
+**Fold 4 result:**
+
+| Metric | Value | Gate |
+|---|---|---|
+| Score | **−0.200** | gate-fail |
+| PF | 0.722 | — |
+| Account DD | **97.0%** | `excessive_drawdown (>25%)` triggered |
+| Win rate | 44.9% | — |
+| Net PnL | −$9,678 | 5-day chunk at $10k equity baseline |
+| Trades | 537 | 9.59/day over 56/60 traded days |
+| Call/put split | 80% / 20% | strong call bias |
+| Positive day rate | 37.5% | — |
+| Daily Sortino | −9.42 | — |
+| Training time | 534 s (13 epochs, time-budgeted) | — |
+| `beats_all_baselines` | **false** | random / atm / rules / trailing all tied at −0.200 |
+| `dataset_fingerprint` | `e43e421037766fd1` | post-patch |
+| `evaluator_fingerprint` | `e45320cc6094cd1e` | unchanged |
+| `policy_fingerprint` | `325ce155e57ddb49` | unchanged |
+
+**Training diagnostics (from `METRICS_JSON`):**
+- `val_loss` best = 0.6437 at **epoch 1**; climbed to 0.689 by epoch 13 — overfitting from step one.
+- `gate_accuracy` = 0.572 (gate head slightly above random)
+- `direction_accuracy` = **0.496** (random)
+- `side_accuracy` = 0.467 (below random)
+
+**Findings:**
+1. **Gate failure regime is the same as exp_171 / exp_172 / exp_173.** Score −0.200, PF ~0.72, DD 97%. The W2a features did not rescue the known failure pattern — consistent with `project_oracle_ceiling_broken.md`: the training objective, not the input feature set, is the binding constraint.
+2. **The model processed W2a features without errors.** Feature matrix shape `(382920, 89)`, no NaN in the new columns, normalization z-scores distributions sane (means near 0, stds near 1 for continuous; discrete features in `_NO_NORMALIZE`). So this is not a "features broken" result — it is a "features present, training still can't learn a profitable policy" result.
+3. **No information is gained about whether W2a features would help a different training config.** The test was binary (keep features or not) under a single training loop known to be broken. A config change that tries to exploit the new features would be a different experiment.
+
+**Decision:**
+- **Not promoted.** Screening is debug-only; no `results.tsv` entry from `run_screen_latest`. No `FINAL_TRAIN` artifact attempted. No `v2/models/model.pt` write.
+- **No full 5-fold `run_cv`.** Per the user's call: one sufficient negative-result screen is enough; save credits.
+- **W2a code and data.pt stay committed / rebuilt.** The v2.2 schema is the new baseline lineage for any future experiment; reverting to v2.1 would require rebuilding again. Future `exp_180+` either uses the v2.2 schema as-is or moves to v3's own training path.
+- **Akash deployment closed** (`./v2/ops/deploy.sh stop -y`, close TX `EF94FC9BD53A6E7C397AE677E571B9C3AEFC51264D84089E1EE9D5FF91ECA46E`).
+
+**Artifact:** none (screen_latest = `--no-artifacts`). Raw GPU log in screen output; full handoff at `v3/reference/w2a_handoff_2026_04_21.md`.
+
+**Hygiene notes (problems surfaced during the run, fixed locally, not W2a bugs):**
+
+1. `build_v2_dataset.py` wrote a **stale `chain_sidecar_digest`** (`3828460bd9ec9127`) identical to the pre-W2a build's digest, even though the sidecars were rebuilt and compute a new digest (`16a6b050d246f4fd`). The stored fingerprint (`5f2ec17a7176df5c`) was also out of sync once the digest was patched. Workaround: patched both `metadata.chain_sidecar_digest` and `metadata.fingerprint` in-place via a small Python script. Root cause in `v2/pipeline/build_v2_dataset.py` near line 1152 should be investigated before the next full rebuild.
+2. `v2/ops/pre_run_gate.py`'s legacy-flag scan picks up macOS Finder duplicates like `v2/collect_trajectories 2.py` and `v2/ops/run_experiment_wf 2.py` that happened to contain `--n-folds`. These files are not tracked by git, were present at session start, and are cosmetic artifacts. Quarantined to `/tmp/w2a_quarantine/`. Gate's scan should probably skip filenames containing " 2" or files outside the git index, but that's a separate fix.
+
+---
+
