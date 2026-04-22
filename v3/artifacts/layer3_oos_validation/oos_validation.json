@@ -1,0 +1,42 @@
+{
+  "anchors": {
+    "in_sample_composed_dd_thr017": 26.3,
+    "in_sample_composed_fold4_pf_thr017": 3.492,
+    "in_sample_composed_pf_thr017": 2.228,
+    "in_sample_layer2_alone_corrected_dd": 35.6,
+    "in_sample_layer2_alone_corrected_pf": 1.472,
+    "in_sample_layer2_alone_fold4_pf": 1.801
+  },
+  "layer2_alone_oos": {
+    "call_pct": 0.5,
+    "gross_loss": 10296.317269786956,
+    "gross_profit": 8945.623453803131,
+    "max_dd_pct": 25.88660395321178,
+    "mean_pnl": -67.53469079919128,
+    "pf": 0.8688177742980746,
+    "trades": 20.0
+  },
+  "layer2_layer3_oos": {
+    "call_pct": 0.5,
+    "early_exit_share": 1.0,
+    "gross_loss": 7268.224966110479,
+    "gross_profit": 7473.674727356989,
+    "max_dd_pct": 23.97068777656493,
+    "mean_bars_held": 107.2,
+    "mean_pnl": 10.272488062325511,
+    "pf": 1.0282668412445213,
+    "trades": 20.0
+  },
+  "meta": {
+    "baseline_run_dir": "v3/artifacts/layer2_shared_enc_fixedq_detach",
+    "entry_threshold": 0.5976018309593201,
+    "fold_used": 4,
+    "layer3_threshold": 0.17,
+    "n_oos_chosen_trades": 20,
+    "n_oos_days": 20,
+    "oos_days_first": "2026-03-05",
+    "oos_days_last": "2026-04-01",
+    "side_threshold": 0.725899338722229
+  },
+  "verdict": "FAIL -- Layer-2 alone OOS PF 0.869 < 1.0; entry doesn't generalize. In-sample 1.472 lift was selection bias."
+}
