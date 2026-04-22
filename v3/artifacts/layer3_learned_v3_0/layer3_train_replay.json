@@ -1,0 +1,81 @@
+{
+  "anchors": {
+    "corrected_baseline_dd": 35.6,
+    "corrected_baseline_fold0": 0.875,
+    "corrected_baseline_pf": 1.472,
+    "heuristic_baseline_dd": 31.3,
+    "heuristic_baseline_fold0": 0.808,
+    "heuristic_baseline_pf": 1.709
+  },
+  "meta": {
+    "baseline_run_dir": "v3/artifacts/layer2_shared_enc_fixedq_detach",
+    "commission": 1.0,
+    "fold0_fallback": "time_of_day_90",
+    "model": "HistGradientBoostingClassifier",
+    "n_layer2_features": 89,
+    "n_skipped": 0,
+    "n_trades": 275,
+    "session_end_bar": 375,
+    "threshold": 0.2,
+    "trade_state_features": [
+      "bars_since_entry",
+      "bars_to_session_end",
+      "current_pnl_norm",
+      "mfe_norm",
+      "mae_norm",
+      "mfe_bar_age",
+      "direction_is_call"
+    ]
+  },
+  "overall": {
+    "gross_loss": 74902.37954143004,
+    "gross_profit": 156147.99994560413,
+    "max_dd_pct": 34.5263698360679,
+    "mean_pnl": 295.4386196515421,
+    "pf": 2.084686773658979,
+    "trades": 275.0
+  },
+  "per_fold": {
+    "0": {
+      "gross_loss": 19973.074859988857,
+      "gross_profit": 16134.034566737448,
+      "max_dd_pct": 26.342411065436767,
+      "mean_pnl": -69.80073260457108,
+      "pf": 0.807789220229581,
+      "trades": 55.0
+    },
+    "1": {
+      "gross_loss": 13454.425080851966,
+      "gross_profit": 13977.424964602496,
+      "max_dd_pct": 20.465505413350755,
+      "mean_pnl": 13.07499709376325,
+      "pf": 1.0388719607569745,
+      "trades": 40.0
+    },
+    "2": {
+      "gross_loss": 15940.879763651581,
+      "gross_profit": 25023.73990306186,
+      "max_dd_pct": 16.901434165619754,
+      "mean_pnl": 151.38100232350465,
+      "pf": 1.5697841194512383,
+      "trades": 60.0
+    },
+    "3": {
+      "gross_loss": 11780.57482376793,
+      "gross_profit": 52991.595086472225,
+      "max_dd_pct": 5.289002999818781,
+      "mean_pnl": 686.8503377117382,
+      "pf": 4.498218115771302,
+      "trades": 60.0
+    },
+    "4": {
+      "gross_loss": 13753.425013169699,
+      "gross_profit": 48021.205424730084,
+      "max_dd_pct": 13.189976890970165,
+      "mean_pnl": 571.1296735260064,
+      "pf": 3.491581579042821,
+      "trades": 60.0
+    }
+  },
+  "verdict": "PASS-PF -- PF 2.085 >= 1.709; min fold PF 0.808 (fold 0) >= 0.798"
+}
