@@ -1,0 +1,23 @@
+{
+  "trades_file": "/Users/gduby/Documents/autoresearch-trading/v3/artifacts/layer2_directional_composed_oos/composed_oos_trades_V1.csv",
+  "n_trades": 20,
+  "observed_pf": 2.169249093141307,
+  "n_iter": 10000,
+  "seed": 42,
+  "bootstrap": {
+    "n_iter": 10000,
+    "n_finite": 9997,
+    "n_inf": 3,
+    "mean": 8.81096686438613,
+    "std": 225.54717637909306,
+    "min": 0.12591505143856782,
+    "max": 12749.930991417568,
+    "p2_5": 0.5195329054744722,
+    "p25": 1.3509576633388796,
+    "p50": 2.1794592484983655,
+    "p75": 3.6240431218721745,
+    "p97_5": 12.644805238019572
+  },
+  "fraction_pf_ge_1": 0.8655596679003701,
+  "fraction_pf_ge_1_5": 0.7013103931179354
+}

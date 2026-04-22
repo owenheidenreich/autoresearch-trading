@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "baseline_run_dir": "v3/artifacts/layer2_shared_enc_fixedq_detach",
+    "fold0_fallback_bars": 90,
+    "n_teacher": 298,
+    "n_v0_chosen": 275,
+    "n_v1_test": 281,
+    "seed": 42,
+    "threshold": 0.19,
+    "v1_trades_file": "v3/artifacts/layer2_directional_variants/in_sample_trades_V1.csv"
+  },
+  "overall_v1_alone": {
+    "gross_loss": 153833.7452376916,
+    "gross_profit": 193287.95673564135,
+    "max_dd_pct": 50.21515776571563,
+    "mean_pnl": 140.40644661192084,
+    "pf": 1.2564730608163266,
+    "trades": 281.0
+  },
+  "overall_v1_l3": {
+    "gross_loss": 85759.52440826721,
+    "gross_profit": 148706.69193130732,
+    "max_dd_pct": 80.9538594527171,
+    "mean_pnl": 224.01127232398608,
+    "pf": 1.7339962290762423,
+    "trades": 281.0
+  },
+  "per_fold_v1_alone": {
+    "0": {
+      "gross_loss": 34127.0640988555,
+      "gross_profit": 30310.26883471992,
+      "max_dd_pct": 41.452640314759286,
+      "mean_pnl": -64.69144515484048,
+      "pf": 0.8881592845760329,
+      "trades": 59.0
+    },
+    "1": {
+      "gross_loss": 22990.862745741662,
+      "gross_profit": 25914.0626352292,
+      "max_dd_pct": 29.371174159385667,
+      "mean_pnl": 69.59999736875082,
+      "pf": 1.127146158968261,
+      "trades": 42.0
+    },
+    "2": {
+      "gross_loss": 28977.553654297975,
+      "gross_profit": 28476.78895625432,
+      "max_dd_pct": 33.23647227426873,
+      "mean_pnl": -8.34607830072758,
+      "pf": 0.9827188759956146,
+      "trades": 60.0
+    },
+    "3": {
+      "gross_loss": 33906.23059096585,
+      "gross_profit": 70481.66227862197,
+      "max_dd_pct": 22.392055809020835,
+      "mean_pnl": 609.5905281276019,
+      "pf": 2.078723026717144,
+      "trades": 60.0
+    },
+    "4": {
+      "gross_loss": 33832.03414783058,
+      "gross_profit": 38105.17403081592,
+      "max_dd_pct": 23.277462986165467,
+      "mean_pnl": 71.21899804975577,
+      "pf": 1.126304551015575,
+      "trades": 60.0
+    }
+  },
+  "per_fold_v1_l3": {
+    "0": {
+      "gross_loss": 23232.624750659008,
+      "gross_profit": 10792.684793453458,
+      "max_dd_pct": 49.7597598288222,
+      "mean_pnl": -210.84643995263642,
+      "pf": 0.4645486641860092,
+      "trades": 59.0
+    },
+    "1": {
+      "gross_loss": 14749.774784974577,
+      "gross_profit": 8075.374830168284,
+      "max_dd_pct": 34.01708391880004,
+      "mean_pnl": -158.91428463824508,
+      "pf": 0.5474913988784814,
+      "trades": 42.0
+    },
+    "2": {
+      "gross_loss": 15946.749972350395,
+      "gross_profit": 26222.815124209454,
+      "max_dd_pct": 10.88552505364686,
+      "mean_pnl": 171.2677525309843,
+      "pf": 1.644398712570049,
+      "trades": 60.0
+    },
+    "3": {
+      "gross_loss": 13171.22507914898,
+      "gross_profit": 61499.561367530565,
+      "max_dd_pct": 5.9985517590900646,
+      "mean_pnl": 805.4722714730264,
+      "pf": 4.669236232618096,
+      "trades": 60.0
+    },
+    "4": {
+      "gross_loss": 18659.14982113425,
+      "gross_profit": 42116.25581594555,
+      "max_dd_pct": 17.977421495848944,
+      "mean_pnl": 390.95176658018835,
+      "pf": 2.2571369124354557,
+      "trades": 60.0
+    }
+  },
+  "verdict": "DISQUALIFIED \u2014 V1+L3 in-sample weak (min fold PF 0.465, aggregate 1.734). OOS lift was likely window-specific."
+}
