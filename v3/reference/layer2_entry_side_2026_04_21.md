@@ -1,5 +1,10 @@
 # Layer-2 Entry/Side Branch — 2026-04-21
 
+Status note:
+- This doc records the first profitable Layer-2 CPU branch.
+- It remains the stable CPU reference.
+- It is no longer the frontier max-PF artifact; see [layer2_shared_encoder_diagnostics_2026_04_21.md](layer2_shared_encoder_diagnostics_2026_04_21.md), [layer2_diagnostic_full_2026_04_21.md](layer2_diagnostic_full_2026_04_21.md), and [layer2_route_aware_fallback_2026_04_21.md](layer2_route_aware_fallback_2026_04_21.md) for the later neural follow-up and its qualification results.
+
 ## Summary
 
 `v3` now has a working Layer-2 export/train/replay path.

@@ -21,6 +21,16 @@ The master plan these findings serve is
 10. [combined_confluence_2026_04_20.md](combined_confluence_2026_04_20.md) — B+C stack (cohort-only)
 11. [hvn_lvn_2026_04_20.md](hvn_lvn_2026_04_20.md) — HVN/LVN (NULL)
 
+## Post-Stage-1 follow-up docs
+
+12. [orc_direction_fix_2026_04_20.md](orc_direction_fix_2026_04_20.md) — A1 shipped
+13. [w2a_handoff_2026_04_21.md](w2a_handoff_2026_04_21.md) — W2a features shipped, `v2` still gate-failed
+14. [layer2_entry_side_2026_04_21.md](layer2_entry_side_2026_04_21.md) — first profitable Layer-2 CPU baseline
+15. [layer2_shared_encoder_diagnostics_2026_04_21.md](layer2_shared_encoder_diagnostics_2026_04_21.md) — detach-side neural branch beats tree on PF/DD
+16. [layer2_diagnostic_full_2026_04_21.md](layer2_diagnostic_full_2026_04_21.md) — reality check on the detach-side branch
+17. [layer2_route_aware_fallback_2026_04_21.md](layer2_route_aware_fallback_2026_04_21.md) — route-aware fallback follow-up (negative result)
+18. [layer2_fallback_only_probe_2026_04_21.md](layer2_fallback_only_probe_2026_04_21.md) — non-teacher fallback-only probe (negative result)
+
 ## Reading order (logical, not just chronological)
 
 ### 1. [decay_analysis_2026_04_20.md](decay_analysis_2026_04_20.md)

@@ -13,6 +13,7 @@ from v3.config import GuardrailConfig
 from v3.harness.v2_adapter import V2Dataset
 from v3.layer2.common import (
     DEFAULT_DATASET_PATH,
+    DEFAULT_POLICY_MODE,
     DEFAULT_RUN_DIR,
     build_labeled_day,
     compute_time_stop_pnl_for_direction,
@@ -23,6 +24,7 @@ from v3.layer2.common import (
     load_pickle,
     per_day_choice,
     replay_metrics_from_pnls,
+    route_source_from_row,
     save_json,
     teacher_baseline_choice,
 )
@@ -40,6 +42,12 @@ def parse_args() -> argparse.Namespace:
         help="How replay chooses direction once a bar is selected.",
     )
     p.add_argument(
+        "--policy-mode",
+        default=None,
+        choices=("scalar_side", "route_aware_fallback"),
+        help="Scalar side-direction policy or route-aware fallback policy.",
+    )
+    p.add_argument(
         "--score-mode",
         default=None,
         choices=("product", "entry_only", "entry_plus_side"),
@@ -55,6 +63,69 @@ def _load_model(path: str):
         return pickle.load(f)
 
 
+def _prepare_policy_predictions(
+    test_df: pd.DataFrame,
+    entry_pred: np.ndarray,
+    *,
+    direction_mode: str,
+    policy_mode: str,
+    side_pred: np.ndarray | None = None,
+    fallback_call_pred: np.ndarray | None = None,
+    fallback_put_pred: np.ndarray | None = None,
+) -> pd.DataFrame:
+    out = test_df.copy()
+    out["entry_score"] = entry_pred
+
+    if policy_mode == "route_aware_fallback":
+        if fallback_call_pred is None or fallback_put_pred is None:
+            raise ValueError("route_aware_fallback requires call/put fallback predictions")
+        out["fallback_call_score"] = fallback_call_pred
+        out["fallback_put_score"] = fallback_put_pred
+        call_avail = out["has_passing_call"] > 0.5
+        put_avail = out["has_passing_put"] > 0.5
+        adj_call = np.where(call_avail.to_numpy(), fallback_call_pred, -np.inf)
+        adj_put = np.where(put_avail.to_numpy(), fallback_put_pred, -np.inf)
+        best_nonflat = np.maximum(adj_call, adj_put)
+        out["side_conf"] = np.maximum(best_nonflat, 0.0)
+        safe_call = np.where(np.isfinite(adj_call), adj_call, 0.0)
+        safe_put = np.where(np.isfinite(adj_put), adj_put, 0.0)
+        out["side_score"] = safe_put - safe_call
+        out["predicted_direction"] = np.where(
+            (adj_call >= adj_put) & (adj_call > 0.0),
+            "call",
+            np.where((adj_put > adj_call) & (adj_put > 0.0), "put", ""),
+        )
+    else:
+        if side_pred is None:
+            raise ValueError("scalar_side requires side_pred")
+        out["side_score"] = side_pred
+        out["side_conf"] = np.abs(out["side_score"])
+        out["predicted_direction"] = np.where(out["side_score"] > 0, "call", "put")
+        only_call = (out["has_passing_call"] > 0.5) & (out["has_passing_put"] <= 0.5)
+        only_put = (out["has_passing_put"] > 0.5) & (out["has_passing_call"] <= 0.5)
+        neither = (out["has_passing_call"] <= 0.5) & (out["has_passing_put"] <= 0.5)
+        out.loc[only_call, "predicted_direction"] = "call"
+        out.loc[only_put, "predicted_direction"] = "put"
+        out.loc[only_call | only_put, "side_conf"] = 1.0
+        out.loc[neither, "predicted_direction"] = ""
+        out.loc[neither, "side_conf"] = 0.0
+        out.loc[~((out["has_passing_call"] > 0.5) & (out["has_passing_put"] > 0.5)), "side_score"] = 0.0
+
+    out["effective_direction"] = out.apply(
+        effective_direction,
+        axis=1,
+        direction_mode=direction_mode,
+        policy_mode=policy_mode,
+    )
+    out["route_source"] = out.apply(
+        route_source_from_row,
+        axis=1,
+        direction_mode=direction_mode,
+        policy_mode=policy_mode,
+    )
+    return out
+
+
 def main() -> int:
     args = parse_args()
     bundle = load_export_bundle(args.dataset)
@@ -65,6 +136,7 @@ def main() -> int:
     manifest_path = os.path.join(args.run_dir, "manifest.pkl")
     manifest = load_pickle(manifest_path) if os.path.exists(manifest_path) else {}
     direction_mode = args.direction_mode or manifest.get("direction_mode", "teacher_if_triggered_else_put")
+    policy_mode = args.policy_mode or manifest.get("policy_mode", DEFAULT_POLICY_MODE)
     score_mode = args.score_mode or manifest.get("score_mode", "product")
     side_score_weight = (
         float(args.side_score_weight)
@@ -87,35 +159,46 @@ def main() -> int:
         fold_dir = os.path.join(args.run_dir, "folds", str(fold_idx))
         if not (
             os.path.exists(os.path.join(fold_dir, "entry_model.pkl"))
-            and os.path.exists(os.path.join(fold_dir, "side_model.pkl"))
             and os.path.exists(os.path.join(fold_dir, "calibration.json"))
         ):
             print(f"Skipping fold {fold_idx}: missing artifacts in {fold_dir}")
             continue
+        if policy_mode == "route_aware_fallback":
+            if not (
+                os.path.exists(os.path.join(fold_dir, "fallback_call_model.pkl"))
+                and os.path.exists(os.path.join(fold_dir, "fallback_put_model.pkl"))
+            ):
+                print(f"Skipping fold {fold_idx}: missing route-aware fallback artifacts in {fold_dir}")
+                continue
+        elif not os.path.exists(os.path.join(fold_dir, "side_model.pkl")):
+            print(f"Skipping fold {fold_idx}: missing scalar side artifact in {fold_dir}")
+            continue
         processed_folds.append(fold)
         entry_model = _load_model(os.path.join(fold_dir, "entry_model.pkl"))
-        side_model = _load_model(os.path.join(fold_dir, "side_model.pkl"))
         thresholds = load_json(os.path.join(fold_dir, "calibration.json"))
 
         test_df = df[df["day"].isin(fold["test_days"])].copy()
         X_test = test_df[feature_names].to_numpy(dtype=np.float32)
-        test_df["entry_score"] = entry_model.predict(X_test)
-        test_df["side_score"] = side_model.predict(X_test)
-        test_df["side_conf"] = np.abs(test_df["side_score"])
-        test_df["predicted_direction"] = np.where(test_df["side_score"] > 0, "call", "put")
-        only_call = (test_df["has_passing_call"] > 0.5) & (test_df["has_passing_put"] <= 0.5)
-        only_put = (test_df["has_passing_put"] > 0.5) & (test_df["has_passing_call"] <= 0.5)
-        neither = (test_df["has_passing_call"] <= 0.5) & (test_df["has_passing_put"] <= 0.5)
-        test_df.loc[only_call, "predicted_direction"] = "call"
-        test_df.loc[only_put, "predicted_direction"] = "put"
-        test_df.loc[only_call | only_put, "side_conf"] = 1.0
-        test_df.loc[neither, "predicted_direction"] = ""
-        test_df.loc[neither, "side_conf"] = 0.0
-        test_df["effective_direction"] = test_df.apply(
-            effective_direction,
-            axis=1,
-            direction_mode=direction_mode,
-        )
+        if policy_mode == "route_aware_fallback":
+            fallback_call_model = _load_model(os.path.join(fold_dir, "fallback_call_model.pkl"))
+            fallback_put_model = _load_model(os.path.join(fold_dir, "fallback_put_model.pkl"))
+            test_df = _prepare_policy_predictions(
+                test_df,
+                entry_model.predict(X_test),
+                direction_mode=direction_mode,
+                policy_mode=policy_mode,
+                fallback_call_pred=fallback_call_model.predict(X_test),
+                fallback_put_pred=fallback_put_model.predict(X_test),
+            )
+        else:
+            side_model = _load_model(os.path.join(fold_dir, "side_model.pkl"))
+            test_df = _prepare_policy_predictions(
+                test_df,
+                entry_model.predict(X_test),
+                direction_mode=direction_mode,
+                policy_mode=policy_mode,
+                side_pred=side_model.predict(X_test),
+            )
 
         for day, day_rows in test_df.groupby("day"):
             log, sidecar = build_labeled_day(ds, day, cfg, equity=args.equity)
@@ -128,6 +211,8 @@ def main() -> int:
                 thresholds["side_threshold"],
                 score_mode=score_mode,
                 side_score_weight=side_score_weight,
+                policy_mode=policy_mode,
+                direction_mode=direction_mode,
             )
             if chosen is not None:
                 bar_index = int(chosen["bar_index"])
@@ -140,6 +225,7 @@ def main() -> int:
                             "day": day,
                             "bar_index": bar_index,
                             "direction": str(chosen["effective_direction"]),
+                            "route_source": str(chosen.get("route_source", "")),
                             "pnl": float(pnl),
                             "entry_value_raw": float(chosen["entry_value_raw"]) if pd.notna(chosen["entry_value_raw"]) else None,
                             "oracle_slice_outcome": str(chosen["oracle_slice_outcome"]),
@@ -203,6 +289,7 @@ def main() -> int:
         "dataset": args.dataset,
         "run_dir": args.run_dir,
         "direction_mode": direction_mode,
+        "policy_mode": policy_mode,
         "score_mode": score_mode,
         "side_score_weight": side_score_weight,
         "elapsed_seconds": time.time() - t0,

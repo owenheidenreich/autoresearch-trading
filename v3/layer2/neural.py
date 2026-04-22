@@ -87,6 +87,44 @@ class Layer2SharedEncoder(nn.Module):
         return entry, side
 
 
+class Layer2RouteAwareSharedEncoder(nn.Module):
+    """Shared trunk + entry head + detached fallback call/put heads."""
+
+    def __init__(
+        self,
+        in_dim: int,
+        hidden_dim: int = 128,
+        depth: int = 2,
+        dropout: float = 0.10,
+        side_dropout: Optional[float] = None,
+        detach_side: bool = True,
+    ) -> None:
+        super().__init__()
+        trunk_layers: list[nn.Module] = []
+        dim = in_dim
+        for _ in range(max(depth, 1)):
+            trunk_layers.append(nn.Linear(dim, hidden_dim))
+            trunk_layers.append(nn.GELU())
+            trunk_layers.append(nn.Dropout(dropout))
+            dim = hidden_dim
+        self.trunk = nn.Sequential(*trunk_layers)
+        self.entry_head = nn.Linear(hidden_dim, 1)
+        self.fallback_call_head = nn.Linear(hidden_dim, 1)
+        self.fallback_put_head = nn.Linear(hidden_dim, 1)
+        self.fallback_extra_dropout = nn.Dropout(side_dropout) if side_dropout is not None else None
+        self.detach_side = bool(detach_side)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        h = self.trunk(x)
+        entry = self.entry_head(h).squeeze(-1)
+        h_fb = h.detach() if self.detach_side else h
+        if self.fallback_extra_dropout is not None:
+            h_fb = self.fallback_extra_dropout(h_fb)
+        call = self.fallback_call_head(h_fb).squeeze(-1)
+        put = self.fallback_put_head(h_fb).squeeze(-1)
+        return entry, call, put
+
+
 @dataclass
 class TorchTabularPredictor:
     """Pickle-friendly wrapper so replay.py can call .predict() like sklearn."""
@@ -325,6 +363,61 @@ class SharedEncoderPredictor:
         return out
 
 
+@dataclass
+class RouteAwareSharedEncoderPredictor:
+    """Pickle-friendly wrapper exposing .predict(X) for one route-aware head."""
+
+    state_dict: dict
+    mean: np.ndarray
+    std: np.ndarray
+    in_dim: int
+    hidden_dim: int
+    depth: int
+    dropout: float
+    head: str  # "entry", "fallback_call", "fallback_put"
+    device_hint: str = "cpu"
+    side_dropout: Optional[float] = None
+    detach_side: bool = True
+
+    def _build_model(self, device: str = "cpu") -> Layer2RouteAwareSharedEncoder:
+        model = Layer2RouteAwareSharedEncoder(
+            in_dim=self.in_dim,
+            hidden_dim=self.hidden_dim,
+            depth=self.depth,
+            dropout=self.dropout,
+            side_dropout=self.side_dropout,
+            detach_side=self.detach_side,
+        )
+        model.load_state_dict(self.state_dict)
+        model.to(device)
+        model.eval()
+        return model
+
+    def predict(self, X: np.ndarray, batch_size: int = 8192) -> np.ndarray:
+        if X.ndim != 2:
+            raise ValueError(f"Expected 2D input, got shape={X.shape}")
+        Xn = ((X.astype(np.float32) - self.mean) / self.std).astype(np.float32, copy=False)
+        Xn = np.nan_to_num(Xn, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32, copy=False)
+        device = "cuda" if torch.cuda.is_available() and self.device_hint == "cuda" else "cpu"
+        model = self._build_model(device=device)
+        out = np.zeros(Xn.shape[0], dtype=np.float32)
+        with torch.inference_mode():
+            for start in range(0, len(Xn), batch_size):
+                xb = torch.from_numpy(Xn[start:start + batch_size]).to(device)
+                entry_pred, call_pred, put_pred = model(xb)
+                if self.head == "entry":
+                    pred = entry_pred
+                elif self.head == "fallback_call":
+                    pred = call_pred
+                elif self.head == "fallback_put":
+                    pred = put_pred
+                else:
+                    raise ValueError(f"Unknown head={self.head!r}")
+                arr = pred.detach().cpu().numpy().astype(np.float32, copy=False)
+                out[start:start + len(arr)] = arr
+        return out
+
+
 def _multitask_huber(
     entry_pred: torch.Tensor,
     side_pred: torch.Tensor,
@@ -353,6 +446,27 @@ def _multitask_huber(
     )
     total = w_entry_loss * entry_loss + w_side_loss * side_loss
     return total, entry_loss.detach(), side_loss.detach()
+
+
+def _route_aware_huber(
+    entry_pred: torch.Tensor,
+    call_pred: torch.Tensor,
+    put_pred: torch.Tensor,
+    y_entry: torch.Tensor,
+    y_call: torch.Tensor,
+    y_put: torch.Tensor,
+    w_entry: torch.Tensor,
+    w_call: torch.Tensor,
+    w_put: torch.Tensor,
+    w_entry_loss: float,
+    w_side_loss: float,
+    delta: float = 1.0,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    entry_loss = _weighted_huber(entry_pred, y_entry, w_entry, delta=delta)
+    call_loss = _weighted_huber(call_pred, y_call, w_call, delta=delta)
+    put_loss = _weighted_huber(put_pred, y_put, w_put, delta=delta)
+    total = w_entry_loss * entry_loss + w_side_loss * 0.5 * (call_loss + put_loss)
+    return total, entry_loss.detach(), call_loss.detach(), put_loss.detach()
 
 
 def _weighted_huber(
@@ -581,3 +695,209 @@ def train_multitask(
         "best_epoch": float(best_epoch),
     }
     return predictor_entry, predictor_side, info
+
+
+def train_route_aware_multitask(
+    *,
+    X_train: np.ndarray,
+    y_entry_train: np.ndarray,
+    y_call_train: np.ndarray,
+    y_put_train: np.ndarray,
+    entry_mask_train: np.ndarray,
+    call_mask_train: np.ndarray,
+    put_mask_train: np.ndarray,
+    entry_weight_train: np.ndarray,
+    call_weight_train: np.ndarray,
+    put_weight_train: np.ndarray,
+    X_val: np.ndarray,
+    y_entry_val: np.ndarray,
+    y_call_val: np.ndarray,
+    y_put_val: np.ndarray,
+    entry_mask_val: np.ndarray,
+    call_mask_val: np.ndarray,
+    put_mask_val: np.ndarray,
+    entry_weight_val: np.ndarray,
+    call_weight_val: np.ndarray,
+    put_weight_val: np.ndarray,
+    w_entry_loss: float,
+    w_side_loss: float,
+    device: str,
+    seed: int,
+    hidden_dim: int,
+    depth: int,
+    dropout: float,
+    lr: float,
+    weight_decay: float,
+    batch_size: int,
+    max_epochs: int,
+    patience: int,
+    side_dropout: Optional[float] = None,
+    detach_side: bool = True,
+) -> tuple[RouteAwareSharedEncoderPredictor, RouteAwareSharedEncoderPredictor, RouteAwareSharedEncoderPredictor, dict[str, float]]:
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    mean, std = make_standardizer(X_train)
+    X_train_n = standardize(X_train, mean, std)
+    X_val_n = standardize(X_val, mean, std)
+
+    wE_train = entry_weight_train.astype(np.float32) * entry_mask_train.astype(np.float32)
+    wC_train = call_weight_train.astype(np.float32) * call_mask_train.astype(np.float32)
+    wP_train = put_weight_train.astype(np.float32) * put_mask_train.astype(np.float32)
+    wE_val = entry_weight_val.astype(np.float32) * entry_mask_val.astype(np.float32)
+    wC_val = call_weight_val.astype(np.float32) * call_mask_val.astype(np.float32)
+    wP_val = put_weight_val.astype(np.float32) * put_mask_val.astype(np.float32)
+
+    yE_train = np.where(entry_mask_train, y_entry_train, 0.0).astype(np.float32)
+    yC_train = np.where(call_mask_train, y_call_train, 0.0).astype(np.float32)
+    yP_train = np.where(put_mask_train, y_put_train, 0.0).astype(np.float32)
+    yE_val = np.where(entry_mask_val, y_entry_val, 0.0).astype(np.float32)
+    yC_val = np.where(call_mask_val, y_call_val, 0.0).astype(np.float32)
+    yP_val = np.where(put_mask_val, y_put_val, 0.0).astype(np.float32)
+
+    train_ds = TensorDataset(
+        torch.from_numpy(X_train_n),
+        torch.from_numpy(yE_train),
+        torch.from_numpy(yC_train),
+        torch.from_numpy(yP_train),
+        torch.from_numpy(wE_train),
+        torch.from_numpy(wC_train),
+        torch.from_numpy(wP_train),
+    )
+    val_ds = TensorDataset(
+        torch.from_numpy(X_val_n),
+        torch.from_numpy(yE_val),
+        torch.from_numpy(yC_val),
+        torch.from_numpy(yP_val),
+        torch.from_numpy(wE_val),
+        torch.from_numpy(wC_val),
+        torch.from_numpy(wP_val),
+    )
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=False)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, drop_last=False)
+
+    model = Layer2RouteAwareSharedEncoder(
+        in_dim=X_train_n.shape[1],
+        hidden_dim=hidden_dim,
+        depth=depth,
+        dropout=dropout,
+        side_dropout=side_dropout,
+        detach_side=detach_side,
+    ).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
+
+    best_state = None
+    best_val = float("inf")
+    best_entry_val = float("inf")
+    best_call_val = float("inf")
+    best_put_val = float("inf")
+    best_epoch = -1
+    stale = 0
+
+    for epoch in range(max_epochs):
+        model.train()
+        for xb, yeb, ycb, ypb, web, wcb, wpb in train_loader:
+            xb = xb.to(device)
+            yeb = yeb.to(device)
+            ycb = ycb.to(device)
+            ypb = ypb.to(device)
+            web = web.to(device)
+            wcb = wcb.to(device)
+            wpb = wpb.to(device)
+            optimizer.zero_grad()
+            ep, cp, pp = model(xb)
+            total, _, _, _ = _route_aware_huber(
+                ep,
+                cp,
+                pp,
+                yeb,
+                ycb,
+                ypb,
+                web,
+                wcb,
+                wpb,
+                w_entry_loss,
+                w_side_loss,
+            )
+            total.backward()
+            optimizer.step()
+        scheduler.step()
+
+        model.eval()
+        v_total = []
+        v_entry = []
+        v_call = []
+        v_put = []
+        with torch.inference_mode():
+            for xb, yeb, ycb, ypb, web, wcb, wpb in val_loader:
+                xb = xb.to(device)
+                yeb = yeb.to(device)
+                ycb = ycb.to(device)
+                ypb = ypb.to(device)
+                web = web.to(device)
+                wcb = wcb.to(device)
+                wpb = wpb.to(device)
+                ep, cp, pp = model(xb)
+                total, el, cl, pl = _route_aware_huber(
+                    ep,
+                    cp,
+                    pp,
+                    yeb,
+                    ycb,
+                    ypb,
+                    web,
+                    wcb,
+                    wpb,
+                    w_entry_loss,
+                    w_side_loss,
+                )
+                v_total.append(total.item())
+                v_entry.append(el.item())
+                v_call.append(cl.item())
+                v_put.append(pl.item())
+        mean_val = float(np.mean(v_total)) if v_total else float("inf")
+        mean_entry = float(np.mean(v_entry)) if v_entry else float("inf")
+        mean_call = float(np.mean(v_call)) if v_call else float("inf")
+        mean_put = float(np.mean(v_put)) if v_put else float("inf")
+        if mean_val < best_val - 1e-6:
+            best_val = mean_val
+            best_entry_val = mean_entry
+            best_call_val = mean_call
+            best_put_val = mean_put
+            best_epoch = epoch
+            stale = 0
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+        else:
+            stale += 1
+            if stale >= patience:
+                break
+
+    if best_state is None:
+        best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+
+    common_kwargs = {
+        "state_dict": best_state,
+        "mean": mean,
+        "std": std,
+        "in_dim": X_train_n.shape[1],
+        "hidden_dim": hidden_dim,
+        "depth": depth,
+        "dropout": dropout,
+        "device_hint": "cuda" if device == "cuda" else "cpu",
+        "side_dropout": side_dropout,
+        "detach_side": detach_side,
+    }
+    predictor_entry = RouteAwareSharedEncoderPredictor(head="entry", **common_kwargs)
+    predictor_call = RouteAwareSharedEncoderPredictor(head="fallback_call", **common_kwargs)
+    predictor_put = RouteAwareSharedEncoderPredictor(head="fallback_put", **common_kwargs)
+    info = {
+        "best_val_loss": float(best_val),
+        "best_entry_val_loss": float(best_entry_val),
+        "best_call_val_loss": float(best_call_val),
+        "best_put_val_loss": float(best_put_val),
+        "best_epoch": float(best_epoch),
+    }
+    return predictor_entry, predictor_call, predictor_put, info

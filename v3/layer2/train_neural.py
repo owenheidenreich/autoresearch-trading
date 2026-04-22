@@ -13,6 +13,7 @@ import torch
 from v3.layer2.common import (
     DEFAULT_DATASET_PATH,
     DEFAULT_ENTRY_QUANTILE,
+    DEFAULT_POLICY_MODE,
     DEFAULT_RUN_DIR,
     DEFAULT_SIDE_QUANTILE,
     calibrate_thresholds,
@@ -20,12 +21,13 @@ from v3.layer2.common import (
     ensure_dir,
     load_export_bundle,
     per_day_choice,
+    route_source_from_row,
     save_json,
     save_pickle,
     selected_value_for_direction_mode,
     side_accuracy_weighted,
 )
-from v3.layer2.neural import train_multitask
+from v3.layer2.neural import train_multitask, train_route_aware_multitask
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,6 +40,12 @@ def parse_args() -> argparse.Namespace:
         "--direction-mode",
         default="teacher_if_triggered_else_put",
         choices=("model", "teacher_if_triggered_else_model", "teacher_if_triggered_else_put", "always_put"),
+    )
+    p.add_argument(
+        "--policy-mode",
+        default=DEFAULT_POLICY_MODE,
+        choices=("scalar_side", "route_aware_fallback"),
+        help="Scalar side-direction policy or detached route-aware fallback policy.",
     )
     p.add_argument("--hidden-dim", type=int, default=128)
     p.add_argument("--depth", type=int, default=2, help="Trunk layers in the shared encoder (heads add 1 linear each).")
@@ -103,28 +111,62 @@ def _resolve_device(arg: str) -> str:
 def _prepare_predictions(
     df: pd.DataFrame,
     entry_pred: np.ndarray,
-    side_pred: np.ndarray,
+    side_pred: np.ndarray | None,
     direction_mode: str,
+    policy_mode: str,
+    fallback_call_pred: np.ndarray | None = None,
+    fallback_put_pred: np.ndarray | None = None,
 ) -> pd.DataFrame:
     out = df.copy()
     out["entry_score"] = entry_pred
-    out["side_score"] = side_pred
-    out["side_conf"] = np.abs(side_pred)
-    out["predicted_direction"] = np.where(side_pred > 0, "call", "put")
-    both_available = (out["has_passing_call"] > 0.5) & (out["has_passing_put"] > 0.5)
-    only_call = (out["has_passing_call"] > 0.5) & (out["has_passing_put"] <= 0.5)
-    only_put = (out["has_passing_put"] > 0.5) & (out["has_passing_call"] <= 0.5)
-    neither = (out["has_passing_call"] <= 0.5) & (out["has_passing_put"] <= 0.5)
-    out.loc[~both_available, "side_score"] = 0.0
-    out.loc[only_call, "predicted_direction"] = "call"
-    out.loc[only_put, "predicted_direction"] = "put"
-    out.loc[only_call | only_put, "side_conf"] = 1.0
-    out.loc[neither, "predicted_direction"] = ""
-    out.loc[neither, "side_conf"] = 0.0
+
+    if policy_mode == "route_aware_fallback":
+        if fallback_call_pred is None or fallback_put_pred is None:
+            raise ValueError("route_aware_fallback requires fallback_call_pred and fallback_put_pred")
+        out["fallback_call_score"] = fallback_call_pred
+        out["fallback_put_score"] = fallback_put_pred
+        call_avail = out["has_passing_call"] > 0.5
+        put_avail = out["has_passing_put"] > 0.5
+        adj_call = np.where(call_avail.to_numpy(), fallback_call_pred, -np.inf)
+        adj_put = np.where(put_avail.to_numpy(), fallback_put_pred, -np.inf)
+        best_nonflat = np.maximum(adj_call, adj_put)
+        out["side_conf"] = np.maximum(best_nonflat, 0.0)
+        safe_call = np.where(np.isfinite(adj_call), adj_call, 0.0)
+        safe_put = np.where(np.isfinite(adj_put), adj_put, 0.0)
+        out["side_score"] = safe_put - safe_call
+        out["predicted_direction"] = np.where(
+            (adj_call >= adj_put) & (adj_call > 0.0),
+            "call",
+            np.where((adj_put > adj_call) & (adj_put > 0.0), "put", ""),
+        )
+    else:
+        if side_pred is None:
+            raise ValueError("scalar_side policy requires side_pred")
+        out["side_score"] = side_pred
+        out["side_conf"] = np.abs(side_pred)
+        out["predicted_direction"] = np.where(side_pred > 0, "call", "put")
+        both_available = (out["has_passing_call"] > 0.5) & (out["has_passing_put"] > 0.5)
+        only_call = (out["has_passing_call"] > 0.5) & (out["has_passing_put"] <= 0.5)
+        only_put = (out["has_passing_put"] > 0.5) & (out["has_passing_call"] <= 0.5)
+        neither = (out["has_passing_call"] <= 0.5) & (out["has_passing_put"] <= 0.5)
+        out.loc[~both_available, "side_score"] = 0.0
+        out.loc[only_call, "predicted_direction"] = "call"
+        out.loc[only_put, "predicted_direction"] = "put"
+        out.loc[only_call | only_put, "side_conf"] = 1.0
+        out.loc[neither, "predicted_direction"] = ""
+        out.loc[neither, "side_conf"] = 0.0
+
     out["effective_direction"] = out.apply(
         effective_direction,
         axis=1,
         direction_mode=direction_mode,
+        policy_mode=policy_mode,
+    )
+    out["route_source"] = out.apply(
+        route_source_from_row,
+        axis=1,
+        direction_mode=direction_mode,
+        policy_mode=policy_mode,
     )
     return out
 
@@ -141,6 +183,7 @@ def _selected_side_forward_value(row: pd.Series) -> float:
 def main() -> int:
     args = parse_args()
     device = _resolve_device(args.device)
+    detach_side_flag = True if args.policy_mode == "route_aware_fallback" else args.detach_side
     ensure_dir(args.run_dir)
 
     bundle = load_export_bundle(args.dataset)
@@ -166,14 +209,6 @@ def main() -> int:
         X_val = val_df[feature_names].to_numpy(dtype=np.float32)
         X_test = test_df[feature_names].to_numpy(dtype=np.float32)
 
-        # --- Shared aligned arrays: both heads consume the SAME rows in the
-        # --- same order. Per-head validity is expressed via boolean masks;
-        # --- targets and sample weights for invalid rows are zeroed in
-        # --- train_multitask and contribute nothing to that head's loss.
-
-        # Entry: target + weight aligned on ALL train rows; entry_mask marks
-        # validity. Mirrors the separate-head version's +0.5 time-stop-rank
-        # weighting for the entry head.
         entry_mask_train = train_df[args.entry_target].notna().to_numpy()
         y_entry_train = train_df[args.entry_target].fillna(0.0).to_numpy(dtype=np.float32)
         entry_weight_train = 0.5 + train_df["time_stop_value_rank"].fillna(0.5).to_numpy(dtype=np.float32)
@@ -182,86 +217,195 @@ def main() -> int:
         y_entry_val = val_df[args.entry_target].fillna(0.0).to_numpy(dtype=np.float32)
         entry_weight_val = 0.5 + val_df["time_stop_value_rank"].fillna(0.5).to_numpy(dtype=np.float32)
 
-        # Side: arcsinh-transformed target, weight = clip(|raw|, 1, p95).
-        # Mirrors the separate-head version exactly; NaN raw targets are
-        # masked out.
-        side_mask_train = (
-            train_df[args.side_target].notna().to_numpy()
-            & (train_df["has_passing_call"].to_numpy(dtype=float) > 0.5)
-            & (train_df["has_passing_put"].to_numpy(dtype=float) > 0.5)
-        )
-        side_raw_train = train_df[args.side_target].fillna(0.0).to_numpy(dtype=np.float32)
-        y_side_train = np.arcsinh(side_raw_train / 100.0)
-        side_weight_train = np.abs(side_raw_train)
-        # p95 computed over ONLY valid rows so invalid zeros don't skew the cap
-        if side_mask_train.sum() > 5:
-            _p95 = float(np.percentile(np.abs(side_raw_train[side_mask_train]), 95))
+        if args.policy_mode == "route_aware_fallback":
+            call_mask_train = (
+                train_df["time_stop_pnl_call"].notna().to_numpy()
+                & (train_df["has_passing_call"].to_numpy(dtype=float) > 0.5)
+            )
+            call_raw_train = train_df["time_stop_pnl_call"].fillna(0.0).to_numpy(dtype=np.float32)
+            y_call_train = np.arcsinh(call_raw_train / 100.0)
+            call_weight_train = np.abs(call_raw_train)
+            if call_mask_train.sum() > 5:
+                _call_p95 = float(np.percentile(np.abs(call_raw_train[call_mask_train]), 95))
+            else:
+                _call_p95 = float(np.max(np.abs(call_raw_train))) if call_raw_train.size else 1.0
+            call_weight_train = np.clip(call_weight_train, 1.0, max(_call_p95, 1.0)).astype(np.float32)
+
+            put_mask_train = (
+                train_df["time_stop_pnl_put"].notna().to_numpy()
+                & (train_df["has_passing_put"].to_numpy(dtype=float) > 0.5)
+            )
+            put_raw_train = train_df["time_stop_pnl_put"].fillna(0.0).to_numpy(dtype=np.float32)
+            y_put_train = np.arcsinh(put_raw_train / 100.0)
+            put_weight_train = np.abs(put_raw_train)
+            if put_mask_train.sum() > 5:
+                _put_p95 = float(np.percentile(np.abs(put_raw_train[put_mask_train]), 95))
+            else:
+                _put_p95 = float(np.max(np.abs(put_raw_train))) if put_raw_train.size else 1.0
+            put_weight_train = np.clip(put_weight_train, 1.0, max(_put_p95, 1.0)).astype(np.float32)
+
+            call_mask_val = (
+                val_df["time_stop_pnl_call"].notna().to_numpy()
+                & (val_df["has_passing_call"].to_numpy(dtype=float) > 0.5)
+            )
+            call_raw_val = val_df["time_stop_pnl_call"].fillna(0.0).to_numpy(dtype=np.float32)
+            y_call_val = np.arcsinh(call_raw_val / 100.0)
+            call_weight_val = np.abs(call_raw_val)
+            if call_mask_val.sum() > 5:
+                _call_p95v = float(np.percentile(np.abs(call_raw_val[call_mask_val]), 95))
+            else:
+                _call_p95v = float(np.max(np.abs(call_raw_val))) if call_raw_val.size else 1.0
+            call_weight_val = np.clip(call_weight_val, 1.0, max(_call_p95v, 1.0)).astype(np.float32)
+
+            put_mask_val = (
+                val_df["time_stop_pnl_put"].notna().to_numpy()
+                & (val_df["has_passing_put"].to_numpy(dtype=float) > 0.5)
+            )
+            put_raw_val = val_df["time_stop_pnl_put"].fillna(0.0).to_numpy(dtype=np.float32)
+            y_put_val = np.arcsinh(put_raw_val / 100.0)
+            put_weight_val = np.abs(put_raw_val)
+            if put_mask_val.sum() > 5:
+                _put_p95v = float(np.percentile(np.abs(put_raw_val[put_mask_val]), 95))
+            else:
+                _put_p95v = float(np.max(np.abs(put_raw_val))) if put_raw_val.size else 1.0
+            put_weight_val = np.clip(put_weight_val, 1.0, max(_put_p95v, 1.0)).astype(np.float32)
+
+            entry_model, fallback_call_model, fallback_put_model, mt_info = train_route_aware_multitask(
+                X_train=X_train,
+                y_entry_train=y_entry_train,
+                y_call_train=y_call_train,
+                y_put_train=y_put_train,
+                entry_mask_train=entry_mask_train,
+                call_mask_train=call_mask_train,
+                put_mask_train=put_mask_train,
+                entry_weight_train=entry_weight_train,
+                call_weight_train=call_weight_train,
+                put_weight_train=put_weight_train,
+                X_val=X_val,
+                y_entry_val=y_entry_val,
+                y_call_val=y_call_val,
+                y_put_val=y_put_val,
+                entry_mask_val=entry_mask_val,
+                call_mask_val=call_mask_val,
+                put_mask_val=put_mask_val,
+                entry_weight_val=entry_weight_val,
+                call_weight_val=call_weight_val,
+                put_weight_val=put_weight_val,
+                w_entry_loss=args.w_entry,
+                w_side_loss=args.w_side,
+                device=device,
+                seed=args.seed + fold_idx,
+                hidden_dim=args.hidden_dim,
+                depth=args.depth,
+                dropout=args.dropout,
+                lr=args.lr,
+                weight_decay=args.weight_decay,
+                batch_size=args.batch_size,
+                max_epochs=args.max_epochs,
+                patience=args.patience,
+                side_dropout=args.side_dropout,
+                detach_side=detach_side_flag,
+            )
+            side_model = None
+            entry_info = {
+                "best_val_loss": mt_info["best_entry_val_loss"],
+                "best_epoch": mt_info["best_epoch"],
+            }
+            side_info = {
+                "best_val_loss": 0.5 * (mt_info["best_call_val_loss"] + mt_info["best_put_val_loss"]),
+                "best_epoch": mt_info["best_epoch"],
+                "best_call_val_loss": mt_info["best_call_val_loss"],
+                "best_put_val_loss": mt_info["best_put_val_loss"],
+            }
+
+            val_pred = _prepare_predictions(
+                val_df,
+                entry_model.predict(X_val),
+                None,
+                args.direction_mode,
+                args.policy_mode,
+                fallback_call_pred=fallback_call_model.predict(X_val),
+                fallback_put_pred=fallback_put_model.predict(X_val),
+            )
         else:
-            _p95 = float(np.max(np.abs(side_raw_train))) if side_raw_train.size else 1.0
-        side_weight_train = np.clip(side_weight_train, 1.0, max(_p95, 1.0)).astype(np.float32)
+            side_mask_train = (
+                train_df[args.side_target].notna().to_numpy()
+                & (train_df["has_passing_call"].to_numpy(dtype=float) > 0.5)
+                & (train_df["has_passing_put"].to_numpy(dtype=float) > 0.5)
+            )
+            side_raw_train = train_df[args.side_target].fillna(0.0).to_numpy(dtype=np.float32)
+            y_side_train = np.arcsinh(side_raw_train / 100.0)
+            side_weight_train = np.abs(side_raw_train)
+            if side_mask_train.sum() > 5:
+                _p95 = float(np.percentile(np.abs(side_raw_train[side_mask_train]), 95))
+            else:
+                _p95 = float(np.max(np.abs(side_raw_train))) if side_raw_train.size else 1.0
+            side_weight_train = np.clip(side_weight_train, 1.0, max(_p95, 1.0)).astype(np.float32)
 
-        side_mask_val = (
-            val_df[args.side_target].notna().to_numpy()
-            & (val_df["has_passing_call"].to_numpy(dtype=float) > 0.5)
-            & (val_df["has_passing_put"].to_numpy(dtype=float) > 0.5)
-        )
-        side_raw_val = val_df[args.side_target].fillna(0.0).to_numpy(dtype=np.float32)
-        y_side_val = np.arcsinh(side_raw_val / 100.0)
-        side_weight_val = np.abs(side_raw_val)
-        if side_mask_val.sum() > 5:
-            _p95v = float(np.percentile(np.abs(side_raw_val[side_mask_val]), 95))
-        else:
-            _p95v = float(np.max(np.abs(side_raw_val))) if side_raw_val.size else 1.0
-        side_weight_val = np.clip(side_weight_val, 1.0, max(_p95v, 1.0)).astype(np.float32)
+            side_mask_val = (
+                val_df[args.side_target].notna().to_numpy()
+                & (val_df["has_passing_call"].to_numpy(dtype=float) > 0.5)
+                & (val_df["has_passing_put"].to_numpy(dtype=float) > 0.5)
+            )
+            side_raw_val = val_df[args.side_target].fillna(0.0).to_numpy(dtype=np.float32)
+            y_side_val = np.arcsinh(side_raw_val / 100.0)
+            side_weight_val = np.abs(side_raw_val)
+            if side_mask_val.sum() > 5:
+                _p95v = float(np.percentile(np.abs(side_raw_val[side_mask_val]), 95))
+            else:
+                _p95v = float(np.max(np.abs(side_raw_val))) if side_raw_val.size else 1.0
+            side_weight_val = np.clip(side_weight_val, 1.0, max(_p95v, 1.0)).astype(np.float32)
 
-        entry_model, side_model, mt_info = train_multitask(
-            X_train=X_train,
-            y_entry_train=y_entry_train,
-            y_side_train=y_side_train,
-            entry_mask_train=entry_mask_train,
-            side_mask_train=side_mask_train,
-            entry_weight_train=entry_weight_train,
-            side_weight_train=side_weight_train,
-            X_val=X_val,
-            y_entry_val=y_entry_val,
-            y_side_val=y_side_val,
-            entry_mask_val=entry_mask_val,
-            side_mask_val=side_mask_val,
-            entry_weight_val=entry_weight_val,
-            side_weight_val=side_weight_val,
-            w_entry_loss=args.w_entry,
-            w_side_loss=args.w_side,
-            device=device,
-            seed=args.seed + fold_idx,
-            hidden_dim=args.hidden_dim,
-            depth=args.depth,
-            dropout=args.dropout,
-            lr=args.lr,
-            weight_decay=args.weight_decay,
-            batch_size=args.batch_size,
-            max_epochs=args.max_epochs,
-            patience=args.patience,
-            side_dropout=args.side_dropout,
-            detach_side=args.detach_side,
-            wrong_side_alpha=args.wrong_side_alpha,
-        )
-        # Preserve the per-fold info dict shape the manifest/audit expect,
-        # but split the multitask diagnostics into entry/side views.
-        entry_info = {
-            "best_val_loss": mt_info["best_entry_val_loss"],
-            "best_epoch": mt_info["best_epoch"],
-        }
-        side_info = {
-            "best_val_loss": mt_info["best_side_val_loss"],
-            "best_epoch": mt_info["best_epoch"],
-        }
+            entry_model, side_model, mt_info = train_multitask(
+                X_train=X_train,
+                y_entry_train=y_entry_train,
+                y_side_train=y_side_train,
+                entry_mask_train=entry_mask_train,
+                side_mask_train=side_mask_train,
+                entry_weight_train=entry_weight_train,
+                side_weight_train=side_weight_train,
+                X_val=X_val,
+                y_entry_val=y_entry_val,
+                y_side_val=y_side_val,
+                entry_mask_val=entry_mask_val,
+                side_mask_val=side_mask_val,
+                entry_weight_val=entry_weight_val,
+                side_weight_val=side_weight_val,
+                w_entry_loss=args.w_entry,
+                w_side_loss=args.w_side,
+                device=device,
+                seed=args.seed + fold_idx,
+                hidden_dim=args.hidden_dim,
+                depth=args.depth,
+                dropout=args.dropout,
+                lr=args.lr,
+                weight_decay=args.weight_decay,
+                batch_size=args.batch_size,
+                max_epochs=args.max_epochs,
+                patience=args.patience,
+                side_dropout=args.side_dropout,
+                detach_side=detach_side_flag,
+                wrong_side_alpha=args.wrong_side_alpha,
+            )
+            fallback_call_model = None
+            fallback_put_model = None
+            entry_info = {
+                "best_val_loss": mt_info["best_entry_val_loss"],
+                "best_epoch": mt_info["best_epoch"],
+            }
+            side_info = {
+                "best_val_loss": mt_info["best_side_val_loss"],
+                "best_epoch": mt_info["best_epoch"],
+            }
 
-        val_pred = _prepare_predictions(
-            val_df,
-            entry_model.predict(X_val),
-            side_model.predict(X_val),
-            args.direction_mode,
-        )
+            val_pred = _prepare_predictions(
+                val_df,
+                entry_model.predict(X_val),
+                side_model.predict(X_val),
+                args.direction_mode,
+                args.policy_mode,
+            )
+
         thresholds = calibrate_thresholds(
             val_pred,
             direction_mode=args.direction_mode,
@@ -270,14 +414,27 @@ def main() -> int:
             side_score_weight=args.side_score_weight,
             entry_quantile=args.entry_quantile,
             side_quantile=args.side_quantile,
+            policy_mode=args.policy_mode,
         )
 
-        test_pred = _prepare_predictions(
-            test_df,
-            entry_model.predict(X_test),
-            side_model.predict(X_test),
-            args.direction_mode,
-        )
+        if args.policy_mode == "route_aware_fallback":
+            test_pred = _prepare_predictions(
+                test_df,
+                entry_model.predict(X_test),
+                None,
+                args.direction_mode,
+                args.policy_mode,
+                fallback_call_pred=fallback_call_model.predict(X_test),
+                fallback_put_pred=fallback_put_model.predict(X_test),
+            )
+        else:
+            test_pred = _prepare_predictions(
+                test_df,
+                entry_model.predict(X_test),
+                side_model.predict(X_test),
+                args.direction_mode,
+                args.policy_mode,
+            )
         test_pred["fold_idx"] = fold_idx
         test_pred["selected_forward_value"] = test_pred.apply(_selected_side_forward_value, axis=1)
         test_pred["selected_time_stop_value"] = test_pred.apply(
@@ -286,6 +443,7 @@ def main() -> int:
             direction_mode=args.direction_mode,
             call_col="time_stop_pnl_call",
             put_col="time_stop_pnl_put",
+            policy_mode=args.policy_mode,
         )
         oof_frames.append(test_pred)
 
@@ -293,12 +451,19 @@ def main() -> int:
         ensure_dir(fold_dir)
         with open(os.path.join(fold_dir, "entry_model.pkl"), "wb") as f:
             pickle.dump(entry_model, f)
-        with open(os.path.join(fold_dir, "side_model.pkl"), "wb") as f:
-            pickle.dump(side_model, f)
+        if args.policy_mode == "route_aware_fallback":
+            with open(os.path.join(fold_dir, "fallback_call_model.pkl"), "wb") as f:
+                pickle.dump(fallback_call_model, f)
+            with open(os.path.join(fold_dir, "fallback_put_model.pkl"), "wb") as f:
+                pickle.dump(fallback_put_model, f)
+        else:
+            with open(os.path.join(fold_dir, "side_model.pkl"), "wb") as f:
+                pickle.dump(side_model, f)
         save_json(os.path.join(fold_dir, "calibration.json"), thresholds)
         save_json(os.path.join(fold_dir, "training_info.json"), {
             "device": device,
-            "architecture": "shared_encoder",
+            "architecture": "route_aware_shared_encoder" if args.policy_mode == "route_aware_fallback" else "shared_encoder",
+            "policy_mode": args.policy_mode,
             "entry": entry_info,
             "side": side_info,
             "multitask_best_val_loss": mt_info["best_val_loss"],
@@ -322,11 +487,14 @@ def main() -> int:
             "entry_target": args.entry_target,
             "side_target": args.side_target,
             "direction_mode": args.direction_mode,
+            "policy_mode": args.policy_mode,
             **thresholds,
             "entry_best_val_loss": entry_info["best_val_loss"],
             "entry_best_epoch": entry_info["best_epoch"],
             "side_best_val_loss": side_info["best_val_loss"],
             "side_best_epoch": side_info["best_epoch"],
+            "best_call_val_loss": side_info.get("best_call_val_loss"),
+            "best_put_val_loss": side_info.get("best_put_val_loss"),
             "multitask_best_val_loss": mt_info["best_val_loss"],
         })
 
@@ -351,6 +519,8 @@ def main() -> int:
                 th["side_threshold"],
                 score_mode=args.score_mode,
                 side_score_weight=args.side_score_weight,
+                policy_mode=args.policy_mode,
+                direction_mode=args.direction_mode,
             )
             if row is not None:
                 chosen_rows.append(row)
@@ -374,10 +544,11 @@ def main() -> int:
         "dataset": args.dataset,
         "run_dir": args.run_dir,
         "device": device,
-        "architecture": "shared_encoder",
+        "architecture": "route_aware_shared_encoder" if args.policy_mode == "route_aware_fallback" else "shared_encoder",
         "entry_target": args.entry_target,
         "side_target": args.side_target,
         "direction_mode": args.direction_mode,
+        "policy_mode": args.policy_mode,
         "calibration_mode": args.calibration_mode,
         "score_mode": args.score_mode,
         "side_score_weight": args.side_score_weight,
@@ -394,7 +565,7 @@ def main() -> int:
         "w_entry": args.w_entry,
         "w_side": args.w_side,
         "side_dropout": args.side_dropout,
-        "detach_side": args.detach_side,
+        "detach_side": detach_side_flag,
         "wrong_side_alpha": args.wrong_side_alpha,
         "elapsed_seconds": time.time() - t0,
         "feature_names": feature_names,
@@ -425,17 +596,18 @@ def main() -> int:
         "entry_target": args.entry_target,
         "side_target": args.side_target,
         "direction_mode": args.direction_mode,
+        "policy_mode": args.policy_mode,
         "calibration_mode": args.calibration_mode,
         "score_mode": args.score_mode,
         "side_score_weight": args.side_score_weight,
         "entry_quantile": args.entry_quantile,
         "side_quantile": args.side_quantile,
-        "model_type": "torch_shared_encoder",
-        "architecture": "shared_encoder",
+        "model_type": "torch_route_aware_shared_encoder" if args.policy_mode == "route_aware_fallback" else "torch_shared_encoder",
+        "architecture": "route_aware_shared_encoder" if args.policy_mode == "route_aware_fallback" else "shared_encoder",
         "w_entry": args.w_entry,
         "w_side": args.w_side,
         "side_dropout": args.side_dropout,
-        "detach_side": args.detach_side,
+        "detach_side": detach_side_flag,
         "wrong_side_alpha": args.wrong_side_alpha,
     })
 

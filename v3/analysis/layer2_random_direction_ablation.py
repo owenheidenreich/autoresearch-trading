@@ -6,10 +6,15 @@ is the edge entirely in the entry gate (fixed_quantile on entry_score
 
 Approach: take the exact trades the winning run made in
 `v3/artifacts/layer2_shared_enc_fixedq_detach/layer2_trades.csv`,
-keep the same (day, bar_index) selections, but OVERRIDE the direction
-with a random call/put pick per trade (seeded). Recompute PnL using
-the same simulator path as replay.py. Report PF / DD / TPD and
-compare to the winning run.
+keep the same (day, bar_index) selections, and override direction in
+one of two ways:
+
+- all-trades mode: randomize every chosen trade
+- fallback-only mode: keep teacher-triggered bars teacher-directed and
+  randomize only fallback bars
+
+Recompute PnL using the same simulator path as replay.py. Report PF /
+DD / TPD and compare to the winning run.
 
 Disqualifying signal (per plan §2b):
 - Random-direction PF ≥ 1.0 → direction head is cosmetic; the "win"
@@ -36,6 +41,8 @@ from v3.layer2.common import (
     build_labeled_day,
     compute_time_stop_pnl_for_direction,
     replay_metrics_from_pnls,
+    teacher_direction_hint_from_row,
+    load_pickle,
 )
 
 
@@ -46,6 +53,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=101)
     p.add_argument("--n-seeds", type=int, default=10,
                    help="Number of random seeds to average over (each seed is a fresh call/put coin-flip pass).")
+    p.add_argument(
+        "--mode",
+        default="all_trades",
+        choices=("all_trades", "fallback_only"),
+        help="Randomize every chosen trade or only non-teacher fallback trades.",
+    )
     return p.parse_args()
 
 
@@ -56,8 +69,35 @@ def _load_trades(run_dir: str) -> pd.DataFrame:
     return df
 
 
+def _trade_route_sources(run_dir: str, trades: pd.DataFrame) -> dict[tuple[str, int], str]:
+    if "route_source" in trades.columns:
+        return {
+            (str(row.day), int(row.bar_index)): str(row.route_source)
+            for row in trades.itertuples(index=False)
+        }
+    oof_path = os.path.join(run_dir, "oof_predictions.pkl")
+    if not os.path.exists(oof_path):
+        return {(str(row.day), int(row.bar_index)): "fallback" for row in trades.itertuples(index=False)}
+    oof = load_pickle(oof_path)
+    route_lookup: dict[tuple[str, int], str] = {}
+    for row in oof.itertuples(index=False):
+        key = (str(row.day), int(row.bar_index))
+        teacher_dir = teacher_direction_hint_from_row(pd.Series(row._asdict()))
+        route_lookup[key] = "teacher" if teacher_dir else "fallback"
+    return {
+        (str(row.day), int(row.bar_index)): route_lookup.get((str(row.day), int(row.bar_index)), "fallback")
+        for row in trades.itertuples(index=False)
+    }
+
+
 def _recompute_one_seed(
-    trades: pd.DataFrame, ds: V2Dataset, cfg: GuardrailConfig, equity: float, seed: int
+    trades: pd.DataFrame,
+    route_sources: dict[tuple[str, int], str],
+    ds: V2Dataset,
+    cfg: GuardrailConfig,
+    equity: float,
+    seed: int,
+    mode: str,
 ) -> tuple[list[float], dict]:
     """Pick a random direction for each trade, recompute PnL."""
     rng = np.random.default_rng(seed)
@@ -76,8 +116,11 @@ def _recompute_one_seed(
         bar = next((b for b in log.bars if b.bar_index == bar_index), None)
         if bar is None:
             continue
-        # Random call/put (50/50 coin flip)
-        direction = "call" if rng.random() < 0.5 else "put"
+        route_source = route_sources.get((day, bar_index), "fallback")
+        if mode == "fallback_only" and route_source == "teacher":
+            direction = str(row["direction"])
+        else:
+            direction = "call" if rng.random() < 0.5 else "put"
         if direction == "call":
             call_count += 1
         else:
@@ -91,6 +134,7 @@ def _recompute_one_seed(
 def main() -> int:
     args = parse_args()
     trades = _load_trades(args.run_dir)
+    route_sources = _trade_route_sources(args.run_dir, trades)
 
     print("Loading v2 dataset + sidecars for PnL recomputation...")
     ds = V2Dataset.load()
@@ -99,7 +143,15 @@ def main() -> int:
     # Collect PF / DD / metrics across n_seeds to average out coin-flip noise
     runs = []
     for seed in range(args.seed, args.seed + args.n_seeds):
-        pnls, counts = _recompute_one_seed(trades, ds, cfg, args.equity, seed)
+        pnls, counts = _recompute_one_seed(
+            trades,
+            route_sources,
+            ds,
+            cfg,
+            args.equity,
+            seed,
+            args.mode,
+        )
         m = replay_metrics_from_pnls(pnls, args.equity)
         m["seed"] = seed
         m["call_count"] = counts["call_count"]
@@ -114,7 +166,7 @@ def main() -> int:
     runs_df = pd.DataFrame(runs)
     print()
     print("=" * 80)
-    print(f"Random-direction ablation — averaged over {args.n_seeds} seeds")
+    print(f"Random-direction ablation ({args.mode}) — averaged over {args.n_seeds} seeds")
     print("=" * 80)
     print(f"PF:        mean={runs_df['pf'].mean():.3f}  std={runs_df['pf'].std():.3f}  "
           f"min={runs_df['pf'].min():.3f}  max={runs_df['pf'].max():.3f}")

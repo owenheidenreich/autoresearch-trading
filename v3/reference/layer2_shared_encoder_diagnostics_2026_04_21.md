@@ -1,5 +1,10 @@
 # Layer-2 Shared-Encoder Diagnostics — 2026-04-21
 
+Status note:
+- This doc records the detach-side branch clearing the tree-baseline bar.
+- It does not include the later reality-check qualification pass.
+- Read [layer2_diagnostic_full_2026_04_21.md](layer2_diagnostic_full_2026_04_21.md) and [layer2_route_aware_fallback_2026_04_21.md](layer2_route_aware_fallback_2026_04_21.md) before treating this branch as the current promoted direction.
+
 ## Verdict
 
 **Exp A (detach-side) is the new Layer-2 neural baseline.** It clears the

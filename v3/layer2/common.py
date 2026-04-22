@@ -36,6 +36,7 @@ DEFAULT_DATASET_PATH = os.path.join(ARTIFACT_ROOT, "layer2_dataset.pkl")
 DEFAULT_RUN_DIR = os.path.join(ARTIFACT_ROOT, "layer2_entry_side")
 DEFAULT_ENTRY_QUANTILE = 0.60
 DEFAULT_SIDE_QUANTILE = 0.10
+DEFAULT_POLICY_MODE = "scalar_side"
 
 W2A_FEATURE_NAMES = (
     "sigma_pos",
@@ -161,9 +162,15 @@ def teacher_direction_hint_from_row(row: pd.Series) -> str:
     return ""
 
 
-def effective_direction(row: pd.Series, direction_mode: str) -> str:
+def effective_direction(
+    row: pd.Series,
+    direction_mode: str,
+    policy_mode: str = DEFAULT_POLICY_MODE,
+) -> str:
     model_direction = str(row.get("predicted_direction", ""))
     teacher_direction = teacher_direction_hint_from_row(row)
+    if policy_mode == "route_aware_fallback":
+        return teacher_direction or (model_direction if model_direction in {"call", "put"} else "")
     if direction_mode == "model":
         return model_direction
     if direction_mode == "teacher_if_triggered_else_model":
@@ -180,13 +187,27 @@ def selected_value_for_direction_mode(
     direction_mode: str,
     call_col: str,
     put_col: str,
+    policy_mode: str = DEFAULT_POLICY_MODE,
 ) -> float:
-    direction = effective_direction(row, direction_mode)
+    direction = effective_direction(row, direction_mode, policy_mode=policy_mode)
     if direction == "call":
         return float(row[call_col]) if pd.notna(row[call_col]) else float("nan")
     if direction == "put":
         return float(row[put_col]) if pd.notna(row[put_col]) else float("nan")
     return float("nan")
+
+
+def route_source_from_row(
+    row: pd.Series,
+    direction_mode: str,
+    policy_mode: str = DEFAULT_POLICY_MODE,
+) -> str:
+    if teacher_direction_hint_from_row(row):
+        return "teacher"
+    direction = effective_direction(row, direction_mode, policy_mode=policy_mode)
+    if direction in {"call", "put"}:
+        return "fallback"
+    return "flat"
 
 
 def surface_feature_values(bar: BarRecord) -> dict[str, float]:
@@ -435,16 +456,30 @@ def _scored_eligible_rows(
     eligible: pd.DataFrame,
     score_mode: str,
     side_score_weight: float,
+    policy_mode: str,
 ) -> pd.DataFrame:
     scored = eligible.copy()
-    if score_mode == "product":
-        scored["combined_score"] = scored["entry_score"] * scored["side_conf"]
-    elif score_mode == "entry_only":
+    if score_mode == "entry_only":
         scored["combined_score"] = scored["entry_score"]
-    elif score_mode == "entry_plus_side":
+        return scored
+
+    if score_mode == "entry_plus_side":
         scored["combined_score"] = scored["entry_score"] + side_score_weight * scored["side_conf"]
-    else:
+        return scored
+
+    if score_mode != "product":
         raise ValueError(f"Unknown score_mode={score_mode!r}")
+
+    if policy_mode == "route_aware_fallback":
+        teacher_mask = scored["teacher_any_triggered"] > 0.5
+        scored["combined_score"] = np.where(
+            teacher_mask,
+            scored["entry_score"],
+            scored["entry_score"] * scored["side_conf"],
+        )
+        return scored
+
+    scored["combined_score"] = scored["entry_score"] * scored["side_conf"]
     return scored
 
 
@@ -455,18 +490,39 @@ def per_day_choice(
     *,
     score_mode: str = "product",
     side_score_weight: float = 0.15,
+    policy_mode: str = DEFAULT_POLICY_MODE,
+    direction_mode: str = "teacher_if_triggered_else_put",
 ) -> Optional[pd.Series]:
-    eligible = day_rows[
-        (day_rows["entry_score"] >= entry_threshold)
-        & (day_rows["side_conf"] >= side_threshold)
-        & (day_rows["predicted_direction"] != "")
-    ].copy()
+    base = day_rows[day_rows["entry_score"] >= entry_threshold].copy()
+    if base.empty:
+        return None
+
+    if "effective_direction" not in base.columns:
+        base["effective_direction"] = base.apply(
+            effective_direction,
+            axis=1,
+            direction_mode=direction_mode,
+            policy_mode=policy_mode,
+        )
+
+    if policy_mode == "route_aware_fallback":
+        teacher_mask = base["teacher_any_triggered"] > 0.5
+        eligible = base[
+            (base["effective_direction"] != "")
+            & (teacher_mask | (base["side_conf"] >= side_threshold))
+        ].copy()
+    else:
+        eligible = base[
+            (base["side_conf"] >= side_threshold)
+            & (base["predicted_direction"] != "")
+        ].copy()
     if eligible.empty:
         return None
     eligible = _scored_eligible_rows(
         eligible,
         score_mode=score_mode,
         side_score_weight=side_score_weight,
+        policy_mode=policy_mode,
     )
     idx = eligible["combined_score"].idxmax()
     return eligible.loc[idx]
@@ -481,10 +537,17 @@ def calibrate_thresholds(
     side_score_weight: float,
     entry_quantile: float = DEFAULT_ENTRY_QUANTILE,
     side_quantile: float = DEFAULT_SIDE_QUANTILE,
+    policy_mode: str = DEFAULT_POLICY_MODE,
 ) -> dict[str, float]:
+    fallback_quantile_base = val_pred["side_conf"]
+    if policy_mode == "route_aware_fallback" and "teacher_any_triggered" in val_pred.columns:
+        fallback_only = val_pred.loc[val_pred["teacher_any_triggered"] <= 0.5, "side_conf"]
+        if len(fallback_only) > 0:
+            fallback_quantile_base = fallback_only
+
     if calibration_mode == "fixed_quantiles":
         entry_threshold = float(np.quantile(val_pred["entry_score"], entry_quantile))
-        side_threshold = float(np.quantile(val_pred["side_conf"], side_quantile))
+        side_threshold = float(np.quantile(fallback_quantile_base, side_quantile))
         picks = []
         for _, day_rows in val_pred.groupby("day"):
             row = per_day_choice(
@@ -493,6 +556,8 @@ def calibrate_thresholds(
                 side_threshold,
                 score_mode=score_mode,
                 side_score_weight=side_score_weight,
+                policy_mode=policy_mode,
+                direction_mode=direction_mode,
             )
             if row is not None:
                 picks.append(row)
@@ -507,6 +572,7 @@ def calibrate_thresholds(
                     direction_mode=direction_mode,
                     call_col="time_stop_pnl_call",
                     put_col="time_stop_pnl_put",
+                    policy_mode=policy_mode,
                 )
             ))
         return {
@@ -529,7 +595,7 @@ def calibrate_thresholds(
     for e_q in entry_grid:
         entry_threshold = float(np.quantile(val_pred["entry_score"], e_q))
         for s_q in side_grid:
-            side_threshold = float(np.quantile(val_pred["side_conf"], s_q))
+            side_threshold = float(np.quantile(fallback_quantile_base, s_q))
             picks = []
             for _, day_rows in val_pred.groupby("day"):
                 row = per_day_choice(
@@ -538,6 +604,8 @@ def calibrate_thresholds(
                     side_threshold,
                     score_mode=score_mode,
                     side_score_weight=side_score_weight,
+                    policy_mode=policy_mode,
+                    direction_mode=direction_mode,
                 )
                 if row is not None:
                     picks.append(row)
@@ -554,6 +622,7 @@ def calibrate_thresholds(
                     direction_mode=direction_mode,
                     call_col="time_stop_pnl_call",
                     put_col="time_stop_pnl_put",
+                    policy_mode=policy_mode,
                 )
             )
             if np.isnan(chosen_value):
@@ -578,6 +647,7 @@ def calibrate_thresholds(
             side_score_weight=side_score_weight,
             entry_quantile=0.75,
             side_quantile=0.10,
+            policy_mode=policy_mode,
         )
     return best
 
