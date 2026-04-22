@@ -7,7 +7,8 @@ triggered the always-put pivot) was a regime-specific artifact.
 Across 13 disjoint 60-day OOS windows (780 OOS days total):
 
 - **V0 aggregate PF 1.132 vs V1 0.888** (V0 wins by +0.244)
-- **V0 beats V1 in 10 of 13 windows** (V1 in 3)
+- **V0 strictly beats V1 in 12 of 13 windows**; by a wider `> 0.10 PF`
+  margin it wins **10 of 13**
 - V0 per-window PF: mean 1.188 / median 1.033
 - V1 per-window PF: mean 0.946 / median 0.823
 
