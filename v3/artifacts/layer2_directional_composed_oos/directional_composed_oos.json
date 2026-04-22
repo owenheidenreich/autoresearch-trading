@@ -1,0 +1,38 @@
+{
+  "comparison_table": [
+    {
+      "DD%": 25.88660395321178,
+      "PF": 0.8688177742980746,
+      "mean$": -67.53469079919127,
+      "system": "Layer-2 V0 alone",
+      "trades": 20
+    },
+    {
+      "DD%": 16.01933269273575,
+      "PF": 1.8965715645981367,
+      "mean$": 284.65474540538764,
+      "system": "Layer-2 V0 + Augmented L3",
+      "trades": 20
+    },
+    {
+      "DD%": 17.025652165133838,
+      "PF": 1.3912640159895397,
+      "mean$": 158.51516795662457,
+      "system": "Layer-2 V1 alone",
+      "trades": 20
+    },
+    {
+      "DD%": 8.200899911025001,
+      "PF": 2.1692490931413064,
+      "mean$": 182.5680032446948,
+      "system": "Layer-2 V1 + Augmented L3",
+      "trades": 20
+    }
+  ],
+  "meta": {
+    "champion_oos_pf": 1.537,
+    "threshold": 0.19,
+    "variant": "V1"
+  },
+  "verdict": "NEW CHAMPION -- V1 + Augmented L3 OOS PF 2.169 beats prior champion (1.537) by +0.632"
+}
