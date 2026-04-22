@@ -547,6 +547,19 @@ cmd_start() {
         log "No local $layer2_dataset; skipping Layer-2 bundle upload."
     fi
 
+    # Upload the Layer-2 action-surface bundle if it exists locally (~400MB).
+    # Required by v3.layer2.train_unified_policy promotion runs; larger than
+    # the original layer2_dataset.pkl because it includes sequence + contract
+    # surfaces and action labels.
+    local layer2_action_dataset="$PROJECT_ROOT/v3/artifacts/layer2_action_surface_dataset.pkl"
+    if [[ -f "$layer2_action_dataset" ]]; then
+        log "Uploading Layer-2 action-surface bundle ($(du -h "$layer2_action_dataset" | cut -f1))..."
+        ssh_cmd "mkdir -p /root/v3/artifacts"
+        scp_retry "$layer2_action_dataset" "root@$SSH_HOST:/root/v3/artifacts/layer2_action_surface_dataset.pkl"
+    else
+        log "No local $layer2_action_dataset; skipping action-surface bundle upload."
+    fi
+
     # Integrity check: confirm remote train.py matches local snapshot.
     local local_train_sha remote_train_sha
     local_train_sha=$(shasum -a 256 "$PROJECT_ROOT/v2/train.py" | awk '{print $1}')
@@ -1265,6 +1278,65 @@ cmd_run_final_train() {
     log "  (or: python3 -m v2.ops.model_manage revert)"
 }
 
+# ===================================================================
+# RUN_V3_PROMOTION — full rolling 3-seed promotion for the v3 unified
+# action policy. Launches on GPU, downloads the artifact dir back.
+# ===================================================================
+cmd_run_v3_promotion() {
+    load_state
+    local exp_id="${EXTRA_ARGS:-}"
+    [[ -n "$exp_id" ]] || die "Usage: deploy.sh run_v3_promotion <exp_id> (e.g., v3_unified_promo_001)"
+
+    local run_dir_rel="v3/artifacts/$exp_id"
+    log "=== V3 PROMOTION: $exp_id ==="
+    log "Remote run-dir: /root/$run_dir_rel"
+
+    # Upload latest v3 sources only (fast, ~seconds). Rebuilds any local
+    # edits since 'start' without re-uploading data/sidecars.
+    local v3_bundle source_git_sha source_dirty_count
+    v3_bundle="/tmp/autoresearch-v3-sync-$$.tgz"
+    rm -f "$v3_bundle"
+    source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
+    source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    log "Packaging v3 source sync (git=$source_git_sha, dirty=$source_dirty_count)..."
+    tar -h -czf "$v3_bundle" -C "$PROJECT_ROOT" \
+        --no-mac-metadata --no-xattrs \
+        --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
+        --exclude='v3/artifacts' \
+        v3
+    scp_retry "$v3_bundle" "root@$SSH_HOST:/root/v3-sync.tgz"
+    rm -f "$v3_bundle"
+    # Extract over existing v3/ (artifacts dir preserved on remote).
+    ssh_cmd "cd /root && tar -xzf v3-sync.tgz 2>/dev/null && rm -f v3-sync.tgz"
+
+    # Verify the dataset is on remote.
+    ssh_cmd "test -f /root/v3/artifacts/layer2_action_surface_dataset.pkl" \
+        || die "action-surface dataset missing on remote; rerun 'start' to upload it"
+
+    # Ensure the remote run-dir is fresh so we cannot silently reuse a prior
+    # partial artifact directory from an earlier failed attempt.
+    ssh_cmd "rm -rf /root/$run_dir_rel"
+
+    local env_prefix="${TRAIN_ENV:-}"
+    ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
+    log "Launching promotion (3 seeds, 13 windows, tier=promotion, device=cuda)..."
+    local run_output
+    run_output=$(ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v3.layer2.train_unified_policy --tier promotion --device cuda --run-dir $run_dir_rel 2>&1 | tee /root/run.log") || true
+    echo "$run_output"
+
+    # Download the full artifact directory back.
+    mkdir -p "$PROJECT_ROOT/v3/artifacts"
+    log "Downloading /root/$run_dir_rel ..."
+    scp_cmd -r "root@$SSH_HOST:/root/$run_dir_rel" "$PROJECT_ROOT/v3/artifacts/" 2>/dev/null || \
+        log "WARNING: artifact directory not found on remote (run may have crashed)"
+
+    log ""
+    log "V3 promotion complete: $exp_id"
+    log "Local artifact: $PROJECT_ROOT/$run_dir_rel"
+    log "Next: inspect seed reports under $run_dir_rel/seed_*/report.json"
+}
+
+
 cmd_stop() {
     load_state
     echo ""
@@ -1338,6 +1410,7 @@ case "$CMD" in
     run_screen_latest) cmd_run_screen_latest ;;
     run_screen_mini)   cmd_run_screen_mini   ;;
     run_final_train)   cmd_run_final_train   ;;
+    run_v3_promotion)  cmd_run_v3_promotion  ;;
     fund)              cmd_fund              ;;
     ssh)               cmd_ssh               ;;
     logs)              cmd_logs              ;;
