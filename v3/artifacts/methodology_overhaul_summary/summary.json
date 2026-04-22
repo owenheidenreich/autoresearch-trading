@@ -4,15 +4,16 @@
     "aggregate_mean_pnl": 61.7780326880451,
     "aggregate_pf": 1.1321436839836814,
     "aggregate_trades": 432,
-    "beats_v1_in_n_of_13_windows": 10,
     "directional_rule": "V0 (model's chosen direction)",
     "exit_rule": "time-stop (session end)",
+    "margin_win_vs_v1_count": 10,
     "per_window_pf_max": 2.2743923194723354,
     "per_window_pf_mean": 1.1878180077584486,
     "per_window_pf_median": 1.0330050462300098,
     "per_window_pf_min": 0.5864430823985803,
     "per_window_pf_std": 0.5463640555873572,
-    "sizing": "1 contract"
+    "sizing": "1 contract",
+    "strict_win_vs_v1_count": 12
   },
   "conditional_rule_test": {
     "aggregate_pf": 1.091914046249355,
@@ -125,7 +126,7 @@
     "previous_champion": "V1 + A3 @ 0.19 (always_put + augmented L3 minus mfe_norm)",
     "previous_oos_pf_claim": 2.847,
     "previous_oos_sample": "20 days (2026-03-05 to 2026-04-01)",
-    "reframing": "The previous claim was built on 20 days. In the rolling-window methodology overhaul (13 disjoint 60-day OOS windows, 780 days total), V1 (always_put) loses to V0 in 12 of 13 windows (aggregate PF 0.888 vs V0 1.132). The 20-day finding was a regime-specific artifact. The methodologically-robust champion is V0 + time-stop."
+    "reframing": "The previous claim was built on 20 days. In the rolling-window methodology overhaul (13 disjoint 60-day OOS windows, 780 days total), V1 (always_put) loses to V0 in 12 of 13 windows (aggregate PF 0.888 vs V0 1.132). The stricter +0.10 PF margin count is 10 of 13. The 20-day finding was a regime-specific artifact. The methodologically-robust champion is V0 + time-stop."
   },
   "what_changed": {
     "after": "V0 (model direction) + time-stop | Agg PF 1.132 on 780 days",

@@ -57,7 +57,8 @@ Total effort: ~1 day CPU-only, single laptop.
 | Windows with PF ≥ 1.0 | 7/13 |
 | Windows with PF ≥ 1.2 | 4/13 |
 | Windows with PF ≥ 1.5 | 3/13 (windows 5, 9, 11) |
-| Beats V1 in | **10/13 windows** |
+| Strictly beats V1 in | **12/13 windows** |
+| Beats V1 by ≥ 0.10 PF in | **10/13 windows** |
 
 Per-window breakdown: see [v3/reference/rolling_directional_eval_2026_04_22.md](rolling_directional_eval_2026_04_22.md).
 

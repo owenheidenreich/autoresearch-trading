@@ -41,6 +41,26 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def _variant_win_counts(eval_data: dict) -> dict[str, dict[str, int]]:
+    per_win = eval_data["per_window_per_variant"]
+    v1_pf_by_window = {
+        r["window_idx"]: r["pf"] for r in per_win if r["variant"] == "V1"
+    }
+    variants = {r["variant"] for r in per_win}
+    out: dict[str, dict[str, int]] = {}
+    for variant in sorted(variants):
+        rows = [r for r in per_win if r["variant"] == variant]
+        strict = sum(
+            1 for r in rows if r["pf"] > v1_pf_by_window.get(r["window_idx"], -np.inf)
+        )
+        margin = sum(
+            1 for r in rows
+            if r["pf"] > v1_pf_by_window.get(r["window_idx"], -np.inf) + 0.10
+        )
+        out[variant] = {"strict": int(strict), "margin": int(margin)}
+    return out
+
+
 def main() -> int:
     args = parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
@@ -51,6 +71,7 @@ def main() -> int:
     # Extract key stats
     variants = eval_data["aggregate_per_variant"]
     per_win = eval_data["per_window_per_variant"]
+    win_counts = _variant_win_counts(eval_data)
 
     v0 = variants["V0"]
     v1 = variants["V1"]
@@ -78,7 +99,8 @@ def main() -> int:
             "per_window_pf_std": v0["per_window_pf_std"],
             "per_window_pf_min": v0["per_window_pf_min"],
             "per_window_pf_max": v0["per_window_pf_max"],
-            "beats_v1_in_n_of_13_windows": v0["beat_V1_count"],
+            "strict_win_vs_v1_count": win_counts["V0"]["strict"],
+            "margin_win_vs_v1_count": win_counts["V0"]["margin"],
         },
         "vs_previous_claim": {
             "previous_champion": "V1 + A3 @ 0.19 (always_put + augmented L3 minus mfe_norm)",
@@ -87,8 +109,10 @@ def main() -> int:
             "reframing": (
                 "The previous claim was built on 20 days. In the rolling-window "
                 "methodology overhaul (13 disjoint 60-day OOS windows, 780 days total), "
-                "V1 (always_put) loses to V0 in 12 of 13 windows (aggregate PF 0.888 "
-                "vs V0 1.132). The 20-day finding was a regime-specific artifact. "
+                f"V1 (always_put) loses to V0 in {win_counts['V0']['strict']} of 13 windows "
+                "(aggregate PF 0.888 vs V0 1.132). The stricter +0.10 PF margin count "
+                f"is {win_counts['V0']['margin']} of 13. The 20-day finding was a "
+                "regime-specific artifact. "
                 "The methodologically-robust champion is V0 + time-stop."
             ),
         },
@@ -172,12 +196,16 @@ def main() -> int:
     print(f"  Per-window PF range: [{v0['per_window_pf_min']:.3f}, {v0['per_window_pf_max']:.3f}]")
     print(f"  Windows with PF >= 1.0: {(v0_arr >= 1.0).sum()}/13")
     print(f"  Windows with PF >= 1.2: {(v0_arr >= 1.2).sum()}/13")
-    print(f"  Beats V1 in: {v0['beat_V1_count']}/13 windows")
+    print(f"  Strictly beats V1 in: {win_counts['V0']['strict']}/13 windows")
+    print(f"  Beats V1 by >= 0.10 PF in: {win_counts['V0']['margin']}/13 windows")
     print(flush=True)
     print(f"Previous 'champion' (reframed):")
     print(f"  V1 + A3 L3 @ 0.19 had OOS PF 2.847 on 20 days")
     print(f"  In the 13-window methodology overhaul, V1 aggregate PF = {v1['agg_pf']:.3f}")
-    print(f"  V1 beats V0 in: {v1['beat_V1_count']}/13 windows (V0 wins in 10/13)")
+    print(
+        f"  V1 strictly beats V0 in: {win_counts['V1']['strict']}/13 windows "
+        f"(V0 wins in {win_counts['V0']['strict']}/13)"
+    )
     print(flush=True)
     print(f"Conditional rule (V0 default, switch to V1 when classifier flags):")
     print(f"  Aggregate PF: {cond_agg['conditional_pf']:.3f}")

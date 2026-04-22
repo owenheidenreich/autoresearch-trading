@@ -8,7 +8,8 @@ For each window:
 
 Aggregates:
 - Per-variant: mean/std/median of per-window PF
-- Per-variant: win-share vs V1 (how many windows it beats V1 by ≥ 0.10 PF)
+- Per-variant: strict win count vs V1 and margin win count vs V1
+- Margin win = beats V1 by at least +0.10 PF in a window
 - Cross-window: aggregate PF, DD, mean$, total trades
 - Regime stratification: tag each window by SPX direction + VIX regime
 
@@ -198,7 +199,7 @@ def main() -> int:
     print("=" * 100, flush=True)
     print(f"{'var':<5}{'agg_PF':>10}{'agg_DD%':>10}{'mean$':>10}{'trades':>8}"
           f"{'win_pf_mean':>14}{'win_pf_med':>13}{'win_pf_std':>12}"
-          f"{'beat_V1':>10}", flush=True)
+          f"{'>V1':>8}{'>V1+0.10':>12}", flush=True)
 
     v1_per_window_pf = {
         r["window_idx"]: r["pf"] for r in per_window_per_variant if r["variant"] == "V1"
@@ -213,8 +214,12 @@ def main() -> int:
             r["pf"] for r in per_window_per_variant if r["variant"] == v
         ]
         pf_arr = np.array(per_win_pfs, dtype=np.float64)
-        # Beat V1 by ≥ 0.10 PF count
-        beat_count = sum(
+        strict_win_count = sum(
+            1 for r in per_window_per_variant
+            if r["variant"] == v
+            and r["pf"] > v1_per_window_pf.get(r["window_idx"], -np.inf)
+        )
+        margin_win_count = sum(
             1 for r in per_window_per_variant
             if r["variant"] == v
             and r["pf"] > v1_per_window_pf.get(r["window_idx"], -np.inf) + 0.10
@@ -223,7 +228,8 @@ def main() -> int:
               f"{agg['pf']:>10.3f}{agg['max_dd_pct']:>10.1f}{agg['mean_pnl']:>10.0f}"
               f"{int(agg['trades']):>8}"
               f"{pf_arr.mean():>14.3f}{np.median(pf_arr):>13.3f}{pf_arr.std(ddof=1):>12.3f}"
-              f"{beat_count:>10}/{len(per_win_pfs)}",
+              f"{strict_win_count:>8}/{len(per_win_pfs)}"
+              f"{margin_win_count:>12}/{len(per_win_pfs)}",
               flush=True)
         aggregate_per_variant[v] = {
             "agg_pf": agg["pf"], "agg_dd_pct": agg["max_dd_pct"],
@@ -234,7 +240,8 @@ def main() -> int:
             "per_window_pf_std": float(pf_arr.std(ddof=1)),
             "per_window_pf_min": float(pf_arr.min()),
             "per_window_pf_max": float(pf_arr.max()),
-            "beat_V1_count": beat_count,
+            "strict_win_vs_V1_count": strict_win_count,
+            "margin_win_vs_V1_count": margin_win_count,
             "total_windows": len(per_win_pfs),
         }
 
