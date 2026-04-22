@@ -60,19 +60,55 @@ GPU gave us:
 But **no lift over the baseline**. The architecture is signal-limited,
 not compute-limited.
 
+## Baseline Sources (correcting an earlier conflation)
+
+Two different baselines exist and an earlier draft of this doc mixed
+them up. Keeping them straight:
+
+| baseline | PF | DD | notes |
+|---|---|---|---|
+| `V0 + time-stop` (entry-only, same shape as unified policy) | **`1.132`** | `95.9%` (cold-start equity-curve artifact) | the PF gate reference |
+| Layer-2.5 patience-gated (entry + patience, different stack) | `~1.795` | **`21.4%`** | the DD gate reference |
+
+The unified policy is structurally comparable to `V0 + time-stop`
+(both are entry-only with time-stop exit). On DD the unified policy
+is **dramatically better** than V0 (`27–38%` vs `95.9%`). On PF it is
+`1.5%` short of V0.
+
 ## Promotion Gate Status
 
-| gate | threshold | result |
-|---|---|---|
-| W1 PF vs baseline | `PF > 1.132` | **FAIL** (mean `1.116`) |
-| W1 DD vs Layer-2.5 | `DD ≤ 21.4%` OR `+0.15 PF` | FAIL (mean DD `31.9%`) |
-| W1 trade share | `0.25 ≤ share ≤ 0.70` | PASS (`0.451–0.554`) |
-| Per-seed PF ≥ 1.0 floor | all 3 seeds | **PASS** (`1.097–1.151`) |
-| Patience fast-loser | `≤ 0.209` | borderline (`0.19–0.21`) |
+| gate | threshold | source | result |
+|---|---|---|---|
+| W1 PF vs baseline | `PF > 1.132` | V0+time-stop | **FAIL** (mean `1.116`) |
+| W1 DD vs Layer-2.5 | `DD ≤ 21.4%` OR `+0.15 PF` | Layer-2.5 | FAIL (mean DD `31.9%`) |
+| W1 trade share | `0.25 ≤ share ≤ 0.70` | — | PASS (`0.451–0.554`) |
+| Per-seed PF ≥ 1.0 floor | all 3 seeds | plan section 1 | **PASS** (`1.097–1.151`) |
+| Patience fast-loser | `≤ 0.209` | — | borderline (`0.19–0.21`) |
 
-All three seeds clear the per-seed `PF ≥ 1.0` floor from the plan. The
-architecture is consistent and honest. It just does not clear the
-aggregate PF gate.
+All three seeds clear the per-seed `PF ≥ 1.0` floor from the plan.
+The DD gate reference is Layer-2.5's `21.4%`, which is a stricter
+bar than the unified policy can clear at this architecture. Against
+the structurally-matched comparison (V0), DD is far better.
+
+## Side Concentration — Not Yet Exhausted
+
+Call share across seeds: `93.5% / 91.9% / 93.5%` (mean `~93%`). This
+is extreme enough that "working architecture, signal-limited" is not
+an honest conclusion yet. The current ranking loss has two terms:
+
+- best-vs-rest: pushes argmax(utility) above all other tradeable actions
+- flat-vs-contract: pushes winning contracts above flat, flat above losing contracts
+
+Neither of these directly contrasts same-bar call-vs-put. A call
+with utility `+$500` and a put with utility `+$100` both get pushed
+up relative to flat by the second term; only the best-vs-rest term
+separates them, and the best-vs-rest gradient on "right side" is
+diluted across ~24 contracts. The model can coast on a side prior.
+
+A same-bar contrastive term (e.g., `relu(margin - (best_side_pred -
+other_side_pred))` with weighting by the sign of the true utility
+gap) forces direct side discrimination. This is a cheap CPU test and
+should happen before declaring the architecture signal-limited.
 
 ## What GPU Proved
 
@@ -95,24 +131,29 @@ decision regime, not the optimizer.
 ## Recommendation
 
 **Do not promote this build as the v3 champion.** The `V0 + time-stop`
-baseline at `PF 1.132 / DD 21.4%` remains the honest champion. The
-unified action policy is shelved as "working architecture, needs
-different data regime to clear."
+baseline at `PF 1.132` remains the honest PF champion. But do not
+shelve the unified policy yet; the `93%` call share is not sufficiently
+interrogated.
 
-Next-step options per the plan, in order of cost/expected-value:
+Revised next-step order (after Codex code review flagged the
+baseline conflation and the side-concentration issue):
 
-1. **Layer-3 outer loop composition (plan section 5).** The unified
-   policy produces trades with lower DD than the baseline; feeding
-   those trades into the rolling Layer-3 exit and retraining entry on
-   composed utilities is the single move the plan identifies as most
-   likely to lift aggregate PF. CPU-feasible. No new GPU needed.
-2. **Bar-level decisions instead of daily picks.** The current rule
-   picks one bar per day; ~85% of scored bars are discarded. A
-   multi-entry policy over the day would extract more signal from the
-   same model weights. Requires rule change, new harness metric.
-3. **Longer sequence context (20→60 bars) with GPU.** Only worth
-   running after the Layer-3 loop closes the PF gap; otherwise
-   conflates lift sources.
+1. **Layer-3 outer loop composition (plan section 5).** Highest EV,
+   CPU-feasible. The unified policy produces trades with DD much
+   better than V0; composing the rolling Layer-3 exit on those
+   entries and retraining entry on composed utilities is the
+   single move most likely to lift aggregate PF.
+2. **Same-bar call-vs-put contrastive loss ablation.** Cheap CPU
+   smoke + one reduced rolling slice. Add a hinge term that forces
+   the model to directly discriminate between the best call and the
+   best put on each bar, weighted by the sign of the true utility
+   gap. If this drops call share and lifts PF, the "signal-limited"
+   conclusion was premature and the architecture has more to give.
+3. **Hold off on bar-level multi-entry changes** until after (1) and
+   (2). Changing entry regime and exit regime together would muddy
+   attribution.
+4. Longer sequence context (`20→60`) on GPU — only if (1) and (2)
+   close the PF gap and we need more lift.
 
 The committed model weights for each seed stay in
 `v3/artifacts/v3_unified_promo_001/seed_*/window_*/model.pkl` as
