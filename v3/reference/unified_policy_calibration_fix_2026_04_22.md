@@ -185,45 +185,122 @@ honestly) would put PF well above baseline. But honestly accepting them
 means the **calibrator's fallback behavior** is now the binding
 constraint, not the model's ranking.
 
+## 3-Seed CPU Dev Run (V1 — baseline architecture)
+
+Command:
+
+```bash
+.venv/bin/python -m v3.layer2.train_unified_policy \
+  --run-dir v3/artifacts/layer2_unified_policy_dev_3seed \
+  --tier dev --device cpu --seeds 42,43,44
+```
+
+| seed | trades | share | PF | DD | windows with PF<1 | slip $25 PF |
+|---|---|---|---|---|---|---|
+| 42 | 410 | 0.526 | 1.066 | 48.8% | 3 | 0.999 |
+| 43 | 390 | 0.500 | **1.172** | 44.1% | 4 | 1.100 |
+| 44 | 401 | 0.514 | 1.097 | 45.3% | 6 | 1.026 |
+
+- **Mean PF across seeds: `1.112`**, std `0.045`
+- **Aggregated across all `1201` trades: PF `1.111`**
+- **Baseline to beat: `1.132`**
+
+Finding: the gap is **not single-seed noise**. Three seeds cluster
+tightly at `1.07–1.17`, all above `PF 1.0` on the seed-level aggregate.
+Seed 43 beats baseline; seeds 42 and 44 fall just short.
+
+## 3-Seed CPU Dev Run (V2 — with weak-window calibrator fallback)
+
+Hypothesis: on weak validation windows (no val candidate `pf_qualified`),
+the calibrator picks "best of a bad lot" and over-trades OOS. A fixed
+high-margin fallback (`80th` percentile of positive validation margins)
+should reduce exposure in those windows and lift the aggregate.
+
+Command:
+
+```bash
+.venv/bin/python -m v3.layer2.train_unified_policy \
+  --run-dir v3/artifacts/layer2_unified_policy_dev_3seed_v2 \
+  --tier dev --device cpu --seeds 42,43,44
+```
+
+| seed | trades | PF | DD | windows_below_1 | fallback-windows (of 13) | slip $25 PF |
+|---|---|---|---|---|---|---|
+| 42 | 379 | 1.071 | 45.2% | 5 | 4 | 1.004 |
+| 43 | 380 | **1.131** | 48.3% | 4 | 4 | 1.062 |
+| 44 | 394 | 1.118 | 44.0% | 6 | 3 | 1.045 |
+
+- **Mean PF: `1.107`** vs V1 `1.112` — essentially unchanged
+- **Std: `0.026`** vs V1 `0.045` — significantly tighter
+- Aggregated `1153` trades: PF `1.107`
+- Fallback triggered on ~`30%` of windows (11/39 seed-windows)
+
+Finding: the fallback rule **reduces variance but does not raise the
+ceiling**. It trims seed 43's edge (-0.041) to protect seed 44's weak
+windows (+0.021). Net effect on mean is a wash. The rule is a defensive
+intervention against a problem that isn't actually the binding
+constraint.
+
+**Decision: reverted the fallback rule.** The pre-V2 calibrator is the
+code state. The 3-seed V1 result (mean PF `1.112`) is the honest CPU
+ceiling.
+
+## Interpretation: Where the Gap Lives
+
+Across the two 3-seed runs, the architecture's CPU-budget ceiling is
+`PF ~1.10–1.12`, roughly `2%` below the `V0 + time-stop` baseline
+`1.132`. The weak-window hypothesis is falsified. What remains:
+
+- **Training-budget ceiling**: `8` CPU epochs are likely too short. The
+  model is still improving on the ranking loss at early-stop. GPU with
+  `20` epochs and a warmer schedule is the plan's own prescription for
+  a real comparison.
+- **Regime bias**: `90%+` of picks are calls. The OOS period (Nov 2025
+  onward) is a trending-up market where calls do win more often. We
+  cannot know if this is real edge or a failure to learn direction until
+  the model sees at least one OOS window with a different character.
+  A side-balance regularizer would risk trading against real market
+  direction; we would only ship it after a regime-switch ablation.
+- **Calibration variance**: across seeds, windows W07/W10/W11 are the
+  consistent weak spots. These are the windows immediately preceding
+  the OOS regime change (mid-2024 → 2025). They may be legitimately
+  hard rather than fixable with a calibration trick.
+
 ## What This Means in Plan Terms
 
-The plan's section 1 promotion contract says:
+The plan's section 1 promotion contract:
 
 > Promotion requires the same result shape on all 3 promotion seeds. No
 > seed may fail below PF 1.0.
 
-A seed here does not fail below `PF 1.0` overall. It *does* include two
-sub-`1.0` windows (`W07` `0.317` and `W10` `0.515`), so a seed-by-seed
-analysis at the window level will still flag those. Deciding whether
-that counts as a seed-level fail is a pre-promotion governance question.
+Both V1 and V2 clear the per-seed `PF ≥ 1.0` floor. Neither clears the
+aggregate `PF > 1.132` W1 gate at CPU budget.
 
 ## Next Work
 
-### Option A — GPU 3-seed promotion now
+### Primary — GPU 3-seed promotion
 
-The plan's own contract calls for this. At `PF 1.066` single-seed CPU,
-seed averaging is the legitimate way to see whether the aggregate clears
-`1.132`. Cost is one proper GPU lease.
+At this point GPU is the legitimate next step, **not** as a fix but as
+the protocol-required confirmation. Expected outcome: either GPU lifts
+mean PF to `~1.15+` (longer training closes the gap) and clears the
+gate, or it tops out at `~1.11–1.13` and we accept the architecture is
+honestly just short of baseline at this dataset scope. Either answer
+is information; the current CPU-only position is not.
 
-### Option B — Harden the calibrator's fallback
+### If GPU also tops out at ~1.11–1.13
 
-If no candidate on validation is `pf_qualified`, fall back to a fixed
-*high* margin (e.g. the `80th` percentile of positive validation margins)
-rather than the lowest grid point. This trades some trades for lower
-exposure in bad-signal windows.
+The architecture isn't the bottleneck. Candidates in order:
+- bar-level decision rather than daily pick (the plan's one-trade-per-day
+  rule discards most of the signal surface)
+- larger contract token budget (top-K beyond 12)
+- longer sequence context (`20 → 60` bars) — requires GPU per the plan
+- Layer-3 rolling exit outer loop from the plan (section 5), which was
+  never wired into this path
 
-### Option C — Side-balance regularization
+### If GPU clears the gate
 
-Call share across `13` windows is still high (e.g. W03 = `33/33` all
-calls, W05 = `19/19` all calls). That is probably real regime bias, not
-a model pathology — OOS windows that span Nov 2025 – Feb 2026 are in a
-trending-up regime. Adding an explicit side-balance term risks trading
-against the real market direction. Do not ship this without OOS
-falsification of "always-call".
-
-Recommendation: run option A first. The calibrator fallback (option B)
-is cheap but shouldn't be merged in front of a promotion seed run that
-will expose whether it was actually the bottleneck.
+Ship. Then run the Layer-3 outer loop described in the plan to see if
+composed PF exceeds the promoted entry-only policy.
 
 ## What This Does Not Prove
 

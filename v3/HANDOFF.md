@@ -46,9 +46,12 @@ Current status:
 - first smoke replay was not promoted: `46` trades, `PF 0.464`, `DD 50.4%`, calibrated margin `-0.083` (incoherent — trading below the model's own flat pick)
 - post-audit fix pass: calibrator floored at `0.0` margin, regression flat weight `0.5 → 1.5`, ranking hinge `0.05 → 0.20`, added bidirectional `_flat_ranking_loss`, loss-weight rebalance `w_ranking 0.75 → 1.0 / w_regression 1.0 → 0.5`, smoke budget `4/2 → 8/3` epochs/patience
 - fixed smoke on the latest rolling window: `39` trades, `PF 0.909`, `DD 15.1%`, trade_share `0.65` (in-band), calibrated margin `+0.305`
-- dev-tier rolling (13 windows, 1 seed, CPU) aggregate: `410` trades, `PF 1.066`, `DD 48.8%`, trade_share `0.526`, fast-loser rate `0.21` (~patience-gate threshold), beats-V1 rate `0.554`
-- PF is now `6%` below the `V0 + time-stop` baseline of `1.132`, driven by three low-margin-fallback windows (W07, W10, W11); the model is not ready to promote but is inside the baseline neighborhood for the first time
-- see [unified_policy_calibration_fix_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/unified_policy_calibration_fix_2026_04_22.md) for the audit and fix pass
+- dev-tier rolling single-seed (13 windows, seed 42, CPU) aggregate: `410` trades, `PF 1.066`, `DD 48.8%`, trade_share `0.526`, fast-loser rate `0.21` (~patience-gate threshold), beats-V1 rate `0.554`
+- dev-tier rolling **3-seed** (seeds 42/43/44, CPU) aggregate: `1201` trades, mean seed PF `1.112` (std `0.045`), aggregated PF `1.111`; seed 43 clears baseline at `1.172`, seeds 42/44 just short
+- a weak-window calibrator fallback rule was implemented and tested: it **reduced cross-seed variance** (std `0.045 → 0.026`) but **did not lift the mean** (`1.112 → 1.107`). Reverted as net-neutral; the "weak window" hypothesis is falsified as the binding constraint
+- CPU-budget architecture ceiling is `~1.11`, `~2%` below the `V0 + time-stop` baseline `1.132`
+- next step per the plan is GPU 3-seed promotion (longer epochs, full protocol). Outcome is binary: either GPU lifts mean PF over `1.132` (ship), or it tops out here and the architecture is honestly just short at this data scope (pivot to bar-level decisions or Layer-3 outer loop)
+- see [unified_policy_calibration_fix_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/unified_policy_calibration_fix_2026_04_22.md) for the full audit, fix pass, and 3-seed V1/V2 analyses
 
 ## TL;DR
 
