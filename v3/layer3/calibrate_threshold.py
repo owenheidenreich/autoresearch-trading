@@ -61,44 +61,77 @@ def _pf(rows: pd.DataFrame) -> tuple[float, float]:
 def calibrate_per_window(
     frames: dict[float, pd.DataFrame],
     equity: float,
+    policy: str = "prior_window_max_pf",
+    fixed_threshold: float | None = None,
+    robust_slack: float = 0.90,
 ) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    """Pick each window's exit threshold under the given policy.
+
+    Policies:
+      - "prior_window_max_pf": per-window, pick threshold that maximized
+        aggregated PF on windows 0..W-1 OOS rows (leakage-free).
+      - "prior_window_robust": same as above, but among thresholds whose
+        prior PF is within `robust_slack` of the best, pick the *lowest*.
+        Motivated by the W07 diagnostic: lower thresholds are more robust
+        to regime shift since they exit earlier and eat less theta.
+      - "fixed": use `fixed_threshold` for every window, ignoring priors.
+    """
     thresholds = sorted(frames.keys())
     windows = sorted(
         {int(w) for df in frames.values() for w in df["window_idx"].unique()}
     )
-    default_thr = thresholds[len(thresholds) // 2]
+    mid_thr = thresholds[len(thresholds) // 2]
+
+    if policy == "fixed":
+        if fixed_threshold is None:
+            raise ValueError("fixed policy requires fixed_threshold")
+        # snap to nearest available threshold in the grid
+        chosen_all = min(thresholds, key=lambda t: abs(t - float(fixed_threshold)))
+    elif policy not in ("prior_window_max_pf", "prior_window_robust"):
+        raise ValueError(f"unknown policy: {policy}")
 
     chosen_rows: list[pd.DataFrame] = []
     per_window_log: list[dict[str, Any]] = []
 
     for window_idx in windows:
-        prior_windows = [w for w in windows if w < window_idx]
-        if not prior_windows:
-            chosen_thr = default_thr
-            calib_note = "fold0_default_mid_grid"
+        if policy == "fixed":
+            chosen_thr = chosen_all
+            calib_note = f"fixed_{fixed_threshold:.2f}"
             calib_pf = None
             calib_trades = 0
         else:
-            best_thr = None
-            best_key: tuple[float, float, float] | None = None
-            calib_pf_at_best = 0.0
-            calib_trades_at_best = 0
-            for thr in thresholds:
-                df = frames[thr]
-                prior_rows = df[df["window_idx"].isin(prior_windows)]
-                pf, mean_pnl = _pf(prior_rows)
-                # Prefer higher PF; then higher mean PnL; then lower threshold
-                # (more selective on exits costs fewer bars of theta decay).
-                key = (pf, mean_pnl, -thr)
-                if best_key is None or key > best_key:
-                    best_key = key
-                    best_thr = thr
-                    calib_pf_at_best = pf
-                    calib_trades_at_best = int(len(prior_rows))
-            chosen_thr = float(best_thr) if best_thr is not None else default_thr
-            calib_note = "prior_window_max_pf"
-            calib_pf = calib_pf_at_best
-            calib_trades = calib_trades_at_best
+            prior_windows = [w for w in windows if w < window_idx]
+            if not prior_windows:
+                chosen_thr = mid_thr
+                calib_note = "fold0_default_mid_grid"
+                calib_pf = None
+                calib_trades = 0
+            else:
+                per_thr_pf: list[tuple[float, float, float, int]] = []
+                for thr in thresholds:
+                    df = frames[thr]
+                    prior_rows = df[df["window_idx"].isin(prior_windows)]
+                    pf, mean_pnl = _pf(prior_rows)
+                    per_thr_pf.append((thr, pf, mean_pnl, int(len(prior_rows))))
+
+                if policy == "prior_window_max_pf":
+                    best = max(per_thr_pf, key=lambda x: (x[1], x[2], -x[0]))
+                    chosen_thr = best[0]
+                    calib_pf = best[1]
+                    calib_trades = best[3]
+                    calib_note = "prior_window_max_pf"
+                else:  # prior_window_robust
+                    best_pf = max(x[1] for x in per_thr_pf)
+                    threshold_floor = best_pf * float(robust_slack)
+                    eligible = [x for x in per_thr_pf if x[1] >= threshold_floor and np.isfinite(x[1])]
+                    if not eligible:
+                        eligible = per_thr_pf
+                    # within eligibility, pick lowest threshold
+                    chosen = min(eligible, key=lambda x: x[0])
+                    chosen_thr = chosen[0]
+                    calib_pf = chosen[1]
+                    calib_trades = chosen[3]
+                    calib_note = f"prior_window_robust_slack_{robust_slack}"
 
         win_rows = frames[chosen_thr]
         win_rows = win_rows[win_rows["window_idx"] == window_idx].copy()
@@ -127,6 +160,19 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--run-dir", required=True, help="Existing rolling L3 artifact directory")
     p.add_argument("--equity", type=float, default=25_000.0)
+    p.add_argument(
+        "--policy",
+        default="prior_window_max_pf",
+        choices=("prior_window_max_pf", "prior_window_robust", "fixed"),
+        help="Threshold-selection policy. `prior_window_max_pf` picks the argmax-PF on prior-window OOS rows. `prior_window_robust` picks the lowest threshold within --robust-slack of the best (more regime-shift resilient). `fixed` uses --threshold for every window.",
+    )
+    p.add_argument("--threshold", type=float, default=None, help="Used when --policy=fixed")
+    p.add_argument("--robust-slack", type=float, default=0.90, help="PF slack fraction for prior_window_robust")
+    p.add_argument(
+        "--out-suffix",
+        default="",
+        help="Suffix appended to output filenames to avoid overwriting prior runs",
+    )
     return p.parse_args()
 
 
@@ -141,7 +187,13 @@ def main() -> int:
     thresholds = [float(t) for t in report["meta"]["exit_thresholds"]]
     frames = _load_per_threshold_rows(args.run_dir, thresholds)
 
-    calibrated_df, per_window_log = calibrate_per_window(frames, args.equity)
+    calibrated_df, per_window_log = calibrate_per_window(
+        frames,
+        args.equity,
+        policy=args.policy,
+        fixed_threshold=args.threshold,
+        robust_slack=args.robust_slack,
+    )
     calibrated_metrics = agg_exit_metrics(calibrated_df, args.equity)
 
     exploratory_best = report.get("best_threshold_by_aggregate_pf_exploratory", {})
@@ -191,19 +243,22 @@ def main() -> int:
         "meta": {
             "source_report": report_path,
             "thresholds_available": thresholds,
-            "calibration_policy": "per_window_prior_oos_max_pf",
-            "fold0_fallback_threshold": "grid_midpoint",
+            "calibration_policy": args.policy,
+            "fixed_threshold": float(args.threshold) if args.threshold is not None else None,
+            "robust_slack": float(args.robust_slack) if args.policy == "prior_window_robust" else None,
+            "fold0_fallback_threshold": "grid_midpoint" if args.policy != "fixed" else f"fixed_{args.threshold}",
         },
         "calibrated_metrics": calibrated_metrics,
         "exploratory_best": exploratory_best,
         "entry_time_stop_baseline": baseline,
         "per_window_calibration": per_window_log,
     }
-    out_path = os.path.join(args.run_dir, "rolling_layer3_calibrated.json")
+    suffix = f"_{args.out_suffix}" if args.out_suffix else ""
+    out_path = os.path.join(args.run_dir, f"rolling_layer3_calibrated{suffix}.json")
     save_json(out_path, out_payload)
     print(f"Saved: {out_path}", flush=True)
     if not calibrated_df.empty:
-        csv_path = os.path.join(args.run_dir, "layer3_trades_calibrated.csv")
+        csv_path = os.path.join(args.run_dir, f"layer3_trades_calibrated{suffix}.csv")
         calibrated_df.to_csv(csv_path, index=False)
         print(f"Saved: {csv_path}", flush=True)
     return 0
