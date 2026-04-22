@@ -1,0 +1,217 @@
+{
+  "arms": {
+    "A0_baseline": {
+      "defer": false,
+      "drop_idxs": [],
+      "drop_names": [],
+      "in_sample": {
+        "gross_loss": 53513.58460177837,
+        "gross_profit": 233934.04070400394,
+        "max_dd_pct": 6.225463127968976,
+        "mean_pnl": 656.0743858262748,
+        "pf": 4.371488892863847,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 3122.8247995336446,
+        "gross_profit": 6774.184864427541,
+        "max_dd_pct": 8.200899911025001,
+        "mean_pnl": 182.5680032446948,
+        "pf": 2.1692490931413064,
+        "trades": 20
+      }
+    },
+    "A1_drop_mtc": {
+      "defer": false,
+      "drop_idxs": [
+        13
+      ],
+      "drop_names": [
+        "minutes_to_close"
+      ],
+      "in_sample": {
+        "gross_loss": 53513.58460177837,
+        "gross_profit": 233934.04070400394,
+        "max_dd_pct": 6.225463127968976,
+        "mean_pnl": 656.0743858262748,
+        "pf": 4.371488892863847,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 3122.8247995336446,
+        "gross_profit": 6774.184864427541,
+        "max_dd_pct": 8.200899911025001,
+        "mean_pnl": 182.5680032446948,
+        "pf": 2.1692490931413064,
+        "trades": 20
+      }
+    },
+    "A2_drop_mtc_t5m": {
+      "defer": false,
+      "drop_idxs": [
+        13,
+        27
+      ],
+      "drop_names": [
+        "minutes_to_close",
+        "trend_5min"
+      ],
+      "in_sample": {
+        "gross_loss": 57792.46452919044,
+        "gross_profit": 233423.88664274427,
+        "max_dd_pct": 6.666260126951788,
+        "mean_pnl": 638.6597167765593,
+        "pf": 4.039002118084859,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 2808.324794013639,
+        "gross_profit": 7897.059930172923,
+        "max_dd_pct": 8.155189634231457,
+        "mean_pnl": 254.43675680796423,
+        "pf": 2.812018021208472,
+        "trades": 20
+      }
+    },
+    "A3_drop_mfen": {
+      "defer": false,
+      "drop_idxs": [
+        92
+      ],
+      "drop_names": [
+        "mfe_norm"
+      ],
+      "in_sample": {
+        "gross_loss": 54562.74440921616,
+        "gross_profit": 224414.13489465715,
+        "max_dd_pct": 6.666260126951788,
+        "mean_pnl": 617.6414199470582,
+        "pf": 4.1129554116920755,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 2773.7497781913958,
+        "gross_profit": 7897.059930172923,
+        "max_dd_pct": 8.018100071921644,
+        "mean_pnl": 256.16550759907636,
+        "pf": 2.8470700537819043,
+        "trades": 20
+      }
+    },
+    "A4_drop_mtc_mfen": {
+      "defer": false,
+      "drop_idxs": [
+        13,
+        92
+      ],
+      "drop_names": [
+        "minutes_to_close",
+        "mfe_norm"
+      ],
+      "in_sample": {
+        "gross_loss": 54562.74440921616,
+        "gross_profit": 224414.13489465715,
+        "max_dd_pct": 6.666260126951788,
+        "mean_pnl": 617.6414199470582,
+        "pf": 4.1129554116920755,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 2773.7497781913958,
+        "gross_profit": 7897.059930172923,
+        "max_dd_pct": 8.018100071921644,
+        "mean_pnl": 256.16550759907636,
+        "pf": 2.8470700537819043,
+        "trades": 20
+      }
+    },
+    "B0_baseline_defer": {
+      "defer": true,
+      "drop_idxs": [],
+      "drop_names": [],
+      "in_sample": {
+        "gross_loss": 55370.98461719726,
+        "gross_profit": 233839.6908381353,
+        "max_dd_pct": 6.225463127968976,
+        "mean_pnl": 648.9771135306839,
+        "pf": 4.223144891765367,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 2957.074797861955,
+        "gross_profit": 6857.184890771847,
+        "max_dd_pct": 8.018100071921644,
+        "mean_pnl": 195.00550464549457,
+        "pf": 2.3189081641525524,
+        "trades": 20
+      }
+    },
+    "B1_drop_mtc_defer": {
+      "defer": true,
+      "drop_idxs": [
+        13
+      ],
+      "drop_names": [
+        "minutes_to_close"
+      ],
+      "in_sample": {
+        "gross_loss": 55370.98461719726,
+        "gross_profit": 233839.6908381353,
+        "max_dd_pct": 6.225463127968976,
+        "mean_pnl": 648.9771135306839,
+        "pf": 4.223144891765367,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 2957.074797861955,
+        "gross_profit": 6857.184890771847,
+        "max_dd_pct": 8.018100071921644,
+        "mean_pnl": 195.00550464549457,
+        "pf": 2.3189081641525524,
+        "trades": 20
+      }
+    },
+    "B4_drop_mtc_mfen_defer": {
+      "defer": true,
+      "drop_idxs": [
+        13,
+        92
+      ],
+      "drop_names": [
+        "minutes_to_close",
+        "mfe_norm"
+      ],
+      "in_sample": {
+        "gross_loss": 56532.9694044714,
+        "gross_profit": 224311.89495110387,
+        "max_dd_pct": 6.666260126951788,
+        "mean_pnl": 610.1051838059361,
+        "pf": 3.967806703133521,
+        "trades": 275
+      },
+      "oos": {
+        "gross_loss": 2773.7497781913958,
+        "gross_profit": 7897.059930172923,
+        "max_dd_pct": 8.018100071921644,
+        "mean_pnl": 256.16550759907636,
+        "pf": 2.8470700537819043,
+        "trades": 20
+      }
+    }
+  },
+  "baseline_oos_pf": 2.1692490931413064,
+  "best_arm": "A3_drop_mfen",
+  "best_oos_pf": 2.8470700537819043,
+  "meta": {
+    "baseline_run_dir": "v3/artifacts/layer2_shared_enc_fixedq_detach",
+    "defer_bars_floor": 10,
+    "mfe_norm_floor": 0.05,
+    "mfe_norm_idx": 92,
+    "minutes_to_close_idx": 13,
+    "n_chosen": 275,
+    "n_teacher": 298,
+    "n_v1_oos": 20,
+    "threshold": 0.19,
+    "trend_5min_idx": 27
+  }
+}
