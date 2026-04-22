@@ -1,0 +1,82 @@
+{
+  "label_balance": {
+    "in_sample_pos": 31,
+    "in_sample_pos_rate": 0.1103202846975089,
+    "in_sample_total": 281,
+    "oos_pos": 3,
+    "oos_pos_rate": 0.15,
+    "oos_total": 20
+  },
+  "meta": {
+    "feature_bar": 14,
+    "feature_indices": [
+      32,
+      33,
+      6,
+      34,
+      35,
+      12,
+      56,
+      58,
+      4,
+      14,
+      48,
+      50,
+      54
+    ],
+    "label_smoothing_usd": 50.0,
+    "n_in_sample": 281,
+    "n_oos": 20,
+    "n_total": 301,
+    "per_day_features": [
+      "opening_gap_pct",
+      "session_open_dist",
+      "vwap_dist",
+      "first15_range_pct",
+      "first15_close_position",
+      "vix_roc",
+      "atm_iv",
+      "iv_percentile",
+      "realized_vol",
+      "vix_regime",
+      "sigma_pos",
+      "omar_range_pct",
+      "omar_mid_pos_units"
+    ]
+  },
+  "per_fold_label_balance": {
+    "0": {
+      "n_days": 59,
+      "n_pos": 6,
+      "pos_rate": 0.1016949152542373
+    },
+    "1": {
+      "n_days": 42,
+      "n_pos": 7,
+      "pos_rate": 0.16666666666666666
+    },
+    "2": {
+      "n_days": 60,
+      "n_pos": 1,
+      "pos_rate": 0.016666666666666666
+    },
+    "3": {
+      "n_days": 60,
+      "n_pos": 1,
+      "pos_rate": 0.016666666666666666
+    },
+    "4": {
+      "n_days": 60,
+      "n_pos": 16,
+      "pos_rate": 0.26666666666666666
+    }
+  },
+  "v0_chose_label_balance": {
+    "in_sample_pos": 27,
+    "in_sample_pos_rate": 0.09818181818181818,
+    "in_sample_total": 275,
+    "oos_pos": 3,
+    "oos_pos_rate": 0.15,
+    "oos_total": 20
+  }
+}
