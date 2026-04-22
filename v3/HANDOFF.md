@@ -1,6 +1,6 @@
-# v3 Handoff — Post-A1, Layer-2 Mainline
+# v3 Handoff — Layer-2 Mainline + Layer-2.5 Timing
 
-**Date:** 2026-04-21  
+**Date:** 2026-04-22  
 **Project framing:** SPX 0DTE long premium, $25k account, 1 contract, Moderate-tier Layer 0 rails
 
 ## Purpose
@@ -11,9 +11,44 @@ This is the current handoff for `v3` after:
 - late-session teacher search falsified
 - W2a soft features shipped into `v2.2`
 - first `v3` Layer-2 supervised branch implemented and screened
+- methodology overhaul reset the honest champion to `V0 + time-stop`
+- Layer-2.5 full-surface entry patience was promoted into the architecture
 
 The mainline is no longer “write more teachers” or “keep tuning `v2/train.py`.”
-The mainline is now the `v3` Layer-2 bar-state branch in [v3/layer2](/Users/gduby/Documents/autoresearch-trading/v3/layer2).
+The mainline is now:
+- `v3/layer2` for bar-state scoring and the new unified action-policy redesign
+- `v3/layer25` for timing / entry patience on the full scored-bar surface
+- `v3/layer3` for honest rolling-window exits on top of the Layer-2.5 trades
+
+There is now also a **W1 surface branch** under `v3/layer2`:
+- `export_surface_dataset.py`
+- `train_surface_model.py`
+
+This branch is the first direct response to the audit's main criticism:
+the old Layer-2 flattened away sequence structure and the contract surface.
+First result:
+- short-budget 5-fold W1 run on the new surface branch: `287` trades, `PF 1.571`, `DD 15.3%`
+- see [w1_surface_branch_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/w1_surface_branch_2026_04_22.md)
+
+There is also now a first-pass **unified action-policy branch** under `v3/layer2`:
+- [export_action_surface_dataset.py](/Users/gduby/Documents/autoresearch-trading/v3/layer2/export_action_surface_dataset.py)
+- [train_unified_policy.py](/Users/gduby/Documents/autoresearch-trading/v3/layer2/train_unified_policy.py)
+
+This is the beginning of the intended end-state:
+- one policy over `flat + real contract candidates`
+- teachers as features, not direction overrides
+- patience / stopout supervision folded into the same model
+- promotion only from the `13`-window rolling harness
+
+Current status:
+- canonical action-surface export is implemented
+- rolling unified-policy smoke path is verified end-to-end
+- first smoke replay was not promoted: `46` trades, `PF 0.464`, `DD 50.4%`, calibrated margin `-0.083` (incoherent — trading below the model's own flat pick)
+- post-audit fix pass: calibrator floored at `0.0` margin, regression flat weight `0.5 → 1.5`, ranking hinge `0.05 → 0.20`, added bidirectional `_flat_ranking_loss`, loss-weight rebalance `w_ranking 0.75 → 1.0 / w_regression 1.0 → 0.5`, smoke budget `4/2 → 8/3` epochs/patience
+- fixed smoke on the latest rolling window: `39` trades, `PF 0.909`, `DD 15.1%`, trade_share `0.65` (in-band), calibrated margin `+0.305`
+- dev-tier rolling (13 windows, 1 seed, CPU) aggregate: `410` trades, `PF 1.066`, `DD 48.8%`, trade_share `0.526`, fast-loser rate `0.21` (~patience-gate threshold), beats-V1 rate `0.554`
+- PF is now `6%` below the `V0 + time-stop` baseline of `1.132`, driven by three low-margin-fallback windows (W07, W10, W11); the model is not ready to promote but is inside the baseline neighborhood for the first time
+- see [unified_policy_calibration_fix_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/unified_policy_calibration_fix_2026_04_22.md) for the audit and fix pass
 
 ## TL;DR
 
@@ -23,6 +58,19 @@ What is actually true now:
 - **Late-session teacher families did not survive.** The tournament went `0/8`; that regime is Layer-2-only. See [late_session_tournament_2026_04_20.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/late_session_tournament_2026_04_20.md).
 - **W2a features shipped, but `v2` still failed.** `exp_179` confirmed the old training loop is the bottleneck, not the feature surface. See [w2a_handoff_2026_04_21.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/w2a_handoff_2026_04_21.md).
 - **The new mainline is `v3` Layer-2.** Export/train/replay tooling now exists under [v3/layer2](/Users/gduby/Documents/autoresearch-trading/v3/layer2).
+- **The methodology overhaul changed the honest baseline.**
+  - old flashy claim: `V1 + A3 L3 @ 0.19`
+  - honest current baseline: `V0 + time-stop`, PF `1.132` across `780` OOS days
+- **Layer-2.5 is now the next architectural step.**
+  - later timing layers were starving on chosen-trade samples
+  - the new full-surface patience layer trains on `69,863` scored bars across `780` OOS days
+  - at threshold `0.40`, patience-gated policy replay gives `218` trades, `PF 1.795`, `DD 21.4%`
+- **The new final-shape target is no longer the old entry/side threshold stack.**
+  - the desired direction is now the unified action-policy path under `v3/layer2`
+  - old `direction_mode`, `score_mode`, `side_score_weight`, and heuristic contract selection should be treated as benchmark-era controls, not champion-era ones
+- **Layer-3 now has an honest rolling prototype on top of Layer-2.5.**
+  - using the same `218` patience-filtered trades, rolling Layer-3 lifts PF from `1.795` to an exploratory best `2.351` at exit threshold `0.19`
+  - important caveat: the threshold sweep is exploratory, not deployment-calibrated
 - **There are now two Layer-2 baselines with different roles.**
   - Stable CPU reference:
     - fixed-quantile hybrid tree policy
@@ -47,6 +95,9 @@ References:
 - [layer2_diagnostic_full_2026_04_21.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/layer2_diagnostic_full_2026_04_21.md)
 - [layer2_route_aware_fallback_2026_04_21.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/layer2_route_aware_fallback_2026_04_21.md)
 - [layer2_fallback_only_probe_2026_04_21.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/layer2_fallback_only_probe_2026_04_21.md)
+- [methodology_overhaul_summary_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/methodology_overhaul_summary_2026_04_22.md)
+- [v3/layer25/README.md](/Users/gduby/Documents/autoresearch-trading/v3/layer25/README.md)
+- [layer3_rolling_entry_patience_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/layer3_rolling_entry_patience_2026_04_22.md)
 
 ## What Changed
 
@@ -93,27 +144,53 @@ What it does:
   - fallback-route diagnostics via [v3/analysis/layer2_fallback_route_diagnostic.py](/Users/gduby/Documents/autoresearch-trading/v3/analysis/layer2_fallback_route_diagnostic.py)
   - fallback-only randomization controls via [v3/analysis/layer2_random_direction_ablation.py](/Users/gduby/Documents/autoresearch-trading/v3/analysis/layer2_random_direction_ablation.py)
 
+New unified-policy path:
+- [v3/layer2/action_surface_dataset.py](/Users/gduby/Documents/autoresearch-trading/v3/layer2/action_surface_dataset.py)
+- [v3/layer2/export_action_surface_dataset.py](/Users/gduby/Documents/autoresearch-trading/v3/layer2/export_action_surface_dataset.py)
+- [v3/layer2/unified_policy.py](/Users/gduby/Documents/autoresearch-trading/v3/layer2/unified_policy.py)
+- [v3/layer2/train_unified_policy.py](/Users/gduby/Documents/autoresearch-trading/v3/layer2/train_unified_policy.py)
+
+What it does:
+- exports the canonical action-surface bundle:
+  - `rows`
+  - `sequence_features`
+  - `sequence_mask`
+  - `contract_features`
+  - `contract_mask`
+  - `action_labels`
+- fixes the execution window at `09:45–11:30 ET`
+- keeps Layer 0 as execution-only rails while exposing blocked contracts to training tokens
+- trains one model over `flat + top-12 call tokens + top-12 put tokens`
+- learns utility, clean-entry probability, and stopout risk jointly
+- calibrates one scalar `decision_margin` on validation only inside the rolling harness
+
 ## Current Best Hypothesis
 
-The surviving signal is still **bar-quality first, structural direction second**.
+The surviving signal is still **bar-quality first, timing caution second, structural direction third**.
+
+But the important architectural correction is:
+
+- do not keep polishing the old decomposed Layer-2 as if it were the final shape
+- use it as a benchmark and scaffolding layer
+- move serious research energy into the unified action-policy path
 
 More concretely:
 
 - The entry model is learning something real. Top-decile and top-1/day bar selection still beat random eligible bars and teacher-triggered bars on oracle-quality metrics.
+- The next bottleneck is no longer “can we score bars?” but “are we entering too greedily on bars that need too much patience?”
 - The detach-side neural branch improved aggregate PF and DD, but the full diagnostic showed the directional edge is still not clean enough to promote as a standalone learned routing policy.
 - The route-aware fallback follow-up did not fix the real problem. Instead of improving fallback action quality, it collapsed into teacher-only selections.
 - The fallback-only probe also failed. Training only on non-teacher rows did not beat the blunt put fallback; even the narrower put-vs-flat control regressed versus always-put.
-- The main unresolved problem is now very specific:
-  - what should happen on **no-teacher bars**
-  - but now more specifically whether fallback puts should be **suppressed in low-payoff regimes**
-  - rather than whether no-teacher bars should be rerouted to calls
+- The main criticism of the old flow is now explicit:
+  - Layer-2 used a big bar-state dataset
+  - later timing logic kept collapsing to tiny chosen-trade samples
+  - that forced trader-like timing questions onto under-trained models
 
 So the next useful hypothesis is not “run GPU.” It is:
 
-- model fallback **regime gating** explicitly and separately
-- likely as a `put-vs-flat` payoff-sufficiency problem on no-teacher bars
-- with emphasis on IV / payoff environment, not free-form direction routing
-- keep the proven entry-selection trunk and fixed-quantile gate as the stable scaffold
+- train timing / patience on the **full scored-bar surface**
+- use Layer-2.5 to reject bars with poor early trade quality before final daily choice
+- only then revisit Layer-3 exits on the cleaner trade set
 
 ## Commands
 
@@ -121,6 +198,12 @@ Dataset export:
 
 ```bash
 .venv/bin/python -m v3.layer2.export_dataset
+```
+
+Canonical unified-policy dataset export:
+
+```bash
+.venv/bin/python -m v3.layer2.export_action_surface_dataset
 ```
 
 Current best train run:
@@ -144,6 +227,20 @@ Replay against post-A1 teacher baseline:
   --run-dir v3/artifacts/layer2_entry_side_fixedq_60_10
 ```
 
+Train Layer-2.5 entry patience on the full scored surface:
+
+```bash
+.venv/bin/python -m v3.layer25.train_surface
+```
+
+Replay Layer-2.5 with the recommended threshold:
+
+```bash
+.venv/bin/python -m v3.layer25.replay
+
+.venv/bin/python -m v3.layer3.train_rolling
+```
+
 Neural GPU-prep command:
 
 ```bash
@@ -157,6 +254,18 @@ Neural GPU-prep command:
   --side-quantile 0.10 \
   --score-mode product \
   --device cuda
+```
+
+Unified-policy rolling smoke:
+
+```bash
+.venv/bin/python -m v3.layer2.train_unified_policy --tier smoke --device cpu
+```
+
+Unified-policy rolling promotion skeleton:
+
+```bash
+.venv/bin/python -m v3.layer2.train_unified_policy --tier promotion --device cuda
 ```
 
 Route-aware fallback reproduction:
@@ -198,18 +307,34 @@ Route-aware fallback reproduction:
   - PF and DD both regressed versus the detach-side baseline
 - So GPU is blocked by research, not by code readiness.
 
-### 3. Next research target: fallback-only modeling
+### 3. Next research target: Layer-2.5 timing / patience
 
-- If Layer-2 is revisited before exit modeling, focus the next cycle on the no-teacher subset only.
+- Do not keep teaching timing on tiny chosen-trade samples.
+- Use the full scored-bar surface as the Layer-2.5 training universe.
 - Good candidate questions:
-  - when should a no-teacher **put** be suppressed because the payoff regime is too weak?
-  - do `atm_iv`, `iv_percentile`, first-15 range, or similar context explain the fold-0-vs-fold-3 payoff gap better than direction models?
-  - can a fallback regime gate beat `teacher_if_triggered_else_put` without damaging the strong sell-off folds?
+  - which bars look directionally right but too early?
+  - which bars need excessive patience before they work?
+  - can Layer-2.5 improve trade quality without collapsing coverage too far?
+- once Layer-2.5 is active, does Layer-3 retrained on cleaner trades generalize better?
 
-### 4. Keep exit modeling deferred
+### 3b. Next research target inside Layer-2 itself: unified action policy
 
-- Current replay still uses time-stop.
-- Exit modeling remains a later Layer-2/3 addition after entry+direction are more stable.
+- keep the action-surface export as the canonical training interface
+- improve the unified model before running larger promotion budgets
+- likely next tuning axes:
+  - more training budget than the smoke run
+  - better validation objective for `decision_margin`
+  - stronger ranking loss weighting
+  - GPU once the rolling path is ready for real budget
+- do not reintroduce teacher direction overrides into this path
+
+### 4. Layer-3 status: prototype, not production
+
+- Exit modeling is no longer deferred in architecture; there is now an honest rolling Layer-3 prototype on top of Layer-2.5.
+- Current caution:
+  - the threshold sweep is still exploratory, not deployment-calibrated
+  - early windows still fall back because there are not enough prior trades
+  - slippage / execution realism still need to be re-run on this new stack
 - Do not let fixed `-35/+60` stop-target logic back into Layer 0.
 
 ## Files To Read First
