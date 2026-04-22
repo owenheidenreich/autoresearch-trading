@@ -1,0 +1,357 @@
+{
+  "in_sample_vs_oos_divergence_top15": [
+    {
+      "feat_idx": 27,
+      "feat_name": "l2_27",
+      "gap": 3.2173365623786747,
+      "in_drop": 3.2933454578512107,
+      "oos_drop": 0.07600889547253598,
+      "rank": 1
+    },
+    {
+      "feat_idx": 13,
+      "feat_name": "l2_13",
+      "gap": 2.891927027805854,
+      "in_drop": 2.8078126415427422,
+      "oos_drop": -0.08411438626311185,
+      "rank": 2
+    },
+    {
+      "feat_idx": 25,
+      "feat_name": "l2_25",
+      "gap": 1.3730994606563742,
+      "in_drop": 1.6883581346243508,
+      "oos_drop": 0.3152586739679767,
+      "rank": 3
+    },
+    {
+      "feat_idx": 92,
+      "feat_name": "mfe_norm",
+      "gap": 0.8792974691800965,
+      "in_drop": 0.8751637486218362,
+      "oos_drop": -0.004133720558260279,
+      "rank": 4
+    },
+    {
+      "feat_idx": 50,
+      "feat_name": "l2_50",
+      "gap": 0.7662652661372376,
+      "in_drop": 0.6155443561501195,
+      "oos_drop": -0.15072090998711807,
+      "rank": 5
+    },
+    {
+      "feat_idx": 61,
+      "feat_name": "l2_61",
+      "gap": 0.40381167998104184,
+      "in_drop": 0.24164596336476052,
+      "oos_drop": -0.16216571661628132,
+      "rank": 6
+    },
+    {
+      "feat_idx": 59,
+      "feat_name": "l2_59",
+      "gap": 0.36457082572658983,
+      "in_drop": 0.29480191458285665,
+      "oos_drop": -0.06976891114373318,
+      "rank": 7
+    },
+    {
+      "feat_idx": 26,
+      "feat_name": "l2_26",
+      "gap": -0.2956552218341452,
+      "in_drop": -0.26853335213733276,
+      "oos_drop": 0.027121869696812462,
+      "rank": 8
+    },
+    {
+      "feat_idx": 89,
+      "feat_name": "bars_since_entry",
+      "gap": -0.28996703482786224,
+      "in_drop": -0.28996703482786224,
+      "oos_drop": 0.0,
+      "rank": 9
+    },
+    {
+      "feat_idx": 32,
+      "feat_name": "l2_32",
+      "gap": 0.2706971340017632,
+      "in_drop": 0.24393897380569562,
+      "oos_drop": -0.026758160196067582,
+      "rank": 10
+    },
+    {
+      "feat_idx": 4,
+      "feat_name": "l2_4",
+      "gap": 0.26074060619888195,
+      "in_drop": 0.23605410708526442,
+      "oos_drop": -0.024686499113617533,
+      "rank": 11
+    },
+    {
+      "feat_idx": 7,
+      "feat_name": "l2_7",
+      "gap": 0.2456754462918983,
+      "in_drop": 0.3414762252408332,
+      "oos_drop": 0.0958007789489349,
+      "rank": 12
+    },
+    {
+      "feat_idx": 34,
+      "feat_name": "l2_34",
+      "gap": 0.242986068409958,
+      "in_drop": 0.47352659794879237,
+      "oos_drop": 0.23054052953883436,
+      "rank": 13
+    },
+    {
+      "feat_idx": 65,
+      "feat_name": "l2_65",
+      "gap": -0.23576908561357102,
+      "in_drop": -0.23606980609605754,
+      "oos_drop": -0.0003007204824865273,
+      "rank": 14
+    },
+    {
+      "feat_idx": 16,
+      "feat_name": "l2_16",
+      "gap": 0.23003018763649685,
+      "in_drop": 0.00873940155865105,
+      "oos_drop": -0.2212907860778458,
+      "rank": 15
+    }
+  ],
+  "meta": {
+    "baseline_run_dir": "v3/artifacts/layer2_shared_enc_fixedq_detach",
+    "n_features": 96,
+    "n_in_sample_trades": 275,
+    "n_oos_trades": 20,
+    "n_permutation_trials": 2,
+    "n_teacher_trades": 298,
+    "threshold": 0.17
+  },
+  "subtask_A_eval": {
+    "chosen_only": {
+      "in_sample_pf": 5.923916546779165,
+      "oos_pf": 1.0282668412445213
+    },
+    "teacher_augmented": {
+      "in_sample_pf": 4.527007015181793,
+      "oos_pf": 1.5365765624827201
+    }
+  },
+  "subtask_B_in_sample_top15": [
+    {
+      "feat_idx": 27,
+      "feat_name": "l2_27",
+      "mean_drop": 3.2933454578512107,
+      "rank": 1,
+      "std_drop": 0.0019940986240960523
+    },
+    {
+      "feat_idx": 13,
+      "feat_name": "l2_13",
+      "mean_drop": 2.8078126415427422,
+      "rank": 2,
+      "std_drop": 0.3608002530380059
+    },
+    {
+      "feat_idx": 25,
+      "feat_name": "l2_25",
+      "mean_drop": 1.6883581346243508,
+      "rank": 3,
+      "std_drop": 0.2549720187704647
+    },
+    {
+      "feat_idx": 92,
+      "feat_name": "mfe_norm",
+      "mean_drop": 0.8751637486218362,
+      "rank": 4,
+      "std_drop": 0.3537656925825212
+    },
+    {
+      "feat_idx": 50,
+      "feat_name": "l2_50",
+      "mean_drop": 0.6155443561501195,
+      "rank": 5,
+      "std_drop": 0.051060807782429496
+    },
+    {
+      "feat_idx": 95,
+      "feat_name": "direction_is_call",
+      "mean_drop": 0.6080358223434223,
+      "rank": 6,
+      "std_drop": 0.08083922206930749
+    },
+    {
+      "feat_idx": 18,
+      "feat_name": "l2_18",
+      "mean_drop": 0.5357519287886974,
+      "rank": 7,
+      "std_drop": 0.07519452205607235
+    },
+    {
+      "feat_idx": 34,
+      "feat_name": "l2_34",
+      "mean_drop": 0.47352659794879237,
+      "rank": 8,
+      "std_drop": 0.08683514051086849
+    },
+    {
+      "feat_idx": 9,
+      "feat_name": "l2_9",
+      "mean_drop": 0.4243327304162161,
+      "rank": 9,
+      "std_drop": 0.045938984967814456
+    },
+    {
+      "feat_idx": 7,
+      "feat_name": "l2_7",
+      "mean_drop": 0.3414762252408332,
+      "rank": 10,
+      "std_drop": 0.09264085715057391
+    },
+    {
+      "feat_idx": 8,
+      "feat_name": "l2_8",
+      "mean_drop": 0.33289768941848186,
+      "rank": 11,
+      "std_drop": 0.03200495719831631
+    },
+    {
+      "feat_idx": 35,
+      "feat_name": "l2_35",
+      "mean_drop": 0.311684918042622,
+      "rank": 12,
+      "std_drop": 0.16971028836794577
+    },
+    {
+      "feat_idx": 59,
+      "feat_name": "l2_59",
+      "mean_drop": 0.29480191458285665,
+      "rank": 13,
+      "std_drop": 0.0728100687720512
+    },
+    {
+      "feat_idx": 89,
+      "feat_name": "bars_since_entry",
+      "mean_drop": -0.28996703482786224,
+      "rank": 14,
+      "std_drop": 0.0436963716207277
+    },
+    {
+      "feat_idx": 26,
+      "feat_name": "l2_26",
+      "mean_drop": -0.26853335213733276,
+      "rank": 15,
+      "std_drop": 0.031350941599923576
+    }
+  ],
+  "subtask_B_oos_top15": [
+    {
+      "feat_idx": 95,
+      "feat_name": "direction_is_call",
+      "mean_drop": 0.42782057767910947,
+      "rank": 1,
+      "std_drop": 0.15686353997978147
+    },
+    {
+      "feat_idx": 18,
+      "feat_name": "l2_18",
+      "mean_drop": 0.42349917405230747,
+      "rank": 2,
+      "std_drop": 0.00957285938672342
+    },
+    {
+      "feat_idx": 9,
+      "feat_name": "l2_9",
+      "mean_drop": 0.3762653495923587,
+      "rank": 3,
+      "std_drop": 0.04164182485027845
+    },
+    {
+      "feat_idx": 25,
+      "feat_name": "l2_25",
+      "mean_drop": 0.3152586739679767,
+      "rank": 4,
+      "std_drop": 0.2621434240833268
+    },
+    {
+      "feat_idx": 38,
+      "feat_name": "l2_38",
+      "mean_drop": 0.31125989022070427,
+      "rank": 5,
+      "std_drop": 0.22933985779603422
+    },
+    {
+      "feat_idx": 17,
+      "feat_name": "l2_17",
+      "mean_drop": 0.2610693856621512,
+      "rank": 6,
+      "std_drop": 0.2023250575413622
+    },
+    {
+      "feat_idx": 34,
+      "feat_name": "l2_34",
+      "mean_drop": 0.23054052953883436,
+      "rank": 7,
+      "std_drop": 0.030971365914271798
+    },
+    {
+      "feat_idx": 16,
+      "feat_name": "l2_16",
+      "mean_drop": -0.2212907860778458,
+      "rank": 8,
+      "std_drop": 0.16997045267787392
+    },
+    {
+      "feat_idx": 43,
+      "feat_name": "l2_43",
+      "mean_drop": 0.21355957698402261,
+      "rank": 9,
+      "std_drop": 0.21355957698402261
+    },
+    {
+      "feat_idx": 35,
+      "feat_name": "l2_35",
+      "mean_drop": 0.19703855172832413,
+      "rank": 10,
+      "std_drop": 0.24408785282386608
+    },
+    {
+      "feat_idx": 61,
+      "feat_name": "l2_61",
+      "mean_drop": -0.16216571661628132,
+      "rank": 11,
+      "std_drop": 0.008641746723986099
+    },
+    {
+      "feat_idx": 50,
+      "feat_name": "l2_50",
+      "mean_drop": -0.15072090998711807,
+      "rank": 12,
+      "std_drop": 0.05113628606273091
+    },
+    {
+      "feat_idx": 8,
+      "feat_name": "l2_8",
+      "mean_drop": 0.12803611267985138,
+      "rank": 13,
+      "std_drop": 0.07032501996342089
+    },
+    {
+      "feat_idx": 7,
+      "feat_name": "l2_7",
+      "mean_drop": 0.0958007789489349,
+      "rank": 14,
+      "std_drop": 0.07478945338488929
+    },
+    {
+      "feat_idx": 37,
+      "feat_name": "l2_37",
+      "mean_drop": -0.08881330409850874,
+      "rank": 15,
+      "std_drop": 0.01725869258947499
+    }
+  ]
+}
