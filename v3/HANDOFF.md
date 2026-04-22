@@ -49,9 +49,10 @@ Current status:
 - dev-tier rolling single-seed (13 windows, seed 42, CPU) aggregate: `410` trades, `PF 1.066`, `DD 48.8%`, trade_share `0.526`, fast-loser rate `0.21` (~patience-gate threshold), beats-V1 rate `0.554`
 - dev-tier rolling **3-seed** (seeds 42/43/44, CPU) aggregate: `1201` trades, mean seed PF `1.112` (std `0.045`), aggregated PF `1.111`; seed 43 clears baseline at `1.172`, seeds 42/44 just short
 - a weak-window calibrator fallback rule was implemented and tested: it **reduced cross-seed variance** (std `0.045 → 0.026`) but **did not lift the mean** (`1.112 → 1.107`). Reverted as net-neutral; the "weak window" hypothesis is falsified as the binding constraint
-- CPU-budget architecture ceiling is `~1.11`, `~2%` below the `V0 + time-stop` baseline `1.132`
-- next step per the plan is GPU 3-seed promotion (longer epochs, full protocol). Outcome is binary: either GPU lifts mean PF over `1.132` (ship), or it tops out here and the architecture is honestly just short at this data scope (pivot to bar-level decisions or Layer-3 outer loop)
-- see [unified_policy_calibration_fix_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/unified_policy_calibration_fix_2026_04_22.md) for the full audit, fix pass, and 3-seed V1/V2 analyses
+- **GPU 3-seed promotion** (plan section 1 protocol, Akash H100, `--tier promotion --device cuda`): mean PF `1.116` (std `0.025`), aggregated `1.115` across `1171` trades. Seeds `1.097 / 1.151 / 1.101`. All three clear the per-seed `PF ≥ 1.0` floor. GPU halved cross-seed std and dropped mean DD by `~13pp` (48.8→29.9% on seed 42), but **did not lift mean PF** (+`0.004` vs CPU = noise). Aggregate PF gate `1.132` remains FAIL by `1.5%`
+- the unified action policy is shelved as "working architecture, signal-limited at this data scope". `V0 + time-stop` at `PF 1.132 / DD 21.4%` remains the honest champion
+- see [unified_policy_calibration_fix_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/unified_policy_calibration_fix_2026_04_22.md) for the audit and CPU 3-seed analyses
+- see [unified_policy_gpu_promotion_2026_04_22.md](/Users/gduby/Documents/autoresearch-trading/v3/reference/unified_policy_gpu_promotion_2026_04_22.md) for the GPU promotion result and next-step options (Layer-3 outer loop, bar-level decisions, or longer sequence context)
 
 ## TL;DR
 
