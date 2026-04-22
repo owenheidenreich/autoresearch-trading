@@ -1,0 +1,131 @@
+{
+  "gap_distribution_dollars": {
+    "mean": 1192.1773234281557,
+    "median": 1063.6250018626451,
+    "n_pos_gap": 269,
+    "n_zero_gap": 6,
+    "p05": 109.2649727825888,
+    "p25": 617.9625320550251,
+    "p50": 1063.6250018626451,
+    "p75": 1477.0625383442589,
+    "p95": 3106.254979549929,
+    "std": 850.1232893479764
+  },
+  "meta": {
+    "baseline_run_dir": "v3/artifacts/layer2_shared_enc_fixedq_detach",
+    "commission": 1.0,
+    "n_skipped": 0,
+    "n_trades": 275,
+    "sanity_max_diff_dollars": 1.8189894035458565e-12,
+    "sanity_mean_diff_dollars": 3.1108852867460385e-14,
+    "session_end_bar": 375
+  },
+  "oracle_bars_held_distribution": {
+    "mean": 89.55272727272727,
+    "median": 76.0,
+    "p05": 1,
+    "p25": 16,
+    "p50": 76,
+    "p75": 154,
+    "p95": 226,
+    "std": 76.69105681296601,
+    "ts_mean_bars_held": 209.0909090909091
+  },
+  "overall": {
+    "asym_pnl (csv repro)": {
+      "gross_loss": 136310.1947731725,
+      "gross_profit": 198289.1257482954,
+      "max_dd_pct": 36.86993269085958,
+      "mean_pnl": 225.37793081862873,
+      "pf": 1.4546903559066817,
+      "trades": 275.0,
+      "trades_per_day": 0.9166666666666666
+    },
+    "corrected_time_stop": {
+      "gross_loss": 136441.24943788807,
+      "gross_profit": 200873.02523070303,
+      "max_dd_pct": 35.639555152350674,
+      "mean_pnl": 234.29736651932714,
+      "pf": 1.4722309129992697,
+      "trades": 275.0,
+      "trades_per_day": 0.9166666666666666
+    },
+    "oracle_exit": {
+      "gross_loss": 2950.244777728262,
+      "gross_profit": 395230.78451328614,
+      "max_dd_pct": 0.6929795818859663,
+      "mean_pnl": 1426.474689947483,
+      "pf": 133.96542127518669,
+      "trades": 275.0,
+      "trades_per_day": 0.9166666666666666
+    }
+  },
+  "per_fold": {
+    "0": {
+      "asym": 0.8601924136167274,
+      "asym_dd": 28.237212182855693,
+      "asym_mean": -76.34750785831665,
+      "corrected": 0.8751091858240705,
+      "corrected_dd": 26.928599123431496,
+      "corrected_mean": -68.1905548690356,
+      "gap_corrected_to_oracle": 56.773005710206796,
+      "n_trades": 55,
+      "oracle": 57.64811489603087,
+      "oracle_dd": 0.6929795818859663,
+      "oracle_mean": 1001.6158227677234
+    },
+    "1": {
+      "asym": 1.4389818794097675,
+      "asym_dd": 22.488187640994216,
+      "asym_mean": 223.21143073573148,
+      "corrected": 1.4600246262246548,
+      "corrected_dd": 22.084010403201614,
+      "corrected_mean": 233.53437493218794,
+      "gap_corrected_to_oracle": 181.27912830155236,
+      "n_trades": 40,
+      "oracle": 182.739152927777,
+      "oracle_dd": 0.21902611593965843,
+      "oracle_mean": 1586.809871602231
+    },
+    "2": {
+      "asym": 1.038259170801152,
+      "asym_dd": 27.598503142680926,
+      "asym_mean": 17.93928683916579,
+      "corrected": 1.0569375347488572,
+      "corrected_dd": 27.330116014837525,
+      "corrected_mean": 26.71084447693116,
+      "gap_corrected_to_oracle": 154.19733124706633,
+      "n_trades": 60,
+      "oracle": 155.2542687818152,
+      "oracle_dd": 0.4060235966033888,
+      "oracle_mean": 1125.0278369221314
+    },
+    "3": {
+      "asym": 2.094640118122502,
+      "asym_dd": 21.361447129547464,
+      "asym_mean": 613.8847309587408,
+      "corrected": 2.1051574017991066,
+      "corrected_dd": 21.458599678735947,
+      "corrected_mean": 621.1095071314887,
+      "gap_corrected_to_oracle": 114.86868797041036,
+      "n_trades": 60,
+      "oracle": 116.97384537220947,
+      "oracle_dd": 0.5201896697297178,
+      "oracle_mean": 1947.0943198034329
+    },
+    "4": {
+      "asym": 1.8006899770211064,
+      "asym_dd": 32.16884829952498,
+      "asym_mean": 322.3357601671111,
+      "corrected": 1.8240221551356928,
+      "corrected_dd": 31.951230000313096,
+      "corrected_mean": 332.86100361365374,
+      "gap_corrected_to_oracle": 486.12651230824343,
+      "n_trades": 60,
+      "oracle": 487.95053446337914,
+      "oracle_dd": 0.2913865310116284,
+      "oracle_mean": 1489.8657535951656
+    }
+  },
+  "verdict": "GO -- oracle PF gap +132.493 >= +0.30; learned exits have room to capture lift"
+}
