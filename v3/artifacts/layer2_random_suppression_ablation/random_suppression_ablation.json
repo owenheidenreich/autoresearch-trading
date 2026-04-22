@@ -1,0 +1,37 @@
+{
+  "baseline": {
+    "gross_loss": 136310.1947731725,
+    "gross_profit": 198289.1257482954,
+    "max_dd_pct": 36.86993269085958,
+    "mean_pnl": 225.37793081862876,
+    "pf": 1.4546903559066817,
+    "trades": 275.0,
+    "trades_per_day": 0.9166666666666666
+  },
+  "meta": {
+    "atm_iv_pf_reference": 1.53,
+    "baseline_run_dir": "v3/artifacts/layer2_shared_enc_fixedq_detach",
+    "n_fallback": 176,
+    "n_seeds": 200,
+    "n_suppress": 66
+  },
+  "random_suppression": {
+    "atm_iv_percentile_in_random": 0.785,
+    "fraction_random_lifts_ge_atm_iv": 0.215,
+    "pf_max": 1.7651145355176827,
+    "pf_mean": 1.3996162050810934,
+    "pf_min": 1.0313140198385076,
+    "pf_quantiles": {
+      "p10": 1.2021963709508312,
+      "p25": 1.2950392802776316,
+      "p5": 1.150727754120968,
+      "p50": 1.3957780603815053,
+      "p70": 1.4938565166326951,
+      "p75": 1.516598010572945,
+      "p90": 1.5985130331725919,
+      "p95": 1.6325641236383688
+    },
+    "pf_std": 0.15053270456074289
+  },
+  "verdict": "PLAUSIBLE -- atm_iv at p78 of random; signal might be real"
+}
