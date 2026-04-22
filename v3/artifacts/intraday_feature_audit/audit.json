@@ -1,0 +1,223 @@
+{
+  "audit_summary": {
+    "missing_from_l2_count": 74,
+    "missing_from_l2_names": [
+      "ret_6",
+      "ret_12",
+      "bar_range",
+      "realized_vol",
+      "range_ratio",
+      "vwap_dist",
+      "session_range_pct",
+      "prev_high_dist",
+      "ema_cross",
+      "consec_direction",
+      "speed_estimate",
+      "vix_roc",
+      "minutes_to_close",
+      "vix_regime",
+      "bollinger_position",
+      "rsi_7",
+      "session_range_position",
+      "poc_dist",
+      "va_position",
+      "ib_break",
+      "atr_14",
+      "bar_delta",
+      "session_cum_delta",
+      "macdh_slope",
+      "force_index_2",
+      "effort_vs_result",
+      "trend_5min",
+      "intraday_sin",
+      "intraday_cos",
+      "intraday_phase",
+      "opening_gap_pct",
+      "session_open_dist",
+      "first15_close_position",
+      "first15_acceptance",
+      "vwap_reclaim_state",
+      "ib_extension_pct",
+      "marker_10am",
+      "marker_11am",
+      "marker_1130am",
+      "lunch_flag",
+      "power_hour_flag",
+      "volume_climax_signal",
+      "breakout_confirmation",
+      "vrp",
+      "atm_gamma",
+      "atm_theta_per_bar",
+      "gamma_pressure",
+      "aggregate_charm",
+      "option_spread_pct",
+      "iv_skew_pct",
+      "current_moneyness_pct",
+      "near_atm_moneyness_pct",
+      "theta_acceleration",
+      "slice_call_iv_mean",
+      "slice_put_iv_mean",
+      "slice_iv_skew_slope",
+      "slice_iv_curvature",
+      "slice_gamma_concentration",
+      "slice_gamma_dollar_concentration",
+      "slice_theta_pressure",
+      "slice_dist_to_max_gamma",
+      "slice_dist_to_max_gamma_dollar",
+      "slice_call_put_gamma_imbalance",
+      "slice_mean_spread",
+      "slice_txn_center_share",
+      "slice_quality_share",
+      "log_near_call_volume",
+      "log_near_put_volume",
+      "call_put_flow_ratio",
+      "log_total_volume",
+      "chain_call_put_ratio",
+      "log_chain_volume",
+      "log_near_transactions",
+      "put_call_txn_ratio"
+    ]
+  },
+  "category_a_additions": [
+    {
+      "in_l2": false,
+      "in_xsim": true,
+      "name": "session_cum_delta",
+      "status": "ADD (in X_sim, not in L2)"
+    },
+    {
+      "in_l2": false,
+      "in_xsim": true,
+      "name": "vwap_dist",
+      "status": "ADD (in X_sim, not in L2)"
+    },
+    {
+      "in_l2": false,
+      "in_xsim": true,
+      "name": "trend_5min",
+      "status": "ADD (in X_sim, not in L2)"
+    },
+    {
+      "in_l2": false,
+      "in_xsim": true,
+      "name": "force_index_2",
+      "status": "ADD (in X_sim, not in L2)"
+    },
+    {
+      "in_l2": false,
+      "in_xsim": true,
+      "name": "ret_6",
+      "status": "ADD (in X_sim, not in L2)"
+    },
+    {
+      "in_l2": false,
+      "in_xsim": true,
+      "name": "ret_12",
+      "status": "ADD (in X_sim, not in L2)"
+    }
+  ],
+  "category_b_specs": [
+    {
+      "definition": "mean(vwap_dist[bar-10:bar+1])",
+      "lookback": 10,
+      "name": "vwap_dist_last10_mean",
+      "rationale": "Smoothed recent VWAP position; reduces tick noise vs raw vwap_dist."
+    },
+    {
+      "definition": "linear regression slope of session_cum_delta[bar-30:bar+1]",
+      "lookback": 30,
+      "name": "cum_delta_slope_30",
+      "rationale": "Is buying/selling accelerating? A directional development signal."
+    },
+    {
+      "definition": "(close - session_high_so_far) / (session_high_so_far - session_low_so_far)",
+      "lookback": "session",
+      "name": "high_low_skew_since_open",
+      "rationale": "Where is price within the developing session range? Near high = bullish, near low = bearish."
+    }
+  ],
+  "meta": {
+    "current_w2a_features": [
+      "sigma_pos",
+      "omar_retest_dist_norm",
+      "omar_range_pct",
+      "last10_range_over_omar",
+      "inside_first15",
+      "late_window_40_120_flag",
+      "omar_mid_pos_units",
+      "last10_break_state"
+    ],
+    "n_l2_features": 42,
+    "n_xsim_features": 89
+  },
+  "nan_counts_full_dataset": {
+    "cum_delta_slope_30": {
+      "nan_count": 0,
+      "nan_pct": 0.0,
+      "total_bars": 382920
+    },
+    "high_low_skew_since_open": {
+      "nan_count": 0,
+      "nan_pct": 0.0,
+      "total_bars": 382920
+    },
+    "vwap_dist_last10_mean": {
+      "nan_count": 0,
+      "nan_pct": 0.0,
+      "total_bars": 382920
+    }
+  },
+  "spot_check_values": {
+    "2026-03-05": {
+      "bar_120": {
+        "cum_delta_slope_30": -0.20858609272587683,
+        "high_low_skew_since_open": 0.7909185886383057,
+        "vwap_dist_last10_mean": -0.0035036986228078604
+      },
+      "bar_30": {
+        "cum_delta_slope_30": 0.08712673004596463,
+        "high_low_skew_since_open": 1.0,
+        "vwap_dist_last10_mean": 0.0013156805653125048
+      },
+      "bar_60": {
+        "cum_delta_slope_30": -0.25286882464443483,
+        "high_low_skew_since_open": 0.9201567769050598,
+        "vwap_dist_last10_mean": -0.0031589677091687918
+      }
+    },
+    "2026-03-18": {
+      "bar_120": {
+        "cum_delta_slope_30": -0.020309620086223848,
+        "high_low_skew_since_open": 1.0,
+        "vwap_dist_last10_mean": -0.0011776814935728908
+      },
+      "bar_30": {
+        "cum_delta_slope_30": -0.06430192035172255,
+        "high_low_skew_since_open": 1.0,
+        "vwap_dist_last10_mean": 7.312078378163278e-05
+      },
+      "bar_60": {
+        "cum_delta_slope_30": -0.18383629341279306,
+        "high_low_skew_since_open": 0.8437103629112244,
+        "vwap_dist_last10_mean": -0.0026304060593247414
+      }
+    },
+    "2026-04-01": {
+      "bar_120": {
+        "cum_delta_slope_30": 0.034465774028531966,
+        "high_low_skew_since_open": 0.3965858817100525,
+        "vwap_dist_last10_mean": 0.0025912600103765726
+      },
+      "bar_30": {
+        "cum_delta_slope_30": -0.04883482845560197,
+        "high_low_skew_since_open": -1.0,
+        "vwap_dist_last10_mean": -0.0004236931272316724
+      },
+      "bar_60": {
+        "cum_delta_slope_30": 0.05579086647879693,
+        "high_low_skew_since_open": -1.0,
+        "vwap_dist_last10_mean": 0.0006276239291764796
+      }
+    }
+  }
+}
