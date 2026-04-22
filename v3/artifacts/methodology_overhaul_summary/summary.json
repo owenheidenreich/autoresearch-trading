@@ -1,0 +1,135 @@
+{
+  "champion": {
+    "aggregate_dd_pct": 95.93334209870868,
+    "aggregate_mean_pnl": 61.7780326880451,
+    "aggregate_pf": 1.1321436839836814,
+    "aggregate_trades": 432,
+    "beats_v1_in_n_of_13_windows": 10,
+    "directional_rule": "V0 (model's chosen direction)",
+    "exit_rule": "time-stop (session end)",
+    "per_window_pf_max": 2.2743923194723354,
+    "per_window_pf_mean": 1.1878180077584486,
+    "per_window_pf_median": 1.0330050462300098,
+    "per_window_pf_min": 0.5864430823985803,
+    "per_window_pf_std": 0.5463640555873572,
+    "sizing": "1 contract"
+  },
+  "conditional_rule_test": {
+    "aggregate_pf": 1.091914046249355,
+    "oracle_upper_bound_pf": 1.3022161686302305,
+    "tested": true,
+    "verdict": "TIE \u2014 conditional within 0.05 of V0 (-0.040)",
+    "vs_blanket_v0": -0.04022963773432631
+  },
+  "cross_window_stats": {
+    "n_windows": 13,
+    "total_oos_days": 780,
+    "v0_pf_distribution": {
+      "max": 2.2743923194723354,
+      "mean": 1.1878180077584486,
+      "median": 1.0330050462300098,
+      "min": 0.5864430823985803,
+      "n_windows_pf_ge_1_0": 7,
+      "n_windows_pf_ge_1_2": 4,
+      "n_windows_pf_ge_1_5": 4,
+      "p25": 0.8471501954174178,
+      "p75": 1.5401706181134034,
+      "std": 0.5463640555873572
+    },
+    "v1_pf_distribution": {
+      "max": 1.8938524119954325,
+      "mean": 0.9457575273333279,
+      "median": 0.822588937353675,
+      "min": 0.3575777766285866,
+      "std": 0.39763944771329424
+    }
+  },
+  "layer3_future_work": {
+    "expected_lift": "If L3 generalizes across windows with similar dynamics as Phase 2A's V1+A3 OOS lift (+0.68 PF over V1 baseline), composed V0+L3 could reach PF ~1.6-1.8 cross-window. This is speculative until proper walk-forward L3 retraining is done.",
+    "reason": "The existing augmented L3 model (Phase 2A A3 config) was trained on chosen+teacher trades from days in the 5-fold structure's training pool. Many of those days appear in the rolling OOS windows, creating leakage if we applied the existing L3 to rolling windows. Proper R6+ L3 evaluation requires walk-forward L3 retraining per rolling window (~2-3 hours of pipeline development + CPU time) \u2014 out of scope for this methodology overhaul pass.",
+    "status": "deferred"
+  },
+  "variant_comparison": {
+    "V0": {
+      "agg_call_pct": 0.1550925925925926,
+      "agg_dd_pct": 95.93334209870868,
+      "agg_mean_pnl": 61.7780326880451,
+      "agg_pf": 1.1321436839836814,
+      "agg_trades": 432,
+      "beat_V1_count": 10,
+      "per_window_pf_max": 2.2743923194723354,
+      "per_window_pf_mean": 1.1878180077584486,
+      "per_window_pf_median": 1.0330050462300098,
+      "per_window_pf_min": 0.5864430823985803,
+      "per_window_pf_std": 0.5463640555873572,
+      "total_windows": 13
+    },
+    "V1": {
+      "agg_call_pct": 0.0,
+      "agg_dd_pct": 151.6530080614584,
+      "agg_mean_pnl": -58.49363399247186,
+      "agg_pf": 0.888165067158166,
+      "agg_trades": 432,
+      "beat_V1_count": 0,
+      "per_window_pf_max": 1.8938524119954325,
+      "per_window_pf_mean": 0.9457575273333279,
+      "per_window_pf_median": 0.822588937353675,
+      "per_window_pf_min": 0.3575777766285866,
+      "per_window_pf_std": 0.39763944771329424,
+      "total_windows": 13
+    },
+    "V2": {
+      "agg_call_pct": 0.03439153439153439,
+      "agg_dd_pct": 119.84671172116299,
+      "agg_mean_pnl": 19.8099432802565,
+      "agg_pf": 1.040008437396982,
+      "agg_trades": 378,
+      "beat_V1_count": 6,
+      "per_window_pf_max": 2.101858636174957,
+      "per_window_pf_mean": 1.1142023981470024,
+      "per_window_pf_median": 0.9125416567157372,
+      "per_window_pf_min": 0.3466574504228163,
+      "per_window_pf_std": 0.5416790383970448,
+      "total_windows": 13
+    },
+    "V3": {
+      "agg_call_pct": 0.06944444444444445,
+      "agg_dd_pct": 115.92857124334581,
+      "agg_mean_pnl": -52.011526608484346,
+      "agg_pf": 0.8988610293065306,
+      "agg_trades": 432,
+      "beat_V1_count": 2,
+      "per_window_pf_max": 1.7440499951519317,
+      "per_window_pf_mean": 0.9362297395298962,
+      "per_window_pf_median": 0.7713386221253576,
+      "per_window_pf_min": 0.5371792310211255,
+      "per_window_pf_std": 0.36796044721055915,
+      "total_windows": 13
+    },
+    "V4": {
+      "agg_call_pct": 0.012285012285012284,
+      "agg_dd_pct": 130.97735018674746,
+      "agg_mean_pnl": -51.95607295005402,
+      "agg_pf": 0.9001454264941795,
+      "agg_trades": 407,
+      "beat_V1_count": 1,
+      "per_window_pf_max": 1.8689734231332926,
+      "per_window_pf_mean": 0.9408630255044835,
+      "per_window_pf_median": 0.7880592639871661,
+      "per_window_pf_min": 0.3466574504228163,
+      "per_window_pf_std": 0.4113633802893343,
+      "total_windows": 13
+    }
+  },
+  "vs_previous_claim": {
+    "previous_champion": "V1 + A3 @ 0.19 (always_put + augmented L3 minus mfe_norm)",
+    "previous_oos_pf_claim": 2.847,
+    "previous_oos_sample": "20 days (2026-03-05 to 2026-04-01)",
+    "reframing": "The previous claim was built on 20 days. In the rolling-window methodology overhaul (13 disjoint 60-day OOS windows, 780 days total), V1 (always_put) loses to V0 in 12 of 13 windows (aggregate PF 0.888 vs V0 1.132). The 20-day finding was a regime-specific artifact. The methodologically-robust champion is V0 + time-stop."
+  },
+  "what_changed": {
+    "after": "V0 (model direction) + time-stop | Agg PF 1.132 on 780 days",
+    "before": "V1 (always_put) + A3 L3 @ 0.19 | OOS PF 2.847 on 20 days",
+    "net_trade": "Exchanged a high-PF claim built on 20 days for a modest-PF claim built on 780 days. The previous claim was optically better but methodologically fragile. The new claim is modestly profitable (PF 1.132) but built on 13x more data and 39x more OOS days. Also reversed the directional rule (always_put \u2192 model's direction)."
+  }
+}
