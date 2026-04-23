@@ -67,10 +67,13 @@ def parse_args() -> argparse.Namespace:
                    help="Blend between time_stop_pnl (0.0) and best_exit_pnl (1.0)")
     # Hold-aware utility target. "time_stop" preserves the original target
     # (session-end PnL). "horizon" uses horizon_pnl, a fixed-horizon PnL
-    # label tuned to the champion Layer-3 median hold.
+    # label tuned to the champion Layer-3 median hold. "simulated_l3" uses
+    # the simulated-L3 oracle per candidate contract (requires --simulated-l3-oracle).
     p.add_argument("--utility-target", default="time_stop",
-                   choices=("time_stop", "horizon"),
+                   choices=("time_stop", "horizon", "simulated_l3"),
                    help="Base utility target before --utility-blend mixing.")
+    p.add_argument("--simulated-l3-oracle", default="",
+                   help="Path to .npz produced by v3.layer2.build_simulated_l3_oracle.")
     return p.parse_args()
 
 
@@ -119,6 +122,7 @@ def _slice_inputs(
     bundle: dict[str, Any],
     utility_blend: float = 0.0,
     utility_target: str = "time_stop",
+    simulated_l3_pnl: np.ndarray | None = None,
 ) -> dict[str, Any]:
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
@@ -131,6 +135,13 @@ def _slice_inputs(
                 "(re-run v3.layer2.export_action_surface_dataset)."
             )
         base_raw = action_labels["horizon_pnl"][mask]
+    elif utility_target == "simulated_l3":
+        if simulated_l3_pnl is None:
+            raise RuntimeError(
+                "--utility-target=simulated_l3 requires --simulated-l3-oracle. "
+                "Run v3.layer2.build_simulated_l3_oracle first."
+            )
+        base_raw = simulated_l3_pnl[mask]
     elif utility_target == "time_stop":
         base_raw = time_stop_raw
     else:
@@ -144,7 +155,7 @@ def _slice_inputs(
         blended[nan_mask] = np.nan
         utility_raw = blended.astype(np.float32)
         utility_arcsinh = np.arcsinh(utility_raw / 100.0).astype(np.float32)
-    elif utility_target == "horizon":
+    elif utility_target in ("horizon", "simulated_l3"):
         utility_raw = base_raw.astype(np.float32)
         utility_arcsinh = np.arcsinh(utility_raw / 100.0).astype(np.float32)
     else:
@@ -420,6 +431,20 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
     bundle = load_export_bundle(args.dataset)
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
+
+    simulated_l3_pnl = None
+    if args.utility_target == "simulated_l3":
+        if not args.simulated_l3_oracle:
+            raise RuntimeError("--utility-target=simulated_l3 requires --simulated-l3-oracle <npz>")
+        z = np.load(args.simulated_l3_oracle, allow_pickle=True)
+        simulated_l3_pnl = z["l3_exit_pnl"]
+        if simulated_l3_pnl.shape[0] != len(rows):
+            raise RuntimeError(
+                f"simulated-L3 oracle row count {simulated_l3_pnl.shape[0]} does not "
+                f"match dataset row count {len(rows)}. Rebuild the oracle against the current dataset."
+            )
+        print(f"Loaded simulated-L3 oracle: shape={simulated_l3_pnl.shape} from {args.simulated_l3_oracle}", flush=True)
+
     windows = generate_rolling_windows(sorted(rows["day"].unique().tolist()))
     verify_windows(windows)
     if args.latest_only:
@@ -446,9 +471,9 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
         val_mask = rows["day"].isin(window.val_days).to_numpy()
         oos_mask = rows["day"].isin(window.oos_days).to_numpy()
 
-        fit = _slice_inputs(fit_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target)
-        val = _slice_inputs(val_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target)
-        oos = _slice_inputs(oos_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target)
+        fit = _slice_inputs(fit_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target, simulated_l3_pnl=simulated_l3_pnl)
+        val = _slice_inputs(val_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target, simulated_l3_pnl=simulated_l3_pnl)
+        oos = _slice_inputs(oos_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target, simulated_l3_pnl=simulated_l3_pnl)
 
         predictor, train_info = train_unified_action_model(
             scalar_train=fit["scalar"],
@@ -626,6 +651,7 @@ def main() -> int:
                 "w_stopout": float(args.w_stopout),
                 "utility_blend": float(args.utility_blend),
                 "utility_target": str(args.utility_target),
+                "simulated_l3_oracle": str(args.simulated_l3_oracle) if args.simulated_l3_oracle else None,
             },
             "aggregate_by_seed": reports,
         },
