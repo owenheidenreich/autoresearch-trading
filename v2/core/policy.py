@@ -11,7 +11,10 @@ class DecisionPolicy:
     """All parameters that materially shape trading decisions."""
 
     # Entry gate
-    gate_threshold: float = -100.0
+    gate_threshold: float = 0.0
+    gate_threshold_mode: str = "fixed"  # "fixed" or "quantile"
+    gate_target_pass_rate: float = 1.0
+    gate_threshold_floor: float = -float("inf")
     label_gate_min_pnl: float = 0.04
 
     # Executability filters
@@ -32,9 +35,9 @@ class DecisionPolicy:
     max_concurrent: int = 1
     qty: int = 1
 
-    # Session restrictions — model has edge only in early morning window (bars 60-105)
-    no_trade_before_bar: int = 60
-    no_trade_after_bar: int = 105
+    # Session restrictions — full supervised day (30-269), aligned with simulator boundary
+    no_trade_before_bar: int = 30
+    no_trade_after_bar: int = 270
 
     # Execution
     order_style: str = "MKT"
@@ -42,6 +45,19 @@ class DecisionPolicy:
 
     # Risk limits
     daily_loss_cap_pct: float = 0.05
+
+    # Session-aware risk overlays (disabled by default — 999 = inactive)
+    max_daily_trades: int = 999
+    max_consecutive_stops: int = 999
+    gate_tighten_after_loss: float = 0.0
+    random_skip_pct: float = 0.0  # control condition: randomly skip this fraction of entries
+
+    # Side prior: how to use the side_logit during inference
+    # "off"  = ignore side_logit entirely (default, current behavior)
+    # "soft" = additive prior: calls get +alpha*logit, puts get -alpha*logit
+    # "hard" = mask to predicted side (legacy, sign convention: positive = call preferred)
+    side_mode: str = "off"
+    alpha_side: float = 0.0  # strength of soft side prior (only used when side_mode="soft")
 
     # Account
     starting_equity: float = 10_000.0

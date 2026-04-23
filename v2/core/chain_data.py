@@ -19,11 +19,14 @@ import numpy as np
 import torch
 
 
-CHAIN_SCHEMA_VERSION = "v4_exact_chain_v2_paths"
+CHAIN_SCHEMA_VERSION = "v5_exact_chain_v2_slice"
 SIDECAR_DIR_DEFAULT = os.path.join("v2", "data_sidecars")
 QUALITY_VALID = 2
 QUALITY_PARTIAL = 1
 QUALITY_CORRUPT = 0
+STRIKE_GRID = 5.0
+SLICE_RADIUS_STRIKES = 10
+SLICE_GATE_MIN_PNL = 0.15
 
 CONTRACT_FEATURE_FIELDS = [
     "contract_valid",       # 0
@@ -86,6 +89,26 @@ def sidecar_path(sidecar_dir: str, day: str) -> str:
 
 def ensure_sidecar_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
+
+
+def nearest_atm_strike(spot: float, strike_grid: float = STRIKE_GRID) -> float:
+    """Round current spot to the nearest listed strike."""
+
+    if not np.isfinite(spot) or strike_grid <= 0:
+        return 0.0
+    return float(round(float(spot) / float(strike_grid)) * float(strike_grid))
+
+
+def dynamic_slice_bounds(
+    spot: float,
+    radius_strikes: int = SLICE_RADIUS_STRIKES,
+    strike_grid: float = STRIKE_GRID,
+) -> tuple[float, float, float]:
+    """Return (atm, lo, hi) for the dynamic near-ATM tradable slice."""
+
+    atm = nearest_atm_strike(spot, strike_grid=strike_grid)
+    width = float(max(radius_strikes, 0)) * float(strike_grid)
+    return atm, atm - width, atm + width
 
 
 def to_wide_bar(bar_contracts: dict[tuple[float, str], dict[str, float]]) -> dict[float, dict[str, float]]:
@@ -162,6 +185,38 @@ def contract_snapshot(sidecar: dict[str, Any], local_bar: int) -> tuple[np.ndarr
     return feats, labels, contract_idx
 
 
+def slice_mask_from_contract_features(
+    contract_features: np.ndarray,
+    slice_lo_strike: float,
+    slice_hi_strike: float,
+) -> np.ndarray:
+    """Return the in-slice executable mask for one bar snapshot."""
+
+    if contract_features.ndim != 2 or contract_features.shape[0] == 0:
+        return np.zeros((contract_features.shape[0],), dtype=bool)
+    valid = contract_features[:, 0] > 0.5
+    strike = contract_features[:, 1]
+    return valid & np.isfinite(strike) & (strike >= slice_lo_strike - 1e-6) & (strike <= slice_hi_strike + 1e-6)
+
+
+def snapshot_slice_mask(
+    sidecar: dict[str, Any],
+    local_bar: int,
+    contract_features: np.ndarray | None = None,
+) -> np.ndarray:
+    """Return the unpadded dynamic slice mask for one bar snapshot."""
+
+    if contract_features is None:
+        contract_features, _, _ = contract_snapshot(sidecar, local_bar)
+    if "bar_slice_lo_strike" not in sidecar or "bar_slice_hi_strike" not in sidecar:
+        if contract_features.ndim != 2:
+            return np.zeros((0,), dtype=bool)
+        return contract_features[:, 0] > 0.5
+    lo = float(sidecar["bar_slice_lo_strike"][local_bar])
+    hi = float(sidecar["bar_slice_hi_strike"][local_bar])
+    return slice_mask_from_contract_features(contract_features, lo, hi)
+
+
 def padded_snapshot(
     sidecar: dict[str, Any],
     local_bar: int,
@@ -180,6 +235,28 @@ def padded_snapshot(
         label_pad[:use] = labels[:use]
         idx_pad[:use] = contract_idx[:use]
     return feat_pad, label_pad, idx_pad
+
+
+def padded_snapshot_with_slice(
+    sidecar: dict[str, Any],
+    local_bar: int,
+    max_contracts: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pad one bar snapshot and include the dynamic in-slice mask."""
+
+    feats, labels, contract_idx = contract_snapshot(sidecar, local_bar)
+    slice_mask = snapshot_slice_mask(sidecar, local_bar, feats)
+    feat_pad = np.zeros((max_contracts, NUM_CONTRACT_FEATURES), dtype=np.float32)
+    label_pad = np.full((max_contracts,), np.nan, dtype=np.float32)
+    idx_pad = np.full((max_contracts,), -1, dtype=np.int32)
+    slice_pad = np.zeros((max_contracts,), dtype=bool)
+    if feats.shape[0] > 0:
+        use = min(feats.shape[0], max_contracts)
+        feat_pad[:use] = feats[:use]
+        label_pad[:use] = labels[:use]
+        idx_pad[:use] = contract_idx[:use]
+        slice_pad[:use] = slice_mask[:use]
+    return feat_pad, label_pad, idx_pad, slice_pad
 
 
 def extract_contract_series(sidecar: dict[str, Any], contract_idx: int) -> dict[str, np.ndarray]:
