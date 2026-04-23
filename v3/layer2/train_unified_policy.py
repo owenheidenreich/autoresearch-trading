@@ -55,9 +55,16 @@ def parse_args() -> argparse.Namespace:
     # collapsed to call-only with a negative margin, ranking is now primary.
     p.add_argument("--w-regression", type=float, default=0.5)
     p.add_argument("--w-ranking", type=float, default=1.0)
+    p.add_argument("--w-side-contrastive", type=float, default=0.0)
     p.add_argument("--w-clean", type=float, default=0.35)
     p.add_argument("--w-stopout", type=float, default=0.35)
     p.add_argument("--equity", type=float, default=25_000.0)
+    # Utility-target blend for outer-loop retrain. alpha=0 reproduces the
+    # time-stop target; alpha=1 uses the oracle best-exit upper bound.
+    # The intermediate regime lets the entry policy learn from a composed
+    # utility without collapsing flat vs trade.
+    p.add_argument("--utility-blend", type=float, default=0.0,
+                   help="Blend between time_stop_pnl (0.0) and best_exit_pnl (1.0)")
     return p.parse_args()
 
 
@@ -101,10 +108,26 @@ def _apply_tier_defaults(args: argparse.Namespace, meta: dict[str, Any], resolve
         )
 
 
-def _slice_inputs(mask: np.ndarray, bundle: dict[str, Any]) -> dict[str, Any]:
+def _slice_inputs(
+    mask: np.ndarray,
+    bundle: dict[str, Any],
+    utility_blend: float = 0.0,
+) -> dict[str, Any]:
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
     action_labels = bundle["action_labels"]
+    time_stop_raw = action_labels["utility_raw"][mask]
+    if utility_blend > 0.0:
+        alpha = float(utility_blend)
+        best_exit = action_labels["best_exit_pnl"][mask]
+        nan_mask = ~np.isfinite(time_stop_raw) | ~np.isfinite(best_exit)
+        blended = (1.0 - alpha) * np.nan_to_num(time_stop_raw, nan=0.0) + alpha * np.nan_to_num(best_exit, nan=0.0)
+        blended[nan_mask] = np.nan
+        utility_raw = blended.astype(np.float32)
+        utility_arcsinh = np.arcsinh(utility_raw / 100.0).astype(np.float32)
+    else:
+        utility_raw = time_stop_raw
+        utility_arcsinh = action_labels["utility_arcsinh"][mask]
     out = {
         "rows": rows.loc[mask].copy().reset_index(drop=True),
         "scalar": rows.loc[mask, meta["scalar_feature_names"]].to_numpy(dtype=np.float32),
@@ -113,8 +136,9 @@ def _slice_inputs(mask: np.ndarray, bundle: dict[str, Any]) -> dict[str, Any]:
         "contracts": bundle["contract_features"][mask],
         "contract_mask": bundle["contract_mask"][mask],
         "contract_strike": bundle["contract_strike"][mask],
-        "utility": action_labels["utility_arcsinh"][mask],
-        "utility_raw": action_labels["utility_raw"][mask],
+        "utility": utility_arcsinh,
+        "utility_raw": utility_raw,
+        "time_stop_raw": time_stop_raw,
         "clean": action_labels["clean_entry"][mask],
         "stopout": action_labels["stopout_risk"][mask],
         "mae_10": action_labels["mae_10"][mask],
@@ -161,7 +185,7 @@ def _prediction_frame(
         np.nan,
     )
 
-    chosen_utility_raw = np.zeros(len(rows), dtype=np.float32)
+    chosen_time_stop = np.zeros(len(rows), dtype=np.float32)
     chosen_clean_prob = np.zeros(len(rows), dtype=np.float32)
     chosen_stopout_prob = np.zeros(len(rows), dtype=np.float32)
     chosen_clean_label = np.zeros(len(rows), dtype=np.float32)
@@ -171,7 +195,7 @@ def _prediction_frame(
     chosen_rows = np.arange(len(rows))[has_trade]
     chosen_cols = chosen_action_id[has_trade]
     if len(chosen_rows) > 0:
-        chosen_utility_raw[chosen_rows] = subset["utility_raw"][chosen_rows, chosen_cols]
+        chosen_time_stop[chosen_rows] = subset["time_stop_raw"][chosen_rows, chosen_cols]
         chosen_clean_prob[chosen_rows] = clean_prob[chosen_rows, chosen_cols]
         chosen_stopout_prob[chosen_rows] = stopout_prob[chosen_rows, chosen_cols]
         chosen_clean_label[chosen_rows] = subset["clean"][chosen_rows, chosen_cols]
@@ -184,7 +208,7 @@ def _prediction_frame(
     rows["chosen_action_id"] = chosen_action_id
     rows["chosen_side"] = chosen_side
     rows["chosen_strike"] = chosen_strike
-    rows["chosen_time_stop_pnl"] = chosen_utility_raw
+    rows["chosen_time_stop_pnl"] = chosen_time_stop
     rows["pred_clean_entry_prob"] = chosen_clean_prob
     rows["pred_stopout_risk"] = chosen_stopout_prob
     rows["chosen_clean_entry_label"] = chosen_clean_label
@@ -192,7 +216,7 @@ def _prediction_frame(
     rows["chosen_mae_10"] = chosen_mae_10
     rows["chosen_time_bucket"] = [
         _timing_bucket(float(pnl), float(mae_10))
-        for pnl, mae_10 in zip(chosen_utility_raw, chosen_mae_10)
+        for pnl, mae_10 in zip(chosen_time_stop, chosen_mae_10)
     ]
     rows["beats_v1_same_bar"] = (
         rows["chosen_action_id"] > 0
@@ -400,9 +424,9 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
         val_mask = rows["day"].isin(window.val_days).to_numpy()
         oos_mask = rows["day"].isin(window.oos_days).to_numpy()
 
-        fit = _slice_inputs(fit_mask, bundle)
-        val = _slice_inputs(val_mask, bundle)
-        oos = _slice_inputs(oos_mask, bundle)
+        fit = _slice_inputs(fit_mask, bundle, utility_blend=args.utility_blend)
+        val = _slice_inputs(val_mask, bundle, utility_blend=args.utility_blend)
+        oos = _slice_inputs(oos_mask, bundle, utility_blend=args.utility_blend)
 
         predictor, train_info = train_unified_action_model(
             scalar_train=fit["scalar"],
@@ -441,6 +465,7 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             patience=args.patience,
             w_regression=args.w_regression,
             w_ranking=args.w_ranking,
+            w_side_contrastive=args.w_side_contrastive,
             w_clean=args.w_clean,
             w_stopout=args.w_stopout,
         )
@@ -561,6 +586,24 @@ def main() -> int:
             "seeds": seeds,
             "history_bars": int(bundle["meta"]["history_bars"]),
             "top_k_contracts_per_side": int(bundle["meta"]["top_k_contracts_per_side"]),
+            "hyperparams": {
+                "hidden_dim": int(args.hidden_dim),
+                "seq_hidden_dim": int(args.seq_hidden_dim),
+                "contract_hidden_dim": int(args.contract_hidden_dim),
+                "depth": int(args.depth),
+                "dropout": float(args.dropout),
+                "lr": float(args.lr),
+                "weight_decay": float(args.weight_decay),
+                "batch_size": int(args.batch_size),
+                "max_epochs": int(args.max_epochs),
+                "patience": int(args.patience),
+                "w_regression": float(args.w_regression),
+                "w_ranking": float(args.w_ranking),
+                "w_side_contrastive": float(args.w_side_contrastive),
+                "w_clean": float(args.w_clean),
+                "w_stopout": float(args.w_stopout),
+                "utility_blend": float(args.utility_blend),
+            },
             "aggregate_by_seed": reports,
         },
     )
