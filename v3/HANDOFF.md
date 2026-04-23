@@ -86,9 +86,10 @@ What is actually true now:
 - **The highest-EV next move is exit composition, not more GPU.**
   - unified-entry Layer-3 replay on GPU seed `42` lifted `PF 1.151 → 2.033` and `DD 29.9% → 22.3%` on the same entries, albeit with exploratory threshold selection
   - side-contrastive is **not** a de-biasing workstream on this stack; every non-zero weight tested regressed at least one seed, and `CPU w=0.00 + L3 robust 0.90` is now the provisional composed-stack champion
-- **The next outer-loop target must be hold-horizon-aware, not oracle-peak.**
+- **Simple outer-loop targets are now falsified; only a simulated-L3 oracle remains defensible.**
   - the first composed-utility retrain attempt using `best_exit_pnl` blend was falsified: entries improved by time-stop PF but got worse once passed through realistic L3 exits
-  - the next productive outer-loop build is a candidate-contract utility aligned to what Layer-3 can actually capture, not late-session oracle peaks
+  - the follow-up fixed-horizon (`60`-bar) target was also falsified because one horizon cannot represent the champion exit's bimodal hold distribution
+  - the only serious remaining outer-loop candidate is a full simulated-L3 oracle per candidate contract; that is a larger infrastructure build and was correctly parked for a future loop
 - **Layer-3 now has an honest rolling prototype on top of Layer-2.5.**
   - using the same `218` patience-filtered trades, rolling Layer-3 lifts PF from `1.795` to an exploratory best `2.351` at exit threshold `0.19`
   - important caveat: the threshold sweep is exploratory, not deployment-calibrated
