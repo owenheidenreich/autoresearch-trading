@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from typing import Any
 
@@ -92,6 +94,35 @@ ACTION_LABEL_NAMES = (
     "available_mask",
     "tradeable_mask",
 )
+
+
+def action_surface_dataset_fingerprint(rows: pd.DataFrame, meta: dict[str, Any]) -> str:
+    identity_columns = list(meta.get("identity_columns", ("day", "bar_index", "fold_id")))
+    missing = [col for col in identity_columns if col not in rows.columns]
+    if missing:
+        raise RuntimeError(f"Cannot fingerprint action-surface rows; missing identity columns: {missing}")
+
+    identity_hashes = pd.util.hash_pandas_object(
+        rows.loc[:, identity_columns].reset_index(drop=True),
+        index=False,
+    ).to_numpy(dtype=np.uint64, copy=False)
+
+    fingerprint_meta = {
+        "identity_columns": identity_columns,
+        "n_rows": int(len(rows)),
+        "history_bars": meta.get("history_bars"),
+        "top_k_contracts_per_side": meta.get("top_k_contracts_per_side"),
+        "n_action_contract_tokens": meta.get("n_action_contract_tokens"),
+        "execution_window": meta.get("execution_window"),
+        "feature_contract_version": meta.get("feature_contract_version"),
+        "contract_feature_names": meta.get("contract_feature_names"),
+        "action_label_names": meta.get("action_label_names"),
+        "token_schema": meta.get("token_schema"),
+    }
+    h = hashlib.sha256()
+    h.update(identity_hashes.tobytes())
+    h.update(json.dumps(fingerprint_meta, sort_keys=True, default=str).encode("utf-8"))
+    return h.hexdigest()
 
 
 def _selection_score(contract: ContractRecord) -> float:
@@ -509,6 +540,7 @@ def build_action_surface_bundle(
             "utility_horizon_bars": int(utility_horizon_bars),
         }
     )
+    meta["dataset_fingerprint"] = action_surface_dataset_fingerprint(df, meta)
 
     return {
         "rows": df,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import time
 from typing import Any
@@ -14,7 +15,10 @@ from v3.harness.rolling_windows import (
     print_window_summary,
     verify_windows,
 )
-from v3.layer2.action_surface_dataset import DEFAULT_ACTION_SURFACE_DATASET_PATH
+from v3.layer2.action_surface_dataset import (
+    DEFAULT_ACTION_SURFACE_DATASET_PATH,
+    action_surface_dataset_fingerprint,
+)
 from v3.layer2.common import (
     ensure_dir,
     load_export_bundle,
@@ -29,6 +33,8 @@ DEFAULT_OUT_DIR = os.path.join("v3", "artifacts", "layer2_unified_policy_rolling
 DEFAULT_BASELINE_PF = 1.132
 DEFAULT_BASELINE_LAYER25_DD = 21.4
 DEFAULT_SIZZLE_SLIPPAGE = (0.0, 10.0, 25.0)
+OBJECTIVE_PNL_COL = "chosen_objective_pnl"
+TIME_STOP_PNL_COL = "chosen_time_stop_pnl"
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,6 +99,12 @@ def _resolve_seeds(args: argparse.Namespace) -> list[int]:
     if args.tier == "promotion":
         return [args.seed, args.seed + 1, args.seed + 2]
     return [args.seed]
+
+
+def _objective_label(utility_target: str, utility_blend: float) -> str:
+    if utility_blend > 0.0:
+        return f"{utility_target}+best_exit@{utility_blend:.2f}"
+    return utility_target
 
 
 def _apply_tier_defaults(args: argparse.Namespace, meta: dict[str, Any], resolved_device: str) -> None:
@@ -218,6 +230,7 @@ def _prediction_frame(
         np.nan,
     )
 
+    chosen_objective = np.zeros(len(rows), dtype=np.float32)
     chosen_time_stop = np.zeros(len(rows), dtype=np.float32)
     chosen_clean_prob = np.zeros(len(rows), dtype=np.float32)
     chosen_stopout_prob = np.zeros(len(rows), dtype=np.float32)
@@ -228,6 +241,7 @@ def _prediction_frame(
     chosen_rows = np.arange(len(rows))[has_trade]
     chosen_cols = chosen_action_id[has_trade]
     if len(chosen_rows) > 0:
+        chosen_objective[chosen_rows] = subset["utility_raw"][chosen_rows, chosen_cols]
         chosen_time_stop[chosen_rows] = subset["time_stop_raw"][chosen_rows, chosen_cols]
         chosen_clean_prob[chosen_rows] = clean_prob[chosen_rows, chosen_cols]
         chosen_stopout_prob[chosen_rows] = stopout_prob[chosen_rows, chosen_cols]
@@ -241,6 +255,7 @@ def _prediction_frame(
     rows["chosen_action_id"] = chosen_action_id
     rows["chosen_side"] = chosen_side
     rows["chosen_strike"] = chosen_strike
+    rows[OBJECTIVE_PNL_COL] = chosen_objective
     rows["chosen_time_stop_pnl"] = chosen_time_stop
     rows["pred_clean_entry_prob"] = chosen_clean_prob
     rows["pred_stopout_risk"] = chosen_stopout_prob
@@ -272,7 +287,17 @@ def _select_daily_trades(pred_df: pd.DataFrame, decision_margin: float) -> pd.Da
 
 
 def _stress_metrics(trades: pd.DataFrame, equity: float, slippage: float) -> dict[str, float]:
-    stressed = (trades["chosen_time_stop_pnl"] - float(slippage)).tolist() if not trades.empty else []
+    return _stress_metrics_for_column(trades, equity, slippage, pnl_col=TIME_STOP_PNL_COL)
+
+
+def _stress_metrics_for_column(
+    trades: pd.DataFrame,
+    equity: float,
+    slippage: float,
+    *,
+    pnl_col: str,
+) -> dict[str, float]:
+    stressed = (trades[pnl_col] - float(slippage)).tolist() if not trades.empty else []
     metrics = replay_metrics_from_pnls(stressed, equity)
     return {
         "slippage_round_trip": float(slippage),
@@ -283,8 +308,14 @@ def _stress_metrics(trades: pd.DataFrame, equity: float, slippage: float) -> dic
     }
 
 
-def _trade_metrics(trades: pd.DataFrame, equity: float, total_days: int) -> dict[str, Any]:
-    metrics = replay_metrics_from_pnls(trades["chosen_time_stop_pnl"].tolist() if not trades.empty else [], equity)
+def _trade_metrics(
+    trades: pd.DataFrame,
+    equity: float,
+    total_days: int,
+    *,
+    pnl_col: str = TIME_STOP_PNL_COL,
+) -> dict[str, Any]:
+    metrics = replay_metrics_from_pnls(trades[pnl_col].tolist() if not trades.empty else [], equity)
     bucket_counts = trades["chosen_time_bucket"].value_counts().to_dict() if not trades.empty else {}
     return {
         "trades": int(len(trades)),
@@ -300,7 +331,12 @@ def _trade_metrics(trades: pd.DataFrame, equity: float, total_days: int) -> dict
     }
 
 
-def _calibrate_decision_margin(val_pred: pd.DataFrame, equity: float) -> dict[str, Any]:
+def _calibrate_decision_margin(
+    val_pred: pd.DataFrame,
+    equity: float,
+    *,
+    pnl_col: str = OBJECTIVE_PNL_COL,
+) -> dict[str, Any]:
     total_days = int(val_pred["day"].nunique())
     candidate_base = val_pred.loc[
         np.isfinite(val_pred["decision_margin"]) & (val_pred["chosen_action_id"] > 0),
@@ -343,7 +379,7 @@ def _calibrate_decision_margin(val_pred: pd.DataFrame, equity: float) -> dict[st
     best_key = None
     for margin in grid:
         trades = _select_daily_trades(val_pred, float(margin))
-        metrics = _trade_metrics(trades, equity, total_days)
+        metrics = _trade_metrics(trades, equity, total_days, pnl_col=pnl_col)
         in_band = 0.25 <= metrics["trade_share"] <= 0.70
         enough_trades = metrics["trades"] >= min_trades_required
         pf_qualified = enough_trades and float(metrics["pf"]) >= 1.0
@@ -375,13 +411,31 @@ def _calibrate_decision_margin(val_pred: pd.DataFrame, equity: float) -> dict[st
     return best_payload
 
 
-def _window_report(window_idx: int, trades: pd.DataFrame, equity: float, total_days: int, decision_margin: float) -> dict[str, Any]:
-    metrics = _trade_metrics(trades, equity, total_days)
-    return {
+def _window_report(
+    window_idx: int,
+    trades: pd.DataFrame,
+    equity: float,
+    total_days: int,
+    decision_margin: float,
+    *,
+    objective_label: str,
+    objective_matches_time_stop: bool,
+) -> dict[str, Any]:
+    metrics = _trade_metrics(trades, equity, total_days, pnl_col=OBJECTIVE_PNL_COL)
+    report = {
         "window_idx": int(window_idx),
         "decision_margin": float(decision_margin),
+        "calibration_objective": objective_label,
         **metrics,
     }
+    if not objective_matches_time_stop:
+        report["time_stop_reference"] = _trade_metrics(
+            trades,
+            equity,
+            total_days,
+            pnl_col=TIME_STOP_PNL_COL,
+        )
+    return report
 
 
 def _aggregate_report(
@@ -391,16 +445,45 @@ def _aggregate_report(
     equity: float,
     seed: int,
     tier: str,
+    *,
+    objective_label: str,
+    objective_matches_time_stop: bool,
 ) -> dict[str, Any]:
-    metrics = _trade_metrics(chosen_trades, equity, total_days)
+    metrics = _trade_metrics(chosen_trades, equity, total_days, pnl_col=OBJECTIVE_PNL_COL)
+    gate_metrics = metrics
+    time_stop_reference = None
+    slippage_time_stop_reference = None
+    if not objective_matches_time_stop:
+        time_stop_reference = _trade_metrics(
+            chosen_trades,
+            equity,
+            total_days,
+            pnl_col=TIME_STOP_PNL_COL,
+        )
+        gate_metrics = time_stop_reference
+        slippage_time_stop_reference = {
+            str(int(slip)): _stress_metrics_for_column(
+                chosen_trades,
+                equity,
+                float(slip),
+                pnl_col=TIME_STOP_PNL_COL,
+            )
+            for slip in DEFAULT_SIZZLE_SLIPPAGE
+        }
     window_pfs = np.asarray([w["pf"] for w in per_window], dtype=np.float64)
     slippage = {
-        str(int(slip)): _stress_metrics(chosen_trades, equity, float(slip))
+        str(int(slip)): _stress_metrics_for_column(
+            chosen_trades,
+            equity,
+            float(slip),
+            pnl_col=OBJECTIVE_PNL_COL,
+        )
         for slip in DEFAULT_SIZZLE_SLIPPAGE
     }
-    return {
+    report = {
         "seed": int(seed),
         "tier": tier,
+        "calibration_objective": objective_label,
         "aggregate": metrics,
         "per_window": per_window,
         "per_window_pf": {
@@ -411,16 +494,31 @@ def _aggregate_report(
         },
         "slippage_stress": slippage,
         "promotion_gates": {
-            "w1_gate_pf_vs_baseline": float(metrics["pf"]) > DEFAULT_BASELINE_PF,
+            "basis": "objective" if objective_matches_time_stop else "time_stop_reference",
+            "w1_gate_pf_vs_baseline": float(gate_metrics["pf"]) > DEFAULT_BASELINE_PF,
             "w1_gate_dd_vs_layer25": (
-                float(metrics["max_dd_pct"]) <= DEFAULT_BASELINE_LAYER25_DD
-                or float(metrics["pf"]) >= DEFAULT_BASELINE_PF + 0.15
+                float(gate_metrics["max_dd_pct"]) <= DEFAULT_BASELINE_LAYER25_DD
+                or float(gate_metrics["pf"]) >= DEFAULT_BASELINE_PF + 0.15
             ),
-            "w1_gate_trade_share": 0.25 <= float(metrics["trade_share"]) <= 0.70,
-            "patience_gate_fast_loser_improvement_vs_old_baseline": float(metrics["fast_loser_rate"]) <= (113.0 / 432.0) * 0.80,
+            "w1_gate_trade_share": 0.25 <= float(gate_metrics["trade_share"]) <= 0.70,
+            "patience_gate_fast_loser_improvement_vs_old_baseline": float(gate_metrics["fast_loser_rate"]) <= (113.0 / 432.0) * 0.80,
             "exit_gate_placeholder": False,
         },
     }
+    if time_stop_reference is not None:
+        time_stop_window_pfs = np.asarray(
+            [w["time_stop_reference"]["pf"] for w in per_window],
+            dtype=np.float64,
+        )
+        report["aggregate_time_stop_reference"] = time_stop_reference
+        report["per_window_pf_time_stop_reference"] = {
+            "mean": float(np.nanmean(time_stop_window_pfs)) if len(time_stop_window_pfs) else None,
+            "std": float(np.nanstd(time_stop_window_pfs)) if len(time_stop_window_pfs) else None,
+            "min": float(np.nanmin(time_stop_window_pfs)) if len(time_stop_window_pfs) else None,
+            "max": float(np.nanmax(time_stop_window_pfs)) if len(time_stop_window_pfs) else None,
+        }
+        report["slippage_stress_time_stop_reference"] = slippage_time_stop_reference
+    return report
 
 
 def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[str, Any]:
@@ -431,6 +529,8 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
     bundle = load_export_bundle(args.dataset)
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
+    objective_label = _objective_label(args.utility_target, float(args.utility_blend))
+    objective_matches_time_stop = args.utility_target == "time_stop" and float(args.utility_blend) == 0.0
 
     simulated_l3_pnl = None
     if args.utility_target == "simulated_l3":
@@ -442,6 +542,35 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             raise RuntimeError(
                 f"simulated-L3 oracle row count {simulated_l3_pnl.shape[0]} does not "
                 f"match dataset row count {len(rows)}. Rebuild the oracle against the current dataset."
+            )
+        expected_actions = int(bundle["action_labels"]["tradeable_mask"].shape[1])
+        if simulated_l3_pnl.shape[1] != expected_actions:
+            raise RuntimeError(
+                f"simulated-L3 oracle action count {simulated_l3_pnl.shape[1]} does not "
+                f"match dataset action count {expected_actions}. Rebuild the oracle against the current dataset."
+            )
+        oracle_meta: dict[str, Any] = {}
+        if "meta_json" in z.files:
+            oracle_meta = json.loads(str(z["meta_json"].item()))
+        dataset_fingerprint = meta.get("dataset_fingerprint") or action_surface_dataset_fingerprint(rows, meta)
+        oracle_fingerprint = str(oracle_meta.get("dataset_fingerprint", "")).strip()
+        if oracle_fingerprint:
+            if oracle_fingerprint != dataset_fingerprint:
+                raise RuntimeError(
+                    "simulated-L3 oracle fingerprint does not match the current dataset. "
+                    "Rebuild the oracle against the exact action-surface bundle you are training on."
+                )
+        else:
+            oracle_dataset_path = str(oracle_meta.get("dataset_path", ""))
+            if oracle_dataset_path and os.path.normpath(oracle_dataset_path) != os.path.normpath(args.dataset):
+                raise RuntimeError(
+                    "Legacy simulated-L3 oracle was built from a different dataset path and has no "
+                    "fingerprint for row-identity verification. Rebuild the oracle against the current dataset."
+                )
+            print(
+                "Warning: simulated-L3 oracle has no dataset fingerprint; falling back to "
+                "legacy path/shape compatibility only. Rebuild it for strict row-identity checks.",
+                flush=True,
             )
         print(f"Loaded simulated-L3 oracle: shape={simulated_l3_pnl.shape} from {args.simulated_l3_oracle}", flush=True)
 
@@ -528,7 +657,26 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             ),
             top_k_contracts=int(meta["top_k_contracts_per_side"]),
         )
-        calibration = _calibrate_decision_margin(val_pred, args.equity)
+        calibration = _calibrate_decision_margin(
+            val_pred,
+            args.equity,
+            pnl_col=OBJECTIVE_PNL_COL,
+        )
+        calibration["calibration_objective"] = objective_label
+        val_chosen = _select_daily_trades(val_pred, calibration["decision_margin"]).copy()
+        calibration["objective_metrics"] = _trade_metrics(
+            val_chosen,
+            args.equity,
+            total_days=len(window.val_days),
+            pnl_col=OBJECTIVE_PNL_COL,
+        )
+        if not objective_matches_time_stop:
+            calibration["time_stop_reference"] = _trade_metrics(
+                val_chosen,
+                args.equity,
+                total_days=len(window.val_days),
+                pnl_col=TIME_STOP_PNL_COL,
+            )
 
         oos_pred = _prediction_frame(
             oos,
@@ -564,6 +712,8 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
                 args.equity,
                 total_days=len(window.oos_days),
                 decision_margin=float(calibration["decision_margin"]),
+                objective_label=objective_label,
+                objective_matches_time_stop=objective_matches_time_stop,
             )
         )
 
@@ -581,6 +731,7 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             "decision_margin",
             "pred_clean_entry_prob",
             "pred_stopout_risk",
+            OBJECTIVE_PNL_COL,
             "chosen_time_stop_pnl",
             "chosen_time_bucket",
             "beats_v1_same_bar",
@@ -595,6 +746,8 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
         equity=args.equity,
         seed=seed,
         tier=args.tier,
+        objective_label=objective_label,
+        objective_matches_time_stop=objective_matches_time_stop,
     )
     report["runtime_seconds"] = float(time.time() - total_t0)
     report["windows"] = [

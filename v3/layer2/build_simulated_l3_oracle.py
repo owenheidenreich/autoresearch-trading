@@ -24,7 +24,10 @@ import pandas as pd
 from v3.config import GuardrailConfig
 from v3.harness.rolling_windows import generate_rolling_windows
 from v3.harness.v2_adapter import V2Dataset
-from v3.layer2.action_surface_dataset import DEFAULT_ACTION_SURFACE_DATASET_PATH
+from v3.layer2.action_surface_dataset import (
+    DEFAULT_ACTION_SURFACE_DATASET_PATH,
+    action_surface_dataset_fingerprint,
+)
 from v3.layer2.common import build_labeled_day
 from v3.layer3.common import (
     DEFAULT_COMMISSION_PER_CONTRACT,
@@ -226,6 +229,7 @@ def main() -> int:
     with open(args.dataset, "rb") as f:
         bundle = pickle.load(f)
     rows: pd.DataFrame = bundle["rows"]
+    meta = bundle["meta"]
     contract_features = bundle["contract_features"]
     contract_strike = bundle["contract_strike"]
     tradeable_mask = bundle["action_labels"]["tradeable_mask"]
@@ -252,6 +256,9 @@ def main() -> int:
         tradeable_mask = tradeable_mask[row_mask]
         n_rows = len(rows)
         print(f"[smoke] limiting to first {args.max_days} days -> {n_rows} rows", flush=True)
+    dataset_fingerprint = meta.get("dataset_fingerprint")
+    if not dataset_fingerprint or args.max_days > 0:
+        dataset_fingerprint = action_surface_dataset_fingerprint(rows, meta)
 
     # 4) Allocate output arrays
     l3_exit_pnl = np.full((n_rows, n_actions), np.nan, dtype=np.float32)
@@ -353,6 +360,7 @@ def main() -> int:
             "min_train_trades": int(args.min_train_trades),
             "n_rows": int(n_rows),
             "n_actions": int(n_actions),
+            "dataset_fingerprint": str(dataset_fingerprint),
             "n_sims": int(n_sims),
             "n_skipped": int(n_skipped),
             "thresholds_by_window": {int(k): float(v) for k, v in thresholds.items()},
