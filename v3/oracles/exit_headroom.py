@@ -51,6 +51,34 @@ def _time_stop_pnl(
     return 100.0 * (exit_bid - entry_ask) - commission
 
 
+def _horizon_pnl(
+    mids: np.ndarray,
+    entry_bar: int,
+    entry_mid: float,
+    entry_spread_frac: float,
+    horizon_bars: int,
+    session_end_bar: int,
+    commission: float,
+) -> float | None:
+    """PnL at a fixed forward horizon: exit at bar (entry_bar + horizon_bars).
+
+    If that target bar is beyond session_end_bar or past the end of the mids
+    series, falls back to the last observation in the horizon window. If no
+    finite mid is found in the window, returns None.
+    """
+    target_bar = min(entry_bar + int(horizon_bars), session_end_bar, len(mids) - 1)
+    if target_bar <= entry_bar:
+        return None
+    window = mids[entry_bar + 1 : target_bar + 1]
+    finite = np.where(np.isfinite(window))[0]
+    if finite.size == 0:
+        return None
+    exit_mid = float(window[finite[-1]])
+    entry_ask = entry_mid * (1.0 + entry_spread_frac / 2.0)
+    exit_bid = exit_mid * (1.0 - entry_spread_frac / 2.0)
+    return 100.0 * (exit_bid - entry_ask) - commission
+
+
 def _stop_target_pnl(
     mids: np.ndarray,
     entry_bar: int,

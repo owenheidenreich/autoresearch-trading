@@ -14,6 +14,7 @@ from v3.layer2.action_surface_dataset import (
     DEFAULT_STOPOUT_HORIZON_BARS,
     DEFAULT_STOPOUT_TARGET_PCT,
     DEFAULT_TOP_K_CONTRACTS,
+    DEFAULT_UTILITY_HORIZON_BARS,
     build_action_surface_bundle,
 )
 from v3.layer2.common import save_pickle
@@ -30,6 +31,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--clean-mae-floor-pct", type=float, default=DEFAULT_CLEAN_MAE_FLOOR_PCT)
     p.add_argument("--stopout-target-pct", type=float, default=DEFAULT_STOPOUT_TARGET_PCT)
     p.add_argument("--stopout-horizon-bars", type=int, default=DEFAULT_STOPOUT_HORIZON_BARS)
+    p.add_argument("--utility-horizon-bars", type=int, default=DEFAULT_UTILITY_HORIZON_BARS,
+                   help="Forward bars for the horizon_pnl composed-utility label.")
     return p.parse_args()
 
 
@@ -49,6 +52,7 @@ def main() -> int:
         mae_floor_pct=args.clean_mae_floor_pct,
         stopout_target_pct=args.stopout_target_pct,
         stopout_horizon_bars=args.stopout_horizon_bars,
+        utility_horizon_bars=args.utility_horizon_bars,
     )
     save_pickle(args.output, bundle)
 

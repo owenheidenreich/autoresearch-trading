@@ -30,7 +30,7 @@ from v3.layer2.surface_dataset import (
 )
 from v3.logger.builder import build_bar_record
 from v3.logger.schema import BarRecord, ContractRecord, DayLog
-from v3.oracles.exit_headroom import _time_stop_pnl, apply_exit_headroom_oracle
+from v3.oracles.exit_headroom import _horizon_pnl, _time_stop_pnl, apply_exit_headroom_oracle
 from v3.oracles.opportunity import (
     CIDX_VALID,
     _best_and_worst_forward_pnl,
@@ -53,6 +53,11 @@ DEFAULT_EXECUTION_END_BAR = 120    # 11:30 ET
 DEFAULT_CLEAN_MAE_FLOOR_PCT = -20.0
 DEFAULT_STOPOUT_TARGET_PCT = 10.0
 DEFAULT_STOPOUT_HORIZON_BARS = 10
+# Hold-aware utility target: champion L3 robust_90 median hold is 62 bars on
+# seeds 42/43 and 81 bars on seed 44. Default horizon 60 sits near the lower
+# end of that band so the signal is representable by L3 exit times that do
+# fire rather than by session-end holds.
+DEFAULT_UTILITY_HORIZON_BARS = 60
 
 CONTRACT_FEATURE_NAMES = (
     "right_is_call",
@@ -75,6 +80,7 @@ ACTION_LABEL_NAMES = (
     "utility_raw",
     "utility_arcsinh",
     "best_exit_pnl",
+    "horizon_pnl",
     "mfe_5",
     "mae_5",
     "mfe_10",
@@ -238,6 +244,7 @@ def _empty_contract_block(top_k: int) -> tuple[np.ndarray, np.ndarray, np.ndarra
     labels["utility_raw"][0] = 0.0
     labels["utility_arcsinh"][0] = 0.0
     labels["best_exit_pnl"][0] = 0.0
+    labels["horizon_pnl"][0] = 0.0
     labels["clean_entry"][0] = 0.0
     labels["stopout_risk"][0] = 0.0
     labels["available_mask"][0] = 1.0
@@ -259,6 +266,7 @@ def build_contract_action_surface(
     mae_floor_pct: float,
     stopout_horizon_bars: int,
     stopout_target_pct: float,
+    utility_horizon_bars: int = DEFAULT_UTILITY_HORIZON_BARS,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, np.ndarray]]:
     token_features, token_mask, token_strikes, action_labels = _empty_contract_block(top_k)
     spot = float(bar.underlying_close)
@@ -287,6 +295,15 @@ def build_contract_action_surface(
                 entry_bar=int(bar.bar_index),
                 entry_mid=float(contract.mid),
                 entry_spread_frac=float(contract.spread_fraction),
+                session_end_bar=375,
+                commission=1.0,
+            )
+            horizon_pnl = _horizon_pnl(
+                path.mids,
+                entry_bar=int(bar.bar_index),
+                entry_mid=float(contract.mid),
+                entry_spread_frac=float(contract.spread_fraction),
+                horizon_bars=int(utility_horizon_bars),
                 session_end_bar=375,
                 commission=1.0,
             )
@@ -321,6 +338,9 @@ def build_contract_action_surface(
             action_labels["best_exit_pnl"][action_idx] = (
                 float(best_exit_pnl) if best_exit_pnl is not None and np.isfinite(best_exit_pnl) else np.nan
             )
+            action_labels["horizon_pnl"][action_idx] = (
+                float(horizon_pnl) if horizon_pnl is not None and np.isfinite(horizon_pnl) else np.nan
+            )
             action_labels["mfe_5"][action_idx] = float(mfe_5) if mfe_5 is not None and np.isfinite(mfe_5) else np.nan
             action_labels["mae_5"][action_idx] = float(mae_5) if mae_5 is not None and np.isfinite(mae_5) else np.nan
             action_labels["mfe_10"][action_idx] = float(mfe_10) if mfe_10 is not None and np.isfinite(mfe_10) else np.nan
@@ -347,6 +367,7 @@ def build_action_surface_bundle(
     mae_floor_pct: float = DEFAULT_CLEAN_MAE_FLOOR_PCT,
     stopout_target_pct: float = DEFAULT_STOPOUT_TARGET_PCT,
     stopout_horizon_bars: int = DEFAULT_STOPOUT_HORIZON_BARS,
+    utility_horizon_bars: int = DEFAULT_UTILITY_HORIZON_BARS,
 ) -> dict[str, Any]:
     sequence_feature_names = resolve_sequence_feature_names(dataset)
     folds = build_folds_for_dataset(dataset)
@@ -407,6 +428,7 @@ def build_action_surface_bundle(
                 mae_floor_pct=mae_floor_pct,
                 stopout_horizon_bars=stopout_horizon_bars,
                 stopout_target_pct=stopout_target_pct,
+                utility_horizon_bars=utility_horizon_bars,
             )
             row["chosen_flat_time_bucket"] = _time_bucket(
                 float(np.nanmax(labels["utility_raw"][1:])) if np.isfinite(labels["utility_raw"][1:]).any() else np.nan,
@@ -484,6 +506,7 @@ def build_action_surface_bundle(
                 "stop_pct": float(mae_floor_pct),
                 "target_pct": float(stopout_target_pct),
             },
+            "utility_horizon_bars": int(utility_horizon_bars),
         }
     )
 

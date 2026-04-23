@@ -65,6 +65,12 @@ def parse_args() -> argparse.Namespace:
     # utility without collapsing flat vs trade.
     p.add_argument("--utility-blend", type=float, default=0.0,
                    help="Blend between time_stop_pnl (0.0) and best_exit_pnl (1.0)")
+    # Hold-aware utility target. "time_stop" preserves the original target
+    # (session-end PnL). "horizon" uses horizon_pnl, a fixed-horizon PnL
+    # label tuned to the champion Layer-3 median hold.
+    p.add_argument("--utility-target", default="time_stop",
+                   choices=("time_stop", "horizon"),
+                   help="Base utility target before --utility-blend mixing.")
     return p.parse_args()
 
 
@@ -112,18 +118,34 @@ def _slice_inputs(
     mask: np.ndarray,
     bundle: dict[str, Any],
     utility_blend: float = 0.0,
+    utility_target: str = "time_stop",
 ) -> dict[str, Any]:
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
     action_labels = bundle["action_labels"]
     time_stop_raw = action_labels["utility_raw"][mask]
+    if utility_target == "horizon":
+        if "horizon_pnl" not in action_labels:
+            raise RuntimeError(
+                "--utility-target=horizon requires a dataset exported with horizon_pnl "
+                "(re-run v3.layer2.export_action_surface_dataset)."
+            )
+        base_raw = action_labels["horizon_pnl"][mask]
+    elif utility_target == "time_stop":
+        base_raw = time_stop_raw
+    else:
+        raise ValueError(f"unknown utility_target: {utility_target}")
+
     if utility_blend > 0.0:
         alpha = float(utility_blend)
         best_exit = action_labels["best_exit_pnl"][mask]
-        nan_mask = ~np.isfinite(time_stop_raw) | ~np.isfinite(best_exit)
-        blended = (1.0 - alpha) * np.nan_to_num(time_stop_raw, nan=0.0) + alpha * np.nan_to_num(best_exit, nan=0.0)
+        nan_mask = ~np.isfinite(base_raw) | ~np.isfinite(best_exit)
+        blended = (1.0 - alpha) * np.nan_to_num(base_raw, nan=0.0) + alpha * np.nan_to_num(best_exit, nan=0.0)
         blended[nan_mask] = np.nan
         utility_raw = blended.astype(np.float32)
+        utility_arcsinh = np.arcsinh(utility_raw / 100.0).astype(np.float32)
+    elif utility_target == "horizon":
+        utility_raw = base_raw.astype(np.float32)
         utility_arcsinh = np.arcsinh(utility_raw / 100.0).astype(np.float32)
     else:
         utility_raw = time_stop_raw
@@ -424,9 +446,9 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
         val_mask = rows["day"].isin(window.val_days).to_numpy()
         oos_mask = rows["day"].isin(window.oos_days).to_numpy()
 
-        fit = _slice_inputs(fit_mask, bundle, utility_blend=args.utility_blend)
-        val = _slice_inputs(val_mask, bundle, utility_blend=args.utility_blend)
-        oos = _slice_inputs(oos_mask, bundle, utility_blend=args.utility_blend)
+        fit = _slice_inputs(fit_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target)
+        val = _slice_inputs(val_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target)
+        oos = _slice_inputs(oos_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target)
 
         predictor, train_info = train_unified_action_model(
             scalar_train=fit["scalar"],
@@ -603,6 +625,7 @@ def main() -> int:
                 "w_clean": float(args.w_clean),
                 "w_stopout": float(args.w_stopout),
                 "utility_blend": float(args.utility_blend),
+                "utility_target": str(args.utility_target),
             },
             "aggregate_by_seed": reports,
         },
