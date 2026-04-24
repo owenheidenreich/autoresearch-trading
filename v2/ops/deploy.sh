@@ -1337,6 +1337,97 @@ cmd_run_v3_promotion() {
 }
 
 
+# ===================================================================
+# RUN_V3_LIVE_PROMOTION — three single-seed promotion calls of the v3
+# unified policy with --utility-target hybrid_live and per-seed
+# simulated-L3 oracles (live-readiness handoff 2026-04-24).
+# Uploads the live action-surface dataset + per-seed oracles before
+# training and downloads each seed's run-dir back.
+# ===================================================================
+cmd_run_v3_live_promotion() {
+    load_state
+    local exp_base="${EXTRA_ARGS:-}"
+    [[ -n "$exp_base" ]] || die "Usage: deploy.sh run_v3_live_promotion <exp_base> (e.g., spx_live_hybrid_001)"
+
+    local dataset_local="${V3_LIVE_DATASET:-$PROJECT_ROOT/v3/artifacts/layer2_action_surface_dataset_spx_live_0945_1130.pkl}"
+    [[ -f "$dataset_local" ]] || die "Live action-surface dataset not found: $dataset_local"
+
+    local oracle_pattern="${V3_LIVE_ORACLE_PATTERN:-$PROJECT_ROOT/v3/artifacts/simulated_l3_oracle_spx_live_0945_1130_seed%s.npz}"
+    local seed
+    for seed in 42 43 44; do
+        local oracle_local
+        oracle_local=$(printf "$oracle_pattern" "$seed")
+        [[ -f "$oracle_local" ]] || die "Per-seed oracle not found: $oracle_local"
+    done
+
+    log "=== V3 LIVE PROMOTION: $exp_base (seeds 42/43/44) ==="
+
+    # Upload latest v3 source bundle.
+    local v3_bundle source_git_sha source_dirty_count
+    v3_bundle="/tmp/autoresearch-v3-sync-$$.tgz"
+    rm -f "$v3_bundle"
+    source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
+    source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    log "Packaging v3 source sync (git=$source_git_sha, dirty=$source_dirty_count)..."
+    tar -h -czf "$v3_bundle" -C "$PROJECT_ROOT" \
+        --no-mac-metadata --no-xattrs \
+        --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
+        --exclude='v3/artifacts' \
+        v3
+    scp_retry "$v3_bundle" "root@$SSH_HOST:/root/v3-sync.tgz"
+    rm -f "$v3_bundle"
+    ssh_cmd "cd /root && tar -xzf v3-sync.tgz 2>/dev/null && rm -f v3-sync.tgz"
+
+    # Upload the live action-surface dataset.
+    local dataset_remote_rel="v3/artifacts/$(basename "$dataset_local")"
+    log "Uploading live action-surface dataset ($(du -h "$dataset_local" | cut -f1)) -> $dataset_remote_rel..."
+    ssh_cmd "mkdir -p /root/v3/artifacts"
+    scp_retry "$dataset_local" "root@$SSH_HOST:/root/$dataset_remote_rel"
+
+    # Upload the three per-seed oracles.
+    local oracle_remote_paths=()
+    for seed in 42 43 44; do
+        local oracle_local oracle_remote_rel
+        oracle_local=$(printf "$oracle_pattern" "$seed")
+        oracle_remote_rel="v3/artifacts/$(basename "$oracle_local")"
+        log "Uploading oracle seed=$seed ($(du -h "$oracle_local" | cut -f1)) -> $oracle_remote_rel..."
+        scp_retry "$oracle_local" "root@$SSH_HOST:/root/$oracle_remote_rel"
+        oracle_remote_paths+=("$oracle_remote_rel")
+    done
+
+    local env_prefix="${TRAIN_ENV:-}"
+    local run_dirs=()
+    local idx=0
+    for seed in 42 43 44; do
+        local run_dir_rel="v3/artifacts/layer2_unified_policy_${exp_base}_seed${seed}"
+        local oracle_remote_rel="${oracle_remote_paths[$idx]}"
+        idx=$((idx + 1))
+        run_dirs+=("$run_dir_rel")
+
+        ssh_cmd "rm -rf /root/$run_dir_rel"
+        ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
+        log ""
+        log "--- seed $seed -> $run_dir_rel (oracle: $oracle_remote_rel) ---"
+        ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v3.layer2.train_unified_policy --tier promotion --device cuda --seed $seed --seeds $seed --dataset $dataset_remote_rel --utility-target hybrid_live --simulated-l3-oracle $oracle_remote_rel --run-dir $run_dir_rel 2>&1 | tee /root/run.log" || log "WARNING: seed $seed run reported non-zero status"
+    done
+
+    # Download each seed's run-dir back.
+    mkdir -p "$PROJECT_ROOT/v3/artifacts"
+    for run_dir_rel in "${run_dirs[@]}"; do
+        log "Downloading /root/$run_dir_rel ..."
+        scp_cmd -r "root@$SSH_HOST:/root/$run_dir_rel" "$PROJECT_ROOT/v3/artifacts/" 2>/dev/null || \
+            log "WARNING: $run_dir_rel not present on remote (run may have crashed)"
+    done
+
+    log ""
+    log "V3 live promotion complete: $exp_base (seeds 42/43/44)"
+    log "Local artifacts:"
+    for run_dir_rel in "${run_dirs[@]}"; do
+        log "  $PROJECT_ROOT/$run_dir_rel/seed_*/report.json"
+    done
+}
+
+
 cmd_stop() {
     load_state
     echo ""
@@ -1411,6 +1502,7 @@ case "$CMD" in
     run_screen_mini)   cmd_run_screen_mini   ;;
     run_final_train)   cmd_run_final_train   ;;
     run_v3_promotion)  cmd_run_v3_promotion  ;;
+    run_v3_live_promotion) cmd_run_v3_live_promotion ;;
     fund)              cmd_fund              ;;
     ssh)               cmd_ssh               ;;
     logs)              cmd_logs              ;;
