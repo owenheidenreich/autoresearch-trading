@@ -1,9 +1,11 @@
 """Build the simulated-Layer-3 oracle per candidate contract.
 
 For every (day, bar, candidate_contract) in the action-surface dataset
-where tradeable_mask == 1, compute the PnL the champion
-`CPU w=0.00 + L3 robust 0.90` policy would have realized on that
-contract. Saved as a sidecar .npz file aligned to dataset row order.
+where tradeable_mask == 1, compute the PnL a rolling Layer-3 exit policy
+would have realized on that contract. By default the Layer-3 models are
+rebuilt from a champion chosen-trade artifact; optionally they can be
+trained on a broader action-surface candidate sample. Saved as a sidecar
+.npz file aligned to dataset row order.
 
 See v3/reference/simulated_l3_oracle_design_2026_04_22.md.
 """
@@ -27,14 +29,17 @@ from v3.harness.v2_adapter import V2Dataset
 from v3.layer2.action_surface_dataset import (
     DEFAULT_ACTION_SURFACE_DATASET_PATH,
     action_surface_dataset_fingerprint,
+    validate_action_surface_bundle,
 )
 from v3.layer2.common import build_labeled_day
 from v3.layer3.common import (
     DEFAULT_COMMISSION_PER_CONTRACT,
+    DEFAULT_CANDIDATE_TRAIN_MAX_PER_DAY,
     DEFAULT_EQUITY,
     DEFAULT_MIN_TRAIN_TRADES,
     DEFAULT_SESSION_END_BAR,
     _build_trade_data,
+    load_action_surface_candidate_trades,
     replay_trade_set,
     train_models_by_window,
 )
@@ -64,6 +69,22 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--output",
         default="v3/artifacts/simulated_l3_oracle_seed42.npz",
+    )
+    p.add_argument(
+        "--l3-training-source",
+        default="champion",
+        choices=("champion", "candidate_surface"),
+        help=(
+            "Training universe for the L3 models used to simulate candidate "
+            "exits. champion preserves the historical chosen-trade source; "
+            "candidate_surface trains on a deterministic broader sample from "
+            "the action-surface dataset."
+        ),
+    )
+    p.add_argument(
+        "--candidate-train-max-per-day",
+        type=int,
+        default=DEFAULT_CANDIDATE_TRAIN_MAX_PER_DAY,
     )
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--equity", type=float, default=DEFAULT_EQUITY)
@@ -115,6 +136,45 @@ def _build_champion_models(
     return models, train_reports
 
 
+def _build_candidate_surface_models(
+    dataset_path: str,
+    max_per_day: int,
+    equity: float,
+    session_end_bar: int,
+    commission: float,
+    seed: int,
+    min_train_trades: int,
+) -> tuple[dict[int, Any], list[dict], dict[str, Any]]:
+    """Train per-window L3 models on a broad action-surface candidate sample."""
+    candidate_trades, candidate_meta = load_action_surface_candidate_trades(
+        dataset_path,
+        max_per_day=max_per_day,
+    )
+    print(
+        f"Candidate L3 source: {dataset_path} -> {len(candidate_trades)} sampled trades "
+        f"(max_per_day={max_per_day}, call_share={candidate_meta['call_share']:.3f})",
+        flush=True,
+    )
+    trade_data, dataset_meta = build_trade_dataset(
+        candidate_trades,
+        equity=equity,
+        session_end_bar=session_end_bar,
+        commission=commission,
+    )
+    print(
+        f"Rebuilding candidate-trained L3 trade-datasets: "
+        f"usable={dataset_meta['n_trade_datasets']} skipped={dataset_meta['n_skipped']}",
+        flush=True,
+    )
+    models, train_reports = train_models_by_window(
+        trade_data, seed=seed, min_train_trades=min_train_trades
+    )
+    return models, train_reports, {
+        "candidate_policy_meta": candidate_meta,
+        "candidate_dataset_meta": dataset_meta,
+    }
+
+
 def _load_champion_thresholds(calibration_path: str) -> dict[int, float]:
     with open(calibration_path) as f:
         payload = json.load(f)
@@ -153,9 +213,13 @@ def _simulate_candidate(
 ) -> tuple[float, int, int]:
     """Returns (l3_exit_pnl, exit_bar, trigger)."""
     direction, right = _infer_direction(right_is_call)
+    entry_fill_bar = int(bar_index) + 1
+    if entry_fill_bar >= session_end_bar:
+        return (float("nan"), -1, TRIGGER_NON_TRADEABLE)
     fake_trade = pd.Series(
         {
             "bar_index": int(bar_index),
+            "entry_fill_bar": int(entry_fill_bar),
             "direction": direction,
             "day": str(day),
             "selected_strike": float(strike),
@@ -212,15 +276,36 @@ def main() -> int:
     args = parse_args()
     t_start = time.time()
 
-    # 1) Load champion L3 models + thresholds
-    models, train_reports = _build_champion_models(
-        args.champion_chosen_trades,
-        equity=args.equity,
-        session_end_bar=args.session_end_bar,
-        commission=args.commission,
-        seed=args.seed,
-        min_train_trades=args.min_train_trades,
-    )
+    # 1) Load L3 models + thresholds
+    l3_training_meta: dict[str, Any]
+    if args.l3_training_source == "candidate_surface":
+        models, train_reports, candidate_meta = _build_candidate_surface_models(
+            args.dataset,
+            max_per_day=args.candidate_train_max_per_day,
+            equity=args.equity,
+            session_end_bar=args.session_end_bar,
+            commission=args.commission,
+            seed=args.seed,
+            min_train_trades=args.min_train_trades,
+        )
+        l3_training_meta = {
+            "source": "candidate_surface",
+            "candidate_train_max_per_day": int(args.candidate_train_max_per_day),
+            **candidate_meta,
+        }
+    else:
+        models, train_reports = _build_champion_models(
+            args.champion_chosen_trades,
+            equity=args.equity,
+            session_end_bar=args.session_end_bar,
+            commission=args.commission,
+            seed=args.seed,
+            min_train_trades=args.min_train_trades,
+        )
+        l3_training_meta = {
+            "source": "champion",
+            "champion_chosen_trades": args.champion_chosen_trades,
+        }
     thresholds = _load_champion_thresholds(args.champion_calibration)
     print(f"Loaded per-window thresholds: {thresholds}", flush=True)
 
@@ -228,6 +313,7 @@ def main() -> int:
     print(f"Loading action-surface dataset from {args.dataset}", flush=True)
     with open(args.dataset, "rb") as f:
         bundle = pickle.load(f)
+    validate_action_surface_bundle(bundle, required_labels={"tradeable_mask"})
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
     contract_features = bundle["contract_features"]
@@ -353,6 +439,8 @@ def main() -> int:
             "dataset_path": args.dataset,
             "champion_chosen_trades": args.champion_chosen_trades,
             "champion_calibration": args.champion_calibration,
+            "l3_training_source": args.l3_training_source,
+            "l3_training": l3_training_meta,
             "seed": int(args.seed),
             "equity": float(args.equity),
             "commission": float(args.commission),

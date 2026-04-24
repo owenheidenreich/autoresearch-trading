@@ -846,6 +846,58 @@ def _label_day_sidecar(
     }
 
 
+def _raw_chain_bars_for_day(day: str, day_ts_ms: np.ndarray) -> tuple[list[dict], list]:
+    cache_path = os.path.join(FULL_CHAIN_CACHE_DIR, f"{day}.pkl")
+    if not os.path.exists(cache_path):
+        return [{} for _ in range(len(day_ts_ms))], []
+    full_day = pickle.load(open(cache_path, "rb"))
+    raw_day_bars = full_day.get("bars", {})
+    raw_bars = [_chain_bar_for_timestamp(raw_day_bars, int(ts)) for ts in day_ts_ms]
+    return raw_bars, sorted(full_day.get("contracts", []))
+
+
+def _build_iv_history_seeds(
+    unique_dates: list[str],
+    day_to_bars: dict[str, list[int]],
+    spot_prices: np.ndarray,
+    timestamps: np.ndarray,
+) -> dict[str, list[float]]:
+    """Build per-day prior IV history for point-in-time iv_percentile.
+
+    Workers process days independently, so same-day local state cannot provide
+    a 60-session percentile. This sequential prepass records the rolling
+    history available at each day's open; workers then append only prior bars
+    within their own day.
+    """
+    lookback = BARS_PER_DAY * 60
+    history: list[float] = []
+    seeds: dict[str, list[float]] = {}
+    for day in unique_dates:
+        gi = day_to_bars[day]
+        day_spot = spot_prices[gi]
+        day_ts_ms = np.asarray(timestamps[gi], dtype=np.int64)
+        raw_bars, _ = _raw_chain_bars_for_day(day, day_ts_ms)
+        seeds[day] = list(history[-lookback:])
+        if len(day_spot) == 0:
+            continue
+        atm_strike_open = round(float(day_spot[0]) / 5.0) * 5.0
+        day_history = list(seeds[day])
+        for local_i, raw_bar in enumerate(raw_bars):
+            mtc = max(BARS_PER_DAY - local_i, 1)
+            opt_feats = compute_option_features(
+                to_wide_bar(raw_bar),
+                float(day_spot[local_i]),
+                atm_strike_open,
+                mtc,
+                iv_history=day_history[-lookback:] if day_history else None,
+            )
+            atm_iv_val = opt_feats.get("atm_iv", np.nan)
+            if np.isfinite(atm_iv_val):
+                history.append(float(atm_iv_val))
+                day_history.append(float(atm_iv_val))
+    return seeds
+
+
 def _process_one_day(args: dict) -> dict:
     """Worker: process a single day's chain data into a sidecar + features.
 
@@ -858,6 +910,7 @@ def _process_one_day(args: dict) -> dict:
     day_X_price = args["day_X_price"]
     day_timestamps = args["day_timestamps"]
     sd = args["sidecar_dir"]
+    iv_history_seed = list(args.get("iv_history_seed", []))
 
     n_bars_day = len(global_indices)
     n_opt = len(OPTION_FEATURE_NAMES)
@@ -867,18 +920,9 @@ def _process_one_day(args: dict) -> dict:
     X_surface_day = np.zeros((n_bars_day, n_surface), dtype=np.float64)
     X_flow_day = np.zeros((n_bars_day, n_flow), dtype=np.float64)
 
-    cache_path = os.path.join(FULL_CHAIN_CACHE_DIR, f"{day}.pkl")
     expiry = day.replace("-", "")
     day_ts_ms = np.asarray(day_timestamps, dtype=np.int64)
-
-    if os.path.exists(cache_path):
-        full_day = pickle.load(open(cache_path, "rb"))
-        raw_day_bars = full_day.get("bars", {})
-        raw_bars = [_chain_bar_for_timestamp(raw_day_bars, int(ts)) for ts in day_ts_ms]
-        contracts = sorted(full_day.get("contracts", []))
-    else:
-        raw_bars = [{} for _ in range(n_bars_day)]
-        contracts = []
+    raw_bars, contracts = _raw_chain_bars_for_day(day, day_ts_ms)
 
     if contracts:
         chain_mats, _ = _fill_chain_matrices(contracts, raw_bars, day_spot)
@@ -892,7 +936,7 @@ def _process_one_day(args: dict) -> dict:
         chain_mats["contract_right"] = np.zeros(0, dtype=np.int8)
 
     atm_strike_open = round(float(day_spot[0]) / 5.0) * 5.0
-    iv_history: list[float] = []
+    iv_history: list[float] = list(iv_history_seed)
     for local_i in range(n_bars_day):
         mtc = max(BARS_PER_DAY - local_i, 1)
         wide_bar = to_wide_bar(raw_bars[local_i])
@@ -1094,6 +1138,14 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
     slice_label_trade = np.zeros(N, dtype=bool)
     slice_label_trade_valid = np.zeros(N, dtype=bool)
 
+    print("  Precomputing rolling IV history seeds...")
+    iv_history_seeds = _build_iv_history_seeds(
+        unique_dates,
+        day_to_bars,
+        spot_prices,
+        np.asarray(spx_df["timestamp"], dtype=np.int64),
+    )
+
     # Build per-day work items
     work_items: list[dict] = []
     for day in unique_dates:
@@ -1105,6 +1157,7 @@ def build_dataset(output_path: str = OUTPUT_PATH, sidecar_dir: str = SIDECAR_DIR
             "day_X_price": X_price[gi],
             "day_timestamps": np.asarray(spx_df["timestamp"][gi], dtype=np.int64),
             "sidecar_dir": sidecar_dir,
+            "iv_history_seed": iv_history_seeds.get(day, []),
         })
 
     n_workers = min(max(1, os.cpu_count() or 1), len(work_items))

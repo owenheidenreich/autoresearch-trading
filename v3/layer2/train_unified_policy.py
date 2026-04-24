@@ -18,6 +18,9 @@ from v3.harness.rolling_windows import (
 from v3.layer2.action_surface_dataset import (
     DEFAULT_ACTION_SURFACE_DATASET_PATH,
     action_surface_dataset_fingerprint,
+    hybrid_live_utility,
+    required_action_labels_for_target,
+    validate_action_surface_bundle,
 )
 from v3.layer2.common import (
     ensure_dir,
@@ -76,10 +79,13 @@ def parse_args() -> argparse.Namespace:
     # label tuned to the champion Layer-3 median hold. "simulated_l3" uses
     # the simulated-L3 oracle per candidate contract (requires --simulated-l3-oracle).
     p.add_argument("--utility-target", default="time_stop",
-                   choices=("time_stop", "horizon", "simulated_l3"),
+                   choices=("time_stop", "horizon", "simulated_l3", "hybrid_live"),
                    help="Base utility target before --utility-blend mixing.")
     p.add_argument("--simulated-l3-oracle", default="",
                    help="Path to .npz produced by v3.layer2.build_simulated_l3_oracle.")
+    p.add_argument("--w-dollar", type=float, default=0.25)
+    p.add_argument("--w-return", type=float, default=0.25)
+    p.add_argument("--w-win", type=float, default=0.25)
     return p.parse_args()
 
 
@@ -135,6 +141,7 @@ def _slice_inputs(
     utility_blend: float = 0.0,
     utility_target: str = "time_stop",
     simulated_l3_pnl: np.ndarray | None = None,
+    simulated_l3_exit_bar: np.ndarray | None = None,
 ) -> dict[str, Any]:
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
@@ -147,10 +154,10 @@ def _slice_inputs(
                 "(re-run v3.layer2.export_action_surface_dataset)."
             )
         base_raw = action_labels["horizon_pnl"][mask]
-    elif utility_target == "simulated_l3":
+    elif utility_target in {"simulated_l3", "hybrid_live"}:
         if simulated_l3_pnl is None:
             raise RuntimeError(
-                "--utility-target=simulated_l3 requires --simulated-l3-oracle. "
+                f"--utility-target={utility_target} requires --simulated-l3-oracle. "
                 "Run v3.layer2.build_simulated_l3_oracle first."
             )
         base_raw = simulated_l3_pnl[mask]
@@ -159,7 +166,28 @@ def _slice_inputs(
     else:
         raise ValueError(f"unknown utility_target: {utility_target}")
 
-    if utility_blend > 0.0:
+    if utility_target == "hybrid_live":
+        entry_mid = action_labels["entry_fill_mid"][mask]
+        entry_spread = action_labels["entry_spread_fraction"][mask]
+        entry_bar = action_labels["entry_fill_bar"][mask]
+        stopout = action_labels["stopout_risk"][mask]
+        exit_bar = simulated_l3_exit_bar[mask] if simulated_l3_exit_bar is not None else np.full_like(base_raw, np.nan)
+        utility_raw = np.full_like(base_raw, np.nan, dtype=np.float32)
+        for row_i in range(base_raw.shape[0]):
+            for action_i in range(base_raw.shape[1]):
+                utility_raw[row_i, action_i] = np.float32(
+                    hybrid_live_utility(
+                        float(base_raw[row_i, action_i]) if np.isfinite(base_raw[row_i, action_i]) else None,
+                        entry_mid=float(entry_mid[row_i, action_i]),
+                        spread_fraction=float(entry_spread[row_i, action_i]),
+                        stopout_risk=float(stopout[row_i, action_i]),
+                        entry_bar=int(entry_bar[row_i, action_i]) if np.isfinite(entry_bar[row_i, action_i]) else 0,
+                        exit_bar=int(exit_bar[row_i, action_i]) if np.isfinite(exit_bar[row_i, action_i]) and exit_bar[row_i, action_i] >= 0 else None,
+                    )
+                )
+        utility_raw[:, 0] = 0.0
+        utility_arcsinh = np.arcsinh(utility_raw / 100.0).astype(np.float32)
+    elif utility_blend > 0.0:
         alpha = float(utility_blend)
         best_exit = action_labels["best_exit_pnl"][mask]
         nan_mask = ~np.isfinite(base_raw) | ~np.isfinite(best_exit)
@@ -173,6 +201,33 @@ def _slice_inputs(
     else:
         utility_raw = time_stop_raw
         utility_arcsinh = action_labels["utility_arcsinh"][mask]
+    entry_mid_all = action_labels.get("entry_fill_mid")
+    if entry_mid_all is None:
+        premium = np.ones_like(utility_raw, dtype=np.float32) * 100.0
+    else:
+        premium = np.maximum(entry_mid_all[mask].astype(np.float32) * 100.0, 1.0)
+    return_multiple = (base_raw.astype(np.float32) / premium).astype(np.float32)
+    return_multiple[:, 0] = 0.0
+    dollar_target = np.arcsinh(base_raw.astype(np.float32) / 100.0).astype(np.float32)
+    dollar_target[:, 0] = 0.0
+    win_target = (base_raw > 0.0).astype(np.float32)
+    win_target[:, 0] = 0.0
+
+    contract_feature_names = list(meta.get("contract_feature_names", ()))
+    if "risk_band" in contract_feature_names:
+        risk_idx = contract_feature_names.index("risk_band")
+        risk_tokens = bundle["contract_features"][mask, :, risk_idx].astype(np.float32)
+    else:
+        risk_tokens = np.zeros(bundle["contract_features"][mask].shape[:2], dtype=np.float32)
+    risk_band = np.concatenate(
+        [np.full((risk_tokens.shape[0], 1), -1.0, dtype=np.float32), risk_tokens],
+        axis=1,
+    )
+    return_on_premium_label = (
+        action_labels["return_on_premium"][mask]
+        if "return_on_premium" in action_labels
+        else np.full_like(utility_raw, np.nan, dtype=np.float32)
+    )
     out = {
         "rows": rows.loc[mask].copy().reset_index(drop=True),
         "scalar": rows.loc[mask, meta["scalar_feature_names"]].to_numpy(dtype=np.float32),
@@ -183,7 +238,12 @@ def _slice_inputs(
         "contract_strike": bundle["contract_strike"][mask],
         "utility": utility_arcsinh,
         "utility_raw": utility_raw,
+        "dollar": dollar_target,
+        "return_multiple": np.clip(return_multiple, -5.0, 5.0).astype(np.float32),
+        "win": win_target,
+        "risk_band": risk_band,
         "time_stop_raw": time_stop_raw,
+        "return_on_premium": return_on_premium_label,
         "clean": action_labels["clean_entry"][mask],
         "stopout": action_labels["stopout_risk"][mask],
         "mae_10": action_labels["mae_10"][mask],
@@ -209,11 +269,15 @@ def _prediction_frame(
     subset: dict[str, Any],
     pred: dict[str, np.ndarray],
     top_k_contracts: int,
+    contract_feature_names: list[str] | None = None,
 ) -> pd.DataFrame:
     rows = subset["rows"].copy()
     utility = pred["utility"]
     clean_prob = pred["clean_prob"]
     stopout_prob = pred["stopout_prob"]
+    win_prob = pred.get("win_prob", clean_prob)
+    dollar_utility = pred.get("dollar_utility")
+    return_multiple_pred = pred.get("return_multiple")
     tradeable_token_mask = np.nan_to_num(subset["tradeable_mask"][:, 1:], nan=0.0) > 0.5
 
     token_scores = utility[:, 1:].copy()
@@ -234,20 +298,31 @@ def _prediction_frame(
     chosen_time_stop = np.zeros(len(rows), dtype=np.float32)
     chosen_clean_prob = np.zeros(len(rows), dtype=np.float32)
     chosen_stopout_prob = np.zeros(len(rows), dtype=np.float32)
+    chosen_win_prob = np.zeros(len(rows), dtype=np.float32)
+    chosen_dollar_score = np.zeros(len(rows), dtype=np.float32)
+    chosen_return_score = np.zeros(len(rows), dtype=np.float32)
     chosen_clean_label = np.zeros(len(rows), dtype=np.float32)
     chosen_stopout_label = np.zeros(len(rows), dtype=np.float32)
     chosen_mae_10 = np.full(len(rows), np.nan, dtype=np.float32)
+    chosen_return_on_premium = np.full(len(rows), np.nan, dtype=np.float32)
 
     chosen_rows = np.arange(len(rows))[has_trade]
     chosen_cols = chosen_action_id[has_trade]
+    chosen_token_cols = best_token_idx[has_trade]
     if len(chosen_rows) > 0:
         chosen_objective[chosen_rows] = subset["utility_raw"][chosen_rows, chosen_cols]
         chosen_time_stop[chosen_rows] = subset["time_stop_raw"][chosen_rows, chosen_cols]
         chosen_clean_prob[chosen_rows] = clean_prob[chosen_rows, chosen_cols]
         chosen_stopout_prob[chosen_rows] = stopout_prob[chosen_rows, chosen_cols]
+        chosen_win_prob[chosen_rows] = win_prob[chosen_rows, chosen_cols]
+        if dollar_utility is not None:
+            chosen_dollar_score[chosen_rows] = dollar_utility[chosen_rows, chosen_cols]
+        if return_multiple_pred is not None:
+            chosen_return_score[chosen_rows] = return_multiple_pred[chosen_rows, chosen_cols]
         chosen_clean_label[chosen_rows] = subset["clean"][chosen_rows, chosen_cols]
         chosen_stopout_label[chosen_rows] = subset["stopout"][chosen_rows, chosen_cols]
         chosen_mae_10[chosen_rows] = subset["mae_10"][chosen_rows, chosen_cols]
+        chosen_return_on_premium[chosen_rows] = subset["return_on_premium"][chosen_rows, chosen_cols]
 
     rows["flat_score"] = utility[:, 0]
     rows["best_nonflat_score"] = best_token_score
@@ -259,9 +334,27 @@ def _prediction_frame(
     rows["chosen_time_stop_pnl"] = chosen_time_stop
     rows["pred_clean_entry_prob"] = chosen_clean_prob
     rows["pred_stopout_risk"] = chosen_stopout_prob
+    rows["pred_win_prob"] = chosen_win_prob
+    rows["pred_dollar_score"] = chosen_dollar_score
+    rows["pred_return_score"] = chosen_return_score
     rows["chosen_clean_entry_label"] = chosen_clean_label
     rows["chosen_stopout_label"] = chosen_stopout_label
     rows["chosen_mae_10"] = chosen_mae_10
+    rows["chosen_return_on_premium"] = chosen_return_on_premium
+    if contract_feature_names:
+        feature_idx = {name: i for i, name in enumerate(contract_feature_names)}
+        for feature_name, out_name in (
+            ("premium", "chosen_premium"),
+            ("abs_delta", "chosen_abs_delta"),
+            ("slot_role", "chosen_slot_role"),
+            ("moneyness_bucket", "chosen_moneyness_bucket"),
+            ("risk_band", "chosen_risk_band"),
+            ("spread_fraction", "chosen_spread_fraction"),
+        ):
+            values = np.full(len(rows), np.nan, dtype=np.float32)
+            if feature_name in feature_idx and len(chosen_rows) > 0:
+                values[chosen_rows] = subset["contracts"][chosen_rows, chosen_token_cols, feature_idx[feature_name]]
+            rows[out_name] = values
     rows["chosen_time_bucket"] = [
         _timing_bucket(float(pnl), float(mae_10))
         for pnl, mae_10 in zip(chosen_time_stop, chosen_mae_10)
@@ -274,12 +367,32 @@ def _prediction_frame(
     return rows
 
 
-def _select_daily_trades(pred_df: pd.DataFrame, decision_margin: float) -> pd.DataFrame:
-    eligible = pred_df[
+def _select_daily_trades(
+    pred_df: pd.DataFrame,
+    decision_margin: float | None = None,
+    *,
+    abstention_policy: dict[str, Any] | None = None,
+) -> pd.DataFrame:
+    if abstention_policy is not None:
+        decision_margin = float(abstention_policy.get("decision_margin", 0.0))
+        min_win_prob = float(abstention_policy.get("min_win_prob", 0.0))
+        max_stopout_prob = float(abstention_policy.get("max_stopout_prob", 1.0))
+        min_l3_train_trades = int(abstention_policy.get("min_l3_train_trades", 0))
+    else:
+        decision_margin = 0.0 if decision_margin is None else float(decision_margin)
+        min_win_prob = 0.0
+        max_stopout_prob = 1.0
+        min_l3_train_trades = 0
+    eligible_mask = (
         (pred_df["chosen_action_id"] > 0)
         & np.isfinite(pred_df["best_nonflat_score"])
         & (pred_df["decision_margin"] >= decision_margin)
-    ].copy()
+        & (pred_df["pred_win_prob"].fillna(0.0) >= min_win_prob)
+        & (pred_df["pred_stopout_risk"].fillna(1.0) <= max_stopout_prob)
+    )
+    if min_l3_train_trades > 0 and "l3_train_trades" in pred_df:
+        eligible_mask &= pred_df["l3_train_trades"].fillna(0).astype(int) >= min_l3_train_trades
+    eligible = pred_df[eligible_mask].copy()
     if eligible.empty:
         return eligible
     idx = eligible.groupby("day")["best_nonflat_score"].idxmax()
@@ -411,6 +524,85 @@ def _calibrate_decision_margin(
     return best_payload
 
 
+def _calibrate_abstention_policy(
+    val_pred: pd.DataFrame,
+    equity: float,
+    *,
+    pnl_col: str = OBJECTIVE_PNL_COL,
+) -> dict[str, Any]:
+    total_days = int(val_pred["day"].nunique())
+    candidate_base = val_pred.loc[
+        np.isfinite(val_pred["decision_margin"]) & (val_pred["chosen_action_id"] > 0),
+        "decision_margin",
+    ].to_numpy(dtype=np.float64)
+    if candidate_base.size == 0:
+        return {
+            "decision_margin": float("inf"),
+            "min_win_prob": 1.0,
+            "max_stopout_prob": 0.0,
+            "objective_pf": 0.0,
+            "objective_mean_pnl": 0.0,
+            "trade_share": 0.0,
+            "pf": 0.0,
+            "trades": 0,
+            "pf_qualified": False,
+            "in_band": False,
+            "min_l3_train_trades": 40,
+        }
+
+    positive_margins = candidate_base[candidate_base >= 0.0]
+    quantiles = (
+        np.quantile(positive_margins, np.linspace(0.0, 0.95, 16))
+        if positive_margins.size >= 5
+        else np.array([], dtype=np.float64)
+    )
+    margin_grid = np.unique(np.concatenate(([0.0, 0.01, 0.03, 0.05, 0.08, 0.12, 0.18], quantiles)))
+    margin_grid = margin_grid[margin_grid >= 0.0]
+    win_grid = [0.0, 0.35, 0.45, 0.55]
+    stopout_grid = [1.0, 0.70, 0.55, 0.45, 0.35]
+    min_trades_required = max(6, int(round(0.10 * total_days)))
+
+    best_payload = None
+    best_key = None
+    for margin in margin_grid:
+        for min_win in win_grid:
+            for max_stopout in stopout_grid:
+                policy = {
+                    "decision_margin": float(margin),
+                    "min_win_prob": float(min_win),
+                    "max_stopout_prob": float(max_stopout),
+                    "min_l3_train_trades": 40,
+                }
+                trades = _select_daily_trades(val_pred, abstention_policy=policy)
+                metrics = _trade_metrics(trades, equity, total_days, pnl_col=pnl_col)
+                in_band = 0.20 <= metrics["trade_share"] <= 0.70
+                enough_trades = metrics["trades"] >= min_trades_required
+                pf_qualified = enough_trades and float(metrics["pf"]) >= 1.0
+                key = (
+                    1 if (pf_qualified and in_band) else 0,
+                    1 if pf_qualified else 0,
+                    1 if enough_trades else 0,
+                    float(metrics["pf"]),
+                    float(metrics["mean_pnl"]),
+                    -abs(float(metrics["trade_share"]) - 0.45),
+                    float(metrics["trades"]),
+                )
+                if best_key is None or key > best_key:
+                    best_key = key
+                    best_payload = {
+                        **policy,
+                        "objective_pf": float(metrics["pf"]),
+                        "objective_mean_pnl": float(metrics["mean_pnl"]),
+                        "trade_share": float(metrics["trade_share"]),
+                        "pf": float(metrics["pf"]),
+                        "trades": int(metrics["trades"]),
+                        "pf_qualified": bool(pf_qualified),
+                        "in_band": bool(in_band),
+                    }
+    assert best_payload is not None
+    return best_payload
+
+
 def _window_report(
     window_idx: int,
     trades: pd.DataFrame,
@@ -505,6 +697,7 @@ def _aggregate_report(
             "exit_gate_placeholder": False,
         },
     }
+    report["chosen_contract_diagnostics"] = _chosen_contract_diagnostics(chosen_trades)
     if time_stop_reference is not None:
         time_stop_window_pfs = np.asarray(
             [w["time_stop_reference"]["pf"] for w in per_window],
@@ -521,6 +714,52 @@ def _aggregate_report(
     return report
 
 
+def _chosen_contract_diagnostics(chosen_trades: pd.DataFrame) -> dict[str, Any]:
+    if chosen_trades.empty:
+        return {"trades": 0}
+    out: dict[str, Any] = {
+        "trades": int(len(chosen_trades)),
+        "side_counts": {str(k): int(v) for k, v in chosen_trades["chosen_side"].value_counts().items()},
+    }
+    for col in (
+        "chosen_risk_band",
+        "chosen_slot_role",
+        "chosen_moneyness_bucket",
+    ):
+        if col in chosen_trades:
+            out[f"{col}_counts"] = {
+                str(k): int(v)
+                for k, v in chosen_trades[col].round(3).astype(str).value_counts().items()
+            }
+    for col in (
+        "chosen_premium",
+        "chosen_abs_delta",
+        "chosen_spread_fraction",
+        "chosen_return_on_premium",
+        "pred_win_prob",
+        "pred_stopout_risk",
+    ):
+        if col in chosen_trades:
+            values = chosen_trades[col].astype(float).replace([np.inf, -np.inf], np.nan).dropna()
+            if not values.empty:
+                out[col] = {
+                    "mean": float(values.mean()),
+                    "median": float(values.median()),
+                    "q10": float(values.quantile(0.10)),
+                    "q90": float(values.quantile(0.90)),
+                }
+    if "bar_index" in chosen_trades:
+        out["bar_index_counts"] = {
+            str(k): int(v)
+            for k, v in pd.cut(
+                chosen_trades["bar_index"].astype(int),
+                bins=[14, 30, 60, 90, 120, 180, 270, 389],
+                labels=["0945-1000", "1001-1030", "1031-1100", "1101-1130", "1131-1230", "1231-1400", "1401-1559"],
+            ).value_counts(sort=False).items()
+        }
+    return out
+
+
 def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[str, Any]:
     ensure_dir(args.run_dir)
     seed_dir = os.path.join(args.run_dir, f"seed_{seed}")
@@ -529,15 +768,26 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
     bundle = load_export_bundle(args.dataset)
     rows: pd.DataFrame = bundle["rows"]
     meta = bundle["meta"]
+    validate_action_surface_bundle(
+        bundle,
+        required_labels=required_action_labels_for_target(args.utility_target),
+        required_contract_features=(
+            {"risk_band", "slot_role", "moneyness_bucket"}
+            if args.utility_target == "hybrid_live"
+            else set()
+        ),
+    )
     objective_label = _objective_label(args.utility_target, float(args.utility_blend))
     objective_matches_time_stop = args.utility_target == "time_stop" and float(args.utility_blend) == 0.0
 
     simulated_l3_pnl = None
-    if args.utility_target == "simulated_l3":
+    simulated_l3_exit_bar = None
+    if args.utility_target in {"simulated_l3", "hybrid_live"}:
         if not args.simulated_l3_oracle:
-            raise RuntimeError("--utility-target=simulated_l3 requires --simulated-l3-oracle <npz>")
+            raise RuntimeError(f"--utility-target={args.utility_target} requires --simulated-l3-oracle <npz>")
         z = np.load(args.simulated_l3_oracle, allow_pickle=True)
         simulated_l3_pnl = z["l3_exit_pnl"]
+        simulated_l3_exit_bar = z["l3_exit_bar"] if "l3_exit_bar" in z.files else None
         if simulated_l3_pnl.shape[0] != len(rows):
             raise RuntimeError(
                 f"simulated-L3 oracle row count {simulated_l3_pnl.shape[0]} does not "
@@ -572,6 +822,8 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
                 "legacy path/shape compatibility only. Rebuild it for strict row-identity checks.",
                 flush=True,
             )
+        if args.utility_target == "hybrid_live" and simulated_l3_exit_bar is None:
+            raise RuntimeError("hybrid_live target requires l3_exit_bar in the simulated-L3 oracle sidecar.")
         print(f"Loaded simulated-L3 oracle: shape={simulated_l3_pnl.shape} from {args.simulated_l3_oracle}", flush=True)
 
     windows = generate_rolling_windows(sorted(rows["day"].unique().tolist()))
@@ -600,9 +852,30 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
         val_mask = rows["day"].isin(window.val_days).to_numpy()
         oos_mask = rows["day"].isin(window.oos_days).to_numpy()
 
-        fit = _slice_inputs(fit_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target, simulated_l3_pnl=simulated_l3_pnl)
-        val = _slice_inputs(val_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target, simulated_l3_pnl=simulated_l3_pnl)
-        oos = _slice_inputs(oos_mask, bundle, utility_blend=args.utility_blend, utility_target=args.utility_target, simulated_l3_pnl=simulated_l3_pnl)
+        fit = _slice_inputs(
+            fit_mask,
+            bundle,
+            utility_blend=args.utility_blend,
+            utility_target=args.utility_target,
+            simulated_l3_pnl=simulated_l3_pnl,
+            simulated_l3_exit_bar=simulated_l3_exit_bar,
+        )
+        val = _slice_inputs(
+            val_mask,
+            bundle,
+            utility_blend=args.utility_blend,
+            utility_target=args.utility_target,
+            simulated_l3_pnl=simulated_l3_pnl,
+            simulated_l3_exit_bar=simulated_l3_exit_bar,
+        )
+        oos = _slice_inputs(
+            oos_mask,
+            bundle,
+            utility_blend=args.utility_blend,
+            utility_target=args.utility_target,
+            simulated_l3_pnl=simulated_l3_pnl,
+            simulated_l3_exit_bar=simulated_l3_exit_bar,
+        )
 
         predictor, train_info = train_unified_action_model(
             scalar_train=fit["scalar"],
@@ -612,6 +885,10 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             contract_mask_train=fit["contract_mask"],
             utility_train=fit["utility"],
             utility_raw_train=fit["utility_raw"],
+            dollar_train=fit["dollar"],
+            return_train=fit["return_multiple"],
+            win_train=fit["win"],
+            risk_band_train=fit["risk_band"],
             clean_train=fit["clean"],
             stopout_train=fit["stopout"],
             available_mask_train=fit["available_mask"],
@@ -623,6 +900,10 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             contract_mask_val=val["contract_mask"],
             utility_val=val["utility"],
             utility_raw_val=val["utility_raw"],
+            dollar_val=val["dollar"],
+            return_val=val["return_multiple"],
+            win_val=val["win"],
+            risk_band_val=val["risk_band"],
             clean_val=val["clean"],
             stopout_val=val["stopout"],
             available_mask_val=val["available_mask"],
@@ -642,6 +923,9 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             w_regression=args.w_regression,
             w_ranking=args.w_ranking,
             w_side_contrastive=args.w_side_contrastive,
+            w_dollar=args.w_dollar,
+            w_return=args.w_return,
+            w_win=args.w_win,
             w_clean=args.w_clean,
             w_stopout=args.w_stopout,
         )
@@ -656,14 +940,15 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
                 val["contract_mask"],
             ),
             top_k_contracts=int(meta["top_k_contracts_per_side"]),
+            contract_feature_names=list(meta.get("contract_feature_names", ())),
         )
-        calibration = _calibrate_decision_margin(
+        calibration = _calibrate_abstention_policy(
             val_pred,
             args.equity,
             pnl_col=OBJECTIVE_PNL_COL,
         )
         calibration["calibration_objective"] = objective_label
-        val_chosen = _select_daily_trades(val_pred, calibration["decision_margin"]).copy()
+        val_chosen = _select_daily_trades(val_pred, abstention_policy=calibration).copy()
         calibration["objective_metrics"] = _trade_metrics(
             val_chosen,
             args.equity,
@@ -688,10 +973,11 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
                 oos["contract_mask"],
             ),
             top_k_contracts=int(meta["top_k_contracts_per_side"]),
+            contract_feature_names=list(meta.get("contract_feature_names", ())),
         )
         oos_pred["window_idx"] = wi
         oos_pred["seed"] = seed
-        chosen_trades = _select_daily_trades(oos_pred, calibration["decision_margin"]).copy()
+        chosen_trades = _select_daily_trades(oos_pred, abstention_policy=calibration).copy()
         chosen_trades["window_idx"] = wi
         chosen_trades["seed"] = seed
 
@@ -800,6 +1086,9 @@ def main() -> int:
                 "w_regression": float(args.w_regression),
                 "w_ranking": float(args.w_ranking),
                 "w_side_contrastive": float(args.w_side_contrastive),
+                "w_dollar": float(args.w_dollar),
+                "w_return": float(args.w_return),
+                "w_win": float(args.w_win),
                 "w_clean": float(args.w_clean),
                 "w_stopout": float(args.w_stopout),
                 "utility_blend": float(args.utility_blend),

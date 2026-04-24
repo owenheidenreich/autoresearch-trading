@@ -15,6 +15,7 @@ from v3.layer2.action_surface_dataset import (
     DEFAULT_STOPOUT_TARGET_PCT,
     DEFAULT_TOP_K_CONTRACTS,
     DEFAULT_UTILITY_HORIZON_BARS,
+    DEFAULT_CONTRACT_SELECTION_MODE,
     build_action_surface_bundle,
 )
 from v3.layer2.common import save_pickle
@@ -33,6 +34,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--stopout-horizon-bars", type=int, default=DEFAULT_STOPOUT_HORIZON_BARS)
     p.add_argument("--utility-horizon-bars", type=int, default=DEFAULT_UTILITY_HORIZON_BARS,
                    help="Forward bars for the horizon_pnl composed-utility label.")
+    p.add_argument(
+        "--contract-selection-mode",
+        default=DEFAULT_CONTRACT_SELECTION_MODE,
+        choices=("risk_band", "nearest"),
+        help="Contract-token construction mode. risk_band is the live-readiness default.",
+    )
     return p.parse_args()
 
 
@@ -53,6 +60,7 @@ def main() -> int:
         stopout_target_pct=args.stopout_target_pct,
         stopout_horizon_bars=args.stopout_horizon_bars,
         utility_horizon_bars=args.utility_horizon_bars,
+        contract_selection_mode=args.contract_selection_mode,
     )
     save_pickle(args.output, bundle)
 
@@ -68,7 +76,8 @@ def main() -> int:
     )
     print(
         f"History bars={meta['history_bars']} top_k_contracts_per_side={meta['top_k_contracts_per_side']} "
-        f"execution={meta['execution_window']['label']} elapsed={time.time() - t0:.1f}s"
+        f"execution={meta['execution_window']['label']} "
+        f"contract_selection={meta['contract_selection_mode']} elapsed={time.time() - t0:.1f}s"
     )
     return 0
 

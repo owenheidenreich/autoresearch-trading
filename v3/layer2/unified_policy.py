@@ -135,6 +135,9 @@ class Layer2UnifiedActionModel(nn.Module):
             nn.Dropout(dropout),
         )
         self.utility_head = nn.Linear(hidden_dim, 1)
+        self.dollar_head = nn.Linear(hidden_dim, 1)
+        self.return_head = nn.Linear(hidden_dim, 1)
+        self.win_head = nn.Linear(hidden_dim, 1)
         self.clean_head = nn.Linear(hidden_dim, 1)
         self.stopout_head = nn.Linear(hidden_dim, 1)
 
@@ -156,7 +159,7 @@ class Layer2UnifiedActionModel(nn.Module):
         seq_mask: torch.Tensor,
         contracts: torch.Tensor,
         contract_mask: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         del contract_mask  # mask is applied upstream during normalization and lossing.
         scalar_h = self.scalar_proj(scalar)
         seq_h = self._encode_sequence(seq, seq_mask)
@@ -168,17 +171,26 @@ class Layer2UnifiedActionModel(nn.Module):
 
         flat_hidden = self.flat_trunk(state_h)
         flat_utility = self.utility_head(flat_hidden).squeeze(-1)
+        flat_dollar = self.dollar_head(flat_hidden).squeeze(-1)
+        flat_return = self.return_head(flat_hidden).squeeze(-1)
+        flat_win = self.win_head(flat_hidden).squeeze(-1)
         flat_clean = self.clean_head(flat_hidden).squeeze(-1)
         flat_stopout = self.stopout_head(flat_hidden).squeeze(-1)
 
         token_utility = self.utility_head(action_hidden).squeeze(-1)
+        token_dollar = self.dollar_head(action_hidden).squeeze(-1)
+        token_return = self.return_head(action_hidden).squeeze(-1)
+        token_win = self.win_head(action_hidden).squeeze(-1)
         token_clean = self.clean_head(action_hidden).squeeze(-1)
         token_stopout = self.stopout_head(action_hidden).squeeze(-1)
 
         utility = torch.cat([flat_utility.unsqueeze(1), token_utility], dim=1)
+        dollar = torch.cat([flat_dollar.unsqueeze(1), token_dollar], dim=1)
+        ret = torch.cat([flat_return.unsqueeze(1), token_return], dim=1)
+        win = torch.cat([flat_win.unsqueeze(1), token_win], dim=1)
         clean = torch.cat([flat_clean.unsqueeze(1), token_clean], dim=1)
         stopout = torch.cat([flat_stopout.unsqueeze(1), token_stopout], dim=1)
-        return utility, clean, stopout
+        return utility, dollar, ret, win, clean, stopout
 
 
 @dataclass
@@ -206,7 +218,7 @@ class UnifiedActionPredictor:
             depth=self.depth,
             dropout=self.dropout,
         )
-        model.load_state_dict(self.state_dict)
+        model.load_state_dict(self.state_dict, strict=False)
         model.to(device)
         model.eval()
         return model
@@ -230,6 +242,9 @@ class UnifiedActionPredictor:
         device = "cuda" if torch.cuda.is_available() and self.device_hint == "cuda" else "cpu"
         model = self._build_model(device=device)
         utility = np.zeros((len(scalar_n), contracts.shape[1] + 1), dtype=np.float32)
+        dollar_utility = np.zeros_like(utility)
+        return_multiple = np.zeros_like(utility)
+        win_prob = np.zeros_like(utility)
         clean_prob = np.zeros_like(utility)
         stopout_prob = np.zeros_like(utility)
         with torch.inference_mode():
@@ -241,7 +256,7 @@ class UnifiedActionPredictor:
                 contract_b = torch.from_numpy(contracts_n[start:end]).to(device)
                 contract_mask_b = torch.from_numpy(contract_mask[start:end].astype(np.float32)).to(device)
 
-                util_b, clean_b, stopout_b = model(
+                util_b, dollar_b, return_b, win_b, clean_b, stopout_b = model(
                     scalar_b,
                     seq_b,
                     seq_mask_b,
@@ -249,10 +264,16 @@ class UnifiedActionPredictor:
                     contract_mask_b,
                 )
                 utility[start:end] = util_b.detach().cpu().numpy().astype(np.float32, copy=False)
+                dollar_utility[start:end] = dollar_b.detach().cpu().numpy().astype(np.float32, copy=False)
+                return_multiple[start:end] = return_b.detach().cpu().numpy().astype(np.float32, copy=False)
+                win_prob[start:end] = torch.sigmoid(win_b).detach().cpu().numpy().astype(np.float32, copy=False)
                 clean_prob[start:end] = torch.sigmoid(clean_b).detach().cpu().numpy().astype(np.float32, copy=False)
                 stopout_prob[start:end] = torch.sigmoid(stopout_b).detach().cpu().numpy().astype(np.float32, copy=False)
         return {
             "utility": utility,
+            "dollar_utility": dollar_utility,
+            "return_multiple": return_multiple,
+            "win_prob": win_prob,
             "clean_prob": clean_prob,
             "stopout_prob": stopout_prob,
         }
@@ -320,6 +341,47 @@ def _pairwise_ranking_loss(
     return (loss * pair_mask.float()).sum() / denom.float()
 
 
+def _risk_band_ranking_loss(
+    pred_utility: torch.Tensor,
+    target_utility_raw: torch.Tensor,
+    valid_mask: torch.Tensor,
+    risk_band: torch.Tensor,
+    margin: float = 0.16,
+) -> torch.Tensor:
+    """Best-vs-rest hinge, restricted to comparable contract risk bands."""
+    if pred_utility.shape[1] < 2:
+        return pred_utility.new_tensor(0.0)
+    valid = valid_mask > 0.0
+    contract_valid = valid[:, 1:]
+    if not contract_valid.any():
+        return pred_utility.new_tensor(0.0)
+
+    target_contract = torch.where(
+        contract_valid,
+        target_utility_raw[:, 1:],
+        torch.full_like(target_utility_raw[:, 1:], float("-inf")),
+    )
+    best_token = target_contract.argmax(dim=1)
+    row_ids = torch.arange(pred_utility.shape[0], device=pred_utility.device)
+    best_target = target_contract[row_ids, best_token]
+    have_best = torch.isfinite(best_target)
+    if not have_best.any():
+        return pred_utility.new_tensor(0.0)
+
+    token_risk = risk_band[:, 1:]
+    best_risk = token_risk[row_ids, best_token].unsqueeze(1)
+    same_band = contract_valid & (torch.abs(token_risk - best_risk) < 0.5)
+    same_band[row_ids, best_token] = False
+    same_band &= have_best.unsqueeze(1)
+    if not same_band.any():
+        return pred_utility.new_tensor(0.0)
+
+    best_pred = pred_utility[:, 1:][row_ids, best_token].unsqueeze(1)
+    loss = torch.relu(margin - (best_pred - pred_utility[:, 1:]))
+    denom = torch.clamp(same_band.sum(), min=1).float()
+    return (loss * same_band.float()).sum() / denom
+
+
 def _flat_ranking_loss(
     pred_utility: torch.Tensor,
     target_utility_raw: torch.Tensor,
@@ -357,6 +419,69 @@ def _flat_ranking_loss(
     return 0.5 * (pos_term + neg_term)
 
 
+def _side_contrastive_loss(
+    pred_utility: torch.Tensor,
+    target_utility_raw: torch.Tensor,
+    valid_mask: torch.Tensor,
+    margin: float = 0.20,
+    utility_eps: float = 10.0,
+) -> torch.Tensor:
+    """Force direct same-bar call-vs-put discrimination.
+
+    Best-vs-rest ranking can be satisfied by a global side prior if the model
+    already likes one side and only needs to sort contracts within it. This
+    term asks a simpler question the previous objective never asked directly:
+    on bars where the best call and best put meaningfully disagree, did we
+    score the better side above the worse side?
+    """
+    n_actions = pred_utility.shape[1]
+    n_contracts = n_actions - 1
+    if n_contracts < 2 or (n_contracts % 2) != 0:
+        return pred_utility.new_tensor(0.0)
+
+    top_k = n_contracts // 2
+    call_valid = valid_mask[:, 1 : 1 + top_k] > 0.0
+    put_valid = valid_mask[:, 1 + top_k :] > 0.0
+    if not call_valid.any() or not put_valid.any():
+        return pred_utility.new_tensor(0.0)
+
+    call_target = torch.where(
+        call_valid,
+        target_utility_raw[:, 1 : 1 + top_k],
+        torch.full_like(target_utility_raw[:, 1 : 1 + top_k], float("-inf")),
+    )
+    put_target = torch.where(
+        put_valid,
+        target_utility_raw[:, 1 + top_k :],
+        torch.full_like(target_utility_raw[:, 1 + top_k :], float("-inf")),
+    )
+    row_ids = torch.arange(pred_utility.shape[0], device=pred_utility.device)
+    best_call_idx = call_target.argmax(dim=1)
+    best_put_idx = put_target.argmax(dim=1)
+
+    best_call_target = call_target[row_ids, best_call_idx]
+    best_put_target = put_target[row_ids, best_put_idx]
+    best_call_pred = pred_utility[:, 1 : 1 + top_k][row_ids, best_call_idx]
+    best_put_pred = pred_utility[:, 1 + top_k :][row_ids, best_put_idx]
+
+    have_both = (
+        call_valid.any(dim=1)
+        & put_valid.any(dim=1)
+        & torch.isfinite(best_call_target)
+        & torch.isfinite(best_put_target)
+    )
+    call_better = have_both & (best_call_target >= best_put_target + utility_eps)
+    put_better = have_both & (best_put_target >= best_call_target + utility_eps)
+    if not call_better.any() and not put_better.any():
+        return pred_utility.new_tensor(0.0)
+
+    call_loss = torch.relu(margin - (best_call_pred - best_put_pred))
+    put_loss = torch.relu(margin - (best_put_pred - best_call_pred))
+    total = call_loss * call_better.float() + put_loss * put_better.float()
+    denom = torch.clamp(call_better.sum() + put_better.sum(), min=1).float()
+    return total.sum() / denom
+
+
 def train_unified_action_model(
     *,
     scalar_train: np.ndarray,
@@ -366,6 +491,10 @@ def train_unified_action_model(
     contract_mask_train: np.ndarray,
     utility_train: np.ndarray,
     utility_raw_train: np.ndarray,
+    dollar_train: np.ndarray,
+    return_train: np.ndarray,
+    win_train: np.ndarray,
+    risk_band_train: np.ndarray,
     clean_train: np.ndarray,
     stopout_train: np.ndarray,
     available_mask_train: np.ndarray,
@@ -377,6 +506,10 @@ def train_unified_action_model(
     contract_mask_val: np.ndarray,
     utility_val: np.ndarray,
     utility_raw_val: np.ndarray,
+    dollar_val: np.ndarray,
+    return_val: np.ndarray,
+    win_val: np.ndarray,
+    risk_band_val: np.ndarray,
     clean_val: np.ndarray,
     stopout_val: np.ndarray,
     available_mask_val: np.ndarray,
@@ -395,6 +528,10 @@ def train_unified_action_model(
     patience: int,
     w_regression: float,
     w_ranking: float,
+    w_side_contrastive: float,
+    w_dollar: float,
+    w_return: float,
+    w_win: float,
     w_clean: float,
     w_stopout: float,
 ) -> tuple[UnifiedActionPredictor, dict[str, float]]:
@@ -433,6 +570,14 @@ def train_unified_action_model(
     utility_val_filled = np.nan_to_num(utility_val, nan=0.0).astype(np.float32)
     utility_raw_train_filled = np.nan_to_num(utility_raw_train, nan=-1e9).astype(np.float32)
     utility_raw_val_filled = np.nan_to_num(utility_raw_val, nan=-1e9).astype(np.float32)
+    dollar_train_filled = np.nan_to_num(dollar_train, nan=0.0).astype(np.float32)
+    dollar_val_filled = np.nan_to_num(dollar_val, nan=0.0).astype(np.float32)
+    return_train_filled = np.nan_to_num(return_train, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+    return_val_filled = np.nan_to_num(return_val, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+    win_train_filled = np.nan_to_num(win_train, nan=0.0).astype(np.float32)
+    win_val_filled = np.nan_to_num(win_val, nan=0.0).astype(np.float32)
+    risk_band_train_filled = np.nan_to_num(risk_band_train, nan=-1.0).astype(np.float32)
+    risk_band_val_filled = np.nan_to_num(risk_band_val, nan=-1.0).astype(np.float32)
 
     abs_utility = np.abs(np.nan_to_num(utility_raw_train, nan=0.0))
     reg_weight_train = (0.5 + np.clip(abs_utility / 250.0, 0.0, 3.0)).astype(np.float32)
@@ -466,6 +611,10 @@ def train_unified_action_model(
         torch.from_numpy(contract_mask_train.astype(np.float32)),
         torch.from_numpy(utility_train_filled),
         torch.from_numpy(utility_raw_train_filled),
+        torch.from_numpy(dollar_train_filled),
+        torch.from_numpy(return_train_filled),
+        torch.from_numpy(win_train_filled),
+        torch.from_numpy(risk_band_train_filled),
         torch.from_numpy(reg_mask_train),
         torch.from_numpy(reg_weight_train),
         torch.from_numpy(clean_train_filled),
@@ -482,6 +631,10 @@ def train_unified_action_model(
         torch.from_numpy(contract_mask_val.astype(np.float32)),
         torch.from_numpy(utility_val_filled),
         torch.from_numpy(utility_raw_val_filled),
+        torch.from_numpy(dollar_val_filled),
+        torch.from_numpy(return_val_filled),
+        torch.from_numpy(win_val_filled),
+        torch.from_numpy(risk_band_val_filled),
         torch.from_numpy(reg_mask_val),
         torch.from_numpy(reg_weight_val),
         torch.from_numpy(clean_val_filled),
@@ -524,6 +677,10 @@ def train_unified_action_model(
                 contract_mask_b,
                 utility_b,
                 utility_raw_b,
+                dollar_b,
+                return_b,
+                win_b,
+                risk_band_b,
                 reg_mask_b,
                 reg_weight_b,
                 clean_b,
@@ -534,7 +691,7 @@ def train_unified_action_model(
             ) = [x.to(device) for x in batch]
 
             optimizer.zero_grad()
-            utility_pred, clean_pred, stopout_pred = model(
+            utility_pred, dollar_pred, return_pred, win_pred, clean_pred, stopout_pred = model(
                 scalar_b,
                 seq_b,
                 seq_mask_b,
@@ -542,14 +699,24 @@ def train_unified_action_model(
                 contract_mask_b,
             )
             reg_loss = _masked_weighted_huber(utility_pred, utility_b, reg_mask_b, reg_weight_b)
-            rank_loss = _pairwise_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
+            rank_loss = _risk_band_ranking_loss(utility_pred, utility_raw_b, tradeable_b, risk_band_b)
+            cross_rank_loss = _pairwise_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
             flat_rank_loss = _flat_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
+            side_loss = _side_contrastive_loss(utility_pred, utility_raw_b, tradeable_b)
+            dollar_loss = _masked_weighted_huber(dollar_pred, dollar_b, reg_mask_b, reg_weight_b)
+            return_loss = _masked_weighted_huber(return_pred, return_b, reg_mask_b, reg_weight_b)
+            win_loss = _masked_bce(win_pred, win_b, reg_mask_b)
             clean_loss = _masked_bce(clean_pred, clean_b, clean_mask_b)
             stopout_loss = _masked_bce(stopout_pred, stopout_b, stopout_mask_b)
             total_loss = (
                 w_regression * reg_loss
                 + w_ranking * rank_loss
+                + 0.5 * w_ranking * cross_rank_loss
                 + w_ranking * flat_rank_loss
+                + w_side_contrastive * side_loss
+                + w_dollar * dollar_loss
+                + w_return * return_loss
+                + w_win * win_loss
                 + w_clean * clean_loss
                 + w_stopout * stopout_loss
             )
@@ -561,6 +728,10 @@ def train_unified_action_model(
         val_totals: list[float] = []
         val_regs: list[float] = []
         val_ranks: list[float] = []
+        val_sides: list[float] = []
+        val_dollars: list[float] = []
+        val_returns: list[float] = []
+        val_wins: list[float] = []
         val_cleans: list[float] = []
         val_stopouts: list[float] = []
         with torch.inference_mode():
@@ -573,6 +744,10 @@ def train_unified_action_model(
                     contract_mask_b,
                     utility_b,
                     utility_raw_b,
+                    dollar_b,
+                    return_b,
+                    win_b,
+                    risk_band_b,
                     reg_mask_b,
                     reg_weight_b,
                     clean_b,
@@ -581,7 +756,7 @@ def train_unified_action_model(
                     stopout_mask_b,
                     tradeable_b,
                 ) = [x.to(device) for x in batch]
-                utility_pred, clean_pred, stopout_pred = model(
+                utility_pred, dollar_pred, return_pred, win_pred, clean_pred, stopout_pred = model(
                     scalar_b,
                     seq_b,
                     seq_mask_b,
@@ -589,20 +764,34 @@ def train_unified_action_model(
                     contract_mask_b,
                 )
                 reg_loss = _masked_weighted_huber(utility_pred, utility_b, reg_mask_b, reg_weight_b)
-                rank_loss = _pairwise_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
+                rank_loss = _risk_band_ranking_loss(utility_pred, utility_raw_b, tradeable_b, risk_band_b)
+                cross_rank_loss = _pairwise_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
                 flat_rank_loss = _flat_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
+                side_loss = _side_contrastive_loss(utility_pred, utility_raw_b, tradeable_b)
+                dollar_loss = _masked_weighted_huber(dollar_pred, dollar_b, reg_mask_b, reg_weight_b)
+                return_loss = _masked_weighted_huber(return_pred, return_b, reg_mask_b, reg_weight_b)
+                win_loss = _masked_bce(win_pred, win_b, reg_mask_b)
                 clean_loss = _masked_bce(clean_pred, clean_b, clean_mask_b)
                 stopout_loss = _masked_bce(stopout_pred, stopout_b, stopout_mask_b)
                 total_loss = (
                     w_regression * reg_loss
                     + w_ranking * rank_loss
+                    + 0.5 * w_ranking * cross_rank_loss
                     + w_ranking * flat_rank_loss
+                    + w_side_contrastive * side_loss
+                    + w_dollar * dollar_loss
+                    + w_return * return_loss
+                    + w_win * win_loss
                     + w_clean * clean_loss
                     + w_stopout * stopout_loss
                 )
                 val_totals.append(float(total_loss.item()))
                 val_regs.append(float(reg_loss.item()))
-                val_ranks.append(float(rank_loss.item()) + float(flat_rank_loss.item()))
+                val_ranks.append(float(rank_loss.item()) + float(cross_rank_loss.item()) + float(flat_rank_loss.item()))
+                val_sides.append(float(side_loss.item()))
+                val_dollars.append(float(dollar_loss.item()))
+                val_returns.append(float(return_loss.item()))
+                val_wins.append(float(win_loss.item()))
                 val_cleans.append(float(clean_loss.item()))
                 val_stopouts.append(float(stopout_loss.item()))
 
@@ -615,6 +804,10 @@ def train_unified_action_model(
             best_parts = {
                 "best_regression_val_loss": float(np.mean(val_regs)) if val_regs else float("inf"),
                 "best_ranking_val_loss": float(np.mean(val_ranks)) if val_ranks else float("inf"),
+                "best_side_contrastive_val_loss": float(np.mean(val_sides)) if val_sides else float("inf"),
+                "best_dollar_val_loss": float(np.mean(val_dollars)) if val_dollars else float("inf"),
+                "best_return_val_loss": float(np.mean(val_returns)) if val_returns else float("inf"),
+                "best_win_val_loss": float(np.mean(val_wins)) if val_wins else float("inf"),
                 "best_clean_val_loss": float(np.mean(val_cleans)) if val_cleans else float("inf"),
                 "best_stopout_val_loss": float(np.mean(val_stopouts)) if val_stopouts else float("inf"),
             }
@@ -644,6 +837,10 @@ def train_unified_action_model(
         "best_epoch": float(best_epoch),
         "train_rows": float(len(scalar_train)),
         "val_rows": float(len(scalar_val)),
+        "w_side_contrastive": float(w_side_contrastive),
+        "w_dollar": float(w_dollar),
+        "w_return": float(w_return),
+        "w_win": float(w_win),
         **best_parts,
     }
     return predictor, training_info
