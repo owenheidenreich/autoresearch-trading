@@ -1368,12 +1368,14 @@ cmd_run_v3_live_promotion() {
     rm -f "$v3_bundle"
     source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
     source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
-    log "Packaging v3 source sync (git=$source_git_sha, dirty=$source_dirty_count)..."
+    log "Packaging v2+v3 source sync (git=$source_git_sha, dirty=$source_dirty_count)..."
     tar -h -czf "$v3_bundle" -C "$PROJECT_ROOT" \
         --no-mac-metadata --no-xattrs \
         --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
-        --exclude='v3/artifacts' \
-        v3
+        --exclude='v3/artifacts' --exclude='v2/artifacts' \
+        --exclude='v2/data*.pt' --exclude='v2/data_sidecars' \
+        --exclude='v2/models' --exclude='v2/output' --exclude='v2/runs' \
+        v2 v3
     scp_retry "$v3_bundle" "root@$SSH_HOST:/root/v3-sync.tgz"
     rm -f "$v3_bundle"
     ssh_cmd "cd /root && tar -xzf v3-sync.tgz 2>/dev/null && rm -f v3-sync.tgz"
@@ -1396,6 +1398,9 @@ cmd_run_v3_live_promotion() {
     done
 
     local env_prefix="${TRAIN_ENV:-}"
+    local sb_weight="${V3_SIDE_BALANCE_WEIGHT:-0.0}"
+    local w_side="${V3_W_SIDE_CONTRASTIVE:-0.0}"
+    log "side_balance_weight=$sb_weight, w_side_contrastive=$w_side"
     local run_dirs=()
     local idx=0
     for seed in 42 43 44; do
@@ -1408,7 +1413,7 @@ cmd_run_v3_live_promotion() {
         ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
         log ""
         log "--- seed $seed -> $run_dir_rel (oracle: $oracle_remote_rel) ---"
-        ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v3.layer2.train_unified_policy --tier promotion --device cuda --seed $seed --seeds $seed --dataset $dataset_remote_rel --utility-target hybrid_live --simulated-l3-oracle $oracle_remote_rel --run-dir $run_dir_rel 2>&1 | tee /root/run.log" || log "WARNING: seed $seed run reported non-zero status"
+        ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v3.layer2.train_unified_policy --tier promotion --device cuda --seed $seed --seeds $seed --dataset $dataset_remote_rel --utility-target hybrid_live --simulated-l3-oracle $oracle_remote_rel --side-balance-weight $sb_weight --w-side-contrastive $w_side --run-dir $run_dir_rel 2>&1 | tee /root/run.log" || log "WARNING: seed $seed run reported non-zero status"
     done
 
     # Download each seed's run-dir back.
