@@ -1,0 +1,1260 @@
+{
+  "best_threshold_by_aggregate_pf_exploratory": {
+    "overall": {
+      "gross_loss": 57488.09036088643,
+      "gross_profit": 138116.57084658134,
+      "max_dd_pct": 8.84047608039385,
+      "mean_bars_held": 88.53448275862068,
+      "mean_pnl": 231.69103587843364,
+      "pf": 2.4025249400274507,
+      "trades": 348.0
+    },
+    "per_window": [
+      {
+        "exit_expert": "entry_policy",
+        "gross_loss": 0.0,
+        "gross_profit": 903.0000570714474,
+        "max_dd_pct": 0.0,
+        "mean_bars_held": 208.0,
+        "mean_pnl": 903.0000570714474,
+        "pf": Infinity,
+        "trades": 1.0,
+        "window_idx": 0
+      },
+      {
+        "exit_expert": "entry_policy",
+        "gross_loss": 14008.067528100517,
+        "gross_profit": 35053.167430325884,
+        "max_dd_pct": 9.07696473663156,
+        "mean_bars_held": 198.55357142857142,
+        "mean_pnl": 375.8053553968816,
+        "pf": 2.5023556861079084,
+        "trades": 56.0,
+        "window_idx": 1
+      },
+      {
+        "exit_expert": "entry_policy",
+        "gross_loss": 1576.1107504773368,
+        "gross_profit": 318.63577215671955,
+        "max_dd_pct": 5.0298999132824544,
+        "mean_bars_held": 50.833333333333336,
+        "mean_pnl": -209.5791630534362,
+        "pf": 0.20216585164476442,
+        "trades": 6.0,
+        "window_idx": 2
+      },
+      {
+        "exit_expert": "candidate_surface",
+        "gross_loss": 6070.7239240760355,
+        "gross_profit": 12946.7554765068,
+        "max_dd_pct": 4.124839940962978,
+        "mean_bars_held": 49.87179487179487,
+        "mean_pnl": 176.30850134437858,
+        "pf": 2.132654299293852,
+        "trades": 39.0,
+        "window_idx": 3
+      },
+      {
+        "exit_expert": "candidate_surface",
+        "gross_loss": 636.7512007789466,
+        "gross_profit": 3950.1335955458494,
+        "max_dd_pct": 0.9426319847271467,
+        "mean_bars_held": 69.0,
+        "mean_pnl": 368.15359941854484,
+        "pf": 6.203574631211683,
+        "trades": 9.0,
+        "window_idx": 4
+      },
+      {
+        "exit_expert": "candidate_surface",
+        "gross_loss": 1090.8898740584402,
+        "gross_profit": 5308.723958256447,
+        "max_dd_pct": 2.814590980616949,
+        "mean_bars_held": 94.77777777777777,
+        "mean_pnl": 468.6482315775563,
+        "pf": 4.8664160191591,
+        "trades": 9.0,
+        "window_idx": 5
+      },
+      {
+        "exit_expert": "candidate_surface",
+        "gross_loss": 1518.0348485098853,
+        "gross_profit": 5557.1355284278025,
+        "max_dd_pct": 3.225972295995415,
+        "mean_bars_held": 90.88888888888889,
+        "mean_pnl": 448.7889644353241,
+        "pf": 3.6607430546688238,
+        "trades": 9.0,
+        "window_idx": 6
+      },
+      {
+        "exit_expert": "entry_policy",
+        "gross_loss": 5927.904727662025,
+        "gross_profit": 2855.466306443268,
+        "max_dd_pct": 15.334498286375235,
+        "mean_bars_held": 72.77272727272727,
+        "mean_pnl": -139.65629187357987,
+        "pf": 0.48169908890716406,
+        "trades": 22.0,
+        "window_idx": 7
+      },
+      {
+        "exit_expert": "candidate_surface",
+        "gross_loss": 7238.590645362933,
+        "gross_profit": 29383.85056495824,
+        "max_dd_pct": 6.325441373776436,
+        "mean_bars_held": 75.71428571428571,
+        "mean_pnl": 395.45106999277334,
+        "pf": 4.059333094596479,
+        "trades": 56.0,
+        "window_idx": 8
+      },
+      {
+        "exit_expert": "entry_policy",
+        "gross_loss": 964.3068354082191,
+        "gross_profit": 2212.5800770678784,
+        "max_dd_pct": 3.3124505366612316,
+        "mean_bars_held": 54.8,
+        "mean_pnl": 249.65464833193187,
+        "pf": 2.2944772305085124,
+        "trades": 5.0,
+        "window_idx": 9
+      },
+      {
+        "exit_expert": "candidate_surface",
+        "gross_loss": 5913.095511480594,
+        "gross_profit": 15292.604195759832,
+        "max_dd_pct": 4.353884717110282,
+        "mean_bars_held": 48.5,
+        "mean_pnl": 173.69460526443038,
+        "pf": 2.5862264808793323,
+        "trades": 54.0,
+        "window_idx": 10
+      },
+      {
+        "exit_expert": "candidate_surface",
+        "gross_loss": 7204.144520028204,
+        "gross_profit": 13015.526069113526,
+        "max_dd_pct": 6.016749191881724,
+        "mean_bars_held": 71.43478260869566,
+        "mean_pnl": 126.33438150185485,
+        "pf": 1.8066719834574572,
+        "trades": 46.0,
+        "window_idx": 11
+      },
+      {
+        "exit_expert": "entry_policy",
+        "gross_loss": 5339.469994943296,
+        "gross_profit": 11318.991814947642,
+        "max_dd_pct": 6.250167418200821,
+        "mean_bars_held": 81.13888888888889,
+        "mean_pnl": 166.09782833345403,
+        "pf": 2.1198717898344226,
+        "trades": 36.0,
+        "window_idx": 12
+      }
+    ],
+    "threshold": 0.15
+  },
+  "entry_time_stop_baseline": {
+    "gross_loss": 129236.44694323595,
+    "gross_profit": 156311.98138520154,
+    "max_dd_pct": 16.690904185626778,
+    "mean_bars_held": 178.94540229885058,
+    "mean_pnl": 77.80325989070575,
+    "pf": 1.2095038596492667,
+    "trades": 348.0
+  },
+  "l3_training": {
+    "candidate_dataset_meta": {
+      "n_input_trades": 3120,
+      "n_skipped": 0,
+      "n_trade_datasets": 3120
+    },
+    "candidate_policy_meta": {
+      "call_share": 0.5,
+      "dataset_path": "v3/artifacts/layer2_action_surface_dataset_spx_live_0945_1130.pkl",
+      "max_per_day": 4,
+      "n_days": 780,
+      "n_trades": 3120,
+      "put_share": 0.5,
+      "skipped_days_without_oos_window": 206,
+      "source": "action_surface_candidate_sample",
+      "total_tradeable_candidates_seen": 939983
+    },
+    "entry_policy_dataset_meta": {
+      "n_input_trades": 364,
+      "n_skipped": 16,
+      "n_trade_datasets": 348
+    },
+    "source": "routed_experts"
+  },
+  "meta": {
+    "candidate_dataset": "v3/artifacts/layer2_action_surface_dataset_spx_live_0945_1130.pkl",
+    "candidate_train_max_per_day": 4,
+    "chosen_trades": "v3/artifacts/layer2_unified_policy_spx_live_hybrid_001_seed43/seed_43/chosen_trades.pkl",
+    "commission": 1.0,
+    "entry_patience_threshold": null,
+    "entry_policy_meta": {
+      "call_share": 0.9423076923076923,
+      "chosen_trades_path": "v3/artifacts/layer2_unified_policy_spx_live_hybrid_001_seed43/seed_43/chosen_trades.pkl",
+      "n_trades": 364,
+      "put_share": 0.057692307692307696,
+      "source": "unified_policy"
+    },
+    "entry_source": "unified",
+    "exit_thresholds": [
+      0.15,
+      0.19,
+      0.2,
+      0.25,
+      0.3
+    ],
+    "fold0_fallback": "time_stop",
+    "fold0_fallback_bars": 90,
+    "l3_training_source": "routed_experts",
+    "min_train_trades": 40,
+    "note": "Threshold comparison is exploratory. The best threshold in this report is not a deployment-calibrated value because it is picked on the same rolling OOS windows used for evaluation.",
+    "out_dir": "v3/artifacts/layer3_unified_spx_live_hybrid_routed_seed43",
+    "seed": 43,
+    "session_end_bar": 375,
+    "surface_dir": "v3/artifacts/layer25_entry_patience_surface",
+    "trade_state_features": [
+      "bars_since_entry",
+      "bars_to_session_end",
+      "current_pnl_norm",
+      "mfe_norm",
+      "mae_norm",
+      "mfe_bar_age",
+      "direction_is_call"
+    ]
+  },
+  "threshold_results": [
+    {
+      "overall": {
+        "gross_loss": 57488.09036088643,
+        "gross_profit": 138116.57084658134,
+        "max_dd_pct": 8.84047608039385,
+        "mean_bars_held": 88.53448275862068,
+        "mean_pnl": 231.69103587843364,
+        "pf": 2.4025249400274507,
+        "trades": 348.0
+      },
+      "per_window": [
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 0.0,
+          "gross_profit": 903.0000570714474,
+          "max_dd_pct": 0.0,
+          "mean_bars_held": 208.0,
+          "mean_pnl": 903.0000570714474,
+          "pf": Infinity,
+          "trades": 1.0,
+          "window_idx": 0
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 14008.067528100517,
+          "gross_profit": 35053.167430325884,
+          "max_dd_pct": 9.07696473663156,
+          "mean_bars_held": 198.55357142857142,
+          "mean_pnl": 375.8053553968816,
+          "pf": 2.5023556861079084,
+          "trades": 56.0,
+          "window_idx": 1
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 1576.1107504773368,
+          "gross_profit": 318.63577215671955,
+          "max_dd_pct": 5.0298999132824544,
+          "mean_bars_held": 50.833333333333336,
+          "mean_pnl": -209.5791630534362,
+          "pf": 0.20216585164476442,
+          "trades": 6.0,
+          "window_idx": 2
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 6070.7239240760355,
+          "gross_profit": 12946.7554765068,
+          "max_dd_pct": 4.124839940962978,
+          "mean_bars_held": 49.87179487179487,
+          "mean_pnl": 176.30850134437858,
+          "pf": 2.132654299293852,
+          "trades": 39.0,
+          "window_idx": 3
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 636.7512007789466,
+          "gross_profit": 3950.1335955458494,
+          "max_dd_pct": 0.9426319847271467,
+          "mean_bars_held": 69.0,
+          "mean_pnl": 368.15359941854484,
+          "pf": 6.203574631211683,
+          "trades": 9.0,
+          "window_idx": 4
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 1090.8898740584402,
+          "gross_profit": 5308.723958256447,
+          "max_dd_pct": 2.814590980616949,
+          "mean_bars_held": 94.77777777777777,
+          "mean_pnl": 468.6482315775563,
+          "pf": 4.8664160191591,
+          "trades": 9.0,
+          "window_idx": 5
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 1518.0348485098853,
+          "gross_profit": 5557.1355284278025,
+          "max_dd_pct": 3.225972295995415,
+          "mean_bars_held": 90.88888888888889,
+          "mean_pnl": 448.7889644353241,
+          "pf": 3.6607430546688238,
+          "trades": 9.0,
+          "window_idx": 6
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 5927.904727662025,
+          "gross_profit": 2855.466306443268,
+          "max_dd_pct": 15.334498286375235,
+          "mean_bars_held": 72.77272727272727,
+          "mean_pnl": -139.65629187357987,
+          "pf": 0.48169908890716406,
+          "trades": 22.0,
+          "window_idx": 7
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 7238.590645362933,
+          "gross_profit": 29383.85056495824,
+          "max_dd_pct": 6.325441373776436,
+          "mean_bars_held": 75.71428571428571,
+          "mean_pnl": 395.45106999277334,
+          "pf": 4.059333094596479,
+          "trades": 56.0,
+          "window_idx": 8
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 964.3068354082191,
+          "gross_profit": 2212.5800770678784,
+          "max_dd_pct": 3.3124505366612316,
+          "mean_bars_held": 54.8,
+          "mean_pnl": 249.65464833193187,
+          "pf": 2.2944772305085124,
+          "trades": 5.0,
+          "window_idx": 9
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 5913.095511480594,
+          "gross_profit": 15292.604195759832,
+          "max_dd_pct": 4.353884717110282,
+          "mean_bars_held": 48.5,
+          "mean_pnl": 173.69460526443038,
+          "pf": 2.5862264808793323,
+          "trades": 54.0,
+          "window_idx": 10
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 7204.144520028204,
+          "gross_profit": 13015.526069113526,
+          "max_dd_pct": 6.016749191881724,
+          "mean_bars_held": 71.43478260869566,
+          "mean_pnl": 126.33438150185485,
+          "pf": 1.8066719834574572,
+          "trades": 46.0,
+          "window_idx": 11
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 5339.469994943296,
+          "gross_profit": 11318.991814947642,
+          "max_dd_pct": 6.250167418200821,
+          "mean_bars_held": 81.13888888888889,
+          "mean_pnl": 166.09782833345403,
+          "pf": 2.1198717898344226,
+          "trades": 36.0,
+          "window_idx": 12
+        }
+      ],
+      "threshold": 0.15
+    },
+    {
+      "overall": {
+        "gross_loss": 69751.26551818167,
+        "gross_profit": 151977.1757376739,
+        "max_dd_pct": 8.84047608039385,
+        "mean_bars_held": 108.74712643678161,
+        "mean_pnl": 236.2813512054375,
+        "pf": 2.1788447078147835,
+        "trades": 348.0
+      },
+      "per_window": [
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 0.0,
+          "gross_profit": 903.0000570714474,
+          "max_dd_pct": 0.0,
+          "mean_bars_held": 208.0,
+          "mean_pnl": 903.0000570714474,
+          "pf": Infinity,
+          "trades": 1.0,
+          "window_idx": 0
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 14008.067528100517,
+          "gross_profit": 35053.167430325884,
+          "max_dd_pct": 9.07696473663156,
+          "mean_bars_held": 198.55357142857142,
+          "mean_pnl": 375.8053553968816,
+          "pf": 2.5023556861079084,
+          "trades": 56.0,
+          "window_idx": 1
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 2103.1468148900112,
+          "gross_profit": 1019.0679298906632,
+          "max_dd_pct": 6.3944331879498355,
+          "mean_bars_held": 126.66666666666667,
+          "mean_pnl": -180.67981416655797,
+          "pf": 0.4845443611809657,
+          "trades": 6.0,
+          "window_idx": 2
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 7121.558646669158,
+          "gross_profit": 14765.124047290677,
+          "max_dd_pct": 6.74482087433122,
+          "mean_bars_held": 71.38461538461539,
+          "mean_pnl": 195.9888564261928,
+          "pf": 2.073299509257922,
+          "trades": 39.0,
+          "window_idx": 3
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 676.1132408336215,
+          "gross_profit": 3860.114560801928,
+          "max_dd_pct": 1.450739994845392,
+          "mean_bars_held": 89.55555555555556,
+          "mean_pnl": 353.7779244409229,
+          "pf": 5.709272245641212,
+          "trades": 9.0,
+          "window_idx": 4
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 222.14814692690837,
+          "gross_profit": 940.8854143983812,
+          "max_dd_pct": 0.40923766763198943,
+          "mean_bars_held": 41.22222222222222,
+          "mean_pnl": 79.85969638571919,
+          "pf": 4.235396186797602,
+          "trades": 9.0,
+          "window_idx": 5
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 362.5641927884648,
+          "gross_profit": 882.5406143290759,
+          "max_dd_pct": 0.8351791036518533,
+          "mean_bars_held": 29.11111111111111,
+          "mean_pnl": 57.775157948956775,
+          "pf": 2.434163747780761,
+          "trades": 9.0,
+          "window_idx": 6
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 8060.002322141148,
+          "gross_profit": 9036.96924054251,
+          "max_dd_pct": 18.270569270930412,
+          "mean_bars_held": 134.8181818181818,
+          "mean_pnl": 44.407587200061904,
+          "pf": 1.1212117415546636,
+          "trades": 22.0,
+          "window_idx": 7
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 10510.299389451598,
+          "gross_profit": 34631.859190497846,
+          "max_dd_pct": 6.534237681665779,
+          "mean_bars_held": 110.75,
+          "mean_pnl": 430.7421393043973,
+          "pf": 3.2950402179080887,
+          "trades": 56.0,
+          "window_idx": 8
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 964.3068354082191,
+          "gross_profit": 3408.6300026639638,
+          "max_dd_pct": 3.172670825638449,
+          "mean_bars_held": 61.8,
+          "mean_pnl": 488.86463345114896,
+          "pf": 3.534798134269153,
+          "trades": 5.0,
+          "window_idx": 9
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 7690.729080779102,
+          "gross_profit": 18244.85907058156,
+          "max_dd_pct": 3.498745900483856,
+          "mean_bars_held": 86.0925925925926,
+          "mean_pnl": 195.4468516630085,
+          "pf": 2.372318525194139,
+          "trades": 54.0,
+          "window_idx": 10
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 9080.988243046775,
+          "gross_profit": 18251.9615671074,
+          "max_dd_pct": 8.856310512838357,
+          "mean_bars_held": 79.52173913043478,
+          "mean_pnl": 199.36898530566577,
+          "pf": 2.0099091727249783,
+          "trades": 46.0,
+          "window_idx": 11
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 8951.341077146137,
+          "gross_profit": 10978.996612172561,
+          "max_dd_pct": 11.703276360302807,
+          "mean_bars_held": 104.16666666666667,
+          "mean_pnl": 56.32376486184511,
+          "pf": 1.2265197491137139,
+          "trades": 36.0,
+          "window_idx": 12
+        }
+      ],
+      "threshold": 0.19
+    },
+    {
+      "overall": {
+        "gross_loss": 66578.38794219072,
+        "gross_profit": 148860.68062386755,
+        "max_dd_pct": 8.84047608039385,
+        "mean_bars_held": 104.47126436781609,
+        "mean_pnl": 236.44336977493342,
+        "pf": 2.2358709068342364,
+        "trades": 348.0
+      },
+      "per_window": [
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 0.0,
+          "gross_profit": 903.0000570714474,
+          "max_dd_pct": 0.0,
+          "mean_bars_held": 208.0,
+          "mean_pnl": 903.0000570714474,
+          "pf": Infinity,
+          "trades": 1.0,
+          "window_idx": 0
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 14008.067528100517,
+          "gross_profit": 35053.167430325884,
+          "max_dd_pct": 9.07696473663156,
+          "mean_bars_held": 198.55357142857142,
+          "mean_pnl": 375.8053553968816,
+          "pf": 2.5023556861079084,
+          "trades": 56.0,
+          "window_idx": 1
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 2103.1468148900112,
+          "gross_profit": 1019.0679298906632,
+          "max_dd_pct": 6.3944331879498355,
+          "mean_bars_held": 126.66666666666667,
+          "mean_pnl": -180.67981416655797,
+          "pf": 0.4845443611809657,
+          "trades": 6.0,
+          "window_idx": 2
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 7498.564750759111,
+          "gross_profit": 14867.094020877847,
+          "max_dd_pct": 6.74482087433122,
+          "mean_bars_held": 77.71794871794872,
+          "mean_pnl": 188.93664795176244,
+          "pf": 1.9826586173537795,
+          "trades": 39.0,
+          "window_idx": 3
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 676.1132408336215,
+          "gross_profit": 3970.9946439110686,
+          "max_dd_pct": 1.4451157218474304,
+          "mean_bars_held": 90.66666666666667,
+          "mean_pnl": 366.09793367527186,
+          "pf": 5.8732685652110375,
+          "trades": 9.0,
+          "window_idx": 4
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 195.24547383487226,
+          "gross_profit": 3204.9124932492255,
+          "max_dd_pct": 0.40923766763198943,
+          "mean_bars_held": 54.0,
+          "mean_pnl": 334.40744660159476,
+          "pf": 16.414785092328245,
+          "trades": 9.0,
+          "window_idx": 5
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 382.3641739101837,
+          "gross_profit": 1764.5906398072057,
+          "max_dd_pct": 0.8079352685057908,
+          "mean_bars_held": 38.666666666666664,
+          "mean_pnl": 153.5807184330024,
+          "pf": 4.614947634245941,
+          "trades": 9.0,
+          "window_idx": 6
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 6210.9650327099025,
+          "gross_profit": 4093.983427652023,
+          "max_dd_pct": 13.980497508365636,
+          "mean_bars_held": 84.54545454545455,
+          "mean_pnl": -96.22643659354001,
+          "pf": 0.6591541581849446,
+          "trades": 22.0,
+          "window_idx": 7
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 10706.27578901588,
+          "gross_profit": 35079.40966453967,
+          "max_dd_pct": 6.529561447574045,
+          "mean_bars_held": 111.78571428571429,
+          "mean_pnl": 435.2345334914962,
+          "pf": 3.2765277446457572,
+          "trades": 56.0,
+          "window_idx": 8
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 1066.8839558254076,
+          "gross_profit": 3408.6300026639638,
+          "max_dd_pct": 3.534576948950808,
+          "mean_bars_held": 65.0,
+          "mean_pnl": 468.3492093677113,
+          "pf": 3.1949397908293,
+          "trades": 5.0,
+          "window_idx": 9
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 6161.747765469323,
+          "gross_profit": 14327.806950198172,
+          "max_dd_pct": 6.256695108272746,
+          "mean_bars_held": 66.16666666666667,
+          "mean_pnl": 151.22331823571938,
+          "pf": 2.3252829384694658,
+          "trades": 54.0,
+          "window_idx": 10
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 9378.218166694016,
+          "gross_profit": 20353.318145759815,
+          "max_dd_pct": 9.673326082257496,
+          "mean_bars_held": 88.06521739130434,
+          "mean_pnl": 238.58912997969128,
+          "pf": 2.170275609288231,
+          "trades": 46.0,
+          "window_idx": 11
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 8190.79525014788,
+          "gross_profit": 10814.705217920573,
+          "max_dd_pct": 12.599757061861148,
+          "mean_bars_held": 97.75,
+          "mean_pnl": 72.88638799368593,
+          "pf": 1.320348621548722,
+          "trades": 36.0,
+          "window_idx": 12
+        }
+      ],
+      "threshold": 0.2
+    },
+    {
+      "overall": {
+        "gross_loss": 82953.83267804369,
+        "gross_profit": 162637.98427819123,
+        "max_dd_pct": 8.84047608039385,
+        "mean_bars_held": 125.53448275862068,
+        "mean_pnl": 228.9774471268607,
+        "pf": 1.9605843277840305,
+        "trades": 348.0
+      },
+      "per_window": [
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 0.0,
+          "gross_profit": 903.0000570714474,
+          "max_dd_pct": 0.0,
+          "mean_bars_held": 208.0,
+          "mean_pnl": 903.0000570714474,
+          "pf": Infinity,
+          "trades": 1.0,
+          "window_idx": 0
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 14008.067528100517,
+          "gross_profit": 35053.167430325884,
+          "max_dd_pct": 9.07696473663156,
+          "mean_bars_held": 198.55357142857142,
+          "mean_pnl": 375.8053553968816,
+          "pf": 2.5023556861079084,
+          "trades": 56.0,
+          "window_idx": 1
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 2941.2966872581146,
+          "gross_profit": 989.426791184641,
+          "max_dd_pct": 9.865597232246333,
+          "mean_bars_held": 149.0,
+          "mean_pnl": -325.31164934557887,
+          "pf": 0.33639135945411464,
+          "trades": 6.0,
+          "window_idx": 2
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 8210.389246728344,
+          "gross_profit": 13739.311401943154,
+          "max_dd_pct": 7.73582384544086,
+          "mean_bars_held": 85.48717948717949,
+          "mean_pnl": 141.7672347490977,
+          "pf": 1.6734056070993177,
+          "trades": 39.0,
+          "window_idx": 3
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 627.3834604259365,
+          "gross_profit": 4366.3836899000025,
+          "max_dd_pct": 1.5184451463832822,
+          "mean_bars_held": 110.44444444444444,
+          "mean_pnl": 415.44446994156283,
+          "pf": 6.959672935808069,
+          "trades": 9.0,
+          "window_idx": 4
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 738.8954258520156,
+          "gross_profit": 4155.885212062988,
+          "max_dd_pct": 2.565070988692257,
+          "mean_bars_held": 74.66666666666667,
+          "mean_pnl": 379.66553180121923,
+          "pf": 5.624456542373183,
+          "trades": 9.0,
+          "window_idx": 5
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 685.1064789795445,
+          "gross_profit": 3225.327730637014,
+          "max_dd_pct": 1.2085098865997135,
+          "mean_bars_held": 66.11111111111111,
+          "mean_pnl": 282.24680573971887,
+          "pf": 4.707775841561285,
+          "trades": 9.0,
+          "window_idx": 6
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 6920.15391991747,
+          "gross_profit": 4877.417384049073,
+          "max_dd_pct": 14.967282363010131,
+          "mean_bars_held": 101.63636363636364,
+          "mean_pnl": -92.85166072129078,
+          "pf": 0.7048134247434833,
+          "trades": 22.0,
+          "window_idx": 7
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 14037.736874313305,
+          "gross_profit": 34428.875197484136,
+          "max_dd_pct": 8.509652635077655,
+          "mean_bars_held": 137.60714285714286,
+          "mean_pnl": 364.127470056622,
+          "pf": 2.452594424994757,
+          "trades": 56.0,
+          "window_idx": 8
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 1433.6680864071573,
+          "gross_profit": 3032.653418819059,
+          "max_dd_pct": 4.725103323570175,
+          "mean_bars_held": 90.4,
+          "mean_pnl": 319.7970664823802,
+          "pf": 2.115310682836665,
+          "trades": 5.0,
+          "window_idx": 9
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 12023.953149127938,
+          "gross_profit": 21596.01232467252,
+          "max_dd_pct": 7.47646411150096,
+          "mean_bars_held": 126.66666666666667,
+          "mean_pnl": 177.2603551026774,
+          "pf": 1.796082540976868,
+          "trades": 54.0,
+          "window_idx": 10
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 11752.05071540678,
+          "gross_profit": 24626.22306660143,
+          "max_dd_pct": 11.239376239942281,
+          "mean_bars_held": 101.21739130434783,
+          "mean_pnl": 279.87331198249234,
+          "pf": 2.0954830491257823,
+          "trades": 46.0,
+          "window_idx": 11
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 9575.131105526569,
+          "gross_profit": 11644.300573439874,
+          "max_dd_pct": 14.317614803090075,
+          "mean_bars_held": 110.55555555555556,
+          "mean_pnl": 57.47692966425848,
+          "pf": 1.2160982909903995,
+          "trades": 36.0,
+          "window_idx": 12
+        }
+      ],
+      "threshold": 0.25
+    },
+    {
+      "overall": {
+        "gross_loss": 91784.78447684123,
+        "gross_profit": 176532.9628531075,
+        "max_dd_pct": 9.010795816211038,
+        "mean_bars_held": 143.3793103448276,
+        "mean_pnl": 243.52924820766174,
+        "pf": 1.923335810606491,
+        "trades": 348.0
+      },
+      "per_window": [
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 0.0,
+          "gross_profit": 903.0000570714474,
+          "max_dd_pct": 0.0,
+          "mean_bars_held": 208.0,
+          "mean_pnl": 903.0000570714474,
+          "pf": Infinity,
+          "trades": 1.0,
+          "window_idx": 0
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 14008.067528100517,
+          "gross_profit": 35053.167430325884,
+          "max_dd_pct": 9.07696473663156,
+          "mean_bars_held": 198.55357142857142,
+          "mean_pnl": 375.8053553968816,
+          "pf": 2.5023556861079084,
+          "trades": 56.0,
+          "window_idx": 1
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 3128.246225615428,
+          "gross_profit": 474.8973791965275,
+          "max_dd_pct": 10.613395385675597,
+          "mean_bars_held": 154.66666666666666,
+          "mean_pnl": -442.2248077364834,
+          "pf": 0.15180946285745128,
+          "trades": 6.0,
+          "window_idx": 2
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 7540.67489874176,
+          "gross_profit": 16805.355822265607,
+          "max_dd_pct": 6.12356338462751,
+          "mean_bars_held": 100.02564102564102,
+          "mean_pnl": 237.55592111599609,
+          "pf": 2.2286275496467502,
+          "trades": 39.0,
+          "window_idx": 3
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 1039.818447905658,
+          "gross_profit": 3192.101467919259,
+          "max_dd_pct": 1.854287902089205,
+          "mean_bars_held": 129.33333333333334,
+          "mean_pnl": 239.14255777928895,
+          "pf": 3.069864238654935,
+          "trades": 9.0,
+          "window_idx": 4
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 992.1199966493249,
+          "gross_profit": 7471.434187751228,
+          "max_dd_pct": 2.675173887305502,
+          "mean_bars_held": 100.44444444444444,
+          "mean_pnl": 719.9237990113226,
+          "pf": 7.530776733645541,
+          "trades": 9.0,
+          "window_idx": 5
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 850.4364865699724,
+          "gross_profit": 3225.327730637014,
+          "max_dd_pct": 1.2159304469794008,
+          "mean_bars_held": 80.33333333333333,
+          "mean_pnl": 263.87680489633794,
+          "pf": 3.79255568354738,
+          "trades": 9.0,
+          "window_idx": 6
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 9360.504040741898,
+          "gross_profit": 9467.632079521672,
+          "max_dd_pct": 20.190695412773373,
+          "mean_bars_held": 181.0909090909091,
+          "mean_pnl": 4.869456308171565,
+          "pf": 1.0114446869862452,
+          "trades": 22.0,
+          "window_idx": 7
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 15919.598069018248,
+          "gross_profit": 33589.489563535266,
+          "max_dd_pct": 8.56312964582374,
+          "mean_bars_held": 152.89285714285714,
+          "mean_pnl": 315.5337766878039,
+          "pf": 2.109945830159185,
+          "trades": 56.0,
+          "window_idx": 8
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 1472.7450868795815,
+          "gross_profit": 3408.6300026639638,
+          "max_dd_pct": 4.800425390526158,
+          "mean_bars_held": 100.6,
+          "mean_pnl": 387.17698315687653,
+          "pf": 2.314473857717014,
+          "trades": 5.0,
+          "window_idx": 9
+        },
+        {
+          "exit_expert": "candidate_surface",
+          "gross_loss": 13005.660972702979,
+          "gross_profit": 20943.463038728234,
+          "max_dd_pct": 10.654118519595512,
+          "mean_bars_held": 142.75925925925927,
+          "mean_pnl": 146.9963345560232,
+          "pf": 1.61033438305716,
+          "trades": 54.0,
+          "window_idx": 10
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 12542.903538184333,
+          "gross_profit": 28345.38619848468,
+          "max_dd_pct": 11.172043308164424,
+          "mean_bars_held": 120.0,
+          "mean_pnl": 343.5322317456597,
+          "pf": 2.259874367381754,
+          "trades": 46.0,
+          "window_idx": 11
+        },
+        {
+          "exit_expert": "entry_policy",
+          "gross_loss": 11924.009185731531,
+          "gross_profit": 13653.077895006734,
+          "max_dd_pct": 16.165849273763943,
+          "mean_bars_held": 129.75,
+          "mean_pnl": 48.0296863687556,
+          "pf": 1.1450073278494481,
+          "trades": 36.0,
+          "window_idx": 12
+        }
+      ],
+      "threshold": 0.3
+    }
+  ],
+  "trade_dataset": {
+    "n_input_trades": 364,
+    "n_skipped": 16,
+    "n_trade_datasets": 348
+  },
+  "train_reports": [
+    {
+      "expert": "entry_policy",
+      "mode": "fallback",
+      "test_trades": 1,
+      "train_pos_rate": null,
+      "train_rows": 0,
+      "train_trades": 0,
+      "window_idx": 0
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "fallback",
+      "test_trades": 56,
+      "train_pos_rate": null,
+      "train_rows": 0,
+      "train_trades": 1,
+      "window_idx": 1
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 6,
+      "train_pos_rate": 0.08002382843526608,
+      "train_rows": 10072,
+      "train_trades": 57,
+      "window_idx": 2
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 39,
+      "train_pos_rate": 0.08679245283018867,
+      "train_rows": 11130,
+      "train_trades": 63,
+      "window_idx": 3
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 9,
+      "train_pos_rate": 0.0887354485277334,
+      "train_rows": 17524,
+      "train_trades": 102,
+      "window_idx": 4
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 9,
+      "train_pos_rate": 0.088083718973496,
+      "train_rows": 19016,
+      "train_trades": 111,
+      "window_idx": 5
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 9,
+      "train_pos_rate": 0.08819081996000196,
+      "train_rows": 20501,
+      "train_trades": 120,
+      "window_idx": 6
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 22,
+      "train_pos_rate": 0.0873233014135887,
+      "train_rows": 21930,
+      "train_trades": 129,
+      "window_idx": 7
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 56,
+      "train_pos_rate": 0.09202172416430812,
+      "train_rows": 26146,
+      "train_trades": 151,
+      "window_idx": 8
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 5,
+      "train_pos_rate": 0.09541289545212542,
+      "train_rows": 35687,
+      "train_trades": 207,
+      "window_idx": 9
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 54,
+      "train_pos_rate": 0.09543227784011604,
+      "train_rows": 36539,
+      "train_trades": 212,
+      "window_idx": 10
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 46,
+      "train_pos_rate": 0.09505245406163078,
+      "train_rows": 45659,
+      "train_trades": 266,
+      "window_idx": 11
+    },
+    {
+      "expert": "entry_policy",
+      "mode": "model",
+      "test_trades": 36,
+      "train_pos_rate": 0.09636537991463437,
+      "train_rows": 53183,
+      "train_trades": 312,
+      "window_idx": 12
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "fallback",
+      "test_trades": 1,
+      "train_pos_rate": null,
+      "train_rows": 0,
+      "train_trades": 0,
+      "window_idx": 0
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 56,
+      "train_pos_rate": 0.11846014726779486,
+      "train_rows": 46446,
+      "train_trades": 240,
+      "window_idx": 1
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 6,
+      "train_pos_rate": 0.1132311137910242,
+      "train_rows": 92872,
+      "train_trades": 480,
+      "window_idx": 2
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 39,
+      "train_pos_rate": 0.11026223563222509,
+      "train_rows": 139531,
+      "train_trades": 720,
+      "window_idx": 3
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 9,
+      "train_pos_rate": 0.10810390334971352,
+      "train_rows": 186404,
+      "train_trades": 960,
+      "window_idx": 4
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 9,
+      "train_pos_rate": 0.10660132307967908,
+      "train_rows": 234453,
+      "train_trades": 1200,
+      "window_idx": 5
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 9,
+      "train_pos_rate": 0.10648279280555162,
+      "train_rows": 282440,
+      "train_trades": 1440,
+      "window_idx": 6
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 22,
+      "train_pos_rate": 0.1090490559373487,
+      "train_rows": 328421,
+      "train_trades": 1680,
+      "window_idx": 7
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 56,
+      "train_pos_rate": 0.10954175431691315,
+      "train_rows": 376021,
+      "train_trades": 1920,
+      "window_idx": 8
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 5,
+      "train_pos_rate": 0.10975563705707152,
+      "train_rows": 423714,
+      "train_trades": 2160,
+      "window_idx": 9
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 54,
+      "train_pos_rate": 0.1114683951872564,
+      "train_rows": 472080,
+      "train_trades": 2400,
+      "window_idx": 10
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 46,
+      "train_pos_rate": 0.11114799839572295,
+      "train_rows": 521107,
+      "train_trades": 2640,
+      "window_idx": 11
+    },
+    {
+      "expert": "candidate_surface",
+      "mode": "model",
+      "test_trades": 36,
+      "train_pos_rate": 0.11179758597482652,
+      "train_rows": 569091,
+      "train_trades": 2880,
+      "window_idx": 12
+    }
+  ]
+}
