@@ -86,6 +86,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--w-dollar", type=float, default=0.25)
     p.add_argument("--w-return", type=float, default=0.25)
     p.add_argument("--w-win", type=float, default=0.25)
+    p.add_argument("--golden-day", default="", help="Optional YYYY-MM-DD day to trace per epoch when it is in OOS.")
+    p.add_argument(
+        "--golden-day-out-dir",
+        default="",
+        help="Directory for per-epoch golden-day traces. Defaults under --run-dir.",
+    )
     return p.parse_args()
 
 
@@ -365,6 +371,63 @@ def _prediction_frame(
         rows["chosen_time_stop_pnl"] > rows["time_stop_pnl_put"].fillna(-np.inf)
     )
     return rows
+
+
+def _golden_epoch_trace_rows(
+    subset: dict[str, Any],
+    pred: dict[str, np.ndarray],
+    *,
+    epoch: int,
+    epoch_parts: dict[str, float],
+    top_k_contracts: int,
+) -> list[dict[str, Any]]:
+    rows = subset["rows"].reset_index(drop=True)
+    utility = pred["utility"]
+    labels = subset["utility_raw"]
+    tradeable = np.nan_to_num(subset["tradeable_mask"], nan=0.0) > 0.5
+    token_tradeable = tradeable[:, 1:]
+    token_scores = utility[:, 1:].copy()
+    token_scores[~token_tradeable] = -np.inf
+    token_labels = labels[:, 1:].copy()
+    token_labels[~token_tradeable] = -np.inf
+
+    out: list[dict[str, Any]] = []
+    for i, row in rows.iterrows():
+        call_slice = slice(0, top_k_contracts)
+        put_slice = slice(top_k_contracts, top_k_contracts * 2)
+        call_scores = token_scores[i, call_slice]
+        put_scores = token_scores[i, put_slice]
+        call_labels = token_labels[i, call_slice]
+        put_labels = token_labels[i, put_slice]
+        best_call_score = float(np.nanmax(call_scores)) if np.isfinite(call_scores).any() else float("nan")
+        best_put_score = float(np.nanmax(put_scores)) if np.isfinite(put_scores).any() else float("nan")
+        best_call_label = float(np.nanmax(call_labels)) if np.isfinite(call_labels).any() else float("nan")
+        best_put_label = float(np.nanmax(put_labels)) if np.isfinite(put_labels).any() else float("nan")
+        pred_action = int(np.nanargmax(np.where(tradeable[i], utility[i], -np.inf)))
+        true_action = int(np.nanargmax(np.where(tradeable[i], labels[i], -np.inf)))
+        out.append(
+            {
+                "epoch": int(epoch),
+                "val_loss": float(epoch_parts.get("val_loss", np.nan)),
+                "bar_index": int(row["bar_index"]),
+                "flat_score": float(utility[i, 0]),
+                "best_call_score": best_call_score,
+                "best_put_score": best_put_score,
+                "score_put_minus_call": float(best_put_score - best_call_score)
+                if np.isfinite(best_put_score) and np.isfinite(best_call_score)
+                else float("nan"),
+                "best_call_label": best_call_label,
+                "best_put_label": best_put_label,
+                "label_put_minus_call": float(best_put_label - best_call_label)
+                if np.isfinite(best_put_label) and np.isfinite(best_call_label)
+                else float("nan"),
+                "chosen_action_id": pred_action,
+                "chosen_side": "flat" if pred_action == 0 else ("call" if pred_action <= top_k_contracts else "put"),
+                "true_best_action_id": true_action,
+                "true_best_side": "flat" if true_action == 0 else ("call" if true_action <= top_k_contracts else "put"),
+            }
+        )
+    return out
 
 
 def _select_daily_trades(
@@ -839,6 +902,8 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
 
     train_days_by_window = {w.window_idx: list(w.train_days) for w in windows}
     total_t0 = time.time()
+    golden_day = str(args.golden_day).strip()
+    golden_day_mask = rows["day"].astype(str).eq(golden_day).to_numpy() if golden_day else None
 
     for window in windows:
         wi = int(window.window_idx)
@@ -876,6 +941,30 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             simulated_l3_pnl=simulated_l3_pnl,
             simulated_l3_exit_bar=simulated_l3_exit_bar,
         )
+        golden_trace_rows: list[dict[str, Any]] = []
+        golden_trace_subset = None
+        if golden_day and golden_day in set(window.oos_days) and golden_day_mask is not None and golden_day_mask.any():
+            golden_trace_subset = _slice_inputs(
+                golden_day_mask,
+                bundle,
+                utility_blend=args.utility_blend,
+                utility_target=args.utility_target,
+                simulated_l3_pnl=simulated_l3_pnl,
+                simulated_l3_exit_bar=simulated_l3_exit_bar,
+            )
+
+        def _trace_callback(epoch: int, epoch_parts: dict[str, float], pred: dict[str, np.ndarray]) -> None:
+            if golden_trace_subset is None:
+                return
+            golden_trace_rows.extend(
+                _golden_epoch_trace_rows(
+                    golden_trace_subset,
+                    pred,
+                    epoch=epoch,
+                    epoch_parts=epoch_parts,
+                    top_k_contracts=int(meta["top_k_contracts_per_side"]),
+                )
+            )
 
         predictor, train_info = train_unified_action_model(
             scalar_train=fit["scalar"],
@@ -928,6 +1017,8 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             w_win=args.w_win,
             w_clean=args.w_clean,
             w_stopout=args.w_stopout,
+            trace_eval=golden_trace_subset,
+            trace_callback=_trace_callback if golden_trace_subset is not None else None,
         )
 
         val_pred = _prediction_frame(
@@ -983,6 +1074,13 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
 
         window_dir = os.path.join(seed_dir, f"window_{wi:02d}")
         ensure_dir(window_dir)
+        if golden_trace_rows:
+            golden_out_dir = args.golden_day_out_dir or os.path.join(args.run_dir, "golden_day_training_trace")
+            ensure_dir(golden_out_dir)
+            pd.DataFrame(golden_trace_rows).to_csv(
+                os.path.join(golden_out_dir, f"seed_{seed}_window_{wi:02d}_{golden_day}.csv"),
+                index=False,
+            )
         save_pickle(os.path.join(window_dir, "model.pkl"), predictor)
         save_json(os.path.join(window_dir, "training_info.json"), train_info)
         save_json(os.path.join(window_dir, "calibration.json"), calibration)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any, Callable
 
 import numpy as np
 import torch
@@ -534,7 +535,9 @@ def train_unified_action_model(
     w_win: float,
     w_clean: float,
     w_stopout: float,
-) -> tuple[UnifiedActionPredictor, dict[str, float]]:
+    trace_eval: dict[str, np.ndarray] | None = None,
+    trace_callback: Callable[[int, dict[str, float], dict[str, np.ndarray]], None] | None = None,
+) -> tuple[UnifiedActionPredictor, dict[str, Any]]:
     torch.manual_seed(seed)
     np.random.seed(seed)
     if torch.cuda.is_available():
@@ -561,6 +564,22 @@ def train_unified_action_model(
         contracts_val,
         contract_mask_val,
     )
+    trace_arrays: dict[str, np.ndarray] | None = None
+    if trace_eval is not None and trace_callback is not None:
+        trace_scalar_n, trace_seq_n, trace_contracts_n = standardizer.transform(
+            trace_eval["scalar"],
+            trace_eval["seq"],
+            trace_eval["seq_mask"],
+            trace_eval["contracts"],
+            trace_eval["contract_mask"],
+        )
+        trace_arrays = {
+            "scalar": trace_scalar_n,
+            "seq": trace_seq_n,
+            "seq_mask": trace_eval["seq_mask"].astype(np.float32),
+            "contracts": trace_contracts_n,
+            "contract_mask": trace_eval["contract_mask"].astype(np.float32),
+        }
 
     reg_mask_train = np.isfinite(utility_train).astype(np.float32) * tradeable_mask_train.astype(np.float32)
     reg_mask_val = np.isfinite(utility_val).astype(np.float32) * tradeable_mask_val.astype(np.float32)
@@ -665,6 +684,7 @@ def train_unified_action_model(
     best_epoch = -1
     stale = 0
     best_parts: dict[str, float] = {}
+    loss_history: list[dict[str, float]] = []
 
     for epoch in range(max_epochs):
         model.train()
@@ -796,6 +816,40 @@ def train_unified_action_model(
                 val_stopouts.append(float(stopout_loss.item()))
 
         mean_val = float(np.mean(val_totals)) if val_totals else float("inf")
+        epoch_parts = {
+            "epoch": float(epoch),
+            "val_loss": float(mean_val),
+            "regression_val_loss": float(np.mean(val_regs)) if val_regs else float("inf"),
+            "ranking_val_loss": float(np.mean(val_ranks)) if val_ranks else float("inf"),
+            "side_contrastive_val_loss": float(np.mean(val_sides)) if val_sides else float("inf"),
+            "dollar_val_loss": float(np.mean(val_dollars)) if val_dollars else float("inf"),
+            "return_val_loss": float(np.mean(val_returns)) if val_returns else float("inf"),
+            "win_val_loss": float(np.mean(val_wins)) if val_wins else float("inf"),
+            "clean_val_loss": float(np.mean(val_cleans)) if val_cleans else float("inf"),
+            "stopout_val_loss": float(np.mean(val_stopouts)) if val_stopouts else float("inf"),
+        }
+        loss_history.append(epoch_parts)
+        if trace_arrays is not None and trace_callback is not None:
+            with torch.inference_mode():
+                trace_utility, trace_dollar, trace_return, trace_win, trace_clean, trace_stopout = model(
+                    torch.from_numpy(trace_arrays["scalar"]).to(device),
+                    torch.from_numpy(trace_arrays["seq"]).to(device),
+                    torch.from_numpy(trace_arrays["seq_mask"]).to(device),
+                    torch.from_numpy(trace_arrays["contracts"]).to(device),
+                    torch.from_numpy(trace_arrays["contract_mask"]).to(device),
+                )
+            trace_callback(
+                int(epoch),
+                epoch_parts,
+                {
+                    "utility": trace_utility.detach().cpu().numpy().astype(np.float32, copy=False),
+                    "dollar_utility": trace_dollar.detach().cpu().numpy().astype(np.float32, copy=False),
+                    "return_multiple": trace_return.detach().cpu().numpy().astype(np.float32, copy=False),
+                    "win_prob": torch.sigmoid(trace_win).detach().cpu().numpy().astype(np.float32, copy=False),
+                    "clean_prob": torch.sigmoid(trace_clean).detach().cpu().numpy().astype(np.float32, copy=False),
+                    "stopout_prob": torch.sigmoid(trace_stopout).detach().cpu().numpy().astype(np.float32, copy=False),
+                },
+            )
         if mean_val < best_val - 1e-6:
             best_val = mean_val
             best_epoch = epoch
@@ -841,6 +895,7 @@ def train_unified_action_model(
         "w_dollar": float(w_dollar),
         "w_return": float(w_return),
         "w_win": float(w_win),
+        "loss_history": loss_history,
         **best_parts,
     }
     return predictor, training_info

@@ -713,6 +713,7 @@ def build_action_surface_bundle(
     cfg: GuardrailConfig,
     equity: float,
     *,
+    days: list[str] | None = None,
     history_bars: int = DEFAULT_HISTORY_BARS,
     top_k_contracts: int = DEFAULT_TOP_K_CONTRACTS,
     execution_start_bar: int = DEFAULT_EXECUTION_START_BAR,
@@ -726,7 +727,7 @@ def build_action_surface_bundle(
     sequence_feature_names = resolve_sequence_feature_names(dataset)
     folds = build_folds_for_dataset(dataset)
     test_fold_map = fold_test_day_map(folds)
-    all_days = sorted(set(dataset.dates))
+    all_days = sorted(set(dataset.dates)) if days is None else [str(day) for day in days]
 
     rows: list[dict[str, Any]] = []
     seq_rows: list[np.ndarray] = []
