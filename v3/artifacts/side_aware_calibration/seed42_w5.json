@@ -1,0 +1,236 @@
+{
+  "calibration": {
+    "global_reference": {
+      "decision_margin": 0.35,
+      "in_band": false,
+      "max_stopout_prob": 1.0,
+      "mean_pnl": 2.5806508633248466,
+      "min_win_prob": 0.0,
+      "objective_pf": 1.010344000569212,
+      "pf_qualified": true,
+      "side": "global",
+      "trade_share": 0.825,
+      "trades": 33
+    },
+    "side_aware_call": {
+      "decision_margin": 0.39340981245040874,
+      "in_band": true,
+      "max_stopout_prob": 1.0,
+      "mean_pnl": 125.36258532572963,
+      "min_win_prob": 0.0,
+      "objective_pf": 1.590584678243865,
+      "pf_qualified": true,
+      "side": "call",
+      "trade_share": 0.45,
+      "trades": 18
+    },
+    "side_aware_put": {
+      "best_unqualified_pf": 0.6828573403129666,
+      "decision_margin": Infinity,
+      "fail_out": true,
+      "in_band": false,
+      "max_stopout_prob": 0.0,
+      "mean_pnl": 0.0,
+      "min_win_prob": 1.0,
+      "objective_pf": 0.0,
+      "pf_qualified": false,
+      "side": "put",
+      "trade_share": 0.0,
+      "trades": 0
+    }
+  },
+  "n_oos_days": 60,
+  "selection_results": {
+    "global_recalibrated": {
+      "calls": 25,
+      "mean_l3_pnl": 13.557335193340595,
+      "mean_label_pnl": -11.769764821188346,
+      "pf_l3": 1.0403052106026736,
+      "pf_label": 0.9698498451288375,
+      "puts": 1,
+      "total_l3_pnl": 352.49071502685547,
+      "total_label_pnl": -306.013885350897,
+      "trade_share_oos": 0.43333333333333335,
+      "trades": 26
+    },
+    "production": {
+      "calls": 13,
+      "mean_label_pnl": -133.7997191292899,
+      "pf_label": 0.7030578869382715,
+      "puts": 1,
+      "total_label_pnl": -1873.1960678100586,
+      "trades": 14
+    },
+    "side_aware": {
+      "calls": 13,
+      "mean_l3_pnl": -73.68970020000751,
+      "mean_label_pnl": -99.41284971425124,
+      "pf_l3": 0.808795666267907,
+      "pf_label": 0.7743559126935363,
+      "puts": 0,
+      "total_l3_pnl": -957.9661026000977,
+      "total_label_pnl": -1292.367046285266,
+      "trade_share_oos": 0.21666666666666667,
+      "trades": 13
+    }
+  },
+  "side_aware_chosen_trades": [
+    {
+      "action_id": 5,
+      "bar_index": 115,
+      "day": "2024-03-26",
+      "l3_pnl": -505.51995849609375,
+      "label_pnl": -575.6660291656478,
+      "margin": 0.5620750188827515,
+      "score": -0.8523901700973511,
+      "side": "call",
+      "stopout": 0.23508991301059723,
+      "win": 0.4568718373775482
+    },
+    {
+      "action_id": 6,
+      "bar_index": 43,
+      "day": "2024-04-01",
+      "l3_pnl": -1088.8463134765625,
+      "label_pnl": -1288.2689129729295,
+      "margin": 0.4756351709365845,
+      "score": -0.9519051313400269,
+      "side": "call",
+      "stopout": 0.23270072042942047,
+      "win": 0.4454185366630554
+    },
+    {
+      "action_id": 6,
+      "bar_index": 103,
+      "day": "2024-04-03",
+      "l3_pnl": -232.50003051757812,
+      "label_pnl": -265.3892705892907,
+      "margin": 0.41264843940734863,
+      "score": -1.0002405643463135,
+      "side": "call",
+      "stopout": 0.2529996633529663,
+      "win": 0.4312029182910919
+    },
+    {
+      "action_id": 6,
+      "bar_index": 73,
+      "day": "2024-04-04",
+      "l3_pnl": -512.2600708007812,
+      "label_pnl": -585.8770138216283,
+      "margin": 0.3963428735733032,
+      "score": -0.9938503503799438,
+      "side": "call",
+      "stopout": 0.2569839060306549,
+      "win": 0.4282805621623993
+    },
+    {
+      "action_id": 6,
+      "bar_index": 41,
+      "day": "2024-05-13",
+      "l3_pnl": -631.3200073242188,
+      "label_pnl": -712.3725663961236,
+      "margin": 0.4547898769378662,
+      "score": -0.9284207820892334,
+      "side": "call",
+      "stopout": 0.24893324077129364,
+      "win": 0.44238168001174927
+    },
+    {
+      "action_id": 6,
+      "bar_index": 71,
+      "day": "2024-05-16",
+      "l3_pnl": 367.9999084472656,
+      "label_pnl": 399.86645234182635,
+      "margin": 0.5034823417663574,
+      "score": -0.9113003015518188,
+      "side": "call",
+      "stopout": 0.25073230266571045,
+      "win": 0.4432545006275177
+    },
+    {
+      "action_id": 6,
+      "bar_index": 79,
+      "day": "2024-05-17",
+      "l3_pnl": -533.5599975585938,
+      "label_pnl": -610.1754426394066,
+      "margin": 0.45816338062286377,
+      "score": -0.8973536491394043,
+      "side": "call",
+      "stopout": 0.2602924406528473,
+      "win": 0.4402541518211365
+    },
+    {
+      "action_id": 6,
+      "bar_index": 115,
+      "day": "2024-05-20",
+      "l3_pnl": -788.070068359375,
+      "label_pnl": -885.7739096937222,
+      "margin": 0.471824586391449,
+      "score": -0.9525511860847473,
+      "side": "call",
+      "stopout": 0.24497535824775696,
+      "win": 0.43995222449302673
+    },
+    {
+      "action_id": 6,
+      "bar_index": 47,
+      "day": "2024-05-21",
+      "l3_pnl": 393.9698791503906,
+      "label_pnl": 427.7574131726595,
+      "margin": 0.5763118267059326,
+      "score": -0.8335263729095459,
+      "side": "call",
+      "stopout": 0.23791316151618958,
+      "win": 0.46032148599624634
+    },
+    {
+      "action_id": 6,
+      "bar_index": 52,
+      "day": "2024-05-22",
+      "l3_pnl": 78.15999603271484,
+      "label_pnl": 78.04008036600021,
+      "margin": 0.5506718158721924,
+      "score": -0.850785493850708,
+      "side": "call",
+      "stopout": 0.23611825704574585,
+      "win": 0.45810309052467346
+    },
+    {
+      "action_id": 7,
+      "bar_index": 52,
+      "day": "2024-05-28",
+      "l3_pnl": -718.0929565429688,
+      "label_pnl": -803.9349136156029,
+      "margin": 0.6772298812866211,
+      "score": -0.820742130279541,
+      "side": "call",
+      "stopout": 0.21225924789905548,
+      "win": 0.4735274016857147
+    },
+    {
+      "action_id": 6,
+      "bar_index": 114,
+      "day": "2024-06-10",
+      "l3_pnl": 458.1128234863281,
+      "label_pnl": 489.4697087330679,
+      "margin": 0.46623456478118896,
+      "score": -0.9944909811019897,
+      "side": "call",
+      "stopout": 0.2547649145126343,
+      "win": 0.43101510405540466
+    },
+    {
+      "action_id": 6,
+      "bar_index": 117,
+      "day": "2024-06-17",
+      "l3_pnl": 2753.960693359375,
+      "label_pnl": 3039.957357995532,
+      "margin": 0.46052730083465576,
+      "score": -0.9946227073669434,
+      "side": "call",
+      "stopout": 0.25659552216529846,
+      "win": 0.4294676184654236
+    }
+  ],
+  "window": 5
+}
