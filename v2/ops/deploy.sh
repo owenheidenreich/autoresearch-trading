@@ -1353,14 +1353,15 @@ cmd_run_v3_live_promotion() {
     [[ -f "$dataset_local" ]] || die "Live action-surface dataset not found: $dataset_local"
 
     local oracle_pattern="${V3_LIVE_ORACLE_PATTERN:-$PROJECT_ROOT/v3/artifacts/simulated_l3_oracle_spx_live_0945_1130_seed%s.npz}"
+    local seeds_list="${V3_SEEDS:-42 43 44}"
     local seed
-    for seed in 42 43 44; do
+    for seed in $seeds_list; do
         local oracle_local
         oracle_local=$(printf "$oracle_pattern" "$seed")
         [[ -f "$oracle_local" ]] || die "Per-seed oracle not found: $oracle_local"
     done
 
-    log "=== V3 LIVE PROMOTION: $exp_base (seeds 42/43/44) ==="
+    log "=== V3 LIVE PROMOTION: $exp_base (seeds: $seeds_list) ==="
 
     # Upload latest v3 source bundle.
     local v3_bundle source_git_sha source_dirty_count
@@ -1386,9 +1387,9 @@ cmd_run_v3_live_promotion() {
     ssh_cmd "mkdir -p /root/v3/artifacts"
     scp_retry "$dataset_local" "root@$SSH_HOST:/root/$dataset_remote_rel"
 
-    # Upload the three per-seed oracles.
+    # Upload per-seed oracles for all seeds in $seeds_list.
     local oracle_remote_paths=()
-    for seed in 42 43 44; do
+    for seed in $seeds_list; do
         local oracle_local oracle_remote_rel
         oracle_local=$(printf "$oracle_pattern" "$seed")
         oracle_remote_rel="v3/artifacts/$(basename "$oracle_local")"
@@ -1403,7 +1404,7 @@ cmd_run_v3_live_promotion() {
     log "side_balance_weight=$sb_weight, w_side_contrastive=$w_side"
     local run_dirs=()
     local idx=0
-    for seed in 42 43 44; do
+    for seed in $seeds_list; do
         local run_dir_rel="v3/artifacts/layer2_unified_policy_${exp_base}_seed${seed}"
         local oracle_remote_rel="${oracle_remote_paths[$idx]}"
         idx=$((idx + 1))
@@ -1425,7 +1426,7 @@ cmd_run_v3_live_promotion() {
     done
 
     log ""
-    log "V3 live promotion complete: $exp_base (seeds 42/43/44)"
+    log "V3 live promotion complete: $exp_base (seeds: $seeds_list)"
     log "Local artifacts:"
     for run_dir_rel in "${run_dirs[@]}"; do
         log "  $PROJECT_ROOT/$run_dir_rel/seed_*/report.json"

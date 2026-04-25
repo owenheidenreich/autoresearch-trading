@@ -1,0 +1,182 @@
+{
+  "all_all": {
+    "frac_model_call_above_put": 0.7393993836917094,
+    "model_best_call_mean": -0.33668767002039485,
+    "model_best_call_median": -0.26307418942451477,
+    "model_best_put_mean": -0.38519786102498477,
+    "model_best_put_median": -0.29236364364624023,
+    "model_call_minus_put_mean": 0.04851019100458992,
+    "model_call_minus_put_median": 0.05172787234187126,
+    "n_bars": 87943,
+    "n_truth_call_best": 55446,
+    "n_truth_put_best": 32497
+  },
+  "all_truth_call": {
+    "frac_model_call_above_put": 0.7762327309454243,
+    "model_best_call_mean": -0.4080937037499282,
+    "model_best_call_median": -0.34455591440200806,
+    "model_best_put_mean": -0.4674211191112557,
+    "model_best_put_median": -0.3860940784215927,
+    "model_call_minus_put_mean": 0.05932741536132751,
+    "model_call_minus_put_median": 0.06218975782394409,
+    "n_bars": 55446,
+    "n_truth_call_best": 55446,
+    "n_truth_put_best": 0
+  },
+  "all_truth_put": {
+    "frac_model_call_above_put": 0.6765547589008216,
+    "model_best_call_mean": -0.2148555333256936,
+    "model_best_call_median": -0.17324072122573853,
+    "model_best_put_mean": -0.24490950308882514,
+    "model_best_put_median": -0.18903608620166779,
+    "model_call_minus_put_mean": 0.030053969763131547,
+    "model_call_minus_put_median": 0.035588860511779785,
+    "n_bars": 32497,
+    "n_truth_call_best": 0,
+    "n_truth_put_best": 32497
+  },
+  "dataset": "v3/artifacts/layer2_action_surface_dataset_spx_live_0945_1130.pkl",
+  "label_best_side_counts": {
+    "call": 56791,
+    "put": 32901
+  },
+  "label_target": "hybrid_live (l3_exit_pnl)",
+  "model_best_side_counts": {
+    "call": 66406,
+    "put": 23286
+  },
+  "model_path": "v3/artifacts/layer2_unified_policy_spx_combined_3seed_001_seed45/seed_45/window_05/model.pkl",
+  "n_rows_oos": 5460,
+  "n_rows_total": 89692,
+  "n_rows_train": 43653,
+  "n_rows_val": 3640,
+  "oos_all": {
+    "frac_model_call_above_put": 0.6460144257444054,
+    "model_best_call_mean": -0.05395764363328498,
+    "model_best_call_median": -0.050779685378074646,
+    "model_best_put_mean": -0.06842493665335203,
+    "model_best_put_median": -0.05392457917332649,
+    "model_call_minus_put_mean": 0.014467293020067053,
+    "model_call_minus_put_median": 0.030537694692611694,
+    "n_bars": 5407,
+    "n_truth_call_best": 2538,
+    "n_truth_put_best": 2869
+  },
+  "oos_truth_call": {
+    "frac_model_call_above_put": 0.693853427895981,
+    "model_best_call_mean": -0.07354934201219873,
+    "model_best_call_median": -0.06876946985721588,
+    "model_best_put_mean": -0.09546763762549869,
+    "model_best_put_median": -0.09591523930430412,
+    "model_call_minus_put_mean": 0.021918295613299964,
+    "model_call_minus_put_median": 0.03603532910346985,
+    "n_bars": 2538,
+    "n_truth_call_best": 2538,
+    "n_truth_put_best": 0
+  },
+  "oos_truth_put": {
+    "frac_model_call_above_put": 0.6036946671314046,
+    "model_best_call_mean": -0.03662626319212671,
+    "model_best_call_median": -0.03483852744102478,
+    "model_best_put_mean": -0.04450218479998563,
+    "model_best_put_median": -0.022435173392295837,
+    "model_call_minus_put_mean": 0.00787592160785892,
+    "model_call_minus_put_median": 0.02404475212097168,
+    "n_bars": 2869,
+    "n_truth_call_best": 0,
+    "n_truth_put_best": 2869
+  },
+  "spot_2024_04_01": {
+    "frac_model_call_above_put": 0.6976744186046512,
+    "label_best_side_counts": {
+      "call": 6,
+      "put": 85
+    },
+    "model_best_call_mean": 0.10535689439018105,
+    "model_best_call_median": 0.08639334887266159,
+    "model_best_put_mean": 0.05677792321630688,
+    "model_best_put_median": 0.062450386583805084,
+    "model_best_side_counts": {
+      "call": 65,
+      "put": 26
+    },
+    "model_call_minus_put_mean": 0.04857897117387417,
+    "model_call_minus_put_median": 0.03675270453095436,
+    "n_bars": 86,
+    "n_truth_call_best": 1,
+    "n_truth_put_best": 85
+  },
+  "train_all": {
+    "frac_model_call_above_put": 0.8200973574408901,
+    "model_best_call_mean": -0.3950758515130495,
+    "model_best_call_median": -0.31296664476394653,
+    "model_best_put_mean": -0.46868945753627567,
+    "model_best_put_median": -0.3749653249979019,
+    "model_call_minus_put_mean": 0.07361360602322611,
+    "model_call_minus_put_median": 0.07687867246568203,
+    "n_bars": 43140,
+    "n_truth_call_best": 30778,
+    "n_truth_put_best": 12362
+  },
+  "train_truth_call": {
+    "frac_model_call_above_put": 0.8494379101955942,
+    "model_best_call_mean": -0.49909337976531903,
+    "model_best_call_median": -0.5080123543739319,
+    "model_best_put_mean": -0.5825851801590397,
+    "model_best_put_median": -0.5837145447731018,
+    "model_call_minus_put_mean": 0.08349180039372064,
+    "model_call_minus_put_median": 0.08611282706260681,
+    "n_bars": 30778,
+    "n_truth_call_best": 30778,
+    "n_truth_put_best": 0
+  },
+  "train_truth_put": {
+    "frac_model_call_above_put": 0.7470474033327941,
+    "model_best_call_mean": -0.13610064648567927,
+    "model_best_call_median": -0.09540433436632156,
+    "model_best_put_mean": -0.18512024940786345,
+    "model_best_put_median": -0.13464438915252686,
+    "model_call_minus_put_mean": 0.049019602922184186,
+    "model_call_minus_put_median": 0.05561661720275879,
+    "n_bars": 12362,
+    "n_truth_call_best": 0,
+    "n_truth_put_best": 12362
+  },
+  "val_all": {
+    "frac_model_call_above_put": 0.693052864655411,
+    "model_best_call_mean": 0.016081331836494288,
+    "model_best_call_median": 0.020515076816082,
+    "model_best_put_mean": -0.01566204707786016,
+    "model_best_put_median": -0.007423713803291321,
+    "model_call_minus_put_mean": 0.03174337891435445,
+    "model_call_minus_put_median": 0.0358644463121891,
+    "n_bars": 3613,
+    "n_truth_call_best": 1888,
+    "n_truth_put_best": 1725
+  },
+  "val_truth_call": {
+    "frac_model_call_above_put": 0.704978813559322,
+    "model_best_call_mean": 0.014091181412923261,
+    "model_best_call_median": 0.01691364496946335,
+    "model_best_put_mean": -0.019881456352423055,
+    "model_best_put_median": -0.015528324991464615,
+    "model_call_minus_put_mean": 0.033972637765346314,
+    "model_call_minus_put_median": 0.036242373287677765,
+    "n_bars": 1888,
+    "n_truth_call_best": 1888,
+    "n_truth_put_best": 0
+  },
+  "val_truth_put": {
+    "frac_model_call_above_put": 0.68,
+    "model_best_call_mean": 0.0182595370537129,
+    "model_best_call_median": 0.025846026837825775,
+    "model_best_put_mean": -0.011043934202280597,
+    "model_best_put_median": 0.0036523640155792236,
+    "model_call_minus_put_mean": 0.0293034712559935,
+    "model_call_minus_put_median": 0.03509511798620224,
+    "n_bars": 1725,
+    "n_truth_call_best": 0,
+    "n_truth_put_best": 1725
+  },
+  "window": 5
+}
