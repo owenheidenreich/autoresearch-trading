@@ -1511,6 +1511,91 @@ cmd_run_v3_w_side_sweep() {
 }
 
 
+# ===================================================================
+# RUN_V3_SIDE_BALANCE_SWEEP — single-seed (42) sweep of
+# --side-balance-weight for the per-bar inverse-frequency rebalance
+# experiment (path 4, 2026-04-24). Same dataset + seed-42 oracle as
+# cmd_run_v3_live_promotion. Iterates values via $V3_SIDE_BALANCE_VALUES
+# (default "0.5 1.0"). Run-dir per variant:
+# layer2_unified_policy_${exp_base}_sb${value}_seed42 where value
+# replaces "." with "p" (e.g., sb0p5, sb1p0).
+# ===================================================================
+cmd_run_v3_side_balance_sweep() {
+    load_state
+    local exp_base="${EXTRA_ARGS:-}"
+    [[ -n "$exp_base" ]] || die "Usage: deploy.sh run_v3_side_balance_sweep <exp_base> (e.g., spx_side_balance_001)"
+
+    local dataset_local="${V3_LIVE_DATASET:-$PROJECT_ROOT/v3/artifacts/layer2_action_surface_dataset_spx_live_0945_1130.pkl}"
+    [[ -f "$dataset_local" ]] || die "Live action-surface dataset not found: $dataset_local"
+
+    local oracle_local="${V3_LIVE_ORACLE_SEED42:-$PROJECT_ROOT/v3/artifacts/simulated_l3_oracle_spx_live_0945_1130_seed42.npz}"
+    [[ -f "$oracle_local" ]] || die "Seed-42 oracle not found: $oracle_local"
+
+    local sb_values="${V3_SIDE_BALANCE_VALUES:-0.5 1.0}"
+
+    log "=== V3 SIDE-BALANCE SWEEP: $exp_base (seed 42, weights: $sb_values) ==="
+
+    # Upload latest v2+v3 source bundle.
+    local v3_bundle source_git_sha source_dirty_count
+    v3_bundle="/tmp/autoresearch-v3-sync-$$.tgz"
+    rm -f "$v3_bundle"
+    source_git_sha=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "nogit")
+    source_dirty_count=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+    log "Packaging v2+v3 source sync (git=$source_git_sha, dirty=$source_dirty_count)..."
+    tar -h -czf "$v3_bundle" -C "$PROJECT_ROOT" \
+        --no-mac-metadata --no-xattrs \
+        --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
+        --exclude='v3/artifacts' --exclude='v2/artifacts' \
+        --exclude='v2/data*.pt' --exclude='v2/data_sidecars' \
+        --exclude='v2/models' --exclude='v2/output' --exclude='v2/runs' \
+        v2 v3
+    scp_retry "$v3_bundle" "root@$SSH_HOST:/root/v3-sync.tgz"
+    rm -f "$v3_bundle"
+    ssh_cmd "cd /root && tar -xzf v3-sync.tgz 2>/dev/null && rm -f v3-sync.tgz"
+
+    # Upload dataset + seed-42 oracle.
+    local dataset_remote_rel="v3/artifacts/$(basename "$dataset_local")"
+    local oracle_remote_rel="v3/artifacts/$(basename "$oracle_local")"
+    log "Uploading live action-surface dataset ($(du -h "$dataset_local" | cut -f1)) -> $dataset_remote_rel..."
+    ssh_cmd "mkdir -p /root/v3/artifacts"
+    scp_retry "$dataset_local" "root@$SSH_HOST:/root/$dataset_remote_rel"
+    log "Uploading seed-42 oracle ($(du -h "$oracle_local" | cut -f1)) -> $oracle_remote_rel..."
+    scp_retry "$oracle_local" "root@$SSH_HOST:/root/$oracle_remote_rel"
+
+    local env_prefix="${TRAIN_ENV:-}"
+    local run_dirs=()
+    local sb
+    for sb in $sb_values; do
+        local sb_token
+        sb_token=$(printf '%s' "$sb" | tr '.' 'p')
+        local run_dir_rel="v3/artifacts/layer2_unified_policy_${exp_base}_sb${sb_token}_seed42"
+        run_dirs+=("$run_dir_rel")
+
+        ssh_cmd "rm -rf /root/$run_dir_rel"
+        ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
+        log ""
+        log "--- side_balance_weight=$sb -> $run_dir_rel ---"
+        ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v3.layer2.train_unified_policy --tier promotion --device cuda --seed 42 --seeds 42 --dataset $dataset_remote_rel --utility-target hybrid_live --simulated-l3-oracle $oracle_remote_rel --side-balance-weight $sb --run-dir $run_dir_rel 2>&1 | tee /root/run.log" || log "WARNING: sb=$sb run reported non-zero status"
+    done
+
+    # Download each variant's run-dir back.
+    mkdir -p "$PROJECT_ROOT/v3/artifacts"
+    local run_dir_rel
+    for run_dir_rel in "${run_dirs[@]}"; do
+        log "Downloading /root/$run_dir_rel ..."
+        scp_cmd -r "root@$SSH_HOST:/root/$run_dir_rel" "$PROJECT_ROOT/v3/artifacts/" 2>/dev/null || \
+            log "WARNING: $run_dir_rel not present on remote (run may have crashed)"
+    done
+
+    log ""
+    log "V3 side-balance sweep complete: $exp_base"
+    log "Local artifacts:"
+    for run_dir_rel in "${run_dirs[@]}"; do
+        log "  $PROJECT_ROOT/$run_dir_rel/seed_42/report.json"
+    done
+}
+
+
 cmd_stop() {
     load_state
     echo ""
@@ -1587,6 +1672,7 @@ case "$CMD" in
     run_v3_promotion)  cmd_run_v3_promotion  ;;
     run_v3_live_promotion) cmd_run_v3_live_promotion ;;
     run_v3_w_side_sweep) cmd_run_v3_w_side_sweep ;;
+    run_v3_side_balance_sweep) cmd_run_v3_side_balance_sweep ;;
     fund)              cmd_fund              ;;
     ssh)               cmd_ssh               ;;
     logs)              cmd_logs              ;;
