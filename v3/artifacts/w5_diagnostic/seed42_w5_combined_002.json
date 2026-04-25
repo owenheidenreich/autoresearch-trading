@@ -1,0 +1,327 @@
+{
+  "chosen_side_distribution": {
+    "call": 0,
+    "put": 1
+  },
+  "n_chosen_trades": 1,
+  "n_oos_days": 60,
+  "oos_days_range": [
+    "2024-03-26",
+    "2024-06-20"
+  ],
+  "oracle_best_pnl_per_chosen_trade_avg": 0.0,
+  "oracle_best_pnl_total_simulated_l3": 0.0,
+  "per_day_decomposition": [
+    {
+      "chosen": null,
+      "day": "2024-03-26"
+    },
+    {
+      "chosen": null,
+      "day": "2024-03-27"
+    },
+    {
+      "chosen": null,
+      "day": "2024-03-28"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-01"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-02"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-03"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-04"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-05"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-08"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-09"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-10"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-11"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-12"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-15"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-16"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-17"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-18"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-19"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-22"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-23"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-24"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-25"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-26"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-29"
+    },
+    {
+      "chosen": null,
+      "day": "2024-04-30"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-01"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-02"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-03"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-06"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-07"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-08"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-09"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-10"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-13"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-14"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-15"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-16"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-17"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-20"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-21"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-22"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-23"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-24"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-28"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-29"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-30"
+    },
+    {
+      "chosen": null,
+      "day": "2024-05-31"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-03"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-04"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-05"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-06"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-07"
+    },
+    {
+      "bar_index": 120,
+      "best_forward_pnl_call_session_end": 476.9833714524905,
+      "best_forward_pnl_put_session_end": 86.52442756667733,
+      "best_nonflat_score": -0.0733707845211029,
+      "chosen_objective_pnl": NaN,
+      "chosen_side": "put",
+      "chosen_strike": 5360.0,
+      "chosen_time_stop_pnl": -578.0000610351562,
+      "day": "2024-06-10",
+      "decision_margin": 0.6628293991088867,
+      "first15_range_pct": 0.0016684820875525475,
+      "flat_score": -0.7362001538276672,
+      "iv_percentile": 0.2839743494987488,
+      "l3_routed_bars_held": 30,
+      "l3_routed_direction": "call",
+      "l3_routed_exit_bar": 145,
+      "l3_routed_exit_pnl": 458.11281171256826,
+      "l3_routed_trigger": "model",
+      "label_best_call": null,
+      "label_best_call_action_id": 1,
+      "label_best_call_strike": 5345.0,
+      "label_best_put": null,
+      "label_best_put_action_id": 13,
+      "label_best_put_strike": 5360.0,
+      "label_best_side": "call",
+      "label_put_minus_call": null,
+      "omar_mid_pos_units": 2.8599138259887695,
+      "oracle_best_action_id": 0,
+      "oracle_best_l3_exit_pnl": 0.0,
+      "oracle_best_side": "flat",
+      "oracle_best_target_pnl": 0.0,
+      "pred_stopout_risk": 0.19917696714401245,
+      "pred_win_prob": 0.42608678340911865,
+      "sigma_pos": 2.4012451171875,
+      "swap_to_best_put_l3_exit_pnl": null,
+      "swap_to_best_put_target_pnl": null,
+      "underlying_close": 5352.169921875,
+      "vwap": 5339.866529141375
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-11"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-12"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-13"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-14"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-17"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-18"
+    },
+    {
+      "chosen": null,
+      "day": "2024-06-20"
+    }
+  ],
+  "production_per_trade_avg": -105.7117719117657,
+  "production_pnl_total": -1479.9648067647197,
+  "swap_counterfactuals": {
+    "margin_200": {
+      "n_swapped": 0,
+      "scenario_pnl_total": 458.11281171256826,
+      "swap_per_trade_avg": 0.0,
+      "swap_pnl_delta_total": 0.0
+    },
+    "margin_50": {
+      "n_swapped": 0,
+      "scenario_pnl_total": 458.11281171256826,
+      "swap_per_trade_avg": 0.0,
+      "swap_pnl_delta_total": 0.0
+    },
+    "margin_500": {
+      "n_swapped": 0,
+      "scenario_pnl_total": 458.11281171256826,
+      "swap_per_trade_avg": 0.0,
+      "swap_pnl_delta_total": 0.0
+    }
+  },
+  "w5_oos_bar_label_distribution": {
+    "edge_distribution": {
+      "n_bars_label_put_beats_call_by_200": 2142,
+      "n_bars_label_put_beats_call_by_50": 2703,
+      "n_bars_label_put_beats_call_by_500": 1448
+    },
+    "label_put_minus_call_mean": 1.026175338114947,
+    "label_put_minus_call_median": 56.296665444218405,
+    "n_bars_label_best_call": 2441,
+    "n_bars_label_best_put": 2908,
+    "n_bars_with_both_sides_finite": 5349
+  },
+  "window": 5
+}

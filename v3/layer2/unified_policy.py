@@ -280,12 +280,25 @@ class UnifiedActionPredictor:
         }
 
 
+def _row_weight_2d(row_weight: torch.Tensor | None, like: torch.Tensor) -> torch.Tensor:
+    """Broadcast a per-row weight (shape N) across the action axis.
+
+    Returns a 2D tensor matching `like.shape[:2]`. When row_weight is None,
+    returns ones (so the multiply is a no-op) — keeps backward-compat with
+    callers that don't pass a weight.
+    """
+    if row_weight is None:
+        return torch.ones(like.shape[0], 1, device=like.device, dtype=like.dtype)
+    return row_weight.unsqueeze(1).to(dtype=like.dtype, device=like.device)
+
+
 def _masked_weighted_huber(
     pred: torch.Tensor,
     target: torch.Tensor,
     mask: torch.Tensor,
     weight: torch.Tensor,
     delta: float = 1.0,
+    row_weight: torch.Tensor | None = None,
 ) -> torch.Tensor:
     valid = mask > 0.0
     if not valid.any():
@@ -295,21 +308,24 @@ def _masked_weighted_huber(
     quadratic = torch.minimum(abs_err, torch.tensor(delta, device=pred.device))
     linear = abs_err - quadratic
     loss = 0.5 * quadratic.pow(2) + delta * linear
-    denom = torch.clamp((weight * mask).sum(), min=1.0)
-    return (loss * weight * mask).sum() / denom
+    rw = _row_weight_2d(row_weight, pred)
+    denom = torch.clamp((weight * mask * rw).sum(), min=1.0)
+    return (loss * weight * mask * rw).sum() / denom
 
 
 def _masked_bce(
     logit: torch.Tensor,
     target: torch.Tensor,
     mask: torch.Tensor,
+    row_weight: torch.Tensor | None = None,
 ) -> torch.Tensor:
     valid = mask > 0.0
     if not valid.any():
         return logit.new_tensor(0.0)
     loss = nn.functional.binary_cross_entropy_with_logits(logit, target, reduction="none")
-    denom = torch.clamp(mask.sum(), min=1.0)
-    return (loss * mask).sum() / denom
+    rw = _row_weight_2d(row_weight, logit)
+    denom = torch.clamp((mask * rw).sum(), min=1.0)
+    return (loss * mask * rw).sum() / denom
 
 
 def _pairwise_ranking_loss(
@@ -317,6 +333,7 @@ def _pairwise_ranking_loss(
     target_utility_raw: torch.Tensor,
     valid_mask: torch.Tensor,
     margin: float = 0.20,
+    row_weight: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Best-vs-rest hinge over valid actions.
 
@@ -338,8 +355,10 @@ def _pairwise_ranking_loss(
     if not pair_mask.any():
         return pred_utility.new_tensor(0.0)
     loss = torch.relu(margin - (best_pred - pred_utility))
-    denom = torch.clamp(pair_mask.sum(), min=1)
-    return (loss * pair_mask.float()).sum() / denom.float()
+    rw = _row_weight_2d(row_weight, pred_utility)
+    pair_mask_f = pair_mask.float() * rw
+    denom = torch.clamp(pair_mask_f.sum(), min=1.0)
+    return (loss * pair_mask_f).sum() / denom
 
 
 def _risk_band_ranking_loss(
@@ -348,6 +367,7 @@ def _risk_band_ranking_loss(
     valid_mask: torch.Tensor,
     risk_band: torch.Tensor,
     margin: float = 0.16,
+    row_weight: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Best-vs-rest hinge, restricted to comparable contract risk bands."""
     if pred_utility.shape[1] < 2:
@@ -379,8 +399,10 @@ def _risk_band_ranking_loss(
 
     best_pred = pred_utility[:, 1:][row_ids, best_token].unsqueeze(1)
     loss = torch.relu(margin - (best_pred - pred_utility[:, 1:]))
-    denom = torch.clamp(same_band.sum(), min=1).float()
-    return (loss * same_band.float()).sum() / denom
+    rw = _row_weight_2d(row_weight, pred_utility)
+    same_band_w = same_band.float() * rw
+    denom = torch.clamp(same_band_w.sum(), min=1.0)
+    return (loss * same_band_w).sum() / denom
 
 
 def _flat_ranking_loss(
@@ -389,6 +411,7 @@ def _flat_ranking_loss(
     valid_mask: torch.Tensor,
     margin: float = 0.20,
     utility_eps: float = 10.0,
+    row_weight: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Bidirectional pressure against flat (action id 0).
 
@@ -413,10 +436,13 @@ def _flat_ranking_loss(
     pos_loss = torch.relu(margin - (contract_pred - flat_pred))
     neg_loss = torch.relu(margin - (flat_pred - contract_pred))
 
-    pos_denom = torch.clamp(pos_mask.sum(), min=1).float()
-    neg_denom = torch.clamp(neg_mask.sum(), min=1).float()
-    pos_term = (pos_loss * pos_mask.float()).sum() / pos_denom
-    neg_term = (neg_loss * neg_mask.float()).sum() / neg_denom
+    rw = _row_weight_2d(row_weight, contract_pred)
+    pos_mask_w = pos_mask.float() * rw
+    neg_mask_w = neg_mask.float() * rw
+    pos_denom = torch.clamp(pos_mask_w.sum(), min=1.0)
+    neg_denom = torch.clamp(neg_mask_w.sum(), min=1.0)
+    pos_term = (pos_loss * pos_mask_w).sum() / pos_denom
+    neg_term = (neg_loss * neg_mask_w).sum() / neg_denom
     return 0.5 * (pos_term + neg_term)
 
 
@@ -426,6 +452,8 @@ def _side_contrastive_loss(
     valid_mask: torch.Tensor,
     margin: float = 0.20,
     utility_eps: float = 10.0,
+    row_weight: torch.Tensor | None = None,
+    cohort_balanced: bool = False,
 ) -> torch.Tensor:
     """Force direct same-bar call-vs-put discrimination.
 
@@ -478,8 +506,34 @@ def _side_contrastive_loss(
 
     call_loss = torch.relu(margin - (best_call_pred - best_put_pred))
     put_loss = torch.relu(margin - (best_put_pred - best_call_pred))
-    total = call_loss * call_better.float() + put_loss * put_better.float()
-    denom = torch.clamp(call_better.sum() + put_better.sum(), min=1).float()
+
+    if row_weight is None:
+        rw = torch.ones_like(call_better, dtype=pred_utility.dtype)
+    else:
+        rw = row_weight.to(dtype=pred_utility.dtype, device=pred_utility.device)
+
+    if cohort_balanced:
+        # Compute per-cohort means independently then average. This forces
+        # call-better and put-better cohorts to contribute equal gradient
+        # mass regardless of count. Independent of row_weight.
+        cb = call_better.float() * rw
+        pb = put_better.float() * rw
+        call_denom = torch.clamp(cb.sum(), min=1.0)
+        put_denom = torch.clamp(pb.sum(), min=1.0)
+        call_mean = (call_loss * cb).sum() / call_denom
+        put_mean = (put_loss * pb).sum() / put_denom
+        # If only one cohort exists, return its mean unchanged (avoids
+        # halving a single-cohort signal). Else average.
+        if not call_better.any():
+            return put_mean
+        if not put_better.any():
+            return call_mean
+        return 0.5 * (call_mean + put_mean)
+
+    cb = call_better.float() * rw
+    pb = put_better.float() * rw
+    total = call_loss * cb + put_loss * pb
+    denom = torch.clamp(cb.sum() + pb.sum(), min=1.0)
     return total.sum() / denom
 
 
@@ -678,6 +732,11 @@ def train_unified_action_model(
     stopout_train_filled = np.nan_to_num(stopout_train, nan=0.0).astype(np.float32)
     stopout_val_filled = np.nan_to_num(stopout_val, nan=0.0).astype(np.float32)
 
+    # Per-row weight passed through every loss head when side-balance is on.
+    # When side_balance_weight=0, side_balance_per_row_train is all-ones
+    # (built in the block above), so multiplying it through is a no-op.
+    row_weight_val_np = np.ones(reg_weight_val.shape[0], dtype=np.float32)
+
     train_ds = TensorDataset(
         torch.from_numpy(scalar_train_n),
         torch.from_numpy(seq_train_n),
@@ -697,6 +756,7 @@ def train_unified_action_model(
         torch.from_numpy(stopout_train_filled),
         torch.from_numpy(stopout_mask_train),
         torch.from_numpy(np.nan_to_num(tradeable_mask_train, nan=0.0).astype(np.float32)),
+        torch.from_numpy(side_balance_per_row_train),
     )
     val_ds = TensorDataset(
         torch.from_numpy(scalar_val_n),
@@ -717,6 +777,7 @@ def train_unified_action_model(
         torch.from_numpy(stopout_val_filled),
         torch.from_numpy(stopout_mask_val),
         torch.from_numpy(np.nan_to_num(tradeable_mask_val, nan=0.0).astype(np.float32)),
+        torch.from_numpy(row_weight_val_np),
     )
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=False)
@@ -764,6 +825,7 @@ def train_unified_action_model(
                 stopout_b,
                 stopout_mask_b,
                 tradeable_b,
+                row_weight_b,
             ) = [x.to(device) for x in batch]
 
             optimizer.zero_grad()
@@ -774,16 +836,19 @@ def train_unified_action_model(
                 contracts_b,
                 contract_mask_b,
             )
-            reg_loss = _masked_weighted_huber(utility_pred, utility_b, reg_mask_b, reg_weight_b)
-            rank_loss = _risk_band_ranking_loss(utility_pred, utility_raw_b, tradeable_b, risk_band_b)
-            cross_rank_loss = _pairwise_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
-            flat_rank_loss = _flat_ranking_loss(utility_pred, utility_raw_b, tradeable_b)
-            side_loss = _side_contrastive_loss(utility_pred, utility_raw_b, tradeable_b)
-            dollar_loss = _masked_weighted_huber(dollar_pred, dollar_b, reg_mask_b, reg_weight_b)
-            return_loss = _masked_weighted_huber(return_pred, return_b, reg_mask_b, reg_weight_b)
-            win_loss = _masked_bce(win_pred, win_b, reg_mask_b)
-            clean_loss = _masked_bce(clean_pred, clean_b, clean_mask_b)
-            stopout_loss = _masked_bce(stopout_pred, stopout_b, stopout_mask_b)
+            # When side_balance_weight > 0, row_weight_b is per-row inverse-
+            # frequency normalized; otherwise it's all-ones (no-op).
+            cohort_balanced_side = side_balance_weight > 0.0
+            reg_loss = _masked_weighted_huber(utility_pred, utility_b, reg_mask_b, reg_weight_b, row_weight=row_weight_b)
+            rank_loss = _risk_band_ranking_loss(utility_pred, utility_raw_b, tradeable_b, risk_band_b, row_weight=row_weight_b)
+            cross_rank_loss = _pairwise_ranking_loss(utility_pred, utility_raw_b, tradeable_b, row_weight=row_weight_b)
+            flat_rank_loss = _flat_ranking_loss(utility_pred, utility_raw_b, tradeable_b, row_weight=row_weight_b)
+            side_loss = _side_contrastive_loss(utility_pred, utility_raw_b, tradeable_b, row_weight=row_weight_b, cohort_balanced=cohort_balanced_side)
+            dollar_loss = _masked_weighted_huber(dollar_pred, dollar_b, reg_mask_b, reg_weight_b, row_weight=row_weight_b)
+            return_loss = _masked_weighted_huber(return_pred, return_b, reg_mask_b, reg_weight_b, row_weight=row_weight_b)
+            win_loss = _masked_bce(win_pred, win_b, reg_mask_b, row_weight=row_weight_b)
+            clean_loss = _masked_bce(clean_pred, clean_b, clean_mask_b, row_weight=row_weight_b)
+            stopout_loss = _masked_bce(stopout_pred, stopout_b, stopout_mask_b, row_weight=row_weight_b)
             total_loss = (
                 w_regression * reg_loss
                 + w_ranking * rank_loss
@@ -831,6 +896,7 @@ def train_unified_action_model(
                     stopout_b,
                     stopout_mask_b,
                     tradeable_b,
+                    row_weight_b,
                 ) = [x.to(device) for x in batch]
                 utility_pred, dollar_pred, return_pred, win_pred, clean_pred, stopout_pred = model(
                     scalar_b,

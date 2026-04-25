@@ -1532,8 +1532,9 @@ cmd_run_v3_side_balance_sweep() {
     [[ -f "$oracle_local" ]] || die "Seed-42 oracle not found: $oracle_local"
 
     local sb_values="${V3_SIDE_BALANCE_VALUES:-0.5 1.0}"
+    local w_side="${V3_W_SIDE_CONTRASTIVE:-0.0}"
 
-    log "=== V3 SIDE-BALANCE SWEEP: $exp_base (seed 42, weights: $sb_values) ==="
+    log "=== V3 SIDE-BALANCE SWEEP: $exp_base (seed 42, sb_values: $sb_values, w_side_contrastive: $w_side) ==="
 
     # Upload latest v2+v3 source bundle.
     local v3_bundle source_git_sha source_dirty_count
@@ -1575,7 +1576,7 @@ cmd_run_v3_side_balance_sweep() {
         ssh_cmd "echo '' > /root/run.log" 2>/dev/null || true
         log ""
         log "--- side_balance_weight=$sb -> $run_dir_rel ---"
-        ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v3.layer2.train_unified_policy --tier promotion --device cuda --seed 42 --seeds 42 --dataset $dataset_remote_rel --utility-target hybrid_live --simulated-l3-oracle $oracle_remote_rel --side-balance-weight $sb --run-dir $run_dir_rel 2>&1 | tee /root/run.log" || log "WARNING: sb=$sb run reported non-zero status"
+        ssh_cmd "$(remote_python_prefix) cd /root && $env_prefix PYTHONUNBUFFERED=1 \"\$PYBIN\" -m v3.layer2.train_unified_policy --tier promotion --device cuda --seed 42 --seeds 42 --dataset $dataset_remote_rel --utility-target hybrid_live --simulated-l3-oracle $oracle_remote_rel --side-balance-weight $sb --w-side-contrastive $w_side --run-dir $run_dir_rel 2>&1 | tee /root/run.log" || log "WARNING: sb=$sb run reported non-zero status"
     done
 
     # Download each variant's run-dir back.
