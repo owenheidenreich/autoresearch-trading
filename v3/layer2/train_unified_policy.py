@@ -86,6 +86,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--w-dollar", type=float, default=0.25)
     p.add_argument("--w-return", type=float, default=0.25)
     p.add_argument("--w-win", type=float, default=0.25)
+    p.add_argument("--side-balance-weight", type=float, default=0.0,
+                   help="Per-bar inverse-frequency sample weight for truth-best-side balance "
+                        "(0.0=current, 1.0=full inverse-frequency). Multiplies into reg_weight "
+                        "so regression/dollar/return heads see balanced gradient mass across "
+                        "call-best vs put-best vs flat-best bars. Targets the 2.83:1 train "
+                        "imbalance documented in spx_w_side_sweep_001 falsification.")
     p.add_argument("--golden-day", default="", help="Optional YYYY-MM-DD day to trace per epoch when it is in OOS.")
     p.add_argument(
         "--golden-day-out-dir",
@@ -1017,6 +1023,7 @@ def _run_single_seed(args: argparse.Namespace, seed: int, device: str) -> dict[s
             w_win=args.w_win,
             w_clean=args.w_clean,
             w_stopout=args.w_stopout,
+            side_balance_weight=args.side_balance_weight,
             trace_eval=golden_trace_subset,
             trace_callback=_trace_callback if golden_trace_subset is not None else None,
         )

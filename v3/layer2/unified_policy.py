@@ -535,6 +535,7 @@ def train_unified_action_model(
     w_win: float,
     w_clean: float,
     w_stopout: float,
+    side_balance_weight: float = 0.0,
     trace_eval: dict[str, np.ndarray] | None = None,
     trace_callback: Callable[[int, dict[str, float], dict[str, np.ndarray]], None] | None = None,
 ) -> tuple[UnifiedActionPredictor, dict[str, Any]]:
@@ -606,6 +607,61 @@ def train_unified_action_model(
     # flat_score`. Upweighting it (1.5) pins the margin distribution in a
     # regime where calibration can reliably pick a positive threshold.
     reg_weight_train[:, 0] = 1.5
+
+    # Per-bar inverse-frequency side-balance weight. Train-set call/put-best
+    # imbalance (~2.83:1 in spx_live_hybrid_001) makes every loss head's
+    # gradient asymmetric: the dominant truth-best-side dominates updates
+    # and the model learns a global side prior. side_balance_weight in
+    # [0, 1] interpolates from "current behavior" (alpha=0) to "full
+    # inverse-frequency" (alpha=1). Falsified-H1 (w_side_contrastive sweep)
+    # showed adding more loss terms can't paper over this; the only fix is
+    # at the per-bar gradient mass level.
+    side_balance_per_row_train = np.ones(reg_weight_train.shape[0], dtype=np.float32)
+    side_balance_meta: dict[str, Any] = {
+        "alpha": float(side_balance_weight),
+        "applied": False,
+    }
+    if side_balance_weight > 0.0:
+        n_actions = reg_weight_train.shape[1]
+        n_contracts = n_actions - 1
+        if n_contracts >= 2 and (n_contracts % 2) == 0:
+            top_k = n_contracts // 2
+            tradeable_train = np.nan_to_num(tradeable_mask_train, nan=0.0) > 0.5
+            tokens = utility_raw_train.astype(np.float64).copy()
+            tokens[~tradeable_train] = -np.inf
+            best_action = tokens.argmax(axis=1)
+            # Side label per row: 0=flat, 1=call, 2=put.
+            best_side = np.where(
+                ~np.isfinite(tokens[np.arange(len(tokens)), best_action]),
+                0,
+                np.where(best_action == 0, 0,
+                         np.where(best_action <= top_k, 1, 2)),
+            )
+            n_total = len(best_side)
+            n_per_side = {
+                "flat": int((best_side == 0).sum()),
+                "call": int((best_side == 1).sum()),
+                "put": int((best_side == 2).sum()),
+            }
+            inv_freq = np.ones_like(best_side, dtype=np.float64)
+            for code, name in ((0, "flat"), (1, "call"), (2, "put")):
+                if n_per_side[name] > 0:
+                    inv_freq[best_side == code] = n_total / n_per_side[name]
+            inv_freq /= inv_freq.mean() if inv_freq.mean() > 0 else 1.0
+            blended = (1.0 - side_balance_weight) * 1.0 + side_balance_weight * inv_freq
+            side_balance_per_row_train = blended.astype(np.float32)
+            reg_weight_train *= side_balance_per_row_train[:, None]
+            side_balance_meta.update(
+                applied=True,
+                n_per_side=n_per_side,
+                imbalance_call_to_put=(
+                    n_per_side["call"] / max(n_per_side["put"], 1)
+                ),
+                weight_min=float(side_balance_per_row_train.min()),
+                weight_max=float(side_balance_per_row_train.max()),
+                weight_mean=float(side_balance_per_row_train.mean()),
+            )
+
     reg_weight_val = np.ones_like(utility_val_filled, dtype=np.float32)
 
     clean_mask_train = np.isfinite(clean_train).astype(np.float32) * available_mask_train.astype(np.float32)
@@ -895,6 +951,8 @@ def train_unified_action_model(
         "w_dollar": float(w_dollar),
         "w_return": float(w_return),
         "w_win": float(w_win),
+        "side_balance_weight": float(side_balance_weight),
+        "side_balance_meta": side_balance_meta,
         "loss_history": loss_history,
         **best_parts,
     }
