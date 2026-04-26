@@ -33,6 +33,7 @@ from v3.layer2.common import load_export_bundle
 BASE_PATTERN = "v3/artifacts/simulated_l3_oracle_spx_live_0945_1130_seed{seed}_balanced_fresh.npz"
 H3A_PATTERN = "v3/artifacts/simulated_l3_oracle_spx_live_0945_1130_seed{seed}_h3a.npz"
 H3E_PATTERN = "v3/artifacts/simulated_l3_oracle_spx_live_0945_1130_seed{seed}_h3e.npz"
+DEFAULT_VARIANT_PATTERN = H3E_PATTERN  # overridable via --variant-pattern
 CHOSEN_PATTERN = "v3/artifacts/layer2_unified_policy_spx_combined_3seed_001_seed{seed}/seed_{seed}/chosen_trades.pkl"
 SPX_1MIN = "/Users/gduby/.cache/autoresearch-trading/data/spx_1min.pkl"
 
@@ -153,6 +154,36 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seeds", type=int, nargs="+", default=[42, 43, 44, 45, 46])
     parser.add_argument("--out", default="v3/artifacts/research/h3e_eval.json")
+    parser.add_argument(
+        "--variant-pattern",
+        default=H3E_PATTERN,
+        help="npz pattern with {seed} placeholder for the variant under test "
+        "(default: H3e). Use {seed}_sideblind.npz for Step A.",
+    )
+    parser.add_argument(
+        "--variant-label",
+        default="h3e",
+        help="Label for the variant column in the comparison table.",
+    )
+    parser.add_argument(
+        "--gate-spread",
+        type=float,
+        default=1.00,
+        help="Primary gate: variant spread must be <= this. H3e plan target "
+        "is 1.00; Step A's plan loosens to 1.30 (the baseline spread).",
+    )
+    parser.add_argument(
+        "--gate-floor",
+        type=float,
+        default=1.40,
+        help="Secondary gate: floor cell PF must be >= this.",
+    )
+    parser.add_argument(
+        "--gate-aggregate",
+        type=float,
+        default=1.831,
+        help="Tertiary gate: aggregate PF must be >= this.",
+    )
     args = parser.parse_args()
 
     seeds = args.seeds
@@ -169,12 +200,13 @@ def main():
 
     df_base = gather_records(seeds, BASE_PATTERN, bundle, key_to_row, al, daily_returns)
     df_h3a = gather_records(seeds, H3A_PATTERN, bundle, key_to_row, al, daily_returns)
-    df_h3e = gather_records(seeds, H3E_PATTERN, bundle, key_to_row, al, daily_returns)
+    df_h3e = gather_records(seeds, args.variant_pattern, bundle, key_to_row, al, daily_returns)
 
+    variant = args.variant_label
     # Align indices on (seed, day, side, exit-key) — actually on row order; same trades
     if not (len(df_base) == len(df_h3a) == len(df_h3e)):
-        print(f"WARNING: row counts differ. base={len(df_base)} h3a={len(df_h3a)} h3e={len(df_h3e)}")
-    print(f"Trades: base={len(df_base)}  h3a={len(df_h3a)}  h3e={len(df_h3e)}")
+        print(f"WARNING: row counts differ. base={len(df_base)} h3a={len(df_h3a)} {variant}={len(df_h3e)}")
+    print(f"Trades: base={len(df_base)}  h3a={len(df_h3a)}  {variant}={len(df_h3e)}")
     print()
 
     def report_variant(label, df):
@@ -195,11 +227,11 @@ def main():
     print(f"{'variant':>10} {'agg_pf':>8} {'spread':>8} {'floor':>8}")
     print(f"{'baseline':>10} {base_pf:>8.3f} {base_spread:>8.3f} {base_floor:>8.3f}")
     print(f"{'h3a':>10} {h3a_pf:>8.3f} {h3a_spread:>8.3f} {h3a_floor:>8.3f}")
-    print(f"{'h3e':>10} {h3e_pf:>8.3f} {h3e_spread:>8.3f} {h3e_floor:>8.3f}")
+    print(f"{variant:>10} {h3e_pf:>8.3f} {h3e_spread:>8.3f} {h3e_floor:>8.3f}")
     print()
 
-    print("=== Per-cell comparison (baseline vs h3e) ===")
-    print(f"{'trend':>6} {'vol':>6} {'n':>5} {'base':>8} {'h3a':>8} {'h3e':>8}  {'d_h3e_vs_base':>15}")
+    print(f"=== Per-cell comparison (baseline vs {variant}) ===")
+    print(f"{'trend':>6} {'vol':>6} {'n':>5} {'base':>8} {'h3a':>8} {variant:>8}  {'d_v_vs_base':>13}")
     base_by = {(c["trend"], c["vol"]): c for c in base_cells}
     h3a_by = {(c["trend"], c["vol"]): c for c in h3a_cells}
     for c in h3e_cells:
@@ -231,38 +263,39 @@ def main():
 
     # Gates
     print("=== Decision gates ===")
-    primary = h3e_spread <= 1.00
-    secondary = h3e_floor >= 1.40
-    tertiary = h3e_pf >= 1.831
+    primary = h3e_spread <= args.gate_spread
+    secondary = h3e_floor >= args.gate_floor
+    tertiary = h3e_pf >= args.gate_aggregate
     no_seed_crash = all(d >= -0.10 for d in per_seed_deltas) if per_seed_deltas else False
 
-    print(f"  PRIMARY   spread <= 1.00:  {h3e_spread:.3f}  -> {'PASS' if primary else 'FAIL'}")
-    print(f"  SECONDARY floor  >= 1.40:  {h3e_floor:.3f}  -> {'PASS' if secondary else 'FAIL'}")
-    print(f"  TERTIARY  agg   >= 1.831:  {h3e_pf:.3f}     -> {'PASS' if tertiary else 'FAIL'}")
+    print(f"  PRIMARY   spread <= {args.gate_spread:.2f}:  {h3e_spread:.3f}  -> {'PASS' if primary else 'FAIL'}")
+    print(f"  SECONDARY floor  >= {args.gate_floor:.2f}:  {h3e_floor:.3f}  -> {'PASS' if secondary else 'FAIL'}")
+    print(f"  TERTIARY  agg   >= {args.gate_aggregate:.3f}:  {h3e_pf:.3f}     -> {'PASS' if tertiary else 'FAIL'}")
     print(f"  DISCIPLINE no seed crash:  {'PASS' if no_seed_crash else 'FAIL'}")
     print()
 
     if primary and secondary and tertiary and no_seed_crash:
         verdict = "PASS"
-        print("✓ H3e PASSES all gates. Recommend forward-walk validation.")
+        print(f"✓ {variant} PASSES all gates. Recommend forward-walk validation.")
     elif primary and secondary and not tertiary and h3e_pf >= 1.5:
         verdict = "PARTIAL"
-        print("≈ H3e PARTIAL: spread + floor pass, aggregate degraded. Per user")
-        print("  framing (regime adaptability over aggregate), still proceed to FW.")
+        print(f"≈ {variant} PARTIAL: spread + floor pass, aggregate degraded.")
+        print("  Per user framing (regime adaptability over aggregate), still proceed to FW.")
     elif primary and not secondary:
         verdict = "WEAK"
-        print("≈ H3e WEAK: spread narrowed but floor didn't lift to 1.40. Marginal.")
+        print(f"≈ {variant} WEAK: spread narrowed but floor didn't lift. Marginal.")
     else:
         verdict = "FAIL"
-        print("✗ H3e FAILS primary gate. Recommend git revert; consider H3e-clean variant")
-        print("  (drop H3a) as a secondary attribution test.")
+        print(f"✗ {variant} FAILS primary gate. Recommend git revert.")
 
     summary = {
         "seeds": list(seeds),
-        "n_trades_per_variant": {"base": len(df_base), "h3a": len(df_h3a), "h3e": len(df_h3e)},
-        "agg_pf": {"base": base_pf, "h3a": h3a_pf, "h3e": h3e_pf},
-        "spread": {"base": base_spread, "h3a": h3a_spread, "h3e": h3e_spread},
-        "floor": {"base": base_floor, "h3a": h3a_floor, "h3e": h3e_floor},
+        "variant_label": variant,
+        "variant_pattern": args.variant_pattern,
+        "n_trades_per_variant": {"base": len(df_base), "h3a": len(df_h3a), variant: len(df_h3e)},
+        "agg_pf": {"base": base_pf, "h3a": h3a_pf, variant: h3e_pf},
+        "spread": {"base": base_spread, "h3a": h3a_spread, variant: h3e_spread},
+        "floor": {"base": base_floor, "h3a": h3a_floor, variant: h3e_floor},
         "h3e_cells": h3e_cells,
         "per_seed_deltas_base_to_h3e": per_seed_deltas,
         "verdict": verdict,
