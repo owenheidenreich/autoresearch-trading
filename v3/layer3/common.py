@@ -400,6 +400,22 @@ def _build_trade_data(
         )
         payload["trade_state"] = trade_state
         payload["target"] = int(current_pnl >= suffix_max[i]) if np.isfinite(suffix_max[i]) else 1
+        # Regret per bar (dollar cost of misclassification at training time):
+        #   target=0 (don't exit): false-positive regret = suffix_max - current_pnl
+        #     (we'd exit now and miss the remaining upside)
+        #   target=1 (exit now):   false-negative regret = current_pnl - final_pnl
+        #     (we'd hold and end up with worse pnl; final = per_bar[-1].current_pnl)
+        # All forward info is at training-label time only; not exposed as feature.
+        # sample_weight = max(50, regret) keeps marginal bars at a floor weight.
+        if np.isfinite(suffix_max[i]):
+            if payload["target"] == 0:
+                regret = max(0.0, float(suffix_max[i]) - current_pnl)
+            else:
+                final_pnl = per_bar[-1]["current_pnl"]
+                regret = max(0.0, current_pnl - float(final_pnl))
+        else:
+            regret = 0.0
+        payload["regret"] = float(regret)
 
     return {
         "window_idx": int(trade["window_idx"]),
@@ -460,16 +476,22 @@ def build_trade_dataset(
     }
 
 
-def _flatten_to_rows(trade_data: list[dict[str, Any]]) -> tuple[np.ndarray, np.ndarray]:
+def _flatten_to_rows(trade_data: list[dict[str, Any]]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     X_rows: list[np.ndarray] = []
     y_rows: list[int] = []
+    w_rows: list[float] = []
     for td in trade_data:
         for payload in td["per_bar"]:
             X_rows.append(np.concatenate([payload["state_features"], payload["trade_state"]]))
             y_rows.append(int(payload["target"]))
+            # Regret-weighted training: bars with high $-regret matter more.
+            # Floor at 50 so all bars contribute; cap at 5000 to avoid extreme outliers.
+            regret = float(payload.get("regret", 0.0))
+            w_rows.append(max(50.0, min(5000.0, 50.0 + regret)))
     return (
         np.asarray(X_rows, dtype=np.float32),
         np.asarray(y_rows, dtype=np.int8),
+        np.asarray(w_rows, dtype=np.float32),
     )
 
 
@@ -502,9 +524,10 @@ def train_models_by_window(
             reports.append(report)
             continue
 
-        X_train, y_train = _flatten_to_rows(train_data)
+        X_train, y_train, w_train = _flatten_to_rows(train_data)
         report["train_rows"] = int(len(X_train))
         report["train_pos_rate"] = float(y_train.mean()) if len(y_train) else None
+        report["mean_sample_weight"] = float(w_train.mean()) if len(w_train) else None
         if len(X_train) == 0 or len(np.unique(y_train)) < 2:
             models[window_idx] = None
             report["mode"] = "fallback"
@@ -520,7 +543,7 @@ def train_models_by_window(
             random_state=seed + window_idx,
             early_stopping=False,
         )
-        model.fit(X_train, y_train)
+        model.fit(X_train, y_train, sample_weight=w_train)
         models[window_idx] = model
         reports.append(report)
 
