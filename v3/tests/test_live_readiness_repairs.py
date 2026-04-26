@@ -136,6 +136,10 @@ class LiveReadinessRepairTests(unittest.TestCase):
             spread_fracs=spread_fracs,
             suffix_max=np.maximum.accumulate(np.nan_to_num(mids[::-1], nan=-np.inf))[::-1],
             suffix_min=np.minimum.accumulate(np.nan_to_num(mids[::-1], nan=np.inf))[::-1],
+            ives=np.full(40, np.nan, dtype=np.float64),
+            deltas=np.full(40, np.nan, dtype=np.float64),
+            theta_to_premiums=np.full(40, np.nan, dtype=np.float64),
+            gamma_dollars=np.full(40, np.nan, dtype=np.float64),
         )
 
         _, _, _, labels = build_contract_action_surface(

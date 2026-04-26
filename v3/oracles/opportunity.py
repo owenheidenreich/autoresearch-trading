@@ -36,6 +36,11 @@ from v3.logger.schema import BarRecord, ContractRecord, DayLog
 CIDX_VALID = 0
 CIDX_MID = 3
 CIDX_SPREAD_FRAC = 4
+# H3e: chosen-contract Greeks per-bar (look-ahead-clean: bar-t snapshots)
+CIDX_IV = 7
+CIDX_DELTA = 8
+CIDX_THETA_TO_PREMIUM = 19
+CIDX_GAMMA_DOLLAR = 21
 
 DEFAULT_SESSION_END_BAR = 375
 DEFAULT_COMMISSION_PER_CONTRACT = 1.0  # round-trip $
@@ -51,6 +56,11 @@ class _ContractPath:
     # Precomputed suffix max/min of mids (NaN-aware); index k = max/min of mids[k:]
     suffix_max: np.ndarray
     suffix_min: np.ndarray
+    # H3e: per-bar Greek snapshots of THIS contract (bar-t observable, no leak)
+    ives: np.ndarray            # implied vol of the contract at bar t
+    deltas: np.ndarray          # contract delta at bar t (signed)
+    theta_to_premiums: np.ndarray  # |theta_per_bar| / mid at bar t
+    gamma_dollars: np.ndarray   # gamma * spot^2 * 0.01 at bar t (econ $-gamma)
 
 
 def _build_contract_paths(sidecar: dict, n_bars: int) -> dict[int, _ContractPath]:
@@ -63,7 +73,9 @@ def _build_contract_paths(sidecar: dict, n_bars: int) -> dict[int, _ContractPath
     row_idx = sidecar["row_contract_idx"]
     feats = sidecar["row_features"]
 
-    observed: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+    # Per-contract observed arrays: (mids, spread_fracs, ives, deltas,
+    # theta_to_premiums, gamma_dollars). Each is [n_bars] with NaN sentinels.
+    observed: dict[int, tuple[np.ndarray, ...]] = {}
     # First pass: allocate arrays per contract.
     # Partial sessions exist — cap iteration by the sidecar's actual bar count.
     usable_bars = min(n_bars, len(ptrs) - 1)
@@ -78,14 +90,19 @@ def _build_contract_paths(sidecar: dict, n_bars: int) -> dict[int, _ContractPath
                 continue
             cid = int(row_idx[j])
             if cid not in observed:
-                mids = np.full(n_bars, np.nan, dtype=np.float64)
-                sfs = np.full(n_bars, np.nan, dtype=np.float64)
-                observed[cid] = (mids, sfs)
-            observed[cid][0][b] = float(c[CIDX_MID])
-            observed[cid][1][b] = float(c[CIDX_SPREAD_FRAC])
+                observed[cid] = tuple(
+                    np.full(n_bars, np.nan, dtype=np.float64) for _ in range(6)
+                )
+            mids, sfs, ives, deltas, ttps, gds = observed[cid]
+            mids[b] = float(c[CIDX_MID])
+            sfs[b] = float(c[CIDX_SPREAD_FRAC])
+            ives[b] = float(c[CIDX_IV])
+            deltas[b] = float(c[CIDX_DELTA])
+            ttps[b] = float(c[CIDX_THETA_TO_PREMIUM])
+            gds[b] = float(c[CIDX_GAMMA_DOLLAR])
 
     paths: dict[int, _ContractPath] = {}
-    for cid, (mids, sfs) in observed.items():
+    for cid, (mids, sfs, ives, deltas, ttps, gds) in observed.items():
         suffix_max = _nan_aware_suffix_reduce(mids, np.fmax)
         suffix_min = _nan_aware_suffix_reduce(mids, np.fmin)
         paths[cid] = _ContractPath(
@@ -94,6 +111,10 @@ def _build_contract_paths(sidecar: dict, n_bars: int) -> dict[int, _ContractPath
             spread_fracs=sfs,
             suffix_max=suffix_max,
             suffix_min=suffix_min,
+            ives=ives,
+            deltas=deltas,
+            theta_to_premiums=ttps,
+            gamma_dollars=gds,
         )
     return paths
 
