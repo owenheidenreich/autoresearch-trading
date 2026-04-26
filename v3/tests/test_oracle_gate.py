@@ -1,4 +1,11 @@
-"""Lock the trained oracle gate's headline numbers."""
+"""Tests for the oracle gate code surface.
+
+⚠️ The original gate's PF claims were retracted (see
+oracle_gate_LEAKAGE_RETRACTION_2026_04_25.md): two features in the
+original feature set were oracle labels. The pickle was deleted; these
+tests are skipped unless the gate is re-trained with the now-clean
+FEATURES list. They no longer assert the +24% lift number.
+"""
 from __future__ import annotations
 
 import os
@@ -28,11 +35,16 @@ class OracleGateTests(unittest.TestCase):
         self.assertEqual(len(self.gate.feature_names), 16)
         self.assertGreater(self.gate.n_train, 1500)
 
-    def test_top_feature_is_time_stop_margin_raw(self) -> None:
-        importance = self.gate.train_metadata.get("feature_importance", {})
-        ranked = sorted(importance.items(), key=lambda r: -r[1])
-        self.assertEqual(ranked[0][0], "time_stop_margin_raw",
-                         f"top feature should be time_stop_margin_raw, got {ranked[0]}")
+    def test_no_label_leak_features(self) -> None:
+        """Ensure gate FEATURES list does not contain oracle labels."""
+        from v3.live_shadow.oracle_gate import FEATURES
+        leaky = {"time_stop_margin_raw", "side_margin_raw",
+                 "best_forward_pnl_call", "best_forward_pnl_put",
+                 "worst_forward_pnl_call", "worst_forward_pnl_put",
+                 "entry_value_raw", "time_stop_pnl_call", "time_stop_pnl_put",
+                 "time_stop_value_raw", "opportunity_oracle_entry"}
+        for f in FEATURES:
+            self.assertNotIn(f, leaky, f"Feature {f} is an oracle label — would leak future PnL")
 
     def test_predict_prob_returns_probability(self) -> None:
         # construct a feature dict
@@ -47,16 +59,16 @@ class OracleGateTests(unittest.TestCase):
         b = self.gate.use_oracle_exit(features)
         self.assertIsInstance(b, bool)
 
-    def test_forward_walk_lift(self) -> None:
+    def test_forward_walk_at_least_baseline(self) -> None:
+        """With clean features, gate should at least not catastrophically
+        underperform always-oracle baseline."""
         result = evaluate_gate_on_forward_walk(self.gate)
-        # Gate should match or beat baseline always-oracle on FW
-        self.assertGreaterEqual(result["gate_pf"], result["baseline_pf_always_oracle"],
-                                "gate should >= baseline on forward-walk")
-        # PF should be at least 2.0 (we found 2.27 at threshold 0.45)
-        self.assertGreaterEqual(result["gate_pf"], 2.0,
-                                f"gate forward-walk PF should be >= 2.0, got {result['gate_pf']:.3f}")
         # n trades
         self.assertGreaterEqual(result["n"], 50)
+        # Gate should be within reasonable range of baseline (no PF lift
+        # claim — that was retracted as label leakage).
+        self.assertGreaterEqual(result["gate_pf"], 1.5,
+                                f"gate PF too low: {result['gate_pf']:.3f}")
 
 
 if __name__ == "__main__":

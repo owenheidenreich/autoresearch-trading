@@ -1,29 +1,18 @@
 """Runtime oracle-vs-no-oracle gate.
 
-A trained Gradient Boosting classifier predicts P(oracle_better_than_time_stop)
-at decision time, given the bar's scalar features. The gate decides whether
-to use the L3 oracle's predicted exit (default for ~80% of trades) or to
-let the trade run to time-stop (best for ~20% of trades, mostly truncated-
-winner cases).
+⚠️  RETRACTED 2026-04-25: original feature set included `time_stop_margin_raw`
+and `side_margin_raw` which are ORACLE LABELS computed from realized
+future PnL (`ts_call - ts_put` and `best_forward_pnl_call - best_forward_pnl_put`
+in v3/layer2/common.py:339, :330). The +24% PF lift on forward walk was
+classifier reward-hacking. With those features stripped:
 
-Trained on 1664 OOS chosen-trade rows from the spx_combined_3seed_001
-champion stack, 13 rolling windows. Validated on 53 forward-walk hold-out
-trades (2026-02-25 → 2026-04-24, never in training):
+    Always oracle (baseline):     PF 1.890
+    Clean-feature gate (thr 0.50): PF 1.736 (worse than baseline)
+    Beat-baseline rate (20 seeds): 0%
 
-    Always oracle:           PF 1.890, sum +$12,189
-    Gate at threshold 0.40:  PF 2.346, sum +$18,442  (+24% PF, +51% sum)
-    Gate at threshold 0.55:  PF 2.316, sum +$19,485
-    Perfect ceiling:         PF 3.203, sum +$26,328
-
-Stability: 100% beat-baseline rate across 20 random GB seeds × 5 thresholds.
-
-Build:
-    .venv/bin/python -m v3.live_shadow.oracle_gate train
-
-Use at runtime:
-    from v3.live_shadow.oracle_gate import OracleGate
-    gate = OracleGate.load()
-    use_oracle = gate.use_oracle_exit(bar_features)
+The gate is preserved for educational reference but should NOT be deployed.
+The feature list FEATURES below has been updated to remove the leaks; if
+re-trained on clean features, the lift does not materialize.
 """
 from __future__ import annotations
 
@@ -40,6 +29,11 @@ import pandas as pd
 DEFAULT_MODEL_PATH = "v3/artifacts/oracle_gate/gate_classifier.pkl"
 DEFAULT_THRESHOLD = 0.45  # leans toward conservative oracle use
 FEATURES = [
+    # CLEAN entry-time features (no future-PnL info).
+    # Removed 2026-04-25: `side_margin_raw` (= oracle_call - oracle_put using
+    # best_forward_pnl_*) and `time_stop_margin_raw` (= realized ts_call - ts_put)
+    # — these are ORACLE LABELS from common.py:330,339 and constituted reward
+    # hacking when used as classifier features.
     "sigma_pos",
     "iv_percentile",
     "vix",
@@ -51,8 +45,6 @@ FEATURES = [
     "pred_win_prob",
     "pred_clean_entry_prob",
     "pred_stopout_risk",
-    "side_margin_raw",
-    "time_stop_margin_raw",
     "late_window_40_120_flag",
     "bars_since_break_above_first15",
     "bars_since_break_below_first15",
