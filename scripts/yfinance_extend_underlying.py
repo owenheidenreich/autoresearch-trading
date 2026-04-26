@@ -76,7 +76,11 @@ def _format_index_like(df: pd.DataFrame, sym: str) -> pd.DataFrame:
     df["datetime"] = df["datetime"].dt.tz_convert("US/Eastern")
     # filter to RTH 09:30 - 15:59
     df = df[df["datetime"].dt.time.between(pd.Timestamp("09:30").time(), pd.Timestamp("15:59").time())].copy()
-    df["timestamp"] = (df["datetime"].astype("int64") // 10**6).astype("int64")
+    # yfinance returns datetime64[s, UTC]; convert to ms-precision first so
+    # int64 cast gives milliseconds (matching existing cache schema).
+    dt_ms = df["datetime"].astype("datetime64[ms, UTC]").dt.tz_convert("US/Eastern")
+    df["timestamp"] = dt_ms.astype("int64").astype("int64")
+    df["datetime"] = dt_ms
     df["time"] = df["datetime"].dt.strftime("%H:%M:%S")
     df["date"] = df["datetime"].dt.strftime("%Y-%m-%d")
     rename = {
@@ -99,7 +103,11 @@ def _format_spy_like(df: pd.DataFrame) -> pd.DataFrame:
         df["datetime"] = df["datetime"].dt.tz_localize("UTC")
     df["datetime"] = df["datetime"].dt.tz_convert("US/Eastern")
     df = df[df["datetime"].dt.time.between(pd.Timestamp("09:30").time(), pd.Timestamp("15:59").time())].copy()
-    df["timestamp"] = (df["datetime"].astype("int64") // 10**6).astype("int64")
+    # yfinance returns datetime64[s, UTC]; convert to ms-precision first so
+    # int64 cast gives milliseconds (matching existing cache schema).
+    dt_ms = df["datetime"].astype("datetime64[ms, UTC]").dt.tz_convert("US/Eastern")
+    df["timestamp"] = dt_ms.astype("int64").astype("int64")
+    df["datetime"] = dt_ms
     df["time"] = df["datetime"].dt.strftime("%H:%M:%S")
     df["date"] = df["datetime"].dt.strftime("%Y-%m-%d")
     df = df.rename(columns={
