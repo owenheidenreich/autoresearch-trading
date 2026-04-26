@@ -300,6 +300,8 @@ def _build_trade_data(
     ds: V2Dataset,
     session_end_bar: int,
     commission: float,
+    *,
+    side_blind: bool = False,
 ) -> dict[str, Any] | None:
     decision_bar = int(trade["bar_index"])
     bar_index = int(trade.get("entry_fill_bar", decision_bar + 1))
@@ -399,6 +401,10 @@ def _build_trade_data(
         f_vol = _h3a_realized_vol_10bar(pnls_arr, i)
         f_vel = _h3a_pnl_velocity_5bar(pnls_arr, i)
         f_dec = _h3a_mfe_decay_rate(pnls_arr, i)
+        # Angle A: when side_blind=True, set direction feature to 0 for all
+        # trades so the model can't condition on call/put. Forces a
+        # side-agnostic exit policy. Trees ignore constant features.
+        direction_feat = 0.0 if side_blind else (1.0 if direction == "call" else 0.0)
         trade_state = np.array(
             [
                 t - bar_index,
@@ -407,7 +413,7 @@ def _build_trade_data(
                 mfe / denom,
                 mae / denom,
                 t - mfe_bar,
-                1.0 if direction == "call" else 0.0,
+                direction_feat,
                 f_vol,
                 f_vel,
                 f_dec,
@@ -436,6 +442,8 @@ def build_trade_dataset(
     equity: float,
     session_end_bar: int,
     commission: float,
+    *,
+    side_blind: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     ds = V2Dataset.load()
     cfg = GuardrailConfig()
@@ -463,6 +471,7 @@ def build_trade_dataset(
             ds,
             session_end_bar,
             commission,
+            side_blind=side_blind,
         )
         if payload is None:
             skipped += 1
