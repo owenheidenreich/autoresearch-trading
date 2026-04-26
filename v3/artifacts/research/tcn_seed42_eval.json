@@ -1,0 +1,69 @@
+{
+  "seeds": [
+    42
+  ],
+  "variant_label": "tcn",
+  "variant_pattern": "v3/artifacts/simulated_l3_oracle_spx_live_0945_1130_seed{seed}_tcn.npz",
+  "n_trades_per_variant": {
+    "base": 376,
+    "h3a": 376,
+    "tcn": 376
+  },
+  "agg_pf": {
+    "base": 2.1947074806987517,
+    "h3a": 2.307831491029523,
+    "tcn": 2.350284304891402
+  },
+  "spread": {
+    "base": 0.9952201097562341,
+    "h3a": 1.5961300440375377,
+    "tcn": 2.788448009352022
+  },
+  "floor": {
+    "base": 1.4053442791936468,
+    "h3a": 1.6062378552530205,
+    "tcn": 1.656619327202849
+  },
+  "h3e_cells": [
+    {
+      "trend": "bear",
+      "vol": "high",
+      "n": 32,
+      "pf": 2.2455969609135593
+    },
+    {
+      "trend": "chop",
+      "vol": "low",
+      "n": 47,
+      "pf": 3.2901342372652387
+    },
+    {
+      "trend": "chop",
+      "vol": "mid",
+      "n": 44,
+      "pf": 1.656619327202849
+    },
+    {
+      "trend": "chop",
+      "vol": "high",
+      "n": 43,
+      "pf": 4.445067336554871
+    },
+    {
+      "trend": "bull",
+      "vol": "low",
+      "n": 143,
+      "pf": 1.9949487136225703
+    },
+    {
+      "trend": "bull",
+      "vol": "mid",
+      "n": 45,
+      "pf": 2.4300438721848194
+    }
+  ],
+  "per_seed_deltas_base_to_h3e": [
+    0.1555768241926505
+  ],
+  "verdict": "FAIL"
+}
