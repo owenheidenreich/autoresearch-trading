@@ -300,3 +300,97 @@ def predict_per_bar(
                 n_bars = int(mb[j].sum().item())
                 out.append(probs[j, :n_bars].numpy())
     return out
+
+
+class TCNPredictor:
+    """Sklearn-style wrapper around (TCNOracle, standardizer) so it drops into
+    the existing `replay_trade_set` code path that calls `model.predict_proba`.
+
+    HGB's predict_proba takes (N, F) and returns (N, 2). For per-bar inference
+    on a single trade, we reshape (n_bars, F) -> (1, n_bars, F), forward pass
+    causally, and return (n_bars, 2) with [:,0]=1-prob, [:,1]=prob to match
+    the existing call site `probs = model.predict_proba(features)[:, 1]`.
+    """
+
+    def __init__(
+        self,
+        model: TCNOracle,
+        standardizer: dict[str, torch.Tensor],
+        max_bars: int = 200,
+        device: str = "cpu",
+    ):
+        self.model = model.to(device).eval()
+        self.mean = standardizer["mean"].to(device)
+        self.std = standardizer["std"].to(device)
+        self.max_bars = max_bars
+        self.device = device
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """X: (n_bars, n_features) per HGB convention. Returns (n_bars, 2)."""
+        if X.ndim != 2:
+            raise ValueError(f"expected (n_bars, n_features), got {X.shape}")
+        n_bars = X.shape[0]
+        if n_bars == 0:
+            return np.zeros((0, 2), dtype=np.float32)
+        # Pad/truncate to max_bars
+        n_use = min(n_bars, self.max_bars)
+        x_t = torch.zeros(1, self.max_bars, X.shape[1], dtype=torch.float32, device=self.device)
+        x_t[0, :n_use] = torch.from_numpy(X[:n_use].astype(np.float32)).to(self.device)
+        # Apply standardizer (only valid bars; rest stay zero)
+        mask = torch.zeros(1, self.max_bars, dtype=torch.float32, device=self.device)
+        mask[0, :n_use] = 1.0
+        x_norm = (x_t - self.mean) / self.std
+        x_norm = x_norm * mask.unsqueeze(-1)
+        with torch.no_grad():
+            logits = self.model(x_norm)  # (1, max_bars)
+            probs = torch.sigmoid(logits).cpu().numpy()[0, :n_use]
+        # Build (n_bars, 2) — pad end with zeros if input was truncated
+        out = np.zeros((n_bars, 2), dtype=np.float32)
+        out[:n_use, 1] = probs
+        out[:n_use, 0] = 1.0 - probs
+        return out
+
+
+def train_tcn_models_by_window(
+    trade_data: list[dict[str, Any]],
+    seed: int,
+    min_train_trades: int,
+    *,
+    test_trade_data: list[dict[str, Any]] | None = None,
+    cfg: TCNTrainConfig | None = None,
+) -> tuple[dict[int, TCNPredictor | None], list[dict[str, Any]]]:
+    """Mirrors v3.layer3.common.train_models_by_window but trains TCNs.
+
+    Returns dict[window_idx -> TCNPredictor or None]. None means the window
+    fell back to time_stop (insufficient training trades).
+    """
+    if cfg is None:
+        cfg = TCNTrainConfig(seed=seed)
+
+    models: dict[int, TCNPredictor | None] = {}
+    reports: list[dict[str, Any]] = []
+    eval_data = trade_data if test_trade_data is None else test_trade_data
+
+    for window_idx in sorted({int(td["window_idx"]) for td in eval_data}):
+        train_window = [td for td in trade_data if int(td["window_idx"]) < window_idx]
+        test_window = [td for td in eval_data if int(td["window_idx"]) == window_idx]
+        report = {
+            "window_idx": int(window_idx),
+            "train_trades": int(len(train_window)),
+            "test_trades": int(len(test_window)),
+            "mode": "tcn",
+        }
+        if len(train_window) < min_train_trades:
+            models[window_idx] = None
+            report["mode"] = "fallback"
+            reports.append(report)
+            continue
+
+        per_seed_cfg = TCNTrainConfig(**{**cfg.__dict__, "seed": seed + int(window_idx)})
+        model, std, history = train_tcn(train_window, per_seed_cfg)
+        report["best_val_loss"] = float(min(history["val_loss"])) if history["val_loss"] else None
+        report["epochs_trained"] = int(len(history["train_loss"]))
+        models[window_idx] = TCNPredictor(model, std, max_bars=per_seed_cfg.max_bars, device=per_seed_cfg.device)
+        reports.append(report)
+
+    return models, reports

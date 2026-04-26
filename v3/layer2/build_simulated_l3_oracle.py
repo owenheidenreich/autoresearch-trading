@@ -103,6 +103,13 @@ def parse_args() -> argparse.Namespace:
         default=25,
         help="Log progress every N days.",
     )
+    p.add_argument(
+        "--oracle-class",
+        default="hgb",
+        choices=("hgb", "tcn"),
+        help="L3 model class: 'hgb' (HistGradientBoostingClassifier, default) or "
+        "'tcn' (causal Temporal Convolutional Network, H3c).",
+    )
     return p.parse_args()
 
 
@@ -144,6 +151,8 @@ def _build_candidate_surface_models(
     commission: float,
     seed: int,
     min_train_trades: int,
+    *,
+    oracle_class: str = "hgb",
 ) -> tuple[dict[int, Any], list[dict], dict[str, Any]]:
     """Train per-window L3 models on a broad action-surface candidate sample."""
     candidate_trades, candidate_meta = load_action_surface_candidate_trades(
@@ -163,15 +172,24 @@ def _build_candidate_surface_models(
     )
     print(
         f"Rebuilding candidate-trained L3 trade-datasets: "
-        f"usable={dataset_meta['n_trade_datasets']} skipped={dataset_meta['n_skipped']}",
+        f"usable={dataset_meta['n_trade_datasets']} skipped={dataset_meta['n_skipped']} "
+        f"(oracle_class={oracle_class})",
         flush=True,
     )
-    models, train_reports = train_models_by_window(
-        trade_data, seed=seed, min_train_trades=min_train_trades
-    )
+    if oracle_class == "tcn":
+        from v3.layer3.tcn_oracle import train_tcn_models_by_window, TCNTrainConfig
+        cfg = TCNTrainConfig(seed=seed, device="cpu")
+        models, train_reports = train_tcn_models_by_window(
+            trade_data, seed=seed, min_train_trades=min_train_trades, cfg=cfg,
+        )
+    else:
+        models, train_reports = train_models_by_window(
+            trade_data, seed=seed, min_train_trades=min_train_trades
+        )
     return models, train_reports, {
         "candidate_policy_meta": candidate_meta,
         "candidate_dataset_meta": dataset_meta,
+        "oracle_class": oracle_class,
     }
 
 
@@ -287,6 +305,7 @@ def main() -> int:
             commission=args.commission,
             seed=args.seed,
             min_train_trades=args.min_train_trades,
+            oracle_class=args.oracle_class,
         )
         l3_training_meta = {
             "source": "candidate_surface",
