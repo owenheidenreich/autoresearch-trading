@@ -56,15 +56,9 @@ TRADE_STATE_NAMES = [
     "mae_norm",
     "mfe_bar_age",
     "direction_is_call",
-    # H3a (causal trajectory features)
     "realized_vol_10bar",
     "pnl_velocity_5bar",
     "mfe_decay_rate",
-    # H3e (per-bar chosen-contract Greeks; bar-t observable, no leak)
-    "iv_current_t",
-    "delta_abs_t",
-    "theta_to_premium_t",
-    "gamma_dollar_norm_t",
 ]
 
 
@@ -373,23 +367,11 @@ def _build_trade_data(
         abs_idx = minute_map.get(t)
         if abs_idx is None:
             continue
-        # H3e: per-bar Greeks of THIS contract. Snapshot at bar t — observable
-        # by a live trader at minute t. NaN where contract not quoted; default
-        # to zero in feature so the model treats "no quote" as "no signal."
-        iv_t = path.ives[t]
-        delta_t = path.deltas[t]
-        ttp_t = path.theta_to_premiums[t]
-        gd_t = path.gamma_dollars[t]
         per_bar.append(
             {
                 "bar": t,
                 "current_pnl": current_pnl,
                 "state_features": ds.X_sim[abs_idx].astype(np.float32),
-                "iv_t": float(iv_t) if np.isfinite(iv_t) else 0.0,
-                "delta_t": float(delta_t) if np.isfinite(delta_t) else 0.0,
-                "ttp_t": float(ttp_t) if np.isfinite(ttp_t) else 0.0,
-                "gd_t": float(gd_t) if np.isfinite(gd_t) else 0.0,
-                "mid_t": float(mid),
             }
         )
 
@@ -417,11 +399,6 @@ def _build_trade_data(
         f_vol = _h3a_realized_vol_10bar(pnls_arr, i)
         f_vel = _h3a_pnl_velocity_5bar(pnls_arr, i)
         f_dec = _h3a_mfe_decay_rate(pnls_arr, i)
-        # H3e features (bar-t observable, no future data)
-        h3e_iv = payload["iv_t"]
-        h3e_delta_abs = abs(payload["delta_t"])
-        h3e_ttp = payload["ttp_t"]
-        h3e_gd_norm = payload["gd_t"] / max(payload["mid_t"], 1.0)
         trade_state = np.array(
             [
                 t - bar_index,
@@ -434,10 +411,6 @@ def _build_trade_data(
                 f_vol,
                 f_vel,
                 f_dec,
-                h3e_iv,
-                h3e_delta_abs,
-                h3e_ttp,
-                h3e_gd_norm,
             ],
             dtype=np.float32,
         )
