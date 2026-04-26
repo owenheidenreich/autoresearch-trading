@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 
 from v3.config import GuardrailConfig
 from v3.harness.rolling_windows import generate_rolling_windows
@@ -416,6 +416,14 @@ def _build_trade_data(
         )
         payload["trade_state"] = trade_state
         payload["target"] = int(current_pnl >= suffix_max[i]) if np.isfinite(suffix_max[i]) else 1
+        # H3f: continuous regret target = max future pnl - current pnl
+        # Positive: upside left (hold). Zero or negative: at/past peak (exit).
+        # Both targets are LABELS computed from realized future pnl — same
+        # convention as the binary `target` above. Features are unchanged.
+        if np.isfinite(suffix_max[i]):
+            payload["target_regret"] = float(suffix_max[i] - current_pnl)
+        else:
+            payload["target_regret"] = 0.0  # last bar: no future, no regret
 
     return {
         "window_idx": int(trade["window_idx"]),
@@ -476,13 +484,24 @@ def build_trade_dataset(
     }
 
 
-def _flatten_to_rows(trade_data: list[dict[str, Any]]) -> tuple[np.ndarray, np.ndarray]:
+def _flatten_to_rows(
+    trade_data: list[dict[str, Any]],
+    target_mode: str = "peak",
+) -> tuple[np.ndarray, np.ndarray]:
     X_rows: list[np.ndarray] = []
-    y_rows: list[int] = []
+    y_rows: list[Any] = []
     for td in trade_data:
         for payload in td["per_bar"]:
             X_rows.append(np.concatenate([payload["state_features"], payload["trade_state"]]))
-            y_rows.append(int(payload["target"]))
+            if target_mode == "regret":
+                y_rows.append(float(payload["target_regret"]))
+            else:
+                y_rows.append(int(payload["target"]))
+    if target_mode == "regret":
+        return (
+            np.asarray(X_rows, dtype=np.float32),
+            np.asarray(y_rows, dtype=np.float32),
+        )
     return (
         np.asarray(X_rows, dtype=np.float32),
         np.asarray(y_rows, dtype=np.int8),
@@ -495,8 +514,9 @@ def train_models_by_window(
     min_train_trades: int,
     *,
     test_trade_data: list[dict[str, Any]] | None = None,
-) -> tuple[dict[int, HistGradientBoostingClassifier | None], list[dict[str, Any]]]:
-    models: dict[int, HistGradientBoostingClassifier | None] = {}
+    target_mode: str = "peak",
+) -> tuple[dict[int, Any | None], list[dict[str, Any]]]:
+    models: dict[int, Any | None] = {}
     reports: list[dict[str, Any]] = []
     eval_data = trade_data if test_trade_data is None else test_trade_data
 
@@ -510,6 +530,7 @@ def train_models_by_window(
             "mode": "model",
             "train_rows": 0,
             "train_pos_rate": None,
+            "target_mode": target_mode,
         }
 
         if len(train_data) < min_train_trades:
@@ -518,27 +539,47 @@ def train_models_by_window(
             reports.append(report)
             continue
 
-        X_train, y_train = _flatten_to_rows(train_data)
+        X_train, y_train = _flatten_to_rows(train_data, target_mode=target_mode)
         report["train_rows"] = int(len(X_train))
-        report["train_pos_rate"] = float(y_train.mean()) if len(y_train) else None
-        if len(X_train) == 0 or len(np.unique(y_train)) < 2:
-            models[window_idx] = None
-            report["mode"] = "fallback"
+        if target_mode == "regret":
+            report["train_target_mean"] = float(y_train.mean()) if len(y_train) else None
+            report["train_target_std"] = float(y_train.std()) if len(y_train) else None
+            if len(X_train) == 0:
+                models[window_idx] = None
+                report["mode"] = "fallback"
+                reports.append(report)
+                continue
+            model = HistGradientBoostingRegressor(
+                loss="absolute_error",  # robust to outliers
+                learning_rate=0.05,
+                max_iter=200,
+                max_depth=4,
+                min_samples_leaf=50,
+                random_state=seed + window_idx,
+                early_stopping=False,
+            )
+            model.fit(X_train, y_train)
+            models[window_idx] = model
             reports.append(report)
-            continue
-
-        model = HistGradientBoostingClassifier(
-            loss="log_loss",
-            learning_rate=0.05,
-            max_iter=200,
-            max_depth=4,
-            min_samples_leaf=50,
-            random_state=seed + window_idx,
-            early_stopping=False,
-        )
-        model.fit(X_train, y_train)
-        models[window_idx] = model
-        reports.append(report)
+        else:
+            report["train_pos_rate"] = float(y_train.mean()) if len(y_train) else None
+            if len(X_train) == 0 or len(np.unique(y_train)) < 2:
+                models[window_idx] = None
+                report["mode"] = "fallback"
+                reports.append(report)
+                continue
+            model = HistGradientBoostingClassifier(
+                loss="log_loss",
+                learning_rate=0.05,
+                max_iter=200,
+                max_depth=4,
+                min_samples_leaf=50,
+                random_state=seed + window_idx,
+                early_stopping=False,
+            )
+            model.fit(X_train, y_train)
+            models[window_idx] = model
+            reports.append(report)
 
     return models, reports
 
@@ -560,11 +601,12 @@ def _time_stop_row(td: dict[str, Any], trigger: str) -> dict[str, Any]:
 
 def replay_trade_set(
     trade_data: list[dict[str, Any]],
-    model: HistGradientBoostingClassifier | None,
+    model: Any | None,
     threshold: float,
     *,
     fallback_policy: str,
     fallback_bars: int,
+    target_mode: str = "peak",
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for td in trade_data:
@@ -593,23 +635,44 @@ def replay_trade_set(
         features = np.stack(
             [np.concatenate([payload["state_features"], payload["trade_state"]]) for payload in td["per_bar"]]
         )
-        probs = model.predict_proba(features)[:, 1]
-        chosen = None
-        for i, payload in enumerate(td["per_bar"]):
-            if probs[i] >= threshold:
-                chosen = {
-                    "window_idx": int(td["window_idx"]),
-                    "day": td["day"],
-                    "entry_bar": int(td["entry_bar"]),
-                    "exit_bar": int(payload["bar"]),
-                    "direction": td["direction"],
-                    "exit_pnl": float(payload["current_pnl"]),
-                    "trigger": "model",
-                    "bars_held": int(payload["bar"] - td["entry_bar"]),
-                    "clean_entry_prob": float(td["clean_entry_prob"]),
-                    "max_exit_prob": float(np.max(probs)),
-                }
-                break
+        if target_mode == "regret":
+            # Regression model: output is predicted regret ($).
+            # Exit when predicted regret <= threshold (low/no upside left).
+            preds = model.predict(features)
+            chosen = None
+            for i, payload in enumerate(td["per_bar"]):
+                if preds[i] <= threshold:
+                    chosen = {
+                        "window_idx": int(td["window_idx"]),
+                        "day": td["day"],
+                        "entry_bar": int(td["entry_bar"]),
+                        "exit_bar": int(payload["bar"]),
+                        "direction": td["direction"],
+                        "exit_pnl": float(payload["current_pnl"]),
+                        "trigger": "model",
+                        "bars_held": int(payload["bar"] - td["entry_bar"]),
+                        "clean_entry_prob": float(td["clean_entry_prob"]),
+                        "min_exit_score": float(np.min(preds)),
+                    }
+                    break
+        else:
+            probs = model.predict_proba(features)[:, 1]
+            chosen = None
+            for i, payload in enumerate(td["per_bar"]):
+                if probs[i] >= threshold:
+                    chosen = {
+                        "window_idx": int(td["window_idx"]),
+                        "day": td["day"],
+                        "entry_bar": int(td["entry_bar"]),
+                        "exit_bar": int(payload["bar"]),
+                        "direction": td["direction"],
+                        "exit_pnl": float(payload["current_pnl"]),
+                        "trigger": "model",
+                        "bars_held": int(payload["bar"] - td["entry_bar"]),
+                        "clean_entry_prob": float(td["clean_entry_prob"]),
+                        "max_exit_prob": float(np.max(probs)),
+                    }
+                    break
         rows.append(chosen if chosen is not None else _time_stop_row(td, "time_stop_fallback"))
     return rows
 

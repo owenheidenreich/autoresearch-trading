@@ -110,6 +110,21 @@ def parse_args() -> argparse.Namespace:
         help="L3 model class: 'hgb' (HistGradientBoostingClassifier, default) or "
         "'tcn' (causal Temporal Convolutional Network, H3c).",
     )
+    p.add_argument(
+        "--target",
+        default="peak",
+        choices=("peak", "regret"),
+        help="L3 supervision target: 'peak' (binary, current >= future suffix max, "
+        "default) or 'regret' (continuous regression, future suffix max - current). "
+        "Regret target is magnitude-aware and matches eval objective. H3f.",
+    )
+    p.add_argument(
+        "--regret-threshold",
+        type=float,
+        default=50.0,
+        help="When --target regret: exit when predicted regret <= threshold (in $). "
+        "Default 50: exit when expected upside is < $50.",
+    )
     return p.parse_args()
 
 
@@ -153,6 +168,7 @@ def _build_candidate_surface_models(
     min_train_trades: int,
     *,
     oracle_class: str = "hgb",
+    target_mode: str = "peak",
 ) -> tuple[dict[int, Any], list[dict], dict[str, Any]]:
     """Train per-window L3 models on a broad action-surface candidate sample."""
     candidate_trades, candidate_meta = load_action_surface_candidate_trades(
@@ -173,10 +189,14 @@ def _build_candidate_surface_models(
     print(
         f"Rebuilding candidate-trained L3 trade-datasets: "
         f"usable={dataset_meta['n_trade_datasets']} skipped={dataset_meta['n_skipped']} "
-        f"(oracle_class={oracle_class})",
+        f"(oracle_class={oracle_class}, target={target_mode})",
         flush=True,
     )
     if oracle_class == "tcn":
+        if target_mode != "peak":
+            raise NotImplementedError(
+                "TCN regression target not yet wired; use --oracle-class hgb with --target regret"
+            )
         from v3.layer3.tcn_oracle import train_tcn_models_by_window, TCNTrainConfig
         cfg = TCNTrainConfig(seed=seed, device="cpu")
         models, train_reports = train_tcn_models_by_window(
@@ -184,12 +204,14 @@ def _build_candidate_surface_models(
         )
     else:
         models, train_reports = train_models_by_window(
-            trade_data, seed=seed, min_train_trades=min_train_trades
+            trade_data, seed=seed, min_train_trades=min_train_trades,
+            target_mode=target_mode,
         )
     return models, train_reports, {
         "candidate_policy_meta": candidate_meta,
         "candidate_dataset_meta": dataset_meta,
         "oracle_class": oracle_class,
+        "target_mode": target_mode,
     }
 
 
@@ -228,6 +250,8 @@ def _simulate_candidate(
     commission: float,
     models: dict[int, Any],
     thresholds: dict[int, float],
+    target_mode: str = "peak",
+    regret_threshold: float = 50.0,
 ) -> tuple[float, int, int]:
     """Returns (l3_exit_pnl, exit_bar, trigger)."""
     direction, right = _infer_direction(right_is_call)
@@ -267,7 +291,12 @@ def _simulate_candidate(
         td["time_stop_pnl"] = float(td["per_bar"][-1]["current_pnl"])
     td["window_idx"] = int(window_idx)
     model = models.get(int(window_idx))
-    threshold = thresholds.get(int(window_idx), 0.20)
+    if target_mode == "regret":
+        # Regret mode: ignore peak-calibrated thresholds; use the
+        # regret_threshold (in $) globally. Lower threshold = hold longer.
+        threshold = float(regret_threshold)
+    else:
+        threshold = thresholds.get(int(window_idx), 0.20)
 
     rows = replay_trade_set(
         [td],
@@ -275,6 +304,7 @@ def _simulate_candidate(
         float(threshold),
         fallback_policy="time_stop",
         fallback_bars=90,
+        target_mode=target_mode,
     )
     row = rows[0]
     trigger_str = row["trigger"]
@@ -306,6 +336,7 @@ def main() -> int:
             seed=args.seed,
             min_train_trades=args.min_train_trades,
             oracle_class=args.oracle_class,
+            target_mode=args.target,
         )
         l3_training_meta = {
             "source": "candidate_surface",
@@ -425,6 +456,8 @@ def main() -> int:
                     commission=args.commission,
                     models=models,
                     thresholds=thresholds,
+                    target_mode=args.target,
+                    regret_threshold=args.regret_threshold,
                 )
                 l3_exit_pnl[row_idx, action_id] = np.float32(pnl)
                 l3_exit_bar[row_idx, action_id] = np.int32(xbar)
