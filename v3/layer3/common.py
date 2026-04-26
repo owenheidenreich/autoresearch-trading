@@ -15,6 +15,11 @@ from v3.layer2.action_surface_dataset import DEFAULT_ACTION_SURFACE_DATASET_PATH
 from v3.layer2.common import build_labeled_day, load_json, replay_metrics_from_pnls
 from v3.layer25.common import DEFAULT_OUT_DIR as DEFAULT_LAYER25_DIR
 from v3.layer25.common import policy_trades
+from v3.layer3.h3a_features import (
+    mfe_decay_rate as _h3a_mfe_decay_rate,
+    pnl_velocity_5bar as _h3a_pnl_velocity_5bar,
+    realized_vol_10bar as _h3a_realized_vol_10bar,
+)
 from v3.logger.builder import select_contract
 from v3.oracles.exit_headroom import (
     DEFAULT_COMMISSION_PER_CONTRACT,
@@ -51,6 +56,9 @@ TRADE_STATE_NAMES = [
     "mae_norm",
     "mfe_bar_age",
     "direction_is_call",
+    "realized_vol_10bar",
+    "pnl_velocity_5bar",
+    "mfe_decay_rate",
 ]
 
 
@@ -374,6 +382,8 @@ def _build_trade_data(
     for i in range(len(per_bar) - 2, -1, -1):
         suffix_max[i] = max(per_bar[i + 1]["current_pnl"], suffix_max[i + 1])
 
+    pnls_arr = np.array([p["current_pnl"] for p in per_bar], dtype=np.float64)
+
     mfe = -np.inf
     mae = np.inf
     mfe_bar = bar_index
@@ -386,6 +396,9 @@ def _build_trade_data(
             mfe_bar = t
         if current_pnl < mae:
             mae = current_pnl
+        f_vol = _h3a_realized_vol_10bar(pnls_arr, i)
+        f_vel = _h3a_pnl_velocity_5bar(pnls_arr, i)
+        f_dec = _h3a_mfe_decay_rate(pnls_arr, i)
         trade_state = np.array(
             [
                 t - bar_index,
@@ -395,6 +408,9 @@ def _build_trade_data(
                 mae / denom,
                 t - mfe_bar,
                 1.0 if direction == "call" else 0.0,
+                f_vol,
+                f_vel,
+                f_dec,
             ],
             dtype=np.float32,
         )
