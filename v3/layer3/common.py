@@ -399,7 +399,22 @@ def _build_trade_data(
             dtype=np.float32,
         )
         payload["trade_state"] = trade_state
-        payload["target"] = int(current_pnl >= suffix_max[i]) if np.isfinite(suffix_max[i]) else 1
+        # Relaxed exit target (research/relaxed-oracle-target branch, 2026-04-25):
+        # Original target = (current_pnl >= suffix_max[i]) trains for "is this the
+        # local max → exit now", causing systematic early-exit bias on trending
+        # winners (audit: 41% of winnable trades blow up under oracle).
+        # Relaxed: exit only when current pnl is within 15% of remaining peak.
+        # Lets winners run when significant upside remains.
+        if np.isfinite(suffix_max[i]):
+            future_peak = suffix_max[i]
+            # If future_peak is positive, require current within 85% of it.
+            # If future_peak is negative or zero, fall back to original "is this max".
+            if future_peak > 0:
+                payload["target"] = int(current_pnl >= 0.85 * future_peak)
+            else:
+                payload["target"] = int(current_pnl >= future_peak)
+        else:
+            payload["target"] = 1
 
     return {
         "window_idx": int(trade["window_idx"]),
