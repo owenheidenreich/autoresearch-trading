@@ -1,0 +1,294 @@
+{
+  "n_oos": 1664,
+  "n_features": 16,
+  "always_oracle_pf": 1.8771984442683256,
+  "rolling_ts_cv_gb_pf": 1.8703328391826344,
+  "rolling_ts_cv_lr_pf": 1.718643404362754,
+  "rolling_ts_cv_gb_sum": 296056.2342019081,
+  "rolling_ts_cv_gb_lift_pct": 16.33684392159715,
+  "feature_importance_top10": [
+    {
+      "feature": "time_stop_margin_raw",
+      "importance": 0.21428123434846907
+    },
+    {
+      "feature": "atm_iv",
+      "importance": 0.11656375873890858
+    },
+    {
+      "feature": "iv_percentile",
+      "importance": 0.11229700362446832
+    },
+    {
+      "feature": "side_margin_raw",
+      "importance": 0.09530340204297261
+    },
+    {
+      "feature": "first15_range_pct",
+      "importance": 0.09217982951758985
+    },
+    {
+      "feature": "pred_clean_entry_prob",
+      "importance": 0.08685827608225015
+    },
+    {
+      "feature": "vwap_slope",
+      "importance": 0.07219292161343079
+    },
+    {
+      "feature": "sigma_pos",
+      "importance": 0.05507526936432227
+    },
+    {
+      "feature": "late_window_40_120_flag",
+      "importance": 0.03598896560530776
+    },
+    {
+      "feature": "bars_since_break_above_first15",
+      "importance": 0.02756158638107786
+    }
+  ],
+  "fold_results": [
+    {
+      "fold": 2,
+      "train_windows": [
+        0,
+        1
+      ],
+      "pred_window": 2,
+      "n_train": 259,
+      "n_pred": 66,
+      "gb_pf_rule": 0.6596523817256914,
+      "gb_sum_rule": -8271.738689422607,
+      "lr_pf_rule": 0.602406749126627,
+      "lr_sum_rule": -8862.480706751347,
+      "always_oracle_pf": 0.9944093286193006,
+      "always_oracle_sum": -93.45002365112305
+    },
+    {
+      "fold": 3,
+      "train_windows": [
+        0,
+        1,
+        2
+      ],
+      "pred_window": 3,
+      "n_train": 325,
+      "n_pred": 239,
+      "gb_pf_rule": 2.268776011709871,
+      "gb_sum_rule": 54355.990492105484,
+      "lr_pf_rule": 2.446359307492941,
+      "lr_sum_rule": 61145.89759492874,
+      "always_oracle_pf": 2.12929688976239,
+      "always_oracle_sum": 48529.699612140656
+    },
+    {
+      "fold": 4,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "pred_window": 4,
+      "n_train": 564,
+      "n_pred": 58,
+      "gb_pf_rule": 0.8239151408248209,
+      "gb_sum_rule": -3713.552502155304,
+      "lr_pf_rule": 0.7560750132979727,
+      "lr_sum_rule": -5499.667291641235,
+      "always_oracle_pf": 0.8227332096704232,
+      "always_oracle_sum": -3672.936044692993
+    },
+    {
+      "fold": 5,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "pred_window": 5,
+      "n_train": 622,
+      "n_pred": 24,
+      "gb_pf_rule": 2.717285922085399,
+      "gb_sum_rule": 4890.242530822754,
+      "lr_pf_rule": 4.622981256850448,
+      "lr_sum_rule": 5135.3706130981445,
+      "always_oracle_pf": 4.622981256850448,
+      "always_oracle_sum": 5135.3706130981445
+    },
+    {
+      "fold": 6,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "pred_window": 6,
+      "n_train": 646,
+      "n_pred": 160,
+      "gb_pf_rule": 2.238966113336571,
+      "gb_sum_rule": 59223.49793505669,
+      "lr_pf_rule": 2.1552066133519605,
+      "lr_sum_rule": 54755.57585024834,
+      "always_oracle_pf": 3.2303460672753768,
+      "always_oracle_sum": 72725.81846117973
+    },
+    {
+      "fold": 7,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "pred_window": 7,
+      "n_train": 806,
+      "n_pred": 134,
+      "gb_pf_rule": 1.8768437585443152,
+      "gb_sum_rule": 27116.75905227661,
+      "lr_pf_rule": 1.8066439772018534,
+      "lr_sum_rule": 23130.441674232483,
+      "always_oracle_pf": 1.8372763582319416,
+      "always_oracle_sum": 23646.325112342834
+    },
+    {
+      "fold": 8,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "pred_window": 8,
+      "n_train": 940,
+      "n_pred": 202,
+      "gb_pf_rule": 2.6236980341724943,
+      "gb_sum_rule": 86036.81017971039,
+      "lr_pf_rule": 2.1291516342594514,
+      "lr_sum_rule": 65887.40354824066,
+      "always_oracle_pf": 2.3994887030211167,
+      "always_oracle_sum": 68924.21057033539
+    },
+    {
+      "fold": 9,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "pred_window": 9,
+      "n_train": 1142,
+      "n_pred": 11,
+      "gb_pf_rule": 0.5080875173621243,
+      "gb_sum_rule": -645.8059185743332,
+      "lr_pf_rule": 0.7814419077746293,
+      "lr_sum_rule": -286.50154876708984,
+      "always_oracle_pf": 0.7814419077746293,
+      "always_oracle_sum": -286.50154876708984
+    },
+    {
+      "fold": 10,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "pred_window": 10,
+      "n_train": 1153,
+      "n_pred": 249,
+      "gb_pf_rule": 1.3163003489915455,
+      "gb_sum_rule": 17797.313166975975,
+      "lr_pf_rule": 1.1543811369603731,
+      "lr_sum_rule": 8310.432471632957,
+      "always_oracle_pf": 1.108003294383421,
+      "always_oracle_sum": 5827.172831892967
+    },
+    {
+      "fold": 11,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "pred_window": 11,
+      "n_train": 1402,
+      "n_pred": 195,
+      "gb_pf_rule": 2.6815785601536004,
+      "gb_sum_rule": 66849.97860956192,
+      "lr_pf_rule": 2.402566648190448,
+      "lr_sum_rule": 54194.51990890503,
+      "always_oracle_pf": 2.061295637572978,
+      "always_oracle_sum": 40480.905254364014
+    },
+    {
+      "fold": 12,
+      "train_windows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "pred_window": 12,
+      "n_train": 1597,
+      "n_pred": 67,
+      "gb_pf_rule": 0.6214703996931614,
+      "gb_sum_rule": -7583.260654449463,
+      "lr_pf_rule": 0.4967103740845609,
+      "lr_sum_rule": -12476.102069854736,
+      "always_oracle_pf": 0.6781722997546263,
+      "always_oracle_sum": -6734.694732666016
+    }
+  ],
+  "stability_pfs": [
+    1.8703328391826344,
+    1.9283459803239344,
+    1.8904264266067594,
+    1.9238078933688385,
+    1.8881445120211502,
+    1.9138002087207586
+  ],
+  "stability_mean": 1.9024763100373459,
+  "stability_std": 0.020961511607439223
+}
