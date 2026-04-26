@@ -103,13 +103,6 @@ def parse_args() -> argparse.Namespace:
         default=25,
         help="Log progress every N days.",
     )
-    p.add_argument(
-        "--side-blind",
-        action="store_true",
-        help="Angle A: set direction_is_call=0 for all trades; forces a "
-        "side-agnostic exit policy. Used to test whether removing per-side "
-        "conditioning narrows cross-cell PF spread.",
-    )
     return p.parse_args()
 
 
@@ -120,8 +113,6 @@ def _build_champion_models(
     commission: float,
     seed: int,
     min_train_trades: int,
-    *,
-    side_blind: bool = False,
 ) -> tuple[dict[int, Any], list[dict]]:
     """Rebuild the champion per-window L3 models by retraining on chosen trades."""
     chosen, policy_meta = load_unified_policy_trades(chosen_trades_path)
@@ -134,7 +125,6 @@ def _build_champion_models(
         equity=equity,
         session_end_bar=session_end_bar,
         commission=commission,
-        side_blind=side_blind,
     )
     print(
         f"Rebuilding champion L3 trade-datasets: usable={meta['n_trade_datasets']} skipped={meta['n_skipped']}",
@@ -154,8 +144,6 @@ def _build_candidate_surface_models(
     commission: float,
     seed: int,
     min_train_trades: int,
-    *,
-    side_blind: bool = False,
 ) -> tuple[dict[int, Any], list[dict], dict[str, Any]]:
     """Train per-window L3 models on a broad action-surface candidate sample."""
     candidate_trades, candidate_meta = load_action_surface_candidate_trades(
@@ -172,7 +160,6 @@ def _build_candidate_surface_models(
         equity=equity,
         session_end_bar=session_end_bar,
         commission=commission,
-        side_blind=side_blind,
     )
     print(
         f"Rebuilding candidate-trained L3 trade-datasets: "
@@ -223,7 +210,6 @@ def _simulate_candidate(
     commission: float,
     models: dict[int, Any],
     thresholds: dict[int, float],
-    side_blind: bool = False,
 ) -> tuple[float, int, int]:
     """Returns (l3_exit_pnl, exit_bar, trigger)."""
     direction, right = _infer_direction(right_is_call)
@@ -252,7 +238,6 @@ def _simulate_candidate(
         ds,
         session_end_bar,
         commission,
-        side_blind=side_blind,
     )
     if td is None:
         return (float("nan"), -1, TRIGGER_NON_TRADEABLE)
@@ -302,7 +287,6 @@ def main() -> int:
             commission=args.commission,
             seed=args.seed,
             min_train_trades=args.min_train_trades,
-            side_blind=args.side_blind,
         )
         l3_training_meta = {
             "source": "candidate_surface",
@@ -317,7 +301,6 @@ def main() -> int:
             commission=args.commission,
             seed=args.seed,
             min_train_trades=args.min_train_trades,
-            side_blind=args.side_blind,
         )
         l3_training_meta = {
             "source": "champion",
@@ -423,7 +406,6 @@ def main() -> int:
                     commission=args.commission,
                     models=models,
                     thresholds=thresholds,
-                    side_blind=args.side_blind,
                 )
                 l3_exit_pnl[row_idx, action_id] = np.float32(pnl)
                 l3_exit_bar[row_idx, action_id] = np.int32(xbar)
