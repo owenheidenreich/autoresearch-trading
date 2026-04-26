@@ -415,14 +415,7 @@ def _build_trade_data(
             dtype=np.float32,
         )
         payload["trade_state"] = trade_state
-        # H3e: profitability-conditioned target. Eliminates loss-bar dilution
-        # (current target had 67% of target=1 bars on losses, median -$459).
-        # Loser trajectories now produce zero target=1; small winners get
-        # 1-2 sharp peak signals instead of 27 diluted bars.
-        payload["target"] = (
-            int(current_pnl >= suffix_max[i] and current_pnl > 0)
-            if np.isfinite(suffix_max[i]) else 0
-        )
+        payload["target"] = int(current_pnl >= suffix_max[i]) if np.isfinite(suffix_max[i]) else 1
 
     return {
         "window_idx": int(trade["window_idx"]),
