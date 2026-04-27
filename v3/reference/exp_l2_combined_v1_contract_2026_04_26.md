@@ -176,8 +176,14 @@ existing forward-walk infrastructure.
 ## Locked invocation
 
 ```sh
-# L3 oracle rebuild per seed (CPU, ~5 min/seed)
-PYTHONPATH=. python3 -m v3.layer2.build_simulated_l3_oracle \
+# L3 oracle rebuild per seed (CPU, ~70-80 min/seed sequential).
+# IMPORTANT: use scripts.build_l3_oracle_with_trailing (NOT the bare
+# v3.layer2.build_simulated_l3_oracle), so the oracle also covers the
+# forward-walk window. Without this wrapper, FW days get NaN predictions
+# and the FW gate cannot be evaluated on the with-oracle metric. See
+# commit 963fe0e3 ("v3 oracle restored: forward walk PF lifts ...")
+# and the `Oracle restoration recovers offline PF on forward walk` memory.
+PYTHONPATH=. python3 -m scripts.build_l3_oracle_with_trailing \
   --seed $SEED \
   --dataset v3/artifacts/layer2_action_surface_dataset.pkl \
   --l3-training-source candidate_surface \

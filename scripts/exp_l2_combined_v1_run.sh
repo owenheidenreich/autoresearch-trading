@@ -32,8 +32,10 @@ case "$phase" in
   smoke)
     # Phase 1: 1-seed CPU smoke of the L3 oracle build to validate the
     # candidate_surface mode works end-to-end on a small slice.
+    # Uses scripts.build_l3_oracle_with_trailing wrapper to add FW-day
+    # coverage (maps trailing days post 2026-02-24 to W12's model).
     echo "[phase smoke] Building L3 oracle for seed 42 with --max-days $SMOKE_MAX_DAYS"
-    PYTHONPATH=. python3 -m v3.layer2.build_simulated_l3_oracle \
+    PYTHONPATH=. python3 -m scripts.build_l3_oracle_with_trailing \
       --seed 42 \
       --dataset "$DATASET" \
       --l3-training-source candidate_surface \
@@ -46,8 +48,13 @@ case "$phase" in
     ;;
 
   oracles)
-    # Phase 2: full CPU L3 oracle build for all 5 seeds (~5 min/seed = ~25 min).
-    # This is safe to run; only CPU.
+    # Phase 2: full CPU L3 oracle build for all 5 seeds.
+    # Uses scripts.build_l3_oracle_with_trailing wrapper so the L3 oracle
+    # also covers forward-walk days (FW days are mapped to W12's model).
+    # Without this wrapper, FW rows get NaN predictions and the FW gate is
+    # un-evaluable on the with-oracle metric (see commit 963fe0e3 +
+    # `Oracle restoration recovers offline PF on forward walk` memory).
+    # Rough cost: ~1-1.5 hr/seed sequential on a quiet 10-core box.
     for seed in "${SEEDS[@]}"; do
       out="${ORACLE_OUT_DIR}/${ORACLE_PREFIX}${seed}${ORACLE_SUFFIX}"
       log="$LOG_DIR/oracle_seed${seed}.log"
@@ -56,7 +63,7 @@ case "$phase" in
         continue
       fi
       echo "[phase oracles] Building L3 oracle for seed $seed -> $out"
-      PYTHONPATH=. python3 -m v3.layer2.build_simulated_l3_oracle \
+      PYTHONPATH=. python3 -m scripts.build_l3_oracle_with_trailing \
         --seed "$seed" \
         --dataset "$DATASET" \
         --l3-training-source candidate_surface \
