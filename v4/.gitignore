@@ -1,0 +1,25 @@
+# Data layers: content is generated, not source.
+# Keep directory structure (.gitkeep), exclude generated data.
+raw/*
+!raw/.gitkeep
+normalized/*
+!normalized/.gitkeep
+feature/*
+!feature/.gitkeep
+label/*
+!label/.gitkeep
+
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local-only audit runs (committed runs go in audit/runs/<timestamp>/)
+audit/local/
+
+# Editor noise
+.DS_Store
+*.swp
