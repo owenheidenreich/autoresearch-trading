@@ -49,6 +49,8 @@ import torch
 
 from v3.layer2.action_surface_dataset import hybrid_live_utility
 from v3.layer2.common import load_export_bundle
+from v3.layer2.post_filters import apply_avoid_filters_mask
+from v3.layer2.post_filters_v0 import FILTER_SET_ID
 from v3.layer2.train_unified_policy import (
     _prediction_frame,
     _select_daily_trades,
@@ -148,6 +150,17 @@ def main() -> None:
     parser.add_argument("--out", default="v3/artifacts/forward_walk/spx_combined_3seed_001.json")
     parser.add_argument("--K", type=int, default=2, help="Consensus K")
     parser.add_argument("--cal-pf-guard", type=float, default=4.0)
+    parser.add_argument(
+        "--apply-veto",
+        action="store_true",
+        help=(
+            "Apply the post-L2 avoid filter spec (Phase 2b). When set, "
+            f"filter_set_id={FILTER_SET_ID} avoid rules are applied as "
+            "additional eligibility constraints inside _select_daily_trades "
+            "(rescan-after-veto semantics). Default off preserves the "
+            "pre-Phase-2b baseline."
+        ),
+    )
     args = parser.parse_args()
 
     print(f"Loading dataset {args.dataset}")
@@ -250,7 +263,17 @@ def main() -> None:
         pred_df["fwd_pnl_hybrid_no_oracle"] = hybrid_no_oracle
         pred_df["fwd_pnl_hybrid_with_oracle"] = pred_df["chosen_objective_pnl"]
 
-        # Apply the saved abstention policy
+        # Apply the saved abstention policy. If --apply-veto is set, also drop
+        # rows matching the Phase 2b avoid spec from pred_df BEFORE the daily
+        # best-bar selection. This implements rescan-after-veto: the daily
+        # picker chooses the highest-scored remaining bar.
+        pre_veto_n = len(pred_df)
+        if args.apply_veto:
+            veto_mask = apply_avoid_filters_mask(pred_df)
+            n_vetoed = int(veto_mask.sum())
+            pred_df = pred_df[~veto_mask].reset_index(drop=True)
+            print(f"  veto applied: dropped {n_vetoed} of {pre_veto_n} candidate bars "
+                  f"({n_vetoed / max(pre_veto_n, 1):.1%})")
         chosen = _select_daily_trades(pred_df, abstention_policy=calibration).copy()
         chosen["window_idx"] = chosen_window
         chosen["seed"] = seed
@@ -387,6 +410,8 @@ def main() -> None:
         "forward_walk_last_day": forward_days[-1] if forward_days else None,
         "K": args.K,
         "cal_pf_guard": args.cal_pf_guard,
+        "apply_veto": bool(args.apply_veto),
+        "filter_set_id": FILTER_SET_ID if args.apply_veto else None,
         "per_seed": per_seed_metrics,
         "cross_seed_no_filter": cross_seed,
     }

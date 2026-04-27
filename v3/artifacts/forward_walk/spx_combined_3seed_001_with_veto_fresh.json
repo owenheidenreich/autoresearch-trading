@@ -1,0 +1,189 @@
+{
+  "champion": "spx_combined_3seed_001",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "forward_walk_after": "2026-02-24",
+  "n_forward_walk_rows": 3819,
+  "forward_walk_unique_days": 42,
+  "forward_walk_first_day": "2026-02-25",
+  "forward_walk_last_day": "2026-04-24",
+  "K": 2,
+  "cal_pf_guard": 4.0,
+  "apply_veto": true,
+  "filter_set_id": "phase_c_gpt55_v0_2026_04_26",
+  "per_seed": {
+    "42": {
+      "n_trades": 5,
+      "n_calls": 1,
+      "n_puts": 5,
+      "with_oracle": {
+        "n": 5,
+        "pf": 0.5048700163593329,
+        "dd_pct": 3.1533036499023432,
+        "sum_pnl": -400.21410369873047,
+        "mean_pnl": -80.04282073974609,
+        "win_rate": 0.4
+      },
+      "no_oracle_dataset_label": {
+        "n": 6,
+        "pf": 1.6161296924255926,
+        "dd_pct": 10.82964892578125,
+        "sum_pnl": 1668.1170654296875,
+        "mean_pnl": 278.01951090494794,
+        "win_rate": 0.5
+      },
+      "time_stop_naive": {
+        "n": 6,
+        "pf": 1.7852044300908463,
+        "dd_pct": 8.98085662841797,
+        "sum_pnl": 1762.9521026611328,
+        "mean_pnl": 293.82535044352215,
+        "win_rate": 0.5
+      },
+      "calibration_window_used": 12,
+      "calibration_pf": 21.58323274238857,
+      "calibration_decision_margin": 0.47600003480911246
+    },
+    "43": {
+      "n_trades": 8,
+      "n_calls": 0,
+      "n_puts": 9,
+      "with_oracle": {
+        "n": 8,
+        "pf": 0.08239754657450038,
+        "dd_pct": 13.74575067138672,
+        "sum_pnl": -3436.4376678466797,
+        "mean_pnl": -429.55470848083496,
+        "win_rate": 0.125
+      },
+      "no_oracle_dataset_label": {
+        "n": 9,
+        "pf": 0.311645044387883,
+        "dd_pct": 19.886041259765623,
+        "sum_pnl": -4971.510314941406,
+        "mean_pnl": -552.3900349934896,
+        "win_rate": 0.2222222222222222
+      },
+      "time_stop_naive": {
+        "n": 9,
+        "pf": 0.33887115099527215,
+        "dd_pct": 16.388447998046875,
+        "sum_pnl": -4097.111999511719,
+        "mean_pnl": -455.2346666124132,
+        "win_rate": 0.2222222222222222
+      },
+      "calibration_window_used": 12,
+      "calibration_pf": 5.713162826632645,
+      "calibration_decision_margin": 0.41922982931137087
+    },
+    "44": {
+      "n_trades": 11,
+      "n_calls": 8,
+      "n_puts": 6,
+      "with_oracle": {
+        "n": 11,
+        "pf": 3.394570102966786,
+        "dd_pct": 6.873304565429687,
+        "sum_pnl": 6713.157516479492,
+        "mean_pnl": 610.2870469526811,
+        "win_rate": 0.45454545454545453
+      },
+      "no_oracle_dataset_label": {
+        "n": 14,
+        "pf": 1.2118799984818713,
+        "dd_pct": 17.816002403259276,
+        "sum_pnl": 1489.8744844198227,
+        "mean_pnl": 106.41960602998734,
+        "win_rate": 0.35714285714285715
+      },
+      "time_stop_naive": {
+        "n": 14,
+        "pf": 1.2924266071182104,
+        "dd_pct": 15.274937580108642,
+        "sum_pnl": 1764.1352500915527,
+        "mean_pnl": 126.0096607208252,
+        "win_rate": 0.35714285714285715
+      },
+      "calibration_window_used": 12,
+      "calibration_pf": 7.993182227532931,
+      "calibration_decision_margin": 0.3942036813497543
+    },
+    "45": {
+      "n_trades": 8,
+      "n_calls": 1,
+      "n_puts": 8,
+      "with_oracle": {
+        "n": 8,
+        "pf": 0.17555857535557512,
+        "dd_pct": 10.58282258605957,
+        "sum_pnl": -2645.7056465148926,
+        "mean_pnl": -330.7132058143616,
+        "win_rate": 0.25
+      },
+      "no_oracle_dataset_label": {
+        "n": 9,
+        "pf": 0.37890346291161486,
+        "dd_pct": 24.79253271484375,
+        "sum_pnl": -4673.4078369140625,
+        "mean_pnl": -519.2675374348959,
+        "win_rate": 0.2222222222222222
+      },
+      "time_stop_naive": {
+        "n": 9,
+        "pf": 0.41070725665538654,
+        "dd_pct": 20.78484423828125,
+        "sum_pnl": -3801.735595703125,
+        "mean_pnl": -422.4150661892361,
+        "win_rate": 0.2222222222222222
+      },
+      "calibration_window_used": 12,
+      "calibration_pf": 3.1494832931293364,
+      "calibration_decision_margin": 0.5239272624254226
+    },
+    "46": {
+      "n_trades": 18,
+      "n_calls": 8,
+      "n_puts": 12,
+      "with_oracle": {
+        "n": 18,
+        "pf": 4.0763608279215635,
+        "dd_pct": 9.710772621133216,
+        "sum_pnl": 11119.08472442627,
+        "mean_pnl": 617.7269291347927,
+        "win_rate": 0.6666666666666666
+      },
+      "no_oracle_dataset_label": {
+        "n": 20,
+        "pf": 2.612131856199759,
+        "dd_pct": 10.718303194811162,
+        "sum_pnl": 11180.110209465027,
+        "mean_pnl": 559.0055104732513,
+        "win_rate": 0.55
+      },
+      "time_stop_naive": {
+        "n": 20,
+        "pf": 2.8133185901214666,
+        "dd_pct": 9.408501524051609,
+        "sum_pnl": 10750.742141723633,
+        "mean_pnl": 537.5371070861817,
+        "win_rate": 0.6
+      },
+      "calibration_window_used": 12,
+      "calibration_pf": 1.9339230615356764,
+      "calibration_decision_margin": 0.42334171533584586
+    }
+  },
+  "cross_seed_no_filter": {
+    "mean_pf_with_oracle": 1.646751413835552,
+    "min_pf_with_oracle": 0.08239754657450038,
+    "mean_pf_no_oracle": 1.226138010881344,
+    "mean_pf_time_stop": 1.3281056069962365,
+    "mean_dd_with_oracle": 8.813190818782308,
+    "max_dd_with_oracle": 13.74575067138672
+  }
+}
