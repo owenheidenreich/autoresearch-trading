@@ -141,13 +141,27 @@ gain).
 | Step | Cost | Approval |
 |---|---|---|
 | Pre-GPU harness eval + look-ahead audit | ~30 min CPU | self |
-| L3 oracle rebuild (3-5 min CPU per seed × 5 seeds) | ~25 min CPU | self |
-| 5-seed L2 training on H100 (12 epochs × 5 seeds) | ~6-8 GPU-hours | **explicit user OK required** |
+| L3 oracle rebuild (~67 min CPU/seed; seeds 43-46 parallelized after seed 42) | ~90-110 min CPU wall-time | self |
+| 5-seed L2 training on H100 (~1.5 GPU-hours/seed × 5 seeds, sequential per-seed invocations) | ~7-8 GPU-hours | **explicit user OK required** |
 | FW evaluation + metrics on the 9 gates | ~10 min CPU | self |
 | Total GPU spend | $200-300 Akash | **explicit user OK required** |
 
+Note on cost-estimate revision: original 25-min CPU oracle estimate was
+wrong because the smoke phase used `--max-days 50` which skipped the
+dominant per-bar simulation cost. The full `candidate_surface` oracle
+runs ~1M (row, action) sims per seed; this is intrinsic to broader
+exposure coverage and there is no shortcut without sacrificing the
+mechanism.
+
 `DEPOSIT_ACT=1` per `feedback_screening_deposit` memory (screening), but
 this is a full official run not a screen — confirm budget before launch.
+
+Note on multi-seed invocation: `train_unified_policy.py` takes one
+`--simulated-l3-oracle` path and applies it to all seeds in its loop;
+to pair each seed with its own oracle, we invoke training 5 times (once
+per seed) inside the run script's `train` phase. This is sequential on
+single GPU and matches the per-seed oracle convention used by the
+existing forward-walk infrastructure.
 
 ## Files that will change
 

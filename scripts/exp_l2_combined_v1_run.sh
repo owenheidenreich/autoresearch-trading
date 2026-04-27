@@ -71,32 +71,47 @@ case "$phase" in
   train)
     # Phase 3: GPU spend phase. DO NOT run without explicit user OK.
     # Requires CUDA; will RuntimeError on CPU per the promotion-tier guard.
+    #
+    # train_unified_policy.py takes ONE --simulated-l3-oracle path and uses
+    # it for all seeds in its internal seed loop, so we invoke it 5 times
+    # (once per seed) to get per-seed oracle pairing.
     echo "[phase train] *** GPU SPEND PHASE *** ($((${#SEEDS[@]})) seeds × ~12 epochs)"
     echo "[phase train] Confirmed user authorization? Set GPU_GO=yes to proceed."
     if [[ "${GPU_GO:-no}" != "yes" ]]; then
       echo "[phase train] Aborting — set GPU_GO=yes to confirm."
       exit 1
     fi
-    seeds_csv=$(IFS=,; echo "${SEEDS[*]}")
-    echo "[phase train] Training seeds: $seeds_csv"
-    PYTHONPATH=. python3 -m v3.layer2.train_unified_policy \
-      --seeds "$seeds_csv" \
-      --tier promotion \
-      --dataset "$DATASET" \
-      --simulated-l3-oracle "${ORACLE_OUT_DIR}/${ORACLE_PREFIX}%s${ORACLE_SUFFIX}" \
-      --utility-target hybrid_live \
-      --w-ranking 0.5 \
-      --w-clean 0.6 \
-      --w-stopout 0.6 \
-      --w-win 0.4 \
-      --w-regression 0.5 \
-      --w-dollar 0.25 \
-      --w-return 0.25 \
-      --w-side-contrastive 0.75 \
-      --side-balance-weight 0.75 \
-      --max-epochs 12 \
-      --patience 4 \
-      2>&1 | tee "$LOG_DIR/train_${seeds_csv}.log"
+    for seed in "${SEEDS[@]}"; do
+      oracle="${ORACLE_OUT_DIR}/${ORACLE_PREFIX}${seed}${ORACLE_SUFFIX}"
+      run_dir="${ORACLE_OUT_DIR}/layer2_unified_policy_spx_${EXP_ID}_seed${seed}"
+      log="$LOG_DIR/train_seed${seed}.log"
+      if [[ ! -f "$oracle" ]]; then
+        echo "[phase train] FATAL: oracle missing for seed $seed: $oracle"
+        exit 2
+      fi
+      echo "[phase train] Training seed $seed -> $run_dir (oracle: $oracle)"
+      PYTHONPATH=. python3 -m v3.layer2.train_unified_policy \
+        --seed "$seed" \
+        --run-dir "$run_dir" \
+        --tier promotion \
+        --seeds "$seed" \
+        --dataset "$DATASET" \
+        --simulated-l3-oracle "$oracle" \
+        --utility-target hybrid_live \
+        --w-ranking 0.5 \
+        --w-clean 0.6 \
+        --w-stopout 0.6 \
+        --w-win 0.4 \
+        --w-regression 0.5 \
+        --w-dollar 0.25 \
+        --w-return 0.25 \
+        --w-side-contrastive 0.75 \
+        --side-balance-weight 0.75 \
+        --max-epochs 12 \
+        --patience 4 \
+        2>&1 | tee "$log"
+    done
+    echo "[phase train] All 5 seeds complete."
     ;;
 
   fw)
