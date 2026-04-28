@@ -52,13 +52,22 @@ The cheapest verification is **subscribe for one cycle, test empirically, decide
 
 Expected outcome: by the end of the month you'll have empirical answers to Q1, Q2, Q4, and Q6, and a written reply (or no reply, which is also data) on Q3.
 
-### Databento
+### Databento — DECIDED 2026-04-27
 
-Open https://databento.com/pricing, run their estimator with:
+**Final query (recorded)**:
 
-> Dataset `OPRA.PILLAR`, symbols `SPXW` (parent), schemas `trades` + `cbbo-1m` + `definitions` + `statistics`, date range 2018-01-01 → present.
+- Dataset: `OPRA.PILLAR`
+- Symbols: `SPXW`
+- Schemas: `CBBO-1m`, `statistics`, `definitions`
+- Date range: 2022-05-11 (Thursday SPXW launch — full-weekday 0DTE coverage achieved) → present
+- **Quoted total: $1,007.79** (CBBO-1m $844.40 + statistics $138.37 + definitions $25.42)
 
-Record the quoted dollar number into the protocol Section 3.3 budget. If much higher than $500, trim the start date to 2022-04 (SPXW Tuesday/Thursday launch) and re-quote — pre-2022 data is stress-test only per Phase 2A regime cohorts.
+**Trades schema dropped**. Original quote was $8,427.50 making the total >$10k. CBBO-1m already includes last-trade-price-and-size aggregated to each minute, which is ~95% of what trades would have given the model at 1-min decision tempo. What we lose:
+
+- Per-trade signed flow (Lee-Ready DIY proxy) — only 60–64% accurate per Grauer et al. anyway, already known to be a weak proxy
+- Sweep detection — Phase 2A+ work, not Phase 1
+
+This decision flows through the protocol: Block 1 microstructure features that previously assumed `trades` are recomputed against CBBO-1m's last-trade fields. DIY dealer-flow proxy quality is reduced (further weakening the case for trying to replicate OptionsDepth's signal in-house).
 
 ### IBKR
 
@@ -73,7 +82,7 @@ Default: buy direct from CBOE/Databento. Reconstruction from 23–37 DTE strips 
 ## Phase 0.5 exit criteria
 
 - [ ] OptionsDepth one-cycle complete; empirical answers to Q1/Q2/Q4/Q6 recorded; Q3 contacted (any reply or no reply documented)
-- [ ] Databento estimator quoted total recorded; replaces provisional `$200–500`
+- [x] Databento estimator quoted total recorded: **$1,007.79** for SPXW CBBO-1m + statistics + definitions, 2022-05-11 → present (trades schema dropped — was $8,427.50)
 - [ ] IBKR preflight runs end-to-end; line budget + pacing-violation count recorded
 - [ ] VIX path chosen
 - [ ] Research-ledger entry written for Phase 0.5
