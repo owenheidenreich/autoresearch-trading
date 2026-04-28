@@ -8,7 +8,13 @@
 
 ## What's already known from public sources
 
-### OptionsDepth (verified from their pricing page, homepage, and T&C, 2026-04-27)
+### OptionsDepth — DEFERRED to Phase 2B (2026-04-27)
+
+OptionsDepth is for Block 2 (dealer flow). Block 2 is added only if Block 1 (microstructure) clears its Phase-2A gate. Buying the one-cycle now would be the "burn before edge" anti-pattern: if Block 1 fails, the $250 is dead money.
+
+**Phase 0.5 OptionsDepth verification deferred** — re-engaged when Phase 2A delivers a Block-1 model with adversarial PF > 1.20 and LCB > 1.05 on the Databento backfill. At that point the seven public-source items below are still valid pre-purchase research; the one-cycle subscription becomes the verification + Block-2 test in one $250.
+
+Public-source status (kept here for Phase-2B reference):
 
 | # | Question | Public status | Source |
 |---|---|---|---|
@@ -89,7 +95,7 @@ Reconstruction from 23–37 DTE SPX strips skipped — too cheap to bother recon
 
 ## Phase 0.5 exit criteria
 
-- [ ] OptionsDepth one-cycle complete; empirical answers to Q1/Q2/Q4/Q6 recorded; Q3 contacted (any reply or no reply documented)
+- [x] OptionsDepth: **deferred to Phase 2B** (Block-2 dealer-flow test, only if Block 1 clears Phase-2A gate)
 - [x] Databento estimator quoted total recorded: **$1,007.79** for SPXW CBBO-1m + statistics + definitions, 2022-05-11 → present (trades schema dropped — was $8,427.50)
 - [ ] IBKR preflight runs end-to-end; line budget + pacing-violation count recorded
 - [x] VIX path chosen: buy direct via Databento OHLCV-1m, $63.96
