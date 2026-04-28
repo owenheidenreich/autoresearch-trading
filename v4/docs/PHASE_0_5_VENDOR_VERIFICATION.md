@@ -73,9 +73,17 @@ This decision flows through the protocol: Block 1 microstructure features that p
 
 Run `python -m v4.scripts.ibkr_preflight --strikes-around-atm 10 --duration-seconds 300` with paper TWS on port 7497. The script's contract-discovery logic is currently commented out — you'll need to wire ~10 lines using your account's chain-discovery calls (example commented in the file). Output is JSONL audit + summary.
 
-### VIX
+### VIX — DECIDED 2026-04-27
 
-Default: buy direct from CBOE/Databento. Reconstruction from 23–37 DTE strips is a research project of its own (strike selection, zero-bid rules, interpolation) and not the v4 edge. Reserve reconstruction as a one-off Phase-1 validation exercise.
+**Final query (recorded)**:
+
+- Dataset: OPRA (per Databento estimator)
+- Symbol: VIX
+- Schema: OHLCV-1m
+- Date range: 2022-05-11 → present
+- **Quoted total: $63.96**
+
+Reconstruction from 23–37 DTE SPX strips skipped — too cheap to bother reconstructing.
 
 ---
 
@@ -84,7 +92,7 @@ Default: buy direct from CBOE/Databento. Reconstruction from 23–37 DTE strips 
 - [ ] OptionsDepth one-cycle complete; empirical answers to Q1/Q2/Q4/Q6 recorded; Q3 contacted (any reply or no reply documented)
 - [x] Databento estimator quoted total recorded: **$1,007.79** for SPXW CBBO-1m + statistics + definitions, 2022-05-11 → present (trades schema dropped — was $8,427.50)
 - [ ] IBKR preflight runs end-to-end; line budget + pacing-violation count recorded
-- [ ] VIX path chosen
+- [x] VIX path chosen: buy direct via Databento OHLCV-1m, $63.96
 - [ ] Research-ledger entry written for Phase 0.5
 
 Then Phase 1 historical pulls authorized. The OptionsDepth one-cycle has already happened by then (it WAS the verification), so Phase 1 starts with that archive in hand.
