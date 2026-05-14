@@ -1748,7 +1748,7 @@ Decision / Experiment: Added and ran an IBKR paper-order permission guard around
 Reason: User approved paper trades, but the project needs an explicit paper-only permission layer so no real-money order path can be reached by accident.
 Data Used: Local guard configuration only unless account-probe mode was requested. No paid data was downloaded and no broker order endpoint was called.
 Cost: $0 incremental paid data.
-Result: Decision ready_for_guarded_paper_order_submission_after_live_shadow_parity. Report: v4/audit/autoresearch/v4_aplus_hypothesis_141_ibkr_paper_order_guard/report.md
+Result: Decision pass_account_probe_connected_orders_still_disabled. Report: v4/audit/autoresearch/v4_aplus_hypothesis_141_ibkr_paper_order_guard/report.md
 Next Gate: Run account-probe with IB Gateway open, then run no-order live shadow parity before enabling paper-order submission.
 Owner: Codex
 ```
@@ -1800,8 +1800,8 @@ Decision / Experiment: Rehearsed Tuesday's cold-start path with IB Gateway close
 Reason: User wanted to know whether the unattended startup path works and expected failure at the missing username/password login stage.
 Data Used: Local app/launchd/API-port checks only. No paid data was downloaded, no market-data endpoint was called, and no order endpoint was called.
 Cost: $0 incremental paid data.
-Result: Decision expected_blocker_gateway_login_required_or_api_port_closed. Ports before=[]; ports after=[]. Report: v4/audit/autoresearch/v4_aplus_hypothesis_145_tuesday_cold_start_rehearsal/report.md
-Next Gate: Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, approve any IBKR Mobile/2FA challenge during startup, and rerun this rehearsal. The next passing state should expose port 4002 or 4000.
+Result: Decision pass_cold_start_api_ready. Ports before=[]; ports after=[4002]. Report: v4/audit/autoresearch/v4_aplus_hypothesis_145_tuesday_cold_start_rehearsal/report.md
+Next Gate: Run Protocol141 account probe, then Protocol119/124 live-data parity, then paper executor dry-run.
 Owner: Codex
 ```
 
@@ -1813,7 +1813,7 @@ Decision / Experiment: Added IBC credential-backed login readiness for IB Gatewa
 Reason: IB Gateway logs out daily, so the morning startup path must enter username/password from local secure storage instead of requiring manual wake-up.
 Data Used: Local IBC installation and macOS Keychain presence checks only. No credentials were committed or printed, no paid data was downloaded, no broker endpoint was called, and no orders were placed.
 Cost: $0 incremental paid data.
-Result: Decision expected_blocker_missing_keychain_credentials. IBC installed=True; username_present=False; password_present=False. Report: v4/audit/autoresearch/v4_aplus_hypothesis_146_ibc_credential_readiness/report.md
-Next Gate: Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, then rerun Protocol146. Do not paste credentials into chat.
+Result: Decision pass_ibc_credentials_ready_for_cold_start_rehearsal. IBC installed=True; username_present=True; password_present=True. Report: v4/audit/autoresearch/v4_aplus_hypothesis_146_ibc_credential_readiness/report.md
+Next Gate: Run Protocol145 cold-start rehearsal again; IBC should enter credentials and expose the paper API port after any required 2FA approval.
 Owner: Codex
 ```

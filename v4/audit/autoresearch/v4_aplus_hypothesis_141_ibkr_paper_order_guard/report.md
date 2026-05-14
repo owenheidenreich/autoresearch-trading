@@ -2,10 +2,10 @@
 
 No paid data was downloaded. No paper order was submitted. No broker order endpoint was called.
 
-- Decision: `ready_for_guarded_paper_order_submission_after_live_shadow_parity`
+- Decision: `pass_account_probe_connected_orders_still_disabled`
 - Mode: `account-probe`
 - Account: `DU***40`
-- Permission reason: `pass`
+- Permission reason: `enable_paper_orders_flag_missing,acknowledge_paper_loss_flag_missing,paper_order_env_not_set`
 - Sample order validation: `pass`
 
 ## Required To Enable Paper Orders
@@ -18,4 +18,4 @@ No paid data was downloaded. No paper order was submitted. No broker order endpo
 
 ## Next Gate
 
-Keep this guard around any paper-order executor. The next requirement is a live Protocol101 shadow stream that passes schema/freshness/parity before a BUY or SELL order is submitted.
+Run live shadow parity next. Paper orders remain intentionally disabled until the explicit order flags are set.

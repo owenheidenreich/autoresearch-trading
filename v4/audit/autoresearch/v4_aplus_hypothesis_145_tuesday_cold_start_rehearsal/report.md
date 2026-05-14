@@ -2,28 +2,21 @@
 
 No paid data was downloaded. No market-data endpoint was called. No order endpoint was called.
 
-- Decision: `expected_blocker_gateway_login_required_or_api_port_closed`
+- Decision: `pass_cold_start_api_ready`
 - Ports before: `[]`
-- Ports after: `[]`
-- Start returncode: `2`
+- Ports after: `[4002]`
+- Start returncode: `0`
 
 ## Interpretation
 
-This is the expected failure when IBC cannot complete credentials/2FA or no API listener opens. IBC can enter the stored username/password, but it cannot bypass IBKR Mobile/2FA approval.
+IB Gateway opened and the paper API became reachable. Tuesday can move to account probe and live-data parity.
 
 ## Start Output
 
 ```text
-IBC runtime config was not created. Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally.
-{
-  "detail": "Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally; do not paste credentials into chat.",
-  "out": "/Users/gduby/.autoresearch-trading/ibc/runtime/ibc-paper.ini",
-  "password_service": "autoresearch-trading-ibkr-paper-password",
-  "status": "missing_credentials",
-  "username_service": "autoresearch-trading-ibkr-paper-username"
-}
+IB Gateway API listener is up on port 4002 via IBC
 ```
 
 ## Next Gate
 
-Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, approve any IBKR Mobile/2FA challenge during startup, and rerun this rehearsal. The next passing state should expose port 4002 or 4000.
+Run Protocol141 account probe, then Protocol119/124 live-data parity, then paper executor dry-run.

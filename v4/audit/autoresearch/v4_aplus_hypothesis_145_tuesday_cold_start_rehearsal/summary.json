@@ -1,8 +1,8 @@
 {
   "broker_order_endpoint_called": false,
-  "decision": "expected_blocker_gateway_login_required_or_api_port_closed",
+  "decision": "pass_cold_start_api_ready",
   "host": "127.0.0.1",
-  "interpretation": "This is the expected failure when IBC cannot complete credentials/2FA or no API listener opens. IBC can enter the stored username/password, but it cannot bypass IBKR Mobile/2FA approval.",
+  "interpretation": "IB Gateway opened and the paper API became reachable. Tuesday can move to account probe and live-data parity.",
   "launchd": {
     "com.autoresearch.ibgateway.paper": {
       "header": "gui/501/com.autoresearch.ibgateway.paper = {",
@@ -19,15 +19,17 @@
   },
   "live_orders": false,
   "market_data_endpoint_called": false,
-  "next_gate": "Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, approve any IBKR Mobile/2FA challenge during startup, and rerun this rehearsal. The next passing state should expose port 4002 or 4000.",
+  "next_gate": "Run Protocol141 account probe, then Protocol119/124 live-data parity, then paper executor dry-run.",
   "paid_data_downloaded": false,
   "paper_orders_submitted": false,
   "port_status_after": {
-    "any_open": false,
-    "open_ports": [],
+    "any_open": true,
+    "open_ports": [
+      4002
+    ],
     "rows": [
       {
-        "open": false,
+        "open": true,
         "port": 4002
       },
       {
@@ -47,7 +49,7 @@
         "port": 4001
       }
     ],
-    "wait_seconds": 1
+    "wait_seconds": 20
   },
   "port_status_before": {
     "any_open": false,
@@ -84,10 +86,10 @@
   ],
   "protocol": "145_tuesday_cold_start_rehearsal",
   "start_result": {
-    "returncode": 2,
+    "returncode": 0,
     "script": "v4/ops/ibkr/start_ib_gateway_paper_ibc.sh",
     "skipped": false,
-    "stderr": "IBC runtime config was not created. Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally.\n{\n  \"detail\": \"Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally; do not paste credentials into chat.\",\n  \"out\": \"/Users/gduby/.autoresearch-trading/ibc/runtime/ibc-paper.ini\",\n  \"password_service\": \"autoresearch-trading-ibkr-paper-password\",\n  \"status\": \"missing_credentials\",\n  \"username_service\": \"autoresearch-trading-ibkr-paper-username\"\n}",
-    "stdout": ""
+    "stderr": "",
+    "stdout": "IB Gateway API listener is up on port 4002 via IBC"
   }
 }

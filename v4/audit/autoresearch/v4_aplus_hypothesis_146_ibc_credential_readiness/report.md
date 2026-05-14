@@ -2,12 +2,12 @@
 
 No paid data was downloaded. No market-data endpoint was called. No order endpoint was called.
 
-- Decision: `expected_blocker_missing_keychain_credentials`
+- Decision: `pass_ibc_credentials_ready_for_cold_start_rehearsal`
 - IBC installed: `True`
-- Username in Keychain: `False`
-- Password in Keychain: `False`
-- Runtime config status: `skipped_missing_credentials`
+- Username in Keychain: `True`
+- Password in Keychain: `True`
+- Runtime config status: `written`
 
 ## Next Gate
 
-Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, then rerun Protocol146. Do not paste credentials into chat.
+Run Protocol145 cold-start rehearsal again; IBC should enter credentials and expose the paper API port after any required 2FA approval.

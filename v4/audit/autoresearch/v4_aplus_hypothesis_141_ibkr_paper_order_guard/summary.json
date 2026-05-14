@@ -3,11 +3,6 @@
   "account_probe": {
     "attempts": [
       {
-        "error": "[Errno 61] Connect call failed ('127.0.0.1', 4000)",
-        "port": 4000,
-        "status": "failed"
-      },
-      {
         "port": 4002,
         "status": "connected"
       }
@@ -36,18 +31,22 @@
     "require_paper_account_prefix": true,
     "starting_paper_cash": 10000.0
   },
-  "decision": "ready_for_guarded_paper_order_submission_after_live_shadow_parity",
+  "decision": "pass_account_probe_connected_orders_still_disabled",
   "live_orders": false,
   "mode": "account-probe",
-  "next_gate": "Keep this guard around any paper-order executor. The next requirement is a live Protocol101 shadow stream that passes schema/freshness/parity before a BUY or SELL order is submitted.",
+  "next_gate": "Run live shadow parity next. Paper orders remain intentionally disabled until the explicit order flags are set.",
   "paid_data_downloaded": false,
   "paper_orders_submitted": false,
   "paper_permission_env_required": "V4_ALLOW_IBKR_PAPER_ORDERS",
   "permission": {
     "account_id_redacted": "DU***40",
-    "passed": true,
-    "reason": "pass",
-    "reasons": [],
+    "passed": false,
+    "reason": "enable_paper_orders_flag_missing,acknowledge_paper_loss_flag_missing,paper_order_env_not_set",
+    "reasons": [
+      "enable_paper_orders_flag_missing",
+      "acknowledge_paper_loss_flag_missing",
+      "paper_order_env_not_set"
+    ],
     "required_env": "V4_ALLOW_IBKR_PAPER_ORDERS=YES"
   },
   "protocol": "141_ibkr_paper_order_guard",

@@ -174,6 +174,8 @@ def decide(
         return "blocked_sample_order_intent_validation_failed"
     if permission.get("passed"):
         return "ready_for_guarded_paper_order_submission_after_live_shadow_parity"
+    if mode == "account-probe" and account_probe.get("connected"):
+        return "pass_account_probe_connected_orders_still_disabled"
     if mode == "guard-smoke":
         return "pass_default_blocks_paper_orders_until_explicitly_enabled"
     return "blocked_paper_order_permission_not_enabled"
@@ -187,6 +189,8 @@ def next_gate(decision: str) -> str:
         )
     if decision == "pass_default_blocks_paper_orders_until_explicitly_enabled":
         return "Run account-probe with IB Gateway open; keep order submission disabled until live shadow parity passes."
+    if decision == "pass_account_probe_connected_orders_still_disabled":
+        return "Run live shadow parity next. Paper orders remain intentionally disabled until the explicit order flags are set."
     return "Fix the blocked paper-order guard input before broker-connected paper trading."
 
 

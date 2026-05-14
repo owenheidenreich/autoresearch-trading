@@ -148,3 +148,14 @@ def test_protocol141_decision_default_guard_smoke_passes_because_it_blocks_order
         decide("guard-smoke", permission=permission, account_probe={}, intent_validation=intent_validation)
         == "pass_default_blocks_paper_orders_until_explicitly_enabled"
     )
+
+
+def test_protocol141_decision_account_probe_passes_without_order_flags() -> None:
+    permission = {"passed": False, "reason": "enable_paper_orders_flag_missing"}
+    account_probe = {"connected": True}
+    intent_validation = {"passed": True, "reason": "pass"}
+
+    assert (
+        decide("account-probe", permission=permission, account_probe=account_probe, intent_validation=intent_validation)
+        == "pass_account_probe_connected_orders_still_disabled"
+    )
