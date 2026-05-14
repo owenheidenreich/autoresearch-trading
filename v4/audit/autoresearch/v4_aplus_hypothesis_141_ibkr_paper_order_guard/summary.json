@@ -1,0 +1,74 @@
+{
+  "account_id_redacted": "DU***40",
+  "account_probe": {
+    "attempts": [
+      {
+        "error": "[Errno 61] Connect call failed ('127.0.0.1', 4000)",
+        "port": 4000,
+        "status": "failed"
+      },
+      {
+        "port": 4002,
+        "status": "connected"
+      }
+    ],
+    "broker_connection_endpoint_called": true,
+    "connected": true,
+    "host": "127.0.0.1",
+    "managed_account_count": 1,
+    "managed_accounts_redacted": [
+      "DU***40"
+    ],
+    "port": 4002,
+    "primary_account_id_redacted": "DU***40"
+  },
+  "broker_connection_endpoint_called": true,
+  "broker_order_endpoint_called": false,
+  "config": {
+    "ibkr_access_reserve": 500.0,
+    "max_concurrent_positions": 1,
+    "max_context_age_ms": 5000,
+    "max_limit_offset": 0.25,
+    "max_option_quote_age_ms": 1500,
+    "paper_account_prefixes": [
+      "DU"
+    ],
+    "require_paper_account_prefix": true,
+    "starting_paper_cash": 10000.0
+  },
+  "decision": "ready_for_guarded_paper_order_submission_after_live_shadow_parity",
+  "live_orders": false,
+  "mode": "account-probe",
+  "next_gate": "Keep this guard around any paper-order executor. The next requirement is a live Protocol101 shadow stream that passes schema/freshness/parity before a BUY or SELL order is submitted.",
+  "paid_data_downloaded": false,
+  "paper_orders_submitted": false,
+  "paper_permission_env_required": "V4_ALLOW_IBKR_PAPER_ORDERS",
+  "permission": {
+    "account_id_redacted": "DU***40",
+    "passed": true,
+    "reason": "pass",
+    "reasons": [],
+    "required_env": "V4_ALLOW_IBKR_PAPER_ORDERS=YES"
+  },
+  "protocol": "141_ibkr_paper_order_guard",
+  "sample_intent": {
+    "action": "BUY",
+    "currency": "USD",
+    "exchange": "SMART",
+    "expiry": "20260320",
+    "limit_price": 10.0,
+    "quantity": 1,
+    "right": "C",
+    "strike": 6700.0,
+    "symbol": "SPX",
+    "trading_class": "SPXW"
+  },
+  "sample_intent_validation": {
+    "account_cash": 10000.0,
+    "open_positions": 0,
+    "passed": true,
+    "premium_required": 1000.0,
+    "reason": "pass",
+    "reasons": []
+  }
+}

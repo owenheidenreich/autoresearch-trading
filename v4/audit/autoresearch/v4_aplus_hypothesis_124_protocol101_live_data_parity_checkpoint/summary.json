@@ -1,0 +1,26 @@
+{
+  "broker_order_endpoint_called": false,
+  "checks": {
+    "delayed_market_data_observed": true,
+    "delayed_plumbing_parity_pass": true,
+    "delayed_plumbing_rows": 24,
+    "ibkr_connected": true,
+    "protocol101_entry_router_wired": true,
+    "protocol119_feature_status_pass": true,
+    "spx_live_price": false,
+    "spxw_live_nbbo_rows": 0,
+    "vix_live_price": false
+  },
+  "decision": "blocked_live_subscriptions_delayed_plumbing_passed",
+  "delayed_capture_blocked_reason": "delayed_market_data_not_promotion_grade",
+  "delayed_capture_decision": "blocked",
+  "ibkr_blocked_reason": "missing_live_market_data_entitlements",
+  "live_orders": false,
+  "paid_data_downloaded": false,
+  "protocol": "124_protocol101_live_data_parity_checkpoint",
+  "protocol119_decision": "blocked_missing_live_market_data_entitlements",
+  "required_before_protocol101_live_shadow": [
+    "Enable live Cboe index market data for SPX and VIX in the IBKR API session.",
+    "Enable live OPRA top-of-book data so SPXW option NBBO is available to the API session."
+  ]
+}

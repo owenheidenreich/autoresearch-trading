@@ -1,0 +1,89 @@
+{
+  "api_port": 4000,
+  "api_ports": [
+    4000,
+    4002,
+    7497,
+    7496,
+    4001
+  ],
+  "app_path": "/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app",
+  "autostart_assumption": "launchd can open IB Gateway in paper mode, but IBKR may still require saved credentials/2FA. If Gateway pauses at login, finish that login once; the preflight will keep reporting port-not-open until the API listener is available.",
+  "broker_order_endpoint_called": false,
+  "checks": [
+    {
+      "detail": "/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app",
+      "name": "ib_gateway_app_exists",
+      "passed": true
+    },
+    {
+      "detail": "/Users/gduby/Jts/jts.ini",
+      "name": "jts_ini_exists",
+      "passed": true
+    },
+    {
+      "detail": "tradingMode=p",
+      "name": "paper_mode_configured",
+      "passed": true
+    },
+    {
+      "detail": "ApiOnly=true",
+      "name": "api_only_configured",
+      "passed": true
+    },
+    {
+      "detail": "LocalServerPort=4000",
+      "name": "api_port_configured",
+      "passed": true
+    },
+    {
+      "detail": "TrustedIPs=127.0.0.1",
+      "name": "trusted_localhost",
+      "passed": true
+    }
+  ],
+  "decision": "ready_to_install_ib_gateway_paper_autostart",
+  "jts_config_redacted": {
+    "Communication": {
+      "Peer": "cdc1.ibllc.com:4001",
+      "Region": "us"
+    },
+    "IBGateway": {
+      "ApiOnly": "true",
+      "LocalServerPort": "4000",
+      "MainWindow.Height": "550",
+      "MainWindow.Width": "935",
+      "RemoteHostOrderRouting": "ndc1.ibllc.com",
+      "RemotePortOrderRouting": "4001",
+      "TrustedIPs": "127.0.0.1",
+      "WriteDebug": "false"
+    },
+    "Logon": {
+      "Locale": "en",
+      "Steps": "7",
+      "SupportsSSL": "ndc1.ibllc.com:4000,true,20260314,false;cdc1.ibllc.com:4000,true,20260514,false",
+      "TimeZone": "America/Los_Angeles",
+      "UseSSL": "true",
+      "UserNameToDirectory": "<redacted>",
+      "colorPalletName": "dark",
+      "ibkrBranding": "pro",
+      "os_titlebar": "false",
+      "s3store": "true",
+      "screenHeight": "982",
+      "tradingMode": "p",
+      "useRemoteSettings": "<redacted>"
+    }
+  },
+  "jts_ini": "/Users/gduby/Jts/jts.ini",
+  "launchd_assets": {
+    "gateway_plist": "v4/ops/launchd/com.autoresearch.ibgateway.paper.plist",
+    "install_script": "v4/ops/launchd/install_ibkr_paper_autostart.sh",
+    "preflight_plist": "v4/ops/launchd/com.autoresearch.protocol101.paper-preflight.plist",
+    "uninstall_script": "v4/ops/launchd/uninstall_ibkr_paper_autostart.sh"
+  },
+  "live_orders": false,
+  "next_gate": "Install the LaunchAgents when desired, then run the IBKR preflight during market hours. Paper-order submission remains blocked until the paper-order guard and live Protocol101 shadow parity pass.",
+  "paid_data_downloaded": false,
+  "paper_orders": false,
+  "protocol": "140_ibkr_autostart_prep"
+}

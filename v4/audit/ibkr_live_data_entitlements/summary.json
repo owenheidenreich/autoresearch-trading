@@ -1,0 +1,107 @@
+{
+  "blocked_reason": "missing_live_market_data_entitlements",
+  "chain_meta": {},
+  "checked_at": "2026-05-14T18:15:46.183115-04:00",
+  "connection_attempts": [
+    {
+      "host": "127.0.0.1",
+      "port": 4002,
+      "status": "connected"
+    }
+  ],
+  "decision": "blocked",
+  "feed_status": {
+    "spx": {
+      "live_price_available": false,
+      "market_data_type": "live",
+      "price": null
+    },
+    "spxw_options": {
+      "contracts_qualified": 0,
+      "contracts_requested": 0,
+      "delayed_nbbo_rows": 0,
+      "live_nbbo_rows": 0,
+      "market_data_type_counts": {}
+    },
+    "vix": {
+      "live_price_available": false,
+      "market_data_type": "live",
+      "price": null
+    }
+  },
+  "ibkr_connected": true,
+  "ibkr_errors": [
+    {
+      "contract": null,
+      "error_code": 2119,
+      "error_string": "Market data farm is connecting:usfarm.nj",
+      "req_id": -1
+    },
+    {
+      "contract": null,
+      "error_code": 2119,
+      "error_string": "Market data farm is connecting:usfarm.nj",
+      "req_id": -1
+    },
+    {
+      "contract": null,
+      "error_code": 2104,
+      "error_string": "Market data farm connection is OK:usfarm.nj",
+      "req_id": -1
+    },
+    {
+      "contract": "Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
+      "error_code": 354,
+      "error_string": "Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL",
+      "req_id": 4
+    },
+    {
+      "contract": "Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')",
+      "error_code": 354,
+      "error_string": "Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL",
+      "req_id": 6
+    }
+  ],
+  "ibkr_port": 4002,
+  "no_order_guarantee": {
+    "broker_order_endpoint_called": false,
+    "order_intent_non_null_rows": 0
+  },
+  "regular_market_hours": false,
+  "required_actions": [
+    {
+      "item": "Market Data API Acknowledgement",
+      "source": "https://www.interactivebrokers.com/campus/ibkr-api-page/market-data-subscriptions/",
+      "why": "IBKR can reject API market data until this Client Portal acknowledgement is enabled."
+    },
+    {
+      "item": "Cboe Streaming Market Indexes",
+      "source": "https://www.interactivebrokers.com/en/pricing/market-data-pricing.php",
+      "why": "Needed for live SPX/VIX index L1 context."
+    },
+    {
+      "item": "OPRA Top of Book (L1)(US Option Exchanges)",
+      "source": "https://www.interactivebrokers.com/en/pricing/market-data-pricing.php",
+      "why": "Needed for live SPXW option NBBO."
+    },
+    {
+      "item": "Underlying/index plus derivative data",
+      "source": "https://www.interactivebrokers.com/campus/ibkr-api-page/market-data-subscriptions/",
+      "why": "IBKR documents that options Greeks need both underlying and derivative subscriptions."
+    }
+  ],
+  "subscription_errors": [
+    {
+      "contract": "Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
+      "error_code": 354,
+      "error_string": "Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL",
+      "req_id": 4
+    },
+    {
+      "contract": "Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')",
+      "error_code": 354,
+      "error_string": "Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL",
+      "req_id": 6
+    }
+  ]
+}

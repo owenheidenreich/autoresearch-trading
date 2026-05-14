@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>IB_GATEWAY_API_PORT</key>
+		<string>4000</string>
+		<key>IB_GATEWAY_API_PORTS</key>
+		<string>4000,4002,7497,7496,4001</string>
+		<key>IB_GATEWAY_APP</key>
+		<string>/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app</string>
+	</dict>
+	<key>Label</key>
+	<string>com.autoresearch.ibgateway.paper</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/start_ib_gateway_paper.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>6</integer>
+		<key>Minute</key>
+		<integer>20</integer>
+	</dict>
+</dict>
+</plist>

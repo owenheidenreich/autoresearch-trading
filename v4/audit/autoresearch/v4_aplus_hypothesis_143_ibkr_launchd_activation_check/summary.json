@@ -1,0 +1,27 @@
+{
+  "broker_order_endpoint_called": false,
+  "checks": [
+    {
+      "installed": true,
+      "label": "com.autoresearch.ibgateway.paper",
+      "launchctl_header": "gui/501/com.autoresearch.ibgateway.paper = {",
+      "launchctl_returncode": 0,
+      "loaded": true,
+      "plist": "/Users/gduby/Library/LaunchAgents/com.autoresearch.ibgateway.paper.plist"
+    },
+    {
+      "installed": true,
+      "label": "com.autoresearch.protocol101.paper-preflight",
+      "launchctl_header": "gui/501/com.autoresearch.protocol101.paper-preflight = {",
+      "launchctl_returncode": 0,
+      "loaded": true,
+      "plist": "/Users/gduby/Library/LaunchAgents/com.autoresearch.protocol101.paper-preflight.plist"
+    }
+  ],
+  "decision": "pass_ibkr_paper_launchagents_installed",
+  "live_orders": false,
+  "next_gate": "At the next market session, confirm the preflight log shows a live IBKR paper API connection and then run live Protocol101 shadow parity before paper orders.",
+  "paid_data_downloaded": false,
+  "paper_orders_submitted": false,
+  "protocol": "143_ibkr_launchd_activation_check"
+}

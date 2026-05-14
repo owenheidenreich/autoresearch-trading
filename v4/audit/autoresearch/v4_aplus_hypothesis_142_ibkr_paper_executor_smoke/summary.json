@@ -1,0 +1,83 @@
+{
+  "broker_order_endpoint_called": false,
+  "decision": "pass_paper_executor_validates_without_order_submission",
+  "executor_result": {
+    "account_probe": {
+      "attempts": [
+        {
+          "error": "[Errno 61] Connect call failed ('127.0.0.1', 4000)",
+          "port": 4000,
+          "status": "failed"
+        },
+        {
+          "port": 4002,
+          "status": "connected"
+        }
+      ],
+      "broker_connection_endpoint_called": true,
+      "connected": true,
+      "host": "127.0.0.1",
+      "managed_account_count": 1,
+      "managed_accounts_redacted": [
+        "DU***40"
+      ],
+      "port": 4002,
+      "primary_account_id_redacted": "DU***40"
+    },
+    "broker_order_endpoint_called": false,
+    "contract_preview": {
+      "currency": "USD",
+      "exchange": "SMART",
+      "lastTradeDateOrContractMonth": "20260320",
+      "right": "C",
+      "strike": 6700.0,
+      "symbol": "SPX",
+      "tradingClass": "SPXW"
+    },
+    "dry_run": true,
+    "intent": {
+      "action": "BUY",
+      "currency": "USD",
+      "exchange": "SMART",
+      "expiry": "20260320",
+      "limit_price": 10.0,
+      "quantity": 1,
+      "right": "C",
+      "strike": 6700.0,
+      "symbol": "SPX",
+      "trading_class": "SPXW"
+    },
+    "order_preview": {
+      "action": "BUY",
+      "lmtPrice": 10.0,
+      "outsideRth": false,
+      "tif": "DAY",
+      "totalQuantity": 1
+    },
+    "paper_order_submitted": false,
+    "permission": {
+      "account_id_redacted": "DU***40",
+      "passed": true,
+      "reason": "pass",
+      "reasons": [],
+      "required_env": "V4_ALLOW_IBKR_PAPER_ORDERS=YES"
+    },
+    "qualified_contracts": 0,
+    "reason": "paper_order_validated_not_submitted",
+    "status": "dry_run_pass",
+    "validation": {
+      "account_cash": 10000.0,
+      "open_positions": 0,
+      "passed": true,
+      "premium_required": 1000.0,
+      "reason": "pass",
+      "reasons": []
+    }
+  },
+  "live_orders": false,
+  "mode": "dry-run",
+  "next_gate": "Use this executor only after a live Protocol101 decision stream passes schema, quote freshness, account, and risk gates. Paper-submit mode requires an explicit order-intent JSON.",
+  "paid_data_downloaded": false,
+  "paper_orders_submitted": false,
+  "protocol": "142_ibkr_paper_executor_smoke"
+}

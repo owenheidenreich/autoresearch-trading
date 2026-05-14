@@ -1519,8 +1519,6 @@ Next Gate: Enable live Cboe index market data for SPX and VIX in the IBKR API se
 Owner: Codex
 ```
 
-
-
 ## 2026-05-13 Protocol 114 Skeptical Falsification
 
 ```text
@@ -1726,6 +1724,58 @@ Data Used: Existing Protocol113 replay trades only. No paid data was downloaded,
 Cost: $0 incremental paid data.
 Result: Decision pass_daily_stop_retune_candidate_not_live. Best stop -1500.0 plus 0.500% equity. Report v4/audit/autoresearch/v4_aplus_hypothesis_139_protocol101_daily_stop_retune/report.md.
 Next Gate: Update account_aware_sizer_v1 to use the retuned daily stop and rerun consolidated validation.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 140 IBKR Paper Autostart Prep
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Prepared IB Gateway paper-mode morning autostart and Protocol101 API preflight assets.
+Reason: User wants the system to start IB Gateway paper mode automatically before the market opens, so the project needs OS-level startup and a broker API readiness check before paper trading.
+Data Used: Local IB Gateway app path and redacted JTS config only. No paid data was downloaded, no broker order endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision ready_to_install_ib_gateway_paper_autostart. Report: v4/audit/autoresearch/v4_aplus_hypothesis_140_ibkr_autostart_prep/report.md
+Next Gate: Install LaunchAgents when desired, then run paper-order guard and live shadow parity before enabling paper orders.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 141 IBKR Paper-Order Guard
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Added and ran an IBKR paper-order permission guard around future Protocol101 broker-connected paper trading.
+Reason: User approved paper trades, but the project needs an explicit paper-only permission layer so no real-money order path can be reached by accident.
+Data Used: Local guard configuration only unless account-probe mode was requested. No paid data was downloaded and no broker order endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision ready_for_guarded_paper_order_submission_after_live_shadow_parity. Report: v4/audit/autoresearch/v4_aplus_hypothesis_141_ibkr_paper_order_guard/report.md
+Next Gate: Run account-probe with IB Gateway open, then run no-order live shadow parity before enabling paper-order submission.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 142 IBKR Paper Executor Smoke
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Added a guarded IBKR paper-order executor and smoke-tested the non-submitting path.
+Reason: User approved eventual paper trades, so the project needs an explicit executor that can submit only validated paper-order intents after live shadow parity passes.
+Data Used: Local IBKR paper connection in dry-run mode. No paid data was downloaded and no paper order was submitted unless paper-submit mode is explicitly used.
+Cost: $0 incremental paid data.
+Result: Decision pass_paper_executor_validates_without_order_submission. Report: v4/audit/autoresearch/v4_aplus_hypothesis_142_ibkr_paper_executor_smoke/report.md
+Next Gate: Feed this executor only from a live Protocol101 order-intent stream that has passed schema/freshness/risk checks.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 143 IBKR LaunchAgent Activation Check
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Installed and verified the IB Gateway paper-mode morning LaunchAgents.
+Reason: User wants IB Gateway paper mode to start before the market so the bot can run without a 6:30 AM manual login.
+Data Used: Local launchd state only. No paid data was downloaded, no paper order was submitted, and no broker order endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision pass_ibkr_paper_launchagents_installed. Report: v4/audit/autoresearch/v4_aplus_hypothesis_143_ibkr_launchd_activation_check/report.md
+Next Gate: During the next market session, use the preflight/live-shadow logs to confirm live paper API parity before enabling paper order submission.
 Owner: Codex
 ```
 

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict/>
+	<key>Label</key>
+	<string>com.autoresearch.protocol101.paper-preflight</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/gduby/Documents/autoresearch-trading/.venv/bin/python</string>
+		<string>/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/wait_for_ibkr_api.py</string>
+		<string>--port</string>
+		<string>4000</string>
+		<string>--auto-ports</string>
+		<string>4000,4002,7497,7496,4001</string>
+		<string>--timeout-seconds</string>
+		<string>600</string>
+		<string>--run-entitlement-probe</string>
+		<string>--repo-root</string>
+		<string>/Users/gduby/Documents/autoresearch-trading</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.err.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.out.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>6</integer>
+		<key>Minute</key>
+		<integer>30</integer>
+	</dict>
+</dict>
+</plist>
