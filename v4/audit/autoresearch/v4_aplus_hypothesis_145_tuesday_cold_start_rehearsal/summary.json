@@ -1,0 +1,93 @@
+{
+  "broker_order_endpoint_called": false,
+  "decision": "expected_blocker_gateway_login_required_or_api_port_closed",
+  "host": "127.0.0.1",
+  "interpretation": "This is the expected failure when IB Gateway launches but credentials/2FA have not completed. The automation can open Gateway, but cannot bypass an unsaved login challenge.",
+  "launchd": {
+    "com.autoresearch.ibgateway.paper": {
+      "header": "gui/501/com.autoresearch.ibgateway.paper = {",
+      "label": "com.autoresearch.ibgateway.paper",
+      "loaded": true,
+      "returncode": 0
+    },
+    "com.autoresearch.protocol101.paper-preflight": {
+      "header": "gui/501/com.autoresearch.protocol101.paper-preflight = {",
+      "label": "com.autoresearch.protocol101.paper-preflight",
+      "loaded": true,
+      "returncode": 0
+    }
+  },
+  "live_orders": false,
+  "market_data_endpoint_called": false,
+  "next_gate": "Finish IB Gateway paper login manually once and ensure API settings remain enabled. Then rerun this rehearsal; the next passing state should expose port 4002 or 4000.",
+  "paid_data_downloaded": false,
+  "paper_orders_submitted": false,
+  "port_status_after": {
+    "any_open": false,
+    "open_ports": [],
+    "rows": [
+      {
+        "open": false,
+        "port": 4000
+      },
+      {
+        "open": false,
+        "port": 4002
+      },
+      {
+        "open": false,
+        "port": 7497
+      },
+      {
+        "open": false,
+        "port": 7496
+      },
+      {
+        "open": false,
+        "port": 4001
+      }
+    ],
+    "wait_seconds": 5
+  },
+  "port_status_before": {
+    "any_open": false,
+    "open_ports": [],
+    "rows": [
+      {
+        "open": false,
+        "port": 4000
+      },
+      {
+        "open": false,
+        "port": 4002
+      },
+      {
+        "open": false,
+        "port": 7497
+      },
+      {
+        "open": false,
+        "port": 7496
+      },
+      {
+        "open": false,
+        "port": 4001
+      }
+    ]
+  },
+  "ports": [
+    4000,
+    4002,
+    7497,
+    7496,
+    4001
+  ],
+  "protocol": "145_tuesday_cold_start_rehearsal",
+  "start_result": {
+    "returncode": 1,
+    "script": "v4/ops/ibkr/start_ib_gateway_paper.sh",
+    "skipped": false,
+    "stderr": "IB Gateway started, but no API port from [4000,4002,7497,7496,4001] was listening after 35s.\nIf Gateway is waiting for credentials/2FA, finish the login once and rerun the preflight.",
+    "stdout": ""
+  }
+}

@@ -1792,3 +1792,16 @@ Next Gate: Wire live Protocol101 decisions/orders/fills/exits/account state into
 Owner: Codex
 ```
 
+## 2026-05-14 Protocol 145 Tuesday Cold-Start Rehearsal
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Rehearsed Tuesday's cold-start path with IB Gateway closed, using the same startup script as the morning LaunchAgent.
+Reason: User wanted to know whether the unattended startup path works and expected failure at the missing username/password login stage.
+Data Used: Local app/launchd/API-port checks only. No paid data was downloaded, no market-data endpoint was called, and no order endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision expected_blocker_gateway_login_required_or_api_port_closed. Ports before=[]; ports after=[]. Report: v4/audit/autoresearch/v4_aplus_hypothesis_145_tuesday_cold_start_rehearsal/report.md
+Next Gate: Finish IB Gateway paper login manually once and ensure API settings remain enabled. Then rerun this rehearsal; the next passing state should expose port 4002 or 4000.
+Owner: Codex
+```
+
