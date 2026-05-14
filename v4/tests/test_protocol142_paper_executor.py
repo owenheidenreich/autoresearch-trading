@@ -81,6 +81,30 @@ def test_executor_dry_run_validates_without_calling_place_order() -> None:
     assert decide("dry-run", result) == "pass_paper_executor_validates_without_order_submission"
 
 
+def test_executor_writes_trade_log_when_log_root_is_supplied(tmp_path) -> None:
+    ib = FakeIB()
+    result = execute_guarded_paper_order(
+        ib=ib,
+        option_cls=FakeOption,
+        order_cls=FakeLimitOrder,
+        intent=_intent(),
+        account_id="DU12345",
+        account_cash=10_000.0,
+        open_positions=0,
+        quote={"bid": 9.9, "ask": 10.0, "reference_ask": 10.0, "quote_age_ms": 100},
+        context={"context_age_ms": 100},
+        enable_paper_orders=True,
+        acknowledge_paper_loss=True,
+        environ={"V4_ALLOW_IBKR_PAPER_ORDERS": "YES"},
+        dry_run=True,
+        trade_log_root=tmp_path,
+        trade_log_run_id="test_executor",
+    )
+
+    assert result["status"] == "dry_run_pass"
+    assert list(tmp_path.glob("*/test_executor.jsonl"))
+
+
 def test_executor_blocks_without_paper_permission() -> None:
     ib = FakeIB()
     result = execute_guarded_paper_order(

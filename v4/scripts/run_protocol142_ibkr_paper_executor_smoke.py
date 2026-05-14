@@ -13,6 +13,7 @@ from typing import Any
 
 from v4.live.ibkr_paper_executor import PaperExecutionConfig, execute_guarded_paper_order
 from v4.live.ibkr_paper_guard import PaperOrderIntent
+from v4.live.paper_trade_log import DEFAULT_TRADE_LOG_ROOT, export_trade_log_csv, trade_log_path
 from v4.scripts.run_protocol141_ibkr_paper_order_guard import candidate_ports, probe_ibkr_account
 
 
@@ -34,6 +35,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--paper-cash", type=float, default=10_000.0)
     parser.add_argument("--enable-paper-orders", action="store_true")
     parser.add_argument("--acknowledge-paper-loss", action="store_true")
+    parser.add_argument("--trade-log-root", type=Path, default=DEFAULT_TRADE_LOG_ROOT)
+    parser.add_argument("--trade-log-run-id", default="protocol142_executor_smoke")
+    parser.add_argument("--no-trade-log", action="store_true")
     parser.add_argument("--no-ledger", action="store_true")
     return parser.parse_args()
 
@@ -58,6 +62,7 @@ def main() -> int:
         "paper_orders_submitted": bool(result.get("paper_order_submitted")),
         "broker_order_endpoint_called": bool(result.get("broker_order_endpoint_called")),
         "executor_result": result,
+        "trade_log": trade_log_outputs(args),
         "next_gate": next_gate(decision),
     }
     return finish(args, payload)
@@ -95,6 +100,8 @@ def run_executor(args: argparse.Namespace, *, intent: PaperOrderIntent, dry_run:
             acknowledge_paper_loss=bool(args.acknowledge_paper_loss),
             dry_run=dry_run,
             config=PaperExecutionConfig(),
+            trade_log_root=None if args.no_trade_log else args.trade_log_root,
+            trade_log_run_id=args.trade_log_run_id,
         )
         result["account_probe"] = redact_account_probe_for_executor(account_probe)
         return result
@@ -169,6 +176,11 @@ def blocked_payload(args: argparse.Namespace, intent: PaperOrderIntent, reason: 
 
 
 def finish(args: argparse.Namespace, payload: dict[str, Any]) -> int:
+    if payload.get("trade_log", {}).get("jsonl_path"):
+        jsonl = Path(payload["trade_log"]["jsonl_path"])
+        csv_path = Path(payload["trade_log"]["csv_path"])
+        if jsonl.exists():
+            payload["trade_log"]["csv_export"] = export_trade_log_csv(jsonl, csv_path)
     (args.out_dir / "summary.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     write_report(args.out_dir / "report.md", payload)
     if not args.no_ledger:
@@ -179,6 +191,7 @@ def finish(args: argparse.Namespace, payload: dict[str, Any]) -> int:
 
 def write_report(path: Path, payload: dict[str, Any]) -> None:
     result = payload["executor_result"]
+    log = payload.get("trade_log", {})
     lines = [
         "# Protocol 142: IBKR Paper Executor Smoke",
         "",
@@ -190,6 +203,8 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
         f"- Reason: `{result.get('reason')}`",
         f"- Broker order endpoint called: `{payload['broker_order_endpoint_called']}`",
         f"- Paper orders submitted: `{payload['paper_orders_submitted']}`",
+        f"- Trade log JSONL: `{log.get('jsonl_path')}`",
+        f"- Trade log CSV: `{log.get('csv_path')}`",
         "",
         "## Next Gate",
         "",
@@ -234,6 +249,18 @@ def redact_account_probe_for_executor(payload: dict[str, Any]) -> dict[str, Any]
         value = str(out.pop("primary_account_id") or "")
         out["primary_account_id_redacted"] = f"{value[:2]}***{value[-2:]}" if len(value) > 4 else "***"
     return out
+
+
+def trade_log_outputs(args: argparse.Namespace) -> dict[str, Any]:
+    if args.no_trade_log:
+        return {"enabled": False, "jsonl_path": None, "csv_path": None}
+    path = trade_log_path(root=args.trade_log_root, run_id=args.trade_log_run_id)
+    return {
+        "enabled": True,
+        "jsonl_path": str(path),
+        "csv_path": str(path.with_suffix(".csv")),
+        "run_id": args.trade_log_run_id,
+    }
 
 
 if __name__ == "__main__":

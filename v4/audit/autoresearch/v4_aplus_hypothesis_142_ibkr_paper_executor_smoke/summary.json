@@ -2,6 +2,11 @@
   "broker_order_endpoint_called": false,
   "decision": "pass_paper_executor_validates_without_order_submission",
   "executor_result": {
+    "account": {
+      "account_id_redacted": "DU***40",
+      "cash": 10000.0,
+      "open_positions": 0
+    },
     "account_probe": {
       "attempts": [
         {
@@ -25,6 +30,9 @@
       "primary_account_id_redacted": "DU***40"
     },
     "broker_order_endpoint_called": false,
+    "context": {
+      "context_age_ms": 100
+    },
     "contract_preview": {
       "currency": "USD",
       "exchange": "SMART",
@@ -63,6 +71,12 @@
       "required_env": "V4_ALLOW_IBKR_PAPER_ORDERS=YES"
     },
     "qualified_contracts": 0,
+    "quote": {
+      "ask": 10.0,
+      "bid": 9.9,
+      "quote_age_ms": 100,
+      "reference_ask": 10.0
+    },
     "reason": "paper_order_validated_not_submitted",
     "status": "dry_run_pass",
     "validation": {
@@ -79,5 +93,16 @@
   "next_gate": "Use this executor only after a live Protocol101 decision stream passes schema, quote freshness, account, and risk gates. Paper-submit mode requires an explicit order-intent JSON.",
   "paid_data_downloaded": false,
   "paper_orders_submitted": false,
-  "protocol": "142_ibkr_paper_executor_smoke"
+  "protocol": "142_ibkr_paper_executor_smoke",
+  "trade_log": {
+    "csv_export": {
+      "csv_path": "v4/logs/paper_trading/2026-05-14/protocol142_executor_smoke.csv",
+      "jsonl_path": "v4/logs/paper_trading/2026-05-14/protocol142_executor_smoke.jsonl",
+      "rows": 1
+    },
+    "csv_path": "v4/logs/paper_trading/2026-05-14/protocol142_executor_smoke.csv",
+    "enabled": true,
+    "jsonl_path": "v4/logs/paper_trading/2026-05-14/protocol142_executor_smoke.jsonl",
+    "run_id": "protocol142_executor_smoke"
+  }
 }

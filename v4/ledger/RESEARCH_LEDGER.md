@@ -1779,3 +1779,16 @@ Next Gate: During the next market session, use the preflight/live-shadow logs to
 Owner: Codex
 ```
 
+## 2026-05-14 Protocol 144 Paper Trade Logging
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Added and validated the append-only Protocol101 paper trade log contract.
+Reason: User requested live/paper trades be logged for later analysis, so every future paper session needs a durable JSONL source of truth plus CSV export.
+Data Used: Synthetic local sample events only. No paid data was downloaded, no broker order endpoint was called, and no paper order was submitted.
+Cost: $0 incremental paid data.
+Result: Decision pass_paper_trade_logging_ready_for_live_paper_analysis. Rows=3; event_counts={'model_decision': 1, 'risk_gate': 1, 'paper_order_dry_run': 1}. Report: v4/audit/autoresearch/v4_aplus_hypothesis_144_paper_trade_logging/report.md
+Next Gate: Wire live Protocol101 decisions/orders/fills/exits/account state into this trade journal during paper sessions.
+Owner: Codex
+```
+

@@ -1,0 +1,31 @@
+{
+  "broker_order_endpoint_called": false,
+  "decision": "pass_paper_trade_logging_ready_for_live_paper_analysis",
+  "live_orders": false,
+  "next_gate": "Wire the live Protocol101 router to append model_decision, risk_gate, order, fill, exit, and account_state events to this JSONL stream during every paper session.",
+  "outputs": {
+    "csv": "v4/audit/autoresearch/v4_aplus_hypothesis_144_paper_trade_logging/sample_protocol101_paper_trade_log.csv",
+    "csv_summary": {
+      "csv_path": "v4/audit/autoresearch/v4_aplus_hypothesis_144_paper_trade_logging/sample_protocol101_paper_trade_log.csv",
+      "jsonl_path": "v4/audit/autoresearch/v4_aplus_hypothesis_144_paper_trade_logging/sample_protocol101_paper_trade_log.jsonl",
+      "rows": 3
+    },
+    "jsonl": "v4/audit/autoresearch/v4_aplus_hypothesis_144_paper_trade_logging/sample_protocol101_paper_trade_log.jsonl",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_144_paper_trade_logging/report.md"
+  },
+  "paid_data_downloaded": false,
+  "paper_orders_submitted": false,
+  "protocol": "144_paper_trade_logging",
+  "validation": {
+    "broker_order_endpoint_called_rows": 0,
+    "errors": [],
+    "event_counts": {
+      "model_decision": 1,
+      "paper_order_dry_run": 1,
+      "risk_gate": 1
+    },
+    "rows": 3,
+    "status": "pass",
+    "warnings": []
+  }
+}

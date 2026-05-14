@@ -80,6 +80,7 @@ v2/output/
 # Observability artifacts (run-scoped, not committed)
 v2/runs/
 v2/build_reports/
+v4/logs/
 
 # Runtime sync/process noise
 .sync-pid

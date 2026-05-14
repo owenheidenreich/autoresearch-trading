@@ -15,6 +15,7 @@ from v4.live.ibkr_paper_guard import (
     paper_order_permission,
     validate_order_intent,
 )
+from v4.live.paper_trade_log import append_trade_event, executor_result_event, trade_log_path
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,9 @@ def execute_guarded_paper_order(
     dry_run: bool = True,
     config: PaperExecutionConfig = PaperExecutionConfig(),
     environ: dict[str, str] | None = None,
+    trade_log_root: Any | None = None,
+    trade_log_run_id: str | None = None,
+    trade_uid: str | None = None,
 ) -> dict[str, Any]:
     """Validate, optionally submit, and return a broker-safe execution record."""
 
@@ -66,14 +70,23 @@ def execute_guarded_paper_order(
         "broker_order_endpoint_called": False,
         "paper_order_submitted": False,
         "intent": intent.__dict__,
+        "quote": quote,
+        "context": context,
+        "account": {
+            "account_id_redacted": permission.get("account_id_redacted"),
+            "cash": validation.get("account_cash"),
+            "open_positions": validation.get("open_positions"),
+        },
     }
     if not permission["passed"] or not validation["passed"]:
-        return {**base, "status": "blocked", "reason": blocked_reason(permission, validation)}
+        result = {**base, "status": "blocked", "reason": blocked_reason(permission, validation)}
+        maybe_log_executor_result(result, trade_log_root=trade_log_root, trade_log_run_id=trade_log_run_id, trade_uid=trade_uid)
+        return result
 
     contract = build_option_contract(option_cls, intent)
     order = build_limit_order(order_cls, intent, config=config)
     if dry_run:
-        return {
+        result = {
             **base,
             "status": "dry_run_pass",
             "reason": "paper_order_validated_not_submitted",
@@ -81,6 +94,8 @@ def execute_guarded_paper_order(
             "contract_preview": contract_preview(contract),
             "order_preview": order_preview(order),
         }
+        maybe_log_executor_result(result, trade_log_root=trade_log_root, trade_log_run_id=trade_log_run_id, trade_uid=trade_uid)
+        return result
 
     qualified_contracts = []
     if hasattr(ib, "qualifyContracts"):
@@ -89,7 +104,7 @@ def execute_guarded_paper_order(
             contract = qualified_contracts[0]
 
     trade = ib.placeOrder(contract, order)
-    return {
+    result = {
         **base,
         "status": "submitted",
         "reason": "paper_order_submitted",
@@ -100,6 +115,8 @@ def execute_guarded_paper_order(
         "order_preview": order_preview(order),
         "trade_preview": trade_preview(trade),
     }
+    maybe_log_executor_result(result, trade_log_root=trade_log_root, trade_log_run_id=trade_log_run_id, trade_uid=trade_uid)
+    return result
 
 
 def build_option_contract(option_cls: Any, intent: PaperOrderIntent) -> Any:
@@ -163,3 +180,23 @@ def trade_preview(trade: Any) -> dict[str, Any]:
         "contract": contract_preview(contract) if contract is not None else None,
         "order": order_preview(order) if order is not None else None,
     }
+
+
+def maybe_log_executor_result(
+    result: dict[str, Any],
+    *,
+    trade_log_root: Any | None,
+    trade_log_run_id: str | None,
+    trade_uid: str | None,
+) -> None:
+    if trade_log_root is None:
+        return
+    run_id = trade_log_run_id or "protocol101_paper"
+    event = executor_result_event(
+        result=result,
+        run_id=run_id,
+        mode="paper_executor",
+        trade_uid=trade_uid,
+    )
+    path = trade_log_path(root=trade_log_root, session=str(event["session"]), run_id=run_id)
+    append_trade_event(path, event)
