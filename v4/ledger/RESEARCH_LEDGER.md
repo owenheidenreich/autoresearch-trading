@@ -1612,3 +1612,16 @@ Next Gate: Tuesday is a no-order live data parity experiment. Paper-order rehear
 Owner: Codex
 ```
 
+## 2026-05-14 Protocol 131 Protocol101 Multi-Contract P&L Tracking
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Tested offline multi-contract P&L tracking policies around frozen Protocol101.
+Reason: User asked whether the model could scale lots only after profits; this requires account-state tracking before any leverage touches paper trading.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision reject_multi_contract_risk_not_improved_enough. Best candidate conservative_profit_ladder. Report v4/audit/autoresearch/v4_aplus_hypothesis_131_protocol101_multi_contract_pnl_tracking/report.md.
+Next Gate: Keep Tuesday and initial paper trading at one contract. Multi-contract sizing remains rejected until a safer policy improves PnL without worsening drawdown or loss clustering.
+Owner: Codex
+```
+

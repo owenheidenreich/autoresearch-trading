@@ -1,0 +1,5 @@
+policy,starting_cash,ending_cash,total_pnl,return_on_starting_cash,candidate_trades,taken_trades,skipped_trades,skip_counts,total_contracts,max_quantity,max_drawdown,max_drawdown_pct,worst_day_pnl,best_day_pnl,min_cash,risk_of_ruin,longest_recovery_trades
+one_contract_baseline,10000.0,329050.0,319050.0,31.905,1028,1028,0,{},1028,1,-2790.0,-0.065335,-2080.0,9270.0,9790.0,False,42
+strict_exposure_ladder,10000.0,639210.0,629210.0,62.921,1028,917,111,"{'daily_loss_stop': 95, 'premium_exposure_cap': 16}",2032,3,-8330.0,-0.07784,-4050.0,18910.0,10000.0,False,34
+conservative_profit_ladder,10000.0,774830.0,764830.0,76.483,1028,913,115,{'daily_loss_stop': 115},2434,3,-11540.0,-0.069042,-5520.0,25570.0,9790.0,False,34
+recovery_lock_ladder,10000.0,709790.0,699790.0,69.979,1028,919,109,"{'daily_loss_stop': 107, 'premium_exposure_cap': 2}",2222,3,-11540.0,-0.074681,-4830.0,24500.0,9950.0,False,37

@@ -1,0 +1,149 @@
+{
+  "acceptance_rule": {
+    "must_have_no_risk_of_ruin": true,
+    "must_improve_total_pnl_vs_baseline": true,
+    "must_not_increase_max_drawdown_pct_by_more_than": 0.03,
+    "must_not_make_worst_day_more_than_150pct_of_baseline": true,
+    "must_not_skip_more_than_20pct_of_candidates": true,
+    "scope": "offline research only"
+  },
+  "best_candidate": {
+    "acceptance_checks": {
+      "drawdown_ok": true,
+      "risk_ok": true,
+      "skip_ok": true,
+      "total_improved": true,
+      "worst_day_ok": false
+    },
+    "baseline_max_drawdown_pct": -0.065335,
+    "baseline_total_pnl": 319050.0,
+    "baseline_worst_day_pnl": -2080.0,
+    "best_day_pnl": 25570.0,
+    "candidate_trades": 1028,
+    "ending_cash": 774830.0,
+    "longest_recovery_trades": 34,
+    "max_drawdown": -11540.0,
+    "max_drawdown_pct": -0.069042,
+    "max_quantity": 3,
+    "min_cash": 9790.0,
+    "passes_acceptance": false,
+    "policy": "conservative_profit_ladder",
+    "return_on_starting_cash": 76.483,
+    "risk_of_ruin": false,
+    "skip_counts": {
+      "daily_loss_stop": 115
+    },
+    "skipped_trades": 115,
+    "starting_cash": 10000.0,
+    "taken_trades": 913,
+    "total_contracts": 2434,
+    "total_pnl": 764830.0,
+    "worst_day_pnl": -5520.0
+  },
+  "broker_endpoint_called": false,
+  "decision": "reject_multi_contract_risk_not_improved_enough",
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Keep Tuesday and initial paper trading at one contract. Multi-contract sizing remains rejected until a safer policy improves PnL without worsening drawdown or loss clustering.",
+  "outputs": {
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_131_protocol101_multi_contract_pnl_tracking/report.md",
+    "sizing_daily_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_131_protocol101_multi_contract_pnl_tracking/sizing_daily_rows.csv",
+    "sizing_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_131_protocol101_multi_contract_pnl_tracking/sizing_summary.csv",
+    "sizing_trade_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_131_protocol101_multi_contract_pnl_tracking/sizing_trade_rows.csv",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_131_protocol101_multi_contract_pnl_tracking/summary.json"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "131_protocol101_multi_contract_pnl_tracking",
+  "protocol101_frozen": true,
+  "source_trades_csv": "v4/audit/autoresearch/v4_aplus_hypothesis_113_protocol101_trade_charts/trades.csv",
+  "summary": [
+    {
+      "best_day_pnl": 9270.0,
+      "candidate_trades": 1028,
+      "ending_cash": 329050.0,
+      "longest_recovery_trades": 42,
+      "max_drawdown": -2790.0,
+      "max_drawdown_pct": -0.065335,
+      "max_quantity": 1,
+      "min_cash": 9790.0,
+      "policy": "one_contract_baseline",
+      "return_on_starting_cash": 31.905,
+      "risk_of_ruin": false,
+      "skip_counts": {},
+      "skipped_trades": 0,
+      "starting_cash": 10000.0,
+      "taken_trades": 1028,
+      "total_contracts": 1028,
+      "total_pnl": 319050.0,
+      "worst_day_pnl": -2080.0
+    },
+    {
+      "best_day_pnl": 18910.0,
+      "candidate_trades": 1028,
+      "ending_cash": 639210.0,
+      "longest_recovery_trades": 34,
+      "max_drawdown": -8330.0,
+      "max_drawdown_pct": -0.07784,
+      "max_quantity": 3,
+      "min_cash": 10000.0,
+      "policy": "strict_exposure_ladder",
+      "return_on_starting_cash": 62.921,
+      "risk_of_ruin": false,
+      "skip_counts": {
+        "daily_loss_stop": 95,
+        "premium_exposure_cap": 16
+      },
+      "skipped_trades": 111,
+      "starting_cash": 10000.0,
+      "taken_trades": 917,
+      "total_contracts": 2032,
+      "total_pnl": 629210.0,
+      "worst_day_pnl": -4050.0
+    },
+    {
+      "best_day_pnl": 25570.0,
+      "candidate_trades": 1028,
+      "ending_cash": 774830.0,
+      "longest_recovery_trades": 34,
+      "max_drawdown": -11540.0,
+      "max_drawdown_pct": -0.069042,
+      "max_quantity": 3,
+      "min_cash": 9790.0,
+      "policy": "conservative_profit_ladder",
+      "return_on_starting_cash": 76.483,
+      "risk_of_ruin": false,
+      "skip_counts": {
+        "daily_loss_stop": 115
+      },
+      "skipped_trades": 115,
+      "starting_cash": 10000.0,
+      "taken_trades": 913,
+      "total_contracts": 2434,
+      "total_pnl": 764830.0,
+      "worst_day_pnl": -5520.0
+    },
+    {
+      "best_day_pnl": 24500.0,
+      "candidate_trades": 1028,
+      "ending_cash": 709790.0,
+      "longest_recovery_trades": 37,
+      "max_drawdown": -11540.0,
+      "max_drawdown_pct": -0.074681,
+      "max_quantity": 3,
+      "min_cash": 9950.0,
+      "policy": "recovery_lock_ladder",
+      "return_on_starting_cash": 69.979,
+      "risk_of_ruin": false,
+      "skip_counts": {
+        "daily_loss_stop": 107,
+        "premium_exposure_cap": 2
+      },
+      "skipped_trades": 109,
+      "starting_cash": 10000.0,
+      "taken_trades": 919,
+      "total_contracts": 2222,
+      "total_pnl": 699790.0,
+      "worst_day_pnl": -4830.0
+    }
+  ]
+}
