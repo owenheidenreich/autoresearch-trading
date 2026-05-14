@@ -1625,3 +1625,42 @@ Next Gate: Keep Tuesday and initial paper trading at one contract. Multi-contrac
 Owner: Codex
 ```
 
+## 2026-05-14 Protocol 132 Protocol101 Confidence Sizing Autoresearch
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Ran a confidence/account-aware sizing autoresearch loop around frozen Protocol101.
+Reason: Long-term bot behavior may scale contracts as a $10,000 account grows, but only if account state and model confidence reduce the loss-clustering problem.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision pass_confidence_sizing_research_candidate_not_live. Accepted 3 sizing hypotheses. Report v4/audit/autoresearch/v4_aplus_hypothesis_132_protocol101_confidence_sizing_autoresearch/report.md.
+Next Gate: Treat the accepted policy as offline research only. It needs split-by-split attribution and live one-contract parity before any multi-contract paper test.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 133 Protocol101 Sizing Split Stress
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Validated accepted Protocol132 sizing policies by split, month, day, and slippage stress.
+Reason: Aggregate multi-contract PnL is not enough; sizing must not simply move loss clustering into a later month or disappear under execution stress.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision pass_sizing_candidate_survives_split_stress_not_live. Best candidate lower_two_contract_threshold. Report v4/audit/autoresearch/v4_aplus_hypothesis_133_protocol101_sizing_split_stress/report.md.
+Next Gate: Run trade-set attribution for the surviving sizing policy and keep it offline until one-contract live paper parity is proven.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 134 Protocol101 Sizing Attribution
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Attributed the surviving Protocol133 sizing policy trade-by-trade against the one-contract baseline.
+Reason: Multi-contract sizing must prove it is not just a few large scaled winners masking concentrated risk.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision pass_sizing_attribution_research_candidate_not_live. Incremental PnL 34950.0. Report v4/audit/autoresearch/v4_aplus_hypothesis_134_protocol101_sizing_attribution/report.md.
+Next Gate: Keep the sizing policy as an offline research candidate. Next test should add split-by-split equity curves and paper-account visualization, not live multi-contract trading.
+Owner: Codex
+```
+

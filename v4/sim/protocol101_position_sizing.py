@@ -30,6 +30,12 @@ class PositionSizingPolicy:
     require_recent_positive_for_scaling: bool = False
     recent_window: int = 10
     initial_contracts: int = 1
+    min_score_margin_for_two: float | None = None
+    min_score_margin_for_three: float | None = None
+    min_profit_for_scaling: float = 0.0
+    profit_cushion_multiplier: float = 0.0
+    scale_only_if_daily_pnl_nonnegative: bool = False
+    max_one_contract_premium_for_scaling: float = math.inf
 
 
 @dataclass
@@ -98,12 +104,73 @@ def recovery_lock_policy() -> PositionSizingPolicy:
     )
 
 
+def confidence_ladder_policy() -> PositionSizingPolicy:
+    return PositionSizingPolicy(
+        name="confidence_ladder",
+        max_contracts=3,
+        equity_for_two_contracts=25_000.0,
+        equity_for_three_contracts=75_000.0,
+        premium_exposure_fraction=0.30,
+        max_premium_dollars=10_000.0,
+        daily_new_entry_stop_loss=-750.0,
+        max_drawdown_for_scaling=0.03,
+        require_recent_positive_for_scaling=True,
+        min_score_margin_for_two=2.0,
+        min_score_margin_for_three=2.9,
+        min_profit_for_scaling=10_000.0,
+        profit_cushion_multiplier=2.0,
+        scale_only_if_daily_pnl_nonnegative=True,
+    )
+
+
+def high_conviction_profit_cushion_policy() -> PositionSizingPolicy:
+    return PositionSizingPolicy(
+        name="high_conviction_profit_cushion",
+        max_contracts=3,
+        equity_for_two_contracts=30_000.0,
+        equity_for_three_contracts=100_000.0,
+        premium_exposure_fraction=0.25,
+        max_premium_dollars=8_000.0,
+        daily_new_entry_stop_loss=-750.0,
+        max_drawdown_for_scaling=0.025,
+        require_recent_positive_for_scaling=True,
+        min_score_margin_for_two=2.4,
+        min_score_margin_for_three=3.2,
+        min_profit_for_scaling=20_000.0,
+        profit_cushion_multiplier=3.0,
+        scale_only_if_daily_pnl_nonnegative=True,
+        max_one_contract_premium_for_scaling=3_000.0,
+    )
+
+
+def slow_growth_two_contract_policy() -> PositionSizingPolicy:
+    return PositionSizingPolicy(
+        name="slow_growth_two_contract",
+        max_contracts=2,
+        equity_for_two_contracts=40_000.0,
+        equity_for_three_contracts=math.inf,
+        premium_exposure_fraction=0.20,
+        max_premium_dollars=6_000.0,
+        daily_new_entry_stop_loss=-750.0,
+        max_drawdown_for_scaling=0.02,
+        require_recent_positive_for_scaling=True,
+        min_score_margin_for_two=2.2,
+        min_profit_for_scaling=30_000.0,
+        profit_cushion_multiplier=4.0,
+        scale_only_if_daily_pnl_nonnegative=True,
+        max_one_contract_premium_for_scaling=2_750.0,
+    )
+
+
 def default_position_sizing_policies() -> tuple[PositionSizingPolicy, ...]:
     return (
         baseline_one_contract_policy(),
         strict_exposure_ladder_policy(),
         conservative_profit_ladder_policy(),
         recovery_lock_policy(),
+        confidence_ladder_policy(),
+        high_conviction_profit_cushion_policy(),
+        slow_growth_two_contract_policy(),
     )
 
 
@@ -131,10 +198,15 @@ def simulate_position_sizing(trades: list[dict[str, Any]], policy: PositionSizin
                 "policy": policy.name,
                 "trade_number": int(trade.get("trade_number", len(rows) + 1)),
                 "session": session,
+                "stage": str(trade.get("stage", "")),
+                "segment": str(trade.get("segment", "")),
                 "decision_time": str(trade["decision_time"]),
                 "exit_time": str(trade["exit_time"]),
                 "contract_id": str(trade["contract_id"]),
                 "side": str(trade.get("side", "")),
+                "score": number(trade.get("score")),
+                "threshold": number(trade.get("threshold")),
+                "score_margin": score_margin(trade),
                 "one_contract_premium": premium_dollars(trade),
                 "one_contract_pnl": float(trade["pnl"]),
                 "quantity": int(quantity),
@@ -166,12 +238,29 @@ def choose_quantity(
         return 0, "daily_loss_stop"
 
     max_by_equity = max_contracts_by_equity(state.cash, policy)
+    if state.cash - policy.starting_cash < policy.min_profit_for_scaling:
+        max_by_equity = min(max_by_equity, policy.initial_contracts)
     if state.drawdown_pct > policy.max_drawdown_for_scaling:
         max_by_equity = min(max_by_equity, policy.initial_contracts)
     if policy.require_recent_positive_for_scaling and max_by_equity > policy.initial_contracts:
         recent_total = sum(state.recent_trade_pnls[-max(1, int(policy.recent_window)) :])
         if recent_total <= 0:
             max_by_equity = policy.initial_contracts
+    if policy.scale_only_if_daily_pnl_nonnegative and daily < 0:
+        max_by_equity = min(max_by_equity, policy.initial_contracts)
+    if premium > policy.max_one_contract_premium_for_scaling:
+        max_by_equity = min(max_by_equity, policy.initial_contracts)
+    margin = score_margin(trade)
+    if max_by_equity >= 3 and policy.min_score_margin_for_three is not None:
+        if margin is None or margin < policy.min_score_margin_for_three:
+            max_by_equity = 2
+    if max_by_equity >= 2 and policy.min_score_margin_for_two is not None:
+        if margin is None or margin < policy.min_score_margin_for_two:
+            max_by_equity = 1
+    if max_by_equity > 1 and policy.profit_cushion_multiplier > 0:
+        profit = max(0.0, state.cash - policy.starting_cash)
+        affordable_extra_by_profit = math.floor(profit / max(premium * policy.profit_cushion_multiplier, 1e-9))
+        max_by_equity = min(max_by_equity, 1 + int(affordable_extra_by_profit))
 
     max_by_cash = math.floor(state.cash / premium)
     exposure_cap = min(policy.max_premium_dollars, state.cash * policy.premium_exposure_fraction)
@@ -262,6 +351,14 @@ def premium_dollars(trade: dict[str, Any]) -> float | None:
         return premium
     ask = number(trade.get("entry_ask"))
     return None if ask is None else ask * CONTRACT_MULTIPLIER
+
+
+def score_margin(trade: dict[str, Any]) -> float | None:
+    score = number(trade.get("score"))
+    threshold = number(trade.get("threshold"))
+    if score is None or threshold is None:
+        return None
+    return score - threshold
 
 
 def drawdown_pct(cash: float, peak: float) -> float:
