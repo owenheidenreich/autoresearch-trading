@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import plistlib
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ DEFAULT_LAUNCHD_DIR = Path("v4/ops/launchd")
 DEFAULT_LOG_DIR = Path.home() / "Library/Logs/autoresearch-trading"
 GATEWAY_LABEL = "com.autoresearch.ibgateway.paper"
 PREFLIGHT_LABEL = "com.autoresearch.protocol101.paper-preflight"
+DEFAULT_IBKR_PAPER_API_PORT = 4002
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,8 +46,9 @@ def main() -> int:
     DEFAULT_LOG_DIR.mkdir(parents=True, exist_ok=True)
     app_path = args.app_path or discover_ib_gateway_app()
     jts = parse_jts_ini(args.jts_ini)
-    api_port = int(jts.get("IBGateway", {}).get("LocalServerPort") or 4000)
-    api_ports = candidate_api_ports(api_port)
+    jts_api_port = int(jts.get("IBGateway", {}).get("LocalServerPort") or 0)
+    api_port = int(os.environ.get("IB_GATEWAY_API_PORT") or DEFAULT_IBKR_PAPER_API_PORT)
+    api_ports = candidate_api_ports(api_port, configured_port=jts_api_port)
     checks = readiness_checks(app_path=app_path, jts=jts, jts_path=args.jts_ini)
     assets = write_launchd_assets(
         launchd_dir=args.launchd_dir,
@@ -147,7 +150,7 @@ def write_launchd_assets(
         label=GATEWAY_LABEL,
         program_arguments=[
             "/bin/bash",
-            str(REPO_ROOT / "v4/ops/ibkr/start_ib_gateway_paper.sh"),
+            str(REPO_ROOT / "v4/ops/ibkr/start_ib_gateway_paper_ibc.sh"),
         ],
         hour=gateway_hour,
         minute=gateway_minute,
@@ -157,6 +160,7 @@ def write_launchd_assets(
             "IB_GATEWAY_APP": app,
             "IB_GATEWAY_API_PORT": str(api_port),
             "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
+            "REPO_ROOT": str(REPO_ROOT),
         },
     )
     preflight_payload = launchd_payload(
@@ -211,9 +215,9 @@ def launchd_payload(
     }
 
 
-def candidate_api_ports(configured_port: int) -> list[int]:
+def candidate_api_ports(primary_port: int, configured_port: int | None = None) -> list[int]:
     ports: list[int] = []
-    for port in (configured_port, 4002, 7497, 7496, 4001):
+    for port in (primary_port, configured_port or 0, 4002, 4000, 7497, 7496, 4001):
         if int(port) > 0 and int(port) not in ports:
             ports.append(int(port))
     return ports
@@ -226,10 +230,12 @@ def write_install_scripts(launchd_dir: Path) -> None:
         f"""#!/usr/bin/env bash
 set -euo pipefail
 mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs/autoresearch-trading"
+launchctl bootout "gui/$UID/{GATEWAY_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/$UID/{PREFLIGHT_LABEL}" 2>/dev/null || true
 cp "{launchd_dir / (GATEWAY_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
 cp "{launchd_dir / (PREFLIGHT_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
-launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{GATEWAY_LABEL}.plist" 2>/dev/null || true
-launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{PREFLIGHT_LABEL}.plist" 2>/dev/null || true
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{GATEWAY_LABEL}.plist"
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{PREFLIGHT_LABEL}.plist"
 launchctl enable "gui/$UID/{GATEWAY_LABEL}"
 launchctl enable "gui/$UID/{PREFLIGHT_LABEL}"
 echo "Installed IB Gateway paper autostart and Protocol101 preflight LaunchAgents."

@@ -2,7 +2,7 @@
   "broker_order_endpoint_called": false,
   "decision": "expected_blocker_gateway_login_required_or_api_port_closed",
   "host": "127.0.0.1",
-  "interpretation": "This is the expected failure when IB Gateway launches but credentials/2FA have not completed. The automation can open Gateway, but cannot bypass an unsaved login challenge.",
+  "interpretation": "This is the expected failure when IBC cannot complete credentials/2FA or no API listener opens. IBC can enter the stored username/password, but it cannot bypass IBKR Mobile/2FA approval.",
   "launchd": {
     "com.autoresearch.ibgateway.paper": {
       "header": "gui/501/com.autoresearch.ibgateway.paper = {",
@@ -19,7 +19,7 @@
   },
   "live_orders": false,
   "market_data_endpoint_called": false,
-  "next_gate": "Finish IB Gateway paper login manually once and ensure API settings remain enabled. Then rerun this rehearsal; the next passing state should expose port 4002 or 4000.",
+  "next_gate": "Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, approve any IBKR Mobile/2FA challenge during startup, and rerun this rehearsal. The next passing state should expose port 4002 or 4000.",
   "paid_data_downloaded": false,
   "paper_orders_submitted": false,
   "port_status_after": {
@@ -28,11 +28,11 @@
     "rows": [
       {
         "open": false,
-        "port": 4000
+        "port": 4002
       },
       {
         "open": false,
-        "port": 4002
+        "port": 4000
       },
       {
         "open": false,
@@ -47,7 +47,7 @@
         "port": 4001
       }
     ],
-    "wait_seconds": 5
+    "wait_seconds": 1
   },
   "port_status_before": {
     "any_open": false,
@@ -55,11 +55,11 @@
     "rows": [
       {
         "open": false,
-        "port": 4000
+        "port": 4002
       },
       {
         "open": false,
-        "port": 4002
+        "port": 4000
       },
       {
         "open": false,
@@ -76,18 +76,18 @@
     ]
   },
   "ports": [
-    4000,
     4002,
+    4000,
     7497,
     7496,
     4001
   ],
   "protocol": "145_tuesday_cold_start_rehearsal",
   "start_result": {
-    "returncode": 1,
-    "script": "v4/ops/ibkr/start_ib_gateway_paper.sh",
+    "returncode": 2,
+    "script": "v4/ops/ibkr/start_ib_gateway_paper_ibc.sh",
     "skipped": false,
-    "stderr": "IB Gateway started, but no API port from [4000,4002,7497,7496,4001] was listening after 35s.\nIf Gateway is waiting for credentials/2FA, finish the login once and rerun the preflight.",
+    "stderr": "IBC runtime config was not created. Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally.\n{\n  \"detail\": \"Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally; do not paste credentials into chat.\",\n  \"out\": \"/Users/gduby/.autoresearch-trading/ibc/runtime/ibc-paper.ini\",\n  \"password_service\": \"autoresearch-trading-ibkr-paper-password\",\n  \"status\": \"missing_credentials\",\n  \"username_service\": \"autoresearch-trading-ibkr-paper-username\"\n}",
     "stdout": ""
   }
 }

@@ -1801,7 +1801,19 @@ Reason: User wanted to know whether the unattended startup path works and expect
 Data Used: Local app/launchd/API-port checks only. No paid data was downloaded, no market-data endpoint was called, and no order endpoint was called.
 Cost: $0 incremental paid data.
 Result: Decision expected_blocker_gateway_login_required_or_api_port_closed. Ports before=[]; ports after=[]. Report: v4/audit/autoresearch/v4_aplus_hypothesis_145_tuesday_cold_start_rehearsal/report.md
-Next Gate: Finish IB Gateway paper login manually once and ensure API settings remain enabled. Then rerun this rehearsal; the next passing state should expose port 4002 or 4000.
+Next Gate: Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, approve any IBKR Mobile/2FA challenge during startup, and rerun this rehearsal. The next passing state should expose port 4002 or 4000.
 Owner: Codex
 ```
 
+## 2026-05-14 Protocol 146 IBC Credential Readiness
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Added IBC credential-backed login readiness for IB Gateway paper mode.
+Reason: IB Gateway logs out daily, so the morning startup path must enter username/password from local secure storage instead of requiring manual wake-up.
+Data Used: Local IBC installation and macOS Keychain presence checks only. No credentials were committed or printed, no paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision expected_blocker_missing_keychain_credentials. IBC installed=True; username_present=False; password_present=False. Report: v4/audit/autoresearch/v4_aplus_hypothesis_146_ibc_credential_readiness/report.md
+Next Gate: Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, then rerun Protocol146. Do not paste credentials into chat.
+Owner: Codex
+```

@@ -21,8 +21,8 @@ from v4.scripts.run_protocol140_ibkr_autostart_prep import GATEWAY_LABEL, PREFLI
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT_DIR = Path("v4/audit/autoresearch/v4_aplus_hypothesis_145_tuesday_cold_start_rehearsal")
 DEFAULT_LEDGER = Path("v4/ledger/RESEARCH_LEDGER.md")
-DEFAULT_START_SCRIPT = Path("v4/ops/ibkr/start_ib_gateway_paper.sh")
-DEFAULT_PORTS = (4000, 4002, 7497, 7496, 4001)
+DEFAULT_START_SCRIPT = Path("v4/ops/ibkr/start_ib_gateway_paper_ibc.sh")
+DEFAULT_PORTS = (4002, 4000, 7497, 7496, 4001)
 
 
 def parse_args() -> argparse.Namespace:
@@ -185,8 +185,8 @@ def interpretation(decision: str) -> str:
         return "The paper API was already reachable before the cold-start rehearsal."
     if decision == "expected_blocker_gateway_login_required_or_api_port_closed":
         return (
-            "This is the expected failure when IB Gateway launches but credentials/2FA have not completed. "
-            "The automation can open Gateway, but cannot bypass an unsaved login challenge."
+            "This is the expected failure when IBC cannot complete credentials/2FA or no API listener opens. "
+            "IBC can enter the stored username/password, but it cannot bypass IBKR Mobile/2FA approval."
         )
     if decision == "expected_blocker_api_closed_start_skipped":
         return "Start was skipped and no API port was open."
@@ -198,8 +198,8 @@ def next_gate(decision: str) -> str:
         return "Run Protocol141 account probe, then Protocol119/124 live-data parity, then paper executor dry-run."
     if decision == "expected_blocker_gateway_login_required_or_api_port_closed":
         return (
-            "Finish IB Gateway paper login manually once and ensure API settings remain enabled. Then rerun this rehearsal; "
-            "the next passing state should expose port 4002 or 4000."
+            "Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, approve any IBKR Mobile/2FA challenge during startup, "
+            "and rerun this rehearsal. The next passing state should expose port 4002 or 4000."
         )
     return "Fix LaunchAgent/startup state before Tuesday."
 

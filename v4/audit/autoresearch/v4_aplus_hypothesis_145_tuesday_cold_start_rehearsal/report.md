@@ -5,19 +5,25 @@ No paid data was downloaded. No market-data endpoint was called. No order endpoi
 - Decision: `expected_blocker_gateway_login_required_or_api_port_closed`
 - Ports before: `[]`
 - Ports after: `[]`
-- Start returncode: `1`
+- Start returncode: `2`
 
 ## Interpretation
 
-This is the expected failure when IB Gateway launches but credentials/2FA have not completed. The automation can open Gateway, but cannot bypass an unsaved login challenge.
+This is the expected failure when IBC cannot complete credentials/2FA or no API listener opens. IBC can enter the stored username/password, but it cannot bypass IBKR Mobile/2FA approval.
 
 ## Start Output
 
 ```text
-IB Gateway started, but no API port from [4000,4002,7497,7496,4001] was listening after 35s.
-If Gateway is waiting for credentials/2FA, finish the login once and rerun the preflight.
+IBC runtime config was not created. Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally.
+{
+  "detail": "Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally; do not paste credentials into chat.",
+  "out": "/Users/gduby/.autoresearch-trading/ibc/runtime/ibc-paper.ini",
+  "password_service": "autoresearch-trading-ibkr-paper-password",
+  "status": "missing_credentials",
+  "username_service": "autoresearch-trading-ibkr-paper-username"
+}
 ```
 
 ## Next Gate
 
-Finish IB Gateway paper login manually once and ensure API settings remain enabled. Then rerun this rehearsal; the next passing state should expose port 4002 or 4000.
+Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, approve any IBKR Mobile/2FA challenge during startup, and rerun this rehearsal. The next passing state should expose port 4002 or 4000.

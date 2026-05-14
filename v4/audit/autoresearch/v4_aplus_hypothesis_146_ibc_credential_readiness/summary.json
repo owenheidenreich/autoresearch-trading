@@ -1,0 +1,27 @@
+{
+  "broker_order_endpoint_called": false,
+  "credentials": {
+    "password_present": false,
+    "password_service": "autoresearch-trading-ibkr-paper-password",
+    "username_present": false,
+    "username_service": "autoresearch-trading-ibkr-paper-username"
+  },
+  "decision": "expected_blocker_missing_keychain_credentials",
+  "ibc": {
+    "ibc_jar": "/Users/gduby/.autoresearch-trading/ibc/3.23.0/IBC.jar",
+    "ibcstart": "/Users/gduby/.autoresearch-trading/ibc/3.23.0/scripts/ibcstart.sh",
+    "installed": true,
+    "path": "/Users/gduby/.autoresearch-trading/ibc/3.23.0",
+    "version_file": "3.23.0"
+  },
+  "live_orders": false,
+  "market_data_endpoint_called": false,
+  "next_gate": "Run v4/ops/ibkr/store_ibkr_paper_credentials.sh locally, then rerun Protocol146. Do not paste credentials into chat.",
+  "paid_data_downloaded": false,
+  "paper_orders_submitted": false,
+  "protocol": "146_ibc_credential_readiness",
+  "runtime_config": {
+    "out": "/Users/gduby/.autoresearch-trading/ibc/runtime/ibc-paper.ini",
+    "status": "skipped_missing_credentials"
+  }
+}

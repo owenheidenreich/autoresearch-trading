@@ -57,8 +57,8 @@ def test_launchd_payload_runs_on_calendar_with_logs(tmp_path: Path) -> None:
 
 
 def test_candidate_api_ports_include_configured_and_paper_default() -> None:
+    assert candidate_api_ports(4002, configured_port=4000) == [4002, 4000, 7497, 7496, 4001]
     assert candidate_api_ports(4000) == [4000, 4002, 7497, 7496, 4001]
-    assert candidate_api_ports(4002) == [4002, 7497, 7496, 4001]
 
 
 def test_paper_order_permission_blocks_by_default_and_passes_with_du_account() -> None:

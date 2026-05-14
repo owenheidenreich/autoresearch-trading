@@ -11,9 +11,9 @@
 		<string>/Users/gduby/Documents/autoresearch-trading/.venv/bin/python</string>
 		<string>/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/wait_for_ibkr_api.py</string>
 		<string>--port</string>
-		<string>4000</string>
+		<string>4002</string>
 		<string>--auto-ports</string>
-		<string>4000,4002,7497,7496,4001</string>
+		<string>4002,4000,7497,7496,4001</string>
 		<string>--timeout-seconds</string>
 		<string>600</string>
 		<string>--run-entitlement-probe</string>

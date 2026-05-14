@@ -4,8 +4,8 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 
 - Decision: `ready_to_install_ib_gateway_paper_autostart`
 - IB Gateway app: `/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app`
-- Configured API port: `4000`
-- Candidate API ports: `[4000, 4002, 7497, 7496, 4001]`
+- Configured API port: `4002`
+- Candidate API ports: `[4002, 4000, 7497, 7496, 4001]`
 
 ## Checks
 
