@@ -1,0 +1,2607 @@
+{
+  "baseline_daily": [
+    {
+      "daily_pnl": 3910.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-01"
+    },
+    {
+      "daily_pnl": 2510.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-02"
+    },
+    {
+      "daily_pnl": 2550.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-03"
+    },
+    {
+      "daily_pnl": 2310.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-04"
+    },
+    {
+      "daily_pnl": 170.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-07"
+    },
+    {
+      "daily_pnl": 1040.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-08"
+    },
+    {
+      "daily_pnl": 1030.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-09"
+    },
+    {
+      "daily_pnl": 630.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-10"
+    },
+    {
+      "daily_pnl": 2670.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-11"
+    },
+    {
+      "daily_pnl": -680.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-14"
+    },
+    {
+      "daily_pnl": 670.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-15"
+    },
+    {
+      "daily_pnl": 930.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-16"
+    },
+    {
+      "daily_pnl": 180.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-17"
+    },
+    {
+      "daily_pnl": 670.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-18"
+    },
+    {
+      "daily_pnl": 2170.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-21"
+    },
+    {
+      "daily_pnl": -480.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-22"
+    },
+    {
+      "daily_pnl": 1170.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-23"
+    },
+    {
+      "daily_pnl": -630.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-24"
+    },
+    {
+      "daily_pnl": 3070.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-25"
+    },
+    {
+      "daily_pnl": -180.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-28"
+    },
+    {
+      "daily_pnl": 770.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-29"
+    },
+    {
+      "daily_pnl": 360.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-30"
+    },
+    {
+      "daily_pnl": -2080.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-10-31"
+    },
+    {
+      "daily_pnl": 1720.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-01"
+    },
+    {
+      "daily_pnl": 60.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-04"
+    },
+    {
+      "daily_pnl": 1590.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-05"
+    },
+    {
+      "daily_pnl": 20.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-06"
+    },
+    {
+      "daily_pnl": 440.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-07"
+    },
+    {
+      "daily_pnl": -20.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-08"
+    },
+    {
+      "daily_pnl": -160.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-11"
+    },
+    {
+      "daily_pnl": 870.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-12"
+    },
+    {
+      "daily_pnl": 1450.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-13"
+    },
+    {
+      "daily_pnl": 230.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-14"
+    },
+    {
+      "daily_pnl": 1720.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-15"
+    },
+    {
+      "daily_pnl": 1560.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-18"
+    },
+    {
+      "daily_pnl": 1490.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-19"
+    },
+    {
+      "daily_pnl": 3880.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-20"
+    },
+    {
+      "daily_pnl": 5710.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-21"
+    },
+    {
+      "daily_pnl": -1300.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-22"
+    },
+    {
+      "daily_pnl": 590.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-25"
+    },
+    {
+      "daily_pnl": -890.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-26"
+    },
+    {
+      "daily_pnl": 640.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-27"
+    },
+    {
+      "daily_pnl": 710.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-11-29"
+    },
+    {
+      "daily_pnl": -280.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-02"
+    },
+    {
+      "daily_pnl": -640.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-03"
+    },
+    {
+      "daily_pnl": -460.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-04"
+    },
+    {
+      "daily_pnl": -580.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-05"
+    },
+    {
+      "daily_pnl": 190.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-06"
+    },
+    {
+      "daily_pnl": 70.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-09"
+    },
+    {
+      "daily_pnl": 290.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-10"
+    },
+    {
+      "daily_pnl": 110.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-11"
+    },
+    {
+      "daily_pnl": -1190.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-12"
+    },
+    {
+      "daily_pnl": 1220.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-13"
+    },
+    {
+      "daily_pnl": 670.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-16"
+    },
+    {
+      "daily_pnl": 1190.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-17"
+    },
+    {
+      "daily_pnl": 550.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-18"
+    },
+    {
+      "daily_pnl": 200.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-19"
+    },
+    {
+      "daily_pnl": 4020.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-20"
+    },
+    {
+      "daily_pnl": 2170.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-23"
+    },
+    {
+      "daily_pnl": 550.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-24"
+    },
+    {
+      "daily_pnl": 390.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-26"
+    },
+    {
+      "daily_pnl": 5400.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-27"
+    },
+    {
+      "daily_pnl": 450.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-30"
+    },
+    {
+      "daily_pnl": 890.0,
+      "mode": "one_contract_baseline",
+      "session": "2024-12-31"
+    },
+    {
+      "daily_pnl": 320.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-01"
+    },
+    {
+      "daily_pnl": 690.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-02"
+    },
+    {
+      "daily_pnl": 490.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-03"
+    },
+    {
+      "daily_pnl": 1580.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-07"
+    },
+    {
+      "daily_pnl": 1010.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-08"
+    },
+    {
+      "daily_pnl": 670.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-09"
+    },
+    {
+      "daily_pnl": 1020.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-10"
+    },
+    {
+      "daily_pnl": 360.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-11"
+    },
+    {
+      "daily_pnl": 870.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-14"
+    },
+    {
+      "daily_pnl": 1480.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-15"
+    },
+    {
+      "daily_pnl": 3940.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-16"
+    },
+    {
+      "daily_pnl": 1240.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-17"
+    },
+    {
+      "daily_pnl": -90.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-18"
+    },
+    {
+      "daily_pnl": 500.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-21"
+    },
+    {
+      "daily_pnl": 850.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-22"
+    },
+    {
+      "daily_pnl": -20.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-23"
+    },
+    {
+      "daily_pnl": 360.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-24"
+    },
+    {
+      "daily_pnl": 450.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-25"
+    },
+    {
+      "daily_pnl": 660.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-28"
+    },
+    {
+      "daily_pnl": 540.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-29"
+    },
+    {
+      "daily_pnl": 2750.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-30"
+    },
+    {
+      "daily_pnl": -140.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-07-31"
+    },
+    {
+      "daily_pnl": 2520.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-01"
+    },
+    {
+      "daily_pnl": 750.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-04"
+    },
+    {
+      "daily_pnl": 2840.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-05"
+    },
+    {
+      "daily_pnl": 2510.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-06"
+    },
+    {
+      "daily_pnl": -160.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-07"
+    },
+    {
+      "daily_pnl": 440.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-08"
+    },
+    {
+      "daily_pnl": -650.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-11"
+    },
+    {
+      "daily_pnl": 2670.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-12"
+    },
+    {
+      "daily_pnl": 780.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-13"
+    },
+    {
+      "daily_pnl": 150.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-14"
+    },
+    {
+      "daily_pnl": 520.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-15"
+    },
+    {
+      "daily_pnl": -160.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-18"
+    },
+    {
+      "daily_pnl": 1470.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-19"
+    },
+    {
+      "daily_pnl": 1610.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-20"
+    },
+    {
+      "daily_pnl": 2080.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-21"
+    },
+    {
+      "daily_pnl": 4940.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-22"
+    },
+    {
+      "daily_pnl": 450.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-25"
+    },
+    {
+      "daily_pnl": 100.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-26"
+    },
+    {
+      "daily_pnl": 360.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-27"
+    },
+    {
+      "daily_pnl": 400.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-28"
+    },
+    {
+      "daily_pnl": 910.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-08-29"
+    },
+    {
+      "daily_pnl": -810.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-02"
+    },
+    {
+      "daily_pnl": 450.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-03"
+    },
+    {
+      "daily_pnl": 2350.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-04"
+    },
+    {
+      "daily_pnl": 5110.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-05"
+    },
+    {
+      "daily_pnl": 1380.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-08"
+    },
+    {
+      "daily_pnl": 370.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-09"
+    },
+    {
+      "daily_pnl": -440.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-10"
+    },
+    {
+      "daily_pnl": 1280.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-11"
+    },
+    {
+      "daily_pnl": 640.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-12"
+    },
+    {
+      "daily_pnl": 470.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-15"
+    },
+    {
+      "daily_pnl": -350.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-16"
+    },
+    {
+      "daily_pnl": 4920.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-17"
+    },
+    {
+      "daily_pnl": 1570.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-18"
+    },
+    {
+      "daily_pnl": 520.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-19"
+    },
+    {
+      "daily_pnl": 1310.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-22"
+    },
+    {
+      "daily_pnl": 1580.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-23"
+    },
+    {
+      "daily_pnl": 200.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-24"
+    },
+    {
+      "daily_pnl": -1200.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-25"
+    },
+    {
+      "daily_pnl": 4330.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-26"
+    },
+    {
+      "daily_pnl": 380.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-29"
+    },
+    {
+      "daily_pnl": 620.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-09-30"
+    },
+    {
+      "daily_pnl": -420.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-01"
+    },
+    {
+      "daily_pnl": 1280.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-02"
+    },
+    {
+      "daily_pnl": 1880.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-03"
+    },
+    {
+      "daily_pnl": 1100.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-06"
+    },
+    {
+      "daily_pnl": 660.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-07"
+    },
+    {
+      "daily_pnl": 1310.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-08"
+    },
+    {
+      "daily_pnl": 410.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-09"
+    },
+    {
+      "daily_pnl": 730.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-10"
+    },
+    {
+      "daily_pnl": 2040.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-13"
+    },
+    {
+      "daily_pnl": 1260.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-14"
+    },
+    {
+      "daily_pnl": 3460.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-15"
+    },
+    {
+      "daily_pnl": 820.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-16"
+    },
+    {
+      "daily_pnl": 3510.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-17"
+    },
+    {
+      "daily_pnl": 1820.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-20"
+    },
+    {
+      "daily_pnl": 1050.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-21"
+    },
+    {
+      "daily_pnl": 1910.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-22"
+    },
+    {
+      "daily_pnl": 1450.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-23"
+    },
+    {
+      "daily_pnl": 1080.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-24"
+    },
+    {
+      "daily_pnl": 650.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-27"
+    },
+    {
+      "daily_pnl": 20.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-28"
+    },
+    {
+      "daily_pnl": 5850.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-29"
+    },
+    {
+      "daily_pnl": 620.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-30"
+    },
+    {
+      "daily_pnl": 2490.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-10-31"
+    },
+    {
+      "daily_pnl": 2930.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-03"
+    },
+    {
+      "daily_pnl": 1850.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-04"
+    },
+    {
+      "daily_pnl": 850.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-05"
+    },
+    {
+      "daily_pnl": 990.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-06"
+    },
+    {
+      "daily_pnl": 1610.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-07"
+    },
+    {
+      "daily_pnl": -270.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-10"
+    },
+    {
+      "daily_pnl": 1380.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-11"
+    },
+    {
+      "daily_pnl": 2310.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-12"
+    },
+    {
+      "daily_pnl": 3940.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-13"
+    },
+    {
+      "daily_pnl": 5780.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-14"
+    },
+    {
+      "daily_pnl": 880.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-17"
+    },
+    {
+      "daily_pnl": 4780.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-18"
+    },
+    {
+      "daily_pnl": 3770.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-19"
+    },
+    {
+      "daily_pnl": 5170.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-20"
+    },
+    {
+      "daily_pnl": 7400.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-21"
+    },
+    {
+      "daily_pnl": 2700.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-24"
+    },
+    {
+      "daily_pnl": -100.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-25"
+    },
+    {
+      "daily_pnl": -1420.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-26"
+    },
+    {
+      "daily_pnl": 30.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-11-28"
+    },
+    {
+      "daily_pnl": 1600.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-01"
+    },
+    {
+      "daily_pnl": 1520.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-02"
+    },
+    {
+      "daily_pnl": 1850.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-03"
+    },
+    {
+      "daily_pnl": 1440.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-04"
+    },
+    {
+      "daily_pnl": 1620.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-05"
+    },
+    {
+      "daily_pnl": 2030.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-08"
+    },
+    {
+      "daily_pnl": 250.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-09"
+    },
+    {
+      "daily_pnl": 2970.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-10"
+    },
+    {
+      "daily_pnl": -1540.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-11"
+    },
+    {
+      "daily_pnl": 1320.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-12"
+    },
+    {
+      "daily_pnl": 810.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-15"
+    },
+    {
+      "daily_pnl": -950.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-16"
+    },
+    {
+      "daily_pnl": 1720.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-17"
+    },
+    {
+      "daily_pnl": -260.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-18"
+    },
+    {
+      "daily_pnl": 680.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-19"
+    },
+    {
+      "daily_pnl": 610.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-22"
+    },
+    {
+      "daily_pnl": 1010.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-23"
+    },
+    {
+      "daily_pnl": 190.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-24"
+    },
+    {
+      "daily_pnl": -280.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-26"
+    },
+    {
+      "daily_pnl": 220.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-29"
+    },
+    {
+      "daily_pnl": 460.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-30"
+    },
+    {
+      "daily_pnl": 190.0,
+      "mode": "one_contract_baseline",
+      "session": "2025-12-31"
+    },
+    {
+      "daily_pnl": 1420.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-02"
+    },
+    {
+      "daily_pnl": 1160.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-05"
+    },
+    {
+      "daily_pnl": -570.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-06"
+    },
+    {
+      "daily_pnl": 220.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-07"
+    },
+    {
+      "daily_pnl": -990.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-08"
+    },
+    {
+      "daily_pnl": 1130.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-09"
+    },
+    {
+      "daily_pnl": 740.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-12"
+    },
+    {
+      "daily_pnl": -150.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-13"
+    },
+    {
+      "daily_pnl": 1510.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-14"
+    },
+    {
+      "daily_pnl": 130.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-15"
+    },
+    {
+      "daily_pnl": 1710.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-16"
+    },
+    {
+      "daily_pnl": 1270.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-20"
+    },
+    {
+      "daily_pnl": 5600.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-21"
+    },
+    {
+      "daily_pnl": 1220.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-22"
+    },
+    {
+      "daily_pnl": 190.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-23"
+    },
+    {
+      "daily_pnl": 50.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-26"
+    },
+    {
+      "daily_pnl": 1570.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-27"
+    },
+    {
+      "daily_pnl": 1560.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-28"
+    },
+    {
+      "daily_pnl": 4300.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-29"
+    },
+    {
+      "daily_pnl": -220.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-01-30"
+    },
+    {
+      "daily_pnl": -10.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-02"
+    },
+    {
+      "daily_pnl": 2510.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-03"
+    },
+    {
+      "daily_pnl": 1740.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-04"
+    },
+    {
+      "daily_pnl": 3430.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-05"
+    },
+    {
+      "daily_pnl": 1480.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-09"
+    },
+    {
+      "daily_pnl": 260.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-10"
+    },
+    {
+      "daily_pnl": 2610.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-11"
+    },
+    {
+      "daily_pnl": 2400.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-12"
+    },
+    {
+      "daily_pnl": 4090.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-13"
+    },
+    {
+      "daily_pnl": 5580.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-17"
+    },
+    {
+      "daily_pnl": -160.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-18"
+    },
+    {
+      "daily_pnl": 250.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-19"
+    },
+    {
+      "daily_pnl": 2480.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-20"
+    },
+    {
+      "daily_pnl": 2000.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-23"
+    },
+    {
+      "daily_pnl": 1830.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-24"
+    },
+    {
+      "daily_pnl": -560.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-25"
+    },
+    {
+      "daily_pnl": 220.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-26"
+    },
+    {
+      "daily_pnl": 1220.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-02-27"
+    },
+    {
+      "daily_pnl": 1520.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-02"
+    },
+    {
+      "daily_pnl": 9270.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-03"
+    },
+    {
+      "daily_pnl": -1980.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-04"
+    },
+    {
+      "daily_pnl": 4900.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-05"
+    },
+    {
+      "daily_pnl": 2010.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-06"
+    },
+    {
+      "daily_pnl": 1130.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-09"
+    },
+    {
+      "daily_pnl": -470.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-10"
+    },
+    {
+      "daily_pnl": -910.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-11"
+    },
+    {
+      "daily_pnl": 1330.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-12"
+    },
+    {
+      "daily_pnl": 740.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-13"
+    },
+    {
+      "daily_pnl": -1140.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-16"
+    },
+    {
+      "daily_pnl": 200.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-17"
+    },
+    {
+      "daily_pnl": 2430.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-18"
+    },
+    {
+      "daily_pnl": 2230.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-19"
+    },
+    {
+      "daily_pnl": 2650.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-20"
+    },
+    {
+      "daily_pnl": 3790.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-23"
+    },
+    {
+      "daily_pnl": 2060.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-24"
+    },
+    {
+      "daily_pnl": 1910.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-25"
+    },
+    {
+      "daily_pnl": 130.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-26"
+    },
+    {
+      "daily_pnl": 1650.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-27"
+    },
+    {
+      "daily_pnl": 5380.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-30"
+    },
+    {
+      "daily_pnl": 2960.0,
+      "mode": "one_contract_baseline",
+      "session": "2026-03-31"
+    }
+  ],
+  "broker_endpoint_called": false,
+  "decision": "reject_scaling_loss_clustering_worse",
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Reject scaling for initial paper trading. Keep one contract as the live-paper constraint and revisit sizing only after the one-contract path survives live shadow and paper replay.",
+  "outputs": {
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_129_protocol101_offline_position_sizing/report.md",
+    "sizing_trade_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_129_protocol101_offline_position_sizing/sizing_trade_rows.csv",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_129_protocol101_offline_position_sizing/summary.json"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "129_protocol101_offline_position_sizing",
+  "results": [
+    {
+      "best_day_pnl": 9270.0,
+      "candidate_trades": 1028,
+      "ending_cash": 329050.0,
+      "longest_recovery_trades": 42,
+      "max_drawdown": -2790.0,
+      "max_drawdown_pct": -0.065335,
+      "max_quantity": 1,
+      "min_cash": 9790.0,
+      "mode": "one_contract_baseline",
+      "return_on_starting_cash": 31.905,
+      "risk_of_ruin": false,
+      "skip_counts": {},
+      "skipped_trades": 0,
+      "starting_cash": 10000.0,
+      "taken_trades": 1028,
+      "total_contracts": 1028,
+      "total_pnl": 319050.0,
+      "worst_day_pnl": -2080.0
+    },
+    {
+      "best_day_pnl": 9270.0,
+      "candidate_trades": 1028,
+      "ending_cash": 302470.0,
+      "longest_recovery_trades": 36,
+      "max_drawdown": -5000.0,
+      "max_drawdown_pct": -0.056281,
+      "max_quantity": 1,
+      "min_cash": 10000.0,
+      "mode": "one_contract_20pct_cap",
+      "return_on_starting_cash": 29.247,
+      "risk_of_ruin": false,
+      "skip_counts": {
+        "daily_loss_stop": 52,
+        "premium_exposure_cap": 16
+      },
+      "skipped_trades": 68,
+      "starting_cash": 10000.0,
+      "taken_trades": 960,
+      "total_contracts": 960,
+      "total_pnl": 292470.0,
+      "worst_day_pnl": -1840.0
+    },
+    {
+      "best_day_pnl": 26690.0,
+      "candidate_trades": 1028,
+      "ending_cash": 778050.0,
+      "longest_recovery_trades": 34,
+      "max_drawdown": -12120.0,
+      "max_drawdown_pct": -0.07784,
+      "max_quantity": 3,
+      "min_cash": 10000.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "return_on_starting_cash": 76.805,
+      "risk_of_ruin": false,
+      "skip_counts": {
+        "daily_loss_stop": 115,
+        "premium_exposure_cap": 16
+      },
+      "skipped_trades": 131,
+      "starting_cash": 10000.0,
+      "taken_trades": 897,
+      "total_contracts": 2462,
+      "total_pnl": 768050.0,
+      "worst_day_pnl": -5520.0
+    }
+  ],
+  "risk_rules": {
+    "daily_loss_stop": -750.0,
+    "equity_20k_to_50k": "max 2 contracts only if current drawdown is below 5%",
+    "equity_above_50k": "max 3 contracts only if drawdown is below 5% and recent pnl is positive",
+    "equity_below_20k": "max 1 contract",
+    "initial_paper_max_contracts": 1,
+    "offline_only": true,
+    "premium_exposure_cap": "20% of equity"
+  },
+  "scaled_daily": [
+    {
+      "daily_pnl": 1340.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-01"
+    },
+    {
+      "daily_pnl": 2550.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-03"
+    },
+    {
+      "daily_pnl": 510.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-04"
+    },
+    {
+      "daily_pnl": 330.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-07"
+    },
+    {
+      "daily_pnl": 1040.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-08"
+    },
+    {
+      "daily_pnl": 630.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-10"
+    },
+    {
+      "daily_pnl": 2670.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-11"
+    },
+    {
+      "daily_pnl": -930.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-14"
+    },
+    {
+      "daily_pnl": 670.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-15"
+    },
+    {
+      "daily_pnl": 930.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-16"
+    },
+    {
+      "daily_pnl": 310.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-17"
+    },
+    {
+      "daily_pnl": 1350.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-18"
+    },
+    {
+      "daily_pnl": 4340.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-21"
+    },
+    {
+      "daily_pnl": -960.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-22"
+    },
+    {
+      "daily_pnl": 2060.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-23"
+    },
+    {
+      "daily_pnl": -1260.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-24"
+    },
+    {
+      "daily_pnl": 5410.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-25"
+    },
+    {
+      "daily_pnl": -390.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-28"
+    },
+    {
+      "daily_pnl": 1170.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-29"
+    },
+    {
+      "daily_pnl": 720.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-30"
+    },
+    {
+      "daily_pnl": -1020.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-10-31"
+    },
+    {
+      "daily_pnl": 3440.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-01"
+    },
+    {
+      "daily_pnl": 120.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-04"
+    },
+    {
+      "daily_pnl": 3180.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-05"
+    },
+    {
+      "daily_pnl": -130.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-06"
+    },
+    {
+      "daily_pnl": 440.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-07"
+    },
+    {
+      "daily_pnl": -20.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-08"
+    },
+    {
+      "daily_pnl": -160.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-11"
+    },
+    {
+      "daily_pnl": 870.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-12"
+    },
+    {
+      "daily_pnl": 2900.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-13"
+    },
+    {
+      "daily_pnl": 460.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-14"
+    },
+    {
+      "daily_pnl": 3440.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-15"
+    },
+    {
+      "daily_pnl": 3120.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-18"
+    },
+    {
+      "daily_pnl": -1660.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-19"
+    },
+    {
+      "daily_pnl": 10190.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-20"
+    },
+    {
+      "daily_pnl": 17130.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-21"
+    },
+    {
+      "daily_pnl": -1980.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-22"
+    },
+    {
+      "daily_pnl": 1770.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-25"
+    },
+    {
+      "daily_pnl": -1260.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-26"
+    },
+    {
+      "daily_pnl": 1920.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-27"
+    },
+    {
+      "daily_pnl": 2130.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-11-29"
+    },
+    {
+      "daily_pnl": -840.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-02"
+    },
+    {
+      "daily_pnl": -2010.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-03"
+    },
+    {
+      "daily_pnl": -1780.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-04"
+    },
+    {
+      "daily_pnl": -580.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-05"
+    },
+    {
+      "daily_pnl": 190.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-06"
+    },
+    {
+      "daily_pnl": 70.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-09"
+    },
+    {
+      "daily_pnl": 290.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-10"
+    },
+    {
+      "daily_pnl": 110.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-11"
+    },
+    {
+      "daily_pnl": -1080.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-12"
+    },
+    {
+      "daily_pnl": 1220.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-13"
+    },
+    {
+      "daily_pnl": 670.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-16"
+    },
+    {
+      "daily_pnl": 3570.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-17"
+    },
+    {
+      "daily_pnl": 1650.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-18"
+    },
+    {
+      "daily_pnl": -1320.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-19"
+    },
+    {
+      "daily_pnl": 12060.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-20"
+    },
+    {
+      "daily_pnl": 6510.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-23"
+    },
+    {
+      "daily_pnl": 1650.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-24"
+    },
+    {
+      "daily_pnl": -780.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-26"
+    },
+    {
+      "daily_pnl": 16200.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-27"
+    },
+    {
+      "daily_pnl": -3750.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-30"
+    },
+    {
+      "daily_pnl": -900.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2024-12-31"
+    },
+    {
+      "daily_pnl": 960.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-01"
+    },
+    {
+      "daily_pnl": 1380.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-02"
+    },
+    {
+      "daily_pnl": 980.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-03"
+    },
+    {
+      "daily_pnl": 4740.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-07"
+    },
+    {
+      "daily_pnl": 3030.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-08"
+    },
+    {
+      "daily_pnl": 2010.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-09"
+    },
+    {
+      "daily_pnl": 3060.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-10"
+    },
+    {
+      "daily_pnl": 1080.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-11"
+    },
+    {
+      "daily_pnl": 2610.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-14"
+    },
+    {
+      "daily_pnl": 4440.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-15"
+    },
+    {
+      "daily_pnl": 11820.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-16"
+    },
+    {
+      "daily_pnl": 3720.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-17"
+    },
+    {
+      "daily_pnl": -270.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-18"
+    },
+    {
+      "daily_pnl": 1500.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-21"
+    },
+    {
+      "daily_pnl": 2550.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-22"
+    },
+    {
+      "daily_pnl": -60.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-23"
+    },
+    {
+      "daily_pnl": 1080.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-24"
+    },
+    {
+      "daily_pnl": 1350.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-25"
+    },
+    {
+      "daily_pnl": 1980.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-28"
+    },
+    {
+      "daily_pnl": 1620.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-29"
+    },
+    {
+      "daily_pnl": 8250.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-30"
+    },
+    {
+      "daily_pnl": -3150.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-07-31"
+    },
+    {
+      "daily_pnl": 7560.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-01"
+    },
+    {
+      "daily_pnl": 2250.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-04"
+    },
+    {
+      "daily_pnl": 8520.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-05"
+    },
+    {
+      "daily_pnl": 7530.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-06"
+    },
+    {
+      "daily_pnl": -4260.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-07"
+    },
+    {
+      "daily_pnl": 1320.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-08"
+    },
+    {
+      "daily_pnl": -1950.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-11"
+    },
+    {
+      "daily_pnl": 5790.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-12"
+    },
+    {
+      "daily_pnl": 2340.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-13"
+    },
+    {
+      "daily_pnl": 450.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-14"
+    },
+    {
+      "daily_pnl": 1560.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-15"
+    },
+    {
+      "daily_pnl": -750.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-18"
+    },
+    {
+      "daily_pnl": 4410.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-19"
+    },
+    {
+      "daily_pnl": -2730.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-20"
+    },
+    {
+      "daily_pnl": 6240.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-21"
+    },
+    {
+      "daily_pnl": 14820.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-22"
+    },
+    {
+      "daily_pnl": 1350.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-25"
+    },
+    {
+      "daily_pnl": 300.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-26"
+    },
+    {
+      "daily_pnl": 1080.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-27"
+    },
+    {
+      "daily_pnl": 1200.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-28"
+    },
+    {
+      "daily_pnl": 2730.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-08-29"
+    },
+    {
+      "daily_pnl": -2430.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-02"
+    },
+    {
+      "daily_pnl": 1330.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-03"
+    },
+    {
+      "daily_pnl": 6070.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-04"
+    },
+    {
+      "daily_pnl": 15330.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-05"
+    },
+    {
+      "daily_pnl": 4140.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-08"
+    },
+    {
+      "daily_pnl": 1110.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-09"
+    },
+    {
+      "daily_pnl": -1320.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-10"
+    },
+    {
+      "daily_pnl": 3840.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-11"
+    },
+    {
+      "daily_pnl": 1920.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-12"
+    },
+    {
+      "daily_pnl": 1410.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-15"
+    },
+    {
+      "daily_pnl": -1050.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-16"
+    },
+    {
+      "daily_pnl": 14760.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-17"
+    },
+    {
+      "daily_pnl": 4710.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-18"
+    },
+    {
+      "daily_pnl": 1560.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-19"
+    },
+    {
+      "daily_pnl": 3930.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-22"
+    },
+    {
+      "daily_pnl": 4740.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-23"
+    },
+    {
+      "daily_pnl": 600.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-24"
+    },
+    {
+      "daily_pnl": -4830.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-25"
+    },
+    {
+      "daily_pnl": 12990.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-26"
+    },
+    {
+      "daily_pnl": 1140.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-29"
+    },
+    {
+      "daily_pnl": 1860.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-09-30"
+    },
+    {
+      "daily_pnl": -1020.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-01"
+    },
+    {
+      "daily_pnl": 3840.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-02"
+    },
+    {
+      "daily_pnl": 5640.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-03"
+    },
+    {
+      "daily_pnl": 3300.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-06"
+    },
+    {
+      "daily_pnl": 1980.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-07"
+    },
+    {
+      "daily_pnl": 3930.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-08"
+    },
+    {
+      "daily_pnl": 1230.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-09"
+    },
+    {
+      "daily_pnl": 2190.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-10"
+    },
+    {
+      "daily_pnl": 6120.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-13"
+    },
+    {
+      "daily_pnl": 3780.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-14"
+    },
+    {
+      "daily_pnl": 10380.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-15"
+    },
+    {
+      "daily_pnl": 2460.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-16"
+    },
+    {
+      "daily_pnl": -1170.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-17"
+    },
+    {
+      "daily_pnl": 5460.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-20"
+    },
+    {
+      "daily_pnl": 3150.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-21"
+    },
+    {
+      "daily_pnl": 5730.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-22"
+    },
+    {
+      "daily_pnl": 4350.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-23"
+    },
+    {
+      "daily_pnl": 3240.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-24"
+    },
+    {
+      "daily_pnl": 1950.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-27"
+    },
+    {
+      "daily_pnl": -960.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-28"
+    },
+    {
+      "daily_pnl": 17550.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-29"
+    },
+    {
+      "daily_pnl": 1860.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-30"
+    },
+    {
+      "daily_pnl": 7470.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-10-31"
+    },
+    {
+      "daily_pnl": 8790.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-03"
+    },
+    {
+      "daily_pnl": 5550.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-04"
+    },
+    {
+      "daily_pnl": -810.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-05"
+    },
+    {
+      "daily_pnl": 2970.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-06"
+    },
+    {
+      "daily_pnl": 4830.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-07"
+    },
+    {
+      "daily_pnl": -810.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-10"
+    },
+    {
+      "daily_pnl": -1410.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-11"
+    },
+    {
+      "daily_pnl": 6100.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-12"
+    },
+    {
+      "daily_pnl": -840.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-13"
+    },
+    {
+      "daily_pnl": 17340.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-14"
+    },
+    {
+      "daily_pnl": 2640.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-17"
+    },
+    {
+      "daily_pnl": 14340.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-18"
+    },
+    {
+      "daily_pnl": 11310.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-19"
+    },
+    {
+      "daily_pnl": 15510.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-20"
+    },
+    {
+      "daily_pnl": 22200.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-21"
+    },
+    {
+      "daily_pnl": 8100.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-24"
+    },
+    {
+      "daily_pnl": -1170.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-25"
+    },
+    {
+      "daily_pnl": -1290.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-26"
+    },
+    {
+      "daily_pnl": 90.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-11-28"
+    },
+    {
+      "daily_pnl": 4800.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-01"
+    },
+    {
+      "daily_pnl": 4560.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-02"
+    },
+    {
+      "daily_pnl": 5550.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-03"
+    },
+    {
+      "daily_pnl": 4320.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-04"
+    },
+    {
+      "daily_pnl": 4860.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-05"
+    },
+    {
+      "daily_pnl": 6090.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-08"
+    },
+    {
+      "daily_pnl": 750.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-09"
+    },
+    {
+      "daily_pnl": 8910.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-10"
+    },
+    {
+      "daily_pnl": -4680.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-11"
+    },
+    {
+      "daily_pnl": 3960.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-12"
+    },
+    {
+      "daily_pnl": 2430.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-15"
+    },
+    {
+      "daily_pnl": -1680.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-16"
+    },
+    {
+      "daily_pnl": 5160.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-17"
+    },
+    {
+      "daily_pnl": -2820.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-18"
+    },
+    {
+      "daily_pnl": -750.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-19"
+    },
+    {
+      "daily_pnl": 1830.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-22"
+    },
+    {
+      "daily_pnl": 3030.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-23"
+    },
+    {
+      "daily_pnl": 570.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-24"
+    },
+    {
+      "daily_pnl": -840.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-26"
+    },
+    {
+      "daily_pnl": 660.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-29"
+    },
+    {
+      "daily_pnl": -1110.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-30"
+    },
+    {
+      "daily_pnl": 380.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2025-12-31"
+    },
+    {
+      "daily_pnl": 4070.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-02"
+    },
+    {
+      "daily_pnl": 3480.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-05"
+    },
+    {
+      "daily_pnl": -900.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-06"
+    },
+    {
+      "daily_pnl": 660.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-07"
+    },
+    {
+      "daily_pnl": -2820.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-08"
+    },
+    {
+      "daily_pnl": -2730.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-09"
+    },
+    {
+      "daily_pnl": 1480.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-12"
+    },
+    {
+      "daily_pnl": -300.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-13"
+    },
+    {
+      "daily_pnl": -1180.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-14"
+    },
+    {
+      "daily_pnl": 270.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-15"
+    },
+    {
+      "daily_pnl": 3420.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-16"
+    },
+    {
+      "daily_pnl": 2670.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-20"
+    },
+    {
+      "daily_pnl": 16800.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-21"
+    },
+    {
+      "daily_pnl": 3660.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-22"
+    },
+    {
+      "daily_pnl": 570.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-23"
+    },
+    {
+      "daily_pnl": 150.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-26"
+    },
+    {
+      "daily_pnl": 4710.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-27"
+    },
+    {
+      "daily_pnl": 4680.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-28"
+    },
+    {
+      "daily_pnl": 12900.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-29"
+    },
+    {
+      "daily_pnl": -1860.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-01-30"
+    },
+    {
+      "daily_pnl": -30.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-02"
+    },
+    {
+      "daily_pnl": 7530.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-03"
+    },
+    {
+      "daily_pnl": -4050.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-04"
+    },
+    {
+      "daily_pnl": 10290.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-05"
+    },
+    {
+      "daily_pnl": 4440.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-09"
+    },
+    {
+      "daily_pnl": 780.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-10"
+    },
+    {
+      "daily_pnl": 7830.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-11"
+    },
+    {
+      "daily_pnl": 7200.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-12"
+    },
+    {
+      "daily_pnl": 12270.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-13"
+    },
+    {
+      "daily_pnl": 16740.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-17"
+    },
+    {
+      "daily_pnl": -2010.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-18"
+    },
+    {
+      "daily_pnl": 750.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-19"
+    },
+    {
+      "daily_pnl": 7440.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-20"
+    },
+    {
+      "daily_pnl": 6000.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-23"
+    },
+    {
+      "daily_pnl": 5490.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-24"
+    },
+    {
+      "daily_pnl": -1680.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-25"
+    },
+    {
+      "daily_pnl": 660.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-26"
+    },
+    {
+      "daily_pnl": 3660.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-02-27"
+    },
+    {
+      "daily_pnl": -2610.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-02"
+    },
+    {
+      "daily_pnl": 26690.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-03"
+    },
+    {
+      "daily_pnl": -5520.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-04"
+    },
+    {
+      "daily_pnl": 14700.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-05"
+    },
+    {
+      "daily_pnl": 6030.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-06"
+    },
+    {
+      "daily_pnl": 3390.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-09"
+    },
+    {
+      "daily_pnl": -3090.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-10"
+    },
+    {
+      "daily_pnl": -4770.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-11"
+    },
+    {
+      "daily_pnl": 2490.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-12"
+    },
+    {
+      "daily_pnl": -2040.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-13"
+    },
+    {
+      "daily_pnl": -1320.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-16"
+    },
+    {
+      "daily_pnl": -1440.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-17"
+    },
+    {
+      "daily_pnl": 4860.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-18"
+    },
+    {
+      "daily_pnl": 6690.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-19"
+    },
+    {
+      "daily_pnl": 7950.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-20"
+    },
+    {
+      "daily_pnl": 11370.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-23"
+    },
+    {
+      "daily_pnl": 6180.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-24"
+    },
+    {
+      "daily_pnl": -1560.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-25"
+    },
+    {
+      "daily_pnl": 390.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-26"
+    },
+    {
+      "daily_pnl": 4950.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-27"
+    },
+    {
+      "daily_pnl": 16140.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-30"
+    },
+    {
+      "daily_pnl": 8880.0,
+      "mode": "adaptive_1_to_3_contracts",
+      "session": "2026-03-31"
+    }
+  ],
+  "source_trades_csv": "v4/audit/autoresearch/v4_aplus_hypothesis_113_protocol101_trade_charts/trades.csv",
+  "starting_cash": 10000.0
+}

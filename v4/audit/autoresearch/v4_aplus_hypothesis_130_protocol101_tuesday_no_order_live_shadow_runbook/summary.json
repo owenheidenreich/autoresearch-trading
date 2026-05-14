@@ -1,0 +1,90 @@
+{
+  "broker_endpoint_called": false,
+  "decision": "ready_for_tuesday_no_order_live_shadow_only",
+  "explicit_approval_required_before_orders": true,
+  "input_summaries": {
+    "protocol126": {
+      "decision": "blocked_incomplete_timing_coverage",
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_126_protocol101_timing_fragility_hardening/summary.json",
+      "present": true,
+      "protocol": "126_protocol101_timing_fragility_hardening"
+    },
+    "protocol127": {
+      "decision": "pass_schema_hardening_ready_for_live_capture",
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_127_protocol101_live_shadow_schema_hardening/summary.json",
+      "present": true,
+      "protocol": "127_protocol101_live_shadow_schema_hardening"
+    },
+    "protocol128": {
+      "decision": "pass_paper_risk_gate_overlay_ready_for_live_shadow",
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_128_protocol101_paper_risk_gate/summary.json",
+      "present": true,
+      "protocol": "128_protocol101_paper_risk_gate"
+    },
+    "protocol129": {
+      "decision": "reject_scaling_loss_clustering_worse",
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_129_protocol101_offline_position_sizing/summary.json",
+      "present": true,
+      "protocol": "129_protocol101_offline_position_sizing"
+    }
+  },
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Tuesday is a no-order live data parity experiment. Paper-order rehearsal happens only after schema, freshness, risk-gate, and order-state checks pass on captured live rows.",
+  "outputs": {
+    "preflight": "v4/audit/autoresearch/v4_aplus_hypothesis_130_protocol101_tuesday_no_order_live_shadow_runbook/protocol101_live_shadow_preflight.json",
+    "promotion_checklist": "v4/promotion/PROTOCOL_101_TUESDAY_LIVE_SHADOW_CHECKLIST.md",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_130_protocol101_tuesday_no_order_live_shadow_runbook/report.md",
+    "runbook": "v4/audit/autoresearch/v4_aplus_hypothesis_130_protocol101_tuesday_no_order_live_shadow_runbook/tuesday_no_order_live_shadow_runbook.md"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "130_protocol101_tuesday_no_order_live_shadow_runbook",
+  "readiness": {
+    "blocked_inputs": [],
+    "caution_inputs": [
+      "protocol126",
+      "protocol129"
+    ],
+    "missing_inputs": [],
+    "ready": true,
+    "required_before_any_order_endpoint": [
+      "valid protocol101_shadow_v2 JSONL stream",
+      "fresh SPX/VIX context and SPXW NBBO",
+      "risk_gate event for every enter/wait/blocked decision",
+      "paper_account_state event after every decision and exit",
+      "order-state rehearsal from captured live shadow rows",
+      "explicit user approval after no-order parity passes"
+    ]
+  },
+  "risk_config": {
+    "daily_new_entry_stop_loss": -750.0,
+    "ibkr_access_reserve": 500.0,
+    "max_concurrent_positions": 1,
+    "max_context_age_ms": 5000,
+    "max_contracts_initial": 1,
+    "max_entry_ask_move": 0.25,
+    "max_option_quote_age_ms": 1500,
+    "max_premium_dollars": 4000.0,
+    "max_premium_fraction_of_equity": 0.4,
+    "require_spxw_pm": true,
+    "starting_cash": 10000.0
+  },
+  "run_sequence": [
+    "Connect IB Gateway.",
+    "Confirm SPX, VIX, and SPXW NBBO are live and fresh.",
+    "Run no-order Protocol101 shadow capture with live_orders_enabled=false.",
+    "Validate protocol101_shadow_v2 schema, feature parity, quote freshness, SPXW root, PM settlement, and account state.",
+    "Run order-state rehearsal on captured live shadow rows.",
+    "Stop and ask for explicit approval before any paper-order endpoint is enabled."
+  ],
+  "schema_version": "protocol101_shadow_v2",
+  "stop_conditions": [
+    "IBKR connection fails or reconnects repeatedly.",
+    "SPX or VIX context is missing, stale, or not timestamped.",
+    "SPXW option NBBO is missing, stale, locked, crossed, zero, or wrong root/settlement.",
+    "Live feature values cannot be mapped to the historical Protocol101 schema.",
+    "Any event has live_orders_enabled=true or broker_endpoint_called=true.",
+    "Paper account risk gate blocks for a hard reason.",
+    "Order-state rehearsal shows overlap, unaffordable trade, or non-flat session."
+  ]
+}

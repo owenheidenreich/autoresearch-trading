@@ -1,0 +1,307 @@
+{
+  "broker_endpoint_called": false,
+  "decision": "blocked_incomplete_timing_coverage",
+  "decision_expiry_rule": {
+    "allowed_root": "SPXW",
+    "allowed_settlement_style": "PM",
+    "max_context_age_ms": 5000,
+    "max_entry_ask_move": 0.25,
+    "max_option_quote_age_ms": 1500,
+    "reject_locked_or_crossed_quotes": true,
+    "reject_missing_bid_ask": true,
+    "reject_zero_or_negative_bid_ask": true,
+    "requires_live_shadow_proof_before_orders": true
+  },
+  "delay_seconds": [
+    0,
+    1,
+    5,
+    15,
+    30,
+    60
+  ],
+  "group_delay_summary_rows": 102,
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Use this expiry rule in no-order live shadow and paper-order rehearsal. Protocol 101 is not paper-order ready until live rows prove quote/context freshness inside budget.",
+  "outputs": {
+    "delay_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_126_protocol101_timing_fragility_hardening/timing_delay_rows.csv",
+    "group_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_126_protocol101_timing_fragility_hardening/group_delay_summary.csv",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_126_protocol101_timing_fragility_hardening/report.md",
+    "split_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_126_protocol101_timing_fragility_hardening/split_delay_summary.csv"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "126_protocol101_timing_fragility_hardening",
+  "row_counts": {
+    "delay_rows": 32958,
+    "input_audited_rows": 5493
+  },
+  "source_highres_replay": "v4/audit/autoresearch/v4_aplus_hypothesis_117_protocol101_targeted_highres_path_audit/report.json",
+  "source_highres_root": "data/raw/audit/protocol101_highres_opra",
+  "split_delay_summary": [
+    {
+      "coverage": 1.0,
+      "delay_seconds": 0,
+      "delayed_pnl": 624610.0,
+      "median_trade_delta": 0.0,
+      "original_pnl": 624610.0,
+      "pnl_delta": 0.0,
+      "positive_trade_fraction": 0.6863509749303621,
+      "rows": 1795,
+      "split": "q1_2026"
+    },
+    {
+      "coverage": 0.7476323119777158,
+      "delay_seconds": 1,
+      "delayed_pnl": 437590.0,
+      "median_trade_delta": -9.999999999999886,
+      "original_pnl": 450950.0,
+      "pnl_delta": -13360.000000000004,
+      "positive_trade_fraction": 0.6862891207153502,
+      "rows": 1795,
+      "split": "q1_2026"
+    },
+    {
+      "coverage": 0.7476323119777158,
+      "delay_seconds": 5,
+      "delayed_pnl": 387830.0,
+      "median_trade_delta": -39.999999999999545,
+      "original_pnl": 450950.0,
+      "pnl_delta": -63120.00000000003,
+      "positive_trade_fraction": 0.6587183308494784,
+      "rows": 1795,
+      "split": "q1_2026"
+    },
+    {
+      "coverage": 0.7476323119777158,
+      "delay_seconds": 15,
+      "delayed_pnl": 294220.0,
+      "median_trade_delta": -100.0,
+      "original_pnl": 450950.0,
+      "pnl_delta": -156730.0,
+      "positive_trade_fraction": 0.5991058122205664,
+      "rows": 1795,
+      "split": "q1_2026"
+    },
+    {
+      "coverage": 0.7476323119777158,
+      "delay_seconds": 30,
+      "delayed_pnl": 152830.0,
+      "median_trade_delta": -180.00000000000023,
+      "original_pnl": 450950.0,
+      "pnl_delta": -298120.0,
+      "positive_trade_fraction": 0.5454545454545454,
+      "rows": 1795,
+      "split": "q1_2026"
+    },
+    {
+      "coverage": 0.7476323119777158,
+      "delay_seconds": 60,
+      "delayed_pnl": -63139.99999999999,
+      "median_trade_delta": -330.0000000000001,
+      "original_pnl": 450950.0,
+      "pnl_delta": -514090.0,
+      "positive_trade_fraction": 0.43815201192250375,
+      "rows": 1795,
+      "split": "q1_2026"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 0,
+      "delayed_pnl": 300750.0,
+      "median_trade_delta": 0.0,
+      "original_pnl": 300750.0,
+      "pnl_delta": 0.0,
+      "positive_trade_fraction": 0.794891640866873,
+      "rows": 1292,
+      "split": "q3_2025"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 1,
+      "delayed_pnl": 281680.0,
+      "median_trade_delta": -9.999999999999801,
+      "original_pnl": 300750.0,
+      "pnl_delta": -19069.999999999985,
+      "positive_trade_fraction": 0.7732198142414861,
+      "rows": 1292,
+      "split": "q3_2025"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 5,
+      "delayed_pnl": 242130.0,
+      "median_trade_delta": -20.000000000000284,
+      "original_pnl": 300750.0,
+      "pnl_delta": -58620.0,
+      "positive_trade_fraction": 0.7523219814241486,
+      "rows": 1292,
+      "split": "q3_2025"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 15,
+      "delayed_pnl": 161050.0,
+      "median_trade_delta": -79.99999999999977,
+      "original_pnl": 300750.0,
+      "pnl_delta": -139700.0,
+      "positive_trade_fraction": 0.6873065015479877,
+      "rows": 1292,
+      "split": "q3_2025"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 30,
+      "delayed_pnl": 86659.99999999997,
+      "median_trade_delta": -139.99999999999994,
+      "original_pnl": 300750.0,
+      "pnl_delta": -214090.0,
+      "positive_trade_fraction": 0.6021671826625387,
+      "rows": 1292,
+      "split": "q3_2025"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 60,
+      "delayed_pnl": -68719.99999999999,
+      "median_trade_delta": -234.99999999999972,
+      "original_pnl": 300750.0,
+      "pnl_delta": -369470.0,
+      "positive_trade_fraction": 0.44969040247678016,
+      "rows": 1292,
+      "split": "q3_2025"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 0,
+      "delayed_pnl": 254930.0,
+      "median_trade_delta": 0.0,
+      "original_pnl": 254930.0,
+      "pnl_delta": 0.0,
+      "positive_trade_fraction": 0.6894889103182257,
+      "rows": 1037,
+      "split": "q4_2024_external"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 1,
+      "delayed_pnl": 246910.0,
+      "median_trade_delta": -9.999999999999801,
+      "original_pnl": 254930.0,
+      "pnl_delta": -8020.000000000003,
+      "positive_trade_fraction": 0.6798457087753134,
+      "rows": 1037,
+      "split": "q4_2024_external"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 5,
+      "delayed_pnl": 227060.0,
+      "median_trade_delta": -29.999999999999375,
+      "original_pnl": 254930.0,
+      "pnl_delta": -27869.999999999996,
+      "positive_trade_fraction": 0.6576663452266153,
+      "rows": 1037,
+      "split": "q4_2024_external"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 15,
+      "delayed_pnl": 168150.0,
+      "median_trade_delta": -69.99999999999994,
+      "original_pnl": 254930.0,
+      "pnl_delta": -86780.0,
+      "positive_trade_fraction": 0.609450337512054,
+      "rows": 1037,
+      "split": "q4_2024_external"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 30,
+      "delayed_pnl": 106320.0,
+      "median_trade_delta": -110.00000000000011,
+      "original_pnl": 254930.0,
+      "pnl_delta": -148610.0,
+      "positive_trade_fraction": 0.5554484088717454,
+      "rows": 1037,
+      "split": "q4_2024_external"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 60,
+      "delayed_pnl": -4419.999999999996,
+      "median_trade_delta": -200.0,
+      "original_pnl": 254930.0,
+      "pnl_delta": -259350.0,
+      "positive_trade_fraction": 0.4416586306653809,
+      "rows": 1037,
+      "split": "q4_2024_external"
+    },
+    {
+      "coverage": 1.0,
+      "delay_seconds": 0,
+      "delayed_pnl": 455760.0,
+      "median_trade_delta": 0.0,
+      "original_pnl": 455760.0,
+      "pnl_delta": 0.0,
+      "positive_trade_fraction": 0.7560262965668371,
+      "rows": 1369,
+      "split": "q4_2025"
+    },
+    {
+      "coverage": 0.9481373265157049,
+      "delay_seconds": 1,
+      "delayed_pnl": 378650.0,
+      "median_trade_delta": -10.000000000000114,
+      "original_pnl": 396660.0,
+      "pnl_delta": -18010.000000000004,
+      "positive_trade_fraction": 0.7357473035439137,
+      "rows": 1369,
+      "split": "q4_2025"
+    },
+    {
+      "coverage": 0.9481373265157049,
+      "delay_seconds": 5,
+      "delayed_pnl": 313700.0,
+      "median_trade_delta": -49.99999999999929,
+      "original_pnl": 396660.0,
+      "pnl_delta": -82960.0,
+      "positive_trade_fraction": 0.6926040061633282,
+      "rows": 1369,
+      "split": "q4_2025"
+    },
+    {
+      "coverage": 0.9481373265157049,
+      "delay_seconds": 15,
+      "delayed_pnl": 226430.0,
+      "median_trade_delta": -109.99999999999977,
+      "original_pnl": 396660.0,
+      "pnl_delta": -170229.99999999997,
+      "positive_trade_fraction": 0.615562403697997,
+      "rows": 1369,
+      "split": "q4_2025"
+    },
+    {
+      "coverage": 0.9481373265157049,
+      "delay_seconds": 30,
+      "delayed_pnl": 101790.00000000003,
+      "median_trade_delta": -189.99999999999986,
+      "original_pnl": 396660.0,
+      "pnl_delta": -294870.0,
+      "positive_trade_fraction": 0.5600924499229584,
+      "rows": 1369,
+      "split": "q4_2025"
+    },
+    {
+      "coverage": 0.9481373265157049,
+      "delay_seconds": 60,
+      "delayed_pnl": -71300.0,
+      "median_trade_delta": -305.0,
+      "original_pnl": 396660.0,
+      "pnl_delta": -467960.0,
+      "positive_trade_fraction": 0.4391371340523883,
+      "rows": 1369,
+      "split": "q4_2025"
+    }
+  ]
+}

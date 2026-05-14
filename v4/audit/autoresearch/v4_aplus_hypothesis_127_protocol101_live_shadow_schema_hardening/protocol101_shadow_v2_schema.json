@@ -1,0 +1,40 @@
+{
+  "actions": [
+    "enter",
+    "wait",
+    "hold",
+    "exit",
+    "blocked"
+  ],
+  "event_types": [
+    "market_snapshot",
+    "candidate_set",
+    "model_decision",
+    "risk_gate",
+    "paper_account_state",
+    "exit_decision"
+  ],
+  "hard_rules": [
+    "live_orders_enabled must be false",
+    "broker_endpoint_called must be false",
+    "broker/order intent fields must be absent or null",
+    "enter/hold/exit actions must reference one PM-settled SPXW contract",
+    "blocked actions must include a risk_gate.reason"
+  ],
+  "no_order_mode": "no_order_shadow",
+  "required_top_level_fields": [
+    "schema_version",
+    "protocol_id",
+    "event_type",
+    "timestamp",
+    "session",
+    "live_orders_enabled",
+    "broker_endpoint_called",
+    "market_snapshot",
+    "model_decision",
+    "selected_action",
+    "risk_gate",
+    "paper_account_state"
+  ],
+  "schema_version": "protocol101_shadow_v2"
+}

@@ -1,0 +1,60 @@
+{
+  "broker_endpoint_called": false,
+  "capital_assumption": {
+    "ibkr_access_reserve": 500.0,
+    "paper_starting_cash": 10000.0,
+    "reserve_policy": "The $500 real IBKR reserve is never counted as trading capital."
+  },
+  "config": {
+    "daily_new_entry_stop_loss": -750.0,
+    "ibkr_access_reserve": 500.0,
+    "max_concurrent_positions": 1,
+    "max_context_age_ms": 5000,
+    "max_contracts_initial": 1,
+    "max_entry_ask_move": 0.25,
+    "max_option_quote_age_ms": 1500,
+    "max_premium_dollars": 4000.0,
+    "max_premium_fraction_of_equity": 0.4,
+    "require_spxw_pm": true,
+    "starting_cash": 10000.0
+  },
+  "decision": "pass_paper_risk_gate_overlay_ready_for_live_shadow",
+  "invariants": {
+    "all_flat_by_close": true,
+    "all_one_contract": true,
+    "flat_violation_examples": [],
+    "max_concurrent_positions": 1,
+    "premium_cap_violation_examples": [],
+    "starting_cash": 10000.0,
+    "trades": 1028,
+    "unaffordable_examples": [],
+    "wrong_root_examples": [],
+    "wrong_settlement_examples": [],
+    "zero_premium_cap_violations": true,
+    "zero_unaffordable_trades": true,
+    "zero_wrong_root_trades": true,
+    "zero_wrong_settlement_trades": true
+  },
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Use this same risk gate in Tuesday's no-order shadow stream. Do not enable any paper-order endpoint until the live schema, quote freshness, and order-state rehearsal all pass.",
+  "outputs": {
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_128_protocol101_paper_risk_gate/report.md",
+    "risk_gate_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_128_protocol101_paper_risk_gate/risk_gate_rows.csv",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_128_protocol101_paper_risk_gate/summary.json"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "128_protocol101_paper_risk_gate",
+  "risk_summary": {
+    "blocked_rows": 35,
+    "hard_block_rows": 0,
+    "note": "daily_loss_stop is reported as a future protective overlay, not a claim that the frozen historical Protocol101 replay was invalid.",
+    "passed_rows": 993,
+    "protective_daily_stop_only_rows": 35,
+    "reason_counts": {
+      "daily_loss_stop": 35
+    },
+    "rows": 1028
+  },
+  "source_trades_csv": "v4/audit/autoresearch/v4_aplus_hypothesis_113_protocol101_trade_charts/trades.csv"
+}

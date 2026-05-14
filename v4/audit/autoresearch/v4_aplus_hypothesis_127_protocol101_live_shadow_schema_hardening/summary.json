@@ -1,0 +1,77 @@
+{
+  "broker_endpoint_called": false,
+  "decision": "pass_schema_hardening_ready_for_live_capture",
+  "example_validation": {
+    "action_counts": {
+      "blocked": 1,
+      "enter": 1,
+      "exit": 1,
+      "hold": 1,
+      "wait": 2
+    },
+    "errors": [],
+    "event_counts": {
+      "candidate_set": 1,
+      "exit_decision": 1,
+      "market_snapshot": 1,
+      "model_decision": 1,
+      "paper_account_state": 1,
+      "risk_gate": 1
+    },
+    "rows": 6,
+    "status": "pass",
+    "warnings": []
+  },
+  "input_shadow_log": null,
+  "input_shadow_validation": null,
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Tuesday live shadow capture must emit this schema and pass validation before order-state rehearsal or any request for paper-order approval.",
+  "outputs": {
+    "examples": "v4/audit/autoresearch/v4_aplus_hypothesis_127_protocol101_live_shadow_schema_hardening/protocol101_shadow_v2_examples.jsonl",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_127_protocol101_live_shadow_schema_hardening/report.md",
+    "schema_contract": "v4/audit/autoresearch/v4_aplus_hypothesis_127_protocol101_live_shadow_schema_hardening/protocol101_shadow_v2_schema.json"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "127_protocol101_live_shadow_schema_hardening",
+  "schema": {
+    "actions": [
+      "enter",
+      "wait",
+      "hold",
+      "exit",
+      "blocked"
+    ],
+    "event_types": [
+      "market_snapshot",
+      "candidate_set",
+      "model_decision",
+      "risk_gate",
+      "paper_account_state",
+      "exit_decision"
+    ],
+    "hard_rules": [
+      "live_orders_enabled must be false",
+      "broker_endpoint_called must be false",
+      "broker/order intent fields must be absent or null",
+      "enter/hold/exit actions must reference one PM-settled SPXW contract",
+      "blocked actions must include a risk_gate.reason"
+    ],
+    "no_order_mode": "no_order_shadow",
+    "required_top_level_fields": [
+      "schema_version",
+      "protocol_id",
+      "event_type",
+      "timestamp",
+      "session",
+      "live_orders_enabled",
+      "broker_endpoint_called",
+      "market_snapshot",
+      "model_decision",
+      "selected_action",
+      "risk_gate",
+      "paper_account_state"
+    ],
+    "schema_version": "protocol101_shadow_v2"
+  }
+}
