@@ -6,7 +6,7 @@ quantity rule, how would cash, drawdown, daily loss, and premium exposure evolve
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 from typing import Any
 
@@ -26,6 +26,7 @@ class PositionSizingPolicy:
     premium_exposure_fraction: float = 1.0
     max_premium_dollars: float = math.inf
     daily_new_entry_stop_loss: float | None = None
+    daily_new_entry_stop_fraction_of_equity: float | None = None
     max_drawdown_for_scaling: float = 1.0
     require_recent_positive_for_scaling: bool = False
     recent_window: int = 10
@@ -36,6 +37,7 @@ class PositionSizingPolicy:
     profit_cushion_multiplier: float = 0.0
     scale_only_if_daily_pnl_nonnegative: bool = False
     max_one_contract_premium_for_scaling: float = math.inf
+    exposure_cap_applies_to_initial_contract: bool = True
 
 
 @dataclass
@@ -162,6 +164,18 @@ def slow_growth_two_contract_policy() -> PositionSizingPolicy:
     )
 
 
+def account_aware_sizer_policy(starting_cash: float = 10_000.0) -> PositionSizingPolicy:
+    return replace(
+        high_conviction_profit_cushion_policy(),
+        name="account_aware_sizer_v1",
+        starting_cash=float(starting_cash),
+        daily_new_entry_stop_loss=-1500.0,
+        min_score_margin_for_two=2.0,
+        daily_new_entry_stop_fraction_of_equity=0.005,
+        exposure_cap_applies_to_initial_contract=False,
+    )
+
+
 def default_position_sizing_policies() -> tuple[PositionSizingPolicy, ...]:
     return (
         baseline_one_contract_policy(),
@@ -234,7 +248,8 @@ def choose_quantity(
     if premium is None or premium <= 0:
         return 0, "missing_premium"
     daily = state.daily_realized_pnl.get(session, 0.0)
-    if policy.daily_new_entry_stop_loss is not None and daily <= policy.daily_new_entry_stop_loss:
+    daily_stop = effective_daily_stop(policy, state.cash)
+    if daily_stop is not None and daily <= daily_stop:
         return 0, "daily_loss_stop"
 
     max_by_equity = max_contracts_by_equity(state.cash, policy)
@@ -265,6 +280,8 @@ def choose_quantity(
     max_by_cash = math.floor(state.cash / premium)
     exposure_cap = min(policy.max_premium_dollars, state.cash * policy.premium_exposure_fraction)
     max_by_exposure = math.floor(exposure_cap / premium)
+    if not policy.exposure_cap_applies_to_initial_contract and max_by_cash >= policy.initial_contracts:
+        max_by_exposure = max(max_by_exposure, policy.initial_contracts)
     quantity = int(min(policy.max_contracts, max_by_equity, max_by_cash, max_by_exposure))
     if quantity <= 0:
         if max_by_cash <= 0:
@@ -279,6 +296,17 @@ def max_contracts_by_equity(equity: float, policy: PositionSizingPolicy) -> int:
     if equity >= policy.equity_for_two_contracts:
         return min(2, policy.max_contracts)
     return min(policy.initial_contracts, policy.max_contracts)
+
+
+def effective_daily_stop(policy: PositionSizingPolicy, equity: float) -> float | None:
+    stops: list[float] = []
+    if policy.daily_new_entry_stop_loss is not None:
+        stops.append(float(policy.daily_new_entry_stop_loss))
+    if policy.daily_new_entry_stop_fraction_of_equity is not None:
+        stops.append(-abs(float(policy.daily_new_entry_stop_fraction_of_equity)) * float(equity))
+    if not stops:
+        return None
+    return min(stops)
 
 
 def summarize_position_sizing(rows: list[dict[str, Any]], policy: PositionSizingPolicy) -> dict[str, Any]:

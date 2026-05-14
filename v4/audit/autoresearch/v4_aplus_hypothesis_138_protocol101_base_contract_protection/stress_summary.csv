@@ -1,0 +1,4 @@
+stress_per_side,baseline_pnl,candidate_pnl,incremental_pnl,candidate_max_drawdown,candidate_worst_day
+0.0,319050.0,366960.0,47910.0,-3060.0,-1840.0
+0.25,267650.0,299430.0,31780.0,-4420.0,-1890.0
+0.5,216250.0,228460.0,12210.0,-6520.0,-1940.0

@@ -1664,3 +1664,68 @@ Next Gate: Keep the sizing policy as an offline research candidate. Next test sh
 Owner: Codex
 ```
 
+## 2026-05-14 Protocol 135 Protocol101 Starting-Cash Sensitivity
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Tested one always-on account-aware sizing policy across multiple starting paper account sizes and slippage stresses.
+Reason: The production goal is a turn-it-on bot that scales risk from account state, not manual model selection.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision pass_always_on_sizer_starting_cash_sensitivity_not_live. Report v4/audit/autoresearch/v4_aplus_hypothesis_135_protocol101_starting_cash_sensitivity/report.md.
+Next Gate: Promote the account-aware sizer to an offline research candidate artifact, then test equity visualizations and live-shadow-compatible account-state serialization.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 136 Protocol101 Account-Scaled Daily Stop
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Tested account-scaled daily loss stops for the always-on Protocol101 sizing policy.
+Reason: A fixed daily stop can be too small after account growth; the real bot needs risk controls that scale with equity without amplifying drawdown.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision pass_account_scaled_daily_stop_candidate_not_live. Accepted 2 daily-stop hypotheses. Report v4/audit/autoresearch/v4_aplus_hypothesis_136_protocol101_account_scaled_daily_stop/report.md.
+Next Gate: Fold the accepted daily-stop rule into the single offline sizing candidate and rerun attribution/visualization.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 137 Protocol101 Account-Aware Sizer V1
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Consolidated the best current account-aware multi-contract sizing rule into one offline candidate artifact.
+Reason: The product goal is a turn-it-on policy that scales risk from account state, confidence, and drawdown without manual model selection.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision pass_account_aware_sizer_v1_research_candidate_not_live. Config v4/audit/autoresearch/v4_aplus_hypothesis_137_protocol101_account_aware_sizer_candidate/account_aware_sizer_v1.json. Report v4/audit/autoresearch/v4_aplus_hypothesis_137_protocol101_account_aware_sizer_candidate/report.md.
+Next Gate: Use this config for offline visual/account-state reports. It is still not paper/live multi-contract approval.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 138 Protocol101 Base Contract Protection
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Tested whether premium exposure caps should protect scaling without blocking the base one-contract trade.
+Reason: The prior account-aware sizer underperformed the Q4 2024 external block partly because a scaling cap could skip ordinary one-contract trades.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision reject_base_contract_protection_still_external_negative. Report v4/audit/autoresearch/v4_aplus_hypothesis_138_protocol101_base_contract_protection/report.md.
+Next Gate: Do not keep this change; inspect the segment summary for why base-contract protection failed.
+Owner: Codex
+```
+
+## 2026-05-14 Protocol 139 Protocol101 Daily Stop Retune
+
+```text
+Date: 2026-05-14
+Decision / Experiment: Retuned the always-on account-aware sizer daily stop after base-contract protection.
+Reason: The prior fixed stop skipped recovery winners in the external block; the sizer needs account-aware risk control without blocking ordinary one-contract recovery trades too aggressively.
+Data Used: Existing Protocol113 replay trades only. No paid data was downloaded, no broker endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision pass_daily_stop_retune_candidate_not_live. Best stop -1500.0 plus 0.500% equity. Report v4/audit/autoresearch/v4_aplus_hypothesis_139_protocol101_daily_stop_retune/report.md.
+Next Gate: Update account_aware_sizer_v1 to use the retuned daily stop and rerun consolidated validation.
+Owner: Codex
+```
+

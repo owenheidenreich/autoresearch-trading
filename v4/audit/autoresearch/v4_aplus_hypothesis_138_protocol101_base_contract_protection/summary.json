@@ -1,0 +1,273 @@
+{
+  "baseline_summary": {
+    "best_day_pnl": 9270.0,
+    "candidate_trades": 1028,
+    "ending_cash": 329050.0,
+    "longest_recovery_trades": 42,
+    "max_drawdown": -2790.0,
+    "max_drawdown_pct": -0.065335,
+    "max_quantity": 1,
+    "min_cash": 9790.0,
+    "policy": "one_contract_baseline",
+    "return_on_starting_cash": 31.905,
+    "risk_of_ruin": false,
+    "skip_counts": {},
+    "skipped_trades": 0,
+    "starting_cash": 10000.0,
+    "taken_trades": 1028,
+    "total_contracts": 1028,
+    "total_pnl": 319050.0,
+    "worst_day_pnl": -2080.0
+  },
+  "broker_endpoint_called": false,
+  "concentration": {
+    "incremental_pnl": 47910.0,
+    "positive_incremental_pnl": 74150.0,
+    "scaled_positive_fraction": 0.8315789473684211,
+    "scaled_trades": 190,
+    "skipped_pnl_given_up": 10770.0,
+    "skipped_trades": 39,
+    "top_day": {
+      "incremental_pnl": 4890.0,
+      "session": "2025-09-17"
+    },
+    "top_day_share_of_positive": 0.065947,
+    "top_month": {
+      "incremental_pnl": 18550.0,
+      "month": "2025-09"
+    },
+    "top_month_share_of_positive": 0.250169,
+    "top_trade_incremental_pnl": 3390.0,
+    "top_trade_share_of_positive": 0.045718
+  },
+  "decision": "reject_base_contract_protection_still_external_negative",
+  "live_orders": false,
+  "model_training": false,
+  "month_rows": [
+    {
+      "incremental_pnl": -2370.0,
+      "month": "2024-10",
+      "scaled_trades": 0,
+      "skipped_trades": 7
+    },
+    {
+      "incremental_pnl": -1380.0,
+      "month": "2024-11",
+      "scaled_trades": 10,
+      "skipped_trades": 5
+    },
+    {
+      "incremental_pnl": 110.0,
+      "month": "2024-12",
+      "scaled_trades": 4,
+      "skipped_trades": 5
+    },
+    {
+      "incremental_pnl": 9930.0,
+      "month": "2025-07",
+      "scaled_trades": 45,
+      "skipped_trades": 2
+    },
+    {
+      "incremental_pnl": 8140.0,
+      "month": "2025-08",
+      "scaled_trades": 28,
+      "skipped_trades": 13
+    },
+    {
+      "incremental_pnl": 18550.0,
+      "month": "2025-09",
+      "scaled_trades": 49,
+      "skipped_trades": 2
+    },
+    {
+      "incremental_pnl": 3090.0,
+      "month": "2025-10",
+      "scaled_trades": 7,
+      "skipped_trades": 0
+    },
+    {
+      "incremental_pnl": 260.0,
+      "month": "2025-11",
+      "scaled_trades": 5,
+      "skipped_trades": 0
+    },
+    {
+      "incremental_pnl": 1600.0,
+      "month": "2025-12",
+      "scaled_trades": 3,
+      "skipped_trades": 1
+    },
+    {
+      "incremental_pnl": 3760.0,
+      "month": "2026-01",
+      "scaled_trades": 11,
+      "skipped_trades": 0
+    },
+    {
+      "incremental_pnl": 1460.0,
+      "month": "2026-02",
+      "scaled_trades": 16,
+      "skipped_trades": 0
+    },
+    {
+      "incremental_pnl": 4760.0,
+      "month": "2026-03",
+      "scaled_trades": 12,
+      "skipped_trades": 4
+    }
+  ],
+  "new_policy": {
+    "daily_new_entry_stop_fraction_of_equity": 0.005,
+    "daily_new_entry_stop_loss": -750.0,
+    "equity_for_three_contracts": 100000.0,
+    "equity_for_two_contracts": 30000.0,
+    "exposure_cap_applies_to_initial_contract": false,
+    "initial_contracts": 1,
+    "max_contracts": 3,
+    "max_drawdown_for_scaling": 0.025,
+    "max_one_contract_premium_for_scaling": 3000.0,
+    "max_premium_dollars": 8000.0,
+    "min_profit_for_scaling": 20000.0,
+    "min_score_margin_for_three": 3.2,
+    "min_score_margin_for_two": 2.0,
+    "name": "account_aware_sizer_v1",
+    "premium_exposure_fraction": 0.25,
+    "profit_cushion_multiplier": 3.0,
+    "recent_window": 10,
+    "require_recent_positive_for_scaling": true,
+    "scale_only_if_daily_pnl_nonnegative": true,
+    "starting_cash": 10000.0
+  },
+  "new_summary": {
+    "best_day_pnl": 10760.0,
+    "candidate_trades": 1028,
+    "ending_cash": 376960.0,
+    "longest_recovery_trades": 37,
+    "max_drawdown": -3060.0,
+    "max_drawdown_pct": -0.063147,
+    "max_quantity": 3,
+    "min_cash": 9790.0,
+    "policy": "account_aware_sizer_v1",
+    "return_on_starting_cash": 36.696,
+    "risk_of_ruin": false,
+    "skip_counts": {
+      "daily_loss_stop": 39
+    },
+    "skipped_trades": 39,
+    "starting_cash": 10000.0,
+    "taken_trades": 989,
+    "total_contracts": 1203,
+    "total_pnl": 366960.0,
+    "worst_day_pnl": -1840.0
+  },
+  "next_gate": "Do not keep this change; inspect the segment summary for why base-contract protection failed.",
+  "old_policy": {
+    "daily_new_entry_stop_fraction_of_equity": 0.005,
+    "daily_new_entry_stop_loss": -750.0,
+    "equity_for_three_contracts": 100000.0,
+    "equity_for_two_contracts": 30000.0,
+    "exposure_cap_applies_to_initial_contract": true,
+    "initial_contracts": 1,
+    "max_contracts": 3,
+    "max_drawdown_for_scaling": 0.025,
+    "max_one_contract_premium_for_scaling": 3000.0,
+    "max_premium_dollars": 8000.0,
+    "min_profit_for_scaling": 20000.0,
+    "min_score_margin_for_three": 3.2,
+    "min_score_margin_for_two": 2.0,
+    "name": "account_aware_sizer_v1_cap_blocks_base",
+    "premium_exposure_fraction": 0.25,
+    "profit_cushion_multiplier": 3.0,
+    "recent_window": 10,
+    "require_recent_positive_for_scaling": true,
+    "scale_only_if_daily_pnl_nonnegative": true,
+    "starting_cash": 10000.0
+  },
+  "old_summary": {
+    "best_day_pnl": 10760.0,
+    "candidate_trades": 1028,
+    "ending_cash": 372890.0,
+    "longest_recovery_trades": 37,
+    "max_drawdown": -3060.0,
+    "max_drawdown_pct": -0.080475,
+    "max_quantity": 3,
+    "min_cash": 9950.0,
+    "policy": "account_aware_sizer_v1_cap_blocks_base",
+    "return_on_starting_cash": 36.289,
+    "risk_of_ruin": false,
+    "skip_counts": {
+      "daily_loss_stop": 39,
+      "premium_exposure_cap": 5
+    },
+    "skipped_trades": 44,
+    "starting_cash": 10000.0,
+    "taken_trades": 984,
+    "total_contracts": 1194,
+    "total_pnl": 362890.0,
+    "worst_day_pnl": -1840.0
+  },
+  "outputs": {
+    "attribution_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_138_protocol101_base_contract_protection/attribution_rows.csv",
+    "month_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_138_protocol101_base_contract_protection/month_summary.csv",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_138_protocol101_base_contract_protection/report.md",
+    "segment_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_138_protocol101_base_contract_protection/segment_summary.csv",
+    "stress_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_138_protocol101_base_contract_protection/stress_summary.csv",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_138_protocol101_base_contract_protection/summary.json"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "138_protocol101_base_contract_protection",
+  "protocol101_frozen": true,
+  "segment_rows": [
+    {
+      "incremental_pnl": 9980.0,
+      "scaled_trades": 39,
+      "segment": "q1_2026",
+      "skipped_trades": 4
+    },
+    {
+      "incremental_pnl": 36620.0,
+      "scaled_trades": 122,
+      "segment": "q3_2025",
+      "skipped_trades": 17
+    },
+    {
+      "incremental_pnl": -3640.0,
+      "scaled_trades": 14,
+      "segment": "q4_2024_external",
+      "skipped_trades": 17
+    },
+    {
+      "incremental_pnl": 4950.0,
+      "scaled_trades": 15,
+      "segment": "q4_2025",
+      "skipped_trades": 1
+    }
+  ],
+  "stress_rows": [
+    {
+      "baseline_pnl": 319050.0,
+      "candidate_max_drawdown": -3060.0,
+      "candidate_pnl": 366960.0,
+      "candidate_worst_day": -1840.0,
+      "incremental_pnl": 47910.0,
+      "stress_per_side": 0.0
+    },
+    {
+      "baseline_pnl": 267650.0,
+      "candidate_max_drawdown": -4420.0,
+      "candidate_pnl": 299430.0,
+      "candidate_worst_day": -1890.0,
+      "incremental_pnl": 31780.0,
+      "stress_per_side": 0.25
+    },
+    {
+      "baseline_pnl": 216250.0,
+      "candidate_max_drawdown": -6520.0,
+      "candidate_pnl": 228460.0,
+      "candidate_worst_day": -1940.0,
+      "incremental_pnl": 12210.0,
+      "stress_per_side": 0.5
+    }
+  ]
+}

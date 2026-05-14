@@ -1,0 +1,133 @@
+{
+  "best_summary": {
+    "best_day_pnl": 10760.0,
+    "candidate_trades": 1028,
+    "ending_cash": 389820.0,
+    "longest_recovery_trades": 37,
+    "max_drawdown": -3150.0,
+    "max_drawdown_pct": -0.063147,
+    "max_quantity": 3,
+    "min_cash": 9790.0,
+    "policy": "daily_stop_1500_0.500%",
+    "return_on_starting_cash": 37.982,
+    "risk_of_ruin": false,
+    "skip_counts": {
+      "daily_loss_stop": 8
+    },
+    "skipped_trades": 8,
+    "starting_cash": 10000.0,
+    "taken_trades": 1020,
+    "total_contracts": 1240,
+    "total_pnl": 379820.0,
+    "worst_day_pnl": -1840.0
+  },
+  "best_variant": {
+    "fixed_stop": -1500.0,
+    "fraction": 0.005,
+    "incremental_025": 45480.0,
+    "incremental_050": 28730.0,
+    "incremental_unstressed": 60770.0,
+    "max_drawdown_unstressed": -3150.0,
+    "passes": true,
+    "total_pnl_unstressed": 379820.0,
+    "worst_day_unstressed": -1840.0
+  },
+  "broker_endpoint_called": false,
+  "current_summary": {
+    "best_day_pnl": 10760.0,
+    "candidate_trades": 1028,
+    "ending_cash": 376960.0,
+    "longest_recovery_trades": 37,
+    "max_drawdown": -3060.0,
+    "max_drawdown_pct": -0.063147,
+    "max_quantity": 3,
+    "min_cash": 9790.0,
+    "policy": "account_aware_sizer_v1",
+    "return_on_starting_cash": 36.696,
+    "risk_of_ruin": false,
+    "skip_counts": {
+      "daily_loss_stop": 39
+    },
+    "skipped_trades": 39,
+    "starting_cash": 10000.0,
+    "taken_trades": 989,
+    "total_contracts": 1203,
+    "total_pnl": 366960.0,
+    "worst_day_pnl": -1840.0
+  },
+  "decision": "pass_daily_stop_retune_candidate_not_live",
+  "experiments": [
+    {
+      "fixed_stop": -1500.0,
+      "fraction": 0.005,
+      "incremental_025": 45480.0,
+      "incremental_050": 28730.0,
+      "incremental_unstressed": 60770.0,
+      "max_drawdown_unstressed": -3150.0,
+      "passes": true,
+      "total_pnl_unstressed": 379820.0,
+      "worst_day_unstressed": -1840.0
+    },
+    {
+      "fixed_stop": -1500.0,
+      "fraction": 0.01,
+      "incremental_025": 45870.0,
+      "incremental_050": 28800.0,
+      "incremental_unstressed": 61060.0,
+      "max_drawdown_unstressed": -3150.0,
+      "passes": true,
+      "total_pnl_unstressed": 380110.0,
+      "worst_day_unstressed": -1980.0
+    },
+    {
+      "fixed_stop": -2000.0,
+      "fraction": 0.005,
+      "incremental_025": 43810.0,
+      "incremental_050": 28820.0,
+      "incremental_unstressed": 59820.0,
+      "max_drawdown_unstressed": -3150.0,
+      "passes": true,
+      "total_pnl_unstressed": 378870.0,
+      "worst_day_unstressed": -2150.0
+    }
+  ],
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Update account_aware_sizer_v1 to use the retuned daily stop and rerun consolidated validation.",
+  "outputs": {
+    "attribution_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_139_protocol101_daily_stop_retune/attribution_rows.csv",
+    "experiment_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_139_protocol101_daily_stop_retune/experiment_summary.csv",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_139_protocol101_daily_stop_retune/report.md",
+    "segment_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_139_protocol101_daily_stop_retune/segment_summary.csv",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_139_protocol101_daily_stop_retune/summary.json"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "139_protocol101_daily_stop_retune",
+  "protocol101_frozen": true,
+  "segment_rows": [
+    {
+      "incremental_pnl": 9980.0,
+      "scaled_trades": 39,
+      "segment": "q1_2026",
+      "skipped_trades": 4
+    },
+    {
+      "incremental_pnl": 42390.0,
+      "scaled_trades": 122,
+      "segment": "q3_2025",
+      "skipped_trades": 2
+    },
+    {
+      "incremental_pnl": 3450.0,
+      "scaled_trades": 17,
+      "segment": "q4_2024_external",
+      "skipped_trades": 1
+    },
+    {
+      "incremental_pnl": 4950.0,
+      "scaled_trades": 15,
+      "segment": "q4_2025",
+      "skipped_trades": 1
+    }
+  ]
+}

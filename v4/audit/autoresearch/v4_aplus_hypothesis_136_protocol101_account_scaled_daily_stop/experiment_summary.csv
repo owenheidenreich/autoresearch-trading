@@ -1,0 +1,5 @@
+experiment,passes,total_incremental_vs_current,min_incremental_vs_current,risk_ok_all,candidate_rows
+daily_stop_0.25%_equity,True,9860.0,0.0,True,15
+daily_stop_0.50%_equity,True,108930.0,4680.0,True,15
+daily_stop_0.75%_equity,False,163010.0,7400.0,False,15
+daily_stop_1.00%_equity,False,197920.0,7890.0,False,15

@@ -1,0 +1,4 @@
+fixed_stop,fraction,total_pnl_unstressed,incremental_unstressed,incremental_025,incremental_050,max_drawdown_unstressed,worst_day_unstressed,passes
+-1500.0,0.005,379820.0,60770.0,45480.0,28730.0,-3150.0,-1840.0,True
+-1500.0,0.01,380110.0,61060.0,45870.0,28800.0,-3150.0,-1980.0,True
+-2000.0,0.005,378870.0,59820.0,43810.0,28820.0,-3150.0,-2150.0,True

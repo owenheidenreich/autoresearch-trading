@@ -1,0 +1,22 @@
+{
+  "daily_new_entry_stop_fraction_of_equity": 0.005,
+  "daily_new_entry_stop_loss": -1500.0,
+  "equity_for_three_contracts": 100000.0,
+  "equity_for_two_contracts": 30000.0,
+  "exposure_cap_applies_to_initial_contract": false,
+  "initial_contracts": 1,
+  "max_contracts": 3,
+  "max_drawdown_for_scaling": 0.025,
+  "max_one_contract_premium_for_scaling": 3000.0,
+  "max_premium_dollars": 8000.0,
+  "min_profit_for_scaling": 20000.0,
+  "min_score_margin_for_three": 3.2,
+  "min_score_margin_for_two": 2.0,
+  "name": "account_aware_sizer_v1",
+  "premium_exposure_fraction": 0.25,
+  "profit_cushion_multiplier": 3.0,
+  "recent_window": 10,
+  "require_recent_positive_for_scaling": true,
+  "scale_only_if_daily_pnl_nonnegative": true,
+  "starting_cash": 10000.0
+}
