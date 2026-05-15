@@ -83,6 +83,18 @@ def test_protocol127_shadow_schema_rejects_order_intent_and_bad_quotes() -> None
     assert any("ask must be >= bid" in error for error in result.errors)
 
 
+def test_protocol127_shadow_schema_allows_configured_multi_contract_quantity() -> None:
+    event = build_examples(_trade())[2]
+    event["selected_contract"]["quantity"] = 2
+
+    default_result = validate_shadow_event(event)
+    multi_result = validate_shadow_event(event, max_contracts_per_position=3)
+
+    assert default_result.status == "fail"
+    assert any("selected quantity must be between 1 and 1" in error for error in default_result.errors)
+    assert multi_result.status == "pass"
+
+
 def test_protocol127_shadow_stream_requires_block_reason() -> None:
     event = build_examples(_trade())[3]
     event["risk_gate"]["reason"] = ""
@@ -108,6 +120,31 @@ def test_protocol128_risk_gate_rejects_wrong_root_stale_quote_and_unaffordable_t
     assert "wrong_settlement" in result["reasons"]
     assert "stale_option_quote" in result["reasons"]
     assert "insufficient_cash" in result["reasons"]
+
+
+def test_protocol128_risk_gate_allows_configured_multi_contract_quantity() -> None:
+    result = evaluate_entry_risk_gate(
+        contract={"contract_id": "SPXW-20260306-06700.000-C", "root": "SPXW", "settlement_style": "PM", "quantity": 2},
+        quote={"bid": 9.90, "ask": 10.0, "quote_age_ms": 0, "reference_ask": 10.0},
+        context={"context_age_ms": 0},
+        account=AccountState(cash=50_000.0, equity=50_000.0),
+        config=Protocol101RiskConfig(max_contracts_initial=3, max_premium_dollars=10_000.0),
+    )
+
+    assert result["passed"] is True
+    assert result["quantity"] == 2
+    assert result["max_contracts"] == 3
+
+    too_large = evaluate_entry_risk_gate(
+        contract={"contract_id": "SPXW-20260306-06700.000-C", "root": "SPXW", "settlement_style": "PM", "quantity": 4},
+        quote={"bid": 9.90, "ask": 10.0, "quote_age_ms": 0, "reference_ask": 10.0},
+        context={"context_age_ms": 0},
+        account=AccountState(cash=50_000.0, equity=50_000.0),
+        config=Protocol101RiskConfig(max_contracts_initial=3, max_premium_dollars=10_000.0),
+    )
+
+    assert too_large["passed"] is False
+    assert "position_size_exceeds_max_contracts" in too_large["reasons"]
 
 
 def test_protocol128_replay_invariants_pass_clean_one_contract_path() -> None:

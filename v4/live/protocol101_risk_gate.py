@@ -18,6 +18,7 @@ class Protocol101RiskConfig:
     max_premium_dollars: float = 4_000.0
     max_premium_fraction_of_equity: float = 0.40
     daily_new_entry_stop_loss: float = -750.0
+    daily_new_entry_stop_fraction_of_equity: float | None = None
     max_option_quote_age_ms: int = 1500
     max_context_age_ms: int = 5000
     max_entry_ask_move: float = 0.25
@@ -36,6 +37,15 @@ def premium_cap(config: Protocol101RiskConfig, equity: float) -> float:
     return min(float(config.max_premium_dollars), float(config.max_premium_fraction_of_equity) * float(equity))
 
 
+def daily_stop_loss(config: Protocol101RiskConfig, equity: float) -> float | None:
+    stops: list[float] = []
+    if config.daily_new_entry_stop_loss is not None:
+        stops.append(float(config.daily_new_entry_stop_loss))
+    if config.daily_new_entry_stop_fraction_of_equity is not None:
+        stops.append(-abs(float(config.daily_new_entry_stop_fraction_of_equity)) * float(equity))
+    return min(stops) if stops else None
+
+
 def evaluate_entry_risk_gate(
     *,
     contract: dict[str, Any],
@@ -44,7 +54,7 @@ def evaluate_entry_risk_gate(
     account: AccountState,
     config: Protocol101RiskConfig = Protocol101RiskConfig(),
 ) -> dict[str, Any]:
-    """Return pass/fail and exact reasons for a potential one-contract entry."""
+    """Return pass/fail and exact reasons for a potential entry."""
 
     reasons: list[str] = []
     bid = _number(quote.get("bid"))
@@ -54,17 +64,23 @@ def evaluate_entry_risk_gate(
     entry_reference_ask = _number(quote.get("reference_ask"))
     root = str(contract.get("root") or _root_from_contract_id(contract.get("contract_id")))
     settlement = str(contract.get("settlement_style") or "")
-    quantity = int(_number(contract.get("quantity")) or 1)
+    quantity_value = _number(contract.get("quantity"))
+    quantity = 1 if quantity_value is None else int(quantity_value)
 
     if config.require_spxw_pm and root != "SPXW":
         reasons.append("wrong_root")
     if config.require_spxw_pm and settlement and settlement != "PM":
         reasons.append("wrong_settlement")
-    if quantity != config.max_contracts_initial:
-        reasons.append("position_size_not_initial_one_contract")
+    if quantity_value is not None and abs(quantity_value - quantity) > 1e-9:
+        reasons.append("noninteger_quantity")
+    if quantity <= 0:
+        reasons.append("nonpositive_quantity")
+    elif quantity > config.max_contracts_initial:
+        reasons.append("position_size_exceeds_max_contracts")
     if account.open_positions >= config.max_concurrent_positions:
         reasons.append("max_concurrent_position_reached")
-    if account.realized_daily_pnl <= config.daily_new_entry_stop_loss:
+    daily_stop = daily_stop_loss(config, account.equity)
+    if daily_stop is not None and account.realized_daily_pnl <= daily_stop:
         reasons.append("daily_loss_stop")
     if bid is None or ask is None:
         reasons.append("missing_bid_ask")
@@ -97,9 +113,11 @@ def evaluate_entry_risk_gate(
         "premium_required": None if not math.isfinite(premium) else round(premium, 6),
         "premium_cap": round(cap, 6),
         "quantity": quantity,
+        "max_contracts": int(config.max_contracts_initial),
         "cash": round(float(account.cash), 6),
         "equity": round(float(account.equity), 6),
         "daily_pnl": round(float(account.realized_daily_pnl), 6),
+        "daily_stop_loss": None if daily_stop is None else round(float(daily_stop), 6),
     }
 
 

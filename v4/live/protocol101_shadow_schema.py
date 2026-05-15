@@ -44,7 +44,12 @@ class SchemaValidationResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def validate_shadow_event(row: dict[str, Any], *, row_index: int = 0) -> SchemaValidationResult:
+def validate_shadow_event(
+    row: dict[str, Any],
+    *,
+    row_index: int = 0,
+    max_contracts_per_position: int = 1,
+) -> SchemaValidationResult:
     errors: list[str] = []
     warnings: list[str] = []
 
@@ -94,6 +99,7 @@ def validate_shadow_event(row: dict[str, Any], *, row_index: int = 0) -> SchemaV
 
     contract = _object(row.get("selected_contract"))
     action = row.get("selected_action")
+    max_contracts = max(1, int(max_contracts_per_position))
     if action not in ACTIONS:
         errors.append(f"row {row_index}: selected_action {action!r} is invalid")
     if action in {"enter", "hold", "exit"}:
@@ -101,8 +107,13 @@ def validate_shadow_event(row: dict[str, Any], *, row_index: int = 0) -> SchemaV
             errors.append(f"row {row_index}: selected contract root must be SPXW")
         if contract.get("settlement_style") != "PM":
             errors.append(f"row {row_index}: selected contract must be PM settled")
-        if _number(contract.get("quantity")) not in (1.0, None):
-            errors.append(f"row {row_index}: selected quantity must be 1 when present")
+        quantity = _number(contract.get("quantity"))
+        if quantity is not None and abs(quantity - int(quantity)) > 1e-9:
+            errors.append(f"row {row_index}: selected quantity must be a whole contract count")
+        if quantity is not None and (quantity <= 0 or quantity > max_contracts):
+            errors.append(
+                f"row {row_index}: selected quantity must be between 1 and {max_contracts} when present"
+            )
     elif contract:
         warnings.append(f"row {row_index}: selected_contract present for non-position action")
 
@@ -133,8 +144,15 @@ def validate_shadow_event(row: dict[str, Any], *, row_index: int = 0) -> SchemaV
     return SchemaValidationResult("pass" if not errors else "fail", errors, warnings)
 
 
-def validate_shadow_stream(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    results = [validate_shadow_event(row, row_index=index) for index, row in enumerate(rows)]
+def validate_shadow_stream(rows: list[dict[str, Any]], *, max_contracts_per_position: int = 1) -> dict[str, Any]:
+    results = [
+        validate_shadow_event(
+            row,
+            row_index=index,
+            max_contracts_per_position=max_contracts_per_position,
+        )
+        for index, row in enumerate(rows)
+    ]
     errors = [error for result in results for error in result.errors]
     warnings = [warning for result in results for warning in result.warnings]
     event_counts: dict[str, int] = {}
@@ -154,18 +172,19 @@ def validate_shadow_stream(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def schema_contract() -> dict[str, Any]:
+def schema_contract(*, max_contracts_per_position: int = 1) -> dict[str, Any]:
     return {
         "schema_version": SHADOW_SCHEMA_VERSION,
         "event_types": list(EVENT_TYPES),
         "actions": list(ACTIONS),
         "no_order_mode": NO_ORDER_MODE,
+        "max_contracts_per_position": max(1, int(max_contracts_per_position)),
         "required_top_level_fields": list(REQUIRED_TOP_LEVEL),
         "hard_rules": [
             "live_orders_enabled must be false",
             "broker_endpoint_called must be false",
             "broker/order intent fields must be absent or null",
-            "enter/hold/exit actions must reference one PM-settled SPXW contract",
+            "enter/hold/exit actions must reference PM-settled SPXW contracts within the configured quantity cap",
             "blocked actions must include a risk_gate.reason",
         ],
     }
