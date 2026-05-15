@@ -1,44 +1,46 @@
-# Protocol 101 Tuesday No-Order Live Shadow Checklist
+# Protocol 101 Tuesday Live-Shadow Checklist
 
-Purpose: data parity and operational rehearsal only. This is not a profit experiment.
+This checklist is for no-order live shadow only. The $500 in IBKR is the access/data reserve. The paper account baseline is $10,000. Do not place paper orders until the no-order live-data parity gate passes and the user explicitly approves paper order testing.
 
-## Non-Negotiables
+## 1. Pre-Open Guardrails
 
-- `live_orders_enabled = false` for the whole run.
-- `broker_endpoint_called = false` for the whole run.
-- Protocol 101 remains frozen.
-- Paper account starts at `$10,000`; the real `$500` IBKR reserve is not trading capital.
-- Max initial paper size remains `1` contract and max concurrent positions remains `1`.
-- Stop and ask for explicit approval before enabling any paper-order endpoint.
+- Confirm `live_orders_enabled = false` and `broker_endpoint_called = false` in the router config.
+- Confirm no paid historical download job is running.
+- Confirm the frozen Protocol101 artifacts and Protocol051/054/081 fallback artifacts are unchanged.
+- Confirm the JSONL output path is new for the session and will not overwrite historical artifacts.
 
-## Run Sequence
+## 2. Market-Data Connection
 
-1. Connect IB Gateway.
-2. Confirm SPX, VIX, and SPXW NBBO are live and fresh.
-3. Run no-order Protocol101 shadow capture with live_orders_enabled=false.
-4. Validate protocol101_shadow_v2 schema, feature parity, quote freshness, SPXW root, PM settlement, and account state.
-5. Run order-state rehearsal on captured live shadow rows.
-6. Stop and ask for explicit approval before any paper-order endpoint is enabled.
+- Connect to IB Gateway/TWS.
+- Verify fresh SPX context, VIX context, and SPXW option NBBO are available.
+- Reject AM-settled `SPX` contracts; accept PM-settled `SPXW` only.
+- Record quote/context freshness and root/settlement metadata in every row.
 
-## Stop Conditions
+## 3. No-Order Shadow Capture
 
-- IBKR connection fails or reconnects repeatedly.
-- SPX or VIX context is missing, stale, or not timestamped.
-- SPXW option NBBO is missing, stale, locked, crossed, zero, or wrong root/settlement.
-- Live feature values cannot be mapped to the historical Protocol101 schema.
-- Any event has live_orders_enabled=true or broker_endpoint_called=true.
-- Paper account risk gate blocks for a hard reason.
-- Order-state rehearsal shows overlap, unaffordable trade, or non-flat session.
+- Emit JSONL rows matching `protocol101_shadow_v1`.
+- Include market snapshot, model decision, selected contract, intended no-order order reference, fill assumption, exit plan, and account state.
+- Keep `intended_order.mode = no_order_shadow` and `will_submit_to_broker = false`.
+- Run long enough to capture both entry opportunities and flat/no-entry periods.
 
-## Required JSONL Events
+## 4. Live Parity Review
 
-- `market_snapshot`
-- `candidate_set`
-- `model_decision`
-- `risk_gate`
-- `paper_account_state`
-- `exit_decision`
+- Validate feature columns against the frozen Protocol101 feature schema.
+- Validate live SPX/VIX/option quote timestamps are fresh.
+- Validate one contract max, no overlaps, flat-before-close behavior, and $10,000 affordability checks.
+- Compare live feature distributions against historical replay distributions before trusting decisions.
 
-## Current Decision
+## 5. Paper-Order Rehearsal Gate
 
-`ready_for_tuesday_no_order_live_shadow_only`
+- Only after no-order live parity passes, rerun order-state rehearsal on captured live shadow rows.
+- Require max concurrent positions = 1, all order intents affordable, and no stale quotes.
+- Ask for explicit user approval before enabling any paper order endpoint.
+
+## Blockers
+
+- Missing SPX/VIX context.
+- Missing OPRA/SPXW NBBO.
+- Stale quote/context rows.
+- Any row with `live_orders_enabled = true` before approval.
+- Any selected contract with root `SPX` instead of `SPXW`.
+- Any unaffordable one-contract trade under the $10,000 paper-account baseline.

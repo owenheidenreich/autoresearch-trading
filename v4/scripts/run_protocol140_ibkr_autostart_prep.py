@@ -169,23 +169,20 @@ def write_launchd_assets(
     preflight_payload = launchd_payload(
         label=PREFLIGHT_LABEL,
         program_arguments=[
-            str(REPO_ROOT / ".venv/bin/python"),
-            str(REPO_ROOT / "v4/ops/ibkr/wait_for_ibkr_api.py"),
-            "--port",
-            str(api_port),
-            "--auto-ports",
-            ",".join(str(port) for port in api_ports),
-            "--timeout-seconds",
-            "600",
-            "--run-entitlement-probe",
-            "--repo-root",
-            str(REPO_ROOT),
+            "/bin/bash",
+            str(DEFAULT_LAUNCHD_RUNTIME_DIR / "run_protocol101_paper_preflight.sh"),
         ],
         hour=preflight_hour,
         minute=preflight_minute,
         stdout=DEFAULT_LOG_DIR / "protocol101-paper-preflight.out.log",
         stderr=DEFAULT_LOG_DIR / "protocol101-paper-preflight.err.log",
-        environment={},
+        environment={
+            "IB_GATEWAY_API_PORT": str(api_port),
+            "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
+            "IB_GATEWAY_PREFLIGHT_TIMEOUT_SECONDS": "600",
+            "PYTHON_BIN": "/usr/bin/python3",
+            "REPO_ROOT": str(REPO_ROOT),
+        },
     )
     gateway_plist.write_bytes(plistlib.dumps(gateway_payload, sort_keys=True))
     preflight_plist.write_bytes(plistlib.dumps(preflight_payload, sort_keys=True))
@@ -236,6 +233,8 @@ RUNTIME_DIR="$HOME/.autoresearch-trading/launchd"
 mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs/autoresearch-trading" "$RUNTIME_DIR"
 cp "{REPO_ROOT / 'v4/ops/ibkr/install_ibc_macos.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/start_ib_gateway_paper_ibc.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_paper_preflight.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/wait_for_ibkr_api.py'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/write_ibc_runtime_config.py'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/probe_ibkr_api.py'}" "$RUNTIME_DIR/"
 chmod 700 "$RUNTIME_DIR"/*.sh

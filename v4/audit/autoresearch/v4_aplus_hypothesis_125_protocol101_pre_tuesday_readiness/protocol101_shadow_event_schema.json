@@ -1,0 +1,88 @@
+{
+  "description": "Tuesday live shadow rows must use these top-level fields. Live capture changes data sources to fresh broker/feed sources, but order mode remains no_order_shadow until explicit paper-order approval.",
+  "hard_rules": [
+    "broker_endpoint_called must be false",
+    "live_orders_enabled must be false",
+    "intended_order.mode must be no_order_shadow",
+    "selected_contract.root must be SPXW",
+    "selected_contract.quantity must be 1",
+    "account_state.starting_cash must be 10000.0"
+  ],
+  "required_nested_fields": {
+    "account_state": [
+      "starting_cash",
+      "cash_before_trade",
+      "premium_required",
+      "buying_power_used",
+      "affordable",
+      "open_positions_after_event",
+      "equity_after_event"
+    ],
+    "audit": [
+      "trade_number",
+      "candidate_uid",
+      "historical_replay_only",
+      "paid_data_downloaded",
+      "live_order_placed"
+    ],
+    "exit_plan": [
+      "exit_reason",
+      "exit_time",
+      "mandatory_flat_before_close"
+    ],
+    "fill_assumption": [
+      "historical_fill_only",
+      "pricing_rule",
+      "real_broker_fill",
+      "reported_trade_pnl"
+    ],
+    "intended_order": [
+      "mode",
+      "will_submit_to_broker",
+      "side",
+      "quantity",
+      "reference_price"
+    ],
+    "market_snapshot": [
+      "underlying",
+      "option_nbbo",
+      "context"
+    ],
+    "model_decision": [
+      "action",
+      "score",
+      "threshold",
+      "entry_reason"
+    ],
+    "selected_contract": [
+      "contract_id",
+      "root",
+      "settlement_style",
+      "right",
+      "side",
+      "offset",
+      "quantity",
+      "multiplier"
+    ]
+  },
+  "required_top_level_fields": [
+    "schema_version",
+    "protocol_id",
+    "event_type",
+    "timestamp",
+    "session",
+    "paper_seed",
+    "replay_mode",
+    "broker_endpoint_called",
+    "live_orders_enabled",
+    "market_snapshot",
+    "model_decision",
+    "selected_contract",
+    "intended_order",
+    "fill_assumption",
+    "exit_plan",
+    "account_state",
+    "audit"
+  ],
+  "schema": "protocol101_shadow_v1"
+}

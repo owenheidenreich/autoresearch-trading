@@ -1,0 +1,300 @@
+{
+  "broker_endpoint_called": false,
+  "decision": "ready_for_tuesday_no_order_live_shadow_only",
+  "execution_skepticism": {
+    "live_data_blocker": null,
+    "protocol114_concentration": {
+      "best_day": {
+        "day": "2025-11-21",
+        "pnl": 39870.0
+      },
+      "best_week": {
+        "pnl": 104970.0,
+        "week": "2025-W47"
+      },
+      "gross_profit": 1961130.0,
+      "leave_one_month": [
+        {
+          "month": "2025-11",
+          "month_pnl": 206170.0,
+          "pnl_without_month": 1252040.0
+        },
+        {
+          "month": "2026-03",
+          "month_pnl": 190130.0,
+          "pnl_without_month": 1268080.0
+        },
+        {
+          "month": "2025-10",
+          "month_pnl": 162620.0,
+          "pnl_without_month": 1295590.0
+        },
+        {
+          "month": "2026-02",
+          "month_pnl": 158560.0,
+          "pnl_without_month": 1299650.0
+        },
+        {
+          "month": "2025-09",
+          "month_pnl": 108550.0,
+          "pnl_without_month": 1349660.0
+        },
+        {
+          "month": "2024-10",
+          "month_pnl": 107260.0,
+          "pnl_without_month": 1350950.0
+        },
+        {
+          "month": "2025-08",
+          "month_pnl": 105670.0,
+          "pnl_without_month": 1352540.0
+        },
+        {
+          "month": "2026-01",
+          "month_pnl": 90730.0,
+          "pnl_without_month": 1367480.0
+        },
+        {
+          "month": "2025-07",
+          "month_pnl": 88070.0,
+          "pnl_without_month": 1370140.0
+        },
+        {
+          "month": "2024-11",
+          "month_pnl": 87330.0,
+          "pnl_without_month": 1370880.0
+        },
+        {
+          "month": "2025-12",
+          "month_pnl": 86630.0,
+          "pnl_without_month": 1371580.0
+        },
+        {
+          "month": "2024-12",
+          "month_pnl": 66490.0,
+          "pnl_without_month": 1391720.0
+        }
+      ],
+      "single_trade_majority": false,
+      "top20_majority": false,
+      "top_10_trades_pnl": 38400.0,
+      "top_10_trades_share_gross": 0.01958054794939652,
+      "top_10_trades_share_net": 0.026333655646306086,
+      "top_20_trades_pnl": 73310.0,
+      "top_20_trades_share_gross": 0.03738150963985049,
+      "top_20_trades_share_net": 0.05027396602684113,
+      "top_5_day_share_net": 0.10538262664499626,
+      "top_5_trades_pnl": 19980.000000000004,
+      "top_5_trades_share_gross": 0.010188003854920379,
+      "top_5_trades_share_net": 0.013701730203468638,
+      "top_day_share_net": 0.027341740901516243,
+      "total_pnl": 1458210.0,
+      "worst_day": {
+        "day": "2024-10-31",
+        "pnl": -7739.999999999999
+      },
+      "worst_week": {
+        "pnl": -7870.000000000004,
+        "week": "2024-W49"
+      }
+    },
+    "protocol114_decision": "fragile_needs_more_data",
+    "protocol114_delay_stress": {
+      "march_2026": {
+        "both_delay_coverage": 1.0,
+        "both_delay_delta": -240630.0,
+        "both_delay_median_total_pnl": -11009.999999999998,
+        "entry_delay_coverage": 1.0,
+        "entry_delay_delta": -171270.0,
+        "entry_delay_median_total_pnl": 5950.000000000005,
+        "exit_delay_coverage": 1.0,
+        "exit_delay_delta": -69360.0,
+        "exit_delay_median_total_pnl": 24090.0,
+        "original_median_total_pnl": 41790.0,
+        "rows": 541
+      },
+      "q1_2026": {
+        "both_delay_coverage": 1.0,
+        "both_delay_delta": -483970.0,
+        "both_delay_median_total_pnl": -8400.0,
+        "entry_delay_coverage": 1.0,
+        "entry_delay_delta": -329730.0,
+        "entry_delay_median_total_pnl": 20870.000000000004,
+        "exit_delay_coverage": 1.0,
+        "exit_delay_delta": -154240.0,
+        "exit_delay_median_total_pnl": 55660.0,
+        "original_median_total_pnl": 95010.0,
+        "rows": 1254
+      },
+      "q3_2025": {
+        "both_delay_coverage": 1.0,
+        "both_delay_delta": -369780.0,
+        "both_delay_median_total_pnl": -14409.999999999996,
+        "entry_delay_coverage": 1.0,
+        "entry_delay_delta": -256520.0,
+        "entry_delay_median_total_pnl": 9310.000000000004,
+        "exit_delay_coverage": 1.0,
+        "exit_delay_delta": -113260.0,
+        "exit_delay_median_total_pnl": 36290.0,
+        "original_median_total_pnl": 59130.0,
+        "rows": 1292
+      },
+      "q4_2024_external": {
+        "both_delay_coverage": 1.0,
+        "both_delay_delta": -262980.0,
+        "both_delay_median_total_pnl": 60.000000000006196,
+        "entry_delay_coverage": 1.0,
+        "entry_delay_delta": -206200.0,
+        "entry_delay_median_total_pnl": 15909.999999999998,
+        "exit_delay_coverage": 1.0,
+        "exit_delay_delta": -56779.999999999985,
+        "exit_delay_median_total_pnl": 47470.00000000001,
+        "original_median_total_pnl": 58280.0,
+        "rows": 1037
+      },
+      "q4_2025": {
+        "both_delay_coverage": 1.0,
+        "both_delay_delta": -525610.0,
+        "both_delay_median_total_pnl": -13250.000000000004,
+        "entry_delay_coverage": 1.0,
+        "entry_delay_delta": -286730.0,
+        "entry_delay_median_total_pnl": 34210.0,
+        "exit_delay_coverage": 1.0,
+        "exit_delay_delta": -238880.0,
+        "exit_delay_median_total_pnl": 42890.0,
+        "original_median_total_pnl": 92460.0,
+        "rows": 1369
+      }
+    },
+    "protocol114_next_hypothesis": "prioritize 1s/tick/live-shadow validation because edge is timing-sensitive",
+    "protocol118_decision": "pass_historical_no_order_shadow_rehearsal_live_capture_next",
+    "protocol118_shadow_paper_status": "pass",
+    "protocol118_shadow_parity_status": "pass",
+    "protocol123_decision": "pass_10000_order_state_rehearsal_live_data_pending",
+    "protocol123_stress_results": [
+      {
+        "ending_cash": 329050.0,
+        "max_drawdown": -2790.0,
+        "positive_ending_cash": true,
+        "stress_per_side": 0.0,
+        "total_pnl": 319050.0,
+        "trades": 1028,
+        "unaffordable_trades": 0,
+        "worst_day_pnl": -2080.0
+      },
+      {
+        "ending_cash": 308490.0,
+        "max_drawdown": -3500.0,
+        "positive_ending_cash": true,
+        "stress_per_side": 0.1,
+        "total_pnl": 298490.0,
+        "trades": 1028,
+        "unaffordable_trades": 0,
+        "worst_day_pnl": -2160.0
+      },
+      {
+        "ending_cash": 277650.0,
+        "max_drawdown": -4640.0,
+        "positive_ending_cash": true,
+        "stress_per_side": 0.25,
+        "total_pnl": 267650.0,
+        "trades": 1028,
+        "unaffordable_trades": 0,
+        "worst_day_pnl": -2280.0
+      },
+      {
+        "ending_cash": 226250.0,
+        "max_drawdown": -6540.0,
+        "positive_ending_cash": true,
+        "stress_per_side": 0.5,
+        "total_pnl": 216250.0,
+        "trades": 1028,
+        "unaffordable_trades": 0,
+        "worst_day_pnl": -2480.0
+      }
+    ],
+    "protocol124_decision": "blocked_live_subscriptions_delayed_plumbing_passed"
+  },
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "On Tuesday, run Protocol101 no-order live shadow capture first. Compare emitted JSONL to protocol101_shadow_event_schema.json and keep paper orders disabled until live feature/quote parity passes.",
+  "outputs": {
+    "daily_pnl": "v4/audit/autoresearch/v4_aplus_hypothesis_125_protocol101_pre_tuesday_readiness/daily_pnl.csv",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_125_protocol101_pre_tuesday_readiness/report.md",
+    "shadow_event_examples": "v4/audit/autoresearch/v4_aplus_hypothesis_125_protocol101_pre_tuesday_readiness/protocol101_shadow_event_examples.jsonl",
+    "shadow_event_schema": "v4/audit/autoresearch/v4_aplus_hypothesis_125_protocol101_pre_tuesday_readiness/protocol101_shadow_event_schema.json",
+    "tuesday_checklist": "v4/promotion/PROTOCOL_101_TUESDAY_LIVE_SHADOW_CHECKLIST.md",
+    "visual_inspection_targets": "v4/audit/autoresearch/v4_aplus_hypothesis_125_protocol101_pre_tuesday_readiness/visual_inspection_targets.csv"
+  },
+  "paid_data_downloaded": false,
+  "paper_concentration": {
+    "gross_profit": 412320.0,
+    "single_trade_majority": false,
+    "top20_majority": false,
+    "top_10_trades_pnl": 35290.0,
+    "top_10_trades_share_net": 0.11060962231625138,
+    "top_20_trades_pnl": 60790.0,
+    "top_20_trades_share_gross": 0.14743403181994566,
+    "top_20_trades_share_net": 0.1905343989970224,
+    "top_5_days_share_net": 0.10659771195737346,
+    "top_5_trades_pnl": 18850.0,
+    "top_5_trades_share_net": 0.0590816486444131,
+    "top_day_share_net": 0.029055007052186176,
+    "total_pnl": 319050.0
+  },
+  "paper_seed": 1,
+  "protocol": "125_protocol101_pre_tuesday_readiness",
+  "replay_realism": {
+    "ending_equity": 329050.0,
+    "max_drawdown": -2790.0,
+    "max_known_buying_power": 3520.0000000000005,
+    "path_coverage": 1.0,
+    "premium_coverage": 1.0,
+    "skipped_trades": 0,
+    "starting_cash": 10000.0,
+    "total_pnl": 319050.0,
+    "trades": 1028,
+    "unaffordable_skips": 0,
+    "worst_day_pnl": -2080.0,
+    "worst_intratrade_mae": -1840.0
+  },
+  "shadow_event_verification": {
+    "entry_events": 1028,
+    "errors": [],
+    "events": 2056,
+    "exit_events": 1028,
+    "max_open_positions": 1,
+    "status": "pass"
+  },
+  "source_of_truth": "v4/audit/autoresearch/v4_aplus_hypothesis_113_protocol101_trade_charts/equity.html",
+  "starting_cash": 10000.0,
+  "trade_overlay": "v4/audit/autoresearch/v4_aplus_hypothesis_113_protocol101_trade_charts/trades.html",
+  "visual_inspection": {
+    "best_day": {
+      "daily_pnl": 9270.0,
+      "ending_equity": 298050.0,
+      "session": "2026-03-03",
+      "trades": 6,
+      "win_rate": 1.0,
+      "wins": 6
+    },
+    "target_categories": {
+      "best_day_context": 36,
+      "highest_premium": 10,
+      "highest_starting_cash_usage": 10,
+      "top_winner": 10,
+      "worst_day_context": 18,
+      "worst_intratrade_mae": 10,
+      "worst_loser": 10
+    },
+    "target_rows": 104,
+    "worst_day": {
+      "daily_pnl": -2080.0,
+      "ending_equity": 32760.0,
+      "session": "2024-10-31",
+      "trades": 4,
+      "win_rate": 0.0,
+      "wins": 0
+    }
+  }
+}

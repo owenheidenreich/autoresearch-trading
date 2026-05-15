@@ -3,22 +3,24 @@
 <plist version="1.0">
 <dict>
 	<key>EnvironmentVariables</key>
-	<dict/>
+	<dict>
+		<key>IB_GATEWAY_API_PORT</key>
+		<string>4002</string>
+		<key>IB_GATEWAY_API_PORTS</key>
+		<string>4002,4000,7497,7496,4001</string>
+		<key>IB_GATEWAY_PREFLIGHT_TIMEOUT_SECONDS</key>
+		<string>600</string>
+		<key>PYTHON_BIN</key>
+		<string>/usr/bin/python3</string>
+		<key>REPO_ROOT</key>
+		<string>/Users/gduby/Documents/autoresearch-trading</string>
+	</dict>
 	<key>Label</key>
 	<string>com.autoresearch.protocol101.paper-preflight</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Users/gduby/Documents/autoresearch-trading/.venv/bin/python</string>
-		<string>/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/wait_for_ibkr_api.py</string>
-		<string>--port</string>
-		<string>4002</string>
-		<string>--auto-ports</string>
-		<string>4002,4000,7497,7496,4001</string>
-		<string>--timeout-seconds</string>
-		<string>600</string>
-		<string>--run-entitlement-probe</string>
-		<string>--repo-root</string>
-		<string>/Users/gduby/Documents/autoresearch-trading</string>
+		<string>/bin/bash</string>
+		<string>/Users/gduby/.autoresearch-trading/launchd/run_protocol101_paper_preflight.sh</string>
 	</array>
 	<key>RunAtLoad</key>
 	<false/>

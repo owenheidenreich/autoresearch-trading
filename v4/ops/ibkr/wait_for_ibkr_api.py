@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=4000)
-    parser.add_argument("--auto-ports", default="4000,4002,7497,7496,4001")
+    parser.add_argument("--auto-ports", default="4002,4000,7497,7496,4001")
     parser.add_argument("--timeout-seconds", type=float, default=180.0)
     parser.add_argument("--poll-seconds", type=float, default=5.0)
     parser.add_argument("--run-entitlement-probe", action="store_true")
@@ -92,7 +92,7 @@ def run_entitlement_probe(args: argparse.Namespace, *, port: int) -> int:
         "--ibkr-port",
         str(port),
         "--ibkr-auto-ports",
-        "4000,4002,7497,7496,4001",
+        "4002,4000,7497,7496,4001",
     ]
     return subprocess.call(cmd, cwd=str(args.repo_root))
 

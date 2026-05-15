@@ -4,6 +4,8 @@ RUNTIME_DIR="$HOME/.autoresearch-trading/launchd"
 mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs/autoresearch-trading" "$RUNTIME_DIR"
 cp "/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/install_ibc_macos.sh" "$RUNTIME_DIR/"
 cp "/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/start_ib_gateway_paper_ibc.sh" "$RUNTIME_DIR/"
+cp "/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/run_protocol101_paper_preflight.sh" "$RUNTIME_DIR/"
+cp "/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/wait_for_ibkr_api.py" "$RUNTIME_DIR/"
 cp "/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/write_ibc_runtime_config.py" "$RUNTIME_DIR/"
 cp "/Users/gduby/Documents/autoresearch-trading/v4/ops/ibkr/probe_ibkr_api.py" "$RUNTIME_DIR/"
 chmod 700 "$RUNTIME_DIR"/*.sh
