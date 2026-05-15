@@ -1,0 +1,119 @@
+{
+  "base_gate": {
+    "acceptance": {
+      "beats_10000_baseline": true,
+      "incremental_positive_every_cash_stress": true,
+      "positive_every_segment": true,
+      "return_over_drawdown_improved_everywhere": true,
+      "scaled_positive_fraction_ge_55pct": true,
+      "top_day_share_le_35pct": true,
+      "top_month_share_le_55pct": true,
+      "worst_day_not_materially_worse_everywhere": true
+    },
+    "passed": true,
+    "reason": "pass",
+    "reasons": []
+  },
+  "baseline": "one_contract_baseline",
+  "baseline_summary": {
+    "best_day_pnl": 9270.0,
+    "candidate_trades": 1028,
+    "ending_cash": 329050.0,
+    "longest_recovery_trades": 42,
+    "max_drawdown": -2790.0,
+    "max_drawdown_pct": -0.065335,
+    "max_quantity": 1,
+    "min_cash": 9790.0,
+    "policy": "one_contract_baseline",
+    "return_on_starting_cash": 31.905,
+    "risk_of_ruin": false,
+    "skip_counts": {},
+    "skipped_trades": 0,
+    "starting_cash": 10000.0,
+    "taken_trades": 1028,
+    "total_contracts": 1028,
+    "total_pnl": 319050.0,
+    "worst_day_pnl": -2080.0
+  },
+  "broker_endpoint_called": false,
+  "challenger": "account_aware_sizer_v1",
+  "challenger_summary": {
+    "best_day_pnl": 10760.0,
+    "candidate_trades": 1028,
+    "ending_cash": 389820.0,
+    "longest_recovery_trades": 37,
+    "max_drawdown": -3150.0,
+    "max_drawdown_pct": -0.063147,
+    "max_quantity": 3,
+    "min_cash": 9790.0,
+    "policy": "account_aware_sizer_v1",
+    "return_on_starting_cash": 37.982,
+    "risk_of_ruin": false,
+    "skip_counts": {
+      "daily_loss_stop": 8
+    },
+    "skipped_trades": 8,
+    "starting_cash": 10000.0,
+    "taken_trades": 1020,
+    "total_contracts": 1240,
+    "total_pnl": 379820.0,
+    "worst_day_pnl": -1840.0
+  },
+  "concentration": {
+    "incremental_pnl": 60770.0,
+    "positive_incremental_pnl": 74150.0,
+    "quantity_counts": {
+      "0": 8,
+      "1": 827,
+      "2": 166,
+      "3": 27
+    },
+    "scaled_positive_fraction": 0.839378,
+    "scaled_trades": 193,
+    "skipped_trades": 8,
+    "top_day": {
+      "incremental_pnl": 4890.0,
+      "session": "2025-09-17",
+      "share_of_positive": 0.065947
+    },
+    "top_day_share_of_positive": 0.065947,
+    "top_month": {
+      "incremental_pnl": 18550.0,
+      "month": "2025-09",
+      "share_of_positive": 0.279164
+    },
+    "top_month_share_of_positive": 0.279164,
+    "top_trade_incremental_pnl": 3390.0,
+    "top_trade_share_of_positive": 0.045718
+  },
+  "decision": "blocked_multi_contract_promotion_incomplete_highres_coverage",
+  "failed_hypotheses": 0,
+  "live_orders": false,
+  "max_failed_hypotheses": 5,
+  "model_training": false,
+  "next_gate": "Do not replace the one-contract operational baseline yet; collect live-shadow/paper evidence or more high-resolution coverage for the same frozen challenger.",
+  "outputs": {
+    "attribution_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/attribution_rows.csv",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/report.md",
+    "segment_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/segment_summary.csv",
+    "side_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/side_summary.csv",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/summary.json",
+    "timing_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/timing_summary.csv",
+    "timing_trade_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/timing_trade_rows.csv",
+    "validation_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_152_protocol101_multi_contract_promotion_gauntlet/validation_summary.csv"
+  },
+  "paid_data_downloaded": false,
+  "protocol": "152_protocol101_multi_contract_promotion_gauntlet",
+  "protocol101_frozen": true,
+  "source_timing_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_126_protocol101_timing_fragility_hardening/timing_delay_rows.csv",
+  "source_trades_csv": "v4/audit/autoresearch/v4_aplus_hypothesis_113_protocol101_trade_charts/trades.csv",
+  "timing_gate": {
+    "passed_for_available_coverage": true,
+    "promotion_coverage_passed": false,
+    "promotion_passed": false,
+    "reason": "incomplete_highres_timing_coverage",
+    "reasons": [
+      "incomplete_highres_timing_coverage"
+    ]
+  }
+}
