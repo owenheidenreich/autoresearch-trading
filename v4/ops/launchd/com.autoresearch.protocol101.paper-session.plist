@@ -8,34 +8,42 @@
 		<string>4002</string>
 		<key>IB_GATEWAY_API_PORTS</key>
 		<string>4002,4000,7497,7496,4001</string>
-		<key>IB_GATEWAY_APP</key>
-		<string>/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45-1.app</string>
-		<key>IB_GATEWAY_KEEPALIVE_SECONDS</key>
-		<string>28800</string>
+		<key>PROTOCOL101_SESSION_CAPTURE_SECONDS</key>
+		<string>45</string>
+		<key>PROTOCOL101_SESSION_CYCLE_SECONDS</key>
+		<string>60</string>
+		<key>PROTOCOL101_SESSION_MAX_CYCLES</key>
+		<string>390</string>
+		<key>PROTOCOL101_SESSION_MODE</key>
+		<string>no-order-shadow</string>
+		<key>PROTOCOL101_SESSION_PAPER_CASH</key>
+		<string>10000</string>
+		<key>PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS</key>
+		<string>120</string>
 		<key>PYTHON_BIN</key>
 		<string>/usr/bin/python3</string>
 		<key>REPO_ROOT</key>
 		<string>/Users/gduby/Documents/autoresearch-trading</string>
 	</dict>
 	<key>Label</key>
-	<string>com.autoresearch.ibgateway.paper</string>
+	<string>com.autoresearch.protocol101.paper-session</string>
 	<key>ProgramArguments</key>
 	<array>
 		<string>/bin/bash</string>
-		<string>/Users/gduby/.autoresearch-trading/launchd/start_ib_gateway_paper_ibc.sh</string>
+		<string>/Users/gduby/.autoresearch-trading/launchd/run_protocol101_paper_session.sh</string>
 	</array>
 	<key>RunAtLoad</key>
 	<false/>
 	<key>StandardErrorPath</key>
-	<string>/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log</string>
+	<string>/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.err.log</string>
 	<key>StandardOutPath</key>
-	<string>/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log</string>
+	<string>/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.out.log</string>
 	<key>StartCalendarInterval</key>
 	<dict>
 		<key>Hour</key>
 		<integer>6</integer>
 		<key>Minute</key>
-		<integer>28</integer>
+		<integer>30</integer>
 	</dict>
 </dict>
 </plist>

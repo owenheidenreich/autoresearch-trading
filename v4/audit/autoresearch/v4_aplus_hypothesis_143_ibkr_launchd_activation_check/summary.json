@@ -16,6 +16,14 @@
       "launchctl_returncode": 0,
       "loaded": true,
       "plist": "/Users/gduby/Library/LaunchAgents/com.autoresearch.protocol101.paper-preflight.plist"
+    },
+    {
+      "installed": true,
+      "label": "com.autoresearch.protocol101.paper-session",
+      "launchctl_header": "gui/501/com.autoresearch.protocol101.paper-session = {",
+      "launchctl_returncode": 0,
+      "loaded": true,
+      "plist": "/Users/gduby/Library/LaunchAgents/com.autoresearch.protocol101.paper-session.plist"
     }
   ],
   "decision": "pass_ibkr_paper_launchagents_installed",

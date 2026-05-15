@@ -22,6 +22,7 @@ DEFAULT_LOG_DIR = Path.home() / "Library/Logs/autoresearch-trading"
 DEFAULT_LAUNCHD_RUNTIME_DIR = Path.home() / ".autoresearch-trading/launchd"
 GATEWAY_LABEL = "com.autoresearch.ibgateway.paper"
 PREFLIGHT_LABEL = "com.autoresearch.protocol101.paper-preflight"
+SESSION_LABEL = "com.autoresearch.protocol101.paper-session"
 DEFAULT_IBKR_PAPER_API_PORT = 4002
 
 
@@ -33,9 +34,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--launchd-dir", type=Path, default=DEFAULT_LAUNCHD_DIR)
     parser.add_argument("--app-path", type=Path, default=None)
     parser.add_argument("--gateway-hour", type=int, default=6)
-    parser.add_argument("--gateway-minute", type=int, default=20)
+    parser.add_argument("--gateway-minute", type=int, default=28)
     parser.add_argument("--preflight-hour", type=int, default=6)
-    parser.add_argument("--preflight-minute", type=int, default=30)
+    parser.add_argument("--preflight-minute", type=int, default=29)
+    parser.add_argument("--session-hour", type=int, default=6)
+    parser.add_argument("--session-minute", type=int, default=30)
     parser.add_argument("--no-ledger", action="store_true")
     return parser.parse_args()
 
@@ -60,6 +63,8 @@ def main() -> int:
         gateway_minute=int(args.gateway_minute),
         preflight_hour=int(args.preflight_hour),
         preflight_minute=int(args.preflight_minute),
+        session_hour=int(args.session_hour),
+        session_minute=int(args.session_minute),
     )
     write_install_scripts(args.launchd_dir)
     decision = "ready_to_install_ib_gateway_paper_autostart" if all(check["passed"] for check in checks) else "blocked_ib_gateway_autostart_config"
@@ -143,10 +148,13 @@ def write_launchd_assets(
     gateway_minute: int,
     preflight_hour: int,
     preflight_minute: int,
+    session_hour: int,
+    session_minute: int,
 ) -> dict[str, str]:
     app = str(app_path or "")
     gateway_plist = launchd_dir / f"{GATEWAY_LABEL}.plist"
     preflight_plist = launchd_dir / f"{PREFLIGHT_LABEL}.plist"
+    session_plist = launchd_dir / f"{SESSION_LABEL}.plist"
     gateway_payload = launchd_payload(
         label=GATEWAY_LABEL,
         program_arguments=[
@@ -184,11 +192,36 @@ def write_launchd_assets(
             "REPO_ROOT": str(REPO_ROOT),
         },
     )
+    session_payload = launchd_payload(
+        label=SESSION_LABEL,
+        program_arguments=[
+            "/bin/bash",
+            str(DEFAULT_LAUNCHD_RUNTIME_DIR / "run_protocol101_paper_session.sh"),
+        ],
+        hour=session_hour,
+        minute=session_minute,
+        stdout=DEFAULT_LOG_DIR / "protocol101-paper-session.out.log",
+        stderr=DEFAULT_LOG_DIR / "protocol101-paper-session.err.log",
+        environment={
+            "IB_GATEWAY_API_PORT": str(api_port),
+            "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
+            "PROTOCOL101_SESSION_MODE": "no-order-shadow",
+            "PROTOCOL101_SESSION_CYCLE_SECONDS": "60",
+            "PROTOCOL101_SESSION_CAPTURE_SECONDS": "45",
+            "PROTOCOL101_SESSION_MAX_CYCLES": "390",
+            "PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS": "120",
+            "PROTOCOL101_SESSION_PAPER_CASH": "10000",
+            "PYTHON_BIN": "/usr/bin/python3",
+            "REPO_ROOT": str(REPO_ROOT),
+        },
+    )
     gateway_plist.write_bytes(plistlib.dumps(gateway_payload, sort_keys=True))
     preflight_plist.write_bytes(plistlib.dumps(preflight_payload, sort_keys=True))
+    session_plist.write_bytes(plistlib.dumps(session_payload, sort_keys=True))
     return {
         "gateway_plist": str(gateway_plist),
         "preflight_plist": str(preflight_plist),
+        "session_plist": str(session_plist),
         "install_script": str(launchd_dir / "install_ibkr_paper_autostart.sh"),
         "uninstall_script": str(launchd_dir / "uninstall_ibkr_paper_autostart.sh"),
     }
@@ -234,6 +267,7 @@ mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs/autoresearch-trading" 
 cp "{REPO_ROOT / 'v4/ops/ibkr/install_ibc_macos.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/start_ib_gateway_paper_ibc.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_paper_preflight.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_paper_session.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/wait_for_ibkr_api.py'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/write_ibc_runtime_config.py'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/probe_ibkr_api.py'}" "$RUNTIME_DIR/"
@@ -241,13 +275,17 @@ chmod 700 "$RUNTIME_DIR"/*.sh
 chmod 600 "$RUNTIME_DIR"/*.py
 launchctl bootout "gui/$UID/{GATEWAY_LABEL}" 2>/dev/null || true
 launchctl bootout "gui/$UID/{PREFLIGHT_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/$UID/{SESSION_LABEL}" 2>/dev/null || true
 cp "{launchd_dir / (GATEWAY_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
 cp "{launchd_dir / (PREFLIGHT_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
+cp "{launchd_dir / (SESSION_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
 launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{GATEWAY_LABEL}.plist"
 launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{PREFLIGHT_LABEL}.plist"
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{SESSION_LABEL}.plist"
 launchctl enable "gui/$UID/{GATEWAY_LABEL}"
 launchctl enable "gui/$UID/{PREFLIGHT_LABEL}"
-echo "Installed IB Gateway paper autostart and Protocol101 preflight LaunchAgents."
+launchctl enable "gui/$UID/{SESSION_LABEL}"
+echo "Installed IB Gateway paper autostart, Protocol101 preflight, and Protocol101 paper-session LaunchAgents."
 """
     )
     uninstall.write_text(
@@ -255,8 +293,10 @@ echo "Installed IB Gateway paper autostart and Protocol101 preflight LaunchAgent
 set -euo pipefail
 launchctl bootout "gui/$UID/{GATEWAY_LABEL}" 2>/dev/null || true
 launchctl bootout "gui/$UID/{PREFLIGHT_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/$UID/{SESSION_LABEL}" 2>/dev/null || true
 rm -f "$HOME/Library/LaunchAgents/{GATEWAY_LABEL}.plist"
 rm -f "$HOME/Library/LaunchAgents/{PREFLIGHT_LABEL}.plist"
+rm -f "$HOME/Library/LaunchAgents/{SESSION_LABEL}.plist"
 echo "Removed IB Gateway paper autostart LaunchAgents."
 """
     )
@@ -311,6 +351,7 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
             "",
             f"- Gateway LaunchAgent: `{payload['launchd_assets']['gateway_plist']}`",
             f"- Preflight LaunchAgent: `{payload['launchd_assets']['preflight_plist']}`",
+            f"- Paper-session LaunchAgent: `{payload['launchd_assets']['session_plist']}`",
             f"- Install script: `{payload['launchd_assets']['install_script']}`",
             f"- Uninstall script: `{payload['launchd_assets']['uninstall_script']}`",
             "",

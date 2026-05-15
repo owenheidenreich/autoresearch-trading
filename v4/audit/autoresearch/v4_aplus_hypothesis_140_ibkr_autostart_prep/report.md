@@ -22,6 +22,7 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 
 - Gateway LaunchAgent: `v4/ops/launchd/com.autoresearch.ibgateway.paper.plist`
 - Preflight LaunchAgent: `v4/ops/launchd/com.autoresearch.protocol101.paper-preflight.plist`
+- Paper-session LaunchAgent: `v4/ops/launchd/com.autoresearch.protocol101.paper-session.plist`
 - Install script: `v4/ops/launchd/install_ibkr_paper_autostart.sh`
 - Uninstall script: `v4/ops/launchd/uninstall_ibkr_paper_autostart.sh`
 

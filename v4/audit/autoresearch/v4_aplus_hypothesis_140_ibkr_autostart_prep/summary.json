@@ -80,6 +80,7 @@
     "gateway_plist": "v4/ops/launchd/com.autoresearch.ibgateway.paper.plist",
     "install_script": "v4/ops/launchd/install_ibkr_paper_autostart.sh",
     "preflight_plist": "v4/ops/launchd/com.autoresearch.protocol101.paper-preflight.plist",
+    "session_plist": "v4/ops/launchd/com.autoresearch.protocol101.paper-session.plist",
     "uninstall_script": "v4/ops/launchd/uninstall_ibkr_paper_autostart.sh"
   },
   "live_orders": false,

@@ -8,6 +8,7 @@ This verifies morning automation only. It does not submit orders.
 | --- | ---: | ---: |
 | com.autoresearch.ibgateway.paper | `True` | `True` |
 | com.autoresearch.protocol101.paper-preflight | `True` | `True` |
+| com.autoresearch.protocol101.paper-session | `True` | `True` |
 
 ## Next Gate
 

@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from v4.scripts.run_protocol140_ibkr_autostart_prep import GATEWAY_LABEL, PREFLIGHT_LABEL
+from v4.scripts.run_protocol140_ibkr_autostart_prep import GATEWAY_LABEL, PREFLIGHT_LABEL, SESSION_LABEL
 
 
 DEFAULT_OUT_DIR = Path("v4/audit/autoresearch/v4_aplus_hypothesis_143_ibkr_launchd_activation_check")
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    checks = [agent_check(GATEWAY_LABEL), agent_check(PREFLIGHT_LABEL)]
+    checks = [agent_check(GATEWAY_LABEL), agent_check(PREFLIGHT_LABEL), agent_check(SESSION_LABEL)]
     decision = "pass_ibkr_paper_launchagents_installed" if all(check["installed"] and check["loaded"] for check in checks) else "blocked_launchagents_not_loaded"
     payload = {
         "protocol": "143_ibkr_launchd_activation_check",

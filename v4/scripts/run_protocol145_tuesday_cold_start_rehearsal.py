@@ -15,7 +15,7 @@ import subprocess
 import time
 from typing import Any
 
-from v4.scripts.run_protocol140_ibkr_autostart_prep import GATEWAY_LABEL, PREFLIGHT_LABEL
+from v4.scripts.run_protocol140_ibkr_autostart_prep import GATEWAY_LABEL, PREFLIGHT_LABEL, SESSION_LABEL
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +47,7 @@ def main() -> int:
     launchd = {
         GATEWAY_LABEL: launchd_status(GATEWAY_LABEL),
         PREFLIGHT_LABEL: launchd_status(PREFLIGHT_LABEL),
+        SESSION_LABEL: launchd_status(SESSION_LABEL),
     }
     start_result = {"skipped": True, "returncode": None, "stdout": "", "stderr": ""}
     if not args.skip_start:
