@@ -6,6 +6,8 @@ from v4.sim.protocol101_position_sizing import (
     PositionSizingPolicy,
     choose_quantity,
     conservative_profit_ladder_policy,
+    large_account_research_sizer_policy,
+    max_contracts_by_equity,
     simulate_position_sizing,
     strict_exposure_ladder_policy,
 )
@@ -118,3 +120,31 @@ def test_protocol131_acceptance_rejects_worse_loss_clustering() -> None:
     assert enriched["acceptance_checks"]["worst_day_ok"] is False
     assert decide([baseline, scaled]) == "reject_multi_contract_risk_not_improved_enough"
 
+
+def test_large_account_policy_is_not_architecturally_capped_at_three() -> None:
+    policy = large_account_research_sizer_policy(starting_cash=1_000_000.0)
+
+    assert max_contracts_by_equity(1_100_000.0, policy) == 20
+
+
+def test_large_account_policy_can_choose_double_digit_contracts_only_with_confidence_and_profit() -> None:
+    policy = large_account_research_sizer_policy(starting_cash=1_000_000.0)
+    high_confidence = {
+        **_trade(premium=2_000.0),
+        "score": 5.0,
+        "threshold": 0.0,
+    }
+    low_confidence = {
+        **_trade(premium=2_000.0),
+        "score": 2.0,
+        "threshold": 0.0,
+    }
+    state = AccountState(
+        cash=1_100_000.0,
+        peak_equity=1_100_000.0,
+        daily_realized_pnl={},
+        recent_trade_pnls=[10_000.0],
+    )
+
+    assert choose_quantity(high_confidence, state, policy) == (11, "")
+    assert choose_quantity(low_confidence, state, policy) == (2, "")

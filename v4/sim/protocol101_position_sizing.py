@@ -23,6 +23,7 @@ class PositionSizingPolicy:
     max_contracts: int = 1
     equity_for_two_contracts: float = math.inf
     equity_for_three_contracts: float = math.inf
+    equity_per_contract_above_three: float | None = None
     premium_exposure_fraction: float = 1.0
     max_premium_dollars: float = math.inf
     daily_new_entry_stop_loss: float | None = None
@@ -33,6 +34,7 @@ class PositionSizingPolicy:
     initial_contracts: int = 1
     min_score_margin_for_two: float | None = None
     min_score_margin_for_three: float | None = None
+    min_score_margin_for_extra: float | None = None
     min_profit_for_scaling: float = 0.0
     profit_cushion_multiplier: float = 0.0
     scale_only_if_daily_pnl_nonnegative: bool = False
@@ -176,6 +178,22 @@ def account_aware_sizer_policy(starting_cash: float = 10_000.0) -> PositionSizin
     )
 
 
+def large_account_research_sizer_policy(starting_cash: float = 1_000_000.0) -> PositionSizingPolicy:
+    return replace(
+        account_aware_sizer_policy(starting_cash),
+        name="large_account_research_sizer",
+        max_contracts=20,
+        equity_per_contract_above_three=50_000.0,
+        premium_exposure_fraction=0.05,
+        max_premium_dollars=75_000.0,
+        daily_new_entry_stop_loss=-5_000.0,
+        daily_new_entry_stop_fraction_of_equity=0.005,
+        max_drawdown_for_scaling=0.015,
+        min_score_margin_for_extra=4.0,
+        profit_cushion_multiplier=5.0,
+    )
+
+
 def default_position_sizing_policies() -> tuple[PositionSizingPolicy, ...]:
     return (
         baseline_one_contract_policy(),
@@ -269,6 +287,9 @@ def choose_quantity(
     if max_by_equity >= 3 and policy.min_score_margin_for_three is not None:
         if margin is None or margin < policy.min_score_margin_for_three:
             max_by_equity = 2
+    if max_by_equity > 3 and policy.min_score_margin_for_extra is not None:
+        if margin is None or margin < policy.min_score_margin_for_extra:
+            max_by_equity = 3
     if max_by_equity >= 2 and policy.min_score_margin_for_two is not None:
         if margin is None or margin < policy.min_score_margin_for_two:
             max_by_equity = 1
@@ -292,7 +313,14 @@ def choose_quantity(
 
 def max_contracts_by_equity(equity: float, policy: PositionSizingPolicy) -> int:
     if equity >= policy.equity_for_three_contracts:
-        return min(3, policy.max_contracts)
+        if policy.max_contracts <= 3:
+            return min(3, policy.max_contracts)
+        if policy.equity_per_contract_above_three is None:
+            return min(3, policy.max_contracts)
+        if not math.isfinite(policy.equity_per_contract_above_three) or policy.equity_per_contract_above_three <= 0:
+            return min(3, policy.max_contracts)
+        extra = math.floor((float(equity) - float(policy.equity_for_three_contracts)) / policy.equity_per_contract_above_three)
+        return min(int(policy.max_contracts), 3 + max(0, int(extra)))
     if equity >= policy.equity_for_two_contracts:
         return min(2, policy.max_contracts)
     return min(policy.initial_contracts, policy.max_contracts)
