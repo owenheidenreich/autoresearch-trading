@@ -1,0 +1,140 @@
+{
+  "baseline_10000": {
+    "best_day_pnl": 9270.0,
+    "candidate_trades": 1028,
+    "ending_cash": 329050.0,
+    "longest_recovery_trades": 42,
+    "max_drawdown": -2790.0,
+    "max_drawdown_pct": -0.065335,
+    "max_quantity": 1,
+    "min_cash": 9790.0,
+    "policy": "one_contract_baseline",
+    "return_on_starting_cash": 31.905,
+    "risk_of_ruin": false,
+    "skip_counts": {},
+    "skipped_trades": 0,
+    "starting_cash": 10000.0,
+    "taken_trades": 1028,
+    "total_contracts": 1028,
+    "total_pnl": 319050.0,
+    "worst_day_pnl": -2080.0
+  },
+  "broker_endpoint_called": false,
+  "candidate_10000": {
+    "best_day_pnl": 10760.0,
+    "candidate_trades": 1028,
+    "ending_cash": 389820.0,
+    "longest_recovery_trades": 37,
+    "max_drawdown": -3150.0,
+    "max_drawdown_pct": -0.063147,
+    "max_quantity": 3,
+    "min_cash": 9790.0,
+    "policy": "account_aware_sizer_v1",
+    "return_on_starting_cash": 37.982,
+    "risk_of_ruin": false,
+    "skip_counts": {
+      "daily_loss_stop": 8
+    },
+    "skipped_trades": 8,
+    "starting_cash": 10000.0,
+    "taken_trades": 1020,
+    "total_contracts": 1240,
+    "total_pnl": 379820.0,
+    "worst_day_pnl": -1840.0
+  },
+  "concentration": {
+    "incremental_pnl": 60770.0,
+    "positive_incremental_pnl": 74150.0,
+    "quantity_counts": {
+      "0": 8,
+      "1": 827,
+      "2": 166,
+      "3": 27
+    },
+    "scaled_positive_fraction": 0.839378,
+    "scaled_trades": 193,
+    "skipped_trades": 8,
+    "top_day": {
+      "incremental_pnl": 4890.0,
+      "session": "2025-09-17",
+      "share_of_positive": 0.065947
+    },
+    "top_day_share_of_positive": 0.065947,
+    "top_month": {
+      "incremental_pnl": 18550.0,
+      "month": "2025-09",
+      "share_of_positive": 0.279164
+    },
+    "top_month_share_of_positive": 0.279164,
+    "top_trade_incremental_pnl": 3390.0,
+    "top_trade_share_of_positive": 0.045718
+  },
+  "decision": "pass_account_aware_sizing_beats_one_contract_research_only",
+  "gate": {
+    "acceptance": {
+      "beats_10000_baseline": true,
+      "incremental_positive_every_cash_stress": true,
+      "positive_every_segment": true,
+      "return_over_drawdown_improved_everywhere": true,
+      "scaled_positive_fraction_ge_55pct": true,
+      "top_day_share_le_35pct": true,
+      "top_month_share_le_55pct": true,
+      "worst_day_not_materially_worse_everywhere": true
+    },
+    "passed": true,
+    "reason": "pass",
+    "reasons": []
+  },
+  "live_orders": false,
+  "model_training": false,
+  "next_gate": "Keep account-aware sizing as an offline research candidate. Use one-contract paper first, then replay live paper logs through this sizer before enabling multi-contract paper order quantities.",
+  "outputs": {
+    "attribution_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/attribution_rows.csv",
+    "candidate_trade_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/candidate_trade_rows.csv",
+    "month_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/month_summary.csv",
+    "policy_config": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/account_aware_sizer_v1.json",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/report.md",
+    "segment_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/segment_summary.csv",
+    "side_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/side_summary.csv",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/summary.json",
+    "validation_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_151_protocol101_account_aware_sizing_validation/validation_summary.csv"
+  },
+  "paid_data_downloaded": false,
+  "policy": {
+    "daily_new_entry_stop_fraction_of_equity": 0.005,
+    "daily_new_entry_stop_loss": -1500.0,
+    "equity_for_three_contracts": 100000.0,
+    "equity_for_two_contracts": 30000.0,
+    "exposure_cap_applies_to_initial_contract": false,
+    "initial_contracts": 1,
+    "max_contracts": 3,
+    "max_drawdown_for_scaling": 0.025,
+    "max_one_contract_premium_for_scaling": 3000.0,
+    "max_premium_dollars": 8000.0,
+    "min_profit_for_scaling": 20000.0,
+    "min_score_margin_for_three": 3.2,
+    "min_score_margin_for_two": 2.0,
+    "name": "account_aware_sizer_v1",
+    "premium_exposure_fraction": 0.25,
+    "profit_cushion_multiplier": 3.0,
+    "recent_window": 10,
+    "require_recent_positive_for_scaling": true,
+    "scale_only_if_daily_pnl_nonnegative": true,
+    "starting_cash": 10000.0
+  },
+  "protocol": "151_protocol101_account_aware_sizing_validation",
+  "protocol101_frozen": true,
+  "source_trades_csv": "v4/audit/autoresearch/v4_aplus_hypothesis_113_protocol101_trade_charts/trades.csv",
+  "starting_cash_values": [
+    10000.0,
+    25000.0,
+    30000.0,
+    50000.0,
+    100000.0
+  ],
+  "stress_per_side": [
+    0.0,
+    0.25,
+    0.5
+  ]
+}
