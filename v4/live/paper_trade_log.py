@@ -218,6 +218,7 @@ def flatten_trade_event(row: dict[str, Any]) -> dict[str, Any]:
     underlying = _object(market.get("underlying"))
     model = _object(row.get("model_decision"))
     risk = _object(row.get("risk_gate"))
+    timing = _object(row.get("timing"))
     return {
         "timestamp": row.get("timestamp"),
         "session": row.get("session"),
@@ -253,6 +254,18 @@ def flatten_trade_event(row: dict[str, Any]) -> dict[str, Any]:
         "model_threshold": model.get("threshold"),
         "risk_passed": risk.get("passed"),
         "risk_reason": risk.get("reason"),
+        "decision_emitted_at": timing.get("decision_emitted_at"),
+        "intended_entry_time": timing.get("intended_entry_time"),
+        "intended_exit_time": timing.get("intended_exit_time"),
+        "broker_submit_at": timing.get("broker_submit_at"),
+        "broker_ack_at": timing.get("broker_ack_at"),
+        "entry_fill_at": timing.get("entry_fill_at"),
+        "exit_decision_at": timing.get("exit_decision_at"),
+        "exit_fill_at": timing.get("exit_fill_at"),
+        "decision_to_submit_ms": timing.get("decision_to_submit_ms"),
+        "decision_to_entry_fill_ms": timing.get("decision_to_entry_fill_ms"),
+        "exit_decision_to_exit_fill_ms": timing.get("exit_decision_to_exit_fill_ms"),
+        "blocked_reason": row.get("blocked_reason") or risk.get("reason"),
     }
 
 

@@ -1,0 +1,109 @@
+{
+  "analysis": {
+    "analyzed_at": "2026-05-15T02:27:57.025252+00:00",
+    "broker_order_endpoint_called_rows": 0,
+    "closed_trade_count": 0,
+    "closed_trade_rows": [],
+    "decision_count": 0,
+    "decision_rows": [],
+    "delay_stress_rows": [],
+    "event_counts": {
+      "heartbeat": 1
+    },
+    "operational_checks": {
+      "closed_trades_all_one_contract": true,
+      "closed_trades_logged": 0,
+      "decisions_logged": 0,
+      "max_observed_order_quantity": 0,
+      "multi_contract_orders_enabled": false,
+      "one_contract_operational_only": true,
+      "quantity_violations": 0,
+      "real_money_rows": 0
+    },
+    "paper_orders_submitted": 0,
+    "replay_summary_rows": [],
+    "run_id": "protocol155_readiness_dry_run",
+    "session": "2026-05-15",
+    "timing_checks": {
+      "closed_trades_for_replay": 0,
+      "context_age_inside_budget": false,
+      "context_age_rows": 0,
+      "delay_stress_available": false,
+      "delay_stress_coverage": [
+        {
+          "closed_trade_rows": 0,
+          "coverage": 0.0,
+          "covered_rows": 0,
+          "delay_seconds": 1,
+          "total_delayed_pnl": 0,
+          "total_original_pnl": 0
+        },
+        {
+          "closed_trade_rows": 0,
+          "coverage": 0.0,
+          "covered_rows": 0,
+          "delay_seconds": 5,
+          "total_delayed_pnl": 0,
+          "total_original_pnl": 0
+        },
+        {
+          "closed_trade_rows": 0,
+          "coverage": 0.0,
+          "covered_rows": 0,
+          "delay_seconds": 15,
+          "total_delayed_pnl": 0,
+          "total_original_pnl": 0
+        },
+        {
+          "closed_trade_rows": 0,
+          "coverage": 0.0,
+          "covered_rows": 0,
+          "delay_seconds": 30,
+          "total_delayed_pnl": 0,
+          "total_original_pnl": 0
+        }
+      ],
+      "delay_stress_rows": 0,
+      "entry_latency_inside_budget": false,
+      "entry_latency_rows": 0,
+      "entry_slippage_inside_budget": false,
+      "entry_slippage_rows": 0,
+      "max_context_age_ms": null,
+      "max_decision_to_entry_fill_ms": null,
+      "max_entry_slippage": null,
+      "max_quote_age_ms": null,
+      "quote_age_inside_budget": false,
+      "quote_age_rows": 0
+    },
+    "trade_log": "v4/logs/paper_trading/2026-05-15/protocol155_readiness_dry_run.jsonl",
+    "validation": {
+      "broker_order_endpoint_called_rows": 0,
+      "errors": [],
+      "event_counts": {
+        "heartbeat": 1
+      },
+      "rows": 1,
+      "status": "pass",
+      "warnings": []
+    }
+  },
+  "broker_endpoint_called": false,
+  "decision": "blocked_protocol155_no_closed_one_contract_paper_trades_yet",
+  "live_orders": false,
+  "multi_contract_enabled": false,
+  "next_gate": "Run the next market session in one-contract paper mode and capture closed entry/exit fill rows.",
+  "operational_mode": "one_contract_paper_only",
+  "outputs": {
+    "closed_trade_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_155_protocol101_live_timing_evidence/2026-05-15/protocol155_readiness_dry_run/closed_trade_rows.csv",
+    "decision_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_155_protocol101_live_timing_evidence/2026-05-15/protocol155_readiness_dry_run/decision_rows.csv",
+    "delay_stress_rows": "v4/audit/autoresearch/v4_aplus_hypothesis_155_protocol101_live_timing_evidence/2026-05-15/protocol155_readiness_dry_run/delay_stress_rows.csv",
+    "replay_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_155_protocol101_live_timing_evidence/2026-05-15/protocol155_readiness_dry_run/replay_summary.csv",
+    "report": "v4/audit/autoresearch/v4_aplus_hypothesis_155_protocol101_live_timing_evidence/2026-05-15/protocol155_readiness_dry_run/report.md",
+    "summary": "v4/audit/autoresearch/v4_aplus_hypothesis_155_protocol101_live_timing_evidence/2026-05-15/protocol155_readiness_dry_run/summary.json"
+  },
+  "paid_data_downloaded": false,
+  "paper_orders_submitted": false,
+  "protocol": "155_protocol101_one_contract_live_timing_evidence",
+  "real_money_trading": false,
+  "source_trade_log": "v4/logs/paper_trading/2026-05-15/protocol155_readiness_dry_run.jsonl"
+}

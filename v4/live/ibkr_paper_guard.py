@@ -19,6 +19,7 @@ PAPER_PERMISSION_ENV = "V4_ALLOW_IBKR_PAPER_ORDERS"
 class PaperOrderGuardConfig:
     starting_paper_cash: float = 10_000.0
     ibkr_access_reserve: float = 500.0
+    max_order_quantity: int = 1
     max_concurrent_positions: int = 1
     require_paper_account_prefix: bool = True
     paper_account_prefixes: tuple[str, ...] = ("DU",)
@@ -101,6 +102,8 @@ def validate_order_intent(
         reasons.append("invalid_right")
     if int(intent.quantity) <= 0:
         reasons.append("nonpositive_quantity")
+    elif int(intent.quantity) > int(config.max_order_quantity):
+        reasons.append("paper_quantity_exceeds_one_contract_limit")
     if int(open_positions) >= int(config.max_concurrent_positions) and action == "BUY":
         reasons.append("max_concurrent_position_reached")
 

@@ -31,9 +31,10 @@ def test_protocol147_dry_run_writes_analyzable_trade_log(tmp_path: Path, monkeyp
     )
     log_path = Path(summary["trade_log"]["jsonl"])
 
-    assert summary["decision"] == "dry_run_logged_no_commands"
+    assert summary["decision"] == "dry_run_logged_timing_evidence"
     assert summary["broker_order_endpoint_called"] is False
     assert summary["paper_orders_submitted"] is False
     assert summary["trade_log"]["validation"]["status"] == "pass"
+    assert summary["timing_evidence"]["summary"]["decision"] == "blocked_protocol155_no_closed_one_contract_paper_trades_yet"
     assert log_path.exists()
     assert log_path.with_suffix(".csv").exists()

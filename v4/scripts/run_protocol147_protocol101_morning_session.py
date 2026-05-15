@@ -53,6 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-cycles", type=int, default=390)
     parser.add_argument("--preflight-timeout-seconds", type=float, default=120.0)
     parser.add_argument("--skip-market-clock", action="store_true")
+    parser.add_argument("--skip-timing-evidence", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -195,6 +196,28 @@ def main() -> int:
     rows = load_trade_log(trade_log)
     validation = validate_trade_log(rows)
     csv_summary = export_trade_log_csv(trade_log, csv_log) if trade_log.exists() else {"rows": 0}
+    timing_evidence = {}
+    if not args.skip_timing_evidence:
+        timing_command = run_module(
+            "v4.scripts.run_protocol155_one_contract_live_timing_evidence",
+            [
+                "--trade-log",
+                str(trade_log),
+                "--out-root",
+                str(out_dir / "protocol155_timing_evidence"),
+                "--no-ledger",
+            ],
+            out_dir=out_dir,
+        )
+        commands.append(timing_command)
+        timing_summary = latest_protocol155_summary(out_dir / "protocol155_timing_evidence", session, run_id)
+        timing_evidence = {
+            "command": command_brief(timing_command),
+            "summary": timing_summary,
+        }
+        if args.dry_run and decision == "dry_run_logged_no_commands":
+            decision = "dry_run_logged_timing_evidence"
+
     payload = {
         "protocol": "147_protocol101_morning_session",
         "decision": decision,
@@ -215,6 +238,7 @@ def main() -> int:
             "validation": validation,
             "csv_summary": csv_summary,
         },
+        "timing_evidence": timing_evidence,
         "command_count": len(commands),
         "commands": [command_brief(item) for item in commands[-20:]],
         "next_gate": next_gate(decision, live_capture_passes),
@@ -368,6 +392,7 @@ def public_config(args: argparse.Namespace) -> dict[str, Any]:
         "cycle_seconds": args.cycle_seconds,
         "capture_seconds": args.capture_seconds,
         "max_cycles": args.max_cycles,
+        "skip_timing_evidence": bool(args.skip_timing_evidence),
     }
 
 
@@ -395,6 +420,11 @@ def load_json(path: Path) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def latest_protocol155_summary(root: Path, session: str, run_id: str) -> dict[str, Any]:
+    summary = root / session / run_id / "summary.json"
+    return load_json(summary)
+
+
 def next_gate(decision: str, live_capture_passes: int) -> str:
     if live_capture_passes > 0:
         return "Review the live shadow rows and trade log, then run order-state rehearsal before enabling paper orders."
@@ -419,6 +449,7 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
         f"- Trade log JSONL: `{payload['trade_log']['jsonl']}`",
         f"- Trade log CSV: `{payload['trade_log']['csv']}`",
         f"- Trade log validation: `{payload['trade_log']['validation']['status']}`",
+        f"- Protocol155 timing evidence: `{payload.get('timing_evidence', {}).get('summary', {}).get('decision', 'not_run')}`",
         "",
         "## Next Gate",
         "",

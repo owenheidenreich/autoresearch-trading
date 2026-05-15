@@ -1830,3 +1830,16 @@ Result: Decision blocked_multi_contract_promotion_missing_timing_evidence. Repor
 Next Gate: Do not enable multi-contract paper trading yet. Unblock by proving the same frozen candidate under >=95% critical high-resolution timing coverage or by replaying sufficiently fresh live-shadow/paper logs.
 Owner: Codex
 ```
+
+## 2026-05-15 Protocol 155 One-Contract Live Paper Timing Evidence
+
+```text
+Date: 2026-05-15
+Decision / Experiment: Added the one-contract live paper timing evidence protocol for Protocol101.
+Reason: Multi-contract sizing is economically promising but blocked by timing evidence; live paper should collect timing and fill data while executing only one contract.
+Data Used: Existing paper/live trade log rows only. No paid data was downloaded.
+Cost: $0 incremental paid data.
+Result: Decision blocked_protocol155_no_closed_one_contract_paper_trades_yet. Report: v4/audit/autoresearch/v4_aplus_hypothesis_155_protocol101_live_timing_evidence/2026-05-15/protocol155_readiness_dry_run/report.md
+Next Gate: Run the next market session in one-contract paper mode and capture closed entry/exit fill rows.
+Owner: Codex
+```

@@ -140,6 +140,30 @@ def test_validate_order_intent_accepts_clean_spxw_paper_intent() -> None:
     assert result["premium_required"] == 1000.0
 
 
+def test_validate_order_intent_rejects_multi_contract_paper_intent_by_default() -> None:
+    intent = PaperOrderIntent(
+        action="BUY",
+        symbol="SPX",
+        expiry="20260320",
+        strike=6700.0,
+        right="P",
+        quantity=2,
+        limit_price=10.0,
+    )
+
+    result = validate_order_intent(
+        intent,
+        account_cash=50_000.0,
+        open_positions=0,
+        quote={"bid": 9.9, "ask": 10.0, "reference_ask": 10.0, "quote_age_ms": 50},
+        context={"context_age_ms": 50},
+        config=PaperOrderGuardConfig(),
+    )
+
+    assert result["passed"] is False
+    assert "paper_quantity_exceeds_one_contract_limit" in result["reasons"]
+
+
 def test_protocol141_decision_default_guard_smoke_passes_because_it_blocks_orders() -> None:
     permission = {"passed": False, "reason": "enable_paper_orders_flag_missing"}
     intent_validation = {"passed": True, "reason": "pass"}
