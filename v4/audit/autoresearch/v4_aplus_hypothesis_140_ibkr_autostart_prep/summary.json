@@ -7,12 +7,12 @@
     7496,
     4001
   ],
-  "app_path": "/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app",
+  "app_path": "/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45-1.app",
   "autostart_assumption": "launchd can open IB Gateway in paper mode, but IBKR may still require saved credentials/2FA. If Gateway pauses at login, finish that login once; the preflight will keep reporting port-not-open until the API listener is available.",
   "broker_order_endpoint_called": false,
   "checks": [
     {
-      "detail": "/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app",
+      "detail": "/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45-1.app",
       "name": "ib_gateway_app_exists",
       "passed": true
     },
@@ -66,6 +66,7 @@
       "UseSSL": "true",
       "UserNameToDirectory": "<redacted>",
       "colorPalletName": "dark",
+      "displayedproxymsg": "1",
       "ibkrBranding": "pro",
       "os_titlebar": "false",
       "s3store": "true",

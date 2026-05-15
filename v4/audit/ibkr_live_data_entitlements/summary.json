@@ -1,7 +1,7 @@
 {
   "blocked_reason": "missing_live_market_data_entitlements",
   "chain_meta": {},
-  "checked_at": "2026-05-14T18:15:46.183115-04:00",
+  "checked_at": "2026-05-14T20:18:47.982718-04:00",
   "connection_attempts": [
     {
       "host": "127.0.0.1",

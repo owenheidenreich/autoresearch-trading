@@ -3,7 +3,7 @@
 No paid data was downloaded. No broker order endpoint was called. No orders were placed.
 
 - Decision: `ready_to_install_ib_gateway_paper_autostart`
-- IB Gateway app: `/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app`
+- IB Gateway app: `/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45-1.app`
 - Configured API port: `4002`
 - Candidate API ports: `[4002, 4000, 7497, 7496, 4001]`
 
@@ -11,7 +11,7 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 
 | check | passed | detail |
 | --- | ---: | --- |
-| ib_gateway_app_exists | `True` | `/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45.app` |
+| ib_gateway_app_exists | `True` | `/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45-1.app` |
 | jts_ini_exists | `True` | `/Users/gduby/Jts/jts.ini` |
 | paper_mode_configured | `True` | `tradingMode=p` |
 | api_only_configured | `True` | `ApiOnly=true` |

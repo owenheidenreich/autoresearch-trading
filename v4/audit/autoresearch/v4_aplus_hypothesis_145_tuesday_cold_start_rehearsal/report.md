@@ -14,7 +14,118 @@ IB Gateway opened and the paper API became reachable. Tuesday can move to accoun
 ## Start Output
 
 ```text
-IB Gateway API listener is up on port 4002 via IBC
+{
+  "account_count": 1,
+  "account_id_redacted": "DU***40",
+  "attempts_tail": [
+    {
+      "attempts": [
+        {
+          "port": 4002,
+          "status": "socket_closed"
+        },
+        {
+          "port": 4000,
+          "status": "socket_closed"
+        },
+        {
+          "port": 7497,
+          "status": "socket_closed"
+        },
+        {
+          "port": 7496,
+          "status": "socket_closed"
+        },
+        {
+          "port": 4001,
+          "status": "socket_closed"
+        }
+      ],
+      "connected": false
+    },
+    {
+      "attempts": [
+        {
+          "port": 4002,
+          "status": "socket_closed"
+        },
+        {
+          "port": 4000,
+          "status": "socket_closed"
+        },
+        {
+          "port": 7497,
+          "status": "socket_closed"
+        },
+        {
+          "port": 7496,
+          "status": "socket_closed"
+        },
+        {
+          "port": 4001,
+          "status": "socket_closed"
+        }
+      ],
+      "connected": false
+    },
+    {
+      "attempts": [
+        {
+          "port": 4002,
+          "status": "socket_closed"
+        },
+        {
+          "port": 4000,
+          "status": "socket_closed"
+        },
+        {
+          "port": 7497,
+          "status": "socket_closed"
+        },
+        {
+          "port": 7496,
+          "status": "socket_closed"
+        },
+        {
+          "port": 4001,
+          "status": "socket_closed"
+        }
+      ],
+      "connected": false
+    },
+    {
+      "account_count": 1,
+      "attempts": [
+        {
+          "port": 4002,
+          "status": "connected"
+        }
+      ],
+      "connected": true,
+      "host": "127.0.0.1",
+      "port": 4002,
+      "primary_account_id_redacted": "DU***40"
+    },
+    {
+      "account_count": 1,
+      "attempts": [
+        {
+          "port": 4002,
+          "status": "connected"
+        }
+      ],
+      "connected": true,
+      "host": "127.0.0.1",
+      "port": 4002,
+      "primary_account_id_redacted": "DU***40"
+    }
+  ],
+  "broker_order_endpoint_called": false,
+  "host": "127.0.0.1",
+  "port": 4002,
+  "stable_seconds": 10.0,
+  "status": "pass"
+}
 ```
 
 ## Next Gate

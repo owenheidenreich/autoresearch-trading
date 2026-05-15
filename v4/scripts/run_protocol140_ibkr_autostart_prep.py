@@ -19,6 +19,7 @@ DEFAULT_LEDGER = Path("v4/ledger/RESEARCH_LEDGER.md")
 DEFAULT_JTS_INI = Path.home() / "Jts/jts.ini"
 DEFAULT_LAUNCHD_DIR = Path("v4/ops/launchd")
 DEFAULT_LOG_DIR = Path.home() / "Library/Logs/autoresearch-trading"
+DEFAULT_LAUNCHD_RUNTIME_DIR = Path.home() / ".autoresearch-trading/launchd"
 GATEWAY_LABEL = "com.autoresearch.ibgateway.paper"
 PREFLIGHT_LABEL = "com.autoresearch.protocol101.paper-preflight"
 DEFAULT_IBKR_PAPER_API_PORT = 4002
@@ -150,7 +151,7 @@ def write_launchd_assets(
         label=GATEWAY_LABEL,
         program_arguments=[
             "/bin/bash",
-            str(REPO_ROOT / "v4/ops/ibkr/start_ib_gateway_paper_ibc.sh"),
+            str(DEFAULT_LAUNCHD_RUNTIME_DIR / "start_ib_gateway_paper_ibc.sh"),
         ],
         hour=gateway_hour,
         minute=gateway_minute,
@@ -160,6 +161,8 @@ def write_launchd_assets(
             "IB_GATEWAY_APP": app,
             "IB_GATEWAY_API_PORT": str(api_port),
             "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
+            "IB_GATEWAY_KEEPALIVE_SECONDS": "28800",
+            "PYTHON_BIN": "/usr/bin/python3",
             "REPO_ROOT": str(REPO_ROOT),
         },
     )
@@ -229,7 +232,14 @@ def write_install_scripts(launchd_dir: Path) -> None:
     install.write_text(
         f"""#!/usr/bin/env bash
 set -euo pipefail
-mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs/autoresearch-trading"
+RUNTIME_DIR="$HOME/.autoresearch-trading/launchd"
+mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs/autoresearch-trading" "$RUNTIME_DIR"
+cp "{REPO_ROOT / 'v4/ops/ibkr/install_ibc_macos.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/start_ib_gateway_paper_ibc.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/write_ibc_runtime_config.py'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/probe_ibkr_api.py'}" "$RUNTIME_DIR/"
+chmod 700 "$RUNTIME_DIR"/*.sh
+chmod 600 "$RUNTIME_DIR"/*.py
 launchctl bootout "gui/$UID/{GATEWAY_LABEL}" 2>/dev/null || true
 launchctl bootout "gui/$UID/{PREFLIGHT_LABEL}" 2>/dev/null || true
 cp "{launchd_dir / (GATEWAY_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
