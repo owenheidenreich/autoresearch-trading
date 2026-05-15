@@ -1,0 +1,3 @@
+split,delay_seconds,rows,covered_rows,required_rows,additional_rows_needed,coverage,required_coverage
+q1_2026,1,359,269,342,73,0.749304,0.95
+q1_2026,5,359,269,342,73,0.749304,0.95

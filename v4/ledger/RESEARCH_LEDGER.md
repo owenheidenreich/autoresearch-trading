@@ -1817,3 +1817,16 @@ Result: Decision pass_ibc_credentials_ready_for_cold_start_rehearsal. IBC instal
 Next Gate: Run Protocol145 cold-start rehearsal again; IBC should enter credentials and expose the paper API port after any required 2FA approval.
 Owner: Codex
 ```
+
+## 2026-05-15 Protocol 154 Multi-Contract Promotion Decision
+
+```text
+Date: 2026-05-15
+Decision / Experiment: Aggregated Protocol151/152/153 into a single multi-contract promotion verdict.
+Reason: User asked for all verifications necessary to decide whether the account-aware multi-contract challenger is promotable.
+Data Used: Existing Protocol101 replay artifacts, existing high-resolution timing rows, and existing live-stack compatibility rows only.
+Cost: $0 incremental paid data.
+Result: Decision blocked_multi_contract_promotion_missing_timing_evidence. Report: v4/audit/autoresearch/v4_aplus_hypothesis_154_protocol101_multi_contract_promotion_decision/report.md
+Next Gate: Do not enable multi-contract paper trading yet. Unblock by proving the same frozen candidate under >=95% critical high-resolution timing coverage or by replaying sufficiently fresh live-shadow/paper logs.
+Owner: Codex
+```
