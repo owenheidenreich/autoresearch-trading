@@ -8,8 +8,10 @@ from v4.scripts.run_protocol140_ibkr_autostart_prep import GATEWAY_LABEL, PREFLI
 from v4.scripts.run_protocol156_ibkr_autostart_observability import (
     PortProbe,
     aggregate_signals,
+    collect_entitlement_summary,
     collect_logs,
     decide,
+    entitlement_live_ready,
     file_digest,
     parse_launchctl_print,
     ports_from_args,
@@ -180,6 +182,71 @@ def test_decide_entitlement_block_after_loaded_api_port() -> None:
     )
 
     assert decision == "blocked_live_market_data_entitlements"
+
+
+def test_entitlement_live_ready_requires_live_index_and_option_nbbo() -> None:
+    payload = {
+        "decision": "pass",
+        "ibkr_connected": True,
+        "broker_order_endpoint_called": False,
+        "feed_status": {
+            "spx": {"live_price_available": True},
+            "vix": {"live_price_available": True},
+            "spxw_options": {"live_nbbo_rows": 6},
+        },
+    }
+
+    assert entitlement_live_ready(payload) is True
+    payload["feed_status"]["spxw_options"]["live_nbbo_rows"] = 0
+    assert entitlement_live_ready(payload) is False
+
+
+def test_collect_entitlement_summary_reads_no_order_probe(tmp_path: Path) -> None:
+    summary = tmp_path / "summary.json"
+    summary.write_text(
+        json.dumps(
+            {
+                "checked_at": "2026-05-19T11:09:54-04:00",
+                "decision": "pass",
+                "blocked_reason": None,
+                "ibkr_connected": True,
+                "ibkr_port": 4002,
+                "feed_status": {"spx": {"live_price_available": True}},
+                "subscription_errors": [],
+                "no_order_guarantee": {"broker_order_endpoint_called": False},
+            }
+        )
+    )
+
+    result = collect_entitlement_summary(summary)
+
+    assert result["decision"] == "pass"
+    assert result["broker_order_endpoint_called"] is False
+    assert result["subscription_error_count"] == 0
+
+
+def test_decide_passes_when_latest_entitlement_probe_passes_despite_stale_log_errors() -> None:
+    launchd = {label: loaded_status(label) for label in (GATEWAY_LABEL, PREFLIGHT_LABEL, SESSION_LABEL)}
+    entitlement = {
+        "decision": "pass",
+        "ibkr_connected": True,
+        "broker_order_endpoint_called": False,
+        "feed_status": {
+            "spx": {"live_price_available": True},
+            "vix": {"live_price_available": True},
+            "spxw_options": {"live_nbbo_rows": 6},
+        },
+    }
+
+    decision = decide(
+        launchd=launchd,
+        logs={},
+        ports=[PortProbe(port=4002, open=True)],
+        signals=Counter({"missing_live_market_data_entitlements": 1, "ibkr_market_data_not_subscribed": 1}),
+        entitlement=entitlement,
+    )
+
+    assert decision == "pass_live_market_data_entitlements"
 
 
 def test_decide_blocks_when_launchagents_missing() -> None:

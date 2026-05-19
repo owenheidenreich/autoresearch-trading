@@ -30,6 +30,7 @@ from v4.scripts.run_protocol140_ibkr_autostart_prep import (
 
 DEFAULT_OUT_DIR = Path("v4/audit/autoresearch/v4_aplus_hypothesis_156_ibkr_autostart_observability")
 DEFAULT_LEDGER = Path("v4/ledger/RESEARCH_LEDGER.md")
+DEFAULT_ENTITLEMENT_SUMMARY = Path("v4/audit/ibkr_live_data_entitlements/summary.json")
 PACIFIC = ZoneInfo("America/Los_Angeles")
 KNOWN_LOG_FILES = {
     "gateway_stdout": "ibgateway-paper.out.log",
@@ -88,10 +89,18 @@ def main() -> int:
     launchd = {label: launchd_status(label, uid=uid) for label in LABELS}
     runtime_wrappers = collect_runtime_wrappers(DEFAULT_LAUNCHD_RUNTIME_DIR)
     logs = collect_logs(args.log_dir, tail_lines=args.tail_lines)
+    entitlement = collect_entitlement_summary(DEFAULT_ENTITLEMENT_SUMMARY)
     ports = probe_ports(ports_from_args(args.ibkr_port, args.ibkr_auto_ports))
     live_logs = collect_live_trade_logs(Path("v4/logs/paper_trading"), session_date=session_date)
     signals = aggregate_signals(logs)
-    decision = decide(launchd=launchd, logs=logs, ports=ports, signals=signals, runtime_wrappers=runtime_wrappers)
+    decision = decide(
+        launchd=launchd,
+        logs=logs,
+        ports=ports,
+        signals=signals,
+        runtime_wrappers=runtime_wrappers,
+        entitlement=entitlement,
+    )
     payload = {
         "protocol": "156_ibkr_autostart_observability",
         "generated_at_pacific": now.isoformat(),
@@ -103,6 +112,7 @@ def main() -> int:
         "broker_order_endpoint_called": False,
         "launchd": launchd,
         "runtime_wrappers": runtime_wrappers,
+        "entitlement_summary": entitlement,
         "ports": [probe.__dict__ for probe in ports],
         "log_dir": str(args.log_dir.expanduser()),
         "logs": logs,
@@ -238,6 +248,28 @@ def collect_runtime_wrappers(runtime_dir: Path) -> dict[str, Any]:
     return wrappers
 
 
+def collect_entitlement_summary(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"path": str(path), "exists": False}
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        return {"path": str(path), "exists": True, "error": f"json_decode_error:{exc}"}
+    feed = payload.get("feed_status", {})
+    return {
+        "path": str(path),
+        "exists": True,
+        "checked_at": payload.get("checked_at"),
+        "decision": payload.get("decision"),
+        "blocked_reason": payload.get("blocked_reason"),
+        "ibkr_connected": payload.get("ibkr_connected"),
+        "ibkr_port": payload.get("ibkr_port"),
+        "feed_status": feed,
+        "subscription_error_count": len(payload.get("subscription_errors") or []),
+        "broker_order_endpoint_called": payload.get("no_order_guarantee", {}).get("broker_order_endpoint_called"),
+    }
+
+
 def file_digest(path: Path, *, tail_lines: int) -> dict[str, Any]:
     out: dict[str, Any] = {
         "path": str(path),
@@ -346,10 +378,13 @@ def decide(
     ports: list[PortProbe],
     signals: Counter[str],
     runtime_wrappers: dict[str, Any] | None = None,
+    entitlement: dict[str, Any] | None = None,
 ) -> str:
     loaded = [label for label, status in launchd.items() if status.get("loaded")]
     if len(loaded) < len(LABELS):
         return "blocked_launchagents_not_loaded"
+    if entitlement_live_ready(entitlement or {}):
+        return "pass_live_market_data_entitlements"
     session_wrapper = (runtime_wrappers or {}).get("run_protocol101_paper_session.sh", {})
     preflight_wrapper = (runtime_wrappers or {}).get("run_protocol101_paper_preflight.sh", {})
     if (signals.get("launchd_python_runtime_failed") or signals.get("launchd_permission_denied")) and not (
@@ -371,6 +406,21 @@ def decide(
     return "blocked_ibkr_autostart_no_api_confirmation"
 
 
+def entitlement_live_ready(entitlement: dict[str, Any]) -> bool:
+    feed = entitlement.get("feed_status") or {}
+    spx = feed.get("spx") or {}
+    vix = feed.get("vix") or {}
+    spxw = feed.get("spxw_options") or {}
+    return bool(
+        entitlement.get("decision") == "pass"
+        and entitlement.get("ibkr_connected")
+        and spx.get("live_price_available")
+        and vix.get("live_price_available")
+        and int(spxw.get("live_nbbo_rows") or 0) > 0
+        and not entitlement.get("broker_order_endpoint_called")
+    )
+
+
 def interpretation(decision: str, signals: Counter[str]) -> list[str]:
     notes = {
         "blocked_launchagents_not_loaded": "One or more launchd jobs are missing or unloaded, so the morning automation may not run.",
@@ -379,6 +429,7 @@ def interpretation(decision: str, signals: Counter[str]) -> list[str]:
         "blocked_live_market_data_entitlements": "Gateway/API startup reached the market-data probe, but IBKR refused at least one live data request. This is a data entitlement/session issue, not a model issue.",
         "blocked_gateway_keepalive_disconnect": "Gateway connected and then disconnected during keepalive. The next check is whether Gateway stayed logged in and API settings remained enabled.",
         "pass_ibkr_api_port_reachable": "An IBKR API port is currently reachable from localhost.",
+        "pass_live_market_data_entitlements": "The latest no-order entitlement probe confirms live SPX, live VIX, and live SPXW option NBBO are available.",
         "observe_previous_ibkr_api_connection_no_current_port": "Recent logs show a prior successful API connection, but no API port is currently reachable.",
         "blocked_ibkr_autostart_no_api_confirmation": "The logs and current port probes do not yet prove that IB Gateway reached the API listener.",
     }
@@ -454,6 +505,26 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
             lines.append(f"| {name} | {count} |")
     else:
         lines.append("| none | 0 |")
+    entitlement = payload.get("entitlement_summary", {})
+    lines.extend(
+        [
+            "",
+            "## Latest Entitlement Probe",
+            "",
+            f"- Path: `{entitlement.get('path')}`",
+            f"- Exists: `{entitlement.get('exists')}`",
+            f"- Checked at: `{entitlement.get('checked_at')}`",
+            f"- Decision: `{entitlement.get('decision')}`",
+            f"- Blocked reason: `{entitlement.get('blocked_reason')}`",
+            f"- IBKR connected: `{entitlement.get('ibkr_connected')}`",
+            f"- IBKR port: `{entitlement.get('ibkr_port')}`",
+            f"- Broker order endpoint called: `{entitlement.get('broker_order_endpoint_called')}`",
+            "",
+            "```json",
+            json.dumps(entitlement.get("feed_status", {}), indent=2, sort_keys=True),
+            "```",
+        ]
+    )
     lines.extend(["", "## Runtime Wrappers", "", "| wrapper | exists | exports PYTHONPATH | prefers project venv | modified |", "| --- | ---: | ---: | ---: | --- |"])
     wrappers = payload.get("runtime_wrappers", {})
     for name, status in wrappers.items():

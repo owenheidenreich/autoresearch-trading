@@ -2,22 +2,22 @@
 
 No paid data was downloaded. No broker order endpoint was called. No orders were placed.
 
-- Generated: `2026-05-19T08:00:42.235716-07:00`
+- Generated: `2026-05-19T08:11:35.769533-07:00`
 - Session date: `2026-05-19`
-- Decision: `blocked_live_market_data_entitlements`
+- Decision: `pass_live_market_data_entitlements`
 - Log directory: `/Users/gduby/Library/Logs/autoresearch-trading`
-- Next action: Confirm the required IBKR paper market-data subscriptions/session state, then run the no-order shadow path again during market hours.
+- Next action: Run Protocol101 no-order/paper session and inspect the live JSONL plus this status report after the session.
 
 ## What It Means
 
-- Gateway/API startup reached the market-data probe, but IBKR refused at least one live data request. This is a data entitlement/session issue, not a model issue.
+- The latest no-order entitlement probe confirms live SPX, live VIX, and live SPXW option NBBO are available.
 - Detected signals: api_port_open_detected=1, holding_status_detected=1, ibkr_api_connected_detected=1, ibkr_competing_live_session=1, ibkr_keepalive_socket_disconnect=1, ibkr_market_data_not_subscribed=1, launchd_permission_denied=2, launchd_python_runtime_failed=2, missing_live_market_data_entitlements=1, pass_status_detected=1, pythonpath_missing_for_session_runner=1, socket_disconnect=1
 
 ## LaunchAgents
 
 | label | loaded | state | runs | last exit | stdout | stderr |
 | --- | ---: | --- | ---: | ---: | --- | --- |
-| com.autoresearch.ibgateway.paper | `True` | `active` | `5` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log` |
+| com.autoresearch.ibgateway.paper | `True` | `active` | `5` | `2` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log` |
 | com.autoresearch.protocol101.paper-preflight | `True` | `active` | `5` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.err.log` |
 | com.autoresearch.protocol101.paper-session | `True` | `active` | `5` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.err.log` |
 
@@ -48,6 +48,41 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 | pythonpath_missing_for_session_runner | 1 |
 | socket_disconnect | 1 |
 
+## Latest Entitlement Probe
+
+- Path: `v4/audit/ibkr_live_data_entitlements/summary.json`
+- Exists: `True`
+- Checked at: `2026-05-19T11:09:54.979918-04:00`
+- Decision: `pass`
+- Blocked reason: `None`
+- IBKR connected: `True`
+- IBKR port: `4002`
+- Broker order endpoint called: `False`
+
+```json
+{
+  "spx": {
+    "live_price_available": true,
+    "market_data_type": "live",
+    "price": 7352.45
+  },
+  "spxw_options": {
+    "contracts_qualified": 6,
+    "contracts_requested": 6,
+    "delayed_nbbo_rows": 0,
+    "live_nbbo_rows": 6,
+    "market_data_type_counts": {
+      "live": 6
+    }
+  },
+  "vix": {
+    "live_price_available": true,
+    "market_data_type": "live",
+    "price": 18.12
+  }
+}
+```
+
 ## Runtime Wrappers
 
 | wrapper | exists | exports PYTHONPATH | prefers project venv | modified |
@@ -70,15 +105,13 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 
 - Path: `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log`
 - Exists: `True`
-- Size bytes: `20918`
-- Modified: `2026-05-18T08:25:23.709114-07:00`
+- Size bytes: `21071`
+- Modified: `2026-05-19T08:09:01.462516-07:00`
 - Signals: `['holding_status_detected', 'ibkr_api_connected_detected', 'ibkr_keepalive_socket_disconnect', 'pass_status_detected', 'socket_disconnect']`
 - Recent JSON events:
   - `{"blocked_reason": "ibkr_keepalive_failed", "error": "Socket disconnect", "status": "blocked"}`
 
 ```text
-      "primary_account_id_redacted": "DU***40"
-    }
   ],
   "broker_order_endpoint_called": false,
   "host": "127.0.0.1",
@@ -97,6 +130,8 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
   "status": "holding"
 }
 {"status": "blocked", "blocked_reason": "ibkr_keepalive_failed", "error": "Socket disconnect"}
+Peer closed connection.
+/Users/gduby/.autoresearch-trading/launchd/start_ib_gateway_paper_ibc.sh: line 87: unexpected EOF while looking for matching `"'
 ```
 
 ### preflight_stdout
@@ -208,7 +243,7 @@ PermissionError: [Errno 1] Operation not permitted
 
 ### Recent IBC Logs
 - `/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.err.log` size=58 modified=`2026-05-19T06:28:04.292274-07:00` signals=`[]`
-- `/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.out.log` size=16399 modified=`2026-05-19T07:57:33.953693-07:00` signals=`[]`
+- `/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.out.log` size=16970 modified=`2026-05-19T08:09:00.916822-07:00` signals=`[]`
 
 ## Live Paper JSONL Logs
 
