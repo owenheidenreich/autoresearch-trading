@@ -2,7 +2,7 @@
 
 No paid data was downloaded. No broker order endpoint was called. No orders were placed.
 
-- Generated: `2026-05-18T18:00:34.165839-07:00`
+- Generated: `2026-05-19T08:00:42.235716-07:00`
 - Session date: `2026-05-19`
 - Decision: `blocked_live_market_data_entitlements`
 - Log directory: `/Users/gduby/Library/Logs/autoresearch-trading`
@@ -11,21 +11,21 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 ## What It Means
 
 - Gateway/API startup reached the market-data probe, but IBKR refused at least one live data request. This is a data entitlement/session issue, not a model issue.
-- Detected signals: api_port_open_detected=1, holding_status_detected=1, ibkr_api_connected_detected=1, ibkr_competing_live_session=1, ibkr_keepalive_socket_disconnect=1, ibkr_market_data_not_subscribed=1, missing_live_market_data_entitlements=1, pass_status_detected=1, pythonpath_missing_for_session_runner=1, socket_disconnect=1
+- Detected signals: api_port_open_detected=1, holding_status_detected=1, ibkr_api_connected_detected=1, ibkr_competing_live_session=1, ibkr_keepalive_socket_disconnect=1, ibkr_market_data_not_subscribed=1, launchd_permission_denied=2, launchd_python_runtime_failed=2, missing_live_market_data_entitlements=1, pass_status_detected=1, pythonpath_missing_for_session_runner=1, socket_disconnect=1
 
 ## LaunchAgents
 
 | label | loaded | state | runs | last exit | stdout | stderr |
 | --- | ---: | --- | ---: | ---: | --- | --- |
-| com.autoresearch.ibgateway.paper | `True` | `active` | `4` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log` |
-| com.autoresearch.protocol101.paper-preflight | `True` | `active` | `4` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.err.log` |
-| com.autoresearch.protocol101.paper-session | `True` | `active` | `4` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.err.log` |
+| com.autoresearch.ibgateway.paper | `True` | `active` | `5` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log` |
+| com.autoresearch.protocol101.paper-preflight | `True` | `active` | `5` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.err.log` |
+| com.autoresearch.protocol101.paper-session | `True` | `active` | `5` | `1` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.out.log` | `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.err.log` |
 
 ## Current IBKR API Ports
 
 | port | open | error |
 | ---: | ---: | --- |
-| 4002 | `False` | `ConnectionRefusedError` |
+| 4002 | `True` | `None` |
 | 4000 | `False` | `ConnectionRefusedError` |
 | 7497 | `False` | `ConnectionRefusedError` |
 | 7496 | `False` | `ConnectionRefusedError` |
@@ -41,6 +41,8 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 | ibkr_competing_live_session | 1 |
 | ibkr_keepalive_socket_disconnect | 1 |
 | ibkr_market_data_not_subscribed | 1 |
+| launchd_permission_denied | 2 |
+| launchd_python_runtime_failed | 2 |
 | missing_live_market_data_entitlements | 1 |
 | pass_status_detected | 1 |
 | pythonpath_missing_for_session_runner | 1 |
@@ -48,11 +50,11 @@ No paid data was downloaded. No broker order endpoint was called. No orders were
 
 ## Runtime Wrappers
 
-| wrapper | exists | exports PYTHONPATH | modified |
-| --- | ---: | ---: | --- |
-| run_protocol101_paper_session.sh | `True` | `True` | `2026-05-18T17:59:34.618453-07:00` |
-| run_protocol101_paper_preflight.sh | `True` | `True` | `2026-05-18T17:59:34.622199-07:00` |
-| run_ibkr_autostart_status.sh | `True` | `True` | `2026-05-18T17:59:34.625765-07:00` |
+| wrapper | exists | exports PYTHONPATH | prefers project venv | modified |
+| --- | ---: | ---: | ---: | --- |
+| run_protocol101_paper_session.sh | `True` | `True` | `True` | `2026-05-19T08:00:41.861522-07:00` |
+| run_protocol101_paper_preflight.sh | `True` | `True` | `True` | `2026-05-19T08:00:41.859102-07:00` |
+| run_ibkr_autostart_status.sh | `True` | `True` | `True` | `2026-05-19T08:00:41.863702-07:00` |
 
 ## Log Files
 
@@ -138,22 +140,31 @@ v4/audit/ibkr_live_data_entitlements/report.md
 
 - Path: `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.err.log`
 - Exists: `True`
-- Size bytes: `3454`
-- Modified: `2026-05-18T07:07:39.671432-07:00`
-- Signals: `['ibkr_competing_live_session', 'ibkr_market_data_not_subscribed']`
+- Size bytes: `5390`
+- Modified: `2026-05-19T06:29:02.154079-07:00`
+- Signals: `['ibkr_competing_live_session', 'ibkr_market_data_not_subscribed', 'launchd_permission_denied', 'launchd_python_runtime_failed']`
 
 ```text
-Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')
-Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')
-Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')
-Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')
-Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')
-Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')
-Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')
-Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')
-Error 1102, reqId -1: Connectivity between IBKR and Trader Workstation has been restored - data maintained. All data farms are connected: usfarm; ushmds; secdefil.
-Error 10197, reqId 4: No market data during competing live session, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')
-Error 10197, reqId 6: No market data during competing live session, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')
+  sys.executable = '/Library/Developer/CommandLineTools/usr/bin/python3'
+  sys.prefix = '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9'
+  sys.exec_prefix = '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9'
+  sys.path = [
+    '/Users/gduby/Documents/autoresearch-trading',
+    '',
+    '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python39.zip',
+    '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9',
+    '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/lib-dynload',
+  ]
+Fatal Python error: init_fs_encoding: failed to get the Python codec of the filesystem encoding
+Python runtime state: core initialized
+Traceback (most recent call last):
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 982, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 925, in _find_spec
+  File "<frozen importlib._bootstrap_external>", line 1414, in find_spec
+  File "<frozen importlib._bootstrap_external>", line 1383, in _get_spec
+  File "<frozen importlib._bootstrap_external>", line 1347, in _path_importer_cache
+PermissionError: [Errno 1] Operation not permitted
 ```
 
 ### session_stdout
@@ -168,20 +179,36 @@ Error 10197, reqId 6: No market data during competing live session, contract: In
 
 - Path: `/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.err.log`
 - Exists: `True`
-- Size bytes: `796`
-- Modified: `2026-05-18T06:45:01.431239-07:00`
-- Signals: `['pythonpath_missing_for_session_runner']`
+- Size bytes: `2732`
+- Modified: `2026-05-19T06:30:02.145351-07:00`
+- Signals: `['launchd_permission_denied', 'launchd_python_runtime_failed', 'pythonpath_missing_for_session_runner']`
 
 ```text
-/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')
-/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')
-/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')
-/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')
+  sys.executable = '/Library/Developer/CommandLineTools/usr/bin/python3'
+  sys.prefix = '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9'
+  sys.exec_prefix = '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9'
+  sys.path = [
+    '/Users/gduby/Documents/autoresearch-trading',
+    '',
+    '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python39.zip',
+    '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9',
+    '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/lib-dynload',
+  ]
+Fatal Python error: init_fs_encoding: failed to get the Python codec of the filesystem encoding
+Python runtime state: core initialized
+Traceback (most recent call last):
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 982, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 925, in _find_spec
+  File "<frozen importlib._bootstrap_external>", line 1414, in find_spec
+  File "<frozen importlib._bootstrap_external>", line 1383, in _get_spec
+  File "<frozen importlib._bootstrap_external>", line 1347, in _path_importer_cache
+PermissionError: [Errno 1] Operation not permitted
 ```
 
 ### Recent IBC Logs
-- `/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.err.log` size=58 modified=`2026-05-18T06:45:01.532039-07:00` signals=`[]`
-- `/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.out.log` size=18030 modified=`2026-05-18T08:25:23.693200-07:00` signals=`[]`
+- `/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.err.log` size=58 modified=`2026-05-19T06:28:04.292274-07:00` signals=`[]`
+- `/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.out.log` size=16399 modified=`2026-05-19T07:57:33.953693-07:00` signals=`[]`
 
 ## Live Paper JSONL Logs
 

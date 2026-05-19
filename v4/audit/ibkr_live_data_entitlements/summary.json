@@ -1,7 +1,7 @@
 {
   "blocked_reason": "missing_live_market_data_entitlements",
   "chain_meta": {},
-  "checked_at": "2026-05-14T20:18:47.982718-04:00",
+  "checked_at": "2026-05-19T11:00:43.775189-04:00",
   "connection_attempts": [
     {
       "host": "127.0.0.1",
@@ -67,7 +67,7 @@
     "broker_order_endpoint_called": false,
     "order_intent_non_null_rows": 0
   },
-  "regular_market_hours": false,
+  "regular_market_hours": true,
   "required_actions": [
     {
       "item": "Market Data API Acknowledgement",

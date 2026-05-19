@@ -6,7 +6,7 @@ No orders were created or submitted.
 - Blocked reason: `missing_live_market_data_entitlements`
 - IBKR connected: `True`
 - IBKR port: `4002`
-- Regular market hours: `False`
+- Regular market hours: `True`
 
 ## Feed Status
 

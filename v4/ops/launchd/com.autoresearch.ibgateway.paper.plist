@@ -15,7 +15,7 @@
 		<key>PYTHONPATH</key>
 		<string>/Users/gduby/Documents/autoresearch-trading</string>
 		<key>PYTHON_BIN</key>
-		<string>/usr/bin/python3</string>
+		<string>/Users/gduby/Documents/autoresearch-trading/.venv/bin/python</string>
 		<key>REPO_ROOT</key>
 		<string>/Users/gduby/Documents/autoresearch-trading</string>
 	</dict>

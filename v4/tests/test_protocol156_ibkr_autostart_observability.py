@@ -78,6 +78,24 @@ def test_file_digest_detects_known_failure_signals(tmp_path: Path) -> None:
     assert digest["json_events"][-1]["blocked_reason"] == "missing_live_market_data_entitlements"
 
 
+def test_file_digest_detects_launchd_python_runtime_failure(tmp_path: Path) -> None:
+    log = tmp_path / "session.err.log"
+    log.write_text(
+        "\n".join(
+            [
+                "Fatal Python error: init_fs_encoding: failed to get the Python codec of the filesystem encoding",
+                "PermissionError: [Errno 1] Operation not permitted",
+            ]
+        )
+        + "\n"
+    )
+
+    digest = file_digest(log, tail_lines=20)
+
+    assert "launchd_python_runtime_failed" in digest["signals"]
+    assert "launchd_permission_denied" in digest["signals"]
+
+
 def test_collect_logs_and_decide_prioritize_session_import_failure(tmp_path: Path) -> None:
     (tmp_path / "protocol101-paper-session.err.log").write_text("ModuleNotFoundError: No module named 'v4'\n")
     (tmp_path / "protocol101-paper-preflight.out.log").write_text('{"status": "port_open"}\n')
@@ -109,6 +127,42 @@ def test_decide_moves_past_historical_import_failure_when_runtime_wrapper_is_pat
                 "ibkr_market_data_not_subscribed": 1,
             }
         ),
+        runtime_wrappers=runtime_wrappers,
+    )
+
+    assert decision == "blocked_live_market_data_entitlements"
+
+
+def test_decide_blocks_unpatched_launchd_python_runtime_failure() -> None:
+    launchd = {label: loaded_status(label) for label in (GATEWAY_LABEL, PREFLIGHT_LABEL, SESSION_LABEL)}
+    runtime_wrappers = {
+        "run_protocol101_paper_session.sh": {"exists": True, "exports_pythonpath": True, "prefers_project_venv": False},
+        "run_protocol101_paper_preflight.sh": {"exists": True, "exports_pythonpath": True, "prefers_project_venv": False},
+    }
+
+    decision = decide(
+        launchd=launchd,
+        logs={},
+        ports=[PortProbe(port=4002, open=True)],
+        signals=Counter({"launchd_python_runtime_failed": 1}),
+        runtime_wrappers=runtime_wrappers,
+    )
+
+    assert decision == "blocked_launchd_python_runtime_failed"
+
+
+def test_decide_moves_past_historical_launchd_python_failure_when_wrappers_are_patched() -> None:
+    launchd = {label: loaded_status(label) for label in (GATEWAY_LABEL, PREFLIGHT_LABEL, SESSION_LABEL)}
+    runtime_wrappers = {
+        "run_protocol101_paper_session.sh": {"exists": True, "exports_pythonpath": True, "prefers_project_venv": True},
+        "run_protocol101_paper_preflight.sh": {"exists": True, "exports_pythonpath": True, "prefers_project_venv": True},
+    }
+
+    decision = decide(
+        launchd=launchd,
+        logs={},
+        ports=[PortProbe(port=4002, open=True)],
+        signals=Counter({"launchd_python_runtime_failed": 1, "missing_live_market_data_entitlements": 1}),
         runtime_wrappers=runtime_wrappers,
     )
 

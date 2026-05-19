@@ -24,6 +24,7 @@ GATEWAY_LABEL = "com.autoresearch.ibgateway.paper"
 PREFLIGHT_LABEL = "com.autoresearch.protocol101.paper-preflight"
 SESSION_LABEL = "com.autoresearch.protocol101.paper-session"
 DEFAULT_IBKR_PAPER_API_PORT = 4002
+DEFAULT_PROJECT_PYTHON = REPO_ROOT / ".venv/bin/python"
 
 
 def parse_args() -> argparse.Namespace:
@@ -170,7 +171,7 @@ def write_launchd_assets(
             "IB_GATEWAY_API_PORT": str(api_port),
             "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
             "IB_GATEWAY_KEEPALIVE_SECONDS": "28800",
-            "PYTHON_BIN": "/usr/bin/python3",
+            "PYTHON_BIN": str(DEFAULT_PROJECT_PYTHON),
             "PYTHONPATH": str(REPO_ROOT),
             "REPO_ROOT": str(REPO_ROOT),
         },
@@ -189,7 +190,7 @@ def write_launchd_assets(
             "IB_GATEWAY_API_PORT": str(api_port),
             "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
             "IB_GATEWAY_PREFLIGHT_TIMEOUT_SECONDS": "600",
-            "PYTHON_BIN": "/usr/bin/python3",
+            "PYTHON_BIN": str(DEFAULT_PROJECT_PYTHON),
             "PYTHONPATH": str(REPO_ROOT),
             "REPO_ROOT": str(REPO_ROOT),
         },
@@ -213,7 +214,7 @@ def write_launchd_assets(
             "PROTOCOL101_SESSION_MAX_CYCLES": "390",
             "PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS": "120",
             "PROTOCOL101_SESSION_PAPER_CASH": "10000",
-            "PYTHON_BIN": "/usr/bin/python3",
+            "PYTHON_BIN": str(DEFAULT_PROJECT_PYTHON),
             "PYTHONPATH": str(REPO_ROOT),
             "REPO_ROOT": str(REPO_ROOT),
         },

@@ -49,6 +49,8 @@ PATTERNS = {
     "ibkr_competing_live_session": "No market data during competing live session",
     "ibkr_keepalive_socket_disconnect": "ibkr_keepalive_failed",
     "socket_disconnect": "Socket disconnect",
+    "launchd_python_runtime_failed": "Fatal Python error: init_fs_encoding",
+    "launchd_permission_denied": "PermissionError: [Errno 1] Operation not permitted",
     "api_port_open_detected": '"status": "port_open"',
     "ibkr_api_connected_detected": '"connected": true',
     "pass_status_detected": '"status": "pass"',
@@ -230,6 +232,7 @@ def collect_runtime_wrappers(runtime_dir: Path) -> dict[str, Any]:
             "path": str(path),
             "exists": path.exists(),
             "exports_pythonpath": "PYTHONPATH" in text and "REPO_ROOT" in text,
+            "prefers_project_venv": ".venv/bin/python" in text and '== "/usr/bin/python3"' in text,
             "modified_at_pacific": datetime.fromtimestamp(path.stat().st_mtime, PACIFIC).isoformat() if path.exists() else None,
         }
     return wrappers
@@ -348,9 +351,14 @@ def decide(
     if len(loaded) < len(LABELS):
         return "blocked_launchagents_not_loaded"
     session_wrapper = (runtime_wrappers or {}).get("run_protocol101_paper_session.sh", {})
+    preflight_wrapper = (runtime_wrappers or {}).get("run_protocol101_paper_preflight.sh", {})
+    if (signals.get("launchd_python_runtime_failed") or signals.get("launchd_permission_denied")) and not (
+        session_wrapper.get("prefers_project_venv") and preflight_wrapper.get("prefers_project_venv")
+    ):
+        return "blocked_launchd_python_runtime_failed"
     if signals.get("pythonpath_missing_for_session_runner") and not session_wrapper.get("exports_pythonpath"):
         return "blocked_session_runner_pythonpath_missing"
-    if any(probe.open for probe in ports) and signals.get("api_port_open_detected") and signals.get("missing_live_market_data_entitlements"):
+    if signals.get("missing_live_market_data_entitlements"):
         return "blocked_live_market_data_entitlements"
     if signals.get("ibkr_market_data_not_subscribed") or signals.get("ibkr_competing_live_session"):
         return "blocked_live_market_data_entitlements"
@@ -367,6 +375,7 @@ def interpretation(decision: str, signals: Counter[str]) -> list[str]:
     notes = {
         "blocked_launchagents_not_loaded": "One or more launchd jobs are missing or unloaded, so the morning automation may not run.",
         "blocked_session_runner_pythonpath_missing": "The session job reached Python but could not import the local v4 package. Reinstall/copy the patched runtime wrappers before tomorrow's run.",
+        "blocked_launchd_python_runtime_failed": "The scheduled launchd job reached Apple Command Line Tools Python and crashed during interpreter startup. Use the project venv wrapper for scheduled jobs.",
         "blocked_live_market_data_entitlements": "Gateway/API startup reached the market-data probe, but IBKR refused at least one live data request. This is a data entitlement/session issue, not a model issue.",
         "blocked_gateway_keepalive_disconnect": "Gateway connected and then disconnected during keepalive. The next check is whether Gateway stayed logged in and API settings remained enabled.",
         "pass_ibkr_api_port_reachable": "An IBKR API port is currently reachable from localhost.",
@@ -382,6 +391,8 @@ def interpretation(decision: str, signals: Counter[str]) -> list[str]:
 def next_action(decision: str) -> str:
     if decision == "blocked_session_runner_pythonpath_missing":
         return "Copy/reinstall the patched launchd runtime wrapper so the paper-session job exports PYTHONPATH before running python -m v4..."
+    if decision == "blocked_launchd_python_runtime_failed":
+        return "Copy/reinstall the patched launchd runtime wrappers so scheduled jobs prefer the project .venv Python instead of Apple Command Line Tools Python."
     if decision == "blocked_live_market_data_entitlements":
         return "Confirm the required IBKR paper market-data subscriptions/session state, then run the no-order shadow path again during market hours."
     if decision == "blocked_gateway_keepalive_disconnect":
@@ -443,13 +454,13 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
             lines.append(f"| {name} | {count} |")
     else:
         lines.append("| none | 0 |")
-    lines.extend(["", "## Runtime Wrappers", "", "| wrapper | exists | exports PYTHONPATH | modified |", "| --- | ---: | ---: | --- |"])
+    lines.extend(["", "## Runtime Wrappers", "", "| wrapper | exists | exports PYTHONPATH | prefers project venv | modified |", "| --- | ---: | ---: | ---: | --- |"])
     wrappers = payload.get("runtime_wrappers", {})
     for name, status in wrappers.items():
         if name == "runtime_dir":
             continue
         lines.append(
-            f"| {name} | `{status.get('exists')}` | `{status.get('exports_pythonpath')}` | `{status.get('modified_at_pacific')}` |"
+            f"| {name} | `{status.get('exists')}` | `{status.get('exports_pythonpath')}` | `{status.get('prefers_project_venv')}` | `{status.get('modified_at_pacific')}` |"
         )
     lines.extend(["", "## Log Files", ""])
     for name, digest in payload["logs"].items():

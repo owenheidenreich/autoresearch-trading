@@ -3,7 +3,11 @@ set -euo pipefail
 
 REPO_ROOT="${REPO_ROOT:-/Users/gduby/Documents/autoresearch-trading}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_BIN="${PYTHON_BIN:-$REPO_ROOT/.venv/bin/python}"
+DEFAULT_PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
+PYTHON_BIN="${PYTHON_BIN:-$DEFAULT_PYTHON_BIN}"
+if [[ -x "$DEFAULT_PYTHON_BIN" && "$PYTHON_BIN" == "/usr/bin/python3" ]]; then
+  PYTHON_BIN="$DEFAULT_PYTHON_BIN"
+fi
 if [[ ! -x "$PYTHON_BIN" ]]; then
   PYTHON_BIN="$(command -v python3)"
 fi
@@ -22,6 +26,7 @@ IB_GATEWAY_STABLE_SECONDS="${IB_GATEWAY_STABLE_SECONDS:-10}"
 IB_GATEWAY_KEEPALIVE_SECONDS="${IB_GATEWAY_KEEPALIVE_SECONDS:-0}"
 LOG_PATH="${LOG_PATH:-$HOME/Library/Logs/autoresearch-trading/ibc}"
 
+export PYTHON_BIN
 mkdir -p "$LOG_PATH"
 
 if [[ ! -x "$IBC_PATH/scripts/ibcstart.sh" ]]; then
