@@ -60,8 +60,8 @@
     },
     "Logon": {
       "Locale": "en",
-      "Steps": "7",
-      "SupportsSSL": "ndc1.ibllc.com:4000,true,20260314,false;cdc1.ibllc.com:4000,true,20260514,false",
+      "Steps": "3",
+      "SupportsSSL": "ndc1.ibllc.com:4000,true,20260314,false;cdc1.ibllc.com:4000,true,20260518,false",
       "TimeZone": "America/Los_Angeles",
       "UseSSL": "true",
       "UserNameToDirectory": "<redacted>",

@@ -1843,3 +1843,16 @@ Result: Decision blocked_protocol155_no_closed_one_contract_paper_trades_yet. Re
 Next Gate: Run the next market session in one-contract paper mode and capture closed entry/exit fill rows.
 Owner: Codex
 ```
+
+## 2026-05-18 Protocol 156 IBKR Autostart Observability
+
+```text
+Date: 2026-05-18
+Decision / Experiment: Added a single IBKR morning autostart observability report covering launchd state, log tails, API port probes, and known failure signals.
+Reason: The user needs to know whether the automatic IBKR login/session path is working and where it fails before Tuesday's paper-trading run.
+Data Used: Local launchd state and local logs only. No paid data was downloaded, no broker order endpoint was called, and no orders were placed.
+Cost: $0 incremental paid data.
+Result: Decision blocked_live_market_data_entitlements. Report: v4/audit/autoresearch/v4_aplus_hypothesis_156_ibkr_autostart_observability/report.md
+Next Gate: Use the report after the scheduled 6:28/6:29/6:30 Pacific automation to diagnose startup, preflight, session, and market-data blockers.
+Owner: Codex
+```

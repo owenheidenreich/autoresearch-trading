@@ -171,6 +171,7 @@ def write_launchd_assets(
             "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
             "IB_GATEWAY_KEEPALIVE_SECONDS": "28800",
             "PYTHON_BIN": "/usr/bin/python3",
+            "PYTHONPATH": str(REPO_ROOT),
             "REPO_ROOT": str(REPO_ROOT),
         },
     )
@@ -189,6 +190,7 @@ def write_launchd_assets(
             "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
             "IB_GATEWAY_PREFLIGHT_TIMEOUT_SECONDS": "600",
             "PYTHON_BIN": "/usr/bin/python3",
+            "PYTHONPATH": str(REPO_ROOT),
             "REPO_ROOT": str(REPO_ROOT),
         },
     )
@@ -212,6 +214,7 @@ def write_launchd_assets(
             "PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS": "120",
             "PROTOCOL101_SESSION_PAPER_CASH": "10000",
             "PYTHON_BIN": "/usr/bin/python3",
+            "PYTHONPATH": str(REPO_ROOT),
             "REPO_ROOT": str(REPO_ROOT),
         },
     )
@@ -268,6 +271,7 @@ cp "{REPO_ROOT / 'v4/ops/ibkr/install_ibc_macos.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/start_ib_gateway_paper_ibc.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_paper_preflight.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_paper_session.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/run_ibkr_autostart_status.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/wait_for_ibkr_api.py'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/write_ibc_runtime_config.py'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/probe_ibkr_api.py'}" "$RUNTIME_DIR/"

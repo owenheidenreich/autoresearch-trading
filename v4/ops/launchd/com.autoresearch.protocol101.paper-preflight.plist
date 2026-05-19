@@ -10,6 +10,8 @@
 		<string>4002,4000,7497,7496,4001</string>
 		<key>IB_GATEWAY_PREFLIGHT_TIMEOUT_SECONDS</key>
 		<string>600</string>
+		<key>PYTHONPATH</key>
+		<string>/Users/gduby/Documents/autoresearch-trading</string>
 		<key>PYTHON_BIN</key>
 		<string>/usr/bin/python3</string>
 		<key>REPO_ROOT</key>

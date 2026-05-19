@@ -1,0 +1,555 @@
+{
+  "broker_order_endpoint_called": false,
+  "decision": "blocked_live_market_data_entitlements",
+  "generated_at_pacific": "2026-05-18T18:00:34.165839-07:00",
+  "interpretation": [
+    "Gateway/API startup reached the market-data probe, but IBKR refused at least one live data request. This is a data entitlement/session issue, not a model issue.",
+    "Detected signals: api_port_open_detected=1, holding_status_detected=1, ibkr_api_connected_detected=1, ibkr_competing_live_session=1, ibkr_keepalive_socket_disconnect=1, ibkr_market_data_not_subscribed=1, missing_live_market_data_entitlements=1, pass_status_detected=1, pythonpath_missing_for_session_runner=1, socket_disconnect=1"
+  ],
+  "launchd": {
+    "com.autoresearch.ibgateway.paper": {
+      "installed": true,
+      "label": "com.autoresearch.ibgateway.paper",
+      "last_exit_code": 1,
+      "loaded": true,
+      "path": "/Users/gduby/Library/LaunchAgents/com.autoresearch.ibgateway.paper.plist",
+      "returncode": 0,
+      "runs": 4,
+      "state": "active",
+      "stderr": null,
+      "stderr_path": "/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log",
+      "stdout_path": "/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log",
+      "target": "gui/501/com.autoresearch.ibgateway.paper"
+    },
+    "com.autoresearch.protocol101.paper-preflight": {
+      "installed": true,
+      "label": "com.autoresearch.protocol101.paper-preflight",
+      "last_exit_code": 1,
+      "loaded": true,
+      "path": "/Users/gduby/Library/LaunchAgents/com.autoresearch.protocol101.paper-preflight.plist",
+      "returncode": 0,
+      "runs": 4,
+      "state": "active",
+      "stderr": null,
+      "stderr_path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.err.log",
+      "stdout_path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.out.log",
+      "target": "gui/501/com.autoresearch.protocol101.paper-preflight"
+    },
+    "com.autoresearch.protocol101.paper-session": {
+      "installed": true,
+      "label": "com.autoresearch.protocol101.paper-session",
+      "last_exit_code": 1,
+      "loaded": true,
+      "path": "/Users/gduby/Library/LaunchAgents/com.autoresearch.protocol101.paper-session.plist",
+      "returncode": 0,
+      "runs": 4,
+      "state": "active",
+      "stderr": null,
+      "stderr_path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.err.log",
+      "stdout_path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.out.log",
+      "target": "gui/501/com.autoresearch.protocol101.paper-session"
+    }
+  },
+  "live_orders": false,
+  "live_trade_logs": {
+    "exists": false,
+    "jsonl_files": [],
+    "root": "v4/logs/paper_trading",
+    "session_date": "2026-05-19"
+  },
+  "log_dir": "/Users/gduby/Library/Logs/autoresearch-trading",
+  "logs": {
+    "gateway_stderr": {
+      "exists": true,
+      "json_events": [
+        {
+          "blocked_reason": "ibkr_keepalive_failed",
+          "error": "Socket disconnect",
+          "status": "blocked"
+        }
+      ],
+      "modified_at_pacific": "2026-05-18T08:25:23.709114-07:00",
+      "path": "/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.err.log",
+      "signals": [
+        "holding_status_detected",
+        "ibkr_api_connected_detected",
+        "ibkr_keepalive_socket_disconnect",
+        "pass_status_detected",
+        "socket_disconnect"
+      ],
+      "size_bytes": 20918,
+      "tail": [
+        "          \"port\": 7496,",
+        "          \"status\": \"socket_closed\"",
+        "        },",
+        "        {",
+        "          \"port\": 4001,",
+        "          \"status\": \"socket_closed\"",
+        "        }",
+        "      ],",
+        "      \"connected\": false",
+        "    },",
+        "    {",
+        "      \"attempts\": [",
+        "        {",
+        "          \"error\": \"\",",
+        "          \"port\": 4002,",
+        "          \"status\": \"api_failed\"",
+        "        },",
+        "        {",
+        "          \"port\": 4000,",
+        "          \"status\": \"socket_closed\"",
+        "        },",
+        "        {",
+        "          \"port\": 7497,",
+        "          \"status\": \"socket_closed\"",
+        "        },",
+        "        {",
+        "          \"port\": 7496,",
+        "          \"status\": \"socket_closed\"",
+        "        },",
+        "        {",
+        "          \"port\": 4001,",
+        "          \"status\": \"socket_closed\"",
+        "        }",
+        "      ],",
+        "      \"connected\": false",
+        "    },",
+        "    {",
+        "      \"account_count\": 1,",
+        "      \"attempts\": [",
+        "        {",
+        "          \"port\": 4002,",
+        "          \"status\": \"connected\"",
+        "        }",
+        "      ],",
+        "      \"connected\": true,",
+        "      \"host\": \"127.0.0.1\",",
+        "      \"port\": 4002,",
+        "      \"primary_account_id_redacted\": \"DU***40\"",
+        "    },",
+        "    {",
+        "      \"account_count\": 1,",
+        "      \"attempts\": [",
+        "        {",
+        "          \"port\": 4002,",
+        "          \"status\": \"connected\"",
+        "        }",
+        "      ],",
+        "      \"connected\": true,",
+        "      \"host\": \"127.0.0.1\",",
+        "      \"port\": 4002,",
+        "      \"primary_account_id_redacted\": \"DU***40\"",
+        "    }",
+        "  ],",
+        "  \"broker_order_endpoint_called\": false,",
+        "  \"host\": \"127.0.0.1\",",
+        "  \"port\": 4002,",
+        "  \"stable_seconds\": 10.0,",
+        "  \"status\": \"pass\"",
+        "}",
+        "{",
+        "  \"account_count\": 1,",
+        "  \"account_id_redacted\": \"DU***40\",",
+        "  \"broker_order_endpoint_called\": false,",
+        "  \"client_id\": 147,",
+        "  \"hold_seconds\": 28800.0,",
+        "  \"host\": \"127.0.0.1\",",
+        "  \"port\": 4002,",
+        "  \"status\": \"holding\"",
+        "}",
+        "{\"status\": \"blocked\", \"blocked_reason\": \"ibkr_keepalive_failed\", \"error\": \"Socket disconnect\"}"
+      ]
+    },
+    "gateway_stdout": {
+      "exists": true,
+      "json_events": [],
+      "modified_at_pacific": "2026-05-14T17:18:02.375757-07:00",
+      "path": "/Users/gduby/Library/Logs/autoresearch-trading/ibgateway-paper.out.log",
+      "signals": [],
+      "size_bytes": 0,
+      "tail": []
+    },
+    "ibc_recent": [
+      {
+        "exists": true,
+        "json_events": [],
+        "modified_at_pacific": "2026-05-18T06:45:01.532039-07:00",
+        "path": "/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.err.log",
+        "signals": [],
+        "size_bytes": 58,
+        "tail": [
+          "mktemp: mkstemp failed on SxzQvTMf: Read-only file system"
+        ]
+      },
+      {
+        "exists": true,
+        "json_events": [],
+        "modified_at_pacific": "2026-05-18T08:25:23.693200-07:00",
+        "path": "/Users/gduby/Library/Logs/autoresearch-trading/ibc/ibc-gateway.out.log",
+        "signals": [],
+        "size_bytes": 18030,
+        "tail": [
+          "2026-05-18 07:02:26:005 IBC: detected frame entitled: Starting application...; event=Closed",
+          "2026-05-18 07:02:26:005 IBC: Login has completed",
+          "2026-05-18 07:02:26:005 IBC: detected dialog entitled: Warning; event=Opened",
+          "2026-05-18 07:02:26:005 IBC: Click button: I understand and accept",
+          "2026-05-18 07:02:26:126 IBC: detected dialog entitled: DUP440540 Trader Workstation Configuration (Simulated Trading); event=Opened",
+          "2026-05-18 07:02:26:126 IBC: Got config dialog from future",
+          "2026-05-18 07:02:26:126 IBC: Got config dialog from future",
+          "2026-05-18 07:02:26:130 IBC: Setting ReadOnlyApi",
+          "2026-05-18 07:02:26:170 IBC: Read-Only API checkbox is already set to: false",
+          "2026-05-18 07:02:26:170 IBC: Performing port configuration",
+          "2026-05-18 07:02:26:170 IBC: TWS API socket port is already set to 4002",
+          "2026-05-18 07:02:26:171 IBC: detected dialog entitled: Warning; event=Closed",
+          "2026-05-18 07:07:31:096 IBC: Configuration tasks completed",
+          "2026-05-18 07:07:31:096 IBC: Click button: OK",
+          "2026-05-18 07:07:31:316 IBC: detected dialog entitled: DUP440540 Trader Workstation Configuration (Simulated Trading); event=Closed",
+          "2026-05-18 07:07:31:487 IBC: detected frame entitled: Connecting to server...; event=Opened",
+          "2026-05-18 07:07:31:493 IBC: detected dialog entitled: Pending Tasks; event=Closed",
+          "2026-05-18 07:07:32:308 IBC: detected frame entitled: Starting application...; event=Closed",
+          "addLogConsole Client 91",
+          "addLogConsole Client 145",
+          "addLogConsole Client 146",
+          "addLogConsole Client 147",
+          "2026-05-18 07:26:14:086 IBC: detected frame entitled: Connecting to server...; event=Opened",
+          "2026-05-18 07:26:15:282 IBC: detected frame entitled: Starting application...; event=Closed",
+          "2026-05-18 07:36:44:935 IBC: detected frame entitled: Connecting to server...; event=Opened",
+          "2026-05-18 07:36:45:768 IBC: detected frame entitled: Starting application...; event=Closed",
+          "2026-05-18 07:52:47:387 IBC: detected frame entitled: Connecting to server...; event=Opened",
+          "2026-05-18 07:52:48:563 IBC: detected frame entitled: Starting application...; event=Closed",
+          "2026-05-18 08:09:34:936 IBC: detected frame entitled: Connecting to server...; event=Opened",
+          "2026-05-18 08:09:35:750 IBC: detected frame entitled: Starting application...; event=Closed",
+          "2026-05-18 08:22:55:618 IBC: detected frame entitled: Connecting to server...; event=Opened",
+          "2026-05-18 08:22:57:308 IBC: detected frame entitled: Starting application...; event=Closed",
+          "2026-05-18 08:25:07:402 IBC: detected frame entitled: Connecting to server...; event=Opened",
+          "2026-05-18 08:25:08:332 IBC: detected frame entitled: Starting application...; event=Closed",
+          "IBC returned exit status 0",
+          "Finding autorestart file",
+          "autorestart file not found: full authentication will be required",
+          "",
+          "Gateway finished",
+          ""
+        ]
+      }
+    ],
+    "preflight_stderr": {
+      "exists": true,
+      "json_events": [],
+      "modified_at_pacific": "2026-05-18T07:07:39.671432-07:00",
+      "path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.err.log",
+      "signals": [
+        "ibkr_competing_live_session",
+        "ibkr_market_data_not_subscribed"
+      ],
+      "size_bytes": 3454,
+      "tail": [
+        "Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
+        "Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')",
+        "Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
+        "Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')",
+        "Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
+        "Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')",
+        "Error 354, reqId 4: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.SPX S&P 500 Stock Index/TOP/ALL, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
+        "Error 354, reqId 6: Requested market data is not subscribed. Check API status by selecting the Account menu then under Management choose Market Data Subscription Manager and/or availability of delayed data.Delayed market data is available.VIX CBOE Volatility Index/TOP/ALL, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')",
+        "Error 1102, reqId -1: Connectivity between IBKR and Trader Workstation has been restored - data maintained. All data farms are connected: usfarm; ushmds; secdefil.",
+        "Error 10197, reqId 4: No market data during competing live session, contract: Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
+        "Error 10197, reqId 6: No market data during competing live session, contract: Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')"
+      ]
+    },
+    "preflight_stdout": {
+      "exists": true,
+      "json_events": [
+        {
+          "blocked_reason": "missing_live_market_data_entitlements",
+          "decision": "blocked",
+          "feed_status": {
+            "spx": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            },
+            "spxw_options": {
+              "contracts_qualified": 0,
+              "contracts_requested": 0,
+              "delayed_nbbo_rows": 0,
+              "live_nbbo_rows": 0,
+              "market_data_type_counts": {}
+            },
+            "vix": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            }
+          },
+          "ibkr_port": 4002
+        },
+        {
+          "blocked_reason": "missing_live_market_data_entitlements",
+          "decision": "blocked",
+          "feed_status": {
+            "spx": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            },
+            "spxw_options": {
+              "contracts_qualified": 0,
+              "contracts_requested": 0,
+              "delayed_nbbo_rows": 0,
+              "live_nbbo_rows": 0,
+              "market_data_type_counts": {}
+            },
+            "vix": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            }
+          },
+          "ibkr_port": 4002
+        },
+        {
+          "blocked_reason": "missing_live_market_data_entitlements",
+          "decision": "blocked",
+          "feed_status": {
+            "spx": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            },
+            "spxw_options": {
+              "contracts_qualified": 0,
+              "contracts_requested": 0,
+              "delayed_nbbo_rows": 0,
+              "live_nbbo_rows": 0,
+              "market_data_type_counts": {}
+            },
+            "vix": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            }
+          },
+          "ibkr_port": 4002
+        },
+        {
+          "blocked_reason": "missing_live_market_data_entitlements",
+          "decision": "blocked",
+          "feed_status": {
+            "spx": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            },
+            "spxw_options": {
+              "contracts_qualified": 0,
+              "contracts_requested": 0,
+              "delayed_nbbo_rows": 0,
+              "live_nbbo_rows": 0,
+              "market_data_type_counts": {}
+            },
+            "vix": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            }
+          },
+          "ibkr_port": 4002
+        },
+        {
+          "blocked_reason": "missing_live_market_data_entitlements",
+          "decision": "blocked",
+          "feed_status": {
+            "spx": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            },
+            "spxw_options": {
+              "contracts_qualified": 0,
+              "contracts_requested": 0,
+              "delayed_nbbo_rows": 0,
+              "live_nbbo_rows": 0,
+              "market_data_type_counts": {}
+            },
+            "vix": {
+              "live_price_available": false,
+              "market_data_type": "live",
+              "price": null
+            }
+          },
+          "ibkr_port": 4002
+        }
+      ],
+      "modified_at_pacific": "2026-05-18T07:07:50.872746-07:00",
+      "path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-preflight.out.log",
+      "signals": [
+        "api_port_open_detected",
+        "missing_live_market_data_entitlements"
+      ],
+      "size_bytes": 3110,
+      "tail": [
+        "v4/audit/ibkr_live_data_entitlements/report.md",
+        "{\"blocked_reason\": \"missing_live_market_data_entitlements\", \"decision\": \"blocked\", \"feed_status\": {\"spx\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}, \"spxw_options\": {\"contracts_qualified\": 0, \"contracts_requested\": 0, \"delayed_nbbo_rows\": 0, \"live_nbbo_rows\": 0, \"market_data_type_counts\": {}}, \"vix\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}}, \"ibkr_port\": 4002}",
+        "{",
+        "  \"candidate_ports\": [",
+        "    4002,",
+        "    4000,",
+        "    7497,",
+        "    7496,",
+        "    4001",
+        "  ],",
+        "  \"host\": \"127.0.0.1\",",
+        "  \"port\": 4002,",
+        "  \"status\": \"port_open\"",
+        "}",
+        "v4/audit/ibkr_live_data_entitlements/report.md",
+        "{\"blocked_reason\": \"missing_live_market_data_entitlements\", \"decision\": \"blocked\", \"feed_status\": {\"spx\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}, \"spxw_options\": {\"contracts_qualified\": 0, \"contracts_requested\": 0, \"delayed_nbbo_rows\": 0, \"live_nbbo_rows\": 0, \"market_data_type_counts\": {}}, \"vix\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}}, \"ibkr_port\": 4002}",
+        "{",
+        "  \"candidate_ports\": [",
+        "    4002,",
+        "    4000,",
+        "    7497,",
+        "    7496,",
+        "    4001",
+        "  ],",
+        "  \"host\": \"127.0.0.1\",",
+        "  \"port\": 4002,",
+        "  \"status\": \"port_open\"",
+        "}",
+        "v4/audit/ibkr_live_data_entitlements/report.md",
+        "{\"blocked_reason\": \"missing_live_market_data_entitlements\", \"decision\": \"blocked\", \"feed_status\": {\"spx\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}, \"spxw_options\": {\"contracts_qualified\": 0, \"contracts_requested\": 0, \"delayed_nbbo_rows\": 0, \"live_nbbo_rows\": 0, \"market_data_type_counts\": {}}, \"vix\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}}, \"ibkr_port\": 4002}",
+        "{",
+        "  \"candidate_ports\": [",
+        "    4002,",
+        "    4000,",
+        "    7497,",
+        "    7496,",
+        "    4001",
+        "  ],",
+        "  \"host\": \"127.0.0.1\",",
+        "  \"port\": 4002,",
+        "  \"status\": \"port_open\"",
+        "}",
+        "v4/audit/ibkr_live_data_entitlements/report.md",
+        "{\"blocked_reason\": \"missing_live_market_data_entitlements\", \"decision\": \"blocked\", \"feed_status\": {\"spx\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}, \"spxw_options\": {\"contracts_qualified\": 0, \"contracts_requested\": 0, \"delayed_nbbo_rows\": 0, \"live_nbbo_rows\": 0, \"market_data_type_counts\": {}}, \"vix\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}}, \"ibkr_port\": 4002}",
+        "{",
+        "  \"candidate_ports\": [",
+        "    4002,",
+        "    4000,",
+        "    7497,",
+        "    7496,",
+        "    4001",
+        "  ],",
+        "  \"host\": \"127.0.0.1\",",
+        "  \"port\": 4002,",
+        "  \"status\": \"port_open\"",
+        "}",
+        "v4/audit/ibkr_live_data_entitlements/report.md",
+        "{\"blocked_reason\": \"missing_live_market_data_entitlements\", \"decision\": \"blocked\", \"feed_status\": {\"spx\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}, \"spxw_options\": {\"contracts_qualified\": 0, \"contracts_requested\": 0, \"delayed_nbbo_rows\": 0, \"live_nbbo_rows\": 0, \"market_data_type_counts\": {}}, \"vix\": {\"live_price_available\": false, \"market_data_type\": \"live\", \"price\": null}}, \"ibkr_port\": 4002}",
+        "{",
+        "  \"candidate_ports\": [",
+        "    4002,",
+        "    4000,",
+        "    7497,",
+        "    7496,",
+        "    4001",
+        "  ],",
+        "  \"host\": \"127.0.0.1\",",
+        "  \"port\": 4002,",
+        "  \"status\": \"port_open\"",
+        "}"
+      ]
+    },
+    "session_stderr": {
+      "exists": true,
+      "json_events": [],
+      "modified_at_pacific": "2026-05-18T06:45:01.431239-07:00",
+      "path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.err.log",
+      "signals": [
+        "pythonpath_missing_for_session_runner"
+      ],
+      "size_bytes": 796,
+      "tail": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')",
+        "/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')",
+        "/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')",
+        "/Library/Developer/CommandLineTools/usr/bin/python3: Error while finding module specification for 'v4.scripts.run_protocol147_protocol101_morning_session' (ModuleNotFoundError: No module named 'v4')"
+      ]
+    },
+    "session_stdout": {
+      "exists": true,
+      "json_events": [],
+      "modified_at_pacific": "2026-05-15T06:30:05.424299-07:00",
+      "path": "/Users/gduby/Library/Logs/autoresearch-trading/protocol101-paper-session.out.log",
+      "signals": [],
+      "size_bytes": 0,
+      "tail": []
+    }
+  },
+  "next_action": "Confirm the required IBKR paper market-data subscriptions/session state, then run the no-order shadow path again during market hours.",
+  "paid_data_downloaded": false,
+  "paper_orders": false,
+  "ports": [
+    {
+      "error": "ConnectionRefusedError",
+      "open": false,
+      "port": 4002
+    },
+    {
+      "error": "ConnectionRefusedError",
+      "open": false,
+      "port": 4000
+    },
+    {
+      "error": "ConnectionRefusedError",
+      "open": false,
+      "port": 7497
+    },
+    {
+      "error": "ConnectionRefusedError",
+      "open": false,
+      "port": 7496
+    },
+    {
+      "error": "ConnectionRefusedError",
+      "open": false,
+      "port": 4001
+    }
+  ],
+  "protocol": "156_ibkr_autostart_observability",
+  "runtime_wrappers": {
+    "run_ibkr_autostart_status.sh": {
+      "exists": true,
+      "exports_pythonpath": true,
+      "modified_at_pacific": "2026-05-18T17:59:34.625765-07:00",
+      "path": "/Users/gduby/.autoresearch-trading/launchd/run_ibkr_autostart_status.sh"
+    },
+    "run_protocol101_paper_preflight.sh": {
+      "exists": true,
+      "exports_pythonpath": true,
+      "modified_at_pacific": "2026-05-18T17:59:34.622199-07:00",
+      "path": "/Users/gduby/.autoresearch-trading/launchd/run_protocol101_paper_preflight.sh"
+    },
+    "run_protocol101_paper_session.sh": {
+      "exists": true,
+      "exports_pythonpath": true,
+      "modified_at_pacific": "2026-05-18T17:59:34.618453-07:00",
+      "path": "/Users/gduby/.autoresearch-trading/launchd/run_protocol101_paper_session.sh"
+    },
+    "runtime_dir": "/Users/gduby/.autoresearch-trading/launchd"
+  },
+  "session_date": "2026-05-19",
+  "signals": {
+    "api_port_open_detected": 1,
+    "holding_status_detected": 1,
+    "ibkr_api_connected_detected": 1,
+    "ibkr_competing_live_session": 1,
+    "ibkr_keepalive_socket_disconnect": 1,
+    "ibkr_market_data_not_subscribed": 1,
+    "missing_live_market_data_entitlements": 1,
+    "pass_status_detected": 1,
+    "pythonpath_missing_for_session_runner": 1,
+    "socket_disconnect": 1
+  }
+}

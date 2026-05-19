@@ -13,6 +13,7 @@ if [[ ! -f "$WAIT_FOR_IBKR_API_SCRIPT" ]]; then
   WAIT_FOR_IBKR_API_SCRIPT="$REPO_ROOT/v4/ops/ibkr/wait_for_ibkr_api.py"
 fi
 
+export PYTHONPATH="$REPO_ROOT:${PYTHONPATH:-}"
 cd "$REPO_ROOT"
 exec "$PYTHON_BIN" "$WAIT_FOR_IBKR_API_SCRIPT" \
   --port "$IB_GATEWAY_API_PORT" \

@@ -12,6 +12,8 @@
 		<string>/Users/gduby/Applications/IB Gateway 10.45/IB Gateway 10.45-1.app</string>
 		<key>IB_GATEWAY_KEEPALIVE_SECONDS</key>
 		<string>28800</string>
+		<key>PYTHONPATH</key>
+		<string>/Users/gduby/Documents/autoresearch-trading</string>
 		<key>PYTHON_BIN</key>
 		<string>/usr/bin/python3</string>
 		<key>REPO_ROOT</key>

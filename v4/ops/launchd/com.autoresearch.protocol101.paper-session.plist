@@ -20,6 +20,8 @@
 		<string>10000</string>
 		<key>PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS</key>
 		<string>120</string>
+		<key>PYTHONPATH</key>
+		<string>/Users/gduby/Documents/autoresearch-trading</string>
 		<key>PYTHON_BIN</key>
 		<string>/usr/bin/python3</string>
 		<key>REPO_ROOT</key>
