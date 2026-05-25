@@ -1,0 +1,54 @@
+{
+  "artifacts": {
+    "csv_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_rows.csv",
+    "json_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.json",
+    "markdown_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.md"
+  },
+  "counts": {
+    "broker_endpoint_rows": 0,
+    "broker_problem_rows": 0,
+    "classification_counts": {
+      "missing": 6647,
+      "unreconstructable": 1
+    },
+    "files_read_count": 15,
+    "paper_submit_problem_rows": 0,
+    "paper_submit_quote_rows": 0,
+    "persisted_quote_age_rows": 1,
+    "placeholder_ratio_among_persisted": 0.0,
+    "quote_evidence_rows": 1,
+    "total_rows": 6648,
+    "trust_status_counts": {
+      "unknown": 6648
+    },
+    "trustworthy_ratio_among_persisted": 0.0
+  },
+  "generated_at": "2026-05-25T01:45:51.264995+00:00",
+  "input": {
+    "files_read": [
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-14/protocol142_executor_smoke.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-15/manual_dry_run.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-15/manual_fail_closed_rehearsal.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-15/protocol155_integrated_dry_run.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-15/protocol155_readiness_dry_run.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-19/protocol101_intent-shadow_bridge_verify_2026-05-19.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-19/protocol101_no-order-shadow_2026-05-19.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-19/protocol101_no-order-shadow_entrybridge_verify_2026-05-19.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-19/protocol101_no-order-shadow_plumbing_verify_2026-05-19.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-19/protocol101_paper_dryrun_alignment_2026-05-19.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-20/protocol101_no-order-shadow_2026-05-20.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-20/protocol101_persistent_cadence_blocker_smoke_2026-05-20.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-20/protocol101_persistent_cadence_smoke_2026-05-20.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-20/protocol101_persistent_smoke_2026-05-20.jsonl",
+      "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-21/protocol101_persistent-paper_2026-05-21.jsonl"
+    ],
+    "json_error_count": 0,
+    "missing_inputs": []
+  },
+  "thresholds": {
+    "max_age_ms": 1500.0,
+    "tolerance_ms": 250.0
+  },
+  "verdict": "unknown",
+  "verdict_reason": "available logs do not contain enough broker/paper-submit trustworthy evidence"
+}

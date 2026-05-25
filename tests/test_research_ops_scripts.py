@@ -10,6 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESEARCH_OPS = REPO_ROOT / "research_ops"
 SCRIPTS = RESEARCH_OPS / "scripts"
+DIAGNOSTICS = RESEARCH_OPS / "diagnostics"
 PROMPTS = RESEARCH_OPS / "prompts"
 
 
@@ -24,7 +25,8 @@ def test_research_ops_scripts_do_not_import_trading_or_external_systems():
         "pandas",
         "numpy",
     }
-    for path in sorted(SCRIPTS.glob("*.py")):
+    paths = sorted([*SCRIPTS.glob("*.py"), *DIAGNOSTICS.glob("*.py")])
+    for path in paths:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         imports = []
         for node in ast.walk(tree):
@@ -195,13 +197,17 @@ def test_stage6_agent_prompts_exist_and_keep_roles_separate():
 def test_new_iteration_validate_summarize_and_dashboard_roundtrip(tmp_path):
     sandbox = tmp_path / "repo"
     shutil.copytree(RESEARCH_OPS, sandbox / "research_ops")
+    iterations_root = sandbox / "research_ops" / "iterations"
+    for child in iterations_root.iterdir():
+        if child.is_dir() and child.name.startswith("ITER-"):
+            shutil.rmtree(child)
 
     create = subprocess.run(
         [
             sys.executable,
             str(sandbox / "research_ops" / "scripts" / "new_iteration.py"),
             "--id",
-            "ITER-001_quote_age_truth",
+            "ITER-900_quote_age_truth",
             "--assumption",
             "A001",
             "--title",
@@ -216,7 +222,7 @@ def test_new_iteration_validate_summarize_and_dashboard_roundtrip(tmp_path):
         capture_output=True,
     )
     iteration_dir = Path(create.stdout.strip())
-    assert iteration_dir.name == "ITER-001_quote_age_truth"
+    assert iteration_dir.name == "ITER-900_quote_age_truth"
 
     for filename in [
         "manifest.yaml",
@@ -230,7 +236,7 @@ def test_new_iteration_validate_summarize_and_dashboard_roundtrip(tmp_path):
         assert (iteration_dir / filename).exists()
     assert (iteration_dir / "artifacts" / ".gitkeep").exists()
     manifest_text = (iteration_dir / "manifest.yaml").read_text(encoding="utf-8")
-    assert 'iteration_id: "ITER-001_quote_age_truth"' in manifest_text
+    assert 'iteration_id: "ITER-900_quote_age_truth"' in manifest_text
     assert 'assumption_id: "A001"' in manifest_text
 
     subprocess.run(
@@ -300,7 +306,7 @@ def test_new_iteration_validate_summarize_and_dashboard_roundtrip(tmp_path):
         "## 8. Newly Confirmed Evidence",
         "## 9. Newly Falsified Assumptions",
         "## 10. Next Recommended Codex Prompt",
-        "ITER-001_quote_age_truth",
+        "ITER-900_quote_age_truth",
         "Quote timestamps can be reconstructed for sampled rows.",
     ]:
         assert required in dashboard

@@ -99,6 +99,17 @@ def extract_section(path: Path, heading: str) -> list[str]:
     return [line for line in out if line not in {"- None yet.", "None yet.", "pending"}]
 
 
+def normalize_section_items(items: list[str]) -> list[str]:
+    normalized = []
+    for item in items:
+        clean = item.strip()
+        while clean.startswith(("- ", "* ")):
+            clean = clean[2:].strip()
+        if clean:
+            normalized.append(clean)
+    return normalized
+
+
 def list_or_none(items: list[str]) -> list[str]:
     return items if items else ["None recorded."]
 
@@ -119,6 +130,11 @@ def bullet_list(items: list[str]) -> str:
     return "\n".join(f"- {item}" for item in items)
 
 
+def code_or_text(value: object) -> str:
+    text = str(value)
+    return text if "`" in text else f"`{text}`"
+
+
 def build_dashboard(root: Path) -> str:
     research_ops = root / "research_ops"
     state = read_yamlish(research_ops / "CURRENT_STATE.yaml")
@@ -128,9 +144,26 @@ def build_dashboard(root: Path) -> str:
     completed = latest_by_status(iterations, completed=True)
 
     completed_path = completed[0] if completed else None
-    latest_decision = extract_section(completed_path / "05_decision_memo.md", "## Decision") if completed_path else []
-    confirmed = extract_section(completed_path / "04_verifier_report.md", "## Newly Confirmed Evidence") if completed_path else []
-    falsified = extract_section(completed_path / "04_verifier_report.md", "## Newly Falsified Assumptions") if completed_path else []
+    latest_decision = (
+        normalize_section_items(extract_section(completed_path / "05_decision_memo.md", "## Decision"))
+        if completed_path
+        else []
+    )
+    confirmed = (
+        normalize_section_items(extract_section(completed_path / "04_verifier_report.md", "## Newly Confirmed Evidence"))
+        if completed_path
+        else []
+    )
+    falsified = (
+        normalize_section_items(extract_section(completed_path / "04_verifier_report.md", "## Newly Falsified Assumptions"))
+        if completed_path
+        else []
+    )
+    next_iteration = (
+        normalize_section_items(extract_section(completed_path / "05_decision_memo.md", "## Next Recommended Iteration"))
+        if completed_path
+        else []
+    )
 
     p0_rows = [row for row in assumptions if row.get("priority") == "P0"]
     p0_lines = [
@@ -146,7 +179,11 @@ def build_dashboard(root: Path) -> str:
     default_scope = state.get("current_default.scope", "unknown")
     real_money = state.get("current_default.real_money", "false")
     safety = state.get("audit_interpretation.next_phase", "execution-and-parity falsification")
-    next_prompt = state.get("next_recommended_prompt", "Create the first verifier RFC for Protocol101 execution realism and replay/live fill parity.")
+    next_prompt = (
+        next_iteration[0]
+        if next_iteration
+        else state.get("next_recommended_prompt", "Create the first verifier RFC for Protocol101 execution realism and replay/live fill parity.")
+    )
 
     decisions_required = []
     if active:
@@ -173,7 +210,7 @@ def build_dashboard(root: Path) -> str:
             "## 7. Blocked Actions\n\n" + bullet_list(list(blocked_actions)),
             "## 8. Newly Confirmed Evidence\n\n" + bullet_list(list_or_none(confirmed)),
             "## 9. Newly Falsified Assumptions\n\n" + bullet_list(list_or_none(falsified)),
-            "## 10. Next Recommended Codex Prompt\n\n" + f"`{next_prompt}`",
+            "## 10. Next Recommended Codex Prompt\n\n" + code_or_text(next_prompt),
             "## Dashboard Rule\n\n"
             "This dashboard is not primary evidence. Evidence lives in iteration artifacts, verifier reports, logs, manifests, and decision memos.",
         ]
