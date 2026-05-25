@@ -87,6 +87,52 @@ def test_current_state_declares_audit_control_fields():
         assert required in text
 
 
+def test_do_not_touch_boundaries_cover_stage4_required_surfaces():
+    text = (RESEARCH_OPS / "DO_NOT_TOUCH_WITHOUT_APPROVAL.md").read_text(encoding="utf-8")
+    required_terms = [
+        "v4/runtime/protocol101_paper_order_enablement.json",
+        "v4/ops/launchd/*",
+        "v4/ops/ibkr/run_protocol101_paper_session.sh",
+        "v4/live/ibkr_paper_executor.py",
+        "v4/live/ibkr_paper_guard.py",
+        "Protocol101 model, scaler, manifest",
+        "Protocol051/054 surface model, scaler, manifest",
+        "Protocol066/081 lifecycle model, scaler, manifest",
+        "Paid data download scripts",
+        "Protected holdout scoring scripts",
+        "Threshold selection logic",
+        "paper-submit default behavior",
+        "placeOrder",
+        "safe read-only work",
+        "Requires CEO Decision Memo",
+        "Requires A Separate Branch",
+        "Requires Human Approval",
+    ]
+    for required in required_terms:
+        assert required in text
+
+
+def test_pull_request_template_ties_prs_to_research_ops_controls():
+    template = (REPO_ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
+    for required in [
+        "## Purpose",
+        "What assumption or RFC does this PR address?",
+        "Iteration ID:",
+        "Assumption ID:",
+        "No trading logic changed unless explicitly approved",
+        "No runtime flags changed",
+        "No launchd files changed",
+        "No broker calls added",
+        "No paid data downloads added",
+        "No training added",
+        "No threshold tuning",
+        "No model promotion",
+        "No protected holdout scored for exploration",
+        "## CEO Decision Required",
+    ]:
+        assert required in template
+
+
 def test_new_iteration_validate_and_summarize_roundtrip(tmp_path):
     sandbox = tmp_path / "repo"
     shutil.copytree(RESEARCH_OPS, sandbox / "research_ops")
