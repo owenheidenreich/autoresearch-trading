@@ -99,6 +99,7 @@ Read these before changing direction:
 - `research_ops/CURRENT_STATE.yaml`
 - `research_ops/CEO_DASHBOARD.md`
 - `research_ops/ASSUMPTION_REGISTRY.csv`
+- `research_ops/BRANCH_AND_PR_CONVENTIONS.md`
 - `research_ops/DECISION_QUEUE.md`
 - `research_ops/bootstrap/V4_BASELINE_INVENTORY.md`
 - `docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md`
@@ -116,6 +117,7 @@ Read these before changing direction:
 | `CURRENT_STATE.yaml` | Machine-readable governance state. |
 | `CEO_DASHBOARD.md` | Human-readable operating snapshot. |
 | `ASSUMPTION_REGISTRY.csv` | Falsification-oriented assumption tracker. |
+| `BRANCH_AND_PR_CONVENTIONS.md` | Git branch and PR naming rules tied to iterations. |
 | `DECISION_QUEUE.md` | Pending governance decisions. |
 | `ROADMAP.md` | Prioritized research-ops roadmap. |
 | `DO_NOT_TOUCH_WITHOUT_APPROVAL.md` | Explicit protected surfaces. |
