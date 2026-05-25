@@ -101,6 +101,7 @@ Read these before changing direction:
 - `research_ops/ASSUMPTION_REGISTRY.csv`
 - `research_ops/BRANCH_AND_PR_CONVENTIONS.md`
 - `research_ops/DECISION_QUEUE.md`
+- `research_ops/TRANSITION_COMPLETION_CRITERIA.md`
 - `research_ops/bootstrap/V4_BASELINE_INVENTORY.md`
 - `docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md`
 - `docs/CURRENT_TRADING_BOT_IMPROVEMENT_QUESTIONS.md`
@@ -119,6 +120,7 @@ Read these before changing direction:
 | `ASSUMPTION_REGISTRY.csv` | Falsification-oriented assumption tracker. |
 | `BRANCH_AND_PR_CONVENTIONS.md` | Git branch and PR naming rules tied to iterations. |
 | `DECISION_QUEUE.md` | Pending governance decisions. |
+| `TRANSITION_COMPLETION_CRITERIA.md` | Definition of done for the research_ops transition. |
 | `ROADMAP.md` | Prioritized research-ops roadmap. |
 | `DO_NOT_TOUCH_WITHOUT_APPROVAL.md` | Explicit protected surfaces. |
 | `EVIDENCE_LADDER.md` | Evidence standards from weak to promotion-grade. |

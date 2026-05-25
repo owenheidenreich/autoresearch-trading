@@ -297,17 +297,24 @@ def test_new_iteration_validate_summarize_and_dashboard_roundtrip(tmp_path):
     dashboard = (sandbox / "research_ops" / "CEO_DASHBOARD.md").read_text(encoding="utf-8")
     for required in [
         "## 1. Current Operational Default",
-        "## 2. Current Safety Posture",
-        "## 3. Active Iteration",
-        "## 4. Latest Completed Iteration",
-        "## 5. Decisions Required",
-        "## 6. P0 Assumptions",
-        "## 7. Blocked Actions",
-        "## 8. Newly Confirmed Evidence",
-        "## 9. Newly Falsified Assumptions",
-        "## 10. Next Recommended Codex Prompt",
+        "## 2. Frozen Control",
+        "## 3. Current Safety Posture",
+        "## 4. Active Iteration",
+        "## 5. Latest Completed Iteration",
+        "## 6. What Changed In The Last Iteration",
+        "## 7. What The Verifier Objects To",
+        "## 8. Decision Required Now",
+        "## 9. Current P0 Assumption",
+        "## 10. All P0 Assumptions",
+        "## 11. Blocked Actions",
+        "## 12. Evidence Collected Last",
+        "## 13. Newly Falsified Assumptions",
+        "## 14. Next Recommended Codex Prompt",
+        "## 15. Transition Completion Check",
         "ITER-900_quote_age_truth",
         "Quote timestamps can be reconstructed for sampled rows.",
+        "Current operational default is answered in section 1.",
+        "Governance transition status: `complete`",
     ]:
         assert required in dashboard
 

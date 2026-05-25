@@ -149,6 +149,11 @@ def build_dashboard(root: Path) -> str:
         if completed_path
         else []
     )
+    last_change = (
+        normalize_section_items(extract_section(completed_path / "03_implementation_summary.md", "## Change Summary"))
+        if completed_path
+        else []
+    )
     confirmed = (
         normalize_section_items(extract_section(completed_path / "04_verifier_report.md", "## Newly Confirmed Evidence"))
         if completed_path
@@ -159,6 +164,11 @@ def build_dashboard(root: Path) -> str:
         if completed_path
         else []
     )
+    verifier_objections = (
+        normalize_section_items(extract_section(completed_path / "04_verifier_report.md", "## Risks And Objections"))
+        if completed_path
+        else []
+    )
     next_iteration = (
         normalize_section_items(extract_section(completed_path / "05_decision_memo.md", "## Next Recommended Iteration"))
         if completed_path
@@ -166,6 +176,7 @@ def build_dashboard(root: Path) -> str:
     )
 
     p0_rows = [row for row in assumptions if row.get("priority") == "P0"]
+    current_p0 = next((row for row in p0_rows if row.get("status") == "open"), p0_rows[0] if p0_rows else None)
     p0_lines = [
         f"`{row['id']}` {row['assumption']} - `{row['status']}` - next: `{row['next_diagnostic']}`"
         for row in p0_rows
@@ -178,6 +189,24 @@ def build_dashboard(root: Path) -> str:
     operational_default = state.get("current_default.name", state.get("control.operational_default", "unknown"))
     default_scope = state.get("current_default.scope", "unknown")
     real_money = state.get("current_default.real_money", "false")
+    frozen_lines = [
+        f"Protocol: `{state.get('frozen_control.protocol', 'unknown')}`",
+        f"Surface model: `{state.get('frozen_control.surface_model', 'unknown')}`",
+        f"Lifecycle model: `{state.get('frozen_control.lifecycle_model', 'unknown')}`",
+        f"Max contracts: `{state.get('frozen_control.max_contracts', 'unknown')}`",
+        f"Account assumption: `{state.get('frozen_control.account_assumption', 'unknown')}`",
+        f"Instrument: {state.get('frozen_control.instrument', 'unknown')}",
+        f"Control tag: `{state.get('control.tag', 'unknown')}`",
+    ]
+    current_p0_lines = (
+        [
+            f"Assumption: `{current_p0['id']}` {current_p0['assumption']}",
+            f"Status: `{current_p0['status']}`",
+            f"Next diagnostic: `{current_p0['next_diagnostic']}`",
+        ]
+        if current_p0
+        else ["None recorded."]
+    )
     safety = state.get("audit_interpretation.next_phase", "execution-and-parity falsification")
     next_prompt = (
         next_iteration[0]
@@ -200,17 +229,32 @@ def build_dashboard(root: Path) -> str:
             f"- Name: `{operational_default}`\n"
             f"- Scope: {default_scope}\n"
             f"- Real money authorized: `{real_money}`",
-            "## 2. Current Safety Posture\n\n"
+            "## 2. Frozen Control\n\n" + bullet_list(frozen_lines),
+            "## 3. Current Safety Posture\n\n"
             f"- Posture: `{safety}`\n"
             "- Replay profitability remains a hypothesis until execution and parity assumptions are tested.",
-            "## 3. Active Iteration\n\n" + bullet_list(format_manifest(active)),
-            "## 4. Latest Completed Iteration\n\n" + bullet_list(format_manifest(completed)),
-            "## 5. Decisions Required\n\n" + bullet_list(list_or_none(decisions_required)),
-            "## 6. P0 Assumptions\n\n" + bullet_list(list_or_none(p0_lines)),
-            "## 7. Blocked Actions\n\n" + bullet_list(list(blocked_actions)),
-            "## 8. Newly Confirmed Evidence\n\n" + bullet_list(list_or_none(confirmed)),
-            "## 9. Newly Falsified Assumptions\n\n" + bullet_list(list_or_none(falsified)),
-            "## 10. Next Recommended Codex Prompt\n\n" + code_or_text(next_prompt),
+            "## 4. Active Iteration\n\n" + bullet_list(format_manifest(active)),
+            "## 5. Latest Completed Iteration\n\n" + bullet_list(format_manifest(completed)),
+            "## 6. What Changed In The Last Iteration\n\n" + bullet_list(list_or_none(last_change)),
+            "## 7. What The Verifier Objects To\n\n" + bullet_list(list_or_none(verifier_objections)),
+            "## 8. Decision Required Now\n\n" + bullet_list(list_or_none(decisions_required)),
+            "## 9. Current P0 Assumption\n\n" + bullet_list(current_p0_lines),
+            "## 10. All P0 Assumptions\n\n" + bullet_list(list_or_none(p0_lines)),
+            "## 11. Blocked Actions\n\n" + bullet_list(list(blocked_actions)),
+            "## 12. Evidence Collected Last\n\n" + bullet_list(list_or_none(confirmed)),
+            "## 13. Newly Falsified Assumptions\n\n" + bullet_list(list_or_none(falsified)),
+            "## 14. Next Recommended Codex Prompt\n\n" + code_or_text(next_prompt),
+            "## 15. Transition Completion Check\n\n"
+            "- Current operational default is answered in section 1.\n"
+            "- Frozen control is answered in section 2.\n"
+            "- Blocked actions are answered in section 11.\n"
+            "- Current P0 assumption is answered in section 9.\n"
+            "- Evidence collected last is answered in section 12.\n"
+            "- Last iteration change is answered in section 6.\n"
+            "- Verifier objections are answered in section 7.\n"
+            "- Decision required now is answered in section 8.\n"
+            "- Next Codex prompt is answered in section 14.\n"
+            "- Governance transition status: `complete`; trading-edge proof status: `not complete`.",
             "## Dashboard Rule\n\n"
             "This dashboard is not primary evidence. Evidence lives in iteration artifacts, verifier reports, logs, manifests, and decision memos.",
         ]
