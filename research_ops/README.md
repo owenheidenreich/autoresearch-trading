@@ -124,6 +124,7 @@ Read these before changing direction:
 | `GLOSSARY.md` | Shared terminology for agents and humans. |
 | `bootstrap/` | Frozen-control cartography. |
 | `templates/` | Standard artifact templates. |
+| `prompts/` | Role-specific prompts for non-overlapping AI-agent sessions. |
 | `iterations/` | Per-iteration packets and artifacts. |
 | `schemas/` | Lightweight JSON schemas for local validation. |
 | `scripts/` | Local file-management utilities only. |

@@ -10,6 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESEARCH_OPS = REPO_ROOT / "research_ops"
 SCRIPTS = RESEARCH_OPS / "scripts"
+PROMPTS = RESEARCH_OPS / "prompts"
 
 
 def test_research_ops_scripts_do_not_import_trading_or_external_systems():
@@ -131,6 +132,64 @@ def test_pull_request_template_ties_prs_to_research_ops_controls():
         "## CEO Decision Required",
     ]:
         assert required in template
+
+
+def test_stage6_agent_prompts_exist_and_keep_roles_separate():
+    expected = {
+        "01_cartographer.md": [
+            "You are the Codebase Cartographer.",
+            "You may not modify files.",
+            "research_ops/iterations/<ITER_ID>/01_cartography.md",
+            "No broker calls",
+            "No paid data",
+            "No training",
+            "No threshold tuning",
+            "No runtime flag mutation",
+        ],
+        "02_experiment_designer.md": [
+            "You are the Experiment Designer.",
+            "Use `research_ops/iterations/<ITER_ID>/01_cartography.md`",
+            "research_ops/iterations/<ITER_ID>/02_rfc.md",
+            "Do not implement code.",
+            "Null hypothesis",
+            "Pass/fail criteria",
+        ],
+        "03_implementation_agent.md": [
+            "You are the Implementation Agent.",
+            "Before coding, list files you will create or modify.",
+            "research_ops/iterations/<ITER_ID>/03_implementation_summary.md",
+            "No trading behavior changes",
+            "No broker calls",
+            "No paid downloads",
+        ],
+        "04_verifier.md": [
+            "You are the Verifier / Red Team.",
+            "research_ops/iterations/<ITER_ID>/04_verifier_report.md",
+            "Leakage",
+            "Broker risk",
+            "Mismatch between RFC and implementation",
+            "Do not implement new features.",
+        ],
+        "05_dashboard_agent.md": [
+            "You are the Dashboard Agent.",
+            "research_ops/CEO_DASHBOARD.md",
+            "Current operational default",
+            "Newly falsified assumptions",
+            "No trading code imports.",
+            "python research_ops/scripts/update_dashboard.py",
+        ],
+        "06_decision_memo_writer.md": [
+            "You are the Decision Memo Writer.",
+            "research_ops/iterations/<ITER_ID>/05_decision_memo.md",
+            "Question asked",
+            "Actions still blocked",
+            "CEO decision required",
+        ],
+    }
+    for filename, required_terms in expected.items():
+        text = (PROMPTS / filename).read_text(encoding="utf-8")
+        for required in required_terms:
+            assert required in text
 
 
 def test_new_iteration_validate_summarize_and_dashboard_roundtrip(tmp_path):
