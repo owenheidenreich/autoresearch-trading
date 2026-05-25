@@ -1,12 +1,55 @@
 schema_version: 1
 last_updated: "2026-05-24"
-stage: "stage_2_research_ops_scaffold"
+stage: "stage_3_audit_control_system"
+
+current_default:
+  name: "PAPER_DEFAULT_PROTOCOL101"
+  scope: "guarded IBKR paper runtime only"
+  real_money: false
+
+frozen_control:
+  protocol: "Protocol101"
+  surface_model: "Protocol051"
+  lifecycle_model: "Protocol066_081"
+  max_contracts: 1
+  account_assumption: 10000
+  instrument: "SPXW 0DTE long calls/puts only"
+
 control:
   tag: "v4-protocol101-control-2026-05-24"
   commit: "87ded0ba30fa236ab9c1b90fce7e82ff7f25a478"
   branch: "research-ops-transition"
   operational_default: "PAPER_DEFAULT_PROTOCOL101"
   challengers_status: "research_only"
+
+blocked_actions:
+  - "no challenger promotion"
+  - "no threshold tuning"
+  - "no new model training"
+  - "no protected holdout scoring for exploration"
+  - "no assuming replay profitability proves live edge"
+  - "no assuming deterministic ask-entry/bid-exit proves fillability"
+  - "no runtime flag mutation as part of research"
+  - "no paid data downloads without approval"
+
+p0_risks:
+  - "execution_fill_realism"
+  - "quote_age_truth"
+  - "replay_live_feature_parity"
+  - "lifecycle_sequence_parity"
+  - "decision_reconstruction"
+  - "validation_provenance"
+
+source_documents:
+  - "research_program_audit_2026_05_24.md"
+  - "CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md"
+  - "CURRENT_TRADING_BOT_IMPROVEMENT_QUESTIONS.md"
+
+source_document_paths:
+  research_program_audit_2026_05_24.md: "v4/docs/research_program_audit_2026_05_24.md"
+  CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md: "docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md"
+  CURRENT_TRADING_BOT_IMPROVEMENT_QUESTIONS.md: "docs/CURRENT_TRADING_BOT_IMPROVEMENT_QUESTIONS.md"
+
 permissions:
   v4_trading_logic: "blocked_without_explicit_approval"
   protocol101: "blocked_without_explicit_approval"
@@ -20,12 +63,12 @@ permissions:
   paid_data_downloads: "blocked_without_explicit_approval"
   model_training: "blocked_without_explicit_approval"
   threshold_tuning: "blocked_without_explicit_approval"
-active_blockers:
-  - "Execution and fill realism not proven."
-  - "Replay/live feature parity not proven."
-  - "Lifecycle live/replay sequence parity not proven."
-  - "Score-margin calibration is weak."
-  - "Validation windows have substantial prior research exposure."
+
+audit_interpretation:
+  next_phase: "execution-and-parity falsification"
+  not_next_phase: "model capacity expansion"
+  rationale: "Replay profitability remains a hypothesis until fill realism, quote age truth, replay/live feature parity, lifecycle sequence parity, decision reconstruction, and validation provenance are falsified or supported."
+
 required_iteration_packet:
   - "cartography_report"
   - "experiment_rfc"
@@ -33,4 +76,5 @@ required_iteration_packet:
   - "verifier_report"
   - "decision_memo"
   - "ceo_packet"
+
 next_recommended_prompt: "Create the first verifier RFC for Protocol101 execution realism and replay/live fill parity."

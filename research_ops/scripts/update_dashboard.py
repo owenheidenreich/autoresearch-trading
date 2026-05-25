@@ -33,14 +33,18 @@ def read_simple_yaml(path: Path) -> dict[str, str]:
 
 
 def build_block(state: dict[str, str]) -> str:
+    operational_default = state.get("current_default.name", state.get("control.operational_default", "unknown"))
+    control_tag = state.get("control.tag", "unknown")
+    next_phase = state.get("audit_interpretation.next_phase", state.get("stage", "unknown"))
     return "\n".join(
         [
             START,
             "## Generated Current State",
             "",
             f"- Stage: `{state.get('stage', 'unknown')}`",
-            f"- Control tag: `{state.get('control.tag', 'unknown')}`",
-            f"- Operational default: `{state.get('control.operational_default', 'unknown')}`",
+            f"- Audit next phase: `{next_phase}`",
+            f"- Control tag: `{control_tag}`",
+            f"- Operational default: `{operational_default}`",
             f"- Next recommended prompt: `{state.get('next_recommended_prompt', 'unknown')}`",
             END,
         ]

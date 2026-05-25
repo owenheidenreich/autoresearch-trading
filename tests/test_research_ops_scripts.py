@@ -39,21 +39,52 @@ def test_assumption_registry_has_expected_header():
     with (RESEARCH_OPS / "ASSUMPTION_REGISTRY.csv").open(newline="", encoding="utf-8") as handle:
         header = next(csv.reader(handle))
     assert header == [
-        "assumption_id",
-        "title",
-        "status",
-        "importance",
-        "fragility",
-        "falsification_risk",
-        "category",
+        "id",
+        "priority",
+        "layer",
+        "assumption",
         "current_evidence",
+        "risk_if_false",
         "falsification_test",
         "confidence_increases_if",
-        "confidence_destroyed_if",
-        "next_artifact",
-        "owner",
-        "last_updated",
+        "confidence_collapses_if",
+        "required_artifacts",
+        "blocked_actions",
+        "status",
+        "next_diagnostic",
     ]
+
+
+def test_assumption_registry_seeds_required_stage3_assumptions():
+    with (RESEARCH_OPS / "ASSUMPTION_REGISTRY.csv").open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    by_id = {row["id"]: row for row in rows}
+    assert {f"A{idx:03d}" for idx in range(1, 13)} <= set(by_id)
+    assert by_id["A001"]["assumption"] == "quote age truth"
+    assert by_id["A002"]["assumption"] == "ask-entry/bid-exit replay is executable"
+    assert by_id["A011"]["priority"] == "P0"
+    assert by_id["A014"]["status"] == "blocked"
+    assert set(row["priority"] for row in rows) <= {"P0", "P1", "P2"}
+
+
+def test_current_state_declares_audit_control_fields():
+    text = (RESEARCH_OPS / "CURRENT_STATE.yaml").read_text(encoding="utf-8")
+    for required in [
+        "current_default:",
+        "name: \"PAPER_DEFAULT_PROTOCOL101\"",
+        "scope: \"guarded IBKR paper runtime only\"",
+        "real_money: false",
+        "frozen_control:",
+        "protocol: \"Protocol101\"",
+        "surface_model: \"Protocol051\"",
+        "lifecycle_model: \"Protocol066_081\"",
+        "blocked_actions:",
+        "p0_risks:",
+        "source_documents:",
+        "next_phase: \"execution-and-parity falsification\"",
+        "not_next_phase: \"model capacity expansion\"",
+    ]:
+        assert required in text
 
 
 def test_new_iteration_validate_and_summarize_roundtrip(tmp_path):

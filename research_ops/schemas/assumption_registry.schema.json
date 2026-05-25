@@ -5,50 +5,41 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "assumption_id",
-    "title",
-    "status",
-    "importance",
-    "fragility",
-    "falsification_risk",
-    "category",
+    "id",
+    "priority",
+    "layer",
+    "assumption",
     "current_evidence",
+    "risk_if_false",
     "falsification_test",
     "confidence_increases_if",
-    "confidence_destroyed_if",
-    "next_artifact",
-    "owner",
-    "last_updated"
+    "confidence_collapses_if",
+    "required_artifacts",
+    "blocked_actions",
+    "status",
+    "next_diagnostic"
   ],
   "properties": {
-    "assumption_id": {
+    "id": {
       "type": "string",
       "pattern": "^A[0-9]{3}$"
     },
-    "title": {
+    "priority": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2"]
+    },
+    "layer": {
       "type": "string",
       "minLength": 1
     },
-    "status": {
+    "assumption": {
       "type": "string",
-      "enum": ["open", "partially_tested", "supported", "falsified", "accepted_risk", "blocked"]
-    },
-    "importance": {
-      "type": "string",
-      "enum": ["low", "medium", "high", "critical"]
-    },
-    "fragility": {
-      "type": "string",
-      "enum": ["low", "medium", "medium_high", "high"]
-    },
-    "falsification_risk": {
-      "type": "string",
-      "enum": ["low", "medium", "medium_high", "high"]
-    },
-    "category": {
-      "type": "string"
+      "minLength": 1
     },
     "current_evidence": {
+      "type": "string"
+    },
+    "risk_if_false": {
       "type": "string"
     },
     "falsification_test": {
@@ -57,18 +48,21 @@
     "confidence_increases_if": {
       "type": "string"
     },
-    "confidence_destroyed_if": {
+    "confidence_collapses_if": {
       "type": "string"
     },
-    "next_artifact": {
+    "required_artifacts": {
       "type": "string"
     },
-    "owner": {
+    "blocked_actions": {
       "type": "string"
     },
-    "last_updated": {
+    "status": {
       "type": "string",
-      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      "enum": ["open", "partially_tested", "supported", "falsified", "accepted_risk", "blocked"]
+    },
+    "next_diagnostic": {
+      "type": "string"
     }
   }
 }

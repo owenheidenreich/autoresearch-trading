@@ -32,20 +32,19 @@ REQUIRED_ARTIFACTS = {
 }
 
 ASSUMPTION_HEADER = [
-    "assumption_id",
-    "title",
-    "status",
-    "importance",
-    "fragility",
-    "falsification_risk",
-    "category",
+    "id",
+    "priority",
+    "layer",
+    "assumption",
     "current_evidence",
+    "risk_if_false",
     "falsification_test",
     "confidence_increases_if",
-    "confidence_destroyed_if",
-    "next_artifact",
-    "owner",
-    "last_updated",
+    "confidence_collapses_if",
+    "required_artifacts",
+    "blocked_actions",
+    "status",
+    "next_diagnostic",
 ]
 
 

@@ -7,7 +7,7 @@ Last updated: 2026-05-24
 | Area | Status | Notes |
 |---|---|---|
 | Current control | `PAPER_DEFAULT_PROTOCOL101` | No default change authorized. |
-| Stage | Stage 2 research_ops scaffold | Governance layer exists around v4. |
+| Stage | Stage 3 audit control system | Audit conclusions are now machine-readable operating state. |
 | Trading-code mutation | Blocked | No strategy/runtime/model changes in the scaffold. |
 | Model hill climbing | Blocked | Execution, parity, and untouched-data gates remain unresolved. |
 | Broker/paper-submit work | Blocked by default | Requires explicit user authorization and Section 4 controls. |
@@ -36,8 +36,9 @@ Last updated: 2026-05-24
 
 ## Next Recommended Decisions
 
-1. Approve the Stage 2 scaffold as the binding operating law.
-2. Decide which blocker gets the first verifier report.
+1. Approve Stage 3 `CURRENT_STATE.yaml` and `ASSUMPTION_REGISTRY.csv` as the
+   binding machine-readable control state.
+2. Decide which P0 blocker gets the first verifier report.
 3. Decide whether `.github` issue and pull request templates should enforce the
    artifact taxonomy.
 4. Decide whether the first iteration should target execution realism,
@@ -46,7 +47,8 @@ Last updated: 2026-05-24
 <!-- research_ops:update_dashboard:start -->
 ## Generated Current State
 
-- Stage: `stage_2_research_ops_scaffold`
+- Stage: `stage_3_audit_control_system`
+- Audit next phase: `execution-and-parity falsification`
 - Control tag: `v4-protocol101-control-2026-05-24`
 - Operational default: `PAPER_DEFAULT_PROTOCOL101`
 - Next recommended prompt: `Create the first verifier RFC for Protocol101 execution realism and replay/live fill parity.`
