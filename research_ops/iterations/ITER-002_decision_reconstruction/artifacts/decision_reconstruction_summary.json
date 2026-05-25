@@ -1,32 +1,45 @@
 {
   "artifacts": {
-    "csv_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_rows.csv",
-    "json_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.json",
-    "markdown_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.md",
-    "missing_timestamp_fields_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/missing_timestamp_fields.csv",
-    "quote_age_truth_report_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_truth_report.md",
-    "required_logging_patch_rfc_path": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/required_logging_patch_rfc.md"
+    "decision_reconstruction_matrix": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-002_decision_reconstruction/artifacts/decision_reconstruction_matrix.csv",
+    "log_schema_gap_report": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-002_decision_reconstruction/artifacts/log_schema_gap_report.md",
+    "missing_fields_report": "/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-002_decision_reconstruction/artifacts/missing_fields_report.md"
   },
   "counts": {
     "broker_endpoint_rows": 0,
-    "broker_problem_rows": 0,
-    "classification_counts": {
-      "missing": 6662,
-      "unreconstructable": 1
+    "decision_rows": 3495,
+    "event_counts": {
+      "candidate_set": 906,
+      "heartbeat": 1139,
+      "market_snapshot": 913,
+      "model_decision": 1103,
+      "paper_account_state": 906,
+      "paper_error": 210,
+      "paper_order_blocked": 96,
+      "paper_order_dry_run": 1,
+      "risk_gate": 1389
     },
-    "files_read_count": 15,
-    "paper_submit_problem_rows": 0,
-    "paper_submit_quote_rows": 0,
-    "persisted_quote_age_rows": 1,
-    "placeholder_ratio_among_persisted": 0.0,
-    "quote_evidence_rows": 1,
-    "total_rows": 6663,
-    "trust_status_counts": {
-      "unknown": 6663
+    "files_read": 15,
+    "insufficient_decision_rows": 3495,
+    "json_errors": 0,
+    "missing_field_counts": {
+      "artifact_refs": 3398,
+      "candidate_count": 2492,
+      "candidate_sample": 906,
+      "full_candidate_features": 906,
+      "option_quote": 2588,
+      "order_intent": 96,
+      "quote_age": 2588,
+      "quote_timestamp": 2589,
+      "selected_contract": 96
     },
-    "trustworthy_ratio_among_persisted": 0.0
+    "status_counts": {
+      "insufficient": 3495,
+      "not_decision_event": 3168
+    },
+    "sufficient_decision_rows": 0,
+    "total_rows": 6663
   },
-  "generated_at": "2026-05-25T01:55:10.260315+00:00",
+  "generated_at": "2026-05-25T01:55:10.290548+00:00",
   "input": {
     "files_read": [
       "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-14/protocol142_executor_smoke.jsonl",
@@ -45,13 +58,8 @@
       "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-20/protocol101_persistent_smoke_2026-05-20.jsonl",
       "/Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading/2026-05-21/protocol101_persistent-paper_2026-05-21.jsonl"
     ],
-    "json_error_count": 0,
     "missing_inputs": []
   },
-  "thresholds": {
-    "max_age_ms": 1500.0,
-    "tolerance_ms": 250.0
-  },
-  "verdict": "unknown",
-  "verdict_reason": "available logs do not contain enough broker/paper-submit trustworthy evidence"
+  "verdict": "schema patch required",
+  "verdict_reason": "one or more decision rows are missing fields needed for independent reconstruction"
 }

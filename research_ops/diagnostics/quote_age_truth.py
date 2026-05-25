@@ -433,14 +433,19 @@ def analyze_logs(
 
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / "quote_age_rows.csv"
+    missing_fields_path = out_dir / "missing_timestamp_fields.csv"
     json_path = out_dir / "quote_age_summary.json"
     md_path = out_dir / "quote_age_summary.md"
+    truth_report_path = out_dir / "quote_age_truth_report.md"
+    logging_rfc_path = out_dir / "required_logging_patch_rfc.md"
 
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=CSV_COLUMNS, lineterminator="\n")
         writer.writeheader()
         for row in output_rows:
             writer.writerow({key: row.get(key, "") for key in CSV_COLUMNS})
+
+    write_missing_timestamp_fields(missing_fields_path, output_rows)
 
     summary = build_summary(
         rows=output_rows,
@@ -452,10 +457,57 @@ def analyze_logs(
         csv_path=csv_path,
         json_path=json_path,
         md_path=md_path,
+        missing_fields_path=missing_fields_path,
+        truth_report_path=truth_report_path,
+        logging_rfc_path=logging_rfc_path,
     )
     json_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    md_path.write_text(render_markdown_summary(summary), encoding="utf-8")
+    markdown_summary = render_markdown_summary(summary)
+    md_path.write_text(markdown_summary, encoding="utf-8")
+    truth_report_path.write_text(render_truth_report(summary), encoding="utf-8")
+    logging_rfc_path.write_text(render_required_logging_patch_rfc(summary), encoding="utf-8")
     return summary
+
+
+def write_missing_timestamp_fields(path: Path, rows: list[dict[str, str]]) -> None:
+    fieldnames = [
+        "source_file",
+        "line_number",
+        "event_type",
+        "run_id",
+        "mode",
+        "missing_quote_age_ms",
+        "missing_quote_timestamp",
+        "missing_reference_timestamp",
+        "missing_received_timestamp",
+        "classification",
+        "reason",
+    ]
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        for row in rows:
+            missing_quote_age = not bool(row.get("persisted_quote_age_ms"))
+            missing_quote_timestamp = row.get("has_quote_timestamp") != "true"
+            missing_reference = row.get("has_reference_timestamp") != "true"
+            missing_received = row.get("has_received_timestamp") != "true"
+            if not (missing_quote_age or missing_quote_timestamp or missing_reference or missing_received):
+                continue
+            writer.writerow(
+                {
+                    "source_file": row.get("source_file", ""),
+                    "line_number": row.get("line_number", ""),
+                    "event_type": row.get("event_type", ""),
+                    "run_id": row.get("run_id", ""),
+                    "mode": row.get("mode", ""),
+                    "missing_quote_age_ms": bool_text(missing_quote_age),
+                    "missing_quote_timestamp": bool_text(missing_quote_timestamp),
+                    "missing_reference_timestamp": bool_text(missing_reference),
+                    "missing_received_timestamp": bool_text(missing_received),
+                    "classification": row.get("classification", ""),
+                    "reason": row.get("reason", ""),
+                }
+            )
 
 
 def build_summary(
@@ -469,6 +521,9 @@ def build_summary(
     csv_path: Path,
     json_path: Path,
     md_path: Path,
+    missing_fields_path: Path,
+    truth_report_path: Path,
+    logging_rfc_path: Path,
 ) -> dict[str, Any]:
     classification_counts = Counter(row["classification"] for row in rows)
     trust_counts = Counter(row["trust_status"] for row in rows)
@@ -517,6 +572,9 @@ def build_summary(
             "csv_path": str(csv_path),
             "json_path": str(json_path),
             "markdown_path": str(md_path),
+            "quote_age_truth_report_path": str(truth_report_path),
+            "missing_timestamp_fields_path": str(missing_fields_path),
+            "required_logging_patch_rfc_path": str(logging_rfc_path),
         },
         "counts": {
             "total_rows": len(rows),
@@ -603,6 +661,7 @@ def render_markdown_summary(summary: dict[str, Any]) -> str:
         f"{missing_block}\n\n"
         "## Artifacts\n\n"
         f"- CSV: `{summary['artifacts']['csv_path']}`\n"
+        f"- Missing timestamp fields CSV: `{summary['artifacts']['missing_timestamp_fields_path']}`\n"
         f"- JSON: `{summary['artifacts']['json_path']}`\n"
         f"- Markdown: `{summary['artifacts']['markdown_path']}`\n\n"
         "## Interpretation\n\n"
@@ -610,6 +669,72 @@ def render_markdown_summary(summary: dict[str, Any]) -> str:
         "- `placeholder` means a persisted age, especially zero, lacked raw timestamp support or contradicted recomputation.\n"
         "- Missing raw quote timestamp is never treated as pass.\n"
         "- `unknown` remains blocking evidence for paper-submit trust until live paper-submit rows carry reconstructable timestamps.\n"
+    )
+
+
+def render_truth_report(summary: dict[str, Any]) -> str:
+    counts = summary["counts"]
+    decision = "require observability patch"
+    if summary["verdict"] == "pass":
+        decision = "trust quote age"
+    elif summary["verdict"] == "fail":
+        decision = "block paper-submit trust"
+    return (
+        "# Quote Age Truth Report\n\n"
+        f"Decision: `{decision}`\n\n"
+        f"Diagnostic verdict: `{summary['verdict']}`\n\n"
+        f"Reason: {summary['verdict_reason']}\n\n"
+        "## Evidence\n\n"
+        f"- Parsed rows: `{counts['total_rows']}`\n"
+        f"- Files read: `{counts['files_read_count']}`\n"
+        f"- Persisted quote-age rows: `{counts['persisted_quote_age_rows']}`\n"
+        f"- Quote evidence rows: `{counts['quote_evidence_rows']}`\n"
+        f"- Broker endpoint rows: `{counts['broker_endpoint_rows']}`\n"
+        f"- Trustworthy ratio among persisted: `{counts['trustworthy_ratio_among_persisted']}`\n"
+        f"- Placeholder ratio among persisted: `{counts['placeholder_ratio_among_persisted']}`\n\n"
+        "## Classification Counts\n\n"
+        + "\n".join(f"- `{key}`: {value}" for key, value in counts["classification_counts"].items())
+        + "\n\n"
+        "## Conclusion\n\n"
+        "Existing inspected logs do not prove quote age truth unless the verdict is `pass`. "
+        "Missing raw quote timestamps remain blocking evidence for paper-submit trust.\n"
+    )
+
+
+def render_required_logging_patch_rfc(summary: dict[str, Any]) -> str:
+    return (
+        "# Required Logging Patch RFC\n\n"
+        "Iteration ID: `ITER-001_quote_age_truth`\n\n"
+        "## Research Need\n\n"
+        "Existing logs cannot prove live quote age truth. A future CEO-approved observability patch should log enough "
+        "causal timestamp evidence to recompute quote age for every selected and rejected candidate.\n\n"
+        "## Required Fields\n\n"
+        "- `quote_timestamp`\n"
+        "- `quote_timestamp_source`\n"
+        "- `received_timestamp`\n"
+        "- `decision_timestamp`\n"
+        "- `quote_age_ms`\n"
+        "- `recomputed_quote_age_ms`\n"
+        "- `quote_age_delta_ms`\n"
+        "- `candidate_contract_id`\n"
+        "- `candidate_rank`\n"
+        "- `selected_contract_id`\n"
+        "- `guard_passed`\n"
+        "- `guard_reason`\n\n"
+        "## Constraints\n\n"
+        "- Logging-only change.\n"
+        "- No runtime flag mutation.\n"
+        "- No broker behavior change.\n"
+        "- No model loading beyond the existing runtime path.\n"
+        "- No threshold tuning.\n"
+        "- No paper-submit behavior change.\n\n"
+        "## Current Evidence\n\n"
+        f"- Diagnostic verdict: `{summary['verdict']}`.\n"
+        f"- Persisted quote-age rows found: `{summary['counts']['persisted_quote_age_rows']}`.\n"
+        f"- Trustworthy quote-age rows found: `{summary['counts']['classification_counts'].get('trustworthy', 0)}`.\n\n"
+        "## Acceptance Criteria\n\n"
+        "A later verifier must be able to recompute quote age from raw timestamp fields and match persisted age within "
+        "declared tolerance for selected and rejected candidates before paper-submit quote freshness can be trusted.\n"
     )
 
 

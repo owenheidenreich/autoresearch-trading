@@ -12,6 +12,9 @@ Title: Quote age truth
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_rows.csv`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.json`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.md`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_truth_report.md`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/missing_timestamp_fields.csv`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/required_logging_patch_rfc.md`
 
 ## Files Modified
 
@@ -25,7 +28,7 @@ Title: Quote age truth
 
 ## Commands Run
 
-- `python3 -m pytest tests/test_quote_age_truth_diagnostic.py tests/test_research_ops_scripts.py`
+- `python3 -m pytest tests/test_quote_age_truth_diagnostic.py tests/test_decision_reconstruction_diagnostic.py tests/test_feature_parity_diagnostic.py tests/test_research_ops_scripts.py`
 - `python3 -m compileall -q research_ops/diagnostics research_ops/scripts tests`
 - `python3 -m research_ops.diagnostics.quote_age_truth --log-root /Users/gduby/Documents/autoresearch-trading/v4/logs/paper_trading --out-dir research_ops/iterations/ITER-001_quote_age_truth/artifacts`
 - `python3 research_ops/scripts/update_dashboard.py`
@@ -33,8 +36,10 @@ Title: Quote age truth
 ## Tests Run
 
 - `tests/test_quote_age_truth_diagnostic.py`: 6 tests passed.
+- `tests/test_decision_reconstruction_diagnostic.py`: 2 tests passed.
+- `tests/test_feature_parity_diagnostic.py`: 3 tests passed.
 - `tests/test_research_ops_scripts.py`: 9 tests passed.
-- Total focused test run: 15 passed.
+- Total focused test run: 20 passed.
 - Compile check passed for `research_ops/diagnostics`, `research_ops/scripts`, and `tests`.
 
 ## Artifacts Generated
@@ -46,16 +51,16 @@ Title: Quote age truth
 ## Diagnostic Result
 
 - Aggregate verdict: `unknown`.
-- Parsed rows: `6648`.
+- Parsed rows: `6663`.
 - Files read: `15`.
 - Persisted quote-age rows: `1`.
 - Quote evidence rows: `1`.
 - Broker endpoint rows: `0`.
 - Classification counts:
-  - `missing`: `6647`
+  - `missing`: `6662`
   - `unreconstructable`: `1`
 - Trust status counts:
-  - `unknown`: `6648`
+  - `unknown`: `6663`
 
 The only row with persisted `quote_age_ms` was a `paper_order_dry_run` row from `protocol142_executor_smoke.jsonl`. It had `quote_age_ms=100` but no raw quote timestamp, so the diagnostic classified it as `unreconstructable`.
 

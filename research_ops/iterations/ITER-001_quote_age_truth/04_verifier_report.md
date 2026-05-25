@@ -16,6 +16,9 @@ The implementation matches the accepted RFC and stayed inside read-only research
 - `research_ops/iterations/ITER-001_quote_age_truth/02_rfc.md`
 - `research_ops/iterations/ITER-001_quote_age_truth/03_implementation_summary.md`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_rows.csv`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/missing_timestamp_fields.csv`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_truth_report.md`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/required_logging_patch_rfc.md`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.json`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.md`
 - Focused test output from `python3 -m pytest tests/test_quote_age_truth_diagnostic.py tests/test_research_ops_scripts.py`
@@ -54,16 +57,16 @@ The implementation matches the accepted RFC and stayed inside read-only research
 
 ## Artifact Review
 
-- Parsed rows: `6648`.
+- Parsed rows: `6663`.
 - Files read: `15`.
 - Quote evidence rows: `1`.
 - Persisted quote-age rows: `1`.
 - Broker endpoint rows: `0`.
 - Classification counts:
-  - `missing`: `6647`
+  - `missing`: `6662`
   - `unreconstructable`: `1`
 - Trust status counts:
-  - `unknown`: `6648`
+  - `unknown`: `6663`
 - Aggregate diagnostic verdict: `unknown`.
 
 The sole persisted `quote_age_ms` row was a `paper_order_dry_run` event with no raw quote timestamp. It was correctly classified as `unreconstructable`.

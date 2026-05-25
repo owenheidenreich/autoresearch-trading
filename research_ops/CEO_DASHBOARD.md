@@ -19,18 +19,17 @@ Last updated: 2026-05-24
 
 ## 4. Latest Completed Iteration
 
-- Iteration: `ITER-001_quote_age_truth`
-- Assumption: `A001`
-- Title: Quote age truth
+- Iteration: `ITER-003_replay_live_feature_parity`
+- Assumption: `A004`
+- Title: Replay/live feature parity
 - Status: `completed`
 
 ## 5. Decisions Required
 
 - Resolve open P0 assumptions before any promotion, threshold, runtime, or model-capacity work.
-- Quote age truth status: `unknown`.
-- Paper-submit trust is affected: existing logs do not prove that quote freshness guards are operating on measured live quote ages.
-- A001 remains open and blocking.
-- Do not promote challengers, tune thresholds, train new models for promotion, assume replay profitability proves live edge, or rely on paper-submit freshness until true quote timestamp logging is proven.
+- Replay/live feature parity status: `replay metrics not yet usable`.
+- Existing logs cannot prove Protocol051-to-Protocol101 live feature construction matches replay.
+- A004 remains open and blocking.
 
 ## 6. P0 Assumptions
 
@@ -56,19 +55,17 @@ Last updated: 2026-05-24
 
 ## 8. Newly Confirmed Evidence
 
-- Existing inspected paper/shadow JSONL logs do not contain enough raw quote timestamp fields to prove quote-age truth.
-- The existing log corpus inspected by this iteration contains `0` broker endpoint rows.
-- The inspected log corpus contains only `1` persisted `quote_age_ms` row, and that row is unreconstructable because it lacks a raw quote timestamp.
-- Current existing logs cannot support a paper-submit quote-age-truth pass.
+- Existing inspected logs do not contain paired replay/live feature evidence.
+- Existing inspected logs do not contain enough Protocol101 logits or replay logits for logit parity.
+- Existing candidate-set logs are not sufficient to compare live candidate membership against replay candidate membership.
 
 ## 9. Newly Falsified Assumptions
 
-- The claim that existing logs are already sufficient to prove live quote age truth is falsified for the inspected log corpus.
-- The claim that persisted `quote_age_ms` alone is sufficient freshness evidence is falsified by the diagnostic design and artifact result.
+- The claim that current logs already prove live Protocol051-to-Protocol101 feature parity is falsified for the inspected corpus.
 
 ## 10. Next Recommended Codex Prompt
 
-`ITER-002_quote_age_observability_packet`: design a CEO-approved logging-only observability change that records raw quote timestamp source, receive timestamp, decision timestamp, persisted `quote_age_ms`, recomputed quote age, and guard result for every selected and rejected candidate without changing trading behavior.
+`ITER-004_quote_age_observability_patch_rfc`: write a CEO-decision RFC for a logging-only patch that captures raw quote timestamps, per-candidate quote ages, decision reconstruction fields, and feature/logit hashes without changing trading behavior.
 
 ## Dashboard Rule
 

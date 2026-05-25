@@ -1,6 +1,6 @@
 # Quote Age Truth Diagnostic Summary
 
-Generated at: `2026-05-25T01:45:51.264995+00:00`
+Generated at: `2026-05-25T01:55:10.260315+00:00`
 
 ## Verdict
 
@@ -11,7 +11,7 @@ Generated at: `2026-05-25T01:45:51.264995+00:00`
 
 ## Counts
 
-- Total rows: `6648`
+- Total rows: `6663`
 - Files read: `15`
 - Quote evidence rows: `1`
 - Persisted quote-age rows: `1`
@@ -24,12 +24,12 @@ Generated at: `2026-05-25T01:45:51.264995+00:00`
 
 ## Classification Counts
 
-- `missing`: 6647
+- `missing`: 6662
 - `unreconstructable`: 1
 
 ## Trust Status Counts
 
-- `unknown`: 6648
+- `unknown`: 6663
 
 ## Inputs Read
 
@@ -56,6 +56,7 @@ Generated at: `2026-05-25T01:45:51.264995+00:00`
 ## Artifacts
 
 - CSV: `/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_rows.csv`
+- Missing timestamp fields CSV: `/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/missing_timestamp_fields.csv`
 - JSON: `/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.json`
 - Markdown: `/Users/gduby/Documents/autoresearch-trading-research-ops-transition/research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.md`
 

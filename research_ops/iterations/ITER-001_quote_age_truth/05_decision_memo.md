@@ -22,6 +22,9 @@ This iteration tested whether existing Protocol101 paper/shadow logs can prove t
 - `research_ops/iterations/ITER-001_quote_age_truth/03_implementation_summary.md`
 - `research_ops/iterations/ITER-001_quote_age_truth/04_verifier_report.md`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_rows.csv`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/missing_timestamp_fields.csv`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_truth_report.md`
+- `research_ops/iterations/ITER-001_quote_age_truth/artifacts/required_logging_patch_rfc.md`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.json`
 - `research_ops/iterations/ITER-001_quote_age_truth/artifacts/quote_age_summary.md`
 
@@ -29,7 +32,7 @@ This iteration tested whether existing Protocol101 paper/shadow logs can prove t
 
 - Research question: Are live quote ages real, or are freshness guards passing because runtime supplies placeholder ages?
 - Result: `unknown`.
-- Parsed rows: `6648`.
+- Parsed rows: `6663`.
 - Files read: `15`.
 - Broker endpoint rows: `0`.
 - Persisted quote-age rows: `1`.
@@ -65,11 +68,11 @@ Can existing logs prove that live quote ages are real measured ages rather than 
 ## Evidence
 
 - Diagnostic verdict: `unknown`.
-- `6648` parsed rows.
+- `6663` parsed rows.
 - `0` broker endpoint rows.
 - `1` persisted quote-age row.
 - `0` trustworthy quote-age rows.
-- `6648` rows had `trust_status=unknown`.
+- `6663` rows had `trust_status=unknown`.
 
 ## Verifier Objections
 

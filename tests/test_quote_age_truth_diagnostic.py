@@ -149,10 +149,16 @@ def test_cli_writes_csv_markdown_and_json_artifacts(tmp_path):
     )
 
     csv_path = out_dir / "quote_age_rows.csv"
+    missing_path = out_dir / "missing_timestamp_fields.csv"
     markdown_path = out_dir / "quote_age_summary.md"
+    report_path = out_dir / "quote_age_truth_report.md"
+    rfc_path = out_dir / "required_logging_patch_rfc.md"
     json_path = out_dir / "quote_age_summary.json"
     assert csv_path.exists()
+    assert missing_path.exists()
     assert markdown_path.exists()
+    assert report_path.exists()
+    assert rfc_path.exists()
     assert json_path.exists()
 
     with csv_path.open(newline="", encoding="utf-8") as handle:
@@ -162,4 +168,7 @@ def test_cli_writes_csv_markdown_and_json_artifacts(tmp_path):
     summary = json.loads(json_path.read_text(encoding="utf-8"))
     assert summary["counts"]["classification_counts"]["trustworthy"] == 1
     assert summary["counts"]["classification_counts"]["placeholder"] == 1
+    assert "missing_timestamp_fields_path" in summary["artifacts"]
     assert "Missing raw quote timestamp is never treated as pass." in markdown_path.read_text(encoding="utf-8")
+    assert "Decision:" in report_path.read_text(encoding="utf-8")
+    assert "Logging-only change." in rfc_path.read_text(encoding="utf-8")
