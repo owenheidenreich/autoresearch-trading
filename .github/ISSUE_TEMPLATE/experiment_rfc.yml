@@ -1,0 +1,69 @@
+name: Experiment RFC
+description: Design a read-only diagnostic or experiment before implementation.
+title: "[RFC] <ITERATION_ID>: <research question>"
+labels:
+  - research-ops
+  - experiment-rfc
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use `research_ops/prompts/02_experiment_designer.md`. The RFC should be falsification-oriented and should not implement code.
+  - type: input
+    id: assumption_id
+    attributes:
+      label: Assumption ID
+      description: Registry ID from `research_ops/ASSUMPTION_REGISTRY.csv`.
+      placeholder: A001
+    validations:
+      required: true
+  - type: input
+    id: iteration_id
+    attributes:
+      label: Iteration ID
+      description: Iteration folder under `research_ops/iterations/`.
+      placeholder: ITER-001_quote_age_truth
+    validations:
+      required: true
+  - type: textarea
+    id: allowed_paths
+    attributes:
+      label: Allowed paths
+      description: Paths the RFC may cite or propose reading.
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden_paths
+    attributes:
+      label: Forbidden paths
+      description: Paths or actions excluded from the RFC.
+      placeholder: |
+        broker calls
+        paid-data downloads
+        model training
+        threshold tuning
+        runtime flag changes
+    validations:
+      required: true
+  - type: input
+    id: expected_artifact
+    attributes:
+      label: Expected artifact
+      placeholder: research_ops/iterations/<ITER_ID>/02_rfc.md
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      placeholder: |
+        Research question, null hypothesis, required inputs/outputs, formulas, pass/fail criteria, tests, and interpretation guide are specified.
+    validations:
+      required: true
+  - type: textarea
+    id: null_hypothesis
+    attributes:
+      label: Null hypothesis
+      description: The claim the diagnostic should be able to falsify.
+    validations:
+      required: true

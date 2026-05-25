@@ -1,0 +1,72 @@
+name: Implementation
+description: Implement an accepted research_ops RFC without changing trading behavior.
+title: "[Implementation] <ITERATION_ID>: <accepted RFC>"
+labels:
+  - research-ops
+  - implementation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use `research_ops/prompts/03_implementation_agent.md`. Implement only the accepted RFC. No trading behavior changes, broker calls, paid-data downloads, training, threshold tuning, runtime flag mutation, launchd mutation, or model promotion.
+  - type: input
+    id: assumption_id
+    attributes:
+      label: Assumption ID
+      description: Registry ID from `research_ops/ASSUMPTION_REGISTRY.csv`.
+      placeholder: A001
+    validations:
+      required: true
+  - type: input
+    id: iteration_id
+    attributes:
+      label: Iteration ID
+      description: Iteration folder under `research_ops/iterations/`.
+      placeholder: ITER-001_quote_age_truth
+    validations:
+      required: true
+  - type: textarea
+    id: allowed_paths
+    attributes:
+      label: Allowed paths
+      description: Paths that may be created or modified.
+      placeholder: |
+        research_ops/diagnostics/
+        tests/
+        research_ops/iterations/<ITER_ID>/
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden_paths
+    attributes:
+      label: Forbidden paths
+      description: Paths and actions that must not change.
+      placeholder: |
+        v4/runtime/
+        v4/ops/launchd/
+        model artifacts
+        broker execution paths
+    validations:
+      required: true
+  - type: input
+    id: expected_artifact
+    attributes:
+      label: Expected artifact
+      placeholder: research_ops/iterations/<ITER_ID>/03_implementation_summary.md
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      placeholder: |
+        Accepted RFC implemented, tests pass, artifacts generated, implementation summary written, no forbidden paths modified.
+    validations:
+      required: true
+  - type: input
+    id: accepted_rfc
+    attributes:
+      label: Accepted RFC
+      placeholder: research_ops/iterations/<ITER_ID>/02_rfc.md
+    validations:
+      required: true

@@ -1,0 +1,68 @@
+name: Decision Memo
+description: Convert verified evidence into a governance decision.
+title: "[Decision Memo] <ITERATION_ID>: <decision>"
+labels:
+  - research-ops
+  - decision-memo
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use `research_ops/prompts/06_decision_memo_writer.md`. The memo should state what is confirmed, falsified, still unknown, newly allowed, and still blocked.
+  - type: input
+    id: assumption_id
+    attributes:
+      label: Assumption ID
+      description: Registry ID from `research_ops/ASSUMPTION_REGISTRY.csv`.
+      placeholder: A001
+    validations:
+      required: true
+  - type: input
+    id: iteration_id
+    attributes:
+      label: Iteration ID
+      description: Iteration folder under `research_ops/iterations/`.
+      placeholder: ITER-001_quote_age_truth
+    validations:
+      required: true
+  - type: textarea
+    id: allowed_paths
+    attributes:
+      label: Allowed paths
+      description: Paths the memo writer may read or update.
+      placeholder: |
+        research_ops/iterations/<ITER_ID>/
+        research_ops/CEO_DASHBOARD.md
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden_paths
+    attributes:
+      label: Forbidden paths
+      description: Paths and actions excluded from the decision memo task.
+    validations:
+      required: true
+  - type: input
+    id: expected_artifact
+    attributes:
+      label: Expected artifact
+      placeholder: research_ops/iterations/<ITER_ID>/05_decision_memo.md
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      placeholder: |
+        Decision memo written, CEO decision requirement stated, dashboard update needs identified or completed.
+    validations:
+      required: true
+  - type: dropdown
+    id: ceo_decision_required
+    attributes:
+      label: CEO decision required
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true

@@ -1,0 +1,72 @@
+name: Cartography
+description: Trace code, data, artifacts, and operational paths before an RFC.
+title: "[Cartography] <ITERATION_ID>: <assumption>"
+labels:
+  - research-ops
+  - cartography
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use `research_ops/prompts/01_cartographer.md`. This issue is read-only: no trading behavior changes, broker calls, paid-data downloads, training, threshold tuning, runtime flag mutation, or launchd mutation.
+  - type: input
+    id: assumption_id
+    attributes:
+      label: Assumption ID
+      description: Registry ID from `research_ops/ASSUMPTION_REGISTRY.csv`.
+      placeholder: A001
+    validations:
+      required: true
+  - type: input
+    id: iteration_id
+    attributes:
+      label: Iteration ID
+      description: Iteration folder under `research_ops/iterations/`.
+      placeholder: ITER-001_quote_age_truth
+    validations:
+      required: true
+  - type: textarea
+    id: allowed_paths
+    attributes:
+      label: Allowed paths
+      description: Paths the cartographer may inspect.
+      placeholder: |
+        research_ops/
+        docs/
+        v4/live/
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden_paths
+    attributes:
+      label: Forbidden paths
+      description: Paths or actions that must not be touched or executed.
+      placeholder: |
+        v4/runtime/
+        v4/ops/launchd/
+        broker scripts
+    validations:
+      required: true
+  - type: input
+    id: expected_artifact
+    attributes:
+      label: Expected artifact
+      placeholder: research_ops/iterations/<ITER_ID>/01_cartography.md
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      description: What must be answered before this issue can close.
+      placeholder: |
+        Files/functions traced, inputs/outputs identified, mutable state listed, tests and observability gaps documented.
+    validations:
+      required: true
+  - type: textarea
+    id: cartography_scope
+    attributes:
+      label: Cartography scope
+      description: Specific paths, protocols, logs, or artifacts to trace.
+    validations:
+      required: true

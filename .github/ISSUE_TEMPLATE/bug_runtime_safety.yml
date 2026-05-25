@@ -1,0 +1,79 @@
+name: Runtime Safety Bug
+description: Report a broker, runtime, data, logging, or safety-control defect.
+title: "[Runtime Safety] <area>: <bug>"
+labels:
+  - research-ops
+  - runtime-safety
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for defects that may affect broker safety, runtime state, paid-data boundaries, logging truth, or operational guards. Reporting is safe; fixes still require an accepted implementation path.
+  - type: input
+    id: assumption_id
+    attributes:
+      label: Assumption ID
+      description: Registry ID from `research_ops/ASSUMPTION_REGISTRY.csv`, or `UNKNOWN` if not yet mapped.
+      placeholder: A001
+    validations:
+      required: true
+  - type: input
+    id: iteration_id
+    attributes:
+      label: Iteration ID
+      description: Existing or proposed iteration folder under `research_ops/iterations/`.
+      placeholder: ITER-000_runtime_safety_bug
+    validations:
+      required: true
+  - type: textarea
+    id: allowed_paths
+    attributes:
+      label: Allowed paths
+      description: Paths that may be inspected while triaging.
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden_paths
+    attributes:
+      label: Forbidden paths
+      description: Paths/actions that must not be touched during triage.
+      placeholder: |
+        v4/runtime/
+        v4/ops/launchd/
+        broker scripts
+        paid-data scripts
+    validations:
+      required: true
+  - type: input
+    id: expected_artifact
+    attributes:
+      label: Expected artifact
+      placeholder: research_ops/iterations/<ITER_ID>/artifacts/runtime_safety_bug_report.md
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      placeholder: |
+        Reproduction evidence captured, operational risk classified, forbidden actions avoided, and next required RFC or human decision identified.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - P0 - possible broker/order/account safety issue
+        - P1 - observability/parity issue that blocks trust
+        - P2 - documentation or governance safety issue
+    validations:
+      required: true
+  - type: textarea
+    id: observed_behavior
+    attributes:
+      label: Observed behavior
+      description: What happened, with paths and timestamps if available. Do not paste secrets or account identifiers.
+    validations:
+      required: true

@@ -1,0 +1,63 @@
+name: Verifier Review
+description: Red-team an implementation, artifacts, and claims.
+title: "[Verifier] <ITERATION_ID>: <review target>"
+labels:
+  - research-ops
+  - verifier
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use `research_ops/prompts/04_verifier.md`. Review scope only. Do not expand the implementation or add features.
+  - type: input
+    id: assumption_id
+    attributes:
+      label: Assumption ID
+      description: Registry ID from `research_ops/ASSUMPTION_REGISTRY.csv`.
+      placeholder: A001
+    validations:
+      required: true
+  - type: input
+    id: iteration_id
+    attributes:
+      label: Iteration ID
+      description: Iteration folder under `research_ops/iterations/`.
+      placeholder: ITER-001_quote_age_truth
+    validations:
+      required: true
+  - type: textarea
+    id: allowed_paths
+    attributes:
+      label: Allowed paths
+      description: Paths the verifier may inspect.
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden_paths
+    attributes:
+      label: Forbidden paths
+      description: Paths and actions the verifier must not mutate or execute.
+    validations:
+      required: true
+  - type: input
+    id: expected_artifact
+    attributes:
+      label: Expected artifact
+      placeholder: research_ops/iterations/<ITER_ID>/04_verifier_report.md
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      placeholder: |
+        RFC, implementation summary, diff, tests, and artifacts reviewed for leakage, mutation, timestamp issues, broker risk, paid-data risk, and overclaimed conclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: review_focus
+    attributes:
+      label: Review focus
+      description: Specific failure modes or claims to challenge.
+    validations:
+      required: true
