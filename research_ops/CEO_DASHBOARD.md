@@ -7,8 +7,8 @@ Last updated: 2026-05-24
 | Area | Status | Notes |
 |---|---|---|
 | Current control | `PAPER_DEFAULT_PROTOCOL101` | No default change authorized. |
-| Stage | Stage 0 transition preparation | Governance layer being created around v4. |
-| Trading-code mutation | Blocked | No strategy/runtime/model changes in Stage 0 scaffold. |
+| Stage | Stage 2 research_ops scaffold | Governance layer exists around v4. |
+| Trading-code mutation | Blocked | No strategy/runtime/model changes in the scaffold. |
 | Model hill climbing | Blocked | Execution, parity, and untouched-data gates remain unresolved. |
 | Broker/paper-submit work | Blocked by default | Requires explicit user authorization and Section 4 controls. |
 | Paid data work | Blocked by default | Requires explicit data request and approval. |
@@ -36,12 +36,21 @@ Last updated: 2026-05-24
 
 ## Next Recommended Decisions
 
-1. Approve or revise the AI-agent artifact taxonomy.
-2. Decide whether to add `.github` issue and pull request templates in Stage 0
-   or defer them to Stage 1.
-3. Decide whether `research_ops/ASSUMPTION_REGISTRY.md` becomes the binding
-   cross-agent assumption tracker.
-4. Decide which blocker gets the first verifier report.
+1. Approve the Stage 2 scaffold as the binding operating law.
+2. Decide which blocker gets the first verifier report.
+3. Decide whether `.github` issue and pull request templates should enforce the
+   artifact taxonomy.
+4. Decide whether the first iteration should target execution realism,
+   replay/live parity, lifecycle parity, or stale-doc cartography.
+
+<!-- research_ops:update_dashboard:start -->
+## Generated Current State
+
+- Stage: `stage_2_research_ops_scaffold`
+- Control tag: `v4-protocol101-control-2026-05-24`
+- Operational default: `PAPER_DEFAULT_PROTOCOL101`
+- Next recommended prompt: `Create the first verifier RFC for Protocol101 execution realism and replay/live fill parity.`
+<!-- research_ops:update_dashboard:end -->
 
 ## Dashboard Rule
 

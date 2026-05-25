@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoresearch-trading.local/research_ops/assumption_registry.schema.json",
+  "title": "Research Ops Assumption Registry Row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "assumption_id",
+    "title",
+    "status",
+    "importance",
+    "fragility",
+    "falsification_risk",
+    "category",
+    "current_evidence",
+    "falsification_test",
+    "confidence_increases_if",
+    "confidence_destroyed_if",
+    "next_artifact",
+    "owner",
+    "last_updated"
+  ],
+  "properties": {
+    "assumption_id": {
+      "type": "string",
+      "pattern": "^A[0-9]{3}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "partially_tested", "supported", "falsified", "accepted_risk", "blocked"]
+    },
+    "importance": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "fragility": {
+      "type": "string",
+      "enum": ["low", "medium", "medium_high", "high"]
+    },
+    "falsification_risk": {
+      "type": "string",
+      "enum": ["low", "medium", "medium_high", "high"]
+    },
+    "category": {
+      "type": "string"
+    },
+    "current_evidence": {
+      "type": "string"
+    },
+    "falsification_test": {
+      "type": "string"
+    },
+    "confidence_increases_if": {
+      "type": "string"
+    },
+    "confidence_destroyed_if": {
+      "type": "string"
+    },
+    "next_artifact": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    }
+  }
+}

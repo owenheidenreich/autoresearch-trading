@@ -1,68 +1,58 @@
-# Experiment RFC Template
+# Experiment RFC
 
-What is this:
-Candidate role label:
-Does this change the paper-trading default: no
-Broker endpoint called: no
-Paid data required:
-Model training requested:
+Status: draft
+Iteration:
+Date:
+Agent:
+Decision owner:
+
+## Research Question
 
 ## Hypothesis
 
-Hypothesis:
+## Assumptions Touched
 
-Failure mode addressed:
+| Assumption ID | Dependency or target | Expected information gain |
+|---|---|---|
+|  |  |  |
 
-Assumptions reduced:
+## Proposed Method
 
-Expected failure mode if wrong:
+## Data And Causality
 
-## Baseline
+- Data source:
+- Time window:
+- Causal availability:
+- Leakage checks:
+- Replay/live parity requirements:
 
-Primary baseline:
+## Execution Realism
 
-Other baseline:
-
-Metric scope:
-
-## Data
-
-Allowed data:
-
-Training splits:
-
-Validation splits:
-
-Protected test splits:
-
-Forbidden data:
-
-## Method
-
-Change proposed:
-
-Files likely touched:
-
-Runtime parity requirement:
+- Fill assumption:
+- Quote-age assumption:
+- Spread/slippage assumption:
+- Non-fill/cancel assumption:
+- Account assumption:
 
 ## Metrics
 
-Primary metric:
+| Metric | Why it matters | Promotion relevance |
+|---|---|---|
+|  |  |  |
 
-Secondary metrics:
+## Falsification Criteria
 
-Required stress checks:
+What result would make this direction less credible or stop it?
 
-Stop conditions:
+## Protected Surfaces
 
-## Safety
+- Broker/API:
+- Paid data:
+- Runtime flags:
+- Models/scalers:
+- Launchd:
+- Holdouts:
 
-Paid data approval needed:
+## Expected Output
 
-Broker/runtime risk:
-
-Paper default unchanged:
-
-## Decision Requested
-
-Approve / revise / reject:
+## Stop Conditions

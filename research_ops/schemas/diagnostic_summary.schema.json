@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoresearch-trading.local/research_ops/diagnostic_summary.schema.json",
+  "title": "Research Ops Diagnostic Summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "iteration_id",
+    "diagnostic_id",
+    "status",
+    "evidence_level",
+    "summary",
+    "artifacts",
+    "assumptions_touched",
+    "falsification_result"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "iteration_id": {
+      "type": "string"
+    },
+    "diagnostic_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "complete", "blocked", "failed"]
+    },
+    "evidence_level": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 7
+    },
+    "summary": {
+      "type": "string"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assumptions_touched": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "falsification_result": {
+      "type": "string",
+      "enum": ["not_tested", "survived", "partially_survived", "falsified", "blocked"]
+    }
+  }
+}

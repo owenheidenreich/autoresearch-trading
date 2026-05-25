@@ -22,6 +22,8 @@ Decision states:
 | D004 | Is the `$500` IBKR reserve unavailable trading capital or only an informational reserve? | queued | Current guard does not subtract reserve, while docs call it reserve. | Verifier report / decision memo | Treat as unresolved assumption. |
 | D005 | Which docs are binding when root README, v4 README, promotion packets, and ops scripts disagree? | needs_cartography | Stale-doc contradictions can mislead agents. | Cartography report | Operational source-of-truth doc wins. |
 | D006 | Should new model training remain blocked until execution/parity gates close? | queued | Prevents relapse into benchmark mining. | Decision memo | Blocked. |
+| D007 | Should Stage 2 `research_ops/` scaffold become binding operating law? | queued | The scaffold adds CSV registry, gates, schemas, and local iteration scripts. | Decision memo | Treat as binding for AI-agent work unless superseded. |
+| D008 | Should `ASSUMPTION_REGISTRY.md` be retired in favor of `ASSUMPTION_REGISTRY.csv`? | queued | CSV is easier for scripts and dashboards, but the markdown file remains useful for narrative context. | Decision memo | CSV is binding; markdown is legacy context. |
 
 ## Decision Memo Requirements
 

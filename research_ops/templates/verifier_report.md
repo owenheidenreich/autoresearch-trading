@@ -1,47 +1,47 @@
-# Verifier Report Template
+# Verifier Report
 
-What is this:
-Claim being verified:
-Does this change the paper-trading default: no
-Broker endpoint called: no
-Paid data downloaded: no
-Model training performed: no
+Status: draft
+Iteration:
+Date:
+Agent:
+Claim verified:
 
-## Verdict
+## Verification Question
 
-Verdict:
+## Evidence Reviewed
 
-Confidence:
+| Evidence | Location | Notes |
+|---|---|---|
+|  |  |  |
 
-## Evidence
+## Procedure
 
-| Evidence | Path/source | What it proves | Limitation |
-|---|---|---|---|
+## Results
 
-## Reproduction / Checks
+| Check | Result | Evidence |
+|---|---|---|
+|  |  |  |
 
-Commands run:
+## Failure Modes Tested
 
-Outputs reviewed:
-
-Invariant checks:
-
-## Failure Cases
-
-What would falsify the claim:
-
-Evidence that would increase confidence:
-
-Evidence that would destroy confidence:
+| Failure mode | Result | Residual risk |
+|---|---|---|
+|  |  |  |
 
 ## Assumption Registry Updates
 
-Assumptions supported:
+| Assumption ID | Old status | New status | Reason |
+|---|---|---|---|
+|  |  |  |  |
 
-Assumptions falsified:
+## Verdict
 
-Assumptions still open:
+One of:
 
-## Next Decision
+- supported
+- partially supported
+- not supported
+- falsified
+- blocked
 
-Recommended next artifact:
+## Follow-Up

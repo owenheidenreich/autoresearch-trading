@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoresearch-trading.local/research_ops/iteration_manifest.schema.json",
+  "title": "Research Ops Iteration Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "iteration_id",
+    "title",
+    "status",
+    "created_date",
+    "control_ref",
+    "scope",
+    "hard_constraints",
+    "required_artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "iteration_id": {
+      "type": "string",
+      "pattern": "^[0-9]{8}_[a-z0-9][a-z0-9_-]*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "verifying", "decision_pending", "closed", "blocked"]
+    },
+    "created_date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "control_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hard_constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_artifacts": {
+      "type": "object",
+      "required": [
+        "cartography_report",
+        "experiment_rfc",
+        "implementation_summary",
+        "verifier_report",
+        "decision_memo",
+        "ceo_packet"
+      ],
+      "properties": {
+        "cartography_report": {
+          "type": "boolean"
+        },
+        "experiment_rfc": {
+          "type": "boolean"
+        },
+        "implementation_summary": {
+          "type": "boolean"
+        },
+        "verifier_report": {
+          "type": "boolean"
+        },
+        "decision_memo": {
+          "type": "boolean"
+        },
+        "ceo_packet": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

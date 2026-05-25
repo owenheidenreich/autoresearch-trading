@@ -1,47 +1,39 @@
-# Decision Memo Template
+# Decision Memo
 
-Decision:
+Status: draft
+Iteration:
 Date:
-Does this change `PAPER_DEFAULT_PROTOCOL101`:
-Does this authorize model training:
-Does this authorize broker/data/runtime action:
-
-## Context
-
-Decision needed:
-
-Why now:
-
-## Evidence Reviewed
-
-| Evidence | Path/source | Relevance |
-|---|---|---|
-
-## Options
-
-| Option | Pros | Cons |
-|---|---|---|
+Decision owner:
 
 ## Decision
 
-Chosen option:
+One of: approve, reject, defer, freeze, block, promote, rollback.
 
-Rationale:
+## Context
 
+## Evidence Reviewed
+
+| Artifact | Location | Weight |
+|---|---|---|
+|  |  |  |
+
+## Decision Details
+
+```text
+Decision:
+Does this change PAPER_DEFAULT_PROTOCOL101:
+Does this authorize model training:
+Does this authorize broker/data/runtime action:
+Evidence reviewed:
 Risks accepted:
-
-## Boundaries
-
-Allowed next actions:
-
-Forbidden next actions:
-
-## Reversal Conditions
-
-What would cause this decision to be reversed:
-
-## Owner
-
+Reversal condition:
 Owner:
+```
 
-Next review:
+## Assumptions Accepted Or Rejected
+
+| Assumption ID | Treatment | Rationale |
+|---|---|---|
+|  |  |  |
+
+## Follow-Up Actions

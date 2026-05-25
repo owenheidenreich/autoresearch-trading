@@ -1,43 +1,56 @@
-# Cartography Report Template
+# Cartography Report
 
-What is this:
-Does this change the paper-trading default: no
-Broker endpoint called: no
-Paid data downloaded: no
-Model training performed: no
+Status: draft
+Iteration:
+Date:
+Agent:
+Scope:
 
-## Scope
+## Question
 
-System area mapped:
+What surface is being mapped, and why now?
 
-Question being answered:
+## Hard Constraints
 
-Files/artifacts inspected:
+- No trading logic changes.
+- No runtime flag changes.
+- No launchd changes.
+- No broker calls.
+- No paid-data downloads.
+- No training, threshold tuning, or challenger promotion.
+
+## Sources Read
+
+| Source | Why read | Binding/stale/unknown |
+|---|---|---|
+|  |  |  |
 
 ## Operational Truth
 
-Current behavior:
+- Current control:
+- Runtime default:
+- Relevant entrypoints:
+- Relevant artifacts:
+- Relevant mutable state:
 
-Binding source:
+## Findings
 
-Confidence:
+| Finding | Evidence | Confidence | Risk |
+|---|---|---|---|
+|  |  |  |  |
 
 ## Contradictions
 
-| Topic | Source A | Source B | Current resolution | Follow-up |
-|---|---|---|---|---|
-
-## Risk Map
-
-| Risk | Evidence | Severity | Owner artifact |
+| Contradiction | Sources | Operational resolution | Follow-up |
 |---|---|---|---|
+|  |  |  |  |
 
-## Outputs
+## Protected Surfaces
 
-New files:
+List files, flags, artifacts, scripts, data paths, and external systems that
+must not be changed without explicit approval.
 
-Changed files:
+## Recommended Next Artifact
 
-## Next Decision
-
-Recommended next artifact:
+One of: experiment RFC, implementation summary, verifier report, decision memo,
+CEO packet.

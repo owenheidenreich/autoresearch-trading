@@ -1,47 +1,84 @@
 # Research Ops
 
-This directory is the governance layer around `v4/`.
+This directory controls research governance around the existing `v4/` trading
+system.
 
-It does not replace the trading code. It controls how AI-agent work is proposed,
-verified, and accepted before any change reaches the current Protocol101 paper
-stack.
+It does not replace trading code. It defines the operating law for AI-agent
+research sessions so work becomes auditable, reversible, and evidence-driven.
 
-## Current Stage
+## Binding Operating Law
 
-Stage 0: transition preparation.
+No model, threshold, runtime, launchd, paper-order, broker, or paid-data change
+is allowed unless an iteration contains:
 
-Current control system:
+1. Cartography report
+2. Experiment RFC
+3. Implementation summary
+4. Verifier report
+5. Decision memo
+6. CEO dashboard update
+
+This is how the project avoids "Codex changed something and now I need to
+remember why."
+
+## Current Control
+
+The frozen control is:
+
+```text
+v4-protocol101-control-2026-05-24
+```
+
+The current operational default remains:
 
 ```text
 PAPER_DEFAULT_PROTOCOL101
 ```
 
-Stage 0 principle:
+Research challengers are research-only until a decision memo and promotion gate
+explicitly say otherwise.
 
-```text
-Freeze v4 as the current control. Build governance around it before changing
-strategy logic, model logic, runtime behavior, or promotion rules.
-```
+## Prohibited By Default
 
-## Allowed Stage 0 Outputs
+The following are blocked unless the user explicitly authorizes the specific
+risk in the current task:
 
-Every agent session should produce exactly one primary artifact type:
+- Modifying v4 trading logic.
+- Modifying Protocol101, Protocol051, Protocol066, Protocol081, model artifacts,
+  or scalers.
+- Modifying runtime flags, launchd, or IBKR paper execution behavior.
+- Calling broker APIs.
+- Downloading paid data.
+- Training models.
+- Tuning thresholds.
+- Promoting challengers.
+- Scoring protected holdouts outside an approved validation plan.
 
-| Output type | Purpose | Template |
-|---|---|---|
-| Cartography report | Map what exists and where truth lives. | `templates/cartography_report.md` |
-| Experiment RFC | Propose a bounded experiment before results are known. | `templates/experiment_rfc.md` |
-| Implementation patch | Change scoped non-runtime code or docs with explicit verification. | `templates/implementation_patch.md` |
-| Verifier report | Independently check a claim, artifact, or patch. | `templates/verifier_report.md` |
-| Decision memo | Accept, reject, freeze, block, or defer a proposal. | `templates/decision_memo.md` |
-| Dashboard update | Update executive state without making research claims. | `templates/dashboard_update.md` |
+## Required Artifact Flow
 
-If a session cannot fit one of these forms, the task is probably too vague.
+Every material research or engineering change should move through this packet:
+
+| Step | Artifact | Purpose |
+|---:|---|---|
+| 1 | `templates/cartography_report.md` | Map code, data, docs, and operational truth before action. |
+| 2 | `templates/experiment_rfc.md` | State the hypothesis, assumptions, falsifiers, and plan before results. |
+| 3 | `templates/implementation_summary.md` | Record what changed and how behavior was protected. |
+| 4 | `templates/verifier_report.md` | Independently test claims and check failure modes. |
+| 5 | `templates/decision_memo.md` | Accept, reject, defer, freeze, or escalate. |
+| 6 | `templates/ceo_packet.md` | Update the dashboard-level truth. |
+
+Single-session cartography, verification, or documentation work may produce only
+the relevant artifact, but it must state why the full packet is not required.
 
 ## Binding Local Truth
 
 Read these before changing direction:
 
+- `research_ops/CURRENT_STATE.yaml`
+- `research_ops/CEO_DASHBOARD.md`
+- `research_ops/ASSUMPTION_REGISTRY.csv`
+- `research_ops/DECISION_QUEUE.md`
+- `research_ops/bootstrap/V4_BASELINE_INVENTORY.md`
 - `docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md`
 - `docs/CURRENT_TRADING_BOT_IMPROVEMENT_QUESTIONS.md`
 - `v4/docs/MODEL_IMPROVEMENT_GUIDELINES.md`
@@ -50,26 +87,27 @@ Read these before changing direction:
 - `v4/docs/PROJECT_SECTIONS_AND_HILL_CLIMB_GATES.md`
 - `v4/docs/research_program_audit_2026_05_24.md`
 
-## Non-Negotiables
-
-- Do not change `PAPER_DEFAULT_PROTOCOL101` without a decision memo and the
-  v4 promotion process.
-- Do not train, retune thresholds, score protected holdouts, download paid data,
-  call broker endpoints, mutate runtime flags, or edit launchd defaults unless
-  the task explicitly authorizes that stage and risk.
-- Treat replay profitability as a hypothesis until execution/fill realism,
-  replay/live parity, lifecycle parity, and untouched validation are proven.
-- Make stale-doc contradictions visible instead of silently resolving them in
-  code.
-- Prefer verifier reports over new experiments when assumptions are untested.
-
 ## Directory Map
 
 | Path | Role |
 |---|---|
-| `STAGE_0_TRANSITION_CHARTER.md` | Defines the migration goal and Stage 0 boundaries. |
-| `AI_AGENT_OPERATING_CONTRACT.md` | Rules for AI-agent sessions. |
+| `CURRENT_STATE.yaml` | Machine-readable governance state. |
 | `CEO_DASHBOARD.md` | Human-readable operating snapshot. |
-| `ASSUMPTION_REGISTRY.md` | Ranked assumptions and falsification status. |
+| `ASSUMPTION_REGISTRY.csv` | Falsification-oriented assumption tracker. |
 | `DECISION_QUEUE.md` | Pending governance decisions. |
+| `ROADMAP.md` | Prioritized research-ops roadmap. |
+| `DO_NOT_TOUCH_WITHOUT_APPROVAL.md` | Explicit protected surfaces. |
+| `EVIDENCE_LADDER.md` | Evidence standards from weak to promotion-grade. |
+| `PROMOTION_GATE.md` | Minimum gates before changing operational defaults. |
+| `GLOSSARY.md` | Shared terminology for agents and humans. |
+| `bootstrap/` | Frozen-control cartography. |
 | `templates/` | Standard artifact templates. |
+| `iterations/` | Per-iteration packets and artifacts. |
+| `schemas/` | Lightweight JSON schemas for local validation. |
+| `scripts/` | Local file-management utilities only. |
+
+## Script Boundary
+
+Scripts under `research_ops/scripts/` may create, validate, and summarize local
+iteration files. They must not import `v4`, broker clients, trading runtimes,
+model code, or paid-data code.
