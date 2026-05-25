@@ -70,6 +70,28 @@ Every material research or engineering change should move through this packet:
 Single-session cartography, verification, or documentation work may produce only
 the relevant artifact, but it must state why the full packet is not required.
 
+## Iteration Workflow
+
+Create a new research cycle with:
+
+```text
+python research_ops/scripts/new_iteration.py --id ITER-001_quote_age_truth --assumption A001 --title "Quote age truth"
+```
+
+Each iteration lives under `research_ops/iterations/` and contains a request,
+cartography report, RFC, implementation summary, verifier report, decision
+memo, `manifest.yaml`, and `artifacts/`. Validate it with:
+
+```text
+python research_ops/scripts/validate_iteration.py ITER-001_quote_age_truth --registry
+```
+
+Update the control-tower dashboard with:
+
+```text
+python research_ops/scripts/update_dashboard.py
+```
+
 ## Binding Local Truth
 
 Read these before changing direction:

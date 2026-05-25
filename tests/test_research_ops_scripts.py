@@ -133,7 +133,7 @@ def test_pull_request_template_ties_prs_to_research_ops_controls():
         assert required in template
 
 
-def test_new_iteration_validate_and_summarize_roundtrip(tmp_path):
+def test_new_iteration_validate_summarize_and_dashboard_roundtrip(tmp_path):
     sandbox = tmp_path / "repo"
     shutil.copytree(RESEARCH_OPS, sandbox / "research_ops")
 
@@ -141,9 +141,14 @@ def test_new_iteration_validate_and_summarize_roundtrip(tmp_path):
         [
             sys.executable,
             str(sandbox / "research_ops" / "scripts" / "new_iteration.py"),
-            "execution-realism",
-            "--date",
-            "2026-05-24",
+            "--id",
+            "ITER-001_quote_age_truth",
+            "--assumption",
+            "A001",
+            "--title",
+            "Quote age truth",
+            "--created-at",
+            "2026-05-24T00:00:00Z",
             "--root",
             str(sandbox),
         ],
@@ -152,10 +157,22 @@ def test_new_iteration_validate_and_summarize_roundtrip(tmp_path):
         capture_output=True,
     )
     iteration_dir = Path(create.stdout.strip())
-    assert iteration_dir.name == "20260524_execution-realism"
+    assert iteration_dir.name == "ITER-001_quote_age_truth"
 
-    manifest = json.loads((iteration_dir / "iteration_manifest.json").read_text(encoding="utf-8"))
-    assert manifest["control_ref"] == "v4-protocol101-control-2026-05-24"
+    for filename in [
+        "manifest.yaml",
+        "00_request.md",
+        "01_cartography.md",
+        "02_rfc.md",
+        "03_implementation_summary.md",
+        "04_verifier_report.md",
+        "05_decision_memo.md",
+    ]:
+        assert (iteration_dir / filename).exists()
+    assert (iteration_dir / "artifacts" / ".gitkeep").exists()
+    manifest_text = (iteration_dir / "manifest.yaml").read_text(encoding="utf-8")
+    assert 'iteration_id: "ITER-001_quote_age_truth"' in manifest_text
+    assert 'assumption_id: "A001"' in manifest_text
 
     subprocess.run(
         [
@@ -171,6 +188,22 @@ def test_new_iteration_validate_and_summarize_roundtrip(tmp_path):
         capture_output=True,
     )
 
+    manifest_path = iteration_dir / "manifest.yaml"
+    manifest_path.write_text(
+        manifest_text.replace('status: "draft"', 'status: "completed"'),
+        encoding="utf-8",
+    )
+    (iteration_dir / "04_verifier_report.md").write_text(
+        "# Verifier Report\n\n"
+        "## Newly Confirmed Evidence\n\n"
+        "- Quote timestamps can be reconstructed for sampled rows.\n\n"
+        "## Newly Falsified Assumptions\n\n"
+        "- None yet.\n\n"
+        "## Verdict\n\n"
+        "supported\n",
+        encoding="utf-8",
+    )
+
     subprocess.run(
         [
             sys.executable,
@@ -183,4 +216,76 @@ def test_new_iteration_validate_and_summarize_roundtrip(tmp_path):
         text=True,
         capture_output=True,
     )
-    assert (iteration_dir / "reports" / "iteration_summary.md").exists()
+    assert (iteration_dir / "artifacts" / "iteration_summary.md").exists()
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(sandbox / "research_ops" / "scripts" / "update_dashboard.py"),
+            "--root",
+            str(sandbox),
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    dashboard = (sandbox / "research_ops" / "CEO_DASHBOARD.md").read_text(encoding="utf-8")
+    for required in [
+        "## 1. Current Operational Default",
+        "## 2. Current Safety Posture",
+        "## 3. Active Iteration",
+        "## 4. Latest Completed Iteration",
+        "## 5. Decisions Required",
+        "## 6. P0 Assumptions",
+        "## 7. Blocked Actions",
+        "## 8. Newly Confirmed Evidence",
+        "## 9. Newly Falsified Assumptions",
+        "## 10. Next Recommended Codex Prompt",
+        "ITER-001_quote_age_truth",
+        "Quote timestamps can be reconstructed for sampled rows.",
+    ]:
+        assert required in dashboard
+
+
+def test_validate_iteration_rejects_forbidden_modified_paths(tmp_path):
+    sandbox = tmp_path / "repo"
+    shutil.copytree(RESEARCH_OPS, sandbox / "research_ops")
+    subprocess.run(
+        [
+            sys.executable,
+            str(sandbox / "research_ops" / "scripts" / "new_iteration.py"),
+            "--id",
+            "ITER-002_runtime_boundary",
+            "--assumption",
+            "A002",
+            "--title",
+            "Runtime boundary",
+            "--created-at",
+            "2026-05-24T00:00:00Z",
+            "--root",
+            str(sandbox),
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    iteration_dir = sandbox / "research_ops" / "iterations" / "ITER-002_runtime_boundary"
+    (iteration_dir / "03_implementation_summary.md").write_text(
+        "# Implementation Summary\n\n"
+        "## Files Modified\n\n"
+        "- v4/runtime/protocol101_paper_order_enablement.json\n",
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(sandbox / "research_ops" / "scripts" / "validate_iteration.py"),
+            str(iteration_dir),
+            "--root",
+            str(sandbox),
+        ],
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 1
+    assert "forbidden path listed as modified" in result.stderr
