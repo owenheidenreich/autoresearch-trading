@@ -1,0 +1,47 @@
+{
+  "config_hash": "aadb3ac6b0389eec8592c0a675bc1f7498f5d5ffa2b547c51f4fd448ca4c26ae",
+  "confirmation_seed": 99,
+  "embargo_sessions": 1,
+  "ensemble_seeds": false,
+  "experiment_id": "exp002_selectivity_and_premium_cap",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "exp001's G4/G5 failures are driven by unbounded premium-at-risk and marginal-EV trades: raising the selection floor to $30 predicted payoff (10x fee) and capping entry premium at $5.00 (=$500 at risk, 5% of account) restores G4 (DD <= $1,500) and G1 (4/5 folds) while keeping G2 above the refit envelope; trade frequency drops but stays above 0.3/day.",
+  "max_candidates_per_row": 10,
+  "max_entry_ask": 5.0,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "refit_null_models": 5,
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selection_threshold": 30.0,
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "test_region_share": 0.5
+}

@@ -81,6 +81,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hypothesis", required=True)
     parser.add_argument("--out-root", type=Path, default=Path("v4/audit/autoresearch"))
     parser.add_argument("--max-iter", type=int, default=200)
+    parser.add_argument(
+        "--selection-threshold", type=float, default=None,
+        help="Predicted-payoff floor for taking a trade; defaults to the fee.",
+    )
+    parser.add_argument(
+        "--max-entry-ask", type=float, default=None,
+        help="Optional premium-at-risk cap: skip candidates with entry ask above this.",
+    )
+    parser.add_argument(
+        "--top-k-per-session", type=int, default=None,
+        help="Rank-based selectivity: keep only the K best-scoring minutes per session (after per-minute argmax). Information lives in rank; absolute predicted values adverse-select into sparse noisy regions (exp002 falsification).",
+    )
+    parser.add_argument(
+        "--ensemble-seeds", action="store_true",
+        help="Score with the mean prediction of all selection seeds (variance reduction); seed gates then apply to the single ensemble result.",
+    )
     return parser.parse_args()
 
 
@@ -252,14 +268,36 @@ def train_payoff_model(table: CandidateTable, seed: int, max_iter: int):
     return model
 
 
-def select_trades(table: CandidateTable, scores: np.ndarray, fee: float) -> np.ndarray:
-    """One candidate per decision minute: argmax predicted payoff if > fee."""
+def select_trades(
+    table: CandidateTable,
+    scores: np.ndarray,
+    fee: float,
+    *,
+    threshold: float | None = None,
+    max_entry_ask: float | None = None,
+    top_k_per_session: int | None = None,
+) -> np.ndarray:
+    """One candidate per decision minute: argmax predicted payoff above the
+    selection threshold (defaults to the fee), optionally premium-capped."""
+    floor = fee if threshold is None else max(threshold, fee)
     order = {}
     for i, (sess, dt) in enumerate(zip(table.session_name, table.decision_time)):
+        if max_entry_ask is not None and table.entry_ask[i] > max_entry_ask:
+            continue
         key = (sess, dt)
-        if scores[i] > fee and (key not in order or scores[i] > scores[order[key]]):
+        if scores[i] > floor and (key not in order or scores[i] > scores[order[key]]):
             order[key] = i
-    return np.asarray(sorted(order.values()), dtype=int)
+    selected = sorted(order.values())
+    if top_k_per_session is not None:
+        by_session: dict[str, list[int]] = {}
+        for i in selected:
+            by_session.setdefault(table.session_name[i], []).append(i)
+        selected = sorted(
+            i
+            for members in by_session.values()
+            for i in sorted(members, key=lambda j: -scores[j])[:top_k_per_session]
+        )
+    return np.asarray(selected, dtype=int)
 
 
 def replay(table: CandidateTable, selected: np.ndarray, fee: float, split: str) -> dict[str, Any]:
@@ -355,6 +393,10 @@ def main() -> int:
         "refit_null_models": REFIT_NULL_MODELS,
         "row_stride": ROW_STRIDE,
         "max_candidates_per_row": MAX_CANDIDATES_PER_ROW,
+        "selection_threshold": args.selection_threshold,
+        "max_entry_ask": args.max_entry_ask,
+        "top_k_per_session": args.top_k_per_session,
+        "ensemble_seeds": bool(args.ensemble_seeds),
         "registry_template": REGISTRY_DIR_TEMPLATE,
         "month_tags": ALL_MONTH_TAGS,
     }
@@ -374,6 +416,7 @@ def main() -> int:
 
     session_arr = np.asarray(table.session_name)
     seed_results: dict[int, Any] = {}
+    ensemble_models: dict[int, dict[int, Any]] = {}
     for seed in SELECTION_SEEDS:
         fold_rows = []
         pooled_scores, pooled_pnl, pooled_stratum, pooled_session = [], [], [], []
@@ -383,11 +426,32 @@ def main() -> int:
             test_mask = np.isin(session_arr, fold["test_sessions"])
             train_tbl, test_tbl = subset(table, train_mask), subset(table, test_mask)
             model = train_payoff_model(train_tbl, seed, args.max_iter)
-            scores = model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
+            ensemble_models.setdefault(fold["fold"], {})[seed] = model
+            if args.ensemble_seeds:
+                members = [
+                    train_payoff_model(train_tbl, member, args.max_iter)
+                    if member != seed
+                    else model
+                    for member in SELECTION_SEEDS
+                ] if seed == SELECTION_SEEDS[0] else None
+                if members is None:
+                    # Non-primary seeds reuse the ensemble scored on seed 0's pass.
+                    scores = ensemble_models[fold["fold"]]["ensemble_scores"]
+                else:
+                    scores = np.mean(
+                        [m.predict(np.nan_to_num(test_tbl.X, nan=0.0)) for m in members], axis=0
+                    )
+                    ensemble_models[fold["fold"]]["ensemble_scores"] = scores
+            else:
+                scores = model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
             rng = np.random.default_rng(seed * 100 + fold["fold"])
             fold_row = {"fold": fold["fold"], "test_sessions": len(fold["test_sessions"])}
             for fee in (FEE_PER_TRADE, *FEE_SENSITIVITY):
-                selected = select_trades(test_tbl, scores, fee)
+                selected = select_trades(
+                    test_tbl, scores, fee,
+                    threshold=args.selection_threshold, max_entry_ask=args.max_entry_ask,
+                    top_k_per_session=args.top_k_per_session,
+                )
                 sim = replay(test_tbl, selected, fee, f"seed{seed}_fold{fold['fold']}")
                 key = "primary" if fee == FEE_PER_TRADE else f"fee_{fee:.2f}"
                 fold_row[key] = sim
@@ -431,7 +495,11 @@ def main() -> int:
             CandidateTable(**{**train_tbl.__dict__, "pnl": shuffled}), seed=SELECTION_SEEDS[0], max_iter=args.max_iter
         )
         refit_scores = refit_model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
-        refit_selected = select_trades(test_tbl, refit_scores, FEE_PER_TRADE)
+        refit_selected = select_trades(
+            test_tbl, refit_scores, FEE_PER_TRADE,
+            threshold=args.selection_threshold, max_entry_ask=args.max_entry_ask,
+            top_k_per_session=args.top_k_per_session,
+        )
         refit_z.append(stratified_selection_z(test_tbl, refit_scores, refit_selected, rng))
 
     # Gates (primary fee, per approved doc)
