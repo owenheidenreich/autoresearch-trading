@@ -265,7 +265,17 @@ def test_label_deadline_caps_policy_holds_at_forced_flat() -> None:
         for policy in config.label_policies
     ]
 
-    assert deadlines == [pd.Timestamp("2026-01-02T15:39:00", tz="America/New_York").time(), pd.Timestamp("2026-01-02T15:54:00", tz="America/New_York").time(), config.forced_flat_before]
+    # Decision at 15:29 ET: 10m and 25m holds end naturally; every longer
+    # menu-v2 shape (45/90/120/384m) is capped at the 15:55 forced flat.
+    assert deadlines == [
+        pd.Timestamp("2026-01-02T15:39:00", tz="America/New_York").time(),
+        pd.Timestamp("2026-01-02T15:54:00", tz="America/New_York").time(),
+        config.forced_flat_before,
+        config.forced_flat_before,
+        config.forced_flat_before,
+        config.forced_flat_before,
+        config.forced_flat_before,
+    ]
 
 
 def test_policy2_late_label_uses_forced_flat_not_post_forced_quote() -> None:

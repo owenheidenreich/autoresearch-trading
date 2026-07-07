@@ -1,9 +1,9 @@
 # Protocol101 Trade-Shape Menu v2 — PROPOSAL (awaiting owner sign-off)
 
-Status: DRAFT for owner review. Nothing in this document is implemented until
-approved. Approval triggers: pinned-policy update, full-corpus label rebuild,
-verifier version bump (v3.4), and re-acceptance — all mechanical under the
-existing pipeline.
+Status: **APPROVED by owner, 2026-07-07, as proposed (all seven shapes).**
+Standing review point: menu revisited with shape-usage statistics after the
+first stage-1 hill-climb cycle. Implemented as pinned label policies +
+verifier v3.4; corpus label rebuild and re-acceptance executed on approval.
 
 ## Why the menu is changing
 

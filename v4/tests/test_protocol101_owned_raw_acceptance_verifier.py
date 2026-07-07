@@ -92,19 +92,19 @@ def test_fold_placement_requires_role_processed_rows_and_acceptance() -> None:
             {
                 "session": "2024-10-01",
                 "status": "pass",
-                "verifier_version": 33,
+                "verifier_version": 34,
                 "processed": {"processed_exists": True, "neural_rows": 360},
             },
             {
                 "session": "2024-10-02",
                 "status": "pass",
-                "verifier_version": 33,
+                "verifier_version": 34,
                 "processed": {"processed_exists": True, "neural_rows": 360},
             },
             {
                 "session": "2026-07-01",
                 "status": "pass",
-                "verifier_version": 33,
+                "verifier_version": 34,
                 "processed": {"processed_exists": True, "neural_rows": 360},
             },
         ]

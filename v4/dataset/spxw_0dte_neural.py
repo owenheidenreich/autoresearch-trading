@@ -84,11 +84,21 @@ class NeuralDatasetConfig:
     diagnostic_index_context_lag_minutes: int | None = None
     diagnostic_source_policy: str | None = None
     compute_policy_labels: bool = True
+    # Trade-shape menu v2, owner-approved 2026-07-07 (see
+    # v4/docs/PROTOCOL101_TRADE_SHAPE_MENU_V2_PROPOSAL.md). Shapes 3-6 add
+    # patient/asymmetric profiles: stop=1.00 means the premium is the stop
+    # (exit only at zero bid); target=99.0 is the no-practical-target
+    # sentinel; hold=384 always reaches the 15:55 ET forced-flat cap, i.e.
+    # "hold to forced flat" for any entry time.
     label_policies: tuple[LabelPolicy, ...] = field(
         default_factory=lambda: (
             LabelPolicy(0.35, 0.60, 10),
             LabelPolicy(0.50, 1.00, 25),
             LabelPolicy(0.65, 1.50, 45),
+            LabelPolicy(0.50, 2.00, 90),
+            LabelPolicy(1.00, 3.00, 120),
+            LabelPolicy(1.00, 9.99, 384),
+            LabelPolicy(1.00, 99.0, 384),
         )
     )
 

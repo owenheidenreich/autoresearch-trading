@@ -1,9 +1,10 @@
 # Protocol101 Stage-1 Objective & Gates — PROPOSAL (awaiting owner sign-off)
 
-Status: DRAFT for owner review. These numbers become the preregistered law of
-stage-1 hill climbing the moment the owner approves them. After approval,
-changing any gate requires an explicit owner-signed revision of this document
-— the autoresearch loop may never adjust its own goalposts.
+Status: **APPROVED by owner, 2026-07-07, as proposed (all gates, all
+checklist defaults ratified).** These numbers are now the preregistered law
+of stage-1 hill climbing. Changing any gate requires an explicit owner-signed
+revision of this document — the autoresearch loop may never adjust its own
+goalposts.
 
 ## The trader being built (owner's directive, 2026-07-06)
 

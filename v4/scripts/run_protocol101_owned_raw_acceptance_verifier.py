@@ -26,10 +26,10 @@ import pyarrow.parquet as pq
 from v4.dataset.spxw_0dte_neural import MARKET_FEATURE_NAMES
 
 
-SCHEMA_VERSION = "Protocol101OwnedRawAcceptanceRegistryV3_3"
+SCHEMA_VERSION = "Protocol101OwnedRawAcceptanceRegistryV3_4"
 PREDICATE_SCHEMA_VERSION = "Protocol101FoldPlacementPredicateV1"
-VERIFIER_VERSION = 33
-MIN_FOLD_PLACEMENT_VERIFIER_VERSION = 33
+VERIFIER_VERSION = 34
+MIN_FOLD_PLACEMENT_VERIFIER_VERSION = 34
 # A session may be classified report_only/missing_index_context only when the
 # official SPX vendor file itself lacks at most this many expected source
 # minutes and every imperfect-lag row is attributable to those exact minutes.
@@ -104,10 +104,17 @@ PINNED_FEE_MODEL = {"fee_model": "gross_no_fees", "fee_per_contract": 0.0}
 PINNED_MAX_QUOTE_AGE_SECONDS = 90.0
 PINNED_CONTRACT_MULTIPLIER = 100
 PINNED_FORCED_FLAT_BEFORE_ET = "15:55"
+# Trade-shape menu v2, owner-approved 2026-07-07; must mirror
+# NeuralDatasetConfig.label_policies exactly (independent duplicate by design;
+# any drift fails the raw-label recompute loudly).
 PINNED_LABEL_POLICIES = (
     {"policy_idx": 0, "stop_loss_pct": 0.35, "take_profit_pct": 0.60, "max_hold_minutes": 10},
     {"policy_idx": 1, "stop_loss_pct": 0.50, "take_profit_pct": 1.00, "max_hold_minutes": 25},
     {"policy_idx": 2, "stop_loss_pct": 0.65, "take_profit_pct": 1.50, "max_hold_minutes": 45},
+    {"policy_idx": 3, "stop_loss_pct": 0.50, "take_profit_pct": 2.00, "max_hold_minutes": 90},
+    {"policy_idx": 4, "stop_loss_pct": 1.00, "take_profit_pct": 3.00, "max_hold_minutes": 120},
+    {"policy_idx": 5, "stop_loss_pct": 1.00, "take_profit_pct": 9.99, "max_hold_minutes": 384},
+    {"policy_idx": 6, "stop_loss_pct": 1.00, "take_profit_pct": 99.0, "max_hold_minutes": 384},
 )
 CBBO_STAMPING_ASSUMPTION = {
     "schema": "Databento OPRA cbbo-1m",
@@ -1039,10 +1046,14 @@ def _sample_label_tuples(rows: list[dict[str, Any]], *, max_samples: int) -> lis
                     all_candidates.append(item)
                     if item["forced_flat_reachable"]:
                         forced_flat_candidates.append(item)
-    desired = [(0, "near"), (1, "near"), (2, "near"), (0, "far"), (2, "far"), (1, "far")]
+    desired = [
+        (int(policy["policy_idx"]), bucket)
+        for bucket in ("near", "far")
+        for policy in PINNED_LABEL_POLICIES
+    ]
     selected: list[dict[str, Any]] = []
     seen: set[tuple[int, int, int, int]] = set()
-    budget = max(max_samples, 20)
+    budget = max(max_samples, 2 * len(PINNED_LABEL_POLICIES) * 2 + 8)
 
     def add(item: dict[str, Any]) -> None:
         identity = (item["row_idx"], item["strike_idx"], item["right_idx"], item["policy_idx"])
@@ -1500,7 +1511,11 @@ def verify_session(
         min_samples=thresholds.min_label_spot_check_count,
     )
     early_close_session = is_early_close_session(session)
-    required_policy_offset_cells = {"0:near", "1:near", "2:near", "0:far", "1:far", "2:far"}
+    required_policy_offset_cells = {
+        f"{int(policy['policy_idx'])}:{bucket}"
+        for policy in PINNED_LABEL_POLICIES
+        for bucket in ("near", "far")
+    }
     sampled_policy_offset_cells = set(label_spot.get("sampled_policy_offset_cells") or [])
     sampled_rights = set(label_spot.get("sampled_rights") or [])
     checks = {

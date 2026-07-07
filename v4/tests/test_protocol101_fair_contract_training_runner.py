@@ -79,7 +79,7 @@ def _governed_manifest_and_artifacts(tmp_path: Path) -> tuple[dict, GovernedLoad
             {
                 "session": session,
                 "status": "pass",
-                "verifier_version": 33,
+                "verifier_version": 34,
                 "early_close_session": False,
                 "processed": {
                     "processed_exists": True,
@@ -91,7 +91,7 @@ def _governed_manifest_and_artifacts(tmp_path: Path) -> tuple[dict, GovernedLoad
         )
     acceptance = {
         "status": "pass",
-        "verifier_version": 33,
+        "verifier_version": 34,
         "thresholds_are_defaults": True,
         "fee_model": {"fee_model": "gross_no_fees", "fee_per_contract": 0.0},
         "sessions": records,
