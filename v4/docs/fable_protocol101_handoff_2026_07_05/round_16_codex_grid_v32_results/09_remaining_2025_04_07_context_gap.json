@@ -1,0 +1,32 @@
+{
+  "bad_context_rows": [
+    {
+      "decision_time": "2025-04-07T14:28:00+00:00",
+      "lag_minutes": 2.0,
+      "source_context_time": "2025-04-07T14:26:00+00:00"
+    },
+    {
+      "decision_time": "2025-04-07T14:29:00+00:00",
+      "lag_minutes": 3.0,
+      "source_context_time": "2025-04-07T14:26:00+00:00"
+    },
+    {
+      "decision_time": "2025-04-07T14:30:00+00:00",
+      "lag_minutes": 4.0,
+      "source_context_time": "2025-04-07T14:26:00+00:00"
+    },
+    {
+      "decision_time": "2025-04-07T14:53:00+00:00",
+      "lag_minutes": 2.0,
+      "source_context_time": "2025-04-07T14:51:00+00:00"
+    }
+  ],
+  "finding": "SPX official index context has four missing one-minute bars; builder emits full grid, but context lag exactness fails for affected decisions.",
+  "missing_spx_minutes_1330_1930": [
+    "2025-04-07T14:27:00+00:00",
+    "2025-04-07T14:28:00+00:00",
+    "2025-04-07T14:29:00+00:00",
+    "2025-04-07T14:52:00+00:00"
+  ],
+  "session": "2025-04-07"
+}

@@ -1,0 +1,14 @@
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest -q \
+  v4/tests/test_protocol101_owned_raw_acceptance_verifier.py \
+  v4/tests/test_protocol101_owned_raw_acceptance_batch.py \
+  v4/tests/test_protocol101_governed_loader.py \
+  v4/tests/test_protocol101_fair_contract_training_runner.py \
+  v4/tests/test_protocol101_era_role_policy.py \
+  v4/tests/test_protocol101_session_era_manifest.py \
+  v4/tests/test_protocol101_serial_simulator.py \
+  v4/tests/test_protocol101_fair_contract_selected_candidate_replay_gate.py \
+  v4/tests/test_spxw_0dte_neural.py
+
+........................................................................ [ 79%]
+...................                                                      [100%]
+91 passed in 6.50s

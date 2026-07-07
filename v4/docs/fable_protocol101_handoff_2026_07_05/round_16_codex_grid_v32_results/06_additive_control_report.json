@@ -1,0 +1,30 @@
+{
+  "controls": [
+    {
+      "diff_count": 0,
+      "diff_examples": [],
+      "new_decision_grid_values": [
+        "calendar_v2"
+      ],
+      "new_extra_rows": 0,
+      "new_rows": 360,
+      "old_missing_in_new": 0,
+      "old_rows": 360,
+      "session": "2024-10-01",
+      "shared_rows": 360
+    },
+    {
+      "diff_count": 0,
+      "diff_examples": [],
+      "new_decision_grid_values": [
+        "calendar_v2"
+      ],
+      "new_extra_rows": 0,
+      "new_rows": 360,
+      "old_missing_in_new": 0,
+      "old_rows": 360,
+      "session": "2025-01-15",
+      "shared_rows": 360
+    }
+  ]
+}

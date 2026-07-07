@@ -1,0 +1,49 @@
+{
+  "schema_version": "Protocol101ContextRepairManifestV1",
+  "repair_id": "protocol101_2025_04_07_spx_context_repair",
+  "created": "2026-07-06",
+  "purpose": "Repair ThetaData SPX 1-minute vendor file for 2025-04-07, which is missing exactly four regular-session minutes (14:27, 14:28, 14:29, 14:52 UTC), causing the sole remaining v3.2 acceptance failure (context_lag_exact_one_minute on 4 attributed decision rows).",
+  "authorization": {
+    "granted_by": "owner",
+    "granted_at": "2026-07-06",
+    "channel": "direct instruction to Fable in Protocol101 foundation session",
+    "quoted_text": "repair the data. i give you authorization."
+  },
+  "approval_required": {
+    "exact_approval_text": "I approve the Protocol101 2025-04-07 SPX context repair exactly as specified: ThetaData index_history_ohlc SPX 1-minute bars for 2025-04-07 only, overwriting data/vendor/thetadata/index/spx_1m/2025-04-07.parquet, no other symbols, no other dates, no Databento."
+  },
+  "scope": {
+    "vendor": "thetadata",
+    "endpoint": "index_history_ohlc",
+    "symbols": ["SPX"],
+    "start_date": "2025-04-07",
+    "end_date": "2025-04-07",
+    "interval": "1m",
+    "output_file": "data/vendor/thetadata/index/spx_1m/2025-04-07.parquet"
+  },
+  "pre_repair_evidence": {
+    "file": "v4/audit/autoresearch/protocol101_2025_04_07_spx_context_repair/2025-04-07.pre_repair.parquet",
+    "sha256": "456354a54ec131d56c6883e9fbfe9a92e6a4b09a07821e8753291f0074647f91",
+    "rows": 387,
+    "missing_session_minutes_utc": [
+      "2025-04-07T14:27:00+00:00",
+      "2025-04-07T14:28:00+00:00",
+      "2025-04-07T14:29:00+00:00",
+      "2025-04-07T14:52:00+00:00"
+    ]
+  },
+  "post_repair_protocol": [
+    "verify the four missing minutes are present in the refetched file",
+    "rebuild 2025-04-07 processed session via single-day batch run",
+    "re-run April 2025 acceptance under verifier v3.2",
+    "expected end state: April = 17 pass + 4 report_only(low_tradable_liquidity) + 0 fail"
+  ],
+  "fallback_if_vendor_lacks_minutes": "keep session as fail; adopt missing_index_context report_only class with strict attribution in the next verifier version bump",
+  "outcome": {
+    "refetched": "2026-07-06",
+    "refetched_rows": 387,
+    "refetched_sha256_prefix": "20ef34a2bc7f37413da3",
+    "missing_minutes_still_absent": true,
+    "conclusion": "ThetaData's own SPX 1m history lacks 14:27, 14:28, 14:29, 14:52 UTC for 2025-04-07; repair via refetch is impossible. Fallback adopted: verifier v3.3 missing_index_context report_only class with strict attribution."
+  }
+}
