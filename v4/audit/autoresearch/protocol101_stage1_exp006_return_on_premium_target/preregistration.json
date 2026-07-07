@@ -1,0 +1,51 @@
+{
+  "config_hash": "eec59099dd0e800ae3296416ac09fddc1e91ace79b5d4fed4dc87c2c8fe8b4d0",
+  "confirmation_seed": 99,
+  "embargo_sessions": 1,
+  "ensemble_seeds": false,
+  "experiment_id": "exp006_return_on_premium_target",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "The drawdown wall traces to the dollar-PnL training target, which rewards premium size (corr(premium,|pnl|)=0.37) though premium is uncorrelated with profit (corr=0) and carries 4x the per-trade variance at the top quartile. Training on return-on-premium (pnl/premium) removes this bias and steers selection toward cheaper, higher-return, lower-variance contracts: expect materially lower drawdown vs exp001 and preserved G2. Isolated on the same expanding window as exp001 for direct comparison.",
+  "loss_quantile": null,
+  "max_candidates_per_row": 10,
+  "max_entry_ask": null,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "refit_null_models": 5,
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selection_threshold": null,
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "target_mode": "return_on_premium",
+  "test_region_share": 0.5,
+  "top_k_per_session": null,
+  "train_window_sessions": null
+}

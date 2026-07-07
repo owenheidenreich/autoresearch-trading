@@ -1,0 +1,1104 @@
+{
+  "config_hash": "eec59099dd0e800ae3296416ac09fddc1e91ace79b5d4fed4dc87c2c8fe8b4d0",
+  "confirmation_seed": 99,
+  "embargo_sessions": 1,
+  "ensemble_seeds": false,
+  "era_fold_pnl": {
+    "owned_2025h2": [
+      -11106.0,
+      -12939.0,
+      -13.999999999999055,
+      -3564.0000000000005,
+      9280.000000000002,
+      -8005.999999999999,
+      -8261.0,
+      -4409.000000000001,
+      399.0000000000011,
+      11531.999999999998,
+      -4262.999999999999,
+      -4529.0,
+      4353.0,
+      1467.9999999999989,
+      4552.999999999998
+    ],
+    "pre_program": []
+  },
+  "experiment_id": "exp006_return_on_premium_target",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates": {
+    "G1_profitability": false,
+    "G2_beats_no_skill": false,
+    "G3_beats_heuristics": null,
+    "G4_drawdown": false,
+    "G5_seed_robustness": false,
+    "G6_era_guard": "regime_bound_requires_owner_review",
+    "G7_frequency_band": true,
+    "G8_calibration": true,
+    "G9_confirmation": null
+  },
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "The drawdown wall traces to the dollar-PnL training target, which rewards premium size (corr(premium,|pnl|)=0.37) though premium is uncorrelated with profit (corr=0) and carries 4x the per-trade variance at the top quartile. Training on return-on-premium (pnl/premium) removes this bias and steers selection toward cheaper, higher-return, lower-variance contracts: expect materially lower drawdown vs exp001 and preserved G2. Isolated on the same expanding window as exp001 for direct comparison.",
+  "labels_used_for_strategy_selection": true,
+  "loss_quantile": null,
+  "max_candidates_per_row": 10,
+  "max_entry_ask": null,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "model_tier": true,
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "paper_submit_allowed": false,
+  "promotion": false,
+  "refit_null_models": 5,
+  "refit_null_selection_z": [
+    -1.6105059668488866,
+    -1.5062565854522276,
+    1.0702515772728791,
+    -2.842112010621377,
+    -0.963319469419109
+  ],
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "result_hash": "ddb56c5ddf345c2860dca00099d9b663c8d6321340df53ab0c0b746784235f93",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "seed_results": {
+    "42": {
+      "folds": [
+        {
+          "fee_2.00": {
+            "candidates_selected": 4444,
+            "fee_per_trade": 2.0,
+            "final_cash": -1613.9999999999998,
+            "max_drawdown": 12112.0,
+            "net_pnl": -11614.000000000002,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4323,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 14
+            },
+            "trades_executed": 107,
+            "trades_per_day": 3.8214285714285716,
+            "win_rate_diagnostic": 0.2336448598130841
+          },
+          "fee_5.00": {
+            "candidates_selected": 4425,
+            "fee_per_trade": 5.0,
+            "final_cash": -1779.9999999999998,
+            "max_drawdown": 12275.0,
+            "net_pnl": -11780.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4309,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 7
+            },
+            "trades_executed": 109,
+            "trades_per_day": 3.892857142857143,
+            "win_rate_diagnostic": 0.24770642201834864
+          },
+          "fold": 0,
+          "primary": {
+            "candidates_selected": 4441,
+            "fee_per_trade": 3.0,
+            "final_cash": -1105.9999999999998,
+            "max_drawdown": 11603.0,
+            "net_pnl": -11106.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4324,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 5
+            },
+            "trades_executed": 112,
+            "trades_per_day": 4.0,
+            "win_rate_diagnostic": 0.26785714285714285
+          },
+          "selection_z": 0.8613190053693511,
+          "test_sessions": 28
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 5030,
+            "fee_per_trade": 2.0,
+            "final_cash": -2891.0,
+            "max_drawdown": 13779.0,
+            "net_pnl": -12891.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4982,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 48,
+            "trades_per_day": 1.7142857142857142,
+            "win_rate_diagnostic": 0.1875
+          },
+          "fee_5.00": {
+            "candidates_selected": 5029,
+            "fee_per_trade": 5.0,
+            "final_cash": -2745.0,
+            "max_drawdown": 13630.0,
+            "net_pnl": -12745.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4982,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 47,
+            "trades_per_day": 1.6785714285714286,
+            "win_rate_diagnostic": 0.19148936170212766
+          },
+          "fold": 1,
+          "primary": {
+            "candidates_selected": 5030,
+            "fee_per_trade": 3.0,
+            "final_cash": -2939.0,
+            "max_drawdown": 13826.0,
+            "net_pnl": -12939.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4982,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 48,
+            "trades_per_day": 1.7142857142857142,
+            "win_rate_diagnostic": 0.1875
+          },
+          "selection_z": -7.013981107021429,
+          "test_sessions": 28
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4812,
+            "fee_per_trade": 2.0,
+            "final_cash": 10049.0,
+            "max_drawdown": 9912.0,
+            "net_pnl": 49.000000000000945,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4741,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 8
+            },
+            "trades_executed": 63,
+            "trades_per_day": 2.3333333333333335,
+            "win_rate_diagnostic": 0.2698412698412698
+          },
+          "fee_5.00": {
+            "candidates_selected": 4811,
+            "fee_per_trade": 5.0,
+            "final_cash": 9860.0,
+            "max_drawdown": 9990.0,
+            "net_pnl": -139.99999999999906,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4740,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 8
+            },
+            "trades_executed": 63,
+            "trades_per_day": 2.3333333333333335,
+            "win_rate_diagnostic": 0.2698412698412698
+          },
+          "fold": 2,
+          "primary": {
+            "candidates_selected": 4811,
+            "fee_per_trade": 3.0,
+            "final_cash": 9986.0,
+            "max_drawdown": 9938.0,
+            "net_pnl": -13.999999999999055,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4740,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 8
+            },
+            "trades_executed": 63,
+            "trades_per_day": 2.3333333333333335,
+            "win_rate_diagnostic": 0.2698412698412698
+          },
+          "selection_z": 10.965915636642444,
+          "test_sessions": 27
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4406,
+            "fee_per_trade": 2.0,
+            "final_cash": 6529.0,
+            "max_drawdown": 7695.0,
+            "net_pnl": -3471.0000000000005,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4363,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 43,
+            "trades_per_day": 1.5925925925925926,
+            "win_rate_diagnostic": 0.20930232558139536
+          },
+          "fee_5.00": {
+            "candidates_selected": 4392,
+            "fee_per_trade": 5.0,
+            "final_cash": 6285.0,
+            "max_drawdown": 7770.0,
+            "net_pnl": -3715.0000000000005,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4349,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 43,
+            "trades_per_day": 1.5925925925925926,
+            "win_rate_diagnostic": 0.20930232558139536
+          },
+          "fold": 3,
+          "primary": {
+            "candidates_selected": 4403,
+            "fee_per_trade": 3.0,
+            "final_cash": 6436.0,
+            "max_drawdown": 7710.0,
+            "net_pnl": -3564.0000000000005,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4360,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 43,
+            "trades_per_day": 1.5925925925925926,
+            "win_rate_diagnostic": 0.20930232558139536
+          },
+          "selection_z": 3.0095377303587396,
+          "test_sessions": 27
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4320,
+            "fee_per_trade": 2.0,
+            "final_cash": 19335.0,
+            "max_drawdown": 7791.0,
+            "net_pnl": 9335.000000000002,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4275,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.6666666666666667,
+            "win_rate_diagnostic": 0.28888888888888886
+          },
+          "fee_5.00": {
+            "candidates_selected": 4293,
+            "fee_per_trade": 5.0,
+            "final_cash": 20900.0,
+            "max_drawdown": 6075.0,
+            "net_pnl": 10900.000000000002,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4249,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 44,
+            "trades_per_day": 1.6296296296296295,
+            "win_rate_diagnostic": 0.2727272727272727
+          },
+          "fold": 4,
+          "primary": {
+            "candidates_selected": 4311,
+            "fee_per_trade": 3.0,
+            "final_cash": 19280.0,
+            "max_drawdown": 7799.0,
+            "net_pnl": 9280.000000000002,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4266,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.6666666666666667,
+            "win_rate_diagnostic": 0.28888888888888886
+          },
+          "selection_z": 2.0116301333474,
+          "test_sessions": 27
+        }
+      ],
+      "mean_selection_z": 1.9668842797393011,
+      "pooled_ece": 0.06829931185401616,
+      "pooled_net_pnl": -18342.999999999996,
+      "pooled_win_rho": 0.1176797737088079,
+      "profitable_folds": 1,
+      "trades_per_day": 2.261375661375661,
+      "worst_fold_drawdown": 13826.0
+    },
+    "43": {
+      "folds": [
+        {
+          "fee_2.00": {
+            "candidates_selected": 4515,
+            "fee_per_trade": 2.0,
+            "final_cash": 7719.0,
+            "max_drawdown": 5322.0,
+            "net_pnl": -2280.9999999999995,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4407,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 108,
+            "trades_per_day": 3.857142857142857,
+            "win_rate_diagnostic": 0.28703703703703703
+          },
+          "fee_5.00": {
+            "candidates_selected": 4479,
+            "fee_per_trade": 5.0,
+            "final_cash": 5790.0,
+            "max_drawdown": 7785.0,
+            "net_pnl": -4209.999999999999,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4340,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 34
+            },
+            "trades_executed": 105,
+            "trades_per_day": 3.75,
+            "win_rate_diagnostic": 0.2761904761904762
+          },
+          "fold": 0,
+          "primary": {
+            "candidates_selected": 4501,
+            "fee_per_trade": 3.0,
+            "final_cash": 1994.0,
+            "max_drawdown": 9977.0,
+            "net_pnl": -8005.999999999999,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 2908,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 1541
+            },
+            "trades_executed": 52,
+            "trades_per_day": 1.8571428571428572,
+            "win_rate_diagnostic": 0.17307692307692307
+          },
+          "selection_z": 8.258074052957197,
+          "test_sessions": 28
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 5016,
+            "fee_per_trade": 2.0,
+            "final_cash": 1771.0,
+            "max_drawdown": 10166.0,
+            "net_pnl": -8229.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4984,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 32,
+            "trades_per_day": 1.1428571428571428,
+            "win_rate_diagnostic": 0.25
+          },
+          "fee_5.00": {
+            "candidates_selected": 5016,
+            "fee_per_trade": 5.0,
+            "final_cash": 1675.0,
+            "max_drawdown": 10235.0,
+            "net_pnl": -8325.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4984,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 32,
+            "trades_per_day": 1.1428571428571428,
+            "win_rate_diagnostic": 0.25
+          },
+          "fold": 1,
+          "primary": {
+            "candidates_selected": 5016,
+            "fee_per_trade": 3.0,
+            "final_cash": 1739.0,
+            "max_drawdown": 10189.0,
+            "net_pnl": -8261.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4984,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 32,
+            "trades_per_day": 1.1428571428571428,
+            "win_rate_diagnostic": 0.25
+          },
+          "selection_z": -1.502922743293071,
+          "test_sessions": 28
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4797,
+            "fee_per_trade": 2.0,
+            "final_cash": 5774.0,
+            "max_drawdown": 10648.0,
+            "net_pnl": -4226.000000000001,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4704,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 93,
+            "trades_per_day": 3.4444444444444446,
+            "win_rate_diagnostic": 0.3655913978494624
+          },
+          "fee_5.00": {
+            "candidates_selected": 4788,
+            "fee_per_trade": 5.0,
+            "final_cash": 5405.0,
+            "max_drawdown": 10705.0,
+            "net_pnl": -4595.000000000001,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4695,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 93,
+            "trades_per_day": 3.4444444444444446,
+            "win_rate_diagnostic": 0.34408602150537637
+          },
+          "fold": 2,
+          "primary": {
+            "candidates_selected": 4795,
+            "fee_per_trade": 3.0,
+            "final_cash": 5591.0,
+            "max_drawdown": 10667.0,
+            "net_pnl": -4409.000000000001,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4702,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 93,
+            "trades_per_day": 3.4444444444444446,
+            "win_rate_diagnostic": 0.3548387096774194
+          },
+          "selection_z": 11.056352409721173,
+          "test_sessions": 27
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4509,
+            "fee_per_trade": 2.0,
+            "final_cash": 10461.0,
+            "max_drawdown": 7938.0,
+            "net_pnl": 461.0000000000011,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4447,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 62,
+            "trades_per_day": 2.2962962962962963,
+            "win_rate_diagnostic": 0.3064516129032258
+          },
+          "fee_5.00": {
+            "candidates_selected": 4492,
+            "fee_per_trade": 5.0,
+            "final_cash": 10510.0,
+            "max_drawdown": 8045.0,
+            "net_pnl": 510.0000000000005,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4431,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 61,
+            "trades_per_day": 2.259259259259259,
+            "win_rate_diagnostic": 0.3114754098360656
+          },
+          "fold": 3,
+          "primary": {
+            "candidates_selected": 4505,
+            "fee_per_trade": 3.0,
+            "final_cash": 10399.0,
+            "max_drawdown": 7957.0,
+            "net_pnl": 399.0000000000011,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4443,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 62,
+            "trades_per_day": 2.2962962962962963,
+            "win_rate_diagnostic": 0.3064516129032258
+          },
+          "selection_z": 3.451528917559992,
+          "test_sessions": 27
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4313,
+            "fee_per_trade": 2.0,
+            "final_cash": 21608.0,
+            "max_drawdown": 10913.0,
+            "net_pnl": 11607.999999999998,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4237,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 76,
+            "trades_per_day": 2.814814814814815,
+            "win_rate_diagnostic": 0.3815789473684211
+          },
+          "fee_5.00": {
+            "candidates_selected": 4281,
+            "fee_per_trade": 5.0,
+            "final_cash": 21755.0,
+            "max_drawdown": 10955.0,
+            "net_pnl": 11754.999999999998,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4206,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 75,
+            "trades_per_day": 2.7777777777777777,
+            "win_rate_diagnostic": 0.38666666666666666
+          },
+          "fold": 4,
+          "primary": {
+            "candidates_selected": 4302,
+            "fee_per_trade": 3.0,
+            "final_cash": 21532.0,
+            "max_drawdown": 10927.0,
+            "net_pnl": 11531.999999999998,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4226,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 76,
+            "trades_per_day": 2.814814814814815,
+            "win_rate_diagnostic": 0.3815789473684211
+          },
+          "selection_z": 6.417483172033688,
+          "test_sessions": 27
+        }
+      ],
+      "mean_selection_z": 5.536103161795795,
+      "pooled_ece": 0.0704022927554206,
+      "pooled_net_pnl": -8745.0,
+      "pooled_win_rho": 0.11736734237755572,
+      "profitable_folds": 2,
+      "trades_per_day": 2.311111111111111,
+      "worst_fold_drawdown": 10927.0
+    },
+    "44": {
+      "folds": [
+        {
+          "fee_2.00": {
+            "candidates_selected": 4511,
+            "fee_per_trade": 2.0,
+            "final_cash": 5903.0,
+            "max_drawdown": 9375.0,
+            "net_pnl": -4096.999999999999,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4345,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 166,
+            "trades_per_day": 5.928571428571429,
+            "win_rate_diagnostic": 0.37349397590361444
+          },
+          "fee_5.00": {
+            "candidates_selected": 4498,
+            "fee_per_trade": 5.0,
+            "final_cash": 3615.0000000000005,
+            "max_drawdown": 11225.0,
+            "net_pnl": -6384.999999999999,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4334,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 164,
+            "trades_per_day": 5.857142857142857,
+            "win_rate_diagnostic": 0.36585365853658536
+          },
+          "fold": 0,
+          "primary": {
+            "candidates_selected": 4507,
+            "fee_per_trade": 3.0,
+            "final_cash": 5737.0,
+            "max_drawdown": 9510.0,
+            "net_pnl": -4262.999999999999,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4341,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 166,
+            "trades_per_day": 5.928571428571429,
+            "win_rate_diagnostic": 0.37349397590361444
+          },
+          "selection_z": 7.762227926823514,
+          "test_sessions": 28
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 5028,
+            "fee_per_trade": 2.0,
+            "final_cash": 5514.0,
+            "max_drawdown": 8441.0,
+            "net_pnl": -4486.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4985,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 43,
+            "trades_per_day": 1.5357142857142858,
+            "win_rate_diagnostic": 0.18604651162790697
+          },
+          "fee_5.00": {
+            "candidates_selected": 5026,
+            "fee_per_trade": 5.0,
+            "final_cash": 5385.0,
+            "max_drawdown": 8555.0,
+            "net_pnl": -4615.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4983,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 43,
+            "trades_per_day": 1.5357142857142858,
+            "win_rate_diagnostic": 0.18604651162790697
+          },
+          "fold": 1,
+          "primary": {
+            "candidates_selected": 5028,
+            "fee_per_trade": 3.0,
+            "final_cash": 5471.0,
+            "max_drawdown": 8479.0,
+            "net_pnl": -4529.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4985,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 43,
+            "trades_per_day": 1.5357142857142858,
+            "win_rate_diagnostic": 0.18604651162790697
+          },
+          "selection_z": -2.9406881442809736,
+          "test_sessions": 28
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4725,
+            "fee_per_trade": 2.0,
+            "final_cash": 14412.0,
+            "max_drawdown": 9263.0,
+            "net_pnl": 4412.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4666,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 59,
+            "trades_per_day": 2.185185185185185,
+            "win_rate_diagnostic": 0.3050847457627119
+          },
+          "fee_5.00": {
+            "candidates_selected": 4708,
+            "fee_per_trade": 5.0,
+            "final_cash": 14235.0,
+            "max_drawdown": 9350.0,
+            "net_pnl": 4235.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4649,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 59,
+            "trades_per_day": 2.185185185185185,
+            "win_rate_diagnostic": 0.288135593220339
+          },
+          "fold": 2,
+          "primary": {
+            "candidates_selected": 4720,
+            "fee_per_trade": 3.0,
+            "final_cash": 14353.0,
+            "max_drawdown": 9292.0,
+            "net_pnl": 4353.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4661,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 59,
+            "trades_per_day": 2.185185185185185,
+            "win_rate_diagnostic": 0.3050847457627119
+          },
+          "selection_z": 9.52807699404221,
+          "test_sessions": 27
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4399,
+            "fee_per_trade": 2.0,
+            "final_cash": 13168.0,
+            "max_drawdown": 7351.0,
+            "net_pnl": 3167.9999999999995,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4323,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 76,
+            "trades_per_day": 2.814814814814815,
+            "win_rate_diagnostic": 0.4473684210526316
+          },
+          "fee_5.00": {
+            "candidates_selected": 4373,
+            "fee_per_trade": 5.0,
+            "final_cash": 11320.0,
+            "max_drawdown": 7940.0,
+            "net_pnl": 1319.9999999999989,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4299,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 74,
+            "trades_per_day": 2.740740740740741,
+            "win_rate_diagnostic": 0.43243243243243246
+          },
+          "fold": 3,
+          "primary": {
+            "candidates_selected": 4390,
+            "fee_per_trade": 3.0,
+            "final_cash": 11468.0,
+            "max_drawdown": 7914.0,
+            "net_pnl": 1467.9999999999989,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4316,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 74,
+            "trades_per_day": 2.740740740740741,
+            "win_rate_diagnostic": 0.43243243243243246
+          },
+          "selection_z": 0.6879588592233421,
+          "test_sessions": 27
+        },
+        {
+          "fee_2.00": {
+            "candidates_selected": 4516,
+            "fee_per_trade": 2.0,
+            "final_cash": 14592.0,
+            "max_drawdown": 10600.0,
+            "net_pnl": 4591.999999999998,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4477,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 39,
+            "trades_per_day": 1.4444444444444444,
+            "win_rate_diagnostic": 0.358974358974359
+          },
+          "fee_5.00": {
+            "candidates_selected": 4502,
+            "fee_per_trade": 5.0,
+            "final_cash": 14475.0,
+            "max_drawdown": 10645.0,
+            "net_pnl": 4474.999999999998,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4463,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 39,
+            "trades_per_day": 1.4444444444444444,
+            "win_rate_diagnostic": 0.358974358974359
+          },
+          "fold": 4,
+          "primary": {
+            "candidates_selected": 4515,
+            "fee_per_trade": 3.0,
+            "final_cash": 14553.0,
+            "max_drawdown": 10615.0,
+            "net_pnl": 4552.999999999998,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 4476,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 39,
+            "trades_per_day": 1.4444444444444444,
+            "win_rate_diagnostic": 0.358974358974359
+          },
+          "selection_z": 3.7270546426602102,
+          "test_sessions": 27
+        }
+      ],
+      "mean_selection_z": 3.752926055693661,
+      "pooled_ece": 0.05955351912906758,
+      "pooled_net_pnl": 1581.999999999998,
+      "pooled_win_rho": 0.11302797297851731,
+      "profitable_folds": 3,
+      "trades_per_day": 2.7669312169312166,
+      "worst_fold_drawdown": 10615.0
+    }
+  },
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selection_threshold": null,
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "target_mode": "return_on_premium",
+  "test_region_share": 0.5,
+  "top_k_per_session": null,
+  "train_window_sessions": null
+}
