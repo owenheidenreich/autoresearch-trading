@@ -376,7 +376,7 @@ def replay(table: CandidateTable, selected: np.ndarray, fee: float, split: str) 
         "trades_executed": len(trades),
         "skipped": state.skipped,
         "net_pnl": float(sum(t.raw_label_pnl for t in trades)),
-        "final_cash": float(equity[-1]) if equity else 10_000.0,
+        "final_cash": float(equity[-1]) if len(equity) else 10_000.0,
         "max_drawdown": drawdown,
         "max_drawdown_pct": drawdown_pct,
         "trades_per_day": float(len(trades) / session_days) if session_days else 0.0,
