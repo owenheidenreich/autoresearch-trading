@@ -1,0 +1,44 @@
+{
+  "config_hash": "68484657f1fc314f653b79231916b144462bd946a1c323e0152767ca8de24709",
+  "confirmation_seed": 99,
+  "embargo_sessions": 1,
+  "experiment_id": "exp001_payoff_gbm_baseline",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "A payoff-trained gradient-boosted tree over the live-v1 contract features contains genuine individual-candidate information (G2) on the menu-v2 corpus; economic gates (G1/G4/G5/G7) establish the baseline profile and are expected to be the binding constraints on the first attempt.",
+  "max_candidates_per_row": 10,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "refit_null_models": 5,
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "test_region_share": 0.5
+}
