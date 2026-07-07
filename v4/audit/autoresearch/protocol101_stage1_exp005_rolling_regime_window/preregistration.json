@@ -1,0 +1,50 @@
+{
+  "config_hash": "8481aade1c78db2a424902cb7e55d526a3bc41b35b43f655f33cd902e6fab395",
+  "confirmation_seed": 99,
+  "embargo_sessions": 1,
+  "ensemble_seeds": false,
+  "experiment_id": "exp005_rolling_regime_window",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "exp001 fold analysis: signal sign flips by regime coherently across seeds (|z| 10-19 with alternating signs); expanding windows average opposing regimes. Training on only the trailing 60 sessions before each test window keeps the model in-regime: expect per-fold selection z to become predominantly positive (>=4 of 5 folds), reducing the seed spread; economics may remain unbound and are addressed separately if the sign stabilizes.",
+  "loss_quantile": null,
+  "max_candidates_per_row": 10,
+  "max_entry_ask": null,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "refit_null_models": 5,
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selection_threshold": null,
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "test_region_share": 0.5,
+  "top_k_per_session": null,
+  "train_window_sessions": 60
+}

@@ -91,6 +91,10 @@ def parse_args() -> argparse.Namespace:
         help="Optional premium-at-risk cap: skip candidates with entry ask above this.",
     )
     parser.add_argument(
+        "--target-mode", choices=("dollar_pnl", "return_on_premium"), default="dollar_pnl",
+        help="Model training target. return_on_premium = pnl / (entry_ask*100): removes the premium-size bias that steers dollar-PnL models toward expensive, high-variance, low-return contracts (measured corr(premium,|pnl|)=0.37, corr(premium,pnl)=0). Simulator economics stay in dollars.",
+    )
+    parser.add_argument(
         "--train-window-sessions", type=int, default=None,
         help="Rolling regime window: train on only the last N pre-test sessions instead of the full expanding history (exp001 fold analysis: signal sign flips by regime, coherent across seeds).",
     )
@@ -271,16 +275,27 @@ def fold_boundaries(session_names: list[str]) -> list[dict[str, Any]]:
     return folds
 
 
-def train_payoff_model(table: CandidateTable, seed: int, max_iter: int, loss_quantile: float | None = None):
+def target_for(table: CandidateTable, mode: str) -> np.ndarray:
+    if mode == "return_on_premium":
+        premium = np.maximum(table.entry_ask * 100.0, 1e-6)
+        return table.pnl / premium
+    return table.pnl
+
+
+def train_payoff_model(
+    table: CandidateTable, seed: int, max_iter: int, loss_quantile: float | None = None,
+    target: np.ndarray | None = None,
+):
     from sklearn.ensemble import HistGradientBoostingRegressor
 
+    y = table.pnl if target is None else target
     if loss_quantile is not None:
         model = HistGradientBoostingRegressor(
             loss="quantile", quantile=loss_quantile, max_iter=max_iter, random_state=seed
         )
     else:
         model = HistGradientBoostingRegressor(max_iter=max_iter, random_state=seed)
-    model.fit(np.nan_to_num(table.X, nan=0.0), table.pnl)
+    model.fit(np.nan_to_num(table.X, nan=0.0), y)
     return model
 
 
@@ -292,16 +307,19 @@ def select_trades(
     threshold: float | None = None,
     max_entry_ask: float | None = None,
     top_k_per_session: int | None = None,
+    dollar_scores: np.ndarray | None = None,
 ) -> np.ndarray:
-    """One candidate per decision minute: argmax predicted payoff above the
-    selection threshold (defaults to the fee), optionally premium-capped."""
+    """One candidate per decision minute: rank by ``scores`` (predicted target),
+    admit only when the predicted DOLLAR gain clears the fee. In return mode
+    ranking is by return while the fee gate stays in dollars via dollar_scores."""
+    gate = scores if dollar_scores is None else dollar_scores
     floor = fee if threshold is None else max(threshold, fee)
     order = {}
     for i, (sess, dt) in enumerate(zip(table.session_name, table.decision_time)):
         if max_entry_ask is not None and table.entry_ask[i] > max_entry_ask:
             continue
         key = (sess, dt)
-        if scores[i] > floor and (key not in order or scores[i] > scores[order[key]]):
+        if gate[i] > floor and (key not in order or scores[i] > scores[order[key]]):
             order[key] = i
     selected = sorted(order.values())
     if top_k_per_session is not None:
@@ -416,6 +434,7 @@ def main() -> int:
         "top_k_per_session": args.top_k_per_session,
         "loss_quantile": args.loss_quantile,
         "train_window_sessions": args.train_window_sessions,
+        "target_mode": args.target_mode,
         "ensemble_seeds": bool(args.ensemble_seeds),
         "registry_template": REGISTRY_DIR_TEMPLATE,
         "month_tags": ALL_MONTH_TAGS,
@@ -445,7 +464,8 @@ def main() -> int:
             train_mask = np.isin(session_arr, fold["train_sessions"])
             test_mask = np.isin(session_arr, fold["test_sessions"])
             train_tbl, test_tbl = subset(table, train_mask), subset(table, test_mask)
-            model = train_payoff_model(train_tbl, seed, args.max_iter, args.loss_quantile)
+            train_target = target_for(train_tbl, args.target_mode)
+            model = train_payoff_model(train_tbl, seed, args.max_iter, args.loss_quantile, target=train_target)
             ensemble_models.setdefault(fold["fold"], {})[seed] = model
             if args.ensemble_seeds:
                 members = [
@@ -466,11 +486,16 @@ def main() -> int:
                 scores = model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
             rng = np.random.default_rng(seed * 100 + fold["fold"])
             fold_row = {"fold": fold["fold"], "test_sessions": len(fold["test_sessions"])}
+            dollar_scores = (
+                scores * np.maximum(test_tbl.entry_ask * 100.0, 1e-6)
+                if args.target_mode == "return_on_premium"
+                else None
+            )
             for fee in (FEE_PER_TRADE, *FEE_SENSITIVITY):
                 selected = select_trades(
                     test_tbl, scores, fee,
                     threshold=args.selection_threshold, max_entry_ask=args.max_entry_ask,
-                    top_k_per_session=args.top_k_per_session,
+                    top_k_per_session=args.top_k_per_session, dollar_scores=dollar_scores,
                 )
                 sim = replay(test_tbl, selected, fee, f"seed{seed}_fold{fold['fold']}")
                 key = "primary" if fee == FEE_PER_TRADE else f"fee_{fee:.2f}"
@@ -509,16 +534,23 @@ def main() -> int:
     train_mask = np.isin(session_arr, last_fold["train_sessions"])
     test_mask = np.isin(session_arr, last_fold["test_sessions"])
     train_tbl, test_tbl = subset(table, train_mask), subset(table, test_mask)
+    refit_target = target_for(train_tbl, args.target_mode)
     for k in range(REFIT_NULL_MODELS):
-        shuffled = shuffle_within_session(train_tbl.pnl, train_tbl.session_idx, np.random.default_rng(9000 + k))
+        shuffled = shuffle_within_session(refit_target, train_tbl.session_idx, np.random.default_rng(9000 + k))
         refit_model = train_payoff_model(
-            CandidateTable(**{**train_tbl.__dict__, "pnl": shuffled}), seed=SELECTION_SEEDS[0], max_iter=args.max_iter, loss_quantile=args.loss_quantile
+            train_tbl, seed=SELECTION_SEEDS[0], max_iter=args.max_iter,
+            loss_quantile=args.loss_quantile, target=shuffled,
         )
         refit_scores = refit_model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
+        refit_dollar = (
+            refit_scores * np.maximum(test_tbl.entry_ask * 100.0, 1e-6)
+            if args.target_mode == "return_on_premium"
+            else None
+        )
         refit_selected = select_trades(
             test_tbl, refit_scores, FEE_PER_TRADE,
             threshold=args.selection_threshold, max_entry_ask=args.max_entry_ask,
-            top_k_per_session=args.top_k_per_session,
+            top_k_per_session=args.top_k_per_session, dollar_scores=refit_dollar,
         )
         refit_z.append(stratified_selection_z(test_tbl, refit_scores, refit_selected, rng))
 
