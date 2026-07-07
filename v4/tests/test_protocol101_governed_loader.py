@@ -16,7 +16,7 @@ from v4.scripts.build_protocol101_protected_holdout_artifact import build_artifa
 from v4.scripts.run_protocol101_owned_raw_acceptance_verifier import compute_registry_hash
 
 
-def _artifacts(tmp_path: Path, *, verifier_version: int = 34, status: str = "pass") -> tuple[Path, GovernedLoaderArtifacts]:
+def _artifacts(tmp_path: Path, *, verifier_version: int = 35, status: str = "pass") -> tuple[Path, GovernedLoaderArtifacts]:
     processed = tmp_path / "2024-10-01.pkl"
     processed.write_bytes(b"accepted")
     acceptance = {
@@ -62,7 +62,7 @@ def _artifacts(tmp_path: Path, *, verifier_version: int = 34, status: str = "pas
     return processed, artifacts
 
 
-def test_validate_session_for_role_accepts_passed_v34_record(tmp_path: Path) -> None:
+def test_validate_session_for_role_accepts_passed_v35_record(tmp_path: Path) -> None:
     processed, artifacts = _artifacts(tmp_path)
 
     result = validate_session_for_role(

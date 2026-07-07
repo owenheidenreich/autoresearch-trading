@@ -26,10 +26,10 @@ import pyarrow.parquet as pq
 from v4.dataset.spxw_0dte_neural import MARKET_FEATURE_NAMES
 
 
-SCHEMA_VERSION = "Protocol101OwnedRawAcceptanceRegistryV3_4"
+SCHEMA_VERSION = "Protocol101OwnedRawAcceptanceRegistryV3_5"
 PREDICATE_SCHEMA_VERSION = "Protocol101FoldPlacementPredicateV1"
-VERIFIER_VERSION = 34
-MIN_FOLD_PLACEMENT_VERIFIER_VERSION = 34
+VERIFIER_VERSION = 35
+MIN_FOLD_PLACEMENT_VERIFIER_VERSION = 35
 # A session may be classified report_only/missing_index_context only when the
 # official SPX vendor file itself lacks at most this many expected source
 # minutes and every imperfect-lag row is attributable to those exact minutes.
@@ -116,6 +116,16 @@ PINNED_LABEL_POLICIES = (
     {"policy_idx": 5, "stop_loss_pct": 1.00, "take_profit_pct": 9.99, "max_hold_minutes": 384},
     {"policy_idx": 6, "stop_loss_pct": 1.00, "take_profit_pct": 99.0, "max_hold_minutes": 384},
 )
+# Pinned 2026-07-07 after encoding archaeology: Databento CBBO wrote absent
+# bids as 0.00 through 2025-02-19 and as null from 2025-02-20 onward. Both
+# encodings mean "no one will pay anything right now"; the exit-path label
+# convention treats them identically as an executable 0.00 (worst-case honest
+# for a long option). Entry tradability and features keep NaN semantics.
+PINNED_NO_BID_CONVENTION = {
+    "exit_path_absent_bid": "executable_zero",
+    "vendor_encoding_boundary": "2025-02-20 null replaces 0.00 in cbbo bid_px_00",
+    "scope": "labels only; entry filters and features unchanged",
+}
 CBBO_STAMPING_ASSUMPTION = {
     "schema": "Databento OPRA cbbo-1m",
     "timestamp_policy": "minute_end_interval_stamp",
@@ -204,6 +214,7 @@ REGISTRY_HASH_FIELDS = (
     "thresholds_are_defaults",
     "fee_model",
     "max_quote_age_seconds",
+    "no_bid_convention",
     "label_policies",
     "forced_flat_before_et",
     "cbbo_stamping_assumption",
@@ -959,20 +970,19 @@ def _raw_path_label(
     exit_row = future.iloc[-1]
     reason = "time_exit"
     for _, row in future.iterrows():
-        bid = row.get("bid")
-        if pd.isna(bid):
-            continue
-        if float(bid) <= stop_bid:
+        # PINNED_NO_BID_CONVENTION: absent bid is an executable 0.00 on exit.
+        bid = 0.0 if pd.isna(row.get("bid")) else float(row.get("bid"))
+        if bid <= stop_bid:
             exit_row = row
             reason = "stop_hit"
             break
-        if float(bid) >= target_bid:
+        if bid >= target_bid:
             exit_row = row
             reason = "target_hit"
             break
     if reason == "time_exit" and deadline < decision_time + pd.Timedelta(minutes=int(policy["max_hold_minutes"])):
         reason = "forced_flat_capped"
-    exit_bid = float(exit_row["bid"])
+    exit_bid = 0.0 if pd.isna(exit_row["bid"]) else float(exit_row["bid"])
     return (exit_bid - entry_ask) * PINNED_CONTRACT_MULTIPLIER, reason
 
 
@@ -1867,6 +1877,7 @@ def main() -> int:
         "thresholds_are_defaults": thresholds_are_defaults(thresholds),
         "fee_model": PINNED_FEE_MODEL,
         "max_quote_age_seconds": PINNED_MAX_QUOTE_AGE_SECONDS,
+        "no_bid_convention": PINNED_NO_BID_CONVENTION,
         "label_policies": PINNED_LABEL_POLICIES,
         "forced_flat_before_et": PINNED_FORCED_FLAT_BEFORE_ET,
         "cbbo_stamping_assumption": CBBO_STAMPING_ASSUMPTION,

@@ -536,14 +536,13 @@ def _label_for_policy(
     target_bid = entry_ask * (1.0 + policy.take_profit_pct)
     exit_row = future.iloc[-1]
     for _, row in future.iterrows():
-        bid = row.get("bid")
-        if pd.isna(bid):
-            continue
-        if float(bid) <= stop_bid or float(bid) >= target_bid:
+        # No-bid convention: absent bid is an executable 0.00 on the exit path.
+        bid = 0.0 if pd.isna(row.get("bid")) else float(row.get("bid"))
+        if bid <= stop_bid or bid >= target_bid:
             exit_row = row
             break
 
-    exit_bid = float(exit_row["bid"])
+    exit_bid = 0.0 if pd.isna(exit_row["bid"]) else float(exit_row["bid"])
     exit_mid = float(exit_row["mid"]) if pd.notna(exit_row["mid"]) else np.nan
     net = (exit_bid - entry_ask) * config.contract_multiplier
     if config.fee_per_contract:
@@ -555,7 +554,15 @@ def _label_for_policy(
 
 
 def _contract_quote_path(contract_quotes: pd.DataFrame) -> ContractQuotePath:
-    """Convert one contract quote path into arrays without changing label semantics."""
+    """Convert one contract quote path into arrays for label computation.
+
+    No-bid convention (pinned 2026-07-07): an absent bid on the exit path is
+    an executable value of 0.00. Databento CBBO encoded absent bids as 0.00
+    through 2025-02-19 and as null from 2025-02-20; both mean "nobody will
+    pay anything for this contract right now", and 0.00 is the worst-case
+    honest exit for a long option. Applies to the LABEL path only — features
+    and entry tradability keep NaN semantics.
+    """
     quotes = contract_quotes.sort_values("quote_time")
     quote_ns = (
         pd.to_datetime(quotes["quote_time"], utc=True)
@@ -565,7 +572,7 @@ def _contract_quote_path(contract_quotes: pd.DataFrame) -> ContractQuotePath:
     )
     return ContractQuotePath(
         quote_ns=quote_ns,
-        bid=pd.to_numeric(quotes["bid"], errors="coerce").to_numpy(dtype=float),
+        bid=pd.to_numeric(quotes["bid"], errors="coerce").fillna(0.0).to_numpy(dtype=float),
         mid=pd.to_numeric(quotes["mid"], errors="coerce").to_numpy(dtype=float),
     )
 

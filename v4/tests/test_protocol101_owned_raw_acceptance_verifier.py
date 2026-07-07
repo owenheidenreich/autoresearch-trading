@@ -92,19 +92,19 @@ def test_fold_placement_requires_role_processed_rows_and_acceptance() -> None:
             {
                 "session": "2024-10-01",
                 "status": "pass",
-                "verifier_version": 34,
+                "verifier_version": 35,
                 "processed": {"processed_exists": True, "neural_rows": 360},
             },
             {
                 "session": "2024-10-02",
                 "status": "pass",
-                "verifier_version": 34,
+                "verifier_version": 35,
                 "processed": {"processed_exists": True, "neural_rows": 360},
             },
             {
                 "session": "2026-07-01",
                 "status": "pass",
-                "verifier_version": 34,
+                "verifier_version": 35,
                 "processed": {"processed_exists": True, "neural_rows": 360},
             },
         ]
@@ -757,3 +757,37 @@ def test_classify_session_status_missing_index_context_paths() -> None:
     assert classify_session_status(
         checks=all_pass, early_close_session=True, index_context_gap=unattributed
     ) == ("report_only", "early_close_not_close_aware")
+
+
+def test_raw_path_label_treats_absent_bid_as_zero_exit() -> None:
+    def quotes(times: list[str], bids: list[float | None]) -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "quote_time": pd.to_datetime(times, utc=True),
+                "bid": bids,
+            }
+        )
+
+    decision = pd.Timestamp("2024-10-01T14:00:00Z")
+
+    # Absent bid mid-path triggers the stop at an executable 0.00 for a
+    # stopped policy (policy 1, stop 50%).
+    stopped_pnl, stopped_reason = _raw_path_label(
+        quotes(["2024-10-01T14:05:00Z", "2024-10-01T14:10:00Z"], [None, 8.0]),
+        decision_time=decision,
+        entry_ask=10.0,
+        policy_idx=1,
+    )
+    # Absent bid at the final row exits at 0.00 (full premium loss) for a
+    # premium-is-the-stop policy (policy 6, stop 100%).
+    worthless_pnl, worthless_reason = _raw_path_label(
+        quotes(["2024-10-01T14:05:00Z"], [None]),
+        decision_time=decision,
+        entry_ask=10.0,
+        policy_idx=6,
+    )
+
+    assert stopped_reason == "stop_hit"
+    assert np.isclose(stopped_pnl, -1000.0)
+    assert worthless_reason == "stop_hit"
+    assert np.isclose(worthless_pnl, -1000.0)
