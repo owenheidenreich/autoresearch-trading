@@ -1,0 +1,49 @@
+{
+  "config_hash": "360d5d89d473e98cc7c1dd6ff9e7d72f5ee78db793517b62d986d894fed6bf80",
+  "confirmation_seed": 99,
+  "embargo_sessions": 1,
+  "ensemble_seeds": false,
+  "experiment_id": "exp004_quantile_conservative_selection",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "exp001-003 triangulate winner's curse under heteroscedastic noise: extreme mean-predictions are noise-inflated in sparse regions. Training with quantile loss (alpha=0.25) and selecting where the PESSIMISTIC payoff estimate clears the fee suppresses curse picks: expect z recovery above the refit envelope, materially lower drawdown, and fewer trades/day than exp001 while staying above 0.3.",
+  "loss_quantile": 0.25,
+  "max_candidates_per_row": 10,
+  "max_entry_ask": null,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "refit_null_models": 5,
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selection_threshold": null,
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "test_region_share": 0.5,
+  "top_k_per_session": null
+}

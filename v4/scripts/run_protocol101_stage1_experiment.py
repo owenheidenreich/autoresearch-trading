@@ -73,6 +73,7 @@ G4_MAX_DRAWDOWN = 1_500.0
 G7_TRADES_PER_DAY = (0.3, 6.0)
 G8_MAX_ECE = 0.10
 PRE_PROGRAM_LAST_SESSION = "2025-06-30"
+TRAIN_WINDOW_SESSIONS: int | None = None  # set from --train-window-sessions
 
 
 def parse_args() -> argparse.Namespace:
@@ -88,6 +89,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-entry-ask", type=float, default=None,
         help="Optional premium-at-risk cap: skip candidates with entry ask above this.",
+    )
+    parser.add_argument(
+        "--train-window-sessions", type=int, default=None,
+        help="Rolling regime window: train on only the last N pre-test sessions instead of the full expanding history (exp001 fold analysis: signal sign flips by regime, coherent across seeds).",
     )
     parser.add_argument(
         "--loss-quantile", type=float, default=None,
@@ -253,6 +258,8 @@ def fold_boundaries(session_names: list[str]) -> list[dict[str, Any]]:
         first_test = window[0]
         train_pool = [s for s in unique if s < first_test]
         train = train_pool[:-EMBARGO_SESSIONS] if EMBARGO_SESSIONS else train_pool
+        if TRAIN_WINDOW_SESSIONS is not None:
+            train = train[-TRAIN_WINDOW_SESSIONS:]
         folds.append(
             {
                 "fold": k,
@@ -382,6 +389,8 @@ def expected_calibration_error(scores: np.ndarray, wins: np.ndarray, bins: int =
 
 def main() -> int:
     args = parse_args()
+    global TRAIN_WINDOW_SESSIONS
+    TRAIN_WINDOW_SESSIONS = args.train_window_sessions
     out_dir = args.out_root / f"protocol101_stage1_{args.experiment_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -406,6 +415,7 @@ def main() -> int:
         "max_entry_ask": args.max_entry_ask,
         "top_k_per_session": args.top_k_per_session,
         "loss_quantile": args.loss_quantile,
+        "train_window_sessions": args.train_window_sessions,
         "ensemble_seeds": bool(args.ensemble_seeds),
         "registry_template": REGISTRY_DIR_TEMPLATE,
         "month_tags": ALL_MONTH_TAGS,
