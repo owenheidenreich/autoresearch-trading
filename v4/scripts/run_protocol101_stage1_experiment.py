@@ -90,6 +90,10 @@ def parse_args() -> argparse.Namespace:
         help="Optional premium-at-risk cap: skip candidates with entry ask above this.",
     )
     parser.add_argument(
+        "--loss-quantile", type=float, default=None,
+        help="Train with quantile loss and select on this lower quantile of predicted payoff (winner's-curse suppression; exp003 falsification).",
+    )
+    parser.add_argument(
         "--top-k-per-session", type=int, default=None,
         help="Rank-based selectivity: keep only the K best-scoring minutes per session (after per-minute argmax). Information lives in rank; absolute predicted values adverse-select into sparse noisy regions (exp002 falsification).",
     )
@@ -260,10 +264,15 @@ def fold_boundaries(session_names: list[str]) -> list[dict[str, Any]]:
     return folds
 
 
-def train_payoff_model(table: CandidateTable, seed: int, max_iter: int):
+def train_payoff_model(table: CandidateTable, seed: int, max_iter: int, loss_quantile: float | None = None):
     from sklearn.ensemble import HistGradientBoostingRegressor
 
-    model = HistGradientBoostingRegressor(max_iter=max_iter, random_state=seed)
+    if loss_quantile is not None:
+        model = HistGradientBoostingRegressor(
+            loss="quantile", quantile=loss_quantile, max_iter=max_iter, random_state=seed
+        )
+    else:
+        model = HistGradientBoostingRegressor(max_iter=max_iter, random_state=seed)
     model.fit(np.nan_to_num(table.X, nan=0.0), table.pnl)
     return model
 
@@ -396,6 +405,7 @@ def main() -> int:
         "selection_threshold": args.selection_threshold,
         "max_entry_ask": args.max_entry_ask,
         "top_k_per_session": args.top_k_per_session,
+        "loss_quantile": args.loss_quantile,
         "ensemble_seeds": bool(args.ensemble_seeds),
         "registry_template": REGISTRY_DIR_TEMPLATE,
         "month_tags": ALL_MONTH_TAGS,
@@ -425,7 +435,7 @@ def main() -> int:
             train_mask = np.isin(session_arr, fold["train_sessions"])
             test_mask = np.isin(session_arr, fold["test_sessions"])
             train_tbl, test_tbl = subset(table, train_mask), subset(table, test_mask)
-            model = train_payoff_model(train_tbl, seed, args.max_iter)
+            model = train_payoff_model(train_tbl, seed, args.max_iter, args.loss_quantile)
             ensemble_models.setdefault(fold["fold"], {})[seed] = model
             if args.ensemble_seeds:
                 members = [
@@ -492,7 +502,7 @@ def main() -> int:
     for k in range(REFIT_NULL_MODELS):
         shuffled = shuffle_within_session(train_tbl.pnl, train_tbl.session_idx, np.random.default_rng(9000 + k))
         refit_model = train_payoff_model(
-            CandidateTable(**{**train_tbl.__dict__, "pnl": shuffled}), seed=SELECTION_SEEDS[0], max_iter=args.max_iter
+            CandidateTable(**{**train_tbl.__dict__, "pnl": shuffled}), seed=SELECTION_SEEDS[0], max_iter=args.max_iter, loss_quantile=args.loss_quantile
         )
         refit_scores = refit_model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
         refit_selected = select_trades(
