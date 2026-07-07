@@ -1,0 +1,52 @@
+{
+  "config_hash": "797dbdd976b788d32ccebbe8657c1c5aac82ec6eb2315e8c99c77b24117bbb2e",
+  "confirmation_seed": 99,
+  "conviction_quantile": 0.85,
+  "embargo_sessions": 1,
+  "ensemble_seeds": false,
+  "experiment_id": "exp008_abstention_synthesis",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "Stage-1 culmination under the owner-revised relative G4 (<=25% peak equity): return-on-premium target + rolling 60-session in-regime window + conviction-quantile 0.85 abstention (trade only top-15% predicted-return candidates, enabling zero-trade low-edge sessions). Expect trades to concentrate into high-edge windows, lifting per-fold PnL toward G1 and pulling relative drawdown toward the 25% gate, while frequency stays above the G7 0.3/day floor and selection z holds above the refit envelope. Isolates whether disciplined abstention is the missing profitability lever before stage-2 learned exits.",
+  "loss_quantile": null,
+  "max_candidates_per_row": 10,
+  "max_entry_ask": null,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "refit_null_models": 5,
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selection_threshold": null,
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "target_mode": "return_on_premium",
+  "test_region_share": 0.5,
+  "top_k_per_session": null,
+  "train_window_sessions": 60
+}
