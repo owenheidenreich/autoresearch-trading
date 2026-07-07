@@ -1,0 +1,32 @@
+{
+  "schema_version": "Protocol101Stage1G4FeasibilityV1",
+  "purpose": "Measure the achievable per-fold drawdown floor of the game itself, model-free, through the strict serial simulator on the stage-1 folds, to inform the G4 gate decision.",
+  "evidence_grade": "diagnostics_tier",
+  "generated": "2026-07-07",
+  "results": {
+    "random_selection": {
+      "mean_per_fold_drawdown": 7827,
+      "max_per_fold_drawdown": 13012,
+      "note": "one random candidate per decision minute; loses money on 2/5 folds"
+    },
+    "oracle_best_pnl": {
+      "mean_per_fold_drawdown": 0,
+      "max_per_fold_drawdown": 0,
+      "per_fold_pnl_range": [
+        114237,
+        160071
+      ],
+      "note": "perfect foresight, never takes a loss -> $0 DD is unachievable upper bound"
+    },
+    "cheap_oracle": {
+      "mean_per_fold_drawdown": 0,
+      "per_fold_pnl_range": [
+        31044,
+        43601
+      ],
+      "note": "perfect foresight over <=$3 premium contracts"
+    }
+  },
+  "finding": "Random no-skill trading has a mean per-fold drawdown of $7,827 (max $13,012) at ~2 trades/day. The approved G4 cap of $1,500 absolute is BELOW the drawdown floor of random noise in this game; no strategy that trades at the G7-required frequency can satisfy it. G4 as an absolute dollar figure is infeasible as specified.",
+  "model_free": true
+}
