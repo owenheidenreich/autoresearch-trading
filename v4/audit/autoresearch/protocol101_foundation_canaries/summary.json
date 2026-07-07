@@ -1,0 +1,111 @@
+{
+  "canaries": {
+    "lag_zero_build_rejected": true,
+    "planted_edge_detected": true,
+    "shuffled_label_null_silent": true,
+    "tampered_pickle_blocked": true
+  },
+  "canaries_hash": "b9f5d7db594e886c7a4334b2d4fabf6519f181b9d35ddfd792eceb973568a49a",
+  "eval_example_count": 115152,
+  "eval_months": [
+    "2025_02",
+    "2025_03"
+  ],
+  "eval_session_count": 40,
+  "evidence_grade": "diagnostics_tier_null_calibration",
+  "labels_used_for_strategy_selection": false,
+  "lag_zero_build": {
+    "acceptance_status": "fail",
+    "build_returncode": 0,
+    "failed_checks": [
+      "context_features_reconstruct_from_index",
+      "context_lag_exact_one_minute",
+      "market_window_samples_reconstruct_from_index",
+      "no_future_context",
+      "no_leading_backfill_at_open"
+    ],
+    "passed": true,
+    "session": "2024-10-01"
+  },
+  "model_persisted": false,
+  "planted_edge_run": {
+    "pooled_rho_vs_pnl_informational": 0.8391630625915787,
+    "random_null_mean": -24.152201476335218,
+    "random_null_p05": -31.73141554494138,
+    "random_null_p95": -15.501280937907078,
+    "random_null_sigma": 5.098943445915474,
+    "selection_z": 98.43588827361619,
+    "top_count": 11515,
+    "top_mean_pnl": 477.76682587928786,
+    "top_share": 0.1,
+    "within_session_win_rho": 0.9980207756694701
+  },
+  "role": "diagnostics_only",
+  "schema_version": "Protocol101FoundationCanariesV1",
+  "shuffled_label_run": {
+    "pooled_rho_vs_pnl_informational": -0.02509207030884109,
+    "random_null_mean": -23.606749891445943,
+    "random_null_p05": -31.710725141120278,
+    "random_null_p95": -15.876378636561011,
+    "random_null_sigma": 4.806547357468651,
+    "rho_null_band": {
+      "draws": 300,
+      "high": 0.007397762067787266,
+      "high_quantile": 0.995,
+      "low": -0.007283708721076937,
+      "low_quantile": 0.005
+    },
+    "selection_z": -1.0335315194473955,
+    "top_count": 11515,
+    "top_mean_pnl": -28.574468085106382,
+    "top_share": 0.1,
+    "within_session_win_rho": -0.003048998626019233
+  },
+  "status": "pass",
+  "tampered_pickle": {
+    "blockers": [
+      "processed_hash_mismatch",
+      "processed_path_differs_from_acceptance_record"
+    ],
+    "passed": true,
+    "placeable": false,
+    "session": "2024-10-01",
+    "tampered_path": "/tmp/protocol101_foundation_canaries_scratch/2024-10-01.pkl"
+  },
+  "thresholds": {
+    "max_candidates_per_row": 8,
+    "planted_min_rho": 0.5,
+    "planted_min_z": 5.0,
+    "random_null_draws": 200,
+    "rho_criterion": "measured permutation null band (within-session label permutation)",
+    "rho_null_draws": 300,
+    "rho_null_quantiles": [
+      0.005,
+      0.995
+    ],
+    "row_stride": 3,
+    "seed": 20260706,
+    "shuffled_max_abs_z": 3.0,
+    "top_share": 0.1
+  },
+  "train_example_count": 236133,
+  "train_months": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01"
+  ],
+  "train_session_count": 82,
+  "true_data_run_informational": {
+    "pooled_rho_vs_pnl_informational": -0.03346194373375169,
+    "random_null_mean": -23.238161094224925,
+    "random_null_p05": -31.238862353452017,
+    "random_null_p95": -14.744376899696054,
+    "random_null_sigma": 5.250657861127787,
+    "selection_z": -5.241409671061178,
+    "top_count": 11515,
+    "top_mean_pnl": -50.75900998697351,
+    "top_share": 0.1,
+    "within_session_win_rho": 0.11006205111240423
+  }
+}
