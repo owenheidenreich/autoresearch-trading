@@ -69,7 +69,7 @@ ROW_STRIDE = 2
 MAX_CANDIDATES_PER_ROW = 10
 G2_POOLED_MIN_Z = 3.0
 G5_WORST_SEED_MIN_Z = 2.0
-G4_MAX_DRAWDOWN = 1_500.0
+G4_MAX_DRAWDOWN_PCT = 0.25  # owner-signed 2026-07-07: relative to peak equity
 G7_TRADES_PER_DAY = (0.3, 6.0)
 G8_MAX_ECE = 0.10
 PRE_PROGRAM_LAST_SESSION = "2025-06-30"
@@ -89,6 +89,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-entry-ask", type=float, default=None,
         help="Optional premium-at-risk cap: skip candidates with entry ask above this.",
+    )
+    parser.add_argument(
+        "--conviction-quantile", type=float, default=None,
+        help="Abstention lever: only trade candidates whose predicted target exceeds this quantile of the TRAINING-set predictions (regime-adaptive when combined with a rolling window). Enables sitting out low-edge sessions entirely (0 trades) while staying rank-based to avoid the absolute-threshold adverse selection of exp002.",
     )
     parser.add_argument(
         "--target-mode", choices=("dollar_pnl", "return_on_premium"), default="dollar_pnl",
@@ -308,6 +312,7 @@ def select_trades(
     max_entry_ask: float | None = None,
     top_k_per_session: int | None = None,
     dollar_scores: np.ndarray | None = None,
+    conviction_floor: float | None = None,
 ) -> np.ndarray:
     """One candidate per decision minute: rank by ``scores`` (predicted target),
     admit only when the predicted DOLLAR gain clears the fee. In return mode
@@ -317,6 +322,8 @@ def select_trades(
     order = {}
     for i, (sess, dt) in enumerate(zip(table.session_name, table.decision_time)):
         if max_entry_ask is not None and table.entry_ask[i] > max_entry_ask:
+            continue
+        if conviction_floor is not None and scores[i] < conviction_floor:
             continue
         key = (sess, dt)
         if gate[i] > floor and (key not in order or scores[i] > scores[order[key]]):
@@ -355,9 +362,13 @@ def replay(table: CandidateTable, selected: np.ndarray, fee: float, split: str) 
             )
         )
     trades, state = simulate_serial_candidates(candidates, config=SerialSimulatorConfig())
-    equity = state.equity_by_account.get(split, [10_000.0])
-    peaks = np.maximum.accumulate(np.asarray(equity))
-    drawdown = float((peaks - np.asarray(equity)).max()) if len(equity) else 0.0
+    equity = np.asarray(state.equity_by_account.get(split, [10_000.0]))
+    peaks = np.maximum.accumulate(equity)
+    drawdown = float((peaks - equity).max()) if len(equity) else 0.0
+    # Owner-signed G4 revision 2026-07-07: drawdown gate is relative to peak
+    # equity, not absolute dollars (absolute $1,500 was below the game's
+    # random-noise drawdown floor of ~$7,800; see G4 feasibility artifact).
+    drawdown_pct = float((np.maximum((peaks - equity) / np.maximum(peaks, 1e-9), 0.0)).max()) if len(equity) else 0.0
     session_days = len(set(table.session_name))
     return {
         "fee_per_trade": fee,
@@ -367,6 +378,7 @@ def replay(table: CandidateTable, selected: np.ndarray, fee: float, split: str) 
         "net_pnl": float(sum(t.raw_label_pnl for t in trades)),
         "final_cash": float(equity[-1]) if equity else 10_000.0,
         "max_drawdown": drawdown,
+        "max_drawdown_pct": drawdown_pct,
         "trades_per_day": float(len(trades) / session_days) if session_days else 0.0,
         "win_rate_diagnostic": float(np.mean([t.raw_label_pnl > 0 for t in trades])) if trades else 0.0,
     }
@@ -435,6 +447,7 @@ def main() -> int:
         "loss_quantile": args.loss_quantile,
         "train_window_sessions": args.train_window_sessions,
         "target_mode": args.target_mode,
+        "conviction_quantile": args.conviction_quantile,
         "ensemble_seeds": bool(args.ensemble_seeds),
         "registry_template": REGISTRY_DIR_TEMPLATE,
         "month_tags": ALL_MONTH_TAGS,
@@ -484,6 +497,10 @@ def main() -> int:
                     ensemble_models[fold["fold"]]["ensemble_scores"] = scores
             else:
                 scores = model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
+            conviction_floor = None
+            if args.conviction_quantile is not None:
+                train_scores = model.predict(np.nan_to_num(train_tbl.X, nan=0.0))
+                conviction_floor = float(np.quantile(train_scores, args.conviction_quantile))
             rng = np.random.default_rng(seed * 100 + fold["fold"])
             fold_row = {"fold": fold["fold"], "test_sessions": len(fold["test_sessions"])}
             dollar_scores = (
@@ -496,6 +513,7 @@ def main() -> int:
                     test_tbl, scores, fee,
                     threshold=args.selection_threshold, max_entry_ask=args.max_entry_ask,
                     top_k_per_session=args.top_k_per_session, dollar_scores=dollar_scores,
+                    conviction_floor=conviction_floor,
                 )
                 sim = replay(test_tbl, selected, fee, f"seed{seed}_fold{fold['fold']}")
                 key = "primary" if fee == FEE_PER_TRADE else f"fee_{fee:.2f}"
@@ -523,6 +541,7 @@ def main() -> int:
             "pooled_net_pnl": float(sum(f["primary"]["net_pnl"] for f in fold_rows)),
             "profitable_folds": int(sum(f["primary"]["net_pnl"] > 0 for f in fold_rows)),
             "worst_fold_drawdown": float(max(f["primary"]["max_drawdown"] for f in fold_rows)),
+            "worst_fold_drawdown_pct": float(max(f["primary"]["max_drawdown_pct"] for f in fold_rows)),
             "mean_selection_z": float(np.mean([f["selection_z"] for f in fold_rows])),
             "trades_per_day": float(np.mean([f["primary"]["trades_per_day"] for f in fold_rows])),
         }
@@ -542,6 +561,11 @@ def main() -> int:
             loss_quantile=args.loss_quantile, target=shuffled,
         )
         refit_scores = refit_model.predict(np.nan_to_num(test_tbl.X, nan=0.0))
+        refit_floor = (
+            float(np.quantile(refit_model.predict(np.nan_to_num(train_tbl.X, nan=0.0)), args.conviction_quantile))
+            if args.conviction_quantile is not None
+            else None
+        )
         refit_dollar = (
             refit_scores * np.maximum(test_tbl.entry_ask * 100.0, 1e-6)
             if args.target_mode == "return_on_premium"
@@ -551,6 +575,7 @@ def main() -> int:
             test_tbl, refit_scores, FEE_PER_TRADE,
             threshold=args.selection_threshold, max_entry_ask=args.max_entry_ask,
             top_k_per_session=args.top_k_per_session, dollar_scores=refit_dollar,
+            conviction_floor=refit_floor,
         )
         refit_z.append(stratified_selection_z(test_tbl, refit_scores, refit_selected, rng))
 
@@ -569,7 +594,7 @@ def main() -> int:
         "G2_beats_no_skill": per_seed[0]["mean_selection_z"] >= G2_POOLED_MIN_Z
         and per_seed[0]["mean_selection_z"] > max(refit_z) + 2.0,
         "G3_beats_heuristics": None,
-        "G4_drawdown": all(r["worst_fold_drawdown"] <= G4_MAX_DRAWDOWN for r in per_seed),
+        "G4_drawdown": all(r["worst_fold_drawdown_pct"] <= G4_MAX_DRAWDOWN_PCT for r in per_seed),
         "G5_seed_robustness": worst["pooled_net_pnl"] > 0 and worst["mean_selection_z"] >= G5_WORST_SEED_MIN_Z,
         "G6_era_guard": all(np.median(v) > 0 for v in era_split.values() if v) or "regime_bound_requires_owner_review",
         "G7_frequency_band": all(
@@ -605,7 +630,7 @@ def main() -> int:
         lines.append(
             f"- seed {seed}: pooled net ${r['pooled_net_pnl']:.0f}, {r['profitable_folds']}/5 folds "
             f"profitable, mean sel z {r['mean_selection_z']:.2f}, win-rho {r['pooled_win_rho']:.3f}, "
-            f"max DD ${r['worst_fold_drawdown']:.0f}, {r['trades_per_day']:.2f} tr/day, ECE {r['pooled_ece']:.3f}"
+            f"max DD ${r['worst_fold_drawdown']:.0f} ({r['worst_fold_drawdown_pct']*100:.0f}% eq), {r['trades_per_day']:.2f} tr/day, ECE {r['pooled_ece']:.3f}"
         )
     lines += ["", f"- Refit-null selection z envelope: {[round(z, 2) for z in refit_z]}", "", "## Gates", ""]
     for k, v in payload["gates"].items():

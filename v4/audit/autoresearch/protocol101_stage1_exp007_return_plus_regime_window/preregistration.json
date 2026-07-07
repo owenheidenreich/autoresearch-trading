@@ -1,0 +1,51 @@
+{
+  "config_hash": "63c68e6d4e65f69b15faf725cdfc279e60aaa27fe1625fbeba48fe2345912ac9",
+  "confirmation_seed": 99,
+  "embargo_sessions": 1,
+  "ensemble_seeds": false,
+  "experiment_id": "exp007_return_plus_regime_window",
+  "fee_per_trade": 3.0,
+  "fee_sensitivity": [
+    2.0,
+    5.0
+  ],
+  "folds": 5,
+  "gates_doc": "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md",
+  "hypothesis": "Synthesis of the two independently-helpful levers: return-on-premium target (exp006: win-rho 0.115, DD -40%, consistent positive z) plus rolling 60-session in-regime training (exp005: regime-coherent, 2/3 seeds positive PnL). Expect the best profitability and most consistent selection z yet, isolating whether in-regime return-normalized ranking clears G1/G2 even if G4 remains structurally blocked by convexity's full-premium-loss drawdown.",
+  "loss_quantile": null,
+  "max_candidates_per_row": 10,
+  "max_entry_ask": null,
+  "model": "HistGradientBoostingRegressor(max_iter=200)",
+  "month_tags": [
+    "2024_10",
+    "2024_11",
+    "2024_12",
+    "2025_01",
+    "2025_02",
+    "2025_03",
+    "2025_04",
+    "2025_05",
+    "2025_06",
+    "2025_07",
+    "2025_08",
+    "2025_09",
+    "2025_10",
+    "2025_11",
+    "2025_12"
+  ],
+  "refit_null_models": 5,
+  "registry_template": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json",
+  "row_stride": 2,
+  "schema_version": "Protocol101Stage1ExperimentV1",
+  "selection_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selection_threshold": null,
+  "target": "labels_net_pnl (gross payoff); selection threshold = fee",
+  "target_mode": "return_on_premium",
+  "test_region_share": 0.5,
+  "top_k_per_session": null,
+  "train_window_sessions": 60
+}

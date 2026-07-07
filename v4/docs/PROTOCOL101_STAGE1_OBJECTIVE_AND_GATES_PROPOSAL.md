@@ -44,7 +44,7 @@ Win rate is a diagnostic, never an objective.
 | G1 Profitability | Fee-adjusted net PnL > 0 on >= 4 of 5 CV folds, and pooled PnL > 0 |
 | G2 Beats no-skill | Pooled top-selection PnL z-score >= 3.0 vs matched random-selection null (band pinned by the canary artifact) |
 | G3 Beats heuristics | Pooled fee-adjusted PnL > the fixed Pickle-heuristic baseline (VWAP-side rule + best single shape) on the same folds |
-| G4 Drawdown | Max simulator drawdown <= $1,500 (15% of starting cash) on every fold |
+| G4 Drawdown | Max simulator drawdown <= 25% of peak equity on every fold (owner-signed revision 2026-07-07; superseded the original $1,500 absolute, which the G4 feasibility artifact measured as below the game's ~$7,800 random-noise drawdown floor and thus infeasible at the G7-required trade frequency) |
 | G5 Seed robustness | >= 3 seeds; WORST seed satisfies G1 and G2 at z >= 2.0 (mean-only results are inadmissible) |
 | G6 Era guard | No era with systematically negative test folds (median era test-fold PnL < 0 across folds => status `regime_bound_requires_owner_review`, implemented as code, not prose) |
 | G7 Frequency band | 0.3 - 6.0 trades/day averaged per fold (the owner's day-trader band; outside it = different product, requires review) |
@@ -84,7 +84,7 @@ than soften the gates.
 ## Sign-off checklist for the owner
 
 - [ ] Fee overlay placeholder ($3.00) acceptable pending verification?
-- [ ] G4 drawdown cap: $1,500 on a $10k account — confirm or adjust.
+- [x] G4 drawdown cap: REVISED 2026-07-07 to <=25% of peak equity (relative), owner-signed, after the feasibility artifact showed the $1,500 absolute was below random-noise drawdown.
 - [ ] G7 frequency band 0.3-6.0 trades/day — confirm or adjust.
 - [ ] Holdout "burns on failure" rule — confirm.
 - [ ] Any gate you want stricter? (Looser requires justification in writing.)
