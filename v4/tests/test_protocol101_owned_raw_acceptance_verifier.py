@@ -614,7 +614,7 @@ def test_threshold_defaults_are_data_plane_only() -> None:
     assert thresholds.min_mean_tradable_candidates == 10.0
     assert thresholds.min_label_finite_share == 0.95
     assert thresholds.min_label_nonzero_share == 0.95
-    assert thresholds.min_label_positive_share == 0.20
+    assert thresholds.min_label_positive_share == 0.15
     assert thresholds.min_label_negative_share == 0.40
     assert thresholds.min_entry_quote_match_share == 1.0
     assert thresholds.min_entry_quote_sweep_match_share == 1.0

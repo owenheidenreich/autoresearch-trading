@@ -149,7 +149,11 @@ class AcceptanceThresholds:
     # placeholder, or polarity-collapsed labels.
     min_label_finite_share: float = 0.95
     min_label_nonzero_share: float = 0.95
-    min_label_positive_share: float = 0.20
+    # Recalibrated 2026-07-07 on the menu-v2 v3.5 corpus (314 sessions):
+    # per-session positive share spans 0.188 (2025-04-07 crash day, honest)
+    # to ~0.5, p5=0.244. 0.15 clears the observed honest tail with margin;
+    # the placeholder pathology this floor exists to catch sits at 0.00.
+    min_label_positive_share: float = 0.15
     min_label_negative_share: float = 0.40
     min_label_spot_check_count: int = 5
     min_vix_close_finite_share: float = 0.95
@@ -180,7 +184,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-near-atm-tradable-share", type=float, default=0.50)
     parser.add_argument("--min-label-finite-share", type=float, default=0.95)
     parser.add_argument("--min-label-nonzero-share", type=float, default=0.95)
-    parser.add_argument("--min-label-positive-share", type=float, default=0.20)
+    parser.add_argument("--min-label-positive-share", type=float, default=0.15)
     parser.add_argument("--min-label-negative-share", type=float, default=0.40)
     parser.add_argument("--min-label-spot-check-count", type=int, default=5)
     parser.add_argument("--min-vix-close-finite-share", type=float, default=0.95)

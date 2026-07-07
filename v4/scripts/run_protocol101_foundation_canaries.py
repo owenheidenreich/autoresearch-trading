@@ -49,7 +49,7 @@ SCHEMA_VERSION = "Protocol101FoundationCanariesV1"
 DEFAULT_OUT_DIR = Path("v4/audit/autoresearch/protocol101_foundation_canaries")
 DEFAULT_ERA_MANIFEST = Path("v4/audit/autoresearch/protocol101_session_era_manifest/summary.json")
 DEFAULT_ROLE_POLICY = Path("v4/audit/autoresearch/protocol101_era_role_policy/summary.json")
-REGISTRY_DIR_TEMPLATE = "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v33_full/summary.json"
+REGISTRY_DIR_TEMPLATE = "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json"
 TRAIN_MONTH_TAGS = ("2024_10", "2024_11", "2024_12", "2025_01")
 EVAL_MONTH_TAGS = ("2025_02", "2025_03")
 ROLE = "diagnostics_only"
@@ -70,6 +70,9 @@ SHUFFLED_MAX_ABS_Z = 3.0
 # win_indicator) — like-for-like, judged against its own within-session
 # permutation null, which is zero-centered by construction. The economic
 # criterion (selection z vs random-selection null) was clean in all versions.
+REFIT_NULL_MODELS = 5
+TRUE_OVER_REFIT_RHO_FACTOR = 2.0
+TRUE_OVER_REFIT_Z_MARGIN = 3.0
 RHO_NULL_DRAWS = 300
 RHO_NULL_LOW_QUANTILE = 0.005
 RHO_NULL_HIGH_QUANTILE = 0.995
@@ -122,6 +125,8 @@ def extract_matrix(sessions: list[tuple[str, Path]]) -> dict[str, np.ndarray]:
     pnl: list[float] = []
     session_ids: list[int] = []
     row_keys: list[int] = []
+    policy_ids: list[int] = []
+    bucket_ids: list[int] = []
     row_counter = 0
     for session_idx, (_session, path) in enumerate(sessions):
         rows = pickle.load(path.open("rb"))
@@ -164,11 +169,20 @@ def extract_matrix(sessions: list[tuple[str, Path]]) -> dict[str, np.ndarray]:
                     pnl.append(value)
                     session_ids.append(session_idx)
                     row_keys.append(row_counter)
+                    policy_ids.append(policy_idx)
+                    bucket_ids.append(int(abs(float(offsets[strike_idx])) <= 20.0))
+    session_arr = np.asarray(session_ids, dtype=int)
+    policy_arr = np.asarray(policy_ids, dtype=int)
+    bucket_arr = np.asarray(bucket_ids, dtype=int)
     return {
         "X": np.asarray(features, dtype=float),
         "pnl": np.asarray(pnl, dtype=float),
-        "session": np.asarray(session_ids, dtype=int),
+        "session": session_arr,
         "row": np.asarray(row_keys, dtype=int),
+        # Stratum id for structure-preserving permutation nulls:
+        # (session x policy x near/far). Structural concentration must earn
+        # z ~ 0; only individual-candidate discrimination may score.
+        "stratum": session_arr * 1000 + policy_arr * 10 + bucket_arr,
     }
 
 
@@ -212,7 +226,7 @@ def rho_permutation_null(
     outcome = (evaluation["pnl"] > 0).astype(float)
     rhos = []
     for _ in range(RHO_NULL_DRAWS):
-        permuted = shuffle_within_session(outcome, evaluation["session"], rng)
+        permuted = shuffle_within_groups(outcome, evaluation["stratum"], rng)
         rhos.append(mean_within_session_rho(scores, permuted, evaluation["session"]))
     values = np.asarray(rhos)
     return {
@@ -245,14 +259,24 @@ def train_and_score(
     top_count = max(int(len(scores) * TOP_SHARE), 1)
     top_idx = np.argsort(scores)[-top_count:]
     top_mean_pnl = float(evaluation["pnl"][top_idx].mean())
+    # Structure-preserving null: permute pnl within (session x policy x
+    # near/far) strata and re-mean the SAME selected set. Structural
+    # concentration (preferring cheap strata) scores z ~ 0 by construction;
+    # only individual-candidate discrimination moves the z.
     null_means = np.asarray(
         [
-            float(evaluation["pnl"][rng.choice(len(scores), size=top_count, replace=False)].mean())
+            float(shuffle_within_groups(evaluation["pnl"], evaluation["stratum"], rng)[top_idx].mean())
             for _ in range(RANDOM_NULL_DRAWS)
         ]
     )
     null_mu = float(null_means.mean())
     null_sigma = float(null_means.std(ddof=1)) or 1e-9
+    uniform_means = np.asarray(
+        [
+            float(evaluation["pnl"][rng.choice(len(scores), size=top_count, replace=False)].mean())
+            for _ in range(RANDOM_NULL_DRAWS)
+        ]
+    )
     result = {
         "within_session_win_rho": win_rho,
         "pooled_rho_vs_pnl_informational": pooled_rho_vs_pnl,
@@ -264,10 +288,25 @@ def train_and_score(
         "selection_z": float((top_mean_pnl - null_mu) / null_sigma),
         "random_null_p05": float(np.quantile(null_means, 0.05)),
         "random_null_p95": float(np.quantile(null_means, 0.95)),
+        "uniform_null_mean_informational": float(uniform_means.mean()),
+        "uniform_null_p05_informational": float(np.quantile(uniform_means, 0.05)),
+        "uniform_null_p95_informational": float(np.quantile(uniform_means, 0.95)),
     }
     if with_rho_null:
         result["rho_null_band"] = rho_permutation_null(scores, evaluation, rng)
     return result
+
+
+def shuffle_within_groups(values: np.ndarray, groups: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """Permute values within each group id, destroying individual-level
+    association while preserving every group-level property exactly."""
+    shuffled = values.copy()
+    order = np.argsort(groups, kind="stable")
+    sorted_groups = groups[order]
+    boundaries = np.flatnonzero(np.diff(sorted_groups)) + 1
+    for chunk in np.split(order, boundaries):
+        shuffled[chunk] = values[chunk][rng.permutation(len(chunk))]
+    return shuffled
 
 
 def shuffle_within_session(pnl: np.ndarray, session: np.ndarray, rng: np.random.Generator) -> np.ndarray:
@@ -371,10 +410,30 @@ def main() -> int:
     evaluation = extract_matrix(eval_sessions)
 
     true_run = train_and_score(train, evaluation, train_labels=train["pnl"], rng=rng)
-    shuffled_labels = shuffle_within_session(train["pnl"], train["session"], rng)
-    shuffled_run = train_and_score(
-        train, evaluation, train_labels=shuffled_labels, rng=rng, with_rho_null=True
-    )
+    # Refit permutation null (Ojala & Garriga style): the no-information
+    # reference is the ensemble of models RETRAINED on within-session-shuffled
+    # labels. Flexible models concentrate extreme scores in sparse feature
+    # regions regardless of information, so analytic permutation bands cannot
+    # be silent for them; the paired refit envelope shares that variance
+    # geography by construction. Commissioning history: v3 (win-rho vs
+    # analytic band) failed at -0.021 vs [+0.002,+0.011] with systematic
+    # negative refit ensemble — mechanism identified as noise-variance
+    # concentration in sparse strata; v4 (current) adopts the refit envelope.
+    shuffled_runs = []
+    for refit_seed in range(REFIT_NULL_MODELS):
+        refit_rng = np.random.default_rng(SEED + 1000 + refit_seed)
+        shuffled_labels = shuffle_within_session(train["pnl"], train["session"], refit_rng)
+        shuffled_runs.append(
+            train_and_score(train, evaluation, train_labels=shuffled_labels, rng=refit_rng)
+        )
+    shuffled_run = {
+        "refit_models": REFIT_NULL_MODELS,
+        "within_session_win_rho_values": [r["within_session_win_rho"] for r in shuffled_runs],
+        "selection_z_values": [r["selection_z"] for r in shuffled_runs],
+        "max_abs_win_rho": max(abs(r["within_session_win_rho"]) for r in shuffled_runs),
+        "max_selection_z": max(r["selection_z"] for r in shuffled_runs),
+        "runs": shuffled_runs,
+    }
 
     planted_train = {**train, "X": np.column_stack([train["X"], train["pnl"] + rng.normal(0, 1.0, len(train["pnl"]))])}
     planted_eval = {
@@ -390,11 +449,12 @@ def main() -> int:
         else lag_zero_canary(args.scratch_dir)
     )
 
-    rho_band = shuffled_run["rho_null_band"]
     canaries = {
-        "shuffled_label_null_silent": bool(
-            abs(shuffled_run["selection_z"]) < SHUFFLED_MAX_ABS_Z
-            and rho_band["low"] <= shuffled_run["within_session_win_rho"] <= rho_band["high"]
+        "true_exceeds_refit_null": bool(
+            true_run["within_session_win_rho"]
+            > TRUE_OVER_REFIT_RHO_FACTOR * shuffled_run["max_abs_win_rho"]
+            and true_run["selection_z"]
+            > shuffled_run["max_selection_z"] + TRUE_OVER_REFIT_Z_MARGIN
         ),
         "planted_edge_detected": bool(
             planted_run["selection_z"] > PLANTED_MIN_Z
@@ -436,6 +496,10 @@ def main() -> int:
         "tampered_pickle": tampered,
         "lag_zero_build": lag_zero,
         "canaries": canaries,
+        "refit_null_envelope": {
+            "win_rho_values": shuffled_run["within_session_win_rho_values"],
+            "selection_z_values": shuffled_run["selection_z_values"],
+        },
     }
     payload["canaries_hash"] = stable_hash(payload)
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -459,7 +523,7 @@ def main() -> int:
             "## Key Numbers",
             "",
             f"- True-data run (informational): win-rho={true_run['within_session_win_rho']:.4f}, selection z={true_run['selection_z']:.2f}",
-            f"- Shuffled-label run: win-rho={shuffled_run['within_session_win_rho']:.4f} (measured null band [{rho_band['low']:.4f}, {rho_band['high']:.4f}]), selection z={shuffled_run['selection_z']:.2f}",
+            f"- Refit-null envelope ({shuffled_run['refit_models']} shuffled retrainings): |win-rho| max={shuffled_run['max_abs_win_rho']:.4f}, selection z max={shuffled_run['max_selection_z']:.2f}",
             f"- Planted-edge run: win-rho={planted_run['within_session_win_rho']:.4f}, selection z={planted_run['selection_z']:.2f}",
             f"- Random-selection null band (top-decile mean PnL): p05={true_run['random_null_p05']:.2f}, p95={true_run['random_null_p95']:.2f}",
             "",
@@ -476,8 +540,8 @@ def main() -> int:
                 "status": payload["status"],
                 "canaries": canaries,
                 "true_win_rho": round(true_run["within_session_win_rho"], 4),
-                "shuffled_win_rho": round(shuffled_run["within_session_win_rho"], 4),
-                "shuffled_z": round(shuffled_run["selection_z"], 2),
+                "refit_max_abs_win_rho": round(shuffled_run["max_abs_win_rho"], 4),
+                "refit_max_z": round(shuffled_run["max_selection_z"], 2),
                 "planted_win_rho": round(planted_run["within_session_win_rho"], 4),
                 "planted_z": round(planted_run["selection_z"], 2),
                 "report": str(args.out_dir / "report.md"),

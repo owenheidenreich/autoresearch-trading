@@ -1,0 +1,296 @@
+[
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-01"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-04"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-05"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-06"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-07"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-08"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-11"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-12"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-13"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-14"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-15"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-18"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-19"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-20"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-21"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-22"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-25"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-26"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-27"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-28"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true,
+      "not_early_close_fold_session": true,
+      "verifier_version_v3_or_newer": true
+    },
+    "era": "owned_jul_dec2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2025-08-29"
+  }
+]
