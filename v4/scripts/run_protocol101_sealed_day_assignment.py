@@ -1,15 +1,26 @@
 """Protocol101 sealed-day assignment: seal-on-arrival for parity recorder sessions.
 
-Rule (fixed 2026-07-09, before any sealed session existed):
+Rule v2 (revised 2026-07-10, owner-directed, while the sealed set was still
+EMPTY — no sealed session existed at revision time, so no data is tainted):
   - 2026-06-30, 2026-07-01, 2026-07-02: BURNED (design/repair set; used to build
     canonical v1..v1.4; certified frozen contract sha256
     602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57).
   - 2026-07-10: VALIDATION day. Openly inspected to verify capture quality.
     Never sealed, never confirmation evidence.
-  - Every parity-recorder session dated >= 2026-07-13: SEALED ON ARRIVAL.
+  - 2026-07-13, 2026-07-14, 2026-07-20: DEVELOPMENT days. Openly inspectable
+    for rehearsal, diagnosis, and repair. 07-14 is the June-CPI release
+    session, giving the development set one event-regime day. Never sealed,
+    never confirmation evidence.
+  - Every other parity-recorder session dated >= 2026-07-13: SEALED ON
+    ARRIVAL (expected: 07-15..17, 07-21..24, 07-27..30 = 11 sessions,
+    including the 07-28/29 FOMC days, which deliberately stay sealed).
     Moved to the sealed root; no analysis/audit tooling may read its market
     data until the one-shot preregistered confirmation battery is executed.
     Health checks read this script's manifests only.
+  Rationale for v2: a development slice lets battery failures be diagnosed
+  and repaired on fresh same-regime days, and lets a rehearsal run of the
+  identical battery gate the sealed exam, instead of a failure spending the
+  entire sealed set. v1 (all >= 07-13 sealed) never governed any actual data.
 
 Sealed evidence integrity depends on this rule pre-dating the data it governs.
 Changing SEAL_FROM_SESSION, VALIDATION_SESSIONS, or the sealed root after
@@ -38,10 +49,12 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-RULE_VERSION = "protocol101_sealed_day_assignment_v1"
-RULE_FIXED_UTC = "2026-07-09T23:30:00+00:00"
+RULE_VERSION = "protocol101_sealed_day_assignment_v2"
+RULE_FIXED_UTC = "2026-07-10T21:15:00+00:00"
+RULE_V1_FIXED_UTC = "2026-07-09T23:30:00+00:00"
 SEAL_FROM_SESSION = "2026-07-13"
 VALIDATION_SESSIONS = ("2026-07-10",)
+DEVELOPMENT_SESSIONS = ("2026-07-13", "2026-07-14", "2026-07-20")
 BURNED_SESSIONS = ("2026-06-30", "2026-07-01", "2026-07-02")
 FROZEN_CONTRACT_SHA256 = "602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57"
 
@@ -67,6 +80,8 @@ def classify(session: str) -> str:
         return "burned"
     if session in VALIDATION_SESSIONS:
         return "validation"
+    if session in DEVELOPMENT_SESSIONS:
+        return "development"
     if session >= SEAL_FROM_SESSION:
         return "sealed"
     return "unassigned_pre_rule"
@@ -77,8 +92,16 @@ def rule_payload() -> dict[str, Any]:
         "schema_version": "Protocol101SealedDayAssignmentRuleV1",
         "rule_version": RULE_VERSION,
         "rule_fixed_utc": RULE_FIXED_UTC,
+        "rule_v1_fixed_utc": RULE_V1_FIXED_UTC,
+        "rule_v2_revision_note": (
+            "v2 adds a development slice (07-13, 07-14 CPI, 07-20) for "
+            "rehearsal/diagnosis/repair; revised 2026-07-10 while the sealed "
+            "set was empty, so no sealed data existed under v1; FOMC "
+            "07-28/29 deliberately remain sealed"
+        ),
         "seal_from_session": SEAL_FROM_SESSION,
         "validation_sessions": list(VALIDATION_SESSIONS),
+        "development_sessions": list(DEVELOPMENT_SESSIONS),
         "burned_sessions": list(BURNED_SESSIONS),
         "frozen_canonical_contract_sha256": FROZEN_CONTRACT_SHA256,
         "sealed_root_policy": (

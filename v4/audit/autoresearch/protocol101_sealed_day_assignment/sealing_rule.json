@@ -4,10 +4,17 @@
     "2026-07-01",
     "2026-07-02"
   ],
+  "development_sessions": [
+    "2026-07-13",
+    "2026-07-14",
+    "2026-07-20"
+  ],
   "frozen_canonical_contract_sha256": "602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57",
   "revision_policy": "changing this rule after 2026-07-13 requires an owner-signed revision and taints affected days",
-  "rule_fixed_utc": "2026-07-09T23:30:00+00:00",
-  "rule_version": "protocol101_sealed_day_assignment_v1",
+  "rule_fixed_utc": "2026-07-10T21:15:00+00:00",
+  "rule_v1_fixed_utc": "2026-07-09T23:30:00+00:00",
+  "rule_v2_revision_note": "v2 adds a development slice (07-13, 07-14 CPI, 07-20) for rehearsal/diagnosis/repair; revised 2026-07-10 while the sealed set was empty, so no sealed data existed under v1; FOMC 07-28/29 deliberately remain sealed",
+  "rule_version": "protocol101_sealed_day_assignment_v2",
   "schema_version": "Protocol101SealedDayAssignmentRuleV1",
   "seal_from_session": "2026-07-13",
   "sealed_root_policy": "sealed sessions move to the sealed root on the same volume; no analysis/audit tooling reads market data there; health automation uses this script's check mode and manifests only",

@@ -1,6 +1,12 @@
 # Protocol101 Canonical v1.4 Sealed-Day Confirmation Battery — PREREGISTRATION
 
 Preregistered: 2026-07-09, before any sealed session exists.
+Amended: 2026-07-10 (owner-directed, sealed set still EMPTY — no sealed data
+existed at amendment time): sealing rule v2 introduces a development slice
+(2026-07-13, 2026-07-14 CPI session, 2026-07-20) for rehearsal and repair;
+sealed-count requirement adjusted for the smaller sealed set; rehearsal gate
+added. FOMC sessions (07-28/29) remain sealed. No pass criteria, thresholds,
+epsilons, or battery contents changed.
 Status: frozen. Executing this battery requires zero design decisions.
 
 ## Purpose
@@ -19,7 +25,7 @@ claim from design-grade to confirmed and unlocks gate-graded Stage-1 training.
 | reconciliation attribution_summary.json (epsilons) | `7919a68854169fb2900e4e72785da897777415fb93dac2502e2a44c168fadcd2` |
 | L0/L2 design-audit preregistration.json (L0 thresholds) | `a3021f4945603bab236cc0ea28c34fb9304299d3e0d24fe6fbc15efee9b71614` |
 | canonical_feature_definition.json (22 features) | `628b162b66fcce50c0bd08e7bd34606ecf9a4a95afc0cd566f12bb79429d5bb8` |
-| sealing_rule.json (sealed-day assignment) | `2488e5ef9adedef041d7e45649ba65c4e592bcd4a5a979b10fc1338901e00bea` |
+| sealing_rule.json (sealed-day assignment, rule v2) | `a9fb2c25e0b31c42b6846925f198930f44594cf7567a0970c767169ed468a89e` |
 
 All epsilons, thresholds (including the v1.4-recalibrated band-probe
 thresholds recorded inside selection_contract_v1_4.json), k = 2 dead-band and
@@ -29,16 +35,27 @@ taken from these artifacts verbatim. Nothing is remeasured or re-derived.
 
 ## Evidence requirements (before the battery may run)
 
-- Sealed sessions: >= 10 sessions dated >= 2026-07-13, sealed on arrival per
-  the sealing rule, seal manifests green (check mode passes).
-- Regime coverage: >= 1 high-volatility/event session (scheduled CPI or FOMC
-  day, or realized SPX daily range in the top tercile of the trailing year).
-  If absent: routing = `insufficient_regime_coverage`; keep collecting. Do
-  not run a partial battery.
+- Sealed sessions: >= 9 sessions sealed on arrival per sealing rule v2
+  (expected 11: 07-15..17, 07-21..24, 07-27..30), seal manifests green
+  (check mode passes).
+- Regime coverage: >= 1 high-volatility/event session IN THE SEALED SET
+  (the 07-28/29 FOMC sessions, or realized SPX daily range in the top
+  tercile of the trailing year). If absent: routing =
+  `insufficient_regime_coverage`; keep collecting. Do not run a partial
+  battery.
+- **Rehearsal gate**: before the sealed battery may run, the IDENTICAL
+  battery (same code, same frozen inputs, same pass criteria) must have been
+  run on the development days (2026-07-13, 2026-07-14, 2026-07-20) and
+  passed. Rehearsal results are design-grade and confer no confirmation
+  claim. A rehearsal failure routes to diagnosis and repair on development +
+  burned + validation days only; any repair produces a NEW owner-signed
+  frozen contract version, which must itself pass rehearsal before taking
+  the sealed exam. The sealed set is never spent on a recipe that has not
+  passed rehearsal.
 - The paired historical (Databento/ThetaData) sessions for the same dates
   built with the SAME source-aligned pipeline used for burned days.
-- 2026-07-10 (validation day) and all burned days are EXCLUDED from
-  confirmation scoring.
+- 2026-07-10 (validation), 2026-07-13/14/20 (development), and all burned
+  days are EXCLUDED from confirmation scoring.
 
 ## The battery (identical to attempt005 semantics, one shot, all sealed days)
 

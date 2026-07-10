@@ -3,7 +3,9 @@
 Drafted: 2026-07-09, before sealed-day confirmation results exist.
 Execution is BLOCKED until: (1) `canonical_v1_4_sealed_confirmed` routing from
 the sealed confirmation battery (preregistration sha256
-`da9f53cadca9cf93281ca150e26ead0aacaf31f588e884f13f9658b2ce508511`), and
+`13176551ed26f4a42f4a9fce204f3059591a55d24d2833caf1c29b8401ed06b9`, amended
+2026-07-10 to add the development-day rehearsal gate while the sealed set was
+still empty), and
 (2) the owner-signed G4/holdout gates revision (Step 3 of the recorder-window
 work queue) is signed. Preregistering now removes the "designed after seeing
 what passed" critique.
