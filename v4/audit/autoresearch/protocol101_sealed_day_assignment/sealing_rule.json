@@ -1,0 +1,18 @@
+{
+  "burned_sessions": [
+    "2026-06-30",
+    "2026-07-01",
+    "2026-07-02"
+  ],
+  "frozen_canonical_contract_sha256": "602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57",
+  "revision_policy": "changing this rule after 2026-07-13 requires an owner-signed revision and taints affected days",
+  "rule_fixed_utc": "2026-07-09T23:30:00+00:00",
+  "rule_version": "protocol101_sealed_day_assignment_v1",
+  "schema_version": "Protocol101SealedDayAssignmentRuleV1",
+  "seal_from_session": "2026-07-13",
+  "sealed_root_policy": "sealed sessions move to the sealed root on the same volume; no analysis/audit tooling reads market data there; health automation uses this script's check mode and manifests only",
+  "spend_policy": "sealed days are opened exactly once, by the preregistered one-shot confirmation battery; after that run they are burned",
+  "validation_sessions": [
+    "2026-07-10"
+  ]
+}
