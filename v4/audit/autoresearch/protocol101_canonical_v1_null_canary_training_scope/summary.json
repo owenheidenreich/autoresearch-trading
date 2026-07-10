@@ -1,0 +1,1883 @@
+{
+  "acceptance_registry_hash": "6c656cfb2caeaab1d03e78eee39a164f7d169709abeaec5b0c490f1b1e29f0fe",
+  "acceptance_registry_path": "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_scope_acceptance/summary.json",
+  "candidate_rows": 3412556,
+  "design_path": "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_design/summary.json",
+  "fee_overlay_dollars": 3.0,
+  "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
+  "generated_at_utc": "2026-07-10T03:47:58.687607+00:00",
+  "manifest_path": "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_preflight/canonical_processed_session_manifest.json",
+  "policy_results": {
+    "0": {
+      "folds": [
+        {
+          "fold": 0,
+          "oracle": {
+            "candidates_selected": 7126,
+            "fee_per_trade": 3.0,
+            "final_cash": 659196.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 649196.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 5543,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 1583,
+            "trades_per_day": 35.17777777777778,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 12428.53,
+            "p05": 10051.600000000002,
+            "p50": 12127.5,
+            "p95": 15767.349999999999,
+            "std": 1977.575234263343
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -10066.56,
+            "p05": -11532.5,
+            "p50": -10178.500000000002,
+            "p95": -8060.700000000001,
+            "std": 1046.9022734243204
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 7.7360000000000015,
+            "p05": 2.684444444444445,
+            "p50": 6.633333333333333,
+            "p95": 13.68111111111111,
+            "std": 4.495098859294674
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 1,
+          "oracle": {
+            "candidates_selected": 7068,
+            "fee_per_trade": 3.0,
+            "final_cash": 437451.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 427451.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 5485,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 1583,
+            "trades_per_day": 35.17777777777778,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 11469.84,
+            "p05": 10062.95,
+            "p50": 11232.5,
+            "p95": 13723.549999999996,
+            "std": 1164.2265366701051
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -10379.25,
+            "p05": -11353.949999999999,
+            "p50": -10318.5,
+            "p95": -9577.149999999998,
+            "std": 531.1144824181908
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 9.855555555555556,
+            "p05": 5.038888888888889,
+            "p50": 8.977777777777778,
+            "p95": 16.80333333333332,
+            "std": 4.339936837338626
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 2,
+          "oracle": {
+            "candidates_selected": 7093,
+            "fee_per_trade": 3.0,
+            "final_cash": 506508.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 496508.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 5504,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 1589,
+            "trades_per_day": 35.31111111111111,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 11277.66,
+            "p05": 9957.0,
+            "p50": 10844.5,
+            "p95": 14075.849999999997,
+            "std": 1563.7832473998706
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -10320.18,
+            "p05": -11664.95,
+            "p50": -10298.0,
+            "p95": -8440.649999999998,
+            "std": 965.5872696724701
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 10.26911111111111,
+            "p05": 4.652222222222223,
+            "p50": 8.7,
+            "p95": 20.68222222222222,
+            "std": 5.487565006172564
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 3,
+          "oracle": {
+            "candidates_selected": 7059,
+            "fee_per_trade": 3.0,
+            "final_cash": 590892.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 580892.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 5478,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 1581,
+            "trades_per_day": 35.13333333333333,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 14005.73,
+            "p05": 10182.5,
+            "p50": 13309.0,
+            "p95": 20944.399999999998,
+            "std": 3340.4834128332595
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9635.88,
+            "p05": -11419.15,
+            "p50": -9755.500000000004,
+            "p95": -7392.550000000001,
+            "std": 1195.3965766027338
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 9.365777777777776,
+            "p05": 2.7111111111111112,
+            "p50": 8.577777777777778,
+            "p95": 19.734444444444446,
+            "std": 5.468113118794741
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 4,
+          "oracle": {
+            "candidates_selected": 7030,
+            "fee_per_trade": 3.0,
+            "final_cash": 734882.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 724882.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 5449,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 1581,
+            "trades_per_day": 35.13333333333333,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 16001.61,
+            "p05": 10617.8,
+            "p50": 15338.0,
+            "p95": 24946.899999999998,
+            "std": 4582.80462822768
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -10385.37,
+            "p05": -12932.850000000002,
+            "p50": -10443.499999999996,
+            "p95": -7983.100000000004,
+            "std": 1991.8474022470657
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 15.925333333333333,
+            "p05": 6.083333333333334,
+            "p50": 14.233333333333334,
+            "p95": 31.464444444444442,
+            "std": 8.570018832876613
+          },
+          "test_session_count": 45
+        }
+      ],
+      "pooled_random_max_drawdown": {
+        "count": 500,
+        "mean": 13036.674,
+        "p05": 10052.900000000001,
+        "p50": 11874.0,
+        "p95": 20321.399999999987,
+        "std": 3323.6475972077496
+      },
+      "pooled_random_net_pnl": {
+        "count": 500,
+        "mean": -10157.448,
+        "p05": -11968.199999999999,
+        "p50": -10240.5,
+        "p95": -8113.650000000003,
+        "std": 1269.1598625900597
+      }
+    },
+    "1": {
+      "folds": [
+        {
+          "fold": 0,
+          "oracle": {
+            "candidates_selected": 7108,
+            "fee_per_trade": 3.0,
+            "final_cash": 423278.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 413278.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6479,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 629,
+            "trades_per_day": 13.977777777777778,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 16488.1,
+            "p05": 10727.15,
+            "p50": 15821.5,
+            "p95": 23284.649999999998,
+            "std": 4252.433514821813
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9952.0,
+            "p05": -14798.00000000001,
+            "p50": -10696.5,
+            "p95": -3249.8999999999946,
+            "std": 4351.982692237569
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 6.592222222222222,
+            "p05": 2.1044444444444443,
+            "p50": 5.377777777777778,
+            "p95": 14.0,
+            "std": 3.922596103926323
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 1,
+          "oracle": {
+            "candidates_selected": 7301,
+            "fee_per_trade": 3.0,
+            "final_cash": 291560.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 281560.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6671,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 630,
+            "trades_per_day": 14.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 13424.05,
+            "p05": 10368.55,
+            "p50": 12708.0,
+            "p95": 18001.75,
+            "std": 2785.631427884924
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9944.24,
+            "p05": -13107.649999999996,
+            "p50": -11097.5,
+            "p95": -1836.750000000009,
+            "std": 3737.2832408885283
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 8.585111111111111,
+            "p05": 3.4555555555555557,
+            "p50": 8.188888888888888,
+            "p95": 14.0,
+            "std": 3.7462033721754833
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 2,
+          "oracle": {
+            "candidates_selected": 7154,
+            "fee_per_trade": 3.0,
+            "final_cash": 332900.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 322900.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6524,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 630,
+            "trades_per_day": 14.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 12460.74,
+            "p05": 10056.85,
+            "p50": 12006.5,
+            "p95": 15846.749999999998,
+            "std": 1844.3397527669254
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -10195.83,
+            "p05": -13738.8,
+            "p50": -10808.999999999996,
+            "p95": -7062.7500000000155,
+            "std": 3301.0753070672745
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 6.9302222222222225,
+            "p05": 3.0266666666666664,
+            "p50": 6.2444444444444445,
+            "p95": 14.0,
+            "std": 3.2705498042298444
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 3,
+          "oracle": {
+            "candidates_selected": 7149,
+            "fee_per_trade": 3.0,
+            "final_cash": 368035.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 358035.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6519,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 630,
+            "trades_per_day": 14.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 17018.77,
+            "p05": 10394.05,
+            "p50": 16340.0,
+            "p95": 25919.85,
+            "std": 4600.661278456708
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -5723.24,
+            "p05": -13704.699999999999,
+            "p50": -8818.999999999998,
+            "p95": 9001.749999999998,
+            "std": 7520.7293383156675
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 10.806222222222223,
+            "p05": 2.9188888888888886,
+            "p50": 13.822222222222223,
+            "p95": 14.0,
+            "std": 4.238399018224393
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 4,
+          "oracle": {
+            "candidates_selected": 7040,
+            "fee_per_trade": 3.0,
+            "final_cash": 465015.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 455015.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6410,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 630,
+            "trades_per_day": 14.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 16186.09,
+            "p05": 11096.85,
+            "p50": 15543.0,
+            "p95": 23857.4,
+            "std": 4100.617014658781
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9104.67,
+            "p05": -13893.75,
+            "p50": -9990.5,
+            "p95": -800.7500000000031,
+            "std": 4273.709296691372
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 8.095333333333333,
+            "p05": 2.5533333333333332,
+            "p50": 7.7555555555555555,
+            "p95": 14.0,
+            "std": 3.610866496074781
+          },
+          "test_session_count": 45
+        }
+      ],
+      "pooled_random_max_drawdown": {
+        "count": 500,
+        "mean": 15115.55,
+        "p05": 10351.450000000003,
+        "p50": 14093.5,
+        "p95": 23239.1,
+        "std": 4081.2095430360273
+      },
+      "pooled_random_net_pnl": {
+        "count": 500,
+        "mean": -8983.996,
+        "p05": -13892.7,
+        "p50": -10416.499999999996,
+        "p95": 1952.249999999956,
+        "std": 5131.898189367758
+      }
+    },
+    "2": {
+      "folds": [
+        {
+          "fold": 0,
+          "oracle": {
+            "candidates_selected": 6927,
+            "fee_per_trade": 3.0,
+            "final_cash": 335525.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 325525.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6567,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 360,
+            "trades_per_day": 8.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 16242.32,
+            "p05": 10143.5,
+            "p50": 15478.5,
+            "p95": 25098.849999999995,
+            "std": 4609.928332403769
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9357.58,
+            "p05": -14841.6,
+            "p50": -10570.5,
+            "p95": 794.2499999999976,
+            "std": 5335.956007004449
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 4.158,
+            "p05": 1.1744444444444444,
+            "p50": 3.2888888888888888,
+            "p95": 8.0,
+            "std": 2.3906328716207503
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 1,
+          "oracle": {
+            "candidates_selected": 7378,
+            "fee_per_trade": 3.0,
+            "final_cash": 223475.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 213475.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 7018,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 360,
+            "trades_per_day": 8.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 12669.92,
+            "p05": 8023.7,
+            "p50": 12636.0,
+            "p95": 17805.05,
+            "std": 3069.0001816141157
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -8640.58,
+            "p05": -13696.1,
+            "p50": -10228.0,
+            "p95": 2178.249999999997,
+            "std": 5048.604960188547
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 5.823555555555556,
+            "p05": 2.8377777777777777,
+            "p50": 6.033333333333333,
+            "p95": 8.0,
+            "std": 2.128084217485955
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 2,
+          "oracle": {
+            "candidates_selected": 7234,
+            "fee_per_trade": 3.0,
+            "final_cash": 281150.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 271150.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6874,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 360,
+            "trades_per_day": 8.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 13315.45,
+            "p05": 8609.95,
+            "p50": 12362.0,
+            "p95": 20352.4,
+            "std": 3674.7770560424697
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -5527.93,
+            "p05": -15414.150000000001,
+            "p50": -8558.5,
+            "p95": 9763.499999999995,
+            "std": 9250.451403951522
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 5.79688888888889,
+            "p05": 2.6155555555555554,
+            "p50": 5.488888888888889,
+            "p95": 8.0,
+            "std": 2.088150931089836
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 3,
+          "oracle": {
+            "candidates_selected": 7158,
+            "fee_per_trade": 3.0,
+            "final_cash": 294930.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 284930.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6798,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 360,
+            "trades_per_day": 8.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 18013.93,
+            "p05": 10206.6,
+            "p50": 18097.5,
+            "p95": 29426.8,
+            "std": 6255.81420591188
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -5860.68,
+            "p05": -16200.499999999998,
+            "p50": -8367.5,
+            "p95": 10752.749999999993,
+            "std": 8744.176548579477
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 6.1291111111111105,
+            "p05": 1.4144444444444446,
+            "p50": 7.944444444444445,
+            "p95": 8.0,
+            "std": 2.33361164499143
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 4,
+          "oracle": {
+            "candidates_selected": 6958,
+            "fee_per_trade": 3.0,
+            "final_cash": 356580.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 346580.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6598,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 360,
+            "trades_per_day": 8.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 18177.19,
+            "p05": 11624.2,
+            "p50": 17578.5,
+            "p95": 27283.399999999998,
+            "std": 5070.925089819968
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9017.87,
+            "p05": -15299.549999999997,
+            "p50": -9539.0,
+            "p95": 917.1499999999993,
+            "std": 5215.345873371093
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 4.926444444444445,
+            "p05": 1.7522222222222221,
+            "p50": 4.7444444444444445,
+            "p95": 8.0,
+            "std": 2.268018995370633
+          },
+          "test_session_count": 45
+        }
+      ],
+      "pooled_random_max_drawdown": {
+        "count": 500,
+        "mean": 15683.762,
+        "p05": 9774.1,
+        "p50": 14330.5,
+        "p95": 25560.34999999999,
+        "std": 5193.344786696047
+      },
+      "pooled_random_net_pnl": {
+        "count": 500,
+        "mean": -7680.928,
+        "p05": -15204.800000000001,
+        "p50": -9638.5,
+        "p95": 7613.7499999999745,
+        "std": 7137.757507178186
+      }
+    },
+    "3": {
+      "folds": [
+        {
+          "fold": 0,
+          "oracle": {
+            "candidates_selected": 6373,
+            "fee_per_trade": 3.0,
+            "final_cash": 259430.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 249430.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6193,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 180,
+            "trades_per_day": 4.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 16366.41,
+            "p05": 10622.95,
+            "p50": 15618.5,
+            "p95": 26182.8,
+            "std": 4743.481437017893
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -5338.93,
+            "p05": -15512.950000000003,
+            "p50": -7853.000000000002,
+            "p95": 12703.749999999993,
+            "std": 9534.923569693623
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 3.082444444444444,
+            "p05": 1.1644444444444446,
+            "p50": 3.7222222222222223,
+            "p95": 4.0,
+            "std": 1.0694748621907681
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 1,
+          "oracle": {
+            "candidates_selected": 7374,
+            "fee_per_trade": 3.0,
+            "final_cash": 167565.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 157565.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 7194,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 180,
+            "trades_per_day": 4.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 11537.6,
+            "p05": 7228.5,
+            "p50": 11497.5,
+            "p95": 17023.0,
+            "std": 3232.37593135702
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -4388.1,
+            "p05": -14070.549999999997,
+            "p50": -4972.499999999998,
+            "p95": 5444.0,
+            "std": 6707.277882715131
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 3.7955555555555556,
+            "p05": 2.4622222222222225,
+            "p50": 4.0,
+            "p95": 4.0,
+            "std": 0.543009860125064
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 2,
+          "oracle": {
+            "candidates_selected": 7031,
+            "fee_per_trade": 3.0,
+            "final_cash": 200150.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 190150.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6851,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 180,
+            "trades_per_day": 4.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 12061.2,
+            "p05": 6335.95,
+            "p50": 11635.0,
+            "p95": 19467.7,
+            "std": 3953.0738148760374
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -401.99000000000075,
+            "p05": -13308.9,
+            "p50": -2312.499999999999,
+            "p95": 18506.249999999993,
+            "std": 10141.140744805763
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 3.681777777777778,
+            "p05": 2.3755555555555556,
+            "p50": 4.0,
+            "p95": 4.0,
+            "std": 0.6048305362275543
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 3,
+          "oracle": {
+            "candidates_selected": 6881,
+            "fee_per_trade": 3.0,
+            "final_cash": 222130.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 212130.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6701,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 180,
+            "trades_per_day": 4.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 16930.78,
+            "p05": 10339.25,
+            "p50": 16329.0,
+            "p95": 25844.85,
+            "std": 4972.465812264717
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9419.68,
+            "p05": -19678.7,
+            "p50": -11540.000000000004,
+            "p95": 3926.499999999999,
+            "std": 8194.711880576191
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 3.086888888888889,
+            "p05": 1.5766666666666667,
+            "p50": 3.411111111111111,
+            "p95": 4.0,
+            "std": 0.976665498365596
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 4,
+          "oracle": {
+            "candidates_selected": 6673,
+            "fee_per_trade": 3.0,
+            "final_cash": 275165.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 265165.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6493,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 180,
+            "trades_per_day": 4.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 20653.21,
+            "p05": 12221.2,
+            "p50": 20217.5,
+            "p95": 32240.85,
+            "std": 5890.552801646879
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -4603.25,
+            "p05": -17011.349999999995,
+            "p50": -7821.0,
+            "p95": 12310.24999999999,
+            "std": 9733.253509816932
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 3.56,
+            "p05": 2.2533333333333334,
+            "p50": 3.9555555555555557,
+            "p95": 4.0,
+            "std": 0.6522572966208477
+          },
+          "test_session_count": 45
+        }
+      ],
+      "pooled_random_max_drawdown": {
+        "count": 500,
+        "mean": 15509.84,
+        "p05": 7682.45,
+        "p50": 14668.0,
+        "p95": 26866.049999999996,
+        "std": 5729.341920332575
+      },
+      "pooled_random_net_pnl": {
+        "count": 500,
+        "mean": -4830.39,
+        "p05": -16797.3,
+        "p50": -6552.499999999998,
+        "p95": 12547.249999999965,
+        "std": 9366.789877600662
+      }
+    },
+    "4": {
+      "folds": [
+        {
+          "fold": 0,
+          "oracle": {
+            "candidates_selected": 6600,
+            "fee_per_trade": 3.0,
+            "final_cash": 201580.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 191580.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6465,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 135,
+            "trades_per_day": 3.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 18098.86,
+            "p05": 10642.65,
+            "p50": 16959.5,
+            "p95": 29461.1,
+            "std": 6086.924127483221
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9896.62,
+            "p05": -21092.0,
+            "p50": -11134.0,
+            "p95": 6219.999999999993,
+            "std": 7921.324281923695
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 2.0897777777777775,
+            "p05": 0.5955555555555555,
+            "p50": 2.2222222222222223,
+            "p95": 3.0,
+            "std": 0.9291011952695214
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 1,
+          "oracle": {
+            "candidates_selected": 7453,
+            "fee_per_trade": 3.0,
+            "final_cash": 140140.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 130140.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 7318,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 135,
+            "trades_per_day": 3.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 13089.47,
+            "p05": 6610.3,
+            "p50": 12290.0,
+            "p95": 22792.75,
+            "std": 4969.916944319528
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -6497.7,
+            "p05": -16309.399999999996,
+            "p50": -7149.999999999998,
+            "p95": 6706.249999999996,
+            "std": 7488.461616636516
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 2.8,
+            "p05": 1.6177777777777778,
+            "p50": 3.0,
+            "p95": 3.0,
+            "std": 0.45847657864250385
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 2,
+          "oracle": {
+            "candidates_selected": 7112,
+            "fee_per_trade": 3.0,
+            "final_cash": 186745.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 176745.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6977,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 135,
+            "trades_per_day": 3.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 13557.83,
+            "p05": 7215.0,
+            "p50": 12792.5,
+            "p95": 22411.7,
+            "std": 5163.9036581843875
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -2585.5,
+            "p05": -17645.25,
+            "p50": -3916.5000000000005,
+            "p95": 16471.249999999993,
+            "std": 10798.399216849904
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 2.767777777777778,
+            "p05": 1.82,
+            "p50": 3.0,
+            "p95": 3.0,
+            "std": 0.45525982024352935
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 3,
+          "oracle": {
+            "candidates_selected": 7219,
+            "fee_per_trade": 3.0,
+            "final_cash": 189090.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 179090.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 7084,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 135,
+            "trades_per_day": 3.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 14219.57,
+            "p05": 8468.6,
+            "p50": 13583.5,
+            "p95": 21235.299999999996,
+            "std": 4520.362022364174
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -3782.03,
+            "p05": -14854.5,
+            "p50": -5384.499999999998,
+            "p95": 12621.249999999996,
+            "std": 8870.722410829909
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 2.344666666666667,
+            "p05": 0.7522222222222222,
+            "p50": 3.0,
+            "p95": 3.0,
+            "std": 0.8666666378888596
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 4,
+          "oracle": {
+            "candidates_selected": 6885,
+            "fee_per_trade": 3.0,
+            "final_cash": 232970.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 222970.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6750,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 135,
+            "trades_per_day": 3.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 21792.42,
+            "p05": 11602.65,
+            "p50": 21282.0,
+            "p95": 34202.95,
+            "std": 6792.711731724159
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -4235.1,
+            "p05": -18333.999999999996,
+            "p50": -8375.000000000004,
+            "p95": 17528.74999999998,
+            "std": 12156.98750521774
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 2.6622222222222227,
+            "p05": 1.3744444444444444,
+            "p50": 3.0,
+            "p95": 3.0,
+            "std": 0.5669097869783972
+          },
+          "test_session_count": 45
+        }
+      ],
+      "pooled_random_max_drawdown": {
+        "count": 500,
+        "mean": 16151.63,
+        "p05": 8078.3,
+        "p50": 14754.0,
+        "p95": 28402.35,
+        "std": 6470.048282250241
+      },
+      "pooled_random_net_pnl": {
+        "count": 500,
+        "mean": -5399.39,
+        "p05": -18896.749999999996,
+        "p50": -7490.0,
+        "p95": 13804.749999999993,
+        "std": 9915.611539704074
+      }
+    },
+    "5": {
+      "folds": [
+        {
+          "fold": 0,
+          "oracle": {
+            "candidates_selected": 6105,
+            "fee_per_trade": 3.0,
+            "final_cash": 128835.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 118835.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6060,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 21031.08,
+            "p05": 12431.95,
+            "p50": 20811.5,
+            "p95": 32539.449999999997,
+            "std": 7083.234598499032
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -9209.15,
+            "p05": -29808.75,
+            "p50": -10492.5,
+            "p95": 11095.24999999999,
+            "std": 13559.654469075054
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 1,
+          "oracle": {
+            "candidates_selected": 7308,
+            "fee_per_trade": 3.0,
+            "final_cash": 97275.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 87275.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 7263,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 9941.58,
+            "p05": 4270.2,
+            "p50": 8732.5,
+            "p95": 19881.85,
+            "std": 4898.387725228237
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -223.94999999999993,
+            "p05": -15931.749999999998,
+            "p50": -379.99999999999955,
+            "p95": 14368.99999999999,
+            "std": 10096.042186211267
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 2,
+          "oracle": {
+            "candidates_selected": 6891,
+            "fee_per_trade": 3.0,
+            "final_cash": 118475.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 108475.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6846,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 15565.32,
+            "p05": 6790.35,
+            "p50": 14692.0,
+            "p95": 26953.1,
+            "std": 6158.325201749665
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -4518.55,
+            "p05": -22757.0,
+            "p50": -5230.0,
+            "p95": 14818.249999999996,
+            "std": 11639.526859049096
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 3,
+          "oracle": {
+            "candidates_selected": 6941,
+            "fee_per_trade": 3.0,
+            "final_cash": 112655.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 102655.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6896,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 15180.24,
+            "p05": 6567.4,
+            "p50": 14189.5,
+            "p95": 26236.05,
+            "std": 5780.195837652575
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -3079.15,
+            "p05": -20643.25,
+            "p50": -2232.500000000001,
+            "p95": 14032.25,
+            "std": 11213.86274682125
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 4,
+          "oracle": {
+            "candidates_selected": 6523,
+            "fee_per_trade": 3.0,
+            "final_cash": 148915.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 138915.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6478,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 22011.97,
+            "p05": 10438.95,
+            "p50": 21092.5,
+            "p95": 37586.399999999994,
+            "std": 8631.696822143022
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -2079.55,
+            "p05": -28525.5,
+            "p50": -2082.499999999999,
+            "p95": 22459.5,
+            "std": 16102.239368306584
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        }
+      ],
+      "pooled_random_max_drawdown": {
+        "count": 500,
+        "mean": 16746.038,
+        "p05": 5807.150000000001,
+        "p50": 15100.5,
+        "p95": 31571.499999999993,
+        "std": 7933.165806409189
+      },
+      "pooled_random_net_pnl": {
+        "count": 500,
+        "mean": -3822.07,
+        "p05": -25007.0,
+        "p50": -3302.5000000000005,
+        "p95": 15722.249999999982,
+        "std": 13007.49856825309
+      }
+    },
+    "6": {
+      "folds": [
+        {
+          "fold": 0,
+          "oracle": {
+            "candidates_selected": 6105,
+            "fee_per_trade": 3.0,
+            "final_cash": 128835.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 118835.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6060,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 21309.64,
+            "p05": 11685.2,
+            "p50": 19921.5,
+            "p95": 34888.49999999999,
+            "std": 7652.6452593237655
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -6348.05,
+            "p05": -30921.25,
+            "p50": -5600.000000000002,
+            "p95": 17358.499999999996,
+            "std": 14613.779661934685
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 1,
+          "oracle": {
+            "candidates_selected": 7302,
+            "fee_per_trade": 3.0,
+            "final_cash": 93945.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 83945.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 7257,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 10584.66,
+            "p05": 4639.2,
+            "p50": 9907.0,
+            "p95": 19305.35,
+            "std": 4613.20991081179
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -1188.9,
+            "p05": -16447.0,
+            "p50": -2094.999999999999,
+            "p95": 13809.25,
+            "std": 9717.051569381536
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 2,
+          "oracle": {
+            "candidates_selected": 6891,
+            "fee_per_trade": 3.0,
+            "final_cash": 118475.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 108475.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6846,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 15079.0,
+            "p05": 6704.9,
+            "p50": 13527.0,
+            "p95": 26340.399999999987,
+            "std": 6591.2680253361095
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": 2134.8,
+            "p05": -21404.25,
+            "p50": 1207.4999999999989,
+            "p95": 24152.75,
+            "std": 14465.785825718407
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 3,
+          "oracle": {
+            "candidates_selected": 6932,
+            "fee_per_trade": 3.0,
+            "final_cash": 112655.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 102655.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6887,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 15110.51,
+            "p05": 7343.0,
+            "p50": 13580.5,
+            "p95": 27518.649999999998,
+            "std": 6233.014024385138
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -479.2499999999997,
+            "p05": -22538.25,
+            "p50": 719.9999999999991,
+            "p95": 19418.0,
+            "std": 13009.139335482574
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        },
+        {
+          "fold": 4,
+          "oracle": {
+            "candidates_selected": 6520,
+            "fee_per_trade": 3.0,
+            "final_cash": 142515.0,
+            "max_drawdown": 0.0,
+            "max_drawdown_pct": 0.0,
+            "net_pnl": 132515.0,
+            "skipped": {
+              "after_entry_cutoff": 0,
+              "cooldown_hold_mismatch": 0,
+              "daily_loss_stop": 0,
+              "nonpositive_ask": 0,
+              "overlap": 6475,
+              "session_trade_cap": 0,
+              "tz_naive_decision_time": 0,
+              "unaffordable": 0
+            },
+            "trades_executed": 45,
+            "trades_per_day": 1.0,
+            "win_rate_diagnostic": 1.0
+          },
+          "random_max_drawdown": {
+            "count": 100,
+            "mean": 23049.46,
+            "p05": 9760.95,
+            "p50": 23188.5,
+            "p95": 37403.85,
+            "std": 8811.620169326687
+          },
+          "random_net_pnl": {
+            "count": 100,
+            "mean": -6173.5,
+            "p05": -26961.750000000004,
+            "p50": -7577.500000000002,
+            "p95": 19093.249999999996,
+            "std": 14956.243105415304
+          },
+          "random_trades_per_day": {
+            "count": 100,
+            "mean": 1.0,
+            "p05": 1.0,
+            "p50": 1.0,
+            "p95": 1.0,
+            "std": 0.0
+          },
+          "test_session_count": 45
+        }
+      ],
+      "pooled_random_max_drawdown": {
+        "count": 500,
+        "mean": 17026.654,
+        "p05": 6425.8,
+        "p50": 15494.0,
+        "p95": 32803.35,
+        "std": 8266.226271026679
+      },
+      "pooled_random_net_pnl": {
+        "count": 500,
+        "mean": -2410.98,
+        "p05": -25563.250000000004,
+        "p50": -2517.4999999999995,
+        "p95": 19857.0,
+        "std": 13845.80182567958
+      }
+    }
+  },
+  "random_runs_per_fold_policy": 100,
+  "schema_version": "Protocol101CanonicalV1NullCanaryV1",
+  "scope": "offline_random_nulls_no_model_training_no_sealed_data",
+  "sessions": 271,
+  "side_effects": {
+    "broker_endpoint_called": false,
+    "model_training_executed": false,
+    "paid_data_downloaded": false,
+    "paper_submit_allowed": false,
+    "promotion_or_default_changed": false,
+    "real_money_path_changed": false,
+    "runtime_or_launchd_changed": false,
+    "sealed_market_data_read": false,
+    "threshold_selection_executed": false
+  },
+  "status": "pass"
+}

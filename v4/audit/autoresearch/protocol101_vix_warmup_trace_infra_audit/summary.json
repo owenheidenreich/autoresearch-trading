@@ -1,0 +1,169 @@
+{
+  "blockers": [
+    "2026-06-30:historical_vix_starts_at_09_30_no_09_32_15m_lookup",
+    "2026-06-30:ibkr_replay_no_pre_09_31_checkpoints",
+    "2026-07-01:historical_vix_starts_at_09_30_no_09_32_15m_lookup",
+    "2026-07-01:ibkr_replay_no_pre_09_31_checkpoints",
+    "2026-07-02:historical_vix_starts_at_09_30_no_09_32_15m_lookup",
+    "2026-07-02:ibkr_replay_no_pre_09_31_checkpoints"
+  ],
+  "decision": "vix_warmup_infra_added_but_current_sources_do_not_close_initial_15m_gap",
+  "generated_at_utc": "2026-07-10T03:22:22.640522+00:00",
+  "implemented_infrastructure": {
+    "build_replay_inputs_decision_start_et": true,
+    "default_behavior_preserved": "09:31 start remains default",
+    "new_prefix_traces_built": false,
+    "reason_new_prefix_not_built": "current burned-day sources cannot provide pre-09:31 paired checkpoints / historical pre-09:30 VIX context",
+    "run_protocol101_capture_replay_decision_start_et_arg": true
+  },
+  "schema_version": "Protocol101VixWarmupTraceInfrastructureAuditV1",
+  "sessions": [
+    {
+      "historical": {
+        "spx": {
+          "exists": true,
+          "first_decision_with_15m_exact_lookup_et": "09:45",
+          "first_decision_with_5m_exact_lookup_et": "09:35",
+          "first_event_time_et": "09:30",
+          "first_event_time_utc": "2026-06-30T13:30:00+00:00",
+          "last_event_time_et": "16:04",
+          "last_event_time_utc": "2026-06-30T20:04:00+00:00",
+          "path": "data/raw/index/spx_1m/2026-06-30.official_spx.parquet",
+          "rows": 395,
+          "supports_09_32_15m_lookup": false,
+          "supports_09_32_5m_lookup": false,
+          "symbol": "SPX"
+        },
+        "vix": {
+          "exists": true,
+          "first_decision_with_15m_exact_lookup_et": "09:45",
+          "first_decision_with_5m_exact_lookup_et": "09:35",
+          "first_event_time_et": "09:30",
+          "first_event_time_utc": "2026-06-30T13:30:00+00:00",
+          "last_event_time_et": "16:04",
+          "last_event_time_utc": "2026-06-30T20:04:00+00:00",
+          "path": "data/raw/index/vix_1m/2026-06-30.official_vix.parquet",
+          "rows": 395,
+          "supports_09_32_15m_lookup": false,
+          "supports_09_32_5m_lookup": false,
+          "symbol": "VIX"
+        }
+      },
+      "ibkr": {
+        "checkpoint_count": 5,
+        "compact_index_rows": 1580,
+        "events": "/Users/gduby/.autoresearch-trading/live_runtime/ibkr_capture/2026-06-30/protocol101-recorder-2026-06-30/market_events.jsonl",
+        "exists": true,
+        "first_checkpoint_decision_et": "09:31",
+        "last_checkpoint_decision_et": "09:35",
+        "requested_end_et": "09:35",
+        "requested_start_et": "09:12",
+        "session": "2026-06-30",
+        "supports_pre_09_31_checkpoints": false
+      },
+      "session": "2026-06-30"
+    },
+    {
+      "historical": {
+        "spx": {
+          "exists": true,
+          "first_decision_with_15m_exact_lookup_et": "09:45",
+          "first_decision_with_5m_exact_lookup_et": "09:35",
+          "first_event_time_et": "09:30",
+          "first_event_time_utc": "2026-07-01T13:30:00+00:00",
+          "last_event_time_et": "16:05",
+          "last_event_time_utc": "2026-07-01T20:05:00+00:00",
+          "path": "data/raw/index/spx_1m/2026-07-01.official_spx.parquet",
+          "rows": 396,
+          "supports_09_32_15m_lookup": false,
+          "supports_09_32_5m_lookup": false,
+          "symbol": "SPX"
+        },
+        "vix": {
+          "exists": true,
+          "first_decision_with_15m_exact_lookup_et": "09:45",
+          "first_decision_with_5m_exact_lookup_et": "09:35",
+          "first_event_time_et": "09:30",
+          "first_event_time_utc": "2026-07-01T13:30:00+00:00",
+          "last_event_time_et": "16:05",
+          "last_event_time_utc": "2026-07-01T20:05:00+00:00",
+          "path": "data/raw/index/vix_1m/2026-07-01.official_vix.parquet",
+          "rows": 396,
+          "supports_09_32_15m_lookup": false,
+          "supports_09_32_5m_lookup": false,
+          "symbol": "VIX"
+        }
+      },
+      "ibkr": {
+        "checkpoint_count": 5,
+        "compact_index_rows": 1584,
+        "events": "/Users/gduby/.autoresearch-trading/live_runtime/ibkr_capture/2026-07-01/protocol101-recorder-2026-07-01/market_events.jsonl",
+        "exists": true,
+        "first_checkpoint_decision_et": "09:31",
+        "last_checkpoint_decision_et": "09:35",
+        "requested_end_et": "09:35",
+        "requested_start_et": "09:12",
+        "session": "2026-07-01",
+        "supports_pre_09_31_checkpoints": false
+      },
+      "session": "2026-07-01"
+    },
+    {
+      "historical": {
+        "spx": {
+          "exists": true,
+          "first_decision_with_15m_exact_lookup_et": "09:45",
+          "first_decision_with_5m_exact_lookup_et": "09:35",
+          "first_event_time_et": "09:30",
+          "first_event_time_utc": "2026-07-02T13:30:00+00:00",
+          "last_event_time_et": "16:05",
+          "last_event_time_utc": "2026-07-02T20:05:00+00:00",
+          "path": "data/raw/index/spx_1m/2026-07-02.official_spx.parquet",
+          "rows": 396,
+          "supports_09_32_15m_lookup": false,
+          "supports_09_32_5m_lookup": false,
+          "symbol": "SPX"
+        },
+        "vix": {
+          "exists": true,
+          "first_decision_with_15m_exact_lookup_et": "09:45",
+          "first_decision_with_5m_exact_lookup_et": "09:35",
+          "first_event_time_et": "09:30",
+          "first_event_time_utc": "2026-07-02T13:30:00+00:00",
+          "last_event_time_et": "16:05",
+          "last_event_time_utc": "2026-07-02T20:05:00+00:00",
+          "path": "data/raw/index/vix_1m/2026-07-02.official_vix.parquet",
+          "rows": 396,
+          "supports_09_32_15m_lookup": false,
+          "supports_09_32_5m_lookup": false,
+          "symbol": "VIX"
+        }
+      },
+      "ibkr": {
+        "checkpoint_count": 5,
+        "compact_index_rows": 1584,
+        "events": "/Users/gduby/.autoresearch-trading/live_runtime/ibkr_capture/2026-07-02/protocol101-recorder-2026-07-02/market_events.jsonl",
+        "exists": true,
+        "first_checkpoint_decision_et": "09:31",
+        "last_checkpoint_decision_et": "09:35",
+        "requested_end_et": "09:35",
+        "requested_start_et": "09:12",
+        "session": "2026-07-02",
+        "supports_pre_09_31_checkpoints": false
+      },
+      "session": "2026-07-02"
+    }
+  ],
+  "side_effects": {
+    "broker_endpoint_called": false,
+    "model_training_executed": false,
+    "paid_data_downloaded": false,
+    "paper_submit_allowed": false,
+    "promotion_or_default_changed": false,
+    "real_money_path_changed": false,
+    "runtime_or_launchd_changed": false,
+    "sealed_market_data_read": false,
+    "threshold_selection_executed": false
+  },
+  "status": "blocked"
+}

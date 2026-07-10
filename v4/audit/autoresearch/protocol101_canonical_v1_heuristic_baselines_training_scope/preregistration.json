@@ -1,0 +1,53 @@
+{
+  "acceptance_registry_hash": "6c656cfb2caeaab1d03e78eee39a164f7d169709abeaec5b0c490f1b1e29f0fe",
+  "acceptance_registry_path": "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_scope_acceptance/summary.json",
+  "canonical_selection_contract": "protocol101-canonical-minute-game-v1.4",
+  "contract": "protocol101-live-v2-microstructure-masked",
+  "design_path": "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_design/summary.json",
+  "embargo_sessions": 1,
+  "fee_overlay_dollars": 3.0,
+  "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
+  "folds": 5,
+  "gates": {
+    "G1": "fee-adjusted net PnL > 0 on >=4/5 folds and pooled > 0",
+    "G2": "pooled z >= 3.0 against canonical v1 null canary",
+    "G4": "max strict-serial drawdown <= 25% of peak equity",
+    "G7": "trades/day within (0.3, 6.0)"
+  },
+  "generated_at_utc": "2026-07-10T03:48:10.862637+00:00",
+  "heuristics": {
+    "internal_delta_geometry": {
+      "definition": "-abs(abs(delta)-0.35) - abs(offset)/100 using the processed delta field",
+      "threshold": "train-fold finite-score q0.80"
+    },
+    "near_atm_band_momentum": {
+      "definition": "abs(log(current_mid / mid_5m_ago)) for |offset| <= 25",
+      "threshold": "train-fold positive finite-score q0.80"
+    },
+    "put_call_ratio_skew": {
+      "definition": "abs(log(put_mid / call_mid)) at the candidate strike",
+      "threshold": "train-fold finite-score q0.80"
+    },
+    "straddle_mid_expansion": {
+      "definition": "(call_mid + put_mid) / spx_close * 10000 at the candidate strike",
+      "threshold": "train-fold finite-score q0.80"
+    }
+  },
+  "manifest_path": "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_preflight/canonical_processed_session_manifest.json",
+  "max_candidates_per_row": 10,
+  "preregistration_hash": "4433a317ee5faee194fece9883677eeb2273f12d2b25ab5c02d4b157367360cb",
+  "row_stride": 2,
+  "schema_version": "Protocol101CanonicalV1HeuristicBaselinesV1Preregistration",
+  "scope": "offline fixed-heuristic baseline probes only",
+  "side_effects": {
+    "broker_endpoint_called": false,
+    "launchd_changed": false,
+    "model_training_executed": false,
+    "paid_data_download": false,
+    "paper_submit_allowed": false,
+    "promotion_or_default_changed": false,
+    "real_money_path_changed": false,
+    "runtime_flags_edited": false,
+    "threshold_optimization_executed": false
+  }
+}

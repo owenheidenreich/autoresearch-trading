@@ -1,0 +1,84 @@
+{
+  "daily": [
+    {
+      "decision_rows": 359,
+      "historical_boundary_stable": 10331,
+      "historical_excess_vs_intersection": 679,
+      "historical_only_boundary_stable": 679,
+      "ibkr_boundary_stable": 9863,
+      "ibkr_excess_vs_intersection": 211,
+      "ibkr_only_boundary_stable": 211,
+      "intersection_boundary_stable": 9652,
+      "paired_static_slots": 15078,
+      "session": "2026-06-30",
+      "status_pair_counts": {
+        "quote_missing->untradable": 65,
+        "tradable_boundary_stable->quote_missing": 1,
+        "tradable_boundary_stable->stale": 2,
+        "tradable_boundary_stable->tradable_boundary_stable": 9652,
+        "tradable_boundary_stable->tradable_unstable": 674,
+        "tradable_boundary_stable->untradable": 2,
+        "tradable_unstable->tradable_boundary_stable": 211,
+        "tradable_unstable->tradable_unstable": 238,
+        "tradable_unstable->untradable": 3,
+        "untradable->quote_missing": 2,
+        "untradable->stale": 4,
+        "untradable->tradable_unstable": 2,
+        "untradable->untradable": 4222
+      }
+    },
+    {
+      "decision_rows": 359,
+      "historical_boundary_stable": 9945,
+      "historical_excess_vs_intersection": 626,
+      "historical_only_boundary_stable": 626,
+      "ibkr_boundary_stable": 9513,
+      "ibkr_excess_vs_intersection": 194,
+      "ibkr_only_boundary_stable": 194,
+      "intersection_boundary_stable": 9319,
+      "paired_static_slots": 15078,
+      "session": "2026-07-01",
+      "status_pair_counts": {
+        "quote_missing->untradable": 32,
+        "tradable_boundary_stable->stale": 2,
+        "tradable_boundary_stable->tradable_boundary_stable": 9319,
+        "tradable_boundary_stable->tradable_unstable": 623,
+        "tradable_boundary_stable->untradable": 1,
+        "tradable_unstable->tradable_boundary_stable": 189,
+        "tradable_unstable->tradable_unstable": 290,
+        "tradable_unstable->untradable": 7,
+        "untradable->stale": 3,
+        "untradable->tradable_boundary_stable": 5,
+        "untradable->tradable_unstable": 7,
+        "untradable->untradable": 4600
+      }
+    },
+    {
+      "decision_rows": 359,
+      "historical_boundary_stable": 10970,
+      "historical_excess_vs_intersection": 933,
+      "historical_only_boundary_stable": 933,
+      "ibkr_boundary_stable": 10415,
+      "ibkr_excess_vs_intersection": 378,
+      "ibkr_only_boundary_stable": 378,
+      "intersection_boundary_stable": 10037,
+      "paired_static_slots": 15078,
+      "session": "2026-07-02",
+      "status_pair_counts": {
+        "tradable_boundary_stable->quote_missing": 9,
+        "tradable_boundary_stable->stale": 1,
+        "tradable_boundary_stable->tradable_boundary_stable": 10037,
+        "tradable_boundary_stable->tradable_unstable": 922,
+        "tradable_boundary_stable->untradable": 1,
+        "tradable_unstable->quote_missing": 1,
+        "tradable_unstable->tradable_boundary_stable": 378,
+        "tradable_unstable->tradable_unstable": 245,
+        "tradable_unstable->untradable": 11,
+        "untradable->quote_missing": 1,
+        "untradable->stale": 7,
+        "untradable->tradable_unstable": 7,
+        "untradable->untradable": 3458
+      }
+    }
+  ]
+}

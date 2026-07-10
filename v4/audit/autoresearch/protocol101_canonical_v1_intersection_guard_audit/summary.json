@@ -1,0 +1,72 @@
+{
+  "decision_rows_checked": 1077,
+  "generated_at_utc": "2026-07-10T03:14:46.976752+00:00",
+  "historical_boundary_stable": 31246,
+  "historical_excess_closed_by_intersection_fraction": 0.07162516802150676,
+  "historical_excess_vs_ibkr_fraction": 0.04884025376791649,
+  "historical_only_boundary_stable": 2238,
+  "ibkr_boundary_stable": 29791,
+  "ibkr_only_boundary_stable": 783,
+  "intersection_boundary_stable": 29008,
+  "paired_static_slots": 45234,
+  "schema_version": "Protocol101IntersectionGuardAuditV1",
+  "sessions": [
+    "2026-06-30",
+    "2026-07-01",
+    "2026-07-02"
+  ],
+  "side_effects": {
+    "broker_endpoint_called": false,
+    "model_training_executed": false,
+    "paid_data_downloaded": false,
+    "paper_submit_allowed": false,
+    "promotion_or_default_changed": false,
+    "real_money_path_changed": false,
+    "runtime_or_launchd_changed": false,
+    "sealed_market_data_read": false,
+    "threshold_selection_executed": false
+  },
+  "source_static_audit": "v4/audit/autoresearch/protocol101_live_v2_static_ladder_boundary_stable_policy_audit",
+  "status": "pass",
+  "status_pair_counts": {
+    "quote_missing->untradable": 97,
+    "tradable_boundary_stable->quote_missing": 10,
+    "tradable_boundary_stable->stale": 5,
+    "tradable_boundary_stable->tradable_boundary_stable": 29008,
+    "tradable_boundary_stable->tradable_unstable": 2219,
+    "tradable_boundary_stable->untradable": 4,
+    "tradable_unstable->quote_missing": 1,
+    "tradable_unstable->tradable_boundary_stable": 778,
+    "tradable_unstable->tradable_unstable": 773,
+    "tradable_unstable->untradable": 21,
+    "untradable->quote_missing": 3,
+    "untradable->stale": 14,
+    "untradable->tradable_boundary_stable": 5,
+    "untradable->tradable_unstable": 16,
+    "untradable->untradable": 12280
+  },
+  "trace_prefix": "protocol101_live_v2_candidate_universe_parity_source_aligned",
+  "vendor_only_training_guard_policy": {
+    "application": "training/evaluation pessimistic tradability only; not a live runtime guard change",
+    "basis": "burned_day_exact_intersection_between_historical_and_ibkr_boundary_stable_guard_states",
+    "extra_historical_acceptance_haircut_fraction": 0.07162516802150676,
+    "policy_id": "protocol101_canonical_v1_intersection_guard_vendor_only_v1",
+    "use_boundary_stable_margins": {
+      "max_affordability_utilization": 0.975,
+      "max_mid": 35.0,
+      "max_quote_age_ms": 90000.0,
+      "max_spread_abs": 0.5,
+      "max_spread_frac": 0.25,
+      "min_ask_size": 1.0,
+      "min_bid_size": 1.0,
+      "min_mid": 0.5,
+      "stable_max_mid": 34.75,
+      "stable_max_quote_age_ms": 85000.0,
+      "stable_max_spread_abs": 0.45,
+      "stable_max_spread_frac": 0.225,
+      "stable_min_ask_size": 2.0,
+      "stable_min_bid_size": 2.0,
+      "stable_min_mid": 0.55
+    }
+  }
+}
