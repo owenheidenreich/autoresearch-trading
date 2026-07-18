@@ -1,0 +1,19 @@
+{
+  "null_control_auc": 0.660178810435365,
+  "positive_control_auc": 0.5074672775719272,
+  "positive_control_fields": [
+    "raw_spread"
+  ],
+  "slot_hgb_auc": 0.5275299485695122,
+  "slot_hgb_fold_aucs": [
+    0.533114469655875,
+    0.5300753343963469,
+    0.5194000416563146
+  ],
+  "slot_logistic_auc": 0.5028043082545465,
+  "slot_logistic_fold_aucs": [
+    0.5016760658169067,
+    0.49994156706037657,
+    0.506795291886356
+  ]
+}

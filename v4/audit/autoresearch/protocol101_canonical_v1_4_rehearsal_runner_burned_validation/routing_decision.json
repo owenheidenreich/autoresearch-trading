@@ -1,0 +1,46 @@
+{
+  "attempt_id": "protocol101_canonical_v1_4_rehearsal_runner_burned_validation",
+  "eval_sessions": [
+    "2026-06-30",
+    "2026-07-01",
+    "2026-07-02"
+  ],
+  "evidence_grade": "burned_validation_self_test",
+  "failures": [],
+  "frozen_contract_sha256": "602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57",
+  "l0_summary": {
+    "failing": [],
+    "features": 22,
+    "gates_source": "v4/audit/autoresearch/protocol101_canonical_v1_l0_l2_design_audit_attempt001/preregistration.json",
+    "inference_grade": "design_grade_point_estimates",
+    "max_standardized_p95": 0.042325152125019916
+  },
+  "l2_summary": {
+    "null_control_auc": 0.660178810435365,
+    "positive_control_auc": 0.5074672775719272,
+    "positive_control_fields": [
+      "raw_spread"
+    ],
+    "slot_hgb_auc": 0.5275299485695122,
+    "slot_logistic_auc": 0.5028043082545465
+  },
+  "material_reordering_allowance": 0,
+  "material_true_reordering_count": 0,
+  "mode": "burned_validation",
+  "no_confirmation_claim": true,
+  "per_day_action_agreement_below_gate": [
+    {
+      "agree": 0.958217270194986,
+      "probe": "AB_CDE_plus_group1_nonvix_logistic",
+      "session_date": "2026-07-02"
+    },
+    {
+      "agree": 0.9665738161559888,
+      "probe": "AB_C_plus_group1_nonvix_logistic",
+      "session_date": "2026-07-02"
+    }
+  ],
+  "routing_decision": "rehearsal_pass",
+  "schema_version": "Protocol101CanonicalV14RehearsalBatteryRoutingV1",
+  "trained_on": "eval_frame_self"
+}

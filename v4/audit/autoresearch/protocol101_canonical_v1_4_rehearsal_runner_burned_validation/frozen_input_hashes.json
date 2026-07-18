@@ -1,0 +1,22 @@
+{
+  "confirmation_prereg": {
+    "actual": "13176551ed26f4a42f4a9fce204f3059591a55d24d2833caf1c29b8401ed06b9",
+    "expected": "13176551ed26f4a42f4a9fce204f3059591a55d24d2833caf1c29b8401ed06b9",
+    "path": "v4/audit/autoresearch/protocol101_canonical_v1_sealed_confirmation_preregistration/preregistration.md"
+  },
+  "contract": {
+    "actual": "602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57",
+    "expected": "602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57",
+    "path": "v4/audit/autoresearch/protocol101_canonical_v1_4_near_atm_band_restriction_attempt005/selection_contract_v1_4.json"
+  },
+  "feature_definition": {
+    "actual": "628b162b66fcce50c0bd08e7bd34606ecf9a4a95afc0cd566f12bb79429d5bb8",
+    "expected": "628b162b66fcce50c0bd08e7bd34606ecf9a4a95afc0cd566f12bb79429d5bb8",
+    "path": "v4/audit/autoresearch/protocol101_canonical_v1_l0_l2_design_audit_attempt001/canonical_feature_definition.json"
+  },
+  "sealing_rule": {
+    "actual": "a9fb2c25e0b31c42b6846925f198930f44594cf7567a0970c767169ed468a89e",
+    "expected": "a9fb2c25e0b31c42b6846925f198930f44594cf7567a0970c767169ed468a89e",
+    "path": "v4/audit/autoresearch/protocol101_sealed_day_assignment/sealing_rule.json"
+  }
+}

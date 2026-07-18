@@ -1,0 +1,13 @@
+{
+  "purpose": "Canonical v1.4 rehearsal battery inputs: paired Databento/ThetaData sessions for the validation day (2026-07-10) and development days (2026-07-13, 2026-07-14).",
+  "owner_authorization": "Granted by owner in Claude session 2026-07-18: 'Yes, rehearsal days + rest of window' for vendor downloads; explicit instruction 2026-07-18 to perform the downloads directly. Scope in this manifest: the three rehearsal sessions only.",
+  "sessions": ["2026-07-10", "2026-07-13", "2026-07-14"],
+  "sources": {
+    "databento": "OPRA.PILLAR SPXW definition, cbbo-1m, ohlcv-1m, statistics (same schemas as burned-day inputs)",
+    "thetadata": "SPX and VIX index_history_ohlc 1m bars 09:30-16:00 ET"
+  },
+  "cost_note": "Burned-day precedent: cents per session for cbbo-1m-scale Databento pulls; ThetaData covered by subscription. Hard cap $5.00 per Databento invocation.",
+  "approval_required": {
+    "exact_approval_text": "APPROVED: paid vendor download of Databento OPRA SPXW (definition, cbbo-1m, ohlcv-1m, statistics) and ThetaData SPX/VIX 1m index bars for sessions 2026-07-10, 2026-07-13, 2026-07-14 for the canonical v1.4 rehearsal battery."
+  }
+}
