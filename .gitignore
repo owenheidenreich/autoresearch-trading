@@ -88,3 +88,6 @@ v4/logs/
 # Personal / non-project files
 AI Breakthrough Papers/
 ART squared.heic
+
+# Local transcript history backup (never commit session contents)
+_history_backup/
