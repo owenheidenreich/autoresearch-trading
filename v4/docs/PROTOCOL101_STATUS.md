@@ -2,7 +2,7 @@
 
 **This is the single source of truth for "where are we."** Updated every
 working session. If it conflicts with memory or older docs, this wins.
-Last updated: 2026-07-18 (evening).
+Last updated: 2026-07-19.
 
 ## The project in two questions
 
@@ -50,6 +50,17 @@ Last updated: 2026-07-18 (evening).
   Nobody looks until it runs. Expected ~11 days incl. FOMC (Jul 28/29).
   (Jul 15–17 were lost to an internet outage — already replaced by the
   Aug extension.)
+
+## Prior-campaign knowledge (mined 07-18, ready for Stage-1)
+
+PROTOCOL101_PRIOR_CAMPAIGN_DISTILLATION.md holds the April backtest
+campaign's full edge ledger. Headlines: the durable April edge was
+OPENING STRUCTURE (gap + first-15 acceptance/range; PF 1.32 → 1.54
+gated), NOT VWAP-reclaim (dropping vwap_reclaim_state improved results);
+honest directional baseline PF 1.132 over 780 days; a 28-item
+do-not-retest list; and the protocol-number decoder (051/054/066/081/
+101/113/155/160). Best April edges map to H0 — the hypothesis we
+expected to be a mere control.
 
 ## After the final exam (if it passes)
 
