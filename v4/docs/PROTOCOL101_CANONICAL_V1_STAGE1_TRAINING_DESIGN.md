@@ -6,9 +6,14 @@ the sealed confirmation battery (preregistration sha256
 `13176551ed26f4a42f4a9fce204f3059591a55d24d2833caf1c29b8401ed06b9`, amended
 2026-07-10 to add the development-day rehearsal gate while the sealed set was
 still empty), and
-(2) the owner-signed G4/holdout gates revision (Step 3 of the recorder-window
-work queue) is signed. Preregistering now removes the "designed after seeing
-what passed" critique.
+(2) the owner-signed G4/holdout gates revision
+(`PROTOCOL101_G4_HOLDOUT_REVISION_2026_07_19.md`: Calmar >= 1.0 pooled +
+$5,000 per-fold equity floor, calibrated by the forced-oracle and
+slot-skill-frontier measurements) is signed. Preregistering now removes the
+"designed after seeing what passed" critique.
+Status note: the canonical v1.4 rehearsal battery PASSED on fresh days
+2026-07-10/13/14 incl. the CPI session (design-grade); the sealed exam
+remains the gate for execution.
 
 ## Objective
 
@@ -57,11 +62,37 @@ evidence packet defined below.
   all gates evaluated on the pessimistic rung; the other rungs are reported
   as the edge band. Fees $3.00 primary, $2.00/$5.00 sensitivity.
 
+## Prior-knowledge inputs (preregistered before results exist)
+
+Two mined documents are formal inputs to this design:
+`PROTOCOL101_PRIOR_CAMPAIGN_DISTILLATION.md` (April edge ledger,
+do-not-retest list, family mapping) and
+`PROTOCOL101_PROTOCOL_FARM_LINEAGE_2026_07_19.md` (transcript-tier farm
+lineage). Binding consequences:
+
+1. **The do-not-retest list is a constraint**: no Stage-1 attempt may
+   re-implement an unchanged falsified mechanism (28 items; e.g.
+   always-put default, vwap_reclaim_state as premise, post-hoc score
+   coverage thresholds). A retest requires a materially different causal
+   variable, target, or game, stated in the ledger entry.
+2. **H0 is dual-role, not a mere control.** April's strongest surviving
+   edge — opening structure (opening gap + first-15 acceptance/range,
+   PF 1.32 -> 1.54 gated, bootstrap CIs excluding zero) — expresses
+   through exactly H0's B/G1 features. An H0 gate-pass is a legitimate,
+   prior-supported outcome, not a harness anomaly. H0 failing while
+   H1-H4 pass would conversely indicate the edge needs option-surface
+   information — also informative.
+3. **Directional priors:** the honest April baseline was directional
+   V0 PF 1.132 over 780 OOS days; the current heuristic scan's best
+   reading is put/call skew (+$15,953, z=2.15, gates-fail). Both point
+   to H0 (side context) and H2/H4 (skew composites) as the highest-prior
+   hypotheses. Priors inform expectations, never thresholds.
+
 ## The five preregistered hypotheses (mirroring the certified L3 subsets)
 
 | ID | Features | Role |
 |---|---|---|
-| H0 | A/B + Group1 non-VIX | Control — expected to fail like masked-v2; validates the harness |
+| H0 | A/B + Group1 non-VIX | Dual role: harness control AND prior-supported opening-structure candidate |
 | H1 | H0 + Family C (per-slot mids/momentum/path) | Option price dynamics |
 | H2 | H0 + Family D (straddle/skew composites) | Implied-move/skew |
 | H3 | H0 + Family E (internal IV/delta/gamma) | Greek structure |
@@ -84,9 +115,11 @@ are all run regardless of interim results (no early stopping on peeking).
   representation, not capacity, is binding — per the standing model ladder.
 - Batch structure: 21-attempt batches (policies x seeds x folds) per
   hypothesis, primary + conservative, as in the Group 2 program.
-- Gates: G1–G9 with revised G4, evaluated against the RECALIBRATED nulls
-  (work-queue Step 5 — canonical-contract null/canary bands; the masked-era
-  bands are void). G3 baseline = best heuristic from work-queue Step 6.
+- Gates: G1–G9 with G4 v2 (Calmar >= 1.0 pooled + $5,000 per-fold equity
+  floor per the signed revision; null-relative drawdown report-only),
+  evaluated against the RECALIBRATED canonical-contract nulls (the
+  masked-era bands are void). G3 baseline = put/call skew heuristic at
+  +$15,953 pooled (the standing best from the heuristic scan).
 - Ledger entry before results are inspected, for every attempt. No
   threshold/feature tuned on test folds. Sealed days are never inputs.
 

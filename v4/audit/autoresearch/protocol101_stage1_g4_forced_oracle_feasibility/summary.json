@@ -1,0 +1,367 @@
+{
+  "aggregates": {
+    "forced_oracle_k1": {
+      "calmar_worst": null,
+      "drawdown_max": 0.0,
+      "drawdown_mean": 0.0,
+      "net_pnl_mean": 209567.0,
+      "net_pnl_min": 151275.0
+    },
+    "forced_oracle_k2": {
+      "calmar_worst": null,
+      "drawdown_max": 0.0,
+      "drawdown_mean": 0.0,
+      "net_pnl_mean": 210729.6,
+      "net_pnl_min": 155089.0
+    },
+    "forced_oracle_k4": {
+      "calmar_worst": null,
+      "drawdown_max": 0.0,
+      "drawdown_mean": 0.0,
+      "net_pnl_mean": 213223.0,
+      "net_pnl_min": 159430.0
+    },
+    "selective_capped_k4": {
+      "calmar_worst": null,
+      "drawdown_max": 0.0,
+      "drawdown_mean": 0.0,
+      "net_pnl_mean": 213223.0,
+      "net_pnl_min": 159430.0
+    }
+  },
+  "fee_per_trade": 3.0,
+  "folds": [
+    {
+      "fold": 0,
+      "results": {
+        "forced_oracle_k1": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 233635.0,
+          "trades": 45,
+          "trades_per_day": 1.0
+        },
+        "forced_oracle_k2": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 232212.0,
+          "trades": 90,
+          "trades_per_day": 2.0
+        },
+        "forced_oracle_k4": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 239630.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        },
+        "selective_capped_k4": {
+          "max_drawdown": 0.0,
+          "net_pnl": 239630.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        }
+      },
+      "test_sessions": 45
+    },
+    {
+      "fold": 1,
+      "results": {
+        "forced_oracle_k1": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 151275.0,
+          "trades": 45,
+          "trades_per_day": 1.0
+        },
+        "forced_oracle_k2": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 155089.0,
+          "trades": 90,
+          "trades_per_day": 2.0
+        },
+        "forced_oracle_k4": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 159430.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        },
+        "selective_capped_k4": {
+          "max_drawdown": 0.0,
+          "net_pnl": 159430.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        }
+      },
+      "test_sessions": 45
+    },
+    {
+      "fold": 2,
+      "results": {
+        "forced_oracle_k1": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 197785.0,
+          "trades": 45,
+          "trades_per_day": 1.0
+        },
+        "forced_oracle_k2": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 194022.0,
+          "trades": 90,
+          "trades_per_day": 2.0
+        },
+        "forced_oracle_k4": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 189612.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        },
+        "selective_capped_k4": {
+          "max_drawdown": 0.0,
+          "net_pnl": 189612.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        }
+      },
+      "test_sessions": 45
+    },
+    {
+      "fold": 3,
+      "results": {
+        "forced_oracle_k1": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 203175.0,
+          "trades": 45,
+          "trades_per_day": 1.0
+        },
+        "forced_oracle_k2": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 202499.0,
+          "trades": 90,
+          "trades_per_day": 2.0
+        },
+        "forced_oracle_k4": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 203846.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        },
+        "selective_capped_k4": {
+          "max_drawdown": 0.0,
+          "net_pnl": 203846.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        }
+      },
+      "test_sessions": 45
+    },
+    {
+      "fold": 4,
+      "results": {
+        "forced_oracle_k1": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 261965.0,
+          "trades": 45,
+          "trades_per_day": 1.0
+        },
+        "forced_oracle_k2": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 269826.0,
+          "trades": 90,
+          "trades_per_day": 2.0
+        },
+        "forced_oracle_k4": {
+          "calmar": null,
+          "max_drawdown": 0.0,
+          "net_pnl": 273597.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        },
+        "selective_capped_k4": {
+          "max_drawdown": 0.0,
+          "net_pnl": 273597.0,
+          "trades": 180,
+          "trades_per_day": 4.0
+        }
+      },
+      "test_sessions": 45
+    }
+  ],
+  "generated_at_utc": "2026-07-19T18:21:37.584837+00:00",
+  "schema_version": "Protocol101Stage1G4ForcedOracleFeasibilityV1",
+  "sessions": 271,
+  "side_effects": {
+    "broker_endpoint_called": false,
+    "model_training_executed": false,
+    "paid_data_download": false,
+    "threshold_selection_executed": false
+  },
+  "skill_frontier_slot_quality_2perday_seed7": {
+    "slot_top_100pct_2perday": {
+      "calmar_worst": -0.8,
+      "dd_max": 19327,
+      "dd_mean": 11516,
+      "per_fold_dd": [
+        14190,
+        5163,
+        14152,
+        4746,
+        19327
+      ],
+      "per_fold_pnl": [
+        -10576,
+        -3801,
+        -8828,
+        6535,
+        -15539
+      ],
+      "pnl_mean": -6442,
+      "pnl_min": -15539
+    },
+    "slot_top_10pct_2perday": {
+      "calmar_worst": 2645.76,
+      "dd_max": 38,
+      "dd_mean": 13,
+      "per_fold_dd": [
+        38,
+        0,
+        13,
+        13,
+        0
+      ],
+      "per_fold_pnl": [
+        100539,
+        74988,
+        75440,
+        99227,
+        115060
+      ],
+      "pnl_mean": 93051,
+      "pnl_min": 74988
+    },
+    "slot_top_25pct_2perday": {
+      "calmar_worst": 444.82,
+      "dd_max": 143,
+      "dd_mean": 82,
+      "per_fold_dd": [
+        143,
+        13,
+        116,
+        73,
+        63
+      ],
+      "per_fold_pnl": [
+        63609,
+        42559,
+        66591,
+        62389,
+        86122
+      ],
+      "pnl_mean": 64254,
+      "pnl_min": 42559
+    },
+    "slot_top_50pct_2perday": {
+      "calmar_worst": 19.59,
+      "dd_max": 1702,
+      "dd_mean": 863,
+      "per_fold_dd": [
+        1702,
+        808,
+        216,
+        596,
+        993
+      ],
+      "per_fold_pnl": [
+        33339,
+        16151,
+        47604,
+        29348,
+        44496
+      ],
+      "pnl_mean": 34188,
+      "pnl_min": 16151
+    }
+  },
+  "skill_frontier_top_q_k2_seed42": {
+    "top_100pct_k2": {
+      "calmar_worst": null,
+      "dd_max": 0,
+      "dd_mean": 0,
+      "per_fold_dd": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pnl_mean": 121717,
+      "pnl_min": 83093
+    },
+    "top_10pct_k2": {
+      "calmar_worst": null,
+      "dd_max": 0,
+      "dd_mean": 0,
+      "per_fold_dd": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pnl_mean": 193086,
+      "pnl_min": 133092
+    },
+    "top_25pct_k2": {
+      "calmar_worst": null,
+      "dd_max": 0,
+      "dd_mean": 0,
+      "per_fold_dd": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pnl_mean": 174284,
+      "pnl_min": 129597
+    },
+    "top_50pct_k2": {
+      "calmar_worst": null,
+      "dd_max": 0,
+      "dd_mean": 0,
+      "per_fold_dd": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pnl_mean": 152309,
+      "pnl_min": 107638
+    },
+    "top_5pct_k2": {
+      "calmar_worst": null,
+      "dd_max": 0,
+      "dd_mean": 0,
+      "per_fold_dd": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pnl_mean": 195010,
+      "pnl_min": 145216
+    }
+  }
+}

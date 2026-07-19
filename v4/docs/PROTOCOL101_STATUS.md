@@ -33,8 +33,10 @@ Last updated: 2026-07-19.
 1. **Friday 07-24 after close**: run the end-of-week batch with Fable —
    live-vs-recording result for 07-20, rehearsal add-on (completes the
    practice-exam requirement), sealed-week review, vendor downloads.
-2. **G4 gate revision**: one Codex goal (frequency-forced oracle) + your
-   signature. Blocks training, not collection. Any time before ~Aug 5.
+2. **G4 gate revision**: measurement DONE (forced oracle + skill
+   frontier); signable draft ready —
+   PROTOCOL101_G4_HOLDOUT_REVISION_2026_07_19.md (Calmar >= 1.0 +
+   $5,000 equity floor). Needs only your signature.
 3. **Sealed-day report fix**: one instruction to Codex — its 13:30 report
    must show counts only for sealed days, never decision numbers.
 4. **ThetaData**: month is active; batch remaining downloads before it
@@ -71,8 +73,8 @@ _history_backup/ (untracked).
 
 Stage-1 training on 15 months of history: five feature-set hypotheses,
 gates against recalibrated luck-bands, everything already built (nulls,
-baselines, noise injection, pessimistic guards, signed design doc pending
-G4 fix). First hopeful clue already logged: a simple put/call-skew rule
+baselines, noise injection, pessimistic guards; training design doc
+amended with April priors + G4 v2, awaiting signature alongside it). First hopeful clue already logged: a simple put/call-skew rule
 showed the strongest signal in project history (+$15,953, z=2.15 — real
 but not yet significant). If training finds a candidate: confirmation
 seed → holdout → replay validation → live shadow → guarded paper trading.
