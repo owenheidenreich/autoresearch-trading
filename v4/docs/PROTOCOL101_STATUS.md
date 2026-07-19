@@ -69,6 +69,15 @@ numbers decoded, key correction — Protocol051's "edge" is a model score
 margin, not dollars. Founding transcript hash-preserved in
 _history_backup/ (untracked).
 
+## The Trader Charter (the root goal, in plain language)
+
+PROTOCOL101_TRADER_CHARTER.md — drafted 07-19 from the owner's answers:
+a convex hunter with a survival guarantee. Droughts must be FLAT (abstain,
+don't force), never deep holes. Year-one floor: beat SPY or index-and-quit;
+dream band 3x-10x, no profit caps in the final system (Stage-2's job).
+Daily circuit breaker: 5% of current equity ends the session. Survival
+outranks everything. Awaiting owner markup/signature.
+
 ## After the final exam (if it passes)
 
 Stage-1 training on 15 months of history: five feature-set hypotheses,

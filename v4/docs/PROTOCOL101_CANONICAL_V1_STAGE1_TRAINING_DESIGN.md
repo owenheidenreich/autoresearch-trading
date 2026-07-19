@@ -17,6 +17,15 @@ remains the gate for execution.
 
 ## Objective
 
+Root reference: `PROTOCOL101_TRADER_CHARTER.md` — the owner's plain-language
+definition of the trader being built (convex hunter, flat droughts, SPY
+floor, 5%-of-equity daily circuit breaker, survival floor). Every gate
+below traces to a charter commitment. New charter-mandated metrics for
+every Stage-1 packet: harvest ratio (realized/peak available PnL) and
+underwater-duration (longest time below high-water mark), both
+report-only. Daily circuit breaker set to 5% of current equity in the
+simulator config.
+
 Unchanged from the owner-approved Stage-1 objective: maximize fee-adjusted net
 PnL through the strict one-account serial simulator
 (`v4/model/protocol101_serial_simulator.py`; $10k, single contract, forced
