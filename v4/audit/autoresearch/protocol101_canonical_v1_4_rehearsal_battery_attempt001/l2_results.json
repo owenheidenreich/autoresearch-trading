@@ -1,0 +1,22 @@
+{
+  "null_control_auc": 0.508249422432605,
+  "positive_control_auc": 0.9999991718223641,
+  "positive_control_fields": [
+    "raw_bid",
+    "raw_ask",
+    "raw_spread",
+    "raw_quote_age_ms"
+  ],
+  "slot_hgb_auc": 0.5355544141826227,
+  "slot_hgb_fold_aucs": [
+    0.5426864994956324,
+    0.5305783494383831,
+    0.5333983936138526
+  ],
+  "slot_logistic_auc": 0.4997464702317019,
+  "slot_logistic_fold_aucs": [
+    0.49930873451948266,
+    0.4997118578035415,
+    0.5002188183720815
+  ]
+}

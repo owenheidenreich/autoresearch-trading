@@ -41,6 +41,7 @@ for d in 2026-07-10 2026-07-13 2026-07-14; do
   "$PY" v4/scripts/run_protocol101_fair_contract_dataset_replay.py \
     --input-pkl "$REHEARSAL_INPUTS/source_aligned_processed/$d.pkl" \
     --session "$d" \
+    --feature-contract protocol101-live-v2-microstructure-masked \
     --out-dir "v4/audit/autoresearch/protocol101_canonical_rehearsal_historical_replay_${d//-/_}"
 done
 

@@ -220,7 +220,8 @@ def compact_l0(eval_frame: pd.DataFrame, admitted: list[str]) -> tuple[pd.DataFr
     return table, summary
 
 
-def compact_l2(eval_frame: pd.DataFrame, admitted: list[str]) -> dict[str, Any]:
+def compact_l2(eval_frame: pd.DataFrame, admitted: list[str], eval_prefix: str,
+               eval_sessions: tuple[str, ...]) -> dict[str, Any]:
     def stack(cols_suffix_pairs):
         frames, labels, groups = [], [], []
         for suffix, label in (("_historical", 0), ("_ibkr", 1)):
@@ -244,24 +245,32 @@ def compact_l2(eval_frame: pd.DataFrame, admitted: list[str]) -> dict[str, Any]:
         scores = cross_val_score(clf, X, yl, cv=lodo, groups=groups, scoring="roc_auc")
         out[f"slot_{name}_auc"] = float(np.mean(scores))
         out[f"slot_{name}_fold_aucs"] = [float(s) for s in scores]
-    # null control: odd/even minutes within historical plane
-    hist = eval_frame.copy()
-    minute_idx = pd.factorize(hist["decision_minute_et"])[0]
-    Xh = hist[[c for c in feat_cols if c.endswith("_historical")]].apply(pd.to_numeric, errors="coerce").fillna(0.0).to_numpy()
+    # null control: odd/even minutes within historical plane, grouped by
+    # minute so per-minute memorization is impossible (a minute's rows never
+    # straddle train/test).
+    from sklearn.model_selection import GroupKFold
+    minute_idx = pd.factorize(eval_frame["decision_minute_et"].astype(str))[0]
+    Xh = eval_frame[[c for c in feat_cols if c.endswith("_historical")]].apply(
+        pd.to_numeric, errors="coerce").fillna(0.0).to_numpy()
     out["null_control_auc"] = float(np.mean(cross_val_score(
         HistGradientBoostingClassifier(max_depth=3, max_iter=200, random_state=42),
-        Xh, minute_idx % 2, cv=5, scoring="roc_auc")))
-    # positive control: raw fields
-    raw_candidates = [c for c in eval_frame.columns
-                      if any(k in c.lower() for k in ("quote_age", "spread"))
-                      or c.split("_")[0].lower() in ("bid", "ask")]
-    raw_cols = [c for c in raw_candidates if c.endswith(("_historical", "_ibkr"))]
-    if raw_cols:
-        Xr, yr, _ = stack(raw_cols)
+        Xh, minute_idx % 2, cv=LeaveOneGroupOut(),
+        groups=eval_frame["session_date"].to_numpy(), scoring="roc_auc")))
+    # positive control: raw fields from the pre-pairing slot frame (the
+    # paired frame drops raw_quote_age_ms, the strongest source fingerprint).
+    l0l2.SESSIONS = tuple(eval_sessions)
+    l1l3.SESSIONS = tuple(eval_sessions)
+    slot_frame, _ = l0l2.build_slot_frame(eval_prefix)
+    raw_fields = [c for c in ("raw_bid", "raw_ask", "raw_spread", "raw_quote_age_ms")
+                  if c in slot_frame.columns]
+    if raw_fields and "source" in slot_frame.columns:
+        Xr = slot_frame[raw_fields].apply(pd.to_numeric, errors="coerce").fillna(0.0).to_numpy()
+        yr = (slot_frame["source"].astype(str) == "ibkr").astype(int).to_numpy()
+        gr = slot_frame["session_date"].to_numpy()
         out["positive_control_auc"] = float(np.mean(cross_val_score(
             HistGradientBoostingClassifier(max_depth=3, max_iter=200, random_state=42),
-            Xr, yr, cv=5, scoring="roc_auc")))
-        out["positive_control_fields"] = sorted({c.rsplit("_", 1)[0] for c in raw_cols})[:8]
+            Xr, yr, cv=LeaveOneGroupOut(), groups=gr, scoring="roc_auc")))
+        out["positive_control_fields"] = raw_fields
     else:
         out["positive_control_auc"] = None
         out["positive_control_fields"] = []
@@ -340,7 +349,7 @@ def main() -> None:
     write_json(out_dir / "progress.json", progress)
     l0_table, l0_summary = compact_l0(eval_frame, admitted)
     l0_table.to_csv(out_dir / "l0_results.csv", index=False)
-    l2_summary = compact_l2(eval_frame, admitted)
+    l2_summary = compact_l2(eval_frame, admitted, eval_prefix, eval_sessions)
     write_json(out_dir / "l2_results.json", l2_summary)
 
     non_random = summary_table[summary_table["probe"] != "random_with_guards_null"]
@@ -367,6 +376,10 @@ def main() -> None:
         failures.append(f"l2_auc:{l2_summary['slot_hgb_auc']:.4f}")
     if l2_summary["positive_control_auc"] is None:
         failures.append("l2_positive_control_unavailable")
+    elif l2_summary["positive_control_auc"] < 0.80:
+        failures.append(f"l2_positive_control:{l2_summary['positive_control_auc']:.4f}<0.80")
+    if not (0.45 <= l2_summary["null_control_auc"] <= 0.55):
+        failures.append(f"l2_null_control:{l2_summary['null_control_auc']:.4f}_outside_[0.45,0.55]")
 
     routing = {
         "schema_version": "Protocol101CanonicalV14RehearsalBatteryRoutingV1",

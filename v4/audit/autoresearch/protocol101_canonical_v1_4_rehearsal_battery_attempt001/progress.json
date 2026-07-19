@@ -1,0 +1,11 @@
+{
+  "broker_endpoint_called": false,
+  "completed_at_utc": "2026-07-19T02:32:10.955811+00:00",
+  "mode": "rehearsal",
+  "paid_data_download": false,
+  "paper_submit_allowed": false,
+  "routing_decision": "rehearsal_pass",
+  "started_at_utc": "2026-07-19T02:30:31.007095+00:00",
+  "status": "complete",
+  "threshold_optimization_executed": false
+}

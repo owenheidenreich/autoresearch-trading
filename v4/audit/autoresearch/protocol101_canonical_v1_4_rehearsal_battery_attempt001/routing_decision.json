@@ -1,0 +1,42 @@
+{
+  "attempt_id": "protocol101_canonical_v1_4_rehearsal_battery_attempt001",
+  "eval_sessions": [
+    "2026-07-10",
+    "2026-07-13",
+    "2026-07-14"
+  ],
+  "evidence_grade": "rehearsal_design_grade",
+  "failures": [],
+  "frozen_contract_sha256": "602fd8eff564a059ad114dd051b6793cb50bcc50269c83b81bdfe25aa119ef57",
+  "l0_summary": {
+    "failing": [],
+    "features": 22,
+    "gates_source": "v4/audit/autoresearch/protocol101_canonical_v1_l0_l2_design_audit_attempt001/preregistration.json",
+    "inference_grade": "design_grade_point_estimates",
+    "max_standardized_p95": 0.051293294387550314
+  },
+  "l2_summary": {
+    "null_control_auc": 0.508249422432605,
+    "positive_control_auc": 0.9999991718223641,
+    "positive_control_fields": [
+      "raw_bid",
+      "raw_ask",
+      "raw_spread",
+      "raw_quote_age_ms"
+    ],
+    "slot_hgb_auc": 0.5355544141826227,
+    "slot_logistic_auc": 0.4997464702317019
+  },
+  "material_reordering_allowance": 0,
+  "material_true_reordering_count": 0,
+  "mode": "rehearsal",
+  "no_confirmation_claim": true,
+  "per_day_action_agreement_below_gate": [],
+  "routing_decision": "rehearsal_pass",
+  "schema_version": "Protocol101CanonicalV14RehearsalBatteryRoutingV1",
+  "trained_on": [
+    "2026-06-30",
+    "2026-07-01",
+    "2026-07-02"
+  ]
+}
