@@ -20,10 +20,11 @@ simulator** (v2 semantics: $10k starting cash, affordability enforced,
 single contract, forced flat 15:55 ET), subject to the constraints below.
 Win rate is a diagnostic, never an objective.
 
-- Fee overlay: PROPOSED $3.00 per contract round trip, with mandatory
-  sensitivity reruns at $2.00 and $5.00. (Exact IBKR all-in figure to be
-  pinned after external verification; the overlay constant is recorded in
-  every experiment artifact.)
+- Fee overlay: $3.00 per contract round trip — grounded 2026-07-19:
+  IBKR fixed $0.65 + CBOE SPXW proprietary customer fee (~$0.70/side) +
+  regulatory (~$0.05-0.10/side) = ~$2.80-3.00 all-in round trip.
+  Sensitivity reruns at $2.60 and $4.00. Final truth-up from actual
+  paper-fill commission records once they exist.
 
 ## Data law
 
@@ -44,7 +45,7 @@ Win rate is a diagnostic, never an objective.
 | G1 Profitability | Fee-adjusted net PnL > 0 on >= 4 of 5 CV folds, and pooled PnL > 0 |
 | G2 Beats no-skill | Pooled top-selection PnL z-score >= 3.0 vs matched random-selection null (band pinned by the canary artifact) |
 | G3 Beats heuristics | Pooled fee-adjusted PnL > the fixed Pickle-heuristic baseline (VWAP-side rule + best single shape) on the same folds |
-| G4 Drawdown | Max simulator drawdown <= 25% of peak equity on every fold (owner-signed revision 2026-07-07; superseded the original $1,500 absolute, which the G4 feasibility artifact measured as below the game's ~$7,800 random-noise drawdown floor and thus infeasible at the G7-required trade frequency) |
+| G4 Drawdown | **v2, owner-signed 2026-07-19 (OWEN HEIDENREICH):** (a) pooled fee-adjusted net PnL / pooled max strict-serial drawdown >= 1.0, AND (b) strict-serial equity never below $5,000 on any fold. Null-relative drawdown is report-only. Calibration: forced-oracle DD = $0 at any mandated cadence and no-skill DD floor $4.7k-$38k/fold proved no absolute or equity-relative cap can separate skill from noise (see `PROTOCOL101_G4_HOLDOUT_REVISION_2026_07_19.md`, `protocol101_stage1_g4_forced_oracle_feasibility`). Supersedes the 2026-07-07 25%-of-peak rule, which was measured infeasible (0/42 ever passed). |
 | G5 Seed robustness | >= 3 seeds; WORST seed satisfies G1 and G2 at z >= 2.0 (mean-only results are inadmissible) |
 | G6 Era guard | No era with systematically negative test folds (median era test-fold PnL < 0 across folds => status `regime_bound_requires_owner_review`, implemented as code, not prose) |
 | G7 Frequency band | 0.3 - 6.0 trades/day averaged per fold (the owner's day-trader band; outside it = different product, requires review) |
@@ -54,10 +55,14 @@ Win rate is a diagnostic, never an objective.
 ## Holdout protocol (the final exam)
 
 One shot per promoted candidate, via owner override token, test role only:
-fee-adjusted PnL > 0, max DD <= $1,500, and result within the 90% bootstrap
-CI implied by CV (a holdout wildly ABOVE expectations is also a red flag and
-triggers audit, not celebration). A failed holdout burns the candidate;
-there is no second attempt without a new candidate hash and owner sign-off.
+fee-adjusted PnL > 0; drawdown judged by the same owner-signed G4 rule
+active for this candidate generation (v2: Calmar >= 1.0 and $5,000 equity
+floor), under identical fee/stress and one-account semantics; and result
+within the 90% bootstrap CI implied by CV (a holdout wildly ABOVE
+expectations is also a red flag and triggers audit, not celebration). A
+failed holdout burns the candidate; there is no second attempt without a
+new candidate hash and owner sign-off. (Stale $1,500 absolute cap removed
+2026-07-19, owner-signed, with the G4 v2 revision.)
 
 ## The autoresearch loop (how hill climbing runs)
 
@@ -83,7 +88,7 @@ than soften the gates.
 
 ## Sign-off checklist for the owner
 
-- [ ] Fee overlay placeholder ($3.00) acceptable pending verification?
+- [x] Fee overlay $3.00 grounded against IBKR/CBOE schedules 2026-07-19.
 - [x] G4 drawdown cap: REVISED 2026-07-07 to <=25% of peak equity (relative), owner-signed, after the feasibility artifact showed the $1,500 absolute was below random-noise drawdown.
 - [ ] G7 frequency band 0.3-6.0 trades/day — confirm or adjust.
 - [ ] Holdout "burns on failure" rule — confirm.

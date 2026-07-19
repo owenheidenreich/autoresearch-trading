@@ -60,7 +60,7 @@ evidence packet defined below.
   All training, CV, and gate evaluation run under intersection guards.
 - **Fill ladder**: labels and PnL computed at mid / mid+0.25*spread / touch;
   all gates evaluated on the pessimistic rung; the other rungs are reported
-  as the edge band. Fees $3.00 primary, $2.00/$5.00 sensitivity.
+  as the edge band. Fees $3.00 primary (schedule-grounded), $2.60/$4.00 sensitivity.
 
 ## Prior-knowledge inputs (preregistered before results exist)
 

@@ -82,12 +82,12 @@ with:
 
 ## Owner sign-off checklist
 
-- [ ] Calmar floor at `1.0` (alternatives: 0.75 lenient / 1.5 strict)
-- [ ] Ruin floor at `$5,000` = 50% of starting cash (alternatives:
+- [x] Calmar floor at `1.0` (alternatives: 0.75 lenient / 1.5 strict)
+- [x] Ruin floor at `$5,000` = 50% of starting cash (alternatives:
       $4,000 / $6,000)
-- [ ] Null-relative drawdown kept report-only (not gating), to avoid
+- [x] Null-relative drawdown kept report-only (not gating), to avoid
       duplicating G2's job
-- [ ] Holdout sentence replacement approved
-- [ ] Effective for all Stage-1 candidate generations from signature date
+- [x] Holdout sentence replacement approved
+- [x] Effective for all Stage-1 candidate generations from signature date
 
-Signature: ______________________  Date: ____________
+Signature: OWEN HEIDENREICH Date: 07-19-2026
