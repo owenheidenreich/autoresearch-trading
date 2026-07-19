@@ -10,12 +10,38 @@ never the optimizer.
 
 ## Who this trader is
 
-A disciplined convex hunter with a survival guarantee. It buys SPXW 0DTE
-options — capped-loss, uncapped-gain tickets — one contract at a time. It
-expects to lose small and often, and to be paid rarely and large. It is
-not a grinder chasing daily green; it is a hunter that waits well.
-Its equity curve will look like a staircase: flat stretches punctuated by
-jumps. That shape is the strategy working, not failing.
+A base-hits trader with home-run capacity, protected by a survival
+guarantee — the Pickles profile. It buys SPXW 0DTE options — capped-loss,
+uncapped-gain tickets — one contract at a time. Most trades end small and
+harmless because the exit discipline scratches anything that stops
+working; a meaningful minority run to large wins; losses are cut fast and
+big losses are rare. The equity line should move up and to the right —
+smooth-ish from the many small outcomes, punctuated by jumps from the big
+ones. High win rate is the natural BYPRODUCT of that exit discipline,
+never a number we optimize directly (optimizing win rate itself teaches a
+system to scratch everything and bleed out in fees).
+
+## The outcome distribution we aim for (the Pickles north star)
+
+The owner's model trader, 17 years / 58,251 trades:
+
+| Category | Share of trades | Avg return |
+|---|---:|---:|
+| Big wins | 18% | +40% |
+| Small wins / scratches | 73% | +0.1% |
+| Small losses | 8% | -0.5% |
+| Big losses | 1.6% | -30% |
+
+Nearly all profit lives in the big-win column; the 73% scratch column is
+risk management wearing a win's clothing; the killer discipline is the
+bottom row staying under 2%. Our version must respect one difference of
+scale: at one contract on a ~$10k account, fees (~$3 round trip) mean a
+literal +0.1% scratch is a small net LOSS. Our "scratch" is therefore
+defined fee-aware: any exit between -5% and +5% is a scratch, and the
+distribution target is directional, not literal — MANY scratches and
+small wins, a REAL minority of big wins, big losses rare enough to count
+on fingers. Every Stage-1/2 packet reports this four-bucket outcome
+distribution so drift from the profile is always visible.
 
 ## The four commitments
 
@@ -28,7 +54,7 @@ not. Depth of drawdown matters more than duration of flatness. The
 machine expression of patience is trade-count dropping toward the low end
 of the frequency band, not degraded trades.
 
-**2. The floor is SPY; the dream is convex.** (Owner: "at the very
+**2. The floor is SPY; the dream is convex — reached the Pickles way.** (Owner: "at the very
 minimum beat the S&P 500 that year... 3x to 10x... 10k -> 100k would have
 me genuinely ecstatic.") The first-year pass/fail line for live trading
 is: beat what the same dollars would have done sitting in SPY that same
@@ -59,9 +85,15 @@ opportunity justifies risking it.
 
 ## What this trader is NOT
 
-- Not a win-rate trader: losing 60-75% of trades is expected and fine.
-- Not a smoothness trader: lumpy, concentrated profits are blessed, not
-  suspicious (concentration metrics are report-only by design).
+- Not a win-rate optimizer: win rate is tracked and expected to be HIGH
+  as exit skill matures (the Pickles byproduct), but the optimized
+  objective is always fee-adjusted PnL — a system rewarded for win rate
+  itself learns to scratch everything and pay fees for nothing.
+- Not a scratch-mill: exits must clear fee gravity; churning breakeven
+  trades at our size is slow bleeding, not safety.
+- Not allergic to lumpy profits: while the line should trend up-and-right,
+  the big-win column carrying most of the profit is the design, not a
+  red flag (concentration metrics stay report-only).
 - Not a scaler (yet): one contract per trade until the owner signs a
   sizing change; no martingale, no doubling, no exceptions.
 - Not a style-drifter: if this style stops working, the answer is an
@@ -75,6 +107,7 @@ opportunity justifies risking it.
 | Droughts flat, never deep | G6 era guard (no systematically negative eras); G7 low bound 0.3/day permits near-abstention; G4a Calmar bounds hole depth vs profit | **Underwater-duration report**: longest time below high-water mark, report-only, so "flat vs clawback" is visible per candidate |
 | Floor = SPY | — | **SPY benchmark line**: every live/paper year-to-date report shows strategy PnL vs same-capital SPY return; G3 remains the training-time analog (beat the best heuristic) |
 | Dream = 3x-10x, uncapped | Stage-2 learned exits (mandated); menu includes time-based uncapped shapes | **Harvest ratio**: realized PnL / peak available PnL per trade, tracked from Stage-1 day one — Stage-2's report card |
+| Pickles outcome profile | Path diagnostics already record MFE/MAE per trade | **Four-bucket outcome distribution** (big win / scratch / small loss / big loss, fee-aware thresholds) in every packet; Stage-2 exit objective explicitly rewards BOTH loss-truncation (the scratch engine) and tail capture (the big-win engine) |
 | 5% daily circuit breaker | Serial simulator supports daily-loss stops (farm precedent `dailyloss500`) | **Set to 5% of current equity** in Stage-1 sim config and all live/paper guards; percent-based, scales with account |
 | Survival floor | G4 v2(b): equity never below $5,000/fold (training); guard layer live | Confirm live guard mirrors the 50%-of-starting-capital rule |
 | No profit caps in final form | Stage-2 objective doc (to be written after Stage-1 evidence) | Charter language binds Stage-2's design: exit model must be rewarded for tail capture, not smoothness |
