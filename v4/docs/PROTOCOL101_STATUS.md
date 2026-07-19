@@ -60,7 +60,12 @@ gated), NOT VWAP-reclaim (dropping vwap_reclaim_state improved results);
 honest directional baseline PF 1.132 over 780 days; a 28-item
 do-not-retest list; and the protocol-number decoder (051/054/066/081/
 101/113/155/160). Best April edges map to H0 — the hypothesis we
-expected to be a mere control.
+expected to be a mere control. The lost protocol-farm history (Apr 28 –
+May 20) was RECOVERED from a single 58k-line Codex transcript
+(PROTOCOL101_PROTOCOL_FARM_LINEAGE_2026_07_19.md): all 160 protocol
+numbers decoded, key correction — Protocol051's "edge" is a model score
+margin, not dollars. Founding transcript hash-preserved in
+_history_backup/ (untracked).
 
 ## After the final exam (if it passes)
 
