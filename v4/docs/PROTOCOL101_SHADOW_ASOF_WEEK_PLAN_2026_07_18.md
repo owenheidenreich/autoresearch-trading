@@ -167,3 +167,33 @@ Suggested Codex check-in points (report-only, no tests):
    battery rerun including 07-20 → completes rehearsal gate 3/3.
 3. Sealed manifests review (07-21..24), sealed-count check.
 4. Sealed-day shadow diffs remain deferred until after the sealed exam.
+
+## Third layer added (2026-07-18, owner-directed): true live-minute measurement
+
+Owner's three-layer design, confirmed as the plan of record:
+1. LIVE: what the model decides in real time during the session.
+2. RECORDED: replay of the day's capture after close.
+3. HISTORICAL: replay of the Databento/ThetaData version of the same day.
+Compare all three. (2 vs 3 = the rehearsal battery; 1 vs 2 = this week's
+new evidence.)
+
+Implementation of layer 1: `run_protocol101_shadow_boundary_ledger.py` +
+launchd agent `shadowasof.ledger` (every 60s, self-gated weekdays
+06:29–13:06 PT) appends per-minute-boundary records — wall clock, capture
+bytes arrived, last complete event — to
+`<capture_dir>/shadow_asof/boundary_ledger.jsonl`. Because the decision
+pipeline is deterministic over bytes (proven daily by the same-input
+replay), the model's exact live per-minute decision stream is
+reconstructed Friday by replaying the capture truncated to each boundary
+offset — full fidelity, zero mid-week computation, read-only, no second
+broker connection.
+
+Paper-order submission is deliberately NOT enabled this week: orders add
+no decision-comparison evidence, the current model is a diagnostic
+stand-in (not a validated candidate), and arming unattended paper-submit
+contradicts the staged plan. Guarded paper-submit remains the
+preregistered post-exam phase, decided with the owner present.
+
+Friday's end-of-week batch gains one step: reconstruct the layer-1 stream
+from the boundary ledger for 07-20 and run the 3-way comparison
+(live vs recorded vs historical) alongside the rehearsal add-on.
