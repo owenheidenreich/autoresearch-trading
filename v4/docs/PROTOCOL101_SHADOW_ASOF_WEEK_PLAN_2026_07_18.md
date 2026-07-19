@@ -128,3 +128,42 @@ authorize now, before the away week.
 - Recorder allowlist extended through 2026-08-04 (sealed expected 8 → 11).
 - First live snapshots: Monday 2026-07-20. First readable diff: same day
   ~13:20 PT (dev day).
+
+## Scope revision (2026-07-18, owner-directed): collection only during the week
+
+The daily 13:20 diff agent is REMOVED. The week runs collection only:
+recorder capture + shadow decision logging. ALL tests/diffs/analyses run
+at the end of the week after collection completes. The diff script is kept
+on disk for the Friday manual run. Sealed-day snapshot counts are visible
+from file listings (no decision content) if needed.
+
+## Daily timeline (Mon 07-20 – Fri 07-24, all times PT) — for Codex check-in automations
+
+| Time | What happens | Automated by |
+|---|---|---|
+| 05:30 | IB Gateway starts | parityrecorder.gateway |
+| 05:40 | Preflight | parityrecorder.preflight |
+| 05:45 | Recorder capture begins | parityrecorder.recorder |
+| 05:50–06:28 | Health checks + watchdog start | parityrecorder.health/watchdog |
+| 06:35–13:05 | Shadow decision log written every 15 min into `<capture_dir>/shadow_asof/` | shadowasof.snapshot |
+| 13:05 | Recorder shutdown | parityrecorder.shutdown |
+| 13:10 | Capture finalize (manifest + checksums) | parityrecorder.finalize |
+| 13:15 | Capture-quality audit | parityrecorder.audit |
+| 13:30 | Codex post-session check + sealing assign (sealed days move to vault, shadow logs inside them) | Codex automation |
+
+Suggested Codex check-in points (report-only, no tests):
+- ~06:45: recorder running? capture file growing? first shadow snapshot
+  present? (file existence/size only)
+- ~13:40: quality manifest green? session sealed (if 07-21..24)? shadow
+  snapshot count for the day? (counts only, no decision content)
+- Escalate loudly on: missing capture, failed quality checks, missing
+  sealing, zero shadow snapshots.
+
+## End-of-week test batch (Friday 07-24 after close, owner present)
+
+1. Shadow-vs-final diff for dev day 07-20 (manual:
+   `run_protocol101_shadow_asof_diff.py --session 2026-07-20 --manual`).
+2. Vendor downloads for 07-20 (pre-authorized), paired replay, rehearsal
+   battery rerun including 07-20 → completes rehearsal gate 3/3.
+3. Sealed manifests review (07-21..24), sealed-count check.
+4. Sealed-day shadow diffs remain deferred until after the sealed exam.
