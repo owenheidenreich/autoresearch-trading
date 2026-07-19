@@ -112,3 +112,19 @@ sealed-day failure forces the extension") has effectively already fired.
 Staged remedy: extend the recorder allowlist through 2026-08-04 (adds
 07-31, 08-03, 08-04; same mechanism as the July extension). Recommended:
 authorize now, before the away week.
+
+## Implementation status (2026-07-18 evening — implemented by Fable, owner-directed)
+
+- `v4/scripts/run_protocol101_shadow_asof_snapshot.py` — built; full-file
+  dry-run on 2026-07-14: 360 rows in ~60s wall. Truncated (60%) dry-run:
+  clean partial-read path.
+- `v4/scripts/run_protocol101_shadow_asof_diff.py` — built; 07-14 dry-run:
+  settled agreement 1.0, trailing-edge 1.0, passes the 0.995 bar; sealed
+  sessions produce count-only markers via the sealing rule's classify().
+- launchd agents loaded: `com.autoresearch.protocol101.shadowasof.snapshot`
+  (StartInterval 900s, self-gated to weekdays 06:35–13:10 PT) and
+  `...shadowasof.diff` (daily 13:20 PT, self-gated). Logs:
+  `~/Library/Logs/autoresearch-trading/shadowasof.*.log`.
+- Recorder allowlist extended through 2026-08-04 (sealed expected 8 → 11).
+- First live snapshots: Monday 2026-07-20. First readable diff: same day
+  ~13:20 PT (dev day).

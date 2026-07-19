@@ -1,0 +1,31 @@
+{
+  "class": "development",
+  "evidence_grade": "shadow_asof_diagnostic",
+  "generated_at": "2026-07-18T20:12:01.100719-07:00",
+  "pass_settled_bar": true,
+  "preregistered_bar_settled": 0.995,
+  "schema_version": "Protocol101ShadowAsofDiffV1",
+  "session": "2026-07-14",
+  "settled_agreement": 1.0,
+  "snapshots": [
+    {
+      "rows": 360,
+      "settled": 358,
+      "settled_agree": 358,
+      "snapshot": "asof_2010.decision_log.jsonl",
+      "trailing": 2,
+      "trailing_agree": 2,
+      "wall_clock_pt": "2026-07-18T20:10:19.909872-07:00"
+    },
+    {
+      "rows": 163,
+      "settled": 161,
+      "settled_agree": 161,
+      "snapshot": "asof_2011.decision_log.jsonl",
+      "trailing": 2,
+      "trailing_agree": 2,
+      "wall_clock_pt": "2026-07-18T20:11:29.292402-07:00"
+    }
+  ],
+  "trailing_agreement": 1.0
+}
