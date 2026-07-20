@@ -78,6 +78,16 @@ dream band 3x-10x, no profit caps in the final system (Stage-2's job).
 Daily circuit breaker: 5% of current equity ends the session. Survival
 outranks everything. Awaiting owner markup/signature.
 
+## The execution plan (exam day -> live paper, mechanics + freezes)
+
+PROTOCOL101_STAGE1_TO_LIVE_EXECUTION_PLAN.md — the full playbook:
+what one training attempt IS at base level, batch structure (Codex
+executes, Fable verifies, owner signs), five phases with a freeze map
+(Phase 0 prereqs -> Stage-1 batches -> candidate hardening -> Stage-2
+learned exits -> live shadow -> guarded paper). NEW pre-exam build item:
+adapt the Stage-1 runner to the canonical contract + plumbing smoke, so
+exam day = training day.
+
 ## After the final exam (if it passes)
 
 Stage-1 training on 15 months of history: five feature-set hypotheses,
