@@ -1,0 +1,43 @@
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m py_compile ...
+
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest ...
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/gduby/Documents/autoresearch-trading
+configfile: pyproject.toml
+plugins: anyio-4.13.0
+collected 76 items
+
+v4/tests/test_protocol101_session_era_manifest.py .....                  [  6%]
+v4/tests/test_protocol101_era_role_policy.py ...                         [ 10%]
+v4/tests/test_protocol101_vendor_overlap_inventory.py ..                 [ 13%]
+v4/tests/test_protocol101_serial_simulator.py ..............             [ 31%]
+v4/tests/test_protocol101_fair_contract_selected_candidate_replay_gate.py . [ 32%]
+.......                                                                  [ 42%]
+v4/tests/test_spxw_0dte_neural.py ..........                             [ 55%]
+v4/tests/test_supervised_pilot.py ..........................             [ 89%]
+v4/tests/test_protocol101_fair_contract_model_search.py ........         [100%]
+
+============================== 76 passed in 2.27s ==============================
+
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.build_protocol101_session_era_manifest
+{
+  "manifest_hash": "6767427de34e6ef1f1558ab7854c5f7b599068ed05302629bd5aec083793ce16",
+  "report": "v4/audit/autoresearch/protocol101_session_era_manifest/report.md",
+  "session_count": 429,
+  "status": "pass"
+}
+
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.build_protocol101_era_role_policy
+{
+  "policy_hash": "d9774a2821e5f3a1be6ec1e59ffc614b4f28b7648c297605af874ad7136eb98c",
+  "report": "v4/audit/autoresearch/protocol101_era_role_policy/report.md",
+  "status": "pass"
+}
+
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.run_protocol101_vendor_overlap_inventory --max-sample-files 1
+{
+  "report": "v4/audit/autoresearch/protocol101_vendor_overlap_inventory/report.md",
+  "requires_thetadata_option_quote_sample_for_td_option_diff": true,
+  "status": "pass"
+}

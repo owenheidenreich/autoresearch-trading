@@ -1,0 +1,319 @@
+{
+  "broker_endpoint_called": false,
+  "cooldown_minutes": 10,
+  "design": "v4/audit/autoresearch/protocol101_fair_contract_expanded_jul_dec2025_128_q1_design/summary.json",
+  "entry_filters": {
+    "put_near_after_0940_vwap_m2_10": {
+      "splits": {
+        "diagnostic_test": {
+          "candidate_count": 109463,
+          "decision_count": 3590,
+          "gate_only": {
+            "p_value_vs_null_m": 0.98001998001998,
+            "p_value_vs_null_u": 0.9410589410589411,
+            "raw_metrics": {
+              "avg_pnl": -76.0,
+              "max_drawdown": -2260.0,
+              "mean_daily_pnl": -190.0,
+              "median_daily_pnl": -335.0,
+              "median_pnl": -170.0,
+              "positive_day_fraction": 0.3,
+              "profit_factor": 0.6684118673647469,
+              "sessions_traded": 10,
+              "total_pnl": -1900.0,
+              "trades": 25,
+              "win_rate": 0.4
+            },
+            "session_trade_counts": {
+              "2026-03-18": 3,
+              "2026-03-19": 1,
+              "2026-03-20": 3,
+              "2026-03-23": 2,
+              "2026-03-24": 3,
+              "2026-03-25": 3,
+              "2026-03-26": 1,
+              "2026-03-27": 3,
+              "2026-03-30": 3,
+              "2026-03-31": 3
+            },
+            "stressed_metrics": {
+              "avg_pnl": -96.0,
+              "max_drawdown": -2600.0,
+              "mean_daily_pnl": -240.0,
+              "median_daily_pnl": -395.0,
+              "median_pnl": -190.0,
+              "positive_day_fraction": 0.3,
+              "profit_factor": 0.6019900497512438,
+              "sessions_traded": 10,
+              "total_pnl": -2400.0,
+              "trades": 25,
+              "win_rate": 0.4
+            },
+            "trades_csv": "v4/audit/autoresearch/protocol101_fair_contract_gate_null_baselines/put_near_after_0940_vwap_m2_10/diagnostic_test/gate_only_trades.csv"
+          },
+          "null_m": {
+            "runs": 1000,
+            "runs_csv": "v4/audit/autoresearch/protocol101_fair_contract_gate_null_baselines/put_near_after_0940_vwap_m2_10/diagnostic_test/null_m_runs.csv",
+            "stressed_avg_pnl_distribution": {
+              "mean": 4.944228543059967,
+              "p25": -30.842391304347824,
+              "p5": -82.56818181818181,
+              "p50": 7.0,
+              "p75": 42.525,
+              "p95": 90.05434782608691,
+              "p99": 132.4,
+              "std": 53.82729999373267
+            },
+            "stressed_profit_factor_distribution": {
+              "mean": 1.1588921612384966,
+              "p25": 0.7558250184774575,
+              "p5": 0.43107552264964144,
+              "p50": 1.06464507963295,
+              "p75": 1.4554837780338623,
+              "p95": 2.192012431776833,
+              "p99": 3.01953333956794,
+              "std": 0.5787125272648208
+            },
+            "stressed_total_pnl_distribution": {
+              "mean": 145.575,
+              "p25": -705.0,
+              "p5": -1862.0,
+              "p50": 162.5,
+              "p75": 1010.0,
+              "p95": 2195.4999999999995,
+              "p99": 3135.45,
+              "std": 1252.9072369393516
+            },
+            "trades_distribution": {
+              "mean": 23.46,
+              "p25": 23.0,
+              "p5": 21.0,
+              "p50": 24.0,
+              "p75": 25.0,
+              "p95": 25.0,
+              "p99": 25.0,
+              "std": 1.3901079094804114
+            }
+          },
+          "null_u": {
+            "runs": 1000,
+            "runs_csv": "v4/audit/autoresearch/protocol101_fair_contract_gate_null_baselines/put_near_after_0940_vwap_m2_10/diagnostic_test/null_u_runs.csv",
+            "stressed_avg_pnl_distribution": {
+              "mean": -14.017353935664417,
+              "p25": -45.912499999999994,
+              "p5": -103.80230769230769,
+              "p50": -13.466666666666667,
+              "p75": 20.708333333333336,
+              "p95": 66.51120689655171,
+              "p99": 102.3462068965517,
+              "std": 52.00833157716291
+            },
+            "stressed_profit_factor_distribution": {
+              "mean": 0.9710714572206506,
+              "p25": 0.6582396657345244,
+              "p5": 0.3804571480487367,
+              "p50": 0.8874586092715231,
+              "p75": 1.1893696939981733,
+              "p95": 1.8229946524064171,
+              "p99": 2.329238641015145,
+              "std": 0.45030802985875795
+            },
+            "stressed_total_pnl_distribution": {
+              "mean": -319.2,
+              "p25": -1215.0,
+              "p5": -2570.0,
+              "p50": -367.5,
+              "p75": 561.25,
+              "p95": 1915.999999999999,
+              "p99": 2905.2,
+              "std": 1355.3470072273005
+            },
+            "trades_distribution": {
+              "mean": 26.875,
+              "p25": 26.0,
+              "p5": 24.0,
+              "p50": 27.0,
+              "p75": 28.0,
+              "p95": 30.0,
+              "p99": 30.0,
+              "std": 1.9943357290085337
+            }
+          },
+          "parallel_label_values": {
+            "gated_minutes_with_selected_label": 857,
+            "mean": 10.618436406067678,
+            "median": -25.0,
+            "no_label_minutes": 2733,
+            "share_positive": 0.44224037339556593,
+            "sum": 9100.0,
+            "trim10_mean": -4.366812227074236,
+            "winsor600_mean": 4.924154025670945
+          }
+        },
+        "validation": {
+          "candidate_count": 107478,
+          "decision_count": 3590,
+          "gate_only": {
+            "p_value_vs_null_m": 0.9600399600399601,
+            "p_value_vs_null_u": 0.9040959040959041,
+            "raw_metrics": {
+              "avg_pnl": -21.304347826086957,
+              "max_drawdown": -2660.0,
+              "mean_daily_pnl": -49.0,
+              "median_daily_pnl": -180.0,
+              "median_pnl": -130.0,
+              "positive_day_fraction": 0.5,
+              "profit_factor": 0.9118705035971223,
+              "sessions_traded": 10,
+              "total_pnl": -490.0,
+              "trades": 23,
+              "win_rate": 0.30434782608695654
+            },
+            "session_trade_counts": {
+              "2026-03-03": 2,
+              "2026-03-04": 2,
+              "2026-03-05": 2,
+              "2026-03-06": 2,
+              "2026-03-09": 3,
+              "2026-03-10": 3,
+              "2026-03-11": 3,
+              "2026-03-12": 3,
+              "2026-03-13": 1,
+              "2026-03-16": 2
+            },
+            "stressed_metrics": {
+              "avg_pnl": -41.30434782608695,
+              "max_drawdown": -2800.0,
+              "mean_daily_pnl": -95.0,
+              "median_daily_pnl": -230.0,
+              "median_pnl": -150.0,
+              "positive_day_fraction": 0.5,
+              "profit_factor": 0.8384353741496599,
+              "sessions_traded": 10,
+              "total_pnl": -950.0,
+              "trades": 23,
+              "win_rate": 0.30434782608695654
+            },
+            "trades_csv": "v4/audit/autoresearch/protocol101_fair_contract_gate_null_baselines/put_near_after_0940_vwap_m2_10/validation/gate_only_trades.csv"
+          },
+          "null_m": {
+            "runs": 1000,
+            "runs_csv": "v4/audit/autoresearch/protocol101_fair_contract_gate_null_baselines/put_near_after_0940_vwap_m2_10/validation/null_m_runs.csv",
+            "stressed_avg_pnl_distribution": {
+              "mean": 58.51036144175443,
+              "p25": 16.4375,
+              "p5": -38.70454545454545,
+              "p50": 57.18899521531101,
+              "p75": 101.37987012987013,
+              "p95": 166.40909090909088,
+              "p99": 214.7615909090909,
+              "std": 63.32668908015399
+            },
+            "stressed_profit_factor_distribution": {
+              "mean": 1.4976033992231628,
+              "p25": 1.099872448979592,
+              "p5": 0.7846102229861157,
+              "p50": 1.386394431082958,
+              "p75": 1.7714284305215813,
+              "p95": 2.607524902333762,
+              "p99": 3.270416799236398,
+              "std": 0.5719851058236267
+            },
+            "stressed_total_pnl_distribution": {
+              "mean": 1277.915,
+              "p25": 337.5,
+              "p5": -780.5,
+              "p50": 1227.5,
+              "p75": 2195.0,
+              "p95": 3670.4999999999995,
+              "p99": 4580.45,
+              "std": 1370.7836363828537
+            },
+            "trades_distribution": {
+              "mean": 21.383,
+              "p25": 21.0,
+              "p5": 19.0,
+              "p50": 21.0,
+              "p75": 23.0,
+              "p95": 23.0,
+              "p99": 23.0,
+              "std": 1.2908566922784264
+            }
+          },
+          "null_u": {
+            "runs": 1000,
+            "runs_csv": "v4/audit/autoresearch/protocol101_fair_contract_gate_null_baselines/put_near_after_0940_vwap_m2_10/validation/null_u_runs.csv",
+            "stressed_avg_pnl_distribution": {
+              "mean": 46.8646560370801,
+              "p25": 2.0625,
+              "p5": -59.77380952380952,
+              "p50": 48.86752136752136,
+              "p75": 94.0,
+              "p95": 150.02777777777774,
+              "p99": 189.8162857142857,
+              "std": 65.32117210825498
+            },
+            "stressed_profit_factor_distribution": {
+              "mean": 1.4048051965646178,
+              "p25": 1.013404542168028,
+              "p5": 0.6917742822276756,
+              "p50": 1.333090348429863,
+              "p75": 1.72153177171863,
+              "p95": 2.391088138054316,
+              "p99": 2.9363833336290877,
+              "std": 0.5316674819064748
+            },
+            "stressed_total_pnl_distribution": {
+              "mean": 1260.78,
+              "p25": 50.0,
+              "p5": -1392.4999999999998,
+              "p50": 1232.5,
+              "p75": 2428.75,
+              "p95": 3995.999999999999,
+              "p99": 4926.149999999999,
+              "std": 1684.1468586794917
+            },
+            "trades_distribution": {
+              "mean": 25.3,
+              "p25": 24.0,
+              "p5": 22.0,
+              "p50": 25.0,
+              "p75": 27.0,
+              "p95": 29.0,
+              "p99": 29.0,
+              "std": 2.030270917882636
+            }
+          },
+          "parallel_label_values": {
+            "gated_minutes_with_selected_label": 695,
+            "mean": 20.92086330935252,
+            "median": -50.0,
+            "no_label_minutes": 2895,
+            "share_positive": 0.38848920863309355,
+            "sum": 14540.0,
+            "trim10_mean": -7.289048473967684,
+            "winsor600_mean": 5.625899280575539
+          }
+        }
+      }
+    }
+  },
+  "evidence_grade": "provisional_current_march_splits_only",
+  "generated_at_utc": "2026-07-06T00:02:50.179504+00:00",
+  "max_daily_loss": 500.0,
+  "max_trades_per_session": 3,
+  "model_training_executed": false,
+  "null_seed_start": 0,
+  "null_seeds": 1000,
+  "paid_data_downloaded": false,
+  "paper_submit_allowed": false,
+  "policy_index": 0,
+  "policy_name": "ask_to_bid_stop35_target60_hold10m",
+  "recorder_days_used_for_selection": false,
+  "schema_version": "Protocol101GateNullBaselinesV1",
+  "selected_feature_contract": "protocol101-live-v1",
+  "selection_mode": "stable_abs_offset_20",
+  "starting_cash": 10000.0,
+  "stress_per_trade": 20.0,
+  "threshold_selection_executed": false
+}

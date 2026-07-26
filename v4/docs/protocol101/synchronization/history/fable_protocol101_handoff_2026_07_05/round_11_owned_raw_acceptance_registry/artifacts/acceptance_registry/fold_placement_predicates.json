@@ -1,0 +1,122 @@
+[
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-01"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-02"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-03"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-04"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-07"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-08"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-09"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-10"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-11"
+  },
+  {
+    "checks": {
+      "acceptance_status_pass": true,
+      "canonical_processed_rows_exist": true,
+      "era_permits_role": true
+    },
+    "era": "pre_program_oct2024_jun2025",
+    "placeable": true,
+    "role": "diagnostics_only",
+    "schema_version": "Protocol101FoldPlacementPredicateV1",
+    "session": "2024-10-14"
+  }
+]

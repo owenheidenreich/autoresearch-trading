@@ -1,0 +1,12 @@
+family,representative_protocols,what_it_tested,result,main_lesson
+A+ timing/value entry,"001-024,039","post-open/late-afternoon A+ 0DTE entry timing and value scoring","positive but stress-fragile and narrow","trader timing priors matter"
+contract quality gates,"022-038","put/call overpay, spread, theta, breakeven, gamma, ladder quality filters","often over-filtered convex winners","contract quality needs context, not hard filters"
+sequential lifecycle,"029-081","hold/exit logic, recovery, residual sequence behavior","improved lifecycle stack but not final policy","exit logic is strategy"
+Protocol101 lineage,"092,097,101","event-level candidate selection with causal short history and wait action","Protocol101 became paper default","conservative trader priors plus serial replay won"
+readiness/falsification,"102-130","paper-account, timing, high-res, live readiness, capital realism","supported default status but exposed timing/fill blockers","replay PnL is not execution proof"
+account/serial realism,"161-163","independent opportunities versus strict one-position account","independent opportunity counts overstated performance","the single slot is scarce"
+full-action surface,"164-194,210-215","rank wider ATM +/- 50 SPXW surface","some strong research wins, promotion blocked","full surface is high opportunity and high timing risk"
+premium/capital efficiency,"221-248","lower premium and blended dollar/return utility","higher gross PnL but lower quality and worse drawdown","more trades is not automatically better"
+policy routers,"254-265","route between Protocol101-like and challenger streams, baseline-anchored continuation","strong research clues but not deployable","baseline-relative opportunity pricing is promising"
+unified serial policy,"270-276","wait/enter/hold/exit labels and integrated lifecycle replay","Protocol276 failed older blocks","coherent machinery alone did not beat trader-belief Protocol101"
+learned defer,"post-276","charge cost of blocking Protocol101 before challenger override","positive diagnostic replay but calibration blocked","slot-cost pricing is right but evidence is not promotion-grade"

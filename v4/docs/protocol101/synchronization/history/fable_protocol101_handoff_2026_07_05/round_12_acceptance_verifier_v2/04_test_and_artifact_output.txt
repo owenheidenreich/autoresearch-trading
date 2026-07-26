@@ -1,0 +1,71 @@
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest \
+  v4/tests/test_protocol101_owned_raw_acceptance_verifier.py
+
+Result:
+
+11 passed in 0.83s
+
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.run_protocol101_owned_raw_acceptance_verifier \
+  --start-date 2024-10-01 \
+  --end-date 2024-10-18 \
+  --out-dir v4/audit/autoresearch/protocol101_owned_raw_acceptance_2024_10_v2_partial \
+  --role diagnostics_only
+
+Result:
+
+{
+  "fail_count": 0,
+  "pass_count": 14,
+  "registry_hash": "cf9107b369dc4673c60ef61d9f54cc430582b31ec23ead8e89a3a76e09c50aee",
+  "report": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_2024_10_v2_partial/report.md",
+  "session_count": 14,
+  "status": "pass"
+}
+
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest \
+  v4/tests/test_protocol101_owned_raw_acceptance_verifier.py \
+  v4/tests/test_protocol101_era_role_policy.py \
+  v4/tests/test_protocol101_session_era_manifest.py \
+  v4/tests/test_protocol101_vendor_overlap_inventory.py \
+  v4/tests/test_protocol101_serial_simulator.py \
+  v4/tests/test_protocol101_fair_contract_selected_candidate_replay_gate.py \
+  v4/tests/test_spxw_0dte_neural.py \
+  v4/tests/test_supervised_pilot.py \
+  v4/tests/test_protocol101_fair_contract_model_search.py
+
+Result:
+
+87 passed in 2.37s
+
+Partial October completion build:
+
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.build_databento_neural_dataset \
+  --start-date 2024-10-15 \
+  --end-date 2024-10-31 \
+  --raw-root data/raw \
+  --normalized-dir v4/normalized_protocol101_owned_raw_acceptance_2024_10_live_v1 \
+  --processed-dir data/processed/spxw_0dte_neural_protocol101_owned_raw_acceptance_2024_10_live_v1 \
+  --context-mode official \
+  --official-spx-dir data/vendor/thetadata/index/spx_1m \
+  --official-vix-dir data/vendor/thetadata/index/vix_1m \
+  --feature-contract protocol101-live-v1 \
+  --compute-live-policy-labels \
+  --summary-out v4/audit/autoresearch/protocol101_owned_raw_acceptance_2024_10_v2_full/build_summary_2024_10_15_to_31.json
+
+Completed emitted sessions:
+
+{"neural_rows": 360, "normalized_rows": 162000, "session": "2024-10-15"}
+{"neural_rows": 360, "normalized_rows": 159570, "session": "2024-10-16"}
+{"neural_rows": 360, "normalized_rows": 157950, "session": "2024-10-17"}
+{"neural_rows": 360, "normalized_rows": 366120, "session": "2024-10-18"}
+
+The build was deliberately stopped after becoming idle on 2024-10-21 with no CPU for several minutes.
+

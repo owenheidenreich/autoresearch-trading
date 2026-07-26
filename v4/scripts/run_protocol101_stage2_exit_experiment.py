@@ -49,7 +49,10 @@ from v4.scripts.run_protocol101_stage1_experiment import (
 import pickle
 
 SCHEMA_VERSION = "Protocol101Stage2ExitExperimentV1"
-GATES_DOC = "v4/docs/PROTOCOL101_STAGE2_OBJECTIVE_AND_GATES_PROPOSAL.md"
+GATES_DOC = (
+    "v4/docs/protocol101/training/contracts/"
+    "PROTOCOL101_STAGE2_OBJECTIVE_AND_GATES_PROPOSAL.md"
+)
 DEFAULT_RAW_ROOT = Path("data/raw")
 NY = "America/New_York"
 FIXED_ENTRY_OFFSETS = {"C": 20.0, "P": -20.0}   # ~20-pt OTM call and put

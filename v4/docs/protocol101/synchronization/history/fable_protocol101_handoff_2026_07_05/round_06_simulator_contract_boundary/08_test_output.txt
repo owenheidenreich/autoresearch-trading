@@ -1,0 +1,25 @@
+Command:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest \
+  v4/tests/test_protocol101_serial_simulator.py \
+  v4/tests/test_protocol101_fair_contract_selected_candidate_replay_gate.py \
+  v4/tests/test_supervised_pilot.py \
+  v4/tests/test_protocol101_fair_contract_model_search.py
+
+Output:
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/gduby/Documents/autoresearch-trading
+configfile: pyproject.toml
+plugins: anyio-4.13.0
+collected 44 items
+
+v4/tests/test_protocol101_serial_simulator.py ....                       [  9%]
+v4/tests/test_protocol101_fair_contract_selected_candidate_replay_gate.py . [ 11%]
+.....                                                                    [ 22%]
+v4/tests/test_supervised_pilot.py ..........................             [ 81%]
+v4/tests/test_protocol101_fair_contract_model_search.py ........         [100%]
+
+============================== 44 passed in 1.85s ==============================
+

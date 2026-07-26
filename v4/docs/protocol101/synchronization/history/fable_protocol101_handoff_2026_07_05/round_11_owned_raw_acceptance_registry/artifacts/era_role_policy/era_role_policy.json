@@ -1,0 +1,66 @@
+{
+  "confirmation_jun_jul2026": {
+    "evidence_tier": "recorder_confirmation_only",
+    "notes": "Recorder/live-parity era. Never train/tune on these sessions.",
+    "permitted_roles": [
+      "confirmation_one_shot",
+      "report_only"
+    ]
+  },
+  "extension_2023": {
+    "evidence_tier": "placeholder_pending_owner_approval_and_acceptance",
+    "notes": "Placeholder for a possible 2023 extension tier. No sessions should use this until approved and accepted.",
+    "permitted_roles": [
+      "train",
+      "test",
+      "diagnostics_only"
+    ]
+  },
+  "extension_2024h1": {
+    "evidence_tier": "placeholder_pending_owner_approval_and_acceptance",
+    "notes": "Placeholder for a possible 2024-01 through 2024-09 purchase tier. No sessions should use this until approved and accepted.",
+    "permitted_roles": [
+      "train",
+      "test",
+      "diagnostics_only"
+    ]
+  },
+  "owned_jul_dec2025": {
+    "evidence_tier": "owned_mechanically_clean_for_new_fold_models_with_family_selection_caveat",
+    "notes": "Mechanically valid for new fold-trained candidates; interpret family-level claims with historical program-ancestry caveat.",
+    "permitted_roles": [
+      "train",
+      "test",
+      "diagnostics_only"
+    ]
+  },
+  "post_q1_gap_apr_may2026": {
+    "evidence_tier": "post_q1_nonfold_report_only",
+    "notes": "Post-Q1 gap stays out of fold selection unless separately governed.",
+    "permitted_roles": [
+      "report_only"
+    ]
+  },
+  "pre_program_oct2024_jun2025": {
+    "evidence_tier": "owned_pre_program_raw_pending_acceptance",
+    "notes": "Cleanest owned pre-program era after raw acceptance gates pass.",
+    "permitted_roles": [
+      "train",
+      "test",
+      "diagnostics_only"
+    ]
+  },
+  "q1_2026_development": {
+    "evidence_tier": "development_report_only_until_split_ancestry_audit",
+    "notes": "Default report-only. Jan-Feb may be upgraded only after explicit design/threshold ancestry audit.",
+    "permitted_roles": [
+      "diagnostics_only",
+      "report_only"
+    ]
+  },
+  "unassigned_requires_decision": {
+    "evidence_tier": "blocked",
+    "notes": "Fail-closed. No fold scaffold may place this era.",
+    "permitted_roles": []
+  }
+}

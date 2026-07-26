@@ -1,0 +1,365 @@
+{
+  "broker_endpoint_called": false,
+  "cooldown_minutes": 10,
+  "design": "v4/audit/autoresearch/protocol101_fair_contract_expanded_jul_dec2025_128_q1_design/summary.json",
+  "evidence_grade": "provisional_current_march_splits_only",
+  "generated_at_utc": "2026-07-06T01:14:42.618042+00:00",
+  "max_daily_loss": 500.0,
+  "max_trades_per_session": 3,
+  "model_training_executed": false,
+  "null_seeds": 1000,
+  "paid_data_downloaded": false,
+  "paper_submit_allowed": false,
+  "policy_index": 0,
+  "policy_name": "ask_to_bid_stop35_target60_hold10m",
+  "recorder_days_used_for_selection": false,
+  "results": {
+    "put_near_after_0940_vwap_m2_10": {
+      "diagnostic_test": {
+        "all_gated_minutes": 857,
+        "gate_first_eligible_raw_metrics": {
+          "avg_pnl": -76.0,
+          "max_drawdown": -2260.0,
+          "mean_daily_pnl": -190.0,
+          "median_daily_pnl": -335.0,
+          "median_pnl": -170.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.6684118673647469,
+          "sessions_traded": 10,
+          "total_pnl": -1900.0,
+          "trades": 25,
+          "win_rate": 0.4
+        },
+        "gate_first_eligible_stressed_metrics": {
+          "avg_pnl": -96.0,
+          "max_drawdown": -2600.0,
+          "mean_daily_pnl": -240.0,
+          "median_daily_pnl": -395.0,
+          "median_pnl": -190.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.6019900497512438,
+          "sessions_traded": 10,
+          "total_pnl": -2400.0,
+          "trades": 25,
+          "win_rate": 0.4
+        },
+        "slot_schedule_raw_metrics": {
+          "avg_pnl": 15.217391304347826,
+          "max_drawdown": -1990.0,
+          "mean_daily_pnl": 35.0,
+          "median_daily_pnl": -95.0,
+          "median_pnl": 10.0,
+          "positive_day_fraction": 0.5,
+          "profit_factor": 1.0916230366492146,
+          "sessions_traded": 10,
+          "total_pnl": 350.0,
+          "trades": 23,
+          "win_rate": 0.5652173913043478
+        },
+        "slot_schedule_stressed_metrics": {
+          "avg_pnl": -4.782608695652174,
+          "max_drawdown": -2110.0,
+          "mean_daily_pnl": -11.0,
+          "median_daily_pnl": -145.0,
+          "median_pnl": -10.0,
+          "positive_day_fraction": 0.4,
+          "profit_factor": 0.9727722772277227,
+          "sessions_traded": 10,
+          "total_pnl": -110.0,
+          "trades": 23,
+          "win_rate": 0.4782608695652174
+        }
+      },
+      "validation": {
+        "all_gated_minutes": 695,
+        "gate_first_eligible_raw_metrics": {
+          "avg_pnl": -21.304347826086957,
+          "max_drawdown": -2660.0,
+          "mean_daily_pnl": -49.0,
+          "median_daily_pnl": -180.0,
+          "median_pnl": -130.0,
+          "positive_day_fraction": 0.5,
+          "profit_factor": 0.9118705035971223,
+          "sessions_traded": 10,
+          "total_pnl": -490.0,
+          "trades": 23,
+          "win_rate": 0.30434782608695654
+        },
+        "gate_first_eligible_stressed_metrics": {
+          "avg_pnl": -41.30434782608695,
+          "max_drawdown": -2800.0,
+          "mean_daily_pnl": -95.0,
+          "median_daily_pnl": -230.0,
+          "median_pnl": -150.0,
+          "positive_day_fraction": 0.5,
+          "profit_factor": 0.8384353741496599,
+          "sessions_traded": 10,
+          "total_pnl": -950.0,
+          "trades": 23,
+          "win_rate": 0.30434782608695654
+        },
+        "slot_schedule_raw_metrics": {
+          "avg_pnl": 30.681818181818183,
+          "max_drawdown": -1800.0,
+          "mean_daily_pnl": 67.5,
+          "median_daily_pnl": 210.0,
+          "median_pnl": -177.5,
+          "positive_day_fraction": 0.6,
+          "profit_factor": 1.145945945945946,
+          "sessions_traded": 10,
+          "total_pnl": 675.0,
+          "trades": 22,
+          "win_rate": 0.3181818181818182
+        },
+        "slot_schedule_stressed_metrics": {
+          "avg_pnl": 10.681818181818182,
+          "max_drawdown": -1920.0,
+          "mean_daily_pnl": 23.5,
+          "median_daily_pnl": 170.0,
+          "median_pnl": -197.5,
+          "positive_day_fraction": 0.6,
+          "profit_factor": 1.047715736040609,
+          "sessions_traded": 10,
+          "total_pnl": 235.0,
+          "trades": 22,
+          "win_rate": 0.3181818181818182
+        }
+      }
+    },
+    "put_near_after_0940_vwap_m2_10_near_vwap": {
+      "diagnostic_test": {
+        "all_gated_minutes": 326,
+        "gate_first_eligible_raw_metrics": {
+          "avg_pnl": -55.0,
+          "max_drawdown": -2910.0,
+          "mean_daily_pnl": -143.0,
+          "median_daily_pnl": -320.0,
+          "median_pnl": -115.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.7212475633528265,
+          "sessions_traded": 10,
+          "total_pnl": -1430.0,
+          "trades": 26,
+          "win_rate": 0.38461538461538464
+        },
+        "gate_first_eligible_stressed_metrics": {
+          "avg_pnl": -75.0,
+          "max_drawdown": -3230.0,
+          "mean_daily_pnl": -195.0,
+          "median_daily_pnl": -380.0,
+          "median_pnl": -135.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.6422018348623854,
+          "sessions_traded": 10,
+          "total_pnl": -1950.0,
+          "trades": 26,
+          "win_rate": 0.38461538461538464
+        },
+        "slot_schedule_raw_metrics": {
+          "avg_pnl": -7.391304347826087,
+          "max_drawdown": -2090.0,
+          "mean_daily_pnl": -17.0,
+          "median_daily_pnl": -155.0,
+          "median_pnl": -10.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.9508670520231214,
+          "sessions_traded": 10,
+          "total_pnl": -170.0,
+          "trades": 23,
+          "win_rate": 0.4782608695652174
+        },
+        "slot_schedule_stressed_metrics": {
+          "avg_pnl": -27.391304347826086,
+          "max_drawdown": -2210.0,
+          "mean_daily_pnl": -63.0,
+          "median_daily_pnl": -210.0,
+          "median_pnl": -30.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.8297297297297297,
+          "sessions_traded": 10,
+          "total_pnl": -630.0,
+          "trades": 23,
+          "win_rate": 0.4782608695652174
+        }
+      },
+      "validation": {
+        "all_gated_minutes": 205,
+        "gate_first_eligible_raw_metrics": {
+          "avg_pnl": 167.6,
+          "max_drawdown": -2500.0,
+          "mean_daily_pnl": 419.0,
+          "median_daily_pnl": 605.0,
+          "median_pnl": -50.0,
+          "positive_day_fraction": 0.7,
+          "profit_factor": 2.082687338501292,
+          "sessions_traded": 10,
+          "total_pnl": 4190.0,
+          "trades": 25,
+          "win_rate": 0.48
+        },
+        "gate_first_eligible_stressed_metrics": {
+          "avg_pnl": 147.6,
+          "max_drawdown": -2620.0,
+          "mean_daily_pnl": 369.0,
+          "median_daily_pnl": 545.0,
+          "median_pnl": -70.0,
+          "positive_day_fraction": 0.7,
+          "profit_factor": 1.8934624697336562,
+          "sessions_traded": 10,
+          "total_pnl": 3690.0,
+          "trades": 25,
+          "win_rate": 0.48
+        },
+        "slot_schedule_raw_metrics": {
+          "avg_pnl": 90.95238095238095,
+          "max_drawdown": -1600.0,
+          "mean_daily_pnl": 191.0,
+          "median_daily_pnl": 250.0,
+          "median_pnl": -60.0,
+          "positive_day_fraction": 0.6,
+          "profit_factor": 1.535014005602241,
+          "sessions_traded": 10,
+          "total_pnl": 1910.0,
+          "trades": 21,
+          "win_rate": 0.38095238095238093
+        },
+        "slot_schedule_stressed_metrics": {
+          "avg_pnl": 70.95238095238095,
+          "max_drawdown": -1680.0,
+          "mean_daily_pnl": 149.0,
+          "median_daily_pnl": 190.0,
+          "median_pnl": -80.0,
+          "positive_day_fraction": 0.6,
+          "profit_factor": 1.3890339425587468,
+          "sessions_traded": 10,
+          "total_pnl": 1490.0,
+          "trades": 21,
+          "win_rate": 0.38095238095238093
+        }
+      }
+    },
+    "put_near_after_0940_vwap_m2_10_premium_gte_7_5": {
+      "diagnostic_test": {
+        "all_gated_minutes": 856,
+        "gate_first_eligible_raw_metrics": {
+          "avg_pnl": -76.0,
+          "max_drawdown": -2260.0,
+          "mean_daily_pnl": -190.0,
+          "median_daily_pnl": -335.0,
+          "median_pnl": -170.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.6684118673647469,
+          "sessions_traded": 10,
+          "total_pnl": -1900.0,
+          "trades": 25,
+          "win_rate": 0.4
+        },
+        "gate_first_eligible_stressed_metrics": {
+          "avg_pnl": -96.0,
+          "max_drawdown": -2600.0,
+          "mean_daily_pnl": -240.0,
+          "median_daily_pnl": -395.0,
+          "median_pnl": -190.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 0.6019900497512438,
+          "sessions_traded": 10,
+          "total_pnl": -2400.0,
+          "trades": 25,
+          "win_rate": 0.4
+        },
+        "slot_schedule_raw_metrics": {
+          "avg_pnl": 62.608695652173914,
+          "max_drawdown": -1990.0,
+          "mean_daily_pnl": 144.0,
+          "median_daily_pnl": -180.0,
+          "median_pnl": 10.0,
+          "positive_day_fraction": 0.4,
+          "profit_factor": 1.3711340206185567,
+          "sessions_traded": 10,
+          "total_pnl": 1440.0,
+          "trades": 23,
+          "win_rate": 0.5217391304347826
+        },
+        "slot_schedule_stressed_metrics": {
+          "avg_pnl": 42.608695652173914,
+          "max_drawdown": -2110.0,
+          "mean_daily_pnl": 98.0,
+          "median_daily_pnl": -240.0,
+          "median_pnl": -10.0,
+          "positive_day_fraction": 0.3,
+          "profit_factor": 1.2378640776699028,
+          "sessions_traded": 10,
+          "total_pnl": 980.0,
+          "trades": 23,
+          "win_rate": 0.43478260869565216
+        }
+      },
+      "validation": {
+        "all_gated_minutes": 683,
+        "gate_first_eligible_raw_metrics": {
+          "avg_pnl": -21.304347826086957,
+          "max_drawdown": -2660.0,
+          "mean_daily_pnl": -49.0,
+          "median_daily_pnl": -180.0,
+          "median_pnl": -130.0,
+          "positive_day_fraction": 0.5,
+          "profit_factor": 0.9118705035971223,
+          "sessions_traded": 10,
+          "total_pnl": -490.0,
+          "trades": 23,
+          "win_rate": 0.30434782608695654
+        },
+        "gate_first_eligible_stressed_metrics": {
+          "avg_pnl": -41.30434782608695,
+          "max_drawdown": -2800.0,
+          "mean_daily_pnl": -95.0,
+          "median_daily_pnl": -230.0,
+          "median_pnl": -150.0,
+          "positive_day_fraction": 0.5,
+          "profit_factor": 0.8384353741496599,
+          "sessions_traded": 10,
+          "total_pnl": -950.0,
+          "trades": 23,
+          "win_rate": 0.30434782608695654
+        },
+        "slot_schedule_raw_metrics": {
+          "avg_pnl": 5.909090909090909,
+          "max_drawdown": -2190.0,
+          "mean_daily_pnl": 13.0,
+          "median_daily_pnl": 195.0,
+          "median_pnl": -210.0,
+          "positive_day_fraction": 0.6,
+          "profit_factor": 1.0251450676982592,
+          "sessions_traded": 10,
+          "total_pnl": 130.0,
+          "trades": 22,
+          "win_rate": 0.3181818181818182
+        },
+        "slot_schedule_stressed_metrics": {
+          "avg_pnl": -14.090909090909092,
+          "max_drawdown": -2410.0,
+          "mean_daily_pnl": -31.0,
+          "median_daily_pnl": 155.0,
+          "median_pnl": -230.0,
+          "positive_day_fraction": 0.6,
+          "profit_factor": 0.943327239488117,
+          "sessions_traded": 10,
+          "total_pnl": -310.0,
+          "trades": 22,
+          "win_rate": 0.3181818181818182
+        }
+      }
+    }
+  },
+  "schema_version": "Protocol101UpliftLifecycleAttributionV1",
+  "selected_feature_contract": "protocol101-live-v1",
+  "selection_mode": "stable_abs_offset_20",
+  "starting_cash": 10000.0,
+  "stress_per_trade": 20.0,
+  "threshold_selection_executed": false,
+  "train_designated_alt_policy_by_gate": {
+    "put_near_after_0940_vwap_m2_10": 1,
+    "put_near_after_0940_vwap_m2_10_near_vwap": 2,
+    "put_near_after_0940_vwap_m2_10_premium_gte_7_5": 1
+  }
+}

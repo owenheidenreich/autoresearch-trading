@@ -1,0 +1,35 @@
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m py_compile ...
+
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest ...
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/gduby/Documents/autoresearch-trading
+configfile: pyproject.toml
+plugins: anyio-4.13.0
+collected 71 items
+
+v4/tests/test_protocol101_serial_simulator.py ..............             [ 19%]
+v4/tests/test_protocol101_fair_contract_selected_candidate_replay_gate.py . [ 21%]
+.......                                                                  [ 30%]
+v4/tests/test_spxw_0dte_neural.py ..........                             [ 45%]
+v4/tests/test_supervised_pilot.py ..........................             [ 81%]
+v4/tests/test_protocol101_fair_contract_model_search.py ........         [ 92%]
+v4/tests/test_protocol101_session_era_manifest.py ...                    [ 97%]
+v4/tests/test_protocol101_vendor_overlap_inventory.py ..                 [100%]
+
+============================== 71 passed in 2.66s ==============================
+
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.build_protocol101_session_era_manifest
+{
+  "manifest_hash": "55c38f8265068fca323ea8e1b4eae36d3c8c3212b7b8e77192f803037a7aa144",
+  "report": "v4/audit/autoresearch/protocol101_session_era_manifest/report.md",
+  "session_count": 193,
+  "status": "pass"
+}
+
+$ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.run_protocol101_vendor_overlap_inventory --max-sample-files 1
+{
+  "report": "v4/audit/autoresearch/protocol101_vendor_overlap_inventory/report.md",
+  "requires_thetadata_option_quote_sample_for_td_option_diff": true,
+  "status": "pass"
+}

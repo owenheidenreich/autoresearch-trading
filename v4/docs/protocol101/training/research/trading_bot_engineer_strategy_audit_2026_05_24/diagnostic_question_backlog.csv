@@ -1,0 +1,11 @@
+priority,question,why_it_matters,existing_evidence,next_artifact
+1,"What archetypes does Protocol101 monetize?","We need to know whether it is a scalp, runner, or hybrid system.","Protocol113 trade log shows short holds, high MFE capture, high premium/ITM bias.","Protocol101 trade atlas by side/time/premium/moneyness/exit reason/MFE/MAE"
+2,"Why do hard-stop and worst-day losses happen?","Loss avoidance may be an easier improvement than finding new entries.","Protocol114 hard_stop group lost heavily; Protocol113 hard_stop rows were 0% win rate.","Losing-day and hard-stop autopsy"
+3,"Where does Protocol101 exit too early?","A runner overlay may improve the existing strategy without replacing entries.","Protocol265 continuation helped recent but hurt March/Q1 on a challenger stream; Protocol101-specific audit missing.","Protocol101 runner opportunity audit"
+4,"Where does holding longer destroy value?","Avoid repeating Protocol200/276 overholding failures.","Protocol276 overheld and missed better path value.","Giveback and overhold taxonomy"
+5,"Which missed candidates become large winners?","Protocol101 may be too narrow, but broad challengers degraded quality.","Protocol240/248 found more PnL with worse quality.","Missed-winner and abstention audit"
+6,"Do Protocol101 trades block better later opportunities?","The single slot is economically scarce.","Learned-defer proved this for challengers, but Protocol101 internal slot cost is unmeasured.","Protocol101 blocked-opportunity audit"
+7,"Are calls and puts separate playbooks?","Side-specific regimes may be hidden by unified models.","Protocol101 call count is higher but puts have higher avg PnL in seed-1 replay.","Side-specific strategy audit"
+8,"Is low-premium/OTM exposure ever worth it?","Challengers found PnL but worse drawdown and lower quality.","Protocol248 showed OTM/low-premium weakness but recent OTM looked better.","Premium/moneyness regime audit"
+9,"Is the edge executable?","Timing/fill realism can erase replay edge.","Protocol114/126 and Protocol195 show severe timing fragility.","Live no-order parity and fill observation packet"
+10,"Are exposed splits overfit?","Repeated protocol iteration weakens validation evidence.","Protocol273 and learned-defer packet flag exposed splits and missing strategy matrix.","Formal strategy-matrix and untouched holdout plan"

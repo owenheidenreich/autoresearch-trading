@@ -1,7 +1,7 @@
 """Protocol101 stage-1 experiment runner: the governed autoresearch loop.
 
 One invocation = one preregistered experiment judged against the owner-approved
-gates (v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md, approved
+gates (v4/docs/protocol101/training/contracts/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md, approved
 2026-07-07). The preregistration artifact is written BEFORE any training so a
 result can never rewrite its own hypothesis.
 
@@ -46,7 +46,10 @@ from v4.scripts.run_protocol101_owned_raw_acceptance_verifier import (
 
 
 SCHEMA_VERSION = "Protocol101Stage1ExperimentV1"
-GATES_DOC = "v4/docs/PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md"
+GATES_DOC = (
+    "v4/docs/protocol101/training/contracts/"
+    "PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md"
+)
 DEFAULT_ERA_MANIFEST = Path("v4/audit/autoresearch/protocol101_session_era_manifest/summary.json")
 DEFAULT_ROLE_POLICY = Path("v4/audit/autoresearch/protocol101_era_role_policy/summary.json")
 REGISTRY_DIR_TEMPLATE = "v4/audit/autoresearch/protocol101_owned_raw_acceptance_{tag}_v35_full/summary.json"

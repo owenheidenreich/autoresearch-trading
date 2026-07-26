@@ -1,0 +1,7 @@
+vendor,product,asset_class,root,file_count,session_count,formats
+databento,opra_spxw_definition,option,data/raw/databento/opra_spxw_definition,834,417,"{""dbn.zst"": 417, ""parquet"": 417}"
+databento,opra_spxw_cbbo_1m,option,data/raw/databento/opra_spxw_cbbo_1m,834,417,"{""dbn.zst"": 417, ""parquet"": 417}"
+databento,opra_spxw_ohlcv_1m,option,data/raw/databento/opra_spxw_ohlcv_1m,834,417,"{""dbn.zst"": 417, ""parquet"": 417}"
+databento,opra_spxw_statistics,option,data/raw/databento/opra_spxw_statistics,834,417,"{""dbn.zst"": 417, ""parquet"": 417}"
+thetadata,spx_1m,index,data/vendor/thetadata/index/spx_1m,418,418,"{""parquet"": 418}"
+thetadata,vix_1m,index,data/vendor/thetadata/index/vix_1m,428,428,"{""parquet"": 428}"

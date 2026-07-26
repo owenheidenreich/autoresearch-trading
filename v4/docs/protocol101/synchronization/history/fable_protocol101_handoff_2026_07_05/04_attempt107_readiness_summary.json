@@ -1,0 +1,270 @@
+{
+  "attempt_id": "attempt_107_policy0_hgb_blend35_relative_put_near_after0940_vwap_m2_10_cap3_scoreceil50_dailyloss500_plateau_s42",
+  "broker_endpoint_called": false,
+  "candidate_status": "offline_sync_replay_candidate",
+  "decision": "not_paper_ready",
+  "feature_contract": "protocol101-live-v1",
+  "historical_gate": {
+    "diagnostic_test": {
+      "max_drawdown_pct_of_start": -0.097,
+      "profit_factor": 1.3888091822094693,
+      "status": "pass",
+      "total_pnl": 1355.0,
+      "trades": 26
+    },
+    "status": "pass",
+    "validation": {
+      "max_drawdown_pct_of_start": -0.2115,
+      "profit_factor": 1.9776223776223776,
+      "status": "pass",
+      "total_pnl": 3495.0,
+      "trades": 24
+    }
+  },
+  "ibkr_same_input_replay_gate": {
+    "sessions": {
+      "2026-06-30": {
+        "candidate_rows": 10772,
+        "decision_rows": 360,
+        "same_input_exact": true,
+        "selected_entries": 3
+      },
+      "2026-07-01": {
+        "candidate_rows": 10188,
+        "decision_rows": 360,
+        "same_input_exact": true,
+        "selected_entries": 3
+      },
+      "2026-07-02": {
+        "candidate_rows": 11598,
+        "decision_rows": 360,
+        "same_input_exact": true,
+        "selected_entries": 3
+      }
+    },
+    "status": "pass"
+  },
+  "microstructure_mask_robustness_search": {
+    "attempts": {
+      "attempt_108": "HGB with vendor-sensitive option microstructure masked; validation +$1,385 PF 1.353; diagnostic -$2,210 PF 0.536; failed diagnostic PnL/PF.",
+      "attempt_109": "MLP ensemble with vendor-sensitive option microstructure masked; validation +$1,650 PF 1.374 but 19 strict trades; diagnostic -$1,390 PF 0.757; failed diagnostic PnL/PF and validation trade count."
+    },
+    "interpretation": "Masking IV/spread/size/volume/open-interest reduces cross-vendor brittleness but also removes enough historical edge that the tested candidates fail diagnostic profitability. This supports rejecting attempt107 as paper-ready and moving to a broader robust-training design rather than trying to adapter-patch confirmation-day drifts.",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_microstructure_mask_robustness/report.md",
+    "status": "fail_no_paper_ready_candidate"
+  },
+  "microstructure_bucket_robustness_search": {
+    "attempts": {
+      "attempt_110": "HGB with vendor-sensitive option microstructure bucketed; validation -$1,050 PF 0.734 with 18 trades; diagnostic +$60 PF 1.018 with 19 trades; failed validation PnL/PF/trade count and diagnostic PF/trade count.",
+      "attempt_111": "MLP ensemble with vendor-sensitive option microstructure bucketed; validation +$1,770 PF 1.518 but 18 trades; diagnostic -$1,100 PF 0.759 with 21 trades; failed validation trade count and diagnostic PnL/PF."
+    },
+    "interpretation": "Coarse bucketing/quantization preserves more option-state information than full masking, but the tested candidates still fail strict validation/diagnostic gates. This supports moving from simple transforms to robustness-aware training or action-stability selection rather than adapter-patching the June/July confirmation days.",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_microstructure_bucket_robustness/report.md",
+    "status": "fail_no_paper_ready_candidate"
+  },
+  "feature_jitter_robustness_gate": {
+    "status": "fail_candidate_not_paper_ready",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_feature_jitter_gate/report.md",
+    "summary": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_feature_jitter_gate/summary.json",
+    "finding": "Attempt107 passes small +/-0.002 IV perturbation scenarios on development rows, but fails option spread and quote-size jitter scenarios through selected-contract instability and material PnL drift.",
+    "repair_implication": "The next fair-contract candidate family should explicitly reward action/contract stability under realistic option spread/size perturbations on development data. Do not adapter-patch June/July confirmation days into agreement."
+  },
+  "score_margin_jitter_gated_search": {
+    "status": "fail_no_paper_ready_candidate",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_margin_jitter_robustness/report.md",
+    "attempts": {
+      "attempt_112": "HGB raw fair-contract features with 5-point top-vs-runner-up score margin and feature-jitter gate; validation -$1,615 PF 0.718; diagnostic -$1,850 PF 0.671; jitter gate failed.",
+      "attempt_113": "HGB raw fair-contract features with 10-point top-vs-runner-up score margin and feature-jitter gate; validation -$1,575 PF 0.755; diagnostic -$2,680 PF 0.541; jitter gate failed."
+    },
+    "interpretation": "A hard score-margin filter is not sufficient. It worsens strict historical replay and still fails option spread/size/IV jitter robustness, so the next repair should make robustness part of training or candidate scoring rather than a post-hoc selection filter."
+  },
+  "feature_noise_augmentation_search": {
+    "status": "fail_no_paper_ready_candidate",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_noiseaug_jitter_robustness/report.md",
+    "attempts": {
+      "attempt_114": "HGB trained with fit-only vendor_microstructure_jitter_v1; validation +$2,770 PF 1.500; diagnostic -$3,300 PF 0.497; jitter gate failed.",
+      "attempt_115": "MLP ensemble trained with fit-only vendor_microstructure_jitter_v1; validation +$840 PF 1.180 with 18 trades; diagnostic -$1,670 PF 0.707; jitter gate failed."
+    },
+    "interpretation": "Naive fit-only feature-noise augmentation did not produce a paper-ready fair-contract model. It suggests the current narrow put/VWAP pocket and label/model family remain unstable under the fair game, so the next repair should use a broader stability-aware objective rather than more simple microstructure transforms."
+  },
+  "jitter_stressed_threshold_search": {
+    "status": "fail_no_paper_ready_candidate",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_jitterthreshold_robustness/report.md",
+    "attempts": {
+      "attempt_116": "HGB with jitter_stability_stressed threshold selection; validation +$1,630 PF 1.304; diagnostic -$2,420 PF 0.581; jitter gate failed.",
+      "attempt_117": "MLP ensemble with jitter_stability_stressed threshold selection; validation +$1,160 PF 1.352 with 16 trades; diagnostic -$890 PF 0.804; jitter gate failed."
+    },
+    "interpretation": "Jitter-aware threshold selection improved the shape of some failures but still did not produce a paper-ready candidate. Threshold mechanics on the current narrow put/VWAP pocket are not sufficient; the next repair should broaden entry filters, labels, or candidate objectives while keeping the jitter-stressed gate."
+  },
+  "broader_entry_filter_jitter_gated_search": {
+    "status": "fail_no_paper_ready_candidate",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_broader_jittergate_robustness/report.md",
+    "attempts": {
+      "attempt_118": "HGB with put_near_10_20_offset and jitter_stability_stressed threshold selection; validation +$60 PF 1.012; diagnostic -$2,240 PF 0.719; jitter gate failed.",
+      "attempt_119": "Right-specialized HGB with near_10_20_offset and jitter_stability_stressed threshold selection; validation -$6,140 PF 0.097; diagnostic -$1,510 PF 0.750; jitter gate failed."
+    },
+    "interpretation": "Broader entry filters did not recover fair-contract edge. They added exposure without stable validation/diagnostic profitability and still failed jitter stability."
+  },
+  "two_stage_selector_diagnostic": {
+    "status": "pass_diagnostic_only",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_two_stage_selector_diagnostic_jul_dec128_q1/report.md",
+    "top_gate": "base_plus_omar_neg_range_20_45",
+    "stable_positive_gate_count": 15,
+    "trade_sufficient_gate_candidates": [
+      "base_put_near_after0940_vwap_m2_10",
+      "base_plus_near_vwap",
+      "base_plus_premium_gte_7_5"
+    ],
+    "interpretation": "The causal live-v1 rows still contain stable candidate-level opportunity, but the highest-average OMAR/range gate is too sparse by itself. Trade-sufficient gates justify learned-model attempts but do not themselves prove paper readiness because the diagnostic uses labels as an oracle."
+  },
+  "compound_selector_jitter_gated_search": {
+    "status": "fail_no_paper_ready_candidate",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_compound_selector_robustness/report.md",
+    "best_attempt": "attempt_122_policy0_hgb_blend35_relative_put_near_after0940_vwap_m2_10_nearvwap_cap3_dailyloss500_s42_jittergate",
+    "attempts": {
+      "attempt_120": "HGB with put_near_after_0940_vwap_m2_10_omar_neg; validation +$5,850 PF 2.851; diagnostic -$1,980 PF 0.490; jitter gate failed.",
+      "attempt_121": "HGB with put_near_after_0940_vwap_m2_10_range_20_45; validation +$2,390 PF 1.616; diagnostic -$250 PF 0.926; jitter gate failed.",
+      "attempt_122": "HGB with put_near_after_0940_vwap_m2_10_near_vwap; validation +$5,650 PF 2.859; diagnostic +$605 PF 1.110 with 24 trades; strict replay failed diagnostic PF and jitter gate failed.",
+      "attempt_123": "HGB with put_near_after_0940_vwap_m2_10_premium_gte_7_5; validation +$4,220 PF 1.783; diagnostic -$930 PF 0.849; jitter gate failed."
+    },
+    "interpretation": "Compound first-stage context gates improve the search evidence but do not solve paper readiness. The near-VWAP branch nearly survives strict replay but still fails diagnostic PF and remains selected-contract/PnL fragile under spread and quote-size perturbations. The next repair should target ranking stability or aggregate candidate selection, not more narrow hand filters."
+  },
+  "stable_selection_jitter_gated_search": {
+    "status": "fail_no_paper_ready_candidate",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_stable_selection_robustness/report.md",
+    "best_attempt": "attempt_125_policy0_hgb_blend35_relative_nearvwap_stableabs15_cap3_dailyloss500_s42_jittergate",
+    "attempts": {
+      "attempt_124": "HGB near-VWAP branch with deterministic stable_abs_offset_10 contract selection; validation +$7,555 PF 4.522; diagnostic +$270 PF 1.058; strict replay failed diagnostic PF and feature-jitter gate failed.",
+      "attempt_125": "HGB near-VWAP branch with deterministic stable_abs_offset_15 contract selection; validation +$6,615 PF 4.454; diagnostic +$35 PF 1.008; strict replay failed diagnostic PF and feature-jitter gate failed.",
+      "attempt_126": "HGB near-VWAP branch with deterministic stable_abs_offset_20 contract selection; validation +$4,925 PF 3.397; diagnostic +$555 PF 1.130; candidate validation passed but strict replay still failed diagnostic PF and feature-jitter gate failed."
+    },
+    "interpretation": "Deterministic fixed-offset contract selection reduces one form of score-ranking freedom but does not produce a paper-ready model. The attempts keep strong validation PnL while diagnostic PF collapses below the required 1.25 and option spread/size jitter still changes selected contracts or PnL materially. The next repair should move from per-contract top-score selection to a decision-level or aggregate candidate-value objective that can decide whether the minute is tradable without depending on brittle contract-ranking details."
+  },
+  "aggregate_decision_objective_search": {
+    "status": "fail_no_paper_ready_candidate_but_jitter_stability_improved",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_aggregate_decision_objective/report.md",
+    "best_attempt": "attempt_130_policy0_hgb_decisionpresence_nearvwap_stableabs20_cap3_dailyloss500_s42_jittergate",
+    "attempts": {
+      "attempt_127": "HGB decision_best_profit_regression with stable_abs_offset_15; validation +$3,100 PF 1.695 with 23 trades; diagnostic -$2,140 PF 0.620 with 24 trades; strict replay failed but feature-jitter gate passed.",
+      "attempt_128": "HGB decision_best_profit_regression with stable_abs_offset_20; validation +$3,690 PF 1.893 with 25 trades; diagnostic -$2,000 PF 0.610 with 24 trades; strict replay failed but feature-jitter gate passed.",
+      "attempt_129": "HGB decision_profit_presence_classifier with stable_abs_offset_15; validation +$4,280 PF 3.365 with 18 trades; diagnostic +$120 PF 1.043 with 17 trades; strict replay failed but feature-jitter gate passed.",
+      "attempt_130": "HGB decision_profit_presence_classifier with stable_abs_offset_20; validation +$4,760 PF 3.850 with 20 trades; diagnostic +$50 PF 1.020 with 17 trades; strict replay failed but feature-jitter gate passed."
+    },
+    "interpretation": "Aggregate decision-level targets are the first tested repair family to pass the option-feature jitter gate across every attempt. This supports the diagnosis that per-contract ranking was the vendor-sensitive component. However, the tested near-VWAP aggregate variants still fail strict replay through weak diagnostic PF/trade count, so the next repair should preserve the aggregate/stable-selection structure while broadening or reshaping the opportunity filter/target to recover diagnostic edge."
+  },
+  "broader_aggregate_decision_objective_search": {
+    "status": "fail_no_paper_ready_candidate_but_jitter_stability_confirmed",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_broader_aggregate_decision_objective/report.md",
+    "best_attempt": "attempt_131_policy0_hgb_decisionpresence_basevwap_stableabs20_cap3_dailyloss500_s42_jittergate",
+    "attempts": {
+      "attempt_131": "HGB decision_profit_presence_classifier with broader put_near_after_0940_vwap_m2_10 filter and stable_abs_offset_20; validation +$1,970 PF 1.540 with 21 trades; diagnostic -$330 PF 0.925 with 22 trades; strict replay failed but feature-jitter gate passed.",
+      "attempt_132": "HGB decision_profit_presence_classifier with premium>=7.5 gate and stable_abs_offset_20; validation +$1,970 PF 1.540 with 21 trades; diagnostic -$330 PF 0.925 with 22 trades; strict replay failed but feature-jitter gate passed."
+    },
+    "interpretation": "Broadening the aggregate/stable classifier confirms that the new structure is much less sensitive to option-feature jitter, but the broader filters lose diagnostic edge. The remaining blocker is no longer primarily vendor microstructure fragility; it is finding a causal target/filter/lifecycle combination with enough out-of-sample diagnostic expectancy under the fair game."
+  },
+  "aggregate_edge_loss_diagnostic": {
+    "status": "pass_diagnostic_completed",
+    "reports": {
+      "attempt130": "v4/audit/autoresearch/protocol101_fair_contract_aggregate_edge_loss_diagnostic_attempt130/report.md",
+      "attempt131": "v4/audit/autoresearch/protocol101_fair_contract_aggregate_edge_loss_diagnostic_attempt131/report.md"
+    },
+    "finding": "Aggregate/stable attempts pass option-feature jitter but fail diagnostic expectancy. The largest diagnostic loser bucket for attempt130 is positive 15-minute momentum on put entries; however, follow-up causal filters that removed or side-switched this bucket did not recover strict diagnostic edge.",
+    "repair_implication": "The next repair should stop adding narrow context filters and inspect whether the current entry labels/lifecycle policy are mispricing continuation and reversals under the fair contract."
+  },
+  "momentum_filtered_aggregate_search": {
+    "status": "fail_no_paper_ready_candidate_but_jitter_stability_confirmed",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_momentum_filtered_aggregate_objective/report.md",
+    "best_attempt": "attempt_135_policy0_hgb_decisionpresence_premiumgte7_5_mom15nonpos_stableabs20_cap3_dailyloss500_s42_jittergate",
+    "attempts": {
+      "attempt_133": "Aggregate classifier with non-positive momentum put filter; validation +$3,430 PF 2.429 with 21 trades; diagnostic -$460 PF 0.859 with 13 trades; jitter gate passed.",
+      "attempt_134": "Aggregate classifier with positive OMAR plus non-positive momentum put filter; validation +$1,630 PF 1.668 with 15 trades; diagnostic -$150 PF 0.947 with 11 trades; jitter gate passed.",
+      "attempt_135": "Aggregate classifier with premium>=7.5 plus non-positive momentum put filter; validation +$2,730 PF 1.881 with 21 trades; diagnostic -$180 PF 0.945 with 13 trades; jitter gate passed."
+    },
+    "interpretation": "Removing the diagnostic positive-momentum loser bucket preserves jitter robustness but starves/reduces diagnostic edge and trade count. The aggregate/stable structure is robust, but narrow momentum filters are not sufficient."
+  },
+  "side_aware_aggregate_search": {
+    "status": "fail_no_paper_ready_candidate_but_jitter_stability_confirmed",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_side_aware_aggregate_objective/report.md",
+    "best_attempt": "attempt_136_policy0_hgb_decisionpresence_mom15side_stableabs20_cap3_dailyloss500_s42_jittergate",
+    "attempts": {
+      "attempt_136": "Aggregate classifier with positive-momentum calls and non-positive-momentum puts; validation +$3,050 PF 1.753 with 22 trades; diagnostic -$2,700 PF 0.636 with 23 trades; jitter gate passed.",
+      "attempt_137": "Same side-aware filter with premium>=7.5; validation +$3,050 PF 1.753 with 22 trades; diagnostic -$2,700 PF 0.636 with 23 trades; jitter gate passed."
+    },
+    "interpretation": "Side-switching on momentum does not solve the edge loss and materially worsens diagnostic performance. The remaining problem is likely not a simple side filter; it points toward entry-label/lifecycle/exit objective design under the fair contract."
+  },
+  "missing_gates": [
+    "paired_ibkr_vs_databento_thetadata_replay_pass_for_this_candidate",
+    "concentration_risk_clearance",
+    "training_window_stability_clearance",
+    "final_baseline_comparison_packet",
+    "option_feature_data_plane_sensitivity_repair_or_reject_decision",
+    "causal_lifecycle_or_entry_label_repair_with_sufficient_diagnostic_edge",
+    "feature_jitter_robust_candidate_selection_gate",
+    "paper_ready_candidate_selection_packet"
+  ],
+  "option_feature_pair_attribution": {
+    "finding": "Cross-vendor drift at the actionable timestamps is concentrated in option-side features, not market context. July 1 action drift is driven by a tiny IV difference crossing the max_score_ceiling guard; July 2 selected-contract drift is driven by spread/size differences among close put scores.",
+    "repair_implication": "Do not paper-submit attempt107 as-is. Either reject this score-ceiling/tree candidate as too data-plane-sensitive or run a new fair-contract search that explicitly avoids brittle option-IV/spread/size threshold dependence using only development data.",
+    "report": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_pair_attribution/report.md",
+    "status": "fail_candidate_not_paper_ready",
+    "summary": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_pair_attribution/summary.json"
+  },
+  "paired_cross_vendor_replay_gate": {
+    "sessions": {
+      "2026-06-30": {
+        "action_matches": 360,
+        "action_mismatches": 0,
+        "selected_contract_mismatches": 0,
+        "status": "action_and_contract_match"
+      },
+      "2026-07-01": {
+        "action_matches": 358,
+        "action_mismatches": 2,
+        "selected_contract_mismatches": 2,
+        "status": "fail"
+      },
+      "2026-07-02": {
+        "action_matches": 360,
+        "action_mismatches": 0,
+        "selected_contract_mismatches": 1,
+        "status": "partial_contract_mismatch"
+      }
+    },
+    "status": "fail"
+  },
+  "paper_default_changed": false,
+  "paper_submit_allowed": false,
+  "recommended_next_step": "diagnose_entry_label_vs_lifecycle_exit_edge_loss_under_fair_contract",
+  "schema_version": "Protocol101FairContractCandidateReadinessPacketV1",
+  "source_reports": {
+    "failure_diagnostic": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_128_failure_diagnostic/report.md",
+    "ibkr_capture_replay_2026_06_30": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_ibkr_capture_replay_2026_06_30/report.md",
+    "ibkr_capture_replay_2026_07_01": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_ibkr_capture_replay_2026_07_01/report.md",
+    "ibkr_capture_replay_2026_07_02": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_ibkr_capture_replay_2026_07_02/report.md",
+    "microstructure_mask_robustness_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_microstructure_mask_robustness/report.md",
+    "microstructure_bucket_robustness_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_microstructure_bucket_robustness/report.md",
+    "feature_jitter_robustness_gate": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_feature_jitter_gate/report.md",
+    "score_margin_jitter_gated_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_margin_jitter_robustness/report.md",
+    "feature_noise_augmentation_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_noiseaug_jitter_robustness/report.md",
+    "jitter_stressed_threshold_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_jitterthreshold_robustness/report.md",
+    "broader_entry_filter_jitter_gated_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_broader_jittergate_robustness/report.md",
+    "two_stage_selector_diagnostic": "v4/audit/autoresearch/protocol101_fair_contract_two_stage_selector_diagnostic_jul_dec128_q1/report.md",
+    "compound_selector_jitter_gated_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_compound_selector_robustness/report.md",
+    "stable_selection_jitter_gated_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_stable_selection_robustness/report.md",
+    "aggregate_decision_objective_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_aggregate_decision_objective/report.md",
+    "broader_aggregate_decision_objective_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_broader_aggregate_decision_objective/report.md",
+    "aggregate_edge_loss_diagnostic_attempt130": "v4/audit/autoresearch/protocol101_fair_contract_aggregate_edge_loss_diagnostic_attempt130/report.md",
+    "aggregate_edge_loss_diagnostic_attempt131": "v4/audit/autoresearch/protocol101_fair_contract_aggregate_edge_loss_diagnostic_attempt131/report.md",
+    "momentum_filtered_aggregate_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_momentum_filtered_aggregate_objective/report.md",
+    "side_aware_aggregate_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_side_aware_aggregate_objective/report.md",
+    "model_search": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_vwap_pocket_plateau_threshold/report.md",
+    "pair_attribution": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_pair_attribution/report.md",
+    "paired_diff_2026_06_30": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_paired_diff_2026_06_30/report.md",
+    "paired_diff_2026_07_01": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_paired_diff_2026_07_01/report.md",
+    "paired_diff_2026_07_02": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_paired_diff_2026_07_02/report.md",
+    "stability": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_stability_packet/report.md",
+    "strict_replay": "v4/audit/autoresearch/protocol101_fair_contract_model_search_expanded_jul_dec2025_128_q1_vwap_pocket_plateau_threshold/attempts/attempt_107_policy0_hgb_blend35_relative_put_near_after0940_vwap_m2_10_cap3_scoreceil50_dailyloss500_plateau_s42/selected_candidate_replay_gate/report.md",
+    "trade_charts": "v4/audit/autoresearch/protocol101_fair_contract_attempt107_128_trade_charts/report.md"
+  },
+  "status": "not_paper_ready"
+}

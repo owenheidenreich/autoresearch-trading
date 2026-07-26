@@ -1,0 +1,79 @@
+Commands run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest \
+  v4/tests/test_protocol101_owned_raw_acceptance_verifier.py \
+  v4/tests/test_protocol101_era_role_policy.py
+
+Result:
+
+9 passed in 0.40s
+
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.build_protocol101_session_era_manifest
+
+Result:
+
+{
+  "manifest_hash": "6767427de34e6ef1f1558ab7854c5f7b599068ed05302629bd5aec083793ce16",
+  "report": "v4/audit/autoresearch/protocol101_session_era_manifest/report.md",
+  "session_count": 429,
+  "status": "pass"
+}
+
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.build_protocol101_era_role_policy
+
+Result:
+
+{
+  "policy_hash": "6f51e65f5b9d271f14c83f6752d30390dca1797d5444c64a710bb9b2214fac7d",
+  "report": "v4/audit/autoresearch/protocol101_era_role_policy/report.md",
+  "status": "pass"
+}
+
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m v4.scripts.run_protocol101_owned_raw_acceptance_verifier \
+  --start-date 2024-10-01 \
+  --end-date 2024-10-14 \
+  --out-dir v4/audit/autoresearch/protocol101_owned_raw_acceptance_2024_10_partial \
+  --role diagnostics_only
+
+Result:
+
+{
+  "fail_count": 0,
+  "pass_count": 10,
+  "registry_hash": "3a7a857c9de4f44c2defa560fb1fed135c1f40e417b5e9d968625a5de283554e",
+  "report": "v4/audit/autoresearch/protocol101_owned_raw_acceptance_2024_10_partial/report.md",
+  "session_count": 10,
+  "status": "pass"
+}
+
+Command run:
+
+PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest \
+  v4/tests/test_protocol101_owned_raw_acceptance_verifier.py \
+  v4/tests/test_protocol101_era_role_policy.py \
+  v4/tests/test_protocol101_session_era_manifest.py \
+  v4/tests/test_protocol101_vendor_overlap_inventory.py \
+  v4/tests/test_protocol101_serial_simulator.py \
+  v4/tests/test_protocol101_fair_contract_selected_candidate_replay_gate.py \
+  v4/tests/test_spxw_0dte_neural.py \
+  v4/tests/test_supervised_pilot.py \
+  v4/tests/test_protocol101_fair_contract_model_search.py
+
+Result:
+
+82 passed in 2.56s
+
+Long-running build note:
+
+The October 2024 live-v1 build was intentionally stopped after successfully writing processed rows through 2024-10-14. The last emitted row was:
+
+{"neural_rows": 360, "normalized_rows": 158760, "session": "2024-10-14"}
+
+The process exited with code 143 because it was stopped deliberately; this is why the acceptance registry is labeled as a partial October subset, not full October.
+

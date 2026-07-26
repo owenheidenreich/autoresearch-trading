@@ -1,0 +1,5 @@
+split,gate,candidate,candidate_trade_count,candidate_stressed_total_pnl,upper_tail_p_value,lower_tail_p_value,null_m_total_pnl_mean,null_m_total_pnl_std,null_m_total_pnl_p5,null_m_total_pnl_p25,null_m_total_pnl_p50,null_m_total_pnl_p75,null_m_total_pnl_p95,null_m_total_pnl_p99
+validation,put_near_after_0940_vwap_m2_10,attempt131,21,1970.0,0.4145854145854146,0.5874125874125874,1502.735,1813.9643173929855,-1355.5,108.75,1595.0,2801.25,4450.749999999999,5500.4
+diagnostic_test,put_near_after_0940_vwap_m2_10,attempt131,22,-330.0,0.6693306693306693,0.33266733266733267,244.985,1196.9996135233296,-1670.5,-581.25,210.0,1037.5,2295.0,3190.05
+validation,put_near_after_0940_vwap_m2_10_near_vwap,attempt130,20,4760.0,0.054945054945054944,0.9460539460539461,2704.805,1294.3636996512996,570.0,1851.25,2750.0,3521.25,4817.249999999998,6180.349999999999
+diagnostic_test,put_near_after_0940_vwap_m2_10_near_vwap,attempt130,17,50.0,0.2627372627372627,0.7392607392607392,-591.135,978.4246454249811,-2191.0,-1245.0,-630.0,82.5,1050.0,1655.1499999999999

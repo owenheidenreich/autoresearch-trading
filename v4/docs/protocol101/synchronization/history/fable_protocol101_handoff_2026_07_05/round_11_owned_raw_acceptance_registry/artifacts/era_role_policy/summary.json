@@ -1,0 +1,113 @@
+{
+  "known_roles": [
+    "confirmation_one_shot",
+    "diagnostics_only",
+    "report_only",
+    "test",
+    "train"
+  ],
+  "policy": {
+    "confirmation_jun_jul2026": {
+      "evidence_tier": "recorder_confirmation_only",
+      "notes": "Recorder/live-parity era. Never train/tune on these sessions.",
+      "permitted_roles": [
+        "confirmation_one_shot",
+        "report_only"
+      ]
+    },
+    "extension_2023": {
+      "evidence_tier": "placeholder_pending_owner_approval_and_acceptance",
+      "notes": "Placeholder for a possible 2023 extension tier. No sessions should use this until approved and accepted.",
+      "permitted_roles": [
+        "train",
+        "test",
+        "diagnostics_only"
+      ]
+    },
+    "extension_2024h1": {
+      "evidence_tier": "placeholder_pending_owner_approval_and_acceptance",
+      "notes": "Placeholder for a possible 2024-01 through 2024-09 purchase tier. No sessions should use this until approved and accepted.",
+      "permitted_roles": [
+        "train",
+        "test",
+        "diagnostics_only"
+      ]
+    },
+    "owned_jul_dec2025": {
+      "evidence_tier": "owned_mechanically_clean_for_new_fold_models_with_family_selection_caveat",
+      "notes": "Mechanically valid for new fold-trained candidates; interpret family-level claims with historical program-ancestry caveat.",
+      "permitted_roles": [
+        "train",
+        "test",
+        "diagnostics_only"
+      ]
+    },
+    "post_q1_gap_apr_may2026": {
+      "evidence_tier": "post_q1_nonfold_report_only",
+      "notes": "Post-Q1 gap stays out of fold selection unless separately governed.",
+      "permitted_roles": [
+        "report_only"
+      ]
+    },
+    "pre_program_oct2024_jun2025": {
+      "evidence_tier": "owned_pre_program_raw_pending_acceptance",
+      "notes": "Cleanest owned pre-program era after raw acceptance gates pass.",
+      "permitted_roles": [
+        "train",
+        "test",
+        "diagnostics_only"
+      ]
+    },
+    "q1_2026_development": {
+      "evidence_tier": "development_report_only_until_split_ancestry_audit",
+      "notes": "Default report-only. Jan-Feb may be upgraded only after explicit design/threshold ancestry audit.",
+      "permitted_roles": [
+        "diagnostics_only",
+        "report_only"
+      ]
+    },
+    "unassigned_requires_decision": {
+      "evidence_tier": "blocked",
+      "notes": "Fail-closed. No fold scaffold may place this era.",
+      "permitted_roles": []
+    }
+  },
+  "policy_hash": "6f51e65f5b9d271f14c83f6752d30390dca1797d5444c64a710bb9b2214fac7d",
+  "promotion_guards": {
+    "pre_program_systematic_negative_guard": {
+      "if": "pooled criteria pass but pre_program_oct2024_jun2025 test folds are systematically negative",
+      "reason": "Pooled fold success must not hide failure in the cleanest owned pre-program era.",
+      "status": "regime_bound_requires_owner_review"
+    }
+  },
+  "role_taxonomy": {
+    "confirmation_one_shot": "May be used only for one-shot live/parity confirmation, not training or tuning.",
+    "diagnostics_only": "May appear in diagnostics-tier fold test windows for gates, samplers, nulls, and uplift; never model-tier train/test.",
+    "report_only": "May be summarized for context but not used for model selection, diagnostics gates, or promotion claims.",
+    "test": "May appear in model-tier test windows when all acceptance and fold predicates pass.",
+    "train": "May appear in model-tier training windows when all acceptance and fold predicates pass."
+  },
+  "schema_version": "Protocol101EraRolePolicyV1",
+  "session_manifest": "v4/audit/autoresearch/protocol101_session_era_manifest/summary.json",
+  "session_manifest_hash": "6767427de34e6ef1f1558ab7854c5f7b599068ed05302629bd5aec083793ce16",
+  "status": "pass",
+  "validation": {
+    "known_roles": [
+      "confirmation_one_shot",
+      "diagnostics_only",
+      "report_only",
+      "test",
+      "train"
+    ],
+    "manifest_eras": [
+      "confirmation_jun_jul2026",
+      "owned_jul_dec2025",
+      "post_q1_gap_apr_may2026",
+      "pre_program_oct2024_jun2025",
+      "q1_2026_development"
+    ],
+    "missing_policy_eras": [],
+    "pass": true,
+    "role_errors": []
+  }
+}

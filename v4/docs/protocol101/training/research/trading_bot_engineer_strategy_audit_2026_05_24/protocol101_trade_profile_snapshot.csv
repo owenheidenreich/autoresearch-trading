@@ -1,0 +1,19 @@
+metric,group,trades,pnl,win_rate,avg_pnl,median_premium,median_duration_min,notes
+overall,all,1028,319050,0.769,310,2750,10,"seed-1 paper replay, Protocol113 trades.csv"
+side,calls,670,193140,0.748,288,2890,,"call-heavy by count"
+side,puts,358,125910,0.785,352,2440,,"puts higher average PnL in this replay"
+exit_reason,sequence_residual_override,691,242950,0.841,352,,7,"main positive exit path"
+exit_reason,protocol054_fallback,297,23020,0.579,78,,21,"longer and lower quality"
+exit_reason,target,29,67550,1.000,2329,,12,"small count, large winners"
+exit_reason,hard_stop,11,-14470,0.000,-1315,,16,"priority loss autopsy group"
+split,q4_2024_external,211,58280,0.692,,2540,,"external stress block"
+split,q3_2025,274,68740,0.850,,2600,,"strongest win rate"
+split,q4_2025,294,97020,0.762,,2905,,"largest block PnL in seed-1 replay"
+split,q1_2026,249,95010,0.719,,2890,,"includes March 2026"
+premium_bucket,0-1k,28,8930,0.786,319,,, "small sample"
+premium_bucket,1k-1.5k,81,27940,0.815,345,,,
+premium_bucket,1.5k-2k,119,35810,0.857,301,,,
+premium_bucket,2k-2.5k,176,45340,0.750,258,,,
+premium_bucket,2.5k-3k,219,74140,0.731,339,,,
+premium_bucket,3k-3.5k,386,116590,0.736,302,,,
+premium_bucket,3.5k+,19,10300,0.842,542,,,"small sample"
