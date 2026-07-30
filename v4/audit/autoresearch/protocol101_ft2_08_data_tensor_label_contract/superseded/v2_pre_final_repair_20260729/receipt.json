@@ -1,0 +1,78 @@
+{
+  "assertions": {
+    "all_28_ft2_20_findings_crosswalked": true,
+    "complete_ladder_safe_action_law_frozen": true,
+    "contract_dependent_features_are_not_global": true,
+    "contract_validation_check_count": 17,
+    "contract_validation_passed": true,
+    "d48_d49_and_one_dollar_soft_close_reproducible": true,
+    "exact_1555_forced_flat_frozen": true,
+    "fee_3_and_fee_4_are_separate_causal_paths": true,
+    "ft2_10_and_ft2_11_findings_remain_open_where_deferred": true,
+    "integer_cent_account_ledger_frozen": true,
+    "no_bid_full_loss_law_frozen": true,
+    "no_ft2_20_severity_downgraded": true,
+    "open_contract_survives_flat_ladder_recenter": true,
+    "owner_signed_sync_amendment_required_for_extension_activation": true,
+    "runtime_loader_cannot_read_label_partitions": true,
+    "signed_17_features_present_exactly_once_by_axis": true,
+    "simulator_v5_source_byte_identical": true,
+    "source_neutral_identity_and_alias_validation_frozen": true,
+    "target_valid_and_label_masks_are_not_runtime_inputs": true,
+    "tplus1_entry_and_exit_fills_frozen": true
+  },
+  "created_at_utc": "2026-07-29T21:26:00.899292+00:00",
+  "deliverable_hashes": {
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json": "83c854e6a8fdc9e293133d4797c2c97b05293b4cd7cd88d40e7732065146fb14",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/contract.md": "f52b2ba9bc63c8d1dc7ae104c153b8c6f120383ca9e2b1fb858e9367d5135820",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json": "9c70e6d93ba994e2cebe33e2bbc147cfbb9ff10be026bf4e199bb73227b074fc",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/fold_roles.json": "19710f535500c09ead3fbde32acadb002e2e0752dcd9f3a5c4c123463a19b1c4",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/identity_mapping_spec.json": "3db4c22152c713ebe1fc06e09afc778a8fa70a7a9fa43d74b416081c2502ba52",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json": "7ec40fa1d56e8acf3926bb214c9b4a426b954e3d77b1f29013077a9b338ed09d",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/replay_authority_v5_1_spec.json": "a8cfd134cc7005078a8d2569d2f368c1ed3b4a870ea36ebb7af3bda9248f9ba1",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/storage_spec.json": "a3bc4a472ccd4c848b2be7bd164555cd20ea28f0cd00a0496475c7aceae71767",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/synthetic_golden_vectors.json": "e1d3d99c78bf59f234b7a6e87a695a71635e2463d4ae46c1568eeac8aae992f7",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json": "16e82c3ffb1612034fac817908c13fc20701ebfbad0162106db5f714eb5deca5",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/validate_contract_v2.py": "7da0e19016e0aaeb5782680bb2307cbd257663475148c85720c16929286aada0",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/validation.json": "e0c83ffb816a568028d668add8e8f524ead3d31203669bc436b67ebc50224e69"
+  },
+  "graph_id": "protocol101-full-trader-v2",
+  "highest_allowed_claim": "FT2-08 (with its FT2-04/05 dependencies) is repaired against the FT2-20 findings under the owner's t+1 fill convention; FT2-10 repair is unblocked.",
+  "input_hashes": {
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json": "0cec80e1ce029bcbec200c991f9183a9b05f1e21b28016fe944fee0ae029b33a",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/findings_crosswalk.json": "0bab5217c3e4e8b6fbf308439cddede494224a86a1a1b9b26ed583816c647627",
+    "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/joined_review.md": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3",
+    "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/receipt.json": "b7beae089444bdec73fadec1037cbc1abd4bd6e29f1333346615a486164544f5",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09"
+  },
+  "next": "FT2-10-ENTRY-SCIENCE-CONTRACT-REPAIR",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "outcome": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "repair_of": {
+    "preserved_path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/superseded/v1_pre_tplus1_20260729/receipt.json",
+    "receipt_sha256": "56885fad09ea7034ce112c356edcce92bad0d9c52e93fb8e32cf66934f5ce518",
+    "schema_version": "Protocol101FT208NodeReceiptV1"
+  },
+  "schema_version": "Protocol101FT208NodeReceiptV2",
+  "self_hash": {
+    "included_in_deliverable_hashes": false,
+    "reason": "the receipt cannot hash itself without self-reference"
+  },
+  "side_effects": {
+    "ft2_10_repaired_or_started": false,
+    "ft2_11_repaired_or_started": false,
+    "model_fitting": false,
+    "model_training": false,
+    "outer_test_access": false,
+    "paid_data_or_compute": false,
+    "protected_holdout_access": false,
+    "real_data_tensor_built": false,
+    "recorder_or_broker_access": false,
+    "runtime_or_promotion_change": false,
+    "simulator_v5_modified": false,
+    "threshold_tuning": false
+  }
+}

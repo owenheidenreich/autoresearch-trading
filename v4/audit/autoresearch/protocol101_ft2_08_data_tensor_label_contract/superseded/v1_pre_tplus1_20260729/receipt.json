@@ -1,0 +1,81 @@
+{
+  "schema_version": "Protocol101FT208NodeReceiptV1",
+  "created_at_utc": "2026-07-29T15:15:45Z",
+  "graph_id": "protocol101-full-trader-v2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "outcome": "design_ready",
+  "next": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "highest_allowed_claim": "The data/tensor/label contract is frozen; FT2-10 may be drafted against it.",
+  "input_hashes": {
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json": "d724195999acf579a43768756b79f30ad122ec446933347b93cbbd8a7bbe9781",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/oracle_rules.json": "23a4cab2715c925a3c4261a508e69ac2c0f70157b93083ff129f4848ae03eb81",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/census_sessions.json": "f77e94e58d3214e490a8d87f888aa92d8b757b028299e533a63b83442df247cc",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json": "8a8805b22ef04a290edf421d5229d75eebc2301bc5246bd3bc595ee616cae583",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/family_distributions.csv": "5bd59171cf6be963fb9bc72ea19fadc0c7bb5ac956900f73e8c7aa7dd63b314e",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/friction_by_premium_band.csv": "6a28e19be5f6b61bfecb5406ce69016289ba8f5c85334545baf22ad9bedabe39",
+    "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_runner/runner_plan.json": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73"
+  },
+  "runner_plan_subobject_hashes": {
+    "expanding_folds_canonical_json_sha256": "c8cf2e3e68650f69142facb310bca46df231a18da526cf98536c3823e5a9732a",
+    "fold_sessions_canonical_json_sha256": "e7c1472d226aabe2af1b39f557934516b48bdd23f06b7d910c12aa80590cb9c5",
+    "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920"
+  },
+  "deliverable_hashes": {
+    "contract.md": "34ddf555bccc05aae70dd4ec162bb3e5e67b8da26bd612cdb1c972f7ccede9a9",
+    "tensor_schema.json": "890015b87c0a2636b554d4c27aea9261f91604783f70bde0a96f402e4469e585",
+    "storage_spec.json": "a92645af245016490376ffff85d7e338aa37b73ea706b4040f1c159c9dc9a8c9",
+    "fold_roles.json": "e5f21f566341b3d2b10baa476a6af309f31ba658a5d944a99bd6015aff032599",
+    "label_join_spec.json": "8695f4bbde17c4375b67efeadffe1d8c85576544eea8b729d2a7564733651847"
+  },
+  "assertions": {
+    "authority_hash_verified": true,
+    "graph_hash_verified": true,
+    "sole_success_route_verified": true,
+    "ft2_04_input_hashes_match_receipt": true,
+    "ft2_05_input_hashes_match_receipt": true,
+    "runner_plan_adopted_by_hashed_reference": true,
+    "five_expanding_folds_frozen": true,
+    "one_session_embargo_frozen": true,
+    "census_is_design_diagnostic_only": true,
+    "census_outer_test_intersection_is_empty": true,
+    "protected_holdout_untouched": true,
+    "identity_key_and_continuity_frozen": true,
+    "ninety_minute_tensor_schema_frozen": true,
+    "forty_two_contract_slots_plus_wait_frozen": true,
+    "all_required_masks_frozen": true,
+    "three_channel_admission_extension_reserved_and_inactive": true,
+    "d40_open_state_rows_frozen": true,
+    "d47_precision_law_applied_field_by_field": true,
+    "ft2_04_label_definitions_inherited_unchanged": true,
+    "census_band_and_phase_provenance_recorded": true,
+    "synthetic_examples_only": true,
+    "all_machine_readable_deliverables_parse": true
+  },
+  "side_effects": {
+    "real_data_tensor_built": false,
+    "new_market_statistic_computed": false,
+    "model_training": false,
+    "model_fitting": false,
+    "threshold_tuning": false,
+    "ft2_10_started": false,
+    "authority_modified": false,
+    "graph_modified": false,
+    "label_spec_modified": false,
+    "oracle_rules_modified": false,
+    "census_manifest_modified": false,
+    "simulator_v5_modified": false,
+    "protected_holdout_access": false,
+    "recorder_or_broker_access": false,
+    "paid_data_or_compute": false,
+    "runtime_or_promotion_change": false
+  },
+  "self_hash": {
+    "included_in_deliverable_hashes": false,
+    "reason": "the receipt is the single manifest and cannot contain its own SHA-256 without a self-reference"
+  }
+}

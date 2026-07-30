@@ -1,0 +1,425 @@
+{
+  "schema_version": "Protocol101FT208TensorSchemaV1",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "decision_convention": {
+    "timezone": "America/New_York",
+    "cadence": "one_completed_minute",
+    "history_length_minutes": 90,
+    "history_order": "oldest_to_newest",
+    "option_information_cutoff": "completed interval at decision minute t",
+    "index_context_cutoff": "through t minus 1 minute",
+    "cross_session_backfill": false,
+    "future_information_allowed": false
+  },
+  "ladder": {
+    "wait_action_index": 0,
+    "contract_action_count": 42,
+    "action_count": 43,
+    "strike_count": 21,
+    "rights_per_strike": 2,
+    "strike_offsets_points": [
+      -50,
+      -45,
+      -40,
+      -35,
+      -30,
+      -25,
+      -20,
+      -15,
+      -10,
+      -5,
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50
+    ],
+    "right_order": [
+      "call",
+      "put"
+    ],
+    "slot_linearization": "strike_idx major, then right_idx",
+    "slot_is_identity": false
+  },
+  "market_history": {
+    "values": {
+      "name": "market_history_fp32",
+      "shape": [
+        90,
+        19
+      ],
+      "dtype": "float32",
+      "model_input": true,
+      "feature_order": [
+        "spx_vwap_gap_points",
+        "spx_vwap_gap_bps",
+        "spx_vwap_gap_over_session_range",
+        "session_range_bps",
+        "momentum_5m_bps",
+        "momentum_15m_bps",
+        "momentum_5m_over_session_range",
+        "momentum_15m_over_session_range",
+        "omar_clipped_neg3_pos3",
+        "vwap_side_alignment_flag",
+        "omar_side_alignment_flag",
+        "momentum15_side_alignment_flag",
+        "D.near_atm.straddle_mid_spot_bps",
+        "D.near_atm.put_call_mid_ratio",
+        "D.near_atm.side_smile_slope_bps_per_5pt",
+        "E.bs.delta",
+        "E.bs.gamma",
+        "minutes_since_open",
+        "minutes_to_close"
+      ]
+    },
+    "phase": {
+      "name": "market_phase_id",
+      "shape": [
+        90
+      ],
+      "dtype": "uint8",
+      "model_input": true,
+      "categories": {
+        "0": "opening_discovery",
+        "1": "primary_morning",
+        "2": "europe_close_transition",
+        "3": "lunch",
+        "4": "afternoon",
+        "5": "power_hour_entry",
+        "6": "manage_exit_only"
+      }
+    },
+    "available_mask": {
+      "name": "market_history_available_mask",
+      "shape": [
+        90
+      ],
+      "dtype": "bool",
+      "model_input": "attention_mask_only",
+      "true_means": "the same-session completed minute and every required active market feature are causally available"
+    }
+  },
+  "contract_path_core": {
+    "name": "contract_path_core_fp32",
+    "shape": [
+      90,
+      42,
+      4
+    ],
+    "dtype": "float32",
+    "model_input": true,
+    "feature_order": [
+      "offset_points",
+      "moneyness_bps",
+      "internal_delta",
+      "internal_gamma"
+    ],
+    "raw_vendor_greeks_allowed": false,
+    "identity_alignment_required": true
+  },
+  "admitted_price_extension": {
+    "path_values": {
+      "name": "contract_path_extension_fp32",
+      "shape": [
+        90,
+        42,
+        3
+      ],
+      "dtype": "float32",
+      "model_input": "only_active_admitted_channels"
+    },
+    "snapshot_values": {
+      "name": "ladder_snapshot_extension_fp32",
+      "shape": [
+        42,
+        3
+      ],
+      "dtype": "float32",
+      "model_input": "only_active_admitted_channels"
+    },
+    "channel_active_mask": {
+      "name": "extension_channel_active_mask",
+      "shape": [
+        3
+      ],
+      "dtype": "bool"
+    },
+    "value_available_mask": {
+      "name": "extension_value_available_mask",
+      "shape": [
+        90,
+        42,
+        3
+      ],
+      "dtype": "bool"
+    },
+    "initial_state": {
+      "active_channels": 0,
+      "values": "canonical_zero",
+      "channel_active_mask": false,
+      "value_available_mask": false
+    },
+    "activation_authority": [
+      "FT2-25-FULL-LADDER-FEATURE-ADMISSION passing receipt",
+      "FT2-26-INDEPENDENT-FEATURE-ADMISSION-AUDIT accepting receipt",
+      "owner-signable synchronization amendment when required"
+    ],
+    "channel_reuse": false,
+    "shape_change_on_activation": false
+  },
+  "exact_contract_path_arrays": [
+    {
+      "name": "contract_dictionary_index",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1,
+      "model_input": false
+    },
+    {
+      "name": "contract_observation_time_ns",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "int64",
+      "missing": -1,
+      "model_input": false
+    },
+    {
+      "name": "contract_strike_milli_points",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1,
+      "model_input": false
+    },
+    {
+      "name": "contract_expiry_yyyymmdd",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1,
+      "model_input": false
+    },
+    {
+      "name": "contract_right_code",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "uint8",
+      "missing": 255,
+      "model_input": false
+    },
+    {
+      "name": "contract_bid_cents",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1,
+      "model_input": false
+    },
+    {
+      "name": "contract_ask_cents",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1,
+      "model_input": false
+    },
+    {
+      "name": "contract_mid_cents",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1,
+      "model_input": false
+    },
+    {
+      "name": "contract_tick_regime_code",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "uint8",
+      "missing": 255,
+      "model_input": false
+    }
+  ],
+  "ladder_snapshot": {
+    "core_values": {
+      "name": "ladder_snapshot_core_fp32",
+      "shape": [
+        42,
+        4
+      ],
+      "dtype": "float32",
+      "model_input": true,
+      "feature_order": [
+        "offset_points",
+        "moneyness_bps",
+        "internal_delta",
+        "internal_gamma"
+      ],
+      "must_equal": "newest identity-matched contract_path_core_fp32 step"
+    },
+    "contract_dictionary_index": {
+      "name": "ladder_contract_dictionary_index",
+      "shape": [
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1
+    },
+    "strike": {
+      "name": "ladder_strike_milli_points",
+      "shape": [
+        42
+      ],
+      "dtype": "int32",
+      "missing": -1
+    },
+    "right": {
+      "name": "ladder_right_code",
+      "shape": [
+        42
+      ],
+      "dtype": "uint8",
+      "missing": 255
+    }
+  },
+  "masks": [
+    {
+      "name": "contract_path_available_mask",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "bool",
+      "true_means": "exact contract exists and every required active path channel is available"
+    },
+    {
+      "name": "missing_minute_mask",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "bool",
+      "true_means": "contract is in the governed universe but the causal minute is absent or unusable"
+    },
+    {
+      "name": "pre_listing_mask",
+      "shape": [
+        90,
+        42
+      ],
+      "dtype": "bool",
+      "true_means": "history minute precedes this exact contract's first governed appearance"
+    },
+    {
+      "name": "current_quote_available_mask",
+      "shape": [
+        42
+      ],
+      "dtype": "bool",
+      "true_means": "current causal quote exists and passes freshness/completeness"
+    },
+    {
+      "name": "tradability_eligibility_mask",
+      "shape": [
+        42
+      ],
+      "dtype": "bool",
+      "true_means": "SPXW 0DTE, well formed, complete, affordable, and guard eligible before D48/D49"
+    },
+    {
+      "name": "d48_premium_cap_mask",
+      "shape": [
+        42
+      ],
+      "dtype": "bool",
+      "true_means": "premium at risk plus round-trip fee is at most 5 percent of session-start equity"
+    },
+    {
+      "name": "d49_budget_mask",
+      "shape": [
+        42
+      ],
+      "dtype": "bool",
+      "true_means": "realized session loss plus new premium at risk plus fee is within the 5 percent daily budget",
+      "assembly": "injected from causal serial account state at replay/live decision time"
+    },
+    {
+      "name": "action_mask",
+      "shape": [
+        43
+      ],
+      "dtype": "bool",
+      "true_means": "action is physically and safely executable",
+      "wait_rule": "index 0 is always true while flat"
+    }
+  ],
+  "open_state": {
+    "source_row_minutes_et": {
+      "start_inclusive": "15:31",
+      "end_inclusive": "15:55",
+      "maximum_rows_per_full_session": 25
+    },
+    "position_identity_fields": [
+      "open_contract_dictionary_index",
+      "open_contract_id_utf8",
+      "open_strike_milli_points",
+      "open_right_code",
+      "open_expiry_yyyymmdd",
+      "entry_time_ns",
+      "entry_ask_cents"
+    ],
+    "actions_before_1555": [
+      "HOLD",
+      "EXIT"
+    ],
+    "actions_at_1555": [
+      "EXIT"
+    ],
+    "new_entry_allowed": false,
+    "trajectory_consumption": "only when a causal serial replay or live state has an open position"
+  },
+  "precision": {
+    "float16_allowed": false,
+    "float16_unlock_node": "FT2-30-ENTRY-HARNESS-PILOT",
+    "float16_unlock_requirement": "identical actions on a reference slice and score drift below a separately preregistered bound versus fp32"
+  },
+  "fail_closed": [
+    "duplicate decision identity",
+    "duplicate contract-path identity",
+    "identity decomposition mismatch",
+    "slot history without exact identity match",
+    "future timestamp in a feature tensor",
+    "prior-session history backfill",
+    "label field exposed to model input",
+    "active extension without accepted admission receipts",
+    "action outside action_mask",
+    "float16 before FT2-30 acceptance"
+  ]
+}

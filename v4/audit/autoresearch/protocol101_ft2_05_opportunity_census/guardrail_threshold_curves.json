@@ -1,0 +1,310 @@
+{
+  "0.00": {
+    "afternoon": {
+      "early_drawdown": -0.9517241379310345,
+      "pre_profit_adverse_excursion": -1.03,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 144.0,
+      "underwater_burden": 129.5181818181818
+    },
+    "europe_close_transition": {
+      "early_drawdown": -0.7,
+      "pre_profit_adverse_excursion": -1.03,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 279.0,
+      "underwater_burden": 250.01403508771932
+    },
+    "lunch": {
+      "early_drawdown": -0.7885714285714286,
+      "pre_profit_adverse_excursion": -1.03,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 249.0,
+      "underwater_burden": 231.90833333333336
+    },
+    "opening_discovery": {
+      "early_drawdown": -0.7146341463414634,
+      "pre_profit_adverse_excursion": -1.03,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 382.0,
+      "underwater_burden": 371.73636363636365
+    },
+    "power_hour_entry": {
+      "early_drawdown": -1.03,
+      "pre_profit_adverse_excursion": -1.03,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 54.0,
+      "underwater_burden": 49.05833333333332
+    },
+    "primary_morning": {
+      "early_drawdown": -0.8740740740740742,
+      "pre_profit_adverse_excursion": -1.03,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 369.0,
+      "underwater_burden": 354.7724137931034
+    }
+  },
+  "0.10": {
+    "afternoon": {
+      "early_drawdown": -0.5615384615384615,
+      "pre_profit_adverse_excursion": -1.0101694915254238,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 96.0,
+      "underwater_burden": 89.54562243502052
+    },
+    "europe_close_transition": {
+      "early_drawdown": -0.44883720930232557,
+      "pre_profit_adverse_excursion": -1.0115384615384615,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 261.10000000000036,
+      "underwater_burden": 216.18276923076922
+    },
+    "lunch": {
+      "early_drawdown": -0.4585365853658537,
+      "pre_profit_adverse_excursion": -1.0122448979591836,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 185.0,
+      "underwater_burden": 168.55261111111108
+    },
+    "opening_discovery": {
+      "early_drawdown": -0.4613636363636364,
+      "pre_profit_adverse_excursion": -1.012,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 376.0,
+      "underwater_burden": 336.93137521222405
+    },
+    "power_hour_entry": {
+      "early_drawdown": -0.6883720930232559,
+      "pre_profit_adverse_excursion": -1.01,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 42.69999999999982,
+      "underwater_burden": 31.502258064516127
+    },
+    "primary_morning": {
+      "early_drawdown": -0.44999999999999996,
+      "pre_profit_adverse_excursion": -1.0103448275862068,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 320.0,
+      "underwater_burden": 279.6042105263158
+    }
+  },
+  "0.20": {
+    "afternoon": {
+      "early_drawdown": -0.47692307692307684,
+      "pre_profit_adverse_excursion": -0.7863636363636364,
+      "profitable_window_stability": 0.009433962264150943,
+      "time_to_first_profit": 55.0,
+      "underwater_burden": 75.35957446808511
+    },
+    "europe_close_transition": {
+      "early_drawdown": -0.37692307692307697,
+      "pre_profit_adverse_excursion": -0.5819545454545454,
+      "profitable_window_stability": 0.00392156862745098,
+      "time_to_first_profit": 50.0,
+      "underwater_burden": 201.8861132075472
+    },
+    "lunch": {
+      "early_drawdown": -0.3812499999999999,
+      "pre_profit_adverse_excursion": -0.6928396572827411,
+      "profitable_window_stability": 0.005681818181818182,
+      "time_to_first_profit": 80.0,
+      "underwater_burden": 150.4144980147476
+    },
+    "opening_discovery": {
+      "early_drawdown": -0.38399999999999995,
+      "pre_profit_adverse_excursion": -1.0068181818181818,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 371.0,
+      "underwater_burden": 315.0974113475178
+    },
+    "power_hour_entry": {
+      "early_drawdown": -0.6000000000000001,
+      "pre_profit_adverse_excursion": -0.8860952380952379,
+      "profitable_window_stability": 0.0,
+      "time_to_first_profit": 29.0,
+      "underwater_burden": 25.832792792792795
+    },
+    "primary_morning": {
+      "early_drawdown": -0.365,
+      "pre_profit_adverse_excursion": -0.7035980148883372,
+      "profitable_window_stability": 0.003401360544217687,
+      "time_to_first_profit": 96.0,
+      "underwater_burden": 255.5810909090909
+    }
+  },
+  "0.25": {
+    "afternoon": {
+      "early_drawdown": -0.43928571428571417,
+      "pre_profit_adverse_excursion": -0.5605263157894737,
+      "profitable_window_stability": 0.018691588785046728,
+      "time_to_first_profit": 28.0,
+      "underwater_burden": 69.22476498237367
+    },
+    "europe_close_transition": {
+      "early_drawdown": -0.344,
+      "pre_profit_adverse_excursion": -0.4235863095238095,
+      "profitable_window_stability": 0.011320754716981131,
+      "time_to_first_profit": 26.0,
+      "underwater_burden": 195.40549395161295
+    },
+    "lunch": {
+      "early_drawdown": -0.35151515151515145,
+      "pre_profit_adverse_excursion": -0.4675675675675676,
+      "profitable_window_stability": 0.012578616352201259,
+      "time_to_first_profit": 31.0,
+      "underwater_burden": 142.6679117147708
+    },
+    "opening_discovery": {
+      "early_drawdown": -0.3449346405228758,
+      "pre_profit_adverse_excursion": -0.7836124401913875,
+      "profitable_window_stability": 0.00267379679144385,
+      "time_to_first_profit": 160.25,
+      "underwater_burden": 306.3199347826087
+    },
+    "power_hour_entry": {
+      "early_drawdown": -0.5666666666666665,
+      "pre_profit_adverse_excursion": -0.6646584440227705,
+      "profitable_window_stability": 0.023809523809523808,
+      "time_to_first_profit": 21.0,
+      "underwater_burden": 23.915454545454548
+    },
+    "primary_morning": {
+      "early_drawdown": -0.3326086956521738,
+      "pre_profit_adverse_excursion": -0.4787878787878787,
+      "profitable_window_stability": 0.008928571428571428,
+      "time_to_first_profit": 38.0,
+      "underwater_burden": 244.71826612903226
+    }
+  },
+  "0.30": {
+    "afternoon": {
+      "early_drawdown": -0.40555555555555556,
+      "pre_profit_adverse_excursion": -0.4129032258064516,
+      "profitable_window_stability": 0.031746031746031744,
+      "time_to_first_profit": 15.0,
+      "underwater_burden": 63.65488095238095
+    },
+    "europe_close_transition": {
+      "early_drawdown": -0.3162790697674418,
+      "pre_profit_adverse_excursion": -0.3237218045112782,
+      "profitable_window_stability": 0.019817742643829586,
+      "time_to_first_profit": 16.0,
+      "underwater_burden": 188.3663396226415
+    },
+    "lunch": {
+      "early_drawdown": -0.324390243902439,
+      "pre_profit_adverse_excursion": -0.3468085106382979,
+      "profitable_window_stability": 0.022222222222222223,
+      "time_to_first_profit": 17.0,
+      "underwater_burden": 135.93636363636364
+    },
+    "opening_discovery": {
+      "early_drawdown": -0.31537157757496737,
+      "pre_profit_adverse_excursion": -0.4798787878787879,
+      "profitable_window_stability": 0.005405405405405406,
+      "time_to_first_profit": 26.0,
+      "underwater_burden": 300.0743292682927
+    },
+    "power_hour_entry": {
+      "early_drawdown": -0.5276480990274094,
+      "pre_profit_adverse_excursion": -0.5214425770308123,
+      "profitable_window_stability": 0.038461538461538464,
+      "time_to_first_profit": 13.0,
+      "underwater_burden": 22.205731092436974
+    },
+    "primary_morning": {
+      "early_drawdown": -0.30750000000000005,
+      "pre_profit_adverse_excursion": -0.3430476190476188,
+      "profitable_window_stability": 0.01557632398753894,
+      "time_to_first_profit": 19.0,
+      "underwater_burden": 235.26028571428571
+    }
+  },
+  "0.40": {
+    "afternoon": {
+      "early_drawdown": -0.3433333333333333,
+      "pre_profit_adverse_excursion": -0.24090909090909096,
+      "profitable_window_stability": 0.07407407407407407,
+      "time_to_first_profit": 7.0,
+      "underwater_burden": 52.22162162162163
+    },
+    "europe_close_transition": {
+      "early_drawdown": -0.2654545454545455,
+      "pre_profit_adverse_excursion": -0.20666666666666664,
+      "profitable_window_stability": 0.05078125,
+      "time_to_first_profit": 7.0,
+      "underwater_burden": 173.27682785299805
+    },
+    "lunch": {
+      "early_drawdown": -0.2733333333333334,
+      "pre_profit_adverse_excursion": -0.21111111111111114,
+      "profitable_window_stability": 0.05416666666666667,
+      "time_to_first_profit": 8.0,
+      "underwater_burden": 123.85
+    },
+    "opening_discovery": {
+      "early_drawdown": -0.2687500000000001,
+      "pre_profit_adverse_excursion": -0.2575,
+      "profitable_window_stability": 0.021152852815121952,
+      "time_to_first_profit": 11.0,
+      "underwater_burden": 285.00008602150535
+    },
+    "power_hour_entry": {
+      "early_drawdown": -0.46111111111111114,
+      "pre_profit_adverse_excursion": -0.3,
+      "profitable_window_stability": 0.08163265306122448,
+      "time_to_first_profit": 6.0,
+      "underwater_burden": 19.04196209587514
+    },
+    "primary_morning": {
+      "early_drawdown": -0.2666666666666666,
+      "pre_profit_adverse_excursion": -0.20909090909090913,
+      "profitable_window_stability": 0.036312849162011177,
+      "time_to_first_profit": 7.0,
+      "underwater_burden": 217.73791812865494
+    }
+  },
+  "0.50": {
+    "afternoon": {
+      "early_drawdown": -0.2863636363636364,
+      "pre_profit_adverse_excursion": -0.14399999999999993,
+      "profitable_window_stability": 0.14285714285714285,
+      "time_to_first_profit": 4.0,
+      "underwater_burden": 42.7
+    },
+    "europe_close_transition": {
+      "early_drawdown": -0.22083333333333333,
+      "pre_profit_adverse_excursion": -0.13023255813953488,
+      "profitable_window_stability": 0.09793265132139813,
+      "time_to_first_profit": 4.0,
+      "underwater_burden": 157.900625
+    },
+    "lunch": {
+      "early_drawdown": -0.22499999999999987,
+      "pre_profit_adverse_excursion": -0.13333333333333344,
+      "profitable_window_stability": 0.11087470449172576,
+      "time_to_first_profit": 4.0,
+      "underwater_burden": 111.98616541353383
+    },
+    "opening_discovery": {
+      "early_drawdown": -0.22682926829268282,
+      "pre_profit_adverse_excursion": -0.1586581709145427,
+      "profitable_window_stability": 0.04736842105263158,
+      "time_to_first_profit": 5.0,
+      "underwater_burden": 260.78
+    },
+    "power_hour_entry": {
+      "early_drawdown": -0.3925925925925927,
+      "pre_profit_adverse_excursion": -0.17001885606536765,
+      "profitable_window_stability": 0.15151515151515152,
+      "time_to_first_profit": 4.0,
+      "underwater_burden": 15.820381231671554
+    },
+    "primary_morning": {
+      "early_drawdown": -0.2239130434782608,
+      "pre_profit_adverse_excursion": -0.12926829268292675,
+      "profitable_window_stability": 0.07612456747404844,
+      "time_to_first_profit": 4.0,
+      "underwater_burden": 199.60500000000002
+    }
+  }
+}

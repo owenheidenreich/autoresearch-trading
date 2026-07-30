@@ -1,0 +1,307 @@
+{
+  "schema_version": "Protocol101FT210ForecastHeadsV2",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "label_authority": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json",
+    "sha256": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60"
+  },
+  "horizons": [
+    "h3",
+    "h5",
+    "h10",
+    "h20",
+    "h45",
+    "h90",
+    "remaining_session"
+  ],
+  "inapplicable_target_rule": "A family-horizon pair that FT2-04 does not define is absent, not zero-filled. Label validity controls supervised loss only and is never a composer input; runtime horizon availability is causal clock state from composer_spec.json.",
+  "head_types": {
+    "continuous_quantile": {
+      "quantiles": [
+        0.1,
+        0.25,
+        0.5,
+        0.75,
+        0.9
+      ],
+      "loss": "masked_pinball_loss",
+      "point_forecast": "final-model disjoint-calibration q50",
+      "monotonicity": "parameterize q10 directly and each higher quantile as the prior quantile plus softplus(nonnegative_increment); post-hoc sorting is forbidden",
+      "calibration": "same-final-model disjoint calibration defined in calibration_spec.json"
+    },
+    "bounded_continuous_quantile": {
+      "quantiles": [
+        0.1,
+        0.25,
+        0.5,
+        0.75,
+        0.9
+      ],
+      "support": "[0,1]",
+      "loss": "masked_pinball_loss_on_logit_with_epsilon_1e-6",
+      "point_forecast": "inverse_logit(final calibrated q50)",
+      "monotonicity": "nonnegative quantile increments before inverse-logit",
+      "calibration": "same-final-model disjoint calibration defined in calibration_spec.json"
+    },
+    "binary_probability": {
+      "output": "probability_in_[0,1]",
+      "loss": "masked_binary_cross_entropy",
+      "calibration": "isotonic regression on predictions from the frozen final model over its disjoint calibration sessions; insufficient evidence blocks confidence-controlled behavior"
+    },
+    "count_distribution": {
+      "output": "categorical_probability_mass_over_integer_support_0_through_causally_available_minutes",
+      "loss": "masked_categorical_cross_entropy",
+      "point_forecast": "smallest integer whose cumulative probability is at least 0.5",
+      "calibration": "same-final-model disjoint cumulative-probability isotonic calibration"
+    },
+    "discrete_survival": {
+      "output": "one-minute conditional hazard from minute 1 through causally available_minutes plus survival mass beyond that clock boundary",
+      "loss": "right_censor_aware_discrete_time_negative_log_likelihood",
+      "derived_outputs": [
+        "probability_of_first_real_profit_by_horizon",
+        "q10_event_minute",
+        "q25_event_minute",
+        "q50_event_minute",
+        "q75_event_minute",
+        "q90_event_minute",
+        "survival_probability_at_horizon"
+      ],
+      "calibration": "same-final-model disjoint isotonic calibration of cumulative incidence at each registered horizon"
+    },
+    "minute_offset_distribution": {
+      "output": "categorical_probability_mass_over_integer_offset_1_through_causally_available_minutes",
+      "loss": "masked_categorical_cross_entropy",
+      "point_forecast": "smallest minute offset whose cumulative probability is at least 0.5",
+      "calibration": "same-final-model disjoint cumulative-probability isotonic calibration",
+      "runtime_role": "diagnostic_and_attribution_only"
+    }
+  },
+  "families": [
+    {
+      "family": "early_drawdown",
+      "family_id": 0,
+      "horizons": [
+        "h3",
+        "h5",
+        "h10"
+      ],
+      "continuous_metrics": [
+        "worst",
+        "q00",
+        "q05",
+        "q10",
+        "q25"
+      ],
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ],
+      "head_type": "continuous_quantile",
+      "auxiliary_metrics": [
+        {
+          "name": "argmin_minute_offset",
+          "head_type": "minute_offset_distribution"
+        }
+      ],
+      "favorable_direction": "higher"
+    },
+    {
+      "family": "time_to_first_real_profit",
+      "family_id": 1,
+      "horizons": "all",
+      "event_head": {
+        "metric": "time_to_first_real_profit",
+        "head_type": "discrete_survival"
+      },
+      "continuous_metrics": [
+        "first_profit_size"
+      ],
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ],
+      "continuous_head_type": "continuous_quantile",
+      "favorable_direction": {
+        "event_probability": "higher",
+        "event_minute": "lower",
+        "first_profit_size": "higher"
+      }
+    },
+    {
+      "family": "pre_profit_adverse_excursion",
+      "family_id": 2,
+      "horizons": "all",
+      "continuous_metrics": [
+        "pre_profit_adverse_excursion"
+      ],
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ],
+      "head_type": "continuous_quantile",
+      "auxiliary_metrics": [
+        {
+          "name": "immediate_profit",
+          "head_type": "binary_probability"
+        }
+      ],
+      "favorable_direction": "higher"
+    },
+    {
+      "family": "underwater_burden",
+      "family_id": 3,
+      "horizons": "all",
+      "continuous_metrics": [
+        "depth_duration_integral"
+      ],
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollar_minutes_per_contract",
+        "fee_adjusted_return_minutes_on_entry_premium"
+      ],
+      "continuous_head_type": "continuous_quantile",
+      "count_metrics": [
+        "total_underwater_minutes",
+        "longest_continuous_underwater_minutes"
+      ],
+      "count_head_type": "count_distribution",
+      "favorable_direction": "lower"
+    },
+    {
+      "family": "profitable_window_stability",
+      "family_id": 4,
+      "horizons": "all",
+      "bounded_continuous_metrics": [
+        "fraction_positive_minutes",
+        "one_minute_jitter_sensitivity"
+      ],
+      "bounded_head_type": "bounded_continuous_quantile",
+      "count_metrics": [
+        "longest_profitable_window_minutes",
+        "profitable_window_count"
+      ],
+      "count_head_type": "count_distribution",
+      "favorable_direction": {
+        "fraction_positive_minutes": "higher",
+        "longest_profitable_window_minutes": "higher",
+        "profitable_window_count": "lower_conditional_on_fraction_positive_above_zero",
+        "one_minute_jitter_sensitivity": "lower"
+      }
+    },
+    {
+      "family": "upside",
+      "family_id": 5,
+      "horizons": "all",
+      "continuous_metrics": [
+        "mfe",
+        "q75",
+        "q90",
+        "q95",
+        "q100",
+        "profit_area"
+      ],
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ],
+      "head_type": "continuous_quantile",
+      "auxiliary_metrics": [
+        {
+          "name": "argmax_minute_offset",
+          "head_type": "minute_offset_distribution"
+        }
+      ],
+      "favorable_direction": "higher"
+    }
+  ],
+  "action_conditioned_outputs": {
+    "required": true,
+    "cannot_be_ablated_or_skipped": true,
+    "wait_probability_head": {
+      "scope": "one output per governed flat decision after the causal risk-set mask is assembled",
+      "inputs": "shared causal state plus permutation-invariant pooling of contract representations, causal action masks, and path-head forecasts; no realized labels",
+      "output": "sigmoid probability p_wait in [0,1]",
+      "training_target": "1 iff the frozen realized-label audit composer applied to the exact governed risk set says WAIT, else 0; constructed only after label join in the training pipeline",
+      "loss": "masked_binary_cross_entropy over governed flat decisions",
+      "calibration": "isotonic calibration on predictions from the same final model over its disjoint calibration sessions",
+      "runtime_derivation": "the calibrated output itself; no implementation may substitute action rate or a post-hoc constant"
+    },
+    "selected_contract_regret_heads": {
+      "scope": "one pair of outputs conditional on the frozen composer selecting ENTER on a governed flat decision",
+      "realized_target": "r=max(0,max_Q_over_exact_governed_risk_set-Q_selected)/2 in [0,1], with Q and the risk set frozen by objective_spec.json",
+      "expected_regret": {
+        "output": "sigmoid mean_regret in [0,1]",
+        "loss": "masked_mean_squared_error(mean_regret,r)"
+      },
+      "raw_q90_regret": {
+        "output": "mean_regret+(1-mean_regret)*sigmoid(nonnegative_tail_logit), guaranteeing mean_regret<=raw_q90<=1",
+        "loss": "masked_pinball_loss_tau_0.90(raw_q90,r)"
+      },
+      "calibrated_upper_bound": "min(1,raw_q90+qhat), where qhat is the finite-sample 0.90 one-sided conformal quantile of max(0,r-raw_q90) from the same frozen final model's disjoint calibration entries",
+      "no_enter_rows": "excluded from regret loss and retained in WAIT-head loss; they may not be relabeled as zero regret"
+    },
+    "loss_weight": {
+      "wait_probability": 0.1,
+      "expected_regret": 0.05,
+      "q90_regret": 0.05,
+      "application": "add these fixed weighted losses to the renormalized six-family primary loss",
+      "inner_loop_tunable": false,
+      "missing_target": "mask only the unavailable action-conditioned loss; if minimum calibration evidence later fails, the candidate is ineligible rather than silently continuing"
+    },
+    "training_data_path": [
+      "build causal model inputs from FT2-08 feature partitions",
+      "join physically separate FT2-04 labels using FT2-08 label_join_spec only inside the training process",
+      "build nested empirical CDFs from fit sessions only",
+      "run the frozen realized-label audit composer to construct WAIT and regret targets",
+      "fit heads on model-fit sessions",
+      "predict the disjoint final-calibration sessions once",
+      "calibrate and hash WAIT and regret outputs",
+      "strip every label and audit target from inference artifacts"
+    ]
+  },
+  "loss_weight_family": {
+    "base_family_weight": "1/6 for each family",
+    "within_family_horizon_weight": "equal over applicable supervised targets",
+    "within_horizon_metric_weight": "equal over registered metrics",
+    "dual_unit_weight": "1/2 dollars and 1/2 return for paired targets",
+    "auxiliary_weight": "0.25 times the mean primary-metric weight within that family; auxiliary losses do not enter composer ranking directly",
+    "inner_loop_tunable": true,
+    "allowed_multiplier_per_family": [
+      0.5,
+      2.0
+    ],
+    "renormalize_after_multiplier": true,
+    "forbidden": [
+      "zeroing a family",
+      "zeroing a registered horizon",
+      "adding or deleting a target",
+      "changing dual-unit parity",
+      "changing action-conditioned output weights",
+      "selecting weights from outer validation"
+    ]
+  },
+  "ensemble": {
+    "independent_seed_count": 3,
+    "seed_identifiers": [
+      "seed_a",
+      "seed_b",
+      "seed_c"
+    ],
+    "seed_values_are_frozen_in_ft2_30": true,
+    "aggregate_quantile": "median across seed-specific same-model calibrated quantiles",
+    "epistemic_scale": "1.4826 times median absolute deviation of seed-specific q50 forecasts"
+  },
+  "target_firewall": {
+    "labels_are_model_inputs": false,
+    "runtime_loader_can_read_labels": false,
+    "future_path_fields_are_model_inputs": false,
+    "label_validity_is_composer_input": false,
+    "hindsight_exit_minute_is_a_target": false,
+    "max_future_price_is_a_complete_target": false,
+    "mfe_is_allowed_only_as_one_registered_component_of_the_six-family_path_forecast": true,
+    "oracle_action_is_a_runtime_target": false,
+    "action_conditioned_targets_exist_only_in_training_label_join": true,
+    "protected_data_access": false
+  }
+}

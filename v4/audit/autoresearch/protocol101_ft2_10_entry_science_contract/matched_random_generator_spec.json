@@ -1,0 +1,145 @@
+{
+  "schema_version": "Protocol101FT210MatchedRandomGeneratorSpecV3",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "sole_generator_source": true,
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "attempts": {
+    "count": 8,
+    "seed_ids_in_order": [
+      10121001,
+      10121002,
+      10121003,
+      10121004,
+      10121005,
+      10121006,
+      10121007,
+      10121008
+    ],
+    "no_redraw": true,
+    "no_replacement_attempt": true,
+    "no_best_attempt_selection": true,
+    "all_attempts_and_failures_remain_in_multiplicity_ledger": true
+  },
+  "candidate_specific_matching_budget": {
+    "freeze_before_outcomes": [
+      "candidate artifact identity",
+      "outer fold and governed-session identities",
+      "universal decision grid hash",
+      "candidate causal intent trace",
+      "candidate intent counts by matching cell"
+    ],
+    "label_blind": true,
+    "future_path_blind": true,
+    "matching_cells": [
+      "outer_fold",
+      "session",
+      "call_or_put",
+      "ATM_NEAR_WING",
+      "decision_time_premium_band"
+    ],
+    "intent_budget": "exact candidate intent count in each matching cell",
+    "candidate_identity_in_random_namespace": false,
+    "reason": "candidate specificity enters only through the frozen matching budget and legal risk set; it may not create a second random-key namespace"
+  },
+  "decision_time_legal_pair_population": {
+    "unit": "one exact (completed decision minute t, source-neutral SPXW 0DTE contract) pair",
+    "clock": "information through t only",
+    "all_required": [
+      "the governed universal-grid minute is flat, action-eligible, and earlier than 15:30 America/New_York",
+      "the exact current 42-contract ladder and source-neutral identity are valid",
+      "the current bid and ask are finite, positive, executable, fresh, and internally consistent",
+      "the contract ask A_t is at least 100 cents",
+      "affordability, D48 intent, and D49 intent pass from A_t under the attempt's own causal policy ledger and active fee path",
+      "complete-ladder, warmup, context-freshness, no-prior-soft-close, and no-daily-stop masks pass"
+    ],
+    "forbidden": [
+      "A_(t+1)",
+      "t+1 quote existence or freshness",
+      "fill success",
+      "future bid or path",
+      "label availability, target_valid, PnL, or oracle rank"
+    ],
+    "fee_paths": "construct and replay fee_3 and fee_4 as separate causal trajectories"
+  },
+  "canonical_random_key": {
+    "object_fields_in_semantic_order": [
+      "attempt_seed_id",
+      "outer_fold",
+      "session",
+      "decision_time_ns",
+      "source_neutral_contract_id",
+      "expiry_yyyymmdd",
+      "strike_milli_points",
+      "right_code"
+    ],
+    "serialization": "UTF-8 JSON object with sorted keys, compact separators (comma and colon), decimal integers, exact strings, and no NaN or Infinity",
+    "digest": "SHA-256(serialization)",
+    "rank": "interpret digest bytes 0 through 7 as one unsigned big-endian 64-bit integer",
+    "tie_break": "the complete 32-byte digest, then the lexicographic exact-contract identity tuple",
+    "candidate_artifact_hash_in_key": false,
+    "universal_grid_hash_in_key": false,
+    "additional_seed_namespace": false
+  },
+  "schedule_construction": {
+    "algorithm_in_order": [
+      "freeze the label-blind candidate-specific matching budget",
+      "enumerate every decision-time legal pair under the causal t-intent law",
+      "compute the canonical random key independently for every registered attempt seed",
+      "within each matching cell sort by rank, complete digest, then exact-contract identity",
+      "take the first required count without replacement",
+      "if a cell has fewer legal pairs than its frozen budget, mark that attempt incomplete",
+      "never borrow from another cell and never redraw"
+    ],
+    "outcome_conditioning": false,
+    "label_conditioning": false,
+    "schedule_identity_artifact": "ordered selected pair list plus complete eligible-population hash, matching-budget hash, attempt seed, and canonical generator-spec hash"
+  },
+  "selected_identity_fill_resolution": {
+    "selection_at_t": "uses only the decision-time legal pair population",
+    "recheck_at_tplus1": "inspect only the selected exact identity and require exact/fresh ask, 100-cent floor, affordability, D48, and D49 under the attempt's own ledger",
+    "failed_recheck": {
+      "position_opened": false,
+      "premium_charged_cents": 0,
+      "fee_charged_cents": 0,
+      "realized_pnl_change_cents": 0,
+      "alternative_contract_substitution": false,
+      "next_decision_no_earlier_than": "t+2"
+    },
+    "successful_recheck": "fill one contract at the exact t+1 executable ask, then enter the common neutral lifecycle"
+  },
+  "serial_replay": {
+    "policy_state": "each attempt owns its cash, session-start equity, D48, D49, soft-close, daily-stop, pending, occupancy, and exit ledger",
+    "soft_close": "current-ladder existence predicate under the active fee path; computed floor costs are 10300 cents for fee_3 and 10400 cents for fee_4",
+    "lifecycle": "hold every successful fill to the exact 15:55 America/New_York bid-or-zero forced-flat boundary",
+    "one_successful_trade_per_session_maximum": true,
+    "structural_wait_pending_occupied_and_zero_trade_sessions_retained": true
+  },
+  "post_replay_matching": {
+    "entry_intent_count": "exact",
+    "executed_trade_count_relative_drift_max": 0.05,
+    "call_put_total_variation_max": 0.05,
+    "moneyness_total_variation_max": 0.06,
+    "mean_executed_premium_relative_drift_max": 0.1,
+    "mean_realized_holding_minutes_relative_drift_max": 0.1,
+    "total_realized_occupancy_relative_drift_max": 0.1,
+    "all_eight_must_pass": true,
+    "failure": "INSUFFICIENT_MATCHED_CONTROL with no replacement attempt"
+  },
+  "aggregate": {
+    "allowed_only_when_all_eight_attempts_pass": true,
+    "definition": "nonselectable equal-weight mean of the eight attempt-specific session statistics",
+    "each_attempt_still_reported": true
+  },
+  "prohibited_overrides": [
+    "an FT2-11 candidate-specific seed namespace",
+    "a second comparator random key",
+    "using t+1 information to form the time-t eligible population",
+    "redraw, replacement, best-seed selection, or outcome matching",
+    "local consumer edits to this algorithm"
+  ]
+}

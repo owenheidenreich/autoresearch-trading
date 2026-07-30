@@ -1,0 +1,232 @@
+{
+  "schema_version": "Protocol101FT208FieldSemanticsV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired_pending_independent_review",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "canonical_sources": {
+    "seventeen_feature_formulas": {
+      "path": "v4/model/protocol101_canonical_stage1_contract.py",
+      "sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39"
+    },
+    "ladder_rounding_and_slot_order": {
+      "path": "v4/live/protocol101_feature_contract.py",
+      "sha256": "3801797f835942a0e42e8b7e5fbf819e0cd5c5aa2eee43e8e394c2a6386271b3"
+    }
+  },
+  "completed_minute_law": {
+    "decision_timezone": "America/New_York",
+    "decision_time_t": "right edge of completed interval (t-1 minute,t]",
+    "option_feature_cutoff": "event/source timestamp at or before t; canonical completed-minute state stamped t",
+    "index_context_cutoff": "completed index/context state stamped t-1 minute",
+    "buy_execution": "BUY committed after tensor t fills only from completed-minute t+1 executable ask",
+    "exit_execution": "EXIT committed after open-state tensor v fills only from completed-minute v+1 executable bid",
+    "descriptive_path_start": "strictly after entry fill e=t+1; first mark is t+2",
+    "last_entry_decision_et": "15:29",
+    "last_entry_fill_et": "15:30",
+    "last_learned_exit_decision_et": "15:54",
+    "forced_flat_fill_et": "15:55"
+  },
+  "quote_completeness_and_freshness": {
+    "maximum_quote_age_ms": 90000,
+    "current_entry_quote_requires": [
+      "finite positive bid",
+      "finite positive ask",
+      "ask greater than or equal to bid",
+      "both legs belong to the same completed-minute state",
+      "quote age at most 90000 ms",
+      "exact contract identity"
+    ],
+    "tplus1_entry_fill_requires": [
+      "finite positive ask at exactly t+1",
+      "quote age at most 90000 ms",
+      "same exact contract identity"
+    ],
+    "no_tplus1_ask": "committed candidate is not executable and has no valid realized-entry label",
+    "future_no_bid": "zero option value for path labels; never forward-fill or substitute an earlier bid",
+    "forced_flat_no_bid": "zero option value at exact 15:55"
+  },
+  "opening_and_reconnect_law": {
+    "history_capacity_minutes": 90,
+    "minimum_consecutive_complete_minutes_for_new_entry": 15,
+    "pre_minimum_flat_action": "WAIT only",
+    "history_before_session_open": "masked; no prior-session backfill",
+    "reconnect_or_delayed_feed": "reset complete-minute streak to zero",
+    "reentry_unlock": "15 new consecutive complete canonical minutes with complete ladder and synchronized context",
+    "open_position_during_reset": "new entries blocked; dedicated open-contract record remains active for HOLD/EXIT and protective flattening"
+  },
+  "market_context_axis": {
+    "shape": [90, 11],
+    "alpha_channels": [
+      {
+        "name": "spx_vwap_gap_points",
+        "formula": "spx_close - spx_vwap",
+        "units": "SPX points"
+      },
+      {
+        "name": "spx_vwap_gap_bps",
+        "formula": "(spx_close-spx_vwap)/max(abs(spx_close),1)*10000",
+        "units": "basis points"
+      },
+      {
+        "name": "spx_vwap_gap_over_session_range",
+        "formula": "(spx_close-spx_vwap)/max(abs(session_range),1)",
+        "units": "ratio"
+      },
+      {
+        "name": "session_range_bps",
+        "formula": "session_range/max(abs(spx_close),1)*10000",
+        "units": "basis points"
+      },
+      {
+        "name": "momentum_5m_bps",
+        "formula": "momentum_5m/max(abs(spx_close),1)*10000",
+        "units": "basis points"
+      },
+      {
+        "name": "momentum_15m_bps",
+        "formula": "momentum_15m/max(abs(spx_close),1)*10000",
+        "units": "basis points"
+      },
+      {
+        "name": "momentum_5m_over_session_range",
+        "formula": "momentum_5m/max(abs(session_range),1)",
+        "units": "ratio"
+      },
+      {
+        "name": "momentum_15m_over_session_range",
+        "formula": "momentum_15m/max(abs(session_range),1)",
+        "units": "ratio"
+      },
+      {
+        "name": "omar_clipped_neg3_pos3",
+        "formula": "min(max(omar,-3),3)",
+        "units": "clipped ratio"
+      }
+    ],
+    "clock_channels": [
+      "minutes_since_open",
+      "minutes_to_close"
+    ],
+    "note": "The market axis contains only contract-invariant values. Right-dependent alignment flags, D-family surface values, and E-family Greeks are contract-axis fields."
+  },
+  "contract_axis": {
+    "shape": [90, 42, 10],
+    "geometry_channels": [
+      {
+        "name": "offset_points",
+        "formula": "strike-atm_strike",
+        "units": "SPX points"
+      },
+      {
+        "name": "moneyness_bps",
+        "formula": "(strike-spx_for_ladder)/max(abs(spx_for_ladder),1)*10000",
+        "units": "basis points"
+      }
+    ],
+    "signed_alpha_channels": [
+      {
+        "name": "vwap_side_alignment_flag",
+        "formula": "1 for call when gap>0 or put when gap<0; else 0"
+      },
+      {
+        "name": "omar_side_alignment_flag",
+        "formula": "1 for call when omar>0 or put when omar<0; else 0"
+      },
+      {
+        "name": "momentum15_side_alignment_flag",
+        "formula": "1 for call when momentum_15m>0 or put when momentum_15m<0; else 0"
+      },
+      {
+        "name": "D.near_atm.straddle_mid_spot_bps",
+        "formula": "(quantized_call_mid+quantized_put_mid)/max(abs(spx_close),1)*10000 at the same strike",
+        "applicability": "abs(offset_points)<=19"
+      },
+      {
+        "name": "D.near_atm.put_call_mid_ratio",
+        "formula": "quantized_put_mid/quantized_call_mid at the same strike",
+        "applicability": "abs(offset_points)<=19 and call_mid>0"
+      },
+      {
+        "name": "D.near_atm.side_smile_slope_bps_per_5pt",
+        "formula": "nearest finite same-right slope of quantized_mid/spx*10000 versus offset, scaled to 5 points",
+        "applicability": "abs(offset_points)<=19"
+      },
+      {
+        "name": "E.bs.delta",
+        "formula": "Black-Scholes delta from exact slot quantized mid, spot, strike, right, and time to 16:00 ET"
+      },
+      {
+        "name": "E.bs.gamma",
+        "formula": "Black-Scholes gamma from exact slot quantized mid, spot, strike, right, and time to 16:00 ET"
+      }
+    ],
+    "mid_quantization": 0.05,
+    "black_scholes_constants": {
+      "risk_free_rate": 0.05,
+      "dividend_yield": 0.0,
+      "iv_search_bounds": [0.0001, 5.0],
+      "iv_bisection_iterations": 45,
+      "minimum_mid": 0.1,
+      "expiry_clock": "same-session 16:00 America/New_York with minimum 60 seconds"
+    },
+    "raw_vendor_greeks_allowed": false
+  },
+  "market_phase_categories": {
+    "0": "[09:30,09:45) opening_discovery",
+    "1": "[09:45,11:15) primary_morning",
+    "2": "[11:15,11:45) europe_close_transition",
+    "3": "[11:45,13:30) lunch",
+    "4": "[13:30,15:00) afternoon",
+    "5": "[15:00,15:30) power_hour_entry",
+    "6": "[15:30,15:56) manage_exit_only"
+  },
+  "ft2_20_legacy_field_crosswalk": {
+    "purpose": "Freeze semantics for every field named by the reviewed V1 [90,19] market-history plus [90,42,4] contract-path layout while documenting the repaired, nonduplicative tensor axis.",
+    "legacy_market_history_19": {
+      "spx_vwap_gap_points": "market_context_axis.alpha_channels",
+      "spx_vwap_gap_bps": "market_context_axis.alpha_channels",
+      "spx_vwap_gap_over_session_range": "market_context_axis.alpha_channels",
+      "session_range_bps": "market_context_axis.alpha_channels",
+      "momentum_5m_bps": "market_context_axis.alpha_channels",
+      "momentum_15m_bps": "market_context_axis.alpha_channels",
+      "momentum_5m_over_session_range": "market_context_axis.alpha_channels",
+      "momentum_15m_over_session_range": "market_context_axis.alpha_channels",
+      "omar_clipped_neg3_pos3": "market_context_axis.alpha_channels",
+      "vwap_side_alignment_flag": "contract_axis.signed_alpha_channels",
+      "omar_side_alignment_flag": "contract_axis.signed_alpha_channels",
+      "momentum15_side_alignment_flag": "contract_axis.signed_alpha_channels",
+      "D.near_atm.straddle_mid_spot_bps": "contract_axis.signed_alpha_channels",
+      "D.near_atm.put_call_mid_ratio": "contract_axis.signed_alpha_channels",
+      "D.near_atm.side_smile_slope_bps_per_5pt": "contract_axis.signed_alpha_channels",
+      "E.bs.delta": "contract_axis.signed_alpha_channels",
+      "E.bs.gamma": "contract_axis.signed_alpha_channels",
+      "minutes_since_open": "market_context_axis.clock_channels",
+      "minutes_to_close": "market_context_axis.clock_channels"
+    },
+    "legacy_contract_path_core_4": {
+      "offset_points": "contract_axis.geometry_channels",
+      "moneyness_bps": "contract_axis.geometry_channels",
+      "internal_delta": "contract_axis.signed_alpha_channels.E.bs.delta",
+      "internal_gamma": "contract_axis.signed_alpha_channels.E.bs.gamma"
+    },
+    "global_e_family_resolution": "No contract-free E-family Greek is permitted. E.bs.delta and E.bs.gamma are computed once per exact source-neutral contract identity and stored once on the repaired contract axis. The V1 internal_delta/internal_gamma aliases point to those same values; they are not duplicate model channels.",
+    "coverage": {
+      "legacy_market_history_fields": 19,
+      "legacy_contract_path_core_fields": 4,
+      "unmapped_fields": 0,
+      "signed_alpha_channels_after_deduplication": 17
+    }
+  },
+  "source_provenance_required_per_value": [
+    "event_time_ns",
+    "source_time_ns",
+    "receipt_time_ns when live",
+    "source plane",
+    "builder hash",
+    "field semantics manifest hash"
+  ],
+  "synthetic_acceptance": {
+    "golden_vector_path": "synthetic_golden_vectors.json",
+    "required": "historical and live builders independently reproduce every exact field, identity, mask, and timestamp in each vector"
+  }
+}

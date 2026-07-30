@@ -1,0 +1,151 @@
+{
+  "schema_version": "Protocol101FT208AccountStateLedgerV3",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "intent_fill_recheck_law": {
+    "path": "intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "authoritative": true
+  },
+  "numeric_unit": "integer USD cents",
+  "rounding": "round monetary fills and commissions to nearest cent before ledger mutation; compare integer cents",
+  "session_start": {
+    "timezone": "America/New_York",
+    "canonical_frozen_timestamp": "session date 09:30:00 America/New_York",
+    "offline_value": {
+      "first_governed_session": 1000000,
+      "later_governed_session": "the policy-specific simulator cash cents immediately after the prior governed session's exact forced-flat/exit realization and all booked fee/commission events, carried unchanged to the current 09:30 boundary",
+      "mark_to_market_or_future_cashflow_allowed": false,
+      "single_source": "the immutable policy causal cash ledger"
+    },
+    "live_paper_value": {
+      "source_field": "IBKR paper-account NetLiquidation",
+      "required_account_class": "paper",
+      "canonical_selection": "Select the authenticated snapshot with the greatest broker source timestamp in the closed interval [09:29:00,09:30:00] America/New_York for the session date; break a source-timestamp tie only by the greatest authenticated broker update sequence.",
+      "receipt_deadline": "09:30:05 America/New_York",
+      "maximum_source_age_at_freeze_seconds": 60,
+      "normalization": "parse the broker value exactly as decimal USD, round once to nearest cent using ROUND_HALF_EVEN, and freeze the resulting integer cents for the session",
+      "single_source": "the selected authenticated IBKR NetLiquidation snapshot; no fallback to AvailableFunds, BuyingPower, prior-day values, estimates, or operator guesses",
+      "missing_stale_ambiguous_or_late": "block all new entries for the session and log SESSION_START_EQUITY_UNAVAILABLE"
+    },
+    "account_scope": {
+      "configured_account": "the one explicitly configured Protocol101 paper account",
+      "dedication_requirement": "the account must be declared dedicated to this Protocol101 evidence run for the entire session",
+      "zero_external_state_required": [
+        "no non-Protocol101 open position",
+        "no non-Protocol101 pending order",
+        "no non-Protocol101 execution or commission event since the prior session close",
+        "no unexplained deposit, withdrawal, fee, interest, dividend, or manual cash adjustment since the prior session close"
+      ],
+      "verification_source": "authenticated account, position, order, execution, commission, and cash-flow snapshots joined to the immutable Protocol101 ledger",
+      "failure": "block all new entries; never subtract or estimate unrelated state"
+    },
+    "missing_or_multiple_accounts": "block all new entries",
+    "snapshot_fields_logged": [
+      "account_id",
+      "NetLiquidation raw text",
+      "normalized cents",
+      "broker source timestamp",
+      "receipt timestamp",
+      "broker update sequence",
+      "session date"
+    ]
+  },
+  "owned_trade_ledger": {
+    "principle": "D49 and the daily stop use Protocol101's own reconciled fill-and-commission ledger, not a lagging broker realized-PnL aggregate",
+    "event_order": [
+      "entry fill",
+      "entry commission",
+      "exit fill",
+      "exit commission",
+      "realized trade close",
+      "D49 and daily-stop recomputation"
+    ],
+    "partial_fill": "reserve actual filled quantity and cash immediately; one-contract policy blocks another entry while any quantity is open or pending",
+    "cancel_or_reject": "release only the unfilled reservation after broker acknowledgement",
+    "late_commission": "retain a conservative preregistered commission reserve until exact commission arrives; reconcile cents without rewriting prior decision records",
+    "realized_session_pnl_cents": "sum exact net closed-trade PnL cents for this session",
+    "realized_session_loss_cents": "max(0,-realized_session_pnl_cents)"
+  },
+  "d48": {
+    "daily_budget_cents": "floor(0.05*session_start_equity_cents)",
+    "decision_time_intent_cost_cents": "A_t_quote_cents*100+active_round_trip_fee_cents",
+    "intent_mask_true": "decision_time_intent_cost_cents<=daily_budget_cents",
+    "fill_time_recheck": "At t+1 recompute actual_fill_cost_cents=A_(t+1)_quote_cents*100+active_round_trip_fee_cents and require actual_fill_cost_cents<=daily_budget_cents.",
+    "future_quote_in_intent_mask": false
+  },
+  "d49": {
+    "intent_mask_true": "realized_session_loss_cents+decision_time_intent_cost_cents<=daily_budget_cents",
+    "fill_time_recheck": "At t+1 require realized_session_loss_cents+actual_fill_cost_cents<=daily_budget_cents.",
+    "premium_floor_quote_cents": 100,
+    "soft_close_floor_cost_formula": "100*100+active_round_trip_fee_cents",
+    "fee_path_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "soft_close_trigger": "At flat decision t, permanently soft-close the active policy/fee-path session when the exact current ladder contains no otherwise-eligible contract with A_t_quote_cents>=100 whose D48 and D49 intent masks pass.",
+    "soft_close_effect": "permanent WAIT for new entries for the rest of the session; existing position may still HOLD/EXIT",
+    "reason": "$1.00 option premium times 100 plus the active fee path, combined with the causal current-ladder existence predicate",
+    "shared_hard_coded_threshold_forbidden": true
+  },
+  "rejected_fill_accounting": {
+    "trigger": "the committed exact contract fails any t+1 identity/freshness, premium-floor, affordability, D48, or D49 recheck",
+    "position_opened": false,
+    "premium_charged_cents": 0,
+    "fee_charged_cents": 0,
+    "realized_pnl_change_cents": 0,
+    "alternative_contract_substitution": false,
+    "occupancy": "the slot is reserved only through the t+1 resolution; the policy may next decide no earlier than t+2",
+    "event": "append the complete rejected-fill event required by intent_fill_recheck_law.json without rewriting the t intent"
+  },
+  "daily_stop": {
+    "basis": "signed realized_session_pnl_cents only",
+    "trigger": "realized_session_pnl_cents<=-daily_budget_cents",
+    "effect": "no new entries for the session; existing position remains under lifecycle and protective exit rules"
+  },
+  "restart_recovery": {
+    "sources": [
+      "immutable Protocol101 order/fill/commission log",
+      "IBKR open positions",
+      "IBKR completed orders and executions",
+      "frozen session-start account snapshot"
+    ],
+    "required_result": "bit-exact reconstruction of open quantity, cash reservations, realized_session_pnl_cents, D48 mask, D49 mask, soft-close state, and daily-stop state",
+    "mismatch": "block new entries and route to operator reconciliation; never choose the more permissive state"
+  },
+  "per_decision_audit_fields": [
+    "session_start_equity_cents",
+    "daily_budget_cents",
+    "realized_session_pnl_cents",
+    "realized_session_loss_cents",
+    "remaining_daily_budget_cents",
+    "decision_time_A_t_quote_cents_by_slot",
+    "decision_time_intent_cost_cents_by_slot",
+    "d48_intent_mask_by_slot",
+    "d49_intent_mask_by_slot",
+    "active_fee_path_and_fee_cents",
+    "active_fee_path_floor_cost_cents",
+    "otherwise_eligible_floor_candidate_count",
+    "soft_close_active",
+    "daily_stop_active",
+    "committed_contract_identity_or_WAIT",
+    "tplus1_actual_ask_cents_or_missing",
+    "tplus1_actual_fill_cost_cents_or_missing",
+    "fill_recheck_result_and_reason",
+    "ledger_event_hash"
+  ],
+  "policy_comparison": "each candidate and comparator owns a separate causal ledger; masks are recomputed from that policy's prior realized trades rather than shared after divergence",
+  "fail_closed_conditions": [
+    "missing session-start snapshot",
+    "stale, late, ambiguous, or non-session-date session-start snapshot",
+    "non-dedicated paper account or unexplained external account state",
+    "unreconciled open position",
+    "unresolved partial fill",
+    "commission reserve unavailable",
+    "ledger sequence gap",
+    "duplicate fill identity",
+    "broker/local position mismatch",
+    "non-cent-exact arithmetic"
+  ]
+}

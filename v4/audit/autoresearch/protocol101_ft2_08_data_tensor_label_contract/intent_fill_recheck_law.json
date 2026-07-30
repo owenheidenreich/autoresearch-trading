@@ -1,0 +1,139 @@
+{
+  "schema_version": "Protocol101FT208IntentFillRecheckLawV1",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "scope": "The single causal entry-legality law for FT2-08 labels/census, FT2-10 composition and comparators, FT2-11 evidence, and the future historical/live guard implementation.",
+  "numeric_primitives": {
+    "money_unit": "integer USD cents",
+    "option_quote_unit": "integer cents per option unit",
+    "contract_multiplier": 100,
+    "premium_floor_quote_cents": 100,
+    "premium_floor_contract_cents": 10000,
+    "daily_budget_fraction_numerator": 5,
+    "daily_budget_fraction_denominator": 100,
+    "daily_budget_cents": "floor(session_start_equity_cents*5/100)",
+    "rounding": "Convert the executable option quote to integer quote cents before multiplication; fee reserves and every ledger mutation are integer cents; no floating comparison is legal."
+  },
+  "fee_paths": {
+    "primary": {
+      "id": "fee_3",
+      "round_trip_fee_cents": 300,
+      "premium_floor_plus_fee_cents": 10300
+    },
+    "stress": {
+      "id": "fee_4",
+      "round_trip_fee_cents": 400,
+      "premium_floor_plus_fee_cents": 10400
+    },
+    "threshold_formula": "premium_floor_plus_fee_cents=premium_floor_quote_cents*contract_multiplier+active_round_trip_fee_cents",
+    "hard_coded_shared_threshold_forbidden": true,
+    "separate_causal_ledgers_required": true
+  },
+  "decision_time_intent": {
+    "clock": "At completed decision minute t, use information with event/source timestamps no later than the frozen FT2-08 cutoffs through t.",
+    "screen_price": "A_t, the selected exact contract's last known executable ask in the completed option state stamped t.",
+    "future_information_forbidden": [
+      "A_(t+1)",
+      "existence or freshness of the t+1 quote",
+      "fill success or rejection",
+      "future bid, path, label, target_valid, or label presence"
+    ],
+    "intent_cost_cents": "A_t_quote_cents*100+active_round_trip_fee_cents",
+    "per_contract_base_requirements": [
+      "source-neutral identity and tradability valid",
+      "fresh finite positive bid and ask in the same completed-minute state",
+      "ask greater than or equal to bid",
+      "premium_floor_quote_cents<=A_t_quote_cents",
+      "affordability from the policy's causal available-cash ledger",
+      "complete ladder, warmup, context-freshness, flat, no pending intent, no daily stop, and no prior soft close"
+    ],
+    "d48_intent_mask": "intent_cost_cents<=daily_budget_cents",
+    "d49_intent_mask": "realized_session_loss_cents+intent_cost_cents<=daily_budget_cents",
+    "buy_intent_legal": "Every base requirement, D48 intent mask, and D49 intent mask is true.",
+    "composer_and_comparator_contract": "The candidate composer, P5, and every live-style control may see only this decision-time intent mask. They know nothing about t+1 when choosing WAIT or one exact contract.",
+    "commit": "A legal BUY selected at t reserves the one-position slot through the t+1 fill-time resolution."
+  },
+  "soft_close": {
+    "evaluation_time": "Before action selection at every flat decision t, independently for each active fee path and policy ledger.",
+    "otherwise_eligible_floor_candidate": "A contract satisfying the decision-time base requirements other than prior soft-close, with A_t_quote_cents>=100, D48 intent true, and D49 intent true.",
+    "trigger": "No otherwise_eligible_floor_candidate exists in the current exact 42-contract ladder.",
+    "threshold_role": "The arithmetic lower bound for any floor candidate is computed from the active path: 10300 cents on fee_3 and 10400 cents on fee_4. The threshold is not a shared literal and does not replace the ladder-dependent existence predicate.",
+    "effect": "Permanently set soft_close_active=true for that policy, fee path, and session; all later new-entry intents are WAIT. Existing-position HOLD, EXIT, and forced-flat laws remain active.",
+    "sub_floor_contract_cannot_keep_lane_open": true,
+    "state_reset": "Only the next session can reset soft_close_active."
+  },
+  "fill_time_recheck": {
+    "clock": "At completed minute t+1 after a committed BUY intent, inspect only the committed exact contract.",
+    "price": "A_(t+1), the actual fresh executable ask for that identity at exactly t+1.",
+    "fill_cost_cents": "A_(t+1)_quote_cents*100+active_round_trip_fee_cents",
+    "all_required": [
+      "fresh finite positive A_(t+1) for the committed exact identity",
+      "A_(t+1)_quote_cents>=premium_floor_quote_cents",
+      "fill_cost_cents<=causal available cash after prior ledger events and reservations",
+      "fill_cost_cents<=daily_budget_cents",
+      "realized_session_loss_cents+fill_cost_cents<=daily_budget_cents"
+    ],
+    "pass": "Open exactly one contract at A_(t+1); book the fee reserve once; occupancy begins at t+1.",
+    "failure": "Reject the committed fill fail-safe. No position opens, no premium or fee is charged, realized PnL is unchanged, and no alternative contract may be substituted at t+1.",
+    "next_action_time_after_failure": "The policy is flat after the t+1 resolution and may next decide no earlier than t+2 if all causal entry gates pass.",
+    "rejection_reasons": [
+      "NO_TPLUS1_EXECUTABLE_ASK",
+      "TPLUS1_PREMIUM_BELOW_FLOOR",
+      "TPLUS1_AFFORDABILITY_FAIL",
+      "TPLUS1_D48_CAP_FAIL",
+      "TPLUS1_D49_BUDGET_FAIL",
+      "IDENTITY_OR_FRESHNESS_FAIL"
+    ],
+    "rejected_fill_event_fields": [
+      "session",
+      "policy_identity",
+      "fee_path",
+      "decision_time_t",
+      "resolution_time_tplus1",
+      "source_neutral_contract_id",
+      "A_t_quote_cents",
+      "A_t_intent_cost_cents",
+      "A_t_d48_intent_mask",
+      "A_t_d49_intent_mask",
+      "A_tplus1_quote_cents_or_missing",
+      "A_tplus1_fill_cost_cents_or_missing",
+      "rejection_reason",
+      "position_opened=false",
+      "premium_charged_cents=0",
+      "fee_charged_cents=0",
+      "ledger_event_hash"
+    ]
+  },
+  "label_oracle_census_semantics": {
+    "successful_fill_label": "A realized-entry path label exists only after the selected intent passes the t+1 recheck and fills.",
+    "rejected_intent_label": "A rejected intent has no position/path label, no fee, and zero realized policy PnL; it remains an explicit failed-fill event in serial population and census accounting.",
+    "eligibility_fields": [
+      "intent_eligible_at_t",
+      "fill_recheck_pass_at_tplus1",
+      "fill_recheck_rejection_reason",
+      "realized_entry_label_present"
+    ],
+    "live_style_policy_rule": "P5, matched random, candidate, and every other live-style policy select from intent_eligible_at_t only, then recheck only the selected contract at t+1.",
+    "hindsight_oracle_rule": "An explicitly labeled oracle ceiling may use future outcomes to rank opportunities, but it must report intent opportunity counts and fill-recheck rejection counts separately and may not rename a t+1 outcome as a decision-time legality mask.",
+    "denominator_rule": "WAIT, committed intents, rejected fills, pending resolution, occupied minutes, and zero-trade sessions remain in their governed denominators."
+  },
+  "historical_live_guard_equivalence": {
+    "required": "Historical replay, the historical-style source plane, the IBKR source plane, and the live order guard implement the same integer arithmetic, ordering, fee-path parameters, state inputs, intent mask, selected-contract-only recheck, rejection event, and fail-closed behavior.",
+    "broker_aggregate_substitution_for_policy_ledger": false,
+    "upstream_boolean_trusted_without_recomputation": false,
+    "mismatch": "invalid_evidence and WAIT/no fill; never choose the more permissive result."
+  },
+  "required_boundary_fixtures": [
+    "A_t passes D48 but A_(t+1) is one cent over D48",
+    "A_t passes D49 but A_(t+1) is one cent over D49",
+    "A_t is exactly $1.00 and A_(t+1) is $0.99",
+    "missing A_(t+1)",
+    "fee_3 floor candidate costs exactly 10300 cents",
+    "fee_4 floor candidate costs exactly 10400 cents",
+    "same ladder soft-closes under fee_4 but remains open under fee_3",
+    "no otherwise-eligible >=$1 ladder contract although remaining budget exceeds 10400 cents",
+    "rejected fill books no position, premium, fee, or PnL",
+    "failed fill may retry at t+2 but not at t+1"
+  ]
+}

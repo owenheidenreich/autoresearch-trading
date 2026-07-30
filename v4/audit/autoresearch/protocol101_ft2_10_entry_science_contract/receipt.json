@@ -1,0 +1,87 @@
+{
+  "attempt": 2,
+  "coordinated_goal": "FT2-FINAL-REPAIR",
+  "deliverable_hashes": {
+    "calibration_spec.json": "d686d57e49938445dbd8ea37ec1b46caf020d606b6929145ee5679c6dbe9e5f8",
+    "composer_spec.json": "5de80b6417bdafcd56497ce1c344e7fe039cb021f5ee50465be8ccc06018a8e9",
+    "contract.md": "1aea4e50d1b1a613a15b99d28d0db907fd5dbc319f617b00c30b4e0872508e38",
+    "controls_spec.json": "f7c81327fce43e7f2e04d2e7c9c20e608d4ca1ca6ffec633e4d79ce8c52af3d3",
+    "findings_crosswalk.json": "763b149afc4a66597872b86e59decb1e018cbd6c4c38bbc77ae57b29f63e03f8",
+    "forecast_heads.json": "612095a4a6fdb14bdabf9009b67589a4f98135d8b40734227816f012b9c59c62",
+    "matched_random_generator_spec.json": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+    "objective_spec.json": "3b5148c79a52977b2d849f4185e5f5dd676604357b5e5d762bc4084ed77f41f0"
+  },
+  "design_repair_budget": {
+    "attempt": 2,
+    "maximum_attempts": 2,
+    "remaining_after_completion": 0
+  },
+  "finding_disposition": {
+    "partially_answered_count": 0,
+    "rebutted_count": 0,
+    "unanswered_count": 0,
+    "unified_crosswalk": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/findings_crosswalk.json",
+    "unified_crosswalk_sha256": "78f69b89e0857c30af6f354cd8a26db923f075c9700f01d3971012462d7fa16d",
+    "verdict": "ANSWERED"
+  },
+  "goal": "FT2-10",
+  "highest_allowed_claim": "All rerun001 findings are answered under one coordinated repair with machine-verified cross-contract consistency; the final re-review is unblocked.",
+  "inputs": {
+    "canonical_matched_random_generator": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/matched_random_generator_spec.json",
+      "sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754"
+    },
+    "census_v3_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
+    },
+    "consolidated_authority": {
+      "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+      "sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a"
+    },
+    "intent_fill_recheck_law": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+      "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+    },
+    "rerun001_joined_review": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/joined_review.md",
+      "sha256": "068fd6e7f49362d69ffaa935abd1fc043a62251f2c1ef6922a62d9416265dc4a"
+    },
+    "rerun001_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/receipt.json",
+      "sha256": "8338b51ecd1ba33d33ed9fa6635456f71092745cdd62559857a9bbca280c0abc"
+    },
+    "simulator_v5": {
+      "path": "v4/model/protocol101_serial_simulator_v5.py",
+      "sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+    },
+    "upstream_FT2_08_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+      "sha256": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c"
+    }
+  },
+  "next_goal": {
+    "goal": "FT2-20",
+    "phase": "final re-review with fresh seats",
+    "status": "not_started"
+  },
+  "outcome": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "repair_of": {
+    "preservation_verified": true,
+    "preserved_path": "superseded/v2_pre_final_repair_20260729/receipt.json",
+    "receipt_sha256": "5108b909740fad187c4c0349196243ed47aa1cd2785a46e9f5c7c6f2f336bda8",
+    "schema_version": "Protocol101FT210NodeReceiptV2"
+  },
+  "schema_version": "Protocol101FT210NodeReceiptV3",
+  "side_effects": {
+    "broker_access": false,
+    "final_re_review_started": false,
+    "new_session_statistics_beyond_census_v3": false,
+    "paid_compute": false,
+    "protected_data_access": false,
+    "recorder_access": false,
+    "simulator_v5_modified": false,
+    "training_or_fitting": false
+  }
+}

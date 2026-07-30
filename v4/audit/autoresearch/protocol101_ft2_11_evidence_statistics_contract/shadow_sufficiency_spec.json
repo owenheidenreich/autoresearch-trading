@@ -1,0 +1,167 @@
+{
+  "schema_version": "Protocol101FT211ShadowSufficiencySpecV3",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "purpose": "Freeze source-transfer evidence treatment and session-clustered no-order shadow sufficiency without authorizing collection or orders.",
+  "recorder_governance": {
+    "status": "deliberately_stopped_by_owner",
+    "new_paired_day_assumed": false,
+    "collection_authorized": false,
+    "broker_or_order_endpoint_authorized": false,
+    "insufficient_existing_development_pairs": "source_transfer_insufficient; historical component research may continue, but decision-shadow, live-shadow, and paper activation remain blocked",
+    "report_only_5s_study": "evidence_standard.json:/recorder_latency_study"
+  },
+  "historical_to_IBKR_source_transfer": {
+    "source": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/source_transfer_gate",
+    "source_sha256": "d686d57e49938445dbd8ea37ec1b46caf020d606b6929145ee5679c6dbe9e5f8",
+    "candidate_specific": true,
+    "same_live_observation_two_implementation_planes_is_not_source_transfer": true,
+    "allowed_population": "already-recorded sessions classified development by the sealed-day governance manifest",
+    "forbidden_population": [
+      "burned",
+      "validation",
+      "sealed",
+      "protected holdout",
+      "unassigned",
+      "new recorder sessions under this repair"
+    ],
+    "pair_key": [
+      "session_date_yyyymmdd",
+      "completed decision_time_ns",
+      "source_neutral_contract_id",
+      "expiry_yyyymmdd",
+      "strike_milli_points",
+      "right_code"
+    ],
+    "minimum_evidence": {
+      "distinct_sessions": 3,
+      "paired_flat_decisions": 500
+    },
+    "required_natural_strata_when_present": [
+      "market phase including opening warmup",
+      "ATM recenter event",
+      "missing or stale quote",
+      "reconnect or reset",
+      "each active extension channel",
+      "open-state outside-current-ladder row"
+    ],
+    "tolerances": {
+      "identity_slot_map_masks_actions_integer_cents_and_clock": "exact",
+      "fp32_model_fields": "abs(reference-runtime)<=1e-6+1e-5*abs(reference)",
+      "extension_inactive": "exact inactive mask and zero model contribution",
+      "complete_ladder_and_reset_actions": "exact WAIT while flat and exact safe HOLD/EXIT precedence while open",
+      "candidate_action_agreement_min": 0.99
+    },
+    "score_gap_p95": {
+      "quantity": "absolute historical-minus-IBKR difference in selected-cluster-versus-best-outside-cluster primary-score gap",
+      "estimator": "nearest-rank order statistic ceil(0.95*n), one-based, no interpolation",
+      "zero_only_if": "every paired score gap is bit-identical",
+      "artifact_required": "candidate-specific source_transfer_gap_p95.json"
+    },
+    "pass": "Every identity, minimum, present stratum, tolerance, action-agreement, and p95 artifact requirement passes and independently reproduces.",
+    "below_minimum_or_missing_natural_stratum": "source_transfer_insufficient",
+    "sufficient_tolerance_or_action_failure": "source_transfer_fail",
+    "identity_causality_hash_or_reproduction_failure": "invalid_source_transfer_evidence",
+    "execution_node": "FT2-92-IBKR-DECISION-SHADOW",
+    "activation_boundary": "FT2-92 starts after FT2-91 pass without a preexisting transfer pass, executes this measurement, and emits its transfer outcome. A pass is mandatory to exit FT2-92 toward FT2-93 or any later no-order/live activation; a pass does not authorize orders."
+  },
+  "graph_topology": {
+    "ordered_nodes": [
+      "FT2-91-PROTECTED-HOLDOUT",
+      "FT2-92-IBKR-DECISION-SHADOW",
+      "FT2-93-NO-ORDER-LIVE-SHADOW"
+    ],
+    "FT2_91_pass_to_FT2_92": true,
+    "FT2_92_produces_transfer_outcome": true,
+    "FT2_92_pass_to_FT2_93": true,
+    "entry_component_may_enter_FT2_92_with": "transfer_not_yet_run",
+    "circular_precondition_forbidden": true
+  },
+  "candidate_state_before_FT2_93_live_shadow": {
+    "complete_full_trader_frozen": true,
+    "weights_features_calibrators_composer_lifecycle_guards_and_hashes_frozen": true,
+    "candidate_specific_historical_IBKR_transfer_passed": true,
+    "paper_or_broker_orders": false
+  },
+  "minimum_no_order_live_shadow_evidence": {
+    "complete_sessions_for_hard_gate": 45,
+    "sessions_1_through_44": "report-only point estimates and raw denominators; terminal is insufficient_shadow_evidence and no hard pass/fail or activation claim is allowed",
+    "complete_session_definition": "Every scheduled flat and open decision boundary reconstructs with timestamps, masks, exact identities, feature hashes, scores, actions, block reasons, account state, and lifecycle state.",
+    "flat_state_decisions": 3000,
+    "model_ENTER_intents": 30,
+    "sessions_with_ENTER_intent": 5,
+    "open_state_HOLD_EXIT_decisions": 100,
+    "regime_coverage": "at least one complete session in the training-defined top volatility tercile",
+    "below_any_minimum": "insufficient_shadow_evidence",
+    "new_session_collection_authorized_by_this_spec": false
+  },
+  "paired_live_planes": {
+    "reference": "Frozen historical-style canonical feature builder and model bundle operating on causally available live observations.",
+    "runtime": "Production-intended M5 or Gateway no-order path.",
+    "identity_join": [
+      "session",
+      "completed_minute",
+      "position_state",
+      "source_neutral_exact_contract_identity"
+    ],
+    "unpaired_required_row": "invalid_shadow_evidence"
+  },
+  "session_clustered_agreement_gates": {
+    "interval_authority": "bootstrap_spec.json:/phase_F_shadow_intervals",
+    "decision_level_Wilson_intervals": "forbidden",
+    "WAIT_or_ENTER": {
+      "point_agreement_min": 0.99,
+      "session_clustered_one_sided_95_lower_min": 0.98,
+      "per_complete_session_point_min": 0.98
+    },
+    "exact_contract_when_both_ENTER": {
+      "point_agreement_min": 0.98,
+      "session_clustered_one_sided_95_lower_min": 0.95,
+      "decision_denominator_min": 30
+    },
+    "HOLD_or_EXIT": {
+      "point_agreement_min": 0.99,
+      "session_clustered_one_sided_95_lower_min": 0.98,
+      "decision_denominator_min": 100
+    },
+    "action_mask_and_block_reason": {
+      "point_agreement_min": 0.995,
+      "forbidden_or_unmasked_action_count": 0,
+      "session_clustered_interval_reported": true
+    },
+    "safety_actions": {
+      "floor_trigger_agreement": 1.0,
+      "forced_flat_agreement": 1.0,
+      "daily_stop_agreement": 1.0,
+      "complete_ladder_safe_action_agreement": 1.0,
+      "observed_denominator_zero": "report not_observed_live; synthetic guard fixtures remain mandatory and do not fabricate live evidence"
+    },
+    "threshold_interval_logic": "A lower-bound threshold passes only when the conservative session-cluster lower bound meets it. An interval overlapping the threshold is insufficient_shadow_evidence; a sufficiently evidenced upper bound below the threshold is shadow_transfer_fail."
+  },
+  "runtime_integrity": {
+    "live_not_delayed": true,
+    "global_complete_ladder": "A missing, stale, reconnecting, or partially rebuilt slot forces WAIT while flat; while open it follows the frozen HOLD/floor/forced-flat safety precedence.",
+    "freshness_and_opening_history": "FT2-08 v3 executable timestamp, warmup, reset, and complete-history laws reproduce exactly.",
+    "decision_deadline": "Every decision completes before the next completed-minute boundary.",
+    "broker_order_endpoint_called": false,
+    "paper_submit": false,
+    "real_money_trading": false,
+    "reconstructability": "Every action and abstention reproduces from the frozen bundle and hashed live input row."
+  },
+  "terminal_rules": {
+    "shadow_pass": "FT2-92 transfer passed first; at least 45 complete FT2-93 sessions plus every other minimum, regime coverage, clustered agreement gate, safety rule, runtime-integrity rule, and independent reproduction pass.",
+    "insufficient_shadow_evidence": "Integrity is valid but a minimum denominator, session-cluster bound, or regime requirement is unresolved.",
+    "shadow_transfer_fail": "Sufficient paired evidence exists and an agreement or runtime behavior bound fails.",
+    "invalid_shadow_evidence": "Identity, hash, causality, feature, timestamp, feed, pairing, or reproduction failure prevents interpretation."
+  },
+  "owner_authorization_boundary": {
+    "FT2_95_request_allowed_only_after_shadow_pass": true,
+    "shadow_pass_authorizes_orders": false,
+    "separate_owner_authorization_required_for_guarded_IBKR_paper": true
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "schema_version": "Protocol101FT208FoldRolesV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "canonical_source": {
+    "path": "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_runner/runner_plan.json",
+    "sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",
+    "json_pointer": "/expanding_folds",
+    "canonical_json_sha256": "c8cf2e3e68650f69142facb310bca46df231a18da526cf98536c3823e5a9732a",
+    "fold_sessions_json_pointer": "/expanding_folds/fold_sessions",
+    "fold_sessions_canonical_json_sha256": "e7c1472d226aabe2af1b39f557934516b48bdd23f06b7d910c12aa80590cb9c5",
+    "adoption": "verbatim_by_hashed_reference_no_rederivation"
+  },
+  "fold_governance": {
+    "schema_version": "Protocol101GovernedExpandingFoldLoaderV1",
+    "required_fold_count": 5,
+    "fold_count": 5,
+    "required_embargo_sessions": 1,
+    "fold_role_map": {
+      "train": "train",
+      "validation": "test"
+    },
+    "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920"
+  },
+  "folds": [
+    {
+      "fold_id": "expanding_fold_01",
+      "manifest_json_pointer": "/expanding_folds/fold_sessions/expanding_fold_01",
+      "canonical_json_sha256": "fd62778becb91d5d78a1b602bdd500069a64b50f3e728edae450e3400de4e487",
+      "train_count": 45,
+      "train_first": "2025-01-02",
+      "train_last": "2025-03-10",
+      "embargo_session": "2025-03-11",
+      "validation_count": 45,
+      "validation_first": "2025-03-12",
+      "validation_last": "2025-07-08"
+    },
+    {
+      "fold_id": "expanding_fold_02",
+      "manifest_json_pointer": "/expanding_folds/fold_sessions/expanding_fold_02",
+      "canonical_json_sha256": "51fc18d76b4c43ccac10fa85de60026b9a5d3a6958340bd6dcd29b028fd71dc6",
+      "train_count": 90,
+      "train_first": "2025-01-02",
+      "train_last": "2025-07-07",
+      "embargo_session": "2025-07-08",
+      "validation_count": 45,
+      "validation_first": "2025-07-09",
+      "validation_last": "2025-09-11"
+    },
+    {
+      "fold_id": "expanding_fold_03",
+      "manifest_json_pointer": "/expanding_folds/fold_sessions/expanding_fold_03",
+      "canonical_json_sha256": "d6496d42cfc5cd401b7e78e60a571ddf23fc78b79b2b10fa06b7ba400742697b",
+      "train_count": 135,
+      "train_first": "2025-01-02",
+      "train_last": "2025-09-10",
+      "embargo_session": "2025-09-11",
+      "validation_count": 45,
+      "validation_first": "2025-09-12",
+      "validation_last": "2025-11-14"
+    },
+    {
+      "fold_id": "expanding_fold_04",
+      "manifest_json_pointer": "/expanding_folds/fold_sessions/expanding_fold_04",
+      "canonical_json_sha256": "43cd25196ade1605e733a4741e1b1c9daff0aa6615b662061844f3d4adf2851e",
+      "train_count": 180,
+      "train_first": "2025-01-02",
+      "train_last": "2025-11-13",
+      "embargo_session": "2025-11-14",
+      "validation_count": 45,
+      "validation_first": "2025-11-17",
+      "validation_last": "2026-01-26"
+    },
+    {
+      "fold_id": "expanding_fold_05",
+      "manifest_json_pointer": "/expanding_folds/fold_sessions/expanding_fold_05",
+      "canonical_json_sha256": "f81e16c96107fef0b196f3f82505cecbc66ea2e6a37d4c600c3453bd0b401a2e",
+      "train_count": 225,
+      "train_first": "2025-01-02",
+      "train_last": "2026-01-23",
+      "embargo_session": "2026-01-26",
+      "validation_count": 45,
+      "validation_first": "2026-01-27",
+      "validation_last": "2026-03-31"
+    }
+  ],
+  "role_semantics": {
+    "train": "may fit parameters, normalization, training-side calibration, and registered inner-loop choices",
+    "embargo": "may not fit, calibrate, select, evaluate, or provide diagnostics",
+    "validation": "outer evidence only; no result may flow back into the candidate, threshold, transform, composer, or stopping rule",
+    "census_design_diagnostic": "may inform explicitly frozen design definitions but is never model-quality evidence",
+    "protected_holdout": "untouchable until the graph's one-shot protected-holdout node"
+  },
+  "census": {
+    "manifest_path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/census_sessions.json",
+    "manifest_sha256": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
+    "session_count": 45,
+    "role": "design_diagnostic_only",
+    "outer_test_union_intersection_count": 0,
+    "protected_holdout_intersection_count": 0,
+    "embargo_intersection_count": 0,
+    "excluded_embargo_sessions": [
+      "2025-03-11",
+      "2025-07-08",
+      "2025-09-11",
+      "2025-11-14",
+      "2026-01-26"
+    ],
+    "may_be_cited_as_model_quality": false
+  },
+  "protected_holdout": {
+    "authority_path": "v4/audit/autoresearch/protocol101_protected_holdout/summary.json",
+    "source_sha256": "29ef78401a422d27875a2bf85b7c75cd05be9649ec8058d82a8984822d53d79e",
+    "session_count": 30,
+    "owner_override": false,
+    "allowed_access_in_ft2_08": false
+  },
+  "outer_test_firewall": {
+    "calibration_from_validation": false,
+    "threshold_selection_from_validation": false,
+    "feature_admission_from_validation": false,
+    "candidate_mutation_after_validation": false,
+    "early_stopping_from_validation": false,
+    "census_outer_test_intersection_must_be_empty": true,
+    "role_collision_action": "fail_closed"
+  },
+  "hash_rule": {
+    "algorithm": "sha256",
+    "canonical_json": "UTF-8, sorted keys, compact separators, no NaN or Infinity",
+    "source_file_hash_is_primary": true,
+    "json_pointer_hashes_are_secondary_integrity_checks": true
+  }
+}

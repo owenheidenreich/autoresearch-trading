@@ -1,0 +1,180 @@
+{
+  "schema_version": "Protocol101FT210CalibrationSpecV1",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "frozen_design_pending_action_gate_acceptance",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "outer_firewall": {
+    "fit_or_calibrate_on_outer_validation": false,
+    "select_thresholds_on_outer_validation": false,
+    "mutate_after_outer_validation": false,
+    "protected_holdout_access": false
+  },
+  "chronological_inner_oof": {
+    "outer_training_role_only": true,
+    "partition": "split the ordered outer-training sessions into five contiguous blocks with sizes differing by at most one; assign any remainder to earlier blocks",
+    "prediction_blocks": "for block j in {2,3,4,5}, fit only on blocks before j after removing the chronologically last preceding session as a one-session embargo, then predict block j",
+    "first_block": "fit warmup only; it produces no OOF calibration predictions",
+    "identity_rule": "each OOF prediction carries outer_fold, inner_block, session, decision_time, exact contract identity, model hash, and feature/target hashes",
+    "final_outer_model": "after all inner choices freeze, refit the same architecture on the complete outer-training role; reuse only the frozen OOF-derived calibrators and composer parameters",
+    "minimum_calibration_evidence": {
+      "distinct_sessions": 20,
+      "distinct_decision_minutes": 1000,
+      "valid_contract_rows": 10000
+    },
+    "insufficient_action": "calibration_insufficient_evidence"
+  },
+  "distribution_calibration": {
+    "continuous": {
+      "method": "split_conformalized_quantile_regression",
+      "coverage_quantiles": [
+        0.1,
+        0.25,
+        0.5,
+        0.75,
+        0.9
+      ],
+      "finite_sample_quantile": "ceil((n+1)*q)/n order-statistic convention, capped at the largest residual",
+      "fit_source": "chronological inner OOF predictions and observed training-role labels only"
+    },
+    "binary": "isotonic regression on chronological inner OOF predictions",
+    "discrete_survival": "isotonic cumulative-incidence calibration separately at every registered horizon",
+    "count": "isotonic calibration of cumulative probabilities",
+    "phase_specific_rule": {
+      "required_distinct_sessions": 8,
+      "required_valid_rows": 2000,
+      "fallback": "globally pooled training-role calibrator",
+      "fallback_receipt_required": true,
+      "global_insufficient": "calibration_insufficient_evidence"
+    }
+  },
+  "guardrail_thresholds": {
+    "method": "reuse the FT2-05 guardrail quantile semantics: pandas/numpy linear empirical quantile within market phase, with higher-good q=alpha and lower-good q=1-alpha",
+    "implementation_requirement": "FT2-30 must import or factor the canonical FT2-05 quantile helper and prove equivalence on synthetic fixtures; a divergent reimplementation fails",
+    "anchor_grid": [
+      0.1,
+      0.2,
+      0.25,
+      0.3
+    ],
+    "phase_specific": true,
+    "fallback": "globally pooled training-role threshold when a phase has fewer than 8 distinct calibration sessions or 2000 valid contract rows",
+    "thresholds_frozen_before_outer_access": true,
+    "emitted_artifacts_per_outer_fold": [
+      "distribution_calibrator.json",
+      "guardrail_thresholds.json",
+      "guardrail_thresholds.sha256",
+      "calibration_identity_manifest.json",
+      "calibration_identity_manifest.sha256"
+    ]
+  },
+  "joint_conservatism": {
+    "parameters": {
+      "guardrail_alpha": [
+        0.1,
+        0.2,
+        0.25,
+        0.3
+      ],
+      "uncertainty_multiplier_k": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ],
+      "positive_upside_floor": "strictly_zero_after_the_frozen_3_dollar_fee"
+    },
+    "selection_order": [
+      "discard settings outside the design trade-rate band",
+      "maximize the inner objective in objective_spec.json",
+      "prefer larger k",
+      "prefer alpha closest to 0.25",
+      "prefer larger alpha",
+      "canonical numeric order"
+    ],
+    "census_trade_rate_provenance": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
+      "sha256": "aaf4e8f3f0aa03aac96e411cca0d4337777991d276db474e25caa3deda4bdb74",
+      "anchor_mean_trades_per_session": {
+        "0.10": 2.630434782608696,
+        "0.20": 2.630434782608696,
+        "0.25": 2.6739130434782608,
+        "0.30": 2.6739130434782608
+      },
+      "anchor_center_median": 2.6521739130434785
+    },
+    "design_trade_rate_band_mean_trades_per_session": {
+      "lower": 0.6630434782608696,
+      "upper": 5.304347826086957,
+      "formula": "[max(0.3,census_anchor_center/4), min(6.0,2*census_anchor_center)]",
+      "purpose": "broad joint-calibration target that permits abstention and prevents the three conservative layers from independently collapsing or exploding activity",
+      "hard_gate": false,
+      "per_day_cap": false
+    },
+    "no_setting_in_band": "joint_calibration_insufficient; do not inspect outer evidence"
+  },
+  "uncertainty": {
+    "model_ensemble": "three independent seeds with median quantile aggregation",
+    "epistemic": "1.4826 times median absolute deviation of seed q50 values",
+    "gap_conformal": "0.90 finite-sample split-conformal quantile of absolute predicted-minus-realized pairwise score-gap error",
+    "source_transfer": "candidate-specific p95 absolute score-gap drift from accepted transfer evidence",
+    "composer_margin": "k * (gap_conformal + source_transfer)",
+    "activation_without_source_evidence": "historical research may run with source_transfer marked unavailable; live or shadow activation fails closed"
+  },
+  "action_conditioned_gate": {
+    "name": "Protocol101EntryActionConditionedCalibrationGateV1",
+    "status": "preregistered_here_but_inactive_until_smoke_test_independent_audit_and_owner_signature",
+    "signed_g8_dependency": {
+      "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_G8_CALIBRATION_REVISION_2026_07_26.md",
+      "sha256": "ac2cdbd9dabf8daa36aa53b8736d9691b8569b6f5b2b810d5a56707702465bf3"
+    },
+    "wait_reliability": {
+      "prediction": "calibrated probability that no exact contract in the governed risk set clears the realized quality screen and realized positive-after-fee rule",
+      "outcome": "1 only when the frozen realized-label composer says WAIT; oracle action is audit-only and never a runtime feature",
+      "binning": "10 equal-frequency bins; merge the smallest adjacent bins deterministically from left to right until every bin has at least 10 observations",
+      "thresholds": {
+        "expected_calibration_error_max": 0.1,
+        "maximum_bin_gap_max": 0.2,
+        "brier_skill_vs_constant_rate_min": 0.0
+      }
+    },
+    "selected_contract_regret": {
+      "realized_regret": "maximum realized whole-path quality Q among the exact governed risk set minus realized Q of the selected contract, floored at zero and divided by 2 because Q lies in [-1,1]; normalized regret therefore lies in [0,1]",
+      "prediction": "training-only calibrated expected regret and 90 percent upper prediction bound conditional on ENTER",
+      "normalization": "regret_Q / 2; no dollar or equity scale is mixed into this calibration statistic",
+      "thresholds": {
+        "absolute_mean_expected_regret_calibration_error_max": 0.1,
+        "nominal_upper_bound_coverage": 0.9,
+        "empirical_upper_bound_coverage_min": 0.85,
+        "empirical_upper_bound_coverage_max": 0.95
+      }
+    },
+    "minimum_evidence": {
+      "distinct_sessions": 20,
+      "flat_decisions": 100,
+      "realized_wait_outcomes": 50,
+      "realized_enter_outcomes": 50,
+      "selected_contracts": 50
+    },
+    "insufficient_result": "insufficient_calibration_evidence",
+    "gate_activation_requirements": [
+      "synthetic smoke test",
+      "independent audit",
+      "owner signature"
+    ],
+    "before_activation": "confidence-controlled composer behavior cannot become an accepted training or runtime candidate",
+    "exit_side_deferred": "HOLD/EXIT reliability and floor behavior are defined only in FT2-60 lifecycle contract"
+  },
+  "hashing": {
+    "algorithm": "sha256",
+    "canonical_json": "UTF-8 sorted keys compact separators no NaN or Infinity",
+    "per_fold_freeze_before_outer_access": true,
+    "required_hashes": [
+      "OOF identity manifest",
+      "model and seed manifests",
+      "all calibrators",
+      "guardrail thresholds",
+      "joint-calibration choice",
+      "source-transfer margin when applicable"
+    ]
+  }
+}

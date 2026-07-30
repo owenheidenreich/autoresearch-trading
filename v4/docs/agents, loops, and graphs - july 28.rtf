@@ -1,0 +1,537 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue-Italic;\f1\fnil\fcharset0 HelveticaNeue;\f2\fnil\fcharset0 HelveticaNeue-Bold;
+\f3\fnil\fcharset0 .SFNS-Regular_wdth_opsz1F0000_GRAD_wght3200000;\f4\fnil\fcharset0 .SFNS-Regular_wdth_opsz1A0000_GRAD_wght3200000;\f5\fnil\fcharset0 HelveticaNeue-BoldItalic;
+}
+{\colortbl;\red255\green255\blue255;\red225\green228\blue229;\red0\green0\blue0;\red24\green26\blue29;
+\red38\green41\blue43;}
+{\*\expandedcolortbl;;\cssrgb\c90588\c91373\c91765;\cssrgb\c0\c0\c0;\cssrgb\c12549\c13725\c15294;
+\cssrgb\c20000\c21176\c22353;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}
+{\list\listtemplateid3\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid201\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid3}
+{\list\listtemplateid4\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid301\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid4}
+{\list\listtemplateid5\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid401\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid5}
+{\list\listtemplateid6\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid501\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid6}
+{\list\listtemplateid7\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid601\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid7}
+{\list\listtemplateid8\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid701\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid8}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}{\listoverride\listid4\listoverridecount0\ls4}{\listoverride\listid5\listoverridecount0\ls5}{\listoverride\listid6\listoverridecount0\ls6}{\listoverride\listid7\listoverridecount0\ls7}{\listoverride\listid8\listoverridecount0\ls8}}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\i\fs34 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 A practical guide to the three architecture layers people keep mixing together
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \
+\pard\pardeftab720\partightenfactor0
+
+\fs34 \cf2 The confusion is understandable. All three ideas sit around the same model, all three influence reliability, and all three can contain "loops." But they are not synonyms. They describe different engineering decisions, and the distinction matters the moment an agent leaves a demo notebook and starts touching files, APIs, customers, or production code\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 THE 30-SECOND ANSWER
+\f1\b0 \cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0\cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Harness engineering builds the machinery around the model\cb1 \
+\ls1\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Loop engineering designs the repeated work-and-feedback cycle\cb1 \
+\ls1\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Graph engineering makes the workflow topology explicit: nodes, branches, joins, state transitions and controlled cycles\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 The clean mental model is environment \uc0\u8594  feedback \u8594  flow
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs62 \cf2 Why these terms suddenly matter\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs34 \cf2 \cb3 A raw language model cannot create text, maintain a state for a project, run a test suite, look at a browser, enforce an approval rule, or restart a failed job. Those capabilities come from the environment it's in. As agentic software matures, a standard engineering stack is finally coming together. At the foundation is the agent harness, the code that actually runs the models. Next are the loops, which handle the repeating execution and quality checks. Finally, graphs map out the structured paths that guide the entire process\cb1 \
+\cb3 Labels are still not consistently standardized. In the current framework, the term "agent harness" is now starting to take on a rather specific definition. The term "loop engineering" arose as a newer term among practitioners in 2026. Graph engineering should be understood practically rather than as an academic field; it is just the process of creating agent workflows as explicit directed graphs or state machines. This practical distinction is helpful because it prevents a buzzword from hiding the real design question\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/beamnxw/article/2081022966645535079/media/2081011502958473216"}}{\fldrslt 
+\fs30 \cf2 \
+\
+}}\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs62 \cf2 Agent Harness Engineering\cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls2\ilvl0
+\f1\b0\fs34 \cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 According to Langchain, the agent is the model plus the harness, and the harness is the code, configuration and execution logic outside the model. In practice, this includes the system prompt, tool definitions, memory, filesystems, sandboxes, model routing, handoffs, middleware hooks, compaction, permissions, logging and verification interfaces\cb1 \
+\ls2\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 OpenAI's Agents SDK describes the same operational core from a runtime perspective: the runner calls the model, executes tool calls, handles handoffs, carries state and stops only when the run reaches a real terminal condition\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/beamnxw/article/2081022966645535079/media/2081012312635219968"}}{\fldrslt 
+\fs30 \cf2 \
+\
+}}\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 The word harness is useful because it shifts attention away from model worship. Two teams can use the same foundation model and get very different outcomes because one gives the model clean tools, a stable workspace, constrained permissions and observable state, while the other gives it a vague prompt and an unreliable API wrapper. The intelligence may be similar; the working conditions are not. 
+\f2\b What a serious harness usually contains:
+\f1\b0 \cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls3\ilvl0
+\f2\b \cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Context injection:
+\f1\b0  instructions, retrieved facts, conversation state, skills and task-specific policies\cb1 \
+\ls3\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Action surfaces:
+\f1\b0  APIs, browsers, shells, code interpreters, databases and MCP-compatible tools\cb1 \
+\ls3\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Persistence:
+\f1\b0  files, checkpoints, sessions, progress logs, git history and long-term memory\cb1 \
+\ls3\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Execution control:
+\f1\b0  timeouts, retries, budgets, model routing, sub-agent spawning and approval gates\cb1 \
+\ls3\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Safety and governance:
+\f1\b0  permissions, isolation, allow lists, secret handling and human authorization\cb1 \
+\ls3\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Observability:
+\f1\b0  traces, tool inputs and outputs, state transitions, cost, latency and evaluation results\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/beamnxw/article/2081022966645535079/media/2081013382769946625"}}{\fldrslt 
+\fs30 \cf2 \
+\
+}}\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 The model sits inside a wider harness of context, control, action, persistence and verification. Remove the model from your architecture diagram. Everything left is probably part of the harness: the tools, data access, state store, sandbox, middleware, evaluators, retry policy and UI\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Where harness engineering earns its keep
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 Harness work is important for long-running tasks. In multi-session coding, Anthropic discovered that simply using context compaction was not sufficient. This was not a better prompt by itself, but they made a good setup that created an initializer, a progress file, git history and a discipline of incremental work that each new context can understand what happened and what is still to do. It's an improved working system with regard to the agent. Apply harness engineering when the agent doesn't have a capability, can't come back clean, loses state, accesses too much, can't be audited, or acts differently on environments\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs62 \cf2 Loop Engineering\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs34 \cf2 \cb3 Each agent that uses a tool has an embedded small loop:\cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls4\ilvl0\cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 call the model\cb1 \
+\ls4\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 look at the results\cb1 \
+\ls4\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 run the tools\cb1 \
+\ls4\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 input observations into the model\cb1 \
+\ls4\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 repeat until a final answer is returned\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 When the builders intentionally build or stack new cycles around that behavior, it is the beginning of loop engineering, as OpenAI calls it. A verification loop, for instance, allows the agent to create an artifact, execute the deterministic check or a grader, receive explicit feedback and repeat only if there are evidence errors. An event-driven loop awakens the agent when a schedule, webhook, or new document is received. An improvement loop analyzes traces & failures, modifies instructions/tools, and tests if the new version works better. LangChain's 2026 framing refers to these as a stack of loops and not one magic while-statement\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 The anatomy of a well-engineered loop:
+\f1\b0 \cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls5\ilvl0
+\f2\b \cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Trigger:
+\f1\b0  what starts another cycle; user request, schedule, failed test, new data or evaluator feedback\cb1 \
+\ls5\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Goal:
+\f1\b0  a specific state to reach, not a vague instruction to "keep improving"\cb1 \
+\ls5\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 State and memory:
+\f1\b0  what the next cycle needs to know without replaying everything\cb1 \
+\ls5\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Action policy:
+\f1\b0  what the agent may change, call, delegate or spend\cb1 \
+\ls5\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Evidence:
+\f1\b0  tests, schema validation, citations, diffs, metrics or human review\cb1 \
+\ls5\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Feedback:
+\f1\b0  a compact, actionable description of why the evidence failed\cb1 \
+\ls5\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Stopping rule:
+\f1\b0  success, budget limit, timeout, irrecoverable error or human escalation\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/beamnxw/article/2081022966645535079/media/2081016756932349952"}}{\fldrslt 
+\fs30 \cf2 \
+\
+}}\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 A verification loop wraps the agent loop with an external grader and an explicit pass condition. Do not loop on confidence. Loop on evidence. "The agent says it is done" is not a stopping condition; "the tests pass, the links resolve, the schema validates and the reviewer approves" is.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Why loop engineering is not just prompt engineering
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 A prompt tells the model what to do during a call. A loop specifies what the system does after the call:\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 how it observes results, chooses feedback, decides whether to continue, persists progress and terminates\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 Prompt quality still matters, but the loop converts a one-shot instruction into a managed process. The main tradeoff is cost and latency. Each grader, reviewer or retry adds another model call or tool run. Anthropic's broader guidance is to prefer the simplest architecture that works and add agentic complexity only when the performance gain justifies it. The same advice applies to loops: add them where the failure cost is higher than the verification cost\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs62 \cf2 Graph Engineering\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs34 \cf2 \cb3 Graph engineering asks a different question though: Not only what the agent does, but what component is permitted to run next. Steps are represented by nodes and allowed steps are represented by edges. These edges can be used to indicate sequence, conditional branching, parallel fan-out, joins, loops and human interrupts. The state traverses the graph, and the topology allows for the desired control flow to be checked. LangGraph is low-level orchestration infrastructure for long-running, stateful agents, with durable execution, state and human-in-the-loop control, and an explicit focus on control over agents rather than an abstraction of the workflow. Microsoft AutoGen's documentation is exceptionally straightforward: use a graph when you need exact control over agent order, different next steps for different outcomes, deterministic branching or complex multi-step processes with cycles. 
+\f2\b What graph engineers actually decide:
+\f1\b0 \cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls6\ilvl0
+\f2\b \cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Node boundaries:
+\f1\b0  which work belongs in a deterministic function, an LLM call, a specialist agent or a human review step\cb1 \
+\ls6\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 State schema:
+\f1\b0  what each node may read or update, and how parallel updates are merged\cb1 \
+\ls6\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Routing conditions:
+\f1\b0  which evidence sends work forward, backward, sideways or to escalate\cb1 \
+\ls6\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Concurrency:
+\f1\b0  what can run in parallel, what must join, and what shared resources need coordination\cb1 \
+\ls6\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Cycles and exits:
+\f1\b0  where retries are legal, how many are allowed, and what makes the cycle safe\cb1 \
+\ls6\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Durability:
+\f1\b0  where checkpoints occur and how execution resumes after interruption\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/beamnxw/article/2081022966645535079/media/2081018635196256256"}}{\fldrslt 
+\fs30 \cf2 \
+\
+}}\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 The above canvas makes agents, skills and relationships inspectable as a composed system. Graph engineering here means engineering graph-based execution. It is not the same as knowledge graph engineering, where the graph represents entities and relationships in data. A workflow graph represents control and state transitions\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 When a graph is worth the ceremony
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 Graphs are valuable when the process has meaningful branches, parallel work, approvals, recovery paths or multiple specialist agents. They are less useful when the job is simply "give one agent three tools and let it work." A graph can improve debugging, but it can also freeze assumptions too early. If the model must dynamically invent the plan, forcing every possible path into a diagram can make the system more brittle, not less\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 How the three layers work together in one real system
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 Consider a research-and-publishing agent responsible for producing a factual industry briefing\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/beamnxw/article/2081022966645535079/media/2081018890004426752"}}{\fldrslt 
+\fs30 \cf2 \
+\
+}}\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 Notice the nesting: the graph runs inside the harness; one or more loops live inside the graph; and the harness supplies the state, tools and evaluators those loops need. The categories overlap because software layers overlap, but each still gives the team a different lever to pull when the system fails\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Choose the engineering layer by diagnosing the failure
+\f1\b0 \cb1 \
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrt\brdrs\brdrw20\brdrcf5 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clcbpat4 \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clcbpat4 \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clcbpat4 \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+
+\fs30 \cf2 \cb3 Symptom
+\f2\b\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+
+\f1\b0\fs30 \cf2 \cb3 \strokec2 Start with
+\f2\b\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+
+\f1\b0\fs30 \cf2 \cb3 \strokec2 Likely fix
+\f2\b\fs24 \cf0 \cb1 \strokec3 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clshdrawnil \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clshdrawnil \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clshdrawnil \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f1\b0\fs30 \cf2 \cb3 \strokec2 The agent cannot access the right data or tool safely.
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Harness
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Tool contract, permissions, sandbox, context injection.
+\fs24 \cf0 \cb1 \strokec3 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clshdrawnil \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clshdrawnil \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clshdrawnil \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 The agent forgets progress across sessions.
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Harness
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Durable state, checkpointing, progress artifacts, compaction.
+\fs24 \cf0 \cb1 \strokec3 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clshdrawnil \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clshdrawnil \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clshdrawnil \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 The first attempt is often close but not reliable.
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Loop
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 External grader, deterministic tests, feedback and bounded retry.
+\fs24 \cf0 \cb1 \strokec3 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clshdrawnil \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clshdrawnil \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clshdrawnil \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 The agent keeps working after success or stops before proof.
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Loop
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Evidence-based terminal states and budget-aware stop rules.
+\fs24 \cf0 \cb1 \strokec3 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clshdrawnil \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clshdrawnil \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clshdrawnil \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Several specialists must run in a controlled order.
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Graph
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Explicit nodes, edges, routing conditions and joins.
+\fs24 \cf0 \cb1 \strokec3 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clshdrawnil \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clshdrawnil \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clshdrawnil \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Failures are hard to locate in a multi-step process.
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Graph + harness
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Stateful traces aligned with graph nodes and transitions.
+\fs24 \cf0 \cb1 \strokec3 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrs\brdrw20\brdrcf5 \trbrdrb\brdrs\brdrw20\brdrcf5 \trbrdrr\brdrs\brdrw20\brdrcf5 
+\clvertalc \clshdrawnil \clwWidth4774\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx2880
+\clvertalc \clshdrawnil \clwWidth1630\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx5760
+\clvertalc \clshdrawnil \clwWidth4885\clftsWidth3 \clbrdrt\brdrs\brdrw20\brdrcf5 \clbrdrl\brdrs\brdrw20\brdrcf5 \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrs\brdrw20\brdrcf5 \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 The workflow changes too often for a fixed diagram.
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Simpler harness
+\fs24 \cf0 \cb1 \strokec3 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 Keep control model-driven; delay graph formalization.
+\fs24 \cf0 \cb1 \strokec3 \cell \lastrow\row
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \strokec2 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs62 \cf2 The Expensive Mistakes Behind Weak Agent Architectures\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\fs34 \cf2 \cb3 Building a graph before understanding the work
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 Teams sometimes translate a business process into dozens of nodes before they have observed how a capable agent actually solves it. Start with traces from a simpler harness, then formalize the stable paths.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Letting the same model write and grade without safeguards
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 Self-review can help, but it is vulnerable to shared blind spots. Prefer deterministic checks where possible, separate reviewer context, and require human approval for high-impact actions.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Using "keep trying" as a loop specification
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 An unbounded retry loop is a cost leak. Every loop needs a measurable objective, fresh evidence, maximum attempts and a named escalation path.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Treating the harness as a dumping ground
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 More tools and memory are not automatically better. A crowded toolset raises selection errors, a noisy context raises confusion, and broad permissions raise risk.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Blaming the model for orchestration failures
+\f1\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \cb3 A model cannot compensate reliably for stale state, ambiguous tool schemas, broken APIs or missing exit conditions. Improve the layer that owns the failure.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b\fs52 \cf2 \cb3 A production-ready design checklist
+\f4 \cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls7\ilvl0
+\f2\fs34 \cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Harness:
+\f1\b0  Are tools narrow, documented and observable? Is state durable? Are permissions least-privilege? Can operators pause, inspect and resume a run?\cb1 \
+\ls7\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Loop:
+\f1\b0  What evidence proves success? What feedback is returned on failure? How many retries are allowed? What happens when the budget is exhausted?\cb1 \
+\ls7\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Graph:
+\f1\b0  Which paths must be deterministic? Where can work run in parallel? Which state is shared? Where are the human gates and recovery routes?\cb1 \
+\ls7\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Evaluation:
+\f1\b0  Can the team replay real traces, compare versions and attribute improvement to a specific change rather than intuition?\cb1 \
+\ls7\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Operations:
+\f1\b0  Are cost, latency, failure rate, intervention rate and task-level success monitored in production?\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f4\b\fs52 \cf2 \cb3 The Simplest Way to Remember the Difference\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\b0\fs34 \cf2 \cb3 Engineering something to be a model to make it operate. Loop engineering methodology is iterative, verifiable and resumable. A complex execution path is made explicit and controllable through the use of graph engineering. None of the three is substituted by any of the others. Even if the harness has lost its state, a beautifully drawn graph is no sufficient. However, even with the best harness, if there is no evidence or stop rule, it is a waste of money! Carefully crafted loops are still hard to operate when branching, parallelism and approvals are embedded in the ad-hoc code. If these three layers are designed jointly, reliable agent systems will arise, provided that the team is aware of what each layer is supposed to solve\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\b\fs62 \cf2 \cb3 SEARCH TERMS READERS USE\cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls8\ilvl0
+\f1\b0\fs34 \cf2 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 agent harness vs loop engineering\cb1 \
+\ls8\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 graph engineering for AI agents\cb1 \
+\ls8\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 AI agent orchestration\cb1 \
+\ls8\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 LLM agent architecture\cb1 \
+\ls8\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 production AI agents\cb1 \
+\ls8\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 LangGraph workflows\cb1 \
+\ls8\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 AutoGen GraphFlow\cb1 \
+\ls8\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 agent verification loops\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \
+\pard\pardeftab720\partightenfactor0
+
+\f4\b\fs52 \cf2 Sources and Further Readings\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://www.langchain.com/blog/the-anatomy-of-an-agent-harness"}}{\fldrslt 
+\f2\fs34 \cf2 \cb3 \ul \ulc2 The Anatomy of an Agent Harness}}
+\f1\b0\fs34 \cb3  
+\f0\i - Learn how agent harnesses transform AI models into autonomous work engines. Explore core components: filesystems, sandboxes, and memory
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://developers.openai.com/api/docs/guides/agents"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 Agents SDK | OpenAI API}}
+\f2\b \cb3  
+\f0\i\b0 - Learn how the OpenAI Agents SDK fits together and which docs to read next
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://www.langchain.com/blog/langchain-langgraph-1dot0"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 LangChain and LangGraph Agent Frameworks Reach v1.0 Milestones}}
+\f5\i\b \cb3  
+\f0\b0 - LangChain 1.0 and LangGraph 1.0 are here. Build production-ready AI agents faster with standardized tools, middleware customization, and durable state
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://microsoft.github.io/autogen/stable//user-guide/agentchat-user-guide/graph-flow.html"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 GraphFlow (Workflows) - AutoGen}}
+\f5\i\b \cb3  
+\f0\b0 - In this section you'll learn how to create an multi-agent workflow using , or simply "flow" for short. It uses structured execution and precisely controls how agents interact to accomplish a task. We'll first show you how to create and run a flow
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://www.langchain.com/blog/the-art-of-loop-engineering"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 The Art of Loop Engineering}}\cb3  
+\f0\i - Agents automate real-world work, but reliable performance requires more than a good model, it requires a carefully designed harness built for specific tasks. This post explores the core agent loop, how stacking and extending loops builds more effective agents, and how to instrument each level with LangChain primitives
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://www.microsoft.com/en-us/research/blog/introducing-autogen-studio-a-low-code-interface-for-building-multi-agent-workflows/"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 Introducing AutoGen Studio from Microsoft Research}}\cb3  
+\f0\i - AutoGen Studio, built on Microsoft's flexible open-source AutoGen framework for orchestrating AI agents, provides a user-friendly interface that enables developers to rapidly build, test, customize, & share multi-agent AI solutions, with little or no coding
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://www.langchain.com/blog/how-to-build-a-custom-agent-harness"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 How to Build a Custom Agent Harness}}
+\f2\b \cb3  
+\f0\i\b0 - Effective agents are built with harnesses that are tightly coupled with the task at hand. The easiest way to build a custom harness is with LangChain's create_agent plus middleware. This guide covers the core agent loop and how you can customize it for your agent's use case
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 A practical guide to building agents}}
+\f2\b \cb3  
+\f0\i\b0 - A comprehensive guide to designing, orchestrating, and deploying AI agents-covering use cases, model selection, tool design, guardrails, and multi-agent patterns
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://resources.anthropic.com/building-effective-ai-agents"}}{\fldrslt 
+\f2\b \cf2 \cb3 \ul \ulc2 Building Effective AI Agents}}
+\f2\b \cb3  
+\f0\i\b0 - Practical advice and guidance guidance for building production-ready single and multi-agent systems from Anthropic and our customers
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf2 \cb3 \
+}

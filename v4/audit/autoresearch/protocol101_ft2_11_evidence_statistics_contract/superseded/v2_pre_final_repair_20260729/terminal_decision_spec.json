@@ -1,0 +1,234 @@
+{
+  "schema_version": "Protocol101FT211TerminalDecisionSpecV2",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "producer_repaired_design",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "purpose": "Make component, D1, calibration, sufficiency, and tripwire outcomes mechanically decidable and mutually exclusive.",
+  "adjusted_bound_authority": {
+    "source": "bootstrap_spec.json:/studentized_maxT",
+    "lower": "simultaneous studentized-maxT one-sided 95% lower bound",
+    "upper": "simultaneous studentized-maxT one-sided 95% upper bound from max_h(-t_h_star)",
+    "block_sensitivity": "lower=min across {3,5,8}; upper=max across {3,5,8}; p=max across {3,5,8}",
+    "equality": "Use the exact threshold ownership defined for each statistic; no floating narrative override is allowed."
+  },
+  "resolver": {
+    "algorithm": "Evaluate all required predicates, collect flags, then return the first true route in terminal_precedence. If no earlier flag is true and every all-required pass predicate is true, return the context-specific success terminal. Any unclassified required predicate is invalid_evidence.",
+    "exactly_one_terminal": true,
+    "terminal_precedence": [
+      "invalid_evidence",
+      "resource_owner_decision_required",
+      "owner_decision_required",
+      "insufficient_evidence",
+      "no_genuine_entry_signal",
+      "entry_component_freeze_pass"
+    ],
+    "combined_system_success_context": "At FT2-80 only, replace entry_component_freeze_pass with combined_system_incremental_edge_pass after every signed combined-system predicate passes.",
+    "unclassified_or_conflicting_rule": "invalid_evidence"
+  },
+  "integrity_rules": {
+    "invalid_evidence_any": [
+      "authority, upstream, ledger, model, calibrator, composer, control, simulator, fee, or packet hash mismatch",
+      "feature/target leakage, role collision, outer-validation feedback, protected-holdout access, or wrong population",
+      "missing, duplicate, or inconsistent session/decision/contract/fold identity",
+      "wrong action space, fill law, fee trajectory, WAIT denominator, neutral lifecycle, D48, D49, soft-close, daily stop, or forced flat",
+      "producer statistic cannot be independently reproduced",
+      "synthetic AR coverage demonstration fails",
+      "a required D1 control is generated with the wrong seed namespace, algorithm, attempt count, redraw, replacement, or outcome-conditioned matching",
+      "a valid strong-shuffle control has significant adjusted positive increment over its valid matched-random control",
+      "a mandatory action-conditioned head, target, calibrator, or artifact is missing or unreproducible",
+      "the MNAR no-bid sensitivity output is missing or unreproducible"
+    ],
+    "scientific_conclusion_allowed": false
+  },
+  "D1_matching_failure_modes": [
+    {
+      "case": "control implementation or identity violates the frozen algorithm",
+      "terminal": "invalid_evidence"
+    },
+    {
+      "case": "the algorithm is valid but any of the eight fixed schedules is incomplete at pre-outcome construction",
+      "terminal": "insufficient_evidence"
+    },
+    {
+      "case": "all schedules construct validly but any fixed schedule fails one or more signed post-replay exposure bounds",
+      "terminal": "insufficient_evidence"
+    },
+    {
+      "case": "all schedules are valid and a strong shuffled model has adjusted p<=0.05 and adjusted lower bound>0",
+      "terminal": "invalid_evidence"
+    },
+    {
+      "case": "all schedules and shuffled controls are valid; real-candidate lower bound<=0<upper bound for a required dollar contrast",
+      "terminal": "insufficient_evidence"
+    },
+    {
+      "case": "all schedules and shuffled controls are valid; real-candidate adjusted upper bound<=0 for a required dollar contrast",
+      "terminal": "no_genuine_entry_signal"
+    },
+    {
+      "case": "all schedules and shuffled controls are valid; real-candidate adjusted lower bound>0 and adjusted p<=0.05 for every FT2-80 comparator",
+      "terminal": "continue_to_other_all_required_gates"
+    }
+  ],
+  "statistic_specific_sufficiency": {
+    "pooled_DeltaQ_component_quality": {
+      "pass": "adjusted lower bound>0 and adjusted p<=0.05",
+      "no_signal": "adjusted upper bound<=0 and corrected-ESS MDE<=0.05",
+      "insufficient": "otherwise when the interval contains zero, MDE>0.05, or ESS is below the frozen minimum"
+    },
+    "chronological_fold_direction": {
+      "minimum_positive_folds": 4,
+      "positive": "point estimate>0 against every required quality comparator",
+      "sufficient_negative": "point estimate<=0, adjusted upper bound<=0, fold corrected-ESS MDE<=0.05, and fold raw sessions>=20",
+      "ambiguous_negative": "point estimate<=0 but adjusted upper bound>0, MDE>0.05, or raw sessions<20",
+      "fewer_than_four_with_any_ambiguous_negative": "insufficient_evidence",
+      "fewer_than_four_with_all_negative_failures_sufficient": "no_genuine_entry_signal",
+      "exactly_one_negative_fold": "May continue only through bounded_fifth_fold_attribution."
+    },
+    "seed_robustness": {
+      "required_seeds": 3,
+      "every_seed": "positive pooled DeltaQ and at least four positive folds against required quality comparators",
+      "sufficient_seed_failure": "seed adjusted upper bound<=0 and seed MDE<=0.05",
+      "ambiguous_seed_failure": "upper bound>0 or seed MDE>0.05",
+      "route_sufficient": "no_genuine_entry_signal",
+      "route_ambiguous": "insufficient_evidence",
+      "frozen_ensemble_also_required": true
+    },
+    "quality_family_and_DeltaU": {
+      "five_families_reported": true,
+      "nonnegative_family_points_min": 4,
+      "sufficient_harm": "family adjusted upper bound<0 and family MDE<=0.05",
+      "ambiguous_harm": "family point<0 but upper bound>=0 or MDE>0.05",
+      "DeltaU_pass": "point>0 and adjusted upper bound>=0",
+      "DeltaU_sufficient_failure": "adjusted upper bound<=0 and MDE<=0.05",
+      "sufficient_route": "no_genuine_entry_signal",
+      "ambiguous_route": "insufficient_evidence"
+    },
+    "side_phase_month_volatility_regime": {
+      "eligible": "at least 20 raw sessions and statistic-specific corrected ESS>=10",
+      "sufficient_negative": "adjusted upper bound<0 and stratum MDE<=0.05",
+      "ambiguous_negative": "point<0 but upper bound>=0 or MDE>0.05",
+      "low_denominator": "descriptive_only unless it is the only evidence for a required route, then insufficient_evidence",
+      "sufficient_route": "no_genuine_entry_signal",
+      "ambiguous_route": "insufficient_evidence"
+    },
+    "serial_dollar_no_harm_vs_P5": {
+      "boundary_dollars_per_session": 0.0,
+      "pass": "adjusted lower bound>=0 and adjusted one-sided p<=0.05 on both $3 and $4",
+      "sufficient_harm": "adjusted upper bound<0",
+      "ambiguous": "lower bound<0<=upper bound",
+      "sufficient_route": "no_genuine_entry_signal",
+      "ambiguous_route": "insufficient_evidence"
+    },
+    "FT2_80_incremental_dollars": {
+      "boundary_dollars_per_session": 0.0,
+      "pass": "adjusted lower bound>0 and adjusted one-sided p<=0.05 versus both P5 and exposure-matched random",
+      "sufficient_no_increment": "adjusted upper bound<=0",
+      "ambiguous": "lower bound<=0<upper bound or adjusted p>0.05",
+      "sufficient_route": "no_genuine_entry_signal",
+      "ambiguous_route": "insufficient_evidence"
+    },
+    "action_conditioned_calibration": {
+      "minimums": "evidence_standard.json:/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration/minimum_evidence",
+      "max_threshold_metric_pass": "conservative adjusted upper bound<=threshold",
+      "max_threshold_metric_fail": "conservative adjusted lower bound>threshold",
+      "min_threshold_metric_pass": "conservative adjusted lower bound>=threshold",
+      "min_threshold_metric_fail": "conservative adjusted upper bound<threshold",
+      "coverage_band_pass": "conservative lower>=0.85 and conservative upper<=0.95",
+      "coverage_band_fail": "upper<0.85 or lower>0.95",
+      "below_minimum_or_bound_overlaps_threshold": "insufficient_evidence",
+      "sufficient_failure": "no_genuine_entry_signal",
+      "missing_artifact": "invalid_evidence"
+    },
+    "safety": {
+      "deterministic_from_complete_ledgers": true,
+      "valid_observed_G4_daily_stop_soft_close_D48_D49_ruin_or_position_breach": "no_genuine_entry_signal",
+      "missing_or_unreconstructable_safety_state": "invalid_evidence"
+    },
+    "MNAR_ranking_stability": {
+      "complete_and_all_rules_pass": "continue",
+      "complete_but_selected_identity_terminal_or_required_pairwise_order_changes": "no_genuine_entry_signal",
+      "complete_Spearman_below_0_95": "no_genuine_entry_signal",
+      "missing_or_unreproducible": "invalid_evidence"
+    },
+    "tail_tripwires": {
+      "point_breach_with_valid_denominator": "owner_decision_required",
+      "zero_alpha0_or_below_frozen_profile_denominator": "insufficient_evidence",
+      "malformed_or_missing_required_arm": "invalid_evidence"
+    }
+  },
+  "bounded_fifth_fold_attribution": {
+    "purpose": "Allow at most one negative fold only when a preregistered composition factor quantitatively explains it; free-text stories and sampling_uncertainty codes are forbidden.",
+    "preregister_before_outer_results": true,
+    "allowed_factor_ids": [
+      "CALL_PUT_MIX",
+      "MARKET_PHASE_MIX",
+      "VOLATILITY_REGIME_MIX",
+      "MASK_COVERAGE_MIX"
+    ],
+    "factor_bins": {
+      "CALL_PUT_MIX": [
+        "call",
+        "put"
+      ],
+      "MARKET_PHASE_MIX": [
+        "primary_morning",
+        "europe_close_transition",
+        "lunch",
+        "afternoon"
+      ],
+      "VOLATILITY_REGIME_MIX": [
+        "training_frozen_low",
+        "training_frozen_medium",
+        "training_frozen_high"
+      ],
+      "MASK_COVERAGE_MIX": [
+        "all_entry_masks_pass",
+        "quote_or_identity_block",
+        "D48_block",
+        "D49_or_soft_close_block",
+        "other_frozen_global_block"
+      ]
+    },
+    "reference_weights": "For the preregistered factor, compute bin session weights from the other four folds combined; no outcome values enter weights.",
+    "negative_fold_bin_means": "Compute the paired session delta mean within every factor bin in the negative fold.",
+    "standardized_fold_effect": "sum(reference_weight_bin*negative_fold_bin_mean)",
+    "attribution_gain": "standardized_fold_effect-observed_negative_fold_effect",
+    "attribution_fraction": "attribution_gain/abs(observed_negative_fold_effect)",
+    "all_required": [
+      "exactly one of five fold point estimates is negative",
+      "abs(negative fold point)<=0.5*positive pooled point estimate",
+      "negative fold unadjusted two-sided 95% interval contains zero",
+      "every preregistered factor bin has at least 3 sessions in the negative fold and positive reference weight",
+      "standardized_fold_effect>=0",
+      "attribution_fraction>=0.80",
+      "session-block adjusted 95% lower bound for attribution_gain>0"
+    ],
+    "missing_bin_or_ambiguous_attribution": "insufficient_evidence",
+    "sufficient_failed_attribution": "no_genuine_entry_signal",
+    "free_text_excuse_code": "invalid_evidence"
+  },
+  "resource_owner_route": {
+    "context": "pre-tranche-1 only",
+    "trigger": "mde_spec.json first GPU tranche gate fails because measured pilot MDE exceeds the census-v2-based planning bound or required pilot measurement is absent",
+    "not_a_model_quality_terminal": true
+  },
+  "owner_tripwire_route": {
+    "trigger": "tripwire_spec.json relative-capture, four-bucket, or harvest tripwire breaches with valid sufficient denominators",
+    "not_automatic_pass_or_rejection": true
+  },
+  "all_required_component_pass": [
+    "integrity valid",
+    "quality evidence passes",
+    "all three seeds and frozen ensemble pass",
+    "fold, family, and regime rules pass or the single fifth fold passes quantitative attribution",
+    "action-conditioned calibration passes",
+    "G4, D48, D49, soft-close, daily-stop, ruin, one-position, and fee trajectories pass",
+    "serial-dollar exact no-harm versus P5 passes",
+    "MNAR ranking stability passes",
+    "no unresolved owner tripwire",
+    "all multiplicity and independent-reproduction requirements pass"
+  ],
+  "worked_examples": "worked_terminal_examples.json",
+  "acceptance_test": "Two independent implementations consuming the same canonical toy packet must emit the same terminal string and the same ordered list of triggered predicates."
+}

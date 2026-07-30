@@ -1,0 +1,85 @@
+{
+  "attempt": 2,
+  "coordinated_goal": "FT2-FINAL-REPAIR",
+  "deliverable_hashes": {
+    "account_state_ledger_spec.json": "4d745b89abc033ee7e6d1b2f5cbfa644c107df7f00c1406fd25f4443ae32ad12",
+    "contract.md": "d1f9875d5300da26d83001a7f52aab67276e9346f9d01488405f808e66db9b07",
+    "field_semantics_manifest.json": "48c5320adc7c8393e4b15e5b739f5f0043fc4743e5e81fc0306f88cde9c2f8d3",
+    "findings_crosswalk.json": "7cf8c82867b843f0a853abc1fd65f47043f53b9ad2f82999550846a36740b59b",
+    "fold_roles.json": "ca11c949feb3739b2476301feaea7b5786b7e167cda27656deede97b9689f6fa",
+    "identity_mapping_spec.json": "273f6c18e800a0af9cc30d079c3e2bffef5fa93a1ad04dbfadb3b9f971112e01",
+    "intent_fill_recheck_law.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "label_join_spec.json": "4be56f5677aeac4aab1b49807f02ab7370dae7706be53d6985f0147c90469cc1",
+    "replay_authority_v5_1_spec.json": "3d9fca3a2aa93193d78ece0e0959686169bd053a479d1c2aaa61663c779aa6b3",
+    "storage_spec.json": "ea3710ee556405f3b190e64af0e192cfcb14276b71d864cb86caa6800bba27d4",
+    "synthetic_golden_vectors.json": "abc2d777790740ad697f1c9893cb700ef90f3cc6d54d039f59acbe48c0350f4a",
+    "tensor_schema.json": "acfdee0460cd69c229cac61c06db1a9592da2f140cdb891994db3de05e1d4c6f",
+    "validate_contract_v3.py": "2f9c226d0cb6649433efa8e53ed316d841d240c720d1bac5da32dcb95a9d85a5",
+    "validation.json": "4ee8235bfdc01bf534c0d9d6b20e9a77ea0ca155e9c6bd71d6cf824d11972197"
+  },
+  "design_repair_budget": {
+    "attempt": 2,
+    "maximum_attempts": 2,
+    "remaining_after_completion": 0
+  },
+  "finding_disposition": {
+    "partially_answered_count": 0,
+    "rebutted_count": 0,
+    "unanswered_count": 0,
+    "unified_crosswalk": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/findings_crosswalk.json",
+    "unified_crosswalk_sha256": "78f69b89e0857c30af6f354cd8a26db923f075c9700f01d3971012462d7fa16d",
+    "verdict": "ANSWERED"
+  },
+  "goal": "FT2-08",
+  "highest_allowed_claim": "All rerun001 findings are answered under one coordinated repair with machine-verified cross-contract consistency; the final re-review is unblocked.",
+  "inputs": {
+    "census_v3_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
+    },
+    "consolidated_authority": {
+      "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+      "sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a"
+    },
+    "intent_fill_recheck_law": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+      "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+    },
+    "rerun001_joined_review": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/joined_review.md",
+      "sha256": "068fd6e7f49362d69ffaa935abd1fc043a62251f2c1ef6922a62d9416265dc4a"
+    },
+    "rerun001_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/receipt.json",
+      "sha256": "8338b51ecd1ba33d33ed9fa6635456f71092745cdd62559857a9bbca280c0abc"
+    },
+    "simulator_v5": {
+      "path": "v4/model/protocol101_serial_simulator_v5.py",
+      "sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+    }
+  },
+  "next_goal": {
+    "goal": "FT2-20",
+    "phase": "final re-review with fresh seats",
+    "status": "not_started"
+  },
+  "outcome": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "repair_of": {
+    "preservation_verified": true,
+    "preserved_path": "superseded/v2_pre_final_repair_20260729/receipt.json",
+    "receipt_sha256": "584612af00f8e04b9b903f1fb4b56396a3dc950bd21f18718fa72fd4ff8dfb9c",
+    "schema_version": "Protocol101FT208NodeReceiptV2"
+  },
+  "schema_version": "Protocol101FT208NodeReceiptV3",
+  "side_effects": {
+    "broker_access": false,
+    "final_re_review_started": false,
+    "new_session_statistics_beyond_census_v3": false,
+    "paid_compute": false,
+    "protected_data_access": false,
+    "recorder_access": false,
+    "simulator_v5_modified": false,
+    "training_or_fitting": false
+  }
+}

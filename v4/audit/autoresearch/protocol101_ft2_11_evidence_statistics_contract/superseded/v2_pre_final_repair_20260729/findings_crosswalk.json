@@ -1,0 +1,338 @@
+{
+  "schema_version": "Protocol101FT211FindingsCrosswalkV2",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "sources": {
+    "joined_review": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/joined_review.md",
+      "sha256": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3"
+    },
+    "ft2_08_crosswalk": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/findings_crosswalk.json",
+      "sha256": "0bab5217c3e4e8b6fbf308439cddede494224a86a1a1b9b26ed583816c647627"
+    },
+    "ft2_10_crosswalk": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/findings_crosswalk.json",
+      "sha256": "a447ab5f19e64cc6430e284f9b00bdc57e6344df88aa37c1c036a0e65e1242b6"
+    }
+  },
+  "inclusion_rule": [
+    "every joined-review finding whose anchor names an FT2-11 deliverable",
+    "every FT2-08 crosswalk deferral whose owner array contains FT2-11",
+    "every FT2-10 crosswalk entry whose owner history, status, or remaining owner names FT2-11",
+    "the goal-required S2-11 MNAR ranking-sensitivity obligation"
+  ],
+  "source_coverage": {
+    "joined_review_FT2_11_anchored_ids": [
+      "S1-02",
+      "S1-03",
+      "S1-04",
+      "S1-06",
+      "S1-07",
+      "S2-03",
+      "S2-04",
+      "S2-05",
+      "S2-06",
+      "S2-09",
+      "S2-10",
+      "S3-01",
+      "S3-03",
+      "S3-06",
+      "S3-09",
+      "S3-10"
+    ],
+    "ft2_08_deferrals_naming_FT2_11": [
+      "S1-03",
+      "S1-04",
+      "S2-03",
+      "S2-04",
+      "S2-05",
+      "S2-06",
+      "S2-09",
+      "S2-10",
+      "S3-03",
+      "S3-10"
+    ],
+    "ft2_10_entries_naming_FT2_11": [
+      "S1-03",
+      "S1-04",
+      "S1-07",
+      "S2-03",
+      "S2-04",
+      "S2-10",
+      "S3-03",
+      "S3-10"
+    ],
+    "expressly_swept_additional_id": "S2-11",
+    "all_lists_covered": true
+  },
+  "repair_requirement_crosswalk": [
+    {
+      "requirement": "R1_TWO_LAYER_ACCEPTANCE",
+      "finding_ids": [
+        "S1-03",
+        "S2-03",
+        "S2-04",
+        "S3-10"
+      ],
+      "artifacts": [
+        "contract.md sections 4-5",
+        "evidence_standard.json:/two_layer_acceptance",
+        "terminal_decision_spec.json:/statistic_specific_sufficiency"
+      ]
+    },
+    {
+      "requirement": "R2_DECIDABLE_TERMINALS",
+      "finding_ids": [
+        "S2-06"
+      ],
+      "artifacts": [
+        "terminal_decision_spec.json",
+        "worked_terminal_examples.json",
+        "bootstrap_spec.json:/studentized_maxT"
+      ]
+    },
+    {
+      "requirement": "R3_MDE_REBUILT",
+      "finding_ids": [
+        "S2-05"
+      ],
+      "artifacts": [
+        "mde_spec.json",
+        "contract.md section 8"
+      ]
+    },
+    {
+      "requirement": "R4_BOOTSTRAP_VALIDITY",
+      "finding_ids": [
+        "S2-09"
+      ],
+      "artifacts": [
+        "bootstrap_spec.json",
+        "shadow_sufficiency_spec.json:/session_clustered_agreement_gates"
+      ]
+    },
+    {
+      "requirement": "R5_MULTIPLICITY_COMPLETENESS",
+      "finding_ids": [
+        "S2-10"
+      ],
+      "artifacts": [
+        "multiplicity_spec.json",
+        "terminal_decision_spec.json:/D1_matching_failure_modes"
+      ]
+    },
+    {
+      "requirement": "R6_TRIPWIRES",
+      "finding_ids": [
+        "S1-04"
+      ],
+      "artifacts": [
+        "tripwire_spec.json",
+        "contract.md section 10"
+      ]
+    },
+    {
+      "requirement": "R7_DEFERRAL_SWEEP",
+      "finding_ids": [
+        "S2-11",
+        "S3-03"
+      ],
+      "artifacts": [
+        "evidence_standard.json:/mnar_no_bid_sensitivity",
+        "evidence_standard.json:/recorder_latency_study",
+        "shadow_sufficiency_spec.json:/historical_to_IBKR_source_transfer"
+      ]
+    },
+    {
+      "requirement": "R8_CENSUS_V2_ONLY",
+      "finding_ids": [
+        "S1-04",
+        "S2-05",
+        "S2-11"
+      ],
+      "artifacts": [
+        "mde_spec.json:/census_v2_provenance",
+        "tripwire_spec.json:/census_v2_context",
+        "evidence_standard.json:/mnar_no_bid_sensitivity/threshold_basis"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "S1-02",
+      "severity": "BLOCKING",
+      "title": "Entry and exit fills use prices known before the action can execute",
+      "FT2_11_anchor": "joined_review.md lines 109-115; evidence_standard fees and stress",
+      "upstream_repair": "FT2-04 v2 t+1 fill law and FT2-08 replay v5.1 requirements",
+      "FT2_11_repair": "All component and combined-system evidence requires t+1 fills, exact forced flat, and separate $3/$4 causal ledgers; wrong fill law is invalid_evidence.",
+      "status": "producer_repaired_by_verified_upstream_consumption"
+    },
+    {
+      "id": "S1-03",
+      "severity": "BLOCKING",
+      "title": "Primary entry test is not the required one-account serial game",
+      "FT2_11_anchor": "joined_review.md lines 117-125",
+      "upstream_repair": "FT2-10 objective_spec serial_primary_population and exact P5-under-cap",
+      "FT2_11_repair": "All quality, no-harm, MDE, bootstrap, fold, seed, and regime statistics are frozen on the complete FT2-10 policy-causal serial ledgers.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S1-04",
+      "severity": "BLOCKING",
+      "title": "Composer can structurally delete the Charter big-win column",
+      "FT2_11_anchor": "joined_review.md lines 127-135",
+      "upstream_repair": "FT2-10 mandatory alpha=0.0 arm and relative tail metrics",
+      "FT2_11_repair": "Big-win incidence below 50% of alpha0 routes owner_decision_required; four-bucket and relative tripwires run at every freeze gate with session-clustered intervals.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S1-06",
+      "severity": "MATERIAL",
+      "title": "D49 can force post-loss lottery exposure and is not independently enforced",
+      "FT2_11_anchor": "joined_review.md lines 145-151; evidence_standard signed safety",
+      "upstream_repair": "FT2-08 v2 integer-cent account ledger and replay v5.1; FT2-10 separate policy ledgers and soft close",
+      "FT2_11_repair": "D48, prospective D49, permanent soft close, daily stop, and separate $3/$4 trajectories are all-required component safety gates.",
+      "status": "producer_repaired_by_verified_upstream_consumption"
+    },
+    {
+      "id": "S1-07",
+      "severity": "MATERIAL",
+      "title": "Exact-contract uncertainty can deadlock valid directional sessions",
+      "FT2_11_anchor": "joined_review.md lines 153-159; shadow agreement",
+      "upstream_repair": "FT2-10 cluster-aware WAIT and selected-contract regret heads",
+      "FT2_11_repair": "Every action-conditioned threshold and denominator is mandatory; overlapping clustered bounds are insufficient and sufficiently failed bounds are no signal.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S2-03",
+      "severity": "BLOCKING",
+      "title": "DeltaQ replaces signed incremental-profit evidence",
+      "FT2_11_anchor": "joined_review.md lines 223-236",
+      "FT2_11_repair": "Two explicit layers separate diagnostic DeltaQ plus exact P5 no-harm for component freeze from full D1 incremental dollars versus both P5 and matched random at FT2-80.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S2-04",
+      "severity": "BLOCKING",
+      "title": "Mandatory action-conditioned calibration gate is absent",
+      "FT2_11_anchor": "joined_review.md lines 238-247",
+      "upstream_repair": "FT2-10 p_wait, expected-regret, q90-regret, exact losses, and disjoint same-model calibration",
+      "FT2_11_repair": "All artifacts, thresholds, denominators, clustered interval rules, and terminal mappings are in the all-required component checklist.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S2-05",
+      "severity": "BLOCKING",
+      "title": "MDE margin is statistically unsound under dependence",
+      "FT2_11_anchor": "joined_review.md lines 249-261",
+      "FT2_11_repair": "MDE uses paired candidate-minus-comparator serial-dollar session deltas, corrected Geyer ESS/LRV, one-trade-per-session caps, a census-v2 hold-to-flat planning ceiling, and mandatory pilot-first variance.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S2-06",
+      "severity": "BLOCKING",
+      "title": "Terminal outcomes are not mechanically decidable",
+      "FT2_11_anchor": "joined_review.md lines 263-276",
+      "FT2_11_repair": "Matched maxT upper bounds, exact precedence, exhaustive D1 cases, statistic-specific sufficiency, quantitative fifth-fold attribution, calibration mapping, and three canonical toy packets are frozen.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S2-09",
+      "severity": "MATERIAL",
+      "title": "Dependence machinery lacks a validity condition",
+      "FT2_11_anchor": "joined_review.md lines 298-306",
+      "FT2_11_repair": "Noncircular in-fold blocks {3,5,8}, conservative sensitivity envelope, synthetic AR coverage, Geyer IPS ESS, and session-clustered Phase-F intervals replace circular and Wilson machinery.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S2-10",
+      "severity": "MATERIAL",
+      "title": "Multiplicity omits selectable control attempts",
+      "FT2_11_anchor": "joined_review.md lines 308-323",
+      "FT2_11_repair": "One candidate-hash-seeded nonselectable eight-attempt algorithm, no redraw, all attempts and aggregate, shuffle contrasts, channel sets, validity outcomes, and plateau rules enter the family.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S2-11",
+      "severity": "MATERIAL",
+      "title": "No-bid censoring is missing-not-at-random",
+      "FT2_11_anchor": "explicit owner-goal deferral sweep; joined_review.md lines 325-331",
+      "upstream_repair": "FT2-04/05 v2 primary full-loss labels and v2 MNAR table",
+      "FT2_11_repair": "Every serious candidate produces a no-bid-excluded sensitivity; selected identity, terminal, selected-pair orders, and Spearman>=0.95 must remain stable.",
+      "status": "producer_repaired"
+    },
+    {
+      "id": "S3-01",
+      "severity": "BLOCKING",
+      "title": "Simulator v5 does not independently enforce the safety game",
+      "FT2_11_anchor": "joined_review.md lines 353-361",
+      "upstream_repair": "FT2-08 replay_authority_v5_1_spec and account_state_ledger_spec",
+      "FT2_11_repair": "Replay v5.1 safety and separate fee trajectories are hard integrity prerequisites; valid observed breaches are no signal and missing enforcement is invalid.",
+      "status": "producer_repaired_by_verified_upstream_consumption"
+    },
+    {
+      "id": "S3-03",
+      "severity": "BLOCKING",
+      "title": "Historical-to-IBKR transfer is assumed as a Boolean",
+      "FT2_11_anchor": "joined_review.md lines 373-381",
+      "upstream_repair": "FT2-10 exact population, pair key, strata, tolerances, minima, action agreement, and p95 score-gap algorithm",
+      "FT2_11_repair": "Source transfer receives exact pass/insufficient/fail/invalid treatment; no new paired day is assumed and Phase F remains blocked without candidate-specific pass.",
+      "status": "producer_repaired_with_FT2_92_execution_gate_retained"
+    },
+    {
+      "id": "S3-06",
+      "severity": "BLOCKING",
+      "title": "Complete-ladder safety is missing from action-mask assembly",
+      "FT2_11_anchor": "joined_review.md lines 403-411; shadow runtime integrity",
+      "upstream_repair": "FT2-08 v2 complete_ladder_mask and FT2-10 global consumption",
+      "FT2_11_repair": "Historical evidence and shadow integrity require exact flat WAIT and open-state safe-action precedence on incomplete ladders.",
+      "status": "producer_repaired_by_verified_upstream_consumption"
+    },
+    {
+      "id": "S3-09",
+      "severity": "MATERIAL",
+      "title": "Completed-minute, freshness, and opening-history laws are not executable",
+      "FT2_11_anchor": "joined_review.md lines 433-443; shadow runtime integrity",
+      "upstream_repair": "FT2-08 v2 decision conventions, field semantics, warmup, reset, and freshness laws",
+      "FT2_11_repair": "Shadow evidence requires exact reproduction of v2 timestamp, freshness, opening-history, reset, and deadline behavior.",
+      "status": "producer_repaired_by_verified_upstream_consumption"
+    },
+    {
+      "id": "S3-10",
+      "severity": "MATERIAL",
+      "title": "Primary entry comparison lacks a serial flat-state population",
+      "FT2_11_anchor": "joined_review.md lines 445-455",
+      "upstream_repair": "FT2-10 universal serial grid, structural states, separate ledgers, neutral lifecycle, and P5 algorithm",
+      "FT2_11_repair": "Every statistic is session-clustered on the unchanged FT2-10 serial population; impossible flat actions and shared D49 state are forbidden.",
+      "status": "producer_repaired"
+    }
+  ],
+  "carried_obligations": [
+    {
+      "id": "AUTH-A1-RECORDER-5S",
+      "title": "Report-only development-recorder +5s versus next-minute fill study",
+      "source": "consolidated authority owner amendment A1",
+      "repair": "Registered in evidence_standard.json and shadow_sufficiency_spec.json as report-only, owner-blocked, deliberately stopped, with no new-day assumption or collection authorization.",
+      "status": "registered_owner_blocked_not_assumed"
+    }
+  ],
+  "counts": {
+    "review_findings": 17,
+    "blocking": 10,
+    "material": 7,
+    "carried_authority_obligations": 1,
+    "severity_downgrades": 0,
+    "missing_FT2_11_deferrals": 0
+  },
+  "assertions": {
+    "every_FT2_11_anchored_finding_present": true,
+    "every_FT2_08_deferral_naming_FT2_11_present": true,
+    "every_FT2_10_entry_naming_FT2_11_present": true,
+    "MNAR_sensitivity_present": true,
+    "recorder_5s_study_present_and_owner_blocked": true,
+    "no_severity_downgrade": true,
+    "no_FT2_20_rereview_started": true
+  }
+}

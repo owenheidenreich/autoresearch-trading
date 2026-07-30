@@ -1,0 +1,362 @@
+{
+  "oracle:best_10": {
+    "candidate_stream_hash": "e01b22eb5cc07c1f190e50816253099ed43649b7dac7a35c4426f52c14329f74",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 1260987.0,
+    "pooled_pnl": 1250987.0,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 2421,
+    "trade_identity_hash": "38aa4c1d8077483914444fe65f429f2aa34073af5e4511dc324451e6b3966d37",
+    "variant": "best_10"
+  },
+  "oracle:best_20": {
+    "candidate_stream_hash": "4dd8b91acc277663ada7a3eace5fabec02ede98ca77a108510edc7a7080eef76",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 1023134.0,
+    "pooled_pnl": 1013134.0,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1252,
+    "trade_identity_hash": "587a3f58a8798b8560d44191c4f7a5c66c7f31b99af4be87c7af7466c67f784b",
+    "variant": "best_20"
+  },
+  "oracle:best_3": {
+    "candidate_stream_hash": "c83b56c1b5501a2bc96b532f6ac62faaf67478d1143a6c5a9281c6d1bce0ec9f",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 1549114.0,
+    "pooled_pnl": 1539114.0000000002,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 7092,
+    "trade_identity_hash": "41ecf60667d1e845ad1e0081e1129da9c3fbf13bde85ff64cc91b5f620cbbdcb",
+    "variant": "best_3"
+  },
+  "oracle:best_45": {
+    "candidate_stream_hash": "0050b755379269c99989231eb43a9671a7ef824b6f0136b902fd11f8219790d2",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 796575.0,
+    "pooled_pnl": 786575.0,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 585,
+    "trade_identity_hash": "3bec18792ca1126061c9bf71be91ad05f67d917e8fc7e5db193338d4e60ca00a",
+    "variant": "best_45"
+  },
+  "oracle:best_5": {
+    "candidate_stream_hash": "fb3a8d499ce597f7a060ec44c483ca10855c5390216e0595190610d504fdc079",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 1469375.0,
+    "pooled_pnl": 1459375.0,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 4590,
+    "trade_identity_hash": "b13e595ac355d24281739004719c01a722395327d19ac0e0119c82ab6679ac3b",
+    "variant": "best_5"
+  },
+  "oracle:best_90": {
+    "candidate_stream_hash": "2996c02b6060b4217b1be03213e16ecbba7084a733699b1841ea7e126d94f52e",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 612306.0,
+    "pooled_pnl": 602306.0,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 308,
+    "trade_identity_hash": "f47956100cb9fe24adc17bb93b49b362dc8056fbb403ec9801afa71bc7cc015f",
+    "variant": "best_90"
+  },
+  "oracle:best_session": {
+    "candidate_stream_hash": "77f79b8ee85d14dd9281d3068f5dd9ea6d1c3730a68e09f791ab7e4052d47617",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 387161.0,
+    "pooled_pnl": 377161.0,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 113,
+    "trade_identity_hash": "5d6a39021ca02f395366e1eb7a8666a321f7a0cfba53b5cf3ee32bf80557ebca",
+    "variant": "best_session"
+  },
+  "oracle:first_real_profit_exit": {
+    "candidate_stream_hash": "3c9f7ba52271fae9b27bb178574debe4b480a57b9fad83d92bbdc229aef85eff",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 284910.0,
+    "pooled_pnl": 274910.00000000006,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1635,
+    "trade_identity_hash": "2b64f0f6ebc12d656c631db7a475f7b40c4716685caa7bd4275870387ef29fa2",
+    "variant": "first_real_profit_exit"
+  },
+  "oracle:hold_to_forced_flat": {
+    "candidate_stream_hash": "65e92b89ae7dd7719e4d462fda4c52f55fd068f459f48ecf88fcc87d431a99c2",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 104602.0,
+    "pooled_pnl": 94602.0,
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 46,
+    "trade_identity_hash": "8a0100071051ceb4948e4ebcf5a4a63d2bd67135a377cb7b70c7e03194b1ac53",
+    "variant": "hold_to_forced_flat"
+  },
+  "p5:best_10": {
+    "candidate_stream_hash": "8525fa0ec8698e71284db51821952465e5c987c3ccbc467a71bcc3f3c5aa0836",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 2663.0,
+    "pooled_pnl": -7337.0,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1524,
+    "trade_identity_hash": "4b42f8e110b23de2959a070551e60be78749053605219ad7c602789d3e0e28c0",
+    "variant": "best_10"
+  },
+  "p5:best_20": {
+    "candidate_stream_hash": "a3f1c3cdf2a6b6b5bb0fb2d89b3c6b109bab9c23e5561926049561c84bf898b7",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 5121.0,
+    "pooled_pnl": -4879.0,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1758,
+    "trade_identity_hash": "45c0b9131b612404b3cdaca9374b9ef017f2d196bba55b8cff3770fa5613eb23",
+    "variant": "best_20"
+  },
+  "p5:best_3": {
+    "candidate_stream_hash": "d222d1b655c5f8679ab43cc4287b3b1c22d528200121159f18aa4fda104a2d2c",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 2286.0,
+    "pooled_pnl": -7713.999999999999,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1108,
+    "trade_identity_hash": "a84413f036a2c7bdb07345a53a4b185b7b032f755a1d61ad739d6ceff3c0f60e",
+    "variant": "best_3"
+  },
+  "p5:best_45": {
+    "candidate_stream_hash": "b776ca7e8211d9a1ffb234243162a45e90a02aa91cd7f4f20e050512d5518fcc",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 41280.0,
+    "pooled_pnl": 31280.000000000004,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1985,
+    "trade_identity_hash": "b04e6a9b81424185db7c7d54c385289063458cc68a0ea8f61e5675d7a0a4edd2",
+    "variant": "best_45"
+  },
+  "p5:best_5": {
+    "candidate_stream_hash": "075cd5b6b2c77ff8cb3abffbc963826fd00f70a5e107273a3e54c2ff90a94ffd",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 2242.0,
+    "pooled_pnl": -7757.999999999999,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1231,
+    "trade_identity_hash": "b648c10edc57635934d183cb589144b3c4fb81ee8dec6e2678c934be98ed4ed9",
+    "variant": "best_5"
+  },
+  "p5:best_90": {
+    "candidate_stream_hash": "4745a19e7e71fce4c2676881cbc76446ea403a136a73c6f71fc1ffa70ebeaf0c",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 103837.0,
+    "pooled_pnl": 93837.0,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 1496,
+    "trade_identity_hash": "cbd07f2bcd330d432c87d9dd5d6f8d9f6e27edc317478b6c6910ac8034d12ec3",
+    "variant": "best_90"
+  },
+  "p5:best_session": {
+    "candidate_stream_hash": "31bb5b93d8a93ba369d9229903f656808cc96b9c026790b8eaf173abdd79bcb8",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 127454.0,
+    "pooled_pnl": 117454.0,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 902,
+    "trade_identity_hash": "294bcf83eeb4efc8ec73d1c3cae41dfe7cdb4504b2fa3db67e1b3343bc3cc07a",
+    "variant": "best_session"
+  },
+  "p5:first_real_profit_exit": {
+    "candidate_stream_hash": "653caebefd7384006eb79130e2f37fe042ba7c1853137ee2cffef98404cb5c09",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 3404.0,
+    "pooled_pnl": -6596.0,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 227,
+    "trade_identity_hash": "62fcf7910c062119252e697a6f27282bb3f81d2ab8acd63ddab937b9bbbb2282",
+    "variant": "first_real_profit_exit"
+  },
+  "p5:hold_to_forced_flat": {
+    "candidate_stream_hash": "6246bce088ed35d31b7210cd2ecc5877b7fc7fdad58160f1def38e444f78c49b",
+    "d48_applied_before_simulator": true,
+    "d49_applied_before_simulator": true,
+    "ending_cash": 2762.0,
+    "pooled_pnl": -7238.0,
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "trade_count": 46,
+    "trade_identity_hash": "ed5eec6055be1f618bc1e8a01e119ba94720c0aa468568808ad2567a2c44b089",
+    "variant": "hold_to_forced_flat"
+  }
+}

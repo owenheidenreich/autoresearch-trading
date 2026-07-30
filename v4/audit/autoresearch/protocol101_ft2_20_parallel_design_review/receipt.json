@@ -1,0 +1,176 @@
+{
+  "schema_version": "Protocol101FT220NodeReceiptV1",
+  "created_at_utc": "2026-07-29T19:02:28Z",
+  "graph_id": "protocol101-full-trader-v2",
+  "node_id": "FT2-20-PARALLEL-DESIGN-REVIEW",
+  "outcome": "data_tensor_label_defect",
+  "next": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "additional_defect_outcomes": [
+    {
+      "outcome": "entry_science_defect",
+      "next": "FT2-10-ENTRY-SCIENCE-CONTRACT"
+    },
+    {
+      "outcome": "evidence_statistics_defect",
+      "next": "FT2-11-EVIDENCE-STATISTICS-CONTRACT"
+    }
+  ],
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "highest_allowed_claim": "Three isolated design reviews are complete and joined; the graph routes to named contract repair.",
+  "finding_counts": {
+    "seat1_trading_realism": {
+      "BLOCKING": 4,
+      "MATERIAL": 3,
+      "MINOR": 0
+    },
+    "seat2_ml_statistics": {
+      "BLOCKING": 6,
+      "MATERIAL": 5,
+      "MINOR": 0
+    },
+    "seat3_live_parity": {
+      "BLOCKING": 8,
+      "MATERIAL": 2,
+      "MINOR": 0
+    },
+    "joined": {
+      "BLOCKING": 18,
+      "MATERIAL": 10,
+      "MINOR": 0,
+      "exact_duplicates_removed": 0
+    }
+  },
+  "isolation": {
+    "harness": "multi_agent_v1",
+    "all_dispatched_before_any_completed": true,
+    "all_completed_before_any_seat_output_was_persisted": true,
+    "parent_context_forked": false,
+    "other_seat_output_visible_during_review": false,
+    "planning_chat_or_producer_summary_visible": false,
+    "base_harness_instructions_visible": true,
+    "reviewers": [
+      {
+        "seat": "trading_realism",
+        "agent_id": "019faf28-5783-7150-ad69-f512d2318fe6",
+        "nickname": "Russell",
+        "output_file": "seat1_trading_realism.md",
+        "output_sha256": "6eeede9b2369e5cadbd2b3c799b95cf0bf7c709a38d86083876d24827c9f3e94"
+      },
+      {
+        "seat": "ml_statistics",
+        "agent_id": "019faf28-ab19-7473-9c13-f509f9e3ee6c",
+        "nickname": "Socrates",
+        "output_file": "seat2_ml_statistics.md",
+        "output_sha256": "e76be3034b5141efd67e5d8fb3f4fcc133aeeaaa10d0f11c7e3cd905989772e0"
+      },
+      {
+        "seat": "live_parity",
+        "agent_id": "019faf29-0369-73d3-a37f-123c1db15d61",
+        "nickname": "Ptolemy",
+        "output_file": "seat3_live_parity.md",
+        "output_sha256": "f72af16953498c1b3849b9f0506f0525ca36054ec56e4ce5c5e90f27ed42420c"
+      }
+    ],
+    "persistence": "After all reviews completed, each same reviewer received only a persistence instruction to write its already-completed final response verbatim, read nothing else, and report the file SHA-256.",
+    "actual_files_opened": "Recorded verbatim at the end of each seat file."
+  },
+  "deliverable_hashes": {
+    "seat1_trading_realism.md": "6eeede9b2369e5cadbd2b3c799b95cf0bf7c709a38d86083876d24827c9f3e94",
+    "seat2_ml_statistics.md": "e76be3034b5141efd67e5d8fb3f4fcc133aeeaaa10d0f11c7e3cd905989772e0",
+    "seat3_live_parity.md": "f72af16953498c1b3849b9f0506f0525ca36054ec56e4ce5c5e90f27ed42420c",
+    "joined_review.md": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3"
+  },
+  "reviewed_artifact_hashes": {
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/contract.md": "34ddf555bccc05aae70dd4ec162bb3e5e67b8da26bd612cdb1c972f7ccede9a9",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/fold_roles.json": "e5f21f566341b3d2b10baa476a6af309f31ba658a5d944a99bd6015aff032599",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json": "8695f4bbde17c4375b67efeadffe1d8c85576544eea8b729d2a7564733651847",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json": "56885fad09ea7034ce112c356edcce92bad0d9c52e93fb8e32cf66934f5ce518",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/storage_spec.json": "a92645af245016490376ffff85d7e338aa37b73ea706b4040f1c159c9dc9a8c9",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json": "890015b87c0a2636b554d4c27aea9261f91604783f70bde0a96f402e4469e585",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json": "176bdb5240ae0129f4bbc48dd0c7a3b67a9bd6f1fa8d5dd99730283e2c4c2789",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json": "522c2e9d4bc36a9f5fd1fcdff2849c8f2fbbcda5d41cf20dd0358c88f48e8ed3",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/contract.md": "10076a0d6cb0388eb956e2383213a3da2954d8ff2aeaa26b2690fe44b0fc2406",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/controls_spec.json": "76c549c725f6ea3bc2610eb0cff02ad0a5e64edd99b504fa3d0dbdd361978b82",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json": "470b6756d1aaf4236a24f142f0f656f516ffb1aeecdc431d804222fe749f1ce4",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json": "75f76491634f1e620ecac38bb187ba2e4265cff20416390d86a7422c45edb0b1",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json": "ec3eff0d42947717b00d2b2055aa20e80ccfb22459b1285923e2c2bd79c682f9",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json": "bea793a6d5647237f9faf5460c8410386002256b55296011dcaaed704ac0129c",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/contract.md": "36ae09493b36c928bd46ede2b047a97bb0326bea6daa9abb55837e4d95b9433d",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json": "050a81c94320cbb700d1b1a47058d838a4d87df5f08cf6868a9a2ef350fafbc8",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json": "b035cd04ed7cde51678d2ae6e378b720cb29bb6a574eff1379257bbf11831223",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/multiplicity_spec.json": "656d80bd9005cb89132d38d59013c3cfd2fbc25ff6901a92327f637454224b69",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json": "d27f70f560629d6fce243071e43c0afa5a3d7ed5424ee1bea6f4d9025c8417de",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json": "422d494a2598c8473b8dff473032f94a4a37d55afb2c4c199b48a0fd04c7b8d0",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/tripwire_spec.json": "c7f19f8ebc96005b4ce50ac29307b48da7c9cc517da62bbf7e53c2e5906eced3"
+  },
+  "context_hashes": {
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_TRADER_CHARTER.md": "3dbc1cf45e2200b7fd789c92be7e927c714b476b4b45aec95b5e0d9686c1ed66",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_G4_HOLDOUT_REVISION_2026_07_19.md": "ff554ef5dd34086cd09954b906bbb5ce8455fa467776ae83906b01f80d565da5",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_G8_CALIBRATION_REVISION_2026_07_26.md": "ac2cdbd9dabf8daa36aa53b8736d9691b8569b6f5b2b810d5a56707702465bf3",
+    "v4/docs/protocol101/synchronization/contracts/PROTOCOL101_SCOPED_SYNCHRONIZATION_DECISION_2026_07_25.md": "5c5a44e6bb4053276ef60b710a3788d1ee5ed9930a0aa8f10a4f45bbbe31417d",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_D1_NEGATIVE_CONTROL_AND_INCREMENTAL_EDGE_AMENDMENT_2026_07_28.md": "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598",
+    "v4/model/protocol101_serial_simulator_v5.py": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/census_sessions.json": "f77e94e58d3214e490a8d87f888aa92d8b757b028299e533a63b83442df247cc",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/compute_census_outer_test_intersection.py": "cc6c08d977a58ff0cc82018be9ca523fd881f6e464c7a7ddeb177cd12f474736",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/intersection_proof.json": "5b3bd920ca476f4c4a61c926a5d3b3187c2f01c0c0ffd85ccad177cf4bce6844",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json": "d724195999acf579a43768756b79f30ad122ec446933347b93cbbd8a7bbe9781",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/oracle_rules.json": "23a4cab2715c925a3c4261a508e69ac2c0f70157b93083ff129f4848ae03eb81",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/report.md": "bf58fc6bc05b75bed889f0f9e42992847b96b209d2134202521aa37ea0c9392b",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/test_compute_census_intersection.py": "7a674d60f400b1933a8cf1f42af95c4975fc0a8a41889adfd0f9d46c8d428aa4",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json": "8a8805b22ef04a290edf421d5229d75eebc2301bc5246bd3bc595ee616cae583",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv": "0c3a4883cddbf9aa6cdc50fbf2de5ecbb2d688c8789f2c0c67decd841cca90b8",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/family_distributions.csv": "5bd59171cf6be963fb9bc72ea19fadc0c7bb5ac956900f73e8c7aa7dd63b314e",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/friction_by_premium_band.csv": "6a28e19be5f6b61bfecb5406ce69016289ba8f5c85334545baf22ad9bedabe39",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/governance_receipt.json": "06d37a3e6d83fc04954ba1f726d84df5da7cdba4a9318a99160ae1e9641f2b8a",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_curves.csv": "54159562cf99fc48989739a404705b632daa1de7084e01c80901c7f9641805da",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_threshold_curves.json": "3e432d302e89e1b9d7c274e945b6477060f04e87fea5f6117ba436763ef7027d",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv": "aaf4e8f3f0aa03aac96e411cca0d4337777991d276db474e25caa3deda4bdb74",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/label_build_compute.json": "9fef189bcf0850ce349448622f7c5e9e3598774c657b9ab9ce4014f06be1e86b",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/label_session_inventory.csv": "6439df71ecd0f863488d0480bf523fcd7b0cfb7f34322542bfda34c1a17639fd",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/minimum_detectable_improvement.csv": "daa15880daf7b9d8651215fa4c952fc54ddd72aa28890d7f7e8945f86d784830",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/oracle_ceiling_summary.csv": "c6e4fa4e5e61da37c1877e9c097f593e70a37c1afdad0dc26bdbd2f66fd48fe8",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/oracle_replay_audit.json": "b910c80e9e805ec6a73bb11f014a906e100e31846f224ad11b48fe58ad8c3fed",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/oracle_session_results.csv": "983c163c199324b3e625ec173be157bf63eb546cbb6200fc43eeab871a2fcbd6",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/oracle_trade_results.csv": "8b2fd0c781773343e1d30de2e4f0eb1d020a7e07b146f846ff145cde22ad2875",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/pareto_frontier.csv": "25efb4d21e4826e44815481285f187c68dfe78737c6e464880309fa4a3a15f72",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/progress.json": "b6b2244f758d54d97aa98fc3537617e053202751969ac29e5e2b645e7a381813",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/regime_headlines.csv": "093d47d470cbea17e015ddcca4eff3e0f7bd8fff0739f2c7479ee2b39c417505",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/report.md": "a9b92a55e2d38ead890c73c744305656417adc2f8bbf78299efa67c822e0f964",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/session_variance_components.csv": "1e00310eabf0d3f86dc20cde895e93a95d6aaa55652af0118af4cef0b5e474e4"
+  },
+  "assertions": {
+    "authority_hash_verified": true,
+    "three_target_receipts_verified": true,
+    "all_target_deliverable_hashes_reproduced": true,
+    "three_fresh_isolated_sessions_used": true,
+    "seat_outputs_preserved_verbatim": true,
+    "every_finding_preserved": true,
+    "exact_duplicate_findings_removed_only": true,
+    "no_severity_downgraded": true,
+    "convergent_findings_not_deduplicated": true,
+    "primary_outcome_is_legal_graph_edge": true,
+    "additional_defect_outcomes_are_legal_graph_edges": true,
+    "owner_approval_not_started": true
+  },
+  "side_effects": {
+    "reviewed_contract_edited": false,
+    "frozen_artifact_edited": false,
+    "finding_resolved": false,
+    "training_or_fitting": false,
+    "new_session_statistics": false,
+    "FT2_21_started": false,
+    "repair_started": false,
+    "protected_resource_access": false,
+    "recorder_or_broker_access": false,
+    "paid_data_or_compute": false,
+    "runtime_or_promotion_change": false
+  },
+  "self_hash": {
+    "included_in_deliverable_hashes": false,
+    "reason": "The receipt cannot contain its own SHA-256 without a self-reference."
+  }
+}

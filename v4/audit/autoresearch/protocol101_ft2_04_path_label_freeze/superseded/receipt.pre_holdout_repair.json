@@ -1,0 +1,50 @@
+{
+  "assertions": {
+    "authority_sha256_verified": true,
+    "census_equals_corpus_minus_outer_test": true,
+    "census_intersects_no_outer_test_slice": true,
+    "fold_manifest_consistent": true,
+    "graph_v2_sha256_verified": true,
+    "no_census_statistics_computed": true,
+    "no_model_training": true,
+    "no_recorder_or_broker_or_paid_access": true
+  },
+  "census_session_count": 76,
+  "created_at_utc": "2026-07-29T04:58:45.782674+00:00",
+  "deliverable_hashes": {
+    "census_sessions.json": "b3b57ec38fb18ba953e95cc8c75d01ae7596b6186e4960f00a09673e4bd79637",
+    "compute_census_outer_test_intersection.py": "3136e8bd36bb63add12002251d9d76b337bfcbc6e6312f91677635c1214957ea",
+    "intersection_proof.json": "73f7a3baeb49e24f7808f7a67b383d11a74088ea99833fafbdfe795f63a8d3aa",
+    "label_spec.json": "d724195999acf579a43768756b79f30ad122ec446933347b93cbbd8a7bbe9781",
+    "oracle_rules.json": "23a4cab2715c925a3c4261a508e69ac2c0f70157b93083ff129f4848ae03eb81",
+    "report.md": "86d22815675cf18861b6db375d24c32f6d90eefcac14442e2078a50cf7a637b4",
+    "test_compute_census_intersection.py": "ffa574bc599caa34673e28509ba6f4e996fb19a032355d51411142468c879347"
+  },
+  "governed_corpus_count": 301,
+  "graph_id": "protocol101-full-trader-v2",
+  "intersection_proof_counts": {
+    "census": 76,
+    "governed_corpus": 301,
+    "intersection": 0,
+    "outer_test_union": 225
+  },
+  "intersection_proof_passed": true,
+  "legal_next": "FT2-05-OPPORTUNITY-CENSUS (separate Goal; NOT begun)",
+  "node_id": "FT2-04-PATH-LABEL-FREEZE",
+  "outcome": "labels_frozen",
+  "outer_test_union_count": 225,
+  "producer": "Claude (FT2-04 goal execution)",
+  "product_contract_hash": "e08b02b31a937bcb7c15909f66cfce5bed69678d7469c8d66c44232f34101c64",
+  "product_contract_hash_note": "SHA-256 of the owner-signed consolidated authority document, as specified by the FT2-04 goal",
+  "schema_version": "Protocol101FT204NodeReceiptV1",
+  "scope": "definitions_and_manifests_only_no_values_computed_on_real_data",
+  "source_hashes": {
+    "canonical_processed_session_manifest_sha256": "e4801126f9c8d6ff79c44aebae633c710ce3206161588c4ca0dcc1f703bcea8d",
+    "consolidated_authority_sha256": "e08b02b31a937bcb7c15909f66cfce5bed69678d7469c8d66c44232f34101c64",
+    "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
+    "graph_v2_json_sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "runner_plan_sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",
+    "serial_simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+    "training_scope_acceptance_summary_sha256": "ccf864b2120973e89cba52a9a015615c34817efcb0c317bc5e63a215c853681f"
+  }
+}

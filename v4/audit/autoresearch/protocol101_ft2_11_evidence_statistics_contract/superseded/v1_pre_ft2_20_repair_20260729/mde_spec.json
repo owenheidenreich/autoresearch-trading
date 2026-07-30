@@ -1,0 +1,128 @@
+{
+  "schema_version": "Protocol101FT211MDESpecV1",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "purpose": "Block GPU tranche 1 when the campaign cannot distinguish a plausible incremental edge from session-level noise.",
+  "confidence_and_power": {
+    "two_sided_confidence": 0.95,
+    "power": 0.8,
+    "unadjusted_z_sum": 2.8015852181129683,
+    "planning_multiplicity_method": "conservative Bonferroni approximation to the frozen maxT family",
+    "planning_hard_statistics": 96,
+    "planning_z_sum": 4.311427788734489
+  },
+  "census_provenance": {
+    "role": "design diagnostic only; never model-quality evidence",
+    "census_results": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
+      "sha256": "8a8805b22ef04a290edf421d5229d75eebc2301bc5246bd3bc595ee616cae583"
+    },
+    "session_variance_components": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/session_variance_components.csv",
+      "sha256": "1e00310eabf0d3f86dc20cde895e93a95d6aaa55652af0118af4cef0b5e474e4",
+      "selected_row": {
+        "regime_dimension": "overall",
+        "regime_value": "all",
+        "variant": "best_session",
+        "session_count": 46,
+        "mean_session_increment": 5645.804347826087,
+        "session_increment_variance": 23285825.227536228,
+        "session_increment_std": 4825.538853593061
+      },
+      "reason": "The remaining-session oracle-minus-P5 increment is the census ceiling aligned with the whole-path entry objective. It is a ceiling, not expected model performance."
+    },
+    "minimum_detectable_improvement": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/minimum_detectable_improvement.csv",
+      "sha256": "daa15880daf7b9d8651215fa4c952fc54ddd72aa28890d7f7e8945f86d784830"
+    },
+    "guardrail_trade_rates": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
+      "sha256": "aaf4e8f3f0aa03aac96e411cca0d4337777991d276db474e25caa3deda4bdb74"
+    }
+  },
+  "projected_trade_counts": {
+    "source": "FT2-10 calibration_spec.json frozen design trade-rate band",
+    "mean_trades_per_session_band": {
+      "lower": 0.6630434782608696,
+      "upper": 5.304347826086957,
+      "center": 2.6521739130434785
+    },
+    "one_outer_fold_45_sessions": {
+      "minimum": 30,
+      "maximum": 238,
+      "center_projection": 119.34782608695653
+    },
+    "pooled_five_folds_225_sessions": {
+      "minimum": 150,
+      "maximum": 1193,
+      "center_projection": 596.7391304347826
+    },
+    "frequency_is_not_a_hard_gate": true,
+    "rare_trade_rule": "Low realized trade count routes insufficient_evidence when ESS or MDE is inadequate; it is not silently rejected for missing an arbitrary cadence."
+  },
+  "mde_formula": {
+    "unadjusted": "MDE_mean_session(n) = (z_0.975 + z_0.80) * census_session_std / sqrt(n)",
+    "multiplicity_planning": "MDE_mean_session_mult(n,m) = (z_(1 - 0.05/(2m)) + z_0.80) * census_session_std / sqrt(n)",
+    "total_effect": "MDE_total = n * MDE_mean_session",
+    "primary_actual_inference": "The campaign uses the 20,000-resample maxT procedure, not Bonferroni. Bonferroni is the preregistered conservative spend-planning approximation."
+  },
+  "frozen_arithmetic": {
+    "one_outer_fold_45_sessions": {
+      "unadjusted_mde_mean_session_dollars": 2015.3171337203364,
+      "unadjusted_mde_total_dollars": 90689.27101741514,
+      "multiplicity_planning_mde_mean_session_dollars": 3101.4206661495305,
+      "multiplicity_planning_mde_total_dollars": 139563.92997672886
+    },
+    "pooled_five_folds_225_sessions": {
+      "unadjusted_mde_mean_session_dollars": 901.2772214437412,
+      "unadjusted_mde_total_dollars": 202787.37482484177,
+      "multiplicity_planning_mde_mean_session_dollars": 1386.9974872666062,
+      "multiplicity_planning_mde_total_dollars": 312074.4346349864
+    }
+  },
+  "plausible_edge_bounds": {
+    "economic_mean_session_dollars": {
+      "value": 1411.4510869565217,
+      "formula": "0.25 * 5645.804347826087 census remaining-session oracle-minus-P5 mean session increment",
+      "interpretation": "Campaign 1 is not assumed capable of harvesting more than one quarter of a hindsight ceiling before learned exits. This is a maximum plausible incremental edge for resource planning, not a required profit target."
+    },
+    "economic_mean_trade_dollars_at_center_rate": {
+      "value": 532.186475409836,
+      "formula": "1411.4510869565217 / 2.6521739130434785"
+    },
+    "whole_path_DeltaQ": {
+      "value": 0.05,
+      "scale": "Q lies in [-1,1]",
+      "interpretation": "A 0.05 mean decision-local improvement is the smallest effect treated as meaningfully distinguishable for sufficiency classification. It is not an acceptance threshold; acceptance still requires an adjusted lower bound strictly above zero."
+    }
+  },
+  "pre_tranche_measurement": {
+    "must_use_training_side_only": true,
+    "required_from_FT2_30_checkpoint_resume_dry_run": [
+      "actual ordered multiplicity-ledger count",
+      "session-cluster standard deviation of DeltaQ versus P5",
+      "session-cluster standard deviation of DeltaQ versus matched random",
+      "projected eligible session count",
+      "projected trade-count band",
+      "checkpoint/resume proof costing at most 10 dollars"
+    ],
+    "quality_mde_formula": "For each required DeltaQ contrast, substitute the training-only pilot session standard deviation and actual ledger count into the multiplicity-planning formula.",
+    "no_outer_validation_use": true
+  },
+  "first_gpu_tranche_gate": {
+    "all_required": [
+      "checkpoint/resume dry-run proof costs at most 10 dollars",
+      "actual pooled economic MDE_mean_session_dollars <= 1411.4510869565217",
+      "actual pooled DeltaQ MDE <= 0.05 for both P5 and matched-random contrasts",
+      "actual per-fold MDEs are reported",
+      "ordered multiplicity ledger is frozen and hashed",
+      "all MDE inputs are training-side or census-design diagnostics"
+    ],
+    "per_fold_interpretation": "A 45-session fold is not required to be individually significant. Its MDE explains why the hard era rule is directional consistency rather than five separate significance tests.",
+    "failure_route": "resource_owner_decision_required",
+    "timing": "before GPU tranche 1",
+    "no_campaign_result_claim": true,
+    "current_design_arithmetic_note": "The conservative pooled census planning MDE of 1386.9974872666062 dollars is only 24.4535996899155 dollars below the 1411.4510869565217 plausible bound. This narrow margin does not authorize spend; FT2-30 must replace planning assumptions with the actual training-only pilot variances and ledger count."
+  }
+}

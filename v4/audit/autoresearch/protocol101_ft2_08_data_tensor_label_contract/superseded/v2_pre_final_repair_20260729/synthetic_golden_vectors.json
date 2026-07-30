@@ -1,0 +1,143 @@
+{
+  "schema_version": "Protocol101FT208SyntheticGoldenVectorsV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired_pending_independent_review",
+  "tolerance": {
+    "integer_and_identity": "exact",
+    "float64_reference": 1e-12,
+    "float32_materialized": 1e-6
+  },
+  "vectors": [
+    {
+      "id": "canonical_17_axis_split",
+      "input": {
+        "decision_time_utc": "2025-01-02T15:00:00Z",
+        "spx_close": 6000.0,
+        "spx_vwap": 5990.0,
+        "session_range": 50.0,
+        "momentum_5m": 6.0,
+        "momentum_15m": -12.0,
+        "omar": 4.0,
+        "atm_strike": 6000,
+        "offset_points": 0,
+        "call_quantized_mid": 10.0,
+        "put_quantized_mid": 9.0,
+        "neighbor_call_mid_change_per_5_points": -0.2,
+        "neighbor_put_mid_change_per_5_points": 0.2
+      },
+      "expected_contract_invariant_market_channels": {
+        "spx_vwap_gap_points": 10.0,
+        "spx_vwap_gap_bps": 16.666666666666668,
+        "spx_vwap_gap_over_session_range": 0.2,
+        "session_range_bps": 83.33333333333333,
+        "momentum_5m_bps": 10.0,
+        "momentum_15m_bps": -20.0,
+        "momentum_5m_over_session_range": 0.12,
+        "momentum_15m_over_session_range": -0.24,
+        "omar_clipped_neg3_pos3": 3.0
+      },
+      "expected_call_contract_channels": {
+        "vwap_side_alignment_flag": 1.0,
+        "omar_side_alignment_flag": 1.0,
+        "momentum15_side_alignment_flag": 0.0,
+        "D.near_atm.straddle_mid_spot_bps": 31.666666666666664,
+        "D.near_atm.put_call_mid_ratio": 0.9,
+        "D.near_atm.side_smile_slope_bps_per_5pt": -0.33333333333333215,
+        "E.bs.delta": 0.5041289932293247,
+        "E.bs.gamma": 0.016080107666400327
+      },
+      "expected_put_contract_channels": {
+        "vwap_side_alignment_flag": 0.0,
+        "omar_side_alignment_flag": 0.0,
+        "momentum15_side_alignment_flag": 1.0,
+        "D.near_atm.straddle_mid_spot_bps": 31.666666666666664,
+        "D.near_atm.put_call_mid_ratio": 0.9,
+        "D.near_atm.side_smile_slope_bps_per_5pt": 0.3333333333333348,
+        "E.bs.delta": -0.49564879702168985,
+        "E.bs.gamma": 0.01748365266755073
+      }
+    },
+    {
+      "id": "tplus1_execution_and_path_clock",
+      "input": {
+        "decision_et": "10:00",
+        "entry_fill_ask_at_1001": 2.0,
+        "future_bids": {
+          "10:02": 1.8,
+          "10:03": null,
+          "10:04": 2.1
+        },
+        "round_trip_fee": 3.0,
+        "multiplier": 100
+      },
+      "expected": {
+        "entry_fill_et": "10:01",
+        "first_descriptive_mark_et": "10:02",
+        "three_minute_path_pnl": [-22.999999999999996, -203.0, 7.000000000000009],
+        "no_bid_minutes": 1,
+        "early_drawdown_dollars": -203.0,
+        "ttfp_from_entry_fill_minutes": 3,
+        "ttfp_from_decision_minutes_report_only": 4
+      }
+    },
+    {
+      "id": "atm_round_half_even",
+      "input_spx_for_ladder": [6002.5, 6007.5, 6004.9],
+      "expected_atm_strike": [6000, 6010, 6005],
+      "expected_slot_count": 42,
+      "expected_first_slot": {
+        "strike": 5950,
+        "right": "C"
+      },
+      "expected_last_slot": {
+        "strike": 6050,
+        "right": "P"
+      }
+    },
+    {
+      "id": "complete_ladder_flat_safe_action",
+      "input": {
+        "defined_contracts": 42,
+        "fresh_complete_quotes": 41,
+        "position_state": "flat"
+      },
+      "expected": {
+        "complete_ladder": false,
+        "action_mask_true_indexes": [0],
+        "safe_action": "WAIT"
+      }
+    },
+    {
+      "id": "open_contract_outside_recentered_ladder",
+      "input": {
+        "bought_contract_key": "SPX|SPXW|20250102|C|6000000|100|USD",
+        "new_ladder_low_strike_milli": 6010000,
+        "new_ladder_high_strike_milli": 6110000
+      },
+      "expected": {
+        "contract_in_flat_ladder": false,
+        "dedicated_open_contract_record_required": true,
+        "open_contract_identity_unchanged": "SPX|SPXW|20250102|C|6000000|100|USD",
+        "HOLD_or_EXIT_remains_evaluable": true
+      }
+    },
+    {
+      "id": "d49_soft_close_boundary",
+      "input": {
+        "session_start_equity_cents": 1000000,
+        "daily_budget_cents": 50000,
+        "minimum_lane_cost_cents": 10300
+      },
+      "cases": [
+        {
+          "realized_loss_cents": 39700,
+          "expected_soft_close": false
+        },
+        {
+          "realized_loss_cents": 39701,
+          "expected_soft_close": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "schema_version": "Protocol101FT208AccountStateLedgerV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired_pending_independent_review",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "numeric_unit": "integer USD cents",
+  "rounding": "round monetary fills and commissions to nearest cent before ledger mutation; compare integer cents",
+  "session_start": {
+    "timezone": "America/New_York",
+    "boundary": "09:30:00",
+    "offline_value": "carried simulator cash/equity entering the session within the governed split",
+    "live_paper_value": "first authenticated pre-open IBKR paper-account NetLiquidation snapshot at or before 09:30, frozen for the session",
+    "account_scope": "the explicitly configured paper account only",
+    "missing_or_multiple_accounts": "block all new entries",
+    "snapshot_fields_logged": [
+      "account_id",
+      "NetLiquidation raw text",
+      "normalized cents",
+      "broker source timestamp",
+      "receipt timestamp",
+      "session date"
+    ]
+  },
+  "owned_trade_ledger": {
+    "principle": "D49 and the daily stop use Protocol101's own reconciled fill-and-commission ledger, not a lagging broker realized-PnL aggregate",
+    "event_order": [
+      "entry fill",
+      "entry commission",
+      "exit fill",
+      "exit commission",
+      "realized trade close",
+      "D49 and daily-stop recomputation"
+    ],
+    "partial_fill": "reserve actual filled quantity and cash immediately; one-contract policy blocks another entry while any quantity is open or pending",
+    "cancel_or_reject": "release only the unfilled reservation after broker acknowledgement",
+    "late_commission": "retain a conservative preregistered commission reserve until exact commission arrives; reconcile cents without rewriting prior decision records",
+    "realized_session_pnl_cents": "sum exact net closed-trade PnL cents for this session",
+    "realized_session_loss_cents": "max(0,-realized_session_pnl_cents)"
+  },
+  "d48": {
+    "daily_budget_cents": "floor(0.05*session_start_equity_cents)",
+    "prospective_entry_cost_cents": "t+1 executable ask cents*100 + round-trip-fee reserve cents",
+    "mask_true": "prospective_entry_cost_cents<=daily_budget_cents"
+  },
+  "d49": {
+    "mask_true": "realized_session_loss_cents+prospective_entry_cost_cents<=daily_budget_cents",
+    "soft_close_floor_cost_cents": 10300,
+    "soft_close_trigger": "daily_budget_cents-realized_session_loss_cents<10300",
+    "soft_close_effect": "permanent WAIT for new entries for the rest of the session; existing position may still HOLD/EXIT",
+    "reason": "$1.00 option premium times 100 plus $3 fee reserve"
+  },
+  "daily_stop": {
+    "basis": "signed realized_session_pnl_cents only",
+    "trigger": "realized_session_pnl_cents<=-daily_budget_cents",
+    "effect": "no new entries for the session; existing position remains under lifecycle and protective exit rules"
+  },
+  "restart_recovery": {
+    "sources": [
+      "immutable Protocol101 order/fill/commission log",
+      "IBKR open positions",
+      "IBKR completed orders and executions",
+      "frozen session-start account snapshot"
+    ],
+    "required_result": "bit-exact reconstruction of open quantity, cash reservations, realized_session_pnl_cents, D48 mask, D49 mask, soft-close state, and daily-stop state",
+    "mismatch": "block new entries and route to operator reconciliation; never choose the more permissive state"
+  },
+  "per_decision_audit_fields": [
+    "session_start_equity_cents",
+    "daily_budget_cents",
+    "realized_session_pnl_cents",
+    "realized_session_loss_cents",
+    "remaining_daily_budget_cents",
+    "prospective_entry_ask_cents_by_slot",
+    "prospective_entry_cost_cents_by_slot",
+    "d48_mask_by_slot",
+    "d49_mask_by_slot",
+    "soft_close_active",
+    "daily_stop_active",
+    "ledger_event_hash"
+  ],
+  "policy_comparison": "each candidate and comparator owns a separate causal ledger; masks are recomputed from that policy's prior realized trades rather than shared after divergence",
+  "fail_closed_conditions": [
+    "missing session-start snapshot",
+    "unreconciled open position",
+    "unresolved partial fill",
+    "commission reserve unavailable",
+    "ledger sequence gap",
+    "duplicate fill identity",
+    "broker/local position mismatch",
+    "non-cent-exact arithmetic"
+  ]
+}

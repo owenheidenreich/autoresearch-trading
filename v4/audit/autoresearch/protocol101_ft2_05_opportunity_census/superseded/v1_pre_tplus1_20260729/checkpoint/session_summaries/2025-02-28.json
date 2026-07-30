@@ -1,0 +1,15 @@
+{
+  "decision_rows": 359,
+  "label_path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-28.parquet",
+  "label_rows": 10992,
+  "label_sha256": "c9dbd386524cfcca79708b28c5c22e6104ea929ec36d401472ebed7ff0bcbb31",
+  "malformed_processed_rows": 0,
+  "missing_contract_paths": 0,
+  "reference_d48_rows": 2562,
+  "session": "2025-02-28",
+  "system_cpu_seconds": 0.15174999999999983,
+  "user_cpu_seconds": 20.179373000000055,
+  "vol_proxy_name": "session_spx_realized_range_bps",
+  "vol_proxy_value": 203.77689088221658,
+  "wall_seconds": 20.343206666992046
+}

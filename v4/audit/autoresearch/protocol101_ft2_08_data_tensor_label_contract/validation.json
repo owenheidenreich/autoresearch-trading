@@ -1,0 +1,41 @@
+{
+  "checks": {
+    "all_19_plus_4_reviewed_fields_crosswalked": true,
+    "all_findings_crosswalked": true,
+    "authority_hash": true,
+    "cent_ledger_and_fee_path_soft_close": true,
+    "complete_ladder_wait": true,
+    "contract_dependent_features_not_global": true,
+    "deterministic_session_start_equity": true,
+    "ft204_v2": true,
+    "ft205_v3": true,
+    "golden_feature_vector": true,
+    "golden_fee_path_soft_close": true,
+    "golden_intent_fill_recheck": true,
+    "intent_law_hash": true,
+    "open_contract_outside_ladder": true,
+    "owner_signed_extension_required": true,
+    "role_firewall": true,
+    "separate_fee_trajectories": true,
+    "signed_17_exact_once_by_axis": true,
+    "target_valid_firewalled": true,
+    "tensor_shapes": true,
+    "terminal_minute_not_learned_action": true,
+    "tplus1_and_no_bid": true
+  },
+  "failed": [],
+  "input_hashes": {
+    "account_state_ledger_spec.json": "4d745b89abc033ee7e6d1b2f5cbfa644c107df7f00c1406fd25f4443ae32ad12",
+    "field_semantics_manifest.json": "48c5320adc7c8393e4b15e5b739f5f0043fc4743e5e81fc0306f88cde9c2f8d3",
+    "fold_roles.json": "ca11c949feb3739b2476301feaea7b5786b7e167cda27656deede97b9689f6fa",
+    "identity_mapping_spec.json": "273f6c18e800a0af9cc30d079c3e2bffef5fa93a1ad04dbfadb3b9f971112e01",
+    "intent_fill_recheck_law.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "label_join_spec.json": "4be56f5677aeac4aab1b49807f02ab7370dae7706be53d6985f0147c90469cc1",
+    "replay_authority_v5_1_spec.json": "3d9fca3a2aa93193d78ece0e0959686169bd053a479d1c2aaa61663c779aa6b3",
+    "storage_spec.json": "ea3710ee556405f3b190e64af0e192cfcb14276b71d864cb86caa6800bba27d4",
+    "synthetic_golden_vectors.json": "abc2d777790740ad697f1c9893cb700ef90f3cc6d54d039f59acbe48c0350f4a",
+    "tensor_schema.json": "acfdee0460cd69c229cac61c06db1a9592da2f140cdb891994db3de05e1d4c6f"
+  },
+  "passed": true,
+  "schema_version": "Protocol101FT208ContractValidationV3"
+}

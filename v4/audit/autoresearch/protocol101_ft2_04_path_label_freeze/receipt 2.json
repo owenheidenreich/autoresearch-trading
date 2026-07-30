@@ -1,0 +1,73 @@
+{
+  "assertions": {
+    "authority_sha256_verified_pre_amendment": true,
+    "census_equals_corpus_minus_outer_test_minus_holdout": true,
+    "census_intersects_no_outer_test_slice": true,
+    "census_intersects_no_protected_holdout_session": true,
+    "label_and_oracle_definitions_untouched": true,
+    "no_census_statistics_computed": true,
+    "no_model_training": true,
+    "no_recorder_or_broker_or_paid_access": true,
+    "old_artifacts_preserved": true,
+    "only_three_authority_regions_amended": true,
+    "protected_holdout_remains_sealed": true
+  },
+  "census_session_count": 46,
+  "census_window": "2025-01-02 to 2025-03-11",
+  "created_at_utc": "2026-07-29T05:10:53.998715+00:00",
+  "deliverable_hashes": {
+    "census_sessions.json": "f77e94e58d3214e490a8d87f888aa92d8b757b028299e533a63b83442df247cc",
+    "compute_census_outer_test_intersection.py": "cc6c08d977a58ff0cc82018be9ca523fd881f6e464c7a7ddeb177cd12f474736",
+    "intersection_proof.json": "5b3bd920ca476f4c4a61c926a5d3b3187c2f01c0c0ffd85ccad177cf4bce6844",
+    "label_spec.json": "d724195999acf579a43768756b79f30ad122ec446933347b93cbbd8a7bbe9781",
+    "oracle_rules.json": "23a4cab2715c925a3c4261a508e69ac2c0f70157b93083ff129f4848ae03eb81",
+    "report.md": "bf58fc6bc05b75bed889f0f9e42992847b96b209d2134202521aa37ea0c9392b",
+    "test_compute_census_intersection.py": "7a674d60f400b1933a8cf1f42af95c4975fc0a8a41889adfd0f9d46c8d428aa4"
+  },
+  "frozen_definitions_unchanged": {
+    "label_spec_json_sha256": "d724195999acf579a43768756b79f30ad122ec446933347b93cbbd8a7bbe9781",
+    "note": "label_spec.json and oracle_rules.json are byte-identical to the original freeze; they cite the pre-amendment authority hash under which the definitions were frozen, which is correct because the definitions themselves did not change",
+    "oracle_rules_json_sha256": "23a4cab2715c925a3c4261a508e69ac2c0f70157b93083ff129f4848ae03eb81"
+  },
+  "governed_corpus_count": 301,
+  "graph_id": "protocol101-full-trader-v2",
+  "intersection_proof_counts": {
+    "census": 46,
+    "governed_corpus": 301,
+    "holdout_intersection": 0,
+    "outer_test_intersection": 0,
+    "outer_test_union": 225,
+    "protected_holdout": 30
+  },
+  "intersection_proof_passed": true,
+  "legal_next": "FT2-05-OPPORTUNITY-CENSUS (separate Goal; NOT begun); it pins product_contract_hash 893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "node_id": "FT2-04-PATH-LABEL-FREEZE",
+  "outcome": "labels_frozen",
+  "outer_test_union_count": 225,
+  "producer": "Claude (FT2-04-REPAIR goal execution)",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "product_contract_hash_note": "SHA-256 of the AMENDED owner-signed consolidated authority (post 2026-07-29 D42 correction), as specified by the FT2-04-REPAIR goal; FT2-05 pins this hash",
+  "protected_holdout_count": 30,
+  "repair": "protected_holdout_firewall_2026_07_29",
+  "repair_authorization": "owner-approved 2026-07-29 (Fable planning session): D42 amended to exclude protected resources; holdout stays sealed",
+  "repair_of": "12e0b745c0b54aee71c2e1b0e3039d6b35cfda65fa1036f95bda1649edd5ae60",
+  "schema_version": "Protocol101FT204NodeReceiptV2",
+  "scope": "bounded_mechanical_repair_plus_one_owner_authorized_text_amendment_no_values_computed",
+  "source_hashes": {
+    "canonical_processed_session_manifest_sha256": "e4801126f9c8d6ff79c44aebae633c710ce3206161588c4ca0dcc1f703bcea8d",
+    "consolidated_authority_sha256_new": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "consolidated_authority_sha256_pre_amendment": "e08b02b31a937bcb7c15909f66cfce5bed69678d7469c8d66c44232f34101c64",
+    "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
+    "graph_v2_json_sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "protected_holdout_hash": "29ef78401a422d27875a2bf85b7c75cd05be9649ec8058d82a8984822d53d79e",
+    "runner_plan_sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",
+    "serial_simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+    "training_scope_acceptance_summary_sha256": "ccf864b2120973e89cba52a9a015615c34817efcb0c317bc5e63a215c853681f"
+  },
+  "superseded_artifacts": {
+    "census_sessions_pre_holdout_repair_sha256": "b3b57ec38fb18ba953e95cc8c75d01ae7596b6186e4960f00a09673e4bd79637",
+    "directory": "superseded/",
+    "intersection_proof_pre_holdout_repair_sha256": "73f7a3baeb49e24f7808f7a67b383d11a74088ea99833fafbdfe795f63a8d3aa",
+    "receipt_pre_holdout_repair_sha256": "12e0b745c0b54aee71c2e1b0e3039d6b35cfda65fa1036f95bda1649edd5ae60"
+  }
+}

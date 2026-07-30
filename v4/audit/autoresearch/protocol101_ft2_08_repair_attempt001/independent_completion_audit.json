@@ -1,0 +1,129 @@
+{
+  "schema_version": "Protocol101FT208RepairIndependentCompletionAuditV1",
+  "outcome": "accepted",
+  "checks": {
+    "goal_text_read_and_hashed": true,
+    "authority_pre_amendment_hash_preserved": true,
+    "authority_current_hash_matches_receipts": true,
+    "authority_a1_next_minute_fill_present": true,
+    "authority_a2_no_bid_loss_present": true,
+    "authority_a3_one_dollar_soft_close_present": true,
+    "authority_a4_embargo_exclusion_present": true,
+    "authority_deferred_subminute_component_freeze_tail_guard_decisions_present": true,
+    "ft2_04_v2_formulas_and_boundaries_frozen": true,
+    "ft2_04_runtime_label_firewall_carried_into_ft2_08_label_join_contract": true,
+    "ft2_04_no_bid_and_mnar_laws_frozen": true,
+    "ft2_04_role_firewall_recomputed": true,
+    "ft2_04_receipt_hash_inventory_matches": true,
+    "ft2_04_repair_of_and_v1_preservation_match": true,
+    "ft2_05_v2_complete_45_session_checkpoint_population": true,
+    "ft2_05_all_rows_use_exact_tplus1_entry_fill": true,
+    "ft2_05_no_bid_full_loss_and_exact_1555_laws_reproduced": true,
+    "ft2_05_d48_and_d49_soft_close_mechanics_reproduced": true,
+    "ft2_05_impact_and_mnar_artifacts_present_and_hashed": true,
+    "ft2_05_builder_hash_matches": true,
+    "ft2_05_receipt_hash_inventory_matches": true,
+    "ft2_05_repair_of_and_v1_preservation_match": true,
+    "ft2_08_step4_a_through_i_requirements_present": true,
+    "ft2_08_active_json_parseability": true,
+    "ft2_08_signed_17_feature_axis_partition_exact": true,
+    "ft2_08_legacy_19_plus_4_field_crosswalk_complete": true,
+    "ft2_08_contract_dependent_greeks_require_exact_identity": true,
+    "ft2_08_synthetic_golden_vectors_validate": true,
+    "ft2_08_role_and_label_firewalls_validate": true,
+    "ft2_08_receipt_input_and_deliverable_hashes_match": true,
+    "ft2_08_repair_of_and_v1_preservation_match": true,
+    "ft2_20_all_28_findings_crosswalked": true,
+    "ft2_20_severity_counts_preserved_18_blocking_10_material": true,
+    "ft2_20_every_finding_has_explicit_owner_and_repair_or_deferral": true,
+    "simulator_v5_hash_matches_prior_independent_acceptance": true,
+    "simulator_v5_not_modified_by_repair": true,
+    "no_affirmative_stale_same_minute_46_session_or_neutral_censoring_claim": true,
+    "no_forbidden_training_tuning_protected_data_recorder_broker_paid_data_or_simulator_change_found": true,
+    "highest_allowed_claim_is_exact_and_not_exceeded": true
+  },
+  "failed": [],
+  "evidence_hashes": {
+    "goal_text": "4fda48a6eda2dd676a79b4d0b5cd57f304d66a7c55b4a6ba1192cc767f13d142",
+    "authority_pre_amendment": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "authority_current": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "ft2_04_receipt": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+    "ft2_04_preserved_v1_receipt": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "ft2_05_builder": "eada84800b5141591995c29898e7d5c2a596bd68d5fa99712738126e9bd913f6",
+    "ft2_05_receipt": "0cec80e1ce029bcbec200c991f9183a9b05f1e21b28016fe944fee0ae029b33a",
+    "ft2_05_preserved_v1_receipt": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+    "ft2_08_receipt": "584612af00f8e04b9b903f1fb4b56396a3dc950bd21f18718fa72fd4ff8dfb9c",
+    "ft2_08_preserved_v1_receipt": "56885fad09ea7034ce112c356edcce92bad0d9c52e93fb8e32cf66934f5ce518",
+    "ft2_08_validator": "7da0e19016e0aaeb5782680bb2307cbd257663475148c85720c16929286aada0",
+    "ft2_08_validation": "e0c83ffb816a568028d668add8e8f524ead3d31203669bc436b67ebc50224e69",
+    "ft2_20_joined_review": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3",
+    "ft2_20_receipt": "b7beae089444bdec73fadec1037cbc1abd4bd6e29f1333346615a486164544f5",
+    "findings_crosswalk": "0bab5217c3e4e8b6fbf308439cddede494224a86a1a1b9b26ed583816c647627",
+    "producer_report": "7162c8c5dbf38fd7679ac43012817645e9c7e4f6be23beeb7f4a885b60f628e5",
+    "simulator_v5_source": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+  },
+  "test_results": {
+    "ft2_04_role_firewall_pytest": {
+      "passed": 12,
+      "failed": 0
+    },
+    "ft2_05_v2_pytest": {
+      "passed": 5,
+      "failed": 0
+    },
+    "ft2_08_contract_validator": {
+      "passed": 17,
+      "failed": 0,
+      "stored_validation_file_unchanged": true
+    },
+    "active_json_parse": {
+      "parsed": 75,
+      "failed": 0
+    },
+    "receipt_hash_verification": {
+      "ft2_04_deliverables": 7,
+      "ft2_05_deliverables": 228,
+      "ft2_08_deliverables": 12,
+      "mismatches": 0
+    },
+    "ft2_05_full_checkpoint_checks": {
+      "session_files": 45,
+      "label_rows": 460937,
+      "decision_time_range_et": [
+        "09:32",
+        "15:29"
+      ],
+      "all_entry_fill_deltas_exactly_one_minute": true,
+      "remaining_executable_plus_no_bid_equals_available": true,
+      "all_hold_flat_clocks_exactly_1555_et": true,
+      "no_bid_hold_flat_rows_use_zero_bid_and_full_loss": true,
+      "d48_mask_reproduced": true
+    }
+  },
+  "side_effect_findings": {
+    "producer_files_modified_by_audit": false,
+    "validator_output_write_intercepted": true,
+    "model_training_or_fitting": false,
+    "threshold_tuning": false,
+    "outer_test_market_data_access": false,
+    "protected_holdout_market_data_access": false,
+    "recorder_or_broker_access": false,
+    "paid_data_or_compute": false,
+    "runtime_promotion_or_paper_change": false,
+    "simulator_v5_source_change": false,
+    "aggregate_receipt_evaluated": false,
+    "aggregate_receipt_note": "The top-level repair receipt intentionally remains the preserved Step-0 terminal receipt until this independent audit is hashed; it is outside this producer-node acceptance verdict."
+  },
+  "highest_allowed_claim_check": {
+    "passed": true,
+    "claim": "FT2-08 (with its FT2-04/05 dependencies) is repaired against the FT2-20 findings under the owner's t+1 fill convention; FT2-10 repair is unblocked.",
+    "not_authorized": [
+      "FT2-10 or FT2-11 repair acceptance",
+      "model design acceptance",
+      "training or tuning",
+      "outer-test or protected-holdout access",
+      "paper or live readiness",
+      "promotion"
+    ]
+  }
+}

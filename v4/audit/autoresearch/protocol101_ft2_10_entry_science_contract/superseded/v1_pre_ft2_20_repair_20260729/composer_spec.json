@@ -1,0 +1,188 @@
+{
+  "schema_version": "Protocol101FT210ComposerSpecV1",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "action_space": {
+    "wait_action_index": 0,
+    "contract_actions": 42,
+    "total_actions": 43,
+    "contract_action": "BUY one exact eligible SPXW 0DTE call or put contract",
+    "no_upstream_p5_rule": true
+  },
+  "composer_order": [
+    "physical_and_safety_action_mask",
+    "required_state_check",
+    "stage_1_quality_screen",
+    "stage_2_conservative_upside_rank",
+    "positive_after_fee_check",
+    "uncertainty_wait_check",
+    "deterministic_tie_break"
+  ],
+  "stage_1_quality_screen": {
+    "guardrail_anchor_grid": [
+      0.1,
+      0.2,
+      0.25,
+      0.3
+    ],
+    "anchor_interpretation": "candidate bottom-tail exclusion level; 0.25 is the literal worst-quartile anchor and adjacent levels test a deliberately loose neighborhood",
+    "census_provenance": {
+      "guardrail_threshold_curves": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_threshold_curves.json",
+        "sha256": "3e432d302e89e1b9d7c274e945b6477060f04e87fea5f6117ba436763ef7027d"
+      },
+      "guardrail_curves": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_curves.csv",
+        "sha256": "54159562cf99fc48989739a404705b632daa1de7084e01c80901c7f9641805da",
+        "overall_quality_plus_positive_upside_qualifying_minute_share_by_anchor": {
+          "0.10": 0.7754397394136808,
+          "0.20": 0.7489902280130293,
+          "0.25": 0.722214983713355,
+          "0.30": 0.6856026058631922
+        }
+      },
+      "excluded_winners": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv",
+        "sha256": "0c3a4883cddbf9aa6cdc50fbf2de5ecbb2d688c8789f2c0c67decd841cca90b8",
+        "overall_joint_excluded_big_winner_rate_by_anchor": {
+          "0.10": 0.06763208341982198,
+          "0.20": 0.16768214508113652,
+          "0.25": 0.2364619836628042,
+          "0.30": 0.30670704160001955
+        }
+      }
+    },
+    "canonical_guardrail_components": [
+      {
+        "family": "early_drawdown",
+        "horizon": "h10",
+        "metric": "worst",
+        "conservative_forecast": "calibrated_q10",
+        "direction": "higher",
+        "units": [
+          "dollars",
+          "return"
+        ]
+      },
+      {
+        "family": "time_to_first_real_profit",
+        "horizon": "remaining_session",
+        "metric": "event_minute",
+        "conservative_forecast": "calibrated_q90_event_minute_with_no_event_mapped_to_available_minutes_plus_one",
+        "direction": "lower",
+        "units": [
+          "minutes"
+        ]
+      },
+      {
+        "family": "pre_profit_adverse_excursion",
+        "horizon": "remaining_session",
+        "metric": "pre_profit_adverse_excursion",
+        "conservative_forecast": "calibrated_q10",
+        "direction": "higher",
+        "units": [
+          "dollars",
+          "return"
+        ]
+      },
+      {
+        "family": "underwater_burden",
+        "horizon": "remaining_session",
+        "metric": "depth_duration_integral",
+        "conservative_forecast": "calibrated_q90",
+        "direction": "lower",
+        "units": [
+          "dollar_minutes",
+          "return_minutes"
+        ]
+      },
+      {
+        "family": "profitable_window_stability",
+        "horizon": "remaining_session",
+        "metric": "fraction_positive_minutes",
+        "conservative_forecast": "calibrated_q10",
+        "direction": "higher",
+        "units": [
+          "share"
+        ]
+      }
+    ],
+    "threshold_rule": "For every component and unit, compute the market-phase training-calibration quantile at alpha when higher is favorable and at 1-alpha when lower is favorable. A contract passes only if every component and both units of every paired component pass.",
+    "missing_component_rule": "fail the contract; missing required state cannot be converted to a favorable value",
+    "screen_is_ranking": false
+  },
+  "stage_2_conservative_upside_rank": {
+    "input_contracts": "only contracts passing stage_1 and the physical/safety action mask",
+    "horizon_components": [
+      "calibrated_q10_mfe",
+      "calibrated_q10_profit_area"
+    ],
+    "units": [
+      "fee_adjusted_dollars",
+      "fee_adjusted_return_on_premium"
+    ],
+    "available_horizon_rule": "use every registered horizon whose target_valid and forecast_valid masks are true; a contract with no valid registered horizon fails",
+    "positive_after_fee_rule": "the equal-horizon mean calibrated q10 MFE must be strictly greater than zero in both dollars and return, and the equal-horizon mean calibrated q10 profit area must be strictly greater than zero in both dollar-minutes and return-minutes",
+    "phase_percentile_rule": "Map each conservative component to its favorable empirical percentile using only the frozen market-phase calibration distribution. Percentiles use linear interpolation and lie in [0,1].",
+    "dollar_percent_arbitration": {
+      "within_metric_horizon": "minimum(dollar_favorable_percentile, return_favorable_percentile)",
+      "within_horizon": "minimum(balanced_mfe_percentile, balanced_profit_area_percentile)",
+      "across_horizons": "arithmetic mean over valid registered horizons",
+      "reason": "a contract must be defensible in both cash outcome and return on premium; neither an expensive dollar winner nor a cheap percentage winner can dominate on one axis alone"
+    },
+    "primary_rank_score": "mean_balanced_upside_percentile",
+    "secondary_rank_score": "minimum_balanced_upside_percentile_across_valid_horizons",
+    "tertiary_rank_score": "equal-horizon mean calibrated q10 MFE return",
+    "quaternary_rank_score": "equal-horizon mean calibrated q10 MFE dollars"
+  },
+  "uncertainty_wait": {
+    "model_gap_error": "On chronological training-only OOF predictions, compute absolute error between predicted and realized top-versus-runner-up balanced-upside score gaps. The conformal model gap is the finite-sample 0.90 split-conformal quantile.",
+    "source_transfer_error": "Candidate-specific p95 absolute top-versus-runner-up score-gap drift from the accepted historical/IBKR transfer audit; zero is permitted only when the score is proved bit-identical. Missing required transfer evidence blocks live activation but not design-stage historical research.",
+    "multiplier_grid": [
+      1.0,
+      1.25,
+      1.5,
+      2.0
+    ],
+    "wait_margin": "k * (model_gap_error + source_transfer_error)",
+    "runner_up": "the highest-ranked different eligible contract; if none exists, WAIT is the runner-up",
+    "wait_score": 0.0,
+    "rules": [
+      "WAIT unless selected primary_rank_score minus runner_up primary_rank_score is strictly greater than wait_margin",
+      "WAIT unless both conservative MFE means exceed their own 0.90 conformal absolute-error margins in dollars and return",
+      "equality with any margin produces WAIT"
+    ]
+  },
+  "joint_calibration": {
+    "parameters": [
+      "guardrail_anchor_alpha",
+      "uncertainty_multiplier_k"
+    ],
+    "selection_source": "chronological training-only OOF calibration evidence",
+    "trade_rate_is_target_not_gate": true,
+    "details": "calibration_spec.json"
+  },
+  "wait_conditions": [
+    "no contract survives the physical and safety action mask",
+    "required market, contract, mask, phase, account, forecast, or calibration state is missing",
+    "no contract clears every quality guardrail",
+    "no surviving contract has conservative upside strictly above zero after fees on both dollar and return axes",
+    "top score is inside the calibrated model/source uncertainty margin versus runner-up or WAIT",
+    "action-conditioned confidence gate is not activated where confidence controls behavior"
+  ],
+  "tie_break": [
+    "higher primary_rank_score",
+    "higher secondary_rank_score",
+    "higher tertiary_rank_score",
+    "higher quaternary_rank_score",
+    "lexicographically smaller tuple(expiry_yyyymmdd,strike_milli_points,right_code,contract_id_utf8)"
+  ],
+  "tie_break_prohibitions": [
+    "nearest ATM",
+    "P5 direction",
+    "iteration order",
+    "slot index as contract identity",
+    "future outcome"
+  ]
+}

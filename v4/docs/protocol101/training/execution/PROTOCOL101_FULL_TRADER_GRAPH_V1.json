@@ -1,0 +1,552 @@
+{
+  "schema_version": "Protocol101FullTraderGraphV1",
+  "graph_id": "protocol101-full-trader-v1",
+  "effective_date": "2026-07-28",
+  "status": "owner_approved_graph_reset",
+  "entry_node": "FT-10-FULL-LADDER-MODEL-DESIGN",
+  "reset_node": "FT-00-GRAPH-RESET",
+  "product_contract": {
+    "instrument": "SPXW_0DTE",
+    "position_limit_contracts": 1,
+    "max_open_positions": 1,
+    "flat_state_inputs": [
+      "synchronized_market_state",
+      "full_governed_eligible_option_ladder"
+    ],
+    "flat_state_learned_actions": [
+      "WAIT",
+      "BUY_SPECIFIC_ELIGIBLE_CALL_OR_PUT_CONTRACT"
+    ],
+    "open_state_learned_actions": [
+      "HOLD",
+      "EXIT"
+    ],
+    "hard_coded_safety_only": [
+      "eligibility",
+      "affordability",
+      "one_contract",
+      "one_open_position",
+      "fees",
+      "daily_loss_limit",
+      "stale_data_abstention",
+      "forced_flat"
+    ],
+    "permanent_policy_prohibitions": [
+      "P5_TIMING",
+      "P5_DIRECTION",
+      "NEAREST_ATM_SELECTION",
+      "FIXED_EXIT_AS_FINAL_LIFECYCLE"
+    ],
+    "paper_readiness_requires_complete_entry_plus_exit": true
+  },
+  "controller_policy": {
+    "controller_executes_training": false,
+    "controller_changes_scientific_contracts": false,
+    "producer_may_independently_accept_own_work": false,
+    "positive_pnl_is_sufficient_evidence": false,
+    "scientific_failure_may_soften_gates": false,
+    "protected_resources_default_closed": true,
+    "node_receipt_required_for_transition": true,
+    "product_contract_hash_required_in_every_receipt": true,
+    "owner_stops": [
+      "product_scope_change",
+      "inconclusive_terminal_evidence",
+      "protected_confirmation_access",
+      "protected_holdout_access",
+      "IBKR_paper_authorization",
+      "real_money_review"
+    ],
+    "drift_tripwires": [
+      "flat_model_cannot_WAIT",
+      "flat_model_cannot_choose_from_full_governed_ladder",
+      "direction_or_strike_is_permanently_hard_coded",
+      "P5_or_nearest_ATM_becomes_final_architecture",
+      "HOLD_EXIT_begins_before_entry_gate",
+      "producer_grades_own_evidence",
+      "entry_only_component_claimed_as_complete_trader"
+    ],
+    "loop_budgets": {
+      "design_repair": 2,
+      "mechanical_repair": 2,
+      "scientific_redesign": 3
+    }
+  },
+  "roles": {
+    "controller": "Route receipts and state without scientific authority",
+    "research_designer": "Specify one bounded hypothesis and experiment",
+    "trading_realism_reviewer": "Audit executable 0DTE trading realism",
+    "ml_statistics_reviewer": "Audit labels, leakage, controls, and inference",
+    "live_parity_reviewer": "Audit IBKR-available inputs and actions",
+    "executor": "Implement or run only the approved node",
+    "independent_auditor": "Reproduce and accept or reject producer evidence",
+    "owner": "Approve product, protected evidence, and paper boundaries"
+  },
+  "protected_resources": [
+    "fresh_confirmation_seed",
+    "protected_holdout",
+    "sealed_recorder_confirmation",
+    "IBKR_no_order_shadow",
+    "IBKR_paper_orders",
+    "real_money_paths"
+  ],
+  "gate_dominance_requirements": {
+    "FT-40-NONPROMOTABLE-FEASIBILITY": [
+      "FT-21-OWNER-DESIGN-APPROVAL"
+    ],
+    "FT-50-FULL-FLAT-POLICY-CAMPAIGN": [
+      "FT-21-OWNER-DESIGN-APPROVAL"
+    ],
+    "FT-60-LEARNED-LIFECYCLE-DESIGN": [
+      "FT-21-OWNER-DESIGN-APPROVAL",
+      "FT-52-OWNER-ENTRY-FREEZE"
+    ],
+    "FT-71-LIFECYCLE-TRAINING": [
+      "FT-21-OWNER-DESIGN-APPROVAL",
+      "FT-52-OWNER-ENTRY-FREEZE",
+      "FT-61-LIFECYCLE-REVIEW-AND-OWNER-APPROVAL"
+    ],
+    "FT-81-FRESH-CONFIRMATION": [
+      "FT-21-OWNER-DESIGN-APPROVAL",
+      "FT-52-OWNER-ENTRY-FREEZE",
+      "FT-61-LIFECYCLE-REVIEW-AND-OWNER-APPROVAL",
+      "FT-80-COMPLETE-SYSTEM-FREEZE"
+    ],
+    "FT-82-PROTECTED-HOLDOUT": [
+      "FT-81-FRESH-CONFIRMATION"
+    ],
+    "FT-91-NO-ORDER-LIVE-SHADOW": [
+      "FT-82-PROTECTED-HOLDOUT"
+    ],
+    "FT-93-GUARDED-IBKR-PAPER-VALIDATION": [
+      "FT-92-OWNER-PAPER-AUTHORIZATION"
+    ]
+  },
+  "historical_negative_evidence": [
+    {
+      "family": "H0_H3",
+      "disposition": "closed_negative_or_inconclusive_evidence",
+      "not_authority_for": "new_full_trader_architecture"
+    },
+    {
+      "family": "M0_M1",
+      "disposition": "closed_no_preliminary_signal",
+      "not_authority_for": "permanent_P5_contract_selection"
+    },
+    {
+      "family": "P5_one_minute_HOLD_EXIT",
+      "disposition": "closed_no_preliminary_signal",
+      "not_authority_for": "final_lifecycle_architecture"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "FT-00-GRAPH-RESET",
+      "kind": "governance",
+      "actor": "controller",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Archive the obsolete Stage-1 work surface and initialize this graph"
+    },
+    {
+      "id": "FT-10-FULL-LADDER-MODEL-DESIGN",
+      "kind": "scientific_design",
+      "actor": "research_designer",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Specify the learned WAIT versus specific full-ladder contract policy without fitting"
+    },
+    {
+      "id": "FT-20-PARALLEL-DESIGN-REVIEW",
+      "kind": "parallel_fanout_join",
+      "actor": "controller",
+      "reviewers": [
+        "trading_realism_reviewer",
+        "ml_statistics_reviewer",
+        "live_parity_reviewer"
+      ],
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Join three independent reviews of the same frozen design"
+    },
+    {
+      "id": "FT-21-OWNER-DESIGN-APPROVAL",
+      "kind": "owner_decision",
+      "actor": "owner",
+      "independent_acceptance": false,
+      "owner_gate": true,
+      "model_training": false,
+      "purpose": "Approve the full-ladder scientific contract before machinery work"
+    },
+    {
+      "id": "FT-30-MECHANICAL-HARNESS-PILOT",
+      "kind": "mechanical_validation",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Validate identities, labels, action masks, causal inputs, and replay on a small sample"
+    },
+    {
+      "id": "FT-31-INDEPENDENT-MACHINERY-ACCEPTANCE",
+      "kind": "independent_audit",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Independently reproduce and accept or reject the mechanical harness"
+    },
+    {
+      "id": "FT-32-BOUNDED-MECHANICAL-REPAIR",
+      "kind": "mechanical_repair",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "loop_budget": "mechanical_repair",
+      "purpose": "Repair only the independently identified machinery defect"
+    },
+    {
+      "id": "FT-40-NONPROMOTABLE-FEASIBILITY",
+      "kind": "exploratory_feasibility",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": true,
+      "action_space": "flat_state_full_governed_ladder",
+      "purpose": "Test preliminary learnability without selection or promotion"
+    },
+    {
+      "id": "FT-41-INDEPENDENT-FEASIBILITY-AUDIT",
+      "kind": "independent_audit",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Verify feasibility evidence and controls independently"
+    },
+    {
+      "id": "FT-50-FULL-FLAT-POLICY-CAMPAIGN",
+      "kind": "model_training",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": true,
+      "action_space": "flat_state_full_governed_ladder",
+      "purpose": "Train the full learned WAIT or specific-contract policy"
+    },
+    {
+      "id": "FT-51-INDEPENDENT-FLAT-POLICY-AUDIT",
+      "kind": "independent_audit",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Test genuine incremental entry and contract-selection edge"
+    },
+    {
+      "id": "FT-52-OWNER-ENTRY-FREEZE",
+      "kind": "owner_decision",
+      "actor": "owner",
+      "independent_acceptance": false,
+      "owner_gate": true,
+      "model_training": false,
+      "purpose": "Approve freezing an accepted flat-state component for lifecycle work"
+    },
+    {
+      "id": "FT-60-LEARNED-LIFECYCLE-DESIGN",
+      "kind": "scientific_design",
+      "actor": "research_designer",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Specify the causal learned HOLD versus EXIT problem"
+    },
+    {
+      "id": "FT-61-LIFECYCLE-REVIEW-AND-OWNER-APPROVAL",
+      "kind": "parallel_review_owner_join",
+      "actor": "owner",
+      "reviewers": [
+        "trading_realism_reviewer",
+        "ml_statistics_reviewer",
+        "live_parity_reviewer"
+      ],
+      "independent_acceptance": true,
+      "owner_gate": true,
+      "model_training": false,
+      "purpose": "Independently review and owner-approve the lifecycle contract"
+    },
+    {
+      "id": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR",
+      "kind": "mechanical_repair",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "loop_budget": "mechanical_repair",
+      "purpose": "Repair only an independently identified lifecycle machinery defect"
+    },
+    {
+      "id": "FT-69-LIFECYCLE-MACHINERY-PILOT",
+      "kind": "mechanical_validation",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Build and validate lifecycle labels, firewall, state, and opportunity accounting"
+    },
+    {
+      "id": "FT-70-LIFECYCLE-MACHINERY-ACCEPTANCE",
+      "kind": "independent_audit",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Accept lifecycle labels, firewall, state, and serial opportunity accounting"
+    },
+    {
+      "id": "FT-71-LIFECYCLE-TRAINING",
+      "kind": "model_training",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": true,
+      "action_space": "open_state_HOLD_EXIT",
+      "purpose": "Train causal HOLD versus EXIT candidates"
+    },
+    {
+      "id": "FT-72-COMBINED-FULL-TRADER-AUDIT",
+      "kind": "independent_audit",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Evaluate the combined learned flat and open policies under serial replay"
+    },
+    {
+      "id": "FT-73-ENTRY-EXIT-FAILURE-ATTRIBUTION",
+      "kind": "diagnostic",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Attribute integration failure without changing the scientific contract"
+    },
+    {
+      "id": "FT-80-COMPLETE-SYSTEM-FREEZE",
+      "kind": "freeze",
+      "actor": "controller",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Freeze every model, threshold, feature, simulator, and source hash"
+    },
+    {
+      "id": "FT-81-FRESH-CONFIRMATION",
+      "kind": "protected_confirmation",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": true,
+      "model_training": false,
+      "protected_resource": "fresh_confirmation_seed",
+      "purpose": "Spend one frozen fresh confirmation on the complete trader"
+    },
+    {
+      "id": "FT-82-PROTECTED-HOLDOUT",
+      "kind": "protected_holdout",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": true,
+      "model_training": false,
+      "protected_resource": "protected_holdout",
+      "purpose": "Open the holdout once for the frozen complete trader"
+    },
+    {
+      "id": "FT-90-IBKR-DECISION-SHADOW",
+      "kind": "transfer_validation",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "protected_resource": "sealed_recorder_confirmation",
+      "purpose": "Compare frozen historical and IBKR inputs, selections, and actions"
+    },
+    {
+      "id": "FT-91-NO-ORDER-LIVE-SHADOW",
+      "kind": "live_shadow",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": true,
+      "model_training": false,
+      "protected_resource": "IBKR_no_order_shadow",
+      "purpose": "Run the complete trader live without orders and reconstruct every action"
+    },
+    {
+      "id": "FT-91A-INDEPENDENT-LIVE-SHADOW-AUDIT",
+      "kind": "independent_audit",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Independently accept or reject the no-order live shadow evidence"
+    },
+    {
+      "id": "FT-92-OWNER-PAPER-AUTHORIZATION",
+      "kind": "owner_decision",
+      "actor": "owner",
+      "independent_acceptance": false,
+      "owner_gate": true,
+      "model_training": false,
+      "purpose": "Authorize or reject guarded IBKR paper orders"
+    },
+    {
+      "id": "FT-93-GUARDED-IBKR-PAPER-VALIDATION",
+      "kind": "paper_validation",
+      "actor": "executor",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "protected_resource": "IBKR_paper_orders",
+      "purpose": "Collect reconstructable paper-trading evidence for the complete trader"
+    },
+    {
+      "id": "FT-94-INDEPENDENT-PAPER-EVIDENCE-REVIEW",
+      "kind": "independent_audit",
+      "actor": "independent_auditor",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Independently review paper evidence before any later owner decision"
+    },
+    {
+      "id": "STOP-OWNER-DECISION",
+      "kind": "terminal",
+      "actor": "owner",
+      "independent_acceptance": false,
+      "owner_gate": true,
+      "model_training": false,
+      "purpose": "Stop because owner judgment is required"
+    },
+    {
+      "id": "STOP-REDESIGN-REQUIRED",
+      "kind": "terminal",
+      "actor": "controller",
+      "independent_acceptance": false,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Stop after loop budget or irreducible scientific failure"
+    },
+    {
+      "id": "STOP-CANDIDATE-REJECTED",
+      "kind": "terminal",
+      "actor": "controller",
+      "independent_acceptance": true,
+      "owner_gate": false,
+      "model_training": false,
+      "purpose": "Stop because the frozen candidate failed confirmation, holdout, or transfer"
+    },
+    {
+      "id": "STOP-PAPER-EVIDENCE-COMPLETE",
+      "kind": "terminal",
+      "actor": "owner",
+      "independent_acceptance": true,
+      "owner_gate": true,
+      "model_training": false,
+      "purpose": "Stop after paper evidence for a separate owner review"
+    }
+  ],
+  "edges": [
+    {"from": "FT-00-GRAPH-RESET", "outcome": "complete", "to": "FT-10-FULL-LADDER-MODEL-DESIGN"},
+    {"from": "FT-10-FULL-LADDER-MODEL-DESIGN", "outcome": "design_ready", "to": "FT-20-PARALLEL-DESIGN-REVIEW"},
+    {"from": "FT-10-FULL-LADDER-MODEL-DESIGN", "outcome": "product_scope_change_requested", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-20-PARALLEL-DESIGN-REVIEW", "outcome": "pass", "to": "FT-21-OWNER-DESIGN-APPROVAL"},
+    {"from": "FT-20-PARALLEL-DESIGN-REVIEW", "outcome": "repairable_design_defect", "to": "FT-10-FULL-LADDER-MODEL-DESIGN", "loop_budget": "design_repair"},
+    {"from": "FT-20-PARALLEL-DESIGN-REVIEW", "outcome": "product_drift_detected", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-20-PARALLEL-DESIGN-REVIEW", "outcome": "irreducible_design_defect", "to": "STOP-REDESIGN-REQUIRED"},
+    {"from": "FT-21-OWNER-DESIGN-APPROVAL", "outcome": "approved", "to": "FT-30-MECHANICAL-HARNESS-PILOT"},
+    {"from": "FT-21-OWNER-DESIGN-APPROVAL", "outcome": "rejected", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-30-MECHANICAL-HARNESS-PILOT", "outcome": "producer_pass", "to": "FT-31-INDEPENDENT-MACHINERY-ACCEPTANCE"},
+    {"from": "FT-30-MECHANICAL-HARNESS-PILOT", "outcome": "mechanical_defect", "to": "FT-32-BOUNDED-MECHANICAL-REPAIR"},
+    {"from": "FT-31-INDEPENDENT-MACHINERY-ACCEPTANCE", "outcome": "pass", "to": "FT-40-NONPROMOTABLE-FEASIBILITY"},
+    {"from": "FT-31-INDEPENDENT-MACHINERY-ACCEPTANCE", "outcome": "mechanical_defect", "to": "FT-32-BOUNDED-MECHANICAL-REPAIR"},
+    {"from": "FT-31-INDEPENDENT-MACHINERY-ACCEPTANCE", "outcome": "scientific_contract_defect", "to": "FT-10-FULL-LADDER-MODEL-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-32-BOUNDED-MECHANICAL-REPAIR", "outcome": "repaired", "to": "FT-30-MECHANICAL-HARNESS-PILOT", "loop_budget": "mechanical_repair"},
+    {"from": "FT-32-BOUNDED-MECHANICAL-REPAIR", "outcome": "budget_exhausted", "to": "STOP-REDESIGN-REQUIRED"},
+    {"from": "FT-32-BOUNDED-MECHANICAL-REPAIR", "outcome": "product_scope_change_requested", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-40-NONPROMOTABLE-FEASIBILITY", "outcome": "complete", "to": "FT-41-INDEPENDENT-FEASIBILITY-AUDIT"},
+    {"from": "FT-40-NONPROMOTABLE-FEASIBILITY", "outcome": "mechanical_defect", "to": "FT-32-BOUNDED-MECHANICAL-REPAIR"},
+    {"from": "FT-41-INDEPENDENT-FEASIBILITY-AUDIT", "outcome": "promising_signal", "to": "FT-50-FULL-FLAT-POLICY-CAMPAIGN"},
+    {"from": "FT-41-INDEPENDENT-FEASIBILITY-AUDIT", "outcome": "no_preliminary_signal", "to": "FT-10-FULL-LADDER-MODEL-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-41-INDEPENDENT-FEASIBILITY-AUDIT", "outcome": "mechanical_defect", "to": "FT-32-BOUNDED-MECHANICAL-REPAIR"},
+    {"from": "FT-41-INDEPENDENT-FEASIBILITY-AUDIT", "outcome": "inconclusive", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-50-FULL-FLAT-POLICY-CAMPAIGN", "outcome": "complete", "to": "FT-51-INDEPENDENT-FLAT-POLICY-AUDIT"},
+    {"from": "FT-50-FULL-FLAT-POLICY-CAMPAIGN", "outcome": "mechanical_defect", "to": "FT-32-BOUNDED-MECHANICAL-REPAIR"},
+    {"from": "FT-51-INDEPENDENT-FLAT-POLICY-AUDIT", "outcome": "entry_signal_accepted", "to": "FT-52-OWNER-ENTRY-FREEZE"},
+    {"from": "FT-51-INDEPENDENT-FLAT-POLICY-AUDIT", "outcome": "no_genuine_signal", "to": "FT-10-FULL-LADDER-MODEL-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-51-INDEPENDENT-FLAT-POLICY-AUDIT", "outcome": "invalid_evidence", "to": "FT-32-BOUNDED-MECHANICAL-REPAIR"},
+    {"from": "FT-51-INDEPENDENT-FLAT-POLICY-AUDIT", "outcome": "inconclusive", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-52-OWNER-ENTRY-FREEZE", "outcome": "approved", "to": "FT-60-LEARNED-LIFECYCLE-DESIGN"},
+    {"from": "FT-52-OWNER-ENTRY-FREEZE", "outcome": "rejected", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-60-LEARNED-LIFECYCLE-DESIGN", "outcome": "design_ready", "to": "FT-61-LIFECYCLE-REVIEW-AND-OWNER-APPROVAL"},
+    {"from": "FT-60-LEARNED-LIFECYCLE-DESIGN", "outcome": "product_scope_change_requested", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-61-LIFECYCLE-REVIEW-AND-OWNER-APPROVAL", "outcome": "approved", "to": "FT-69-LIFECYCLE-MACHINERY-PILOT"},
+    {"from": "FT-61-LIFECYCLE-REVIEW-AND-OWNER-APPROVAL", "outcome": "repairable_design_defect", "to": "FT-60-LEARNED-LIFECYCLE-DESIGN", "loop_budget": "design_repair"},
+    {"from": "FT-61-LIFECYCLE-REVIEW-AND-OWNER-APPROVAL", "outcome": "rejected", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-69-LIFECYCLE-MACHINERY-PILOT", "outcome": "producer_pass", "to": "FT-70-LIFECYCLE-MACHINERY-ACCEPTANCE"},
+    {"from": "FT-69-LIFECYCLE-MACHINERY-PILOT", "outcome": "mechanical_defect", "to": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR"},
+    {"from": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR", "outcome": "repaired", "to": "FT-69-LIFECYCLE-MACHINERY-PILOT", "loop_budget": "mechanical_repair"},
+    {"from": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR", "outcome": "budget_exhausted", "to": "STOP-REDESIGN-REQUIRED"},
+    {"from": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR", "outcome": "product_scope_change_requested", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-70-LIFECYCLE-MACHINERY-ACCEPTANCE", "outcome": "pass", "to": "FT-71-LIFECYCLE-TRAINING"},
+    {"from": "FT-70-LIFECYCLE-MACHINERY-ACCEPTANCE", "outcome": "mechanical_defect", "to": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR"},
+    {"from": "FT-70-LIFECYCLE-MACHINERY-ACCEPTANCE", "outcome": "scientific_contract_defect", "to": "FT-60-LEARNED-LIFECYCLE-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-71-LIFECYCLE-TRAINING", "outcome": "complete", "to": "FT-72-COMBINED-FULL-TRADER-AUDIT"},
+    {"from": "FT-71-LIFECYCLE-TRAINING", "outcome": "mechanical_defect", "to": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR"},
+    {"from": "FT-72-COMBINED-FULL-TRADER-AUDIT", "outcome": "candidate_accepted", "to": "FT-80-COMPLETE-SYSTEM-FREEZE"},
+    {"from": "FT-72-COMBINED-FULL-TRADER-AUDIT", "outcome": "entry_failure", "to": "FT-10-FULL-LADDER-MODEL-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-72-COMBINED-FULL-TRADER-AUDIT", "outcome": "lifecycle_failure", "to": "FT-60-LEARNED-LIFECYCLE-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-72-COMBINED-FULL-TRADER-AUDIT", "outcome": "interaction_failure", "to": "FT-73-ENTRY-EXIT-FAILURE-ATTRIBUTION"},
+    {"from": "FT-72-COMBINED-FULL-TRADER-AUDIT", "outcome": "invalid_evidence", "to": "FT-73-ENTRY-EXIT-FAILURE-ATTRIBUTION"},
+    {"from": "FT-73-ENTRY-EXIT-FAILURE-ATTRIBUTION", "outcome": "entry_attributed", "to": "FT-10-FULL-LADDER-MODEL-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-73-ENTRY-EXIT-FAILURE-ATTRIBUTION", "outcome": "lifecycle_attributed", "to": "FT-60-LEARNED-LIFECYCLE-DESIGN", "loop_budget": "scientific_redesign"},
+    {"from": "FT-73-ENTRY-EXIT-FAILURE-ATTRIBUTION", "outcome": "mechanical_attributed", "to": "FT-68-BOUNDED-LIFECYCLE-MECHANICAL-REPAIR"},
+    {"from": "FT-73-ENTRY-EXIT-FAILURE-ATTRIBUTION", "outcome": "inconclusive", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-80-COMPLETE-SYSTEM-FREEZE", "outcome": "frozen", "to": "FT-81-FRESH-CONFIRMATION"},
+    {"from": "FT-81-FRESH-CONFIRMATION", "outcome": "pass", "to": "FT-82-PROTECTED-HOLDOUT"},
+    {"from": "FT-81-FRESH-CONFIRMATION", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
+    {"from": "FT-82-PROTECTED-HOLDOUT", "outcome": "pass", "to": "FT-90-IBKR-DECISION-SHADOW"},
+    {"from": "FT-82-PROTECTED-HOLDOUT", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
+    {"from": "FT-90-IBKR-DECISION-SHADOW", "outcome": "pass", "to": "FT-91-NO-ORDER-LIVE-SHADOW"},
+    {"from": "FT-90-IBKR-DECISION-SHADOW", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
+    {"from": "FT-91-NO-ORDER-LIVE-SHADOW", "outcome": "producer_complete", "to": "FT-91A-INDEPENDENT-LIVE-SHADOW-AUDIT"},
+    {"from": "FT-91-NO-ORDER-LIVE-SHADOW", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
+    {"from": "FT-91A-INDEPENDENT-LIVE-SHADOW-AUDIT", "outcome": "pass", "to": "FT-92-OWNER-PAPER-AUTHORIZATION"},
+    {"from": "FT-91A-INDEPENDENT-LIVE-SHADOW-AUDIT", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
+    {"from": "FT-92-OWNER-PAPER-AUTHORIZATION", "outcome": "approved", "to": "FT-93-GUARDED-IBKR-PAPER-VALIDATION"},
+    {"from": "FT-92-OWNER-PAPER-AUTHORIZATION", "outcome": "rejected", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-93-GUARDED-IBKR-PAPER-VALIDATION", "outcome": "producer_complete", "to": "FT-94-INDEPENDENT-PAPER-EVIDENCE-REVIEW"},
+    {"from": "FT-93-GUARDED-IBKR-PAPER-VALIDATION", "outcome": "safety_failure", "to": "STOP-OWNER-DECISION"},
+    {"from": "FT-94-INDEPENDENT-PAPER-EVIDENCE-REVIEW", "outcome": "evidence_accepted", "to": "STOP-PAPER-EVIDENCE-COMPLETE"},
+    {"from": "FT-94-INDEPENDENT-PAPER-EVIDENCE-REVIEW", "outcome": "evidence_rejected", "to": "STOP-OWNER-DECISION"}
+  ],
+  "initial_state": {
+    "completed_nodes": [
+      "FT-00-GRAPH-RESET"
+    ],
+    "current_node": "FT-10-FULL-LADDER-MODEL-DESIGN",
+    "execution_status": "parked_before_node",
+    "owner_start_required": true,
+    "stop_reason": "Owner requested stop before the first full-ladder model-design node",
+    "loop_counts": {
+      "design_repair": 0,
+      "mechanical_repair": 0,
+      "scientific_redesign": 0
+    },
+    "accepted_full_ladder_flat_model": null,
+    "accepted_lifecycle_model": null,
+    "complete_full_trader_candidate": null,
+    "protected_resources_spent": []
+  }
+}

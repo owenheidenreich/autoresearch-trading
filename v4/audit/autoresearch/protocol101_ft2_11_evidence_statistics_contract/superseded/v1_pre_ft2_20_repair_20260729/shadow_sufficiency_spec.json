@@ -1,0 +1,93 @@
+{
+  "schema_version": "Protocol101FT211ShadowSufficiencySpecV1",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "frozen_design_for_phase_F",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "purpose": "Define the minimum no-order live evidence required before FT2-95 may ask the owner to authorize guarded IBKR paper trading.",
+  "candidate_state": {
+    "complete_full_trader_frozen": true,
+    "weights_features_calibrators_composer_lifecycle_guards_and_hashes_frozen": true,
+    "historical_IBKR_tensor_and_action_transfer_passed": true,
+    "paper_or_broker_orders": false
+  },
+  "minimum_live_shadow_evidence": {
+    "complete_sessions": 15,
+    "complete_session_definition": "All scheduled flat-state and open-state decision boundaries are reconstructable, with live timestamps, masks, exact contract identities, feature hashes, action scores, actions, block reasons, and lifecycle state.",
+    "flat_state_decisions": 3000,
+    "model_enter_intents": 30,
+    "sessions_with_at_least_one_enter_intent": 5,
+    "open_state_hold_exit_decisions": 100,
+    "regime_coverage": "At least one complete session in the training-defined top realized-volatility tercile. A named event day is not required.",
+    "below_any_minimum": "insufficient_shadow_evidence"
+  },
+  "paired_planes": {
+    "reference": "Frozen historical-style canonical feature builder and model bundle operating on the same causally available live observations.",
+    "runtime": "The production-intended M5/Gateway no-order path.",
+    "identity_join": [
+      "session",
+      "completed_minute",
+      "position_state",
+      "exact_contract_identity"
+    ],
+    "unpaired_required_row": "invalid_shadow_evidence"
+  },
+  "agreement_gates": {
+    "flat_state_WAIT_or_ENTER": {
+      "point_agreement_min": 0.99,
+      "wilson_one_sided_95_lower_min": 0.98,
+      "per_complete_session_point_min": 0.98
+    },
+    "exact_contract_when_both_ENTER": {
+      "point_agreement_min": 0.98,
+      "wilson_one_sided_95_lower_min": 0.95,
+      "minimum_denominator": 30
+    },
+    "open_state_HOLD_or_EXIT": {
+      "point_agreement_min": 0.99,
+      "wilson_one_sided_95_lower_min": 0.98,
+      "minimum_denominator": 100
+    },
+    "action_mask_and_block_reason": {
+      "point_agreement_min": 0.995,
+      "forbidden_or_unmasked_action_count": 0
+    },
+    "safety_actions": {
+      "floor_trigger_agreement": 1.0,
+      "forced_flat_agreement": 1.0,
+      "daily_stop_agreement": 1.0,
+      "observed_denominator_zero": "report not_observed_live; the independently accepted synthetic guard suite remains mandatory but does not fabricate live evidence"
+    }
+  },
+  "confidence_boundary_reporting": {
+    "required": [
+      "both-confident, both-WAIT/fallback, and split-confidence counts",
+      "score and margin drift at every action disagreement",
+      "distance to every frozen action boundary",
+      "exact-contract top-two margin",
+      "source-transfer error contribution"
+    ],
+    "split_confidence": "One plane clears a frozen confidence or action margin while the other does not.",
+    "material_split_confidence": "Any split that changes WAIT/ENTER, exact contract, HOLD/EXIT, floor, daily-stop, or forced-flat behavior.",
+    "allowed_as_hidden_error": false
+  },
+  "runtime_integrity": {
+    "live_not_delayed": true,
+    "freshness_and_complete_ladder_guards": "100% of stale, reconnecting, delayed, missing-minute, or incomplete-ladder boundaries must produce the frozen safe action.",
+    "decision_deadline": "Every decision must finish before the next completed-minute boundary; any missed boundary is reported and blocks sufficiency until independently attributed and repaired.",
+    "broker_order_endpoint_called": false,
+    "paper_submit": false,
+    "real_money_trading": false,
+    "reconstructability": "Every action and abstention must be reproducible from the frozen bundle and hashed live input row."
+  },
+  "terminal_rules": {
+    "pass": "All minimum counts, regime coverage, agreement gates, safety rules, runtime integrity rules, and independent reproduction pass.",
+    "insufficient_shadow_evidence": "Integrity is valid but one or more minimum denominators or regime requirements are unmet.",
+    "shadow_transfer_fail": "Sufficient paired evidence exists and an agreement or runtime behavior bound fails.",
+    "invalid_shadow_evidence": "Identity, hash, causality, feature, timing, delayed-feed, missing-row, or independent-reproduction failure prevents interpretation."
+  },
+  "owner_authorization_boundary": {
+    "FT2_95_request_allowed_only_after_pass": true,
+    "pass_does_not_authorize_orders": true,
+    "owner_must_separately_authorize_guarded_IBKR_paper": true
+  }
+}

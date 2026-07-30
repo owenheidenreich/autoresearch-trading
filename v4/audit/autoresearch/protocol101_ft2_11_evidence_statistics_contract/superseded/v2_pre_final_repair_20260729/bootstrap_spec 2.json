@@ -1,0 +1,129 @@
+{
+  "schema_version": "Protocol101FT211BootstrapSpecV1",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "dependence_unit": {
+    "cluster": "session",
+    "reason": "Minutes, contracts, actions, and trades within one session share market state, opportunity state, account state, and serial occupancy and are not independent observations.",
+    "forbidden_pseudoreplication": [
+      "minute-level bootstrap",
+      "contract-row bootstrap",
+      "trade-level bootstrap",
+      "treating five forecast heads as independent samples",
+      "treating three model seeds as independent market samples"
+    ]
+  },
+  "required_session_ledger": {
+    "one_row_per": [
+      "outer_fold",
+      "session",
+      "candidate_lineage",
+      "seed",
+      "comparison"
+    ],
+    "comparison_values": [
+      "DeltaQ_session",
+      "DeltaU_session",
+      "each_of_five_quality_family_deltas",
+      "fee_adjusted_net_pnl",
+      "trade_count",
+      "entry_intent_count",
+      "realized_occupancy_minutes",
+      "minimum_equity",
+      "maximum_drawdown",
+      "daily_stop_state"
+    ],
+    "identity_order": "outer_fold, session, candidate_lineage, seed, comparison",
+    "duplicate_action": "invalid_evidence"
+  },
+  "effective_sample_size": {
+    "ordered_by": "chronological session order within each outer fold",
+    "statistic_specific": true,
+    "raw_n": "number of unique sessions with a finite paired statistic",
+    "maximum_autocorrelation_lag_sessions": 5,
+    "autocorrelation_sequence": "Compute sample autocorrelation rho_k for k=1..min(5,n-1). Retain the initial strictly positive sequence and stop before the first rho_k <= 0.",
+    "integrated_dependence_factor": "tau = max(1, 1 + 2 * sum(retained rho_k))",
+    "formula": "ESS = raw_n / tau",
+    "bounds": "Clamp numerical roundoff to [1, raw_n].",
+    "pooled_rule": "Compute fold ESS separately and sum the five fold ESS values. Do not estimate autocorrelation across fold boundaries.",
+    "minimum_for_selection": {
+      "per_fold": 20,
+      "pooled": 100
+    },
+    "below_minimum": "insufficient_evidence",
+    "inference_note": "ESS is a power and sufficiency diagnostic. Confidence intervals and p-values still come from the frozen moving-block bootstrap."
+  },
+  "moving_block_bootstrap": {
+    "method": "circular moving-block bootstrap",
+    "resamples": 20000,
+    "block_length_sessions": 5,
+    "per_fold": "For a fold with n ordered sessions, sample ceil(n/5) start indices uniformly with replacement from 0..n-1, take five consecutive sessions from each start with circular wraparound, concatenate, and truncate to n.",
+    "pooled": "Resample each outer fold independently with the same replicate number, preserve the original session count in every fold, then concatenate the five resampled folds. Never create a block across a fold boundary.",
+    "synchronization": "Within replicate b, reuse the same fold-specific session index arrays for every candidate lineage, seed, metric, and comparator in the registered family.",
+    "seed_derivation": {
+      "algorithm": "sha256",
+      "material": "FT2-11|<ordered_session_ledger_sha256>|<multiplicity_ledger_sha256>|<statistic_family_id>",
+      "integer": "Interpret the first 16 hexadecimal digits as an unsigned integer and reduce modulo 2^32.",
+      "seed_must_be_reported": true
+    },
+    "missing_session_pair": "A required paired comparison missing on either side is not silently dropped. It is invalid_evidence unless a preregistered action mask makes the decision absent on both sides, in which case both receive the frozen WAIT utility."
+  },
+  "confidence_intervals": {
+    "unadjusted_two_sided_95": "Percentile interval at bootstrap quantiles [0.025, 0.975].",
+    "unadjusted_one_sided_95_lower": "Bootstrap quantile 0.05.",
+    "per_fold": "Report unadjusted two-sided 95% intervals and point estimates. Per-fold statistical significance is not required; fold direction and bounded-fifth rules are hard.",
+    "pooled": "Report unadjusted intervals plus multiplicity-adjusted maxT intervals and p-values. The adjusted pooled lower bounds are the hard improvement gates.",
+    "strata": "Use the identical session-block scheme within the eligible session set. If a stratum has fewer than 20 sessions or ESS below 10, mark it descriptive_only."
+  },
+  "studentized_maxT": {
+    "scope": "All active test statistics in the ordered multiplicity ledger for the current gated stage.",
+    "observed_statistic": "t_h = mean_h / cluster_se_h, where cluster_se_h is the standard error of the chronological session-cluster means.",
+    "centered_null_resample": "For each hypothesis h, subtract its observed session mean before applying the synchronized block indices.",
+    "bootstrap_statistic": "t_h_star = mean(centered_resample_h) / cluster_se(centered_resample_h).",
+    "replicate_maximum": "maxT_star_b = max_h(t_h_star_b) for the one-sided improvement family.",
+    "critical_value": "The empirical 0.95 quantile of maxT_star over 20,000 resamples.",
+    "adjusted_lower_bound": "observed_mean_h - critical_value * observed_cluster_se_h.",
+    "adjusted_one_sided_p": "(1 + count(maxT_star_b >= observed_t_h)) / 20001.",
+    "candidate_conjunction": {
+      "required_comparisons": [
+        "candidate_minus_P5_under_identical_safety",
+        "candidate_minus_matched_random_full_ladder"
+      ],
+      "candidate_adjusted_p": "max(adjusted_p_P5, adjusted_p_random)",
+      "candidate_adjusted_lower_bound": "min(adjusted_LCB_P5, adjusted_LCB_random)"
+    }
+  },
+  "degenerate_cases": {
+    "all_session_deltas_exactly_zero": {
+      "point": 0.0,
+      "interval": [
+        0.0,
+        0.0
+      ],
+      "p_value": 1.0,
+      "route": "no_genuine_entry_signal"
+    },
+    "nonzero_mean_with_zero_session_variance": {
+      "route": "insufficient_evidence",
+      "reason": "A finite market-sampling uncertainty cannot be estimated from a degenerate session series."
+    },
+    "nonfinite_or_unreproducible_statistic": {
+      "route": "invalid_evidence"
+    }
+  },
+  "independent_reproduction": {
+    "auditor_input": "Hashed decision-level and session-level source ledgers, not producer summaries.",
+    "auditor_must_recompute": [
+      "session aggregation",
+      "ESS",
+      "all bootstrap indices from the frozen seed rule",
+      "all intervals",
+      "all adjusted p-values",
+      "all fold signs",
+      "all terminal classifications"
+    ],
+    "tolerance": "Bit-identical categorical results and hashes; floating values must match within max(1e-12, 1e-10 * abs(reference)).",
+    "producer_metric_without_recomputation": "invalid_evidence"
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "schema_version": "Protocol101FT211TripwireSpecV1",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "general_law": {
+    "optimization_target": false,
+    "automatic_pass": false,
+    "automatic_fail": false,
+    "trigger_route": "owner_decision_required",
+    "must_report_at": [
+      "entry_shortlist_freeze",
+      "entry_freeze",
+      "lifecycle_freeze",
+      "complete_full_trader_freeze"
+    ]
+  },
+  "four_bucket_profile": {
+    "authority": "D50 and signed Trader Charter",
+    "return_definition": "fee_adjusted_net_pnl / entry_premium_at_risk",
+    "buckets": [
+      {
+        "name": "big_win",
+        "rule": "return >= 0.40"
+      },
+      {
+        "name": "small_win_or_scratch",
+        "rule": "-0.05 <= return < 0.40"
+      },
+      {
+        "name": "small_loss",
+        "rule": "-0.30 < return < -0.05"
+      },
+      {
+        "name": "big_loss",
+        "rule": "return <= -0.30"
+      }
+    ],
+    "boundary_ownership": {
+      "plus_40_percent": "big_win",
+      "minus_5_percent": "small_win_or_scratch",
+      "minus_30_percent": "big_loss"
+    },
+    "required_reports": [
+      "count and share in each bucket",
+      "session-block-bootstrap 95% interval for each share",
+      "average and median return within each bucket",
+      "share of total positive PnL from big wins",
+      "fee stress at 3 and 4 dollars per round trip"
+    ],
+    "big_loss_tripwire": {
+      "point_share_strictly_greater_than": 0.04,
+      "basis": "2 times the Charter's approximately 2 percent ceiling",
+      "minimum_evidence": "At least 3 big-loss trades. With fewer, report descriptive_only unless the exact same trade breaches the daily or ruin gate.",
+      "trigger": "profile_tripwire_owner_decision"
+    },
+    "big_win_collapse_tripwire": {
+      "near_zero_definition": "big_win share < 0.02",
+      "minimum_trades": 50,
+      "below_minimum": "insufficient_profile_evidence",
+      "trigger": "profile_tripwire_owner_decision"
+    },
+    "warning": "The target 18/73/8/approximately-2 profile is a north star, not a fit target. No loss, threshold, reward, early stopping rule, or candidate rank may use bucket proximity."
+  },
+  "harvest_ratio": {
+    "authority": "D52",
+    "evaluation_entries": "Identical frozen entries for floor-on and learned-exit-without-floor.",
+    "eligible_trade": "The causal peak available fee-adjusted PnL before forced flat is strictly positive.",
+    "per_trade": "realized_fee_adjusted_net_pnl / peak_available_fee_adjusted_net_pnl",
+    "aggregate": "sum(realized_fee_adjusted_net_pnl over eligible trades) / sum(peak_available_fee_adjusted_net_pnl over eligible trades)",
+    "paired_session_delta": "aggregate contribution floor_on minus aggregate contribution floor_off, computed from identical entries and summarized by session",
+    "required_reports": [
+      "aggregate ratio floor-on and floor-off",
+      "median and quantiles of per-trade ratio",
+      "paired session-block-bootstrap 95% interval for floor-on minus floor-off",
+      "peak-PnL bucket and time-in-trade breakdown",
+      "committed-floor crossing slippage distribution"
+    ],
+    "minimum_evidence": {
+      "eligible_trades": 50,
+      "distinct_sessions": 20,
+      "below_minimum": "insufficient_harvest_evidence"
+    },
+    "collapse_definition": {
+      "absolute_ratio_drop_at_least": 0.1,
+      "relative_ratio_floor_on_to_floor_off_strictly_below": 0.75,
+      "statistical_condition": "The paired session-block-bootstrap 95% upper confidence bound for floor_on minus floor_off is below zero.",
+      "all_conditions_required": true
+    },
+    "trigger": "harvest_tripwire_owner_decision",
+    "floor_off_not_positive": "Report lifecycle_no_harvestable_tail rather than calling a floor-collapse tripwire."
+  },
+  "relationship_to_hard_gates": {
+    "g4_daily_ruin": "Always hard and evaluated separately. A tripwire can never rescue a G4, daily-stop, or ruin failure.",
+    "entry_acceptance": "Profile shape cannot rescue failed whole-path entry evidence.",
+    "lifecycle_acceptance": "Harvest collapse pauses for owner review even if ordinary lifecycle metrics pass."
+  }
+}

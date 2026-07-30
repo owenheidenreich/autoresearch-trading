@@ -1,0 +1,229 @@
+{
+  "interpretation": "v2 and v3 are not directly interchangeable because v3 separates causal intent legality from selected-contract fill outcomes; the impact is attributed only to this preregistered semantic repair",
+  "oracle_changes": [
+    {
+      "pooled_pnl_delta": -799.0,
+      "pooled_pnl_v2": 957456.0,
+      "pooled_pnl_v3": 956657.0,
+      "selector": "oracle",
+      "trade_count_delta": 3,
+      "trade_count_v2": 2018,
+      "trade_count_v3": 2021,
+      "variant": "best_10"
+    },
+    {
+      "pooled_pnl_delta": -1407.0,
+      "pooled_pnl_v2": 831633.0,
+      "pooled_pnl_v3": 830226.0,
+      "selector": "oracle",
+      "trade_count_delta": -1,
+      "trade_count_v2": 1119,
+      "trade_count_v3": 1118,
+      "variant": "best_20"
+    },
+    {
+      "pooled_pnl_delta": -1900.0,
+      "pooled_pnl_v2": 1054162.0000000002,
+      "pooled_pnl_v3": 1052262.0000000002,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v2": 4846,
+      "trade_count_v3": 4846,
+      "variant": "best_3"
+    },
+    {
+      "pooled_pnl_delta": 3867.0,
+      "pooled_pnl_v2": 667795.0,
+      "pooled_pnl_v3": 671662.0,
+      "selector": "oracle",
+      "trade_count_delta": 1,
+      "trade_count_v2": 535,
+      "trade_count_v3": 536,
+      "variant": "best_45"
+    },
+    {
+      "pooled_pnl_delta": -1398.0,
+      "pooled_pnl_v2": 1053850.0,
+      "pooled_pnl_v3": 1052452.0,
+      "selector": "oracle",
+      "trade_count_delta": 1,
+      "trade_count_v2": 3455,
+      "trade_count_v3": 3456,
+      "variant": "best_5"
+    },
+    {
+      "pooled_pnl_delta": 1707.0,
+      "pooled_pnl_v2": 523299.0,
+      "pooled_pnl_v3": 525006.0,
+      "selector": "oracle",
+      "trade_count_delta": 1,
+      "trade_count_v2": 287,
+      "trade_count_v3": 288,
+      "variant": "best_90"
+    },
+    {
+      "pooled_pnl_delta": -1060.0,
+      "pooled_pnl_v2": 341796.0,
+      "pooled_pnl_v3": 340736.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v2": 108,
+      "trade_count_v3": 108,
+      "variant": "best_session"
+    },
+    {
+      "pooled_pnl_delta": 1770.0,
+      "pooled_pnl_v2": 215417.00000000003,
+      "pooled_pnl_v3": 217187.00000000003,
+      "selector": "oracle",
+      "trade_count_delta": 20,
+      "trade_count_v2": 1316,
+      "trade_count_v3": 1336,
+      "variant": "first_real_profit_exit"
+    },
+    {
+      "pooled_pnl_delta": -2130.0,
+      "pooled_pnl_v2": 89035.0,
+      "pooled_pnl_v3": 86905.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v2": 45,
+      "trade_count_v3": 45,
+      "variant": "hold_to_forced_flat"
+    },
+    {
+      "pooled_pnl_delta": -12179.0,
+      "pooled_pnl_v2": 232824.0,
+      "pooled_pnl_v3": 220645.0,
+      "selector": "p5",
+      "trade_count_delta": -67,
+      "trade_count_v2": 2977,
+      "trade_count_v3": 2910,
+      "variant": "best_10"
+    },
+    {
+      "pooled_pnl_delta": -4901.0,
+      "pooled_pnl_v2": 208137.0,
+      "pooled_pnl_v3": 203236.0,
+      "selector": "p5",
+      "trade_count_delta": -3,
+      "trade_count_v2": 2071,
+      "trade_count_v3": 2068,
+      "variant": "best_20"
+    },
+    {
+      "pooled_pnl_delta": -17912.0,
+      "pooled_pnl_v2": 197431.0,
+      "pooled_pnl_v3": 179519.0,
+      "selector": "p5",
+      "trade_count_delta": -276,
+      "trade_count_v2": 5558,
+      "trade_count_v3": 5282,
+      "variant": "best_3"
+    },
+    {
+      "pooled_pnl_delta": -4927.0,
+      "pooled_pnl_v2": 188998.0,
+      "pooled_pnl_v3": 184071.0,
+      "selector": "p5",
+      "trade_count_delta": 4,
+      "trade_count_v2": 1349,
+      "trade_count_v3": 1353,
+      "variant": "best_45"
+    },
+    {
+      "pooled_pnl_delta": -12662.0,
+      "pooled_pnl_v2": 241259.0,
+      "pooled_pnl_v3": 228597.0,
+      "selector": "p5",
+      "trade_count_delta": -106,
+      "trade_count_v2": 4352,
+      "trade_count_v3": 4246,
+      "variant": "best_5"
+    },
+    {
+      "pooled_pnl_delta": -3829.0,
+      "pooled_pnl_v2": 173392.0,
+      "pooled_pnl_v3": 169563.0,
+      "selector": "p5",
+      "trade_count_delta": 3,
+      "trade_count_v2": 981,
+      "trade_count_v3": 984,
+      "variant": "best_90"
+    },
+    {
+      "pooled_pnl_delta": -2822.0,
+      "pooled_pnl_v2": 156830.0,
+      "pooled_pnl_v3": 154008.0,
+      "selector": "p5",
+      "trade_count_delta": 9,
+      "trade_count_v2": 580,
+      "trade_count_v3": 589,
+      "variant": "best_session"
+    },
+    {
+      "pooled_pnl_delta": 1982.0,
+      "pooled_pnl_v2": -6997.0,
+      "pooled_pnl_v3": -5015.0,
+      "selector": "p5",
+      "trade_count_delta": -39,
+      "trade_count_v2": 234,
+      "trade_count_v3": 195,
+      "variant": "first_real_profit_exit"
+    },
+    {
+      "pooled_pnl_delta": 1886.0,
+      "pooled_pnl_v2": -7205.0,
+      "pooled_pnl_v3": -5319.0,
+      "selector": "p5",
+      "trade_count_delta": -12,
+      "trade_count_v2": 45,
+      "trade_count_v3": 33,
+      "variant": "hold_to_forced_flat"
+    }
+  ],
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "scalar_changes": {
+    "distinct_d48_reference_minutes": {
+      "v2": 15183,
+      "v3": 15106,
+      "v3_minus_v2": -77.0
+    },
+    "label_rows_all_governed_candidates": {
+      "v2": 460937,
+      "v3": 460937,
+      "v3_minus_v2": 0.0
+    },
+    "label_rows_d48_reference": {
+      "v2": 159312,
+      "v3": 121553,
+      "v3_minus_v2": -37759.0
+    },
+    "remaining_session_label_coverage": {
+      "v2": 1.0,
+      "v3": 1.0,
+      "v3_minus_v2": 0.0
+    },
+    "session_count": {
+      "v2": 45,
+      "v3": 45,
+      "v3_minus_v2": 0.0
+    }
+  },
+  "schema_version": "Protocol101FT205V2V3ImpactV1",
+  "semantic_changes": [
+    "decision-time D48/D49 and premium-floor intent masks now use only A_t",
+    "only the selected exact intent is rechecked at t+1 for identity/freshness, $1 floor, affordability, D48, and D49",
+    "a rejected fill opens no position, charges no premium or fee, realizes no PnL, and permits no same-minute substitute",
+    "soft close uses the causal current-ladder floor-candidate predicate and a fee-path-computed threshold ($103 for fee_3; $104 for fee_4)",
+    "intent opportunities and successful realized-entry labels are reported as separate populations"
+  ],
+  "v2_receipt_sha256": "0cec80e1ce029bcbec200c991f9183a9b05f1e21b28016fe944fee0ae029b33a",
+  "v3_intent_and_recheck_counts": {
+    "fill_recheck_rejected_fee3_rows": 7205,
+    "fill_recheck_rejected_fee4_rows": 7205,
+    "intent_eligible_fee3_rows": 128758,
+    "intent_eligible_fee4_rows": 128758
+  },
+  "v3_intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+}

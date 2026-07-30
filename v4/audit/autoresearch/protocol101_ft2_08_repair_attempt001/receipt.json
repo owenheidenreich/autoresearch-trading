@@ -1,0 +1,81 @@
+{
+  "assertions": {
+    "all_28_findings_crosswalked": true,
+    "ft2_10_repair_unblocked_but_not_started": true,
+    "ft2_20_fresh_seat_rerun_deferred_until_all_three_repairs": true,
+    "highest_allowed_claim_not_exceeded": true,
+    "independent_completion_audit_accepted": true,
+    "repair_of_chain_complete": true,
+    "steps_1_through_4_complete": true,
+    "superseded_packets_preserved": true
+  },
+  "authority_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "created_at_utc": "2026-07-29T21:34:18.857547+00:00",
+  "current_node_receipts": {
+    "ft2_04": {
+      "outcome": "labels_frozen_v2",
+      "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
+      "sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775"
+    },
+    "ft2_05": {
+      "outcome": "feasible",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "sha256": "0cec80e1ce029bcbec200c991f9183a9b05f1e21b28016fe944fee0ae029b33a"
+    },
+    "ft2_08": {
+      "outcome": "producer_repaired",
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+      "sha256": "584612af00f8e04b9b903f1fb4b56396a3dc950bd21f18718fa72fd4ff8dfb9c"
+    }
+  },
+  "deliverable_hashes": {
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json": "0cec80e1ce029bcbec200c991f9183a9b05f1e21b28016fe944fee0ae029b33a",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json": "584612af00f8e04b9b903f1fb4b56396a3dc950bd21f18718fa72fd4ff8dfb9c",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/finalize_aggregate_receipt.py": "fb1e97aee152572df836d4ab628ec54f7b5d769901337748f54009556229c1a3",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/finalize_producer_repair.py": "3e127e511e22725be2558b78e3ba79680ee98253ed2b117fd8d99b17903ab5bd",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/findings_crosswalk.json": "0bab5217c3e4e8b6fbf308439cddede494224a86a1a1b9b26ed583816c647627",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/independent_completion_audit.json": "a743d482661e368a868750e5aea840a80cc8aca1ac6c64be723a53f5fe7cd7a5",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/independent_completion_audit.md": "0ce93c9a903329829c1f02c37314d8bf52bb8dca561b961a7de1252878935d3e",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/report.md": "7162c8c5dbf38fd7679ac43012817645e9c7e4f6be23beeb7f4a885b60f628e5",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/step0_data_feasibility.json": "5c829f7399cc00b60dc6988afc463e376f9110ddca89a17c4e1dbc9799a8ad21",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/step0_quote_per_minute.csv": "e4a8b27f67bebc93d52cbb93a040df6541ad084ff5bd7ae8d1bd6d88a47d3d0f"
+  },
+  "goal": "FT2-08-REPAIR",
+  "highest_allowed_claim": "FT2-08 (with its FT2-04/05 dependencies) is repaired against the FT2-20 findings under the owner's t+1 fill convention; FT2-10 repair is unblocked.",
+  "independent_completion_audit": {
+    "json_sha256": "a743d482661e368a868750e5aea840a80cc8aca1ac6c64be723a53f5fe7cd7a5",
+    "markdown_sha256": "0ce93c9a903329829c1f02c37314d8bf52bb8dca561b961a7de1252878935d3e",
+    "outcome": "accepted"
+  },
+  "next": "FT2-10-ENTRY-SCIENCE-CONTRACT-REPAIR",
+  "node": "design_repair_data_tensor_label",
+  "outcome": "producer_repaired",
+  "repair_attempt": 1,
+  "repair_budget": 2,
+  "repair_of": {
+    "authority_sha256": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "ft2_04_receipt_sha256": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "ft2_05_receipt_sha256": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+    "ft2_08_receipt_sha256": "56885fad09ea7034ce112c356edcce92bad0d9c52e93fb8e32cf66934f5ce518",
+    "step0_receipt_sha256": "5704e2fab4eaead28a49c240f5ac61fe97ae4e59df0c52fd7150210a4a0a8e2f"
+  },
+  "required_stop_observed": true,
+  "schema_version": "Protocol101FT208RepairAttemptReceiptV2",
+  "self_hash": {
+    "included_in_deliverable_hashes": false,
+    "reason": "the aggregate receipt cannot hash itself"
+  },
+  "side_effects": {
+    "broker_contacted": false,
+    "ft2_10_repaired_or_started": false,
+    "ft2_11_repaired_or_started": false,
+    "model_training_or_tuning": false,
+    "outer_test_accessed": false,
+    "paid_data_or_compute_used": false,
+    "protected_holdout_accessed": false,
+    "recorder_data_accessed": false,
+    "runtime_or_promotion_modified": false,
+    "simulator_v5_source_modified": false
+  }
+}

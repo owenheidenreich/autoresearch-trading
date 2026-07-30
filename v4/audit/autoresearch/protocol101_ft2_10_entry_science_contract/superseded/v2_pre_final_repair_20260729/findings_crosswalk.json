@@ -1,0 +1,280 @@
+{
+  "schema_version": "Protocol101FT210RepairFindingsCrosswalkV1",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "source_review": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/joined_review.md",
+    "sha256": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3",
+    "receipt_sha256": "b7beae089444bdec73fadec1037cbc1abd4bd6e29f1333346615a486164544f5"
+  },
+  "source_ft2_08_crosswalk": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/findings_crosswalk.json",
+    "sha256": "0bab5217c3e4e8b6fbf308439cddede494224a86a1a1b9b26ed583816c647627"
+  },
+  "inclusion_rule": "include every FT2-20 finding whose original anchor names FT2-10 and every FT2-08 repair-crosswalk entry whose owner array names FT2-10",
+  "counts": {
+    "findings": 14,
+    "blocking": 8,
+    "material": 6,
+    "minor": 0,
+    "severity_downgrades": 0
+  },
+  "findings": [
+    {
+      "id": "S1-03",
+      "severity": "BLOCKING",
+      "title": "Primary entry test is not the required one-account serial game",
+      "original_anchor": "joined_review.md lines 117-125; FT2-10 objective_spec and FT2-11 evidence",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10",
+        "FT2-11"
+      ],
+      "repair_area": "serial-game primary population",
+      "ft2_10_repair": "objective_spec.json freezes the universal serial minute grid, occupied/pending treatment, WAIT accounting, policy-specific integer-cent ledgers, t+1 fill resolution, D48/D49/soft-close state, neutral hold-to-15:55 lifecycle, re-entry law, and exact P5-under-cap comparator.",
+      "acceptance_contract": "candidate and comparator each mutate only their own causal ledger; impossible occupied BUYs are never scored; all universal-grid states remain in denominators.",
+      "status": "producer_repaired_ft2_11_statistics_pending",
+      "remaining_owner": "FT2-11 freezes clustered inference and all-required pass criteria on this population."
+    },
+    {
+      "id": "S1-04",
+      "severity": "BLOCKING",
+      "title": "Composer can structurally delete the Charter big-win column",
+      "original_anchor": "joined_review.md lines 127-135; FT2-10 composer and FT2-11 tripwire",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10",
+        "FT2-11"
+      ],
+      "repair_area": "tail guard",
+      "ft2_10_repair": "composer_spec.json adds mandatory alpha=0.0 no-screen control to every campaign; objective_spec.json freezes per-session big-win incidence, tail opportunity dollars, positive serial-PnL concentration, relative ratios, zero-denominator handling, and owner-decision routing.",
+      "acceptance_contract": "every serious candidate, fold, seed, ensemble, and $3/$4 path retains the no-screen arm; tail metrics cannot enter optimization.",
+      "status": "producer_repaired_ft2_11_tripwire_thresholds_pending",
+      "remaining_owner": "FT2-11 freezes clustered intervals, material-capture thresholds, multiplicity, and terminal precedence."
+    },
+    {
+      "id": "S1-05",
+      "severity": "MATERIAL",
+      "title": "Dual-unit min arbitration biases middle-premium contracts",
+      "original_anchor": "joined_review.md lines 137-143; FT2-10 composer_spec and objective_spec",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10"
+      ],
+      "repair_area": "dual-unit arbitration",
+      "ft2_10_repair": "objective_spec.json defines session-balanced empirical CDFs per metric, horizon, unit, census-v2 premium band, and phase; composer_spec.json compares dollar and return ranks only inside the same causal decision-time premium band.",
+      "acceptance_contract": "exact band boundaries, population, session/row weights, midrank ties, linear interpolation, nesting, same-band-only fallback, and fail-closed insufficiency are frozen.",
+      "status": "producer_repaired",
+      "remaining_owner": "FT2-30 implements synthetic fixtures; FT2-31 independently accepts machinery."
+    },
+    {
+      "id": "S1-07",
+      "severity": "MATERIAL",
+      "title": "Exact-contract uncertainty can deadlock valid directional sessions",
+      "original_anchor": "joined_review.md lines 153-159; FT2-10 composer/calibration",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10"
+      ],
+      "repair_area": "cluster-aware WAIT",
+      "ft2_10_repair": "composer_spec.json freezes a same-expiry, same-right, plus/minus-one-strike cluster and compares selected-cluster score with the best outside cluster or WAIT rather than an adjacent exact-contract substitute.",
+      "acceptance_contract": "cluster-gap model and source residuals use the same definition; exact-contract quality is separately covered by the regret head.",
+      "status": "producer_repaired",
+      "remaining_owner": "FT2-11 freezes the statistical calibration pass rule."
+    },
+    {
+      "id": "S2-01",
+      "severity": "BLOCKING",
+      "title": "Future target_valid directly controls the composer",
+      "original_anchor": "joined_review.md lines 205-213; FT2-10 composer_spec and FT2-08 label_join_spec",
+      "ft2_08_crosswalk_owner": [
+        "FT2-08"
+      ],
+      "repair_area": "composer causality",
+      "ft2_10_repair": "composer_spec.json derives finite-horizon availability only from e=t+1, the 15:55 clock boundary, family registration, and finite model outputs; target_valid, label-derived forecast_valid, label_join_present, future bid availability, and censoring are forbidden.",
+      "acceptance_contract": "stripping every label partition and label-derived mask must leave horizons, scores, actions, WAIT reasons, and tie traces bit-identical.",
+      "status": "producer_repaired",
+      "remaining_owner": "FT2-30/31 implement and independently verify the invariant."
+    },
+    {
+      "id": "S2-02",
+      "severity": "BLOCKING",
+      "title": "Census consumes the first fold embargo session",
+      "original_anchor": "joined_review.md lines 215-221; FT2-10 calibration/composer plus FT2-08 fold_roles",
+      "ft2_08_crosswalk_owner": [
+        "FT2-04",
+        "FT2-05",
+        "FT2-08"
+      ],
+      "repair_area": "v2 census provenance",
+      "ft2_10_repair": "all composer, calibration, contract, and receipt census citations point to the repaired 45-session v2 packet and its hashes; the five fold embargo sessions have zero intersection.",
+      "acceptance_contract": "v1 guardrail, excluded-winner, trade-rate, friction, and census hashes or values are forbidden as current FT2-10 authority.",
+      "status": "producer_repaired",
+      "remaining_owner": "none for FT2-10 design"
+    },
+    {
+      "id": "S2-03",
+      "severity": "BLOCKING",
+      "title": "DeltaQ replaces signed incremental-profit evidence",
+      "original_anchor": "joined_review.md lines 223-236; FT2-10 objective and FT2-11 evidence",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10",
+        "FT2-11"
+      ],
+      "repair_area": "component-freeze objective",
+      "ft2_10_repair": "objective_spec.json demotes DeltaQ to diagnostic/inner-loop use and requires quality evidence, all safety gates, and no harm versus exact P5 in neutral-lifecycle serial dollars under separate $3/$4 causal ledgers.",
+      "acceptance_contract": "entry can earn only a component freeze; promotable dollar claims are deferred to combined FT2-80 evaluation.",
+      "status": "producer_repaired_ft2_11_noninferiority_statistics_pending",
+      "remaining_owner": "FT2-11 freezes serial-dollar noninferiority margin, adjusted interval, multiplicity, and terminal rule."
+    },
+    {
+      "id": "S2-04",
+      "severity": "BLOCKING",
+      "title": "Mandatory action-conditioned calibration gate is absent",
+      "original_anchor": "joined_review.md lines 238-247; FT2-10 contract/calibration/forecast heads and FT2-11 checklist",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10",
+        "FT2-11"
+      ],
+      "repair_area": "action-conditioned gate implementability",
+      "ft2_10_repair": "forecast_heads.json adds a WAIT-probability head plus expected-regret and q90-regret heads, exact losses, realized targets, training data path, and conformal upper-bound derivation; calibration_spec.json makes the gate non-skippable.",
+      "acceptance_contract": "missing heads/artifacts are invalid evidence; insufficient or failed calibration makes the candidate ineligible; pre-acceptance runtime behavior is WAIT-only.",
+      "status": "producer_repaired_ft2_11_pass_checklist_pending",
+      "remaining_owner": "FT2-11 adds every threshold and minimum to the all-required entry-component checklist."
+    },
+    {
+      "id": "S2-07",
+      "severity": "MATERIAL",
+      "title": "Empirical-CDF metric is under-specified and not nested",
+      "original_anchor": "joined_review.md lines 278-286; FT2-10 objective",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10"
+      ],
+      "repair_area": "nested empirical CDF",
+      "ft2_10_repair": "objective_spec.json freezes the exact reference population, metric/horizon/unit/band/phase scope, equal-session weighting, row weights, midrank tie knots, interpolation, endpoints, minimums, same-band fallback, canonical hash, and inner/final nesting.",
+      "acceptance_contract": "the scored block, chronological future, disjoint final calibration, and outer validation never enter their own CDF; no transduction is permitted.",
+      "status": "producer_repaired",
+      "remaining_owner": "FT2-30/31 implementation and independent fixture acceptance"
+    },
+    {
+      "id": "S2-08",
+      "severity": "MATERIAL",
+      "title": "OOF conformal residuals are reused for a different refit",
+      "original_anchor": "joined_review.md lines 288-296; FT2-10 calibration_spec",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10"
+      ],
+      "repair_area": "conformal validity",
+      "ft2_10_repair": "calibration_spec.json reserves a chronological disjoint final-calibration set, fits the final model once on earlier sessions separated by an embargo, calibrates that same model, and forbids every post-calibration refit.",
+      "acceptance_contract": "earlier-block residuals cannot calibrate the final model; all final model/calibration identities and hashes freeze before outer validation.",
+      "status": "producer_repaired",
+      "remaining_owner": "FT2-30/31 implementation and independent acceptance"
+    },
+    {
+      "id": "S2-10",
+      "severity": "MATERIAL",
+      "title": "Multiplicity omits selectable control attempts",
+      "original_anchor": "joined_review.md lines 308-323; FT2-11 multiplicity and FT2-10 controls",
+      "ft2_08_crosswalk_owner": [
+        "FT2-11"
+      ],
+      "repair_area": "nonselectable control generation",
+      "ft2_10_repair": "controls_spec.json freezes eight SHA-256-ranked matched-random schedules, eight shuffle identities, no redraw, no best-seed selection, exact pre-outcome schedule construction, post-replay matching, and incomplete-attempt handling.",
+      "acceptance_contract": "all attempted identities and selectable admitted-channel sets enter the ordered ledger; any invalid random schedule yields insufficient control with no replacement.",
+      "status": "producer_repaired_ft2_11_multiplicity_pending",
+      "remaining_owner": "FT2-11 includes all attempts, aggregates, controls, and extension sets in multiplicity and terminal precedence."
+    },
+    {
+      "id": "S3-03",
+      "severity": "BLOCKING",
+      "title": "Historical-to-IBKR transfer is assumed as a Boolean",
+      "original_anchor": "joined_review.md lines 373-381; FT2-10 composer and FT2-11 shadow prerequisite",
+      "ft2_08_crosswalk_owner": [
+        "FT2-08",
+        "FT2-10",
+        "FT2-11",
+        "FT2-92"
+      ],
+      "repair_area": "paired source transfer",
+      "ft2_10_repair": "calibration_spec.json freezes development-only existing paired population, exact pair key, forbidden roles, three-session/500-decision minimum, required strata, exact and FP32 tolerances, 0.99 action agreement, cluster-gap p95 nearest-rank margin, and fail-closed insufficiency without assuming new recorder days.",
+      "acceptance_contract": "historical component research may mark transfer unavailable; decision-shadow/live/paper activation remains blocked until candidate-specific transfer passes.",
+      "status": "producer_repaired_with_downstream_execution_gate",
+      "remaining_owner": "FT2-11 freezes evidence/terminal treatment; FT2-92 executes candidate-specific transfer when legally reached."
+    },
+    {
+      "id": "S3-06",
+      "severity": "BLOCKING",
+      "title": "Complete-ladder safety is missing from action-mask assembly",
+      "original_anchor": "joined_review.md lines 403-411; FT2-08 contract, FT2-10 composer, FT2-11 runtime integrity",
+      "ft2_08_crosswalk_owner": [
+        "FT2-08"
+      ],
+      "repair_area": "complete-ladder consumption",
+      "ft2_10_repair": "composer_spec.json consumes FT2-08 v2 complete_ladder_mask as a global first-stage requirement; one missing/stale slot while flat disables all 42 BUY actions and leaves WAIT only.",
+      "acceptance_contract": "the mask is safety, never alpha; partial-ladder ranking is forbidden.",
+      "status": "producer_repaired",
+      "remaining_owner": "FT2-30/31 implementation fixtures and independent acceptance"
+    },
+    {
+      "id": "S3-10",
+      "severity": "MATERIAL",
+      "title": "Primary entry comparison lacks a serial flat-state population",
+      "original_anchor": "joined_review.md lines 445-455; FT2-10 objective and FT2-11 evidence",
+      "ft2_08_crosswalk_owner": [
+        "FT2-10",
+        "FT2-11"
+      ],
+      "repair_area": "serial flat-state population",
+      "ft2_10_repair": "objective_spec.json freezes the common universal grid, structural pending/occupied rows, flat WAIT rows, separate policy ledgers, fill/occupancy timing, neutral lifecycle, and policy-specific D49 evolution.",
+      "acceptance_contract": "the population is FT2-10 authority; FT2-11 may define statistics but may not change population membership or state evolution.",
+      "status": "producer_repaired_ft2_11_statistics_pending",
+      "remaining_owner": "FT2-11 statistical inference only"
+    }
+  ],
+  "repair_area_coverage": {
+    "composer_causality": [
+      "S2-01"
+    ],
+    "serial_game_primary_population": [
+      "S1-03",
+      "S3-10"
+    ],
+    "component_freeze": [
+      "S2-03"
+    ],
+    "tail_guard": [
+      "S1-04"
+    ],
+    "dual_unit_arbitration": [
+      "S1-05",
+      "S2-07"
+    ],
+    "cluster_aware_wait": [
+      "S1-07"
+    ],
+    "action_conditioned_gate": [
+      "S2-04"
+    ],
+    "conformal_validity": [
+      "S2-08"
+    ],
+    "v2_census_provenance": [
+      "S2-02"
+    ],
+    "nonselectable_controls": [
+      "S2-10"
+    ],
+    "source_transfer": [
+      "S3-03"
+    ],
+    "complete_ladder": [
+      "S3-06"
+    ]
+  },
+  "assertions": {
+    "all_ft2_10_anchored_findings_covered": true,
+    "all_ft2_08_crosswalk_ft2_10_owner_entries_covered": true,
+    "blocking_findings_covered": 8,
+    "material_findings_covered": 6,
+    "no_severity_downgraded": true,
+    "ft2_11_not_repaired_here": true,
+    "ft2_20_rerun_not_started": true
+  }
+}

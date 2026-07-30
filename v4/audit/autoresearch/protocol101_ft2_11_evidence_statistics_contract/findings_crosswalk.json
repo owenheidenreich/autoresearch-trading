@@ -1,0 +1,41 @@
+{
+  "schema_version": "Protocol101FT211FinalRepairCrosswalkPointerV3",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "unified_crosswalk": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/findings_crosswalk.json",
+    "sha256": "78f69b89e0857c30af6f354cd8a26db923f075c9700f01d3971012462d7fa16d",
+    "finding_count": 47,
+    "answered_count": 47
+  },
+  "primary_repair_ids": [
+    "S1-03",
+    "S1-04",
+    "S1-06",
+    "S1-07",
+    "S2-03",
+    "S2-04",
+    "S2-05",
+    "S2-06",
+    "S2-09",
+    "S2-10",
+    "S2-11",
+    "S3-01",
+    "S3-03",
+    "S3-06",
+    "S3-09",
+    "S3-10",
+    "FRESH-S2-B3",
+    "FRESH-S2-B4",
+    "FRESH-S2-B6",
+    "FRESH-S3-B3",
+    "FRESH-S3-B7",
+    "FRESH-S2-MINOR-RECEIPT",
+    "FRESH-S3-MINOR-RECEIPT"
+  ],
+  "upstream_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+  "canonical_matched_random_generator_sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+  "verdict": "ANSWERED",
+  "partial_or_unanswered": 0
+}

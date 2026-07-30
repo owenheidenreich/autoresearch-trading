@@ -1,0 +1,226 @@
+{
+  "schema_version": "Protocol101FT210ControlsSpecV2",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "model_lab": {
+    "allowed": [
+      "architecture family within the registered entry lab",
+      "width and depth",
+      "temporal representation",
+      "cross-ladder representation",
+      "six-family loss weights within the frozen multiplier family",
+      "optimizer and learning-rate schedule",
+      "regularization",
+      "calibration implementation mathematically identical to calibration_spec.json",
+      "checkpointing and compute efficiency"
+    ],
+    "frozen": [
+      "WAIT plus 42 exact-contract action space",
+      "FT2-08 features, complete-ladder law, and masks",
+      "FT2-04 v2 target families and definitions",
+      "all seven horizons and causal runtime horizon rule",
+      "dual dollar and return representation",
+      "premium-band-and-phase nested CDF algorithm",
+      "composer order and semantics",
+      "alpha grid including mandatory 0.0 no-screen arm",
+      "uncertainty multiplier grid and adjacent-strike cluster",
+      "mandatory WAIT-probability and selected-regret heads",
+      "P5-under-cap algorithm",
+      "serial primary population and neutral lifecycle",
+      "folds, embargo, and disjoint final calibration",
+      "t+1 ask entry, 15:55 bid-or-zero exit, and separate $3/$4 fee trajectories",
+      "D48, D49, $1 soft close, and daily stop",
+      "entry-component freeze evidence channels",
+      "tail-guard metric definitions",
+      "final gates and controller stopping rules"
+    ]
+  },
+  "mandatory_controls": [
+    {
+      "name": "summarized_feature_hgb",
+      "purpose": "transparent non-sequential baseline",
+      "input": "causal summaries of the same admitted FT2-08 feature tensors",
+      "action_space": "WAIT plus full 42-slot ladder",
+      "required_action_conditioned_outputs": true
+    },
+    {
+      "name": "summarized_feature_mlp",
+      "purpose": "simple nonlinear baseline",
+      "input": "identical summarized features as HGB",
+      "action_space": "WAIT plus full 42-slot ladder",
+      "required_action_conditioned_outputs": true
+    },
+    {
+      "name": "constant_output",
+      "purpose": "prove composer behavior when the model has no state information",
+      "fit": "model-fit-role marginal target distributions only",
+      "must_run_all_alpha_arms": true
+    },
+    {
+      "name": "matched_random_full_ladder",
+      "purpose": "D1 V2 negative and incremental-signal control",
+      "algorithm": "frozen_nonselectable_random_controls in this file",
+      "feature_independent": true,
+      "outcome_blind": true
+    },
+    {
+      "name": "nearest_atm",
+      "purpose": "deterministic contract baseline",
+      "timing": "registered baseline timing only; cannot filter learned decisions"
+    },
+    {
+      "name": "p5_under_cap",
+      "purpose": "mandatory historical benchmark",
+      "description": "objective_spec.json exact P5 VWAP-side nearest-eligible-under-cap algorithm on its own causal ledger",
+      "never_final_architecture": true
+    },
+    {
+      "name": "sign_reversed",
+      "purpose": "detect orientation or composer bugs",
+      "operation": "reverse every favorable-direction forecast before composing while preserving masks, CDF strata, identities, and the mandatory action heads"
+    },
+    {
+      "name": "strong_shuffled_targets",
+      "purpose": "destroy predictive alignment",
+      "operation": "global within-model-fit-role target permutation that destroys time, contract, right, slot, moneyness, premium-band, and phase associations; use the fixed shuffle identities in this file",
+      "outer_role_unchanged": true
+    },
+    {
+      "name": "feature_family_ablations",
+      "purpose": "attribute quality evidence and detect shortcut dependence",
+      "registered_ablations": [
+        "remove_market_history_context",
+        "remove_contract_path_core",
+        "remove_ladder_snapshot_core",
+        "remove_phase_and_clock_fields",
+        "remove_each_active_price_extension_channel_one_at_a_time",
+        "geometry_and_masks_only"
+      ],
+      "cannot_ablate": [
+        "WAIT-probability head",
+        "selected-regret heads",
+        "complete-ladder mask",
+        "D48 or D49",
+        "alpha=0.0 control arm"
+      ]
+    }
+  ],
+  "frozen_nonselectable_random_controls": {
+    "schema": "Protocol101FT210MatchedRandomScheduleV2",
+    "attempt_count": 8,
+    "seed_ids": [
+      10121001,
+      10121002,
+      10121003,
+      10121004,
+      10121005,
+      10121006,
+      10121007,
+      10121008
+    ],
+    "random_key": "SHA-256 UTF-8 canonical tuple(seed,outer_fold,session,decision_time_ns,source_neutral_contract_id,expiry_yyyymmdd,strike_milli_points,right_code); interpret the first unsigned 64 big-endian bits as a rank and the full digest as the tie-break",
+    "schedule_construction": [
+      "freeze the candidate's serial action trace and intent counts before reading any realized path or PnL label",
+      "derive the registered intent budget by session, side, moneyness band, and decision-time premium band from that label-blind trace",
+      "within each cell, rank every causally legal universal-grid minute and eligible exact contract by random_key",
+      "take the first required count without replacement; when the cell has too few legal pairs, mark the seed schedule incomplete",
+      "replay the complete schedule through its own causal t+1 fills, occupancy, D48, D49, soft-close, daily-stop, neutral lifecycle, and separate $3/$4 ledgers"
+    ],
+    "no_redraw": true,
+    "no_outcome_conditioning": true,
+    "no_best_seed_selection": true,
+    "matching_is_not_a_search": "all eight schedules are generated once; every identity, complete or incomplete, enters the ordered multiplicity and validity ledger",
+    "post_replay_matching": {
+      "opportunity_set": "same governed fold/session universal grid and exact intent budget",
+      "entry_intent_count": "exact",
+      "executed_trade_count_relative_drift_max": 0.05,
+      "call_put_total_variation_max": 0.05,
+      "moneyness_total_variation_max": 0.06,
+      "mean_executed_premium_relative_drift_max": 0.1,
+      "mean_realized_holding_minutes_relative_drift_max": 0.1,
+      "total_realized_occupancy_relative_drift_max": 0.1
+    },
+    "validity": "every one of the eight schedules must be complete and pass the frozen post-replay matching table; any failure yields INSUFFICIENT_MATCHED_CONTROL with no replacement attempt",
+    "aggregate": "when all eight are valid, report each separately and a nonselectable equal-weight mean across the eight session-level comparator values",
+    "ft2_11_dependency": "FT2-11 repair includes all eight individual contrasts, the fixed aggregate, incomplete attempts, and every control validity outcome in multiplicity and terminal precedence"
+  },
+  "strong_shuffle_identities": {
+    "seed_ids": [
+      10121001,
+      10121002,
+      10121003,
+      10121004,
+      10121005,
+      10121006,
+      10121007,
+      10121008
+    ],
+    "permutation": "sort model-fit target-row identities by the same SHA-256 random_key and assign target bundles in that order, preserving each row's full target bundle while destroying its original feature identity",
+    "all_attempts_required": true,
+    "no_selectable_attempt": true
+  },
+  "extension_channel_ledger": {
+    "rule": "every owner-admitted active-channel set and every separately selectable channel ablation is preregistered before outcomes",
+    "combination_selection_after_results": false,
+    "ft2_11_dependency": "all selectable channel sets and invalidating ablations enter multiplicity"
+  },
+  "d1_v2": {
+    "authority_path": "v4/docs/protocol101/training/contracts/PROTOCOL101_D1_NEGATIVE_CONTROL_AND_INCREMENTAL_EDGE_AMENDMENT_2026_07_28.md",
+    "authority_sha256": "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598",
+    "full_ladder_extension": "Randomize both timing and exact contract over the full governed risk set without model features or outcome labels, then apply the frozen serial replay and exposure-matching table.",
+    "contract_only_randomization": "diagnostic only; never hard evidence",
+    "incomplete_matching": "INSUFFICIENT_MATCHED_CONTROL"
+  },
+  "feature_firewall": {
+    "runtime_allowed": "exact FT2-08 model-input tensors and causal masks plus the frozen model outputs only",
+    "blocked": [
+      "all FT2-04 labels",
+      "target_valid or label_join_present",
+      "future bid ask spread greeks context or paths",
+      "future horizon availability",
+      "hindsight exit minute",
+      "max future price as a complete label",
+      "oracle action or oracle-selected contract",
+      "action advantage",
+      "future PnL",
+      "outer-validation-derived transforms or CDFs",
+      "protected holdout",
+      "recorder or sealed confirmation evidence"
+    ],
+    "bit_identical_composition_without_labels": true,
+    "fail_closed": true
+  },
+  "prohibited_shortcuts": [
+    "P5 supplies opportunity timing to the learned model",
+    "P5 supplies direction or nearest-ATM contract to the learned model",
+    "ATM-only or reduced-ladder action space",
+    "dropping WAIT, PENDING, OCCUPIED, failed-fill, or zero-trade session rows",
+    "choosing a target horizon after seeing outer results",
+    "using MFE or max-future-price as the complete entry objective",
+    "training the entry model to imitate an oracle exit",
+    "using model-selected realized exits to define entry labels",
+    "forward filling missing future marks",
+    "using slot index as durable contract identity",
+    "tuning fees, D48, D49, soft-close, or safety masks",
+    "selecting a candidate on DeltaQ or fixed-exit PnL",
+    "using tail-guard metrics as an optimization target",
+    "redrawing or selecting a random control",
+    "reusing calibration residuals from another model",
+    "changing a stopping rule from inside the autoresearch loop"
+  ],
+  "required_receipts_per_trial": [
+    "feature and target schema hashes",
+    "fold, inner-fit, embargo, final-fit, and disjoint-calibration identities",
+    "model configuration and weights hash",
+    "nested CDF, calibrator, composer, and action-gate hashes",
+    "action-mask, complete-ladder, and contract-identity checks",
+    "universal serial-grid and per-policy ledger hashes",
+    "P5-under-cap and all random-control identities",
+    "all alpha-arm traces including 0.0",
+    "WAIT, BUY, PENDING, OCCUPIED, failed-fill, and zero-trade session counts",
+    "tail-guard inputs and results",
+    "$3 and $4 causal replay hashes",
+    "resource and latency measurements"
+  ]
+}

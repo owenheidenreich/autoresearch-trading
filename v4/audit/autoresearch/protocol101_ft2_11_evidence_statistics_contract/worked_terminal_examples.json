@@ -1,0 +1,185 @@
+{
+  "schema_version": "Protocol101FT211WorkedTerminalExamplesV3",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "synthetic_contract_fixtures",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+  "warning": "Every value is invented for terminal-resolver testing. These are not market statistics, model results, or evidence of profitability.",
+  "canonical_evaluation": "terminal_decision_spec.json first-true precedence over the complete predicate set",
+  "examples": [
+    {
+      "id": "TOY-PASS-001",
+      "description": "All entry-component predicates pass, including exact serial-dollar no-harm, action calibration, safety, MNAR stability, and tail review.",
+      "packet": {
+        "integrity": "valid",
+        "synthetic_AR_coverage": "pass",
+        "D1_controls": {
+          "eight_random_schedules_complete_and_matched": true,
+          "shuffled_significant_positive_increment": false
+        },
+        "quality": {
+          "DeltaQ_vs_P5_adjusted_lower": 0.012,
+          "DeltaQ_vs_P5_adjusted_upper": 0.081,
+          "DeltaQ_vs_P5_adjusted_p": 0.021,
+          "DeltaQ_vs_constant_adjusted_lower": 0.019,
+          "DeltaQ_vs_shuffle_adjusted_lower": 0.016,
+          "positive_folds": 5,
+          "all_three_seeds_and_ensemble_pass": true,
+          "nonnegative_family_points": 5,
+          "DeltaU_point": 0.014,
+          "regime_failures": []
+        },
+        "action_calibration": {
+          "minimums_pass": true,
+          "ECE_adjusted_upper": 0.08,
+          "maximum_bin_gap_adjusted_upper": 0.17,
+          "brier_skill_adjusted_lower": 0.01,
+          "regret_calibration_error_adjusted_upper": 0.08,
+          "q90_normalized_regret_upper_bound": 0.08,
+          "q90_coverage_adjusted_interval": [
+            0.87,
+            0.94
+          ]
+        },
+        "serial_dollar_no_harm": {
+          "$3_adjusted_interval": [
+            0.0,
+            62.0
+          ],
+          "$3_adjusted_p": 0.04,
+          "$4_adjusted_interval": [
+            1.0,
+            58.0
+          ],
+          "$4_adjusted_p": 0.03
+        },
+        "signed_safety": "all pass",
+        "MNAR": {
+          "selected_identity_same": true,
+          "component_terminal_same": true,
+          "selected_pairwise_orders_same": true,
+          "Spearman": 0.99
+        },
+        "tripwires": {
+          "relative_big_win_capture": 0.72,
+          "big_loss_share": 0.03,
+          "big_win_share": 0.11,
+          "denominators_pass": true
+        }
+      },
+      "expected_triggered_predicates": [],
+      "expected_terminal": "entry_component_freeze_pass",
+      "allowed_claim": "component freeze for lifecycle work only; no selection eligibility or incremental-edge claim"
+    },
+    {
+      "id": "TOY-INSUFFICIENT-001",
+      "description": "The machinery is valid and no clear harm is established, but action calibration and serial-dollar no-harm remain unresolved.",
+      "packet": {
+        "integrity": "valid",
+        "synthetic_AR_coverage": "pass",
+        "D1_controls": {
+          "eight_random_schedules_complete_and_matched": true,
+          "shuffled_significant_positive_increment": false
+        },
+        "quality": {
+          "DeltaQ_vs_P5_adjusted_interval": [
+            -0.006,
+            0.072
+          ],
+          "DeltaQ_MDE": 0.061,
+          "positive_folds": 4,
+          "negative_fifth_attribution": "ambiguous"
+        },
+        "action_calibration": {
+          "distinct_sessions": 18,
+          "required_minimum_sessions": 20,
+          "ECE_adjusted_interval": [
+            0.07,
+            0.13
+          ],
+          "ECE_threshold": 0.1,
+          "q90_normalized_regret_upper_bound": 0.08
+        },
+        "serial_dollar_no_harm": {
+          "$3_adjusted_interval": [
+            -20.0,
+            50.0
+          ],
+          "$4_adjusted_interval": [
+            -24.0,
+            43.0
+          ]
+        },
+        "signed_safety": "all pass",
+        "MNAR": {
+          "all_hard_rules_pass": true
+        },
+        "tripwires": {
+          "no_valid_breach": true
+        }
+      },
+      "expected_triggered_predicates": [
+        "quality interval contains zero and DeltaQ MDE exceeds 0.05",
+        "bounded fifth-fold attribution is ambiguous",
+        "action-calibration distinct-session minimum is unmet",
+        "action-calibration ECE bound overlaps 0.10",
+        "serial-dollar no-harm intervals contain zero with negative lower bounds"
+      ],
+      "expected_terminal": "insufficient_evidence",
+      "forbidden_terminal": "no_genuine_entry_signal"
+    },
+    {
+      "id": "TOY-NO-SIGNAL-001",
+      "description": "All machinery and denominators are valid and precise, but the candidate is demonstrably worse than P5 in serial dollars.",
+      "packet": {
+        "integrity": "valid",
+        "synthetic_AR_coverage": "pass",
+        "D1_controls": {
+          "eight_random_schedules_complete_and_matched": true,
+          "shuffled_significant_positive_increment": false
+        },
+        "quality": {
+          "DeltaQ_vs_P5_adjusted_lower": 0.011,
+          "DeltaQ_vs_P5_adjusted_p": 0.018,
+          "positive_folds": 5,
+          "all_three_seeds_and_ensemble_pass": true,
+          "families_and_regimes_pass": true
+        },
+        "action_calibration": {
+          "all_minimums_and_bounds_pass": true,
+          "q90_normalized_regret_upper_bound": 0.07
+        },
+        "serial_dollar_no_harm": {
+          "$3_adjusted_interval": [
+            -54.0,
+            -7.0
+          ],
+          "$4_adjusted_interval": [
+            -61.0,
+            -11.0
+          ],
+          "boundary": 0.0
+        },
+        "signed_safety": "all pass",
+        "MNAR": {
+          "all_hard_rules_pass": true
+        },
+        "tripwires": {
+          "no_valid_breach": true
+        }
+      },
+      "expected_triggered_predicates": [
+        "serial-dollar no-harm adjusted upper bound is below zero on $3",
+        "serial-dollar no-harm adjusted upper bound is below zero on $4"
+      ],
+      "expected_terminal": "no_genuine_entry_signal",
+      "reason": "The precise harm finding is a component-freeze failure even though diagnostic DeltaQ is positive."
+    }
+  ],
+  "independent_implementation_test": {
+    "required": true,
+    "input": "canonical sorted-key JSON for each packet",
+    "expected": "Two independent resolvers emit the exact expected_terminal and ordered expected_triggered_predicates for all three examples.",
+    "mismatch": "invalid_terminal_implementation"
+  }
+}

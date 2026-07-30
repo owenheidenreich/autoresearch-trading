@@ -1,0 +1,72 @@
+{
+  "schema_version": "Protocol101FT204OracleExitRuleSetV1",
+  "node": "FT2-04-PATH-LABEL-FREEZE",
+  "status": "frozen_definitions_only_no_values_computed",
+  "purpose": "The small, transparent, preregistered set of hindsight oracle exit rules FT2-05 will REPLAY to compute label-side opportunity ceilings. These are ceiling references, never learned policies and never entry targets.",
+  "authority": {
+    "document_sha256": "e08b02b31a937bcb7c15909f66cfce5bed69678d7469c8d66c44232f34101c64",
+    "governing_sections": ["7.1 FT2-04 oracle semantics", "7.2 FT2-05 census", "1.4 D48 premium cap / D49 budget-aware", "6.1 G4 v2 / daily stop"]
+  },
+  "serial_semantics": {
+    "simulator": "v4/model/protocol101_serial_simulator_v5.py",
+    "starting_cash_usd": 10000.0,
+    "contract_multiplier": 100.0,
+    "round_trip_fee_usd": 3.0,
+    "one_open_position": true,
+    "account_continuity": "cash_compounds_across_sessions_within_split",
+    "daily_loss_basis": "raw_realized_net_pnl_at_occupancy_exit",
+    "daily_stop_fraction_of_session_start_equity": 0.05,
+    "no_new_entries_after_et": "15:30",
+    "forced_flat_before_et": "15:55",
+    "occupancy_release": "at the separately persisted realized exit minute (v5 label_realized_exit_time semantics)"
+  },
+  "census_layer_constraints": {
+    "session_start_equity_E": "account equity carried into the session under v5 within-split compounding; the 5% cap and 5% budget both scale off E",
+    "D48_per_trade_premium_cap": {
+      "rule": "a contract at minute t is ELIGIBLE only if premium_at_risk + F <= 0.05 * E, i.e. A_t * M + 3 <= 0.05 * E",
+      "effect": "contracts failing the cap are MASKED out of the oracle's choice set exactly like unaffordable/ineligible contracts; the oracle may not select a masked contract",
+      "same_game": "identical mask must hold offline (census + simulator) and in every live/shadow guard"
+    },
+    "D49_budget_aware_entry": {
+      "rule": "a new oracle entry at minute t is LEGAL only if realized_session_loss + (premium_at_risk + F) <= 0.05 * E",
+      "realized_session_loss": "L = max(0, -(realized net PnL so far this session)); grows only as realized losing exits accumulate",
+      "effect": "as L grows the eligible ladder narrows (natural size-down); a session can reach forced-WAIT before the daily breaker fires"
+    },
+    "daily_breaker": "once L >= 0.05 * E the session takes no further entries (breaker keeps its signed realized-only basis; unchanged by these rules)"
+  },
+  "oracle_sequencing": {
+    "principle": "an oracle may NEVER take a trade the rules would mask. Cap (D48), budget (D49), one-open-position occupancy, the 15:30 no-new-entry boundary, the 15:55 forced-flat boundary, and the 5% daily breaker gate every oracle entry exactly as they gate the model.",
+    "serial_ceiling_replay": "iterate sessions in split order; within a session iterate decision minutes t ascending; maintain equity E, realized session loss L, and occupancy. While flat and t <= 15:30 and not breaker-halted, the oracle may open the single contract its rule prescribes IF that contract passes D48 and the entry passes D49; it then exits per the rule; realize fee-adjusted PnL; update E and L; release occupancy at the realized exit minute.",
+    "threshold_independent_distributions": "for the per-contract-minute distribution view (no serial account), each eligible contract-minute path is scored independently under the family formulas; D48 eligibility still gates which contract-minutes exist; D49 (a sequencing constraint) applies only to the serial ceiling replay, not to the independent per-minute distribution. FT2-05 reports both views."
+  },
+  "frozen_exit_rules": [
+    {
+      "id": "best_achievable_bid_by_horizon",
+      "transparent": true,
+      "definition": "for each horizon h in {3,5,10,20,45,90,remaining_session}, exit at the minute u* in W(t,h) with the maximum executable bid B_{u*} (hindsight-best exit within the horizon); PnL fee-adjusted",
+      "tie_break": "earliest u attaining the max",
+      "role": "per-horizon opportunity ceiling; upper bound on what a perfect within-horizon exit could realize",
+      "censoring": "if the horizon is censored near close, the max is taken over available minutes only"
+    },
+    {
+      "id": "hold_to_forced_flat",
+      "transparent": true,
+      "definition": "exit at the forced-flat boundary (15:55 ET) at that minute's executable bid, or the last available bid before forced flat if 15:55 is masked",
+      "role": "the no-management baseline; what buying and letting it run to the close realizes"
+    },
+    {
+      "id": "first_real_profit_exit",
+      "transparent": true,
+      "definition": "exit at the first minute u* in the remaining session with PnL$(u*) > 0 (first fee-adjusted profit); if none before forced flat, exit at forced flat",
+      "tie_break": "earliest qualifying u",
+      "role": "the take-the-first-green ceiling; ties directly to family (b) time-to-first-profit and bounds a maximally impatient exit",
+      "added_beyond_minimum": true,
+      "justification": "authority family (b) defines time-to-first-real-profit; this oracle makes its realized-PnL ceiling explicit for the census"
+    }
+  ],
+  "rule_count": 3,
+  "explicitly_not_included": [
+    "any fixed stop / fixed target / fixed holding-time exit (the authority forbids fixed exits as truth; oracle rules are hindsight-transparent, not learned)",
+    "any exit that peeks at the eventual lifecycle model's selected exit"
+  ]
+}

@@ -1,0 +1,620 @@
+{
+  "oracle:best_10": {
+    "candidate_stream_hash": "7d3d0c2fb52109ee2bcf84a3c5c3be331df17b250081c62cc1d04db987a445d3",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 966657.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 956657.0,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 2021,
+    "trade_identity_hash": "6eee4254e1b4d148ddf7cd49214521cdaf6aa5cc1f44f901c15b69893c1b8f94",
+    "variant": "best_10"
+  },
+  "oracle:best_20": {
+    "candidate_stream_hash": "d3fce007c8ad4cbf30b4de2302b1a9e1a4258c6aab952dc03089665e6550bb05",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 840226.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 830226.0,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 1118,
+    "trade_identity_hash": "3d8e7b13dc18801b2d39db399edef7c0d5049a79111db49f520e0c44c34cc4a1",
+    "variant": "best_20"
+  },
+  "oracle:best_3": {
+    "candidate_stream_hash": "8379cfb9e7a57c278665967c8ad707ba724b46f2a52e512cde425d183005f529",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 1062262.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 1052262.0000000002,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 4846,
+    "trade_identity_hash": "dab0a3208165477c8f9d78607ecef11805b3a70bd00a1f866a7d275070073632",
+    "variant": "best_3"
+  },
+  "oracle:best_45": {
+    "candidate_stream_hash": "e0fe6d207c9118740b98040962d20c3932d574107965379d93d9a996d3d06a0f",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 681662.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 671662.0,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 536,
+    "trade_identity_hash": "6bf16b48cc6268558b50d2745060a941e394d23aa667aaf56ed6b1c6fc73b6cd",
+    "variant": "best_45"
+  },
+  "oracle:best_5": {
+    "candidate_stream_hash": "46da71693dab96d3107d7345d227c2f95f16afc7e45c4e8e030f93915cd5926b",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 1062452.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 1052452.0,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 3456,
+    "trade_identity_hash": "85de09e24be1c42d1d6bb200b8586f7a730033bc005090016070e66dddf4d129",
+    "variant": "best_5"
+  },
+  "oracle:best_90": {
+    "candidate_stream_hash": "b5b6480e949a46c239f3dc9030e2ee8341cf5b2911927bb778640c4f48e22304",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 535006.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 525006.0,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 288,
+    "trade_identity_hash": "3752ef4a122bc879180bb8e5380f77ffd2116fb3ea4a40314de5aa67c7214b98",
+    "variant": "best_90"
+  },
+  "oracle:best_session": {
+    "candidate_stream_hash": "add46cdb0c8497dfc4004111cb879690b99dd828bec6588ff522ce4065afd51a",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 350736.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 340736.0,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 108,
+    "trade_identity_hash": "ba9f7c95b8776f64a7f2c916c70b4ebb1e4d078be91fe0847fb1e947a18f8080",
+    "variant": "best_session"
+  },
+  "oracle:first_real_profit_exit": {
+    "candidate_stream_hash": "dac1d6d5d3a4083aee2d4fc1787e036598626892eb7619571b595c252cd38a31",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 227187.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 217187.00000000003,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 1336,
+    "trade_identity_hash": "fcb53fe3a84631fbcbd412108d55fc39e12c75b23bbd6bd71889b32f8516f0b4",
+    "variant": "first_real_profit_exit"
+  },
+  "oracle:hold_to_forced_flat": {
+    "candidate_stream_hash": "4082b9ae3c7f0acf612611758b6bf1dce77fd5e9ebdbc78f465c056edc7e8f1b",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 96905.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 86905.0,
+    "rejected_fill_count": 0,
+    "rejected_fill_event_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "rejected_fill_reason_counts": {},
+    "selector": "oracle",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 45,
+    "trade_identity_hash": "de6b5dcf67d648f9af8def8e4b15f7bdea1406878a9b33e0d5ba5d18dfa31f35",
+    "variant": "hold_to_forced_flat"
+  },
+  "p5:best_10": {
+    "candidate_stream_hash": "2517c1186639438d70cc07ca9cc738f2887799d5b5cfb8c3d46a561f9f78882e",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 230645.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 220645.0,
+    "rejected_fill_count": 29,
+    "rejected_fill_event_hash": "318657524443b2e957f3b5adba2a0b8cad281989c035301d04a2c596a6752e8c",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 28,
+      "TPLUS1_D49_BUDGET_FAIL": 1
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 1,
+    "soft_closed_sessions": {
+      "2025-01-02": 1735828680000000000
+    },
+    "trade_count": 2910,
+    "trade_identity_hash": "9c9a69eaa2b550c0b2aa443b38ee3dfad863febb45e154e7e4142669fe01d3fb",
+    "variant": "best_10"
+  },
+  "p5:best_20": {
+    "candidate_stream_hash": "0dc990c6b0bf32e6c8997b5a8cdbccc6b8f542b64ff2e8d6bc58bbdfe872c924",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 213236.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 203236.0,
+    "rejected_fill_count": 24,
+    "rejected_fill_event_hash": "50061a619bcb091ea2661c115252758140ebb8995a070eacb4024364992e93bd",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 19,
+      "TPLUS1_D49_BUDGET_FAIL": 5
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 2068,
+    "trade_identity_hash": "541c1126d4f385af3586d0dd9b697f378dccf396bbc4f646a006fc3af13a0e22",
+    "variant": "best_20"
+  },
+  "p5:best_3": {
+    "candidate_stream_hash": "2ec10244a5e4d5c44bac0f9456e6da08d0e5e4d948e5a69f816fd3c351217741",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 189519.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 179519.0,
+    "rejected_fill_count": 94,
+    "rejected_fill_event_hash": "499cf43de93338af293fa9ac017644663e0b88673a08285c5cd0b5775481bdce",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 77,
+      "TPLUS1_D49_BUDGET_FAIL": 17
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 2,
+    "soft_closed_sessions": {
+      "2025-01-02": 1735828680000000000,
+      "2025-01-03": 1735917780000000000
+    },
+    "trade_count": 5282,
+    "trade_identity_hash": "ddad1c6ae24a377023b5ced4f599dac6c3590ff29c18f10d1ae6149748d656f6",
+    "variant": "best_3"
+  },
+  "p5:best_45": {
+    "candidate_stream_hash": "8f2b286fd04d7d9c39e99202dbbd79b10a69e4856176b08286b6b4121e6ede63",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 194071.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 184071.0,
+    "rejected_fill_count": 5,
+    "rejected_fill_event_hash": "a7fa459a61a71516ffdef642c88041343df4ca35e9891d8239f7f901209cd7f9",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 4,
+      "TPLUS1_D49_BUDGET_FAIL": 1
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 1353,
+    "trade_identity_hash": "8e8120ba5a89613298ac0d34a97f86cc937edb0514c23e447156fa1644810543",
+    "variant": "best_45"
+  },
+  "p5:best_5": {
+    "candidate_stream_hash": "6635cea7323a5296fe24adf69b2a7e7f8a4e7122cf5667b1ee906ad0088ecd7a",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 238597.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 228597.0,
+    "rejected_fill_count": 45,
+    "rejected_fill_event_hash": "832e621a0a060fa139626e88528e921e724c014b889f1b1dbd36e86a1cfef6f1",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 44,
+      "TPLUS1_D49_BUDGET_FAIL": 1
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 1,
+    "soft_closed_sessions": {
+      "2025-01-02": 1735828680000000000
+    },
+    "trade_count": 4246,
+    "trade_identity_hash": "022c37f426735c0df74c78cb92f5c107069d40027bff6cdf7060f26a4ad6aa6e",
+    "variant": "best_5"
+  },
+  "p5:best_90": {
+    "candidate_stream_hash": "1dbefe88f2bbe4309ad51236b145e85ec2a13a41fad799db92491848534b0a90",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 179563.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 169563.0,
+    "rejected_fill_count": 12,
+    "rejected_fill_event_hash": "b149813749f1dc7cc51d58a110fc92d51d45d26a41fa639f25f4b1d850023137",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 11,
+      "TPLUS1_D49_BUDGET_FAIL": 1
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 984,
+    "trade_identity_hash": "5d4cae4afe35df35f6bffb2d2f6c6f4abaea1dbdadf61a8e555f98c19b1308ae",
+    "variant": "best_90"
+  },
+  "p5:best_session": {
+    "candidate_stream_hash": "e79db077aac536832ebf19cb0844211d0cb2524cd8876d9fa51577afec5871a9",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 164008.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": 154008.0,
+    "rejected_fill_count": 6,
+    "rejected_fill_event_hash": "8affc09fd94242395de19a47131a279179b86ffbe9245711dcda7199b72d1a3d",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 5,
+      "TPLUS1_D49_BUDGET_FAIL": 1
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 0,
+    "soft_closed_sessions": {},
+    "trade_count": 589,
+    "trade_identity_hash": "481685d66d34b9baeeca4310827675781e723122891374771839532487020056",
+    "variant": "best_session"
+  },
+  "p5:first_real_profit_exit": {
+    "candidate_stream_hash": "3a30574b83dfa500202047212cde5d74273701d041973fdb72536da5cae67205",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 4985.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": -5015.0,
+    "rejected_fill_count": 24,
+    "rejected_fill_event_hash": "a306d01af541be91c12dee0e7eaa137d1b943efc65b9092f64dc342299f8cd25",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 24
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 14,
+    "soft_closed_sessions": {
+      "2025-01-10": 1736519640000000000,
+      "2025-01-27": 1737988320000000000,
+      "2025-01-29": 1738173900000000000,
+      "2025-02-03": 1738593120000000000,
+      "2025-02-25": 1740494040000000000,
+      "2025-02-26": 1740580320000000000,
+      "2025-02-27": 1740666960000000000,
+      "2025-02-28": 1740753120000000000,
+      "2025-03-03": 1741012320000000000,
+      "2025-03-04": 1741098720000000000,
+      "2025-03-05": 1741185120000000000,
+      "2025-03-06": 1741271520000000000,
+      "2025-03-07": 1741357920000000000,
+      "2025-03-10": 1741613520000000000
+    },
+    "trade_count": 195,
+    "trade_identity_hash": "2fc6e3cd9a12b21252df1b637fa19320ed7010af2ec8989ed13df7b9bb6f7e7a",
+    "variant": "first_real_profit_exit"
+  },
+  "p5:hold_to_forced_flat": {
+    "candidate_stream_hash": "18c326e910b4011b1334bd731de955150a83f457dbabee76ec41953d00d2b95d",
+    "d48_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_intent_and_fill_recheck_applied_before_simulator": true,
+    "d49_soft_close_floor_cost_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "d49_soft_close_floor_premium": 1.0,
+    "ending_cash": 4681.0,
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "pooled_pnl": -5319.0,
+    "rejected_fill_count": 8,
+    "rejected_fill_event_hash": "e25d4e8e413390484afacb7e7e3b4b2a04fc2de2850f144066ec2af66c24635c",
+    "rejected_fill_reason_counts": {
+      "TPLUS1_D48_CAP_FAIL": 8
+    },
+    "selector": "p5",
+    "simulator_skips": {
+      "after_entry_cutoff": 0,
+      "daily_loss_stop": 0,
+      "nonpositive_ask": 0,
+      "overlap": 0,
+      "session_trade_cap": 0,
+      "unaffordable": 0
+    },
+    "simulator_version": "protocol101_serial_simulator_v5_label_realized_exit_account_continuity_fee_reserve",
+    "soft_closed_session_count": 12,
+    "soft_closed_sessions": {
+      "2025-01-08": 1736346720000000000,
+      "2025-01-27": 1737988320000000000,
+      "2025-02-03": 1738593120000000000,
+      "2025-02-25": 1740494040000000000,
+      "2025-02-26": 1740580320000000000,
+      "2025-02-28": 1740753120000000000,
+      "2025-03-03": 1741012320000000000,
+      "2025-03-04": 1741098720000000000,
+      "2025-03-05": 1741185120000000000,
+      "2025-03-06": 1741271520000000000,
+      "2025-03-07": 1741357920000000000,
+      "2025-03-10": 1741613520000000000
+    },
+    "trade_count": 33,
+    "trade_identity_hash": "23f3bff5ce0be9b114a2bbffe4e810b1afa199a3f9860b9fe0334d70a4d63659",
+    "variant": "hold_to_forced_flat"
+  }
+}

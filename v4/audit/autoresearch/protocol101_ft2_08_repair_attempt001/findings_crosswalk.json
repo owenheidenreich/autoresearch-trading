@@ -1,0 +1,352 @@
+{
+  "schema_version": "Protocol101FT208RepairFindingsCrosswalkV1",
+  "source_review": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/joined_review.md",
+    "sha256": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3",
+    "blocking_count": 18,
+    "material_count": 10,
+    "total_count": 28
+  },
+  "status_counts": {
+    "repaired_in_ft2_04_05_08_design": 14,
+    "partially_repaired_with_downstream_gate_retained": 1,
+    "deferred_to_ft2_10_or_ft2_11_without_downgrade": 13
+  },
+  "findings": [
+    {
+      "id": "S1-01",
+      "seat": "trading_realism",
+      "severity": "BLOCKING",
+      "title": "No-bid periods are erased instead of treated as losses",
+      "original_anchor": "joined_review.md lines 101-107; FT2-08 label_join_spec censoring",
+      "owner": ["FT2-04", "FT2-05", "FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_04_path_label_freeze/label_spec.json:/missing_minute_rule",
+        "protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv",
+        "protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json:/no_bid"
+      ]
+    },
+    {
+      "id": "S1-02",
+      "seat": "trading_realism",
+      "severity": "BLOCKING",
+      "title": "Entry and exit fills use prices known before the action can execute",
+      "original_anchor": "joined_review.md lines 109-115; tensor decision convention and label economics",
+      "owner": ["FT2-04", "FT2-05", "FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "consolidated authority owner amendment A1",
+        "protocol101_ft2_04_path_label_freeze/label_spec.json:/economic_primitives",
+        "protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json:/completed_minute_law"
+      ]
+    },
+    {
+      "id": "S1-03",
+      "seat": "trading_realism",
+      "severity": "BLOCKING",
+      "title": "Primary entry test is not the required one-account serial game",
+      "original_anchor": "joined_review.md lines 117-125; FT2-10 objective and FT2-11 evidence",
+      "owner": ["FT2-10", "FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "synchronized policy-causal serial ledgers and an exact hashed P5-under-cap comparator"
+    },
+    {
+      "id": "S1-04",
+      "seat": "trading_realism",
+      "severity": "BLOCKING",
+      "title": "Composer can structurally delete the Charter big-win column",
+      "original_anchor": "joined_review.md lines 127-135; FT2-10 composer and FT2-11 tripwire",
+      "owner": ["FT2-10", "FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "no-screen control and hard tail-preservation acceptance law"
+    },
+    {
+      "id": "S1-05",
+      "seat": "trading_realism",
+      "severity": "MATERIAL",
+      "title": "Dual-unit min arbitration biases middle-premium contracts",
+      "original_anchor": "joined_review.md lines 137-143; FT2-10 composer/objective",
+      "owner": ["FT2-10"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "remove or preregister and validate the premium-neutral dollar/return arbitration"
+    },
+    {
+      "id": "S1-06",
+      "seat": "trading_realism",
+      "severity": "MATERIAL",
+      "title": "D49 can force post-loss lottery exposure and is not independently enforced",
+      "original_anchor": "joined_review.md lines 145-151; FT2-08 masks and FT2-11 safety",
+      "owner": ["authority", "FT2-05", "FT2-08", "FT2-30", "FT2-31"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "consolidated authority owner amendment A3",
+        "protocol101_ft2_05_opportunity_census/oracle_replay_audit.json",
+        "protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json",
+        "protocol101_ft2_08_data_tensor_label_contract/replay_authority_v5_1_spec.json"
+      ],
+      "remaining_gate": "FT2-30 implementation plus FT2-31 independent acceptance"
+    },
+    {
+      "id": "S1-07",
+      "seat": "trading_realism",
+      "severity": "MATERIAL",
+      "title": "Exact-contract uncertainty can deadlock valid directional sessions",
+      "original_anchor": "joined_review.md lines 153-159; FT2-10 composer/calibration",
+      "owner": ["FT2-10"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "cluster/substitute-aware uncertainty design and missed-tail diagnostics"
+    },
+    {
+      "id": "S2-01",
+      "seat": "ml_statistics",
+      "severity": "BLOCKING",
+      "title": "Future target_valid directly controls the composer",
+      "original_anchor": "joined_review.md ML review; FT2-10 composer and FT2-08 label_join_spec",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json:/runtime_label_firewall",
+        "protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/label_firewall"
+      ]
+    },
+    {
+      "id": "S2-02",
+      "seat": "ml_statistics",
+      "severity": "BLOCKING",
+      "title": "Census consumes the first fold embargo session",
+      "original_anchor": "joined_review.md lines 215-221; FT2-08 fold roles",
+      "owner": ["FT2-04", "FT2-05", "FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_04_path_label_freeze/intersection_proof.json",
+        "protocol101_ft2_08_data_tensor_label_contract/fold_roles.json:/census"
+      ]
+    },
+    {
+      "id": "S2-03",
+      "seat": "ml_statistics",
+      "severity": "BLOCKING",
+      "title": "DeltaQ replaces signed incremental-profit evidence",
+      "original_anchor": "joined_review.md lines 223-236; FT2-10 objective and FT2-11 evidence",
+      "owner": ["FT2-10", "FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "signed D1 fee-adjusted profit increment over matched random plus synchronized P5"
+    },
+    {
+      "id": "S2-04",
+      "seat": "ml_statistics",
+      "severity": "BLOCKING",
+      "title": "Mandatory action-conditioned calibration gate is absent",
+      "original_anchor": "joined_review.md lines 238-247; FT2-10 calibration and FT2-11 acceptance",
+      "owner": ["FT2-10", "FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "define an action-regret or WAIT reliability head, loss, gate, and terminal route"
+    },
+    {
+      "id": "S2-05",
+      "seat": "ml_statistics",
+      "severity": "BLOCKING",
+      "title": "MDE margin is statistically unsound under dependence",
+      "original_anchor": "joined_review.md lines 249-261; FT2-11 MDE/bootstrap",
+      "owner": ["FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "dependence-aware power using the candidate-minus-comparator serial estimand"
+    },
+    {
+      "id": "S2-06",
+      "seat": "ml_statistics",
+      "severity": "BLOCKING",
+      "title": "Terminal outcomes are not mechanically decidable",
+      "original_anchor": "joined_review.md lines 263-276; FT2-11 evidence/bootstrap",
+      "owner": ["FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "two-sided adjusted bounds, precedence, and statistic-specific sufficiency rules"
+    },
+    {
+      "id": "S2-07",
+      "seat": "ml_statistics",
+      "severity": "MATERIAL",
+      "title": "Empirical-CDF metric is under-specified and not nested",
+      "original_anchor": "joined_review.md lines 278-286; FT2-10 objective",
+      "owner": ["FT2-10"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "frozen weighted CDF algorithm fitted only within each inner-training role"
+    },
+    {
+      "id": "S2-08",
+      "seat": "ml_statistics",
+      "severity": "MATERIAL",
+      "title": "OOF conformal residuals are reused for a different refit",
+      "original_anchor": "joined_review.md ML review; FT2-10 calibration",
+      "owner": ["FT2-10"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "valid cross-conformal or disjoint calibration construction for the final model"
+    },
+    {
+      "id": "S2-09",
+      "seat": "ml_statistics",
+      "severity": "MATERIAL",
+      "title": "Dependence machinery lacks a validity condition",
+      "original_anchor": "joined_review.md ML review; FT2-11 bootstrap/shadow",
+      "owner": ["FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "block-length sensitivity, stationarity limits, and session-clustered shadow uncertainty"
+    },
+    {
+      "id": "S2-10",
+      "seat": "ml_statistics",
+      "severity": "MATERIAL",
+      "title": "Multiplicity omits selectable control attempts",
+      "original_anchor": "joined_review.md ML review; FT2-11 multiplicity and FT2-10 controls",
+      "owner": ["FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "freeze control identities/attempt caps or use one nonselectable generation algorithm"
+    },
+    {
+      "id": "S2-11",
+      "seat": "ml_statistics",
+      "severity": "MATERIAL",
+      "title": "No-bid censoring is missing-not-at-random",
+      "original_anchor": "joined_review.md ML review; FT2-08 labels",
+      "owner": ["FT2-04", "FT2-05", "FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_04_path_label_freeze/label_spec.json:/missing_minute_rule/mnar_sensitivity",
+        "protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv",
+        "protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json:/no_bid"
+      ]
+    },
+    {
+      "id": "S3-01",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Simulator v5 does not independently enforce the safety game",
+      "original_anchor": "joined_review.md lines 353-361; Simulator v5 and FT2-11",
+      "owner": ["FT2-08", "FT2-30", "FT2-31"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/replay_authority_v5_1_spec.json"
+      ],
+      "remaining_gate": "implementation and independent acceptance; Simulator v5 source unchanged here"
+    },
+    {
+      "id": "S3-02",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Live D48/D49 account state is not frozen or reconstructable",
+      "original_anchor": "joined_review.md lines 363-371; FT2-08 masks",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json"
+      ]
+    },
+    {
+      "id": "S3-03",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Historical-to-IBKR transfer is assumed as a Boolean",
+      "original_anchor": "joined_review.md lines 373-381; FT2-10/11 source transfer",
+      "owner": ["FT2-08", "FT2-10", "FT2-11", "FT2-92"],
+      "status": "partially_repaired_with_downstream_gate_retained",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/contract.md section 13",
+        "protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json"
+      ],
+      "remaining_gate": "FT2-10/11 must freeze tolerances/population; FT2-92 executes candidate-specific transfer"
+    },
+    {
+      "id": "S3-04",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Exact IBKR identity and ATM recentering are underdefined",
+      "original_anchor": "joined_review.md lines 383-391; FT2-08 identity/storage",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/identity_mapping_spec.json"
+      ]
+    },
+    {
+      "id": "S3-05",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Tensor field semantics and E-family contract axis are undefined",
+      "original_anchor": "joined_review.md lines 393-401; FT2-08 tensor",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json",
+        "protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/contract_path_core",
+        "protocol101_ft2_08_data_tensor_label_contract/synthetic_golden_vectors.json"
+      ]
+    },
+    {
+      "id": "S3-06",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Complete-ladder safety is missing from action-mask assembly",
+      "original_anchor": "joined_review.md lines 403-411; FT2-08 masks",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/flat_state_masks"
+      ]
+    },
+    {
+      "id": "S3-07",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Open-state rows lose an open contract outside the recentered ladder",
+      "original_anchor": "joined_review.md lines 413-421; FT2-08 open state",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/open_state",
+        "protocol101_ft2_08_data_tensor_label_contract/storage_spec.json:/partitions/open_contract_paths"
+      ]
+    },
+    {
+      "id": "S3-08",
+      "seat": "live_parity",
+      "severity": "BLOCKING",
+      "title": "Price-extension activation lacks an owner-signed amendment requirement",
+      "original_anchor": "joined_review.md lines 423-431; FT2-08 extension",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/admitted_price_extension/activation_requires_all"
+      ]
+    },
+    {
+      "id": "S3-09",
+      "seat": "live_parity",
+      "severity": "MATERIAL",
+      "title": "Completed-minute, freshness, and opening-history laws are not executable",
+      "original_anchor": "joined_review.md lines 433-443; FT2-08 timing/masks",
+      "owner": ["FT2-08"],
+      "status": "repaired_in_ft2_04_05_08_design",
+      "repair_paths": [
+        "protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json",
+        "protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/decision_convention"
+      ]
+    },
+    {
+      "id": "S3-10",
+      "seat": "live_parity",
+      "severity": "MATERIAL",
+      "title": "Primary entry comparison lacks a serial flat-state population",
+      "original_anchor": "joined_review.md lines 445-455; FT2-10 objective and FT2-11 evidence",
+      "owner": ["FT2-10", "FT2-11"],
+      "status": "deferred_to_ft2_10_or_ft2_11_without_downgrade",
+      "required_repair": "one serial state machine defining occupied minutes, policy-specific D49, WAIT accounting, and comparator ledgers"
+    }
+  ],
+  "assertions": {
+    "all_28_findings_present": true,
+    "no_severity_downgraded": true,
+    "no_ft2_10_or_ft2_11_finding_silently_closed": true,
+    "simulator_v5_source_not_modified": true
+  }
+}

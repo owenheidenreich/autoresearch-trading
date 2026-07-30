@@ -1,0 +1,304 @@
+{
+  "schema_version": "Protocol101FT210ObjectiveSpecV3",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "cross_contract_constants": {
+    "numeric_unit": "integer USD cents",
+    "contract_multiplier": 100,
+    "premium_floor_quote_cents": 100,
+    "fee_3_round_trip_cents": 300,
+    "fee_4_round_trip_cents": 400,
+    "fee_3_floor_cost_cents": 10300,
+    "fee_4_floor_cost_cents": 10400,
+    "daily_budget": "floor(session_start_equity_cents*5/100)"
+  },
+  "decision_local_quality_diagnostic": {
+    "role": "diagnostic and inner-loop search channel only; DeltaQ is not the entry-component freeze claim and cannot substitute for serial dollars",
+    "unit_of_evaluation": "one minute on the universal governed serial entry grid",
+    "buy_action": "the exact successfully filled selected contract",
+    "wait_action_utility": 0.0,
+    "occupied_or_pending_utility": 0.0,
+    "failed_fill_utility": 0.0,
+    "population": "serial_primary_population in this file",
+    "component_transform": {
+      "higher_is_better": "2*F_nested(value)-1",
+      "lower_is_better": "1-2*F_nested(value)",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "dual_unit_arbitration": "minimum of dollar and return transformed values after both are ranked within the same decision-time premium band and market phase",
+      "censored_or_invalid": "component missing for supervised scoring; never zero-imputed and never exposed to runtime composition"
+    },
+    "family_aggregation": {
+      "within_horizon": "equal mean of non-timestamp registered metrics after dual-unit arbitration",
+      "across_horizons": "equal mean over the causally available horizons frozen by composer_spec.json",
+      "quality_family_score": "equal mean within each of early_drawdown, time_to_first_real_profit, pre_profit_adverse_excursion, underwater_burden, profitable_window_stability",
+      "whole_path_quality_Q": "equal mean of the five quality-family scores",
+      "upside_U": "the upside-family score",
+      "insufficient_family": "a filled BUY with any required quality family unavailable is invalid evidence and fails closed"
+    },
+    "paired_diagnostics": {
+      "DeltaQ_session": "mean over the universal governed serial minute grid of Q_candidate-Q_comparator",
+      "DeltaU_session": "mean over the same grid of U_candidate-U_comparator",
+      "comparators": [
+        "P5-under-cap",
+        "frozen matched-random full-ladder controls"
+      ],
+      "required_reports": [
+        "WAIT, BUY, PENDING, OCCUPIED, failed-fill counts",
+        "five family deltas",
+        "upside delta",
+        "side, moneyness, premium-band, phase, and missingness distributions"
+      ]
+    }
+  },
+  "nested_empirical_cdf": {
+    "purpose": "make dual dollar/return arbitration reproducible without a deterministic middle-premium preference",
+    "reference_population": "for each outer fold, inner fit, metric, horizon, unit, premium band, and phase: eligible finite full-window FT2-04 label values joined to governed rows from only the sessions used to fit that model; exclude the scored inner block, its embargo, chronological future blocks, census-only sessions not in the fit role, outer validation, confirmation, protected holdout, and live data",
+    "premium_band_assignment": "use the causal completed-minute executable ask at decision t and the five census-v3 boundaries in composer_spec.json; never use the future t+1 fill ask to choose a runtime band",
+    "full_window_filter": {
+      "finite_horizon": "include hN continuous/count/CDF reference values only when censored=false, deadline_ns=entry_fill_time_ns+N*60 seconds, nominal_minutes=N, available_minutes=N, and every required mark in (entry_fill_time,deadline] is represented under the primary no-bid-as-full-loss rule",
+      "remaining_session": "include continuous/count/CDF reference values only when censored=false, deadline is exact 15:55 America/New_York, and the complete registered remaining-session grid is represented",
+      "finite_but_censored_near_close": "excluded from every empirical-CDF reference population; never treated as a shorter full horizon",
+      "time_to_event_exception": "right-censored first-profit targets are handled only by the registered discrete-survival likelihood and its censoring indicator; they do not enter continuous empirical-CDF references as finite events",
+      "filter_source": "FT2-04 label metadata only inside the label-side fit pipeline; the filter is never exposed to runtime composition"
+    },
+    "market_phase_assignment": "use the FT2-08 causal market_phase_id at decision t",
+    "scope": "one CDF per metric x horizon x unit x premium_band x market_phase; no pooling across metrics, horizons, or units",
+    "weighting": {
+      "session": "each contributing session has weight 1/S within the stratum",
+      "row_within_session": "each finite reference row in a contributing session has weight 1/n_session_stratum",
+      "result": "session-balanced rather than decision-row- or contract-row-dominated"
+    },
+    "ties_and_interpolation": {
+      "knot_at_distinct_value_v": "sum(weight for y<v)+0.5*sum(weight for y=v)",
+      "exact_tie": "return the midrank knot",
+      "between_adjacent_distinct_values": "linear interpolation between their midrank knots in value space",
+      "below_minimum": 0.0,
+      "above_maximum": 1.0,
+      "single_distinct_value": "0.5 at equality, 0 below, 1 above",
+      "nonfinite_query": "unavailable; fail the affected contract"
+    },
+    "minimum_reference": {
+      "distinct_sessions": 8,
+      "finite_rows": 2000
+    },
+    "fallback_order": [
+      "exact premium_band plus market_phase",
+      "same premium_band pooled over all training-fit market phases"
+    ],
+    "no_cross_band_fallback": true,
+    "fallback_receipt": "record exact stratum, contributing session identities, row counts, total weights, fallback level, and canonical CDF hash",
+    "same_band_insufficient": "metric/horizon/unit rank unavailable; affected contract fails closed",
+    "nesting": {
+      "inner_search": "build every CDF from that inner model's fit sessions only before scoring the next block",
+      "final_outer_model": "build CDFs from final_model_fit sessions only; final_calibration and outer-validation rows are never included",
+      "transduction": false
+    },
+    "canonical_hash": "SHA-256 over UTF-8 canonical JSON with sorted keys, compact separators, finite decimal strings, and ordered knots"
+  },
+  "serial_primary_population": {
+    "authority": [
+      "FT2-08 account_state_ledger_spec.json",
+      "FT2-08 replay_authority_v5_1_spec.json",
+      "FT2-04 label_spec.json"
+    ],
+    "universal_grid": "every governed completed flat-entry decision minute from the first action-eligible minute through 15:29 America/New_York on every governed session, ordered by session then decision_time_ns",
+    "policy_states": [
+      "FLAT_WAIT",
+      "FLAT_BUY_COMMIT",
+      "PENDING_TPLUS1_FILL",
+      "OCCUPIED_NEUTRAL_LIFECYCLE",
+      "SOFT_CLOSED",
+      "DAILY_STOPPED"
+    ],
+    "occupied_minute_treatment": "a policy that is pending or occupied has no flat-state action at that minute; record PENDING or OCCUPIED, assign Q=0 and U=0, retain the minute in paired population denominators, and never score a counterfactual BUY",
+    "wait_accounting": "WAIT is available only while flat, has Q=0, U=0, and serial dollars 0 for that minute, and remains in every denominator",
+    "entry_commit_and_fill": {
+      "intent_population": "at decision t assemble affordability, D48, D49, and premium-floor masks only from the last known executable ask A_t and the causal policy ledger; A_(t+1), its existence, freshness, or outcome is forbidden",
+      "commit": "select one exact identity from the t-intent population and reserve the one-position slot at decision t",
+      "pending": "no second action is allowed at t+1 while the t+1 executable fill outcome is resolved",
+      "fill": "successful BUY uses the actual t+1 executable ask, one contract, and the active fee trajectory",
+      "fill_time_rechecks_selected_identity_only": [
+        "exact identity and fresh executable ask at t+1",
+        "100-cent premium floor",
+        "affordability",
+        "D48 actual premium plus active fee",
+        "D49 policy-ledger realized loss plus actual premium plus active fee"
+      ],
+      "failed_fill": "no t+1 ask or a failed selected-identity fill-time safety recheck opens no position, charges no premium or fee, realizes no PnL, permits no substitute, records failed execution with Q=U=0, and returns to flat no earlier than decision t+2"
+    },
+    "account_and_safety_state": {
+      "starting_equity_each_outer_fold_cents": 1000000,
+      "carry_between_sessions_within_fold": true,
+      "separate_policy_ledgers": true,
+      "D48": "floor(0.05*policy session-start equity cents) and actual entry cost cents<=that budget",
+      "D49": "policy realized_session_loss_cents+actual entry cost cents<=policy daily budget cents",
+      "soft_close": "at every flat decision and independently per fee path, permanently WAIT for new entries when the current exact ladder contains no otherwise-eligible contract with A_t>=100 cents whose D48 and D49 intent masks pass; compute the arithmetic floor as 100*100+active_fee_cents (10300 fee_3, 10400 fee_4), never as a shared literal",
+      "daily_stop": "signed policy realized_session_pnl_cents<=-policy daily budget cents blocks new entries",
+      "fee_paths": "run $3 and $4 as separate causal trajectories; metrics-only fee subtraction is forbidden"
+    },
+    "neutral_lifecycle": {
+      "rule": "hold every successful entry without a learned exit to the exact 15:55 America/New_York forced-flat boundary",
+      "exit_value": "actual executable 15:55 bid; zero option value when no executable boundary bid; no earlier-bid substitution",
+      "occupancy": "from successful t+1 fill through the single 15:55 realization",
+      "reason": "the entry component does not own exits; this uncapped common rule supplies causal occupancy and dollar/safety accounting without making a fixed exit the learned entry objective"
+    },
+    "re_entry_law": "after any realized exit fill, a policy may next act only at the first later completed decision minute at which it is flat and t<15:30; under the frozen hold-to-15:55 neutral lifecycle a successful fill therefore permits no same-session re-entry, while a failed t+1 fill may retry at t+2",
+    "paired_comparison": "candidate, P5, every control, every seed, and every alpha arm traverse the same universal grid but each mutates only its own causal cash, occupancy, D48, D49, soft-close, and daily-stop ledger",
+    "required_hashes": [
+      "universal grid",
+      "per-policy action/state trace",
+      "fill and exit identities",
+      "integer-cent ledger events",
+      "$3 trajectory",
+      "$4 trajectory"
+    ]
+  },
+  "p5_under_cap_algorithm": {
+    "name": "P5_VWAP_SIDE_NEAREST_ELIGIBLE_UNDER_CAP_V2",
+    "role": "mandatory comparator only; never an upstream filter, label, feature, or final architecture",
+    "inputs": "causal completed-minute SPX close, causal session VWAP, exact current 42-slot ladder identities, current offsets, and that P5 ledger's time-t physical/safety intent mask built from A_t only",
+    "timing": "at every universal-grid minute where P5 is flat, not pending, t<15:30, and global entry masks pass, attempt an entry; there is no learned P5 abstention threshold",
+    "side": "C when finite spx_close>=finite spx_vwap, otherwise P; missing or nonfinite state means WAIT",
+    "eligible_set": "contracts of the selected side whose current t quote, identity, tradability, affordability, 100-cent floor, complete-ladder, warmup, freshness, P5-ledger D48 intent, and P5-ledger D49 intent masks all pass without t+1 information",
+    "selection": "minimum lexicographic tuple(abs(offset_points),offset_points,0_for_C_1_for_P,expiry_yyyymmdd,strike_milli_points,right_code,source_neutral_contract_id)",
+    "wait_behavior": [
+      "WAIT when P5 is pending or occupied, recorded structurally rather than as a flat choice",
+      "WAIT when global entry masks fail",
+      "WAIT when SPX/VWAP state is missing or nonfinite",
+      "WAIT when no selected-side contract is eligible",
+      "WAIT permanently after P5's own soft-close or daily stop"
+    ],
+    "fill_and_ledger": "after selecting from the t-intent population, recheck only the selected exact identity at t+1 under serial_primary_population, then use the neutral lifecycle, re-entry law, and P5's own causal account ledger",
+    "target_and_forecast_independence": "P5 may not read labels, forecast heads, future quote availability, candidate actions, or another policy's ledger",
+    "hashing": "this complete object is pinned by objective_spec.json SHA-256 in receipt.json; any algorithm change is a new contract version"
+  },
+  "entry_component_freeze": {
+    "owner_decision": "component freeze",
+    "claim_scope": "freeze the entry layer as a component for later combined-system evaluation",
+    "all_required_evidence_channels": {
+      "quality_evidence": [
+        "registered head families demonstrate nested out-of-fold skill versus constant-output and strong-shuffle controls under FT2-11 statistics",
+        "mandatory WAIT-probability and selected-regret gate passes",
+        "all five quality-family effects and upside are reported; no materially harmful family may be hidden",
+        "tail_guard_relative_capture passes or routes owner_decision_required"
+      ],
+      "safety": [
+        "all FT2-08 integrity, identity, complete-ladder, D48, D49, soft-close, daily-stop, no-bid, forced-flat, and separate-fee-trajectory gates pass",
+        "one contract, one position, no overlap, and account-survival gates pass"
+      ],
+      "no_harm_vs_p5_serial_dollars": {
+        "estimand": "DeltaSerialDollar_session=Pnl_cents_candidate-Pnl_cents_P5 on every common governed session under the separate causal neutral-lifecycle ledgers; a no-trade session contributes zero policy PnL rather than disappearing",
+        "primary_fee_path": "$3 round-trip",
+        "hard_stress_path": "$4 round-trip separate causal replay",
+        "statistical_noninferiority_margin_and_adjusted_bound": "owned by the FT2-11 repair and must be frozen before campaign results",
+        "cannot_be_replaced_by": [
+          "DeltaQ",
+          "absolute positive candidate PnL",
+          "fixed-exit PnL",
+          "oracle PnL"
+        ]
+      }
+    },
+    "DeltaQ_role": "diagnostic and inner-loop only",
+    "can_claim": [
+      "entry forecasts and composer earned a component freeze under quality, safety, tail, and serial-dollar no-harm evidence",
+      "the frozen entry component may proceed to the lifecycle and combined-system stages named by the graph"
+    ],
+    "cannot_claim": [
+      "the entry component makes more money than P5",
+      "the entry component is promotable by itself",
+      "the complete Full Trader is profitable",
+      "paper or real-money readiness"
+    ],
+    "promotable_dollar_claim_owner": "combined FT2-80 evaluation after learned entry and learned lifecycle are assembled",
+    "any_missing_channel": "entry_component_not_frozen",
+    "source_transfer_topology": "candidate-specific historical/IBKR transfer is not an entry-component acceptance precondition. A frozen component may carry transfer_not_yet_run into the graph; FT2-92 performs the transfer measurement, and its pass is mandatory before FT2-93 or later live activation.",
+    "combined_lifecycle_boundary": "the one-trade neutral lifecycle answers component quality and safety only. Live/combined behavior with learned exits and possible re-entry must be re-evaluated on complete combined-system ledgers at FT2-80; component freeze makes no live-parity or incremental-edge claim."
+  },
+  "tail_guard_relative_capture": {
+    "control": "the alpha=0.0 no-screen arm using the same trained model, CDFs, calibrators, k, physical/safety masks, serial state machine, and fee path as the evaluated alpha arm",
+    "big_win_definition": "remaining-session MFE fee-adjusted return>=0.40 under FT2-04 v2",
+    "per_arm_metrics": {
+      "big_win_entries_per_governed_session": "count of successfully filled entries satisfying big_win_definition divided by all governed sessions",
+      "big_win_opportunity_dollars_per_governed_session": "sum max(0,remaining-session MFE fee-adjusted dollars) over those big-win entries divided by all governed sessions",
+      "positive_serial_pnl_concentration_from_big_win_paths": "sum max(0,neutral-lifecycle PnL dollars) for entries satisfying big_win_definition divided by sum max(0,neutral-lifecycle PnL dollars) over all entries"
+    },
+    "relative_metrics": "for each per-arm metric, evaluated-alpha value divided by alpha=0.0 value on the same fold/seed/session set",
+    "zero_control_denominator": "tail_guard_insufficient_evidence; never impute one or declare pass",
+    "evaluation_scope": "every serious candidate, outer fold, seed, frozen ensemble, $3 primary path, and $4 stress path; all alpha grid arms are retained",
+    "ft2_11_dependency": "FT2-11 repair freezes cluster-aware uncertainty, session-clustered intervals, material relative-capture thresholds, multiplicity, and the owner-decision tripwire before results",
+    "breach": "owner_decision_required; an excluded alpha arm may not be silently selected",
+    "not_an_optimization_target": "Charter bucket proximity and tail ratios may not enter training loss, model selection score, or early stopping"
+  },
+  "inner_loop_objective": {
+    "type": "lexicographic diagnostic search only",
+    "eligibility_before_scoring": [
+      "feature and target firewall valid",
+      "identity, complete-ladder, and policy-ledger mask checks valid",
+      "nested CDF and final calibration machinery valid",
+      "mandatory action-conditioned heads present and trainable",
+      "mandatory negative controls available",
+      "all alpha arms including 0.0 registered"
+    ],
+    "ordered_terms": [
+      {
+        "priority": 1,
+        "maximize": "one-sided 80 percent session-block lower bound of diagnostic DeltaQ versus P5"
+      },
+      {
+        "priority": 2,
+        "maximize": "one-sided 80 percent session-block lower bound of diagnostic DeltaU versus P5"
+      },
+      {
+        "priority": 3,
+        "maximize": "minimum of the five quality-family diagnostic lower bounds"
+      },
+      {
+        "priority": 4,
+        "minimize": "measured inference latency then materialized bytes without changing the scientific contract"
+      }
+    ],
+    "forbidden_interpretation": "winning this search does not freeze the component and is not a dollar or promotion claim",
+    "final_entry_component_evidence": "entry_component_freeze in this file plus FT2-11 repaired statistical checklist"
+  },
+  "resampling_noise_and_plateau": {
+    "resamples": 2000,
+    "sampling_unit": "session",
+    "method": "noncircular moving-block bootstrap; FT2-11 repair owns final dependence validity",
+    "candidate_block_lengths_sessions": [
+      3,
+      5,
+      10
+    ],
+    "seed": 101210,
+    "minimum_distinct_sessions": 20,
+    "comparison": "candidate minus current incumbent on the same nested inner-scored sessions",
+    "plateau_counter": {
+      "limit_serious_trials": 12,
+      "reset_only_on_preregistered_inner_improvement": true,
+      "failed_or_incomplete_trial": "does not reset and counts only if it consumed a registered serious-trial slot",
+      "graph_controller_owns_counter": true,
+      "research_loop_may_edit_counter_or_rule": false
+    },
+    "scope": "search guidance only; no final scientific acceptance"
+  },
+  "no_reward_hacking": [
+    "no absolute PnL optimization for entry training",
+    "no DeltaQ promotion claim",
+    "no label or metric selected after outer results",
+    "no dropping WAIT, PENDING, OCCUPIED, failed-fill, or zero-trade session rows",
+    "no family may be removed because it hurts results",
+    "no fixed-exit profit may substitute for whole-path quality or serial-dollar no-harm",
+    "no P5 opportunity filtering of the learned action space",
+    "no tail metric in loss or selection",
+    "no outer validation feedback into model, composer, calibration, stopping, CDF, or tail threshold"
+  ]
+}

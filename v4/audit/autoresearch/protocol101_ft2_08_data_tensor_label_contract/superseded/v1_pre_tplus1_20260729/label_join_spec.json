@@ -1,0 +1,314 @@
+{
+  "schema_version": "Protocol101FT208LabelJoinSpecV1",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "inherited_label_authority": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json",
+    "sha256": "d724195999acf579a43768756b79f30ad122ec446933347b93cbbd8a7bbe9781",
+    "definitions_changed_by_ft2_08": false
+  },
+  "join": {
+    "cardinality": "one_feature_contract_minute_to_one_label_contract_minute",
+    "keys": [
+      "session_date_yyyymmdd",
+      "decision_time_ns_utc",
+      "expiry_yyyymmdd",
+      "contract_id_utf8",
+      "strike_milli_points",
+      "right_code"
+    ],
+    "duplicate_feature_key": "fail_closed",
+    "duplicate_label_key": "fail_closed",
+    "unmatched_feature_row": "retain feature row with every target_valid mask false",
+    "unmatched_label_row": "fail_closed_and_report_orphan",
+    "slot_indices_used_for_join": false,
+    "join_occurs_after_feature_tensor_completion": true
+  },
+  "horizons": [
+    {
+      "id": 0,
+      "name": "h3",
+      "nominal_minutes": 3
+    },
+    {
+      "id": 1,
+      "name": "h5",
+      "nominal_minutes": 5
+    },
+    {
+      "id": 2,
+      "name": "h10",
+      "nominal_minutes": 10
+    },
+    {
+      "id": 3,
+      "name": "h20",
+      "nominal_minutes": 20
+    },
+    {
+      "id": 4,
+      "name": "h45",
+      "nominal_minutes": 45
+    },
+    {
+      "id": 5,
+      "name": "h90",
+      "nominal_minutes": 90
+    },
+    {
+      "id": 6,
+      "name": "remaining_session",
+      "nominal_minutes": "decision_plus_one_through_last_tradable_mark_before_1555"
+    }
+  ],
+  "families": [
+    {
+      "id": 0,
+      "name": "early_drawdown",
+      "applies_to_horizons": [
+        "h3",
+        "h5",
+        "h10"
+      ],
+      "metrics": [
+        "worst",
+        "q00",
+        "q05",
+        "q10",
+        "q25",
+        "argmin_time_ns"
+      ],
+      "units": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "time_to_first_real_profit",
+      "applies_to_horizons": "all",
+      "metrics": [
+        "minutes",
+        "censored",
+        "first_profit_time_ns",
+        "first_profit_pnl_dollars",
+        "first_profit_return"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "pre_profit_adverse_excursion",
+      "applies_to_horizons": "all",
+      "metrics": [
+        "ppae_dollars",
+        "ppae_return",
+        "immediate_profit"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "underwater_burden",
+      "applies_to_horizons": "all",
+      "metrics": [
+        "uwi_dollars",
+        "uwi_return",
+        "underwater_minutes",
+        "longest_underwater_minutes"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "profitable_window_stability",
+      "applies_to_horizons": "all",
+      "metrics": [
+        "fraction_positive",
+        "longest_profitable_minutes",
+        "profitable_window_count",
+        "one_minute_jitter"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "upside",
+      "applies_to_horizons": "all",
+      "metrics": [
+        "mfe_dollars",
+        "mfe_return",
+        "q75_dollars",
+        "q75_return",
+        "q90_dollars",
+        "q90_return",
+        "q95_dollars",
+        "q95_return",
+        "q100_dollars",
+        "q100_return",
+        "profit_area_dollars",
+        "profit_area_return",
+        "argmax_time_ns"
+      ]
+    }
+  ],
+  "economic_primitives": {
+    "entry": "executable ask at decision minute",
+    "mark_and_exit": "executable causal bid at future completed minute",
+    "contract_multiplier": 100,
+    "round_trip_fee_overlay_usd": 3,
+    "fee_count": "exactly_once",
+    "dollar_pnl": "(future_bid - entry_ask) * 100 - 3",
+    "return_on_premium": "dollar_pnl / (entry_ask * 100)",
+    "profit_test": "dollar_pnl > 0"
+  },
+  "encoding": {
+    "one_row_per": "exact contract-minute identity",
+    "dollar_values": "int64 cents where exact; float32 model view derived after join",
+    "return_values": "float32",
+    "minute_counts": "int16",
+    "timestamps": "int64 UTC nanoseconds with -1 missing",
+    "booleans": "boolean bitmap",
+    "available_minutes": "int16 per horizon",
+    "nominal_minutes": "int16 per finite horizon; remaining-session boundary stored explicitly",
+    "horizon_censored": "bool per horizon",
+    "target_valid": "bool per family and horizon",
+    "numeric_missing_sentinel": "none; validity bitmap is authoritative"
+  },
+  "censoring": {
+    "near_close": "retain the nominal horizon, mask unavailable minutes past 15:55, set horizon_censored true, and record available_minutes",
+    "no_usable_future_mark": "target_valid false for every affected family and horizon",
+    "time_to_first_profit": "right-censored at the last available minute when no strict fee-adjusted profit occurs",
+    "no_bid_or_stale_future_minute": "exclude minute from aggregates, never forward fill, and break run continuity",
+    "shorten_nominal_horizon": false,
+    "invent_or_extrapolate_marks": false
+  },
+  "feature_firewall": {
+    "labels_physically_separate": true,
+    "runtime_loader_can_access_labels": false,
+    "future_bid_or_path_in_feature_tensor": false,
+    "blocking_rule": "exact membership in the frozen label schema and labels partition, never a broad string-prefix rule",
+    "target_column_prefixes_blocked_from_features": [
+      "h3_",
+      "h5_",
+      "h10_",
+      "h20_",
+      "h45_",
+      "h90_",
+      "first_profit_",
+      "hold_flat_"
+    ],
+    "remaining_session_target_columns": "the exact remaining-session label columns are blocked by schema membership; legitimate features such as session_range_bps remain allowed",
+    "training_join_must_be_explicit": true
+  },
+  "rebuild_reproducibility": {
+    "required_hashes": [
+      "raw normalized option input partitions",
+      "raw synchronized context partitions",
+      "contract-definition partitions",
+      "builder source",
+      "label_spec.json",
+      "label_join_spec.json",
+      "output logical schema"
+    ],
+    "sort_order": [
+      "session_date_yyyymmdd",
+      "decision_time_ns_utc",
+      "expiry_yyyymmdd",
+      "strike_milli_points",
+      "right_code",
+      "contract_id_utf8"
+    ],
+    "column_order": "frozen schema order",
+    "logical_content_hash": "sha256 over fixed-width little-endian values, UTF-8 identity bytes, and validity bitmaps in sorted row/column order",
+    "writer_metadata_part_of_logical_hash": false,
+    "per_session_checkpoint": true,
+    "recompute_from_raw_required": true
+  },
+  "census_informed_descriptive_parameters": {
+    "premium_bands": {
+      "definition": [
+        {
+          "name": "cheap_le_1",
+          "condition": "ask <= 1.00"
+        },
+        {
+          "name": "small_1_3",
+          "condition": "1.00 < ask <= 3.00"
+        },
+        {
+          "name": "medium_3_8",
+          "condition": "3.00 < ask <= 8.00"
+        },
+        {
+          "name": "large_8_20",
+          "condition": "8.00 < ask <= 20.00"
+        },
+        {
+          "name": "very_large_20p",
+          "condition": "ask > 20.00"
+        }
+      ],
+      "provenance_table": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/friction_by_premium_band.csv",
+      "provenance_sha256": "6a28e19be5f6b61bfecb5406ce69016289ba8f5c85334545baf22ad9bedabe39"
+    },
+    "moneyness_bands": {
+      "definition": [
+        {
+          "name": "atm",
+          "condition": "abs(offset_points) <= 10"
+        },
+        {
+          "name": "near",
+          "condition": "10 < abs(offset_points) <= 25"
+        },
+        {
+          "name": "wing",
+          "condition": "abs(offset_points) > 25"
+        }
+      ],
+      "provenance_table": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/family_distributions.csv",
+      "provenance_sha256": "5bd59171cf6be963fb9bc72ea19fadc0c7bb5ac956900f73e8c7aa7dd63b314e"
+    },
+    "market_phases": {
+      "definition": [
+        {
+          "id": 0,
+          "name": "opening_discovery",
+          "interval_et": "[09:30,09:45)"
+        },
+        {
+          "id": 1,
+          "name": "primary_morning",
+          "interval_et": "[09:45,11:15)"
+        },
+        {
+          "id": 2,
+          "name": "europe_close_transition",
+          "interval_et": "[11:15,11:45)"
+        },
+        {
+          "id": 3,
+          "name": "lunch",
+          "interval_et": "[11:45,13:30)"
+        },
+        {
+          "id": 4,
+          "name": "afternoon",
+          "interval_et": "[13:30,15:00)"
+        },
+        {
+          "id": 5,
+          "name": "power_hour_entry",
+          "interval_et": "[15:00,15:31)"
+        },
+        {
+          "id": 6,
+          "name": "manage_exit_only",
+          "interval_et": "[15:31,15:56)"
+        }
+      ],
+      "entry_phase_provenance_table": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/family_distributions.csv",
+      "entry_phase_provenance_sha256": "5bd59171cf6be963fb9bc72ea19fadc0c7bb5ac956900f73e8c7aa7dd63b314e",
+      "manage_exit_only_provenance": "D40 in signed product authority; FT2-05 has no post-15:30 flat-entry census rows"
+    },
+    "may_be_cited_as_model_quality": false
+  }
+}

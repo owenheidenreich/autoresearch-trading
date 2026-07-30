@@ -1,0 +1,70 @@
+{
+  "schema_version": "Protocol101FT210NodeReceiptV1",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "outcome": "design_ready",
+  "created_at_utc": "2026-07-29T15:44:28Z",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "graph": {
+    "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+    "sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "node_present": true,
+    "sole_success_outcome": "design_ready",
+    "next_node": "FT2-11-EVIDENCE-STATISTICS-CONTRACT"
+  },
+  "input_hashes": {
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json": "d724195999acf579a43768756b79f30ad122ec446933347b93cbbd8a7bbe9781",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/oracle_rules.json": "23a4cab2715c925a3c4261a508e69ac2c0f70157b93083ff129f4848ae03eb81",
+    "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json": "8a8805b22ef04a290edf421d5229d75eebc2301bc5246bd3bc595ee616cae583",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_curves.csv": "54159562cf99fc48989739a404705b632daa1de7084e01c80901c7f9641805da",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv": "0c3a4883cddbf9aa6cdc50fbf2de5ecbb2d688c8789f2c0c67decd841cca90b8",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv": "aaf4e8f3f0aa03aac96e411cca0d4337777991d276db474e25caa3deda4bdb74",
+    "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_threshold_curves.json": "3e432d302e89e1b9d7c274e945b6477060f04e87fea5f6117ba436763ef7027d",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json": "890015b87c0a2636b554d4c27aea9261f91604783f70bde0a96f402e4469e585",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/storage_spec.json": "a92645af245016490376ffff85d7e338aa37b73ea706b4040f1c159c9dc9a8c9",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/fold_roles.json": "e5f21f566341b3d2b10baa476a6af309f31ba658a5d944a99bd6015aff032599",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json": "8695f4bbde17c4375b67efeadffe1d8c85576544eea8b729d2a7564733651847",
+    "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json": "56885fad09ea7034ce112c356edcce92bad0d9c52e93fb8e32cf66934f5ce518",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_G8_CALIBRATION_REVISION_2026_07_26.md": "ac2cdbd9dabf8daa36aa53b8736d9691b8569b6f5b2b810d5a56707702465bf3",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_D1_NEGATIVE_CONTROL_AND_INCREMENTAL_EDGE_AMENDMENT_2026_07_28.md": "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598"
+  },
+  "deliverable_hashes": {
+    "contract.md": "10076a0d6cb0388eb956e2383213a3da2954d8ff2aeaa26b2690fe44b0fc2406",
+    "forecast_heads.json": "470b6756d1aaf4236a24f142f0f656f516ffb1aeecdc431d804222fe749f1ce4",
+    "composer_spec.json": "522c2e9d4bc36a9f5fd1fcdff2849c8f2fbbcda5d41cf20dd0358c88f48e8ed3",
+    "calibration_spec.json": "176bdb5240ae0129f4bbc48dd0c7a3b67a9bd6f1fa8d5dd99730283e2c4c2789",
+    "objective_spec.json": "75f76491634f1e620ecac38bb187ba2e4265cff20416390d86a7422c45edb0b1",
+    "controls_spec.json": "76c549c725f6ea3bc2610eb0cff02ad0a5e64edd99b504fa3d0dbdd361978b82"
+  },
+  "design_freezes": {
+    "forecast_head_family": true,
+    "composer_semantics": true,
+    "guardrail_anchor_grid": true,
+    "joint_calibration": true,
+    "uncertainty_wait_rule": true,
+    "entry_action_conditioned_gate_preregistered": true,
+    "inner_loop_objective": true,
+    "plateau_noise_rule": true,
+    "model_lab_boundaries": true,
+    "mandatory_controls": true,
+    "whole_path_entry_metric": true
+  },
+  "action_gate_status": "preregistered_inactive_pending_smoke_test_independent_audit_owner_signature",
+  "side_effects": {
+    "model_training": false,
+    "model_fitting": false,
+    "threshold_tuning": false,
+    "new_market_statistics": false,
+    "outer_validation_access": false,
+    "protected_holdout_access": false,
+    "recorder_or_broker_access_by_ft2_10_node": false,
+    "paid_data_or_compute": false,
+    "runtime_or_promotion_change": false,
+    "upstream_artifact_modified": false,
+    "ft2_11_started": false
+  },
+  "highest_allowed_claim": "The entry-science contract is frozen; FT2-11 may be drafted against it."
+}

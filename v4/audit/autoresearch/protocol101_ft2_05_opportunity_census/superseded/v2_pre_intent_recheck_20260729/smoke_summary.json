@@ -1,0 +1,14 @@
+{
+  "d48_reference_rows": 3678,
+  "label_compute": {
+    "core_hours": 0.006422601666666667,
+    "system_cpu_seconds": 0.16289199999999998,
+    "user_cpu_seconds": 22.958474000000002,
+    "wall_seconds": 23.209447457978968
+  },
+  "node": "FT2-05-OPPORTUNITY-CENSUS",
+  "row_count": 11314,
+  "schema_version": "Protocol101FT205OpportunityCensusV2",
+  "session": "2025-01-02",
+  "status": "engineering_smoke_complete_nonterminal"
+}

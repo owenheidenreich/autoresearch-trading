@@ -1,0 +1,93 @@
+{
+  "schema_version": "Protocol101FT204PathLabelSpecV1",
+  "node": "FT2-04-PATH-LABEL-FREEZE",
+  "status": "frozen_definitions_only_no_values_computed",
+  "authority": {
+    "document": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+    "document_sha256": "e08b02b31a937bcb7c15909f66cfce5bed69678d7469c8d66c44232f34101c64",
+    "governing_sections": ["4.2 economic primitives", "4.3 six path-property families", "7.1 FT2-04 spec", "1.4 D48/D49"]
+  },
+  "economic_primitives": {
+    "decision_minute": "t (completed-minute convention; the flat-state decision minute)",
+    "entry_fill": "executable ask A_t at minute t (per-share option price, index points)",
+    "mark_fill": "executable bid B_u at each completed future minute u > t",
+    "contract_multiplier_M": 100.0,
+    "round_trip_fee_overlay_F_usd": 3.0,
+    "fee_application": "the single $3 round-trip overlay is subtracted once from every marked-to-exit PnL (it covers both entry and exit legs); no per-leg double counting",
+    "premium_at_risk_usd": "A_t * M  (cash outlay for one long contract; this is the capped maximum loss and the return denominator)",
+    "fee_adjusted_dollar_pnl_at_u": "PnL$(u) = (B_u - A_t) * M - F",
+    "fee_adjusted_return_on_premium_at_u": "R(u) = PnL$(u) / (A_t * M) = ((B_u - A_t) * M - F) / (A_t * M)",
+    "breakeven_condition": "PnL$(u) > 0  <=>  B_u > A_t + F/M   (fee-adjusted; strict inequality)",
+    "dual_representation_rule": "every family target is emitted in BOTH fee-adjusted dollars per contract AND fee-adjusted return on entry premium, so cheap OTM (explosive %) and expensive ATM/ITM (larger $) cannot each win on only one axis"
+  },
+  "horizons_minutes": [3, 5, 10, 20, 45, 90, "remaining_session"],
+  "horizon_window_definition": "for horizon h, window W(t,h) = { completed minutes u : t < u <= t+h } intersected with the tradable session up to the forced-flat boundary; 'remaining_session' runs from t+1 through the last tradable mark minute before forced flat 15:55 ET",
+  "session_boundaries": {
+    "no_new_entries_after_et": "15:30",
+    "forced_flat_before_et": "15:55",
+    "source": "v4/model/protocol101_serial_simulator_v5.py SerialSimulatorV5Config"
+  },
+  "censoring_rules": {
+    "near_close": "if the nominal horizon t+h extends past the last available tradable mark minute (forced flat 15:55), the target is CENSORED at the available boundary: mask the unavailable minutes, set censored=true, and record available_minutes. Never shorten the nominal horizon and never invent or extrapolate marks.",
+    "time_to_event_censoring": "time-to-first-profit is right-censored at the last available minute of the horizon when no qualifying minute occurs; the censored flag and the censoring boundary are both recorded"
+  },
+  "missing_minute_rule": {
+    "definition": "a minute u whose executable bid is missing, stale beyond max_quote_age, or a no-bid is MASKED",
+    "no_bid_convention": "a no-bid minute cannot be sold: it is neither profitable nor underwater; it is excluded from every window aggregation and cannot be the first-profit minute",
+    "no_forward_fill": "masked minutes are never forward-filled, interpolated, or invented",
+    "continuity": "masked minutes break continuity for all run-length metrics (longest underwater / longest profitable window)"
+  },
+  "tie_breaking": {
+    "argmin_argmax_minute": "when several minutes attain the extremum, select the earliest (smallest u)",
+    "threshold": "profit threshold uses strict inequality PnL$(u) > 0"
+  },
+  "families": {
+    "a_early_drawdown": {
+      "applies_to_horizons": [3, 5, 10],
+      "worst_return": "EarlyDD_return(h) = min over u in W(t,h) of R(u)",
+      "worst_dollars": "EarlyDD_dollars(h) = min over u in W(t,h) of PnL$(u)",
+      "quantile_representation": "emit the lower-tail quantile vector of {R(u): u in W(t,h)} and {PnL$(u)} at q in {0.00, 0.05, 0.10, 0.25} where q=0.00 is the min; quantiles over available (unmasked) minutes only, linear interpolation",
+      "argmin_minute": "earliest u attaining the min (tie rule)"
+    },
+    "b_time_to_first_real_profit": {
+      "definition": "TTFP(h) = min{ u - t : u in W(t,h), unmasked, PnL$(u) > 0 }",
+      "first_profit_size": "record PnL$ and R at the first-profit minute u* in both units",
+      "censoring": "if no qualifying minute in W(t,h): right-censored at (last_available_u - t) with censored=true",
+      "emitted_per_horizon_and_session": true
+    },
+    "c_pre_profit_adverse_excursion": {
+      "definition_return": "PPAE_return(h) = min over u in W(t,h) with u < u* of R(u), where u* = first-profit minute",
+      "definition_dollars": "PPAE_dollars(h) = min over u in W(t,h) with u < u* of PnL$(u)",
+      "never_profitable": "if no u* in the horizon, PPAE is the min over the full available window (whole-window adverse excursion)",
+      "immediate_profit": "if u* is the first available minute, the pre-profit window is empty; PPAE=0 with immediate_profit=true"
+    },
+    "d_underwater_burden": {
+      "underwater_minute": "u is underwater iff PnL$(u) < 0 (equivalently R(u) < 0); fee-adjusted breakeven",
+      "depth_duration_integral_dollars": "UWI$(h) = sum over underwater u in W(t,h) of (-PnL$(u)) * 1_minute",
+      "depth_duration_integral_return": "UWI_ret(h) = sum over underwater u in W(t,h) of (-R(u)) * 1_minute",
+      "total_underwater_minutes": "count of underwater unmasked minutes in W(t,h)",
+      "longest_continuous_underwater_interval": "max run length of consecutive underwater minutes; masked or non-underwater minutes break the run"
+    },
+    "e_profitable_window_stability": {
+      "fraction_positive_minutes": "frac_pos(h) = |{u in W(t,h): PnL$(u) > 0}| / |{u in W(t,h): unmasked}|",
+      "longest_profitable_window": "max run length of consecutive positive minutes",
+      "profitable_window_count": "number of maximal consecutive-positive runs",
+      "one_minute_jitter_sensitivity": "jitter(h) = max( |frac_pos_shift(+1) - frac_pos(0)|, |frac_pos_shift(-1) - frac_pos(0)| ), where shift(k) replaces each B_u by B_{u+k} (masked if the neighbor is unavailable); lower = more stable",
+      "unit_note": "positive/negative classification is unit-agnostic; PnL$ and R agree on sign"
+    },
+    "f_upside": {
+      "mfe_return": "MFE_return(h) = max over u in W(t,h) of R(u)",
+      "mfe_dollars": "MFE_dollars(h) = max over u in W(t,h) of PnL$(u)",
+      "upper_quantiles": "emit upper-tail quantiles of {R(u)} and {PnL$(u)} at q in {0.75, 0.90, 0.95, 1.00} where q=1.00 is MFE",
+      "profit_area_dollars": "ProfitArea$(h) = sum over u in W(t,h) with PnL$(u) > 0 of PnL$(u) * 1_minute",
+      "profit_area_return": "ProfitArea_ret(h) = sum over u in W(t,h) with R(u) > 0 of R(u) * 1_minute",
+      "argmax_minute": "earliest u attaining the max (tie rule)"
+    }
+  },
+  "prohibited_here": [
+    "computing any of these targets on real recorded/historical market data (that is FT2-05)",
+    "perfect-hindsight exit minute, max-future-price, or lifecycle-selected exit as an ENTRY target (authority 4.4)",
+    "any future bid/ask/spread/greeks/context as a runtime feature"
+  ],
+  "worked_example_reference": "one synthetic toy example per family is given in report.md using hand-made numbers (A_t=2.00, M=100, F=3, toy bids); no real data is touched"
+}

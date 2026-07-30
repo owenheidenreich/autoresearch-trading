@@ -1,0 +1,81 @@
+{
+  "schema_version": "Protocol101FT208IdentityMappingV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired_pending_independent_review",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "source_neutral_contract_key": [
+    "underlying_symbol=SPX",
+    "trading_class=SPXW",
+    "expiry_yyyymmdd=session_date_yyyymmdd",
+    "strike_milli_points",
+    "right_code=C_or_P",
+    "multiplier=100",
+    "currency=USD"
+  ],
+  "canonical_contract_id": "SPX|SPXW|{expiry_yyyymmdd}|{right_code}|{strike_milli_points}|100|USD",
+  "historical_alias_record": [
+    "vendor",
+    "vendor_symbol",
+    "vendor_instrument_id",
+    "source_neutral_contract_key",
+    "first_seen_ns",
+    "last_seen_ns",
+    "mapping_source_hash"
+  ],
+  "ibkr_alias_record": [
+    "conId",
+    "localSymbol",
+    "symbol=SPX",
+    "tradingClass=SPXW",
+    "lastTradeDateOrContractMonth",
+    "strike",
+    "right",
+    "multiplier=100",
+    "currency=USD",
+    "exchange=SMART",
+    "primary_or_valid_exchange",
+    "source_neutral_contract_key",
+    "contract_details_receipt_time_ns"
+  ],
+  "ibkr_definition_fail_closed": [
+    "underlying symbol is not SPX",
+    "trading class is not SPXW",
+    "expiry is not the session date",
+    "strike is not an exact five-point increment",
+    "right is not C or P",
+    "multiplier is not 100",
+    "currency is not USD",
+    "duplicate conId maps to incompatible source-neutral keys",
+    "multiple conIds map to one key without an explicit exchange-equivalence record"
+  ],
+  "atm_and_ladder": {
+    "spx_for_ladder": "canonical completed SPX close available to the decision builder under the signed one-minute context-lag law",
+    "atm_formula": "int(round(spx_for_ladder/5)*5)",
+    "tie_policy": "Python round half to even",
+    "strike_offsets_points": [
+      -50, -45, -40, -35, -30, -25, -20, -15, -10, -5, 0,
+      5, 10, 15, 20, 25, 30, 35, 40, 45, 50
+    ],
+    "right_order": ["C", "P"],
+    "slot_linearization": "strike_idx major then right_idx",
+    "slot_is_identity": false,
+    "complete_ladder_definition": "all 42 source-neutral keys resolve to one complete current contract definition and one current quote state before flat-state contract actions are enabled"
+  },
+  "recentring": {
+    "law": "rebuild the 21 strikes from the new canonical ATM each completed decision minute",
+    "history_join": "join each current slot to history by source-neutral contract key only",
+    "forbidden": "copying history from the prior occupant of the same strike_idx/right_idx",
+    "open_position": "preserve the open contract by source-neutral key independently of the recentered 42-slot flat-entry ladder"
+  },
+  "required_acceptance_fixtures": [
+    "ATM unchanged",
+    "ATM moves up one strike",
+    "ATM moves down one strike",
+    "exact half-step tie",
+    "historical alias and IBKR conId map to identical key",
+    "wrong trading class fails",
+    "wrong expiry fails",
+    "slot recentering never inherits history",
+    "open contract moves outside plus-or-minus-50 ladder and remains fully observable"
+  ]
+}

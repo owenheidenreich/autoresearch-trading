@@ -1,0 +1,654 @@
+{
+  "schema_version": "Protocol101FT2FinalRepairFindingsCrosswalkV1",
+  "goal": "FT2-FINAL-REPAIR",
+  "attempt": 2,
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "source_review": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/joined_review.md",
+    "sha256": "068fd6e7f49362d69ffaa935abd1fc043a62251f2c1ef6922a62d9416265dc4a",
+    "receipt_path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/receipt.json",
+    "receipt_sha256": "8338b51ecd1ba33d33ed9fa6635456f71092745cdd62559857a9bbca280c0abc"
+  },
+  "verdict_law": "Every rerun001 original and fresh finding is individually present. ANSWERED requires at least one final-repair citation. No severity is downgraded and no finding is rebutted.",
+  "counts": {
+    "total": 47,
+    "original": 28,
+    "fresh": 19,
+    "blocking": 26,
+    "material": 19,
+    "minor": 2,
+    "answered": 47,
+    "rebutted": 0,
+    "partial": 0,
+    "unanswered": 0
+  },
+  "findings": [
+    {
+      "finding_id": "S1-01",
+      "seat": 1,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "No-bid periods are erased instead of treated as losses",
+      "rerun_locator": "joined_review.md:176",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json:/no_bid",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/replay_authority_v5_1_spec.json:/required_v5_1_behavior"
+      ]
+    },
+    {
+      "finding_id": "S1-02",
+      "seat": 1,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Entry and exit fills use prices known before the action can execute",
+      "rerun_locator": "joined_review.md:189",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/fill_time_recheck",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json:/completed_minute_law"
+      ]
+    },
+    {
+      "finding_id": "S1-03",
+      "seat": 1,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Primary entry test is not the required one-account serial game",
+      "rerun_locator": "joined_review.md:202",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/serial_primary_population",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json:/authoritative_population"
+      ]
+    },
+    {
+      "finding_id": "S1-04",
+      "seat": 1,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Composer can structurally delete the Charter big-win column",
+      "rerun_locator": "joined_review.md:216",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/tail_guard_relative_capture",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/tripwire_spec.json:/relative_capture_tripwire"
+      ]
+    },
+    {
+      "finding_id": "S1-05",
+      "seat": 1,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "Dual-unit min arbitration biases middle-premium contracts",
+      "rerun_locator": "joined_review.md:229",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/nested_empirical_cdf",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/stage_2_conservative_upside_rank/dollar_percent_arbitration"
+      ]
+    },
+    {
+      "finding_id": "S1-06",
+      "seat": 1,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "D49 size-down can force post-loss lottery exposure and is not independently enforced by simulator v5",
+      "rerun_locator": "joined_review.md:241",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/soft_close",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/replay_authority_v5_1_spec.json:/fee_trajectories",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/serial_primary_population/account_and_safety_state"
+      ]
+    },
+    {
+      "finding_id": "S1-07",
+      "seat": 1,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "Exact-contract uncertainty can deadlock valid directional sessions",
+      "rerun_locator": "joined_review.md:257",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/uncertainty_wait/directional_substitute_cluster",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/mandatory_action_conditioned_gate/selected_contract_regret_action_constraint"
+      ]
+    },
+    {
+      "finding_id": "S2-01",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Future target_valid directly controls the composer",
+      "rerun_locator": "joined_review.md:431",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/causal_horizon_availability",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/label_join_spec.json:/runtime_label_firewall"
+      ]
+    },
+    {
+      "finding_id": "S2-02",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Census consumes the first fold embargo session",
+      "rerun_locator": "joined_review.md:446",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/fold_roles.json:/census",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json:/session_count",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/stage_1_quality_screen/census_v3_provenance"
+      ]
+    },
+    {
+      "finding_id": "S2-03",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "DeltaQ replaces the signed incremental-profit gate",
+      "rerun_locator": "joined_review.md:461",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/entry_component_freeze",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json:/two_layer_acceptance"
+      ]
+    },
+    {
+      "finding_id": "S2-04",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Mandatory action-conditioned calibration gate is absent and unimplementable",
+      "rerun_locator": "joined_review.md:477",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json:/action_conditioned_outputs",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/action_conditioned_gate",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json:/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration"
+      ]
+    },
+    {
+      "finding_id": "S2-05",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "The MDE is unsound in estimand, dependence, and trade count",
+      "rerun_locator": "joined_review.md:493",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json:/dependence_adjusted_MDE",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json:/studentized_maxT/standard_error_authority"
+      ]
+    },
+    {
+      "finding_id": "S2-06",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Terminal outcomes are mechanically undecidable",
+      "rerun_locator": "joined_review.md:510",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/terminal_decision_spec.json:/resolver",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/worked_terminal_examples.json:/examples",
+        "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/check_cross_contract_consistency.py"
+      ]
+    },
+    {
+      "finding_id": "S2-07",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "Empirical-CDF transform is under-specified and not nested",
+      "rerun_locator": "joined_review.md:525",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/nested_empirical_cdf",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/chronological_nested_search"
+      ]
+    },
+    {
+      "finding_id": "S2-08",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "OOF conformal residuals are reused for refit",
+      "rerun_locator": "joined_review.md:543",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/final_outer_fit_and_disjoint_calibration"
+      ]
+    },
+    {
+      "finding_id": "S2-09",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "Dependence machinery lacks a validity condition",
+      "rerun_locator": "joined_review.md:557",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json:/synthetic_AR_coverage_demonstration",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json:/phase_F_shadow_intervals",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json:/studentized_maxT/standard_error_authority"
+      ]
+    },
+    {
+      "finding_id": "S2-10",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "Multiplicity omits selectable controls",
+      "rerun_locator": "joined_review.md:572",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/matched_random_generator_spec.json",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/multiplicity_spec.json:/frozen_nonselectable_matched_random_algorithm"
+      ]
+    },
+    {
+      "finding_id": "S2-11",
+      "seat": 2,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "No-bid censoring is missing-not-at-random and rewards illiquidity",
+      "rerun_locator": "joined_review.md:589",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json:/mnar_no_bid_sensitivity",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv"
+      ]
+    },
+    {
+      "finding_id": "S3-01",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Simulator v5 does not enforce the safety game FT2-11 assigns to it",
+      "rerun_locator": "joined_review.md:805",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/replay_authority_v5_1_spec.json:/activation_gate",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/replay_authority_v5_1_spec.json:/base_simulator"
+      ]
+    },
+    {
+      "finding_id": "S3-02",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Live D48/D49 account state is neither frozen nor reconstructable",
+      "rerun_locator": "joined_review.md:830",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json:/session_start",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json:/restart_recovery"
+      ]
+    },
+    {
+      "finding_id": "S3-03",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Historical-to-IBKR transfer is assumed as a Boolean rather than specified as a gate",
+      "rerun_locator": "joined_review.md:855",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/source_transfer_gate",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json:/historical_to_IBKR_source_transfer"
+      ]
+    },
+    {
+      "finding_id": "S3-04",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Exact IBKR identity and ATM recentering are underdefined",
+      "rerun_locator": "joined_review.md:876",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/identity_mapping_spec.json:/source_neutral_contract_key",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/identity_mapping_spec.json:/atm_and_ladder"
+      ]
+    },
+    {
+      "finding_id": "S3-05",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Tensor field semantics and E-family contract axis are undefined",
+      "rerun_locator": "joined_review.md:897",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/contract_path_core",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json:/contract_axis"
+      ]
+    },
+    {
+      "finding_id": "S3-06",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Complete-ladder safety rule is missing from action-mask assembly",
+      "rerun_locator": "joined_review.md:919",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/flat_state_masks/action_mask",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/complete_ladder_and_safety"
+      ]
+    },
+    {
+      "finding_id": "S3-07",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Open-state rows lose the open contract outside the recentered ladder",
+      "rerun_locator": "joined_review.md:937",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/open_state/dedicated_open_contract_record",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/storage_spec.json:/partitions/6"
+      ]
+    },
+    {
+      "finding_id": "S3-08",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "BLOCKING",
+      "description": "Price-extension activation lacks an owner-signed amendment requirement",
+      "rerun_locator": "joined_review.md:955",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/admitted_price_extension"
+      ]
+    },
+    {
+      "finding_id": "S3-09",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "Completed-minute, freshness, and opening-history laws are not executable",
+      "rerun_locator": "joined_review.md:971",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json:/completed_minute_law",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json:/opening_and_reconnect_law"
+      ]
+    },
+    {
+      "finding_id": "S3-10",
+      "seat": 3,
+      "finding_class": "original",
+      "severity": "MATERIAL",
+      "description": "Primary entry comparison lacks a serial flat-state population compatible with live D49 and occupancy",
+      "rerun_locator": "joined_review.md:989",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/serial_primary_population",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/entry_component_freeze/combined_lifecycle_boundary",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json:/two_layer_acceptance"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S1-B1",
+      "seat": 1,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "D48/D49 action masks leak the future t+1 ask into the decision at t",
+      "rerun_locator": "joined_review.md:271",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/decision_time_intent",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/fill_time_recheck"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S1-B2",
+      "seat": 1,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "The one-dollar-plus-fee soft-close law is fixed at 103 dollars on the four-dollar path",
+      "rerun_locator": "joined_review.md:285",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/soft_close",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json:/d49"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S1-B3",
+      "seat": 1,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "Finite near-close censored labels are not explicitly excluded from empirical-CDF references",
+      "rerun_locator": "joined_review.md:297",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/nested_empirical_cdf/full_window_filter",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json:/full_window_training_filter"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S2-B1",
+      "seat": 2,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "D48/D49 decision masks use the future t+1 fill quote",
+      "rerun_locator": "joined_review.md:607",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/complete_ladder_and_safety",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/serial_primary_population/entry_commit_and_fill"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S2-B2",
+      "seat": 2,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "D49 soft close does not implement signed A3 and is inconsistent across fee paths",
+      "rerun_locator": "joined_review.md:625",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/soft_close",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/serial_primary_population/account_and_safety_state"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S2-B3",
+      "seat": 2,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "FT2-10 and FT2-11 freeze different matched-random generators",
+      "rerun_locator": "joined_review.md:639",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/matched_random_generator_spec.json",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/multiplicity_spec.json:/frozen_nonselectable_matched_random_algorithm"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S2-B4",
+      "seat": 2,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "Studentized max-T uses an undefined replicate standard error",
+      "rerun_locator": "joined_review.md:653",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json:/studentized_maxT/standard_error_authority",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json:/worked_studentization_example"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S2-B5",
+      "seat": 2,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "The cluster-aware WAIT rule never constrains exact-contract regret magnitude",
+      "rerun_locator": "joined_review.md:666",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/mandatory_action_conditioned_gate/selected_contract_regret_action_constraint",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/action_conditioned_gate/selected_contract_regret"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S2-B6",
+      "seat": 2,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "Hard Phase-F reporting is allowed below the sample size covered by the AR demonstration",
+      "rerun_locator": "joined_review.md:679",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json:/phase_F_shadow_intervals",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json:/minimum_no_order_live_shadow_evidence"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S2-MINOR-RECEIPT",
+      "seat": 2,
+      "finding_class": "fresh",
+      "severity": "MINOR",
+      "description": "Receipt authority field naming is inconsistent across repaired packets",
+      "rerun_locator": "joined_review.md:75",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json:/product_contract_hash",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json:/product_contract_hash",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json:/product_contract_hash"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B1",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "Decision-time D48/D49 action masks require the unknowable actual t+1 ask",
+      "rerun_locator": "joined_review.md:1015",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/decision_time_intent",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/complete_ladder_and_safety"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B2",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "The repaired 103-dollar soft close is not the owner-authorized ladder-dependent predicate",
+      "rerun_locator": "joined_review.md:1041",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json:/soft_close",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json:/d49/soft_close_trigger"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B3",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "BLOCKING",
+      "description": "The source-transfer prerequisite is required before the graph node that performs it",
+      "rerun_locator": "joined_review.md:1063",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json:/source_transfer_graph_topology",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json:/graph_topology"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B4",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "The open-state schema creates an impossible learned EXIT at 15:55",
+      "rerun_locator": "joined_review.md:1080",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/tensor_schema.json:/open_state/terminal_minute_1555",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/field_semantics_manifest.json:/completed_minute_law"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B5",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "The neutral serial game and census trade-rate selection rule contradict each other",
+      "rerun_locator": "joined_review.md:1094",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/joint_conservatism/census_v3_trade_rate_provenance",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json:/serial_trade_count_projection"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B6",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "The one-strike cluster-aware WAIT fix can still deadlock a smooth directional surface",
+      "rerun_locator": "joined_review.md:1118",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json:/uncertainty_wait/directional_substitute_cluster"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B7",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "MNAR candidate stability does not specify whether label-dependent machinery is refit",
+      "rerun_locator": "joined_review.md:1134",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json:/mnar_no_bid_sensitivity/alternate_refit_protocol",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/terminal_decision_spec.json:/statistic_specific_sufficiency/MNAR_ranking_stability"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-B8",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "MATERIAL",
+      "description": "Live session-start equity can include stale or unrelated account state",
+      "rerun_locator": "joined_review.md:1158",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json:/session_start/live_paper_value",
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/account_state_ledger_spec.json:/session_start/account_scope"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S3-MINOR-RECEIPT",
+      "seat": 3,
+      "finding_class": "fresh",
+      "severity": "MINOR",
+      "description": "Receipt authority field naming is inconsistent across repaired packets",
+      "rerun_locator": "joined_review.md:75",
+      "verdict": "ANSWERED",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json:/product_contract_hash",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json:/product_contract_hash",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json:/product_contract_hash"
+      ]
+    }
+  ],
+  "assertions": {
+    "all_original_findings_present": true,
+    "all_fresh_findings_present": true,
+    "all_verdicts_answered": true,
+    "no_partials": true,
+    "no_unanswered": true,
+    "no_rebuttals": true,
+    "no_severity_downgrades": true,
+    "final_rereview_started": false
+  }
+}

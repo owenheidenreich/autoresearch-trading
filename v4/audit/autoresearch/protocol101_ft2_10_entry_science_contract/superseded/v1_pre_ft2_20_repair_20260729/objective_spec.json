@@ -1,0 +1,126 @@
+{
+  "schema_version": "Protocol101FT210ObjectiveSpecV1",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "decision_local_entry_metric": {
+    "unit_of_evaluation": "one governed flat-state decision minute",
+    "buy_action": "the exact selected contract",
+    "wait_action_utility": 0.0,
+    "occupancy_or_exit_assumption": "none; this is whole-path entry quality and does not manufacture an exit",
+    "training_reference_distributions": "market-phase empirical distributions from the outer-training role only, frozen before outer validation",
+    "component_transform": {
+      "higher_is_better": "2 * empirical_CDF_train_phase(value) - 1",
+      "lower_is_better": "1 - 2 * empirical_CDF_train_phase(value)",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "dual_unit_arbitration": "minimum of dollar and return transformed values",
+      "censored_or_invalid": "component missing; never zero-imputed"
+    },
+    "family_aggregation": {
+      "within_horizon": "equal mean of non-timestamp registered metrics after dual-unit arbitration",
+      "across_horizons": "equal mean over applicable valid registered horizons",
+      "quality_family_score": "equal mean within each of early_drawdown, time_to_first_real_profit, pre_profit_adverse_excursion, underwater_burden, profitable_window_stability",
+      "whole_path_quality_Q": "equal mean of the five quality-family scores",
+      "upside_U": "the upside-family score",
+      "insufficient_family": "a BUY with any of the five quality families unavailable is invalid and cannot be selected or scored"
+    },
+    "time_to_first_profit_scoring": {
+      "event_by_horizon": "higher is better",
+      "event_minute_if_observed": "lower is better",
+      "no_event": "worst transformed event-time value for that horizon",
+      "first_profit_size": "higher is better with dual-unit arbitration"
+    },
+    "profitable_window_count_rule": "when fraction_positive is zero the count component takes the worst value; otherwise fewer runs are better because equal profitable time in fewer runs is more stable"
+  },
+  "p5_comparison": {
+    "benchmark": "P5 VWAP-side nearest-ATM under its frozen historical rule",
+    "role": "mandatory benchmark only; never an upstream filter, label, feature, or final architecture",
+    "identical_safety": [
+      "same decision-minute population",
+      "same 42-slot governed risk set",
+      "same tradability and quote masks",
+      "same D48 premium cap",
+      "same D49 causal daily budget state where serial state is relevant",
+      "same entry ask and 3 dollar fee primitives"
+    ],
+    "wait_accounting": "P5 WAIT and learned WAIT each receive Q=0 and U=0; WAIT rows remain in every denominator",
+    "paired_session_metrics": {
+      "primary": "DeltaQ_session = mean_over_governed_decisions(Q_learned - Q_P5)",
+      "secondary": "DeltaU_session = mean_over_governed_decisions(U_learned - U_P5)",
+      "reported": [
+        "model and P5 action rates",
+        "WAIT/BUY confusion table",
+        "call/put and moneyness distributions",
+        "five family deltas separately",
+        "upside delta",
+        "invalid or missing counts"
+      ]
+    },
+    "fixed_exit_economics": "report-only if retained; cannot pass the entry gate or replace whole-path quality"
+  },
+  "inner_loop_objective": {
+    "type": "lexicographic",
+    "eligibility_before_scoring": [
+      "feature and target firewall valid",
+      "identity and mask checks valid",
+      "distribution calibration machinery valid",
+      "joint composer calibration valid",
+      "mandatory negative controls available"
+    ],
+    "ordered_terms": [
+      {
+        "priority": 1,
+        "maximize": "one-sided 80 percent moving-block-bootstrap lower bound of mean paired DeltaQ_session versus P5"
+      },
+      {
+        "priority": 2,
+        "maximize": "one-sided 80 percent moving-block-bootstrap lower bound of mean paired DeltaU_session versus P5"
+      },
+      {
+        "priority": 3,
+        "maximize": "minimum of the five quality-family lower bounds"
+      },
+      {
+        "priority": 4,
+        "minimize": "measured inference latency then materialized bytes, without changing the scientific contract"
+      }
+    ],
+    "trade_frequency": "diagnostic and joint-calibration target only; no hard trades-per-day objective or cap",
+    "final_outer_evidence": "defined in FT2-11, not optimized here"
+  },
+  "resampling_noise_and_plateau": {
+    "resamples": 2000,
+    "sampling_unit": "session",
+    "method": "moving block bootstrap",
+    "block_length_sessions": 5,
+    "seed": 101210,
+    "minimum_distinct_sessions": 20,
+    "comparison": "candidate minus current incumbent on the same inner OOF sessions",
+    "real_improvement_requires": [
+      "one-sided 80 percent lower bound for DeltaQ(candidate-incumbent) strictly greater than zero",
+      "one-sided 80 percent lower bound for DeltaU(candidate-incumbent) greater than or equal to zero",
+      "no quality-family point estimate is negative",
+      "all machinery and mandatory controls remain valid"
+    ],
+    "plateau_counter": {
+      "limit_serious_trials": 12,
+      "reset_only_on_real_improvement": true,
+      "failed_or_incomplete_trial": "does not reset and counts only if it consumed a registered serious-trial slot",
+      "graph_controller_owns_counter": true,
+      "research_loop_may_edit_counter_or_rule": false
+    },
+    "scope": "search guidance only; these 80 percent bounds are not final scientific acceptance"
+  },
+  "no_reward_hacking": [
+    "no absolute PnL objective for entry training",
+    "no label or metric selected after outer results",
+    "no dropping WAIT rows",
+    "no family may be removed because it hurts results",
+    "no fixed-exit profit may substitute for whole-path quality",
+    "no P5 opportunity filtering of the learned action space",
+    "no outer validation feedback into model, composer, calibration, or stopping"
+  ]
+}

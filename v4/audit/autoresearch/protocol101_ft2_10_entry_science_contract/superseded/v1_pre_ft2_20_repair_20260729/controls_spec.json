@@ -1,0 +1,156 @@
+{
+  "schema_version": "Protocol101FT210ControlsSpecV1",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "model_lab": {
+    "allowed": [
+      "architecture family within the registered entry lab",
+      "width and depth",
+      "temporal representation",
+      "cross-ladder representation",
+      "loss weights within the frozen multiplier family",
+      "optimizer and learning-rate schedule",
+      "regularization",
+      "calibration implementation that is mathematically equivalent to calibration_spec.json",
+      "checkpointing and compute efficiency"
+    ],
+    "frozen": [
+      "WAIT plus 42 exact-contract action space",
+      "FT2-08 features and masks",
+      "FT2-04 target families and definitions",
+      "all seven horizons",
+      "dual dollar and return representation",
+      "composer order and semantics",
+      "guardrail anchor grid",
+      "uncertainty multiplier grid",
+      "P5 benchmark definition",
+      "folds and embargo",
+      "entry ask, future bid, multiplier, and 3 dollar fee",
+      "D48 and D49 safety",
+      "whole-path objective",
+      "final gates and controller stopping rules"
+    ]
+  },
+  "mandatory_controls": [
+    {
+      "name": "summarized_feature_hgb",
+      "purpose": "transparent non-sequential baseline",
+      "input": "causal summaries of the same admitted FT2-08 feature tensors",
+      "action_space": "WAIT plus full 42-slot ladder"
+    },
+    {
+      "name": "summarized_feature_mlp",
+      "purpose": "simple nonlinear baseline",
+      "input": "identical summarized features as HGB",
+      "action_space": "WAIT plus full 42-slot ladder"
+    },
+    {
+      "name": "constant_output",
+      "purpose": "prove composer behavior when the model has no state information",
+      "fit": "training-role marginal target distributions only"
+    },
+    {
+      "name": "matched_random_full_ladder",
+      "purpose": "D1 V2 negative and incremental-edge control",
+      "randomizes": [
+        "timing",
+        "call_or_put",
+        "exact_contract"
+      ],
+      "feature_independent": true,
+      "outcome_blind": true
+    },
+    {
+      "name": "nearest_atm",
+      "purpose": "deterministic contract baseline",
+      "timing": "registered baseline timing only; cannot filter learned decisions"
+    },
+    {
+      "name": "p5",
+      "purpose": "mandatory historical benchmark",
+      "description": "VWAP-side direction and nearest-ATM selection under the frozen P5 rule",
+      "never_final_architecture": true
+    },
+    {
+      "name": "sign_reversed",
+      "purpose": "detect orientation or composer bugs",
+      "operation": "reverse every favorable-direction forecast before composing while preserving masks and identities"
+    },
+    {
+      "name": "strong_shuffled_targets",
+      "purpose": "destroy predictive alignment",
+      "operation": "global within-fit-role target permutation that destroys time, contract, right, slot, moneyness, and premium associations",
+      "outer_role_unchanged": true
+    },
+    {
+      "name": "feature_family_ablations",
+      "purpose": "attribute edge and detect shortcut dependence",
+      "registered_ablations": [
+        "remove_market_history_context",
+        "remove_contract_path_core",
+        "remove_ladder_snapshot_core",
+        "remove_phase_and_clock_fields",
+        "remove_each_active_price_extension_channel_one_at_a_time",
+        "geometry_and_masks_only"
+      ]
+    }
+  ],
+  "d1_v2": {
+    "authority_path": "v4/docs/protocol101/training/contracts/PROTOCOL101_D1_NEGATIVE_CONTROL_AND_INCREMENTAL_EDGE_AMENDMENT_2026_07_28.md",
+    "authority_sha256": "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598",
+    "matching": {
+      "opportunity_set": "same governed fold/session risk set and exact intent budget",
+      "entry_intent_count": "exact",
+      "executed_trade_count_relative_drift_max": 0.05,
+      "call_put_total_variation_max": 0.05,
+      "moneyness_total_variation_max": 0.06,
+      "mean_executed_premium_relative_drift_max": 0.1,
+      "mean_realized_holding_minutes_relative_drift_max": 0.1,
+      "total_realized_occupancy_relative_drift_max": 0.1
+    },
+    "full_ladder_extension": "The control randomizes both timing and exact contract from the same 42-slot risk set without model features. Post-replay exposure matching is mandatory. A contract-only randomization is diagnostic, never hard evidence.",
+    "incomplete_matching": "INSUFFICIENT_MATCHED_CONTROL"
+  },
+  "feature_firewall": {
+    "runtime_allowed": "exact FT2-08 model-input tensors and masks only",
+    "blocked": [
+      "all FT2-04 labels",
+      "future bid ask spread greeks context or paths",
+      "hindsight exit minute",
+      "max future price as a complete label",
+      "oracle action or oracle-selected contract",
+      "action advantage",
+      "future PnL",
+      "outer-validation-derived transforms",
+      "protected holdout",
+      "recorder or sealed confirmation evidence"
+    ],
+    "fail_closed": true
+  },
+  "prohibited_shortcuts": [
+    "P5 supplies opportunity timing to the learned model",
+    "P5 supplies direction or nearest-ATM contract to the learned model",
+    "ATM-only or three-contract action space",
+    "dropping WAIT rows from training or evaluation",
+    "choosing a target horizon after seeing outer results",
+    "using MFE or max-future-price as the complete entry objective",
+    "training the entry model to imitate an oracle exit",
+    "using model-selected realized exits to define entry labels",
+    "forward filling missing future marks",
+    "using slot index as durable contract identity",
+    "tuning fees, D48, D49, or safety masks",
+    "selecting a candidate on fixed-exit PnL",
+    "changing a stopping rule from inside the autoresearch loop"
+  ],
+  "required_receipts_per_trial": [
+    "feature and target schema hashes",
+    "fold and session identities",
+    "model configuration and weights hash",
+    "calibrator and composer hashes",
+    "action-mask and contract-identity checks",
+    "mandatory-control identities",
+    "WAIT and action counts",
+    "resource and latency measurements"
+  ]
+}

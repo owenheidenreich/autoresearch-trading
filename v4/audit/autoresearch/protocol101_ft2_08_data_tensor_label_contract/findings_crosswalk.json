@@ -1,0 +1,43 @@
+{
+  "schema_version": "Protocol101FT208FinalRepairCrosswalkPointerV3",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "unified_crosswalk": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/findings_crosswalk.json",
+    "sha256": "78f69b89e0857c30af6f354cd8a26db923f075c9700f01d3971012462d7fa16d",
+    "finding_count": 47,
+    "answered_count": 47
+  },
+  "primary_repair_ids": [
+    "S1-01",
+    "S1-02",
+    "S1-06",
+    "S2-01",
+    "S2-02",
+    "S3-01",
+    "S3-02",
+    "S3-04",
+    "S3-05",
+    "S3-06",
+    "S3-07",
+    "S3-08",
+    "S3-09",
+    "FRESH-S1-B1",
+    "FRESH-S1-B2",
+    "FRESH-S2-B1",
+    "FRESH-S2-B2",
+    "FRESH-S3-B1",
+    "FRESH-S3-B2",
+    "FRESH-S3-B4",
+    "FRESH-S3-B8",
+    "FRESH-S2-MINOR-RECEIPT",
+    "FRESH-S3-MINOR-RECEIPT"
+  ],
+  "consumer_synchronization": [
+    "FT2-10 consumes the exact intent/fill law hash and census v3",
+    "FT2-11 consumes the exact intent/fill law hash and standardized receipt field"
+  ],
+  "verdict": "ANSWERED",
+  "partial_or_unanswered": 0
+}

@@ -1,0 +1,203 @@
+{
+  "schema_version": "Protocol101FT220FinalRereviewReceiptV1",
+  "node": "FT2-20-PARALLEL-DESIGN-REVIEW",
+  "run_id": "rerun002",
+  "created_at_utc": "2026-07-30T02:08:00Z",
+  "review_mode": "fresh_isolated_final_rereview",
+  "outcome": "STOP-REDESIGN-REQUIRED",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "repair_budgets": {
+    "FT2-08": {
+      "attempts_used": 2,
+      "maximum_attempts": 2,
+      "attempts_remaining": 0
+    },
+    "FT2-10": {
+      "attempts_used": 2,
+      "maximum_attempts": 2,
+      "attempts_remaining": 0
+    },
+    "FT2-11": {
+      "attempts_used": 2,
+      "maximum_attempts": 2,
+      "attempts_remaining": 0
+    }
+  },
+  "verified_authority": {
+    "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+    "sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "verified": true
+  },
+  "review_targets": {
+    "graph_v2": {
+      "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+      "sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09"
+    },
+    "signed_contracts": {
+      "PROTOCOL101_TRADER_CHARTER.md": "3dbc1cf45e2200b7fd789c92be7e927c714b476b4b45aec95b5e0d9686c1ed66",
+      "PROTOCOL101_G4_HOLDOUT_REVISION_2026_07_19.md": "ff554ef5dd34086cd09954b906bbb5ce8455fa467776ae83906b01f80d565da5",
+      "PROTOCOL101_G8_CALIBRATION_REVISION_2026_07_26.md": "ac2cdbd9dabf8daa36aa53b8736d9691b8569b6f5b2b810d5a56707702465bf3",
+      "PROTOCOL101_SCOPED_SYNCHRONIZATION_DECISION_2026_07_25.md": "5c5a44e6bb4053276ef60b710a3788d1ee5ed9930a0aa8f10a4f45bbbe31417d",
+      "PROTOCOL101_D1_NEGATIVE_CONTROL_AND_INCREMENTAL_EDGE_AMENDMENT_2026_07_28.md": "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598"
+    },
+    "current_packets": {
+      "FT2-04": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/",
+        "receipt_sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+        "receipt_listed_deliverables_verified": 7
+      },
+      "FT2-05": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/",
+        "receipt_sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce",
+        "receipt_listed_deliverables_verified": 114,
+        "v2_v3_impact_sha256": "5341e2ead4ff6e0d4bbdbb59ba6312180c457e41a89ab6e8dfc7b28796d9f9a1"
+      },
+      "FT2-08": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/",
+        "receipt_sha256": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c",
+        "receipt_listed_deliverables_verified": 14
+      },
+      "FT2-10": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/",
+        "receipt_sha256": "c04a591fd3034a2caba756e8f9dc1d7f5c24c397170894b0b6b0eca7a083fa6f",
+        "receipt_listed_deliverables_verified": 8
+      },
+      "FT2-11": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/",
+        "receipt_sha256": "bdb52c4f9178da1cab75ec4a80bd13c1db8c0074c1c398f380729d1df80c5ef9",
+        "receipt_listed_deliverables_verified": 10
+      }
+    },
+    "prior_reviews": {
+      "round_1": {
+        "joined_review_sha256": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3",
+        "receipt_sha256": "b7beae089444bdec73fadec1037cbc1abd4bd6e29f1333346615a486164544f5"
+      },
+      "rerun001": {
+        "joined_review_sha256": "068fd6e7f49362d69ffaa935abd1fc043a62251f2c1ef6922a62d9416265dc4a",
+        "receipt_sha256": "8338b51ecd1ba33d33ed9fa6635456f71092745cdd62559857a9bbca280c0abc"
+      }
+    },
+    "final_repair": {
+      "aggregate_receipt_sha256": "19b74e513f0c6c68b50167b37e4bcfd40cb4ccd0f3c2240201ff3cbbd178f4f3",
+      "findings_crosswalk_sha256": "78f69b89e0857c30af6f354cd8a26db923f075c9700f01d3971012462d7fa16d",
+      "consistency_checker_sha256": "7b327ba8956ef03c581a4e4e390440a22d92c962cbf4e564ac8a876978a38d04",
+      "consistency_output_sha256": "64a051d401381deddbdea34ec6b439d6bfe15d399e1b3461c79a5243e5b86664",
+      "producer_check_count": 26,
+      "producer_check_outcome": "pass"
+    },
+    "simulator_v5": {
+      "path": "v4/model/protocol101_serial_simulator_v5.py",
+      "sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+    },
+    "directory_scope": {
+      "top_level_only": true,
+      "superseded_excluded": true,
+      "recursive_traversal_prohibited": true
+    }
+  },
+  "isolation_record": {
+    "fresh_context": "fork_turns=none for all three seats",
+    "execution": "strictly sequential; one reviewer active at a time",
+    "shared_packet_created_after_all_seats_completed": true,
+    "completed_report_present_while_another_seat_ran": false,
+    "cross_seat_paths_or_results_disclosed": false,
+    "controller_storage_between_seats": "controller-only memory",
+    "private_scratch_reports": {
+      "seat1": {
+        "path": "/tmp/protocol101-ft2-rerun002-seat1.ciPDP5/seat1_trading_realism.md",
+        "sha256": "cfd0883039f788dcae3f421d5d23aa18c81e427d54cecef4b22bec07838d8437",
+        "bytes": 22299,
+        "deleted_before_next_seat": true
+      },
+      "seat2": {
+        "path": "/tmp/protocol101-ft2-rerun002-seat2.I4uPWb/seat2_ml_statistics.md",
+        "sha256": "bf4b21ad70e0ce4f8b914a206cccc000c24280323c7a20ce1223d99c08c95270",
+        "bytes": 24595,
+        "deleted_before_next_seat": true
+      },
+      "seat3": {
+        "path": "/tmp/protocol101-ft2-rerun002-seat3.HwWHeT/seat3_live_parity.md",
+        "sha256": "671894e61886501597a1f4b71f0539820ccf745e73419c2d30c07c05e584423c",
+        "bytes": 32985,
+        "deleted_before_shared_packet": true
+      }
+    },
+    "seat_affirmations": {
+      "top_level_only": true,
+      "no_superseded_traversal": true,
+      "no_unallowlisted_evidence": true,
+      "no_other_scratch_access": true
+    },
+    "procedural_imperfection_disclosed": false
+  },
+  "finding_verification": {
+    "rerun001_finding_count": 47,
+    "answered_count": 45,
+    "not_actually_answered_count": 2,
+    "not_actually_answered_ids": [
+      "FRESH-S1-B1",
+      "S2-04"
+    ]
+  },
+  "seat_findings": {
+    "seat1": {
+      "blocking": 1,
+      "material_acceptable_with_documentation": 0,
+      "material_not_acceptable": 0,
+      "minor": 0,
+      "route": "STOP-REDESIGN-REQUIRED"
+    },
+    "seat2": {
+      "blocking": 3,
+      "material_acceptable_with_documentation": 1,
+      "material_not_acceptable": 0,
+      "minor": 0,
+      "route": "STOP-REDESIGN-REQUIRED"
+    },
+    "seat3": {
+      "blocking": 0,
+      "material_acceptable_with_documentation": 0,
+      "material_not_acceptable": 1,
+      "minor": 0,
+      "route": "STOP-REDESIGN-REQUIRED"
+    }
+  },
+  "routing": {
+    "pass_to_FT2_21": false,
+    "FT2_21_started": false,
+    "stop_redesign_required": true,
+    "repair_route_available": false,
+    "reasons": [
+      "a rerun001 BLOCKING finding was found NOT ACTUALLY ANSWERED",
+      "fresh BLOCKING findings remain in the final-repaired contract set",
+      "a fresh MATERIAL finding was classified not-acceptable"
+    ],
+    "affected_contracts": [
+      "FT2-04",
+      "FT2-05",
+      "FT2-08",
+      "FT2-10",
+      "FT2-11",
+      "Graph V2 FT2-92/93 routing"
+    ]
+  },
+  "deliverable_hashes": {
+    "seat1_trading_realism.md": "cfd0883039f788dcae3f421d5d23aa18c81e427d54cecef4b22bec07838d8437",
+    "seat2_ml_statistics.md": "bf4b21ad70e0ce4f8b914a206cccc000c24280323c7a20ce1223d99c08c95270",
+    "seat3_live_parity.md": "671894e61886501597a1f4b71f0539820ccf745e73419c2d30c07c05e584423c",
+    "joined_review.md": "49937f2f4c78935dda755ca87942f36367b06b91524cc7940359099716cb9140"
+  },
+  "side_effects": {
+    "review_targets_edited": false,
+    "findings_resolved": false,
+    "training_or_fitting": false,
+    "new_session_statistics": false,
+    "protected_data_access": false,
+    "recorder_access": false,
+    "broker_access": false,
+    "paid_compute": false,
+    "FT2_21_started": false
+  },
+  "highest_allowed_claim": "The final-repaired contract set has been independently re-reviewed; the graph routes to redesign stop."
+}

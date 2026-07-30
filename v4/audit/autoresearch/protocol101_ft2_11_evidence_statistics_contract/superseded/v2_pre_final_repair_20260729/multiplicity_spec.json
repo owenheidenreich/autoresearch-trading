@@ -1,0 +1,214 @@
+{
+  "schema_version": "Protocol101FT211MultiplicitySpecV2",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "producer_repaired_design",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "family_principle": "Every selectable or invalidating research identity is registered before outcomes. Shared heads and mandatory seed replications are not independently selectable hypotheses, but their all-required failures remain terminal evidence.",
+  "ordered_ledger": {
+    "required_before_any_pilot_or_result": true,
+    "canonical_sort": [
+      "stage_order",
+      "admission_transform_set_id",
+      "active_extension_channel_set_id",
+      "model_family",
+      "candidate_lineage_id",
+      "composer_alpha",
+      "uncertainty_multiplier",
+      "seed_or_ensemble_id",
+      "control_type",
+      "control_attempt_id",
+      "comparison_id",
+      "fee_trajectory"
+    ],
+    "canonical_JSON": "UTF-8, sorted keys, compact separators, no NaN or Infinity",
+    "SHA256_required": true,
+    "failed_incomplete_invalid_and_abandoned_attempts_remain": true,
+    "post_outcome_add_delete_relabel_or_reorder": "invalid_evidence"
+  },
+  "frozen_nonselectable_matched_random_algorithm": {
+    "source_contract": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/controls_spec.json:/frozen_nonselectable_random_controls",
+    "source_sha256": "e546aaa34b18a85608db4fb9dee5c64179a80ed9bb750f74c0b1bb6b7a616317",
+    "single_algorithm": true,
+    "candidate_specific_seed_namespace": "base_seed_hex=SHA-256('Protocol101|FT2-11-V2|MATCHED_RANDOM|' + candidate_artifact_sha256 + '|' + ordered_universal_grid_sha256)",
+    "bounded_attempt_count": 8,
+    "attempt_ids": [
+      10121001,
+      10121002,
+      10121003,
+      10121004,
+      10121005,
+      10121006,
+      10121007,
+      10121008
+    ],
+    "attempt_random_key": "SHA-256 UTF-8 canonical tuple(base_seed_hex,attempt_id,outer_fold,session,decision_time_ns,source_neutral_contract_id,expiry_yyyymmdd,strike_milli_points,right_code); first unsigned 64 big-endian bits rank, full digest breaks ties",
+    "pre_outcome_construction": [
+      "Freeze candidate artifact hash, universal grid hash, causal action trace, and intent counts before reading any future path or PnL outcome.",
+      "Derive exact intent budgets by session, call/put, ATM/NEAR/WING, and decision-time premium band.",
+      "Within each cell rank every causally legal minute-contract pair by attempt_random_key and take the required count without replacement.",
+      "If a cell cannot supply its exact budget, mark that registered attempt incomplete; never borrow from another cell.",
+      "Generate all eight attempts exactly once."
+    ],
+    "pre_outcome_matching": {
+      "same_governed_fold_session_risk_set": "exact",
+      "intent_budget": "exact",
+      "entry_intent_count": "exact",
+      "call_put_cell_counts": "exact",
+      "ATM_NEAR_WING_cell_counts": "exact",
+      "decision_time_premium_band_cell_counts": "exact"
+    },
+    "serial_replay": "Each complete schedule traverses its own FT2-10 t+1 fills, occupancy, D48, D49, soft-close, daily-stop, neutral lifecycle, and separate $3/$4 ledgers.",
+    "signed_post_replay_verification": {
+      "entry_intent_count": "exact",
+      "executed_trade_count_relative_drift_max": 0.05,
+      "call_put_total_variation_max": 0.05,
+      "moneyness_total_variation_max": 0.06,
+      "mean_executed_premium_relative_drift_max": 0.1,
+      "mean_realized_holding_minutes_relative_drift_max": 0.1,
+      "total_realized_occupancy_relative_drift_max": 0.1
+    },
+    "no_redraw": true,
+    "no_replacement_attempt": true,
+    "no_best_attempt_selection": true,
+    "no_outcome_conditioning": true,
+    "validity": "All eight registered attempts must be complete and pass every pre-outcome and post-replay rule.",
+    "any_attempt_incomplete_or_mismatched_with_valid_inputs": "INSUFFICIENT_MATCHED_CONTROL",
+    "implementation_deviates_from_algorithm_or_hashes": "invalid_evidence",
+    "aggregate": "When and only when all eight attempts are valid, report every individual schedule and the frozen equal-weight mean of their session statistics.",
+    "aggregate_is_selectable": false
+  },
+  "strong_shuffle_family": {
+    "source_contract": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/controls_spec.json:/strong_shuffle_identities",
+    "attempt_ids": [
+      10121001,
+      10121002,
+      10121003,
+      10121004,
+      10121005,
+      10121006,
+      10121007,
+      10121008
+    ],
+    "every_shuffled_model_seed_vs_each_random_schedule": "registered",
+    "every_shuffled_model_seed_vs_equal_weight_random_aggregate": "registered",
+    "all_attempts_required": true,
+    "significant_positive_increment_rule": "If a strong shuffled model has both adjusted one-sided p<=0.05 and adjusted 95% lower bound>0 over a valid matched-random control, route invalid_evidence for real-candidate selection.",
+    "absolute_shuffled_PnL": "diagnostic only"
+  },
+  "registered_families": {
+    "feature_admission": {
+      "stage_order": 1,
+      "maximum_preregistered_canonical_price_transforms": 3,
+      "all_attempts_count": true,
+      "positive_and_null_harness_controls_count": true
+    },
+    "entry_component": {
+      "stage_order": 2,
+      "outer_shortlist_candidates_max": 3,
+      "composer_alpha_values": [
+        0.0,
+        0.1,
+        0.2,
+        0.25,
+        0.3
+      ],
+      "uncertainty_multiplier_variants": 4,
+      "required_real_candidate_contrasts_per_lineage": [
+        "DeltaQ versus P5",
+        "DeltaQ versus constant-output",
+        "DeltaQ versus every strong-shuffle identity",
+        "serial-dollar no-harm versus P5 on $3",
+        "serial-dollar no-harm versus P5 on $4",
+        "candidate versus each of eight matched-random schedules",
+        "candidate versus the equal-weight matched-random aggregate",
+        "MNAR no-bid primary versus sensitivity ranking identity"
+      ],
+      "tail_alpha0_arm_mandatory": true,
+      "action_conditioned_gate_statistics_registered": true
+    },
+    "lifecycle": {
+      "stage_order": 3,
+      "model_families": [
+        "transparent_HGB",
+        "neural_or_sequence_challenger"
+      ],
+      "every_selectable_horizon_composer_confidence_floor_variant_counts": true,
+      "required_comparators": [
+        "best fixed or transparent exit on identical entries",
+        "matched-random exit",
+        "learned exit without floor"
+      ]
+    },
+    "combined_FT2_80": {
+      "stage_order": 4,
+      "required_dollar_contrasts": [
+        "complete combined system minus P5",
+        "complete combined system minus candidate-specific exposure-matched random aggregate"
+      ],
+      "all_costs_and_complete_serial_ledgers": true
+    }
+  },
+  "admitted_channel_combinations": {
+    "source": "FT2-10 controls_spec.json:/extension_channel_ledger",
+    "rule": "Every owner-admitted active-channel set and every channel combination that can be separately selected, shortlisted, stopped, frozen, or promoted has a distinct pre-outcome family identity.",
+    "all_nonempty_selectable_subsets_count": true,
+    "single_channel_ablations_that_can_invalidate_or_select_count": true,
+    "combination_selected_after_results": "invalid_evidence",
+    "family_size": "Computed exactly from the preregistered channel-set manifest before outcomes; UNKNOWN is not a valid evidence packet."
+  },
+  "family_counting": {
+    "dynamic_exact_count_required": true,
+    "old_fixed_96_statistic_ceiling_retired": true,
+    "why": "The old count omitted alpha=0.0, matched-random attempts and aggregate, shuffled contrasts, action-gate metrics, and admitted-channel combinations.",
+    "count_includes": [
+      "all selectable lineages and composer variants",
+      "all eight matched-random attempt contrasts",
+      "the fixed matched-random aggregate contrast",
+      "all strong-shuffle contrasts",
+      "all selectable admitted-channel sets and invalidating ablations",
+      "all failed, incomplete, and abandoned registered identities",
+      "all hard calibration and no-harm statistics"
+    ],
+    "count_excludes_only": [
+      "shared jointly trained forecast heads that cannot be selected separately",
+      "pure diagnostics that cannot select, reject, freeze, promote, reset a plateau, or change a terminal"
+    ]
+  },
+  "correction": {
+    "method": "synchronized single-step studentized maxT",
+    "bootstrap_reference": "bootstrap_spec.json",
+    "familywise_one_sided_alpha": 0.05,
+    "block_length_envelope": true,
+    "lower_and_upper_bounds": true
+  },
+  "serial_gatekeeping": {
+    "order": [
+      "feature_admission",
+      "entry_component",
+      "lifecycle",
+      "combined_FT2_80"
+    ],
+    "later_family_requires_prior_freeze": true,
+    "alpha_recycling": false,
+    "optional_reordering": false,
+    "future_family_peeking": false,
+    "component_freeze_does_not_open_promotable_claim": true
+  },
+  "control_validity_and_plateau": {
+    "validity_definitions_frozen_before_outcomes": true,
+    "invalid_or_incomplete_control_attempt_remains_in_ledger": true,
+    "invalid_or_incomplete_control_can_reset_serious_trial_plateau": false,
+    "control_failure_can_be_relabelled_nonserious_after_results": false,
+    "plateau_reset_rule": "Only a preregistered serious trial that has valid controls and earns the already-frozen stage success terminal may reset the plateau. Diagnostic improvement, control mismatch, missing evidence, or an owner tripwire cannot reset it.",
+    "same_candidate_replayed_with_new_random_draw": "forbidden",
+    "attempt_cap_change_after_results": "invalid_evidence"
+  },
+  "D1_failure_mapping": {
+    "wrong_seed_hash_algorithm_redraw_outcome_matching_or_missing_identity": "invalid_evidence",
+    "valid_algorithm_but_any_schedule_incomplete_or_post_replay_mismatched": "insufficient_evidence",
+    "valid_strong_shuffle_has_significant_positive_increment": "invalid_evidence",
+    "real_candidate_interval_contains_zero": "insufficient_evidence",
+    "real_candidate_adjusted_upper_bound_at_or_below_zero": "no_genuine_entry_signal",
+    "real_candidate_lower_bound_strictly_above_zero_and_adjusted_p_at_most_0_05": "contrast_pass"
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "interpretation": "v1 and v2 economics are not directly interchangeable because execution, missingness, role membership, and serial budget semantics all changed",
+  "oracle_changes": [
+    {
+      "pooled_pnl_delta": -293531.0,
+      "pooled_pnl_v1": 1250987.0,
+      "pooled_pnl_v2": 957456.0,
+      "selector": "oracle",
+      "trade_count_delta": -403,
+      "trade_count_v1": 2421,
+      "trade_count_v2": 2018,
+      "variant": "best_10"
+    },
+    {
+      "pooled_pnl_delta": -181501.0,
+      "pooled_pnl_v1": 1013134.0,
+      "pooled_pnl_v2": 831633.0,
+      "selector": "oracle",
+      "trade_count_delta": -133,
+      "trade_count_v1": 1252,
+      "trade_count_v2": 1119,
+      "variant": "best_20"
+    },
+    {
+      "pooled_pnl_delta": -484952.0,
+      "pooled_pnl_v1": 1539114.0000000002,
+      "pooled_pnl_v2": 1054162.0000000002,
+      "selector": "oracle",
+      "trade_count_delta": -2246,
+      "trade_count_v1": 7092,
+      "trade_count_v2": 4846,
+      "variant": "best_3"
+    },
+    {
+      "pooled_pnl_delta": -118780.0,
+      "pooled_pnl_v1": 786575.0,
+      "pooled_pnl_v2": 667795.0,
+      "selector": "oracle",
+      "trade_count_delta": -50,
+      "trade_count_v1": 585,
+      "trade_count_v2": 535,
+      "variant": "best_45"
+    },
+    {
+      "pooled_pnl_delta": -405525.0,
+      "pooled_pnl_v1": 1459375.0,
+      "pooled_pnl_v2": 1053850.0,
+      "selector": "oracle",
+      "trade_count_delta": -1135,
+      "trade_count_v1": 4590,
+      "trade_count_v2": 3455,
+      "variant": "best_5"
+    },
+    {
+      "pooled_pnl_delta": -79007.0,
+      "pooled_pnl_v1": 602306.0,
+      "pooled_pnl_v2": 523299.0,
+      "selector": "oracle",
+      "trade_count_delta": -21,
+      "trade_count_v1": 308,
+      "trade_count_v2": 287,
+      "variant": "best_90"
+    },
+    {
+      "pooled_pnl_delta": -35365.0,
+      "pooled_pnl_v1": 377161.0,
+      "pooled_pnl_v2": 341796.0,
+      "selector": "oracle",
+      "trade_count_delta": -5,
+      "trade_count_v1": 113,
+      "trade_count_v2": 108,
+      "variant": "best_session"
+    },
+    {
+      "pooled_pnl_delta": -59493.00000000003,
+      "pooled_pnl_v1": 274910.00000000006,
+      "pooled_pnl_v2": 215417.00000000003,
+      "selector": "oracle",
+      "trade_count_delta": -319,
+      "trade_count_v1": 1635,
+      "trade_count_v2": 1316,
+      "variant": "first_real_profit_exit"
+    },
+    {
+      "pooled_pnl_delta": -5567.0,
+      "pooled_pnl_v1": 94602.0,
+      "pooled_pnl_v2": 89035.0,
+      "selector": "oracle",
+      "trade_count_delta": -1,
+      "trade_count_v1": 46,
+      "trade_count_v2": 45,
+      "variant": "hold_to_forced_flat"
+    },
+    {
+      "pooled_pnl_delta": 240161.0,
+      "pooled_pnl_v1": -7337.0,
+      "pooled_pnl_v2": 232824.0,
+      "selector": "p5",
+      "trade_count_delta": 1453,
+      "trade_count_v1": 1524,
+      "trade_count_v2": 2977,
+      "variant": "best_10"
+    },
+    {
+      "pooled_pnl_delta": 213016.0,
+      "pooled_pnl_v1": -4879.0,
+      "pooled_pnl_v2": 208137.0,
+      "selector": "p5",
+      "trade_count_delta": 313,
+      "trade_count_v1": 1758,
+      "trade_count_v2": 2071,
+      "variant": "best_20"
+    },
+    {
+      "pooled_pnl_delta": 205145.0,
+      "pooled_pnl_v1": -7713.999999999999,
+      "pooled_pnl_v2": 197431.0,
+      "selector": "p5",
+      "trade_count_delta": 4450,
+      "trade_count_v1": 1108,
+      "trade_count_v2": 5558,
+      "variant": "best_3"
+    },
+    {
+      "pooled_pnl_delta": 157718.0,
+      "pooled_pnl_v1": 31280.000000000004,
+      "pooled_pnl_v2": 188998.0,
+      "selector": "p5",
+      "trade_count_delta": -636,
+      "trade_count_v1": 1985,
+      "trade_count_v2": 1349,
+      "variant": "best_45"
+    },
+    {
+      "pooled_pnl_delta": 249017.0,
+      "pooled_pnl_v1": -7757.999999999999,
+      "pooled_pnl_v2": 241259.0,
+      "selector": "p5",
+      "trade_count_delta": 3121,
+      "trade_count_v1": 1231,
+      "trade_count_v2": 4352,
+      "variant": "best_5"
+    },
+    {
+      "pooled_pnl_delta": 79555.0,
+      "pooled_pnl_v1": 93837.0,
+      "pooled_pnl_v2": 173392.0,
+      "selector": "p5",
+      "trade_count_delta": -515,
+      "trade_count_v1": 1496,
+      "trade_count_v2": 981,
+      "variant": "best_90"
+    },
+    {
+      "pooled_pnl_delta": 39376.0,
+      "pooled_pnl_v1": 117454.0,
+      "pooled_pnl_v2": 156830.0,
+      "selector": "p5",
+      "trade_count_delta": -322,
+      "trade_count_v1": 902,
+      "trade_count_v2": 580,
+      "variant": "best_session"
+    },
+    {
+      "pooled_pnl_delta": -401.0,
+      "pooled_pnl_v1": -6596.0,
+      "pooled_pnl_v2": -6997.0,
+      "selector": "p5",
+      "trade_count_delta": 7,
+      "trade_count_v1": 227,
+      "trade_count_v2": 234,
+      "variant": "first_real_profit_exit"
+    },
+    {
+      "pooled_pnl_delta": 33.0,
+      "pooled_pnl_v1": -7238.0,
+      "pooled_pnl_v2": -7205.0,
+      "selector": "p5",
+      "trade_count_delta": -1,
+      "trade_count_v1": 46,
+      "trade_count_v2": 45,
+      "variant": "hold_to_forced_flat"
+    }
+  ],
+  "scalar_changes": {
+    "distinct_d48_reference_minutes": {
+      "v1": 15350,
+      "v2": 15183,
+      "v2_minus_v1": -167.0
+    },
+    "label_rows_all_governed_candidates": {
+      "v1": 472048,
+      "v2": 460937,
+      "v2_minus_v1": -11111.0
+    },
+    "label_rows_d48_reference": {
+      "v1": 159875,
+      "v2": 159312,
+      "v2_minus_v1": -563.0
+    },
+    "remaining_session_label_coverage": {
+      "v1": 1.0,
+      "v2": 1.0,
+      "v2_minus_v1": 0.0
+    },
+    "session_count": {
+      "v1": 46,
+      "v2": 45,
+      "v2_minus_v1": -1.0
+    }
+  },
+  "schema_version": "Protocol101FT205V1V2ImpactV1",
+  "semantic_changes": [
+    "same-minute entry/exit prices replaced by next-completed-minute fills",
+    "no-bid minutes changed from exclusion/earlier-bid substitution to full-loss states",
+    "exact 15:55 forced-flat valuation replaces latest-earlier executable bid",
+    "the five fold embargo sessions are excluded (46 sessions becomes 45)",
+    "D49 permanently soft-closes new entries when remaining budget cannot fund a $1 premium plus fees"
+  ],
+  "v1_receipt_sha256": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+  "v2_product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a"
+}

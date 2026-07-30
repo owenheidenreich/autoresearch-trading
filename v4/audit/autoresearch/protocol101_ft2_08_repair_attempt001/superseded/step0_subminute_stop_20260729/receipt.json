@@ -1,0 +1,68 @@
+{
+  "assertions": {
+    "authority_sha256_matches_required_value": true,
+    "census_sessions_failed": 46,
+    "census_sessions_tested": 46,
+    "first_executable_quote_after_plus_15s_identifiable": false,
+    "first_executable_quote_after_plus_5s_identifiable": false,
+    "forbidden_fallback_used": false,
+    "global_max_distinct_quote_timestamps_per_contract_event_minute": 1,
+    "global_max_rows_per_contract_event_minute": 1,
+    "normalized_rows_scanned": 10295500,
+    "protected_holdout_or_outer_test_accessed": false,
+    "sessions_failed": 56,
+    "sessions_passed": 0,
+    "wider_sessions_failed": 10,
+    "wider_sessions_tested": 10
+  },
+  "created_at_utc": "2026-07-29T20:19:39Z",
+  "deliverables": {
+    "report.md": "f45a3de029c403a3e1c0da3f8e4b9ed32c91598804d9dbe7127c2b22175f3b07",
+    "step0_data_feasibility.json": "5c829f7399cc00b60dc6988afc463e376f9110ddca89a17c4e1dbc9799a8ad21",
+    "step0_quote_per_minute.csv": "e4a8b27f67bebc93d52cbb93a040df6541ad084ff5bd7ae8d1bd6d88a47d3d0f"
+  },
+  "goal": "FT2-08-REPAIR",
+  "highest_allowed_claim": "STEP 0 found that the normalized corpus lacks the sub-minute quote sequences required by the owner-authorized +5-second fill law; the repair stopped before any contract amendment.",
+  "input_hashes": {
+    "census_manifest": "f77e94e58d3214e490a8d87f888aa92d8b757b028299e533a63b83442df247cc",
+    "consolidated_authority": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "ft2_04_current_receipt": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "ft2_05_current_receipt": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+    "ft2_08_current_receipt": "56885fad09ea7034ce112c356edcce92bad0d9c52e93fb8e32cf66934f5ce518",
+    "ft2_20_joined_review": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3",
+    "ft2_20_receipt": "b7beae089444bdec73fadec1037cbc1abd4bd6e29f1333346615a486164544f5"
+  },
+  "next_action": {
+    "automatic_graph_node": null,
+    "owner_decision_required": true,
+    "permitted_choices_not_authorized_here": [
+      "authorize a recorder-calibrated fill/slippage law",
+      "authorize acquisition and use of sub-minute historical quote data"
+    ]
+  },
+  "node": "design_repair_data_tensor_label",
+  "outcome": "stop_subminute_data_unavailable",
+  "repair_attempt": 1,
+  "repair_budget": 2,
+  "repair_of": {
+    "ft2_04_receipt_sha256": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "ft2_05_receipt_sha256": "9085a09cbc1583973fdb372c78d78568e3fb1baa0fa1d9b42c23b05543ee24de",
+    "ft2_08_receipt_sha256": "56885fad09ea7034ce112c356edcce92bad0d9c52e93fb8e32cf66934f5ce518"
+  },
+  "required_stop_observed": true,
+  "schema_version": "Protocol101FT208RepairAttemptReceiptV1",
+  "side_effects": {
+    "authority_amended": false,
+    "broker_contacted": false,
+    "census_rerun": false,
+    "ft2_04_amended": false,
+    "ft2_05_amended": false,
+    "ft2_08_amended": false,
+    "model_training_or_tuning": false,
+    "outer_test_accessed": false,
+    "paid_compute_used": false,
+    "protected_holdout_accessed": false,
+    "recorder_data_accessed": false,
+    "simulator_v5_source_modified": false
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "schema_version": "Protocol101FT211MultiplicitySpecV1",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "family_principle": "Every selectable research choice is a hypothesis identity. Joint heads and repeated seeds are not separate hypotheses.",
+  "ordered_ledger": {
+    "required_before_stage_evidence": true,
+    "canonical_sort": [
+      "stage_order",
+      "admission_transform_id",
+      "model_family",
+      "candidate_lineage_id",
+      "composer_guardrail_variant_id",
+      "lifecycle_family",
+      "lifecycle_variant_id",
+      "comparison_id"
+    ],
+    "canonical_json": "UTF-8, sorted keys, compact separators, no NaN or Infinity",
+    "sha256_required": true,
+    "failed_and_abandoned_attempts_remain": true,
+    "post_result_addition_or_deletion": "invalid_evidence"
+  },
+  "registered_families": {
+    "feature_admission": {
+      "stage_order": 1,
+      "maximum_preregistered_transforms": 3,
+      "hypothesis_unit": "one canonical-price transform attempt",
+      "controls": [
+        "known-source-positive-control",
+        "known-clean-null-control"
+      ],
+      "hard_components": [
+        "session-block-bootstrap discriminator upper 95% bound below 0.55",
+        "decision-transfer agreement at least 0.99",
+        "no label or opportunity correlated drift",
+        "boundary and stress sanity",
+        "economic materiality"
+      ]
+    },
+    "entry": {
+      "stage_order": 2,
+      "outer_shortlist_candidates_max": 3,
+      "composer_guardrail_anchor_variants": 4,
+      "uncertainty_multiplier_variants": 4,
+      "maximum_selectable_lineages": 48,
+      "hard_comparisons_per_lineage": 2,
+      "maximum_hard_test_statistics": 96,
+      "comparisons": [
+        "candidate_minus_P5_under_identical_safety",
+        "candidate_minus_matched_random_full_ladder"
+      ],
+      "note": "All 16 alpha-by-k variants count for each outer-shortlisted lineage even when inner OOF calibration exposes only one selected setting to outer validation."
+    },
+    "lifecycle": {
+      "stage_order": 3,
+      "model_families": [
+        "transparent_HGB",
+        "neural_or_sequence_challenger"
+      ],
+      "outer_shortlist_candidates_per_family_max": 3,
+      "minimum_lineage_count_before_variants": 6,
+      "required_comparators": [
+        "best_fixed_or_transparent_exit_on_identical_entries",
+        "matched_random_exit",
+        "learned_exit_without_floor"
+      ],
+      "variant_rule": "Every selectable horizon, composer, confidence, and floor variant defined by the later signed lifecycle contract enters the lifecycle ledger. FT2-11 does not invent their count.",
+      "heads_are_hypotheses": false
+    }
+  },
+  "not_hypotheses": [
+    "the five jointly trained entry forecast heads",
+    "the seven registered horizons inside one frozen target family",
+    "three seeds used to test robustness of one lineage",
+    "diagnostics that cannot select, reject, promote, or mutate a candidate",
+    "the four-bucket profile and harvest tripwires"
+  ],
+  "correction": {
+    "method": "synchronized single-step studentized maxT",
+    "resamples": 20000,
+    "familywise_one_sided_alpha": 0.05,
+    "bootstrap_reference": "bootstrap_spec.json",
+    "why": "It preserves cross-candidate and cross-comparator dependence while controlling the familywise probability of a false improvement claim."
+  },
+  "serial_gatekeeping": {
+    "order": [
+      "feature_admission",
+      "entry",
+      "lifecycle",
+      "complete_full_trader"
+    ],
+    "rule": "A later family is tested only after every hard prerequisite family has passed and frozen. At the first true null in this fixed hierarchy, that family's maxT test controls the probability of any false downstream success at 0.05.",
+    "alpha_recycling_or_optional_reordering": false,
+    "future_family_peeking": false,
+    "global_final_audit": "The complete Full Trader audit carries the hashes of every prior family and reruns the applicable candidate contrasts; it may not reopen or delete prior attempts."
+  },
+  "real_candidate_rule": {
+    "adjusted_lower_bound": "strictly greater than zero against both P5 and matched random",
+    "adjusted_one_sided_p": "at most 0.05 against both P5 and matched random",
+    "equality_at_boundary": "fail",
+    "absolute_profit": "diagnostic only",
+    "required_identity": "candidate lineage, all selectable variants, all registered failed attempts, and ordered-ledger SHA-256"
+  },
+  "d1_v2_full_ladder": {
+    "authority_sha256": "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598",
+    "randomizes": [
+      "timing",
+      "call_or_put",
+      "exact_contract"
+    ],
+    "feature_independent": true,
+    "outcome_blind": true,
+    "matching": {
+      "opportunity_set": "same governed fold/session risk set and exact intent budget",
+      "entry_intent_count": "exact",
+      "executed_trade_count_relative_drift_max": 0.05,
+      "call_put_total_variation_max": 0.05,
+      "moneyness_total_variation_max": 0.06,
+      "moneyness_buckets": {
+        "ATM": "canonical distance from ATM slot 10 at most one slot",
+        "NEAR": "distance two through five slots",
+        "WING": "distance greater than five slots"
+      },
+      "mean_executed_premium_relative_drift_max": 0.1,
+      "mean_realized_holding_minutes_relative_drift_max": 0.1,
+      "total_realized_occupancy_relative_drift_max": 0.1
+    },
+    "post_serial_replay_verification": true,
+    "incomplete_matching": "insufficient_evidence",
+    "positive_shuffled_increment": "invalid_evidence_for_real_candidate_selection",
+    "three_dollar_per_trade_equivalence": "precision_diagnostic_only"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": "Protocol101FT204NodeReceiptV3",
+  "graph_id": "protocol101-full-trader-v2",
+  "node_id": "FT2-04-PATH-LABEL-FREEZE",
+  "outcome": "labels_frozen_v2",
+  "created_at_utc": "2026-07-29T20:39:44Z",
+  "producer": "Codex FT2-08-REPAIR resumption",
+  "scope": "owner_authorized_tplus1_no_bid_embargo_repair_definitions_only",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "repair_of": {
+    "receipt_sha256": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
+    "preserved_directory": "superseded/v1_pre_tplus1_20260729/"
+  },
+  "role_counts": {
+    "governed_corpus": 301,
+    "outer_test_union": 225,
+    "protected_holdout": 30,
+    "embargo_union": 5,
+    "census": 45
+  },
+  "intersection_counts": {
+    "outer_test": 0,
+    "protected_holdout": 0,
+    "embargo": 0,
+    "missing_from_expected_census": 0,
+    "extra_in_census": 0
+  },
+  "deliverable_hashes": {
+    "label_spec.json": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
+    "oracle_rules.json": "b435d5fd8e37aca0919196e9f8e4b2d79132e3dd8dca04cc592887e2c6b79ddb",
+    "census_sessions.json": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
+    "intersection_proof.json": "74433f97822a7e2fd49f45acf321654399aadfc5405fb1c00dbdf6f41c51fcc9",
+    "compute_census_outer_test_intersection.py": "152bb61785d9d82e5dddfe34f4eb2037107fc162e078dd01633646df8a65501c",
+    "test_compute_census_intersection.py": "7fcc8b2dbb910c2a1a0b3336baa5e7b79f859f399933b69ae5d3f39bbb0e2415",
+    "report.md": "01cd4f7380916b4f7da2b5e5ec25b040035733cc2e40e1e71b483b4282e007d1"
+  },
+  "source_hashes": {
+    "consolidated_authority_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "consolidated_authority_pre_repair_sha256": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "graph_v2_json_sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "runner_plan_sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",
+    "canonical_processed_session_manifest_sha256": "e4801126f9c8d6ff79c44aebae633c710ce3206161588c4ca0dcc1f703bcea8d",
+    "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
+    "protected_holdout_hash": "29ef78401a422d27875a2bf85b7c75cd05be9649ec8058d82a8984822d53d79e",
+    "serial_simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+  },
+  "assertions": {
+    "buy_decision_t_fills_at_t_plus_1_ask": true,
+    "exit_decision_v_fills_at_v_plus_1_bid": true,
+    "entry_fill_minute_excluded_from_descriptive_path": true,
+    "no_bid_minutes_valued_at_full_loss": true,
+    "forced_flat_uses_exact_1555_boundary": true,
+    "embargo_sessions_excluded": true,
+    "protected_holdout_remains_sealed": true,
+    "no_real_label_values_computed": true,
+    "no_census_statistics_computed": true,
+    "no_model_training_or_tuning": true,
+    "no_simulator_v5_source_change": true,
+    "no_recorder_broker_paid_data_runtime_or_paper_access": true,
+    "superseded_v1_packet_preserved": true
+  },
+  "legal_next": "FT2-05 opportunity census rerun under this exact v2 contract"
+}

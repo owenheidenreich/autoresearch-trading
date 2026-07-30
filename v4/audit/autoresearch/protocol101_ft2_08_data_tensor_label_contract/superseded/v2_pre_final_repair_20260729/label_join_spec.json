@@ -1,0 +1,113 @@
+{
+  "schema_version": "Protocol101FT208LabelJoinSpecV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired_pending_independent_review",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "inherited_label_authority": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json",
+    "sha256": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
+    "receipt_sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+    "definitions_changed_by_ft2_08": false
+  },
+  "join": {
+    "cardinality": "one decision-contract feature row to one decision-contract label row",
+    "keys": [
+      "session_date_yyyymmdd",
+      "decision_time_ns_utc",
+      "expiry_yyyymmdd",
+      "source_neutral_contract_id",
+      "strike_milli_points",
+      "right_code"
+    ],
+    "duplicate_feature_key": "fail_closed",
+    "duplicate_label_key": "fail_closed",
+    "unmatched_feature_row": "retain feature row with label_join_present=false; it is unavailable for supervised loss but remains part of runtime-population accounting",
+    "unmatched_label_row": "fail_closed_and_report_orphan",
+    "slot_indices_used_for_join": false,
+    "join_occurs_after_feature_tensor_completion": true
+  },
+  "timing": {
+    "decision_time": "t",
+    "entry_fill_time": "e=t+1",
+    "entry_price": "executable ask A_e",
+    "first_descriptive_mark": "t+2",
+    "exit_decision_time": "v",
+    "exit_fill_time": "x=v+1",
+    "exit_price": "executable bid B_x",
+    "forced_flat": "exact 15:55 state with zero option value if no executable bid",
+    "no_earlier_quote_substitution": true
+  },
+  "horizons": [
+    {"id": 0, "name": "h3", "nominal_minutes_after_entry_fill": 3},
+    {"id": 1, "name": "h5", "nominal_minutes_after_entry_fill": 5},
+    {"id": 2, "name": "h10", "nominal_minutes_after_entry_fill": 10},
+    {"id": 3, "name": "h20", "nominal_minutes_after_entry_fill": 20},
+    {"id": 4, "name": "h45", "nominal_minutes_after_entry_fill": 45},
+    {"id": 5, "name": "h90", "nominal_minutes_after_entry_fill": 90},
+    {"id": 6, "name": "remaining_session", "boundary": "15:55 ET"}
+  ],
+  "families": [
+    "early_drawdown",
+    "time_to_first_real_profit",
+    "pre_profit_adverse_excursion",
+    "underwater_burden",
+    "profitable_window_stability",
+    "upside"
+  ],
+  "economic_primitives": {
+    "contract_multiplier": 100,
+    "round_trip_fee_overlay_usd": 3,
+    "fee_count": "exactly_once",
+    "dollar_pnl": "(future_bid_or_zero_if_no_bid - entry_fill_ask) * 100 - 3",
+    "return_on_premium": "dollar_pnl / (entry_fill_ask * 100)",
+    "profit_test": "dollar_pnl > 0"
+  },
+  "no_bid": {
+    "primary": "full-loss state with option value zero",
+    "underwater": true,
+    "breaks_profitable_run": true,
+    "may_be_first_profit": false,
+    "forward_fill": false,
+    "prior_bid_substitution": false,
+    "mnar_sensitivity": "materialize a separately named no-bid-excluded diagnostic view and require policy-rank stability before acceptance"
+  },
+  "runtime_label_firewall": {
+    "labels_physically_separate": true,
+    "runtime_loader_can_access_labels": false,
+    "future_bid_or_path_in_feature_tensor": false,
+    "target_valid_available_to_composer": false,
+    "label_join_present_available_to_composer": false,
+    "historical_action_without_labels_partition": "must be bit-identical",
+    "runtime_horizon_availability": "causal clock and model-output availability only; never future target availability",
+    "blocking_rule": "exact membership in the frozen label schema and label partition"
+  },
+  "encoding": {
+    "dollar_values": "int64 cents where exact; float32 model view only after explicit training join",
+    "return_values": "float32",
+    "minute_counts": "int16",
+    "timestamps": "int64 UTC nanoseconds with -1 missing",
+    "booleans": "boolean bitmap",
+    "no_numeric_missing_sentinel_for_model_inputs": true
+  },
+  "rebuild_reproducibility": {
+    "required_hashes": [
+      "normalized option input partitions",
+      "synchronized context partitions",
+      "contract-definition partitions",
+      "builder source",
+      "FT2-04 label spec",
+      "this join spec",
+      "field semantics manifest",
+      "output logical schema"
+    ],
+    "sort_order": [
+      "session_date_yyyymmdd",
+      "decision_time_ns_utc",
+      "expiry_yyyymmdd",
+      "strike_milli_points",
+      "right_code",
+      "source_neutral_contract_id"
+    ],
+    "logical_content_hash": "sha256 over frozen little-endian values, UTF-8 identities, and validity bitmaps in sorted order"
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "schema_version": "Protocol101FT211EvidenceStandardV1",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "primary_entry_claim": "A learned WAIT-or-buy-exact-contract policy improves whole-path entry quality over both P5 under identical safety and a feature-independent exposure-matched random full-ladder policy.",
+  "primary_metric": {
+    "name": "DeltaQ_session",
+    "source": "FT2-10 objective_spec.json",
+    "definition": "Mean over every governed flat-state decision minute in the session of Q_candidate - Q_comparator.",
+    "WAIT_utility": 0.0,
+    "WAIT_rows_in_denominator": true,
+    "quality_families": [
+      "early_drawdown",
+      "time_to_first_real_profit",
+      "pre_profit_adverse_excursion",
+      "underwater_burden",
+      "profitable_window_stability"
+    ],
+    "secondary_upside": "DeltaU_session",
+    "fixed_exit_profit": "report_only_and_cannot_pass_the_entry_gate"
+  },
+  "entry_acceptance_all_required": {
+    "integrity": [
+      "FT2-08 tensor, identity, role, mask, and label contracts reproduce",
+      "FT2-10 feature and target firewall passes",
+      "outer validation never fits, calibrates, selects, stops, or mutates",
+      "ordered multiplicity ledger and every source ledger are hash-valid",
+      "independent auditor recomputes all statistics",
+      "D1 V2 strong shuffle and exposure-matched controls are valid"
+    ],
+    "pooled_improvement": {
+      "candidate_minus_P5": {
+        "multiplicity_adjusted_95_lower_bound": "strictly_greater_than_0",
+        "multiplicity_adjusted_one_sided_p": "less_than_or_equal_to_0.05"
+      },
+      "candidate_minus_matched_random_full_ladder": {
+        "multiplicity_adjusted_95_lower_bound": "strictly_greater_than_0",
+        "multiplicity_adjusted_one_sided_p": "less_than_or_equal_to_0.05"
+      },
+      "DeltaU_point_estimate": "strictly_greater_than_0"
+    },
+    "chronological_folds": {
+      "positive_folds_min": 4,
+      "fold_count": 5,
+      "positive_definition": "DeltaQ point estimate > 0 against both required comparators.",
+      "all_five_positive": "pass_this_component",
+      "bounded_explained_fifth": {
+        "maximum_negative_magnitude": "abs(negative_fold_DeltaQ) <= 0.5 * pooled_positive_DeltaQ",
+        "uncertainty": "the negative fold's unadjusted two-sided 95% interval includes zero",
+        "allowed_explanation_codes": [
+          "sampling_uncertainty",
+          "preregistered_regime_mix",
+          "preregistered_side_mix",
+          "preregistered_market_phase_mix",
+          "mask_or_coverage_mix"
+        ],
+        "explanation_must_be_preregistered_or_mechanical": true,
+        "unknown_or_post_hoc_story": "no_genuine_entry_signal"
+      }
+    },
+    "seed_robustness": {
+      "independent_training_seeds": 3,
+      "every_seed_requires": [
+        "pooled DeltaQ point estimate > 0 against P5",
+        "pooled DeltaQ point estimate > 0 against matched random",
+        "at least 4 of 5 folds positive against both",
+        "G4 and daily/ruin safety pass under the neutral lifecycle"
+      ],
+      "ensemble_or_frozen_aggregate_also_passes_adjusted_inference": true,
+      "one_winning_seed_cannot_promote": true
+    },
+    "metric_robustness": {
+      "five_quality_family_deltas_all_reported": true,
+      "nonnegative_family_point_estimates_min": 4,
+      "significantly_harmful_family_allowed": false,
+      "significantly_harmful_definition": "the unadjusted session-block 95% upper confidence bound is below zero",
+      "DeltaU_point_estimate_positive": true,
+      "single_head_or_upside_only_story_cannot_promote": true
+    },
+    "stratum_robustness": {
+      "registered_dimensions": [
+        "call_or_put",
+        "market_phase",
+        "calendar_month",
+        "training_frozen_volatility_regime"
+      ],
+      "eligible_stratum": "at least 20 sessions and ESS at least 10",
+      "hard_rule": "No eligible stratum may have a session-block 95% upper confidence bound below zero against either required comparator.",
+      "dependency_test": "Recompute pooled adjusted inference after removing each eligible stratum. If every significant pooled result disappears after removal of one stratum, route insufficient_evidence unless the remaining sample itself meets ESS and MDE and proves no effect.",
+      "low_n": "descriptive_only"
+    },
+    "sample_sufficiency": {
+      "bootstrap_spec": "bootstrap_spec.json",
+      "mde_spec": "mde_spec.json",
+      "ESS_per_fold_min": 20,
+      "ESS_pooled_min": 100,
+      "pooled_DeltaQ_MDE_max": 0.05
+    },
+    "fees_and_stress": {
+      "primary_round_trip_fee_dollars": 3.0,
+      "diagnostic_low_fee_dollars": 2.6,
+      "hard_stress_round_trip_fee_dollars": 4.0,
+      "entry_quality": "Primary whole-path inference uses the frozen 3 dollar labels. The 4 dollar rerun must retain positive DeltaQ point estimates against both comparators.",
+      "serial_economics": "G4 and daily/ruin rules must pass at both 3 and 4 dollars."
+    },
+    "signed_safety": {
+      "neutral_entry_safety_lifecycle": "hold every accepted entry to the frozen 15:55 ET forced-flat deadline, using executable bid marks and simulator v5; apply identically to candidate, P5, and matched random",
+      "reason": "Entry quality has no learned exit. The neutral uncapped lifecycle supplies a common serial occupancy and safety ledger without allowing fixed-exit profit to select the entry model.",
+      "one_contract": true,
+      "maximum_open_positions": 1,
+      "daily_realized_loss_stop": "5% of session-starting equity",
+      "G4_v2": {
+        "pooled_fee_adjusted_net_pnl_divided_by_pooled_max_drawdown_min": 1.0,
+        "minimum_equity_each_fold_dollars": 5000.0,
+        "starting_cash_each_fold_dollars": 10000.0
+      },
+      "win_rate": "diagnostic_only",
+      "SPY": "live first-year opportunity-cost benchmark; not an entry-training target"
+    }
+  },
+  "retired_gate_role_mapping": {
+    "G1_profitability": "Replaced for entry acceptance by multiplicity-adjusted whole-path DeltaQ improvement against both P5 and matched random. Fixed-exit absolute PnL cannot pass G1. Signed G4 still hard-checks serial economics under the common neutral lifecycle.",
+    "G2_no_skill_null": "D1 V2 full-ladder strong shuffle plus feature-independent matched-random timing, side, and exact-contract control with the signed exposure table and adjusted paired inference.",
+    "G3_heuristic_baseline": "P5 VWAP-side nearest-ATM under identical safety is the mandatory learned-policy benchmark, never an upstream filter or final architecture.",
+    "G5_seed_robustness": "Three independent seeds; every seed must be directionally positive and 4-of-5-fold robust, and the frozen aggregate must pass adjusted inference.",
+    "G6_era_guard": "At least 4 of 5 chronological folds positive, a bounded explained fifth, and no credible dependency on one side, phase, month, or volatility regime.",
+    "G7_frequency": "No hard trades-per-day minimum or maximum. High frequency must pay its fees and pass DeltaQ/G4 at stress; rare trading routes insufficient_evidence when ESS or MDE is inadequate.",
+    "G8_calibration": "Remains report-only under the signed amendment unless confidence controls WAIT/ENTER. The separately preregistered action-conditioned gate in FT2-10 remains inactive until smoke-tested, independently audited, and owner-signed."
+  },
+  "frequency_economics": {
+    "hard_daily_trade_cap": null,
+    "hard_average_trade_band": null,
+    "required_reports": [
+      "trades and entry intents per session, fold, side, and phase",
+      "gross and net fee drag",
+      "incremental DeltaQ and serial PnL by session trade-count quantile",
+      "occupancy and skipped-opportunity burden",
+      "D48 premium-cap and D49 daily-budget blocks"
+    ],
+    "high_frequency_failure": "Only through failed after-fee whole-path evidence, 4 dollar stress, G4, daily stop, or ruin rule; frequency alone never fails.",
+    "rare_frequency": "insufficient_evidence when required ESS, paired control matching, or MDE cannot be achieved."
+  },
+  "terminal_classification_precedence": [
+    "invalid_evidence",
+    "insufficient_evidence",
+    "no_genuine_entry_signal",
+    "entry_evidence_pass"
+  ],
+  "terminal_boundaries": {
+    "invalid_evidence": {
+      "definition": "The evidence cannot answer the scientific question because causality, identity, roles, masks, controls, hashes, replay, or independent reproduction are wrong or unverifiable.",
+      "examples": [
+        "feature or target leakage",
+        "outer validation fed back into fitting or selection",
+        "duplicate or missing decision, contract, slot, session, or fold identity",
+        "D1 matching table fails after replay",
+        "strong shuffled model shows a significant adjusted positive increment over matched random",
+        "producer summary cannot be recomputed",
+        "wrong fee, action space, simulator, or WAIT denominator"
+      ],
+      "scientific_conclusion_allowed": false
+    },
+    "insufficient_evidence": {
+      "definition": "The machinery is valid, but sampling precision cannot distinguish zero from the smallest meaningful effect.",
+      "hard_conditions_any": [
+        "pooled ESS < 100",
+        "any required fold ESS < 20",
+        "actual pooled DeltaQ MDE > 0.05",
+        "paired matched-random control cannot meet exposure matching despite valid outcome-blind attempts",
+        "for a required contrast, adjusted lower bound <= 0 and adjusted upper bound >= 0.05",
+        "a required fold, seed, stratum, or tripwire denominator is below its frozen minimum and the missing evidence could change the route"
+      ],
+      "may_be_numerically_profitable": true,
+      "automatic_rejection": false
+    },
+    "no_genuine_entry_signal": {
+      "definition": "Evidence is valid and sufficiently precise, but the candidate does not meet the balanced entry claim under signed safety.",
+      "hard_conditions_any": [
+        "for a required DeltaQ contrast, adjusted upper 95% bound < 0.05 while the adjusted lower bound is <= 0",
+        "a required contrast point estimate <= 0 and its adjusted upper bound < 0.05",
+        "fewer than 4 of 5 folds are positive with sufficient fold evidence",
+        "the fifth fold is not bounded or has no permitted explanation",
+        "one or more seeds fail the frozen directional or fold rule with sufficient evidence",
+        "fewer than 4 of 5 quality-family point estimates are nonnegative",
+        "a quality family is significantly harmful",
+        "an eligible side, phase, month, or regime is credibly negative",
+        "DeltaU point estimate <= 0",
+        "G4, 5% daily stop, one-position, 5000 dollar ruin floor, or 4 dollar fee stress fails"
+      ],
+      "absolute_profit_cannot_override": true
+    },
+    "entry_evidence_pass": {
+      "definition": "Every integrity, pooled improvement, fold, seed, metric, stratum, MDE, fee-stress, D1, G4, daily, and ruin requirement passes.",
+      "next_claim": "The entry candidate may be frozen for the next graph node; it is not a Full Trader and is not paper-ready."
+    }
+  },
+  "tripwires": {
+    "reference": "tripwire_spec.json",
+    "owner_decision_preempts_normal_success": true,
+    "cannot_be_optimized": true
+  },
+  "reproducibility": {
+    "required_hash_chain": [
+      "product authority",
+      "graph",
+      "FT2-04 labels and oracle rules",
+      "FT2-05 census citations",
+      "FT2-08 data/tensor/label contract and receipt",
+      "FT2-10 entry-science contract and receipt",
+      "ordered multiplicity ledger",
+      "fold/session/decision/contract ledgers",
+      "model, calibrator, composer, and control artifacts",
+      "simulator and fee configuration",
+      "bootstrap specification and derived seed",
+      "producer packet",
+      "independent auditor packet"
+    ],
+    "independent_auditor": "Rehash inputs and recompute all decision, session, bootstrap, multiplicity, G4, profile, and terminal metrics from source ledgers in a separate immutable output directory.",
+    "producer_derived_metric_trusted_without_recomputation": false
+  }
+}

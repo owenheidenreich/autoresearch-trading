@@ -1,0 +1,73 @@
+{
+  "schema_version": "Protocol101FT208ReplayAuthorityV5_1SpecV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "design_only_implementation_deferred_to_ft2_30_ft2_31",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "intent_fill_recheck_law": {
+    "path": "intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "base_simulator": {
+    "path": "v4/model/protocol101_serial_simulator_v5.py",
+    "sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+    "modified_by_ft2_08_repair": false
+  },
+  "required_v5_1_behavior": {
+    "entry_intent": "compute floor, affordability, D48, and D49 masks from A_t and the policy's causal ledger only; no actual t+1 field may enter action selection",
+    "entry_commit": "reserve the one-position slot at decision t for the one exact selected identity",
+    "entry_fill": "at t+1 independently recheck exact identity/freshness, $1 premium floor, affordability, D48, and D49 against the actual executable ask; on pass charge that ask and the active fee reserve",
+    "entry_failure": "any failed t+1 recheck means no position, no premium, no fee, no PnL, an immutable rejected-fill event, no alternative substitution, and return to flat no earlier than t+2",
+    "exit_fill": "EXIT decision v realizes at actual v+1 executable bid",
+    "occupancy": "open from successful t+1 fill until realized v+1 exit fill or exact 15:55 forced flat",
+    "forced_flat": "exact 15:55 state, zero option value when no executable bid, no earlier-bid substitution, no duplicate 15:55 exit",
+    "d48": "enforced independently at intent time from A_t and again at fill time from A_(t+1), using integer-cent ledger primitives",
+    "d49": "enforced independently at intent and fill time; soft close uses the current-ladder floor-candidate existence predicate and the active fee-path threshold computed from $1 premium plus fee",
+    "daily_stop": "signed realized-only basis",
+    "complete_ladder": "flat-state incomplete ladder permits WAIT only",
+    "open_contract": "uses dedicated identity-keyed open-position state even outside the recentered ladder"
+  },
+  "fee_trajectories": {
+    "three_dollar": "complete causal replay with $3 round-trip reserve and economics",
+    "four_dollar": "separate complete causal replay with $4 reserve, $104 floor threshold, and economics",
+    "computed_floor_thresholds_cents": {
+      "fee_3": 10300,
+      "fee_4": 10400
+    },
+    "forbidden": "metrics-only subtraction of an extra dollar after replay",
+    "reason": "the extra fee can change D48, D49, cash, soft-close timing, and later eligibility"
+  },
+  "independent_replay_assertions": [
+    "reject an actual t+1 fill above the D48 cap even if the causal t intent mask passed",
+    "reject an actual t+1 fill exceeding remaining D49 budget even if the causal t intent mask passed",
+    "reject an actual t+1 fill below the $1 premium floor even if the causal t intent mask passed",
+    "book no position, premium, fee, or PnL for every rejected fill",
+    "recompute t intent masks and selected-contract t+1 rechecks from the account ledger rather than trusting upstream booleans",
+    "fail when current ladder is incomplete while flat",
+    "preserve open-contract execution outside current ladder",
+    "produce separate $3 and $4 trade identities, ledger paths, and hashes",
+    "release occupancy at actual exit fill rather than decision or deadline",
+    "never use label target_valid or future availability to choose a runtime action"
+  ],
+  "required_boundary_fixtures": [
+    "D48 exactly equal and one cent above",
+    "D49 exactly equal and one cent above",
+    "fee_3 floor cost exactly 10300 cents and one cent below",
+    "fee_4 floor cost exactly 10400 cents and one cent below",
+    "no otherwise-eligible >=$1 current-ladder contract with remaining budget above $104",
+    "loss then recovery",
+    "15:29 BUY decision and 15:30 fill",
+    "15:54 EXIT decision and 15:55 fill",
+    "15:54 EXIT plus forced-flat nonduplication",
+    "no t+1 ask",
+    "t+1 ask below $1 after a legal $1-or-more intent",
+    "t intent passes but t+1 ask fails D48",
+    "t intent passes but t+1 ask fails D49",
+    "rejected fill has zero position, premium, fee, and PnL",
+    "no t+1 exit bid",
+    "no 15:55 bid",
+    "one missing ladder slot",
+    "open contract outside recentered ladder",
+    "$3 trajectory eligible while $4 trajectory becomes ineligible"
+  ],
+  "activation_gate": "No implementation may become replay authority until FT2-30 producer tests and FT2-31 independent acceptance both pass with immutable hashes."
+}

@@ -1,0 +1,256 @@
+{
+  "schema_version": "Protocol101FT220ParallelDesignReviewRerunReceiptV1",
+  "created_at_utc": "2026-07-29T23:52:38Z",
+  "graph_id": "protocol101-full-trader-v2",
+  "node_id": "FT2-20-PARALLEL-DESIGN-REVIEW",
+  "rerun_id": "rerun001",
+  "outcome": "data_tensor_label_defect",
+  "next": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "additional_defect_outcomes": [
+    {
+      "outcome": "entry_science_defect",
+      "next": "FT2-10-ENTRY-SCIENCE-CONTRACT"
+    },
+    {
+      "outcome": "evidence_statistics_defect",
+      "next": "FT2-11-EVIDENCE-STATISTICS-CONTRACT"
+    }
+  ],
+  "authority_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "highest_allowed_claim": "The repaired three-contract set has been independently re-reviewed; the graph routes to named contract repair.",
+  "goal_objective": {
+    "path": "/Users/gduby/.codex/attachments/31f1d31e-7ec8-4196-96b1-f14cafb39e23/goal-objective.md",
+    "sha256": "83ff62fc844665209c9c3e4cac6ad46b3fa5a6b627eb6819f94bac010a23225c"
+  },
+  "review_target_receipts": {
+    "FT2-04-v2": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
+      "sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+      "outcome": "labels_frozen_v2",
+      "top_level_declared_deliverables_verified": 7
+    },
+    "FT2-05-v2": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "sha256": "0cec80e1ce029bcbec200c991f9183a9b05f1e21b28016fe944fee0ae029b33a",
+      "outcome": "feasible",
+      "top_level_declared_deliverables_verified": 24
+    },
+    "FT2-08-v2": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+      "sha256": "584612af00f8e04b9b903f1fb4b56396a3dc950bd21f18718fa72fd4ff8dfb9c",
+      "outcome": "producer_repaired",
+      "top_level_declared_deliverables_verified": 12
+    },
+    "FT2-10-v2": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json",
+      "sha256": "5108b909740fad187c4c0349196243ed47aa1cd2785a46e9f5c7c6f2f336bda8",
+      "outcome": "producer_repaired",
+      "top_level_declared_deliverables_verified": 7
+    },
+    "FT2-11-v2": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json",
+      "sha256": "61746ee2c71f279c4ae5c864e8bd8ed242d0281cb4084abeb7e0fd0a274d7871",
+      "outcome": "producer_repaired",
+      "top_level_declared_deliverables_verified": 10
+    }
+  },
+  "repair_budgets": {
+    "design_repair_data_tensor_label": {
+      "total": 2,
+      "used": 1,
+      "remaining": 1,
+      "routed_attempt": 2,
+      "primary": true
+    },
+    "design_repair_entry_science": {
+      "total": 2,
+      "used": 1,
+      "remaining": 1,
+      "routed_attempt": 2,
+      "primary": false
+    },
+    "design_repair_evidence_statistics": {
+      "total": 2,
+      "used": 1,
+      "remaining": 1,
+      "routed_attempt": 2,
+      "primary": false
+    },
+    "exhaustion_rule": "If an owner cannot repair its recorded set in its one remaining attempt, or a blocking defect persists after that attempt, route irreducible_design_defect -> STOP-REDESIGN-REQUIRED."
+  },
+  "original_finding_verification": {
+    "seat1_trading_realism": {
+      "original_findings": 7,
+      "ANSWERED": 6,
+      "PARTIALLY_ANSWERED": 1,
+      "UNANSWERED": 0
+    },
+    "seat2_ml_statistics": {
+      "original_findings": 11,
+      "ANSWERED": 7,
+      "PARTIALLY_ANSWERED": 4,
+      "UNANSWERED": 0
+    },
+    "seat3_live_parity": {
+      "original_findings": 10,
+      "ANSWERED": 8,
+      "PARTIALLY_ANSWERED": 2,
+      "UNANSWERED": 0
+    },
+    "joined": {
+      "original_findings": 28,
+      "ANSWERED": 21,
+      "PARTIALLY_ANSWERED": 7,
+      "UNANSWERED": 0
+    }
+  },
+  "fresh_finding_counts": {
+    "seat1_trading_realism": {
+      "BLOCKING": 1,
+      "MATERIAL": 2,
+      "MINOR": 0
+    },
+    "seat2_ml_statistics": {
+      "BLOCKING": 4,
+      "MATERIAL": 2,
+      "MINOR": 1
+    },
+    "seat3_live_parity": {
+      "BLOCKING": 3,
+      "MATERIAL": 5,
+      "MINOR": 1
+    },
+    "joined": {
+      "BLOCKING": 8,
+      "MATERIAL": 9,
+      "MINOR": 2,
+      "exact_duplicates_removed": 0
+    }
+  },
+  "convergence": [
+    {
+      "finding": "Decision-time D48/D49 masks use the future t+1 ask.",
+      "seats": [
+        "seat1_trading_realism",
+        "seat2_ml_statistics",
+        "seat3_live_parity"
+      ],
+      "highest_severity": "BLOCKING",
+      "primary_owner": "FT2-08-DATA-TENSOR-LABEL-CONTRACT"
+    },
+    {
+      "finding": "The D49 soft-close predicate does not implement signed A3 across the eligible ladder and fee paths.",
+      "seats": [
+        "seat1_trading_realism",
+        "seat2_ml_statistics",
+        "seat3_live_parity"
+      ],
+      "seat_severities_preserved": {
+        "seat1_trading_realism": "MATERIAL",
+        "seat2_ml_statistics": "BLOCKING",
+        "seat3_live_parity": "BLOCKING"
+      },
+      "highest_severity": "BLOCKING",
+      "primary_owner": "FT2-08-DATA-TENSOR-LABEL-CONTRACT"
+    }
+  ],
+  "isolation": {
+    "harness": "collaboration_fresh_agent_sessions",
+    "all_dispatched_before_any_completed": true,
+    "all_observed_running_concurrently_before_first_completion": true,
+    "parent_context_forked": false,
+    "fork_turns": "none",
+    "identical_evidence_allowlist": true,
+    "identical_producer_disclosure": true,
+    "controller_opened_seat_outputs_only_after_all_completed": true,
+    "cross_seat_output_physically_present_before_all_completed": true,
+    "cross_seat_output_inspected_as_reported": false,
+    "perfect_isolation_claimed_for_entire_run": false,
+    "imperfection": "First, completed reports were persisted directly to the shared workspace while later seats were still running, so the harness did not provide physical file invisibility; later seats explicitly report they did not inspect other rerun outputs. Second, Seat 1 disclosed one recursively scoped search that could traverse conservatively listed superseded files; it reported no nested match, no intentional inspection or citation of nested text, and no influence on findings. Seats 2 and 3 reported perfect substantive isolation under their prompts.",
+    "reviewers": [
+      {
+        "seat": "trading_realism",
+        "agent_task": "/root/ft2_20_rerun_seat1",
+        "fresh_no_history_session": true,
+        "output_file": "seat1_trading_realism.md",
+        "output_sha256": "8245e8d6674c49280b1929a89c6e8c7857f85c4a7c525a3958e65c829992f307",
+        "isolation_report": "substantively independent; procedurally tainted by disclosed recursive search"
+      },
+      {
+        "seat": "ml_statistics",
+        "agent_task": "/root/ft2_20_rerun_seat2",
+        "fresh_no_history_session": true,
+        "output_file": "seat2_ml_statistics.md",
+        "output_sha256": "00ef0c3aabea30c8d3beedfe4d58ec8e3e10c68003420583b7bf4242203dde2e",
+        "isolation_report": "perfect under the stated definition"
+      },
+      {
+        "seat": "live_parity",
+        "agent_task": "/root/ft2_20_rerun_seat3",
+        "fresh_no_history_session": true,
+        "output_file": "seat3_live_parity.md",
+        "output_sha256": "446f77e46c738755ab6b2002dd52f0cdf0ced8978db1f8e9de9dc17494ab4be5",
+        "isolation_report": "perfect for substantive evidence"
+      }
+    ],
+    "actual_files_opened": "Recorded verbatim in each seat file."
+  },
+  "deliverable_hashes": {
+    "seat1_trading_realism.md": "8245e8d6674c49280b1929a89c6e8c7857f85c4a7c525a3958e65c829992f307",
+    "seat2_ml_statistics.md": "00ef0c3aabea30c8d3beedfe4d58ec8e3e10c68003420583b7bf4242203dde2e",
+    "seat3_live_parity.md": "446f77e46c738755ab6b2002dd52f0cdf0ced8978db1f8e9de9dc17494ab4be5",
+    "joined_review.md": "068fd6e7f49362d69ffaa935abd1fc043a62251f2c1ef6922a62d9416265dc4a"
+  },
+  "context_hashes": {
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_TRADER_CHARTER.md": "3dbc1cf45e2200b7fd789c92be7e927c714b476b4b45aec95b5e0d9686c1ed66",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_G4_HOLDOUT_REVISION_2026_07_19.md": "ff554ef5dd34086cd09954b906bbb5ce8455fa467776ae83906b01f80d565da5",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_G8_CALIBRATION_REVISION_2026_07_26.md": "ac2cdbd9dabf8daa36aa53b8736d9691b8569b6f5b2b810d5a56707702465bf3",
+    "v4/docs/protocol101/training/contracts/PROTOCOL101_D1_NEGATIVE_CONTROL_AND_INCREMENTAL_EDGE_AMENDMENT_2026_07_28.md": "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598",
+    "v4/docs/protocol101/synchronization/contracts/PROTOCOL101_SCOPED_SYNCHRONIZATION_DECISION_2026_07_25.md": "5c5a44e6bb4053276ef60b710a3788d1ee5ed9930a0aa8f10a4f45bbbe31417d",
+    "v4/model/protocol101_serial_simulator_v5.py": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+    "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/findings_crosswalk.json": "0bab5217c3e4e8b6fbf308439cddede494224a86a1a1b9b26ed583816c647627",
+    "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/findings_crosswalk.json": "a447ab5f19e64cc6430e284f9b00bdc57e6344df88aa37c1c036a0e65e1242b6",
+    "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/findings_crosswalk.json": "17e465306d31a349cb986604afb8cd310d940235483b36fbd5286c09d1f59b61",
+    "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/joined_review.md": "8825972e3ca99b7ee1950935e37a341699e7c78e7de6b93170270230ba50c0c3",
+    "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/seat1_trading_realism.md": "6eeede9b2369e5cadbd2b3c799b95cf0bf7c709a38d86083876d24827c9f3e94",
+    "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/seat2_ml_statistics.md": "e76be3034b5141efd67e5d8fb3f4fcc133aeeaaa10d0f11c7e3cd905989772e0",
+    "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review/seat3_live_parity.md": "f72af16953498c1b3849b9f0506f0525ca36054ec56e4ce5c5e90f27ed42420c"
+  },
+  "assertions": {
+    "authority_hash_verified": true,
+    "five_target_receipts_verified": true,
+    "all_top_level_declared_target_deliverable_hashes_reproduced": true,
+    "three_fresh_no_history_sessions_used": true,
+    "all_seats_dispatched_before_any_completed": true,
+    "seat_files_opened_by_controller_only_after_all_completed": true,
+    "every_original_domain_finding_verified": true,
+    "fresh_scan_completed_by_all_seats": true,
+    "seat_outputs_preserved_verbatim": true,
+    "no_severity_downgraded": true,
+    "convergent_findings_not_deduplicated": true,
+    "primary_outcome_is_legal_graph_edge": true,
+    "additional_outcomes_are_legal_graph_edges": true,
+    "one_repair_attempt_remaining_per_contract": true,
+    "FT2_21_not_started": true
+  },
+  "side_effects": {
+    "reviewed_contract_edited": false,
+    "frozen_artifact_edited": false,
+    "graph_edited": false,
+    "finding_resolved": false,
+    "training_or_fitting": false,
+    "new_session_statistics": false,
+    "FT2_21_started": false,
+    "repair_started": false,
+    "protected_resource_access": false,
+    "recorder_or_broker_access": false,
+    "paid_data_or_compute": false,
+    "runtime_or_promotion_change": false
+  },
+  "self_hash": {
+    "included_in_deliverable_hashes": false,
+    "reason": "The receipt cannot contain its own SHA-256 without a self-reference."
+  }
+}

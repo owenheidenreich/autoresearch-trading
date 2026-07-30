@@ -1,0 +1,72 @@
+{
+  "attempt": 2,
+  "census_v3": {
+    "impact_note_path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v2_v3_impact.json",
+    "impact_note_sha256": "5341e2ead4ff6e0d4bbdbb59ba6312180c457e41a89ab6e8dfc7b28796d9f9a1",
+    "receipt_path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+    "receipt_sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
+  },
+  "child_receipts": {
+    "FT2-08": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+      "schema_version": "Protocol101FT208NodeReceiptV3",
+      "sha256": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c"
+    },
+    "FT2-10": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json",
+      "schema_version": "Protocol101FT210NodeReceiptV3",
+      "sha256": "c04a591fd3034a2caba756e8f9dc1d7f5c24c397170894b0b6b0eca7a083fa6f"
+    },
+    "FT2-11": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json",
+      "schema_version": "Protocol101FT211NodeReceiptV3",
+      "sha256": "bdb52c4f9178da1cab75ec4a80bd13c1db8c0074c1c398f380729d1df80c5ef9"
+    }
+  },
+  "consistency_verification": {
+    "check_count": 26,
+    "checker_path": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/check_cross_contract_consistency.py",
+    "checker_sha256": "7b327ba8956ef03c581a4e4e390440a22d92c962cbf4e564ac8a876978a38d04",
+    "failed_checks": [],
+    "outcome": "pass",
+    "output_path": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/consistency_checker_output.json",
+    "output_sha256": "64a051d401381deddbdea34ec6b439d6bfe15d399e1b3461c79a5243e5b86664"
+  },
+  "fixed_inputs": {
+    "canonical_matched_random_generator_sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+    "consolidated_authority_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "rerun001_joined_review_sha256": "068fd6e7f49362d69ffaa935abd1fc043a62251f2c1ef6922a62d9416265dc4a",
+    "rerun001_receipt_sha256": "8338b51ecd1ba33d33ed9fa6635456f71092745cdd62559857a9bbca280c0abc",
+    "simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+  },
+  "goal": "FT2-FINAL-REPAIR",
+  "highest_allowed_claim": "All rerun001 findings are answered under one coordinated repair with machine-verified cross-contract consistency; the final re-review is unblocked.",
+  "next_goal": {
+    "goal": "FT2-20",
+    "phase": "final re-review with fresh seats",
+    "status": "not_started"
+  },
+  "outcome": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "schema_version": "Protocol101FT2FinalRepairAggregateReceiptV1",
+  "side_effects": {
+    "broker_access": false,
+    "final_re_review_started": false,
+    "new_session_statistics_beyond_census_v3": false,
+    "paid_compute": false,
+    "protected_data_access": false,
+    "recorder_access": false,
+    "simulator_v5_modified": false,
+    "training_or_fitting": false
+  },
+  "unified_findings_crosswalk": {
+    "answered_count": 47,
+    "finding_count": 47,
+    "partially_answered_count": 0,
+    "path": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/findings_crosswalk.json",
+    "rebutted_count": 0,
+    "sha256": "78f69b89e0857c30af6f354cd8a26db923f075c9700f01d3971012462d7fa16d",
+    "unanswered_count": 0
+  }
+}

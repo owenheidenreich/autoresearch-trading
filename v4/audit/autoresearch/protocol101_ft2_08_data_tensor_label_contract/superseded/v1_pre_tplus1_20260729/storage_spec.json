@@ -1,0 +1,158 @@
+{
+  "schema_version": "Protocol101FT208StorageSpecV1",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "frozen_design",
+  "product_contract_hash": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+  "logical_root": "protocol101_full_trader_tensor_store_v1",
+  "contract_path_key": [
+    "session_date_yyyymmdd",
+    "expiry_yyyymmdd",
+    "contract_id_utf8",
+    "strike_milli_points",
+    "right_code"
+  ],
+  "decision_key": [
+    "session_date_yyyymmdd",
+    "decision_time_ns_utc",
+    "position_state"
+  ],
+  "label_join_key": [
+    "session_date_yyyymmdd",
+    "decision_time_ns_utc",
+    "expiry_yyyymmdd",
+    "contract_id_utf8",
+    "strike_milli_points",
+    "right_code"
+  ],
+  "key_validation": {
+    "contract_id_decomposition_must_match_redundant_fields": true,
+    "duplicate_contract_path_key": "fail_closed",
+    "duplicate_decision_key": "fail_closed",
+    "duplicate_label_join_key": "fail_closed",
+    "canonical_slot_index_is_identity": false
+  },
+  "partitions": [
+    {
+      "name": "manifest",
+      "path_template": "manifest/",
+      "purpose": "schema, input, code, partition, and logical-content hashes"
+    },
+    {
+      "name": "identity_dictionary",
+      "path_template": "identity_dictionary/session={session_date_yyyymmdd}/",
+      "purpose": "stable exact contract-id UTF-8 dictionary and redundant identity fields"
+    },
+    {
+      "name": "market_context",
+      "path_template": "market_context/session={session_date_yyyymmdd}/",
+      "purpose": "one copy of each causal synchronized market-context minute"
+    },
+    {
+      "name": "contract_paths",
+      "path_template": "contract_paths/session={session_date_yyyymmdd}/expiry={expiry_yyyymmdd}/right={right_code}/",
+      "purpose": "one copy of each exact contract-minute causal path"
+    },
+    {
+      "name": "flat_decisions",
+      "path_template": "flat_decisions/session={session_date_yyyymmdd}/",
+      "purpose": "09:32 through 15:30 flat decision identities and current ladder maps"
+    },
+    {
+      "name": "open_state_scaffolds",
+      "path_template": "open_state_scaffolds/session={session_date_yyyymmdd}/",
+      "purpose": "15:31 through 15:55 source-row scaffolds, independent of a selected entry policy"
+    },
+    {
+      "name": "labels",
+      "path_template": "labels/session={session_date_yyyymmdd}/",
+      "purpose": "physically separate FT2-04 family targets keyed to contract-minutes"
+    },
+    {
+      "name": "checkpoints",
+      "path_template": "checkpoints/node={builder_node}/session={session_date_yyyymmdd}/",
+      "purpose": "atomic resume state and completion markers"
+    }
+  ],
+  "deduplication": {
+    "unit": "exact contract-minute and exact market-context-minute",
+    "window_materialization": "never persist repeated 90 by 42 decision windows",
+    "batch_assembly": "join the current ladder identity map to shared contract paths and slice the trailing 90 same-session minutes",
+    "cross_session_history": false,
+    "expected_benefit_is_planning_only": "authority estimates 10x to 20x path reuse; FT2-30 must measure actuals"
+  },
+  "ordering": {
+    "session": "ascending",
+    "decision_time_ns_utc": "ascending",
+    "contract_identity": [
+      "expiry_yyyymmdd ascending",
+      "strike_milli_points ascending",
+      "right_code ascending",
+      "contract_id_utf8 ascending"
+    ],
+    "history_axis": "oldest_to_newest",
+    "ladder_axis": "strike_idx major then right_idx"
+  },
+  "atomic_commit": {
+    "write_target": "temporary sibling partition",
+    "required_pre_commit_checks": [
+      "schema hash match",
+      "input hash match",
+      "builder code hash present",
+      "unique keys",
+      "causal timestamp checks",
+      "row count recorded",
+      "logical-content hash recorded"
+    ],
+    "commit": "atomic rename after every required check passes",
+    "append_in_place": false
+  },
+  "resume": {
+    "skip_completed_partition_only_if_all_match": [
+      "input manifest hash",
+      "source partition hashes",
+      "builder code hash",
+      "tensor schema hash",
+      "storage schema hash",
+      "label spec hash when labels are built",
+      "row count",
+      "logical-content hash",
+      "completion marker"
+    ],
+    "mismatch_action": "discard only the mismatched temporary/derived partition and rebuild it",
+    "partial_partition_action": "rebuild",
+    "raw_source_deletion": false,
+    "checkpoint_granularity": "session"
+  },
+  "precision": {
+    "session_date_yyyymmdd": "int32",
+    "expiry_yyyymmdd": "int32",
+    "timestamp_ns_utc": "int64",
+    "strike_milli_points": "int32",
+    "right_code": "uint8",
+    "contract_dictionary_index": "int32",
+    "option_price": "int32 cents plus uint8 tick regime",
+    "spx_level": "float32",
+    "internal_greeks": "float32",
+    "normalized_features": "float32",
+    "path_differences": "float32",
+    "masks": "boolean bitmap",
+    "float16": "forbidden pending FT2-30 equivalence acceptance"
+  },
+  "hashing": {
+    "algorithm": "sha256",
+    "manifest": "single packet and per-store manifest with sorted relative paths",
+    "json_canonicalization": "UTF-8, sorted object keys, separators comma/colon, no NaN or Infinity",
+    "logical_table_hash": "fixed schema and column order; rows in frozen key order; little-endian fixed-width values plus validity bitmaps",
+    "parquet_byte_hash_is_authoritative_logical_hash": false,
+    "reason": "logical reproducibility must not depend on compression or writer metadata"
+  },
+  "model_firewall": {
+    "runtime_feature_reader_can_open_labels_partition": false,
+    "raw_bid_ask_mid_model_input": false,
+    "raw_vendor_greeks_model_input": false,
+    "audit_exact_arrays_model_input": false,
+    "masks_are_alpha_features": false,
+    "explicit_training_join_required": true
+  },
+  "synthetic_only_in_ft2_08": true
+}

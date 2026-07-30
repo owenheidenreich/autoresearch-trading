@@ -1,0 +1,154 @@
+{
+  "schema_version": "Protocol101FT211TripwireSpecV2",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "producer_repaired_design",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "general_law": {
+    "optimization_target": false,
+    "model_selection_score": false,
+    "automatic_pass": false,
+    "automatic_candidate_rejection": false,
+    "trigger_terminal": "owner_decision_required",
+    "evaluated_at_every_freeze_gate": [
+      "entry_shortlist_freeze",
+      "entry_component_freeze",
+      "lifecycle_freeze",
+      "combined_FT2_80_freeze"
+    ],
+    "population": "FT2-10 complete neutral-lifecycle serial population, including all governed sessions and structural WAIT/PENDING/OCCUPIED rows",
+    "fees": [
+      "$3 causal trajectory",
+      "$4 causal trajectory"
+    ],
+    "cluster": "session",
+    "intervals": "bootstrap_spec.json conservative {3,5,8} session-block envelope",
+    "tripwire_route_preempts_success": true
+  },
+  "relative_capture_tripwire": {
+    "owner_decision": "tail guard: relative-capture tripwire",
+    "selected_arm": "the composer alpha arm proposed for the applicable freeze",
+    "control_arm": "alpha=0.0 no-screen arm with the same model, k, calibrators, physical/safety masks, action gate, serial state machine, sessions, seed or ensemble, and fee trajectory",
+    "big_win_definition": "FT2-04 v2 remaining-session MFE fee-adjusted return on entry premium is at least +0.40 for a successfully filled serial entry",
+    "primary_metric": {
+      "name": "big_win_incidence_per_governed_session",
+      "formula": "number of successfully filled entries meeting big_win_definition divided by all governed sessions",
+      "relative_capture": "selected_arm_incidence/alpha0_arm_incidence",
+      "tripwire": "relative_capture < 0.50"
+    },
+    "required_secondary_reports": {
+      "big_win_opportunity_dollars_per_governed_session": "sum max(0,remaining-session MFE fee-adjusted dollars) for big-win entries divided by all governed sessions",
+      "positive_neutral_lifecycle_PnL_concentration": "sum max(0,neutral-lifecycle PnL dollars) for big-win-path entries divided by sum max(0,neutral-lifecycle PnL dollars) for all entries",
+      "relative_ratios": "selected divided by alpha0 for each secondary metric"
+    },
+    "uncertainty": {
+      "report": "point ratio plus conservative session-cluster 95% interval for each primary and secondary relative metric",
+      "trigger_uses": "the frozen point relative-capture rule; intervals describe uncertainty and cannot suppress a point breach",
+      "zero_alpha0_denominator": "insufficient_tail_evidence",
+      "missing_selected_denominator": "invalid_evidence"
+    },
+    "scope": "Every serious candidate, fold, seed, frozen ensemble, fee trajectory, and no-bid sensitivity convention.",
+    "breach": "owner_decision_required",
+    "cannot_silently_drop_arm": true
+  },
+  "four_bucket_profile_tripwire": {
+    "authority": "D50 and signed Trader Charter",
+    "evaluation_unit": "successfully filled serial trade under the applicable complete policy ledger",
+    "return_definition": "fee-adjusted neutral-lifecycle net PnL divided by entry premium at risk",
+    "buckets": [
+      {
+        "name": "big_win",
+        "rule": "return >= 0.40"
+      },
+      {
+        "name": "small_win_or_scratch",
+        "rule": "-0.05 <= return < 0.40"
+      },
+      {
+        "name": "small_loss",
+        "rule": "-0.30 < return < -0.05"
+      },
+      {
+        "name": "big_loss",
+        "rule": "return <= -0.30"
+      }
+    ],
+    "boundary_ownership": {
+      "+0.40": "big_win",
+      "-0.05": "small_win_or_scratch",
+      "-0.30": "big_loss"
+    },
+    "required_reports": [
+      "count and share in every bucket",
+      "conservative session-cluster 95% interval for every share",
+      "mean and median return within every bucket",
+      "share of positive PnL from big wins",
+      "side, phase, premium-band, and volatility-regime breakdown",
+      "$3 and $4 causal fee trajectories"
+    ],
+    "recalibrated_rules": {
+      "big_loss": {
+        "point_share_strictly_above": 0.04,
+        "minimum_big_loss_trades": 3,
+        "basis": "two times the Charter's approximately 2% big-loss ceiling",
+        "below_minimum": "insufficient_profile_evidence",
+        "tripwire": "owner_decision_required"
+      },
+      "big_win_near_zero": {
+        "point_share_strictly_below": 0.02,
+        "minimum_total_trades": 50,
+        "basis": "the signed D50 near-zero definition retained as an absolute profile alarm; relative capture is evaluated separately and is stricter when alpha0 has a material tail",
+        "below_minimum": "insufficient_profile_evidence",
+        "tripwire": "owner_decision_required"
+      }
+    },
+    "relationship_to_relative_capture": "Both tripwires are evaluated independently at every freeze gate. Passing the absolute profile never overrides a relative-capture breach, and passing relative capture never overrides a four-bucket breach."
+  },
+  "harvest_ratio_tripwire": {
+    "authority": "D52",
+    "stage": [
+      "lifecycle_freeze",
+      "combined_FT2_80_freeze"
+    ],
+    "evaluation_entries": "identical frozen entries for floor-on and learned-exit-without-floor",
+    "eligible_trade": "causal peak available fee-adjusted PnL before forced flat is strictly positive",
+    "aggregate": "sum realized fee-adjusted PnL over eligible trades divided by sum peak available fee-adjusted PnL over eligible trades",
+    "minimum_evidence": {
+      "eligible_trades": 50,
+      "distinct_sessions": 20
+    },
+    "collapse_all_required": [
+      "floor-on ratio falls by at least 0.10",
+      "floor-on divided by floor-off is strictly below 0.75",
+      "conservative session-cluster upper confidence bound for floor-on minus floor-off is below zero"
+    ],
+    "below_minimum": "insufficient_harvest_evidence",
+    "breach": "owner_decision_required"
+  },
+  "multiplicity_and_governance": {
+    "alpha0_and_selected_arm_identities_in_ordered_ledger": true,
+    "tripwire_metrics_are_not_alpha_hypotheses": true,
+    "all_alpha_arms_remain_registered": true,
+    "owner_resolution_must_hash_the_breached_packet": true,
+    "tripwire_cannot_rescue": [
+      "integrity failure",
+      "action-conditioned calibration failure",
+      "serial-dollar no-harm failure",
+      "G4, daily-stop, soft-close, or ruin failure",
+      "FT2-80 incremental-dollar failure"
+    ]
+  },
+  "census_v2_context": {
+    "excluded_winners": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv",
+      "sha256": "6db7af4d37ad6f3c963e424fa6b03c930a723097a3208f4ca42836eeed72bd43",
+      "overall_joint_excluded_big_winner_rate": {
+        "alpha_0_00": 0.0,
+        "alpha_0_10": 0.06458425421148274,
+        "alpha_0_20": 0.15690535828299199,
+        "alpha_0_25": 0.2257133736064044,
+        "alpha_0_30": 0.29681744511566227
+      }
+    },
+    "role": "Design context only. Census paths neither pass nor fail a candidate tripwire."
+  }
+}

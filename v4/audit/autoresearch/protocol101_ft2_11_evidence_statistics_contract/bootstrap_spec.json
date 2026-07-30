@@ -1,0 +1,277 @@
+{
+  "schema_version": "Protocol101FT211BootstrapSpecV3",
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "status": "producer_repaired",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "dependence_unit": {
+    "cluster": "session",
+    "reason": "Minutes, contracts, decisions, fills, and trades within a session share market state, account state, causal occupancy, and opportunity state.",
+    "forbidden_pseudoreplication": [
+      "minute-level independent intervals",
+      "decision-level Wilson intervals",
+      "contract-row bootstrap",
+      "trade-level bootstrap",
+      "treating model seeds as market samples",
+      "treating action heads as market samples"
+    ]
+  },
+  "required_session_ledger": {
+    "population": "FT2-10 objective_spec.json:/serial_primary_population",
+    "one_row_per": [
+      "outer_fold",
+      "session",
+      "candidate_or_control_identity",
+      "seed_or_frozen_ensemble",
+      "fee_trajectory"
+    ],
+    "required_values": [
+      "DeltaQ_session and five family deltas",
+      "DeltaU_session",
+      "candidate neutral-lifecycle serial PnL cents",
+      "P5 neutral-lifecycle serial PnL cents",
+      "each matched-random schedule serial PnL cents",
+      "entry intents, fills, failed fills, WAIT, PENDING, OCCUPIED, SOFT_CLOSED, and DAILY_STOPPED counts",
+      "minimum equity, maximum drawdown, daily-stop and ruin state",
+      "action-conditioned calibration numerators and denominators",
+      "four-bucket and relative-tail contributions",
+      "no-bid sensitivity convention"
+    ],
+    "chronological_order": "outer_fold, session",
+    "missing_required_session": "invalid_evidence",
+    "duplicate_required_session": "invalid_evidence",
+    "no_trade_session": "retained with zero PnL and zero contribution where defined"
+  },
+  "corrected_effective_sample_size": {
+    "name": "Geyer initial-positive-sequence long-run-variance estimator",
+    "statistic_specific": true,
+    "within_fold_only": true,
+    "ordered_series": "finite paired session statistics in chronological order",
+    "minimum_raw_sessions_to_estimate": 8,
+    "autocovariance": "gamma_k=(1/n)*sum_{t=1}^{n-k}(x_t-xbar)*(x_{t+k}-xbar), k=0..n-1",
+    "paired_sums": "Gamma_m=gamma_(2m)+gamma_(2m+1) for every complete pair with 2m+1<=n-1",
+    "initial_positive_sequence": [
+      "Starting at m=0, retain consecutive Gamma_m while Gamma_m is strictly positive; stop before the first nonpositive pair.",
+      "Replace each retained Gamma_m after the first with min(previous_adjusted_Gamma, current_Gamma) to enforce the initial monotone sequence.",
+      "Do not stop merely because one individual autocorrelation is nonpositive."
+    ],
+    "long_run_variance": "LRV=max(gamma_0, -gamma_0+2*sum(retained adjusted Gamma_m))",
+    "formula": "ESS=n*gamma_0/LRV",
+    "bounds": "Clamp finite ESS to [1,n].",
+    "zero_variance": "If every session value is exactly equal, use the degenerate-case rules; do not fabricate an ESS.",
+    "pooled_rule": "Estimate ESS in each fold and sum fold ESS values; never estimate autocovariance across fold boundaries.",
+    "use": "MDE and sufficiency diagnostic; intervals and p-values come from the block bootstrap."
+  },
+  "moving_block_bootstrap": {
+    "method": "noncircular moving-block bootstrap",
+    "production_resamples": 20000,
+    "block_length_sensitivity_sessions": [
+      3,
+      5,
+      8
+    ],
+    "within_fold_algorithm": [
+      "For block length L and a fold with n>=L ordered sessions, legal block starts are integers 0 through n-L.",
+      "Sample ceil(n/L) legal starts uniformly with replacement.",
+      "Append each contiguous block [start,start+L) without wrapping.",
+      "Truncate the concatenation to n sessions."
+    ],
+    "cross_fold_block": false,
+    "circular_wrap": false,
+    "pooled": "For each replicate and L, resample each fold independently, preserve each fold's raw session count, then concatenate folds.",
+    "synchronization": "For a fixed replicate, L, and fold, reuse the exact resampled session indices across every registered candidate, seed, metric, comparator, fee path, sensitivity convention, and control.",
+    "seed_derivation": {
+      "algorithm": "SHA-256",
+      "material": "FT2-11-V3|<ordered_session_ledger_sha256>|<multiplicity_ledger_sha256>|<statistic_family_id>|<block_length>",
+      "integer": "Interpret the first 16 hexadecimal digits as an unsigned integer and reduce modulo 2^32.",
+      "must_report": true
+    },
+    "conservative_sensitivity_envelope": {
+      "adjusted_lower_bound": "minimum adjusted lower bound across L in {3,5,8}",
+      "adjusted_upper_bound": "maximum adjusted upper bound across L in {3,5,8}",
+      "adjusted_one_sided_p": "maximum adjusted p-value across L in {3,5,8}",
+      "pass": "A hard condition passes only when the conservative envelope passes.",
+      "any_length_uncomputable_with_otherwise_valid_data": "insufficient_evidence"
+    }
+  },
+  "studentized_maxT": {
+    "scope": "Every active statistic identity in the current ordered multiplicity family.",
+    "standard_error_authority": {
+      "name": "contiguous delete-L block jackknife, computed within each fold and pooled with fixed raw-session weights",
+      "observed_SE_h": [
+        "For fold f, let x_f be its chronological finite paired session series, n_f its raw length, L the active block length, and K_f=n_f-L+1.",
+        "For j=0,...,K_f-1 delete x_f[j:j+L] and compute theta_f_minus_j as the mean of the n_f-L retained observations.",
+        "Let theta_bar_f_delete be the arithmetic mean of the K_f delete-block means.",
+        "Set V_f=(n_f-L)/(L*K_f)*sum_j((theta_f_minus_j-theta_bar_f_delete)^2).",
+        "Freeze w_f=n_f/sum_g(n_g) from raw fold sizes and set SE_h=sqrt(sum_f(w_f^2*V_f))."
+      ],
+      "replicate_SE_h_star": [
+        "For centered-null outer bootstrap replicate b, retain each fold's emitted resampled chronological sequence of length n_f.",
+        "Apply the identical contiguous delete-L formula to that centered resampled fold sequence; this is a direct jackknife calculation, not a nested bootstrap.",
+        "Use the same fixed raw-session weights w_f and set SE_h_star_b=sqrt(sum_f(w_f^2*V_f_star_b)).",
+        "No observed SE reuse, cross-fold delete block, circular wrap, analytic substitution, or nested resampling is allowed."
+      ],
+      "minimum": "Every required fold must have n_f>L and K_f>=2. Otherwise that L is uncomputable and the conservative envelope routes insufficient_evidence.",
+      "zero_or_nonfinite": "Apply degenerate_cases; never add an epsilon or borrow another hypothesis's standard error.",
+      "weight_freeze": "Raw fold sizes and weights freeze before outcomes and are identical for observed and every replicate."
+    },
+    "observed_statistic": "t_h=observed_mean_h/SE_h",
+    "centered_null_resample": "Subtract the pooled observed_mean_h from every session value in every fold, apply synchronized moving-block indices within folds, compute SE_h_star_b mechanically with standard_error_authority, and set t_h_star_b=centered_resample_mean_h_b/SE_h_star_b.",
+    "lower_bound_construction": {
+      "replicate_extreme": "max_lower_b=max_h(t_h_star_b)",
+      "critical_value": "empirical nearest-rank 0.95 quantile of max_lower over 20,000 replicates",
+      "adjusted_one_sided_95_lower": "observed_mean_h-critical_lower*SE_h",
+      "adjusted_one_sided_p": "(1+count(max_lower_b>=observed_t_h))/(20001)"
+    },
+    "upper_bound_construction": {
+      "replicate_extreme": "max_upper_b=max_h(-t_h_star_b)",
+      "critical_value": "empirical nearest-rank 0.95 quantile of max_upper over 20,000 replicates",
+      "adjusted_one_sided_95_upper": "observed_mean_h+critical_upper*SE_h",
+      "purpose": "Mechanically decide sufficiently negative/harmful or no-signal cases using a simultaneous upper bound matched to the lower-bound family."
+    },
+    "nearest_rank_quantile": "For B sorted values and q, take one-based index ceil(q*B), with no interpolation.",
+    "familywise_one_sided_alpha": 0.05,
+    "two_sided_descriptive": "Report unadjusted percentile [0.025,0.975] intervals; hard terminal decisions use the simultaneous one-sided lower and upper bounds.",
+    "candidate_conjunction": "A candidate passes a conjunctive gate only if every required contrast passes under the conservative block-length envelope."
+  },
+  "worked_studentization_example": {
+    "purpose": "invented arithmetic fixture only; not a market or session statistic",
+    "one_fold": true,
+    "block_length_L": 2,
+    "observed_series": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "observed_delete_block_means_in_order": [
+      4.0,
+      3.3333333333333335,
+      2.6666666666666665,
+      2.0
+    ],
+    "observed_delete_mean_average": 3.0,
+    "observed_sum_squared_deviations": 2.2222222222222223,
+    "jackknife_factor": 0.375,
+    "observed_variance": 0.8333333333333334,
+    "SE_h": 0.9128709291752769,
+    "observed_mean": 3.0,
+    "observed_t_h": 3.2863353450309964,
+    "centered_outer_resample": [
+      -2,
+      -2,
+      0,
+      0,
+      2
+    ],
+    "centered_resample_mean": -0.4,
+    "replicate_delete_block_means_in_order": [
+      0.6666666666666666,
+      0.0,
+      -0.6666666666666666,
+      -1.3333333333333333
+    ],
+    "replicate_delete_mean_average": -0.3333333333333333,
+    "replicate_variance": 0.8333333333333334,
+    "SE_h_star_b": 0.9128709291752769,
+    "t_h_star_b": -0.4381780460041329,
+    "tolerance": "max(1e-12,1e-10*abs(expected))"
+  },
+  "statistic_specific_MDE": {
+    "source": "mde_spec.json and terminal_decision_spec.json",
+    "quality_DeltaQ_meaningful_effect": 0.05,
+    "serial_dollar_component_no_harm_boundary_dollars_per_session": 0.0,
+    "promotable_increment_boundary_dollars_per_session": 0.0,
+    "fold_seed_metric_regime": "Use the same statistic's corrected ESS, marginal session SD, multiplicity count, and frozen boundary; never borrow pooled precision or another metric's MDE."
+  },
+  "synthetic_AR_coverage_demonstration": {
+    "required_before_any_evidence_packet": true,
+    "fixtures_are_synthetic_not_market_statistics": true,
+    "generator": {
+      "model": "x_t=mu+phi*(x_(t-1)-mu)+epsilon_t, epsilon_t iid N(0,1)",
+      "phi_values": [
+        -0.3,
+        0.0,
+        0.3,
+        0.6,
+        0.8
+      ],
+      "mu_values": [
+        0.0,
+        0.25
+      ],
+      "burn_in": 500,
+      "fold_shapes": [
+        "one fold of 45 sessions",
+        "five independent folds of 45 sessions pooled without cross-fold blocks"
+      ],
+      "monte_carlo_series_per_fixture": 2000,
+      "bootstrap_resamples_per_series": 2000,
+      "block_lengths": [
+        3,
+        5,
+        8
+      ],
+      "seed": "first 64 bits of SHA-256('Protocol101|FT2-11-V3|AR-COVERAGE'), reduced modulo 2^32"
+    },
+    "checks": [
+      "coverage of each one-sided 95% lower bound at the true mu",
+      "coverage of each one-sided 95% upper bound at the true mu",
+      "coverage of the conservative block-length envelope",
+      "no generated block crosses or wraps a fold boundary",
+      "the ESS estimator does not truncate at an isolated nonpositive autocorrelation"
+    ],
+    "pass_rule": "For every phi, mu, fold shape, block length, and bound direction, empirical coverage is at least 0.93 and the Wilson 95% lower confidence limit for coverage is at least 0.90; the conservative envelope must also satisfy both conditions.",
+    "failure": "invalid_inference_implementation; no market evidence may be evaluated",
+    "artifact": "synthetic_ar_coverage_receipt.json with code hash, fixture identities, coverage table, and pass/fail"
+  },
+  "phase_F_shadow_intervals": {
+    "decision_level_Wilson_allowed": false,
+    "cluster": "complete live session",
+    "resampling": "For each L in {3,5,8}, apply the same noncircular within-phase chronological block bootstrap to complete sessions; each selected session contributes all of its paired decisions as an indivisible cluster.",
+    "point_statistic": "sum agreement numerators across selected session clusters divided by sum denominators across those clusters",
+    "hard_lower_bound": "minimum one-sided 95% lower bound across block lengths",
+    "hard_upper_bound": "maximum one-sided 95% upper bound across block lengths",
+    "minimum_complete_sessions_for_hard_bounds": 45,
+    "sessions_1_through_44": "report point estimates and descriptive raw counts only; hard bounds, pass/fail gates, and activation claims are forbidden and the route is insufficient_shadow_evidence",
+    "zero_sessions": "insufficient_shadow_evidence with no interval",
+    "too_few_sessions_or_uncomputable_length": "insufficient_shadow_evidence",
+    "applies_to": [
+      "WAIT versus ENTER",
+      "exact contract when both ENTER",
+      "HOLD versus EXIT",
+      "action mask and block reason",
+      "safety-action agreement"
+    ]
+  },
+  "degenerate_cases": {
+    "all_session_deltas_exactly_zero": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "p": 1.0,
+      "quality_or_increment_route": "no_genuine_entry_signal",
+      "exact_no_harm_route": "passes only the zero-margin no-harm component; it proves no superiority"
+    },
+    "nonzero_mean_with_zero_session_variance": "insufficient_evidence",
+    "nonfinite_statistic_or_failed_reproduction": "invalid_evidence"
+  },
+  "independent_reproduction": {
+    "inputs": "hashed decision and session source ledgers, never copied producer summaries",
+    "must_recompute": [
+      "session aggregation",
+      "Geyer initial-positive-sequence ESS",
+      "all block indices",
+      "block-length sensitivity envelope",
+      "adjusted lower and upper bounds",
+      "adjusted p-values",
+      "Phase-F clustered intervals",
+      "terminal route"
+    ],
+    "floating_tolerance": "max(1e-12,1e-10*abs(reference))",
+    "categorical_and_hash_tolerance": "exact"
+  }
+}

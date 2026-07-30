@@ -1,0 +1,248 @@
+{
+  "schema_version": "Protocol101FT208TensorSchemaV2",
+  "node_id": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+  "status": "producer_repaired_pending_independent_review",
+  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "decision_convention": {
+    "timezone": "America/New_York",
+    "cadence": "one completed minute",
+    "history_length_minutes": 90,
+    "history_order": "oldest to newest",
+    "option_information_cutoff": "completed option state stamped t",
+    "index_context_cutoff": "completed context state stamped t-1 minute",
+    "buy_fill": "t+1 executable ask",
+    "exit_fill": "v+1 executable bid",
+    "minimum_complete_minutes_for_entry": 15,
+    "reconnect_resets_complete_streak": true,
+    "cross_session_backfill": false,
+    "future_information_allowed": false
+  },
+  "ladder": {
+    "wait_action_index": 0,
+    "contract_action_count": 42,
+    "action_count": 43,
+    "strike_count": 21,
+    "rights_per_strike": 2,
+    "strike_offsets_points": [
+      -50, -45, -40, -35, -30, -25, -20, -15, -10, -5, 0,
+      5, 10, 15, 20, 25, 30, 35, 40, 45, 50
+    ],
+    "right_order": ["C", "P"],
+    "slot_linearization": "strike_idx major then right_idx",
+    "slot_is_identity": false,
+    "identity_authority": "identity_mapping_spec.json"
+  },
+  "market_history": {
+    "values": {
+      "name": "market_history_fp32",
+      "shape": [90, 11],
+      "dtype": "float32",
+      "model_input": true,
+      "feature_order": [
+        "spx_vwap_gap_points",
+        "spx_vwap_gap_bps",
+        "spx_vwap_gap_over_session_range",
+        "session_range_bps",
+        "momentum_5m_bps",
+        "momentum_15m_bps",
+        "momentum_5m_over_session_range",
+        "momentum_15m_over_session_range",
+        "omar_clipped_neg3_pos3",
+        "minutes_since_open",
+        "minutes_to_close"
+      ]
+    },
+    "phase": {
+      "name": "market_phase_id",
+      "shape": [90],
+      "dtype": "uint8",
+      "model_input": true,
+      "categories_authority": "field_semantics_manifest.json"
+    },
+    "available_mask": {
+      "name": "market_history_available_mask",
+      "shape": [90],
+      "dtype": "bool",
+      "model_input": "attention_mask_only"
+    }
+  },
+  "contract_path_core": {
+    "name": "contract_path_core_fp32",
+    "shape": [90, 42, 10],
+    "dtype": "float32",
+    "model_input": true,
+    "feature_order": [
+      "offset_points",
+      "moneyness_bps",
+      "vwap_side_alignment_flag",
+      "omar_side_alignment_flag",
+      "momentum15_side_alignment_flag",
+      "D.near_atm.straddle_mid_spot_bps",
+      "D.near_atm.put_call_mid_ratio",
+      "D.near_atm.side_smile_slope_bps_per_5pt",
+      "E.bs.delta",
+      "E.bs.gamma"
+    ],
+    "formula_authority": "field_semantics_manifest.json",
+    "raw_vendor_greeks_allowed": false,
+    "identity_alignment_required": true,
+    "reason_for_axis_repair": "the signed alignment, D-family, and E-family values are right/strike dependent and cannot live on a contract-free market axis"
+  },
+  "admitted_price_extension": {
+    "path_values": {
+      "name": "contract_path_extension_fp32",
+      "shape": [90, 42, 3],
+      "dtype": "float32",
+      "model_input": "only active admitted channels"
+    },
+    "snapshot_values": {
+      "name": "ladder_snapshot_extension_fp32",
+      "shape": [42, 3],
+      "dtype": "float32",
+      "model_input": "only active admitted channels"
+    },
+    "channel_active_mask": {
+      "name": "extension_channel_active_mask",
+      "shape": [3],
+      "dtype": "bool"
+    },
+    "value_available_mask": {
+      "name": "extension_value_available_mask",
+      "shape": [90, 42, 3],
+      "dtype": "bool"
+    },
+    "initial_state": "all channels inactive, unavailable, and ignored",
+    "activation_requires_all": [
+      "FT2-25 producer pass",
+      "FT2-26 independent acceptance",
+      "owner-signed synchronization amendment hash",
+      "candidate bundle pins the amendment and active-channel manifest"
+    ],
+    "missing_signed_amendment": "fail closed",
+    "channel_reuse": false,
+    "shape_change_on_activation": false
+  },
+  "exact_contract_path_arrays": {
+    "shape": [90, 42],
+    "model_input": false,
+    "fields": [
+      "source_neutral_contract_dictionary_index:int32",
+      "contract_observation_time_ns:int64",
+      "contract_source_time_ns:int64",
+      "contract_receipt_time_ns:int64_or_minus1",
+      "contract_strike_milli_points:int32",
+      "contract_expiry_yyyymmdd:int32",
+      "contract_right_code:uint8",
+      "contract_bid_cents:int32_or_minus1",
+      "contract_ask_cents:int32_or_minus1",
+      "contract_mid_cents:int32_or_minus1",
+      "contract_quote_age_ms:int32_or_minus1",
+      "contract_tick_regime_code:uint8_or_255"
+    ]
+  },
+  "ladder_snapshot": {
+    "core_values": {
+      "name": "ladder_snapshot_core_fp32",
+      "shape": [42, 10],
+      "dtype": "float32",
+      "model_input": true,
+      "must_equal": "newest exact-identity contract_path_core step"
+    },
+    "identity": [
+      "ladder_contract_dictionary_index[42]:int32",
+      "ladder_strike_milli_points[42]:int32",
+      "ladder_right_code[42]:uint8"
+    ]
+  },
+  "flat_state_masks": {
+    "per_contract": [
+      "contract_path_available_mask[90,42]",
+      "missing_minute_mask[90,42]",
+      "pre_listing_mask[90,42]",
+      "current_quote_available_mask[42]",
+      "tradability_eligibility_mask[42]",
+      "d48_premium_cap_mask[42]",
+      "d49_budget_mask[42]"
+    ],
+    "global": [
+      "complete_ladder_mask:bool",
+      "complete_history_streak_at_least_15_mask:bool",
+      "synchronized_context_fresh_mask:bool",
+      "soft_close_active:bool",
+      "daily_stop_active:bool"
+    ],
+    "action_mask": {
+      "shape": [43],
+      "wait_rule": "WAIT index 0 is true while flat",
+      "contract_rule": "contract action requires every per-contract mask and every global entry mask",
+      "incomplete_ladder_rule": "all 42 BUY actions false; WAIT true"
+    },
+    "model_use": "masks may gate attention or actions but are not alpha values"
+  },
+  "open_state": {
+    "source_row_minutes_et": {
+      "start_inclusive": "15:30",
+      "end_inclusive": "15:55",
+      "note": "15:30 is manage/exit-only after the final 15:29 BUY decision fills"
+    },
+    "dedicated_open_contract_record": {
+      "independent_of_current_ladder": true,
+      "identity_fields": [
+        "open_source_neutral_contract_id",
+        "open_contract_dictionary_index",
+        "open_strike_milli_points",
+        "open_right_code",
+        "open_expiry_yyyymmdd"
+      ],
+      "entry_fields": [
+        "entry_decision_time_ns",
+        "entry_fill_time_ns",
+        "entry_ask_cents",
+        "entry_fee_reserve_cents"
+      ],
+      "current_exact_fields": [
+        "open_quote_observation_time_ns",
+        "open_quote_source_time_ns",
+        "open_bid_cents",
+        "open_ask_cents",
+        "open_quote_age_ms",
+        "open_quote_available"
+      ],
+      "history": "open_contract_path_core_fp32[90,10] plus exact arrays and masks",
+      "outside_current_ladder": "record remains required and valid"
+    },
+    "actions_before_1555": ["HOLD", "EXIT"],
+    "actions_at_1555": ["EXIT"],
+    "new_entry_allowed": false,
+    "incomplete_flat_ladder": "does not remove a fresh executable EXIT for the existing open contract",
+    "missing_open_quote": "block learned EXIT fill, retain HOLD/retry, and preserve forced-flat recovery path"
+  },
+  "account_state": {
+    "authority": "account_state_ledger_spec.json",
+    "model_input": false,
+    "mask_and_audit_only": true
+  },
+  "label_firewall": {
+    "authority": "label_join_spec.json",
+    "target_valid_model_or_composer_input": false,
+    "actions_bit_identical_without_label_partitions": true
+  },
+  "precision": {
+    "float16_allowed": false,
+    "float16_unlock_node": "FT2-30-ENTRY-HARNESS-PILOT",
+    "float16_unlock_requirement": "identical actions and preregistered score-drift pass versus fp32"
+  },
+  "fail_closed": [
+    "duplicate decision or contract-path identity",
+    "source-neutral identity mismatch",
+    "slot history without exact identity match",
+    "future timestamp in a feature tensor",
+    "prior-session history backfill",
+    "label field or target-valid mask exposed to runtime composition",
+    "active extension without owner-signed synchronization amendment",
+    "flat contract action while ladder incomplete or warmup/reset incomplete",
+    "open contract state absent because it left the recentered ladder",
+    "action outside action_mask",
+    "float16 before independent acceptance"
+  ]
+}
