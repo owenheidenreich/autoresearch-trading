@@ -1,11 +1,18 @@
 {
-  "schema_version": "Protocol101FT210ComposerSpecV3",
+  "schema_version": "Protocol101FT210ComposerSpecV4",
   "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
-  "status": "producer_repaired",
-  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "status": "scoped_final_round_repaired",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
   "intent_fill_recheck_law": {
     "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
     "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "causal_role": {
+    "order": "downstream of frozen RLAC targets, fitted heads, and same-final-model disjoint calibration",
+    "may_construct_training_targets": false,
+    "may_select_target_population": false,
+    "may_recalibrate_heads": false,
+    "runtime_outputs_feed_back_into_rlac_or_training": false
   },
   "action_space": {
     "wait_action_index": 0,
@@ -81,40 +88,40 @@
       "tail_guard": "objective_spec.json tail_guard_relative_capture"
     },
     "anchor_interpretation": "candidate bottom-tail exclusion level; 0.0 is the mandatory no-screen control, and nonzero settings are quality exclusions rather than upside ranks",
-    "census_v3_provenance": {
+    "census_v4_provenance": {
       "census_results": {
         "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
-        "sha256": "e6ad9ec79318e15590439af60025f91f88c5b14877c45d8da75de9607a84e561"
+        "sha256": "a7a4001223d2c06babbb10098639d15e82ea0a2a6dd44448e3b1e517bb10e8f8"
       },
       "guardrail_threshold_curves": {
         "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_threshold_curves.json",
-        "sha256": "478e88e8143d1b9ea6344bc8a706906c8d0a938ae1a5f2de1babf977737a580e"
+        "sha256": "0613ca2b1a420a6639b2b9774fa94cc38310893e9d6761f36a27dfd28d10fdc5"
       },
       "guardrail_curves": {
         "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_curves.csv",
-        "sha256": "000085b1e541dcef862133952ccf128ffac52ac8a33da3160d08c4c450da0d2b",
+        "sha256": "810651d12d6701765254173102fdde2c93c7246f4d34c1c93daf2d8f43a9334d",
         "overall_quality_plus_positive_upside_qualifying_minute_share_by_anchor": {
-          "0.00": 0.7769760360121806,
-          "0.10": 0.7575135707665828,
-          "0.20": 0.7205746061167748,
-          "0.25": 0.6828412551304117,
-          "0.30": 0.6447769098371507
+          "0.00": 0.7872607260726072,
+          "0.10": 0.7671947194719472,
+          "0.20": 0.7303630363036303,
+          "0.25": 0.6913531353135314,
+          "0.30": 0.6534653465346535
         }
       },
       "excluded_winners": {
         "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv",
-        "sha256": "fb3b2bddcf0d78499bfcc6f6324bcbf8328d1a11b196cf13f51acc60a743c501",
+        "sha256": "3e67b86aa763570a201d7960e618a9189ebd942f9d6c310e9983286a561bb1ec",
         "overall_joint_excluded_big_winner_rate_by_anchor": {
           "0.00": 0.0,
-          "0.10": 0.0682632357200567,
-          "0.20": 0.1765575694751444,
-          "0.25": 0.2490434305400997,
-          "0.30": 0.316666412597753
+          "0.10": 0.0682094827459779,
+          "0.20": 0.1773358558082919,
+          "0.25": 0.2501356563567835,
+          "0.30": 0.3171572293839002
         }
       },
       "guardrail_trade_rates": {
         "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
-        "sha256": "1460090f13327ebf83e4f39a666eb83d44cf23625a6a7053499eafb072c18ac6",
+        "sha256": "fb47b66ec08b74edc96bcd28bdcaac94cb41ef3bc36dee432cdff316d8897209",
         "overall_mean_trades_per_session_by_anchor": {
           "0.00": 2.6,
           "0.10": 2.6,
@@ -123,13 +130,13 @@
           "0.30": 2.6666666666666665
         }
       },
-      "v2_v3_impact": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v2_v3_impact.json",
-        "sha256": "5341e2ead4ff6e0d4bbdbb59ba6312180c457e41a89ab6e8dfc7b28796d9f9a1"
+      "v3_v4_impact": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json",
+        "sha256": "913f127563daf9e5dff25cb8da72b4c3cdefd7a06d7e5edf569ca3c736806c3e"
       },
       "receipt": {
         "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-        "sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
+        "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
       },
       "role": "45-session embargo-free multi-trade oracle design diagnostic only; report-only and never a model-quality gate, calibration-selection gate, component acceptance criterion, or neutral-lifecycle trade-count target"
     },
@@ -206,7 +213,7 @@
     "positive_after_fee_rule": "the equal-horizon mean calibrated q10 MFE must be strictly greater than zero in both dollars and return, and the equal-horizon mean calibrated q10 profit area must be strictly greater than zero in both dollar-minutes and return-minutes",
     "premium_band_at_decision": {
       "quote": "current completed-minute executable ask at decision t; never the future t+1 fill ask",
-      "bands_copied_from_census_v3": {
+      "bands_copied_from_census_v4": {
         "cheap_le_1": "ask_cents<=100",
         "small_1_3": "100<ask_cents<=300",
         "medium_3_8": "300<ask_cents<=800",
@@ -260,7 +267,7 @@
     "missing_untrained_uncalibrated_or_failed": "candidate is ineligible for component freeze and confidence-controlled runtime behavior; composer emits WAIT in any shadow/runtime rehearsal",
     "ft2_11_dependency": "FT2-11 repair must place this gate in the required entry-component pass checklist",
     "selected_contract_regret_action_constraint": {
-      "quantity": "same-final-model conformalized q90 normalized selected-contract regret upper bound in [0,1]",
+      "quantity": "same-final-model conformalized q90 upper bound for the signed normalized RLAC regret target; the upper bound is at most 1",
       "maximum": 0.1,
       "pass": "finite bound<=0.10",
       "equality": "passes the regret magnitude threshold but all other strict composer margins still apply",

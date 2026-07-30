@@ -49,7 +49,7 @@
   ],
   "node": "FT2-05-OPPORTUNITY-CENSUS",
   "required_count": 45,
-  "schema_version": "Protocol101FT205CheckpointStateV3",
+  "schema_version": "Protocol101FT205CheckpointStateV4",
   "status": "complete",
-  "updated_at_utc": "2026-07-30T00:53:17.631441+00:00"
+  "updated_at_utc": "2026-07-30T03:12:50.108058+00:00"
 }

@@ -1,13 +1,13 @@
-# Protocol101 FT2-11 Evidence And Statistics Contract V3
+# Protocol101 FT2-11 Evidence And Statistics Contract V4
 
-Status: `producer_repaired`
+Status: `scoped_final_round_repaired`
 
 Authority:
-`2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a`
+`3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033`
 
-This is the final coordinated repair-attempt-2 statistical design. It freezes
+This is the scoped final-round statistical design. It freezes
 future evidence treatment only. It performs no model fitting, new session
-analysis beyond the separately authorized census v3, protected-data access,
+analysis beyond the separately authorized census v4, protected-data access,
 recorder action, broker action, paid compute, simulator edit, or re-review.
 
 ## 1. Shared causal and comparator authorities
@@ -47,7 +47,7 @@ promotion, paper readiness, or profitability. Only the fully assembled
 entry/lifecycle trader at FT2-80 can make the separately registered combined
 incremental-dollar comparison.
 
-The FT2-05 census v3 multi-trade oracle activity is report-only planning
+The FT2-05 census v4 multi-trade oracle activity is report-only planning
 context. It cannot select, reject, calibrate, or project the neutral component.
 
 ## 3. Session dependence and bootstrap
@@ -114,7 +114,7 @@ statistic-specific marginal SD, Geyer initial-positive-sequence ESS/LRV, the
 actual ordered multiplicity family, and the same 3/5/8 block-power envelope
 with replicate-specific `SE_h_star`.
 
-Census v3 variance is planning context only. A future training-side pilot must
+Census v4 variance is planning context only. A future training-side pilot must
 measure its own paired variance, LRV, ESS, activity, analytic MDE, and
 block-power MDE before any GPU tranche. No census statistic authorizes spend.
 
@@ -135,12 +135,17 @@ studentized max-T procedure.
 
 ## 5. Action-conditioned evidence
 
-WAIT reliability, expected selected-contract regret calibration, q90 regret
-coverage, and all registered denominators remain mandatory. In addition,
+WAIT reliability over all RLAC-auditable minutes, expected per-contract regret
+calibration, marginal q90 regret coverage over the complete RLAC regret target
+population, and all registered denominators remain mandatory. In addition,
 every ENTER must have a finite same-final-model conformalized q90 normalized
 selected-contract-regret upper bound `<=0.10`. Missing, nonfinite, or larger
 values emit WAIT. Calibration accuracy does not substitute for this magnitude
 constraint.
+
+Runtime-composer-selected-subset coverage is reported after the composer runs.
+It is a conditional diagnostic, never a claimed conformal guarantee. Collapse
+routes to owner review and cannot trigger recalibration or relabeling.
 
 ## 6. MNAR alternate-label procedure
 
@@ -172,9 +177,10 @@ acceptance precondition. The graph order is:
 FT2-91-PROTECTED-HOLDOUT pass
   -> FT2-92-IBKR-DECISION-SHADOW
        executes the candidate-specific transfer measurement
-       and emits pass / insufficient / fail / invalid
-  -> FT2-92 pass
-  -> FT2-93-NO-ORDER-LIVE-SHADOW
+       and emits exactly pass / fail / insufficient_evidence
+  -> pass -> FT2-93-NO-ORDER-LIVE-SHADOW
+  -> fail -> STOP-CANDIDATE-REJECTED
+  -> insufficient_evidence -> STOP-OWNER-DECISION
 ```
 
 A component may reach FT2-92 with `transfer_not_yet_run`. A transfer pass is
@@ -186,8 +192,9 @@ in this packet authorizes new recorder collection or orders.
 The synthetic AR coverage design covers 45-session fold shapes. Therefore,
 hard Phase-F/no-order-shadow bounds and pass/fail gates require at least 45
 complete sessions. With 1 through 44 complete sessions, only point estimates
-and raw denominators may be reported; the terminal is
-`insufficient_shadow_evidence`. No activation claim is permitted below the
+and raw denominators may be reported; FT2-93 remains active and emits no graph
+outcome. At or beyond the hard floor it emits only the graph-legal
+`producer_complete` or `fail`. No activation claim is permitted below the
 covered floor.
 
 ## 9. Highest packet claim

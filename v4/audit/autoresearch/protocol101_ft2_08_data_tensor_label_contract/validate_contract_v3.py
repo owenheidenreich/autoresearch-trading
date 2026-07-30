@@ -1,4 +1,4 @@
-"""Independent mechanical validation for the final repaired FT2-08 v3 packet."""
+"""Independent mechanical validation for the scoped-round FT2-08 packet."""
 from __future__ import annotations
 
 import hashlib
@@ -21,6 +21,9 @@ AUTHORITY = REPO / (
     "PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md"
 )
 AUTHORITY_HASH = (
+    "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
+)
+LAW_PRODUCT_CONTRACT_HASH = (
     "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a"
 )
 FT204 = REPO / "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze"
@@ -58,15 +61,15 @@ def main() -> int:
         ft204_receipt["outcome"] == "labels_frozen_v2"
         and ft204_receipt["product_contract_hash"] == AUTHORITY_HASH
     )
-    checks["ft205_v3"] = (
-        ft205_receipt["schema_version"] == "Protocol101FT205NodeReceiptV3"
+    checks["ft205_v4"] = (
+        ft205_receipt["schema_version"] == "Protocol101FT205NodeReceiptV4"
         and ft205_receipt["product_contract_hash"] == AUTHORITY_HASH
         and ft205_receipt["session_count"] == 45
     )
     intent_law = load("intent_fill_recheck_law.json")
     checks["intent_law_hash"] = (
         sha256(ROOT / "intent_fill_recheck_law.json") == INTENT_LAW_HASH
-        and intent_law["product_contract_hash"] == AUTHORITY_HASH
+        and intent_law["product_contract_hash"] == LAW_PRODUCT_CONTRACT_HASH
     )
 
     tensor = load("tensor_schema.json")
@@ -257,7 +260,7 @@ def main() -> int:
 
     failed = sorted(name for name, passed in checks.items() if not passed)
     output = {
-        "schema_version": "Protocol101FT208ContractValidationV3",
+        "schema_version": "Protocol101FT208ContractValidationV4",
         "passed": not failed,
         "checks": checks,
         "failed": failed,

@@ -1,8 +1,8 @@
 {
-  "schema_version": "Protocol101FT210ForecastHeadsV3",
+  "schema_version": "Protocol101FT210ForecastHeadsV4",
   "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
-  "status": "producer_repaired",
-  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "status": "scoped_final_round_repaired",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
   "intent_fill_recheck_law": {
     "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
     "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
@@ -10,6 +10,10 @@
   "label_authority": {
     "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json",
     "sha256": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60"
+  },
+  "realized_label_audit_composer": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+    "sha256": "d833297dbaf2a547d8246cdf3cf404dea0d8ff4234026ceac37797e462a8422f"
   },
   "horizons": [
     "h3",
@@ -224,17 +228,17 @@
     "required": true,
     "cannot_be_ablated_or_skipped": true,
     "wait_probability_head": {
-      "scope": "one output per governed flat decision after the causal risk-set mask is assembled",
+      "scope": "one output for every label-complete governed flat minute in the RLAC population; runtime composer output and runtime model selection never control target membership",
       "inputs": "shared causal state plus permutation-invariant pooling of contract representations, causal action masks, and path-head forecasts; no realized labels",
       "output": "sigmoid probability p_wait in [0,1]",
-      "training_target": "1 iff the frozen realized-label audit composer applied to the exact governed risk set says WAIT, else 0; constructed only after label join in the training pipeline",
-      "loss": "masked_binary_cross_entropy over governed flat decisions",
+      "training_target": "y_wait(t)=1 iff max over intent-eligible contracts of U_label(t,c) is less than the frozen RLAC entry threshold; otherwise 0. The target is constructed by the model-free one-pass RLAC before any model head is fit.",
+      "loss": "masked_binary_cross_entropy over every label-complete governed flat minute in the RLAC population",
       "calibration": "isotonic calibration on predictions from the same final model over its disjoint calibration sessions",
       "runtime_derivation": "the calibrated output itself; no implementation may substitute action rate or a post-hoc constant"
     },
     "selected_contract_regret_heads": {
-      "scope": "one pair of outputs conditional on the frozen composer selecting ENTER on a governed flat decision",
-      "realized_target": "r=max(0,max_Q_over_exact_governed_risk_set-Q_selected)/2 in [0,1], with Q and the risk set frozen by objective_spec.json",
+      "scope": "one pair of outputs for every label-complete intent-eligible contract on every included governed flat minute, including RLAC WAIT minutes; runtime composer selections never control target membership",
+      "realized_target": "r(t,c)=U_label(t,c_star_regret)-U_label(t,c), where c_star_regret is the RLAC deterministic U_label argmax over the complete intent-eligible risk set. The exact target lies in [0,1], equals zero for c_star_regret, and is produced before any model head is fit.",
       "expected_regret": {
         "output": "sigmoid mean_regret in [0,1]",
         "loss": "masked_mean_squared_error(mean_regret,r)"
@@ -251,7 +255,7 @@
         "equality": "passes this regret threshold",
         "report_only": false
       },
-      "no_enter_rows": "excluded from regret loss and retained in WAIT-head loss; they may not be relabeled as zero regret"
+      "rlac_wait_minutes": "retained in both WAIT-head loss and full-population regret loss through c_star_regret_label; runtime WAIT decisions may not remove them or relabel them as zero regret"
     },
     "loss_weight": {
       "wait_probability": 0.1,
@@ -259,18 +263,27 @@
       "q90_regret": 0.05,
       "application": "add these fixed weighted losses to the renormalized six-family primary loss",
       "inner_loop_tunable": false,
-      "missing_target": "mask only the unavailable action-conditioned loss; if minimum calibration evidence later fails, the candidate is ineligible rather than silently continuing"
+      "missing_target": "mask only label-incomplete or RLAC-inapplicable targets; runtime composer output and model-selected actions are forbidden missingness reasons. If minimum calibration evidence later fails, the candidate is ineligible rather than silently continuing."
     },
     "training_data_path": [
       "build causal model inputs from FT2-08 feature partitions",
       "join physically separate FT2-04 labels using FT2-08 label_join_spec only inside the training process",
       "build nested empirical CDFs from fit sessions only",
-      "run the frozen realized-label audit composer to construct WAIT and regret targets",
+      "run the frozen model-free one-pass RLAC over the complete label-eligible intent population to construct WAIT and per-contract regret targets before fitting any model head",
       "fit heads on model-fit sessions",
       "predict the disjoint final-calibration sessions once",
       "calibrate and hash WAIT and regret outputs",
+      "freeze calibrated head artifacts before the runtime entry composer is evaluated",
       "strip every label and audit target from inference artifacts"
-    ]
+    ],
+    "coverage_claim": {
+      "wait_denominator": "all label-complete governed flat minutes in the RLAC population",
+      "wait_excluded": "label-incomplete governed flat minutes only",
+      "regret_denominator": "all label-complete intent-eligible contracts on every included minute, including RLAC WAIT minutes",
+      "regret_excluded": "label-incomplete rows and minutes with zero intent-eligible contracts only",
+      "zero_eligible_row_exclusions": true,
+      "runtime_composer_can_change_membership": false
+    }
   },
   "loss_weight_family": {
     "base_family_weight": "1/6 for each family",
@@ -314,6 +327,8 @@
     "mfe_is_allowed_only_as_one_registered_component_of_the_six-family_path_forecast": true,
     "oracle_action_is_a_runtime_target": false,
     "action_conditioned_targets_exist_only_in_training_label_join": true,
+    "action_head_target_may_reference_runtime_composer_output": false,
+    "action_head_target_producer": "the frozen model-free one-pass realized_label_audit_composer_spec.json only",
     "protected_data_access": false
   }
 }

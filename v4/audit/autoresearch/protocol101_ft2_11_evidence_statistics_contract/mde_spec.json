@@ -1,13 +1,13 @@
 {
-  "schema_version": "Protocol101FT211MDESpecV3",
+  "schema_version": "Protocol101FT211MDESpecV4",
   "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
-  "status": "producer_repaired",
-  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "status": "scoped_final_round_repaired",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
   "intent_fill_recheck_law": {
     "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
     "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
   },
-  "purpose": "Require dependence-aware pilot power evidence before GPU tranche 1; census-v3 variance is planning context only and can never authorize spend.",
+  "purpose": "Require dependence-aware pilot power evidence before GPU tranche 1; census-v4 variance is planning context only and can never authorize spend.",
   "estimands": {
     "candidate_minus_P5": "For each governed session, candidate neutral-lifecycle serial PnL dollars minus exact P5-under-cap neutral-lifecycle serial PnL dollars.",
     "candidate_minus_matched_random": "For each governed session, candidate neutral-lifecycle serial PnL dollars minus the frozen equal-weight aggregate of the eight valid matched-random schedules' neutral-lifecycle serial PnL dollars.",
@@ -48,17 +48,17 @@
     "pooled_executed_trade_cap": 225,
     "minimum_projected_executed_trades": 0,
     "projection_rule": "Report the pilot's session-level entry probability and projected count, clipped to [0,number_of_sessions]. Never multiply a multi-trade census rate by sessions.",
-    "census_trade_rate_role": "FT2-05 v3 guardrail trade rates are report-only multi-trade oracle diagnostics, are incompatible with the neutral one-trade component population, and are not a selection rule or trade-count projection."
+    "census_trade_rate_role": "FT2-05 v4 guardrail trade rates are report-only multi-trade oracle diagnostics, are incompatible with the neutral one-trade component population, and are not a selection rule or trade-count projection."
   },
-  "census_v3_provenance": {
+  "census_v4_provenance": {
     "role": "planning-only context; never a spend authorization and never candidate evidence",
     "census_results": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
-      "sha256": "e6ad9ec79318e15590439af60025f91f88c5b14877c45d8da75de9607a84e561"
+      "sha256": "a7a4001223d2c06babbb10098639d15e82ea0a2a6dd44448e3b1e517bb10e8f8"
     },
     "census_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-      "sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
+      "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
     },
     "session_variance_components": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/session_variance_components.csv",
@@ -72,26 +72,26 @@
         "session_increment_variance": 8460883.704040406,
         "session_increment_std": 2908.7598223367304
       },
-      "interpretation": "This v3 row is a hindsight best-entry-oracle minus P5 ceiling under the hold-to-forced-flat variant. It is not the candidate-minus-comparator pilot estimand and its variance cannot authorize spend."
+      "interpretation": "This v4 row is a hindsight best-entry-oracle minus P5 ceiling under the hold-to-forced-flat variant. It is not the candidate-minus-comparator pilot estimand and its variance cannot authorize spend."
     },
     "minimum_detectable_improvement": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/minimum_detectable_improvement.csv",
       "sha256": "f641fe3aef329073395227ab4484887dae20a38e2acf383d4d75d887f6ad1fa7",
-      "role": "v3 census planning table only; its raw-n session-cluster rows are not the FT2-11 pilot result"
+      "role": "v4 census planning table only; its raw-n session-cluster rows are not the FT2-11 pilot result"
     },
     "guardrail_trade_rates": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
-      "sha256": "1460090f13327ebf83e4f39a666eb83d44cf23625a6a7053499eafb072c18ac6",
+      "sha256": "fb47b66ec08b74edc96bcd28bdcaac94cb41ef3bc36dee432cdff316d8897209",
       "role": "diagnostic only and excluded from neutral-lifecycle trade projections"
     },
-    "v2_v3_impact": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v2_v3_impact.json",
-      "sha256": "5341e2ead4ff6e0d4bbdbb59ba6312180c457e41a89ab6e8dfc7b28796d9f9a1"
+    "v3_v4_impact": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json",
+      "sha256": "913f127563daf9e5dff25cb8da72b4c3cdefd7a06d7e5edf569ca3c736806c3e"
     }
   },
   "plausible_detectable_improvement_bound": {
     "value_dollars_per_session": 2049.4222222222224,
-    "basis": "The exact FT2-05 v3 overall/all hold_to_forced_flat mean_session_increment row cited above.",
+    "basis": "The exact FT2-05 v4 overall/all hold_to_forced_flat mean_session_increment row cited above.",
     "derivation": "Use 100% of the existing hindsight neutral-lifecycle oracle-minus-P5 mean as an empirical planning ceiling; no unsupported fractional haircut or uplift is applied.",
     "why_defensible_for_spend_screen": "P5 is the harder required comparator in the component game, and a learned candidate cannot be presumed to exceed the hindsight best-entry ceiling. This is deliberately generous and can block only when the pilot design cannot detect even that ceiling.",
     "not_a_target": true,
@@ -122,7 +122,7 @@
       "pilot paired session-delta variance, LRV, ESS, and trade count are present for both comparators",
       "larger of analytic and block-power MDE is at most $2,049.4222222222224/session for both required comparators on the $3 trajectory",
       "$4 trajectory MDE is reported and does not contradict resource feasibility",
-      "all inputs are training-side pilot evidence or hash-cited census-v3 planning context"
+      "all inputs are training-side pilot evidence or hash-cited census-v4 planning context"
     ],
     "detectable_improvement_exceeds_bound": "resource_owner_decision_required",
     "census_only_result": "resource_owner_decision_required",

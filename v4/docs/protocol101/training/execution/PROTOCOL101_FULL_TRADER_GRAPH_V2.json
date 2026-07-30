@@ -1,8 +1,8 @@
 {
   "schema_version": "Protocol101FullTraderGraphV2",
   "graph_id": "protocol101-full-trader-v2",
-  "effective_date": "2026-07-28",
-  "status": "consolidated_pending_owner_signature",
+  "effective_date": "2026-07-30",
+  "status": "consolidated_with_scoped_owner_amendment",
   "provenance": {
     "consolidated_by": "FT2-01 Consolidated Authority goal (Fable / Claude Opus)",
     "authority_precedence": [
@@ -13,7 +13,8 @@
     "narrative_authority_document": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
     "codex_brief_sha256": "765591b130ccc6d1e9a12d65252808027a08c02118d9be2ace22bd2834ee2e3f",
     "consolidation_invents_new_science": false,
-    "note": "Same schema family as Protocol101FullTraderGraphV1. This is a topology amendment plus Rev B/C safety and evidence law. It is not a training authorization and not owner-signed until the narrative authority document is signed."
+    "scoped_owner_amendment": "2026-07-30: add the FT2-92 insufficient_evidence -> STOP-OWNER-DECISION edge; every other node and edge remains frozen.",
+    "note": "Same schema family as Protocol101FullTraderGraphV1. This is the consolidated graph plus the single scoped FT2-92 outcome edge authorized in the narrative authority amendment. It is not a training authorization."
   },
   "reset_node": "FT2-00-GRAPH-RESET",
   "entry_node": "FT2-01-CONSOLIDATED-AUTHORITY",
@@ -787,6 +788,7 @@
     {"from": "FT2-91-PROTECTED-HOLDOUT", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
     {"from": "FT2-92-IBKR-DECISION-SHADOW", "outcome": "pass", "to": "FT2-93-NO-ORDER-LIVE-SHADOW"},
     {"from": "FT2-92-IBKR-DECISION-SHADOW", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
+    {"from": "FT2-92-IBKR-DECISION-SHADOW", "outcome": "insufficient_evidence", "to": "STOP-OWNER-DECISION"},
     {"from": "FT2-93-NO-ORDER-LIVE-SHADOW", "outcome": "producer_complete", "to": "FT2-94-INDEPENDENT-LIVE-SHADOW-AUDIT"},
     {"from": "FT2-93-NO-ORDER-LIVE-SHADOW", "outcome": "fail", "to": "STOP-CANDIDATE-REJECTED"},
     {"from": "FT2-94-INDEPENDENT-LIVE-SHADOW-AUDIT", "outcome": "pass", "to": "FT2-95-OWNER-PAPER-AUTHORIZATION"},

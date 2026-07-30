@@ -1,0 +1,244 @@
+{
+  "expected_identity": {
+    "v3_to_v4_reference_delta_equals_recheck_rejections": true,
+    "v4_d48_reference_equals_time_t_intent_count": true
+  },
+  "interpretation": "v4 corrects only the D48 reference/distribution universe from successful t+1 rechecks to canonical time-t intent eligibility; the added rows are the disclosed t+1 rejections",
+  "oracle_changes": [
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 956657.0,
+      "pooled_pnl_v4": 956657.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 2021,
+      "trade_count_v4": 2021,
+      "variant": "best_10"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 830226.0,
+      "pooled_pnl_v4": 830226.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 1118,
+      "trade_count_v4": 1118,
+      "variant": "best_20"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 1052262.0000000002,
+      "pooled_pnl_v4": 1052262.0000000002,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 4846,
+      "trade_count_v4": 4846,
+      "variant": "best_3"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 671662.0,
+      "pooled_pnl_v4": 671662.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 536,
+      "trade_count_v4": 536,
+      "variant": "best_45"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 1052452.0,
+      "pooled_pnl_v4": 1052452.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 3456,
+      "trade_count_v4": 3456,
+      "variant": "best_5"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 525006.0,
+      "pooled_pnl_v4": 525006.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 288,
+      "trade_count_v4": 288,
+      "variant": "best_90"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 340736.0,
+      "pooled_pnl_v4": 340736.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 108,
+      "trade_count_v4": 108,
+      "variant": "best_session"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 217187.00000000003,
+      "pooled_pnl_v4": 217187.00000000003,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 1336,
+      "trade_count_v4": 1336,
+      "variant": "first_real_profit_exit"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 86905.0,
+      "pooled_pnl_v4": 86905.0,
+      "selector": "oracle",
+      "trade_count_delta": 0,
+      "trade_count_v3": 45,
+      "trade_count_v4": 45,
+      "variant": "hold_to_forced_flat"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 220645.0,
+      "pooled_pnl_v4": 220645.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 2910,
+      "trade_count_v4": 2910,
+      "variant": "best_10"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 203236.0,
+      "pooled_pnl_v4": 203236.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 2068,
+      "trade_count_v4": 2068,
+      "variant": "best_20"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 179519.0,
+      "pooled_pnl_v4": 179519.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 5282,
+      "trade_count_v4": 5282,
+      "variant": "best_3"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 184071.0,
+      "pooled_pnl_v4": 184071.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 1353,
+      "trade_count_v4": 1353,
+      "variant": "best_45"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 228597.0,
+      "pooled_pnl_v4": 228597.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 4246,
+      "trade_count_v4": 4246,
+      "variant": "best_5"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 169563.0,
+      "pooled_pnl_v4": 169563.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 984,
+      "trade_count_v4": 984,
+      "variant": "best_90"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": 154008.0,
+      "pooled_pnl_v4": 154008.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 589,
+      "trade_count_v4": 589,
+      "variant": "best_session"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": -5015.0,
+      "pooled_pnl_v4": -5015.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 195,
+      "trade_count_v4": 195,
+      "variant": "first_real_profit_exit"
+    },
+    {
+      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_v3": -5319.0,
+      "pooled_pnl_v4": -5319.0,
+      "selector": "p5",
+      "trade_count_delta": 0,
+      "trade_count_v3": 33,
+      "trade_count_v4": 33,
+      "variant": "hold_to_forced_flat"
+    }
+  ],
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "scalar_changes": {
+    "distinct_d48_reference_minutes": {
+      "v3": 15106,
+      "v4": 15150,
+      "v4_minus_v3": 44.0
+    },
+    "fill_recheck_rejected_fee3_rows": {
+      "v3": 7205,
+      "v4": 7205,
+      "v4_minus_v3": 0.0
+    },
+    "intent_eligible_fee3_rows": {
+      "v3": 128758,
+      "v4": 128758,
+      "v4_minus_v3": 0.0
+    },
+    "label_rows_all_governed_candidates": {
+      "v3": 460937,
+      "v4": 460937,
+      "v4_minus_v3": 0.0
+    },
+    "label_rows_d48_reference": {
+      "v3": 121553,
+      "v4": 128758,
+      "v4_minus_v3": 7205.0
+    },
+    "remaining_session_label_coverage": {
+      "v3": 1.0,
+      "v4": 0.9775004271579242,
+      "v4_minus_v3": -0.02249957284207582
+    },
+    "session_count": {
+      "v3": 45,
+      "v4": 45,
+      "v4_minus_v3": 0.0
+    }
+  },
+  "schema_version": "Protocol101FT205V3V4ImpactV1",
+  "semantic_changes": [
+    "D48-reference and per-minute distribution membership is the canonical time-t intent universe based on A_t",
+    "the selected-only t+1 recheck remains logged but cannot remove a row from the time-t intent universe",
+    "successful realized-entry and rejection populations remain separately reported",
+    "no session, label-family, simulator-v5, fee, or lifecycle definition changed"
+  ],
+  "v3_oracle_rules_sha256": "b435d5fd8e37aca0919196e9f8e4b2d79132e3dd8dca04cc592887e2c6b79ddb",
+  "v3_receipt_sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce",
+  "v4_intent_and_recheck_counts": {
+    "d48_reference_rows": 128758,
+    "fill_recheck_rejected_fee3_rows": 7205,
+    "governed_rows": 460937,
+    "intent_eligible_fee3_rows": 128758
+  },
+  "v4_intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+  "v4_oracle_rules_sha256": "1989a42bc3cf62d97db3fc4f45b5936e8c0dee9fc365aee9b439be734158f639"
+}

@@ -1,15 +1,16 @@
 {
-  "schema_version": "Protocol101FT204NodeReceiptV3",
+  "schema_version": "Protocol101FT204NodeReceiptV4",
   "graph_id": "protocol101-full-trader-v2",
   "node_id": "FT2-04-PATH-LABEL-FREEZE",
   "outcome": "labels_frozen_v2",
-  "created_at_utc": "2026-07-29T20:39:44Z",
-  "producer": "Codex FT2-08-REPAIR resumption",
-  "scope": "owner_authorized_tplus1_no_bid_embargo_repair_definitions_only",
-  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "created_at_utc": "2026-07-30T02:48:10Z",
+  "producer": "Codex scoped final round executor",
+  "scope": "owner_authorized_oracle_rules_intent_universe_refreeze_only",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
   "repair_of": {
-    "receipt_sha256": "0b4a4b14b250e377211f29e3fcd4ab2051bacd9f65079bb73f0a3cc20928ce91",
-    "preserved_directory": "superseded/v1_pre_tplus1_20260729/"
+    "schema_version": "Protocol101FT204NodeReceiptV3",
+    "receipt_sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+    "preserved_directory": "superseded/v3_pre_scoped_final_round_20260730/"
   },
   "role_counts": {
     "governed_corpus": 301,
@@ -27,7 +28,7 @@
   },
   "deliverable_hashes": {
     "label_spec.json": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
-    "oracle_rules.json": "b435d5fd8e37aca0919196e9f8e4b2d79132e3dd8dca04cc592887e2c6b79ddb",
+    "oracle_rules.json": "1989a42bc3cf62d97db3fc4f45b5936e8c0dee9fc365aee9b439be734158f639",
     "census_sessions.json": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
     "intersection_proof.json": "74433f97822a7e2fd49f45acf321654399aadfc5405fb1c00dbdf6f41c51fcc9",
     "compute_census_outer_test_intersection.py": "152bb61785d9d82e5dddfe34f4eb2037107fc162e078dd01633646df8a65501c",
@@ -35,9 +36,9 @@
     "report.md": "01cd4f7380916b4f7da2b5e5ec25b040035733cc2e40e1e71b483b4282e007d1"
   },
   "source_hashes": {
-    "consolidated_authority_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "consolidated_authority_sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
     "consolidated_authority_pre_repair_sha256": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
-    "graph_v2_json_sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "graph_v2_json_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
     "runner_plan_sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",
     "canonical_processed_session_manifest_sha256": "e4801126f9c8d6ff79c44aebae633c710ce3206161588c4ca0dcc1f703bcea8d",
     "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
@@ -57,7 +58,11 @@
     "no_model_training_or_tuning": true,
     "no_simulator_v5_source_change": true,
     "no_recorder_broker_paid_data_runtime_or_paper_access": true,
-    "superseded_v1_packet_preserved": true
+    "superseded_v1_packet_preserved": true,
+    "superseded_v3_packet_preserved": true,
+    "time_t_intent_universe_is_canonical": true,
+    "selected_only_tplus1_recheck_cannot_redefine_intent_population": true,
+    "canonical_intent_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
   },
-  "legal_next": "FT2-05 opportunity census rerun under this exact v2 contract"
+  "legal_next": "FT2-05 opportunity census v4 rebuild under this exact refrozen contract"
 }

@@ -141,16 +141,16 @@
       "FT2-80 incremental-dollar failure"
     ]
   },
-  "census_v3_context": {
+  "census_v4_context": {
     "excluded_winners": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv",
-      "sha256": "fb3b2bddcf0d78499bfcc6f6324bcbf8328d1a11b196cf13f51acc60a743c501",
+      "sha256": "3e67b86aa763570a201d7960e618a9189ebd942f9d6c310e9983286a561bb1ec",
       "overall_joint_excluded_big_winner_rate": {
         "alpha_0_00": 0.0,
-        "alpha_0_10": 0.0682632357200567,
-        "alpha_0_20": 0.1765575694751444,
-        "alpha_0_25": 0.2490434305400997,
-        "alpha_0_30": 0.316666412597753
+        "alpha_0_10": 0.0682094827459779,
+        "alpha_0_20": 0.1773358558082919,
+        "alpha_0_25": 0.2501356563567835,
+        "alpha_0_30": 0.3171572293839002
       }
     },
     "role": "Design context only. Census paths neither pass nor fail a candidate tripwire."

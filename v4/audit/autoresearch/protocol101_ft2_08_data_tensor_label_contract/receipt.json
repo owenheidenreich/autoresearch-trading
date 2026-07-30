@@ -1,6 +1,7 @@
 {
-  "attempt": 2,
-  "coordinated_goal": "FT2-FINAL-REPAIR",
+  "attempt": 1,
+  "coordinated_goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
+  "created_at_utc": "2026-07-30T03:16:39.079994+00:00",
   "deliverable_hashes": {
     "account_state_ledger_spec.json": "4d745b89abc033ee7e6d1b2f5cbfa644c107df7f00c1406fd25f4443ae32ad12",
     "contract.md": "d1f9875d5300da26d83001a7f52aab67276e9346f9d01488405f808e66db9b07",
@@ -14,72 +15,51 @@
     "storage_spec.json": "ea3710ee556405f3b190e64af0e192cfcb14276b71d864cb86caa6800bba27d4",
     "synthetic_golden_vectors.json": "abc2d777790740ad697f1c9893cb700ef90f3cc6d54d039f59acbe48c0350f4a",
     "tensor_schema.json": "acfdee0460cd69c229cac61c06db1a9592da2f140cdb891994db3de05e1d4c6f",
-    "validate_contract_v3.py": "2f9c226d0cb6649433efa8e53ed316d841d240c720d1bac5da32dcb95a9d85a5",
-    "validation.json": "4ee8235bfdc01bf534c0d9d6b20e9a77ea0ca155e9c6bd71d6cf824d11972197"
-  },
-  "design_repair_budget": {
-    "attempt": 2,
-    "maximum_attempts": 2,
-    "remaining_after_completion": 0
-  },
-  "finding_disposition": {
-    "partially_answered_count": 0,
-    "rebutted_count": 0,
-    "unanswered_count": 0,
-    "unified_crosswalk": "v4/audit/autoresearch/protocol101_ft2_final_repair_attempt002/findings_crosswalk.json",
-    "unified_crosswalk_sha256": "78f69b89e0857c30af6f354cd8a26db923f075c9700f01d3971012462d7fa16d",
-    "verdict": "ANSWERED"
+    "validate_contract_v3.py": "009b27cda9b301390868d913b3c54ad3d1d39450070dff9e51dc3537a6642d2a",
+    "validation.json": "70888a9c07e8de2f0eb1ae8a94f842bc91ef8b67e32709ca1c2ed11d1389729c"
   },
   "goal": "FT2-08",
-  "highest_allowed_claim": "All rerun001 findings are answered under one coordinated repair with machine-verified cross-contract consistency; the final re-review is unblocked.",
+  "highest_allowed_claim": "The scoped producer repair is complete and mechanically testable; Fable verification and delta-scoped fresh-seat review remain pending.",
   "inputs": {
-    "census_v3_receipt": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-      "sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
-    },
-    "consolidated_authority": {
-      "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
-      "sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a"
-    },
-    "intent_fill_recheck_law": {
+    "canonical_intent_fill_recheck_law": {
       "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
       "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
     },
-    "rerun001_joined_review": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/joined_review.md",
-      "sha256": "068fd6e7f49362d69ffaa935abd1fc043a62251f2c1ef6922a62d9416265dc4a"
+    "census_v4_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
     },
-    "rerun001_receipt": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun001/receipt.json",
-      "sha256": "8338b51ecd1ba33d33ed9fa6635456f71092745cdd62559857a9bbca280c0abc"
+    "consolidated_authority": {
+      "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+      "sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
     },
-    "simulator_v5": {
-      "path": "v4/model/protocol101_serial_simulator_v5.py",
-      "sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+    "ft2_04_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
+      "sha256": "fc9c27e7ed1025aeeab4461d4176504bb8789340296cd1e9e0ad4cec67a127ca"
+    },
+    "graph_v2": {
+      "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+      "sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9"
+    },
+    "rerun002_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun002/receipt.json",
+      "sha256": "17cc72ea85c629ae9a2d23059ae13020782464705ee6049f577c9936dd2579ac"
     }
   },
-  "next_goal": {
-    "goal": "FT2-20",
-    "phase": "final re-review with fresh seats",
-    "status": "not_started"
-  },
   "outcome": "producer_repaired",
-  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
   "repair_of": {
     "preservation_verified": true,
-    "preserved_path": "superseded/v2_pre_final_repair_20260729/receipt.json",
-    "receipt_sha256": "584612af00f8e04b9b903f1fb4b56396a3dc950bd21f18718fa72fd4ff8dfb9c",
-    "schema_version": "Protocol101FT208NodeReceiptV2"
+    "preserved_path": "superseded/v3_pre_scoped_final_round_20260730/receipt.json",
+    "receipt_sha256": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c",
+    "schema_version": "Protocol101FT208NodeReceiptV3"
   },
-  "schema_version": "Protocol101FT208NodeReceiptV3",
+  "schema_version": "Protocol101FT208NodeReceiptV4",
   "side_effects": {
-    "broker_access": false,
-    "final_re_review_started": false,
-    "new_session_statistics_beyond_census_v3": false,
-    "paid_compute": false,
-    "protected_data_access": false,
-    "recorder_access": false,
-    "simulator_v5_modified": false,
-    "training_or_fitting": false
+    "broker_recorder_or_paid_data_access": false,
+    "protected_or_outer_data_access": false,
+    "real_model_training_or_fitting": false,
+    "runtime_promotion_or_paper_change": false,
+    "simulator_v5_modified": false
   }
 }

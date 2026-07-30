@@ -1,0 +1,67 @@
+{
+  "attempt": 1,
+  "created_at_utc": "2026-07-30T03:22:15.019039+00:00",
+  "goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
+  "graph_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+  "highest_allowed_claim": "All five owner-scoped repairs and T1-T6 passed producer-side mechanical checks. Independent Fable verification and the delta-scoped fresh-seat review remain pending.",
+  "next": "STOP_FOR_FABLE_VERIFICATION",
+  "outcome": "producer_complete_pending_fable_verification",
+  "packet_receipts": {
+    "FT2-04": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
+      "sha256": "fc9c27e7ed1025aeeab4461d4176504bb8789340296cd1e9e0ad4cec67a127ca"
+    },
+    "FT2-05": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
+    },
+    "FT2-08": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+      "sha256": "74d0e3be59dff05be12144046326cd8e1d91832b899e7f22304273e4b17a0813"
+    },
+    "FT2-10": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json",
+      "sha256": "0af1ce13d7839ba5b64706afac493d2d95ff25fc08abb0d31b2b42fe172de1e9"
+    },
+    "FT2-11": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json",
+      "sha256": "b1ebff7c3647cf6da6b0a30f61c217f7e2b1542fb558ecf8d269de21fe4400e4"
+    }
+  },
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "repair_source": {
+    "prior_aggregate_receipt_sha256": "19b74e513f0c6c68b50167b37e4bcfd40cb4ccd0f3c2240201ff3cbbd178f4f3",
+    "rerun002_receipt_sha256": "17cc72ea85c629ae9a2d23059ae13020782464705ee6049f577c9936dd2579ac"
+  },
+  "round_deliverable_hashes": {
+    "consistency_checker_output.json": "9141c2cd35a2b464e2009479df8d6b6cc74c465e98056b5a42ae2b14b0c40939",
+    "diff_manifest.json": "81cd6c4655f9f0313b5ba40167428460e5680aa53ba0dd86c6fc5a42e6295cf3",
+    "findings_crosswalk.json": "068dfcfe09201991c2bc2797f362c8cd6c9f8a2a26db6c9f3fe362071e034b3f",
+    "graph_validation.json": "025f0446ecf013bdcdce910b75a15dd5f2e19974cb0149ec28d2e8679c04251c",
+    "report.md": "2c82379f077a1fbf65a7b89c44e170b8fd17c31191ac3af4d580fcf965afc419",
+    "t1_rlac_pipeline_output.json": "e34409e23b0f7ca916d4542f3aa3398da4ba7926a489d8e1796cb2d95a55e06e",
+    "t3_t4_census_v4_output.json": "2f4777b57f2098823474cdb3d72903618092cf7ebd96560b2a2598de2a322b79",
+    "t6_regression_output.json": "65855c2db84277d1715086787bf90b0a886d518575286c62a00d6103fd1ff21d",
+    "targeted_census_pytest_output.json": "323ac50472256ad52db8cdfa3365370d37b7c55aa71c363d379ed27d23f7325d"
+  },
+  "schema_version": "Protocol101FT2ScopedFinalRoundAggregateReceiptV1",
+  "side_effects": {
+    "broker_recorder_or_paid_data_access": false,
+    "protected_or_outer_data_access": false,
+    "real_model_training_or_fitting": false,
+    "runtime_promotion_or_paper_change": false,
+    "simulator_v5_modified": false,
+    "synthetic_tiny_T1_only": true
+  },
+  "simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+  "tests": {
+    "T1": "pass",
+    "T2": "pass",
+    "T3_T4": "pass",
+    "T5": "pass",
+    "T6": "pass",
+    "consistency_check_count": 29,
+    "consistency_failed_checks": [],
+    "targeted_census_pytest": "pass"
+  }
+}

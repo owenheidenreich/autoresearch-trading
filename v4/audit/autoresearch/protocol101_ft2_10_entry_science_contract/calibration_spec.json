@@ -1,12 +1,25 @@
 {
-  "schema_version": "Protocol101FT210CalibrationSpecV3",
+  "schema_version": "Protocol101FT210CalibrationSpecV4",
   "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
-  "status": "producer_repaired",
-  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "status": "scoped_final_round_repaired",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
   "intent_fill_recheck_law": {
     "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
     "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
   },
+  "realized_label_audit_composer": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+    "sha256": "d833297dbaf2a547d8246cdf3cf404dea0d8ff4234026ceac37797e462a8422f",
+    "execution_order": "construct the complete WAIT and per-contract regret target tables exactly once before fitting any model head; freeze their identity and provenance manifests; runtime composer output is never read"
+  },
+  "action_head_one_pass_order": [
+    "construct anchor-specific RLAC targets independently inside each inner-train and disjoint inner-calibration role",
+    "fit forecast and action heads on inner-train against the complete RLAC target populations",
+    "conformal-calibrate q90 regret bounds and WAIT reliability on disjoint inner-calibration blocks over those complete populations",
+    "freeze the heads, calibrators, target manifests, and hashes",
+    "run the runtime composer only after that freeze"
+  ],
+  "post_composer_recalibration_or_relabeling": "forbidden; any implementation or provenance trace that conditions targets or calibration membership on composer output is invalid_evidence",
   "outer_firewall": {
     "fit_or_calibrate_on_outer_validation": false,
     "select_thresholds_on_outer_validation": false,
@@ -138,9 +151,9 @@
       "prefer smaller nonzero alpha; alpha=0.0 remains a control and is selectable only if it wins the same frozen rule",
       "canonical numeric order"
     ],
-    "census_v3_trade_rate_provenance": {
+    "census_v4_trade_rate_provenance": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
-      "sha256": "1460090f13327ebf83e4f39a666eb83d44cf23625a6a7053499eafb072c18ac6",
+      "sha256": "fb47b66ec08b74edc96bcd28bdcaac94cb41ef3bc36dee432cdff316d8897209",
       "session_count": 45,
       "embargo_intersection_count": 0,
       "overall_mean_trades_per_session_by_anchor": {
@@ -154,7 +167,7 @@
     },
     "design_trade_rate_band_mean_trades_per_session": {
       "reference": 2.6,
-      "reference_source": "census-v3 alpha=0.0 no-screen overall row",
+      "reference_source": "census-v4 alpha=0.0 no-screen overall row",
       "lower": 0.65,
       "upper": 5.2,
       "formula": "[max(0.3,2.6/4),min(6.0,2*2.6)]",
@@ -164,7 +177,7 @@
       "calibration_gate": false,
       "ranking_or_tie_break_input": false,
       "per_day_cap": false,
-      "population_reconciliation": "FT2-05 v3 reports multi-trade oracle activity. FT2-10 component evaluation holds a successful entry to 15:55 and therefore permits at most one successful trade per session. The census band never governs the component population."
+      "population_reconciliation": "FT2-05 v4 reports multi-trade oracle activity. FT2-10 component evaluation holds a successful entry to 15:55 and therefore permits at most one successful trade per session. The census band never governs the component population."
     },
     "no_setting_in_band": "report the diagnostic mismatch; continue under the frozen inner objective and all actual safety, quality, tail, regret, and evidence gates"
   },
@@ -178,12 +191,14 @@
     "activation_without_source_evidence": "historical component research may remain source_transfer_unavailable; any live, decision-shadow, or paper activation fails closed"
   },
   "action_conditioned_gate": {
-    "name": "Protocol101EntryActionConditionedCalibrationGateV2",
+    "name": "Protocol101EntryActionConditionedCalibrationGateV3",
     "status": "mandatory_non_skippable_ft2_11_pass_checklist_pending",
     "head_contract": "forecast_heads.json action_conditioned_outputs",
     "wait_reliability": {
       "prediction": "same-final-model disjoint-calibrated p_wait",
-      "outcome": "1 only when the frozen realized-label audit composer on the exact risk set says WAIT; audit outcome is never a runtime input",
+      "outcome": "the pre-model RLAC target y_wait(t) over every label-complete governed flat minute; target construction never invokes or conditions on runtime composer output",
+      "denominator": "all label-complete governed flat minutes in the disjoint calibration sessions",
+      "excluded_rows": "label-incomplete governed flat minutes only",
       "binning": "10 equal-frequency bins ordered by calibrated p_wait; ties remain together; merge the smallest adjacent bins left-to-right until every bin has at least 10 observations",
       "thresholds": {
         "expected_calibration_error_max": 0.1,
@@ -192,8 +207,10 @@
       }
     },
     "selected_contract_regret": {
-      "realized_regret": "objective_spec.json normalized selected-contract regret in [0,1]",
+      "realized_regret": "the pre-model RLAC per-contract target r(t,c)=U_label(t,c_star_regret)-U_label(t,c) in [0,1] on every label-complete intent-eligible contract of every included minute, including RLAC WAIT minutes",
       "prediction": "same-final-model expected regret and conformalized 90 percent upper bound from forecast_heads.json",
+      "denominator": "all label-complete intent-eligible contracts on every included minute in the disjoint calibration sessions",
+      "excluded_rows": "label-incomplete rows and zero-eligible minutes only; runtime model or composer selections may exclude zero rows",
       "thresholds": {
         "absolute_mean_expected_regret_calibration_error_max": 0.1,
         "nominal_upper_bound_coverage": 0.9,
@@ -204,12 +221,19 @@
       "action_use": "The conformalized q90 normalized-regret upper bound is a hard composer action constraint: finite and <=0.10 is required to ENTER; missing, nonfinite, or >0.10 emits WAIT.",
       "report_only": false
     },
+    "runtime_selected_subset_diagnostic": {
+      "timing": "post-hoc after the frozen runtime composer is run on out-of-fold predictions",
+      "quantity": "empirical q90-regret upper-bound coverage on the runtime-composer-selected exact-contract subset, with distinct-session, minute, and contract denominators",
+      "claim": "report-only conditional diagnostic; no conditional-coverage guarantee is asserted",
+      "may_refit_recalibrate_relabel_or_select": false,
+      "collapse": "route owner_decision_required through the existing tripwire vocabulary; do not silently accept, recalibrate, or relabel"
+    },
     "minimum_evidence": {
       "distinct_sessions": 20,
       "flat_decisions": 100,
       "realized_wait_outcomes": 50,
       "realized_enter_outcomes": 50,
-      "selected_contracts": 50
+      "rlac_contract_targets": 50
     },
     "insufficient_result": "insufficient_calibration_evidence",
     "cannot_skip": true,
@@ -242,7 +266,7 @@
         "each active extension channel",
         "open-state outside-current-ladder row when present"
       ],
-      "missing_required_natural_stratum": "source_transfer_insufficient; synthetic fixtures may prove machinery but cannot manufacture empirical source evidence",
+      "missing_required_natural_stratum": "insufficient_evidence; synthetic fixtures may prove machinery but cannot manufacture empirical source evidence",
       "recorder_status": "deliberately stopped by owner decision; no pass condition assumes another paired day will appear"
     },
     "field_tolerances": {
@@ -258,10 +282,15 @@
       "zero_allowed": "only when every paired gap is bit-identical",
       "artifact": "candidate-specific source_transfer_gap_p95.json plus identity manifest and hashes"
     },
-    "activation": "FT2-92 emits pass only when all exact fields, numeric tolerances, action agreement, minimum evidence, present strata, and p95 artifact pass",
-    "graph_order": "FT2-91 pass -> FT2-92 executes this measurement -> FT2-92 pass -> FT2-93 no-order live shadow",
+    "activation": "FT2-92 emits pass only when all exact fields, numeric tolerances, action agreement, minimum evidence, present strata, and p95 artifact pass; identity/tolerance/action failures emit fail; an otherwise valid run below frozen evidence or natural-stratum minima emits insufficient_evidence",
+    "emitted_outcome_vocabulary": [
+      "pass",
+      "fail",
+      "insufficient_evidence"
+    ],
+    "graph_order": "FT2-91 pass -> FT2-92 executes this measurement -> pass routes to FT2-93, fail routes to STOP-CANDIDATE-REJECTED, and insufficient_evidence routes to STOP-OWNER-DECISION",
     "entry_component_freeze_state_before_FT2_92": "transfer_not_yet_run is permitted and is not an entry-component failure",
-    "insufficient_existing_data": "FT2-92 routes source_transfer_insufficient; FT2-93/live/paper activation remains blocked and no new collection is authorized here"
+    "insufficient_existing_data": "FT2-92 emits insufficient_evidence; FT2-93/live/paper activation remains blocked and no new collection is authorized here"
   },
   "hashing": {
     "algorithm": "sha256",

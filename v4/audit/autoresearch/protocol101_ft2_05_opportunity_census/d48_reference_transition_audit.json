@@ -1,0 +1,622 @@
+{
+  "distributions": {
+    "v2_to_v3": {
+      "added": {
+        "categorical": {
+          "market_phase": {},
+          "moneyness_band": {},
+          "premium_band": {}
+        },
+        "economic": {
+          "decision_entry_ask": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "entry_ask": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "fill_cost_fee3_cents": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "intent_cost_fee3_cents": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          }
+        },
+        "label_families": {
+          "early_drawdown_h10_dollars": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "pre_profit_adverse_excursion_dollars": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "profitable_window_fraction_positive": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "time_to_first_real_profit_minutes": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "underwater_burden_dollar_minutes": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "upside_mfe_dollars": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          }
+        },
+        "row_count": 0
+      },
+      "removed": {
+        "categorical": {
+          "market_phase": {
+            "afternoon": 12206,
+            "europe_close_transition": 2649,
+            "lunch": 12633,
+            "opening_discovery": 592,
+            "power_hour_entry": 3863,
+            "primary_morning": 5816
+          },
+          "moneyness_band": {
+            "atm": 2998,
+            "near": 10506,
+            "wing": 24255
+          },
+          "premium_band": {
+            "cheap_le_1": 31046,
+            "large_8_20": 8,
+            "medium_3_8": 5034,
+            "small_1_3": 1671
+          }
+        },
+        "economic": {
+          "decision_entry_ask": {
+            "mean": 1.3803940782330042,
+            "q10": 0.55,
+            "q50": 0.8,
+            "q90": 5.1,
+            "valid_count": 37759
+          },
+          "entry_ask": {
+            "mean": 1.2626380465584364,
+            "q10": 0.55,
+            "q50": 0.8,
+            "q90": 4.4,
+            "valid_count": 37759
+          },
+          "fill_cost_fee3_cents": {
+            "mean": 12926.380465584363,
+            "q10": 5800.0,
+            "q50": 8300.0,
+            "q90": 44300.0,
+            "valid_count": 37759
+          },
+          "intent_cost_fee3_cents": {
+            "mean": 14103.94078233004,
+            "q10": 5800.0,
+            "q50": 8300.0,
+            "q90": 51300.0,
+            "valid_count": 37759
+          }
+        },
+        "label_families": {
+          "early_drawdown_h10_dollars": {
+            "mean": -108.55335184450615,
+            "q10": -223.00000000000003,
+            "q50": -103.0,
+            "q90": -3.0,
+            "valid_count": 5042
+          },
+          "pre_profit_adverse_excursion_dollars": {
+            "mean": -120.369892899643,
+            "q10": -443.00000000000006,
+            "q50": -43.000000000000036,
+            "q90": 0.0,
+            "valid_count": 5042
+          },
+          "profitable_window_fraction_positive": {
+            "mean": 0.3029959310781344,
+            "q10": 0.0,
+            "q50": 0.1620995995995996,
+            "q90": 0.8566643356643358,
+            "valid_count": 5042
+          },
+          "time_to_first_real_profit_minutes": {
+            "mean": 35.84212614042047,
+            "q10": 1.0,
+            "q50": 3.0,
+            "q90": 125.80000000000109,
+            "valid_count": 5042
+          },
+          "underwater_burden_dollar_minutes": {
+            "mean": 45163.838754462515,
+            "q10": 1551.200000000001,
+            "q50": 33573.5,
+            "q90": 108188.00000000007,
+            "valid_count": 5042
+          },
+          "upside_mfe_dollars": {
+            "mean": 901.8928996429988,
+            "q10": -13.000000000000053,
+            "q50": 306.99999999999994,
+            "q90": 2736.0000000000055,
+            "valid_count": 5042
+          }
+        },
+        "row_count": 37759
+      },
+      "retained": {
+        "categorical": {
+          "market_phase": {
+            "afternoon": 29556,
+            "europe_close_transition": 11310,
+            "lunch": 38792,
+            "opening_discovery": 3458,
+            "power_hour_entry": 8314,
+            "primary_morning": 30123
+          },
+          "moneyness_band": {
+            "atm": 20664,
+            "near": 40035,
+            "wing": 60854
+          },
+          "premium_band": {
+            "cheap_le_1": 1535,
+            "medium_3_8": 43641,
+            "small_1_3": 76377
+          }
+        },
+        "economic": {
+          "decision_entry_ask": {
+            "mean": 2.6286615714955617,
+            "q10": 1.25,
+            "q50": 2.5,
+            "q90": 4.3,
+            "valid_count": 121553
+          },
+          "entry_ask": {
+            "mean": 2.602695943333361,
+            "q10": 1.25,
+            "q50": 2.45,
+            "q90": 4.2,
+            "valid_count": 121553
+          },
+          "fill_cost_fee3_cents": {
+            "mean": 26326.959433333606,
+            "q10": 12800.0,
+            "q50": 24800.0,
+            "q90": 42300.0,
+            "valid_count": 121553
+          },
+          "intent_cost_fee3_cents": {
+            "mean": 26586.615714955617,
+            "q10": 12800.0,
+            "q50": 25300.0,
+            "q90": 43300.0,
+            "valid_count": 121553
+          }
+        },
+        "label_families": {
+          "early_drawdown_h10_dollars": {
+            "mean": -64.47713343150724,
+            "q10": -143.0,
+            "q50": -53.0,
+            "q90": -7.999999999999982,
+            "valid_count": 121553
+          },
+          "pre_profit_adverse_excursion_dollars": {
+            "mean": -77.17512525400443,
+            "q10": -232.99999999999997,
+            "q50": -32.999999999999986,
+            "q90": 0.0,
+            "valid_count": 121553
+          },
+          "profitable_window_fraction_positive": {
+            "mean": 0.25200579496670694,
+            "q10": 0.0,
+            "q50": 0.10566037735849057,
+            "q90": 0.7862540103993806,
+            "valid_count": 121553
+          },
+          "time_to_first_real_profit_minutes": {
+            "mean": 44.5422901944008,
+            "q10": 1.0,
+            "q50": 4.0,
+            "q90": 183.0,
+            "valid_count": 121553
+          },
+          "underwater_burden_dollar_minutes": {
+            "mean": 27614.939614818228,
+            "q10": 1632.0,
+            "q50": 19784.0,
+            "q90": 65945.8,
+            "valid_count": 121553
+          },
+          "upside_mfe_dollars": {
+            "mean": 537.6514442259755,
+            "q10": -13.000000000000009,
+            "q50": 117.00000000000001,
+            "q90": 1527.0,
+            "valid_count": 121553
+          }
+        },
+        "row_count": 121553
+      }
+    },
+    "v3_to_v4": {
+      "added": {
+        "categorical": {
+          "market_phase": {
+            "afternoon": 2129,
+            "europe_close_transition": 526,
+            "lunch": 2017,
+            "opening_discovery": 196,
+            "power_hour_entry": 810,
+            "primary_morning": 1527
+          },
+          "moneyness_band": {
+            "atm": 1439,
+            "near": 2384,
+            "wing": 3382
+          },
+          "premium_band": {
+            "cheap_le_1": 1226,
+            "medium_3_8": 4280,
+            "small_1_3": 1699
+          }
+        },
+        "economic": {
+          "decision_entry_ask": {
+            "mean": 3.1600346981263012,
+            "q10": 1.0,
+            "q50": 4.3,
+            "q90": 4.9,
+            "valid_count": 7205
+          },
+          "entry_ask": {
+            "mean": 3.599028452463567,
+            "q10": 0.85,
+            "q50": 5.0,
+            "q90": 5.7,
+            "valid_count": 7205
+          },
+          "fill_cost_fee3_cents": {
+            "mean": 36290.28452463567,
+            "q10": 8800.0,
+            "q50": 50300.0,
+            "q90": 57300.0,
+            "valid_count": 7205
+          },
+          "intent_cost_fee3_cents": {
+            "mean": 31900.34698126301,
+            "q10": 10300.0,
+            "q50": 43300.0,
+            "q90": 49300.0,
+            "valid_count": 7205
+          }
+        },
+        "label_families": {
+          "early_drawdown_h10_dollars": {
+            "mean": -131.27065923862583,
+            "q10": -273.0,
+            "q50": -123.00000000000001,
+            "q90": -3.0,
+            "valid_count": 4308
+          },
+          "pre_profit_adverse_excursion_dollars": {
+            "mean": -141.06313834726092,
+            "q10": -503.0,
+            "q50": -53.0,
+            "q90": 0.0,
+            "valid_count": 4308
+          },
+          "profitable_window_fraction_positive": {
+            "mean": 0.31893791700750684,
+            "q10": 0.0,
+            "q50": 0.1789798570500325,
+            "q90": 0.8765595153632048,
+            "valid_count": 4308
+          },
+          "time_to_first_real_profit_minutes": {
+            "mean": 34.66434540389972,
+            "q10": 1.0,
+            "q50": 3.0,
+            "q90": 121.0,
+            "valid_count": 4308
+          },
+          "underwater_burden_dollar_minutes": {
+            "mean": 50481.37256267409,
+            "q10": 1366.5,
+            "q50": 35632.0,
+            "q90": 123059.90000000002,
+            "valid_count": 4308
+          },
+          "upside_mfe_dollars": {
+            "mean": 991.3384401114206,
+            "q10": -12.999999999999964,
+            "q50": 357.00000000000006,
+            "q90": 2917.0000000000005,
+            "valid_count": 4308
+          }
+        },
+        "row_count": 7205
+      },
+      "removed": {
+        "categorical": {
+          "market_phase": {},
+          "moneyness_band": {},
+          "premium_band": {}
+        },
+        "economic": {
+          "decision_entry_ask": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "entry_ask": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "fill_cost_fee3_cents": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "intent_cost_fee3_cents": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          }
+        },
+        "label_families": {
+          "early_drawdown_h10_dollars": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "pre_profit_adverse_excursion_dollars": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "profitable_window_fraction_positive": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "time_to_first_real_profit_minutes": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "underwater_burden_dollar_minutes": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          },
+          "upside_mfe_dollars": {
+            "mean": null,
+            "q10": null,
+            "q50": null,
+            "q90": null,
+            "valid_count": 0
+          }
+        },
+        "row_count": 0
+      },
+      "retained": {
+        "categorical": {
+          "market_phase": {
+            "afternoon": 29556,
+            "europe_close_transition": 11310,
+            "lunch": 38792,
+            "opening_discovery": 3458,
+            "power_hour_entry": 8314,
+            "primary_morning": 30123
+          },
+          "moneyness_band": {
+            "atm": 20664,
+            "near": 40035,
+            "wing": 60854
+          },
+          "premium_band": {
+            "cheap_le_1": 1535,
+            "medium_3_8": 43641,
+            "small_1_3": 76377
+          }
+        },
+        "economic": {
+          "decision_entry_ask": {
+            "mean": 2.6286615714955617,
+            "q10": 1.25,
+            "q50": 2.5,
+            "q90": 4.3,
+            "valid_count": 121553
+          },
+          "entry_ask": {
+            "mean": 2.602695943333361,
+            "q10": 1.25,
+            "q50": 2.45,
+            "q90": 4.2,
+            "valid_count": 121553
+          },
+          "fill_cost_fee3_cents": {
+            "mean": 26326.959433333606,
+            "q10": 12800.0,
+            "q50": 24800.0,
+            "q90": 42300.0,
+            "valid_count": 121553
+          },
+          "intent_cost_fee3_cents": {
+            "mean": 26586.615714955617,
+            "q10": 12800.0,
+            "q50": 25300.0,
+            "q90": 43300.0,
+            "valid_count": 121553
+          }
+        },
+        "label_families": {
+          "early_drawdown_h10_dollars": {
+            "mean": -64.47713343150724,
+            "q10": -143.0,
+            "q50": -53.0,
+            "q90": -7.999999999999982,
+            "valid_count": 121553
+          },
+          "pre_profit_adverse_excursion_dollars": {
+            "mean": -77.17512525400443,
+            "q10": -232.99999999999997,
+            "q50": -32.999999999999986,
+            "q90": 0.0,
+            "valid_count": 121553
+          },
+          "profitable_window_fraction_positive": {
+            "mean": 0.25200579496670694,
+            "q10": 0.0,
+            "q50": 0.10566037735849057,
+            "q90": 0.7862540103993806,
+            "valid_count": 121553
+          },
+          "time_to_first_real_profit_minutes": {
+            "mean": 44.5422901944008,
+            "q10": 1.0,
+            "q50": 4.0,
+            "q90": 183.0,
+            "valid_count": 121553
+          },
+          "underwater_burden_dollar_minutes": {
+            "mean": 27614.939614818228,
+            "q10": 1632.0,
+            "q50": 19784.0,
+            "q90": 65945.8,
+            "valid_count": 121553
+          },
+          "upside_mfe_dollars": {
+            "mean": 537.6514442259755,
+            "q10": -13.000000000000009,
+            "q50": 117.00000000000001,
+            "q90": 1527.0,
+            "valid_count": 121553
+          }
+        },
+        "row_count": 121553
+      }
+    }
+  },
+  "governed_row_count": 460937,
+  "identity_columns": [
+    "session",
+    "decision_time_ns",
+    "contract_id"
+  ],
+  "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "reconciliation": {
+    "aggregate_identity_v2_minus_v3_equals_net_intent_plus_recheck": true,
+    "each_step_sums_to_governed_rows": true,
+    "every_removed_row_accounted": true,
+    "v2_minus_v3_headline": 37759,
+    "v2_minus_v4_net_intent_universe_change": 30554,
+    "v2_to_v3_removed_observed": 37759,
+    "v3_to_v4_added_observed": 7205,
+    "v3_to_v4_additions_equal_v4_recheck_rejections": true,
+    "v4_minus_v3_recheck_population": 7205
+  },
+  "row_audit_path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.csv",
+  "schema_version": "Protocol101FT205D48ReferenceTransitionAuditV1",
+  "side_effects": {
+    "broker_or_paid_data_access": false,
+    "model_training": false,
+    "protected_or_outer_access": false
+  },
+  "summary_verdict": {
+    "explanation": "Removed/restored rows are selected by premium, time-t intent, and t+1 executability rules, so their premium, moneyness, phase, missingness, and path-label distributions differ from retained rows. The tables quantify those differences; they are the intended consequence of correcting the universe and are not a profitability or causal-effect claim. The published 30,554 plus 7,205 identity is a net aggregate decomposition, not a disjoint v2-to-v3 row partition: the three-version membership matrix is the row-level authority.",
+    "value": "economically_different_descriptive_not_causal"
+  },
+  "three_version_membership_overlap": {
+    "v2_0_v3_0_v4_0": 297317,
+    "v2_0_v3_0_v4_1": 4308,
+    "v2_1_v3_0_v4_0": 34862,
+    "v2_1_v3_0_v4_1": 2897,
+    "v2_1_v3_1_v4_1": 121553
+  },
+  "transition_counts": {
+    "v2_to_v3": {
+      "absent_both": 301625,
+      "added": 0,
+      "removed": 37759,
+      "retained": 121553
+    },
+    "v3_to_v4": {
+      "absent_both": 332179,
+      "added": 7205,
+      "removed": 0,
+      "retained": 121553
+    }
+  },
+  "unique_identity_count": 460937,
+  "v2_to_v3_removed_reason_counts": {
+    "time_t_intent_eligible_tplus1_recheck_rejected": 2897,
+    "time_t_intent_ineligible": 34862
+  },
+  "version_reference_counts": {
+    "v2": 159312,
+    "v3": 121553,
+    "v4": 128758
+  }
+}

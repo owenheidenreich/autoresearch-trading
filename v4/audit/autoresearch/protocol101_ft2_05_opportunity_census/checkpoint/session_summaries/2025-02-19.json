@@ -6,15 +6,15 @@
   "intent_eligible_fee4_rows": 2765,
   "label_path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-19.parquet",
   "label_rows": 8872,
-  "label_sha256": "279ae8bdf5756201c1a11245bd64fc77d9b70ae3d9203f4316b32a3d587baeff",
+  "label_sha256": "da051a18e36c99b2307ca326dea2e5bf84b38c2d37492e8392b4fb389c242100",
   "malformed_processed_rows": 0,
   "missing_contract_paths": 0,
   "missing_entry_fill_asks": 0,
-  "reference_d48_rows": 2649,
+  "reference_d48_rows": 2765,
   "session": "2025-02-19",
-  "system_cpu_seconds": 0.11659599999999992,
-  "user_cpu_seconds": 17.887383999999997,
+  "system_cpu_seconds": 0.12028799999999995,
+  "user_cpu_seconds": 16.068111999999985,
   "vol_proxy_name": "session_spx_realized_range_bps",
   "vol_proxy_value": 58.20089963985422,
-  "wall_seconds": 18.32527274999302
+  "wall_seconds": 16.23304650001228
 }

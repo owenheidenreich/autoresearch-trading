@@ -1,0 +1,10 @@
+{
+  "schema_version": "Protocol101FT2ScopedRoundTargetedCensusPytestOutputV1",
+  "command": "PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python -m pytest -q v4/tests/test_protocol101_ft2_05_opportunity_census.py v4/tests/test_protocol101_ft2_05_opportunity_census_v2.py",
+  "exit_code": 0,
+  "collected": 10,
+  "passed": 10,
+  "failed": 0,
+  "stdout": "..........                                                               [100%]\n10 passed in 1.00s",
+  "outcome": "pass"
+}

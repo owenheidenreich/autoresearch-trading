@@ -8,7 +8,7 @@
     "contract_dependent_features_not_global": true,
     "deterministic_session_start_equity": true,
     "ft204_v2": true,
-    "ft205_v3": true,
+    "ft205_v4": true,
     "golden_feature_vector": true,
     "golden_fee_path_soft_close": true,
     "golden_intent_fill_recheck": true,
@@ -37,5 +37,5 @@
     "tensor_schema.json": "acfdee0460cd69c229cac61c06db1a9592da2f140cdb891994db3de05e1d4c6f"
   },
   "passed": true,
-  "schema_version": "Protocol101FT208ContractValidationV3"
+  "schema_version": "Protocol101FT208ContractValidationV4"
 }

@@ -973,6 +973,40 @@ Post-signature amendments:
     The **tail guard** decision belongs to the bounded FT2-10/FT2-11 repairs.
     They are recorded here but are not implemented or reinterpreted by
     FT2-08-REPAIR.
+- Owner amendment 2026-07-30 — **scoped final redesign round after FT2-20
+  rerun002**:
+  - The owner authorizes one redesign round limited strictly to the five
+    residual rerun002 findings: S2-04 calibration circularity; the FT2-04
+    oracle-rule versus canonical intent-law contradiction; the FT2-92
+    outcome-vocabulary mismatch; the missing D48 row-transition audit; and
+    the fill-recheck denominator disclosure. Every other region of the
+    triple-reviewed contract set remains frozen.
+  - Codex is the executor. Fable is the independent verifier. After mechanical
+    verification, three fresh isolated seats review only the changed regions
+    and their direct consequences. A clean or documentable-only delta routes
+    to FT2-21; a blocking delta flips the roles so Fable writes and Codex
+    reviews. This amendment does not itself start FT2-21, training, protected
+    evidence access, broker work, or paper operation.
+  - The model-free Realized-Label Audit Composer (RLAC) is authorized as the
+    one-pass source of WAIT and exact-contract regret training targets over
+    the full intent-eligible population. RLAC uses only frozen realized FT2-04
+    labels and frozen anchor thresholds; it may not consume model forecasts,
+    runtime-composer outputs, iterations, or a fixed point.
+  - The canonical D48/D49 law is two-stage: decision-time intent eligibility
+    uses information through completed minute `t`, and only the committed
+    exact identity is rechecked at `t+1`. Rejection opens no position, charges
+    no premium or fee, realizes no PnL, and permits no substitute.
+  - Graph V2 is amended so
+    `FT2-92-IBKR-DECISION-SHADOW --insufficient_evidence-->
+    STOP-OWNER-DECISION`. FT2-92 may emit exactly `pass`, `fail`, or
+    `insufficient_evidence`; `fail` continues to reject the candidate, while
+    insufficient valid evidence is an owner stop rather than candidate
+    failure. No other FT2-92 or FT2-93 route is changed.
+  - The authorized evidence rebuild is census v4 on the already-governed
+    45-session census set only, with v3-to-v4 impact, complete row-level
+    v2-to-v3-to-v4 D48 transition accounting, and both governed-row and
+    intent-conditional fill-recheck rejection denominators. It authorizes no
+    new session, model fit, feature selection, or threshold tuning.
 
 Every owner-gate packet in Graph V2 must open with a one-page plain-English memo:
 the question, the options, the evidence in trader terms, the recommendation, and

@@ -1,0 +1,99 @@
+{
+  "schema_version": "Protocol101FT2ScopedFinalRoundFiveFindingCrosswalkV1",
+  "goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
+  "authority_sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "source_review": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun002/joined_review.md",
+    "receipt_sha256": "17cc72ea85c629ae9a2d23059ae13020782464705ee6049f577c9936dd2579ac"
+  },
+  "scope_count": 5,
+  "unchanged_regions_frozen": true,
+  "findings": [
+    {
+      "finding_id": "S2-04",
+      "title": "Action-conditioned calibration target/composer circularity",
+      "severity": "BLOCKING",
+      "disposition": "IMPLEMENTED_PENDING_FABLE_VERIFICATION",
+      "repair": "A model-free one-pass RLAC constructs full-population WAIT and per-contract regret targets before fitting; disjoint calibration freezes before the runtime composer; target provenance rejects model/composer ancestors.",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json:/independence_law",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json:/targets",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/action_head_one_pass_order",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/action_conditioned_gate/runtime_selected_subset_diagnostic",
+        "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/t1_rlac_pipeline_output.json"
+      ],
+      "tests": [
+        "T1",
+        "T2c",
+        "T6"
+      ]
+    },
+    {
+      "finding_id": "FRESH-S1-B1+F-TR-001+S2-CONVERGENCE",
+      "title": "Oracle rules contradict canonical two-stage intent/fill law",
+      "severity": "BLOCKING",
+      "disposition": "IMPLEMENTED_PENDING_FABLE_VERIFICATION",
+      "repair": "Oracle eligibility is re-frozen to the time-t intent universe under the unchanged canonical law hash; selected-only t+1 rejection is an outcome rather than a universe filter; census v4 rebuilds all 45 frozen sessions.",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/oracle_rules.json:/canonical_intent_fill_recheck_law",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json:/input_contracts",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json:/semantic_changes",
+        "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/t3_t4_census_v4_output.json"
+      ],
+      "tests": [
+        "T2a",
+        "T3",
+        "T6"
+      ]
+    },
+    {
+      "finding_id": "RERUN002-S2-PHASE-F-OUTCOMES",
+      "title": "Phase-F emitted outcomes lack legal graph edges",
+      "severity": "BLOCKING",
+      "disposition": "IMPLEMENTED_PENDING_FABLE_VERIFICATION",
+      "repair": "The owner-amended graph adds FT2-92 insufficient_evidence to STOP-OWNER-DECISION; FT2-92 emits exactly pass, fail, or insufficient_evidence; FT2-93 emits only producer_complete or fail.",
+      "repair_citations": [
+        "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json:/historical_to_IBKR_source_transfer/emitted_outcome_vocabulary",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json:/terminal_rules/emitted_outcome_vocabulary",
+        "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/graph_validation.json"
+      ],
+      "tests": [
+        "T2b",
+        "T5"
+      ]
+    },
+    {
+      "finding_id": "LP-RERUN002-01",
+      "title": "Missing row-level D48 v2-to-v3 transition audit",
+      "severity": "MATERIAL_NOT_ACCEPTABLE",
+      "disposition": "IMPLEMENTED_PENDING_FABLE_VERIFICATION",
+      "repair": "A unique row-identity audit covers v2-to-v3 and v3-to-v4 membership, accounts for every removed/restored row, and reports premium, moneyness, phase, economic, and per-family label distributions.",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.json:/reconciliation",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.json:/distributions",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.csv",
+        "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/t3_t4_census_v4_output.json"
+      ],
+      "tests": [
+        "T4"
+      ]
+    },
+    {
+      "finding_id": "RERUN002-S2-DENOMINATOR-DISCLOSURE",
+      "title": "Fill-recheck rejection shorthand is denominator-ambiguous",
+      "severity": "MATERIAL_ACCEPTABLE_WITH_DOCUMENTATION",
+      "disposition": "IMPLEMENTED_PENDING_FABLE_VERIFICATION",
+      "repair": "The results and report label both the governed-row and conditional-on-reaching-recheck denominators and recompute their exact v4 rates.",
+      "repair_citations": [
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json:/fill_recheck_rejection_denominators",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/report.md",
+        "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/t3_t4_census_v4_output.json"
+      ],
+      "tests": [
+        "T3"
+      ]
+    }
+  ],
+  "highest_allowed_claim": "All five scoped repairs are implemented and mechanically tested; independent Fable verification and delta-scoped fresh-seat review remain pending."
+}

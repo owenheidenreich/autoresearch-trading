@@ -1,0 +1,21 @@
+{
+  "T3": {
+    "both_rejection_denominators_exact": true,
+    "canonical_law_hash": true,
+    "exact_session_and_governed_row_counts": true,
+    "v3_v4_impact_complete": true,
+    "v4_reference_universe_equals_time_t_intent": true
+  },
+  "T4": {
+    "aggregate_identity_and_overlap_distinguished": true,
+    "each_transition_step_sums_exactly": true,
+    "economic_and_family_distributions_nonempty": true,
+    "row_audit_identity_complete_and_unique": true,
+    "v2_v3_all_removed_rows_accounted": true,
+    "v3_v4_restores_exact_rejection_population": true
+  },
+  "assertion_count": 11,
+  "failed_assertions": [],
+  "outcome": "pass",
+  "schema_version": "Protocol101FT2ScopedRoundCensusV4TestOutputV1"
+}

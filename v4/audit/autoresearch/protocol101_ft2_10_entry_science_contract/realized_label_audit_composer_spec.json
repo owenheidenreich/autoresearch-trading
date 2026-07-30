@@ -1,0 +1,182 @@
+{
+  "schema_version": "Protocol101FT210RealizedLabelAuditComposerSpecV1",
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "status": "owner_authorized_scoped_final_round",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "purpose": "Define one model-free, one-pass source of WAIT and exact-contract regret training targets without consulting the runtime composer or any model output.",
+  "authorities": {
+    "label_families": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json",
+      "sha256": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60"
+    },
+    "intent_fill_recheck_law": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+      "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+    },
+    "quality_and_upside_formula": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json",
+      "sha256": "3b5148c79a52977b2d849f4185e5f5dd676604357b5e5d762bc4084ed77f41f0",
+      "pointers": [
+        "/decision_local_quality_diagnostic/component_transform",
+        "/decision_local_quality_diagnostic/family_aggregation",
+        "/nested_empirical_cdf"
+      ]
+    }
+  },
+  "independence_law": {
+    "model_outputs_allowed": false,
+    "runtime_composer_outputs_allowed": false,
+    "runtime_composer_code_import_allowed": false,
+    "iteration_allowed": false,
+    "fixed_point_allowed": false,
+    "post_composer_relabeling_allowed": false,
+    "single_pass": true,
+    "checker_rule": "Every action-head target provenance trace must terminate in frozen labels, causal intent masks, fit-side CDFs, and frozen anchor thresholds without a composer-output or model-output ancestor."
+  },
+  "target_provenance": {
+    "allowed_ancestors": [
+      "frozen_FT2_04_label_families",
+      "canonical_time_t_intent_masks",
+      "fit_role_session_balanced_nested_CDFs",
+      "fit_role_frozen_anchor_thresholds",
+      "deterministic_RLAC_formula_and_tie_break"
+    ],
+    "runtime_or_model_ancestors": [],
+    "runtime_composer_selection_changes_membership": false,
+    "model_output_changes_membership": false
+  },
+  "population": {
+    "unit": "one governed flat decision minute t and its exact intent-eligible contracts c",
+    "intent_eligibility": "Use only the canonical time-t intent masks from the referenced intent/fill-recheck law. A_(t+1), fill result, runtime-composer action, model forecast, and eventual selected identity are forbidden population filters.",
+    "minutes_with_zero_intent_eligible_contracts": "exclude from both WAIT and regret target populations and report the count",
+    "full_window_filter": "Reuse objective_spec.json:/nested_empirical_cdf/full_window_filter exactly. A finite but censored near-close label is not a shorter full window and is excluded.",
+    "incomplete_required_label_set": "If any intent-eligible contract lacks a required label for the registered anchor after the full-window filter, exclude that contract from regret targets; if this makes the label-auditable risk set incomplete for a minute, exclude that minute from the WAIT target and report the contract/minute/session denominators. Missingness is never converted to WAIT, ENTER, zero quality, or zero regret.",
+    "role_firewall": "Build targets independently inside each inner training or disjoint calibration role. Outer validation, confirmation, protected holdout, live, and census-only rows never enter target thresholds or CDFs."
+  },
+  "realized_label_transforms": {
+    "nested_CDF_source": "Fit-side, session-balanced empirical CDFs from objective_spec.json only; no scored or calibration row contributes to its own transform.",
+    "component_transform": {
+      "higher_is_better": "T(value)=2*F_nested(value)-1",
+      "lower_is_better": "T(value)=1-2*F_nested(value)",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "dual_unit_arbitration": "For a metric represented in dollars and return, take min(T_dollars,T_return) after both values are mapped in the same time-t premium band and market phase."
+    },
+    "Q_label": {
+      "within_horizon": "Equal mean of non-timestamp registered transformed metrics after dual-unit arbitration.",
+      "across_horizons": "Equal mean over the causally available full-window horizons.",
+      "quality_family_score": "Apply those two equal means separately to early_drawdown, time_to_first_real_profit, pre_profit_adverse_excursion, underwater_burden, and profitable_window_stability.",
+      "formula": "Q_label(c,t)=mean(family_score_f(c,t) for the five registered quality families)",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    "U_label": {
+      "mfe_rank_at_horizon": "m_h=min(F_nested(realized_mfe_dollars),F_nested(realized_mfe_return))",
+      "profit_area_rank_at_horizon": "a_h=min(F_nested(realized_profit_area_dollar_minutes),F_nested(realized_profit_area_return_minutes))",
+      "conservative_horizon_blend": "u_h=min(m_h,a_h)",
+      "formula": "U_label(c,t)=mean(u_h over all causally available registered full-window upside horizons)",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "relationship_to_Q": "Q_label is the frozen five-family guardrail quantity and the first deterministic tie-break after U_label; it is not folded into U_label or given an invented weight."
+    },
+    "fee_cleared_upside": "The equal-horizon realized MFE mean and realized profit-area mean must each be strictly greater than zero on both dollar and return axes. Equality, missingness, or nonfinite values fail the contract."
+  },
+  "anchor_specific_RLAC": {
+    "registered_anchor_variants": [
+      0.0,
+      0.1,
+      0.2,
+      0.25,
+      0.3
+    ],
+    "threshold_source": "For each anchor alpha, use only the campaign anchor's training-side, label-derived nested quantile thresholds already registered by composer_spec.json:/stage_1_quality_screen. Alpha 0.0 applies no learned quality threshold.",
+    "guardrail_components": "Exactly composer_spec.json:/stage_1_quality_screen/canonical_guardrail_components, evaluated on realized label transforms rather than forecasts.",
+    "guardrail_rule": "For alpha>0, a contract passes only when every required realized quality component/unit clears its frozen training-side threshold in the registered favorable direction.",
+    "variant_isolation": "Each registered alpha receives separately hashed RLAC verdicts, selected label identities, WAIT targets, and regret targets.",
+    "multiplicity": "The anchor variants are already registered selectable members. RLAC creates no new variant, seed, or multiplicity member."
+  },
+  "minute_verdict": {
+    "contract_pass": "intent eligible at t AND label complete under the full-window rule AND every active realized guardrail passes AND realized fee-cleared-upside passes",
+    "ENTER_justified": "At least one exact contract passes.",
+    "WAIT_justified": "No exact contract passes.",
+    "c_star_label": {
+      "selection": "argmax U_label(c,t) among passing exact contracts",
+      "tie_break": [
+        "higher U_label",
+        "higher Q_label",
+        "lexicographically smaller tuple(expiry_yyyymmdd,strike_milli_points,right_code,source_neutral_contract_id)"
+      ],
+      "absent_when_WAIT": true
+    },
+    "c_star_regret_label": {
+      "selection": "argmax U_label(c,t) among every label-complete time-t intent-eligible contract, whether the minute verdict is ENTER or WAIT",
+      "tie_break": [
+        "higher U_label",
+        "higher Q_label",
+        "lexicographically smaller tuple(expiry_yyyymmdd,strike_milli_points,right_code,source_neutral_contract_id)"
+      ],
+      "purpose": "Define the all-population regret reference without changing the ENTER/WAIT verdict or choosing a runtime action.",
+      "present_on_every_included_minute": true
+    }
+  },
+  "targets": {
+    "WAIT_head": {
+      "population": "all label-auditable governed minutes with at least one time-t intent-eligible contract",
+      "formula": "y_wait(t)=1 if WAIT_justified(t) else 0",
+      "runtime_composer_selection_filter": false
+    },
+    "regret_heads": {
+      "population": "all label-complete time-t intent-eligible contract-minute pairs (c,t), regardless of whether the runtime composer would select ENTER or select c",
+      "formula": "regret_label(c,t)=U_label(c_star_regret_label(t),t)-U_label(c,t) on every included minute, including WAIT_justified minutes",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "exact_target_rule": "Because c_star_regret_label is the deterministic full-population U_label argmax, the exact difference is nonnegative without clipping, shifting, or conditioning on a model/composer action.",
+      "runtime_composer_selection_filter": false
+    }
+  },
+  "coverage_scope": {
+    "hard_conformal_claim": "marginal over the complete RLAC regret target population: every label-complete intent-eligible contract on every included minute, including RLAC WAIT minutes",
+    "runtime_composer_selected_subset": "post-hoc conditional-coverage diagnostic only; no conditional guarantee is claimed",
+    "selected_subset_collapse_route": "owner_decision_required under the existing tripwire vocabulary",
+    "selected_subset_may_change_fit_calibration_or_targets": false
+  },
+  "one_pass_order": [
+    "assemble causal time-t intent population",
+    "join physically separate frozen FT2-04 labels in the training-only plane",
+    "apply the frozen full-window filter",
+    "build fit-only nested CDFs and anchor thresholds",
+    "compute Q_label and U_label directly from realized labels",
+    "emit anchor-specific RLAC minute verdicts and targets once",
+    "fit forecast and action heads",
+    "calibrate on disjoint blocks against independently built RLAC targets",
+    "freeze heads and calibrators",
+    "run the runtime composer"
+  ],
+  "required_artifacts": [
+    "anchor-specific target rows keyed by session, decision minute, and exact contract identity",
+    "causal intent-mask hash",
+    "label-family and full-window-filter hashes",
+    "fit-side CDF and threshold hashes",
+    "Q_label and U_label component trace",
+    "minute verdict, c_star_label, and c_star_regret_label trace",
+    "population and missingness denominators",
+    "target-provenance DAG proving no model/composer ancestor"
+  ],
+  "forbidden": [
+    "constructing targets only on runtime-composer ENTER rows",
+    "using the runtime composer to select c_star_label",
+    "recalibrating on runtime-composer-selected outputs",
+    "a provisional composer whose output changes target membership",
+    "iteration or fixed-point target construction",
+    "future t+1 fill information in the time-t target population",
+    "zero-filling censored, missing, or inapplicable labels"
+  ]
+}

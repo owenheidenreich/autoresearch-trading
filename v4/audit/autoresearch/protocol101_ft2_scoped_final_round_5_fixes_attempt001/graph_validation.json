@@ -1,0 +1,30 @@
+{
+  "schema_version": "Protocol101FT2ScopedRoundGraphValidationV1",
+  "validator": "v4/docs/protocol101/training/execution/validate_protocol101_full_trader_graph_v2.py",
+  "graph": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+  "graph_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+  "required_new_edge": {
+    "from": "FT2-92-IBKR-DECISION-SHADOW",
+    "outcome": "insufficient_evidence",
+    "to": "STOP-OWNER-DECISION",
+    "present": true
+  },
+  "validator_result": {
+    "valid": true,
+    "errors": [],
+    "schema_version": "Protocol101FullTraderGraphV2",
+    "graph_id": "protocol101-full-trader-v2",
+    "node_count": 47,
+    "edge_count": 104,
+    "reachable_from_root": 47,
+    "reachability_root": "FT2-00-GRAPH-RESET",
+    "terminal_states": [
+      "STOP-CANDIDATE-REJECTED",
+      "STOP-INSUFFICIENT-EVIDENCE",
+      "STOP-OWNER-DECISION",
+      "STOP-PAPER-EVIDENCE-COMPLETE",
+      "STOP-REDESIGN-REQUIRED"
+    ]
+  },
+  "outcome": "pass"
+}

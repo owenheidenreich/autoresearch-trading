@@ -1,11 +1,17 @@
 {
-  "schema_version": "Protocol101FT204OracleExitRuleSetV2",
+  "schema_version": "Protocol101FT204OracleExitRuleSetV3",
   "node": "FT2-04-PATH-LABEL-FREEZE",
-  "status": "frozen_definitions_only_no_values_computed",
+  "status": "owner_authorized_scoped_refreeze_causal_intent_law",
   "purpose": "The small, transparent, preregistered set of hindsight oracle exit rules FT2-05 will REPLAY to compute label-side opportunity ceilings. These are ceiling references, never learned policies and never entry targets.",
   "authority": {
-    "document_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "document_sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
     "governing_sections": ["7.1 FT2-04 oracle semantics", "7.2 FT2-05 census", "1.4 D48 premium cap / D49 budget-aware", "6.1 G4 v2 / daily stop"]
+  },
+  "canonical_intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "authority": "sole arithmetic and sequencing authority for D48/D49 decision-time intent eligibility and selected-contract fill-time recheck",
+    "local_override_forbidden": true
   },
   "serial_semantics": {
     "simulator": "v4/model/protocol101_serial_simulator_v5.py",
@@ -27,21 +33,23 @@
   "census_layer_constraints": {
     "session_start_equity_E": "account equity carried into the session under v5 within-split compounding; the 5% cap and 5% budget both scale off E",
     "D48_per_trade_premium_cap": {
-      "rule": "a BUY decision at t is eligible only if actual t+1 fill premium plus fee satisfies A_(t+1)*M+3 <= 0.05*E",
-      "effect": "contracts failing the cap are MASKED out of the oracle's choice set exactly like unaffordable/ineligible contracts; the oracle may not select a masked contract",
-      "same_game": "identical mask must hold offline (census + simulator) and in every live/shadow guard"
+      "rule": "decision-time intent eligibility at completed minute t is defined only by canonical_intent_fill_recheck_law.json:/decision_time_intent using information through t",
+      "effect": "contracts failing the causal time-t intent mask are outside the oracle choice universe; the oracle may not use the future t+1 ask to restore or remove a decision-time action",
+      "fill_outcome": "after one exact identity is committed, canonical_intent_fill_recheck_law.json:/fill_time_recheck determines pass or rejection at t+1",
+      "same_game": "the exact referenced law hash must govern census, simulator, model, shadow, and live guard; restated arithmetic or a local override is forbidden"
     },
     "D49_budget_aware_entry": {
-      "rule": "a new oracle BUY committed at t is legal only if realized_session_loss + (A_(t+1)*M+F) <= 0.05*E",
+      "rule": "decision-time budget intent legality at completed minute t is defined only by canonical_intent_fill_recheck_law.json:/decision_time_intent and the causal policy ledger",
       "realized_session_loss": "L = max(0, -(realized net PnL so far this session)); grows only as realized losing exits accumulate",
-      "effect": "as L grows the eligible ladder narrows; if no otherwise eligible contract with A_(t+1)>=1.00 fits the remaining budget, the session soft-closes to WAIT for new entries"
+      "effect": "as L grows the causal time-t eligible ladder narrows; the fee-path-specific current-ladder soft-close predicate is owned by canonical_intent_fill_recheck_law.json:/soft_close",
+      "fill_outcome": "only the committed exact identity is rechecked at t+1 under the referenced canonical law; rejection is not retroactive decision-time ineligibility"
     },
     "daily_breaker": "once L >= 0.05 * E the session takes no further entries (breaker keeps its signed realized-only basis; unchanged by these rules)"
   },
   "oracle_sequencing": {
-    "principle": "an oracle may NEVER take a trade the rules would mask. Entry-fill availability, D48, D49 including the $1 soft-close floor, one-position occupancy, t<15:30 entry decisions, the 15:55 forced-flat boundary, and the 5% daily breaker gate every oracle entry exactly as they gate the model.",
-    "serial_ceiling_replay": "iterate sessions in split order and completed decision minutes t ascending; maintain equity E, realized session loss L, soft-close state, and occupancy. While flat at t<15:30 and not halted, the oracle may commit one contract only if its executable t+1 ask exists and passes D48/D49. It realizes at the exit rule's t+1 bid fill, updates E and L, and releases occupancy at that fill minute.",
-    "threshold_independent_distributions": "for the per-contract-minute distribution view (no serial account), each eligible contract-minute path is scored independently under the family formulas; D48 eligibility still gates which contract-minutes exist; D49 (a sequencing constraint) applies only to the serial ceiling replay, not to the independent per-minute distribution. FT2-05 reports both views."
+    "principle": "an oracle may rank future realized outcomes only after the causal time-t intent universe is frozen. It may never use t+1 availability, price, or recheck result to redefine the time-t universe. One-position occupancy, t<15:30 entry decisions, the 15:55 forced-flat boundary, and the 5% daily breaker remain binding.",
+    "serial_ceiling_replay": "iterate sessions in split order and completed decision minutes t ascending; maintain equity E, realized session loss L, soft-close state, and occupancy. While flat at t<15:30 and not halted, construct the time-t oracle choice universe solely from the referenced canonical intent law, commit at most one exact identity under the frozen tie-break, and then apply the referenced selected-contract-only t+1 recheck. A rejection logs the canonical event, opens no position, charges no premium or fee, realizes no PnL, permits no substitute, and returns to a later flat decision exactly as the canonical law specifies.",
+    "threshold_independent_distributions": "for the per-contract-minute distribution view (no serial account), causal time-t intent eligibility defines the opportunity universe. Successful t+1 recheck defines the separate realized-entry/reference-label population. Rejected intents remain explicit governed rows rather than disappearing or being renamed decision-time ineligible. D49 policy-ledger sequencing applies only to serial replay. FT2-05 reports all three populations and both rejection-rate denominators."
   },
   "frozen_exit_rules": [
     {

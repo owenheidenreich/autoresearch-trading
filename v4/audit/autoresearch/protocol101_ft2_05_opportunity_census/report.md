@@ -1,4 +1,4 @@
-# Protocol101 FT2-05 Opportunity Census
+# Protocol101 FT2-05 Opportunity Census V4
 
 ## Owner Memo
 
@@ -6,10 +6,10 @@
 
 This is a label-side map of the governed game, not evidence that a profitable
 model exists. Across `45` development-only sessions, the fixed $10,000
-D48 reference mask left `15,106` distinct executable minutes
-with at least one contract, or about `335.7` minutes per
+D48 reference mask left `15,150` distinct executable minutes
+with at least one contract, or about `336.7` minutes per
 day. A deliberately loose 25%-tail quality screen plus positive conservative
-upside left about `229.2` qualifying minutes per day. This is a
+upside left about `232.8` qualifying minutes per day. This is a
 curve diagnostic, not a selected guardrail.
 
 The hindsight `best_session` selector made `$340,736.00` under one-account
@@ -18,11 +18,11 @@ hindsight exit rule made `$154,008.00`. These are ceilings: they prove paths
 exist, not that present-time features can identify them. The median entry
 friction across premium bands was `5.3%` of premium.
 
-The primary remaining-session paths contained `1,866,843` no-bid
-minutes out of `24,974,153` marks (`7.48%`). Those minutes are
+The primary remaining-session paths contained `1,904,900` no-bid
+minutes out of `25,853,867` marks (`7.37%`). Those minutes are
 valued at full loss rather than erased. Across the preregistered MNAR
 no-bid-excluded sensitivity, the minimum path-metric rank correlation was
-`0.9833`. This is label-surface stability, not candidate-policy
+`0.9838`. This is label-surface stability, not candidate-policy
 stability; FT2-10/11 must still verify the latter.
 
 Compared with preserved FT2-05 v2, v3 changes the realized-entry label
@@ -38,6 +38,21 @@ changed by `$-1,060.00` and
 only to the preregistered causal intent/fill-recheck and active-fee soft-close
 repair; no new sessions or unrelated label definitions were introduced.
 
+Compared with preserved FT2-05 v3, v4 restores
+`7,205` rows to the
+D48 reference/distribution population. Those are exactly the time-`t`
+intent-eligible rows that did not pass the selected-only `t+1` recheck. The
+reference universe is therefore the canonical time-`t` intent population;
+successful realized entries and rejections remain separate outcomes.
+
+The fee-3 fill-recheck rejection numerator is `7,205`.
+It is `7,205/460,937
+= 1.56%` of all governed contract-minute
+rows, and `7,205/128,758
+= 5.60%` conditional on reaching the
+recheck population. These denominators answer different questions and are
+never interchanged.
+
 The 45-session cluster calculation estimates that a best-session improvement
 would need to be roughly `$63,474.90` in total PnL to achieve conventional
 95%/80% detection under the observed session variance. FT2-11 must refine this
@@ -45,9 +60,9 @@ before paid training.
 
 Where D48-reference opportunities live:
 
-- Market phase: `[{"count": 38792, "market_phase": "lunch", "share": 0.3533580492070577}, {"count": 30123, "market_phase": "primary_morning", "share": 0.2743917435621829}, {"count": 29556, "market_phase": "afternoon", "share": 0.26922691540430493}, {"count": 11310, "market_phase": "europe_close_transition", "share": 0.10302329182645449}]`.
-- Moneyness: `[{"count": 60854, "moneyness_band": "wing", "share": 0.5006375819601326}, {"count": 40035, "moneyness_band": "near", "share": 0.3293625003085074}, {"count": 20664, "moneyness_band": "atm", "share": 0.16999991773135997}]`.
-- Premium band: `[{"count": 76377, "premium_band": "small_1_3", "share": 0.6283431918586954}, {"count": 43641, "premium_band": "medium_3_8", "share": 0.35902857189867793}, {"count": 1535, "premium_band": "cheap_le_1", "share": 0.012628236242626673}]`.
+- Market phase: `[{"count": 40809, "market_phase": "lunch", "share": 0.35186239006725295}, {"count": 31685, "market_phase": "afternoon", "share": 0.2731936540782894}, {"count": 31650, "market_phase": "primary_morning", "share": 0.2728918779099845}, {"count": 11836, "market_phase": "europe_close_transition", "share": 0.10205207794447319}]`.
+- Moneyness: `[{"count": 64236, "moneyness_band": "wing", "share": 0.49888938939716365}, {"count": 42419, "moneyness_band": "near", "share": 0.3294474906413582}, {"count": 22103, "moneyness_band": "atm", "share": 0.17166311996147812}]`.
+- Premium band: `[{"count": 78076, "premium_band": "small_1_3", "share": 0.6063778561332112}, {"count": 47921, "premium_band": "medium_3_8", "share": 0.37217881607356434}, {"count": 2761, "premium_band": "cheap_le_1", "share": 0.021443327793224498}]`.
 
 **Regime warning:** this census sees only January through early March 2025.
 April 2025 volatility is in fold-1 outer test, and May-June 2025 is protected
@@ -63,7 +78,7 @@ selection, holdout access, shadow operation, or paper trading.
 ## Frozen Scope
 
 - Node: `FT2-05-OPPORTUNITY-CENSUS`.
-- Product-contract SHA-256: `2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a`.
+- Product-contract SHA-256: `3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033`.
 - Sessions: exactly 45 from the repaired FT2-04 manifest.
 - Horizons: `(3, 5, 10, 20, 45, 90, 'remaining_session')`.
 - Entry/exit accounting: BUY masks at `t` use only `A_t`; the selected exact
@@ -102,9 +117,9 @@ Regime headline tables split every replay by month and SPX range tercile.
 ## Compute
 
 - Label rows: `460,937`.
-- D48-reference rows: `121,553`.
-- Wall time: `0.269` hours.
-- CPU time: `0.267` core-hours.
+- D48-reference rows: `128,758`.
+- Wall time: `0.171` hours.
+- CPU time: `0.170` core-hours.
 - Resume checkpoints: one Parquet file and summary per session.
 
 ## Route

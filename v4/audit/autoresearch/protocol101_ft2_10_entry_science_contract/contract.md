@@ -1,11 +1,11 @@
-# Protocol101 FT2-10 Entry Science Contract V3
+# Protocol101 FT2-10 Entry Science Contract V4
 
-Status: `producer_repaired`
+Status: `scoped_final_round_repaired`
 
 Authority:
-`2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a`
+`3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033`
 
-This packet is the final coordinated repair-attempt-2 entry-component design.
+This packet is the scoped final-round entry-component design.
 It freezes a research contract only. It performs no training, fitting,
 threshold tuning, protected-data access, broker action, or re-review.
 
@@ -44,7 +44,27 @@ permanent for the active policy/fee-path session when the current exact ladder
 contains no otherwise-eligible contract with `A_t >= 100` cents whose D48 and
 D49 intent masks pass. A shared literal threshold is forbidden.
 
-## 2. Targets and empirical CDFs
+## 2. Model-free realized-label audit composer
+
+The sole action-conditioned target producer is:
+
+```text
+v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json
+sha256 d833297dbaf2a547d8246cdf3cf404dea0d8ff4234026ceac37797e462a8422f
+```
+
+The RLAC executes once over the complete label-eligible intent population
+before any model head is fit. It uses only frozen label families, fit-role
+reference distributions, and deterministic anchor-specific thresholds. It
+produces a WAIT target for every label-complete governed flat minute and a
+nonnegative per-contract regret target for every label-complete intent-eligible
+contract on every included minute, including RLAC WAIT minutes. A runtime
+composer, fitted model output, composer-selected
+contract, or model-selected action may neither create a target nor select its
+membership. Calibrated heads freeze before the runtime composer runs, so there
+is no target/composer fixed point and no iterative relabeling.
+
+## 3. Targets and empirical CDFs
 
 The target families and label firewall remain in `forecast_heads.json`.
 Continuous, bounded, count, and empirical-CDF reference values for finite
@@ -62,7 +82,7 @@ within a session share that session weight. Midrank ties, interpolation,
 same-band fallback, minimum support, and fail-closed insufficiency are frozen
 in `objective_spec.json`.
 
-## 3. Serial component population
+## 4. Serial component population
 
 Every candidate and comparator traverses the same governed minute grid but
 mutates only its own integer-cent causal ledger. WAIT, pending, failed-fill,
@@ -76,7 +96,7 @@ it does not claim to reproduce a later learned lifecycle with earlier exits
 and re-entry. The assembled learned entry/lifecycle trader must be evaluated
 again on complete combined-system ledgers at FT2-80.
 
-## 4. Composer
+## 5. Composer
 
 `composer_spec.json` is authoritative. Its order is:
 
@@ -100,7 +120,7 @@ upper bound is a hard action constraint, not a report. ENTER requires a finite
 bound `<= 0.10`; missing, nonfinite, or larger values emit WAIT. The regret
 calibration and coverage requirements remain separately mandatory.
 
-## 5. Canonical matched-random comparator
+## 6. Canonical matched-random comparator
 
 The sole generator source is:
 
@@ -115,13 +135,13 @@ selected-only `t+1` recheck, no-redraw law, post-replay tolerances, incomplete
 attempt treatment, and fixed equal-weight aggregate. No consumer may add a
 candidate-specific seed namespace or a second random key.
 
-## 6. Census v3 reconciliation
+## 7. Census v4 reconciliation
 
 The current census receipt is:
 
 ```text
 v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json
-sha256 a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce
+sha256 ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928
 ```
 
 The census is a 45-session multi-trade hindsight/oracle design diagnostic. Its
@@ -130,14 +150,14 @@ retain, rank, calibrate, select, or fail a component setting. They also cannot
 project neutral-lifecycle trade count, because the component game has a hard
 one-successful-trade-per-session maximum.
 
-The v2-to-v3 impact note is:
+The v3-to-v4 impact note is:
 
 ```text
-v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v2_v3_impact.json
-sha256 5341e2ead4ff6e0d4bbdbb59ba6312180c457e41a89ab6e8dfc7b28796d9f9a1
+v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json
+sha256 913f127563daf9e5dff25cb8da72b4c3cdefd7a06d7e5edf569ca3c736806c3e
 ```
 
-## 7. Acceptance and graph boundary
+## 8. Acceptance and graph boundary
 
 Entry-component acceptance requires reproducible integrity, quality,
 action-conditioned calibration, q90 regret action control, signed safety,
@@ -151,13 +171,15 @@ acceptance precondition. A frozen component may carry
 ```text
 FT2-91 pass
   -> FT2-92 executes candidate-specific historical/IBKR transfer measurement
-  -> FT2-92 pass
-  -> FT2-93 no-order live shadow
+  -> pass -> FT2-93 no-order live shadow
+  -> fail -> STOP-CANDIDATE-REJECTED
+  -> insufficient_evidence -> STOP-OWNER-DECISION
 ```
 
-Missing or failed transfer blocks the FT2-92-to-FT2-93 edge and every later
-live activation. It does not retroactively make component acceptance depend on
-evidence produced by a later node.
+The exact FT2-92 emitted vocabulary is `pass`, `fail`, and
+`insufficient_evidence`. Missing evidence and transfer failure both block every
+later live activation but take their distinct legal graph edges. Neither
+retroactively makes component acceptance depend on evidence produced later.
 
 The highest FT2-10 claim is only that its repaired entry-science design is
 complete for final re-review. It is not evidence of profitability, selection

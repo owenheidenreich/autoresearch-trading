@@ -215,7 +215,7 @@
   },
   "resource_owner_route": {
     "context": "pre-tranche-1 only",
-    "trigger": "mde_spec.json first GPU tranche gate fails because measured pilot MDE exceeds the census-v3-based planning bound or required pilot measurement is absent",
+    "trigger": "mde_spec.json first GPU tranche gate fails because measured pilot MDE exceeds the census-v4-based planning bound or required pilot measurement is absent",
     "not_a_model_quality_terminal": true
   },
   "owner_tripwire_route": {

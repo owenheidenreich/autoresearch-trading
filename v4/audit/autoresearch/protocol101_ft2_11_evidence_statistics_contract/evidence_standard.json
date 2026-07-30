@@ -1,8 +1,8 @@
 {
-  "schema_version": "Protocol101FT211EvidenceStandardV3",
+  "schema_version": "Protocol101FT211EvidenceStandardV4",
   "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
-  "status": "producer_repaired",
-  "product_contract_hash": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+  "status": "scoped_final_round_repaired",
+  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
   "intent_fill_recheck_law": {
     "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
     "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
@@ -21,7 +21,7 @@
     "design_only": true,
     "model_training_or_fitting": false,
     "new_session_statistics": false,
-    "allowed_numeric_source": "FT2-05 census v3 tables cited by exact SHA-256",
+    "allowed_numeric_source": "FT2-05 census v4 tables cited by exact SHA-256",
     "owner_decisions": [
       "component freeze",
       "tail guard: relative-capture tripwire",
@@ -80,11 +80,12 @@
           "required": true,
           "cannot_be_skipped_or_ablated": true,
           "source": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/action_conditioned_gate",
-          "source_sha256": "d686d57e49938445dbd8ea37ec1b46caf020d606b6929145ee5679c6dbe9e5f8",
+          "source_sha256": "921e8d70c363f6206afe3f7c10c35f2d01c358e6c496c941815412a159c6dc5d",
           "required_artifacts": [
             "same-final-model disjoint-calibrated p_wait",
-            "same-final-model expected selected-contract regret",
-            "same-final-model conformalized q90 selected-contract-regret upper bound",
+            "same-final-model expected per-contract RLAC regret",
+            "same-final-model conformalized q90 per-contract RLAC-regret upper bound",
+            "frozen one-pass RLAC target and provenance manifests",
             "disjoint calibration-session identity manifest",
             "calibrator hashes and action-head model hash"
           ],
@@ -93,7 +94,7 @@
             "flat_decisions": 100,
             "realized_wait_outcomes": 50,
             "realized_enter_outcomes": 50,
-            "selected_contracts": 50
+            "rlac_contract_targets": 50
           },
           "wait_reliability": {
             "expected_calibration_error_max": 0.1,
@@ -101,12 +102,23 @@
             "brier_skill_vs_constant_rate_min": 0.0
           },
           "selected_contract_regret": {
+            "target_denominator": "every label-complete intent-eligible contract on every included RLAC minute, including WAIT minutes; runtime composer selections exclude zero rows",
             "absolute_mean_expected_regret_calibration_error_max": 0.1,
             "nominal_upper_bound_coverage": 0.9,
             "empirical_upper_bound_coverage_min": 0.85,
             "empirical_upper_bound_coverage_max": 0.95,
             "composer_q90_normalized_regret_upper_bound_max": 0.1,
             "action_rule": "every ENTER requires a finite selected-contract q90 normalized-regret upper bound<=0.10; missing, nonfinite, or larger emits WAIT"
+          },
+          "runtime_selected_subset_coverage": {
+            "role": "report-only conditional diagnostic after the frozen composer runs",
+            "hard_guarantee": false,
+            "denominators_required": [
+              "distinct sessions",
+              "runtime-composer ENTER minutes",
+              "selected exact contracts"
+            ],
+            "collapse": "owner_decision_required tripwire; never automatic recalibration, relabeling, or acceptance"
           },
           "interval_rule": "Session-clustered simultaneous bounds must lie on the passing side of every threshold. A bound overlapping a threshold is insufficient_evidence; a bound wholly on the failing side is no_genuine_entry_signal.",
           "missing_head_or_artifact": "invalid_evidence",
@@ -224,10 +236,10 @@
       "Spearman rank correlation across all serious selectable identities is at least 0.95"
     ],
     "threshold_basis": {
-      "census_v3_artifact": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv",
-      "sha256": "a7b16b3735dae5bb24dbb2456e092cea44b56ff528823f2c4843242af41d6855",
-      "census_v3_minimum_path_metric_rank_correlation": 0.983319984421661,
-      "interpretation": "The 0.95 candidate-ranking floor is below the observed census-v3 label-surface diagnostic and is still subordinate to exact selected-identity and terminal invariance."
+      "census_v4_artifact": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv",
+      "sha256": "462e5a676c82064959e3d94649672fa55938dc03377b2d403d2c3832f3ba0d2a",
+      "census_v4_minimum_path_metric_rank_correlation": 0.983762571807032,
+      "interpretation": "The 0.95 candidate-ranking floor is below the observed census-v4 label-surface diagnostic and is still subordinate to exact selected-identity and terminal invariance."
     },
     "failure_with_complete_sensitivity": "no_genuine_entry_signal",
     "missing_or_unreproducible_sensitivity": "invalid_evidence",
@@ -275,12 +287,17 @@
     "graph_order": [
       "FT2-91-PROTECTED-HOLDOUT pass",
       "FT2-92-IBKR-DECISION-SHADOW executes candidate-specific historical/IBKR tensor-and-action transfer measurement",
-      "FT2-92 pass",
-      "FT2-93-NO-ORDER-LIVE-SHADOW"
+      "FT2-92 pass -> FT2-93-NO-ORDER-LIVE-SHADOW",
+      "FT2-92 fail -> STOP-CANDIDATE-REJECTED",
+      "FT2-92 insufficient_evidence -> STOP-OWNER-DECISION"
     ],
     "entry_component_acceptance_transfer_state": "transfer_not_yet_run is allowed and is not a component-acceptance failure",
     "FT2_92_entry_prerequisite": "FT2-91 pass and frozen candidate bundle; a preexisting transfer pass is not required",
-    "FT2_92_output": "candidate-specific transfer pass, source_transfer_insufficient, source_transfer_fail, or invalid_source_transfer_evidence",
+    "FT2_92_output_vocabulary": [
+      "pass",
+      "fail",
+      "insufficient_evidence"
+    ],
     "FT2_93_prerequisite": "FT2-92 transfer pass",
     "paper_or_order_authorization": false
   },
