@@ -186,7 +186,7 @@
       "variant": "hold_to_forced_flat"
     }
   ],
-  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "scalar_changes": {
     "distinct_d48_reference_minutes": {
       "v3": 15106,

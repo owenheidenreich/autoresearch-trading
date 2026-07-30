@@ -38,7 +38,7 @@ POINTER_ALIASES = {
 }
 
 AUTHORITY_HASH = (
-    "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
+    "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
 )
 INTENT_LAW_HASH = (
     "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
@@ -50,7 +50,7 @@ SIMULATOR_HASH = (
     "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
 )
 CENSUS_RECEIPT_HASH = (
-    "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
+    "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
 )
 PARENT_RECEIPTS = {
     "FT2-08": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c",
@@ -233,6 +233,63 @@ def main() -> int:
     check("intent_law_hash", sha256(law_path) == INTENT_LAW_HASH, sha256(law_path))
     check("canonical_generator_hash", sha256(generator_path) == GENERATOR_HASH, sha256(generator_path))
     check("census_v4_receipt_hash", sha256(FT205 / "receipt.json") == CENSUS_RECEIPT_HASH, sha256(FT205 / "receipt.json"))
+
+    # Guard A (added in the 2026-07-30 authority-graph hash-drift repair):
+    # the authority's recorded Graph V2 hash must equal the live graph. This
+    # catches the exact drift where amending the graph leaves the authority
+    # citing a stale graph hash. Amendment-history prose (e.g. "moved from
+    # <old> to <new>") is not captured; only the two labeled references are.
+    authority_text = authority.read_text(encoding="utf-8")
+    live_graph_hash = sha256(GRAPH_PATH)
+    recorded_graph_refs = set(
+        re.findall(r"Graph V2 JSON: SHA-256 `([0-9a-f]{64})`", authority_text)
+    ) | set(
+        re.findall(
+            r"GRAPH_V2\.json`\s*\(SHA-256 `([0-9a-f]{64})`",
+            authority_text,
+        )
+    )
+    check(
+        "authority_recorded_graph_hash_matches_live_graph",
+        len(recorded_graph_refs) >= 1
+        and recorded_graph_refs == {live_graph_hash},
+        {"recorded": sorted(recorded_graph_refs), "live": live_graph_hash},
+    )
+
+    # Guard B (added in the same repair): every active spec that pins the
+    # product contract must pin the current authority hash, so a future
+    # amendment cannot leave a spec citing a superseded authority.
+    pch_specs = [
+        FT205 / "census_results.json",
+        FT205 / "v3_v4_impact.json",
+        FT205 / "d48_reference_transition_audit.json",
+        FT210 / "forecast_heads.json",
+        FT210 / "composer_spec.json",
+        FT210 / "calibration_spec.json",
+        FT210 / "realized_label_audit_composer_spec.json",
+        FT211 / "evidence_standard.json",
+        FT211 / "mde_spec.json",
+        FT211 / "shadow_sufficiency_spec.json",
+    ]
+    pch_map: dict[str, Any] = {}
+    pch_ok = True
+    for spec_path in pch_specs:
+        value = load(spec_path).get("product_contract_hash")
+        pch_map[str(spec_path.relative_to(ROOT))] = value
+        pch_ok &= value == AUTHORITY_HASH
+    oracle_auth = load(FT204 / "oracle_rules.json")["authority"]["document_sha256"]
+    pch_map["FT2-04/oracle_rules:/authority/document_sha256"] = oracle_auth
+    pch_ok &= oracle_auth == AUTHORITY_HASH
+    ft204_receipt_doc = load(FT204 / "receipt.json")
+    pch_ok &= ft204_receipt_doc["product_contract_hash"] == AUTHORITY_HASH
+    pch_ok &= (
+        ft204_receipt_doc["source_hashes"]["consolidated_authority_sha256"]
+        == AUTHORITY_HASH
+    )
+    pch_ok &= (
+        load(FT205 / "receipt.json")["product_contract_hash"] == AUTHORITY_HASH
+    )
+    check("all_spec_product_contract_hash_match_authority", pch_ok, pch_map)
     census_receipt = load(FT205 / "receipt.json")
     census_deliverable_results = {
         relative: {

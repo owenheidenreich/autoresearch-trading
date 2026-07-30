@@ -23,7 +23,7 @@ GRAPH = REPO / (
 )
 SIMULATOR = REPO / "v4/model/protocol101_serial_simulator_v5.py"
 AUTHORITY_HASH = (
-    "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
+    "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
 )
 LAW_HASH = (
     "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"

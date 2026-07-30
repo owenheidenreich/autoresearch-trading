@@ -1,15 +1,15 @@
 {
   "attempt": 1,
   "coordinated_goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
-  "created_at_utc": "2026-07-30T03:16:39.081705+00:00",
+  "created_at_utc": "2026-07-30T04:16:37.185869+00:00",
   "deliverable_hashes": {
     "bootstrap_spec.json": "48cb6226b847e02664dc0dc4ae04d618848f0631126be3fb7d2c2946d233fcc0",
-    "contract.md": "13c96b45994cae3270cdb31182aa5e0bf7e7bdcc379b6786dde5388e310d0bc3",
-    "evidence_standard.json": "b57edfc2f9edfcccb3444fb124f52c78b2a62ee31c74633d2e078d3b105e77e8",
+    "contract.md": "ed6a61dfa63c1d1673e9ecca8e9eab76a466df22c891ae770d8d0466d1a29871",
+    "evidence_standard.json": "be527c8906fb7e00be32fcad45d8f684a7846f8d7af9cae6b322270b420ac905",
     "findings_crosswalk.json": "fdc12c802fc1008148a97d5a0a04bd536d3e17d63e9010c28ff4095cf88d4cb8",
-    "mde_spec.json": "b911557763d7a7e211437bddda021d1d13a89df2bcb2f0e8658d92207bd119c0",
+    "mde_spec.json": "d82e7340f8ee9ab8212c96330979bf03af7a6d8755c8756d4ac7c2cafcdd1f10",
     "multiplicity_spec.json": "4d41d3a466e9ab77178096167ac0399df1299fbb43d3be0924ed1712333b1c18",
-    "shadow_sufficiency_spec.json": "7b187e426ce65af71528b28878ac96f5be145386c04665856d44ca023ff2dcbd",
+    "shadow_sufficiency_spec.json": "990f431c1c7d467a49a9fb451c96b402c2ddcbcfb81ae59e770de6fafc370eb7",
     "terminal_decision_spec.json": "b617dad2e51915992748813e6c098b5e91761ea5e6cd7767bfdbb8181fb6d451",
     "tripwire_spec.json": "b497aafaba037ee573b6be284456488b0c19da491109572192cd0c8a69750f63",
     "worked_terminal_examples.json": "6a622e2443137eb678c9682d8f43abada80ff845b36a7ab220772aa68828ef52"
@@ -23,15 +23,15 @@
     },
     "census_v4_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-      "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
+      "sha256": "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
     },
     "consolidated_authority": {
       "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
-      "sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
+      "sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
     },
     "ft2_04_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
-      "sha256": "fc9c27e7ed1025aeeab4461d4176504bb8789340296cd1e9e0ad4cec67a127ca"
+      "sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe"
     },
     "graph_v2": {
       "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
@@ -43,7 +43,7 @@
     }
   },
   "outcome": "producer_repaired",
-  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "repair_of": {
     "preservation_verified": true,
     "preserved_path": "superseded/v3_pre_scoped_final_round_20260730/receipt.json",

@@ -1,17 +1,17 @@
 {
   "attempt": 1,
   "coordinated_goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
-  "created_at_utc": "2026-07-30T03:16:39.081074+00:00",
+  "created_at_utc": "2026-07-30T04:16:37.184782+00:00",
   "deliverable_hashes": {
-    "calibration_spec.json": "921e8d70c363f6206afe3f7c10c35f2d01c358e6c496c941815412a159c6dc5d",
-    "composer_spec.json": "2eb329503dc16a3cf51c1b8e613b4e5f6d1711b1408127ca2461da76e1a80cfa",
-    "contract.md": "bc225597196ed2612444927fcfabe2a9666ed68c655eccfd72445970e18a5100",
+    "calibration_spec.json": "354870fdab769042c2f6f2aefcdc10015b4a254a069be2060be02b9939aad06b",
+    "composer_spec.json": "b124a71ca431d0389437d843cb0e8b795f9003f5dea8cddcdeaf05064d7df39d",
+    "contract.md": "d974f29d2cff1403dfa3c2280d0ab884f98628269b56359c6cb527607803a2f3",
     "controls_spec.json": "f7c81327fce43e7f2e04d2e7c9c20e608d4ca1ca6ffec633e4d79ce8c52af3d3",
     "findings_crosswalk.json": "763b149afc4a66597872b86e59decb1e018cbd6c4c38bbc77ae57b29f63e03f8",
-    "forecast_heads.json": "68648f608d08940d81475e2901701e6413911edadcec9ac98d5e1d495d71c21c",
+    "forecast_heads.json": "2afcffc4c9ca8e78e1e9c9315252dbaf8d4d560e42e85b48dd88f3251e52d05c",
     "matched_random_generator_spec.json": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
     "objective_spec.json": "3b5148c79a52977b2d849f4185e5f5dd676604357b5e5d762bc4084ed77f41f0",
-    "realized_label_audit_composer_spec.json": "d833297dbaf2a547d8246cdf3cf404dea0d8ff4234026ceac37797e462a8422f"
+    "realized_label_audit_composer_spec.json": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09"
   },
   "goal": "FT2-10",
   "highest_allowed_claim": "The scoped producer repair is complete and mechanically testable; Fable verification and delta-scoped fresh-seat review remain pending.",
@@ -22,15 +22,15 @@
     },
     "census_v4_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-      "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
+      "sha256": "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
     },
     "consolidated_authority": {
       "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
-      "sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
+      "sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
     },
     "ft2_04_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
-      "sha256": "fc9c27e7ed1025aeeab4461d4176504bb8789340296cd1e9e0ad4cec67a127ca"
+      "sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe"
     },
     "graph_v2": {
       "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
@@ -42,7 +42,7 @@
     }
   },
   "outcome": "producer_repaired",
-  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "repair_of": {
     "preservation_verified": true,
     "preserved_path": "superseded/v3_pre_scoped_final_round_20260730/receipt.json",

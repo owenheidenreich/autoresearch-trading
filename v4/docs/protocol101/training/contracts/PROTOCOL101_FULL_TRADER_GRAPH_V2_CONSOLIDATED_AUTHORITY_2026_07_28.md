@@ -12,7 +12,8 @@ substantive was resolved silently.
 
 Machine-readable companion (same schema family as Graph V1):
 `v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json`
-(SHA-256 `b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09`).
+(SHA-256 `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9`;
+amended 2026-07-30 — see amendment A4 in the Deliverable-hashes section).
 
 Source authority chain and precedence (highest first):
 
@@ -1098,9 +1099,27 @@ present.
 
 **Deliverable hashes.**
 
-- Graph V2 JSON: SHA-256 `b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09`.
+- Graph V2 JSON: SHA-256 `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9`
+  (amended 2026-07-30 — see amendment A4 below).
 - This narrative authority: SHA-256 recorded in the FT2-01 completion note
   (a file cannot contain its own final hash); recompute with
   `shasum -a 256 <this file>`.
 
-**Validation.** Graph V2 validator: `valid: true`, 0 errors (§11).
+**Owner amendment A4 (2026-07-30): Graph V2 topology re-seal.** The scoped
+final five-fix round added exactly one edge —
+`FT2-92-IBKR-DECISION-SHADOW` `insufficient_evidence` → `STOP-OWNER-DECISION`
+— so that every Phase-F emitted outcome has a legal graph edge (rerun002
+finding `RERUN002-S2-PHASE-F-OUTCOMES`). This is a topology amendment in the
+same schema family; it invents no new science and changes no contract text.
+The Graph V2 JSON SHA-256 therefore moved from
+`b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09` (pre-round)
+to `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9` (current),
+and both deliverable-hash references above were corrected to match. This
+amendment was recorded 2026-07-30 during the owner-authorized authority↔graph
+hash-drift repair; before it, this authority still recorded the pre-round graph
+hash while the live graph carried the new edge. The consistency checker was
+extended in the same repair to fail if the authority's recorded graph hash ever
+again diverges from the live Graph V2 JSON.
+
+**Validation.** Graph V2 validator: `valid: true`, 0 errors (§11);
+47 nodes / 104 edges after amendment A4.

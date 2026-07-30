@@ -10,7 +10,7 @@ simulator v5, or change the paper default.
 ## Frozen authority and chains
 
 - Amended authority SHA-256:
-  `3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033`.
+  `d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca`.
 - Amended Graph V2 SHA-256:
   `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9`.
 - Canonical intent/fill law remains byte-identical:

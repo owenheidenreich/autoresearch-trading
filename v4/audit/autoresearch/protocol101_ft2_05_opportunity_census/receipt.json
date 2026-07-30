@@ -2,7 +2,7 @@
   "builder_sha256": "5a4d0f643cbe38d257b25b6108e3a3488bde1d9cfadc2f6b7714dc71dfaba681",
   "created_at_utc": "2026-07-30T03:12:50.384203+00:00",
   "deliverable_hashes": {
-    "census_results.json": "a7a4001223d2c06babbb10098639d15e82ea0a2a6dd44448e3b1e517bb10e8f8",
+    "census_results.json": "7d9e4f634e92db4e62b21caa07b698b57e75ba4f1b8fca1c2ef560b2af98f60e",
     "checkpoint/session_labels/2025-01-02.parquet": "eeb45e89ff502dcccb9a4dc768a623f4a7c5af8e5e5baa233356a76438142406",
     "checkpoint/session_labels/2025-01-03.parquet": "609643c514da8d6cadf1201851258fefe262d1772cd56771a51da16b2af08891",
     "checkpoint/session_labels/2025-01-06.parquet": "e30431a63af731313badd927b567b90b552326a472d80fa3cea0f0e1da67fb67",
@@ -95,7 +95,7 @@
     "checkpoint/session_summaries/2025-03-10.json": "72887f63e4c10e7de66129a24d7088432a0fc6468afcf2acfaee3b90a9b5babb",
     "checkpoint/state.json": "b7162c67b9d64de94f801e9fd452d23c09c62e3d421f68089a3741fba88c02c3",
     "d48_reference_transition_audit.csv": "17c53e6225924ab311be3ee10fa52a313ab2210129abd478962b9621817ea96a",
-    "d48_reference_transition_audit.json": "ab7529265811b107dbd4e4a646f69d9f4f671ef3e94f4c8916164b155eaf8797",
+    "d48_reference_transition_audit.json": "462f65ff3190ac2ff68afd2a4308602da345a2bf0c9fb6fb7907eb50f2a51553",
     "excluded_winners.csv": "3e67b86aa763570a201d7960e618a9189ebd942f9d6c310e9983286a561bb1ec",
     "family_distributions.csv": "c1707bc22161c6af24a8205fbedbb8c5c7cbc3dbfb9ae2bb9f7d85b307ec193c",
     "fill_recheck_rejections.csv": "0955519b26a7c9795a09e90ad342242f9a3959b91f5cd264064bd08212b0673e",
@@ -115,10 +115,10 @@
     "pareto_frontier.csv": "39e7dd578cede9dde593ed3ce7dcb62bf067e1e79230b1aaae11a2b4814c7f5c",
     "progress.json": "db9e6075734e7e67eec5b260cdc6c490c27eb66d2c130dc8e9a5f3f7b52fa54f",
     "regime_headlines.csv": "cec6ef494932b085df341274b0595bf2829df68bd37b02ff18c19625ffa2a37e",
-    "report.md": "de991ba6c48f3c52163639038f334b7ad5cb0efd28febf4c2583347ef280b927",
+    "report.md": "ef6deed08d2b6c4f9c66ac06342a7cd9b6a2ca068eecdf4d04faa2511fb8dc8a",
     "session_variance_components.csv": "b35bc341dc04d8c2cc6368681eb9892b4666ea28d5d7b9de4f9184c86328fc43",
     "v2_v3_impact.json": "5341e2ead4ff6e0d4bbdbb59ba6312180c457e41a89ab6e8dfc7b28796d9f9a1",
-    "v3_v4_impact.json": "913f127563daf9e5dff25cb8da72b4c3cdefd7a06d7e5edf569ca3c736806c3e"
+    "v3_v4_impact.json": "a5614b82fcf3fc3a5034627a9f8fbfc068ce4ff8a9e67aabee47fd6896bbaed9"
   },
   "governance_hash": "d3fd26fb0b9350d7874183d217a24caf91a7f876472932096711e8293d435590",
   "graph_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
@@ -126,12 +126,12 @@
     "census_sessions.json": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
     "intent_fill_recheck_law.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
     "label_spec.json": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
-    "oracle_rules.json": "1989a42bc3cf62d97db3fc4f45b5936e8c0dee9fc365aee9b439be734158f639"
+    "oracle_rules.json": "4c558964153f7a8d8a8f70948e7bbc822463a4539bf25c0dee5f453cf847d755"
   },
   "next": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
   "node": "FT2-05-OPPORTUNITY-CENSUS",
   "outcome": "feasible",
-  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "repair_of": {
     "preserved_path": "superseded/v3_pre_scoped_final_round_20260730/receipt.json",
     "receipt_sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce",

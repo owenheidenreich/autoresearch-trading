@@ -3,7 +3,7 @@
 Status: `scoped_final_round_repaired`
 
 Authority:
-`3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033`
+`d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca`
 
 This is the scoped final-round statistical design. It freezes
 future evidence treatment only. It performs no model fitting, new session

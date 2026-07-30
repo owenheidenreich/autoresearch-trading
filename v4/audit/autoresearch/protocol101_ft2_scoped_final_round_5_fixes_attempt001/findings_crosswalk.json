@@ -1,7 +1,7 @@
 {
   "schema_version": "Protocol101FT2ScopedFinalRoundFiveFindingCrosswalkV1",
   "goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
-  "authority_sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "source_review": {
     "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun002/joined_review.md",
     "receipt_sha256": "17cc72ea85c629ae9a2d23059ae13020782464705ee6049f577c9936dd2579ac"

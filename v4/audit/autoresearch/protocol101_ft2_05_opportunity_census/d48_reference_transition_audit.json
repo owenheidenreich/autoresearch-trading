@@ -565,7 +565,7 @@
     "contract_id"
   ],
   "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
-  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "reconciliation": {
     "aggregate_identity_v2_minus_v3_equals_net_intent_plus_recheck": true,
     "each_step_sums_to_governed_rows": true,

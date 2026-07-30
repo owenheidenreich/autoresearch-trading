@@ -6,7 +6,7 @@
   "created_at_utc": "2026-07-30T02:48:10Z",
   "producer": "Codex scoped final round executor",
   "scope": "owner_authorized_oracle_rules_intent_universe_refreeze_only",
-  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "repair_of": {
     "schema_version": "Protocol101FT204NodeReceiptV3",
     "receipt_sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
@@ -28,7 +28,7 @@
   },
   "deliverable_hashes": {
     "label_spec.json": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
-    "oracle_rules.json": "1989a42bc3cf62d97db3fc4f45b5936e8c0dee9fc365aee9b439be734158f639",
+    "oracle_rules.json": "4c558964153f7a8d8a8f70948e7bbc822463a4539bf25c0dee5f453cf847d755",
     "census_sessions.json": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
     "intersection_proof.json": "74433f97822a7e2fd49f45acf321654399aadfc5405fb1c00dbdf6f41c51fcc9",
     "compute_census_outer_test_intersection.py": "152bb61785d9d82e5dddfe34f4eb2037107fc162e078dd01633646df8a65501c",
@@ -36,7 +36,7 @@
     "report.md": "01cd4f7380916b4f7da2b5e5ec25b040035733cc2e40e1e71b483b4282e007d1"
   },
   "source_hashes": {
-    "consolidated_authority_sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+    "consolidated_authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
     "consolidated_authority_pre_repair_sha256": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
     "graph_v2_json_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
     "runner_plan_sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",

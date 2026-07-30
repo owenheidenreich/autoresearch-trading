@@ -1,0 +1,1975 @@
+{
+  "baseline": {
+    "authority_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+    "graph_sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+    "packet_receipt_sha256": {
+      "FT2-04": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+      "FT2-05": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce",
+      "FT2-08": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c",
+      "FT2-10": "c04a591fd3034a2caba756e8f9dc1d7f5c24c397170894b0b6b0eca7a083fa6f",
+      "FT2-11": "bdb52c4f9178da1cab75ec4a80bd13c1db8c0074c1c398f380729d1df80c5ef9"
+    },
+    "rerun002_receipt_sha256": "17cc72ea85c629ae9a2d23059ae13020782464705ee6049f577c9936dd2579ac"
+  },
+  "changed_file_count": 145,
+  "changed_files": [
+    {
+      "after_sha256": "4c558964153f7a8d8a8f70948e7bbc822463a4539bf25c0dee5f453cf847d755",
+      "before_sha256": "b435d5fd8e37aca0919196e9f8e4b2d79132e3dd8dca04cc592887e2c6b79ddb",
+      "category": "FT2-04_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/authority/document_sha256",
+        "/canonical_intent_fill_recheck_law",
+        "/census_layer_constraints/D48_per_trade_premium_cap/effect",
+        "/census_layer_constraints/D48_per_trade_premium_cap/fill_outcome",
+        "/census_layer_constraints/D48_per_trade_premium_cap/rule",
+        "/census_layer_constraints/D48_per_trade_premium_cap/same_game",
+        "/census_layer_constraints/D49_budget_aware_entry/effect",
+        "/census_layer_constraints/D49_budget_aware_entry/fill_outcome",
+        "/census_layer_constraints/D49_budget_aware_entry/rule",
+        "/oracle_sequencing/principle",
+        "/oracle_sequencing/serial_ceiling_replay",
+        "/oracle_sequencing/threshold_independent_distributions",
+        "/schema_version",
+        "/status"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/oracle_rules.json"
+    },
+    {
+      "after_sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe",
+      "before_sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+      "category": "FT2-04_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/assertions/canonical_intent_law_sha256",
+        "/assertions/selected_only_tplus1_recheck_cannot_redefine_intent_population",
+        "/assertions/superseded_v3_packet_preserved",
+        "/assertions/time_t_intent_universe_is_canonical",
+        "/created_at_utc",
+        "/deliverable_hashes/oracle_rules.json",
+        "/legal_next",
+        "/producer",
+        "/product_contract_hash",
+        "/repair_of/preserved_directory",
+        "/repair_of/receipt_sha256",
+        "/repair_of/schema_version",
+        "/schema_version",
+        "/scope",
+        "/source_hashes/consolidated_authority_sha256",
+        "/source_hashes/graph_v2_json_sha256"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json"
+    },
+    {
+      "after_sha256": "7d9e4f634e92db4e62b21caa07b698b57e75ba4f1b8fca1c2ef560b2af98f60e",
+      "before_sha256": "e6ad9ec79318e15590439af60025f91f88c5b14877c45d8da75de9607a84e561",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/d48_reference_transition_audit",
+        "/distinct_d48_reference_minutes",
+        "/fill_recheck_rejection_denominators",
+        "/input_contracts/ft2_04_receipt_schema",
+        "/input_contracts/oracle_rule_schema",
+        "/input_contracts/oracle_rules_sha256",
+        "/label_rows_d48_reference",
+        "/product_contract_hash",
+        "/remaining_session_label_coverage",
+        "/remaining_session_no_bid_minutes",
+        "/remaining_session_total_path_minutes",
+        "/schema_version",
+        "/tables/excluded_winners/records",
+        "/tables/family_distributions/records",
+        "/tables/friction_by_premium_band/records",
+        "/tables/guardrail_curves/records",
+        "/tables/guardrail_trade_rates/records",
+        "/tables/label_session_inventory/records",
+        "/tables/mnar_sensitivity/records",
+        "/tables/regime_headlines/records",
+        "/v2_v3_impact/role",
+        "/v2_v3_impact/semantic_changes",
+        "/v2_v3_impact/sha256",
+        "/v3_v4_impact"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json"
+    },
+    {
+      "after_sha256": "eeb45e89ff502dcccb9a4dc768a623f4a7c5af8e5e5baa233356a76438142406",
+      "before_sha256": "b295e8a4cbc6f9a3968d3ef7c748eab2d1fc9cba1dc7484bd03f964ff20b8799",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-02.parquet"
+    },
+    {
+      "after_sha256": "609643c514da8d6cadf1201851258fefe262d1772cd56771a51da16b2af08891",
+      "before_sha256": "31348b70ac9717f4e3a4efa265dbb17dcfbc781a20100c43e2063a568e29c5c5",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-03.parquet"
+    },
+    {
+      "after_sha256": "e30431a63af731313badd927b567b90b552326a472d80fa3cea0f0e1da67fb67",
+      "before_sha256": "4d66647da3714081eb7581f5330b79139f2550352219cbe9ce7dfa87a1b638a5",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-06.parquet"
+    },
+    {
+      "after_sha256": "04bdef69813fa3c76deb7fc01ac886a2c942be616f09a518190dfd8877b7f3c0",
+      "before_sha256": "8e52f102a28a7bcf800d3d9c5448af26bc2761d9f2ea1f992a0aa6f6fa214d3b",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-07.parquet"
+    },
+    {
+      "after_sha256": "ec6ffa51461965061ee5c44e6d7b5220e8d23eab0c60e7fdc0afbdb2f4d76c61",
+      "before_sha256": "f66ce8d3082a4b0b82d4d6cb3561a1a6e554a8a7870d18cb14a96c2a43015ff4",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-08.parquet"
+    },
+    {
+      "after_sha256": "23a1eea1aa8760d77615b10267d9f57f84dc5fa2e542d06babd218fcefe628f3",
+      "before_sha256": "a1125be8c0573fbb88701bb1e02b47b6830d7a362d72aacc3cb9b6661b17164f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-10.parquet"
+    },
+    {
+      "after_sha256": "dac3fed78147534ce1824908f6a63846845ae8539be0f8604f90a6c46b026794",
+      "before_sha256": "b940240ef4da1afbde2aae9fbbe1f3fe76decfb08cf745ff3e7a682a3f1a0df6",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-13.parquet"
+    },
+    {
+      "after_sha256": "6e08be358db9bab213f352c65e6dac3b949220dc3ebecd47e64703c92dc14a60",
+      "before_sha256": "204f10def5bb2aea2f93c517ddbe3aeb65c85abe414bdff1803f7cb4f94d74db",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-14.parquet"
+    },
+    {
+      "after_sha256": "8fa927a3ccb10c12ffb4e24b3d8d1fe164b233511c38fea67302240503a87601",
+      "before_sha256": "b21948d94c67bda0992ae2ff73543ee7e7017ece0fd97abe9245938cfb2bdfce",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-15.parquet"
+    },
+    {
+      "after_sha256": "e76c9dc224d3362745b77ba08a783740b0be8f8ecb9975b7d2357022e83a7eb7",
+      "before_sha256": "5e7fb9259ed0baaa60078f6f9ffa44babfcd4d69c294438593547e4fb3438b0a",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-16.parquet"
+    },
+    {
+      "after_sha256": "a8445c569e35a1e732bc9c1bb89df84907a77cf53eae1b8353ac9ccc6bd2ba4b",
+      "before_sha256": "b84f79dfb0d119049fbe796891d4974b05311c8984c6ee86c821f9867ae89f90",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-17.parquet"
+    },
+    {
+      "after_sha256": "cb737a3f18d4408c01c2edb02d34c690aadea2f6be35a52bbd643b9bb76f6223",
+      "before_sha256": "2d4ff743c541c1717585a408b86da791c4c530ea94f2b24044b94dd77695873f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-21.parquet"
+    },
+    {
+      "after_sha256": "0804d81a0deb3bfbdc0df2c77916e9cf64cc03f9fd91d8f9fa56980d570fecd6",
+      "before_sha256": "ceba6d8cecf9aefd83ba2d769d3f692ff0cfbce2486e714654fd6448bd8e1dd5",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-22.parquet"
+    },
+    {
+      "after_sha256": "2372dace8bc925de66313b990953ed31193ff2210e0378869c4104c8bb0d1c24",
+      "before_sha256": "7be9b85c5c5b69afeec4bfb669245c64eb21d8de641f8bf0a10b810753961c33",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-23.parquet"
+    },
+    {
+      "after_sha256": "9d4ab1ba45a7e6c1dbcd0d02cd460d725508e61eb4b5ed2442af6666cb93f27e",
+      "before_sha256": "ed41ed6f078e518a2697fc68a6382b22a8e9938e6ab4d0e2c1152c1c5bc1488a",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-24.parquet"
+    },
+    {
+      "after_sha256": "ad150bf3f21aecb30f070af5bcea56546140bc6d6ec26d5c31206d2c99664946",
+      "before_sha256": "f40b1339702076b40788948c5c87eef953f4834ac860d4134ca35df4df85af46",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-27.parquet"
+    },
+    {
+      "after_sha256": "5679505f47ef173273dc46e804a5085f16bf1c4032f8e1d8ae8f668283e623ee",
+      "before_sha256": "beb5f353fa578e83c5a0dfce6e6afedf675b465372e3568f4eb0e5e1239d3875",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-28.parquet"
+    },
+    {
+      "after_sha256": "cd326b842c772672c028558d70d151e3e12be30bc417db4046cec1a4a42a13b5",
+      "before_sha256": "8e49b67baad69c6dc88082dd7e0045d3cdf912e2eb4d86d169643ae78592ec15",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-29.parquet"
+    },
+    {
+      "after_sha256": "674e336de5fa62c712f6bc5e19d9f28a4bf825a8f36a17f2a453722ef1d155d6",
+      "before_sha256": "eb6d87cd3d10acf0594f0f95ef53dfad04410b5c6eb39cc88551f2a8804c4b08",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-30.parquet"
+    },
+    {
+      "after_sha256": "2ed075b6cedc447ca40b457a88e786a1c1f12c759b4a7de7f1b09b2b252c9468",
+      "before_sha256": "628d7112efe3f264f1a051c4560d441f3649cec09edd89d04f44f63e18e5f4f9",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-01-31.parquet"
+    },
+    {
+      "after_sha256": "cd88c753531c872e7c5ebd3edbebdcddd01fa29358ddddd80d9f1f347f6d1665",
+      "before_sha256": "a5d8dd868642c4600c1b52f696f0d31ab5d0fa9cb8c224088a32401cf7f49cd1",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-03.parquet"
+    },
+    {
+      "after_sha256": "d36d78ff7772cc7ffaa8e7bc7d62384dab2f26f8f991188686998d0d6c6179c6",
+      "before_sha256": "f8ebb08adc1358e4863463be68223f5518c5bc68aaa72ad85ca9e901d7916f9e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-04.parquet"
+    },
+    {
+      "after_sha256": "58a821dc885f9293bb89b15a092e1e2363e4b6338505a559ac2b2fc2767d44bd",
+      "before_sha256": "d3d1ec57936fb223b16f9171cce61ddbd400ef312f537b9bd1160145f2caf182",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-05.parquet"
+    },
+    {
+      "after_sha256": "e3b1a8605454e9bedd82c923c34fa76e705a70222e8526955834de902bda7963",
+      "before_sha256": "e3f1efa3d90422367cbd9d6fbf7bb0db598179e3335842c72b793c12d3967805",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-06.parquet"
+    },
+    {
+      "after_sha256": "7fcd4c53371a06285e8a5ca54455a010a5720e28f2049aee8dd9eebd22178c80",
+      "before_sha256": "c84dc8416638496404ffc90465583670e8d277f55b0b6800915bd22a394a26b7",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-07.parquet"
+    },
+    {
+      "after_sha256": "7025007da38455dc6b1dc2ac72e7a1ff42fa5a9a857070d747fbe9f69bffe0bc",
+      "before_sha256": "101f3c938dcd57f7b25b157dd9a977db54c590d38ce028ecc4576356c841341f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-10.parquet"
+    },
+    {
+      "after_sha256": "6e4a133ad063744c9f0ed1ee3d1f0717e1390fdb8f57319f6b7805fb95d906ce",
+      "before_sha256": "37d7f4cc92f1ee77e482e1697cf18109eeaa8de3fb26a9deae4b6e6bb8eaae28",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-11.parquet"
+    },
+    {
+      "after_sha256": "d313fb2683a2162c0f1c342168ca182446dbe8254e4ae536aa75ba4193576ae6",
+      "before_sha256": "3033f72e17b23909bdc71cad2eff1358c26ff02a20b02db9b2a236c9bf28cbc0",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-12.parquet"
+    },
+    {
+      "after_sha256": "e0e0a0571d59bb061a2f91b2c0de1c362aa840bb6b710ef6a6cdd5ebb2ea9bc1",
+      "before_sha256": "63e5cd4b43b264b92b349c5b981173704180e4de0580da55ecb58df8e4c438eb",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-13.parquet"
+    },
+    {
+      "after_sha256": "c4b06c3a7f55939313e00fad09f556dcd0e995ef2b1698365132cd2ef3c37f0c",
+      "before_sha256": "0ca3c3d49c09eb454aa5252517c93c24c84ee62823ea9d011589773001df033d",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-14.parquet"
+    },
+    {
+      "after_sha256": "5ff9aaf052c723fd27b8007e885c5bdd2b696184d4355c984e5dff7e297fd25d",
+      "before_sha256": "a7462b2198f674a89c58eaa1fe1c8a1b3c6625cb600672930fa47bc2cca5bcc5",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-18.parquet"
+    },
+    {
+      "after_sha256": "da051a18e36c99b2307ca326dea2e5bf84b38c2d37492e8392b4fb389c242100",
+      "before_sha256": "279ae8bdf5756201c1a11245bd64fc77d9b70ae3d9203f4316b32a3d587baeff",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-19.parquet"
+    },
+    {
+      "after_sha256": "192c61451c2df86661729ebb8d3d41808c8dc62bf20f56eaf7f5183ef689db00",
+      "before_sha256": "20ffacf66fe609ad66857d7fee9d20712b4112760140c6cdce888cc95020ea5d",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-20.parquet"
+    },
+    {
+      "after_sha256": "34cfea471e4e765213575f0e0deed93811ef0944070ef7a0f01dd25aee09f4b9",
+      "before_sha256": "2e1034222e5faa7fa07488d720c4f88f37686055f330794714380710b97c549c",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-21.parquet"
+    },
+    {
+      "after_sha256": "19b5eeb908dee0bf91ed03dcb63d56ecaa5cd9a13fb23b045f5d1f21a773b2d7",
+      "before_sha256": "288a138200e6882d6037b2dd0836e16f805ed159d990461c5b7be863379d15f3",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-24.parquet"
+    },
+    {
+      "after_sha256": "59d5fed212f58479887f7424ec87caf2a63c92b8845d6e3a27d1fc262dfa3820",
+      "before_sha256": "ebb83d69f452a70de97d381e84bc44e41e7e9cd9d7e07c4a8b2ac7e2d9dacc8e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-25.parquet"
+    },
+    {
+      "after_sha256": "8dd8ddf7015506e91503737bf9b184019c2f52b392ce66153bdc948250e2390a",
+      "before_sha256": "aa39d1eaff763ae7fa00632e9a2f170e0cf27c16815a7f5c69df2fcff5a83700",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-26.parquet"
+    },
+    {
+      "after_sha256": "063787ac4ded37f4f72c2564a160fc97cc03847de02e107d8749556df632b2b3",
+      "before_sha256": "745c1c42d0888c77a80ab262c3089c8cfffb23a8a21a602efeb767d02bbcb071",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-27.parquet"
+    },
+    {
+      "after_sha256": "129904f104631d167fb2ed205949454b4efdbee98410dda6f8b2fc51c16eb6bd",
+      "before_sha256": "a2c8278008f654c9dbabc61e47afa9db1df4dc2f8ae3775b7d8ef8b1635726fd",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-02-28.parquet"
+    },
+    {
+      "after_sha256": "5bcc2025ad44a85b81c42e12b2b89d86afb68dbf67e6f5860e912d9899011d23",
+      "before_sha256": "ed9ba1ab5b00260291f929fd25bfc921f46ae5ac00675b8b43f046cf2a5e6ee2",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-03-03.parquet"
+    },
+    {
+      "after_sha256": "12912ca4d97c35f3c11e23796c67717e6a0e76a58b2f7cf84acfcabe54aeb291",
+      "before_sha256": "c56171872c933ca26186315251cf4f0f8b359c205c30e60967033075fe24da64",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-03-04.parquet"
+    },
+    {
+      "after_sha256": "f1b359bc21e137073e158214f1e62a8a492e4d7eb4bd52affcf0a21795bed9d0",
+      "before_sha256": "7f07f0284c1bbad269f29548ab4f6c77b944e70e921bd2a4916df1dfb975e7ed",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-03-05.parquet"
+    },
+    {
+      "after_sha256": "cf2d807c3084fc09a5c0984cb13941cdcea090e998340fede7788068c4514b4e",
+      "before_sha256": "72eb83ce639b1b2b5043fa11ed55f23c9e75073191b8a363dfeee4f21b595ba8",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-03-06.parquet"
+    },
+    {
+      "after_sha256": "5ecc0c0f5e03aa2981267560ecd579bc5636aca41ac98e24aec4f73da6a3bc0f",
+      "before_sha256": "377aa74299933f9939bf7c2d3dda736642634390265085f8f6db306aa1a9ae5e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-03-07.parquet"
+    },
+    {
+      "after_sha256": "95f6d0f8fd3578fceac9c4b99d2d87a3e42f22fa242173383c2a28776ad96430",
+      "before_sha256": "a553c4c11c6a029831f261625a38dbdec1b38c564628ade1f01114de8b61a2c9",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_labels/2025-03-10.parquet"
+    },
+    {
+      "after_sha256": "aa285f835be4687322ba6b351609d29e380f47467a23801dc51b13254625d01c",
+      "before_sha256": "ec457da2a15a87d9c7515fd9c29b2159ca7768dcd7874cee934c664d66cb4bf3",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-02.json"
+    },
+    {
+      "after_sha256": "9fe5c671edcb2c807a83193b0148d8a690826af5ff55bdc77e022bae4846ef15",
+      "before_sha256": "0cab2a2154cdeb1b692f57bb8c4873f921d96b452dd93237ea0f88548f927667",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-03.json"
+    },
+    {
+      "after_sha256": "d432881311d64cb8415aa3781caae3f2e1c12fa27323a90f3366c228a2a48e6d",
+      "before_sha256": "d9e8c993c1de270a510694276461722c6279096fd118165bacec530dff2eb957",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-06.json"
+    },
+    {
+      "after_sha256": "11e389d4b9e41f7cf29ab39d0076c1726cce668e387a215f7a6dcdb889cdf133",
+      "before_sha256": "e45a7405f2a587c0bc4ab48a9ef4a6444a45d1e19dd673f08e5fa31e84e440da",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-07.json"
+    },
+    {
+      "after_sha256": "f94e19e95c10c68ebaf746a04933ec9de7aad8ccbea7fdb79fb4a7ca89378a7a",
+      "before_sha256": "df66ac2c02743dd66dfec6eff505c23ea22cc5cb264153be6ff03baede7bb059",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-08.json"
+    },
+    {
+      "after_sha256": "8f5bddbf73490a20ec03dacdafcbc5eb1a7a333e6759a87291a6eae5ef9c140d",
+      "before_sha256": "5de17ae7652cf72f1e57584db3a7d3d4e3baa8b54169c936e88f550cd2ca5a6b",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-10.json"
+    },
+    {
+      "after_sha256": "62611d957af49f8b8cd214d632cf11961fbf20ad3cb5a4470e6bacc444958291",
+      "before_sha256": "13e743c8fa7904174e73e9bf05d448352a7fb4fe5e99703de0c94021d63d27ca",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-13.json"
+    },
+    {
+      "after_sha256": "72e9be94ad8466ad411fae22338ca2c687139acd84ace5c2503a3241259eb73e",
+      "before_sha256": "a1692a4c7b348870958eed543eef7ab5a75511ed69c62783092044729136b26a",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-14.json"
+    },
+    {
+      "after_sha256": "9f3dfeeace876136e785c53c9f7e605a49623305ee2063a83a7b153f2d85cc5a",
+      "before_sha256": "9904c2bb30df1ad50cb8854ef80dd12b85ecef08b11bed9323c157d57f40082b",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-15.json"
+    },
+    {
+      "after_sha256": "4e75b3028786fc346655cc51e2130e5347085f4bb0a6c1770aded37f6df0ae83",
+      "before_sha256": "7e2ab2dabff8134f579cf547fc9ac2665c6b97a1e6448d8fcafade1ecfc7cde2",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-16.json"
+    },
+    {
+      "after_sha256": "2c6080c7ced1a4328d0275ebf0862a779678cbbe6d8534dbd168625fa91b80f4",
+      "before_sha256": "d3add63dfc145d6f974cd64c7ce880a0b59bb8162a42f666d9863a703875fc51",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-17.json"
+    },
+    {
+      "after_sha256": "da4fe8696dd8a93f2bae6720f9f96fdaccd6f110b47e549afc913ecb8a874ca5",
+      "before_sha256": "d1b2e9cdfd565cbf32c535e6b73ca58c30a55d5521602d166cbc2df8f5606757",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-21.json"
+    },
+    {
+      "after_sha256": "f5ba41249e183f53f2c0adb5a641123881343af4bd8c92d6ebb6af18fe0bc93e",
+      "before_sha256": "a5775aec6f34b2abc631629951c44657141441ca3411475a877c3aa0491a278f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-22.json"
+    },
+    {
+      "after_sha256": "4008f03dbbd0c4092f7b12e4e22aec629ee507a669a33348fb4371ce7e21e60d",
+      "before_sha256": "c54340ec413088dfbe729ee7d2e027639844b7b18f926ddab7f031d86e8ff5ad",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-23.json"
+    },
+    {
+      "after_sha256": "c0308983fcf372eb9dc44307ba3ec9cee8af4c7dc2d0f10f2d61fa85bd9177fb",
+      "before_sha256": "85f0e114296ac53cf805f550135d1c204554100b5a82d46877037b519772d944",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-24.json"
+    },
+    {
+      "after_sha256": "bcb9d059cfa5fc014f04dfd3ce6a3d616d0b11298eeba5b4273816620a61468f",
+      "before_sha256": "e5a675ea55930a710a230d7f71266aef60bc6b93250a14078f8cd8703405b989",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-27.json"
+    },
+    {
+      "after_sha256": "138085e4c168bbac7988f77ebf1fd16951a45f7d5195d96ff78c995f5aeb5128",
+      "before_sha256": "d32dc2d65ba4fd17be189aca19ca3b505c5766e474560201105642429cab7e0e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-28.json"
+    },
+    {
+      "after_sha256": "a80d4dfcdd681ad666c7dfb9ad0bdbe3c185161987d6cb8b251f92564b698b31",
+      "before_sha256": "0ec8cb06938ec3ace6ac816b0b2a00e53b1c000d69743d5a5a313dbc5cdfc39e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-29.json"
+    },
+    {
+      "after_sha256": "3d77e351f45b4acc521fc8cebd2e300bb2e7728219075efc96928e0843f601ff",
+      "before_sha256": "2354a98b271fb4573a7048755a82d6d60d71dc557ba71586494e358748218faa",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-30.json"
+    },
+    {
+      "after_sha256": "5177740e8c3c60efadbdf68982341443a78a0cefd55e37d41468e14dee6b9a0c",
+      "before_sha256": "e1ff6b6a84869caf0316a95f7259a906f4fafd0342de396611ab2caa3555347b",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-01-31.json"
+    },
+    {
+      "after_sha256": "4e72bccac62c40dbfe4b71d494a4731c2877ac5fb84c446e28399ad0a552dee2",
+      "before_sha256": "341044d1e8d9a0b0ee9830ad1d09dd9259cbd2a75d2ccdf255073d102111a54f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-03.json"
+    },
+    {
+      "after_sha256": "9c481b6d8b8d685ecbea6b76519036a54e53448b7ec708d128592b22726dbdbb",
+      "before_sha256": "b41580f409f05ee1ed1e28f8c535578c476a49a5739d24d74c06484237d32bdb",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-04.json"
+    },
+    {
+      "after_sha256": "d215339a58797310b4ffa495b4f91cf9879e7c74ed6459c7041347e235d7469a",
+      "before_sha256": "afc5294120e1f562595261588d245ecd260bdf25300cd692bdcda1c493c2b860",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-05.json"
+    },
+    {
+      "after_sha256": "44f81ffe3f93e06d12db80fbea5e557a6d9672303264a0f5a9ecacb457098518",
+      "before_sha256": "ea5f04a51952a595bc4087ad343d1ac46c38b7bb2f7722817ac964363e239d23",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-06.json"
+    },
+    {
+      "after_sha256": "c76ede5a9599f33e16966252ec4300616e7e7925fa6b8ce064285a2909a64d62",
+      "before_sha256": "a0c018793cb85c073b46eae2f6720c6f79cd51f79696a6a09be5b5595255aeed",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-07.json"
+    },
+    {
+      "after_sha256": "8ba15eda428be4f4da16517edd1154abc69e152bcf8c75cc8052caff8699fb26",
+      "before_sha256": "9b9dc702183c71634990e69801f84db9792ac978fdef21d1045ef9d59df54697",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-10.json"
+    },
+    {
+      "after_sha256": "88557a10b3d0b42c770e63d5cdffd1c0983c158654955c2ed4d39ef5b2b855bc",
+      "before_sha256": "63386875eab3fe710946dadcd86ed9b715a3bd9c28591a4b47d03078c9139f76",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-11.json"
+    },
+    {
+      "after_sha256": "8b1baa463e98fa0a87caba4c39464536121e9f05f7e425edd9bc56861ce8b16e",
+      "before_sha256": "a7c3cc89f28dbe059780e17dc59c92e8fc62a0c78e45c00a771e65701fdaff2c",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-12.json"
+    },
+    {
+      "after_sha256": "89bdab0c93753cb236bc3bbd6dae640b941b474f76eb9c7c0df72d6fc7aeb703",
+      "before_sha256": "2ad8a4d46b41b929d59bc69b9e54ca26c16e0163c9ce8d3be130ff98ef6cd751",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-13.json"
+    },
+    {
+      "after_sha256": "b85b22090a39462aa43eed76cc4e1e0e5c8adf297431ca6e1b046b04688a3062",
+      "before_sha256": "6b1667e3a7a017042da2e98faee192e78c060abc293fb13880b703eb6d79ec4f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-14.json"
+    },
+    {
+      "after_sha256": "d24b6355c0a55e61c1e9d26057968e5a48a37a78037021dd4d654b95051a9b02",
+      "before_sha256": "48133b937e4008f3e5c9323b91430c22c63c2dce727b1505df9c56678c594454",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-18.json"
+    },
+    {
+      "after_sha256": "71c736ed58b4496c25e06afd13338c50516c11311afdc35bee6102666c446f3f",
+      "before_sha256": "5050360e5aaf56626e10ce10bc0815c33709cbc10eef49f3bc14680c64d907ae",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-19.json"
+    },
+    {
+      "after_sha256": "bbfb802282eea0d161044ad582cdecac9110f30cecd74448f6f7093b11a7690e",
+      "before_sha256": "5b76e44b715d5fd0bb35492b37207a9b579275fa0521401cc459095732a4615f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-20.json"
+    },
+    {
+      "after_sha256": "0dfdf50e2fbf2673bc65878ee50eb3c37e1f2877233a2c3268c12fb643ed8843",
+      "before_sha256": "f406cc56881f77bde49cac2d60365950aece7b4ac40c3fb9cd0d48cb9ed28dd8",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-21.json"
+    },
+    {
+      "after_sha256": "c88bf57f607136146a01e5511cc19c02383d2a711c1f466555dbcc07063f2d2f",
+      "before_sha256": "d4275a916d4096f12fa08255df64cb785a02e81b5e96740e48c3d2f4e652492e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-24.json"
+    },
+    {
+      "after_sha256": "c9b707b7f3edea38ebf9284d26a8adb5b9b3064b8b67dc4f6c006a6d8c3f0848",
+      "before_sha256": "b4aa6f5f9ba75d4ac58a8ec81afb034a9a9e79e8512e31b6af42fdf3d3006d7b",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-25.json"
+    },
+    {
+      "after_sha256": "82e698b659def730c5a508a8f0c08585cdbb2ce72d267bddd06619252ead72ba",
+      "before_sha256": "fe4edab5e7cf7149e81cb69afbcc22a297744c95d57bc576ca825d552e081382",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-26.json"
+    },
+    {
+      "after_sha256": "0915e4e0fc2de82bbfa86f17355d03074bfb5a2ccac4400f8399900461d2eee4",
+      "before_sha256": "6fa82da15c9dc1f5c2d23d329306d59a2c6f61506a6414becf9a078ea7b91501",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-27.json"
+    },
+    {
+      "after_sha256": "588c3ef52bac4c29861ec7d3f0b0cdab9d6defe9548a957ee101b0f8020adc88",
+      "before_sha256": "ab30588a0dcf7ecda2479753e95305688a3655a675f5cdb968fa694523e657ca",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-02-28.json"
+    },
+    {
+      "after_sha256": "c4ab98b7cd195996da0c15798554a209409f79b4c403a913214c11fac44a5a52",
+      "before_sha256": "d81487f0fe9b8c600ca24f030a31fd67e3967bb86242d81be9c426a577527c38",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-03-03.json"
+    },
+    {
+      "after_sha256": "23a9ee35f45d62383601d53c0672c06cb3aac99583bee7ac43d0c99fa82576af",
+      "before_sha256": "f542e2b5e55318f908c988795bfe2a94f57b95294b179c162463276e1d5c680f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-03-04.json"
+    },
+    {
+      "after_sha256": "e4d00cfe6f8211bc6d127012e3520621e4f51a62f7eebdfb9b4f484c76f26127",
+      "before_sha256": "a54e8e047181d51850edbc867a43d45b24aa3cf1884dc224f03a86929a107440",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-03-05.json"
+    },
+    {
+      "after_sha256": "c9ae5d6490f7e8d02993e8defd5bc1a3cade5e59a85c67cd0cc19cc04d62e6b7",
+      "before_sha256": "203f1a75e431d0f2aab6cdea3099dc70b8ea338d98f5389617749abfdcd1673c",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-03-06.json"
+    },
+    {
+      "after_sha256": "7fb1aa9b0bcbe89a2ae748e71a66e8721e07c1a8ea9da5cca09914b91d3183f4",
+      "before_sha256": "4cacf3436c45b2f213fab2625235a1083cc07be243eba0c916ab3e9642f2898f",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-03-07.json"
+    },
+    {
+      "after_sha256": "72887f63e4c10e7de66129a24d7088432a0fc6468afcf2acfaee3b90a9b5babb",
+      "before_sha256": "01e2a666d54d60e2e16ab04965bb5e3ee2172dfb6f35ec1f8424934ba837a8ac",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/label_sha256",
+        "/reference_d48_rows",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/session_summaries/2025-03-10.json"
+    },
+    {
+      "after_sha256": "b7162c67b9d64de94f801e9fd452d23c09c62e3d421f68089a3741fba88c02c3",
+      "before_sha256": "8481665f71f860ec50a129a00c393dfd068acc66a232e958452de198b9f52c55",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/schema_version",
+        "/updated_at_utc"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/checkpoint/state.json"
+    },
+    {
+      "after_sha256": "17c53e6225924ab311be3ee10fa52a313ab2210129abd478962b9621817ea96a",
+      "before_sha256": null,
+      "category": "FT2-05_packet",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.csv"
+    },
+    {
+      "after_sha256": "462f65ff3190ac2ff68afd2a4308602da345a2bf0c9fb6fb7907eb50f2a51553",
+      "before_sha256": null,
+      "category": "FT2-05_packet",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.json"
+    },
+    {
+      "after_sha256": "3e67b86aa763570a201d7960e618a9189ebd942f9d6c310e9983286a561bb1ec",
+      "before_sha256": "fb3b2bddcf0d78499bfcc6f6324bcbf8328d1a11b196cf13f51acc60a743c501",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv"
+    },
+    {
+      "after_sha256": "c1707bc22161c6af24a8205fbedbb8c5c7cbc3dbfb9ae2bb9f7d85b307ec193c",
+      "before_sha256": "ae2a07418e2329ef6e79de6cdeb8db08d9da834dc4d0934f3347c5bc5e0e066a",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/family_distributions.csv"
+    },
+    {
+      "after_sha256": "2c725f0cb338882136268415038447dc8bb79aa5bcb9ce66aab3a38df5f3a927",
+      "before_sha256": "37dcefc5eac6b9e1f931c36b8bc82ff360948a9b4223f9ff0cbd667cc3c37b07",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/friction_by_premium_band.csv"
+    },
+    {
+      "after_sha256": "810651d12d6701765254173102fdde2c93c7246f4d34c1c93daf2d8f43a9334d",
+      "before_sha256": "000085b1e541dcef862133952ccf128ffac52ac8a33da3160d08c4c450da0d2b",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_curves.csv"
+    },
+    {
+      "after_sha256": "0613ca2b1a420a6639b2b9774fa94cc38310893e9d6761f36a27dfd28d10fdc5",
+      "before_sha256": "478e88e8143d1b9ea6344bc8a706906c8d0a938ae1a5f2de1babf977737a580e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/0.10/afternoon/pre_profit_adverse_excursion",
+        "/0.10/afternoon/time_to_first_profit",
+        "/0.10/afternoon/underwater_burden",
+        "/0.10/europe_close_transition/early_drawdown",
+        "/0.10/europe_close_transition/pre_profit_adverse_excursion",
+        "/0.10/europe_close_transition/time_to_first_profit",
+        "/0.10/europe_close_transition/underwater_burden",
+        "/0.10/lunch/early_drawdown",
+        "/0.10/lunch/pre_profit_adverse_excursion",
+        "/0.10/lunch/underwater_burden",
+        "/0.10/opening_discovery/early_drawdown",
+        "/0.10/opening_discovery/pre_profit_adverse_excursion",
+        "/0.10/opening_discovery/underwater_burden",
+        "/0.10/power_hour_entry/early_drawdown",
+        "/0.10/power_hour_entry/pre_profit_adverse_excursion",
+        "/0.10/power_hour_entry/time_to_first_profit",
+        "/0.10/power_hour_entry/underwater_burden",
+        "/0.10/primary_morning/pre_profit_adverse_excursion",
+        "/0.10/primary_morning/time_to_first_profit",
+        "/0.10/primary_morning/underwater_burden",
+        "/0.20/afternoon/early_drawdown",
+        "/0.20/afternoon/pre_profit_adverse_excursion",
+        "/0.20/afternoon/profitable_window_stability",
+        "/0.20/afternoon/time_to_first_profit",
+        "/0.20/afternoon/underwater_burden",
+        "/0.20/europe_close_transition/early_drawdown",
+        "/0.20/europe_close_transition/pre_profit_adverse_excursion",
+        "/0.20/europe_close_transition/underwater_burden",
+        "/0.20/lunch/early_drawdown",
+        "/0.20/lunch/pre_profit_adverse_excursion",
+        "/0.20/lunch/profitable_window_stability",
+        "/0.20/lunch/time_to_first_profit",
+        "/0.20/lunch/underwater_burden",
+        "/0.20/opening_discovery/early_drawdown",
+        "/0.20/opening_discovery/pre_profit_adverse_excursion",
+        "/0.20/opening_discovery/underwater_burden",
+        "/0.20/power_hour_entry/early_drawdown",
+        "/0.20/power_hour_entry/pre_profit_adverse_excursion",
+        "/0.20/power_hour_entry/underwater_burden",
+        "/0.20/primary_morning/early_drawdown",
+        "/0.20/primary_morning/pre_profit_adverse_excursion",
+        "/0.20/primary_morning/profitable_window_stability",
+        "/0.20/primary_morning/time_to_first_profit",
+        "/0.20/primary_morning/underwater_burden",
+        "/0.25/afternoon/early_drawdown",
+        "/0.25/afternoon/pre_profit_adverse_excursion",
+        "/0.25/afternoon/profitable_window_stability",
+        "/0.25/afternoon/time_to_first_profit",
+        "/0.25/afternoon/underwater_burden",
+        "/0.25/europe_close_transition/early_drawdown",
+        "/0.25/europe_close_transition/pre_profit_adverse_excursion",
+        "/0.25/europe_close_transition/profitable_window_stability",
+        "/0.25/europe_close_transition/underwater_burden",
+        "/0.25/lunch/early_drawdown",
+        "/0.25/lunch/pre_profit_adverse_excursion",
+        "/0.25/lunch/profitable_window_stability",
+        "/0.25/lunch/time_to_first_profit",
+        "/0.25/lunch/underwater_burden",
+        "/0.25/opening_discovery/early_drawdown",
+        "/0.25/opening_discovery/pre_profit_adverse_excursion",
+        "/0.25/opening_discovery/time_to_first_profit",
+        "/0.25/opening_discovery/underwater_burden",
+        "/0.25/power_hour_entry/early_drawdown",
+        "/0.25/power_hour_entry/pre_profit_adverse_excursion",
+        "/0.25/power_hour_entry/profitable_window_stability",
+        "/0.25/power_hour_entry/underwater_burden",
+        "/0.25/primary_morning/early_drawdown",
+        "/0.25/primary_morning/pre_profit_adverse_excursion",
+        "/0.25/primary_morning/profitable_window_stability",
+        "/0.25/primary_morning/time_to_first_profit",
+        "/0.25/primary_morning/underwater_burden",
+        "/0.30/afternoon/early_drawdown",
+        "/0.30/afternoon/pre_profit_adverse_excursion",
+        "/0.30/afternoon/profitable_window_stability",
+        "/0.30/afternoon/underwater_burden",
+        "/0.30/europe_close_transition/early_drawdown",
+        "/0.30/europe_close_transition/pre_profit_adverse_excursion",
+        "/0.30/europe_close_transition/profitable_window_stability",
+        "/0.30/europe_close_transition/underwater_burden",
+        "/0.30/lunch/early_drawdown",
+        "/0.30/lunch/pre_profit_adverse_excursion",
+        "/0.30/lunch/profitable_window_stability",
+        "/0.30/lunch/underwater_burden",
+        "/0.30/opening_discovery/early_drawdown",
+        "/0.30/opening_discovery/pre_profit_adverse_excursion",
+        "/0.30/opening_discovery/profitable_window_stability",
+        "/0.30/opening_discovery/underwater_burden",
+        "/0.30/power_hour_entry/early_drawdown",
+        "/0.30/power_hour_entry/pre_profit_adverse_excursion",
+        "/0.30/power_hour_entry/profitable_window_stability",
+        "/0.30/power_hour_entry/underwater_burden",
+        "/0.30/primary_morning/early_drawdown",
+        "/0.30/primary_morning/pre_profit_adverse_excursion",
+        "/0.30/primary_morning/profitable_window_stability",
+        "/0.30/primary_morning/time_to_first_profit",
+        "/0.30/primary_morning/underwater_burden",
+        "/0.40/afternoon/early_drawdown",
+        "/0.40/afternoon/pre_profit_adverse_excursion",
+        "/0.40/afternoon/profitable_window_stability",
+        "/0.40/afternoon/underwater_burden",
+        "/0.40/europe_close_transition/early_drawdown",
+        "/0.40/europe_close_transition/pre_profit_adverse_excursion",
+        "/0.40/europe_close_transition/profitable_window_stability",
+        "/0.40/europe_close_transition/underwater_burden",
+        "/0.40/lunch/early_drawdown",
+        "/0.40/lunch/pre_profit_adverse_excursion",
+        "/0.40/lunch/profitable_window_stability",
+        "/0.40/lunch/underwater_burden",
+        "/0.40/opening_discovery/pre_profit_adverse_excursion",
+        "/0.40/opening_discovery/profitable_window_stability",
+        "/0.40/opening_discovery/underwater_burden",
+        "/0.40/power_hour_entry/early_drawdown",
+        "/0.40/power_hour_entry/pre_profit_adverse_excursion",
+        "/0.40/power_hour_entry/profitable_window_stability",
+        "/0.40/power_hour_entry/underwater_burden",
+        "/0.40/primary_morning/pre_profit_adverse_excursion",
+        "/0.40/primary_morning/profitable_window_stability",
+        "/0.40/primary_morning/underwater_burden",
+        "/0.50/afternoon/early_drawdown",
+        "/0.50/afternoon/pre_profit_adverse_excursion",
+        "/0.50/afternoon/profitable_window_stability",
+        "/0.50/afternoon/underwater_burden",
+        "/0.50/europe_close_transition/early_drawdown",
+        "/0.50/europe_close_transition/pre_profit_adverse_excursion",
+        "/0.50/europe_close_transition/profitable_window_stability",
+        "/0.50/europe_close_transition/underwater_burden",
+        "/0.50/lunch/early_drawdown",
+        "/0.50/lunch/pre_profit_adverse_excursion",
+        "/0.50/lunch/profitable_window_stability",
+        "/0.50/lunch/underwater_burden",
+        "/0.50/opening_discovery/early_drawdown",
+        "/0.50/opening_discovery/pre_profit_adverse_excursion",
+        "/0.50/opening_discovery/profitable_window_stability",
+        "/0.50/opening_discovery/underwater_burden",
+        "/0.50/power_hour_entry/early_drawdown",
+        "/0.50/power_hour_entry/pre_profit_adverse_excursion",
+        "/0.50/power_hour_entry/profitable_window_stability",
+        "/0.50/power_hour_entry/time_to_first_profit",
+        "/0.50/power_hour_entry/underwater_burden",
+        "/0.50/primary_morning/pre_profit_adverse_excursion",
+        "/0.50/primary_morning/profitable_window_stability",
+        "/0.50/primary_morning/underwater_burden"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_threshold_curves.json"
+    },
+    {
+      "after_sha256": "fb47b66ec08b74edc96bcd28bdcaac94cb41ef3bc36dee432cdff316d8897209",
+      "before_sha256": "1460090f13327ebf83e4f39a666eb83d44cf23625a6a7053499eafb072c18ac6",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv"
+    },
+    {
+      "after_sha256": "3de14c65c0b9abb27e7c3a72f531941372540578b590230750a9d557e6e34f16",
+      "before_sha256": "8ef9312c964dbc3206180b1f6371dd0b479cda164ce8bff433659d8a480f381d",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/checkpoint_resume_used",
+        "/core_hours",
+        "/latest_checkpoint_load",
+        "/overall_system_cpu_seconds",
+        "/overall_user_cpu_seconds",
+        "/overall_wall_seconds",
+        "/per_session",
+        "/process_max_rss_platform_units",
+        "/system_cpu_seconds",
+        "/user_cpu_seconds",
+        "/wall_seconds"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/label_build_compute.json"
+    },
+    {
+      "after_sha256": "ab5592894514064119c19d1aa443e98841248f6b9ec76159bb1429df369abb6b",
+      "before_sha256": "198ccd008f4f1d465184bbafdb165e5df504c976f0f13ce2a48ecb45eec71302",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/label_session_inventory.csv"
+    },
+    {
+      "after_sha256": "462e5a676c82064959e3d94649672fa55938dc03377b2d403d2c3832f3ba0d2a",
+      "before_sha256": "a7b16b3735dae5bb24dbb2456e092cea44b56ff528823f2c4843242af41d6855",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv"
+    },
+    {
+      "after_sha256": "db9e6075734e7e67eec5b260cdc6c490c27eb66d2c130dc8e9a5f3f7b52fa54f",
+      "before_sha256": "113498a57eb0b4b11910c555f424dca35c2c3d08911ab51722139525241a5808",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/updated_at_utc"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/progress.json"
+    },
+    {
+      "after_sha256": "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d",
+      "before_sha256": "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/builder_sha256",
+        "/created_at_utc",
+        "/deliverable_hashes/census_results.json",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-02.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-03.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-06.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-07.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-08.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-10.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-13.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-14.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-15.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-16.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-17.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-21.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-22.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-23.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-24.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-27.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-28.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-29.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-30.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-01-31.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-03.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-04.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-05.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-06.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-07.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-10.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-11.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-12.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-13.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-14.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-18.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-19.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-20.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-21.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-24.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-25.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-26.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-27.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-02-28.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-03-03.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-03-04.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-03-05.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-03-06.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-03-07.parquet",
+        "/deliverable_hashes/checkpoint~1session_labels~12025-03-10.parquet",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-02.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-03.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-06.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-07.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-08.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-10.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-13.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-14.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-15.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-16.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-17.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-21.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-22.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-23.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-24.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-27.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-28.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-29.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-30.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-01-31.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-03.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-04.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-05.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-06.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-07.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-10.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-11.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-12.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-13.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-14.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-18.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-19.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-20.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-21.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-24.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-25.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-26.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-27.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-02-28.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-03-03.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-03-04.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-03-05.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-03-06.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-03-07.json",
+        "/deliverable_hashes/checkpoint~1session_summaries~12025-03-10.json",
+        "/deliverable_hashes/checkpoint~1state.json",
+        "/deliverable_hashes/d48_reference_transition_audit.csv",
+        "/deliverable_hashes/d48_reference_transition_audit.json",
+        "/deliverable_hashes/excluded_winners.csv",
+        "/deliverable_hashes/family_distributions.csv",
+        "/deliverable_hashes/friction_by_premium_band.csv",
+        "/deliverable_hashes/guardrail_curves.csv",
+        "/deliverable_hashes/guardrail_threshold_curves.json",
+        "/deliverable_hashes/guardrail_trade_rates.csv",
+        "/deliverable_hashes/label_build_compute.json",
+        "/deliverable_hashes/label_session_inventory.csv",
+        "/deliverable_hashes/mnar_sensitivity.csv",
+        "/deliverable_hashes/progress.json",
+        "/deliverable_hashes/regime_headlines.csv",
+        "/deliverable_hashes/report.md",
+        "/deliverable_hashes/v3_v4_impact.json",
+        "/graph_sha256",
+        "/input_hashes/oracle_rules.json",
+        "/product_contract_hash",
+        "/repair_of/preserved_path",
+        "/repair_of/receipt_sha256",
+        "/repair_of/schema_version",
+        "/schema_version"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json"
+    },
+    {
+      "after_sha256": "cec6ef494932b085df341274b0595bf2829df68bd37b02ff18c19625ffa2a37e",
+      "before_sha256": "1119870eb205f81fe6169fdc6cfa7e89fb434dc5275294aeb2800956903a338e",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/regime_headlines.csv"
+    },
+    {
+      "after_sha256": "ef6deed08d2b6c4f9c66ac06342a7cd9b6a2ca068eecdf4d04faa2511fb8dc8a",
+      "before_sha256": "b7d97271be143a6a09268b371ecd8c6452a293f81579e72f868ca2ed8f6c51f3",
+      "category": "FT2-05_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/report.md"
+    },
+    {
+      "after_sha256": "a5614b82fcf3fc3a5034627a9f8fbfc068ce4ff8a9e67aabee47fd6896bbaed9",
+      "before_sha256": null,
+      "category": "FT2-05_packet",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json"
+    },
+    {
+      "after_sha256": "4a061275dc7fd58c4a8f7774aeb464462f4101795a583ab5150f8f224d7eb484",
+      "before_sha256": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c",
+      "category": "FT2-08_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/attempt",
+        "/coordinated_goal",
+        "/created_at_utc",
+        "/deliverable_hashes/validate_contract_v3.py",
+        "/deliverable_hashes/validation.json",
+        "/design_repair_budget",
+        "/finding_disposition",
+        "/highest_allowed_claim",
+        "/inputs/canonical_intent_fill_recheck_law",
+        "/inputs/census_v3_receipt",
+        "/inputs/census_v4_receipt",
+        "/inputs/consolidated_authority/sha256",
+        "/inputs/ft2_04_receipt",
+        "/inputs/graph_v2",
+        "/inputs/intent_fill_recheck_law",
+        "/inputs/rerun001_joined_review",
+        "/inputs/rerun001_receipt",
+        "/inputs/rerun002_receipt",
+        "/inputs/simulator_v5",
+        "/next_goal",
+        "/product_contract_hash",
+        "/repair_of/preserved_path",
+        "/repair_of/receipt_sha256",
+        "/repair_of/schema_version",
+        "/schema_version",
+        "/side_effects/broker_access",
+        "/side_effects/broker_recorder_or_paid_data_access",
+        "/side_effects/final_re_review_started",
+        "/side_effects/new_session_statistics_beyond_census_v3",
+        "/side_effects/paid_compute",
+        "/side_effects/protected_data_access",
+        "/side_effects/protected_or_outer_data_access",
+        "/side_effects/real_model_training_or_fitting",
+        "/side_effects/recorder_access",
+        "/side_effects/runtime_promotion_or_paper_change",
+        "/side_effects/training_or_fitting"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json"
+    },
+    {
+      "after_sha256": "de878f91ffd3cd65a89130060e595acea093797aa0e9e6d5611b8a7703379eca",
+      "before_sha256": "2f9c226d0cb6649433efa8e53ed316d841d240c720d1bac5da32dcb95a9d85a5",
+      "category": "FT2-08_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/validate_contract_v3.py"
+    },
+    {
+      "after_sha256": "70888a9c07e8de2f0eb1ae8a94f842bc91ef8b67e32709ca1c2ed11d1389729c",
+      "before_sha256": "4ee8235bfdc01bf534c0d9d6b20e9a77ea0ca155e9c6bd71d6cf824d11972197",
+      "category": "FT2-08_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/checks/ft205_v3",
+        "/checks/ft205_v4",
+        "/schema_version"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/validation.json"
+    },
+    {
+      "after_sha256": "354870fdab769042c2f6f2aefcdc10015b4a254a069be2060be02b9939aad06b",
+      "before_sha256": "d686d57e49938445dbd8ea37ec1b46caf020d606b6929145ee5679c6dbe9e5f8",
+      "category": "FT2-10_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/action_conditioned_gate/minimum_evidence/rlac_contract_targets",
+        "/action_conditioned_gate/minimum_evidence/selected_contracts",
+        "/action_conditioned_gate/name",
+        "/action_conditioned_gate/runtime_selected_subset_diagnostic",
+        "/action_conditioned_gate/selected_contract_regret/denominator",
+        "/action_conditioned_gate/selected_contract_regret/excluded_rows",
+        "/action_conditioned_gate/selected_contract_regret/realized_regret",
+        "/action_conditioned_gate/wait_reliability/denominator",
+        "/action_conditioned_gate/wait_reliability/excluded_rows",
+        "/action_conditioned_gate/wait_reliability/outcome",
+        "/action_head_one_pass_order",
+        "/joint_conservatism/census_v3_trade_rate_provenance",
+        "/joint_conservatism/census_v4_trade_rate_provenance",
+        "/joint_conservatism/design_trade_rate_band_mean_trades_per_session/population_reconciliation",
+        "/joint_conservatism/design_trade_rate_band_mean_trades_per_session/reference_source",
+        "/post_composer_recalibration_or_relabeling",
+        "/product_contract_hash",
+        "/realized_label_audit_composer",
+        "/schema_version",
+        "/source_transfer_gate/activation",
+        "/source_transfer_gate/emitted_outcome_vocabulary",
+        "/source_transfer_gate/graph_order",
+        "/source_transfer_gate/insufficient_existing_data",
+        "/source_transfer_gate/population/missing_required_natural_stratum",
+        "/status"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json"
+    },
+    {
+      "after_sha256": "b124a71ca431d0389437d843cb0e8b795f9003f5dea8cddcdeaf05064d7df39d",
+      "before_sha256": "5de80b6417bdafcd56497ce1c344e7fe039cb021f5ee50465be8ccc06018a8e9",
+      "category": "FT2-10_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/causal_role",
+        "/mandatory_action_conditioned_gate/selected_contract_regret_action_constraint/quantity",
+        "/product_contract_hash",
+        "/schema_version",
+        "/stage_1_quality_screen/census_v3_provenance",
+        "/stage_1_quality_screen/census_v4_provenance",
+        "/stage_2_conservative_upside_rank/premium_band_at_decision/bands_copied_from_census_v3",
+        "/stage_2_conservative_upside_rank/premium_band_at_decision/bands_copied_from_census_v4",
+        "/status"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json"
+    },
+    {
+      "after_sha256": "d974f29d2cff1403dfa3c2280d0ab884f98628269b56359c6cb527607803a2f3",
+      "before_sha256": "1aea4e50d1b1a613a15b99d28d0db907fd5dbc319f617b00c30b4e0872508e38",
+      "category": "FT2-10_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/contract.md"
+    },
+    {
+      "after_sha256": "2afcffc4c9ca8e78e1e9c9315252dbaf8d4d560e42e85b48dd88f3251e52d05c",
+      "before_sha256": "612095a4a6fdb14bdabf9009b67589a4f98135d8b40734227816f012b9c59c62",
+      "category": "FT2-10_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/action_conditioned_outputs/coverage_claim",
+        "/action_conditioned_outputs/loss_weight/missing_target",
+        "/action_conditioned_outputs/selected_contract_regret_heads/no_enter_rows",
+        "/action_conditioned_outputs/selected_contract_regret_heads/realized_target",
+        "/action_conditioned_outputs/selected_contract_regret_heads/rlac_wait_minutes",
+        "/action_conditioned_outputs/selected_contract_regret_heads/scope",
+        "/action_conditioned_outputs/training_data_path",
+        "/action_conditioned_outputs/wait_probability_head/loss",
+        "/action_conditioned_outputs/wait_probability_head/scope",
+        "/action_conditioned_outputs/wait_probability_head/training_target",
+        "/product_contract_hash",
+        "/realized_label_audit_composer",
+        "/schema_version",
+        "/status",
+        "/target_firewall/action_head_target_may_reference_runtime_composer_output",
+        "/target_firewall/action_head_target_producer"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json"
+    },
+    {
+      "after_sha256": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09",
+      "before_sha256": null,
+      "category": "FT2-10_packet",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json"
+    },
+    {
+      "after_sha256": "91ca7032c3d11bb6fb59229e2c8ae083209d7b59085460c48adae4cc14de36e3",
+      "before_sha256": "c04a591fd3034a2caba756e8f9dc1d7f5c24c397170894b0b6b0eca7a083fa6f",
+      "category": "FT2-10_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/attempt",
+        "/coordinated_goal",
+        "/created_at_utc",
+        "/deliverable_hashes/calibration_spec.json",
+        "/deliverable_hashes/composer_spec.json",
+        "/deliverable_hashes/contract.md",
+        "/deliverable_hashes/forecast_heads.json",
+        "/deliverable_hashes/realized_label_audit_composer_spec.json",
+        "/design_repair_budget",
+        "/finding_disposition",
+        "/highest_allowed_claim",
+        "/inputs/canonical_intent_fill_recheck_law",
+        "/inputs/canonical_matched_random_generator",
+        "/inputs/census_v3_receipt",
+        "/inputs/census_v4_receipt",
+        "/inputs/consolidated_authority/sha256",
+        "/inputs/ft2_04_receipt",
+        "/inputs/graph_v2",
+        "/inputs/intent_fill_recheck_law",
+        "/inputs/rerun001_joined_review",
+        "/inputs/rerun001_receipt",
+        "/inputs/rerun002_receipt",
+        "/inputs/simulator_v5",
+        "/inputs/upstream_FT2_08_receipt",
+        "/next_goal",
+        "/product_contract_hash",
+        "/repair_of/preserved_path",
+        "/repair_of/receipt_sha256",
+        "/repair_of/schema_version",
+        "/schema_version",
+        "/side_effects/broker_access",
+        "/side_effects/broker_recorder_or_paid_data_access",
+        "/side_effects/final_re_review_started",
+        "/side_effects/new_session_statistics_beyond_census_v3",
+        "/side_effects/paid_compute",
+        "/side_effects/protected_data_access",
+        "/side_effects/protected_or_outer_data_access",
+        "/side_effects/real_model_training_or_fitting",
+        "/side_effects/recorder_access",
+        "/side_effects/runtime_promotion_or_paper_change",
+        "/side_effects/training_or_fitting"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json"
+    },
+    {
+      "after_sha256": "ed6a61dfa63c1d1673e9ecca8e9eab76a466df22c891ae770d8d0466d1a29871",
+      "before_sha256": "fe7c9d8c1356a07da403e85ae3fc46c9800782e945508e0c63f194cf83af2455",
+      "category": "FT2-11_packet",
+      "change": "modified",
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/contract.md"
+    },
+    {
+      "after_sha256": "be527c8906fb7e00be32fcad45d8f684a7846f8d7af9cae6b322270b420ac905",
+      "before_sha256": "e6491dc923028332daf8ae1436124680d7d2098691bfb79d018158ac0f41263a",
+      "category": "FT2-11_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/mnar_no_bid_sensitivity/threshold_basis/census_v3_artifact",
+        "/mnar_no_bid_sensitivity/threshold_basis/census_v3_minimum_path_metric_rank_correlation",
+        "/mnar_no_bid_sensitivity/threshold_basis/census_v4_artifact",
+        "/mnar_no_bid_sensitivity/threshold_basis/census_v4_minimum_path_metric_rank_correlation",
+        "/mnar_no_bid_sensitivity/threshold_basis/interpretation",
+        "/mnar_no_bid_sensitivity/threshold_basis/sha256",
+        "/product_contract_hash",
+        "/schema_version",
+        "/scope/allowed_numeric_source",
+        "/source_transfer_graph_topology/FT2_92_output",
+        "/source_transfer_graph_topology/FT2_92_output_vocabulary",
+        "/source_transfer_graph_topology/graph_order",
+        "/status",
+        "/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration/minimum_evidence/rlac_contract_targets",
+        "/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration/minimum_evidence/selected_contracts",
+        "/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration/required_artifacts",
+        "/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration/runtime_selected_subset_coverage",
+        "/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration/selected_contract_regret/target_denominator",
+        "/two_layer_acceptance/entry_component_acceptance/all_required/action_conditioned_calibration/source_sha256"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json"
+    },
+    {
+      "after_sha256": "d82e7340f8ee9ab8212c96330979bf03af7a6d8755c8756d4ac7c2cafcdd1f10",
+      "before_sha256": "2338374376076ac44d9be761fd36ecd8d916147d175dbe8acfd9404f8d9e72b3",
+      "category": "FT2-11_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/census_v3_provenance",
+        "/census_v4_provenance",
+        "/first_GPU_tranche_gate/all_required",
+        "/plausible_detectable_improvement_bound/basis",
+        "/product_contract_hash",
+        "/purpose",
+        "/schema_version",
+        "/serial_trade_count_projection/census_trade_rate_role",
+        "/status"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json"
+    },
+    {
+      "after_sha256": "4daebddf61df1d22896c67fa783bf2e0d983ee3df3ab61def71661103065b452",
+      "before_sha256": "bdb52c4f9178da1cab75ec4a80bd13c1db8c0074c1c398f380729d1df80c5ef9",
+      "category": "FT2-11_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/attempt",
+        "/coordinated_goal",
+        "/created_at_utc",
+        "/deliverable_hashes/contract.md",
+        "/deliverable_hashes/evidence_standard.json",
+        "/deliverable_hashes/mde_spec.json",
+        "/deliverable_hashes/shadow_sufficiency_spec.json",
+        "/deliverable_hashes/terminal_decision_spec.json",
+        "/deliverable_hashes/tripwire_spec.json",
+        "/design_repair_budget",
+        "/finding_disposition",
+        "/highest_allowed_claim",
+        "/inputs/canonical_intent_fill_recheck_law",
+        "/inputs/canonical_matched_random_generator",
+        "/inputs/census_v3_receipt",
+        "/inputs/census_v4_receipt",
+        "/inputs/consolidated_authority/sha256",
+        "/inputs/ft2_04_receipt",
+        "/inputs/graph_v2",
+        "/inputs/intent_fill_recheck_law",
+        "/inputs/rerun001_joined_review",
+        "/inputs/rerun001_receipt",
+        "/inputs/rerun002_receipt",
+        "/inputs/simulator_v5",
+        "/inputs/upstream_FT2_08_receipt",
+        "/inputs/upstream_FT2_10_receipt",
+        "/next_goal",
+        "/product_contract_hash",
+        "/repair_of/preserved_path",
+        "/repair_of/receipt_sha256",
+        "/repair_of/schema_version",
+        "/schema_version",
+        "/side_effects/broker_access",
+        "/side_effects/broker_recorder_or_paid_data_access",
+        "/side_effects/final_re_review_started",
+        "/side_effects/new_session_statistics_beyond_census_v3",
+        "/side_effects/paid_compute",
+        "/side_effects/protected_data_access",
+        "/side_effects/protected_or_outer_data_access",
+        "/side_effects/real_model_training_or_fitting",
+        "/side_effects/recorder_access",
+        "/side_effects/runtime_promotion_or_paper_change",
+        "/side_effects/training_or_fitting"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json"
+    },
+    {
+      "after_sha256": "990f431c1c7d467a49a9fb451c96b402c2ddcbcfb81ae59e770de6fafc370eb7",
+      "before_sha256": "5b2e136e7c1d01e79de4036a4e276a6d5bb008d45404fbf622d3319b57a60512",
+      "category": "FT2-11_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/graph_topology/FT2_92_fail_to_STOP_CANDIDATE_REJECTED",
+        "/graph_topology/FT2_92_insufficient_evidence_to_STOP_OWNER_DECISION",
+        "/historical_to_IBKR_source_transfer/below_minimum_or_missing_natural_stratum",
+        "/historical_to_IBKR_source_transfer/emitted_outcome_vocabulary",
+        "/historical_to_IBKR_source_transfer/identity_causality_hash_or_reproduction_failure",
+        "/historical_to_IBKR_source_transfer/source_sha256",
+        "/historical_to_IBKR_source_transfer/sufficient_tolerance_or_action_failure",
+        "/minimum_no_order_live_shadow_evidence/below_any_minimum",
+        "/minimum_no_order_live_shadow_evidence/sessions_1_through_44",
+        "/owner_authorization_boundary/FT2_95_request_allowed_only_after_producer_complete",
+        "/owner_authorization_boundary/FT2_95_request_allowed_only_after_shadow_pass",
+        "/owner_authorization_boundary/producer_complete_authorizes_orders",
+        "/owner_authorization_boundary/shadow_pass_authorizes_orders",
+        "/product_contract_hash",
+        "/recorder_governance/insufficient_existing_development_pairs",
+        "/schema_version",
+        "/session_clustered_agreement_gates/threshold_interval_logic",
+        "/status",
+        "/terminal_rules/emitted_outcome_vocabulary",
+        "/terminal_rules/fail",
+        "/terminal_rules/insufficient_shadow_evidence",
+        "/terminal_rules/invalid_shadow_evidence",
+        "/terminal_rules/pre_terminal_internal_status",
+        "/terminal_rules/producer_complete",
+        "/terminal_rules/shadow_pass",
+        "/terminal_rules/shadow_transfer_fail"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json"
+    },
+    {
+      "after_sha256": "b617dad2e51915992748813e6c098b5e91761ea5e6cd7767bfdbb8181fb6d451",
+      "before_sha256": "211c5abfd826a24acad29ca8b16d64c04449fe20503a3b9be893208ba30910a4",
+      "category": "FT2-11_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/resource_owner_route/trigger"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/terminal_decision_spec.json"
+    },
+    {
+      "after_sha256": "b497aafaba037ee573b6be284456488b0c19da491109572192cd0c8a69750f63",
+      "before_sha256": "610ca02996be65745861ea460c604d014ab6cb069199b09b4bd2b09e251e06ba",
+      "category": "FT2-11_packet",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/census_v3_context",
+        "/census_v4_context"
+      ],
+      "path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/tripwire_spec.json"
+    },
+    {
+      "after_sha256": "a28c80cf79439aa5848c88c748b5fe43b36e7d72025eab6e40ba0a2b1fd7096a",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/build_diff_manifest.py"
+    },
+    {
+      "after_sha256": "c790470b805f0bb255b51e61cf0975e8fc0278746e3daafc239580b3a8de9261",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/check_cross_contract_consistency_v3.py"
+    },
+    {
+      "after_sha256": "83e0817b4fee056d1c1ef25c30e7ee8af473b4e3a49e844f5849bf4dc66bcc87",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/consistency_checker_output.json"
+    },
+    {
+      "after_sha256": "c10e01d144e1efd5e7982769ec9c1841b2503d1b25c66ec934f85375321846ff",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/finalize_scoped_receipts.py"
+    },
+    {
+      "after_sha256": "b5b5f5d0a20bb8fb796b0e8ad2e61d0fc67626355d06b51f72cbc8018ba7f8a2",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/findings_crosswalk.json"
+    },
+    {
+      "after_sha256": "025f0446ecf013bdcdce910b75a15dd5f2e19974cb0149ec28d2e8679c04251c",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/graph_validation.json"
+    },
+    {
+      "after_sha256": "46f435c4b1c4905c4fa61722467cbd11b8156eb1d19ddb6adba4ab7e6fe639e2",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/report.md"
+    },
+    {
+      "after_sha256": "e34409e23b0f7ca916d4542f3aa3398da4ba7926a489d8e1796cb2d95a55e06e",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/t1_rlac_pipeline_output.json"
+    },
+    {
+      "after_sha256": "2f4777b57f2098823474cdb3d72903618092cf7ebd96560b2a2598de2a322b79",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/t3_t4_census_v4_output.json"
+    },
+    {
+      "after_sha256": "65855c2db84277d1715086787bf90b0a886d518575286c62a00d6103fd1ff21d",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/t6_regression_output.json"
+    },
+    {
+      "after_sha256": "323ac50472256ad52db8cdfa3365370d37b7c55aa71c363d379ed27d23f7325d",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/targeted_census_pytest_output.json"
+    },
+    {
+      "after_sha256": "874dea80bf35e2bc220b6f67f8a5f5d9882994d0da6dea6e25d255f44bc503d0",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/test_census_v4.py"
+    },
+    {
+      "after_sha256": "2f6069f64df05a364a8e4c8cc100a9bc7fa12dbdfcdcc4c0a8346ed72c34435c",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/test_regression_t6.py"
+    },
+    {
+      "after_sha256": "69e9f4ae5421e64302c31234cfbae28fdcc0af7ab84f92952bee773ac0cfc441",
+      "before_sha256": null,
+      "category": "scoped_round_evidence",
+      "change": "added",
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/test_rlac_pipeline.py"
+    },
+    {
+      "after_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+      "before_sha256": "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a",
+      "category": "owner_authority_amendment",
+      "change": "modified",
+      "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md"
+    },
+    {
+      "after_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+      "before_sha256": "b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09",
+      "category": "graph_outcome_edge",
+      "change": "modified",
+      "changed_json_pointers": [
+        "/edges",
+        "/effective_date",
+        "/provenance/note",
+        "/provenance/scoped_owner_amendment",
+        "/status"
+      ],
+      "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json"
+    },
+    {
+      "after_sha256": "5a4d0f643cbe38d257b25b6108e3a3488bde1d9cfadc2f6b7714dc71dfaba681",
+      "before_sha256": "1871312e476c64d73db8873e8ed842a70efb9598ba858cc13d2d373e1294ace6",
+      "category": "FT2-05_builder",
+      "change": "modified",
+      "changed_regions": [
+        "authority and schema constants",
+        "D48 reference membership uses time-t intent eligibility",
+        "v3-to-v4 impact writer",
+        "dual rejection-denominator disclosure",
+        "row-level v2-to-v3-to-v4 transition audit",
+        "v4 receipt chain"
+      ],
+      "path": "v4/scripts/run_protocol101_ft2_05_opportunity_census.py"
+    },
+    {
+      "after_sha256": "f564eb4d204bb2490b7717df16ab28228be6b08153187c4020c0eba539d21611",
+      "before_sha256": "fbca2dd9d77dbb9396b3bed7063f8d73ddae74a45dbc3e7a902fea5184dcaaa6",
+      "category": "direct_census_test_consequence",
+      "change": "modified",
+      "changed_regions": [
+        "v4 fixture now carries canonical time-t intent and selected-only t+1 recheck fields"
+      ],
+      "path": "v4/tests/test_protocol101_ft2_05_opportunity_census.py"
+    },
+    {
+      "after_sha256": "3f6319c76dbc3b6e1ace793d0819a8656ffcee0a69bc47f57e773badca81193f",
+      "before_sha256": "8236aa2b14a5eba3b582a2cf313c203e7ad9b24b32970cdcb9e75fa433798fba",
+      "category": "direct_census_test_consequence",
+      "change": "modified",
+      "changed_regions": [
+        "preserved-v2 regression imports the preserved v2 builder rather than the current v4 builder"
+      ],
+      "path": "v4/tests/test_protocol101_ft2_05_opportunity_census_v2.py"
+    }
+  ],
+  "current": {
+    "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+    "graph_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9"
+  },
+  "delta_review_instruction": "Review the listed changed JSON pointers and direct consequences only. Generated census/checkpoint files are evidence outputs; use the transition audit for their semantic delta.",
+  "post_manifest_seal_excluded": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/aggregate_receipt.json",
+    "reason": "The aggregate receipt is written after this manifest and pins the manifest hash; excluding its self-dependent hash avoids a circular seal."
+  },
+  "schema_version": "Protocol101FT2ScopedFinalRoundDiffManifestV1",
+  "scope_law": "Only the five owner-authorized findings and their direct hash/test/receipt consequences changed; the remaining reviewed science is frozen."
+}

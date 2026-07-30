@@ -78,7 +78,7 @@ selection, holdout access, shadow operation, or paper trading.
 ## Frozen Scope
 
 - Node: `FT2-05-OPPORTUNITY-CENSUS`.
-- Product-contract SHA-256: `3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033`.
+- Product-contract SHA-256: `d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca`.
 - Sessions: exactly 45 from the repaired FT2-04 manifest.
 - Horizons: `(3, 5, 10, 20, 45, 90, 'remaining_session')`.
 - Entry/exit accounting: BUY masks at `t` use only `A_t`; the selected exact

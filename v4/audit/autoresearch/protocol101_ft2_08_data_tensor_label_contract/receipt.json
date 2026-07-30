@@ -1,7 +1,7 @@
 {
   "attempt": 1,
   "coordinated_goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
-  "created_at_utc": "2026-07-30T03:16:39.079994+00:00",
+  "created_at_utc": "2026-07-30T04:16:37.183276+00:00",
   "deliverable_hashes": {
     "account_state_ledger_spec.json": "4d745b89abc033ee7e6d1b2f5cbfa644c107df7f00c1406fd25f4443ae32ad12",
     "contract.md": "d1f9875d5300da26d83001a7f52aab67276e9346f9d01488405f808e66db9b07",
@@ -15,7 +15,7 @@
     "storage_spec.json": "ea3710ee556405f3b190e64af0e192cfcb14276b71d864cb86caa6800bba27d4",
     "synthetic_golden_vectors.json": "abc2d777790740ad697f1c9893cb700ef90f3cc6d54d039f59acbe48c0350f4a",
     "tensor_schema.json": "acfdee0460cd69c229cac61c06db1a9592da2f140cdb891994db3de05e1d4c6f",
-    "validate_contract_v3.py": "009b27cda9b301390868d913b3c54ad3d1d39450070dff9e51dc3537a6642d2a",
+    "validate_contract_v3.py": "de878f91ffd3cd65a89130060e595acea093797aa0e9e6d5611b8a7703379eca",
     "validation.json": "70888a9c07e8de2f0eb1ae8a94f842bc91ef8b67e32709ca1c2ed11d1389729c"
   },
   "goal": "FT2-08",
@@ -27,15 +27,15 @@
     },
     "census_v4_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-      "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
+      "sha256": "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
     },
     "consolidated_authority": {
       "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
-      "sha256": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
+      "sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
     },
     "ft2_04_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
-      "sha256": "fc9c27e7ed1025aeeab4461d4176504bb8789340296cd1e9e0ad4cec67a127ca"
+      "sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe"
     },
     "graph_v2": {
       "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
@@ -47,7 +47,7 @@
     }
   },
   "outcome": "producer_repaired",
-  "product_contract_hash": "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033",
+  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
   "repair_of": {
     "preservation_verified": true,
     "preserved_path": "superseded/v3_pre_scoped_final_round_20260730/receipt.json",
