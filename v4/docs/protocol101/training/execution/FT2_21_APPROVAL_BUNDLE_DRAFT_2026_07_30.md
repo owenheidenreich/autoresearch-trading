@@ -1,10 +1,13 @@
 # FT2-21 Design-Approval Bundle — Cohesive Narrative (DRAFT)
 
-**STATUS: SIGNATURE-READY DRAFT, NOT YET SIGNED.** The delta review is clean
-(§3) and the pilot findings are folded in (§8). This is the owner's one-read
-approval packet for FT2-21; it awaits only the owner's signature and a
-pre-training step the owner has reserved. Binding docs remain the consolidated
-authority and Graph V2 JSON.
+**STATUS: OWNER-SIGNED — FT2-21 DESIGN APPROVED (2026-07-30).** The delta
+review is clean (§3), the pilot findings are folded in (§8), and the owner has
+signed the design approval (§12). Amendments D54-D60 are adopted. The owner's
+reserved pre-training step is the Walking-Skeleton dry-run (separate plan).
+Formal incorporation of D54-D60 into the binding consolidated authority (new
+authority hash, receipt re-pin) and the Graph V2 FT2-21 state update are the
+next governed Codex step. Binding docs remain the consolidated authority and
+Graph V2 JSON.
 
 Prepared 2026-07-30 (Fable), folding two independent streams into one story:
 the internal delta-review of the repaired design, and the external ChatGPT
@@ -302,3 +305,17 @@ trade-chart exporter). This was implicit before; D60 names it as a required
 step. See the Walking-Skeleton plan
 (`PROTOCOL101_WALKING_SKELETON_DRYRUN_PLAN_2026_07_30.md`), which exercises it
 first as Stage 3.
+
+---
+
+## 12. Owner signature — FT2-21 design approval
+
+By signing, the owner approves the Protocol101 Full Trader Graph V2 design as
+sound enough to begin machinery, adopts amendments D54-D60, and authorizes the
+Walking-Skeleton dry-run as the reserved pre-training step. This does NOT
+authorize training, GPU spend, paid downloads, broker contact, or paper orders
+— each remains behind its own later gate. It directs the next governed step:
+formally incorporate D54-D60 into the consolidated authority and record the
+FT2-21 approval in the Graph V2 state.
+
+Owner signature: **Owen Heidenreich**   Date: **July 30, 2026**
