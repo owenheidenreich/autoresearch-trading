@@ -1,0 +1,191 @@
+{
+  "schema_version": "Protocol101FT220DeltaScopedSeatReceiptV2",
+  "goal": "FT2-DELTA-SCOPED-FRESH-SEAT-REVIEW",
+  "attempt": 2,
+  "seat": "seat2_ml_statistics",
+  "baseline_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+  "verdict": "DELTA_REVIEW_CLEAN",
+  "next": "STOP_FOR_OWNER_DECISION",
+  "ft2_21_approved_or_routed": false,
+  "scope": {
+    "law": "Only diff-manifest changed files/JSON pointers and their direct RLAC, variance/MDE, path/hash, test, and receipt consequences were reviewed.",
+    "diff_manifest_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_fixes_attempt001/diff_manifest.json",
+    "diff_manifest_sha256": "2aa1ff2d307d9eccdd483484cde882dee230cc2703869b05dc8561eb41f18ee7",
+    "manifest_changed_file_count": 41,
+    "manifest_after_hash_mismatch_count": 0,
+    "other_attempt002_seat_outputs_read": false
+  },
+  "producer_packet_hashes": {
+    "report.md": "b8d2ee4fbae66be7b0abb0de9464d54954dcaa42d3a48b1c062018b0b0b90685",
+    "receipt.json": "f7c01162f8637b70e5d0492495ce870a6172d5f91713478b345e47d70d1bf532",
+    "aggregate_receipt_raw_file_sha256": "4532e1829b8cb99320de474fe96b204b3c99ab85bd519bb49c397a49a266d4db",
+    "aggregate_receipt_canonical_self_hash": "f7ae2a4aa768fa441220fad2945e9a7d712a018978e1fe6bd041a477046e8c02",
+    "aggregate_receipt_self_hash_reproduced": true
+  },
+  "mandatory_hashes": {
+    "consolidated_authority": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+    "graph_v2_json": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+    "intent_fill_recheck_law": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "simulator_v5": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+    "matched_random_generator": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+    "rlac_spec": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09",
+    "rerun002_receipt_raw_bytes": "17cc9983c38ef4c75b8fece0cd67d4662e559f84a27de8eba2a84a34f85d96ac"
+  },
+  "ft2_delta_b3": {
+    "dependency_is_genuinely_one_way": true,
+    "merely_relocated": false,
+    "model_or_runtime_composer_target_ancestors": false,
+    "disjoint_fit_and_calibration_roles": true,
+    "freeze_before_runtime_composer": true,
+    "forecast_and_calibration_target_authority_identical": true,
+    "wait_target_formula": "y_wait(t)=1 if WAIT_justified(t) else 0",
+    "scalar_u_label_threshold_forbidden": true,
+    "wait_population": "all label-auditable governed flat minutes with at least one time-t intent-eligible contract",
+    "zero_intent_eligible_minutes": "excluded_and_counted",
+    "label_incomplete_minutes": "excluded_and_counted",
+    "marginal_full_population_coverage_is_hard_claim": true,
+    "runtime_selected_subset_is_report_only": true,
+    "runtime_selected_subset_conditional_guarantee_claimed": false,
+    "runtime_selected_subset_may_change_targets_or_calibration": false,
+    "blocking_finding": null
+  },
+  "mde_variance_direct_consequences": {
+    "session_variance_rows_recomputed": 63,
+    "session_variance_rows_exact": 63,
+    "session_cluster_mde_rows_recomputed": 504,
+    "mde_mean_max_absolute_error": 4.547473508864641e-13,
+    "mde_total_max_absolute_error": 2.9103830456733704e-11,
+    "planning_row": {
+      "regime_dimension": "overall",
+      "regime_value": "all",
+      "variant": "hold_to_forced_flat",
+      "session_count": 45,
+      "mean_session_increment": 2042.3111111111111,
+      "session_increment_variance": 8346744.491919192,
+      "session_increment_std": 2889.073292929619
+    },
+    "planning_only_not_spend_authorization": true,
+    "actual_pilot_mde_exists": false,
+    "census_variance_substitution_allowed": false
+  },
+  "semantic_and_receipt_reseal": {
+    "active_semantic_path_hash_mismatch_count": 0,
+    "repair_of_baseline_receipt_pins_reproduced": 4,
+    "repair_of_baseline_receipt_pin_mismatches": 0,
+    "authority_pin_all_five_packets": true,
+    "declared_deliverable_count": 157,
+    "declared_deliverable_mismatch_count": 0,
+    "rerun002_raw_receipt_pin_exact": true,
+    "receipts": {
+      "FT2-04": {
+        "schema_version": "Protocol101FT204NodeReceiptV4",
+        "sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe",
+        "deliverable_count": 7,
+        "mismatch_count": 0
+      },
+      "FT2-05": {
+        "schema_version": "Protocol101FT205NodeReceiptV5",
+        "sha256": "ecaa16c923d4834c314816bca471597e09b9668ec5f1fe76d956be9c9d97d168",
+        "deliverable_count": 117,
+        "mismatch_count": 0
+      },
+      "FT2-08": {
+        "schema_version": "Protocol101FT208NodeReceiptV5",
+        "sha256": "c4c9c729c8d19ae76f827ed280f66e7ee1143f7f51fd5b753615d6d968adb726",
+        "deliverable_count": 14,
+        "mismatch_count": 0
+      },
+      "FT2-10": {
+        "schema_version": "Protocol101FT210NodeReceiptV5",
+        "sha256": "b0504ea7d78c041ed066b238229fd5bdda5584da2d1a0854adeefba91b63a3a2",
+        "deliverable_count": 9,
+        "mismatch_count": 0
+      },
+      "FT2-11": {
+        "schema_version": "Protocol101FT211NodeReceiptV5",
+        "sha256": "3cb4693185bc2d1c77c5ecea38817766822b684b33679ba021c0446fade1534c",
+        "deliverable_count": 10,
+        "mismatch_count": 0
+      }
+    }
+  },
+  "mechanical_gates": {
+    "bounded_fix_checker": {
+      "outcome": "pass",
+      "passed": 20,
+      "total": 20,
+      "failed": []
+    },
+    "targeted_pytest": {
+      "outcome": "pass",
+      "passed": 12,
+      "total": 12
+    },
+    "T1_RLAC_pipeline": {
+      "outcome": "pass",
+      "passed": 5,
+      "total": 5,
+      "composer_swap_targets_byte_identical": true,
+      "circular_negative_control_detected": true
+    },
+    "T3_T4_census": {
+      "outcome": "pass",
+      "passed": 11,
+      "total": 11
+    },
+    "T5_graph_structure": {
+      "outcome": "pass",
+      "node_count": 47,
+      "edge_count": 104,
+      "reachable_nodes": 47
+    },
+    "T6_regression": {
+      "outcome": "pass",
+      "passed": 4,
+      "total": 4,
+      "FT2_08_checks_passed": 22,
+      "FT2_08_checks_total": 22,
+      "terminal_examples_passed": 3,
+      "studentized_SE_fixture_passed": true,
+      "reviewed_validation_mutated": false,
+      "redirected_validation_matches_reviewed_sha256": "d0fd65b55ed38d88d82541e7a2fe1ecec3903b0bb61c6bc41e3c24368cd5fd6e"
+    }
+  },
+  "in_scope_findings": [],
+  "documentation_only_observations": [
+    {
+      "id": "S2-DOC-001",
+      "observation": "The duplicated historical consolidated-authority amendment label A4 remains unchanged.",
+      "blocking": false
+    }
+  ],
+  "supporting_evidence_hashes": {
+    "bounded_fix_checker_output.json": "aeb507eecdd98502d339e1a376392810efdba305ba60dda752fe1263c05319e1",
+    "t1_rlac_pipeline_output.json": "e34409e23b0f7ca916d4542f3aa3398da4ba7926a489d8e1796cb2d95a55e06e",
+    "t3_t4_census_v5_output.json": "2f4777b57f2098823474cdb3d72903618092cf7ebd96560b2a2598de2a322b79",
+    "t6_regression_output.json": "65855c2db84277d1715086787bf90b0a886d518575286c62a00d6103fd1ff21d",
+    "t6_ft208_validation.json": "d0fd65b55ed38d88d82541e7a2fe1ecec3903b0bb61c6bc41e3c24368cd5fd6e",
+    "sitecustomize.py": "b532b256c63d73a4312b87b02ca60f111541734279853a3b1db0f42288de165e"
+  },
+  "deliverable_hashes": {
+    "review.md": "add6d52c2e4d78bad3a809638b71922ece284b163616a7d08ee659206ec385af"
+  },
+  "receipt_self_hash_policy": "receipt.json intentionally omits its own raw SHA-256 to avoid self-reference; the joining controller must hash it externally.",
+  "side_effects": {
+    "broker_access": false,
+    "broker_or_market_data_contact": false,
+    "recorder_access": false,
+    "paid_data_access": false,
+    "protected_or_outer_or_holdout_data_access": false,
+    "real_model_training_or_fitting": false,
+    "threshold_tuning": false,
+    "simulator_v5_modified": false,
+    "runtime_flags_modified": false,
+    "paper_default_modified": false,
+    "promotion_state_modified": false,
+    "launchd_modified": false,
+    "orders_submitted": false,
+    "reviewed_artifact_modified": false,
+    "writes_outside_private_seat_directory": false
+  }
+}

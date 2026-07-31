@@ -1,0 +1,845 @@
+{
+  "checks": [
+    {
+      "evidence": {
+        "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+        "sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
+      },
+      "name": "authority_hash",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dates": [
+          "2025-02-20",
+          "2025-03-03",
+          "2025-03-13",
+          "2025-03-24",
+          "2025-04-03",
+          "2025-04-14",
+          "2025-04-25",
+          "2025-05-06",
+          "2025-05-16",
+          "2025-05-28",
+          "2025-06-09",
+          "2025-06-18",
+          "2025-07-01",
+          "2025-07-11",
+          "2025-07-23",
+          "2025-08-01",
+          "2025-08-13",
+          "2025-08-22",
+          "2025-09-04",
+          "2025-09-15",
+          "2025-09-25",
+          "2025-10-06",
+          "2025-10-16",
+          "2025-10-27",
+          "2025-11-06",
+          "2025-11-17",
+          "2025-11-28",
+          "2025-12-09",
+          "2025-12-19",
+          "2025-12-31"
+        ],
+        "indices": [
+          0,
+          7,
+          15,
+          22,
+          30,
+          37,
+          45,
+          52,
+          60,
+          67,
+          75,
+          82,
+          90,
+          97,
+          105,
+          112,
+          120,
+          127,
+          135,
+          142,
+          150,
+          157,
+          165,
+          172,
+          180,
+          187,
+          195,
+          202,
+          210,
+          217
+        ]
+      },
+      "name": "deterministic_selection",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dataset": "OPRA.PILLAR",
+        "schema": "cbbo-1s",
+        "symbol_sessions": 15570
+      },
+      "name": "exact_paid_scope",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "actual_vendor_invoice_cost_usd": "UNKNOWN",
+        "estimated_total_usd": 24.115594923494996,
+        "failed_attempt_billable_cost_upper_bound_usd": 2.997483360816,
+        "hard_cap_usd": 30.0,
+        "worst_case_estimated_spend_usd": 27.113078284310994
+      },
+      "name": "cost_gate_and_reconciliation",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 75010960,
+        "parquet_bytes": 38220918,
+        "rows": 4612606,
+        "symbol_count": 382
+      },
+      "name": "raw_session_2025-02-20",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 78014314,
+        "parquet_bytes": 45251347,
+        "rows": 4488344,
+        "symbol_count": 446
+      },
+      "name": "raw_session_2025-03-03",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 102385758,
+        "parquet_bytes": 46542848,
+        "rows": 5568105,
+        "symbol_count": 526
+      },
+      "name": "raw_session_2025-03-13",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 105407591,
+        "parquet_bytes": 47631967,
+        "rows": 6386377,
+        "symbol_count": 478
+      },
+      "name": "raw_session_2025-03-24",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 124266386,
+        "parquet_bytes": 58236562,
+        "rows": 6717270,
+        "symbol_count": 408
+      },
+      "name": "raw_session_2025-04-03",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 127266713,
+        "parquet_bytes": 59238326,
+        "rows": 6678082,
+        "symbol_count": 574
+      },
+      "name": "raw_session_2025-04-14",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 100139030,
+        "parquet_bytes": 49852312,
+        "rows": 5645358,
+        "symbol_count": 596
+      },
+      "name": "raw_session_2025-04-25",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 70911313,
+        "parquet_bytes": 39767117,
+        "rows": 4169332,
+        "symbol_count": 464
+      },
+      "name": "raw_session_2025-05-06",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 107365773,
+        "parquet_bytes": 52654675,
+        "rows": 6166024,
+        "symbol_count": 988
+      },
+      "name": "raw_session_2025-05-16",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 46860951,
+        "parquet_bytes": 29199076,
+        "rows": 2846130,
+        "symbol_count": 406
+      },
+      "name": "raw_session_2025-05-28",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 48984238,
+        "parquet_bytes": 30895900,
+        "rows": 3047488,
+        "symbol_count": 372
+      },
+      "name": "raw_session_2025-06-09",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 100434264,
+        "parquet_bytes": 51505373,
+        "rows": 5836140,
+        "symbol_count": 386
+      },
+      "name": "raw_session_2025-06-18",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 88255768,
+        "parquet_bytes": 41931320,
+        "rows": 5328108,
+        "symbol_count": 404
+      },
+      "name": "raw_session_2025-07-01",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 99285668,
+        "parquet_bytes": 49698575,
+        "rows": 6017834,
+        "symbol_count": 498
+      },
+      "name": "raw_session_2025-07-11",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 75515010,
+        "parquet_bytes": 37553144,
+        "rows": 4811977,
+        "symbol_count": 398
+      },
+      "name": "raw_session_2025-07-23",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 111472060,
+        "parquet_bytes": 55436780,
+        "rows": 6017148,
+        "symbol_count": 500
+      },
+      "name": "raw_session_2025-08-01",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 59087837,
+        "parquet_bytes": 34883831,
+        "rows": 3541558,
+        "symbol_count": 394
+      },
+      "name": "raw_session_2025-08-13",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 88153343,
+        "parquet_bytes": 46229696,
+        "rows": 5001105,
+        "symbol_count": 526
+      },
+      "name": "raw_session_2025-08-22",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 46120029,
+        "parquet_bytes": 29930920,
+        "rows": 2781508,
+        "symbol_count": 424
+      },
+      "name": "raw_session_2025-09-04",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 54620158,
+        "parquet_bytes": 35837203,
+        "rows": 3292487,
+        "symbol_count": 422
+      },
+      "name": "raw_session_2025-09-15",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 68297034,
+        "parquet_bytes": 39365840,
+        "rows": 3863288,
+        "symbol_count": 430
+      },
+      "name": "raw_session_2025-09-25",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 56336125,
+        "parquet_bytes": 35161389,
+        "rows": 3477133,
+        "symbol_count": 430
+      },
+      "name": "raw_session_2025-10-06",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 126107552,
+        "parquet_bytes": 61305460,
+        "rows": 6821665,
+        "symbol_count": 460
+      },
+      "name": "raw_session_2025-10-16",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 56985824,
+        "parquet_bytes": 36767454,
+        "rows": 3571389,
+        "symbol_count": 414
+      },
+      "name": "raw_session_2025-10-27",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 114483153,
+        "parquet_bytes": 54751478,
+        "rows": 6397444,
+        "symbol_count": 442
+      },
+      "name": "raw_session_2025-11-06",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 128848712,
+        "parquet_bytes": 60423958,
+        "rows": 6755403,
+        "symbol_count": 450
+      },
+      "name": "raw_session_2025-11-17",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 48445146,
+        "parquet_bytes": 23951307,
+        "rows": 2816793,
+        "symbol_count": 882
+      },
+      "name": "raw_session_2025-11-28",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 79323881,
+        "parquet_bytes": 40002703,
+        "rows": 4434328,
+        "symbol_count": 444
+      },
+      "name": "raw_session_2025-12-09",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 223321007,
+        "parquet_bytes": 89245826,
+        "rows": 11236240,
+        "symbol_count": 902
+      },
+      "name": "raw_session_2025-12-19",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 237549800,
+        "parquet_bytes": 114593309,
+        "rows": 13600662,
+        "symbol_count": 1124
+      },
+      "name": "raw_session_2025-12-31",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dbn_bytes": 2849255398,
+        "estimated_cost_usd": 24.115594923494996,
+        "parquet_bytes": 1436066614,
+        "rows": 161927326,
+        "sessions": 30,
+        "symbols": 15570
+      },
+      "name": "raw_totals",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "dates": [
+          "2025-02-20",
+          "2025-03-03",
+          "2025-03-13",
+          "2025-03-24",
+          "2025-04-03",
+          "2025-04-14",
+          "2025-04-25",
+          "2025-05-06",
+          "2025-05-16",
+          "2025-05-28",
+          "2025-06-09",
+          "2025-06-18",
+          "2025-07-01",
+          "2025-07-11",
+          "2025-07-23",
+          "2025-08-01",
+          "2025-08-13",
+          "2025-08-22",
+          "2025-09-04",
+          "2025-09-15",
+          "2025-09-25",
+          "2025-10-06",
+          "2025-10-16",
+          "2025-10-27",
+          "2025-11-06",
+          "2025-11-17",
+          "2025-11-28",
+          "2025-12-09",
+          "2025-12-19",
+          "2025-12-31"
+        ],
+        "raw_root": "v4/raw/opra_1s_pilot"
+      },
+      "name": "raw_root_date_scope",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "attempts": 22,
+        "billable_cost_upper_bound_usd": 2.997483360816
+      },
+      "name": "failure_scope",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "jobs": [
+          {
+            "date": "2025-12-09",
+            "job_id": "OPRA-20260730-99NLP6YY3M"
+          },
+          {
+            "date": "2025-12-19",
+            "job_id": "OPRA-20260730-NJAWU5AMYH"
+          }
+        ]
+      },
+      "name": "batch_fallback_scope",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 88617,
+        "floor_response": 350508,
+        "minute_input": 88617,
+        "one_second_input": 4547853
+      },
+      "name": "measurement_session_2025-02-20",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 107484,
+        "floor_response": 422812,
+        "minute_input": 107484,
+        "one_second_input": 4426531
+      },
+      "name": "measurement_session_2025-03-03",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 127191,
+        "floor_response": 502268,
+        "minute_input": 127191,
+        "one_second_input": 5476625
+      },
+      "name": "measurement_session_2025-03-13",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 110702,
+        "floor_response": 440968,
+        "minute_input": 110702,
+        "one_second_input": 6306025
+      },
+      "name": "measurement_session_2025-03-24",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 110158,
+        "floor_response": 438656,
+        "minute_input": 110158,
+        "one_second_input": 6646157
+      },
+      "name": "measurement_session_2025-04-03",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 150968,
+        "floor_response": 582624,
+        "minute_input": 150968,
+        "one_second_input": 6577523
+      },
+      "name": "measurement_session_2025-04-14",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 133901,
+        "floor_response": 499284,
+        "minute_input": 133901,
+        "one_second_input": 5562815
+      },
+      "name": "measurement_session_2025-04-25",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 98920,
+        "floor_response": 365200,
+        "minute_input": 98920,
+        "one_second_input": 4092188
+      },
+      "name": "measurement_session_2025-05-06",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 197056,
+        "floor_response": 749024,
+        "minute_input": 197056,
+        "one_second_input": 6014581
+      },
+      "name": "measurement_session_2025-05-16",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 74005,
+        "floor_response": 261024,
+        "minute_input": 74005,
+        "one_second_input": 2779103
+      },
+      "name": "measurement_session_2025-05-28",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 71819,
+        "floor_response": 269288,
+        "minute_input": 71819,
+        "one_second_input": 2991094
+      },
+      "name": "measurement_session_2025-06-09",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 109653,
+        "floor_response": 436380,
+        "minute_input": 109653,
+        "one_second_input": 5764326
+      },
+      "name": "measurement_session_2025-06-18",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 98361,
+        "floor_response": 391336,
+        "minute_input": 98361,
+        "one_second_input": 5259241
+      },
+      "name": "measurement_session_2025-07-01",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 114240,
+        "floor_response": 455200,
+        "minute_input": 114240,
+        "one_second_input": 5937027
+      },
+      "name": "measurement_session_2025-07-11",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 93639,
+        "floor_response": 372808,
+        "minute_input": 93639,
+        "one_second_input": 4749744
+      },
+      "name": "measurement_session_2025-07-23",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 125752,
+        "floor_response": 499332,
+        "minute_input": 125752,
+        "one_second_input": 5929020
+      },
+      "name": "measurement_session_2025-08-01",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 95603,
+        "floor_response": 379044,
+        "minute_input": 95603,
+        "one_second_input": 3481229
+      },
+      "name": "measurement_session_2025-08-13",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 124022,
+        "floor_response": 488864,
+        "minute_input": 124022,
+        "one_second_input": 4917736
+      },
+      "name": "measurement_session_2025-08-22",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 96763,
+        "floor_response": 370364,
+        "minute_input": 96763,
+        "one_second_input": 2712047
+      },
+      "name": "measurement_session_2025-09-04",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 107129,
+        "floor_response": 424288,
+        "minute_input": 107129,
+        "one_second_input": 3219921
+      },
+      "name": "measurement_session_2025-09-15",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 103348,
+        "floor_response": 407788,
+        "minute_input": 103348,
+        "one_second_input": 3794447
+      },
+      "name": "measurement_session_2025-09-25",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 99876,
+        "floor_response": 395072,
+        "minute_input": 99876,
+        "one_second_input": 3411309
+      },
+      "name": "measurement_session_2025-10-06",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 123852,
+        "floor_response": 490384,
+        "minute_input": 123852,
+        "one_second_input": 6739976
+      },
+      "name": "measurement_session_2025-10-16",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 107918,
+        "floor_response": 429056,
+        "minute_input": 107918,
+        "one_second_input": 3506924
+      },
+      "name": "measurement_session_2025-10-27",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 112442,
+        "floor_response": 446360,
+        "minute_input": 112442,
+        "one_second_input": 6339906
+      },
+      "name": "measurement_session_2025-11-06",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 112073,
+        "floor_response": 446064,
+        "minute_input": 112073,
+        "one_second_input": 6676344
+      },
+      "name": "measurement_session_2025-11-17",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 99118,
+        "floor_response": 384704,
+        "minute_input": 99118,
+        "one_second_input": 2815911
+      },
+      "name": "measurement_session_2025-11-28",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 102850,
+        "floor_response": 408012,
+        "minute_input": 102850,
+        "one_second_input": 4363237
+      },
+      "name": "measurement_session_2025-12-09",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 197685,
+        "floor_response": 787796,
+        "minute_input": 197685,
+        "one_second_input": 11093804
+      },
+      "name": "measurement_session_2025-12-19",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minute_distortion": 238102,
+        "floor_response": 948880,
+        "minute_input": 238102,
+        "one_second_input": 13424784
+      },
+      "name": "measurement_session_2025-12-31",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "contract_minutes": 3533247,
+        "executable_rows": 150749791,
+        "stream_rows": 150812608
+      },
+      "name": "distortion_population_reconciliation",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "crossed": 24779,
+        "eligible": 3460847
+      },
+      "name": "floor_population_0.70",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "crossed": 57568,
+        "eligible": 3460847
+      },
+      "name": "floor_population_0.80",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "crossed": 167916,
+        "eligible": 3460847
+      },
+      "name": "floor_population_0.90",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "crossed": 333096,
+        "eligible": 3460847
+      },
+      "name": "floor_population_0.95",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "next": "STOP_FOR_OWNER_DECISION",
+        "verdict": "NOT_TRUSTWORTHY_WITHOUT_HIGHRES_VALIDATION_OR_ADJUSTMENT"
+      },
+      "name": "measurement_route",
+      "outcome": "PASS"
+    },
+    {
+      "evidence": {
+        "receipt": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/receipt.json",
+        "sha256": "def44a5d93eb6036af7ff76640469fed6e6781b0bd858f30a268b44f5aedbba7"
+      },
+      "name": "receipt_scope",
+      "outcome": "PASS"
+    }
+  ],
+  "goal": "FT2-D55-EXIT-REALISM-PILOT",
+  "highest_allowed_claim": "the minute-vs-1-second exit-realism distortion is measured; the owner can decide substrate and exit-data strategy",
+  "next": "STOP_FOR_OWNER_DECISION",
+  "outcome": "PASS",
+  "receipt": {
+    "bytes": 593558,
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/receipt.json",
+    "sha256": "def44a5d93eb6036af7ff76640469fed6e6781b0bd858f30a268b44f5aedbba7"
+  },
+  "reviewed_at_utc": "2026-07-31T01:09:35.965539+00:00",
+  "schema_version": "Protocol101FT2D55DeltaScopedReviewV1"
+}

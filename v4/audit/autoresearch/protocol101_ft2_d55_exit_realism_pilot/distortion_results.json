@@ -1,0 +1,503 @@
+{
+  "acquisition_cost": {
+    "actual_vendor_invoice_cost_usd": "UNKNOWN",
+    "estimated_total_usd": 24.115594923495,
+    "failed_attempt_billable_cost_upper_bound_usd": 2.997483360816,
+    "hard_cap_usd": 30.0,
+    "worst_case_estimated_spend_usd": 27.113078284310994
+  },
+  "acquisition_summary": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/acquisition_summary.json",
+    "sha256": "4aa286224952f17cbee75465522b4216257feead9e5e204882fd164c06be3eee"
+  },
+  "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "completed_at_utc": "2026-07-31T01:07:29.261816+00:00",
+  "entry_signal_exploratory": {
+    "claim": "descriptive_only_no_model",
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/entry_signal_exploratory.csv",
+    "rows": 90
+  },
+  "floor_response": [
+    {
+      "completed_minute_cross_rate": 0.004705784451031785,
+      "crossed_contract_minutes": 24779,
+      "eligible_contract_minutes": 3460847,
+      "floor_ratio": 0.7,
+      "floor_trigger_gap_mean_points": 3.205930626740384,
+      "floor_trigger_gap_p50_points": 0.01999999999999999,
+      "floor_trigger_gap_p90_points": 0.06999999999999851,
+      "floor_trigger_gap_p95_dollars": 141.09999999999852,
+      "floor_trigger_gap_p95_points": 1.4109999999999854,
+      "floor_trigger_gap_p99_points": 127.50060000000083,
+      "hidden_cross_recover_rate": 0.0024540235381685467,
+      "intraminute_cross_rate": 0.007159807989200332
+    },
+    {
+      "completed_minute_cross_rate": 0.010658084567159427,
+      "crossed_contract_minutes": 57568,
+      "eligible_contract_minutes": 3460847,
+      "floor_ratio": 0.8,
+      "floor_trigger_gap_mean_points": 2.052944691495276,
+      "floor_trigger_gap_p50_points": 0.01999999999999999,
+      "floor_trigger_gap_p90_points": 0.08000000000000007,
+      "floor_trigger_gap_p95_dollars": 33.999999999999986,
+      "floor_trigger_gap_p95_points": 0.33999999999999986,
+      "floor_trigger_gap_p99_points": 95.43260000000048,
+      "hidden_cross_recover_rate": 0.005975993737949121,
+      "intraminute_cross_rate": 0.016634078305108546
+    },
+    {
+      "completed_minute_cross_rate": 0.029530343294574997,
+      "crossed_contract_minutes": 167916,
+      "eligible_contract_minutes": 3460847,
+      "floor_ratio": 0.9,
+      "floor_trigger_gap_mean_points": 1.1051996236213346,
+      "floor_trigger_gap_p50_points": 0.030000000000000027,
+      "floor_trigger_gap_p90_points": 0.1899999999999995,
+      "floor_trigger_gap_p95_dollars": 49.0000000000002,
+      "floor_trigger_gap_p95_points": 0.490000000000002,
+      "floor_trigger_gap_p99_points": 13.529500000000406,
+      "hidden_cross_recover_rate": 0.018988415263662333,
+      "intraminute_cross_rate": 0.04851875855823733
+    },
+    {
+      "completed_minute_cross_rate": 0.05395875633912739,
+      "crossed_contract_minutes": 333096,
+      "eligible_contract_minutes": 3460847,
+      "floor_ratio": 0.95,
+      "floor_trigger_gap_mean_points": 0.7746475715709572,
+      "floor_trigger_gap_p50_points": 0.04249999999999998,
+      "floor_trigger_gap_p90_points": 0.5,
+      "floor_trigger_gap_p95_dollars": 118.00000000000068,
+      "floor_trigger_gap_p95_points": 1.1800000000000068,
+      "floor_trigger_gap_p99_points": 4.780000000000001,
+      "hidden_cross_recover_rate": 0.0422882028590111,
+      "intraminute_cross_rate": 0.09624695919813848
+    }
+  ],
+  "goal": "FT2-D55-EXIT-REALISM-PILOT",
+  "highest_allowed_claim": "the minute-vs-1-second exit-realism distortion is measured; the owner can decide substrate and exit-data strategy",
+  "measurement_spec": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/measurement_spec.json",
+    "sha256": "3a8c91216f611cf310e40a59111b6e1298cc2a5fd18b18d3b073280c36994c8a"
+  },
+  "next": "STOP_FOR_OWNER_DECISION",
+  "outputs": {
+    "entry_signal_exploratory.csv": "b021072b52e18fae034f3345c701dd2ec83637243feb3d44572ab4679110da83",
+    "floor_slippage_by_band.csv": "3d72051835ade078dce3f38f5aedd7ad917e72896a3077569c4c67e3ca4f2062",
+    "per_moneyness_band.csv": "fd7d736c528515b6f491bcca7331cf12d7019d6859546495dbef1ffbd2910d88",
+    "per_premium_band.csv": "c8d093cf0827add9dd4dbd40abf6555e46504cdc5e93dbf0115d93687cb452e2",
+    "per_premium_moneyness_band.csv": "125a6d4cc7eb9e7d8c615537200cc65f8c82ad9e80cc42da5d99f51a010a2974",
+    "per_session_metrics.csv": "2d2700bcbd755cdf1a5f61991ccb357cb612b7260553cdf3a2afa4ad9821490d"
+  },
+  "overall": {
+    "adverse_gap_mean_points": 2.323671215174031,
+    "adverse_gap_p50_points": 0.6000000000000227,
+    "adverse_gap_p90_points": 7.400000000000091,
+    "adverse_gap_p95_points": 9.099999999999966,
+    "adverse_gap_p99_points": 12.100000000000023,
+    "breach_and_recover_rate": 0.7408378185844352,
+    "contract_minutes": 3533247,
+    "entry_fill_abs_error_p95_points": 3.136666666666656,
+    "entry_fill_error_mean_points": -0.030341470005462744,
+    "entry_fill_error_p50_points": 0.0,
+    "entry_fill_optimistic_rate": 0.47829772444439916,
+    "entry_one_second_ask_std_mean": 0.9757346535849258,
+    "executable_1s_coverage_rate": 1.0,
+    "exit_fill_abs_error_p95_points": 3.1299999999999955,
+    "exit_fill_error_mean_points": 0.01795295114087659,
+    "exit_fill_error_p50_points": 0.0,
+    "exit_fill_optimistic_rate": 0.46223912452200483,
+    "exit_one_second_bid_std_mean": 0.9631092864909746,
+    "forward_fill_rate": 0.0006656766424764529,
+    "hidden_adverse_dip_rate": 0.7408378185844352,
+    "minute_quote_age_zero_rate": 1.0,
+    "minute_quote_gap_null_rate": 1.0,
+    "minute_vs_last_1s_ask_abs_p95_points": 0.0,
+    "minute_vs_last_1s_bid_abs_p95_points": 0.0,
+    "one_second_executable_rows": 150749791,
+    "one_second_stream_coverage_rate": 1.0,
+    "one_second_stream_rows": 150812608
+  },
+  "premium_band_response": [
+    {
+      "adverse_gap_mean_points": 0.010362336594324697,
+      "adverse_gap_p50_points": 0.0,
+      "adverse_gap_p90_points": 0.04999999999999999,
+      "adverse_gap_p95_points": 0.050000000000000044,
+      "adverse_gap_p99_points": 0.10000000000000009,
+      "breach_and_recover_rate": 0.16144281299914345,
+      "contract_minutes": 526527,
+      "entry_fill_abs_error_p95_points": 0.04558823529411765,
+      "entry_fill_error_mean_points": -0.001843475724008554,
+      "entry_fill_error_p50_points": 0.0,
+      "entry_fill_optimistic_rate": 0.2348844408738773,
+      "entry_one_second_ask_std_mean": 0.008881144227452035,
+      "executable_1s_coverage_rate": 1.0,
+      "exit_fill_abs_error_p95_points": 0.04500000000000004,
+      "exit_fill_error_mean_points": -0.0017792765645816614,
+      "exit_fill_error_p50_points": 0.0,
+      "exit_fill_optimistic_rate": 0.14902559602831383,
+      "exit_one_second_bid_std_mean": 0.008555525554771131,
+      "forward_fill_rate": 0.0016219491118214262,
+      "hidden_adverse_dip_rate": 0.16144281299914345,
+      "minute_quote_age_zero_rate": 1.0,
+      "minute_quote_gap_null_rate": 1.0,
+      "minute_vs_last_1s_ask_abs_p95_points": 0.0,
+      "minute_vs_last_1s_bid_abs_p95_points": 0.0,
+      "one_second_executable_rows": 20635386,
+      "one_second_stream_coverage_rate": 1.0,
+      "one_second_stream_rows": 20695943,
+      "premium_band": "cheap_le_1"
+    },
+    {
+      "adverse_gap_mean_points": 0.7370713993345999,
+      "adverse_gap_p50_points": 0.5,
+      "adverse_gap_p90_points": 1.6999999999999993,
+      "adverse_gap_p95_points": 2.1999999999999993,
+      "adverse_gap_p99_points": 3.4000000000000004,
+      "breach_and_recover_rate": 0.8929062457362958,
+      "contract_minutes": 95281,
+      "entry_fill_abs_error_p95_points": 1.3033333333333346,
+      "entry_fill_error_mean_points": -0.03184077312220497,
+      "entry_fill_error_p50_points": -0.022413793103448043,
+      "entry_fill_optimistic_rate": 0.517973153094531,
+      "entry_one_second_ask_std_mean": 0.41896740694668305,
+      "executable_1s_coverage_rate": 1.0,
+      "exit_fill_abs_error_p95_points": 1.2899999999999991,
+      "exit_fill_error_mean_points": -0.030648579108602424,
+      "exit_fill_error_p50_points": -0.0216666666666665,
+      "exit_fill_optimistic_rate": 0.48036859394842624,
+      "exit_one_second_bid_std_mean": 0.41334869437476646,
+      "forward_fill_rate": 0.0,
+      "hidden_adverse_dip_rate": 0.8929062457362958,
+      "minute_quote_age_zero_rate": 1.0,
+      "minute_quote_gap_null_rate": 1.0,
+      "minute_vs_last_1s_ask_abs_p95_points": 0.0,
+      "minute_vs_last_1s_bid_abs_p95_points": 0.0,
+      "one_second_executable_rows": 5677264,
+      "one_second_stream_coverage_rate": 1.0,
+      "one_second_stream_rows": 5677272,
+      "premium_band": "large_8_20"
+    },
+    {
+      "adverse_gap_mean_points": 0.3483850542208671,
+      "adverse_gap_p50_points": 0.20000000000000018,
+      "adverse_gap_p90_points": 0.7999999999999998,
+      "adverse_gap_p95_points": 1.0499999999999998,
+      "adverse_gap_p99_points": 1.6999999999999993,
+      "breach_and_recover_rate": 0.8345095532003836,
+      "contract_minutes": 81334,
+      "entry_fill_abs_error_p95_points": 0.666666666666667,
+      "entry_fill_error_mean_points": -0.026739416981929567,
+      "entry_fill_error_p50_points": -0.018333333333333535,
+      "entry_fill_optimistic_rate": 0.5294833648904517,
+      "entry_one_second_ask_std_mean": 0.21352410181029105,
+      "executable_1s_coverage_rate": 1.0,
+      "exit_fill_abs_error_p95_points": 0.6600000000000001,
+      "exit_fill_error_mean_points": -0.02681559022525685,
+      "exit_fill_error_p50_points": -0.018333333333334423,
+      "exit_fill_optimistic_rate": 0.4664469963360956,
+      "exit_one_second_bid_std_mean": 0.20989358176057404,
+      "forward_fill_rate": 1.229498118867878e-05,
+      "hidden_adverse_dip_rate": 0.8345095532003836,
+      "minute_quote_age_zero_rate": 1.0,
+      "minute_quote_gap_null_rate": 1.0,
+      "minute_vs_last_1s_ask_abs_p95_points": 0.0,
+      "minute_vs_last_1s_bid_abs_p95_points": 0.0,
+      "one_second_executable_rows": 4869084,
+      "one_second_stream_coverage_rate": 1.0,
+      "one_second_stream_rows": 4869089,
+      "premium_band": "medium_3_8"
+    },
+    {
+      "adverse_gap_mean_points": 0.12473054349486178,
+      "adverse_gap_p50_points": 0.09999999999999987,
+      "adverse_gap_p90_points": 0.30000000000000004,
+      "adverse_gap_p95_points": 0.3999999999999999,
+      "adverse_gap_p99_points": 0.6499999999999999,
+      "breach_and_recover_rate": 0.7729256212772456,
+      "contract_minutes": 91666,
+      "entry_fill_abs_error_p95_points": 0.2683333333333333,
+      "entry_fill_error_mean_points": -0.014790038259892467,
+      "entry_fill_error_p50_points": -0.00749999999999984,
+      "entry_fill_optimistic_rate": 0.5341347937075906,
+      "entry_one_second_ask_std_mean": 0.0818575056469403,
+      "executable_1s_coverage_rate": 1.0,
+      "exit_fill_abs_error_p95_points": 0.2616666666666667,
+      "exit_fill_error_mean_points": -0.012993906379126714,
+      "exit_fill_error_p50_points": -0.007500000000000062,
+      "exit_fill_optimistic_rate": 0.45652695655968406,
+      "exit_one_second_bid_std_mean": 0.07948533877455531,
+      "forward_fill_rate": 1.0909170248510898e-05,
+      "hidden_adverse_dip_rate": 0.7729256212772456,
+      "minute_quote_age_zero_rate": 1.0,
+      "minute_quote_gap_null_rate": 1.0,
+      "minute_vs_last_1s_ask_abs_p95_points": 0.0,
+      "minute_vs_last_1s_bid_abs_p95_points": 0.0,
+      "one_second_executable_rows": 5469101,
+      "one_second_stream_coverage_rate": 1.0,
+      "one_second_stream_rows": 5469114,
+      "premium_band": "small_1_3"
+    },
+    {
+      "adverse_gap_mean_points": 2.955935954753783,
+      "adverse_gap_p50_points": 1.300000000000182,
+      "adverse_gap_p90_points": 8.100000000000023,
+      "adverse_gap_p95_points": 9.599999999999909,
+      "adverse_gap_p99_points": 12.699999999999932,
+      "breach_and_recover_rate": 0.8430923602826281,
+      "contract_minutes": 2738439,
+      "entry_fill_abs_error_p95_points": 3.659342211460883,
+      "entry_fill_error_mean_points": -0.03639623889305542,
+      "entry_fill_error_p50_points": -0.01999999999998181,
+      "entry_fill_optimistic_rate": 0.5203296476569316,
+      "entry_one_second_ask_std_mean": 1.2377695638855706,
+      "executable_1s_coverage_rate": 1.0,
+      "exit_fill_abs_error_p95_points": 3.671666666666681,
+      "exit_fill_error_mean_points": 0.02580353033788415,
+      "exit_fill_error_p50_points": 0.022222222222239907,
+      "exit_fill_optimistic_rate": 0.5218969639272593,
+      "exit_one_second_bid_std_mean": 1.2218728200876159,
+      "forward_fill_rate": 0.000546296631036879,
+      "hidden_adverse_dip_rate": 0.8430923602826281,
+      "minute_quote_age_zero_rate": 1.0,
+      "minute_quote_gap_null_rate": 1.0,
+      "minute_vs_last_1s_ask_abs_p95_points": 0.0,
+      "minute_vs_last_1s_bid_abs_p95_points": 0.0,
+      "one_second_executable_rows": 114098956,
+      "one_second_stream_coverage_rate": 1.0,
+      "one_second_stream_rows": 114101190,
+      "premium_band": "very_large_20p"
+    }
+  ],
+  "schema_version": "Protocol101FT2D55DistortionResultsV1",
+  "selected_dates": [
+    "2025-02-20",
+    "2025-03-03",
+    "2025-03-13",
+    "2025-03-24",
+    "2025-04-03",
+    "2025-04-14",
+    "2025-04-25",
+    "2025-05-06",
+    "2025-05-16",
+    "2025-05-28",
+    "2025-06-09",
+    "2025-06-18",
+    "2025-07-01",
+    "2025-07-11",
+    "2025-07-23",
+    "2025-08-01",
+    "2025-08-13",
+    "2025-08-22",
+    "2025-09-04",
+    "2025-09-15",
+    "2025-09-25",
+    "2025-10-06",
+    "2025-10-16",
+    "2025-10-27",
+    "2025-11-06",
+    "2025-11-17",
+    "2025-11-28",
+    "2025-12-09",
+    "2025-12-19",
+    "2025-12-31"
+  ],
+  "session_measurement_manifests": [
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-02-20/manifest.json",
+      "session": "2025-02-20",
+      "sha256": "5491767f19f1ef1a9b3a47f02f3911386e923af0c206c9a24298f17f9a1a28ba"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-03-03/manifest.json",
+      "session": "2025-03-03",
+      "sha256": "a7519ff3947cff5b2b7dee9a517cd1d507be95859a31c9ddb3b4a934ca5567c9"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-03-13/manifest.json",
+      "session": "2025-03-13",
+      "sha256": "126e5d63cce244d20eb22b075ada10bd841a97d4de379c9ede32d2f11bc68a52"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-03-24/manifest.json",
+      "session": "2025-03-24",
+      "sha256": "6355f0f5a311c2af8a945c201fc4b817f1bfdbf21eced9a4eea2dd84c06ed2c4"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-04-03/manifest.json",
+      "session": "2025-04-03",
+      "sha256": "43ca811001bf21a56f094b86fc61f7bd1892ba9df031b1f85e2349f3d4749928"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-04-14/manifest.json",
+      "session": "2025-04-14",
+      "sha256": "646bdfd0c04acb5f0d943d17f2345fbb7793d7dbbff8fe4d8ec9ad7178810047"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-04-25/manifest.json",
+      "session": "2025-04-25",
+      "sha256": "2238fa9251cc464ace9050315016103dc8a60f0d250cb269c3cc91729f91b430"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-05-06/manifest.json",
+      "session": "2025-05-06",
+      "sha256": "cc7e195fd8b766df276f3cad7e85b71cfccd3304a2dba6970435daca1d9d00f9"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-05-16/manifest.json",
+      "session": "2025-05-16",
+      "sha256": "c35a258674e00cb51a6bb1d270bd8a0f1e14fe136000d444cefc499bb2f226b0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-05-28/manifest.json",
+      "session": "2025-05-28",
+      "sha256": "c752620186ef3ff2c529eb69f9d9b87a5d866b76f10a776725462a2e610d88f3"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-06-09/manifest.json",
+      "session": "2025-06-09",
+      "sha256": "0ee0fbbb4eb8849dc8d984a48703ee55c6ed84e3d4d0f0c7aa5864595c73f16d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-06-18/manifest.json",
+      "session": "2025-06-18",
+      "sha256": "439ec37072ffcd16c3238b2f6cac477309ca7d2828d34cfcf556e1cb499bdbe8"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-07-01/manifest.json",
+      "session": "2025-07-01",
+      "sha256": "0345b858d81efade710cb72850310a439da665b791c96459ea474e9a9419b877"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-07-11/manifest.json",
+      "session": "2025-07-11",
+      "sha256": "a370f1fd55bce43c418567d76a8ae2c9e03a61d98d64bad82ccf4b9461d63cd7"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-07-23/manifest.json",
+      "session": "2025-07-23",
+      "sha256": "7d0d52b127c059ae85063823e7bf10b8ebf69b1abedc7b457356da01ea4bcc93"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-08-01/manifest.json",
+      "session": "2025-08-01",
+      "sha256": "6cb7a620f86b82b78712ef075f5e96a64faed408d396dc9a7b39436fb59d5044"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-08-13/manifest.json",
+      "session": "2025-08-13",
+      "sha256": "f0878983f6a5aa9164c0dc3281925bc5324703edde9619c1378c3e64d3f95241"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-08-22/manifest.json",
+      "session": "2025-08-22",
+      "sha256": "71096e27a0f0ef4761b0665606311b15409c21361c98274642bdea18d063ef3b"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-09-04/manifest.json",
+      "session": "2025-09-04",
+      "sha256": "e8ae3972264c9371ec9188f8380206dab492df4157e829ac4d81a0a11d860dac"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-09-15/manifest.json",
+      "session": "2025-09-15",
+      "sha256": "329fcd0d56054233bc08e58851688e560d20591d08b231cbf834f808d10cbc0d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-09-25/manifest.json",
+      "session": "2025-09-25",
+      "sha256": "72d491582b7ef36397a790690351ec2fb7d58bd7180e640b107c7b2634b76af9"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-10-06/manifest.json",
+      "session": "2025-10-06",
+      "sha256": "0245c6555cff51d0b20dd297f96944c4e0bc4b9f676d93c828fb0e5b1478b221"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-10-16/manifest.json",
+      "session": "2025-10-16",
+      "sha256": "16a8a8498cfa7e9321f9b2665448588900e39d79feefe274aa454f4c222e1f3b"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-10-27/manifest.json",
+      "session": "2025-10-27",
+      "sha256": "dbc627f7b31e3d61a4f557d64ce1c9f60a6076da0b737a0777c04f1c5bee1c8d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-11-06/manifest.json",
+      "session": "2025-11-06",
+      "sha256": "f1c3b2b7ca3f2b222df873bcd9e9dda6bb1a32abb8dc82018e8cd230696dab86"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-11-17/manifest.json",
+      "session": "2025-11-17",
+      "sha256": "fb4ddbd7aeaf0e3edbfdeefd2a9791f216f3b8a1d2c0cca1a28127bdd911157c"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-11-28/manifest.json",
+      "session": "2025-11-28",
+      "sha256": "6fa48e55470e84f7c29305f2b36b766285825731e61312333e2ef86b7dea68bc"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-12-09/manifest.json",
+      "session": "2025-12-09",
+      "sha256": "bb9dcbca036156b0f998ca7bd3d50d1acd7aa02a639f9ac92395e52acf145541"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-12-19/manifest.json",
+      "session": "2025-12-19",
+      "sha256": "88643c4003feb78d76f7bbe4763e4aba01d0009f1931647fbf1c3ae91f198310"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/session_measurements/2025-12-31/manifest.json",
+      "session": "2025-12-31",
+      "sha256": "a41b0281d27fd45e8fdca1dec88c2170aaa4df44e4be60c26ecdd3512e7793d1"
+    }
+  ],
+  "sessions": 30,
+  "side_effects": {
+    "broker_contacted": false,
+    "census_modified": false,
+    "graph_modified": false,
+    "model_training_or_fitting": false,
+    "paid_download_performed_by_measurement_runner": false,
+    "protected_data_accessed": false,
+    "runtime_or_promotion_modified": false,
+    "signed_contract_modified": false
+  },
+  "substrate_recommendation": {
+    "cost_note": "Pilot ~$24.12; all available CBBO-1s history roughly $280; deferred 2022-2024 minute backfill roughly $41-$347.",
+    "entry": "Keep minute data as the entry training substrate and CBBO-1s as a validation/feature-discovery instrument. The exploratory statistics are not a trained or causally validated entry signal; a substrate change would require a separately owner-authorized experiment.",
+    "exit": "Use CBBO-1s to construct/calibrate exit and floor labels for the available 2025+ window, while retaining minute history for regime breadth only after applying a measured distortion model. An unadjusted minute-only exit campaign is not supported.",
+    "shorter_denser_vs_longer_coarser_tradeoff": "CBBO-1s is denser but begins 2025-02-20; minute data can reach 2022 and spans more regimes. Prefer a hybrid evidence design over discarding either axis.",
+    "strongest_absolute_exploratory_spearman": 0.6557844674684776,
+    "strongest_exploratory_pair": {
+      "claim": "descriptive_only_no_model",
+      "feature": "bbo_change_count",
+      "moneyness_band": null,
+      "premium_band": "cheap_le_1",
+      "rows": 516814,
+      "spearman": 0.6557844674684776,
+      "stratification": "premium_band",
+      "target": "next_minute_bid_over_current_ask_return",
+      "top_minus_bottom_quintile_mean": 0.3244199338957303
+    }
+  },
+  "verdict": {
+    "all_checks_pass": false,
+    "checks": {
+      "entry_fill_distortion": false,
+      "exit_fill_distortion": false,
+      "floor_trigger_gap": false,
+      "forward_fill": true,
+      "hidden_adverse_excursion_magnitude": false,
+      "hidden_adverse_excursion_rate": false,
+      "hidden_floor_cross": true,
+      "one_second_coverage": true
+    },
+    "minute_resolution_exit_floor_validation": "NOT_TRUSTWORTHY_WITHOUT_HIGHRES_VALIDATION_OR_ADJUSTMENT",
+    "required_action": "Calibrate or replace minute fill/floor assumptions using CBBO-1s evidence before the exit campaign; do not claim intraminute floor protection from minute paths."
+  }
+}

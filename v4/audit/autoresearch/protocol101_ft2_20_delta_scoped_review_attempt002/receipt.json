@@ -1,0 +1,179 @@
+{
+  "schema_version": "Protocol101FT220DeltaScopedReviewReceiptV2",
+  "goal": "FT2-DELTA-SCOPED-FRESH-SEAT-REVIEW",
+  "attempt": "002",
+  "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "baseline_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+  "diff_manifest": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_fixes_attempt001/diff_manifest.json",
+    "sha256": "2aa1ff2d307d9eccdd483484cde882dee230cc2703869b05dc8561eb41f18ee7",
+    "changed_file_count": 41,
+    "after_hash_matches": 41,
+    "after_hash_mismatches": 0
+  },
+  "scope": {
+    "law": "Exactly the repair diff-manifest changed files and JSON pointers plus direct authority, receipt, semantic-lineage, graph, test, trading-game, variance, MDE, and friction-population consequences.",
+    "full_review": false,
+    "three_fresh_isolated_seats_completed": true,
+    "controller_assembled_after_all_seats_completed": true,
+    "ft2_21_approved_or_routed": false
+  },
+  "mandatory_pins": {
+    "consolidated_authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+    "graph_v2_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+    "matched_random_generator_sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+    "rlac_spec_sha256": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09",
+    "rerun002_raw_receipt_sha256": "17cc9983c38ef4c75b8fece0cd67d4662e559f84a27de8eba2a84a34f85d96ac",
+    "all_exact": true
+  },
+  "producer_packet": {
+    "report_sha256": "b8d2ee4fbae66be7b0abb0de9464d54954dcaa42d3a48b1c062018b0b0b90685",
+    "receipt_sha256": "f7c01162f8637b70e5d0492495ce870a6172d5f91713478b345e47d70d1bf532",
+    "aggregate_receipt_raw_sha256": "4532e1829b8cb99320de474fe96b204b3c99ab85bd519bb49c397a49a266d4db",
+    "aggregate_receipt_canonical_self_hash": "f7ae2a4aa768fa441220fad2945e9a7d712a018978e1fe6bd041a477046e8c02"
+  },
+  "packet_receipt_chain": {
+    "packet_receipts": {
+      "FT2-04": {
+        "receipt_sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe",
+        "declared_deliverables_checked": 7,
+        "mismatches": 0
+      },
+      "FT2-05": {
+        "receipt_sha256": "ecaa16c923d4834c314816bca471597e09b9668ec5f1fe76d956be9c9d97d168",
+        "declared_deliverables_checked": 117,
+        "mismatches": 0
+      },
+      "FT2-08": {
+        "receipt_sha256": "c4c9c729c8d19ae76f827ed280f66e7ee1143f7f51fd5b753615d6d968adb726",
+        "declared_deliverables_checked": 14,
+        "mismatches": 0
+      },
+      "FT2-10": {
+        "receipt_sha256": "b0504ea7d78c041ed066b238229fd5bdda5584da2d1a0854adeefba91b63a3a2",
+        "declared_deliverables_checked": 9,
+        "mismatches": 0
+      },
+      "FT2-11": {
+        "receipt_sha256": "3cb4693185bc2d1c77c5ecea38817766822b684b33679ba021c0446fade1534c",
+        "declared_deliverables_checked": 10,
+        "mismatches": 0
+      }
+    },
+    "total_declared_deliverables_checked": 157,
+    "total_mismatches": 0,
+    "authority_pin_match_count": 5,
+    "current_semantic_path_hash_mismatches": 0,
+    "preserved_ft205_checkpoint_artifacts_checked": 90,
+    "preserved_ft205_checkpoint_artifact_mismatches": 0
+  },
+  "per_seat_receipts": {
+    "seat1_trading_realism": {
+      "review_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat1_trading_realism/review.md",
+      "review_sha256": "60ab47b33eed80a72ed5d5c7547680c828d7a2aa4b1c996593967ce03cce6203",
+      "receipt_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat1_trading_realism/receipt.json",
+      "receipt_sha256": "d310b5577a13d65017e813c7c8922f9fd1fc16bcf23c7b05b1242583584386bd",
+      "declared_deliverables_checked": 7,
+      "deliverable_mismatches": 0,
+      "verdict": "DELTA_REVIEW_CLEAN"
+    },
+    "seat2_ml_statistics": {
+      "review_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat2_ml_statistics/review.md",
+      "review_sha256": "add6d52c2e4d78bad3a809638b71922ece284b163616a7d08ee659206ec385af",
+      "receipt_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat2_ml_statistics/receipt.json",
+      "receipt_sha256": "ff38f4c7ecd0cbcf09589004f919415a802cd9dbee2c2dcc8d531b89a0372c2c",
+      "declared_deliverables_checked": 1,
+      "deliverable_mismatches": 0,
+      "verdict": "DELTA_REVIEW_CLEAN"
+    },
+    "seat3_live_parity": {
+      "review_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat3_live_parity/review.md",
+      "review_sha256": "9ef638202252fa59eca3326cb8048793a6a587721b9d52cde758dc15cedee0ce",
+      "receipt_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat3_live_parity/receipt.json",
+      "receipt_sha256": "6436cf617746d1dc905d8248141889c3e88801e5363517efd3d75f875122e247",
+      "declared_deliverables_checked": 1,
+      "deliverable_mismatches": 0,
+      "verdict": "DELTA_REVIEW_CLEAN"
+    }
+  },
+  "mechanical_gates": {
+    "bounded_fix_checker": {
+      "status": "PASS",
+      "passed": 20,
+      "total": 20
+    },
+    "targeted_ft205_pytest": {
+      "status": "PASS",
+      "passed": 12,
+      "total": 12
+    },
+    "t1_rlac_pipeline": {
+      "status": "PASS",
+      "passed": 5,
+      "total": 5,
+      "composer_swap_target_bytes_identical": true,
+      "planted_circularity_detected": true
+    },
+    "t3_t4_census_v5": {
+      "status": "PASS",
+      "passed": 11,
+      "total": 11
+    },
+    "t6_private_copy_regression": {
+      "status": "PASS",
+      "passed": 4,
+      "total": 4,
+      "ft2_08_checks_passed": 22,
+      "ft2_08_checks_total": 22,
+      "terminal_fixtures_passed": 3,
+      "studentized_se_fixture_passed": true
+    },
+    "graph": {
+      "status": "PASS",
+      "nodes": 47,
+      "edges": 104,
+      "reachable_from_reset": 47
+    }
+  },
+  "repair_verdicts": {
+    "FT2-DELTA-B1": "FIXED",
+    "FT2-DELTA-B2": "FIXED",
+    "FT2-DELTA-B3": "FIXED",
+    "FT2-DELTA-D1": "FIXED",
+    "FT2-DELTA-D2": "DOCUMENTATION_ONLY_UNCHANGED"
+  },
+  "blocking_findings": [],
+  "documentation_only_observations": [
+    {
+      "finding_id": "FT2-DELTA-D2",
+      "title": "The immutable consolidated authority retains a duplicated historical A4 amendment label.",
+      "blocking": false
+    }
+  ],
+  "side_effects": {
+    "broker_access": false,
+    "broker_recorder_access": false,
+    "paid_data_access": false,
+    "protected_outer_holdout_access": false,
+    "live_path_execution": false,
+    "real_model_training_or_fitting": false,
+    "threshold_tuning": false,
+    "simulator_v5_modified": false,
+    "runtime_flags_modified": false,
+    "paper_default_modified": false,
+    "promotion_state_modified": false,
+    "launchd_modified": false,
+    "orders_submitted": false,
+    "reviewed_artifacts_modified": false,
+    "seat_cross_read_before_completion": false
+  },
+  "controller_deliverables": {
+    "joined_review.md": "422a26226c44af206d2c401c3fe3ae37dcde3771c8deb624dfbc45617ce7ac07"
+  },
+  "verdict": "DELTA_REVIEW_CLEAN",
+  "highest_allowed_claim": "The manifest-bounded repair has no remaining in-scope blocking defect under three fresh independent delta-scoped reviews.",
+  "routing_recommendation": "STOP_FOR_OWNER_DECISION; do not approve or route FT2-21.",
+  "next": "STOP_FOR_OWNER_DECISION"
+}

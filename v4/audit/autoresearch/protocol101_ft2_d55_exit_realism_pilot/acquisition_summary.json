@@ -1,0 +1,236 @@
+{
+  "actual_vendor_invoice_cost_usd": "UNKNOWN",
+  "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "batch_fallback_jobs": {
+    "count": 2,
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/batch_fallback_jobs.json",
+    "sha256": "fd3285e46732248db3083db2bd60db8e049a7e81e59a05be84a5f84649e69acc"
+  },
+  "bytes": {
+    "dbn": 2849255398,
+    "parquet": 1436066614
+  },
+  "completed_at_utc": "2026-07-31T00:19:45.662269+00:00",
+  "cost_receipt": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/cost_receipt.json",
+    "sha256": "5270373e24a0078493990aabb466193466b6de7c16e519c241dca4dae1c3236d"
+  },
+  "cost_receipt_total_usd": 24.115594923494996,
+  "cost_reconciliation_delta_usd": 3.552713678800501e-15,
+  "dataset": "OPRA.PILLAR",
+  "estimated_cost_usd": 24.115594923495,
+  "failed_attempt_billable_cost_upper_bound_usd": 2.997483360816,
+  "failed_download_attempts": {
+    "count": 22,
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/failed_download_attempts.json",
+    "sha256": "10d93495d3f69c35f467d54b7ca312ad6f97ab6160957950e2aa2b697e2451c3"
+  },
+  "goal": "FT2-D55-EXIT-REALISM-PILOT",
+  "hard_cap_usd": 30.0,
+  "plan": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/acquisition_plan.json",
+    "sha256": "d2cb0f774aa7c4a6e7cec715de67c6ff45e2ba3197c6cb0152ee3eccf25ce72c"
+  },
+  "raw_root": "v4/raw/opra_1s_pilot",
+  "requested_symbol_sessions": 15570,
+  "returned_symbols": 15570,
+  "rows": 161927326,
+  "schema": "cbbo-1s",
+  "schema_version": "Protocol101FT2D55AcquisitionSummaryV1",
+  "selected_dates": [
+    "2025-02-20",
+    "2025-03-03",
+    "2025-03-13",
+    "2025-03-24",
+    "2025-04-03",
+    "2025-04-14",
+    "2025-04-25",
+    "2025-05-06",
+    "2025-05-16",
+    "2025-05-28",
+    "2025-06-09",
+    "2025-06-18",
+    "2025-07-01",
+    "2025-07-11",
+    "2025-07-23",
+    "2025-08-01",
+    "2025-08-13",
+    "2025-08-22",
+    "2025-09-04",
+    "2025-09-15",
+    "2025-09-25",
+    "2025-10-06",
+    "2025-10-16",
+    "2025-10-27",
+    "2025-11-06",
+    "2025-11-17",
+    "2025-11-28",
+    "2025-12-09",
+    "2025-12-19",
+    "2025-12-31"
+  ],
+  "selected_sessions": 30,
+  "session_manifests": [
+    {
+      "date": "2025-02-20",
+      "path": "v4/raw/opra_1s_pilot/2025-02-20/manifest.json",
+      "sha256": "d98749d5ae9b1ee41f1bb05fa9f68ccd08ec81137f90018fef1a513bb3129399"
+    },
+    {
+      "date": "2025-03-03",
+      "path": "v4/raw/opra_1s_pilot/2025-03-03/manifest.json",
+      "sha256": "ce6d5cc0e1d06f405d884fcc9f10dc082aff010854a757fdb32ef61545e0f3de"
+    },
+    {
+      "date": "2025-03-13",
+      "path": "v4/raw/opra_1s_pilot/2025-03-13/manifest.json",
+      "sha256": "dbe066ff6ec3892493e37e415571c4a05c81f1eee98bcb866f64524a61854c9d"
+    },
+    {
+      "date": "2025-03-24",
+      "path": "v4/raw/opra_1s_pilot/2025-03-24/manifest.json",
+      "sha256": "6160bdfc216385c884669c63f71e1b3e129b17b1c6c5a8039b182aae353c6d04"
+    },
+    {
+      "date": "2025-04-03",
+      "path": "v4/raw/opra_1s_pilot/2025-04-03/manifest.json",
+      "sha256": "7c3a2e819b79e98e39441bf21d072f6d259da841ec58f8a80ec82679ea6fc4ee"
+    },
+    {
+      "date": "2025-04-14",
+      "path": "v4/raw/opra_1s_pilot/2025-04-14/manifest.json",
+      "sha256": "ab5591e9cdf9ddde06e7240b89e4b2b322184b649572aa405c6fe4f6be1cd991"
+    },
+    {
+      "date": "2025-04-25",
+      "path": "v4/raw/opra_1s_pilot/2025-04-25/manifest.json",
+      "sha256": "368b2d68e8c3b4f4daab2dbcf313d7473d4585af4c86b902df687b4408a33ed9"
+    },
+    {
+      "date": "2025-05-06",
+      "path": "v4/raw/opra_1s_pilot/2025-05-06/manifest.json",
+      "sha256": "ac5621819c89011ecaa6fb2801bd8d39ccc626fae4c58ec567484e01824ab4ba"
+    },
+    {
+      "date": "2025-05-16",
+      "path": "v4/raw/opra_1s_pilot/2025-05-16/manifest.json",
+      "sha256": "0d25bcf24a894355975099136adc060d1a4b893b885e8b6f1710c4108544df9c"
+    },
+    {
+      "date": "2025-05-28",
+      "path": "v4/raw/opra_1s_pilot/2025-05-28/manifest.json",
+      "sha256": "770e0e0cd5365bb6c763e6fe4843025ceba9a7a7bd687528f58022751130aa9a"
+    },
+    {
+      "date": "2025-06-09",
+      "path": "v4/raw/opra_1s_pilot/2025-06-09/manifest.json",
+      "sha256": "a87a583a27ae0423021c3e4d63297ae966745623189b8f8e2b8b4c96d03609db"
+    },
+    {
+      "date": "2025-06-18",
+      "path": "v4/raw/opra_1s_pilot/2025-06-18/manifest.json",
+      "sha256": "07fa20a466c16e71369e0dd91f2ea094f32a144351062fb0caace4e0dac6270c"
+    },
+    {
+      "date": "2025-07-01",
+      "path": "v4/raw/opra_1s_pilot/2025-07-01/manifest.json",
+      "sha256": "82a1a7b9db4ab3c3d97182973c60b60017998085d683bc2b78e5b5fda653f9a2"
+    },
+    {
+      "date": "2025-07-11",
+      "path": "v4/raw/opra_1s_pilot/2025-07-11/manifest.json",
+      "sha256": "27ccc474be31b62ece229331990886f3f14544e8b98e33b32b768c79b91590db"
+    },
+    {
+      "date": "2025-07-23",
+      "path": "v4/raw/opra_1s_pilot/2025-07-23/manifest.json",
+      "sha256": "f455bf22e2dbba9da9f2bd53c86f6e1a5d1dfe3836eb5b6811b0fb5c71caa381"
+    },
+    {
+      "date": "2025-08-01",
+      "path": "v4/raw/opra_1s_pilot/2025-08-01/manifest.json",
+      "sha256": "1b6f1169d5ac03db2a21ad94addb0771f806e7eddf0e6e839f78b63317343153"
+    },
+    {
+      "date": "2025-08-13",
+      "path": "v4/raw/opra_1s_pilot/2025-08-13/manifest.json",
+      "sha256": "b391bf974950efa6d72a761cbfba64f8571432e81f75950e8debab2a3582762c"
+    },
+    {
+      "date": "2025-08-22",
+      "path": "v4/raw/opra_1s_pilot/2025-08-22/manifest.json",
+      "sha256": "70639c3acac592a538d6e797b320948202e46c79528c610eaa958e17c1bfece6"
+    },
+    {
+      "date": "2025-09-04",
+      "path": "v4/raw/opra_1s_pilot/2025-09-04/manifest.json",
+      "sha256": "b6687e44b5f37cec48e3704fe5cb27d0924be2f02a25b19ca37c61db3cc5523c"
+    },
+    {
+      "date": "2025-09-15",
+      "path": "v4/raw/opra_1s_pilot/2025-09-15/manifest.json",
+      "sha256": "31d2dfff16c7cd1be58ccb7e4d24c478622747b7f0d6e346f62650b739d4c6d0"
+    },
+    {
+      "date": "2025-09-25",
+      "path": "v4/raw/opra_1s_pilot/2025-09-25/manifest.json",
+      "sha256": "d362d3bac28ee070c2cc2d7e02a89b7203e5f650dd8edb961cc5db677d28dee8"
+    },
+    {
+      "date": "2025-10-06",
+      "path": "v4/raw/opra_1s_pilot/2025-10-06/manifest.json",
+      "sha256": "daebf4a291cf93b23b4897ccfe71458d92555251fd5de0269e15e55c0bea3725"
+    },
+    {
+      "date": "2025-10-16",
+      "path": "v4/raw/opra_1s_pilot/2025-10-16/manifest.json",
+      "sha256": "46f52c0b5894522200946c2cf4e8bc19c4f5b52c3b2fb14ffaecd101bce45d64"
+    },
+    {
+      "date": "2025-10-27",
+      "path": "v4/raw/opra_1s_pilot/2025-10-27/manifest.json",
+      "sha256": "f1232e17be6c83d8ed7808818c22e181338bf3127baa40675dfdb8acf2e42179"
+    },
+    {
+      "date": "2025-11-06",
+      "path": "v4/raw/opra_1s_pilot/2025-11-06/manifest.json",
+      "sha256": "faffb1487f6bd9e4885e233c45d979cc11e4145b108155733bfd681f3410f076"
+    },
+    {
+      "date": "2025-11-17",
+      "path": "v4/raw/opra_1s_pilot/2025-11-17/manifest.json",
+      "sha256": "96dbf944466409b4e192e6433b3fabac79e7fdf7f4104341074bce60521a0c96"
+    },
+    {
+      "date": "2025-11-28",
+      "path": "v4/raw/opra_1s_pilot/2025-11-28/manifest.json",
+      "sha256": "ca205feb1b20b22963d17db7d6ce0978ac37126e59de032c08d2f35dc4496ebf"
+    },
+    {
+      "date": "2025-12-09",
+      "path": "v4/raw/opra_1s_pilot/2025-12-09/manifest.json",
+      "sha256": "bad7ed46ef987759de3ef36aeec0c841c7483c21aa661ee3594447b4bd38bdb9"
+    },
+    {
+      "date": "2025-12-19",
+      "path": "v4/raw/opra_1s_pilot/2025-12-19/manifest.json",
+      "sha256": "ec815bad26b15189955f16e737bb0a8322557b8ac26977fb29dd20c115233559"
+    },
+    {
+      "date": "2025-12-31",
+      "path": "v4/raw/opra_1s_pilot/2025-12-31/manifest.json",
+      "sha256": "7a0ec59c4b19cc2f6c68870100acb3c8c1e3c0e15a7b7a7237687a45b4b8a4c5"
+    }
+  ],
+  "side_effects": {
+    "broker_contacted": false,
+    "census_modified": false,
+    "graph_modified": false,
+    "model_training": false,
+    "paid_download_performed": true,
+    "protected_data_accessed": false,
+    "runtime_or_promotion_modified": false,
+    "signed_contract_modified": false
+  },
+  "worst_case_estimated_spend_usd": 27.113078284310994
+}

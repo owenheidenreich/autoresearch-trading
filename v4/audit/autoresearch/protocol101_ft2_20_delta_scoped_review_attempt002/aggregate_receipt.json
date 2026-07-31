@@ -1,0 +1,64 @@
+{
+  "schema_version": "Protocol101FT220DeltaScopedReviewAggregateReceiptV2",
+  "goal": "FT2-DELTA-SCOPED-FRESH-SEAT-REVIEW",
+  "attempt": "002",
+  "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "baseline_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+  "diff_manifest": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_fixes_attempt001/diff_manifest.json",
+    "sha256": "2aa1ff2d307d9eccdd483484cde882dee230cc2703869b05dc8561eb41f18ee7",
+    "changed_file_count": 41
+  },
+  "producer_packet": {
+    "receipt_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_fixes_attempt001/receipt.json",
+    "receipt_sha256": "f7c01162f8637b70e5d0492495ce870a6172d5f91713478b345e47d70d1bf532",
+    "aggregate_receipt_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_fixes_attempt001/aggregate_receipt.json",
+    "aggregate_receipt_raw_sha256": "4532e1829b8cb99320de474fe96b204b3c99ab85bd519bb49c397a49a266d4db",
+    "aggregate_receipt_canonical_self_hash": "f7ae2a4aa768fa441220fad2945e9a7d712a018978e1fe6bd041a477046e8c02"
+  },
+  "seat_receipts": {
+    "seat1_trading_realism": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat1_trading_realism/receipt.json",
+      "sha256": "d310b5577a13d65017e813c7c8922f9fd1fc16bcf23c7b05b1242583584386bd",
+      "verdict": "DELTA_REVIEW_CLEAN"
+    },
+    "seat2_ml_statistics": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat2_ml_statistics/receipt.json",
+      "sha256": "ff38f4c7ecd0cbcf09589004f919415a802cd9dbee2c2dcc8d531b89a0372c2c",
+      "verdict": "DELTA_REVIEW_CLEAN"
+    },
+    "seat3_live_parity": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat3_live_parity/receipt.json",
+      "sha256": "6436cf617746d1dc905d8248141889c3e88801e5363517efd3d75f875122e247",
+      "verdict": "DELTA_REVIEW_CLEAN"
+    }
+  },
+  "controller_receipt": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/receipt.json",
+    "sha256": "c1937130fa2822aecb14fb34da120d13fba274084d6659df3636fd4ea1565b6f"
+  },
+  "joined_review": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/joined_review.md",
+    "sha256": "422a26226c44af206d2c401c3fe3ae37dcde3771c8deb624dfbc45617ce7ac07"
+  },
+  "seat_isolation": {
+    "all_three_completed_before_controller_read": true,
+    "each_seat_wrote_only_its_private_directory": true,
+    "seat_cross_read_before_completion": false,
+    "seat_declared_deliverable_hashes_reproduced": true,
+    "seat_declared_deliverables_checked": 9,
+    "seat_declared_deliverable_mismatches": 0
+  },
+  "repair_dispositions": {
+    "FT2-DELTA-B1": "FIXED",
+    "FT2-DELTA-B2": "FIXED",
+    "FT2-DELTA-B3": "FIXED",
+    "FT2-DELTA-D1": "FIXED",
+    "FT2-DELTA-D2": "DOCUMENTATION_ONLY_UNCHANGED"
+  },
+  "verdict": "DELTA_REVIEW_CLEAN",
+  "routing_recommendation": "STOP_FOR_OWNER_DECISION; do not approve or route FT2-21.",
+  "next": "STOP_FOR_OWNER_DECISION",
+  "self_hash_method": "SHA-256 of UTF-8 canonical compact JSON with keys sorted lexicographically, separators ',' and ':', ensure_ascii=false, no trailing newline, and the top-level self_hash field omitted",
+  "self_hash": "b076e2cc2ece6934d0f0d34de96a9e7f64b53628af2d895710d0596177e58e0d"
+}

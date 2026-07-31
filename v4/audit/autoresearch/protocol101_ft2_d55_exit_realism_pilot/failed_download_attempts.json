@@ -1,0 +1,701 @@
+{
+  "attempts": [
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3830,
+          "path": "v4/raw/opra_1s_pilot/2025-02-20/failed_attempts/attempt01_20260730T191647644190Z_2025-02-20.partial.cbbo-1s.dbn.zst",
+          "sha256": "ef7c448508d9074d9c9e1f97b50d4377257222fc5f3089a40ce9b6b5967cb092",
+          "stream_billable_bound": {
+            "compressed_bytes": 3830,
+            "declared_first_frame_content_size": 29924,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 29924,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 5.9848e-05,
+      "billable_uncompressed_bytes_upper_bound": 29924,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-02-20",
+      "error_message": "A prior identical get_range invocation ended before a session manifest could be sealed.",
+      "error_type": "OrphanedPartialFromPriorInvocation",
+      "preflight_session_cost_usd": 0.68601757288,
+      "recorded_at_utc": "2026-07-30T19:16:47.644534+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 382,
+      "symbols_sha256": "0ff5195c20024e704d7a96876e9c2510f94219b87bffb0e01e522380483332cf"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-04-14/failed_attempts/attempt01_20260730T192751955190Z_2025-04-14.partial.cbbo-1s.dbn.zst",
+          "sha256": "2524a0e0dafc7981700c39c5646efff3c208ace0c42cfaf5a44d1bfea4adc11a",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 44900,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 44900,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 8.98e-05,
+      "billable_uncompressed_bytes_upper_bound": 44900,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-04-14",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.993238687515,
+      "recorded_at_utc": "2026-07-30T19:27:51.956018+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 574,
+      "symbols_sha256": "01ad6d2d6811ec78619376d8bed8e4bd99b031fe9f5adc3549b4e5fe5a9422df"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-04-14/failed_attempts/attempt02_20260730T192857223576Z_2025-04-14.partial.cbbo-1s.dbn.zst",
+          "sha256": "2524a0e0dafc7981700c39c5646efff3c208ace0c42cfaf5a44d1bfea4adc11a",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 44900,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 44900,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 2,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 8.98e-05,
+      "billable_uncompressed_bytes_upper_bound": 44900,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-04-14",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.993238687515,
+      "recorded_at_utc": "2026-07-30T19:28:57.224338+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 574,
+      "symbols_sha256": "01ad6d2d6811ec78619376d8bed8e4bd99b031fe9f5adc3549b4e5fe5a9422df"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 7925,
+          "path": "v4/raw/opra_1s_pilot/2025-05-16/failed_attempts/attempt01_20260730T193908409781Z_2025-05-16.partial.cbbo-1s.dbn.zst",
+          "sha256": "36d8b65a27dfbb930dff3b1eda4851ada925762451669651fd58c6c811f9f3ef",
+          "stream_billable_bound": {
+            "compressed_bytes": 7925,
+            "declared_first_frame_content_size": 77192,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 77192,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 0.000154384,
+      "billable_uncompressed_bytes_upper_bound": 77192,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-05-16",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.918809175491,
+      "recorded_at_utc": "2026-07-30T19:39:08.410888+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 988,
+      "symbols_sha256": "6d51fda80441ecac8a4774343efec43a798192e410ef1c0f15248c0be85874d1"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 7925,
+          "path": "v4/raw/opra_1s_pilot/2025-05-16/failed_attempts/attempt02_20260730T194011578055Z_2025-05-16.partial.cbbo-1s.dbn.zst",
+          "sha256": "36d8b65a27dfbb930dff3b1eda4851ada925762451669651fd58c6c811f9f3ef",
+          "stream_billable_bound": {
+            "compressed_bytes": 7925,
+            "declared_first_frame_content_size": 77192,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 77192,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 2,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 0.000154384,
+      "billable_uncompressed_bytes_upper_bound": 77192,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-05-16",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.918809175491,
+      "recorded_at_utc": "2026-07-30T19:40:11.578595+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 988,
+      "symbols_sha256": "6d51fda80441ecac8a4774343efec43a798192e410ef1c0f15248c0be85874d1"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-05-28/failed_attempts/attempt01_20260730T194221974081Z_2025-05-28.partial.cbbo-1s.dbn.zst",
+          "sha256": "6741b79f632976e98490fe0d1c416b21495e0c9e30f2f3ff08c565d7340bc683",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 31796,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 31796,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.3592e-05,
+      "billable_uncompressed_bytes_upper_bound": 31796,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-05-28",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.424106419086,
+      "recorded_at_utc": "2026-07-30T19:42:21.974836+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 406,
+      "symbols_sha256": "587c05ebc24b2024d684ce4c1d5cc1df802a5e87fcd95b6f2bce05ff7cc6bc84"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-05-28/failed_attempts/attempt02_20260730T194325766279Z_2025-05-28.partial.cbbo-1s.dbn.zst",
+          "sha256": "6741b79f632976e98490fe0d1c416b21495e0c9e30f2f3ff08c565d7340bc683",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 31796,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 31796,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 2,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.3592e-05,
+      "billable_uncompressed_bytes_upper_bound": 31796,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-05-28",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.424106419086,
+      "recorded_at_utc": "2026-07-30T19:43:25.767045+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 406,
+      "symbols_sha256": "587c05ebc24b2024d684ce4c1d5cc1df802a5e87fcd95b6f2bce05ff7cc6bc84"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-06-09/failed_attempts/attempt01_20260730T194458109812Z_2025-06-09.partial.cbbo-1s.dbn.zst",
+          "sha256": "c9819d99fc611283076f5f87629fb8f3b14e90e9f06cea28f5c823cf6ae12bfb",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 29144,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 29144,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 5.8288e-05,
+      "billable_uncompressed_bytes_upper_bound": 29144,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-06-09",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.454111099243,
+      "recorded_at_utc": "2026-07-30T19:44:58.110747+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 372,
+      "symbols_sha256": "3aeb7ae53ad0f1dec959beaa36233c588207bc6fa296ad7245820b1b6e83bc0b"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-07-01/failed_attempts/attempt01_20260730T194740780963Z_2025-07-01.partial.cbbo-1s.dbn.zst",
+          "sha256": "22dd998e717f54a6f3a225bc2dd6254669bfd885ebea099e659b5a0922217ec7",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 31640,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 31640,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.328e-05,
+      "billable_uncompressed_bytes_upper_bound": 31640,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-07-01",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.793949961662,
+      "recorded_at_utc": "2026-07-30T19:47:40.781918+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 404,
+      "symbols_sha256": "30f5326db339956d3cd72000d5c33e0b5dc16bc65c0e4da2ff5bc98c73eeb0f7"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-07-01/failed_attempts/attempt02_20260730T195309000395Z_2025-07-01.partial.cbbo-1s.dbn.zst",
+          "sha256": "22dd998e717f54a6f3a225bc2dd6254669bfd885ebea099e659b5a0922217ec7",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 31640,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 31640,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 2,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.328e-05,
+      "billable_uncompressed_bytes_upper_bound": 31640,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-07-01",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.793949961662,
+      "recorded_at_utc": "2026-07-30T19:53:09.001010+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 404,
+      "symbols_sha256": "30f5326db339956d3cd72000d5c33e0b5dc16bc65c0e4da2ff5bc98c73eeb0f7"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-08-01/failed_attempts/attempt01_20260730T195712372132Z_2025-08-01.partial.cbbo-1s.dbn.zst",
+          "sha256": "2602f00ed8118afa2567415245bedb7b26d5ab28b303d27e514e730d8b4b5787",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 39128,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 39128,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 7.8256e-05,
+      "billable_uncompressed_bytes_upper_bound": 39128,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-08-01",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.896624922752,
+      "recorded_at_utc": "2026-07-30T19:57:12.372796+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 500,
+      "symbols_sha256": "359248e59a7bf4242227851e2b9be412b03641f4b06e1262b3aebf7952e56097"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-09-15/failed_attempts/attempt01_20260730T200427695161Z_2025-09-15.partial.cbbo-1s.dbn.zst",
+          "sha256": "4e9f2764ecb04a19f09414c07863d0bf04603032c064c13a72d3047f69900209",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 33044,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 33044,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.6088e-05,
+      "billable_uncompressed_bytes_upper_bound": 33044,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-09-15",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.490618795156,
+      "recorded_at_utc": "2026-07-30T20:04:27.695724+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 422,
+      "symbols_sha256": "bb30e85d29eb1381bee1be9859e62f36fedf17b13ad2179191fa4ca664ecff46"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-09-25/failed_attempts/attempt01_20260730T200626747966Z_2025-09-25.partial.cbbo-1s.dbn.zst",
+          "sha256": "c49d4169264825b25937235615bd2fbe9b8cf03bd3e55384d9f8585ed2978bef",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 33668,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 33668,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.7336e-05,
+      "billable_uncompressed_bytes_upper_bound": 33668,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-09-25",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.575674772263,
+      "recorded_at_utc": "2026-07-30T20:06:26.748841+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 430,
+      "symbols_sha256": "754c74ec30a468086512b5d1da58f68f3f9d37f2b80121c387d60a6403d82082"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-10-06/failed_attempts/attempt01_20260730T200831451441Z_2025-10-06.partial.cbbo-1s.dbn.zst",
+          "sha256": "e06167a877d549b758c26af333e0769062849fa10e3fb2a6635168ae32e9d7c2",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 33668,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 33668,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.7336e-05,
+      "billable_uncompressed_bytes_upper_bound": 33668,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-10-06",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.518133193254,
+      "recorded_at_utc": "2026-07-30T20:08:31.452247+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 430,
+      "symbols_sha256": "991a514e24479b680c8e560da28a21a8b4b9bc671ef72647206656114234dbbb"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-10-27/failed_attempts/attempt01_20260730T201446049771Z_2025-10-27.partial.cbbo-1s.dbn.zst",
+          "sha256": "7499a6146534d172dbfae386975ace67bf83574a25d527a35517c03a5f7dc943",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 32420,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 32420,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.484e-05,
+      "billable_uncompressed_bytes_upper_bound": 32420,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-10-27",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.532178431749,
+      "recorded_at_utc": "2026-07-30T20:14:46.050455+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 414,
+      "symbols_sha256": "fb14320fc02aa55454e72737b8eecca09d0e7916f6b5114f49927656244a060a"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-10-27/failed_attempts/attempt02_20260730T201548421949Z_2025-10-27.partial.cbbo-1s.dbn.zst",
+          "sha256": "7499a6146534d172dbfae386975ace67bf83574a25d527a35517c03a5f7dc943",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 32420,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 32420,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 2,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.484e-05,
+      "billable_uncompressed_bytes_upper_bound": 32420,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-10-27",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.532178431749,
+      "recorded_at_utc": "2026-07-30T20:15:48.422606+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 414,
+      "symbols_sha256": "fb14320fc02aa55454e72737b8eecca09d0e7916f6b5114f49927656244a060a"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 72596472,
+          "path": "v4/raw/opra_1s_pilot/2025-12-09/failed_attempts/attempt01_20260730T203910151429Z_2025-12-09.partial.cbbo-1s.dbn.zst",
+          "sha256": "5281627c3912e5ac7a63f9947da5bfe0e9aae3095db3936a8fd3b3281e0201ed",
+          "stream_billable_bound": {
+            "compressed_bytes": 72596472,
+            "declared_first_frame_content_size": 34760,
+            "eligible_for_byte_bound": false,
+            "first_frame_complete": true,
+            "method": "not_proven_header_only",
+            "uncompressed_billable_bytes_upper_bound": null,
+            "zstd_magic_count": 86
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "full_preflight_session_cost_fallback",
+      "billable_cost_upper_bound_usd": 0.660766363144,
+      "billable_uncompressed_bytes_upper_bound": null,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-12-09",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.660766363144,
+      "recorded_at_utc": "2026-07-30T20:39:10.212850+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 444,
+      "symbols_sha256": "90283b0f8686b648b6035cf68281c6ae854df0f72a296e0b63b5493abc8640ab"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 3829,
+          "path": "v4/raw/opra_1s_pilot/2025-12-09/failed_attempts/attempt02_20260730T204034239013Z_2025-12-09.partial.cbbo-1s.dbn.zst",
+          "sha256": "5f295e4af9002c36abe2de6e5a1e405b355da432dd931b48dbfb848563852a9a",
+          "stream_billable_bound": {
+            "compressed_bytes": 3829,
+            "declared_first_frame_content_size": 34760,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 34760,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 2,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 6.952e-05,
+      "billable_uncompressed_bytes_upper_bound": 34760,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-12-09",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.660766363144,
+      "recorded_at_utc": "2026-07-30T20:40:34.239650+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 444,
+      "symbols_sha256": "90283b0f8686b648b6035cf68281c6ae854df0f72a296e0b63b5493abc8640ab"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 58830698,
+          "path": "v4/raw/opra_1s_pilot/2025-12-09/failed_attempts/attempt03_20260730T205651905725Z_2025-12-09.partial.cbbo-1s.dbn.zst",
+          "sha256": "eb689afbe85777c8de120fb63d19e307d346bafc6334bc59ac4395e62765b7b8",
+          "stream_billable_bound": {
+            "compressed_bytes": 58830698,
+            "declared_first_frame_content_size": 34760,
+            "eligible_for_byte_bound": false,
+            "first_frame_complete": true,
+            "method": "not_proven_header_only",
+            "uncompressed_billable_bytes_upper_bound": null,
+            "zstd_magic_count": 69
+          }
+        }
+      ],
+      "attempt_number": 3,
+      "billable_cost_method": "full_preflight_session_cost_fallback",
+      "billable_cost_upper_bound_usd": 0.660766363144,
+      "billable_uncompressed_bytes_upper_bound": null,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-12-09",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 0.660766363144,
+      "recorded_at_utc": "2026-07-30T20:56:51.951253+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 444,
+      "symbols_sha256": "90283b0f8686b648b6035cf68281c6ae854df0f72a296e0b63b5493abc8640ab"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 40089885,
+          "path": "v4/raw/opra_1s_pilot/2025-12-19/failed_attempts/attempt01_20260730T214806727490Z_2025-12-19.partial.cbbo-1s.dbn.zst",
+          "sha256": "854edece19427e8099559b21ffc1e1ea65238bb22cd2bdd4f11ce5429c681887",
+          "stream_billable_bound": {
+            "compressed_bytes": 40089885,
+            "declared_first_frame_content_size": 70484,
+            "eligible_for_byte_bound": false,
+            "first_frame_complete": true,
+            "method": "not_proven_header_only",
+            "uncompressed_billable_bytes_upper_bound": null,
+            "zstd_magic_count": 39
+          }
+        }
+      ],
+      "attempt_number": 1,
+      "billable_cost_method": "full_preflight_session_cost_fallback",
+      "billable_cost_upper_bound_usd": 1.674330234528,
+      "billable_uncompressed_bytes_upper_bound": null,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-12-19",
+      "error_message": "Error streaming response: ('Connection broken: IncompleteRead(987 bytes read, 3109 more expected)', IncompleteRead(987 bytes read, 3109 more expected))",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 1.674330234528,
+      "recorded_at_utc": "2026-07-30T21:48:06.752813+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 902,
+      "symbols_sha256": "89e6a4bbd8300c76ececb34a12cd3ec4af6ce1b50fd28651f04a98ea1fd5fc5e"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 2790,
+          "path": "v4/raw/opra_1s_pilot/2025-12-19/failed_attempts/attempt02_20260730T222305879825Z_2025-12-19.partial.cbbo-1s.dbn.zst",
+          "sha256": "7b6ba2db1882bb565af6c7c6d3701bb546fc02935af24ac334c2270ee469b6ca",
+          "stream_billable_bound": {
+            "compressed_bytes": 2790,
+            "declared_first_frame_content_size": 70484,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 70484,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 2,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 0.000140968,
+      "billable_uncompressed_bytes_upper_bound": 70484,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-12-19",
+      "error_message": "Error streaming response: HTTPSConnectionPool(host='hist.databento.com', port=443): Read timed out.",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 1.674330234528,
+      "recorded_at_utc": "2026-07-30T22:23:05.881426+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 902,
+      "symbols_sha256": "89e6a4bbd8300c76ececb34a12cd3ec4af6ce1b50fd28651f04a98ea1fd5fc5e"
+    },
+    {
+      "archived_partial_files": [
+        {
+          "bytes": 7925,
+          "path": "v4/raw/opra_1s_pilot/2025-12-19/failed_attempts/attempt03_20260730T222411055040Z_2025-12-19.partial.cbbo-1s.dbn.zst",
+          "sha256": "58c23b8a880cede23f174a718b130486ff1f6acb78de3cd6c3cfa114beefc9d0",
+          "stream_billable_bound": {
+            "compressed_bytes": 7925,
+            "declared_first_frame_content_size": 70484,
+            "eligible_for_byte_bound": true,
+            "first_frame_complete": false,
+            "method": "interrupted_first_zstd_frame_declared_content_size",
+            "uncompressed_billable_bytes_upper_bound": 70484,
+            "zstd_magic_count": 1
+          }
+        }
+      ],
+      "attempt_number": 3,
+      "billable_cost_method": "vendor_streamed_bytes_upper_bound",
+      "billable_cost_upper_bound_usd": 0.000140968,
+      "billable_uncompressed_bytes_upper_bound": 70484,
+      "dataset": "OPRA.PILLAR",
+      "date": "2025-12-19",
+      "error_message": "Error streaming response: Response ended prematurely",
+      "error_type": "BentoError",
+      "preflight_session_cost_usd": 1.674330234528,
+      "recorded_at_utc": "2026-07-30T22:24:11.055804+00:00",
+      "schema": "cbbo-1s",
+      "symbol_count": 902,
+      "symbols_sha256": "89e6a4bbd8300c76ececb34a12cd3ec4af6ce1b50fd28651f04a98ea1fd5fc5e"
+    }
+  ],
+  "billable_cost_upper_bound_usd": 2.997483360816,
+  "billable_uncompressed_bytes_upper_bound": 810200,
+  "goal": "FT2-D55-EXIT-REALISM-PILOT",
+  "reconciled_at_utc": "2026-07-31T00:18:16.996612+00:00",
+  "schema_version": "Protocol101FT2D55FailedDownloadAttemptsV2",
+  "vendor_billing_evidence": {
+    "billing_rule": "Streaming is billed for outbound data bytes actually sent; an interrupted request is not billed for unsent remainder.",
+    "billing_rule_url": "https://databento.com/docs/faqs/usage-pricing-and-data-credits",
+    "dataset": "OPRA.PILLAR",
+    "decimal_bytes_per_gb": 1000000000,
+    "mode": "historical-streaming",
+    "schema": "cbbo-1s",
+    "source": "Databento metadata.list_unit_prices",
+    "unit_price_usd_per_gb": 2.0
+  }
+}

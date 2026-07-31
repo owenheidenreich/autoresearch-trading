@@ -1,0 +1,94 @@
+{
+  "authority": {
+    "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+    "sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
+  },
+  "bands": {
+    "canonical_ATM": "np.rint(underlying_price/5)*5, matching the project round-half-to-even five-point rule",
+    "moneyness": {
+      "atm": "abs(strike-canonical_ATM)<=10",
+      "near": "10<abs(strike-canonical_ATM)<=25",
+      "wing": "abs(strike-canonical_ATM)>25"
+    },
+    "premium": {
+      "cheap_le_1": "0<ask<=1",
+      "large_8_20": "8<ask<=20",
+      "medium_3_8": "3<ask<=8",
+      "small_1_3": "1<ask<=3",
+      "very_large_20p": "ask>20"
+    }
+  },
+  "cost_context_usd": {
+    "all_available_1s_history": 280,
+    "minute_backfill_high": 347,
+    "minute_backfill_low": 41,
+    "pilot_reference": 24.12
+  },
+  "goal": "FT2-D55-EXIT-REALISM-PILOT",
+  "measurements": {
+    "entry_signal_exploratory": {
+      "claim": "descriptive only; not a fitted model or entry-edge claim",
+      "features": [
+        "intraminute_mid_return",
+        "one_second_realized_volatility",
+        "intraminute_mid_range_fraction",
+        "bbo_change_count",
+        "spread_change"
+      ],
+      "statistics": [
+        "Spearman correlation",
+        "top-minus-bottom feature-quintile target mean"
+      ],
+      "targets": [
+        "next_minute_mid_return",
+        "next_minute_bid_over_current_ask_return"
+      ]
+    },
+    "fill_price_distortion": {
+      "entry_error": "minute assumed ask minus one-second ask; negative is optimistic for a buyer",
+      "exit_error": "minute assumed bid minus one-second bid; positive is optimistic for a seller",
+      "population": "equal-weight contract-minutes, using first/mean/median/worst executable observations within the 60-second interval"
+    },
+    "floor_slippage": {
+      "committed_floor": "prior completed-minute executable bid times floor_ratio",
+      "floor_ratios": [
+        0.7,
+        0.8,
+        0.9,
+        0.95
+      ],
+      "gap_loss": "committed floor minus first observed executable bid at or below the floor",
+      "hidden_cross": "one-second bid crosses the committed floor but the completed-minute bid does not",
+      "limitation": "The signed design has no instantiated forecast-to-floor equation yet. D55 therefore measures a preregistered one-step committed-floor response surface, not a policy."
+    },
+    "forward_fill": "No price-or-size BBO state change in the one-second stream during the interval; a missing interval also counts stale.",
+    "hidden_adverse_excursion": "minute_bid - minimum positive executable one-second bid; a breach-and-recover has min_1s_bid<minute_bid and last_1s_bid>=minute_bid"
+  },
+  "schema_version": "Protocol101FT2D55MeasurementSpecV1",
+  "scope": {
+    "census_changes": false,
+    "descriptive_only": true,
+    "graph_changes": false,
+    "model_training_or_fitting": false,
+    "signed_contract_changes": false
+  },
+  "time_alignment": {
+    "implementation": "bar_time=ts_recv.ceil('min')",
+    "market_bar_end_window_et": "[09:31,15:55]",
+    "minute_bar_timestamp": "T",
+    "one_second_interval": "(T-60 seconds, T]",
+    "reason": "Databento cbbo-1m snapshots are interval-end stamped; this is the existing project CBBO-1m-vs-1s alignment convention."
+  },
+  "tradable_contract_minute": "SPXW PM-settled 0DTE normalized row in the governed market window with finite bid>0, finite ask>0, and ask>=bid",
+  "trust_decision_thresholds": {
+    "floor_ratio_for_gate": 0.9,
+    "max_forward_fill_rate": 0.05,
+    "max_hidden_adverse_dip_rate": 0.05,
+    "max_hidden_floor_cross_rate": 0.05,
+    "max_p95_abs_entry_fill_error_points": 0.25,
+    "max_p95_abs_exit_fill_error_points": 0.25,
+    "max_p95_adverse_gap_points": 0.25,
+    "max_p95_floor_trigger_gap_points": 0.25,
+    "min_executable_1s_coverage_rate": 0.95
+  }
+}

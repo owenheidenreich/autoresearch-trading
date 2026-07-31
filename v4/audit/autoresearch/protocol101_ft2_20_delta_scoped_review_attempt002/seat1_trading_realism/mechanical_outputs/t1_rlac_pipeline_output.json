@@ -1,0 +1,21 @@
+{
+  "assertions": {
+    "circular_negative_control_detected": true,
+    "gate_metrics_decidable_and_reproducible": true,
+    "positive_target_provenance_accepted": true,
+    "targets_byte_identical_under_composer_swap": true,
+    "targets_compute_with_composer_stubbed": true
+  },
+  "composer_action_count": 18,
+  "fixture_only": true,
+  "freeze_sha256": "dbb1bfcba157eddf15c64d13b655e9cd843c427e45aac169df5ccea9e6357322",
+  "gate_metrics": {
+    "regret_calibration_rows": 35,
+    "regret_marginal_coverage": 0.9428571428571428,
+    "wait_ECE_one_bin_fixture": 0.44996886195670527
+  },
+  "model_training_scope": "tiny_synthetic_fixture_only",
+  "outcome": "pass",
+  "schema_version": "Protocol101FT2ScopedRoundRLACPipelineTestV1",
+  "target_sha256": "3ce865b72f01aeeaf6db18a9bb1cb8acc8674bd3ec246990e7c71b10087c2442"
+}

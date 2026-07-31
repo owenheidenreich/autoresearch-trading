@@ -1,0 +1,64 @@
+{
+  "authority_and_lineage": {
+    "active_semantic_path_hash_mismatches": 0,
+    "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+    "builder_authority_verifier": "pass",
+    "graph_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+    "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+    "matched_random_generator_sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+    "packet_declared_deliverables_matched": 157,
+    "packet_declared_deliverables_total": 157,
+    "prior_ft205_checkpoint_artifacts_matched": 90,
+    "prior_ft205_checkpoint_artifacts_total": 90,
+    "prior_ft205_receipt_sha256": "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d",
+    "rerun002_receipt_sha256": "17cc9983c38ef4c75b8fece0cd67d4662e559f84a27de8eba2a84a34f85d96ac",
+    "simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+  },
+  "d48_and_friction": {
+    "conditional_rejection_denominator": 128758,
+    "conditional_rejection_rate": 0.05595768806598425,
+    "decision_time_spread_valid_rows": 128758,
+    "fill_pass_rows": 121553,
+    "friction_valid_rows": 121553,
+    "governed_rejection_denominator": 460937,
+    "governed_rejection_rate": 0.015631203396559618,
+    "rejected_fill_rows": 7205,
+    "time_t_intent_rows": 128758
+  },
+  "manifest": {
+    "changed_file_count": 41,
+    "changed_file_hash_matches": 41,
+    "diff_manifest_sha256": "2aa1ff2d307d9eccdd483484cde882dee230cc2703869b05dc8561eb41f18ee7",
+    "producer_aggregate_raw_sha256": "4532e1829b8cb99320de474fe96b204b3c99ab85bd519bb49c397a49a266d4db",
+    "producer_aggregate_self_hash": "f7ae2a4aa768fa441220fad2945e9a7d712a018978e1fe6bd041a477046e8c02",
+    "producer_receipt_sha256": "f7c01162f8637b70e5d0492495ce870a6172d5f91713478b345e47d70d1bf532",
+    "producer_report_sha256": "b8d2ee4fbae66be7b0abb0de9464d54954dcaa42d3a48b1c062018b0b0b90685"
+  },
+  "oracle_replay": {
+    "all_rejections_fee_zero": true,
+    "all_rejections_position_closed": true,
+    "all_rejections_premium_zero": true,
+    "all_rejections_realized_pnl_change_zero": true,
+    "all_rejections_resolve_exactly_tplus1": true,
+    "earliest_retry_before_tplus2_count": 0,
+    "oracle_pooled_pnl": 5673928.0,
+    "oracle_rejected_fill_count": 375,
+    "oracle_trade_count": 13669,
+    "p5_pooled_pnl": 1329305.0,
+    "p5_rejected_fill_count": 247,
+    "p5_trade_count": 17660,
+    "rejection_and_trade_same_policy_minute_overlap": 0,
+    "serial_rejection_event_count": 622,
+    "serial_trade_count": 31329,
+    "serial_trade_pnl": 7003233.0
+  },
+  "side_effects": {
+    "broker_recorder_paid_data_or_live_access": false,
+    "model_training_or_fitting": false,
+    "orders_submitted": false,
+    "protected_outer_or_holdout_access": false,
+    "reviewed_artifacts_modified": false,
+    "runtime_promotion_paper_default_or_launchd_modified": false,
+    "simulator_v5_modified": false
+  }
+}

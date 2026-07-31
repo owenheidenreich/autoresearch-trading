@@ -1,0 +1,97 @@
+{
+  "schema_version": "Protocol101FT2DeltaScopedReviewAttempt002Seat1ReceiptV1",
+  "goal": "FT2-DELTA-SCOPED-FRESH-SEAT-REVIEW",
+  "attempt": 2,
+  "seat": "seat1_trading_realism",
+  "verdict": "DELTA_REVIEW_CLEAN",
+  "scope": {
+    "authority_path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_fixes_attempt001/diff_manifest.json",
+    "authority_sha256": "2aa1ff2d307d9eccdd483484cde882dee230cc2703869b05dc8561eb41f18ee7",
+    "changed_file_count": 41,
+    "changed_file_hash_matches": 41,
+    "law": "Exactly the diff-manifest changed files and JSON pointers plus direct consequences."
+  },
+  "producer_packet": {
+    "report_sha256": "b8d2ee4fbae66be7b0abb0de9464d54954dcaa42d3a48b1c062018b0b0b90685",
+    "receipt_sha256": "f7c01162f8637b70e5d0492495ce870a6172d5f91713478b345e47d70d1bf532",
+    "aggregate_receipt_raw_sha256": "4532e1829b8cb99320de474fe96b204b3c99ab85bd519bb49c397a49a266d4db",
+    "aggregate_receipt_self_hash": "f7ae2a4aa768fa441220fad2945e9a7d712a018978e1fe6bd041a477046e8c02"
+  },
+  "repair_dispositions": {
+    "FT2-DELTA-B1": "FIXED",
+    "FT2-DELTA-B2": "FIXED",
+    "FT2-DELTA-B3": "FIXED",
+    "FT2-DELTA-D1": "FIXED",
+    "FT2-DELTA-D2": "DOCUMENTATION_ONLY_UNCHANGED"
+  },
+  "verification": {
+    "bounded_checker": {
+      "outcome": "pass",
+      "passed": 20,
+      "total": 20
+    },
+    "targeted_pytest": {
+      "outcome": "pass",
+      "passed": 12,
+      "failed": 0
+    },
+    "t1_rlac": {
+      "outcome": "pass",
+      "passed": 5,
+      "total": 5
+    },
+    "t3_t4_census": {
+      "outcome": "pass",
+      "passed": 11,
+      "total": 11
+    },
+    "t6_regression_private_copy": {
+      "outcome": "pass",
+      "passed": 4,
+      "total": 4,
+      "ft2_08_checks_passed": 22,
+      "ft2_08_checks_total": 22
+    },
+    "graph": {
+      "outcome": "pass",
+      "nodes": 47,
+      "edges": 104,
+      "reachable": 47
+    },
+    "current_semantic_path_hash_mismatches": 0,
+    "packet_deliverables_matched": 157,
+    "packet_deliverables_total": 157,
+    "preserved_ft205_checkpoint_artifacts_matched": 90,
+    "preserved_ft205_checkpoint_artifacts_total": 90
+  },
+  "deliverable_hashes": {
+    "review.md": "60ab47b33eed80a72ed5d5c7547680c828d7a2aa4b1c996593967ce03cce6203",
+    "mechanical_outputs/checker_output.json": "aeb507eecdd98502d339e1a376392810efdba305ba60dda752fe1263c05319e1",
+    "mechanical_outputs/targeted_pytest_output.json": "923fdbc6c56d8d66f74e4c2d33cbdcc58e65f667d09a26b01abd10887adefc65",
+    "mechanical_outputs/t1_rlac_pipeline_output.json": "e34409e23b0f7ca916d4542f3aa3398da4ba7926a489d8e1796cb2d95a55e06e",
+    "mechanical_outputs/t3_t4_census_v5_output.json": "2f4777b57f2098823474cdb3d72903618092cf7ebd96560b2a2598de2a322b79",
+    "mechanical_outputs/t6_regression_output.json": "65855c2db84277d1715086787bf90b0a886d518575286c62a00d6103fd1ff21d",
+    "mechanical_outputs/hash_and_economics_reproduction.json": "4d7889714dcfd233e9ee32b837ca977eea6ca29490e6717694c9071ce5b82e78"
+  },
+  "side_effects": {
+    "broker_access": false,
+    "recorder_access": false,
+    "paid_data_access": false,
+    "live_path_access": false,
+    "protected_data_access": false,
+    "outer_data_access": false,
+    "holdout_access": false,
+    "real_model_training_or_fitting": false,
+    "threshold_tuning": false,
+    "simulator_v5_modified": false,
+    "reviewed_artifacts_modified": false,
+    "runtime_flags_modified": false,
+    "paper_default_modified": false,
+    "promotion_state_modified": false,
+    "launchd_modified": false,
+    "orders_submitted": false,
+    "ft2_21_approved_or_routed": false
+  },
+  "highest_allowed_claim": "The manifest-bounded producer repair has no remaining in-scope blocking defect under fresh Seat 1 trading-realism review.",
+  "next": "STOP_FOR_OWNER_DECISION"
+}

@@ -1,0 +1,188 @@
+{
+  "schema_version": "Protocol101FT220DeltaScopedReviewSeatReceiptV2",
+  "goal": "FT2-DELTA-SCOPED-FRESH-SEAT-REVIEW",
+  "attempt": 2,
+  "seat": "seat3_live_parity",
+  "baseline_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+  "scope_contract": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_fixes_attempt001/diff_manifest.json",
+    "sha256": "2aa1ff2d307d9eccdd483484cde882dee230cc2703869b05dc8561eb41f18ee7",
+    "changed_file_count": 41,
+    "matched_after_hashes": 41,
+    "after_hash_mismatches": 0,
+    "scope_discipline": "exact manifest-listed files and JSON pointers plus their direct authority, receipt, semantic-lineage, graph, test, and live-game consequences only"
+  },
+  "producer_packet": {
+    "report_sha256": "b8d2ee4fbae66be7b0abb0de9464d54954dcaa42d3a48b1c062018b0b0b90685",
+    "receipt_sha256": "f7c01162f8637b70e5d0492495ce870a6172d5f91713478b345e47d70d1bf532",
+    "aggregate_receipt_raw_sha256": "4532e1829b8cb99320de474fe96b204b3c99ab85bd519bb49c397a49a266d4db",
+    "aggregate_receipt_self_hash_declared": "f7ae2a4aa768fa441220fad2945e9a7d712a018978e1fe6bd041a477046e8c02",
+    "aggregate_receipt_self_hash_reproduced": "f7ae2a4aa768fa441220fad2945e9a7d712a018978e1fe6bd041a477046e8c02"
+  },
+  "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "graph_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+  "intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+  "simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+  "matched_random_generator_sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+  "rerun002_receipt_raw_sha256": "17cc9983c38ef4c75b8fece0cd67d4662e559f84a27de8eba2a84a34f85d96ac",
+  "semantic_lineage": {
+    "realized_label_audit_composer_spec_sha256": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09",
+    "calibration_spec_sha256": "22837145aa2744760ff2ad34c78a4db2998e9946e875118aafa3467f0c6f2e57",
+    "forecast_heads_sha256": "f4d6ec7a8ddd9dd1da6dd617c06e5ae26513b8d30767eeb43d8963973e13aee1",
+    "evidence_standard_sha256": "a06a57c4ed39ef7f01a87b5469f5a1457e33c2068030feb8b689ec43cce70080",
+    "shadow_sufficiency_spec_sha256": "3497e727ad64cdda3f2f60e674900114899115452ce6a49cd4bc9675e5f7e0f2",
+    "active_path_hash_mismatch_count": 0,
+    "source_transfer_calibration_pin": "PASS",
+    "action_conditioned_calibration_pin": "PASS",
+    "shared_exact_wait_target": "PASS"
+  },
+  "packet_receipts": {
+    "FT2-04": {
+      "sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe",
+      "deliverable_count": 7,
+      "deliverable_hash_mismatch_count": 0
+    },
+    "FT2-05": {
+      "sha256": "ecaa16c923d4834c314816bca471597e09b9668ec5f1fe76d956be9c9d97d168",
+      "deliverable_count": 117,
+      "deliverable_hash_mismatch_count": 0
+    },
+    "FT2-08": {
+      "sha256": "c4c9c729c8d19ae76f827ed280f66e7ee1143f7f51fd5b753615d6d968adb726",
+      "deliverable_count": 14,
+      "deliverable_hash_mismatch_count": 0
+    },
+    "FT2-10": {
+      "sha256": "b0504ea7d78c041ed066b238229fd5bdda5584da2d1a0854adeefba91b63a3a2",
+      "deliverable_count": 9,
+      "deliverable_hash_mismatch_count": 0
+    },
+    "FT2-11": {
+      "sha256": "3cb4693185bc2d1c77c5ecea38817766822b684b33679ba021c0446fade1534c",
+      "deliverable_count": 10,
+      "deliverable_hash_mismatch_count": 0
+    }
+  },
+  "repair_verdicts": {
+    "FT2-DELTA-B1_oracle_commit_recheck_ordering": "PASS",
+    "FT2-DELTA-B2_authority_and_semantic_hash_reseal": "PASS",
+    "FT2-DELTA-B3_exact_wait_target_alignment": "PASS",
+    "FT2-DELTA-D1_friction_population_disclosure": "PASS",
+    "FT2-DELTA-D2_duplicate_A4_label": "DOCUMENTATION_ONLY_UNCHANGED"
+  },
+  "blocking_findings": [],
+  "documentation_only_observations": [
+    {
+      "id": "FT2-DELTA-D2",
+      "summary": "The consolidated authority retains a duplicated historical A4 amendment label; its graph bytes and routes remain unambiguous."
+    }
+  ],
+  "live_parity_assessment": {
+    "historical_oracle_commit_then_recheck_mechanics": "PASS",
+    "same_minute_substitute_forbidden": "PASS",
+    "zero_charge_rejection": "PASS",
+    "source_transfer_lineage": "PASS_FAIL_CLOSED_DESIGN_ONLY",
+    "phase_F_graph_topology": "PASS",
+    "graph_node_count": 47,
+    "graph_edge_count": 104,
+    "reachable_node_count": 47,
+    "FT2_92_outcomes": [
+      "pass",
+      "fail",
+      "insufficient_evidence"
+    ],
+    "FT2_93_outcomes": [
+      "producer_complete",
+      "fail"
+    ],
+    "historical_IBKR_parity_already_earned": false,
+    "live_shadow_authorized": false,
+    "orders_authorized": false
+  },
+  "mechanical_gates": {
+    "bounded_fix_checker": {
+      "outcome": "pass",
+      "passed": 20,
+      "total": 20,
+      "failed": 0,
+      "reproduced_output_sha256": "aeb507eecdd98502d339e1a376392810efdba305ba60dda752fe1263c05319e1"
+    },
+    "targeted_census_pytest": {
+      "outcome": "pass",
+      "passed": 12,
+      "failed": 0
+    },
+    "T1_RLAC_pipeline": {
+      "outcome": "pass",
+      "passed": 5,
+      "total": 5,
+      "reproduced_output_sha256": "e34409e23b0f7ca916d4542f3aa3398da4ba7926a489d8e1796cb2d95a55e06e"
+    },
+    "T3_T4_census": {
+      "outcome": "pass",
+      "passed": 11,
+      "total": 11,
+      "reproduced_output_sha256": "2f4777b57f2098823474cdb3d72903618092cf7ebd96560b2a2598de2a322b79"
+    },
+    "T6_private_copy_regression": {
+      "outcome": "pass",
+      "passed": 4,
+      "total": 4,
+      "FT2_08_checks": 22,
+      "terminal_examples": 3,
+      "source_validation_json_sha256": "d0fd65b55ed38d88d82541e7a2fe1ecec3903b0bb61c6bc41e3c24368cd5fd6e",
+      "source_validation_json_unchanged": true,
+      "temporary_private_copy_present_at_seal": false
+    },
+    "graph_structure": {
+      "outcome": "pass",
+      "nodes": 47,
+      "edges": 104,
+      "reachable": 47,
+      "all_phase_F_outcomes_have_legal_edges": true
+    },
+    "manifest_after_hashes": {
+      "outcome": "pass",
+      "matched": 41,
+      "total": 41
+    },
+    "receipt_deliverables": {
+      "outcome": "pass",
+      "matched": 157,
+      "total": 157
+    }
+  },
+  "side_effects": {
+    "broker_access": false,
+    "broker_recorder_access": false,
+    "paid_data_access": false,
+    "protected_outer_or_holdout_access": false,
+    "live_path_execution": false,
+    "model_training_or_fitting": false,
+    "threshold_tuning": false,
+    "simulator_v5_modified": false,
+    "runtime_flags_modified": false,
+    "paper_default_modified": false,
+    "promotion_state_modified": false,
+    "launchd_modified": false,
+    "orders_submitted": false,
+    "reviewed_artifacts_modified": false,
+    "other_attempt002_seat_outputs_read": false
+  },
+  "isolation": {
+    "write_root": "v4/audit/autoresearch/protocol101_ft2_20_delta_scoped_review_attempt002/seat3_live_parity",
+    "durable_files": [
+      "review.md",
+      "receipt.json"
+    ],
+    "temporary_gate_outputs_present_at_seal": false,
+    "other_attempt002_seat_outputs_read": false
+  },
+  "deliverable_hashes": {
+    "review.md": "9ef638202252fa59eca3326cb8048793a6a587721b9d52cde758dc15cedee0ce"
+  },
+  "receipt_self_hash_policy": "receipt.json is excluded from deliverable_hashes to avoid self-referential hashing; its raw SHA-256 is reported to the controller after sealing",
+  "verdict": "DELTA_REVIEW_CLEAN",
+  "routing_recommendation": "STOP_FOR_OWNER_DECISION; do not approve or route FT2-21",
+  "next": "STOP_FOR_OWNER_DECISION"
+}

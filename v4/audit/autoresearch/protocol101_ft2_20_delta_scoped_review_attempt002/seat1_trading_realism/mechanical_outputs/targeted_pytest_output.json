@@ -1,0 +1,12 @@
+{
+  "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. .venv/bin/python -m pytest -q -p no:cacheprovider v4/tests/test_protocol101_ft2_05_opportunity_census.py v4/tests/test_protocol101_ft2_05_opportunity_census_v2.py",
+  "failed": 0,
+  "outcome": "pass",
+  "passed": 12,
+  "side_effects": {
+    "broker_recorder_or_paid_data_access": false,
+    "model_training_or_fitting": false,
+    "protected_outer_or_holdout_access": false,
+    "runtime_promotion_or_paper_change": false
+  }
+}

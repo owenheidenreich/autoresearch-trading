@@ -68,8 +68,17 @@ metal" milestone.
 
 ## Landmines for the next conversation
 
-1. **✅ RESOLVED — CONFIRMED DRIFT (in-scope, BLOCKING-class). Authority
-   misstates the hash of the graph it governs.** Verified 2026-07-30:
+1. **✅ FIXED & re-sealed 2026-07-30 (commit `a7602fdc`).** Was a confirmed
+   in-scope BLOCKING-class drift: the authority misstated the hash of the graph
+   it governs. Repair (roles-flip, Fable-written, **Codex review still owed**):
+   corrected both graph-hash references + added amendment A4; re-pinned the
+   authority hash `3c7a0aaf`→`d115b953` across 21 active files; recomputed
+   FT2-04/05 receipts; re-ran finalize + checker + diff manifest + aggregate so
+   the chain reproduces at `d115b953`; added checker Guard A (authority recorded
+   graph hash == live) and Guard B (every spec `product_contract_hash` ==
+   authority) — **checker now 31/31**. New aggregate self-hash
+   `06b1aec845da9a2062bd72a4c381f2fa0554f136247f6fb8607248e765015050`.
+   Original diagnosis retained below for the reviewer:
    - The authority doc's own hash changed (`2363d3f9` → `3c7a0aaf`) via the
      A1/A2/A3 amendments, and the doc↔its-own-hash is self-consistent
      (on-disk = `3c7a0aaf` = the round's recorded `authority_sha256`). So the

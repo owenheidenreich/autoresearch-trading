@@ -1,0 +1,64 @@
+{
+  "SE_fixture": {
+    "SE_h": 0.9128709291752769,
+    "SE_h_star_b": 0.9128709291752769,
+    "t_h": 3.2863353450309964,
+    "t_h_star_b": -0.4381780460041329
+  },
+  "assertions": {
+    "FT2_08_exactly_22_checks_green": true,
+    "FT2_08_validator_process_exit_zero": true,
+    "SE_worked_example_recomputed": true,
+    "three_terminal_examples_recomputed": true
+  },
+  "ft2_08_check_count": 22,
+  "ft2_08_stderr": "",
+  "ft2_08_stdout": "{\"passed\": true, \"check_count\": 22}",
+  "ft2_08_validation_schema": "Protocol101FT208ContractValidationV4",
+  "outcome": "pass",
+  "schema_version": "Protocol101FT2ScopedRoundRegressionT6OutputV1",
+  "terminal_results": [
+    {
+      "expected_predicates": [],
+      "expected_terminal": "entry_component_freeze_pass",
+      "id": "TOY-PASS-001",
+      "observed_predicates": [],
+      "observed_terminal": "entry_component_freeze_pass",
+      "pass": true
+    },
+    {
+      "expected_predicates": [
+        "quality interval contains zero and DeltaQ MDE exceeds 0.05",
+        "bounded fifth-fold attribution is ambiguous",
+        "action-calibration distinct-session minimum is unmet",
+        "action-calibration ECE bound overlaps 0.10",
+        "serial-dollar no-harm intervals contain zero with negative lower bounds"
+      ],
+      "expected_terminal": "insufficient_evidence",
+      "id": "TOY-INSUFFICIENT-001",
+      "observed_predicates": [
+        "quality interval contains zero and DeltaQ MDE exceeds 0.05",
+        "bounded fifth-fold attribution is ambiguous",
+        "action-calibration distinct-session minimum is unmet",
+        "action-calibration ECE bound overlaps 0.10",
+        "serial-dollar no-harm intervals contain zero with negative lower bounds"
+      ],
+      "observed_terminal": "insufficient_evidence",
+      "pass": true
+    },
+    {
+      "expected_predicates": [
+        "serial-dollar no-harm adjusted upper bound is below zero on $3",
+        "serial-dollar no-harm adjusted upper bound is below zero on $4"
+      ],
+      "expected_terminal": "no_genuine_entry_signal",
+      "id": "TOY-NO-SIGNAL-001",
+      "observed_predicates": [
+        "serial-dollar no-harm adjusted upper bound is below zero on $3",
+        "serial-dollar no-harm adjusted upper bound is below zero on $4"
+      ],
+      "observed_terminal": "no_genuine_entry_signal",
+      "pass": true
+    }
+  ]
+}

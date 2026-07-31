@@ -1,0 +1,363 @@
+{
+  "acquisition_plan": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_d55_exit_realism_pilot/acquisition_plan.json",
+    "sha256": "d2cb0f774aa7c4a6e7cec715de67c6ff45e2ba3197c6cb0152ee3eccf25ce72c"
+  },
+  "authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "checked_at_utc": "2026-07-30T19:14:08.500024+00:00",
+  "download_performed_before_gate": false,
+  "estimated_total_usd": 24.115594923494996,
+  "full_set_estimation": "sum of metadata.get_cost for all 30 exact session-date requests before any timeseries.get_range call",
+  "gate": "PASS",
+  "goal": "FT2-D55-EXIT-REALISM-PILOT",
+  "hard_cap_usd": 30.0,
+  "one_shot_full_set_attempt": {
+    "adaptation": "sum metadata.get_cost over the exact 30 session-date requests; this is the request topology used by the downloader",
+    "attempted_first": true,
+    "error_type": "BentoClientError",
+    "outcome": "rejected_vendor_2000_symbol_limit",
+    "requested_symbols": 15570
+  },
+  "owner_reference_cost_usd": 24.12,
+  "reference_delta_usd": -0.004405076505005212,
+  "request": {
+    "dataset": "OPRA.PILLAR",
+    "schema": "cbbo-1s",
+    "selected_sessions": 30,
+    "stype_in": "raw_symbol",
+    "symbol_session_count": 15570
+  },
+  "schema_version": "Protocol101FT2D55CostReceiptV1",
+  "session_estimates": [
+    {
+      "cost_estimate_usd": 0.68601757288,
+      "date": "2025-02-20",
+      "end": "2025-02-21T00:00:00+00:00",
+      "running_total_usd": 0.68601757288,
+      "selection_index": 0,
+      "sequence": 1,
+      "start": "2025-02-20T00:00:00+00:00",
+      "symbol_count": 382,
+      "symbols_sha256": "0ff5195c20024e704d7a96876e9c2510f94219b87bffb0e01e522380483332cf"
+    },
+    {
+      "cost_estimate_usd": 0.665564537048,
+      "date": "2025-03-03",
+      "end": "2025-03-04T00:00:00+00:00",
+      "running_total_usd": 1.351582109928,
+      "selection_index": 7,
+      "sequence": 2,
+      "start": "2025-03-03T00:00:00+00:00",
+      "symbol_count": 446,
+      "symbols_sha256": "4cca368f18f4e6eb6bb014c46b8324801a449c01ec4b2e21ecb6d608f5b5c33c"
+    },
+    {
+      "cost_estimate_usd": 0.825702548027,
+      "date": "2025-03-13",
+      "end": "2025-03-14T00:00:00+00:00",
+      "running_total_usd": 2.177284657955,
+      "selection_index": 15,
+      "sequence": 3,
+      "start": "2025-03-13T00:00:00+00:00",
+      "symbol_count": 526,
+      "symbols_sha256": "ce8cf54f4ddd696e0d863bd145f2e7f2b021e3d0d01bfd7962d0f2e824fc5220"
+    },
+    {
+      "cost_estimate_usd": 0.950756967068,
+      "date": "2025-03-24",
+      "end": "2025-03-25T00:00:00+00:00",
+      "running_total_usd": 3.128041625023,
+      "selection_index": 22,
+      "sequence": 4,
+      "start": "2025-03-24T00:00:00+00:00",
+      "symbol_count": 478,
+      "symbols_sha256": "b8b01bcfd35fec29e0c26193e39677cb8c47ce47dc4b6ae2f8ad11a697ab9fdf"
+    },
+    {
+      "cost_estimate_usd": 1.000298410654,
+      "date": "2025-04-03",
+      "end": "2025-04-04T00:00:00+00:00",
+      "running_total_usd": 4.128340035677001,
+      "selection_index": 30,
+      "sequence": 5,
+      "start": "2025-04-03T00:00:00+00:00",
+      "symbol_count": 408,
+      "symbols_sha256": "e39a9eaf23a7de592c8db820e21f02c7b30c8a0292a71afb134fca63a53bd7fb"
+    },
+    {
+      "cost_estimate_usd": 0.993238687515,
+      "date": "2025-04-14",
+      "end": "2025-04-15T00:00:00+00:00",
+      "running_total_usd": 5.121578723192001,
+      "selection_index": 37,
+      "sequence": 6,
+      "start": "2025-04-14T00:00:00+00:00",
+      "symbol_count": 574,
+      "symbols_sha256": "01ad6d2d6811ec78619376d8bed8e4bd99b031fe9f5adc3549b4e5fe5a9422df"
+    },
+    {
+      "cost_estimate_usd": 0.839755088091,
+      "date": "2025-04-25",
+      "end": "2025-04-26T00:00:00+00:00",
+      "running_total_usd": 5.9613338112830005,
+      "selection_index": 45,
+      "sequence": 7,
+      "start": "2025-04-25T00:00:00+00:00",
+      "symbol_count": 596,
+      "symbols_sha256": "1b96be0b02d0a8ec450ee41a79ac6678113140cdeeeb62bf704a060e3b4e8ad3"
+    },
+    {
+      "cost_estimate_usd": 0.621278882027,
+      "date": "2025-05-06",
+      "end": "2025-05-07T00:00:00+00:00",
+      "running_total_usd": 6.582612693310001,
+      "selection_index": 52,
+      "sequence": 8,
+      "start": "2025-05-06T00:00:00+00:00",
+      "symbol_count": 464,
+      "symbols_sha256": "9e2dd4cf05992a437d364716e687a3d2cdea03e926c05cdf7d14befb4ccbc6e6"
+    },
+    {
+      "cost_estimate_usd": 0.918809175491,
+      "date": "2025-05-16",
+      "end": "2025-05-17T00:00:00+00:00",
+      "running_total_usd": 7.501421868801001,
+      "selection_index": 60,
+      "sequence": 9,
+      "start": "2025-05-16T00:00:00+00:00",
+      "symbol_count": 988,
+      "symbols_sha256": "6d51fda80441ecac8a4774343efec43a798192e410ef1c0f15248c0be85874d1"
+    },
+    {
+      "cost_estimate_usd": 0.424106419086,
+      "date": "2025-05-28",
+      "end": "2025-05-29T00:00:00+00:00",
+      "running_total_usd": 7.925528287887,
+      "selection_index": 67,
+      "sequence": 10,
+      "start": "2025-05-28T00:00:00+00:00",
+      "symbol_count": 406,
+      "symbols_sha256": "587c05ebc24b2024d684ce4c1d5cc1df802a5e87fcd95b6f2bce05ff7cc6bc84"
+    },
+    {
+      "cost_estimate_usd": 0.454111099243,
+      "date": "2025-06-09",
+      "end": "2025-06-10T00:00:00+00:00",
+      "running_total_usd": 8.37963938713,
+      "selection_index": 75,
+      "sequence": 11,
+      "start": "2025-06-09T00:00:00+00:00",
+      "symbol_count": 372,
+      "symbols_sha256": "3aeb7ae53ad0f1dec959beaa36233c588207bc6fa296ad7245820b1b6e83bc0b"
+    },
+    {
+      "cost_estimate_usd": 0.869652628899,
+      "date": "2025-06-18",
+      "end": "2025-06-19T00:00:00+00:00",
+      "running_total_usd": 9.249292016029,
+      "selection_index": 82,
+      "sequence": 12,
+      "start": "2025-06-18T00:00:00+00:00",
+      "symbol_count": 386,
+      "symbols_sha256": "076beedb00faf94c1399baf68dfe0dee15deca6cba86d0d46b3fc8ae4fc2e74d"
+    },
+    {
+      "cost_estimate_usd": 0.793949961662,
+      "date": "2025-07-01",
+      "end": "2025-07-02T00:00:00+00:00",
+      "running_total_usd": 10.043241977691,
+      "selection_index": 90,
+      "sequence": 13,
+      "start": "2025-07-01T00:00:00+00:00",
+      "symbol_count": 404,
+      "symbols_sha256": "30f5326db339956d3cd72000d5c33e0b5dc16bc65c0e4da2ff5bc98c73eeb0f7"
+    },
+    {
+      "cost_estimate_usd": 0.896727144718,
+      "date": "2025-07-11",
+      "end": "2025-07-12T00:00:00+00:00",
+      "running_total_usd": 10.939969122409,
+      "selection_index": 97,
+      "sequence": 14,
+      "start": "2025-07-11T00:00:00+00:00",
+      "symbol_count": 498,
+      "symbols_sha256": "1008a69353d532f7b2cd93afac25580e083a4e852891af358609a2e0bf36135a"
+    },
+    {
+      "cost_estimate_usd": 0.717040449381,
+      "date": "2025-07-23",
+      "end": "2025-07-24T00:00:00+00:00",
+      "running_total_usd": 11.65700957179,
+      "selection_index": 105,
+      "sequence": 15,
+      "start": "2025-07-23T00:00:00+00:00",
+      "symbol_count": 398,
+      "symbols_sha256": "77f61ee776cbfcac5a9e3dd6b14b4e23bde7f38af214ad8c8b125a09a2743f9a"
+    },
+    {
+      "cost_estimate_usd": 0.896624922752,
+      "date": "2025-08-01",
+      "end": "2025-08-02T00:00:00+00:00",
+      "running_total_usd": 12.553634494542,
+      "selection_index": 112,
+      "sequence": 16,
+      "start": "2025-08-01T00:00:00+00:00",
+      "symbol_count": 500,
+      "symbols_sha256": "359248e59a7bf4242227851e2b9be412b03641f4b06e1262b3aebf7952e56097"
+    },
+    {
+      "cost_estimate_usd": 0.527733266354,
+      "date": "2025-08-13",
+      "end": "2025-08-14T00:00:00+00:00",
+      "running_total_usd": 13.081367760896,
+      "selection_index": 120,
+      "sequence": 17,
+      "start": "2025-08-13T00:00:00+00:00",
+      "symbol_count": 394,
+      "symbols_sha256": "de2aa07cfe345412b36902d60d50a1a16874882a149b7464a5f65408f80e1cf3"
+    },
+    {
+      "cost_estimate_usd": 0.745222717524,
+      "date": "2025-08-22",
+      "end": "2025-08-23T00:00:00+00:00",
+      "running_total_usd": 13.82659047842,
+      "selection_index": 127,
+      "sequence": 18,
+      "start": "2025-08-22T00:00:00+00:00",
+      "symbol_count": 526,
+      "symbols_sha256": "8b34a8d65d1abb4dbd53e0a1d4afa640ba6ae76dfb76a8b0426731c5bed6981b"
+    },
+    {
+      "cost_estimate_usd": 0.4144769907,
+      "date": "2025-09-04",
+      "end": "2025-09-05T00:00:00+00:00",
+      "running_total_usd": 14.24106746912,
+      "selection_index": 135,
+      "sequence": 19,
+      "start": "2025-09-04T00:00:00+00:00",
+      "symbol_count": 424,
+      "symbols_sha256": "ab70ada2d46e418e2892a92ed3b1e18ae3459c6d0baa0f7fa22256a01ac6e887"
+    },
+    {
+      "cost_estimate_usd": 0.490618795156,
+      "date": "2025-09-15",
+      "end": "2025-09-16T00:00:00+00:00",
+      "running_total_usd": 14.731686264276,
+      "selection_index": 142,
+      "sequence": 20,
+      "start": "2025-09-15T00:00:00+00:00",
+      "symbol_count": 422,
+      "symbols_sha256": "bb30e85d29eb1381bee1be9859e62f36fedf17b13ad2179191fa4ca664ecff46"
+    },
+    {
+      "cost_estimate_usd": 0.575674772263,
+      "date": "2025-09-25",
+      "end": "2025-09-26T00:00:00+00:00",
+      "running_total_usd": 15.307361036539,
+      "selection_index": 150,
+      "sequence": 21,
+      "start": "2025-09-25T00:00:00+00:00",
+      "symbol_count": 430,
+      "symbols_sha256": "754c74ec30a468086512b5d1da58f68f3f9d37f2b80121c387d60a6403d82082"
+    },
+    {
+      "cost_estimate_usd": 0.518133193254,
+      "date": "2025-10-06",
+      "end": "2025-10-07T00:00:00+00:00",
+      "running_total_usd": 15.825494229793,
+      "selection_index": 157,
+      "sequence": 22,
+      "start": "2025-10-06T00:00:00+00:00",
+      "symbol_count": 430,
+      "symbols_sha256": "991a514e24479b680c8e560da28a21a8b4b9bc671ef72647206656114234dbbb"
+    },
+    {
+      "cost_estimate_usd": 1.016507297754,
+      "date": "2025-10-16",
+      "end": "2025-10-17T00:00:00+00:00",
+      "running_total_usd": 16.842001527546998,
+      "selection_index": 165,
+      "sequence": 23,
+      "start": "2025-10-16T00:00:00+00:00",
+      "symbol_count": 460,
+      "symbols_sha256": "78923c323621943be1239ebc57c91673dc829f4631f78c0260e772326fe0530c"
+    },
+    {
+      "cost_estimate_usd": 0.532178431749,
+      "date": "2025-10-27",
+      "end": "2025-10-28T00:00:00+00:00",
+      "running_total_usd": 17.374179959295997,
+      "selection_index": 172,
+      "sequence": 24,
+      "start": "2025-10-27T00:00:00+00:00",
+      "symbol_count": 414,
+      "symbols_sha256": "fb14320fc02aa55454e72737b8eecca09d0e7916f6b5114f49927656244a060a"
+    },
+    {
+      "cost_estimate_usd": 0.953293442726,
+      "date": "2025-11-06",
+      "end": "2025-11-07T00:00:00+00:00",
+      "running_total_usd": 18.327473402021997,
+      "selection_index": 180,
+      "sequence": 25,
+      "start": "2025-11-06T00:00:00+00:00",
+      "symbol_count": 442,
+      "symbols_sha256": "c86a85a1f76c7358a60a6b5a519e1307c3f045ca6105706fb09b20eacdb6154f"
+    },
+    {
+      "cost_estimate_usd": 1.006633490324,
+      "date": "2025-11-17",
+      "end": "2025-11-18T00:00:00+00:00",
+      "running_total_usd": 19.334106892345996,
+      "selection_index": 187,
+      "sequence": 26,
+      "start": "2025-11-17T00:00:00+00:00",
+      "symbol_count": 450,
+      "symbols_sha256": "cd73c7dbc145e50bbda350fcc4cd594052d02fd9d36bf41f8eb225cb06e27a40"
+    },
+    {
+      "cost_estimate_usd": 0.419734865427,
+      "date": "2025-11-28",
+      "end": "2025-11-29T00:00:00+00:00",
+      "running_total_usd": 19.753841757772996,
+      "selection_index": 195,
+      "sequence": 27,
+      "start": "2025-11-28T00:00:00+00:00",
+      "symbol_count": 882,
+      "symbols_sha256": "982af01d328448db771551d8ea15f2c3c499eaa648b73ee5833a24de21549ad2"
+    },
+    {
+      "cost_estimate_usd": 0.660766363144,
+      "date": "2025-12-09",
+      "end": "2025-12-10T00:00:00+00:00",
+      "running_total_usd": 20.414608120916995,
+      "selection_index": 202,
+      "sequence": 28,
+      "start": "2025-12-09T00:00:00+00:00",
+      "symbol_count": 444,
+      "symbols_sha256": "90283b0f8686b648b6035cf68281c6ae854df0f72a296e0b63b5493abc8640ab"
+    },
+    {
+      "cost_estimate_usd": 1.674330234528,
+      "date": "2025-12-19",
+      "end": "2025-12-20T00:00:00+00:00",
+      "running_total_usd": 22.088938355444995,
+      "selection_index": 210,
+      "sequence": 29,
+      "start": "2025-12-19T00:00:00+00:00",
+      "symbol_count": 902,
+      "symbols_sha256": "89e6a4bbd8300c76ececb34a12cd3ec4af6ce1b50fd28651f04a98ea1fd5fc5e"
+    },
+    {
+      "cost_estimate_usd": 2.02665656805,
+      "date": "2025-12-31",
+      "end": "2026-01-01T00:00:00+00:00",
+      "running_total_usd": 24.115594923494996,
+      "selection_index": 217,
+      "sequence": 30,
+      "start": "2025-12-31T00:00:00+00:00",
+      "symbol_count": 1124,
+      "symbols_sha256": "977682bcba5f6af22cc0bbbadba2e44f3fabe076097aa51341a920c5b8b7afd0"
+    }
+  ]
+}

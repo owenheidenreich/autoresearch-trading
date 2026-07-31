@@ -1,0 +1,303 @@
+{
+  "checks": {
+    "active_path_hash_chain": {
+      "evidence": [],
+      "pass": true
+    },
+    "authority_graph_references": {
+      "evidence": [
+        "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9"
+      ],
+      "pass": true
+    },
+    "builder_authority_resealed": {
+      "evidence": {
+        "builder_constant": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+        "old_hash_present": false
+      },
+      "pass": true
+    },
+    "builder_current_authority_verifier": {
+      "evidence": {
+        "error": null,
+        "passed": true
+      },
+      "pass": true
+    },
+    "current_receipts_pin_exact_rerun002_bytes": {
+      "evidence": "17cc9983c38ef4c75b8fece0cd67d4662e559f84a27de8eba2a84a34f85d96ac",
+      "pass": true
+    },
+    "dual_rejection_denominators": {
+      "evidence": {
+        "conditional_on_reaching_recheck": {
+          "denominator": 128758,
+          "label": "time-t fee-3 intent-eligible rows reaching the t+1 recheck population",
+          "rate": 0.05595768806598425
+        },
+        "governed_rows": {
+          "denominator": 460937,
+          "label": "all governed contract-minute rows",
+          "rate": 0.015631203396559618
+        },
+        "numerator": {
+          "label": "fee-3 time-t intent rows rejected by the selected-only t+1 recheck",
+          "row_count": 7205
+        }
+      },
+      "pass": true
+    },
+    "friction_populations_disclosed": {
+      "evidence": {
+        "entry_spread_valid_rows": 128758,
+        "fill_pass_rows": 121553,
+        "friction_valid_rows": 121553,
+        "intent_contract_minutes": 128758,
+        "rejected_fill_rows": 7205
+      },
+      "pass": true
+    },
+    "generated_oracle_rejections_are_observable": {
+      "evidence": [
+        {
+          "pooled_pnl": 1035797.0,
+          "rejected_fill_count": 67,
+          "trade_count": 4806,
+          "variant": "best_3"
+        },
+        {
+          "pooled_pnl": 1040566.0,
+          "rejected_fill_count": 71,
+          "trade_count": 3428,
+          "variant": "best_5"
+        },
+        {
+          "pooled_pnl": 946434.0,
+          "rejected_fill_count": 49,
+          "trade_count": 2002,
+          "variant": "best_10"
+        },
+        {
+          "pooled_pnl": 823281.0,
+          "rejected_fill_count": 46,
+          "trade_count": 1113,
+          "variant": "best_20"
+        },
+        {
+          "pooled_pnl": 663645.0,
+          "rejected_fill_count": 28,
+          "trade_count": 535,
+          "variant": "best_45"
+        },
+        {
+          "pooled_pnl": 523363.0,
+          "rejected_fill_count": 21,
+          "trade_count": 289,
+          "variant": "best_90"
+        },
+        {
+          "pooled_pnl": 339686.0,
+          "rejected_fill_count": 12,
+          "trade_count": 108,
+          "variant": "best_session"
+        },
+        {
+          "pooled_pnl": 86585.0,
+          "rejected_fill_count": 10,
+          "trade_count": 45,
+          "variant": "hold_to_forced_flat"
+        },
+        {
+          "pooled_pnl": 214571.00000000003,
+          "rejected_fill_count": 71,
+          "trade_count": 1343,
+          "variant": "first_real_profit_exit"
+        }
+      ],
+      "pass": true
+    },
+    "graph_phase_f_topology": {
+      "evidence": {
+        "edges": 104,
+        "nodes": 47,
+        "phase_edges": {
+          "FT2-92-IBKR-DECISION-SHADOW": [
+            [
+              "fail",
+              "STOP-CANDIDATE-REJECTED"
+            ],
+            [
+              "insufficient_evidence",
+              "STOP-OWNER-DECISION"
+            ],
+            [
+              "pass",
+              "FT2-93-NO-ORDER-LIVE-SHADOW"
+            ]
+          ],
+          "FT2-93-NO-ORDER-LIVE-SHADOW": [
+            [
+              "fail",
+              "STOP-CANDIDATE-REJECTED"
+            ],
+            [
+              "producer_complete",
+              "FT2-94-INDEPENDENT-LIVE-SHADOW-AUDIT"
+            ]
+          ]
+        },
+        "reachable": 47,
+        "sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9"
+      },
+      "pass": true
+    },
+    "immutable_authority": {
+      "evidence": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+      "pass": true
+    },
+    "immutable_graph": {
+      "evidence": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
+      "pass": true
+    },
+    "immutable_law": {
+      "evidence": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+      "pass": true
+    },
+    "immutable_matched_random_generator": {
+      "evidence": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+      "pass": true
+    },
+    "immutable_rerun002_receipt": {
+      "evidence": "17cc9983c38ef4c75b8fece0cd67d4662e559f84a27de8eba2a84a34f85d96ac",
+      "pass": true
+    },
+    "immutable_simulator": {
+      "evidence": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+      "pass": true
+    },
+    "mde_planning_values_match_rebuilt_census": {
+      "evidence": {
+        "csv": {
+          "mean_session_increment": 2042.3111111111111,
+          "regime_dimension": "overall",
+          "regime_value": "all",
+          "session_count": 45,
+          "session_increment_std": 2889.073292929619,
+          "session_increment_variance": 8346744.491919192,
+          "variant": "hold_to_forced_flat"
+        },
+        "spec": {
+          "mean_session_increment": 2042.3111111111111,
+          "regime_dimension": "overall",
+          "regime_value": "all",
+          "session_count": 45,
+          "session_increment_std": 2889.073292929619,
+          "session_increment_variance": 8346744.4919191925,
+          "variant": "hold_to_forced_flat"
+        }
+      },
+      "pass": true
+    },
+    "oracle_select_then_selected_only_recheck": {
+      "evidence": {
+        "fee_charged_cents": 0,
+        "pooled_pnl": 0.0,
+        "position_opened": false,
+        "premium_charged_cents": 0,
+        "rejected_contract": "future-best-rejects",
+        "rejected_fill_count": 1,
+        "trade_count": 0
+      },
+      "pass": true
+    },
+    "packet_receipts_and_deliverables": {
+      "evidence": {
+        "FT2-04": {
+          "declared_deliverables": 7,
+          "mismatches": {},
+          "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+          "receipt_sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe",
+          "schema_version": "Protocol101FT204NodeReceiptV4"
+        },
+        "FT2-05": {
+          "declared_deliverables": 117,
+          "mismatches": {},
+          "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+          "receipt_sha256": "ecaa16c923d4834c314816bca471597e09b9668ec5f1fe76d956be9c9d97d168",
+          "schema_version": "Protocol101FT205NodeReceiptV5"
+        },
+        "FT2-08": {
+          "declared_deliverables": 14,
+          "mismatches": {},
+          "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+          "receipt_sha256": "c4c9c729c8d19ae76f827ed280f66e7ee1143f7f51fd5b753615d6d968adb726",
+          "schema_version": "Protocol101FT208NodeReceiptV5"
+        },
+        "FT2-10": {
+          "declared_deliverables": 9,
+          "mismatches": {},
+          "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+          "receipt_sha256": "b0504ea7d78c041ed066b238229fd5bdda5584da2d1a0854adeefba91b63a3a2",
+          "schema_version": "Protocol101FT210NodeReceiptV5"
+        },
+        "FT2-11": {
+          "declared_deliverables": 10,
+          "mismatches": {},
+          "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+          "receipt_sha256": "3cb4693185bc2d1c77c5ecea38817766822b684b33679ba021c0446fade1534c",
+          "schema_version": "Protocol101FT211NodeReceiptV5"
+        }
+      },
+      "pass": true
+    },
+    "wait_population_denominator_aligned": {
+      "evidence": {
+        "denominator": "all label-auditable governed flat minutes with at least one time-t intent-eligible contract in the disjoint calibration sessions",
+        "excluded_rows": "label-incomplete governed flat minutes and zero-intent-eligible governed flat minutes only; report both excluded minute counts"
+      },
+      "pass": true
+    },
+    "wait_target_authority_exact_and_shared": {
+      "evidence": {
+        "calibration": {
+          "formula": "y_wait(t)=1 if WAIT_justified(t) else 0",
+          "json_pointer": "/targets/WAIT_head",
+          "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+          "scalar_U_label_threshold_allowed": false,
+          "sha256": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09",
+          "zero_intent_eligible_minutes": "excluded_and_counted"
+        },
+        "expected": {
+          "formula": "y_wait(t)=1 if WAIT_justified(t) else 0",
+          "json_pointer": "/targets/WAIT_head",
+          "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+          "scalar_U_label_threshold_allowed": false,
+          "sha256": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09",
+          "zero_intent_eligible_minutes": "excluded_and_counted"
+        },
+        "forecast": {
+          "formula": "y_wait(t)=1 if WAIT_justified(t) else 0",
+          "json_pointer": "/targets/WAIT_head",
+          "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+          "scalar_U_label_threshold_allowed": false,
+          "sha256": "adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09",
+          "zero_intent_eligible_minutes": "excluded_and_counted"
+        }
+      },
+      "pass": true
+    }
+  },
+  "failed": [],
+  "goal": "FT2-DELTA-REVIEW-BOUNDED-FIX",
+  "outcome": "pass",
+  "passed": 20,
+  "schema_version": "Protocol101FT2DeltaReviewBoundedFixCheckerV1",
+  "side_effects": {
+    "broker_recorder_or_paid_data_access": false,
+    "model_training_or_fitting": false,
+    "protected_outer_or_holdout_access": false,
+    "runtime_promotion_or_paper_change": false,
+    "simulator_v5_modified": false
+  },
+  "total": 20
+}
