@@ -1,5 +1,11 @@
 # Protocol101 Full Trader Program
 
+> **Current-status pointer (2026-08-01):** This front page predates the
+> walking-skeleton A6/A7 record and the owner-selected Path-D planning pivot.
+> Read [`../PATH_D_CURRENT_STATE.md`](../PATH_D_CURRENT_STATE.md) before acting on
+> its older graph-position or next-step statements. Path-D Phase-1 remains
+> design-blocked and is not authorized for training/backtest.
+
 Status: **CANONICAL PRODUCT AND GRAPH FRONT PAGE**
 
 Last reconciled: **2026-07-28, Full Trader graph reset**

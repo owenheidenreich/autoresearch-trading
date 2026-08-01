@@ -1,5 +1,11 @@
 # Agent Directives
 
+> **Protocol101 Path-D status (2026-08-01):** Read
+> [`v4/docs/protocol101/PATH_D_CURRENT_STATE.md`](v4/docs/protocol101/PATH_D_CURRENT_STATE.md)
+> before Protocol101 model, data, training, validation, or paper work. Path D is
+> in design repair; Phase-1 training/backtest and learned-trader paper readiness
+> are not authorized.
+
 ## First Steps
 
 1. Read `v2/ART2_LOOP.md` — the canonical hill-climbing protocol. This is the operating loop definition.

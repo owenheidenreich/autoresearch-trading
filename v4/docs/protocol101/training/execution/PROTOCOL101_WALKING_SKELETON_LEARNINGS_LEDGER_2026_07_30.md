@@ -1,0 +1,820 @@
+# Walking-Skeleton Learnings → Real-Campaign Ledger
+
+**STATUS: LIVING METHODOLOGY LEDGER, NOT AUTHORITY.** The single place every
+Walking-Skeleton learning is recorded with an explicit *disposition* — so each
+one either propagates into the real campaign (via a governed amendment or a
+process change), is a tracked watch-item, or is deliberately accepted. Nothing
+is allowed to just evaporate. Update this as each stage runs.
+
+Disposition types:
+- **DESIGN CHANGE** — alters the real model/contracts → governed amendment
+  folded into the consolidated authority (new hash, checker, review).
+- **PROCESS CHANGE** — alters how the real campaign is run (data, orchestration).
+- **WATCH-ITEM** — a risk to verify at a known point in the real campaign.
+- **VALIDATION** — confirms a design/process choice; keep doing it.
+
+| # | Learning | Evidence | Disposition | Status |
+|---|---|---|---|---|
+| L1 | **Entry gate was structurally unsatisfiable.** The composer required positive *pessimistic-decile* (q10) upside — a risk-free entry, which no real trade offers → 0 trades for any model. | Option-D Stage-1: realized q10 MFE negative at every horizon; 0/4191 contracts pass; even the no-screen control abstains 100%. | **DESIGN CHANGE** → FT2-10 entry-gate convexity amendment: gate on *expected* upside after fees; keep q10 for ranking; downside → exit + cap + breaker. Codex added a required statistical correction: gate on the **calibrated session-clustered lower-confidence bound on the conditional MEAN** (not an individual-outcome conformal quantile, which would recreate the q10 defect). | **OWNER-SIGNED (2026-07-31, Owen Heidenreich).** Authority `edcbee06`→`82d9573e` folded into binding authority; sign-off receipt in `protocol101_ft2_10_entry_gate_convexity_amendment/owner_approval_receipt.json`. Claude verified independently: authority + graph hashes reproduced; provenance owner-signed→convexity clean; anti-regression rule `entry_gate_uses_satisfiable_central_tendency_statistic` real (forbids "q10" in the gate) & passing; checker 32/32 re-run green; gate now passes **552 proposals** (was 0/4191). L1 CLOSED. |
+| L2 | **Loss control belongs to the exit model, not the entry gate.** Entry scans market-wide for a setup (broad, once, from forecasts); exit is locked on one position — its greeks, that contract, tick-by-tick — the only component that can see and cut a developing loss. | Census: dumb-entry + good-exit captured ~45% of the ceiling; L1 mechanism. | **DESIGN CHANGE / carry-forward** — embedded in L1; a binding design principle for the FT2-60 lifecycle contract when written (the exit must be strong; it owns loss control). | Captured in L1 amendment; flagged for FT2-60 design. |
+| L3 | **Conformal calibration is very conservative on thin data.** 45 sessions → the calibrated q10 upside was ~5× more pessimistic than raw (0.265 → 0.051), which compounds over-abstention. | Option-D replay predictions (raw vs calibrated). | **WATCH-ITEM** — more development data tightens calibration; strengthens the case for the 2022-2023+ backfill (D57) and must be reflected in the D54 entry-feasibility gate and MDE-before-spend. | Flagged; feeds D54/D57. |
+| L4 | **The downstream composer gates are still untested.** Uncertainty-WAIT, q90-regret, and the action-conditioned gate never ran — nothing survived the entry gate to reach them. | Option-D: 0 contracts past stage-2. | **WATCH-ITEM** — after the L1 fix, the Stage-1 re-run exercises them for the first time; watch for a second-order over-abstention (a repeat of L1 one layer down). | **RESOLVED (2026-07-31): second-order over-abstention CONFIRMED, but it is NOT an L1-class defect — see L9.** Post-fix Stage-1 rerun: 552 proposals cleared the new entry gate, then **every** downstream numeric gate individually rejected all 552; action-conditioned gate was *unavailable*. Still 0 BUY. |
+| L9 | **The remaining 0-BUY is a weak/thin model correctly failing conservative confidence gates — NOT a structural defect.** After the L1 fix the block moved one layer down: the uncertainty-margin gate requires the predicted directional cluster-gap (≤0.08, median 0.015) to exceed the model's own 90% conformal prediction-error bar (`wait_margin`=0.7038 ≈ model_gap_error) — the dumb GBT's error is ~10× its signal, so it can't clear ANY confidence gate. Additionally the action-conditioned gate is unavailable (19 realized WAIT outcomes < 50 minimum). Unlike L1 (unsatisfiable for *any* model on *any* data), these shrink with a stronger model + more data. | Stage-1 headline_decisions.csv: wait_margin 0.7038 constant vs cluster_gap max 0.078; diagnostic_packet.json individual downstream pass counts all 0; action gate WAIT-outcomes 19<50. | **WATCH-ITEM / PROCESS CHANGE.** Owner selected fork (b): an explicitly quarantined forced-BUY harness that cannot alter or bypass the real composer in runtime. That harness exercised Stages 2–3; the real signal-to-error feasibility issue remains open for the governed data-scaling curve before GPU spend. | **PLUMBING FORK RESOLVED (2026-07-31); REAL-MODEL WATCH-ITEM OPEN.** Real composer remains byte-frozen and `ABSTAINS`; 552 real A6 proposals yielded 78 deterministic quarantined intents solely downstream. |
+| L10 | **Branch-coverage canaries prove control-flow seams, not policy quality or alpha.** The deterministic forced-BUY selection and lifecycle canaries successfully fired learned exit, floor, and forced-flat paths, but they also shape trade mix and P&L. | Stage 2–3 replay: 9 accepted trades, 4 learned exits, 4 floor triggers, 1 forced-flat; descriptive P&L −$552; four buckets 0/4/2/3. | **PROCESS CHANGE** — keep branch canaries in a separately labeled plumbing suite. Never tune entry, lifecycle, floor, or promotion policy from canary-shaped results; the real campaign must report governed performance separately. | Applied to Stage 2–3 packet and audit; carry forward to every later skeleton/parity stage. |
+| L11 | **ROC AUC can look strong while rare-event usefulness remains weak.** The throwaway lifecycle classifier's calibration ROC AUC was 0.8372, but average precision was only 0.0664. | `lifecycle_model_manifest.json` in the Stage 2–3 evidence packet. | **WATCH-ITEM** — the real lifecycle campaign must lead with prevalence-aware precision-recall, calibration, and session-clustered evidence; ROC AUC alone is not sufficient evidence of a usable exit model. | Recorded; verify at the governed FT2-60 lifecycle-model gate. |
+| L12 | **The historical simulator needs two native exit clocks.** Frozen simulator v5 requires threshold-exit source time to equal realized occupancy time with zero label age, while official 1-second rows have a distinct exchange-event timestamp and nonzero market-quote age. | Independent Stage 2–3 review reproduced the simulator rejection when the raw event clock was supplied directly. The quarantined adapter now preserves actual `exit_source_event_time_ns` and `exit_market_quote_age_ms` in trade metadata and the audit checks exact clock arithmetic/freshness. | **DESIGN WATCH-ITEM** — do not mutate frozen simulator v5 for the skeleton. Before real-campaign acceptance/parity, make source-event time, decision/occupancy time, and quote age first-class schema fields with exact invariant tests. | Skeleton adapter verified; native real-campaign schema requirement remains open. |
+| L13 | **Static chart checks do not replace rendered visual QA.** The first 35/35 structural audit passed while the multi-session SPX chart mapped global bar IDs as dense array indexes, causing every displayed date to collapse to 2025-03-10. | Independent local-browser review of `trades-on-spx.html`; fixed exporter now densely reindexes the filtered SPX rows and trade markers. Final audit 38/38 plus rendered span 2025-03-06 through 2025-03-10. | **PROCESS CHANGE** — every owner-facing D60/parity visualization requires both machine checks and an actual local render check covering session/date span and marker alignment. | Applied; regression test and audit rule added. |
+| L14 | **Safety cutoffs need exact-boundary tests.** A strict `>` comparison admitted decisions at exactly 15:30 even though the binding last legal decision is 15:29. | Independent Stage 2–3 review of the forced-BUY prefilter; exact 15:29-pass / 15:30-reject regression test now passes. | **VALIDATION / PROCESS CHANGE** — historical and live adapters must test both sides of every time and risk boundary, including equality. | Applied to the quarantined harness; carry into runtime-parity tests. |
+| L5 | **Sub-minute data must be sourced by governed role, not recency.** Only 3 of 30 owned 1s sessions were firewall-safe (23 outer-test, 4 protected holdout). | Stage-0 firewall proof; the $10 clean-download correction. | **PROCESS CHANGE** — the real exit-calibration acquisition (cmbp-1) selects sessions by governed train/dev role with a firewall-intersection proof, never "recent N." | Applied at Stage-0; generalize to the real acquisition. |
+| L6 | **Bulk-batch acquisition, not serial streaming, at scale.** 13 sessions took 66 min but only 37 CPU-sec — the cost was vendor latency + retries + batch-queue, not data volume. | Stage-0 clean-1s run; process was ~99% idle. | **PROCESS CHANGE** — the full backfill submits bulk batch jobs (parallel server-side prep), under the same cost caps. | Documented in the parallelism/diamond doc; apply at backfill. |
+| L7 | **Stage-by-stage review cadence works — do not batch stages.** The "build 1-2-3 in one shot" attempt correctly stopped at Stage 1 on the active-gate, surfacing L1 at the first fit instead of after three stages of throwaway build. | Stage-1 stop record. | **VALIDATION** — keep the one-stage-at-a-time gate for the real campaign. | Confirmed. |
+| L8 | **The dry-run-before-spend thesis is validated.** Three cold design reviews could not catch L1 (spec was internally consistent; the defect only appears when a fitted model meets the real label distribution). A ~$10 dry-run did. | Review history vs Option-D finding. | **VALIDATION** — always run the Walking Skeleton before committing to the full data download + GPU campaign. | Confirmed. |
+
+## How this ledger enforces propagation
+
+1. **DESIGN CHANGES don't count as "handled" until they're in the binding
+   authority** (new hash, checker, owner sign-off) — L1 is not done until then.
+2. **PROCESS CHANGES are referenced from the real acquisition/campaign goals**
+   (L5, L6) so the operators inherit them, not rediscover them.
+3. **WATCH-ITEMS name the exact real-campaign checkpoint** where they get
+   verified (L3/L9 → D54/D57; L11/L12 → lifecycle and parity acceptance).
+4. Every future Walking-Skeleton stage (2-6) appends its learnings here with a
+   disposition before that stage is called "reviewed."
+
+## Open items to fold into the FT2-21 bundle / authority when convenient
+- L1 as a formal owner-adopted amendment (D-number) once Codex implements it.
+- L5 (firewall-role acquisition) and L6 (bulk batch) as process addenda.
+- L2 as a binding note for the FT2-60 lifecycle contract.
+
+---
+
+## Standing process (owner directive 2026-07-31)
+
+This ledger is updated after EVERY Walking-Skeleton phase — the moment Codex
+gets snagged on something — in THIS file, not a separate tracker. Purpose:
+learn from each snag, don't tunnel-vision on the skeleton, and carry every
+lesson forward into the real large-scale model's design.
+
+## Emerging synthesis — what Stage 1 is teaching us about the REAL entry model
+
+Stage 1 (the entry model) has hit TWO structural blocks before a single
+downstream stage ran, and **both are entry-side**. That is itself the headline:
+**the entry model is the hard part of this whole system.** Anticipate this for
+the beefy model now.
+
+- **L1 (fixed): a gate can be internally consistent yet empirically
+  unsatisfiable.** Real-model carry-forward: before the real campaign, every
+  gate gets a "can ANY model clear this against the real label distribution?"
+  satisfiability test — not just a consistency review. The three cold reviews
+  missed L1 precisely because they only checked consistency.
+
+- **L9 (plumbing fork resolved; real-model watch open): the entry model's
+  confidence (signal-to-error) on 45 sessions is
+  ~10× too weak to clear the downstream uncertainty/regret gates.** These gates
+  are demanding *by design* (they enforce "don't trade on noise") — that is
+  correct and protective. Real-model carry-forward, the key anticipation:
+  **the beefy model's feasibility hinges on signal > conformal error**, which
+  needs (a) more data and (b) more model capability. **Before the GPU campaign,
+  measure a data-scaling curve: how does signal-to-error shrink as dev data
+  grows 45 → ~300 sessions? If the 10× gap doesn't close, the entry edge may be
+  too thin for ANY model — which is exactly what we must learn cheaply before
+  spending.** This is the D54 entry-feasibility question made concrete, and it
+  quantifies the value of the D57 backfill.
+
+- **Cross-cutting:** a demanding confidence gate means the real entry model must
+  be genuinely strong OR the trader is mostly WAIT (abstention-as-success, which
+  the Charter permits). Per the component-freeze logic, the real test is whether
+  the COMBINED system (a selective/weak-ish entry + a strong exit) still profits
+  — so a mostly-abstaining entry is not automatically a failure. Track this.
+
+## Stage 2–3 synthesis — what the downstream skeleton adds
+
+- The forced-BUY fork did its narrow job: real A6 proposals flowed through a
+  quarantined intent wrapper into official 1-second lifecycle rows, learned
+  HOLD/EXIT decisions, the upward-only floor, serial replay, and D60 outputs.
+  That proves the seams can execute; it says nothing about alpha.
+- The lifecycle baseline demonstrates why rare-event metrics must lead the real
+  exit-model review: ROC AUC `0.8372` coexists with average precision `0.0664`.
+- The independent replay found two parity-sensitive boundary issues that static
+  success counts hid: a 15:30 equality error and an implicit two-clock adapter
+  contract. Both now have explicit checks; the latter remains a native-schema
+  requirement for the real simulator/runtime-parity campaign.
+- Rendered QA found a multi-session coordinate defect after the structural HTML
+  checks passed. Visualization is part of verification, not presentation polish.
+
+---
+
+## Phase update 2026-07-31 — Codex V1 retrospective + V2 rerun packet review
+
+Source: `PROTOCOL101_WALKING_SKELETON_V2_RERUN_PACKET_2026_07_31.md` (Codex),
+Claude-verified against authority + artifacts. New learnings:
+
+- **L10 — Cadence: the V1 skeleton was NON-COMPLIANT, not the authority ambiguous.**
+  V1 made 1-second HOLD/EXIT/floor *decisions* (confirmed in stage2_3/report.md).
+  Authority §2.4 + A1 unambiguously specify **completed-minute** decisions and
+  fills, and explicitly REJECTED sub-minute decisions because the normalized
+  corpus has one CBBO snapshot per contract-minute; sub-minute acquisition is
+  "deferred to a separate campaign-2 owner decision" (L223). D58/D59 govern
+  1-second *labels/calibration*, a different axis Codex conflated with decision
+  cadence. **Disposition: fidelity DEFECT in the skeleton (fix to comply);
+  Codex's "blocking Q1 ambiguity" framing is corrected.** Real-model carry:
+  decisions stay completed-minute unless the owner deliberately opens the
+  campaign-2 sub-minute-decision amendment (which carries data-cost + IBKR
+  live-parity burden and cannot backfill minute history before 2023-03-28).
+
+- **L11 — The real lifecycle objective is not yet specified.** The action-advantage
+  foundation (`..._HOLD_EXIT_ACTION_ADVANTAGE_FOUNDATION_V1.md`) defines
+  `A_hold = Q(hold) - Q(exit@bid)` but EXPLICITLY BLOCKS training until slot
+  opportunity cost, switching cost, calibrated fill/latency/quote-age
+  uncertainty, and distributional targets are added. V1's harness lifecycle used
+  a convenient HGB HOLD/EXIT proxy — the forbidden shortcut. **Disposition:
+  DESIGN work (real FT2-60), Claude writes / Codex reviews. You cannot faithfully
+  skeleton a model that isn't specified.** Confirms RSD-06.
+
+- **L12 — Adopt Codex's V2 discipline as the permanent operating standard.**
+  Two-lane A/B separation (autonomous model-fidelity vs deterministic canary),
+  `fidelity_manifest.json`, the two-axis stage card (engineering coverage vs
+  policy acceptance), immutable attempt dirs, rendered visual QA, and the RSD
+  register. These prevent the exact "forced activity = pass" trap that damaged
+  V1. **Disposition: PROCESS CHANGE, adopt now.**
+
+- **META (owner steer 2026-07-31): the skeleton is a discovery instrument, not a
+  destination.** It has surfaced its findings (L1 fixed; entry signal-to-error =
+  the D54 question; lifecycle objective undesigned; cadence defect; process
+  rules). Route findings to the REAL spec — do NOT iterate skeletons for their
+  own sake. The next quantitative gate is the D54 simple-model entry-feasibility
+  + scaling study on the REAL entry path (CPU, likely no new download), which is
+  what decides the ~$1,100 spend. Codex's full "miniature-but-real neural V2"
+  over-rotates toward rebuilding the real campaign under a skeleton label; prefer
+  fold-findings + design-the-real-gaps + a LEAN completed-minute confirm run.
+
+---
+
+## Phase update 2026-07-31 (b) — 1-second-exit pivot + parity finding
+
+Owner decisions: (1) amend toward **1-second EXIT decisions** (pivot on new
+information; floor=stop=exit is already sub-minute); (2) V2 = **full
+miniature-neural, from scratch, quarantined** (build it exactly like the real
+thing, miniature); (3) confirm decision parity via recorder days.
+
+- **L13 — Parity is the binding constraint on 1-second exit, and it is the
+  HARDEST version of the parity gate (Claude-verified against the synchronization
+  contracts).** The recorder captures event-driven sub-minute data (good), BUT
+  the existing parity certification is **minute-cadence and microstructure-MASKED**:
+  cross-vendor (IBKR-live vs Databento-historical) parity was only achievable by
+  masking `bid/ask/mid/spread/sizes/iv/greeks` before model scoring, because the
+  raw fields caused action/selected-contract mismatches; even then features are
+  "not byte-identical." Those masked microstructure fields are exactly what a
+  tick-by-tick exit model decides on, and cross-vendor divergence is WORSE at
+  1-second than at minute. **The binding constraint is not cadence — it is which
+  vendor trains the exit model.** Three paths: (A) same-vendor IBKR-train/IBKR-live
+  (parity-clean; needs a recorder-capture campaign — only ~4 recorder days exist);
+  (B) cross-vendor Databento-train/IBKR-live (fast data, real feasibility risk —
+  the microstructure that failed parity is the exit's own input); (C) hybrid —
+  1-second floor/stop (robust price-threshold trigger, parity-tolerant) + minute
+  learned exit (certified). **Disposition: OPEN — run a cheap 1-second
+  cross-vendor parity probe on the existing 4 recorder days BEFORE amending the
+  authority or committing to a data campaign.** Pairs with the standing
+  parity-gate hard rule (no training until train/live feature parity certified).
+  Real-model carry: the 1-second-exit amendment must specify the vendor/training
+  path and its parity certification, not just the cadence.
+
+---
+
+## Phase update 2026-07-31 (c) — recorder audit, cbbo-1s cost, staged-D59 (A7)
+
+- **L14 — Recorder-day inventory (Claude-verified).** 13 IBKR capture dirs exist
+  (~3 GB event-driven JSONL each). **6 COMPLETE**: 2026-06-30, 07-01, 07-02,
+  07-10, 07-13, 07-14 (~436–440 one-per-minute health files; 06-30 & 07-02
+  recovery=pass). **INCOMPLETE/UNUSABLE**: 06-29 (dev partial, 32 files),
+  07-20 (recovery=FAIL, died ~2h early), 07-29 (aborted, 21 files), and
+  07-06/07/08/09 (empty, no capture). For a parity probe, incomplete days only
+  reduce coverage — use the 6 complete days. 06-30/07-01/07-02 already have
+  Databento paired builds (minute cadence, microstructure-masked).
+- **Databento coverage (verified via metadata range):** `cbbo-1s`
+  **2025-02-20→present**; `cmbp-1` 2023-03-28→present; `cbbo-1m` (entry minute
+  substrate) back to 2013-04-01.
+- **Cost (free get_cost, exact 0DTE ladders 58–86 syms/day from the captures):**
+  6 complete days — `cbbo-1s` **$1.34** total; `cmbp-1` **$9.88** total.
+- **DESIGN DECISION — staged data ladder + A7 amendment (owner-approved
+  2026-07-31).** Replace the "cmbp-1 for all later acquisitions" mandate with a
+  risk ladder: (1) $1.34 cbbo-1s parity check → (2) Walking Skeleton V2 → (3)
+  cbbo-1s backfill to 2025-02-20 (~360 sessions) = first prototype → (4) cmbp-1
+  only if an edge is shown. **Governed via amendment A7 (staged D59):** cbbo-1s
+  ACCEPTED for parity/skeleton/prototype + 1-second decision cadence; cmbp-1-
+  derived-1s REQUIRED for the trusted floor/stop label corpus before promotion.
+  Rationale: cbbo-1s = 1 snapshot/sec and can miss an intra-second
+  cross-then-recover that a stop/floor cares about; cmbp-1 sees every quote.
+  Proposal: `PROTOCOL101_D59_STAGED_SUBMINUTE_REPRESENTATION_AMENDMENT_PROPOSAL_2026_07_31.md`
+  (Claude writes → Codex reviews → owner signs). New checker rule
+  `sub_minute_corpus_tier_tag_required`. **No download executed** — awaiting A7
+  sign-off + explicit green-light. Real-model carry: the trusted exit corpus is
+  cmbp-1; combined entry+exit replay only valid in the 1s-overlap window (≥2025-02-20).
+
+---
+
+## Phase update 2026-07-31 (d) — A7 Codex review and governed reseal
+
+- **L15 — Trusted floor/stop labels must inspect raw events before
+  downsampling.** Codex endorsed the Tier-S/Tier-T cut with a required technical
+  clarification. Official `cbbo-1s` is the last consolidated BBO on an interval
+  (and may omit an interval with no qualifying update/trade), while `cmbp-1`
+  provides every consolidated top-of-book update event. Merely retaining
+  `cmbp-1` and then labeling only the downsampled last state would still miss a
+  cross-then-recover. Tier-T floor/stop crossing labels therefore inspect the
+  raw CMBP event path; only the derived 1-second representation is a model
+  input. **Disposition: DESIGN CLARIFICATION, folded into A7.** Tier S remains
+  `1-second-approximate`, quarantined, and forbidden from trusted promotion,
+  paper-readiness, paper, or real-money floor/stop-label paths.
+- **A7 enforcement is machine-readable, not prose-only.** The governed policy
+  and canonical corpus registry classify the two current `cbbo-1s` raw roots
+  plus the V1 downstream derivative. Forty-one discovered current sub-minute
+  manifests are covered through the registry sidecar without rewriting their
+  immutable pre-A7 provenance. Every post-A7 corpus must embed its tier fields
+  and register before use. Checker rule
+  `sub_minute_corpus_tier_tag_required` includes negative fixtures proving it
+  rejects Tier-S promotion marking, a trusted consumer bound to Tier S, and an
+  unregistered current corpus.
+- **Reseal result:** authority
+  `82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2`
+  → `1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc`;
+  Graph V2 remains
+  `9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08`;
+  cross-contract checker 33/33 green. **Status: awaiting Claude independent
+  verification and final owner signature; no training, download, broker,
+  recorder, protected-resource, runtime/default, or graph action occurred.**
+
+---
+
+## Phase update 2026-07-31 (d) — A7 signed; cbbo-1s parity download authorized
+
+- **A7 CLOSED — owner-signed** (Owen Heidenreich, 2026-07-31). Claude-verified:
+  authority `82d9573e`→`1d215845` (reproduced as plain sha256), graph unchanged
+  `9955085a`, checker 33 checks/0 failures + new rule
+  `sub_minute_corpus_tier_tag_required` passing, Tier-T guarantee verbatim, both
+  Codex clarifications (raw-event-path-before-downsampling; cadence boundary =
+  no 1s-decision activation, FT2-08 minute stays authoritative) folded into the
+  authority. Sign-off receipt: `protocol101_d59_staged_subminute_representation_amendment/owner_approval_receipt.json`.
+- **Rung 1 authorized:** owner green-lit the $1.34 cbbo-1s parity download
+  (Tier-S). All four A7 conditions met (free estimate, hard cap $15, owner
+  green-light, quarantine `v4/raw/opra_1s_parity_probe/`). Download in progress;
+  then the cross-vendor 1-second parity probe (Phase 1 same-vendor viability +
+  Phase 2 cross-vendor comparison on the masked microstructure fields) decides
+  the cadence path.
+
+- **Rung-1 download COMPLETE + Claude-verified (2026-07-31):** cbbo-1s for the 6
+  complete recorder days pulled to `v4/raw/opra_1s_parity_probe/` (DBN+parquet,
+  hashed manifest, `tier_tag: probe`). Actual cost $1.34 = estimate, under cap.
+  ~9.0M rows total. Schema carries bid/ask/sizes (the masked microstructure).
+  Next: the cross-vendor 1-second parity probe decides the cadence path.
+
+---
+
+## Phase update 2026-07-31 (e) — WS2 1-second parity probe
+
+- **L16 — One-second price levels transfer; the full exit feature vector and
+  first-cross event do not transfer cleanly.** The six-day Tier-S probe aligned
+  every IBKR ladder contract to its exact padded OSI symbol with zero unmatched
+  symbols and measured 5,570,116 paired symbol-seconds. IBKR same-vendor
+  reconstruction yielded 5,569,565 clean active symbol-seconds, 90.66%–98.29%
+  active-ladder coverage, and 95.21%–99.14% one-second continuity. Bid differed
+  from its minute checkpoint on 71.94%–85.80% of rows, so the sub-minute path
+  carries real state variation (not a predictive-signal or alpha claim).
+- Cross-vendor bid/ask/mid level parity was strong (daily correlation at least
+  0.999963; weighted bid MAE $0.0218; daily bid p95 $0.10–$0.20), but displayed
+  sizes remained vendor-sensitive (22.2/22.7-contract weighted bid/ask-size
+  MAE, 23.31%–38.39% exact agreement, 51.24%–55.43% nonzero direction
+  agreement). The frozen common-history 80% trailing-bid floor flipped on
+  0.1479% of states, yet first-cross decisions differed on 17.59% of triggered
+  quote segments; 92.25% of dual-vendor triggers were within one second. The
+  old minute certificate cannot waive this result: it masked these fields,
+  had zero exact rows, and accepted only zero action/contract flips.
+- **Cadence-path disposition: recommend C now; preserve A as the full learned
+  destination; do not authorize B from this probe.** A future governed design
+  should use an IBKR-live one-second protective floor/stop plus the existing
+  completed-minute learned exit. A fully learned one-second policy should use
+  same-vendor IBKR-train/IBKR-live after FT2-60 freezes its objective and sample
+  law and a real recorder campaign supplies sufficient independent sessions and
+  action-diverse held trajectories. The present six days are only 6/45 of the
+  frozen session hard-bound minimum; their 125 completed-minute open-state rows
+  collapse to five trajectories on three sessions (120 HOLD, five forced-flat,
+  no learned EXIT, no native one-second labels). **Tier-S feasibility only:**
+  trusted historical floor/stop labels remain Tier T; no authority or cadence
+  changed. Evidence:
+  `v4/audit/autoresearch/protocol101_ws2_parity_probe/`.
+
+---
+
+## Phase update 2026-07-31 (e) — WS2 parity probe COMPLETE + Claude-verified
+
+- **L15 — Cross-vendor 1-second exit parity result (Claude-verified).** On 6
+  recorder-paired days (5.57M paired symbol-seconds): price LEVELS transfer well
+  (bid/ask/mid corr ≥0.99996); SIZES/SPREAD do NOT (size corr 0.88–0.98, exact
+  agreement 23–38%; spread agreement ~40%); floor STATE agrees 99.85% but exact
+  first-cross TIMING disagrees 17.59% (269/~1500 triggered segments). Receipt
+  hash 44eaa3aa… reproduced independently; validation 18/18.
+  **Conclusion:** a learned cross-vendor 1-second exit (Databento-train/IBKR-live,
+  path B) is NOT reliable and is rejected. A price-threshold floor/stop is robust.
+- **DECISION INPUT — cadence path — [SUPERSEDED by phase (f)/L16; decision REOPENED].**
+  Original (retained for the record): recommended C now (minute entry + minute
+  learned exit + IBKR-live 1s floor), A as destination via a recorder campaign.
+  **Corrections (phase (f)):** (i) a 1-second floor CHECK is a governed change vs
+  authority D24 (completed-minute floor), so C is NOT "buildable now" without
+  governance + ablation — the "NO cadence amendment needed" claim above is WRONG;
+  (ii) the ~65–90-session figure was misapplied (Phase-F shadow bound, not a
+  training minimum); (iii) "Databento is not a live-exit source" is WRONG —
+  Databento offers live OPRA (Path D). Path A/B/C trichotomy dissolved.
+
+---
+
+## Phase update 2026-07-31 (f) — adversarial review corrected the record (Codex)
+
+Codex adversarial review of the cadence brief; Claude re-verified every point
+against source — all CONFIRMED. Corrections to prior claims:
+
+- **L15 spread claim was WRONG.** The "~40% spread agreement" cited the
+  same-vendor (IBKR-second vs its own minute checkpoint) table, not cross-vendor.
+  Real cross-vendor: spread exact-level ~69–83%, within $0.10 on 97–99%; only
+  spread-CHANGE direction is noisy (~46–58%). Price levels ≥0.99996 (5th pct
+  ~0.997). **Parity is more favorable than L15 implied.** Sizes genuinely do NOT
+  transfer (exact 23–38%, direction 51–55%).
+- **Trigger/first-cross metric is not decision-grade:** the floor was computed
+  from `(bid_ibkr+bid_dbn)/2` (`run_parity_probe.py:574`) — info neither live
+  system has. State-flip (~0.145%) is robust; the 17.59% exact-cross stat is
+  observation/segmentation-dependent (session bootstrap ~12.9–22.8%) and must NOT
+  gate architecture.
+- **"18/18 validation" overstated:** ≥3 checks just assert the report recommends
+  C / preserves A / rejects B (circular).
+- **65–90 sessions misapplied:** 45 is the Phase-F live-shadow hard-bound minimum
+  (`bootstrap_spec.json:239`), not a 1s-lifecycle training minimum. Data need
+  must be power-derived. "Only 5 trajectories" = 5 shadow trajectories, not all
+  constructible from recorded full-ladder paths (minute foundation already built
+  198,261 state rows / 709 trades).
+- **DOC CONFLICT (fix):** ledger "no cadence amendment needed" (L320) vs authority
+  D24 completed-minute floor check (L502) — a 1s floor check IS a governed change.
+- **Recorder confound:** no gross drop (2026-07-14: 6.48M callbacks, ~104ms BBO
+  inter-arrival ≈ IBKR's ~100ms aggregation, not Claude's 250ms). BUT recorder
+  `event_timestamp_utc` = local TCP packet time (batched; ~85% shared), so exact
+  cross-vendor timing is confounded; the probe cannot attribute size/spread
+  differences among IBKR aggregation / SMART-NBBO / entitlements / recorder, and
+  cannot prove a price/path model is unreliable.
+
+- **L16 — PATH D (the missed architecture; now the lead candidate).** "Same-vendor"
+  need not mean IBKR-recorded history. **Databento offers live OPRA**, so train +
+  decide live on Databento (same vendor → no model-input parity problem), IBKR =
+  execution/guard only. Multirate design: (1) slow minute decision plane (deep
+  history, regime/ranking/entry intent); (2) fast Databento cmbp-1 historical +
+  Databento live sub-minute execution/position plane; (3) deterministic risk
+  governor (forced-flat, stale-data, loss limits, catastrophic boundary); floor
+  updated at slow cadence, monitored continuously; (4) separate MODEL cadence from
+  ORDER cadence (intent → bounded quote-fresh marketable-limit window; needs A1
+  change). Open costs: Databento live OPRA entitlement + cost, outage handling,
+  symbol sync, IBKR execution reconciliation — needs an owner-approved estimate.
+  Fallback **Path B-prime:** price/path-only features (relative bid/PnL/MFE/
+  giveback/time/underlying-path; exclude displayed size + vendor greeks; spread/
+  IBKR state as execution/abstention guards only) — falsifiable on the 6 owned
+  days. **A7 sequencing fix:** buy a small trusted cmbp-1 raw-event slice BEFORE
+  any large cbbo-1s backfill (else we optimize against approximate stop labels).
+  Path C is NOT "buildable now" in the trusted sense (floor-cadence governance +
+  ablation required). Decision REOPENED; no path settled.
+
+---
+
+## Phase update 2026-07-31 (g) — Path B-prime falsification COMPLETE, Claude verification pending
+
+- **L17 — B-prime deterministic representation-transfer falsification.** The
+  six already-owned recorder-paired days were tested with 399 entry-only-frozen
+  counterfactual trajectories. No model was trained. Both feeds ran the same
+  preregistered deterministic state machine: an upward-only 65%-of-entry / 80%-of-
+  running-peak bid floor, fixed adverse-path and giveback exits, and a 45-minute
+  or 15:55 ET time stop. IBKR used `received_timestamp_utc`; Databento `ts_recv`
+  was mapped to the same canonical `received_boundary_second_utc`. Neither
+  `event_timestamp_utc` nor `ts_event` was used. Each feed used its own entry ask
+  and prior state; no cross-vendor average was available to either decision path.
+- **Preregistered verdict: `INSUFFICIENT`, not YES and not NO.** At both the 1s
+  and 5s quote-age caps, price/path-only exit decisions agreed within 5 seconds
+  on 88.97% of 399 resolved trajectories (six-session cluster 95% CI
+  86.95%–91.14%), below the 90% YES point gate. State-level decisions agreed
+  99.856% (CI 99.804%–99.893%), while 29.82% of trajectories had at least one
+  action flip (CI 24.81%–34.24%), missing the 20% point / 30% CI-high YES gates.
+  Economic exit-price disagreement was much smaller: median $0 and p95 $20 per
+  contract (p95 cluster CI $10–$40). No preregistered cluster-CI severe-failure
+  rule fired, so a NO claim would also overstate the evidence.
+- **The simplification was directionally right, but not established as a live
+  contract.** Adding displayed size plus symmetrically recomputed IV/delta made
+  transfer worse: price/path-only improved ≤5s exit agreement by 5.76 percentage
+  points (CI 3.40–8.75), reduced any-flip trajectories by 16.04 points (CI
+  12.89–18.84), and improved p95 exit-price disagreement by $10 (CI $0–$19.50).
+  This supports excluding vendor-sensitive size/Greek features from a
+  cross-vendor representation; it does not authorize B-prime.
+- **Architecture consequence:** another inherited multi-day IBKR campaign is
+  not the automatic next step. The 1s and 5s headline exit-agreement,
+  exit-price, and trajectory-flip results were identical; eligibility-denominator
+  rates changed only negligibly. The YES miss includes point-estimate gates, so
+  more sessions merely narrowing these intervals would not make this exact
+  preregistered rule pass. Any later recorder sample count needs a new
+  decision/power contract. Path D remains a candidate, B-prime remains unproven,
+  Path C remains governed, and no architecture is committed by this Tier-S probe.
+- Evidence: `v4/audit/autoresearch/protocol101_ws2_bprime_falsification/`.
+  Highest claim: measured whether a price/path-only exit representation
+  transfers cross-vendor on 6 recorder-paired days; Tier-S; no promotion/alpha
+  claim; no architecture committed. Terminal: `STOP_FOR_CLAUDE_VERIFICATION`.
+
+---
+
+## Phase update 2026-07-31 (h) — WS2 latency/fill sensitivity COMPLETE, Claude verification pending
+
+- **L18 — Received-clock latency and marketable-limit sensitivity.** The 399
+  frozen B-prime trajectories supplied 798 fixed Databento decisions (399 entry
+  asks and 399 price/path-only exit bids). No policy was fitted or retuned. For
+  each decision, IBKR BBO and last/last-size state was reconstructed only by
+  `received_timestamp_utc`; Databento `ts_recv` supplied T. The preregistered
+  delays were 0/1/2/5/10/30/60 seconds and buffers were $0/$0.05/$0.10/$0.20.
+  No cross-vendor average or `event_timestamp_utc` decision field was used.
+- **Executable-price sensitivity rises quickly in the tail.** Median adverse
+  slippage stayed approximately $0 per contract, but entry/exit p95 adverse
+  slippage was $1/$0 at 0s, $20/$20 at 1s, $30/$30 at 2s, $50/$40 at 5s,
+  $60/$50 at 10s, $110/$70 at 30s, and $142.50/$90 at 60s. Fresh-touch
+  eligibility remained 98.25%–100% under the existing 1.5-second paper-guard
+  quote-age limit. These are assumed-delay sensitivities, not measured API or
+  end-to-end live latency.
+- **Tier-S buffer recommendation: $0.00 at the frozen five-second window
+  (`PASS`).** At the Databento decided price, IBKR-order-guard eligibility was
+  100% for entry and 99.75% for exit. Conditional immediate-touch-or-later-
+  trade-through fill proxies were 99.50% for entry (session-cluster 95% CI low
+  98.94%) and 99.75% for exit (CI low 99.22%); strict observed trade-through by
+  five seconds was 92.98%/96.73%. The realized adverse p95 proxy was $0 because
+  immediate crosses executed at the observed better-or-equal touch and delayed
+  trade-throughs were conservatively assigned the unbuffered limit. Every
+  larger buffer also passed, so the preregistered smallest-passing rule selected
+  zero rather than paying for no required fill-proxy improvement.
+- **Interpretation and hard limit:** a Path-D design should separate model
+  cadence from order cadence and submit/cancel a bounded quote-fresh limit
+  promptly; it should not intentionally wait for a later executable quote when
+  tail slippage grows this fast. But no historical order existed. Queue
+  position, depth, routing, partial fills, cancels, and API latency are unknown,
+  so this packet does **not** measure true fill probability and does not commit
+  an execution architecture or amend A1.
+- Evidence: `v4/audit/autoresearch/protocol101_ws2_latency_sweep/`. Highest
+  claim: measured historical slippage-vs-assumed-delay and marketable-limit fill
+  behavior on 6 recorder-paired days; Tier-S; sensitivity not true live latency;
+  no architecture committed. Terminal: `STOP_FOR_CLAUDE_VERIFICATION`.
+
+---
+
+## Phase update 2026-07-31 (g) — B-prime falsification (Claude-verified)
+
+- **L17 — Price/path-only exit representation transfers cross-vendor only
+  BORDERLINE (INSUFFICIENT); price/path >> size+greek.** 399 frozen trajectories,
+  6 paired days. Discrete "same exit ≤5s" agreement **0.890 [0.869, 0.911]** —
+  under the preregistered 0.90 YES gate, above the 0.80 severe-failure floor →
+  neither YES nor NO. BUT per-second HOLD/EXIT **state agreement 0.999** and
+  economic exit-price diff **median $0, p95 $20/contract**. Size+greek variant
+  materially worse (0.832, ~2x decision-flips). Claude-verified: receipt
+  `fba996a5…` reproduced; preregistration frozen-before-results; validation
+  non-circular (verdict independently re-derived, 84 checks). Codex applied its
+  own earlier anti-circularity critique.
+  **Disposition:** (1) **DESIGN lesson (durable):** the real exit model should
+  lean on price/path features (relative bid/PnL/MFE/MAE/giveback/time/SPX-path),
+  NOT displayed size or vendor greeks. (2) **Path B-prime NOT a cheap escape** —
+  a cross-vendor learned exit (Databento-train/IBKR-live, no live subscription)
+  is only borderline, unproven at 6 days. (3) **Reframe — reinforces Path D:**
+  the 89% is cross-vendor MODEL-decision agreement, which only bites B-prime;
+  Path D trains+decides on Databento (model never sees IBKR data), so its only
+  cross-vendor exposure is EXECUTION slippage (the small $0/$20 number, still a
+  proxy — true round-trip needs live latency measurement). Decision now hinges on
+  the remaining de-risk item: **Databento-live OPRA cost/feasibility.**
+
+---
+
+## Phase update 2026-07-31 (i) — latency sweep + Path D review → project reshape
+
+- **L19 — Latency/fill sweep (Claude-verified; receipt 5483d6ff, validation 12/12,
+  non-circular).** $0 extra buffer, submit immediately → 99.5% entry / 99.75% exit
+  immediate touch; tail cost is from WAITING (p95 adverse slippage $50→$142 entry,
+  $40→$90 exit as delay 5s→60s). Execute fast; never rest passively.
+- **L20 — CORRECTION: ThetaData stays on the critical path.** Prior claim (it drops
+  for Path D) was WRONG. Feature floor requires official SPX price action; Databento
+  sells SPX options, NOT the cash index. A matched historical+live SPX source
+  (ThetaData ~$50/mo, or equivalent) is mandatory. Path D is NOT single-vendor.
+- **L21 — CORRECTION: Databento $199 subscription bundling UNCONFIRMED.** Public
+  pages suggest Standard bundles live + 10yr historical, but caps/fair-use unknown
+  and live OPRA entitlement was ABSENT on 2026-07-24. Do not assume "$200 = all data."
+  Owner-facing confirmation required.
+- **L22 — Path D adversarial verdict: conditional GO as lead architecture; NO-GO for
+  paper/A1-amendment today.** KEY REFRAME: execution is a SECOND CAUSAL POLICY, not a
+  thin adapter. Project is now THREE components: entry + exit/lifecycle + execution
+  policy. Additions/changes: (a) execution = broker-quote-anchored bounded
+  marketable-limit (fresh IBKR quote at submit, one tick through, IOC/short timer,
+  bounded requotes, reconcile-before-next; exit no-fill ESCALATES); (b) first-class
+  broker-facing deterministic risk governor (Databento feed-loss while holding →
+  forced-flat via IBKR); (c) A1 rewrite = full order state machine (all clocks,
+  no-fill/partial/late-fill/disconnect/no-bid/15:55/fees/D48-49/collar) used
+  IDENTICALLY across training labels, replay, PnL, floor, and live; trusted
+  sub-minute exit labels need cmbp-1 raw event-path, not cbbo-1s; (d) Path C dropped
+  (its 1s floor is an unauthorized authority change). Comparative: D lead (conditional
+  on execution-bridge + entitlement), A cleanest-but-delayed benchmark, B/B-prime
+  inferior. **Next step: free offline Execution-Bridge Skeleton (6 days, latency
+  rungs 100/250/500/1000ms) before any live rung / A1 amendment / subscription.**
+
+---
+
+## Phase update 2026-07-31 (j) — COST CONSTRAINT: Path D shelved, revert to affordable cross-vendor
+
+- **L23 — Owner cost constraint: Databento live ($199/mo) is unaffordable → Path D
+  SHELVED.** Revert to the certified "old way": train Databento/ThetaData, decide +
+  execute on IBKR live. This is the `protocol101-live-v2-microstructure-masked`
+  contract (cross-vendor model handled by masking size/greeks/spread, keeping
+  price/path, minute cadence). **Upside:** deciding AND executing on IBKR is
+  same-vendor, so the Path D decide-Databento/fill-IBKR reconciliation risk
+  VANISHES — reverting for cost accidentally removes a real risk. Path D analysis
+  NOT wasted (execution-as-policy, latency/slippage data, ThetaData/SPX necessity
+  all transfer).
+  **Affordable architecture (lead):** minute learned entry + minute learned exit
+  (Databento-train / IBKR-decide, microstructure-masked) + 1-second price-based
+  floor/stop on IBKR live price (robust; price transfers 99.996%) + IBKR execution
+  (marketable-limit, same-vendor). = essentially Path C. Governance to-do: the 1s
+  floor check is an authority change vs D24 (needs amendment).
+  **Tradeoff accepted:** model can't use displayed size/greeks/spread live (masked);
+  the LEARNED tick-by-tick 1s exit is DEFERRED (B-prime cross-vendor only 89%).
+  **Affordable route to the tick-by-tick learned exit = Path A** (train on IBKR
+  recordings, run on IBKR, same-vendor, no subscription) — cost is TIME; recorder is
+  built and runs ~free; bank sub-minute IBKR history over months.
+  **Costs kept:** Databento historical pay-as-you-go (cheap) + ThetaData $50/mo (SPX,
+  mandatory) + IBKR (cheap/owned). NOT the $200 Databento live.
+
+---
+
+## Phase update 2026-07-31 (k) — CORRECTION: greeks ARE used (self-computed), synchronized
+
+- **L24 — CORRECTION to L23 phrasing.** "Microstructure-masked → model can't use
+  greeks live" was MISLEADING. Authority §3.1 feature floor: the model uses
+  **internally recomputed IV/delta/gamma** (from canonical price, spot, strike,
+  time-to-expiry, frozen constants); only **raw VENDOR greeks are prohibited**
+  (they differ IBKR vs Databento). So greeks ARE model features and ARE
+  synchronized train↔live — exactly the owner's "same game / synchronized"
+  principle. What the mask removes is raw vendor microstructure (vendor bid/ask/
+  spread/sizes/vendor-greeks), not the self-computed features. B-prime's
+  "size+greek worse" result CONFIRMS this existing design choice (recomputed >
+  vendor). The 17 signed model-facing features are all synchronized-computable
+  (SPX context, premium path, moneyness, recomputed greeks) — no raw vendor fields.
+
+---
+
+## Phase update 2026-08-01 — Path D REVIVED with deployment-cost financing; single fast exit
+
+- **L25 — Two-layer exit (minute-smart + 1s-stop) is a cross-vendor COMPROMISE, not a
+  design ideal.** Stop and smart-exit aren't redundant (stop = reactive downside,
+  always sells late; smart = proactive profit-taking near peaks, key for convex
+  0DTE). But a once-a-minute smart exit is crippled. The clean design is ONE fast
+  (1-second) exit that is both smart and protective — which requires same-vendor
+  sub-minute (Path A or D).
+- **L26 — Path D revived as target, financed as deployment-not-research.** Owner
+  reconsidered: Path D is the best idea; the $199/mo Databento live is a DEPLOYMENT
+  cost, not a research cost — build+prove the whole model on HISTORICAL Databento
+  (cheap, pay-as-you-go), subscribe to live ONLY once it provably makes money
+  (cancel anytime). Path D's wins: (a) kills the recurring cross-vendor parity
+  treadmill (every feature change → IBKR re-check) — PROVIDED SPX is also
+  same-vendor (ThetaData train+live); (b) avoids Path A's months-long IBKR-recording
+  clock; (c) same-vendor lets the 1s exit use FULL microstructure (sizes/spread/tick)
+  that cross-vendor had to mask → richer exit. Remaining hard part = the execution
+  bridge (decide Databento/fill IBKR), but only needed at Phase 2 (after edge proven).
+- **Databento $199 Standard coverage (owner research):** L0 (definitions/ohlcv-1m/
+  statistics) fully included all history; L1 (cbbo-1m/cbbo-1s/cmbp-1/tcbbo) only
+  trailing 12 months, older pay-as-you-go; ES(CME)/VX(CFE) separate. So subscription
+  = live access + recent 12mo, NOT a cheap deep backfill. Deep sub-minute training
+  backfill stays a priced-first pay-as-you-go buy.
+- **PLAN (collapses the sprawl):** Phase 1 (now, cheap, no subscription, no parity
+  treadmill) — design the 1-second smart+protective exit objective (Q2) + architecture
+  (Q3), then build+backtest the Path D trader on historical Databento+ThetaData;
+  gate = does it show provable edge? Phase 2 (only if edge proven) — solve execution
+  bridge, start $199/mo live, paper-trade. Moots: banking IBKR recordings (Path A =
+  fallback), the two-layer exit. Next step: design the exit objective + architecture
+  (Claude writes / Codex reviews) + price the sub-minute backfill.
+
+---
+
+## Phase update 2026-08-01 (b) — Path D COMMITTED; $199/mo accepted
+
+- **CORRECTION to L26:** "$199 = deployment-not-research cost" was WRONG (owner
+  caught it). The real proof is forward PAPER-TRADING, which Path D cannot do
+  without the live Databento feed (backtest is only the first gate). So the
+  subscription is a VALIDATION cost incurred through the paper-validation period,
+  not just at final deployment.
+- **DECISION (owner, 2026-08-01): Path D committed; pay the $199/mo; single fast
+  1-second exit; stop designing around avoiding the subscription.** Rationale:
+  better design, kills the cross-vendor parity treadmill, and a 1-minute smart
+  exit is structurally crippled (can only sell at peak if the peak lands within
+  ~5s of the minute mark).
+- **Sequencing discipline (kept):** backtest edge FIRST (don't run paid
+  paper-trading on a model that failed backtest); the $199 clock runs through
+  paper-validation after backtest edge is shown. Subscription may start earlier
+  IF the 12-month L1 backfill discount justifies it.
+- **Discount study (owner requested):** produce a pay-as-you-go vs $199-subscription
+  cost table across the full 9-dataset footprint (OPRA definition/cbbo-1m/ohlcv-1m/
+  statistics/cbbo-1s/cmbp-1/tcbbo + ES GLBX.MDP3 ohlcv-1m + VX XCBF.PITCH ohlcv-1m).
+  Subscription covers L0 fully + L1 trailing-12mo; older L1 + ES + VX pay-as-you-go.
+  Free get_cost sampling estimate; also answers subscribe-now-vs-later.
+- **NEXT:** (1) exit objective + architecture design (Q2/Q3, Claude writes/Codex
+  reviews) — Phase-1 long pole; (2) discount table in parallel.
+
+---
+
+## Phase update 2026-08-01 (c) — Databento subscription-vs-payg cost table
+
+- **L27 — Cost table (free get_cost, representative day 2026-06-30 / 70 syms,
+  extrapolated by trading days).** Full backfill EXCLUDING tcbbo: pay-as-you-go
+  ~$1,560 vs one-month $199 sub ~$1,005 (residual ~$806 + $199) → **sub saves ~$555
+  on the backfill AND unlocks live.** Dominant real cost = cmbp-1 older history
+  (2023-03-28→2025-08-01) ~$767. Sub makes all L0 free (ohlcv-1m $373, defs, stats)
+  + trailing-12mo L1 free.
+- **tcbbo ANOMALY (skepticism):** get_cost priced tcbbo at $15.98/day = 12× cmbp-1,
+  which is backwards (tcbbo = BBO@trades should be ≤ cmbp-1 = BBO@every event).
+  Do NOT trust the $13k figure. cmbp-1 covers the sub-minute need → **DROP tcbbo**
+  unless a specific use appears (verify the number first if so).
+- **Buy strategy:** subscribe ONE month → download all-L0-free + 12mo-L1-free +
+  pay-as-you-go older-L1 (cmbp-1) → cancel (keep data) → resubscribe for live at
+  paper-trade time. Verify data retained after cancellation.
+- **Data chronology (owner rule):** sub-minute substrate = cmbp-1 contiguous
+  2023-03-28→now (derive 1s from it pre-2025-02-20; cbbo-1s canonical-cross-check
+  from 2025-02-20); minute substrate = ohlcv-1m/cbbo-1m 2022→now; ES 2022→now;
+  VX only 2026-04→now (VIX-proxy gap before — flag, don't patch). HARD RULE: every
+  pay-as-you-go purchase STOPS at 2025-08-01 (newer is free under sub).
+- **NEXT:** the 1-second exit objective + architecture design (Q2/Q3).
+
+---
+
+## Phase update 2026-08-01 (d) — tcbbo dropped; IBKR trimmed; Path D transition plan
+
+- **tcbbo DROPPED — not used.** Every repo mention is an optional audit-slice
+  alternative to cbbo-1s; project prefers cmbp-1/cbbo-1s. Never in a tensor/feature
+  contract. The $9-13k is irrelevant. Real backfill ≈ $1,005.
+- **IBKR subscriptions:** KEEP OPRA L1 $1.50/mo (execution quote; waived at ≥$20
+  commissions); CANCEL CBOE Streaming Market Indexes $3.50/mo (SPX/VIX now from
+  ThetaData under Path D; execution doesn't use it).
+- **Path D Transition Plan written:** PROTOCOL101_PATH_D_TRANSITION_PLAN_2026_08_01.md
+  — download manifest (subscribe-first; cmbp-1 2023-03-28→now ~$767 is the one big
+  line; L0 + trailing-12mo-L1 free; stop payg at 2025-08-01; ThetaData=SPX;
+  ES/VX=Databento futures; VX only from 2026-04); data-use plan (normalize+align →
+  exit objective design → exit tensor/labels from frozen-entry OOF trajectories →
+  backtest); blast-radius of changed assumptions (mask no longer needed; parity
+  pivots to execution reconciliation; A1→order state machine; minute-entry+1s-exit;
+  IBKR index dropped; Path A recording dropped; execution = 2nd causal policy);
+  what survives/deprecated/new.
+- **NEXT:** Claude drafts the 1-second exit objective + architecture; Codex runs a
+  repo-wide Path D assumption blast-radius audit (read-only).
+
+---
+
+## Phase update 2026-08-01 (e) — 12mo staged cost; ToS research; exit design drafted
+
+- **12-months-only backfill ≈ $208** ($199 sub gives the entire trailing 12mo of ALL
+  schemas free incl. ~$325 cmbp-1; only ES/VX futures ~$9 pay-as-you-go). Deferred
+  deep backfill ~$797 (older cmbp-1) = pay-as-you-go ANYTIME, no active sub needed.
+  Added to the transition plan (§2a). Recommended: 12mo-first for research, buy the
+  deep history only if warranted.
+- **ThinkorSwim/Schwab execution research** prompt written (owner runs in ChatGPT) —
+  evaluate Schwab Trader API as execution-only replacement for IBKR (free ~$514),
+  covering programmatic SPXW 0DTE orders, marketable-limit/IOC/cancel-confirm/partial
+  fills, fresh-quote-at-submit, paper API, algo-trading policy, costs, go/no-go.
+- **1-second exit objective + architecture DESIGN drafted:**
+  PROTOCOL101_ONE_SECOND_EXIT_OBJECTIVE_ARCHITECTURE_DESIGN_2026_08_01.md (Claude
+  writes → Codex reviews → owner signs). Learned 1s exit = sole decision-maker; floor
+  demoted to catastrophic backstop in the risk governor. Unblocks the action-advantage
+  objective by specifying slot-opportunity-cost, switching cost, fill/latency
+  uncertainty, and distributional targets; convexity (cut losers/run winners); causal
+  1s features (self-computed greeks; Path-D microstructure now admissible); OOF
+  trajectories from frozen entry; architecture = transparent GBT baseline then
+  miniature-neural; lead eval with PR/AP not ROC AUC; floor-on/off ablation; 4-bucket.
+- **NEXT PHASE (after: Codex audit returns + owner runs ToS research + downloads):**
+  enter the next planning phase.
+
+---
+
+## Phase update 2026-08-01 (f) — coverage-table web verification
+
+- **ChatGPT OPRA-coverage table: directionally right, UNVERIFIED on the costly part**
+  (Claude web-check). Databento per-schema/per-tier included-history is behind a JS
+  portal, not externally readable. Confirmed: ES/VX separate from OPRA Standard;
+  "L0/L1" = pricing tier ≠ depth level. Likely WRONG-in-our-favor: cbbo-1m appears to
+  include ~10yr (Databento's "10 more years" list names trades/cbbo-1m/ohlcv/
+  statistics/definition), not "trailing 12mo." UNCONFIRMED (the ~$767 swing):
+  cmbp-1 + cbbo-1s history depth under Standard — NOT in the 10-yr list (consistent
+  with a 12mo cap but unproven). DEFINITIVE check = run get_cost on an older cmbp-1
+  range AFTER subscribing ($0=included, price=payg). No impact on the ~$208 12-month
+  research start; only the deferred deep backfill cost is affected. Transition plan §2b
+  updated.
+
+---
+
+## Phase update 2026-08-01 (g) — coverage CONFIRMED; IBKR stays; blast-radius → phasing
+
+- **Coverage table CONFIRMED** via Databento source chain (pricing: Standard = 16+yr
+  L0 / 1yr L1 / 1mo L2-L3; schema doc: cmbp-1/cbbo-1s/cbbo-1m/tcbbo all L1). Earlier
+  "cbbo-1m under-counted" guess was WRONG (that "10 more years" = catalog availability,
+  not Standard inclusion). So ~$797 deep cmbp-1 backfill IS pay-as-you-go; ~$208 12mo
+  plan stands. Availability: cmbp-1/cbbo-1s/tcbbo don't exist before ~2023-02-28
+  (cbbo-1m finest before that). Transition plan §2b corrected.
+- **IBKR STAYS** (Schwab has no paperMoney API → can't paper-validate). Keep OPRA
+  $1.50; defer CBOE-index $3.50 cancellation until the Path D runtime replaces the
+  current IBKR-SPX/VIX usage.
+- **Codex blast-radius audit received:** Path D = governed redesign of decision-plane
+  + exit + fill law + FT2 chain (7 amendment areas; 39 files pin old fill-law hash;
+  graph + synchronization gates). BUT large "safe to keep" set (minute entry + 17
+  features, identity/ladder/firewalls/self-greeks, label families conceptually,
+  D48/D49/serial/15:55, simulator core, IBKR execution guards, order-state scaffold),
+  and MOST blocking items are Phase-2 (live).
+- **RECOMMENDATION — phase the amendments to match prove-before-pay:**
+  Phase 1 (backtest edge, cheap) = buy 12mo data + sign FT2-60 + minimal model-plane
+  amendment (unmask for same-vendor model; additive 1s exit contract on frozen minute
+  entry; conservative latency-calibrated backtest fill model). Gate on edge.
+  Phase 2 (only if edge proven) = execution-policy contract + risk governor + full A1
+  rewrite + graph reissue (FT2-24/25/26/92) + supersede synchronization gates +
+  runtime/promotion packet + 39-file fill-law resupersession.
+- **NEXT:** owner buys 12mo data; Codex reviews FT2-60; Claude drafts the Phase-1/
+  Phase-2 amendment sequencing plan (turns the audit into a small now-set + deferred
+  backlog).
+
+---
+
+## Phase update 2026-08-01 (h) — subscription purchased; storage sizing; Phase-1 sequencing
+
+- **Subscription PURCHASED** (OPRA Standard, Equity-options = correct plan; covers
+  SPX/SPXW index options — confirmed via Databento coverage docs + empirical SPXW pulls).
+- **Storage sizing (billable-anchored to actual on-disk files):** `cmbp-1` is huge —
+  ~8.7GB raw/day, ~1.2GB/day on disk → **~300+ GB for 12 months.** Everything else tiny
+  (`cbbo-1s` ~4GB/12mo; minute/defs negligible).
+- **KEY: Phase 1 does NOT need `cmbp-1`.** Per A7, Tier-S `cbbo-1s` (1-second) suffices
+  for backtest/prototype; `cmbp-1` (Tier-T raw-event-path) is only for trusted
+  floor/stop labels before promotion (Phase 2). So **Phase-1 download = `cbbo-1s` +
+  minute + defs + ES/VX ≈ ~5 GB** (trivial). `cmbp-1` (~300GB) deferred to Phase 2 —
+  then use derive-to-1s-and-discard-raw or monthly chunks; free under sub anytime.
+  Keep DBN.zst OR parquet, not both. **DO NOT pull cmbp-1 now.**
+- **Phase-1/Phase-2 amendment sequencing plan WRITTEN** (owner-agreed phasing):
+  PROTOCOL101_PATH_D_AMENDMENT_SEQUENCING_PLAN_2026_08_01.md. Phase 1 (prove edge,
+  cheap): new Path-D model-plane contract (supersede mask's governing role for Path D;
+  same-vendor unmasked; single clock; self-greeks) + sign FT2-60 + additive FT2-08 1s
+  exit tensor/labels + provisional latency-calibrated backtest fill. Unchanged:
+  minute entry+17 features, identity/ladder/firewalls, FT2-04 entry labels, D48/D49/
+  serial/15:55, simulator core, IBKR guards. GATE: backtest edge. Phase 2 (only if
+  edge): execution-policy+risk-governor, full A1 rewrite, graph reissue, supersede
+  sync gates, runtime/promotion packet, 39-file fill-law resupersession; GATE:
+  paper-readiness.
+- **NEXT:** owner downloads Phase-1 data (cbbo-1s, NOT cmbp-1); Codex reviews FT2-60;
+  then execute the Phase-1 reseal set.
+
+---
+
+## Phase update 2026-08-01 (i) — PHASE 1 STARTED
+
+- **Path-D model-plane contract PROPOSAL written** (Claude writes → Codex reviews →
+  owner signs): PROTOCOL101_PATH_D_MODEL_PLANE_CONTRACT_PROPOSAL_2026_08_01.md.
+  Databento OPRA + ThetaData SPX same-vendor model plane; IBKR execution-only;
+  microstructure mask lifted (same-vendor) with causal/leakage discipline + self-
+  computed greeks retained; single clock; entry minute / exit 1s (cbbo-1s Tier-S for
+  Phase-1). Supersedes mask cert + scoped-sync decision GOVERNING ROLE for Path-D only
+  (old artifacts immutable). New checker rule path_d_model_plane_source_purity.
+  Phase-1 (backtest) scope only — no live/runtime/paper.
+- **Phase-1 kickoff handoffs:** (1) Codex design-review goal covering BOTH the
+  model-plane contract + FT2-60 exit design (review-only checkpoint before reseal;
+  BLOCKING defect → STOP/roles-flip). (2) Owner downloads Phase-1 data = cbbo-1s (NOT
+  cmbp-1) + minute/defs/ES/VX + ThetaData SPX (~5GB).
+- **Sequence:** Codex review → Claude verify → owner sign → Codex implements Phase-1
+  reseal set (model-plane contract + additive FT2-08 1s exit tensor/labels +
+  provisional latency-calibrated backtest fill) → build+run Path-D backtest → EDGE GATE.
+
+---
+
+## Phase update 2026-08-01 (j) — Codex Phase-1 governance review → repair package written
+
+- **Codex governance review returned NEEDS-CHANGES** (Claude-verified correct against
+  source). Blocking: Q(hold) undefined/oracle (foundation q_hold = hindsight upper bound);
+  Phase-1 fill law absent; tier contradiction (cbbo-1s vs cmbp-1); source-purity rule
+  breaks position-state parity; governance identity unresolved (parent authority
+  hard-requires minute exits/floor/feature-restrictions + checker pins hash); two docs
+  insufficient (need FT2-08 exit contract + fill law).
+- **Repair package written** (Claude writes → Codex re-review → owner signs), plan-approved:
+  1. `..._PATH_D_MODEL_PLANE_CONTRACT_PROPOSAL_V2_2026_08_01.md` — 3-way source split
+     (market-alpha Databento/ThetaData ONLY / permitted broker position-state / forbidden
+     IBKR-alpha+vendor-greeks); frozen per-namespace allowlists (entry=17 unchanged, new
+     exit allowlist); fail-closed feature-lineage manifest + negative fixtures; full clock
+     spec; Tier-S cbbo-1s.
+  2. `..._ONE_SECOND_EXIT_OBJECTIVE_ARCHITECTURE_DESIGN_V2_2026_08_01.md` — DEPLOYABLE
+     Q_hold/Q_exit (finite-horizon continuation + flat-slot law, NO oracle); each economic
+     term once; slot-cost in $ (minute-forecast honest); switching no-double-count; distrib
+     heads exact contract; OOF fold-specific; economic acceptance ≥4/5 folds (§5.4) +
+     action-conditioned gate (L449); PR/AP diagnostic-only; floor = deterministic backstop;
+     Tier-S claim boundary.
+  3. `..._FT2_08_PATHD_1S_EXIT_TENSOR_LABEL_CONTRACT_2026_08_01.md` — additive 1s exit
+     tensor/labels on frozen minute entry; occupancy-release semantics.
+  4. `..._PATHD_PHASE1_PROVISIONAL_FILL_LAW_2026_08_01.md` — frozen marketable-limit
+     backtest fill/no-fill/latency law, identical across labels/replay/PnL; Δ-sensitivity
+     band; conservative; Phase-1-provisional (superseded by Phase-2 A1).
+  5. `..._PATHD_PHASE1_AUTHORITY_OVERLAY_2026_08_01.md` — immutable overlay pinning parent
+     1d215845 + graph 9955085a + A7 + the 4 constituents; resolves governance identity
+     WITHOUT resealing parent/legacy; owner signs the overlay.
+- v1 model-plane + FT2-60 docs retained as the Codex-review-rejected versions (audit trail).
+- **NEXT:** Codex re-reviews the full 5-artifact Phase-1 set (A–E rubric) → Claude verifies →
+  owner signs overlay → implement (build FT2-08 1s exit tensor/labels on cbbo-1s, wire fill
+  law, train GBT baseline exit on OOF-from-frozen-entry, run serial-replay Tier-S backtest)
+  → Tier-S feasibility gate.
