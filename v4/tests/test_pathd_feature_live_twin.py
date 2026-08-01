@@ -11,14 +11,21 @@ from v4.research import pathd_entry_exit as frozen_prereg
 from v4.research.pathd_feature_live_twin import (
     AVAILABLE_AT_EVENT_PLUS_60_SECONDS,
     BAR_OPEN_TIMESTAMP,
+    DATABENTO_OPRA_CBBO_1M,
+    DATABENTO_OPRA_CBBO_1M_COMPLETED,
+    DATABENTO_OPRA_CBBO_1S_TO_1M,
+    DATABENTO_OPRA_CMBP_1_TO_1M,
     DATABENTO_OPRA_OHLCV_1M_COMPLETED,
     DATABENTO_OPRA_STATISTICS_EOD,
     DATABENTO_OPRA_TRADES_1M_COMPLETED,
     DROP,
+    DROP_UNTIL_EXACT_ADAPTER_RECEIPT,
     ENTRY17_FEATURE_NAMES,
     ENTRY17_LIVE_TWIN_INVENTORY,
-    EXIT48_CORRECTED_FEATURE_NAMES,
-    EXIT48_CORRECTED_LIVE_TWIN_INVENTORY,
+    EXIT47_CORRECTED_FEATURE_NAMES,
+    EXIT47_CORRECTED_LIVE_TWIN_INVENTORY,
+    EXIT48_INTERMEDIATE_FEATURE_NAMES,
+    EXIT48_INTERMEDIATE_LIVE_TWIN_INVENTORY,
     EXIT49_FEATURE_NAMES,
     EXIT49_LIVE_TWIN_INVENTORY,
     IntradayLiveTwinBinding,
@@ -54,7 +61,7 @@ def _volume_binding(**changes: object) -> IntradayLiveTwinBinding:
     return replace(binding, **changes)
 
 
-def test_exact_signed17_original_exit49_and_corrected_exit48_coverage() -> None:
+def test_exact_signed17_original_exit49_intermediate_exit48_and_corrected_exit47_coverage() -> None:
     validate_inventory_contracts()
 
     assert len(ENTRY17_FEATURE_NAMES) == len(ENTRY17_LIVE_TWIN_INVENTORY) == 17
@@ -85,13 +92,21 @@ def test_exact_signed17_original_exit49_and_corrected_exit48_coverage() -> None:
     assert tuple(row.feature_name for row in EXIT49_LIVE_TWIN_INVENTORY) == EXIT49_FEATURE_NAMES
     assert tuple(
         frozen_prereg.exit_feature_spec()["feature_names_in_exact_order"]
-    ) == EXIT48_CORRECTED_FEATURE_NAMES
+    ) == EXIT47_CORRECTED_FEATURE_NAMES
+    assert len(EXIT48_INTERMEDIATE_FEATURE_NAMES) == 48
+    assert tuple(
+        row.feature_name for row in EXIT48_INTERMEDIATE_LIVE_TWIN_INVENTORY
+    ) == EXIT48_INTERMEDIATE_FEATURE_NAMES
+    assert len(EXIT47_CORRECTED_FEATURE_NAMES) == 47
+    assert tuple(
+        row.feature_name for row in EXIT47_CORRECTED_LIVE_TWIN_INVENTORY
+    ) == EXIT47_CORRECTED_FEATURE_NAMES
 
 
 def test_every_signed17_feature_is_live_derivable_without_changing_signed17() -> None:
     assert Counter(row.family for row in ENTRY17_LIVE_TWIN_INVENTORY) == {
         "official_spx_completed_minute_derivation": 12,
-        "opra_cbbo_current_ladder_derivation": 3,
+        "opra_cbbo_completed_minute_ladder_derivation": 3,
         "self_computed_greeks": 2,
     }
     assert all(
@@ -99,6 +114,28 @@ def test_every_signed17_feature_is_live_derivable_without_changing_signed17() ->
         and row.adapter_receipt_required_before_fit
         and row.permitted_intraday_sources
         for row in ENTRY17_LIVE_TWIN_INVENTORY
+    )
+
+
+def test_entry_option_features_bind_historical_cbbo_1m() -> None:
+    option_rows = [
+        row
+        for row in ENTRY17_LIVE_TWIN_INVENTORY
+        if row.feature_name.startswith("D.")
+    ]
+
+    assert len(option_rows) == 3
+    assert all(row.historical_source == DATABENTO_OPRA_CBBO_1M for row in option_rows)
+    assert all(
+        row.permitted_intraday_sources
+        == (
+            DATABENTO_OPRA_CBBO_1M_COMPLETED,
+            DATABENTO_OPRA_CBBO_1S_TO_1M,
+            DATABENTO_OPRA_CMBP_1_TO_1M,
+        )
+        and "completed interval end" in row.clock_semantics
+        and row.max_feature_age_seconds == 90
+        for row in option_rows
     )
 
 
@@ -127,13 +164,14 @@ def test_exit49_has_an_explicit_classification_for_every_feature() -> None:
     )
 
 
-def test_corrected_exit48_drops_only_intraday_open_interest() -> None:
-    assert len(EXIT48_CORRECTED_FEATURE_NAMES) == 48
-    assert tuple(row.feature_name for row in EXIT48_CORRECTED_LIVE_TWIN_INVENTORY) == (
-        EXIT48_CORRECTED_FEATURE_NAMES
+def test_corrected_exit47_drops_open_interest_and_unproved_minute_volume() -> None:
+    assert len(EXIT47_CORRECTED_FEATURE_NAMES) == 47
+    assert tuple(row.feature_name for row in EXIT47_CORRECTED_LIVE_TWIN_INVENTORY) == (
+        EXIT47_CORRECTED_FEATURE_NAMES
     )
-    assert set(EXIT49_FEATURE_NAMES) - set(EXIT48_CORRECTED_FEATURE_NAMES) == {
-        "last_causal_open_interest"
+    assert set(EXIT49_FEATURE_NAMES) - set(EXIT47_CORRECTED_FEATURE_NAMES) == {
+        "last_causal_minute_volume",
+        "last_causal_open_interest",
     }
 
     open_interest = live_twin_record("exit", "last_causal_open_interest")
@@ -142,9 +180,12 @@ def test_corrected_exit48_drops_only_intraday_open_interest() -> None:
     assert open_interest.live_twin_class == NO_INTRADAY_LIVE_TWIN
     assert open_interest.prior_day_static_class == PRIOR_DAY_EOD_STATIC
     assert open_interest.recommended_action == DROP
+    minute_volume = live_twin_record("exit", "last_causal_minute_volume")
+    assert minute_volume.recommended_action == DROP_UNTIL_EXACT_ADAPTER_RECEIPT
+    assert minute_volume.feature_name not in EXIT47_CORRECTED_FEATURE_NAMES
 
 
-def test_open_interest_is_classified_prior_day_static_but_absent_from_exit48() -> None:
+def test_open_interest_is_classified_prior_day_static_but_absent_from_exit47() -> None:
     open_interest = live_twin_record("exit", "last_causal_open_interest")
 
     assert open_interest.prior_day_static_class == PRIOR_DAY_EOD_STATIC
@@ -152,7 +193,7 @@ def test_open_interest_is_classified_prior_day_static_but_absent_from_exit48() -
         "prior_session_eod_only_if_used_as_one_static_session_value"
     )
     assert open_interest.max_feature_age_seconds is None
-    assert open_interest.feature_name not in EXIT48_CORRECTED_FEATURE_NAMES
+    assert open_interest.feature_name not in EXIT47_CORRECTED_FEATURE_NAMES
 
 
 def test_feature_without_live_twin_fixture_rejects_intraday_open_interest_even_with_adapter(
@@ -233,3 +274,5 @@ def test_minute_volume_is_conditionally_live_derivable_with_exact_receipt(
     assert record.feature_name == "last_causal_minute_volume"
     assert record.live_twin_class == LIVE_DERIVABLE_PENDING_ADAPTER
     assert record.adapter_receipt_required_before_fit is True
+    assert record.recommended_action == DROP_UNTIL_EXACT_ADAPTER_RECEIPT
+    assert record.feature_name not in EXIT47_CORRECTED_FEATURE_NAMES

@@ -1082,6 +1082,7 @@ def _prepare_invalid_nested_skip_claim(
     from v4.research.pathd_holdout_gate import _assert_protected_holdout_unopened
 
     _assert_protected_holdout_unopened()
+    _foundation.assert_research_foundation_stable()
     prereg_receipt = _foundation.assert_preregistration_frozen()
     payload = _foundation.read_json(PREREG_PATH)
     assignments = _foundation.read_json(SESSION_PATH)

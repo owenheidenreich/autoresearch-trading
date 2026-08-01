@@ -1884,6 +1884,12 @@ def main() -> int:
         raise ValueError("--outer-fold is required exactly for fold-scoped stages")
     if (args.stage in needs_inner) != (args.inner_fold is not None):
         raise ValueError("--inner-fold is required exactly for nested-block stages")
+    if args.stage in needs_outer:
+        # One campaign-wide byte-stability preflight must succeed before any
+        # fold-scoped dispatcher can write a skip, access, burn, dataset, or
+        # result artifact.  The evidence gate revalidates again immediately
+        # before its one authorized decode.
+        prereg.assert_research_foundation_stable()
     if args.stage == "freeze-prereg":
         receipt = freeze_preregistration()
         negatives = require_all_negative_fixtures_rejected()

@@ -10,8 +10,9 @@ from v4.model.protocol101_canonical_stage1_contract import FEATURE_NAMES
 from v4.research import pathd_entry_exit as foundation
 from v4.research.pathd_feature_live_twin import (
     ENTRY17_FEATURE_NAMES,
-    EXIT48_CORRECTED_FEATURE_NAMES,
+    EXIT47_CORRECTED_FEATURE_NAMES,
     EXIT49_FEATURE_NAMES,
+    DROP_UNTIL_EXACT_ADAPTER_RECEIPT,
     NO_INTRADAY_LIVE_TWIN,
     PRIOR_DAY_EOD_STATIC,
     live_twin_record,
@@ -45,6 +46,7 @@ def test_corrected_generation_binds_restoration_and_stability_receipts() -> None
         foundation.repo_path_label(foundation.FOUNDATION_STABILITY_RECEIPT_PATH)
     )
     assert foundation.AUDIT_ROOT != foundation.SUPERSEDED_AUDIT_ROOT
+    assert foundation.AUDIT_ROOT != foundation.INTERMEDIATE_CORRECTED_AUDIT_ROOT
 
 
 def test_foundation_byte_root_changes_on_any_file_or_generation_change() -> None:
@@ -86,27 +88,66 @@ def test_stability_seal_requires_all_corrected_fold_namespaces_pristine(
         foundation._pristine_corrected_fold_namespaces()
 
 
-def test_p2_live_twin_inventory_keeps_signed17_and_corrects_exit48() -> None:
+def test_p2_live_twin_inventory_keeps_signed17_and_corrects_exit47() -> None:
     exit_contract = foundation.exit_feature_spec()
     lineage = foundation.feature_lineage()["live_twin_inventory"]
     open_interest = live_twin_record("exit", "last_causal_open_interest")
+    minute_volume = live_twin_record("exit", "last_causal_minute_volume")
 
     assert tuple(FEATURE_NAMES) == ENTRY17_FEATURE_NAMES
     assert exit_contract["feature_names_in_exact_order"] == list(
-        EXIT48_CORRECTED_FEATURE_NAMES
+        EXIT47_CORRECTED_FEATURE_NAMES
     )
-    assert exit_contract["feature_count"] == 48
+    assert exit_contract["feature_count"] == 47
     assert exit_contract["original_exit49_audit_binding"][
         "feature_names_in_exact_order"
     ] == list(EXIT49_FEATURE_NAMES)
     assert open_interest.live_twin_class == NO_INTRADAY_LIVE_TWIN
     assert open_interest.prior_day_static_class == PRIOR_DAY_EOD_STATIC
-    assert "last_causal_open_interest" not in EXIT48_CORRECTED_FEATURE_NAMES
-    assert lineage["minute_volume_adapter_receipt_required_before_exit_fit"] is True
-    assert lineage["entry_fit_blocked_by_pending_exit_adapter"] is False
+    assert "last_causal_open_interest" not in EXIT47_CORRECTED_FEATURE_NAMES
+    assert "last_causal_minute_volume" not in EXIT47_CORRECTED_FEATURE_NAMES
+    assert minute_volume.recommended_action == DROP_UNTIL_EXACT_ADAPTER_RECEIPT
+    assert lineage["minute_volume_current_run_disposition"] == (
+        "DROPPED_UNTIL_EXACT_SHARED_ADAPTER_RECEIPT"
+    )
+    assert lineage["unresolved_live_twin_allowed_in_current_alpha"] is False
     assert foundation.require_all_negative_fixtures_rejected()[
         "feature_without_live_twin"
     ] is True
+
+
+def test_fold_stage_preflight_stops_before_dispatch_on_foundation_mismatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from argparse import Namespace
+    from v4.scripts import run_pathd_entry_exit_research as runner
+
+    fold_root = tmp_path / "entry_outer_folds"
+    called: list[int] = []
+    monkeypatch.setattr(
+        runner,
+        "parse_args",
+        lambda: Namespace(stage="run-entry-fold", outer_fold=1, inner_fold=None),
+    )
+    monkeypatch.setattr(runner.prereg, "ENTRY_FOLD_ARTIFACT_ROOT", fold_root)
+
+    def mismatch() -> None:
+        raise RuntimeError("synthetic global foundation mismatch")
+
+    monkeypatch.setattr(
+        runner.prereg, "assert_research_foundation_stable", mismatch
+    )
+    monkeypatch.setattr(
+        runner,
+        "run_canonical_entry_fold",
+        lambda *, outer_fold: called.append(outer_fold),
+    )
+
+    with pytest.raises(RuntimeError, match="synthetic global foundation mismatch"):
+        runner.main()
+
+    assert called == []
+    assert not fold_root.exists()
 
 
 def test_p3_widen_entry_lead_is_forward_only() -> None:

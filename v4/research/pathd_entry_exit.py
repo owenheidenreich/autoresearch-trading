@@ -25,13 +25,14 @@ from v4.model.protocol101_canonical_stage1_contract import FEATURE_NAMES
 from v4.model.protocol101_walking_skeleton import HGBConfig
 from v4.research.pathd_feature_live_twin import (
     ENTRY17_LIVE_TWIN_INVENTORY,
-    EXIT48_CORRECTED_FEATURE_NAMES,
-    EXIT48_CORRECTED_LIVE_TWIN_INVENTORY,
+    EXIT47_CORRECTED_FEATURE_NAMES,
+    EXIT47_CORRECTED_LIVE_TWIN_INVENTORY,
+    EXIT48_INTERMEDIATE_FEATURE_NAMES,
+    EXIT48_INTERMEDIATE_LIVE_TWIN_INVENTORY,
     EXIT49_FEATURE_NAMES,
     EXIT49_LIVE_TWIN_INVENTORY,
     INVENTORY_SCHEMA_VERSION,
-    KEEP_AFTER_EXACT_ADAPTER_RECEIPT,
-    LIVE_DERIVABLE_PENDING_ADAPTER,
+    DROP_UNTIL_EXACT_ADAPTER_RECEIPT,
     NO_INTRADAY_LIVE_TWIN,
     live_twin_record,
     validate_inventory_contracts,
@@ -77,6 +78,11 @@ SUPERSEDED_AUDIT_ROOT = (
     / "v4/audit/autoresearch/"
     "protocol101_pathd_entry_exit_model_research_2026_08_01"
 )
+INTERMEDIATE_CORRECTED_AUDIT_ROOT = (
+    REPO_ROOT
+    / "v4/audit/autoresearch/"
+    "protocol101_pathd_entry_exit_model_research_corrected_2026_08_01"
+)
 TEST_CONTAMINATION_QUARANTINE_ROOT = (
     REPO_ROOT
     / "v4/audit/autoresearch/pathd_test_contamination_quarantine_2026_08_01"
@@ -84,7 +90,7 @@ TEST_CONTAMINATION_QUARANTINE_ROOT = (
 AUDIT_ROOT = (
     REPO_ROOT
     / "v4/audit/autoresearch/"
-    "protocol101_pathd_entry_exit_model_research_corrected_2026_08_01"
+    "protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01"
 )
 PREREG_PATH = AUDIT_ROOT / "preregistration.json"
 PREREG_HASH_PATH = AUDIT_ROOT / "preregistration.sha256"
@@ -175,6 +181,44 @@ SUPERSEDED_FOUNDATION_FILE_BINDINGS = (
         "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_2026_08_01/session_assignments.json",
         "bytes": 183_209,
         "sha256": "8455127b950269e966f378790ff77b2c3d7f8565518c2ad581fbd9dfc288f9a2",
+    },
+)
+
+# The first corrected generation is also immutable history.  It lawfully
+# restored five folds and dropped OI, but its parity audit still described the
+# signed-17 option ladder as CBBO-1s and retained minute volume without a real
+# shared adapter receipt.  The v2 generation supersedes it rather than mutating
+# its frozen files in place.
+INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS = (
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_2026_08_01/feature_lineage.json",
+        "bytes": 116_912,
+        "sha256": "0cd8059141074a9fb35e5c64c68a3c515cebb3e0b48ae0bbbeab6242b9de5adb",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_2026_08_01/foundation_restoration_receipt.json",
+        "bytes": 5_129,
+        "sha256": "20e32e44843976ae3ff1985a05e389f0c1c87f0504c1079b018457e6ca0cacbd",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_2026_08_01/preregistration.json",
+        "bytes": 347_371,
+        "sha256": "4a01f145abfb2a5da664af4f3de1c122069678dc7c3aa1b953745672f2822ec8",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_2026_08_01/preregistration.sha256",
+        "bytes": 87,
+        "sha256": "32bc571be0a201d29000ab846139f8c9d1c600cf4c1d11568be41e40fa91a692",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_2026_08_01/preregistration_freeze_receipt.json",
+        "bytes": 2_642,
+        "sha256": "79958c44a5b47b6db78ca8cfcd7ea5bd650c11ba471f65803df4b6c9db36a1ce",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_2026_08_01/session_assignments.json",
+        "bytes": 103_609,
+        "sha256": "431cd14879ad6a14b278cb2683e4f3b860eef960e6b74a4f0edb3e620cf82475",
     },
 )
 QUARANTINED_TEST_BURN_BINDING = {
@@ -441,11 +485,12 @@ FIXED_SCIENCE_GATE_TEST_NAMES = (
     "test_context_diagnostics_are_fixed_one_dimensional_post_primary_nonalpha_tables",
 )
 FEATURE_LIVE_TWIN_TEST_NAMES = (
-    "test_exact_signed17_original_exit49_and_corrected_exit48_coverage",
+    "test_exact_signed17_original_exit49_intermediate_exit48_and_corrected_exit47_coverage",
     "test_every_signed17_feature_is_live_derivable_without_changing_signed17",
+    "test_entry_option_features_bind_historical_cbbo_1m",
     "test_exit49_has_an_explicit_classification_for_every_feature",
-    "test_corrected_exit48_drops_only_intraday_open_interest",
-    "test_open_interest_is_classified_prior_day_static_but_absent_from_exit48",
+    "test_corrected_exit47_drops_open_interest_and_unproved_minute_volume",
+    "test_open_interest_is_classified_prior_day_static_but_absent_from_exit47",
     "test_feature_without_live_twin_fixture_rejects_intraday_open_interest_even_with_adapter",
     "test_minute_volume_fails_without_exact_completed_bar_semantics[change0-concrete live adapter]",
     "test_minute_volume_fails_without_exact_completed_bar_semantics[change1-implementation SHA-256]",
@@ -480,7 +525,8 @@ FOUNDATION_CORRECTION_TEST_NAMES = (
     "test_corrected_generation_binds_restoration_and_stability_receipts",
     "test_foundation_byte_root_changes_on_any_file_or_generation_change",
     "test_stability_seal_requires_all_corrected_fold_namespaces_pristine",
-    "test_p2_live_twin_inventory_keeps_signed17_and_corrects_exit48",
+    "test_p2_live_twin_inventory_keeps_signed17_and_corrects_exit47",
+    "test_fold_stage_preflight_stops_before_dispatch_on_foundation_mismatch",
     "test_p3_widen_entry_lead_is_forward_only",
     "test_nested_dataset_membership_uses_only_current_authorization_segment",
 )
@@ -3115,10 +3161,10 @@ def receipt_contract_spec() -> dict[str, Any]:
         "machinery_test_evidence_schema_version": "pathd.entry_exit.entry_machinery_test_evidence.v1",
         "corpus_integrity_receipt_schema_version": "pathd.entry_exit.corpus_integrity_verification_receipt.v1",
         "foundation_restoration_receipt_schema_version": (
-            "pathd.entry_exit.foundation_restoration_receipt.v1"
+            "pathd.entry_exit.foundation_restoration_receipt.v2"
         ),
         "foundation_stability_receipt_schema_version": (
-            "pathd.entry_exit.foundation_stability_receipt.v1"
+            "pathd.entry_exit.foundation_stability_receipt.v2"
         ),
         "context_diagnostic_inventory_receipt_schema_version": "pathd.entry_exit.context_diagnostic_inventory_receipt.v1",
         "core_corpus_integrity_receipt": core_corpus_integrity_receipt_spec(),
@@ -3190,7 +3236,8 @@ def receipt_contract_spec() -> dict[str, Any]:
             "five_transitive_negative_fixtures",
             "historical_online_replay_byte_equality",
             "clock_watermark",
-            "field_parity_inventory_exact_17_49_48",
+            "field_parity_inventory_exact_17_49_48_47",
+            "entry_cbbo_1m_lineage",
             "intraday_open_interest_nonempty_adapter_rejected",
             "minute_volume_exact_clock_carry_and_receipt",
             "entry_signed17_unchanged_after_correction",
@@ -3259,7 +3306,8 @@ def receipt_contract_spec() -> dict[str, Any]:
             "five_transitive_negative_fixtures": "test_signed17_lineage_fail_closed",
             "negative_fixtures": "test_signed17_lineage_fail_closed",
             "clock_watermark": "test_mutate_future_is_causal_and_live",
-            "field_parity_inventory_exact_17_49_48": "test_exact_signed17_original_exit49_and_corrected_exit48_coverage",
+            "field_parity_inventory_exact_17_49_48_47": "test_exact_signed17_original_exit49_intermediate_exit48_and_corrected_exit47_coverage",
+            "entry_cbbo_1m_lineage": "test_entry_option_features_bind_historical_cbbo_1m",
             "intraday_open_interest_nonempty_adapter_rejected": "test_feature_without_live_twin_fixture_rejects_intraday_open_interest_even_with_adapter",
             "minute_volume_exact_clock_carry_and_receipt": "test_minute_volume_is_conditionally_live_derivable_with_exact_receipt[90-DATABENTO_OPRA_OHLCV_1M_COMPLETED]",
             "entry_signed17_unchanged_after_correction": "test_every_signed17_feature_is_live_derivable_without_changing_signed17",
@@ -3311,6 +3359,7 @@ def receipt_contract_spec() -> dict[str, Any]:
             "benign_test_contamination_restores_five_folds": "test_p1_forensic_contract_is_benign_zero_access_and_restores_five",
             "foundation_byte_root_is_mutation_sensitive": "test_foundation_byte_root_changes_on_any_file_or_generation_change",
             "foundation_stability_seal_requires_pristine_folds": "test_stability_seal_requires_all_corrected_fold_namespaces_pristine",
+            "foundation_mismatch_stops_before_fold_dispatch": "test_fold_stage_preflight_stops_before_dispatch_on_foundation_mismatch",
             "detached_authorization_cannot_touch_fixed_scope": "test_untrusted_exact_authorization_cannot_read_or_burn_fixed_scope[detached]",
             "active_foundation_drift_burns_and_releases": "test_active_capability_foundation_drift_burns_and_releases_transaction",
             "evidence_scope_id_is_generation_bound": "test_scope_id_is_bound_to_frozen_foundation_generation",
@@ -3559,8 +3608,11 @@ def feature_lineage() -> dict[str, Any]:
 
     entry_twin_rows = [live_twin_row(record) for record in ENTRY17_LIVE_TWIN_INVENTORY]
     exit49_twin_rows = [live_twin_row(record) for record in EXIT49_LIVE_TWIN_INVENTORY]
-    exit48_twin_rows = [
-        live_twin_row(record) for record in EXIT48_CORRECTED_LIVE_TWIN_INVENTORY
+    exit48_intermediate_twin_rows = [
+        live_twin_row(record) for record in EXIT48_INTERMEDIATE_LIVE_TWIN_INVENTORY
+    ]
+    exit47_twin_rows = [
+        live_twin_row(record) for record in EXIT47_CORRECTED_LIVE_TWIN_INVENTORY
     ]
     rows: list[dict[str, Any]] = []
     for name in FEATURE_NAMES:
@@ -3571,6 +3623,7 @@ def feature_lineage() -> dict[str, Any]:
             vendors.append("DATABENTO_OPRA")
             schemas.extend(
                 [
+                    "raw/databento/opra_spxw_cbbo_1m/{session}.cbbo-1m.parquet",
                     "aligned/processed/minute_entry.option_ladder",
                     "aligned/processed/minute_entry.contract_quote_metadata",
                 ]
@@ -3619,17 +3672,29 @@ def feature_lineage() -> dict[str, Any]:
             "original_exit49_feature_names": list(EXIT49_FEATURE_NAMES),
             "original_exit49_records": exit49_twin_rows,
             "original_exit49_records_sha256": stable_hash(exit49_twin_rows),
-            "corrected_exit48_feature_names": list(
-                EXIT48_CORRECTED_FEATURE_NAMES
+            "intermediate_exit48_feature_names": list(
+                EXIT48_INTERMEDIATE_FEATURE_NAMES
             ),
-            "corrected_exit48_records": exit48_twin_rows,
-            "corrected_exit48_records_sha256": stable_hash(exit48_twin_rows),
+            "intermediate_exit48_records": exit48_intermediate_twin_rows,
+            "intermediate_exit48_records_sha256": stable_hash(
+                exit48_intermediate_twin_rows
+            ),
+            "corrected_exit47_feature_names": list(
+                EXIT47_CORRECTED_FEATURE_NAMES
+            ),
+            "corrected_exit47_records": exit47_twin_rows,
+            "corrected_exit47_records_sha256": stable_hash(exit47_twin_rows),
             "correction_delta": {
-                "removed": ["last_causal_open_interest"],
+                "removed": [
+                    "last_causal_minute_volume",
+                    "last_causal_open_interest",
+                ],
                 "added": [],
             },
-            "minute_volume_adapter_receipt_required_before_exit_fit": True,
-            "entry_fit_blocked_by_pending_exit_adapter": False,
+            "minute_volume_current_run_disposition": (
+                "DROPPED_UNTIL_EXACT_SHARED_ADAPTER_RECEIPT"
+            ),
+            "unresolved_live_twin_allowed_in_current_alpha": False,
         },
         "signed17_reference_builder_sha256": sha256_path(builder_path),
         "planned_adapter_contract": {
@@ -3662,9 +3727,21 @@ def feature_lineage() -> dict[str, Any]:
             },
             "option_quotes": {
                 "vendor": "DATABENTO_OPRA",
+                "raw_historical_path": (
+                    "raw/databento/opra_spxw_cbbo_1m/"
+                    "{session}.cbbo-1m.parquet"
+                ),
                 "path": "aligned/processed/minute_entry.contract_quote_metadata",
                 "fields": ["contract_id", "bid", "ask", "mid", "received_timestamp_utc", "strike", "right", "offset"],
-                "derivations": "normalized mid from completed quote; canonical feature transform quantizes at $0.05",
+                "timestamp_semantics": (
+                    "Databento CBBO-1m timestamp marks the completed interval end; "
+                    "latest completed exact-contract minute at or before decision"
+                ),
+                "future_live_twin": (
+                    "direct completed OPRA CBBO-1m or exact CBBO-1s/CMBP-1 to "
+                    "CBBO-1m consolidation with identical minute boundary and ladder sampling"
+                ),
+                "derivations": "normalized mid from completed CBBO-1m quote; canonical feature transform quantizes at $0.05",
             },
             "structural": ["decision_time", "atm_strike", "strike_offsets", "rights", "source_neutral_contract_id"],
         },
@@ -3757,35 +3834,37 @@ def exit_feature_spec() -> dict[str, Any]:
     """Exact first-run exit-alpha subset; VIX/ES/VX are intentionally absent."""
 
     validate_inventory_contracts()
-    features = list(EXIT48_CORRECTED_FEATURE_NAMES)
-    minute_volume = next(
-        record
-        for record in EXIT48_CORRECTED_LIVE_TWIN_INVENTORY
-        if record.feature_name == "last_causal_minute_volume"
-    )
-    minute_volume_row = asdict(minute_volume)
-    minute_volume_row["permitted_intraday_sources"] = list(
-        minute_volume_row["permitted_intraday_sources"]
-    )
+    features = list(EXIT47_CORRECTED_FEATURE_NAMES)
     return {
         "feature_names_in_exact_order": features,
         "feature_count": len(features),
         "original_exit49_audit_binding": {
             "feature_names_in_exact_order": list(EXIT49_FEATURE_NAMES),
             "feature_names_sha256": stable_hash(list(EXIT49_FEATURE_NAMES)),
-            "removed_for_corrected_generation": ["last_causal_open_interest"],
+            "intermediate_exit48_feature_names_in_exact_order": list(
+                EXIT48_INTERMEDIATE_FEATURE_NAMES
+            ),
+            "removed_for_corrected_v2_generation": [
+                "last_causal_minute_volume",
+                "last_causal_open_interest",
+            ],
         },
         "live_twin_inventory_schema_version": INVENTORY_SCHEMA_VERSION,
         "decision_cadence_seconds": 1,
         "history_seconds": 300,
         "option_freshness_ms": 2_000,
         "official_spx_carry_bound_seconds": 90,
-        "minute_volume_carry_bound_seconds": 90,
-        "last_causal_minute_volume_live_twin": {
-            **minute_volume_row,
-            "fit_status": "PENDING_EXACT_HASHED_ADAPTER_RECEIPT",
-            "entry_fit_blocked": False,
-            "exit_fit_blocked_until_receipt": True,
+        "last_causal_minute_volume": {
+            "intraday_alpha": "DROPPED",
+            "reason": (
+                "field-level OHLCV/trades derivability is plausible, but no shared "
+                "historical/live adapter receipt proves exact completed-bar, sparse/no-trade, "
+                "exact-contract, and 90-second carry semantics"
+            ),
+            "future_research": (
+                "may return only in a separately frozen generation after an exact adapter "
+                "implementation and parity receipt"
+            ),
         },
         "last_causal_open_interest": {
             "intraday_alpha": "DROPPED",
@@ -5271,10 +5350,16 @@ def foundation_correction_spec() -> dict[str, Any]:
         for path in authority_paths
     ]
     return {
-        "schema_version": "pathd.entry_exit.foundation_correction.v1",
+        "schema_version": "pathd.entry_exit.foundation_correction.v2",
         "status": "CORRECTED_GENERATION_REQUIRED_BEFORE_FIT",
         "authority": authority,
         "superseded_audit_root": repo_path_label(SUPERSEDED_AUDIT_ROOT),
+        "intermediate_corrected_audit_root": repo_path_label(
+            INTERMEDIATE_CORRECTED_AUDIT_ROOT
+        ),
+        "intermediate_corrected_foundation_files": [
+            dict(row) for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
+        ],
         "corrected_audit_root": repo_path_label(AUDIT_ROOT),
         "p1_foundation_restoration": {
             "classification": "BENIGN_TEST_CONTAMINATION",
@@ -5298,9 +5383,14 @@ def foundation_correction_spec() -> dict[str, Any]:
         "p2_live_twin_correction": {
             "last_causal_open_interest": "DROP_FROM_INTRADAY_EXIT_FEATURE_SET",
             "last_causal_minute_volume": (
-                "ALLOW_ONLY_IF_DERIVED_FROM_LIVE_INTRADAY_OHLCV_OR_TRADES_WITH_THE_"
-                "FROZEN_CAUSAL_CARRY_SEMANTICS"
+                "DROP_UNTIL_A_SHARED_HISTORICAL_LIVE_OHLCV_OR_TRADES_ADAPTER_PROVES_"
+                "EXACT_COMPLETED_BAR_SPARSE_MINUTE_CONTRACT_AND_CARRY_SEMANTICS"
             ),
+            "entry_option_ladder_historical_source": "DATABENTO_OPRA_CBBO_1M",
+            "entry_option_ladder_live_twin": (
+                "DIRECT_COMPLETED_CBBO_1M_OR_EXACT_CBBO_1S_OR_CMBP_1_TO_CBBO_1M"
+            ),
+            "corrected_exit_feature_count": 47,
             "field_parity_inventory_is_ground_truth": True,
             "feature_without_live_twin_must_fail_closed": True,
             "integration_owner": "exit_feature_spec_and_feature_lineage_live_twin_correction",
@@ -6303,11 +6393,21 @@ def validate_preregistration_payload(
         for key in ("hold_to_flat_channel", "shared_transparent_channel")
     ):
         raise ValueError("corrected generation changed the frozen >=4/5 acceptance")
-    if "last_causal_open_interest" in payload.get("exit", {}).get(
-        "feature_contract", {}
-    ).get("feature_names_in_exact_order", []):
+    exit_features = payload.get("exit", {}).get("feature_contract", {}).get(
+        "feature_names_in_exact_order", []
+    )
+    if (
+        exit_features != list(EXIT47_CORRECTED_FEATURE_NAMES)
+        or any(
+            name in exit_features
+            for name in (
+                "last_causal_minute_volume",
+                "last_causal_open_interest",
+            )
+        )
+    ):
         raise ValueError(
-            "P2 correction is not integrated: intraday open interest remains in exit alpha"
+            "P2 correction is not integrated: unproved intraday fields remain in exit alpha"
         )
     if lineage.get("entry_feature_names_in_exact_order") != list(FEATURE_NAMES):
         raise ValueError("signed-17 order drift")
@@ -6696,7 +6796,7 @@ def freeze_preregistration() -> dict[str, Any]:
     )
     receipt_contracts = payload["source_hash_policy"]["receipt_contracts"]
     receipt = {
-        "schema_version": "pathd.entry_exit.preregistration_freeze_receipt.v2",
+        "schema_version": "pathd.entry_exit.preregistration_freeze_receipt.v3",
         "status": "FROZEN_BEFORE_ANY_MODEL_FIT",
         "frozen_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "preregistration_path": receipt_contracts["preregistration_path"],
@@ -6712,6 +6812,9 @@ def freeze_preregistration() -> dict[str, Any]:
         "correction_proposal_path": repo_path_label(CORRECTION_PROPOSAL_PATH),
         "correction_proposal_sha256": sha256_path(CORRECTION_PROPOSAL_PATH),
         "superseded_audit_root": repo_path_label(SUPERSEDED_AUDIT_ROOT),
+        "intermediate_corrected_audit_root": repo_path_label(
+            INTERMEDIATE_CORRECTED_AUDIT_ROOT
+        ),
         "holdout_open_count": 0,
         "holdout_caveat": HOLDOUT_CAVEAT,
         "claim_boundary": CLAIM_BOUNDARY,
@@ -6792,6 +6895,7 @@ def assert_preregistration_frozen() -> dict[str, Any]:
         "correction_proposal_path",
         "correction_proposal_sha256",
         "superseded_audit_root",
+        "intermediate_corrected_audit_root",
         "holdout_open_count",
         "holdout_caveat",
         "claim_boundary",
@@ -6803,7 +6907,7 @@ def assert_preregistration_frozen() -> dict[str, Any]:
     if (
         set(receipt) != expected_receipt_keys
         or receipt.get("schema_version")
-        != "pathd.entry_exit.preregistration_freeze_receipt.v2"
+        != "pathd.entry_exit.preregistration_freeze_receipt.v3"
         or receipt.get("status") != "FROZEN_BEFORE_ANY_MODEL_FIT"
         or re.fullmatch(r"\d{4}-\d{2}-\d{2}T[^\s]+Z", str(receipt.get("frozen_at_utc", "")))
         is None
@@ -6820,6 +6924,8 @@ def assert_preregistration_frozen() -> dict[str, Any]:
         != sha256_path(CORRECTION_PROPOSAL_PATH)
         or receipt.get("superseded_audit_root")
         != repo_path_label(SUPERSEDED_AUDIT_ROOT)
+        or receipt.get("intermediate_corrected_audit_root")
+        != repo_path_label(INTERMEDIATE_CORRECTED_AUDIT_ROOT)
     ):
         raise RuntimeError("Path-D preregistration freeze receipt semantic drift")
     try:
@@ -7090,6 +7196,11 @@ def _assert_superseded_foundation_history() -> dict[str, Any]:
             raise RuntimeError(
                 f"superseded foundation history drift: {expected['path']}"
             )
+    for expected in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS:
+        if _raw_regular_file_binding(expected["path"]) != expected:
+            raise RuntimeError(
+                f"intermediate corrected foundation history drift: {expected['path']}"
+            )
     expected_burn_file = {
         key: QUARANTINED_TEST_BURN_BINDING[key]
         for key in ("path", "bytes", "sha256")
@@ -7159,12 +7270,16 @@ def _foundation_generation_sha256(
 ) -> str:
     return stable_hash(
         {
-            "schema_version": "pathd.entry_exit.corrected_foundation_generation.v1",
+            "schema_version": "pathd.entry_exit.corrected_foundation_generation.v2",
             "corrected_audit_root": repo_path_label(AUDIT_ROOT),
             "corrected_files": corrected_files,
             "correction_sha256": correction_sha256,
             "superseded_foundation_files": [
                 dict(row) for row in SUPERSEDED_FOUNDATION_FILE_BINDINGS
+            ],
+            "intermediate_corrected_foundation_files": [
+                dict(row)
+                for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
             ],
             "quarantined_burn_file_sha256": QUARANTINED_TEST_BURN_BINDING[
                 "sha256"
@@ -7204,6 +7319,13 @@ def seal_foundation_restoration_receipt() -> dict[str, Any]:
             "superseded_audit_root": repo_path_label(SUPERSEDED_AUDIT_ROOT),
             "superseded_foundation_files": [
                 dict(row) for row in SUPERSEDED_FOUNDATION_FILE_BINDINGS
+            ],
+            "intermediate_corrected_audit_root": repo_path_label(
+                INTERMEDIATE_CORRECTED_AUDIT_ROOT
+            ),
+            "intermediate_corrected_foundation_files": [
+                dict(row)
+                for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
             ],
             "quarantined_burn": dict(QUARANTINED_TEST_BURN_BINDING),
             "fold_namespaces": folds,
@@ -7249,6 +7371,8 @@ def assert_foundation_restoration_frozen() -> dict[str, Any]:
         "corrected_foundation_files",
         "superseded_audit_root",
         "superseded_foundation_files",
+        "intermediate_corrected_audit_root",
+        "intermediate_corrected_foundation_files",
         "quarantined_burn",
         "fold_namespaces",
         "restored_outer_folds",
@@ -7281,6 +7405,12 @@ def assert_foundation_restoration_frozen() -> dict[str, Any]:
         or receipt.get("corrected_foundation_files") != corrected
         or receipt.get("superseded_foundation_files")
         != [dict(row) for row in SUPERSEDED_FOUNDATION_FILE_BINDINGS]
+        or receipt.get("intermediate_corrected_audit_root")
+        != repo_path_label(INTERMEDIATE_CORRECTED_AUDIT_ROOT)
+        or receipt.get("intermediate_corrected_foundation_files")
+        != [
+            dict(row) for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
+        ]
         or receipt.get("superseded_audit_root")
         != repo_path_label(SUPERSEDED_AUDIT_ROOT)
         or receipt.get("quarantined_burn") != dict(QUARANTINED_TEST_BURN_BINDING)
@@ -7337,6 +7467,9 @@ def _foundation_stability_file_bindings(
         command["junit_path"] for command in contracts["required_test_commands"]
     )
     labels.extend(row["path"] for row in SUPERSEDED_FOUNDATION_FILE_BINDINGS)
+    labels.extend(
+        row["path"] for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
+    )
     labels.append(QUARANTINED_TEST_BURN_BINDING["path"])
     ordered = list(dict.fromkeys(labels))
     if len(ordered) != len(set(ordered)):
@@ -7352,7 +7485,7 @@ def _foundation_root_sha256(
 ) -> str:
     return stable_hash(
         {
-            "schema_version": "pathd.entry_exit.foundation_byte_snapshot.v1",
+            "schema_version": "pathd.entry_exit.foundation_byte_snapshot.v2",
             "foundation_generation_sha256": generation_sha256,
             "files": files,
             "fit_environment_sha256": fit_environment_sha256,
@@ -7367,29 +7500,34 @@ def _assert_corrected_live_twin_contract(payload: dict[str, Any]) -> None:
     exit_contract = payload.get("exit", {}).get("feature_contract", {})
     if (
         exit_contract.get("feature_names_in_exact_order")
-        != list(EXIT48_CORRECTED_FEATURE_NAMES)
-        or exit_contract.get("feature_count") != 48
-        or "last_causal_open_interest"
-        in exit_contract.get("feature_names_in_exact_order", [])
-        or inventory.get("corrected_exit48_feature_names")
-        != list(EXIT48_CORRECTED_FEATURE_NAMES)
+        != list(EXIT47_CORRECTED_FEATURE_NAMES)
+        or exit_contract.get("feature_count") != 47
+        or any(
+            name in exit_contract.get("feature_names_in_exact_order", [])
+            for name in (
+                "last_causal_minute_volume",
+                "last_causal_open_interest",
+            )
+        )
+        or inventory.get("corrected_exit47_feature_names")
+        != list(EXIT47_CORRECTED_FEATURE_NAMES)
         or inventory.get("original_exit49_feature_names")
         != list(EXIT49_FEATURE_NAMES)
-        or inventory.get("corrected_exit48_records_sha256")
+        or inventory.get("corrected_exit47_records_sha256")
         != stable_hash(
-            [asdict(record) for record in EXIT48_CORRECTED_LIVE_TWIN_INVENTORY]
+            [asdict(record) for record in EXIT47_CORRECTED_LIVE_TWIN_INVENTORY]
         )
     ):
-        raise RuntimeError("corrected live-twin inventory/exit-48 contract drift")
-    volume = exit_contract.get("last_causal_minute_volume_live_twin", {})
+        raise RuntimeError("corrected live-twin inventory/exit-47 contract drift")
+    minute_volume = live_twin_record("exit", "last_causal_minute_volume")
     if (
-        volume.get("live_twin_class") != LIVE_DERIVABLE_PENDING_ADAPTER
-        or volume.get("recommended_action") != KEEP_AFTER_EXACT_ADAPTER_RECEIPT
-        or volume.get("adapter_receipt_required_before_fit") is not True
-        or volume.get("exit_fit_blocked_until_receipt") is not True
-        or volume.get("entry_fit_blocked") is not False
+        minute_volume.recommended_action != DROP_UNTIL_EXACT_ADAPTER_RECEIPT
+        or exit_contract.get("last_causal_minute_volume", {}).get(
+            "intraday_alpha"
+        )
+        != "DROPPED"
     ):
-        raise RuntimeError("minute-volume pending adapter contract drift")
+        raise RuntimeError("minute-volume dropped disposition drift")
 
 
 def seal_foundation_stability_receipt() -> dict[str, Any]:

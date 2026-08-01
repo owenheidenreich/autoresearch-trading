@@ -4,9 +4,13 @@ This module records the field-parity finding that a nonempty adapter name is not
 proof of a real intraday twin.  In particular, OPRA statistics/open interest is
 daily/EOD and cannot be made intraday by carrying it for 90 seconds.
 
-The original frozen exit-49 inventory remains visible for audit.  The corrected
-exit-48 contract removes ``last_causal_open_interest``.  This inventory is bound
-into the corrected preregistration, but does not itself authorize a fit.
+The original frozen exit-49 inventory remains visible for audit.  The first
+correction removed ``last_causal_open_interest`` but left minute volume pending
+an adapter proof.  The final corrected exit-47 contract removes both fields:
+open interest has no intraday twin, and minute volume is only conditionally
+derivable until a shared historical/live adapter proves exact sparse-minute and
+carry semantics.  This inventory is bound into the corrected preregistration,
+but does not itself authorize a fit.
 """
 from __future__ import annotations
 
@@ -26,8 +30,17 @@ PRIOR_DAY_EOD_STATIC: Final = "PRIOR_DAY_EOD_STATIC"
 KEEP_AFTER_EXACT_ADAPTER_RECEIPT: Final = "KEEP_AFTER_EXACT_ADAPTER_RECEIPT"
 KEEP_CAUSAL_INTERNAL_STATE: Final = "KEEP_CAUSAL_INTERNAL_STATE"
 DROP: Final = "DROP"
+DROP_UNTIL_EXACT_ADAPTER_RECEIPT: Final = "DROP_UNTIL_EXACT_ADAPTER_RECEIPT"
 
 THETADATA_SPX_1M_COMPLETED: Final = "THETADATA_SPX_1M_COMPLETED"
+DATABENTO_OPRA_CBBO_1M: Final = "DATABENTO_OPRA_CBBO_1M"
+DATABENTO_OPRA_CBBO_1M_COMPLETED: Final = "DATABENTO_OPRA_CBBO_1M_COMPLETED"
+DATABENTO_OPRA_CBBO_1S_TO_1M: Final = (
+    "DATABENTO_OPRA_CBBO_1S_CONSOLIDATED_TO_EXACT_CBBO_1M"
+)
+DATABENTO_OPRA_CMBP_1_TO_1M: Final = (
+    "DATABENTO_OPRA_CMBP_1_CONSOLIDATED_TO_EXACT_CBBO_1M"
+)
 DATABENTO_OPRA_CBBO_1S: Final = "DATABENTO_OPRA_CBBO_1S"
 DATABENTO_OPRA_CMBP_1_TO_1S: Final = "DATABENTO_OPRA_CMBP_1_TO_EXACT_CBBO_1S"
 SELF_COMPUTED_CAUSAL: Final = "SELF_COMPUTED_FROM_CAUSAL_INPUTS"
@@ -191,8 +204,16 @@ _EXIT_OFFICIAL_SPX = EXIT49_FEATURE_NAMES[24:29]
 _EXIT_SELF_GREEKS = EXIT49_FEATURE_NAMES[29:36]
 _EXIT_CAUSAL_STATE = EXIT49_FEATURE_NAMES[36:]
 
-EXIT48_CORRECTED_FEATURE_NAMES: Final = tuple(
+EXIT48_INTERMEDIATE_FEATURE_NAMES: Final = tuple(
     name for name in EXIT49_FEATURE_NAMES if name != "last_causal_open_interest"
+)
+
+# The intermediate exit-48 list is retained as explicit history.  It is not the
+# current fit contract because no concrete minute-volume adapter receipt exists.
+EXIT47_CORRECTED_FEATURE_NAMES: Final = tuple(
+    name
+    for name in EXIT49_FEATURE_NAMES
+    if name not in {"last_causal_minute_volume", "last_causal_open_interest"}
 )
 
 
@@ -262,19 +283,21 @@ ENTRY17_LIVE_TWIN_INVENTORY: Final = _ordered(
     + _records(
         namespace="entry",
         names=_ENTRY_OPTION_CBBO,
-        family="opra_cbbo_current_ladder_derivation",
-        historical_source="DATABENTO_OPRA_CBBO_1S",
+        family="opra_cbbo_completed_minute_ladder_derivation",
+        historical_source=DATABENTO_OPRA_CBBO_1M,
         permitted_intraday_sources=(
-            DATABENTO_OPRA_CBBO_1S,
-            DATABENTO_OPRA_CMBP_1_TO_1S,
+            DATABENTO_OPRA_CBBO_1M_COMPLETED,
+            DATABENTO_OPRA_CBBO_1S_TO_1M,
+            DATABENTO_OPRA_CMBP_1_TO_1M,
         ),
         clock_semantics=(
-            "receipt timestamp <= decision; exact historical 1-second consolidation, "
-            "contract identity, and ladder sampling"
+            "historical CBBO-1m timestamp marks the completed interval end; live must "
+            "use direct completed CBBO-1m or reproduce the exact one-minute "
+            "consolidation, contract identity, and ladder-boundary sampling"
         ),
         selection_rule=SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION,
-        carry_policy="same-session exact-contract quote; action freshness mask applies",
-        max_feature_age_seconds=None,
+        carry_policy="same-session latest completed exact-contract minute; no cross-session carry",
+        max_feature_age_seconds=90,
     )
     + _records(
         namespace="entry",
@@ -328,6 +351,7 @@ EXIT49_LIVE_TWIN_INVENTORY: Final = _ordered(
         selection_rule=SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION,
         carry_policy="same-session latest completed exact-contract minute; age<=90 seconds",
         max_feature_age_seconds=90,
+        recommended_action=DROP_UNTIL_EXACT_ADAPTER_RECEIPT,
     )
     + _records(
         namespace="exit",
@@ -392,10 +416,16 @@ EXIT49_LIVE_TWIN_INVENTORY: Final = _ordered(
     ),
 )
 
-EXIT48_CORRECTED_LIVE_TWIN_INVENTORY: Final = tuple(
+EXIT48_INTERMEDIATE_LIVE_TWIN_INVENTORY: Final = tuple(
     record
     for record in EXIT49_LIVE_TWIN_INVENTORY
     if record.feature_name != "last_causal_open_interest"
+)
+EXIT47_CORRECTED_LIVE_TWIN_INVENTORY: Final = tuple(
+    record
+    for record in EXIT49_LIVE_TWIN_INVENTORY
+    if record.feature_name
+    not in {"last_causal_minute_volume", "last_causal_open_interest"}
 )
 
 
@@ -494,23 +524,49 @@ def validate_inventory_contracts() -> None:
         raise RuntimeError("signed-17 inventory count drift")
     if len(EXIT49_FEATURE_NAMES) != 49 or len(EXIT49_LIVE_TWIN_INVENTORY) != 49:
         raise RuntimeError("exit-49 inventory count drift")
-    if len(EXIT48_CORRECTED_FEATURE_NAMES) != 48:
-        raise RuntimeError("corrected exit-48 count drift")
+    if len(EXIT48_INTERMEDIATE_FEATURE_NAMES) != 48:
+        raise RuntimeError("intermediate exit-48 count drift")
+    if len(EXIT47_CORRECTED_FEATURE_NAMES) != 47:
+        raise RuntimeError("corrected exit-47 count drift")
     if (
         tuple(record.feature_name for record in ENTRY17_LIVE_TWIN_INVENTORY)
         != ENTRY17_FEATURE_NAMES
     ):
         raise RuntimeError("signed-17 inventory order drift")
+    entry_option_rows = tuple(
+        record
+        for record in ENTRY17_LIVE_TWIN_INVENTORY
+        if record.feature_name in _ENTRY_OPTION_CBBO
+    )
+    if (
+        len(entry_option_rows) != 3
+        or any(
+            record.historical_source != DATABENTO_OPRA_CBBO_1M
+            or record.permitted_intraday_sources
+            != (
+                DATABENTO_OPRA_CBBO_1M_COMPLETED,
+                DATABENTO_OPRA_CBBO_1S_TO_1M,
+                DATABENTO_OPRA_CMBP_1_TO_1M,
+            )
+            for record in entry_option_rows
+        )
+    ):
+        raise RuntimeError("signed-17 option ladder CBBO-1m lineage drift")
     if tuple(record.feature_name for record in EXIT49_LIVE_TWIN_INVENTORY) != EXIT49_FEATURE_NAMES:
         raise RuntimeError("exit-49 inventory order drift")
     if (
-        tuple(record.feature_name for record in EXIT48_CORRECTED_LIVE_TWIN_INVENTORY)
-        != EXIT48_CORRECTED_FEATURE_NAMES
+        tuple(record.feature_name for record in EXIT48_INTERMEDIATE_LIVE_TWIN_INVENTORY)
+        != EXIT48_INTERMEDIATE_FEATURE_NAMES
     ):
-        raise RuntimeError("corrected exit-48 inventory order drift")
-    removed = set(EXIT49_FEATURE_NAMES) - set(EXIT48_CORRECTED_FEATURE_NAMES)
-    if removed != {"last_causal_open_interest"}:
-        raise RuntimeError("corrected exit inventory must drop only open interest")
+        raise RuntimeError("intermediate exit-48 inventory order drift")
+    if (
+        tuple(record.feature_name for record in EXIT47_CORRECTED_LIVE_TWIN_INVENTORY)
+        != EXIT47_CORRECTED_FEATURE_NAMES
+    ):
+        raise RuntimeError("corrected exit-47 inventory order drift")
+    removed = set(EXIT49_FEATURE_NAMES) - set(EXIT47_CORRECTED_FEATURE_NAMES)
+    if removed != {"last_causal_minute_volume", "last_causal_open_interest"}:
+        raise RuntimeError("corrected exit inventory must drop OI and unproved minute volume")
     open_interest = live_twin_record("exit", "last_causal_open_interest")
     if (
         open_interest.permitted_intraday_sources
@@ -519,6 +575,14 @@ def validate_inventory_contracts() -> None:
         or open_interest.recommended_action != DROP
     ):
         raise RuntimeError("open-interest live-twin classification drift")
+    minute_volume = live_twin_record("exit", "last_causal_minute_volume")
+    if (
+        minute_volume.live_twin_class != LIVE_DERIVABLE_PENDING_ADAPTER
+        or minute_volume.recommended_action != DROP_UNTIL_EXACT_ADAPTER_RECEIPT
+        or not minute_volume.adapter_receipt_required_before_fit
+        or minute_volume.feature_name in EXIT47_CORRECTED_FEATURE_NAMES
+    ):
+        raise RuntimeError("minute-volume unresolved adapter disposition drift")
     for record in (*ENTRY17_LIVE_TWIN_INVENTORY, *EXIT49_LIVE_TWIN_INVENTORY):
         if (
             not record.selection_rule
