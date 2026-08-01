@@ -95,6 +95,7 @@ _history_backup/
 # Local agent state and iCloud conflict copies (never commit)
 .claude/
 * 2
+* 2/
 * 2.*
 .deploy-state *
 

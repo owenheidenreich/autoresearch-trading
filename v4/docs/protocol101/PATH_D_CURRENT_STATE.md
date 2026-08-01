@@ -1,7 +1,7 @@
 # Protocol101 Path-D current state
 
 - As of: **2026-08-01**
-Status: **design repair required; Phase-1 training/backtest not authorized**
+- Status: **Phase-1 design/review; training and backtest not yet authorized**
 
 This is the current orientation page for the Path-D pivot. It does not replace
 the signed consolidated authority. It resolves narrative drift among older
@@ -58,32 +58,52 @@ The first skeleton earned useful negative and plumbing evidence:
 The durable details and claim boundaries are in the
 [walking-skeleton learnings ledger](training/execution/PROTOCOL101_WALKING_SKELETON_LEARNINGS_LEDGER_2026_07_30.md).
 
-## Path-D direction
-
-The owner-selected planning direction is:
+## The Path-D pivot
 
 ```text
-historical/live model market plane
-  = Databento OPRA + ThetaData SPX
+OLD
+  train = Databento OPRA + ThetaData SPX
+  decide = IBKR live market feed
+  execute = IBKR
 
-broker plane
-  = IBKR execution, confirmed position/account state, and safety
-
-candidate shape
-  = frozen minute entry + learned 1-second lifecycle exit
+NEW — Path D
+  train = Databento OPRA + ThetaData SPX
+  decide = Databento Live OPRA + ThetaData live SPX context
+  execute = IBKR via IB Gateway
 ```
 
-This direction is recorded in the
+IBKR remains the source of broker-confirmed fills, position/account state, and
+safety enforcement, but IBKR quotes/index data are not Path-D market-alpha
+inputs. The candidate remains frozen minute entry plus a learned 1-second
+lifecycle exit.
+
+## Where Phase 1 is
+
+Phase 1 has started as the project's **“prove backtest edge cheaply”** phase. Its
+governed Tier-S claim boundary is narrower: produce feasibility evidence strong
+enough to decide whether to fund Tier-T, not proven/deployable edge. It has not
+yet crossed the authority gate to model fitting or backtest execution.
+
+- The owner recorded the Databento OPRA Standard subscription as **purchased**
+  in the learnings ledger. This is the project record of the purchase; no billing
+  credential or secret belongs in Git.
+- Phase-1 targets the small Tier-S `cbbo-1s` plus minute/context corpus; the
+  roughly 300 GB `cmbp-1` Tier-T acquisition remains deferred.
+- The FT2-60 one-second exit objective **v2 is drafted and under Codex
+  re-review**, together with the complete five-document repair package.
+- No Phase-1 download, training, threshold tuning, or backtest is authorized by
+  these proposal documents alone.
+
+The planning direction is recorded in the
 [transition plan](training/execution/PROTOCOL101_PATH_D_TRANSITION_PLAN_2026_08_01.md)
 and [sequencing plan](training/execution/PROTOCOL101_PATH_D_AMENDMENT_SEQUENCING_PLAN_2026_08_01.md).
-Those documents are planning records, not signed authority amendments. Data
-acquisition/subscription status is `UNKNOWN` unless a separate receipt proves it.
+They remain planning records rather than signed authority amendments.
 
-## Current blocker
+## Current review boundary
 
-The latest independent governance review returned **NEEDS CHANGES — STOP before
-signature**. The Path-D model-plane proposal and FT2-60 exit design are not
-jointly signable yet. The blocking defects are:
+The latest completed independent governance review returned **NEEDS CHANGES —
+STOP before signature** on the v1 model-plane proposal and v1 FT2-60 design. Its
+blocking findings were:
 
 - `Q(hold)` lacks a deployable continuation policy/value law;
 - the provisional Phase-1 decision/fill/no-fill/latency law is absent;
@@ -91,21 +111,34 @@ jointly signable yet. The blocking defects are:
 - market-source purity incorrectly excludes broker-confirmed position/fill state;
 - exact clocks, OOF trajectory construction, feature lineage/allowlists,
   calibration, multiplicity, and economic acceptance remain underspecified; and
-- Phase 1 lacks a resolved Path-D authority/checker namespace.
+- Phase 1 lacked a resolved Path-D authority/checker namespace.
 
 The full findings and minimum repair package are in the
 [Path-D governance review](training/execution/path-d-governance-review.md).
 
+Claude has now drafted a five-document V2 repair package intended to address
+those findings:
+
+1. [Model-plane contract v2](training/execution/PROTOCOL101_PATH_D_MODEL_PLANE_CONTRACT_PROPOSAL_V2_2026_08_01.md)
+2. [FT2-60 one-second exit objective v2](training/execution/PROTOCOL101_ONE_SECOND_EXIT_OBJECTIVE_ARCHITECTURE_DESIGN_V2_2026_08_01.md)
+3. [Additive FT2-08 one-second tensor/label contract](training/execution/PROTOCOL101_FT2_08_PATHD_1S_EXIT_TENSOR_LABEL_CONTRACT_2026_08_01.md)
+4. [Phase-1 provisional fill/no-fill/latency law](training/execution/PROTOCOL101_PATHD_PHASE1_PROVISIONAL_FILL_LAW_2026_08_01.md)
+5. [Path-D Phase-1 authority overlay](training/execution/PROTOCOL101_PATHD_PHASE1_AUTHORITY_OVERLAY_2026_08_01.md)
+
+All five are proposals. Their existence is not proof that the defects are
+closed; that requires Codex re-review, Claude verification, and owner signature.
+
 ## Next permitted gate
 
-1. Repair the model-plane and FT2-60 documents using the nine-item minimum repair
-   package in the governance review.
-2. Add the exact additive FT2-08 one-second tensor/label contract and frozen
-   provisional fill contract.
-3. Re-run independent review.
-4. Obtain owner signature on a non-vacuous Path-D Phase-1 authority overlay.
-5. Only then may a separately authorized Tier-S feasibility skeleton/backtest be
-   specified and run.
+1. Codex re-reviews the complete five-document V2 package together against the
+   governance review's A–E rubric.
+2. If sound, build the Path-D overlay hashes/checker and negative fixtures while
+   keeping the parent authority and legacy artifacts byte-unchanged.
+3. Claude independently verifies the overlay, constituent hashes, checker, and
+   claim boundary.
+4. The owner signs the Phase-1 authority overlay.
+5. Only then may separately authorized Tier-S data preparation, fitting, and
+   feasibility backtesting begin.
 
 Until those gates pass: no Path-D model fitting, threshold tuning, Phase-1
 backtest claim, paid-data download, broker contact, runtime/default change,
@@ -115,10 +148,11 @@ paper-submit, promotion, or real-money claim follows from this pivot record.
 
 1. This page.
 2. [Walking-skeleton learnings ledger](training/execution/PROTOCOL101_WALKING_SKELETON_LEARNINGS_LEDGER_2026_07_30.md).
-3. [Path-D governance review](training/execution/path-d-governance-review.md).
-4. [Path-D transition plan](training/execution/PROTOCOL101_PATH_D_TRANSITION_PLAN_2026_08_01.md).
-5. [Path-D amendment sequencing](training/execution/PROTOCOL101_PATH_D_AMENDMENT_SEQUENCING_PLAN_2026_08_01.md).
-6. The signed authority and A6/A7 owner receipts above.
+3. [Path-D transition plan](training/execution/PROTOCOL101_PATH_D_TRANSITION_PLAN_2026_08_01.md).
+4. [Path-D amendment sequencing](training/execution/PROTOCOL101_PATH_D_AMENDMENT_SEQUENCING_PLAN_2026_08_01.md).
+5. The five-document V2 repair package listed above.
+6. [Path-D governance review](training/execution/path-d-governance-review.md) for why v1 was rejected.
+7. The signed parent authority and A6/A7 owner receipts above.
 
 The existing `PAPER_DEFAULT_PROTOCOL101` runtime is a separate legacy operating
 surface. Its existence does not mean the new learned Path-D trader has earned

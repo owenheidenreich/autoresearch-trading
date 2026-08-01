@@ -1,10 +1,6 @@
 # Current Trading Bot Single Source Of Truth
 
-> **Protocol101 model-building status (2026-08-01):** This paper-runtime audit is
-> not the current Path-D training authority. Read
-> [`v4/docs/protocol101/PATH_D_CURRENT_STATE.md`](../v4/docs/protocol101/PATH_D_CURRENT_STATE.md).
-> The existing paper default is separate from the new learned trader; the latter
-> has not earned Phase-1 backtest authorization or paper readiness.
+> **SUPERSEDED-BY for Path-D model-building status (2026-08-01):** [`v4/docs/protocol101/PATH_D_CURRENT_STATE.md`](../v4/docs/protocol101/PATH_D_CURRENT_STATE.md); this document remains legacy paper-runtime evidence and does not authorize Path-D training, backtesting, or paper readiness.
 
 Audit date: 2026-05-24
 Repository: `autoresearch-trading`

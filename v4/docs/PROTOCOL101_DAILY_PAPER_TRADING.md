@@ -1,10 +1,6 @@
 # Daily Paper Autopilot Operations
 
-> **Path-D boundary (2026-08-01):** This runbook describes the existing guarded
-> Protocol101 paper-default runtime. It does not authorize or describe the new
-> learned Path-D trader. Read
-> [`protocol101/PATH_D_CURRENT_STATE.md`](protocol101/PATH_D_CURRENT_STATE.md);
-> Path-D model training/backtest and paper readiness remain blocked.
+> **SUPERSEDED-BY for Path-D model-building status (2026-08-01):** [`protocol101/PATH_D_CURRENT_STATE.md`](protocol101/PATH_D_CURRENT_STATE.md); this runbook remains the legacy guarded paper-default runtime and does not authorize Path-D training, backtesting, or paper readiness.
 
 Feature name: `daily paper autopilot`
 
