@@ -1,0 +1,20 @@
+{
+  "schema_version": "Protocol101OwnerAmendmentApprovalV1",
+  "amendment": "A7",
+  "title": "Staged D59 sub-minute representation (Tier-S/Tier-T)",
+  "authority_self_hash_signed": "1d215845cf7b8535",
+  "authority_self_hash_full_note": "plain sha256 of PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md at signing; reproduced by Claude",
+  "graph_hash": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+  "prior_authority_hash": "82d9573e",
+  "owner_signature": "Owen Heidenreich",
+  "owner_signature_date": "2026-07-31",
+  "verifier": "Claude",
+  "verification_summary": "Graph byte-identical (9955085a); authority new self-hash reproduced as plain sha256 (1d215845); consistency checker 33 checks / 39 pass-flags / 0 failures; new rule sub_minute_corpus_tier_tag_required present + passing with negative fixtures; Tier-T original guarantee preserved verbatim; both review clarifications (raw-event-path-before-downsampling; cadence boundary/no-1s-activation) folded into the authority text.",
+  "references": {
+    "proposal": "v4/docs/protocol101/training/execution/PROTOCOL101_D59_STAGED_SUBMINUTE_REPRESENTATION_AMENDMENT_PROPOSAL_2026_07_31.md",
+    "implementation_report": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/implementation_report.md",
+    "implementation_receipt": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/implementation_receipt.json",
+    "codex_review": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/codex_review.md"
+  },
+  "scope_note": "A7 authorizes no download, no cmbp-1 purchase, and no cadence change by itself. cbbo-1s acquisitions require a per-acquisition free cost estimate, hard cap, explicit owner green-light, and quarantined output. D57 minute backfill remains deferred; completed-minute FT2-08 remains authoritative."
+}

@@ -1,269 +1,43 @@
 {
-  "schema_version": "Protocol101FT210ForecastHeadsV4",
-  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
-  "status": "scoped_final_round_repaired",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
-  "intent_fill_recheck_law": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
-    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
-  },
-  "label_authority": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json",
-    "sha256": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60"
-  },
-  "realized_label_audit_composer": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
-    "sha256": "d833297dbaf2a547d8246cdf3cf404dea0d8ff4234026ceac37797e462a8422f"
-  },
-  "horizons": [
-    "h3",
-    "h5",
-    "h10",
-    "h20",
-    "h45",
-    "h90",
-    "remaining_session"
-  ],
-  "inapplicable_target_rule": "A family-horizon pair that FT2-04 does not define is absent, not zero-filled. Label validity controls supervised loss only and is never a composer input; runtime horizon availability is causal clock state from composer_spec.json.",
-  "full_window_training_filter": "Continuous, bounded, count, and empirical-CDF targets for finite hN require the complete uncensored N-mark window; finite near-close censored values are excluded. Right-censored time-to-first-profit rows remain eligible only for the registered discrete-survival likelihood with their censoring indicator.",
-  "head_types": {
-    "continuous_quantile": {
-      "quantiles": [
-        0.1,
-        0.25,
-        0.5,
-        0.75,
-        0.9
-      ],
-      "loss": "masked_pinball_loss",
-      "point_forecast": "final-model disjoint-calibration q50",
-      "monotonicity": "parameterize q10 directly and each higher quantile as the prior quantile plus softplus(nonnegative_increment); post-hoc sorting is forbidden",
-      "calibration": "same-final-model disjoint calibration defined in calibration_spec.json"
-    },
-    "bounded_continuous_quantile": {
-      "quantiles": [
-        0.1,
-        0.25,
-        0.5,
-        0.75,
-        0.9
-      ],
-      "support": "[0,1]",
-      "loss": "masked_pinball_loss_on_logit_with_epsilon_1e-6",
-      "point_forecast": "inverse_logit(final calibrated q50)",
-      "monotonicity": "nonnegative quantile increments before inverse-logit",
-      "calibration": "same-final-model disjoint calibration defined in calibration_spec.json"
-    },
-    "binary_probability": {
-      "output": "probability_in_[0,1]",
-      "loss": "masked_binary_cross_entropy",
-      "calibration": "isotonic regression on predictions from the frozen final model over its disjoint calibration sessions; insufficient evidence blocks confidence-controlled behavior"
-    },
-    "count_distribution": {
-      "output": "categorical_probability_mass_over_integer_support_0_through_causally_available_minutes",
-      "loss": "masked_categorical_cross_entropy",
-      "point_forecast": "smallest integer whose cumulative probability is at least 0.5",
-      "calibration": "same-final-model disjoint cumulative-probability isotonic calibration"
-    },
-    "discrete_survival": {
-      "output": "one-minute conditional hazard from minute 1 through causally available_minutes plus survival mass beyond that clock boundary",
-      "loss": "right_censor_aware_discrete_time_negative_log_likelihood",
-      "derived_outputs": [
-        "probability_of_first_real_profit_by_horizon",
-        "q10_event_minute",
-        "q25_event_minute",
-        "q50_event_minute",
-        "q75_event_minute",
-        "q90_event_minute",
-        "survival_probability_at_horizon"
-      ],
-      "calibration": "same-final-model disjoint isotonic calibration of cumulative incidence at each registered horizon"
-    },
-    "minute_offset_distribution": {
-      "output": "categorical_probability_mass_over_integer_offset_1_through_causally_available_minutes",
-      "loss": "masked_categorical_cross_entropy",
-      "point_forecast": "smallest minute offset whose cumulative probability is at least 0.5",
-      "calibration": "same-final-model disjoint cumulative-probability isotonic calibration",
-      "runtime_role": "diagnostic_and_attribution_only"
-    }
-  },
-  "families": [
-    {
-      "family": "early_drawdown",
-      "family_id": 0,
-      "horizons": [
-        "h3",
-        "h5",
-        "h10"
-      ],
-      "continuous_metrics": [
-        "worst",
-        "q00",
-        "q05",
-        "q10",
-        "q25"
-      ],
-      "units_for_each_continuous_metric": [
-        "fee_adjusted_dollars_per_contract",
-        "fee_adjusted_return_on_entry_premium"
-      ],
-      "head_type": "continuous_quantile",
-      "auxiliary_metrics": [
-        {
-          "name": "argmin_minute_offset",
-          "head_type": "minute_offset_distribution"
-        }
-      ],
-      "favorable_direction": "higher"
-    },
-    {
-      "family": "time_to_first_real_profit",
-      "family_id": 1,
-      "horizons": "all",
-      "event_head": {
-        "metric": "time_to_first_real_profit",
-        "head_type": "discrete_survival"
-      },
-      "continuous_metrics": [
-        "first_profit_size"
-      ],
-      "units_for_each_continuous_metric": [
-        "fee_adjusted_dollars_per_contract",
-        "fee_adjusted_return_on_entry_premium"
-      ],
-      "continuous_head_type": "continuous_quantile",
-      "favorable_direction": {
-        "event_probability": "higher",
-        "event_minute": "lower",
-        "first_profit_size": "higher"
-      }
-    },
-    {
-      "family": "pre_profit_adverse_excursion",
-      "family_id": 2,
-      "horizons": "all",
-      "continuous_metrics": [
-        "pre_profit_adverse_excursion"
-      ],
-      "units_for_each_continuous_metric": [
-        "fee_adjusted_dollars_per_contract",
-        "fee_adjusted_return_on_entry_premium"
-      ],
-      "head_type": "continuous_quantile",
-      "auxiliary_metrics": [
-        {
-          "name": "immediate_profit",
-          "head_type": "binary_probability"
-        }
-      ],
-      "favorable_direction": "higher"
-    },
-    {
-      "family": "underwater_burden",
-      "family_id": 3,
-      "horizons": "all",
-      "continuous_metrics": [
-        "depth_duration_integral"
-      ],
-      "units_for_each_continuous_metric": [
-        "fee_adjusted_dollar_minutes_per_contract",
-        "fee_adjusted_return_minutes_on_entry_premium"
-      ],
-      "continuous_head_type": "continuous_quantile",
-      "count_metrics": [
-        "total_underwater_minutes",
-        "longest_continuous_underwater_minutes"
-      ],
-      "count_head_type": "count_distribution",
-      "favorable_direction": "lower"
-    },
-    {
-      "family": "profitable_window_stability",
-      "family_id": 4,
-      "horizons": "all",
-      "bounded_continuous_metrics": [
-        "fraction_positive_minutes",
-        "one_minute_jitter_sensitivity"
-      ],
-      "bounded_head_type": "bounded_continuous_quantile",
-      "count_metrics": [
-        "longest_profitable_window_minutes",
-        "profitable_window_count"
-      ],
-      "count_head_type": "count_distribution",
-      "favorable_direction": {
-        "fraction_positive_minutes": "higher",
-        "longest_profitable_window_minutes": "higher",
-        "profitable_window_count": "lower_conditional_on_fraction_positive_above_zero",
-        "one_minute_jitter_sensitivity": "lower"
-      }
-    },
-    {
-      "family": "upside",
-      "family_id": 5,
-      "horizons": "all",
-      "continuous_metrics": [
-        "mfe",
-        "q75",
-        "q90",
-        "q95",
-        "q100",
-        "profit_area"
-      ],
-      "units_for_each_continuous_metric": [
-        "fee_adjusted_dollars_per_contract",
-        "fee_adjusted_return_on_entry_premium"
-      ],
-      "head_type": "continuous_quantile",
-      "auxiliary_metrics": [
-        {
-          "name": "argmax_minute_offset",
-          "head_type": "minute_offset_distribution"
-        }
-      ],
-      "favorable_direction": "higher"
-    }
-  ],
   "action_conditioned_outputs": {
-    "required": true,
     "cannot_be_ablated_or_skipped": true,
-    "wait_probability_head": {
-      "scope": "one output for every label-complete governed flat minute in the RLAC population; runtime composer output and runtime model selection never control target membership",
-      "inputs": "shared causal state plus permutation-invariant pooling of contract representations, causal action masks, and path-head forecasts; no realized labels",
-      "output": "sigmoid probability p_wait in [0,1]",
-      "training_target": "y_wait(t)=1 iff max over intent-eligible contracts of U_label(t,c) is less than the frozen RLAC entry threshold; otherwise 0. The target is constructed by the model-free one-pass RLAC before any model head is fit.",
-      "loss": "masked_binary_cross_entropy over every label-complete governed flat minute in the RLAC population",
-      "calibration": "isotonic calibration on predictions from the same final model over its disjoint calibration sessions",
-      "runtime_derivation": "the calibrated output itself; no implementation may substitute action rate or a post-hoc constant"
-    },
-    "selected_contract_regret_heads": {
-      "scope": "one pair of outputs for every label-complete intent-eligible contract on every included governed flat minute, including RLAC WAIT minutes; runtime composer selections never control target membership",
-      "realized_target": "r(t,c)=U_label(t,c_star_regret)-U_label(t,c), where c_star_regret is the RLAC deterministic U_label argmax over the complete intent-eligible risk set. The exact target lies in [0,1], equals zero for c_star_regret, and is produced before any model head is fit.",
-      "expected_regret": {
-        "output": "sigmoid mean_regret in [0,1]",
-        "loss": "masked_mean_squared_error(mean_regret,r)"
-      },
-      "raw_q90_regret": {
-        "output": "mean_regret+(1-mean_regret)*sigmoid(nonnegative_tail_logit), guaranteeing mean_regret<=raw_q90<=1",
-        "loss": "masked_pinball_loss_tau_0.90(raw_q90,r)"
-      },
-      "calibrated_upper_bound": "min(1,raw_q90+qhat), where qhat is the finite-sample 0.90 one-sided conformal quantile of max(0,r-raw_q90) from the same frozen final model's disjoint calibration entries",
-      "composer_action_constraint": {
-        "maximum_normalized_q90_upper_bound": 0.1,
-        "enter_requires": "finite conformalized q90 upper bound<=0.10",
-        "missing_nonfinite_or_above": "WAIT",
-        "equality": "passes this regret threshold",
-        "report_only": false
-      },
-      "rlac_wait_minutes": "retained in both WAIT-head loss and full-population regret loss through c_star_regret_label; runtime WAIT decisions may not remove them or relabel them as zero regret"
+    "coverage_claim": {
+      "regret_denominator": "all label-complete intent-eligible contracts on every included minute, including RLAC WAIT minutes",
+      "regret_excluded": "label-incomplete rows and minutes with zero intent-eligible contracts only",
+      "runtime_composer_can_change_membership": false,
+      "wait_denominator": "all label-complete governed flat minutes in the RLAC population",
+      "wait_excluded": "label-incomplete governed flat minutes only",
+      "zero_eligible_row_exclusions": true
     },
     "loss_weight": {
-      "wait_probability": 0.1,
-      "expected_regret": 0.05,
-      "q90_regret": 0.05,
       "application": "add these fixed weighted losses to the renormalized six-family primary loss",
+      "expected_regret": 0.05,
       "inner_loop_tunable": false,
-      "missing_target": "mask only label-incomplete or RLAC-inapplicable targets; runtime composer output and model-selected actions are forbidden missingness reasons. If minimum calibration evidence later fails, the candidate is ineligible rather than silently continuing."
+      "missing_target": "mask only label-incomplete or RLAC-inapplicable targets; runtime composer output and model-selected actions are forbidden missingness reasons. If minimum calibration evidence later fails, the candidate is ineligible rather than silently continuing.",
+      "q90_regret": 0.05,
+      "wait_probability": 0.1
+    },
+    "required": true,
+    "selected_contract_regret_heads": {
+      "calibrated_upper_bound": "min(1,raw_q90+qhat), where qhat is the finite-sample 0.90 one-sided conformal quantile of max(0,r-raw_q90) from the same frozen final model's disjoint calibration entries",
+      "composer_action_constraint": {
+        "enter_requires": "finite conformalized q90 upper bound<=0.10",
+        "equality": "passes this regret threshold",
+        "maximum_normalized_q90_upper_bound": 0.1,
+        "missing_nonfinite_or_above": "WAIT",
+        "report_only": false
+      },
+      "expected_regret": {
+        "loss": "masked_mean_squared_error(mean_regret,r)",
+        "output": "sigmoid mean_regret in [0,1]"
+      },
+      "raw_q90_regret": {
+        "loss": "masked_pinball_loss_tau_0.90(raw_q90,r)",
+        "output": "mean_regret+(1-mean_regret)*sigmoid(nonnegative_tail_logit), guaranteeing mean_regret<=raw_q90<=1"
+      },
+      "realized_target": "r(t,c)=U_label(t,c_star_regret)-U_label(t,c), where c_star_regret is the RLAC deterministic U_label argmax over the complete intent-eligible risk set. The exact target lies in [0,1], equals zero for c_star_regret, and is produced before any model head is fit.",
+      "rlac_wait_minutes": "retained in both WAIT-head loss and full-population regret loss through c_star_regret_label; runtime WAIT decisions may not remove them or relabel them as zero regret",
+      "scope": "one pair of outputs for every label-complete intent-eligible contract on every included governed flat minute, including RLAC WAIT minutes; runtime composer selections never control target membership"
     },
     "training_data_path": [
       "build causal model inputs from FT2-08 feature partitions",
@@ -276,27 +50,286 @@
       "freeze calibrated head artifacts before the runtime entry composer is evaluated",
       "strip every label and audit target from inference artifacts"
     ],
-    "coverage_claim": {
-      "wait_denominator": "all label-complete governed flat minutes in the RLAC population",
-      "wait_excluded": "label-incomplete governed flat minutes only",
-      "regret_denominator": "all label-complete intent-eligible contracts on every included minute, including RLAC WAIT minutes",
-      "regret_excluded": "label-incomplete rows and minutes with zero intent-eligible contracts only",
-      "zero_eligible_row_exclusions": true,
-      "runtime_composer_can_change_membership": false
+    "wait_probability_head": {
+      "calibration": "isotonic calibration on predictions from the same final model over its disjoint calibration sessions",
+      "inputs": "shared causal state plus permutation-invariant pooling of contract representations, causal action masks, and path-head forecasts; no realized labels",
+      "loss": "masked_binary_cross_entropy over every label-complete governed flat minute in the RLAC population",
+      "output": "sigmoid probability p_wait in [0,1]",
+      "runtime_derivation": "the calibrated output itself; no implementation may substitute action rate or a post-hoc constant",
+      "scope": "one output for every label-auditable governed flat minute with at least one time-t intent-eligible contract in the exact RLAC WAIT population; zero-intent-eligible and label-incomplete minutes are excluded and counted; runtime composer output and runtime model selection never control target membership",
+      "target_authority": {
+        "formula": "y_wait(t)=1 if WAIT_justified(t) else 0",
+        "json_pointer": "/targets/WAIT_head",
+        "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+        "scalar_U_label_threshold_allowed": false,
+        "sha256": "31a7a7d6c7da34852da499688432315f875d59f321c3036483bc25d9cde40a1b",
+        "zero_intent_eligible_minutes": "excluded_and_counted"
+      },
+      "training_target": "Import realized_label_audit_composer_spec.json:/targets/WAIT_head exactly: y_wait(t)=1 if WAIT_justified(t) else 0, where WAIT_justified means no exact contract passes the RLAC contract_pass conjunction of time-t intent eligibility, complete labels, every active realized guardrail, and realized fee-cleared upside. No scalar U_label threshold is defined or permitted. The target is constructed by the model-free one-pass RLAC before any model head is fit."
     }
   },
+  "ensemble": {
+    "aggregate_quantile": "median across seed-specific same-model calibrated quantiles",
+    "epistemic_scale": "1.4826 times median absolute deviation of seed-specific q50 forecasts",
+    "independent_seed_count": 3,
+    "seed_identifiers": [
+      "seed_a",
+      "seed_b",
+      "seed_c"
+    ],
+    "seed_values_are_frozen_in_ft2_30": true
+  },
+  "central_tendency_entry_gate_outputs": {
+    "calibration": "calibration_spec.json entry_gate_expected_upside_calibration",
+    "composer_role": "positive-after-fee gate only; the existing calibrated-q10 favorable percentiles remain the unchanged rank statistics",
+    "ensemble": "median across the three seed-specific conditional-mean forecasts before the disjoint-calibration lower-confidence correction",
+    "head_family": "required fixed-weight gate-support companions to the existing upside family; they do not delete, replace, retune, or reweight any existing quantile head",
+    "horizons": [
+      "h3",
+      "h5",
+      "h10",
+      "h20",
+      "h45",
+      "h90",
+      "remaining_session"
+    ],
+    "loss": "masked mean squared error on the unchanged full-window fee-adjusted labels",
+    "metrics": [
+      "expected_mfe",
+      "expected_profit_area"
+    ],
+    "output": "unbounded conditional arithmetic mean in each native fee-adjusted unit",
+    "required_output_count": 28,
+    "units_for_each_metric": [
+      "fee_adjusted_dollars_or_dollar_minutes_per_contract",
+      "fee_adjusted_return_or_return_minutes_on_entry_premium"
+    ]
+  },
+  "families": [
+    {
+      "auxiliary_metrics": [
+        {
+          "head_type": "minute_offset_distribution",
+          "name": "argmin_minute_offset"
+        }
+      ],
+      "continuous_metrics": [
+        "worst",
+        "q00",
+        "q05",
+        "q10",
+        "q25"
+      ],
+      "family": "early_drawdown",
+      "family_id": 0,
+      "favorable_direction": "higher",
+      "head_type": "continuous_quantile",
+      "horizons": [
+        "h3",
+        "h5",
+        "h10"
+      ],
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ]
+    },
+    {
+      "continuous_head_type": "continuous_quantile",
+      "continuous_metrics": [
+        "first_profit_size"
+      ],
+      "event_head": {
+        "head_type": "discrete_survival",
+        "metric": "time_to_first_real_profit"
+      },
+      "family": "time_to_first_real_profit",
+      "family_id": 1,
+      "favorable_direction": {
+        "event_minute": "lower",
+        "event_probability": "higher",
+        "first_profit_size": "higher"
+      },
+      "horizons": "all",
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ]
+    },
+    {
+      "auxiliary_metrics": [
+        {
+          "head_type": "binary_probability",
+          "name": "immediate_profit"
+        }
+      ],
+      "continuous_metrics": [
+        "pre_profit_adverse_excursion"
+      ],
+      "family": "pre_profit_adverse_excursion",
+      "family_id": 2,
+      "favorable_direction": "higher",
+      "head_type": "continuous_quantile",
+      "horizons": "all",
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ]
+    },
+    {
+      "continuous_head_type": "continuous_quantile",
+      "continuous_metrics": [
+        "depth_duration_integral"
+      ],
+      "count_head_type": "count_distribution",
+      "count_metrics": [
+        "total_underwater_minutes",
+        "longest_continuous_underwater_minutes"
+      ],
+      "family": "underwater_burden",
+      "family_id": 3,
+      "favorable_direction": "lower",
+      "horizons": "all",
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollar_minutes_per_contract",
+        "fee_adjusted_return_minutes_on_entry_premium"
+      ]
+    },
+    {
+      "bounded_continuous_metrics": [
+        "fraction_positive_minutes",
+        "one_minute_jitter_sensitivity"
+      ],
+      "bounded_head_type": "bounded_continuous_quantile",
+      "count_head_type": "count_distribution",
+      "count_metrics": [
+        "longest_profitable_window_minutes",
+        "profitable_window_count"
+      ],
+      "family": "profitable_window_stability",
+      "family_id": 4,
+      "favorable_direction": {
+        "fraction_positive_minutes": "higher",
+        "longest_profitable_window_minutes": "higher",
+        "one_minute_jitter_sensitivity": "lower",
+        "profitable_window_count": "lower_conditional_on_fraction_positive_above_zero"
+      },
+      "horizons": "all"
+    },
+    {
+      "auxiliary_metrics": [
+        {
+          "head_type": "minute_offset_distribution",
+          "name": "argmax_minute_offset"
+        }
+      ],
+      "continuous_metrics": [
+        "mfe",
+        "q75",
+        "q90",
+        "q95",
+        "q100",
+        "profit_area"
+      ],
+      "family": "upside",
+      "family_id": 5,
+      "favorable_direction": "higher",
+      "head_type": "continuous_quantile",
+      "horizons": "all",
+      "units_for_each_continuous_metric": [
+        "fee_adjusted_dollars_per_contract",
+        "fee_adjusted_return_on_entry_premium"
+      ]
+    }
+  ],
+  "full_window_training_filter": "Continuous, bounded, count, and empirical-CDF targets for finite hN require the complete uncensored N-mark window; finite near-close censored values are excluded. Right-censored time-to-first-profit rows remain eligible only for the registered discrete-survival likelihood with their censoring indicator.",
+  "head_types": {
+    "binary_probability": {
+      "calibration": "isotonic regression on predictions from the frozen final model over its disjoint calibration sessions; insufficient evidence blocks confidence-controlled behavior",
+      "loss": "masked_binary_cross_entropy",
+      "output": "probability_in_[0,1]"
+    },
+    "bounded_continuous_quantile": {
+      "calibration": "same-final-model disjoint calibration defined in calibration_spec.json",
+      "loss": "masked_pinball_loss_on_logit_with_epsilon_1e-6",
+      "monotonicity": "nonnegative quantile increments before inverse-logit",
+      "point_forecast": "inverse_logit(final calibrated q50)",
+      "quantiles": [
+        0.1,
+        0.25,
+        0.5,
+        0.75,
+        0.9
+      ],
+      "support": "[0,1]"
+    },
+    "continuous_quantile": {
+      "calibration": "same-final-model disjoint calibration defined in calibration_spec.json",
+      "loss": "masked_pinball_loss",
+      "monotonicity": "parameterize q10 directly and each higher quantile as the prior quantile plus softplus(nonnegative_increment); post-hoc sorting is forbidden",
+      "point_forecast": "final-model disjoint-calibration q50",
+      "quantiles": [
+        0.1,
+        0.25,
+        0.5,
+        0.75,
+        0.9
+      ]
+    },
+    "count_distribution": {
+      "calibration": "same-final-model disjoint cumulative-probability isotonic calibration",
+      "loss": "masked_categorical_cross_entropy",
+      "output": "categorical_probability_mass_over_integer_support_0_through_causally_available_minutes",
+      "point_forecast": "smallest integer whose cumulative probability is at least 0.5"
+    },
+    "discrete_survival": {
+      "calibration": "same-final-model disjoint isotonic calibration of cumulative incidence at each registered horizon",
+      "derived_outputs": [
+        "probability_of_first_real_profit_by_horizon",
+        "q10_event_minute",
+        "q25_event_minute",
+        "q50_event_minute",
+        "q75_event_minute",
+        "q90_event_minute",
+        "survival_probability_at_horizon"
+      ],
+      "loss": "right_censor_aware_discrete_time_negative_log_likelihood",
+      "output": "one-minute conditional hazard from minute 1 through causally available_minutes plus survival mass beyond that clock boundary"
+    },
+    "minute_offset_distribution": {
+      "calibration": "same-final-model disjoint cumulative-probability isotonic calibration",
+      "loss": "masked_categorical_cross_entropy",
+      "output": "categorical_probability_mass_over_integer_offset_1_through_causally_available_minutes",
+      "point_forecast": "smallest minute offset whose cumulative probability is at least 0.5",
+      "runtime_role": "diagnostic_and_attribution_only"
+    }
+  },
+  "horizons": [
+    "h3",
+    "h5",
+    "h10",
+    "h20",
+    "h45",
+    "h90",
+    "remaining_session"
+  ],
+  "inapplicable_target_rule": "A family-horizon pair that FT2-04 does not define is absent, not zero-filled. Label validity controls supervised loss only and is never a composer input; runtime horizon availability is causal clock state from composer_spec.json.",
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "label_authority": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/label_spec.json",
+    "sha256": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60"
+  },
   "loss_weight_family": {
-    "base_family_weight": "1/6 for each family",
-    "within_family_horizon_weight": "equal over applicable supervised targets",
-    "within_horizon_metric_weight": "equal over registered metrics",
-    "dual_unit_weight": "1/2 dollars and 1/2 return for paired targets",
-    "auxiliary_weight": "0.25 times the mean primary-metric weight within that family; auxiliary losses do not enter composer ranking directly",
-    "inner_loop_tunable": true,
     "allowed_multiplier_per_family": [
       0.5,
       2.0
     ],
-    "renormalize_after_multiplier": true,
+    "auxiliary_weight": "0.25 times the mean primary-metric weight within that family; auxiliary losses do not enter composer ranking directly",
+    "base_family_weight": "1/6 for each family",
+    "dual_unit_weight": "1/2 dollars and 1/2 return for paired targets",
     "forbidden": [
       "zeroing a family",
       "zeroing a registered horizon",
@@ -304,31 +337,32 @@
       "changing dual-unit parity",
       "changing action-conditioned output weights",
       "selecting weights from outer validation"
-    ]
-  },
-  "ensemble": {
-    "independent_seed_count": 3,
-    "seed_identifiers": [
-      "seed_a",
-      "seed_b",
-      "seed_c"
     ],
-    "seed_values_are_frozen_in_ft2_30": true,
-    "aggregate_quantile": "median across seed-specific same-model calibrated quantiles",
-    "epistemic_scale": "1.4826 times median absolute deviation of seed-specific q50 forecasts"
+    "inner_loop_tunable": true,
+    "renormalize_after_multiplier": true,
+    "within_family_horizon_weight": "equal over applicable supervised targets",
+    "within_horizon_metric_weight": "equal over registered metrics"
   },
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "realized_label_audit_composer": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+    "sha256": "31a7a7d6c7da34852da499688432315f875d59f321c3036483bc25d9cde40a1b"
+  },
+  "schema_version": "Protocol101FT210ForecastHeadsV5",
+  "status": "scoped_final_round_repaired",
   "target_firewall": {
-    "labels_are_model_inputs": false,
-    "runtime_loader_can_read_labels": false,
-    "future_path_fields_are_model_inputs": false,
-    "label_validity_is_composer_input": false,
-    "hindsight_exit_minute_is_a_target": false,
-    "max_future_price_is_a_complete_target": false,
-    "mfe_is_allowed_only_as_one_registered_component_of_the_six-family_path_forecast": true,
-    "oracle_action_is_a_runtime_target": false,
     "action_conditioned_targets_exist_only_in_training_label_join": true,
     "action_head_target_may_reference_runtime_composer_output": false,
     "action_head_target_producer": "the frozen model-free one-pass realized_label_audit_composer_spec.json only",
-    "protected_data_access": false
+    "future_path_fields_are_model_inputs": false,
+    "hindsight_exit_minute_is_a_target": false,
+    "label_validity_is_composer_input": false,
+    "labels_are_model_inputs": false,
+    "max_future_price_is_a_complete_target": false,
+    "mfe_is_allowed_only_as_one_registered_component_of_the_six-family_path_forecast": true,
+    "oracle_action_is_a_runtime_target": false,
+    "protected_data_access": false,
+    "runtime_loader_can_read_labels": false
   }
 }

@@ -1,7 +1,7 @@
 {
   "attempt": 1,
-  "coordinated_goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
-  "created_at_utc": "2026-07-30T04:16:37.183276+00:00",
+  "coordinated_goal": "FT2-DELTA-REVIEW-BOUNDED-FIX",
+  "created_at_utc": "2026-07-30T05:48:39Z",
   "deliverable_hashes": {
     "account_state_ledger_spec.json": "4d745b89abc033ee7e6d1b2f5cbfa644c107df7f00c1406fd25f4443ae32ad12",
     "contract.md": "d1f9875d5300da26d83001a7f52aab67276e9346f9d01488405f808e66db9b07",
@@ -15,46 +15,47 @@
     "storage_spec.json": "ea3710ee556405f3b190e64af0e192cfcb14276b71d864cb86caa6800bba27d4",
     "synthetic_golden_vectors.json": "abc2d777790740ad697f1c9893cb700ef90f3cc6d54d039f59acbe48c0350f4a",
     "tensor_schema.json": "acfdee0460cd69c229cac61c06db1a9592da2f140cdb891994db3de05e1d4c6f",
-    "validate_contract_v3.py": "de878f91ffd3cd65a89130060e595acea093797aa0e9e6d5611b8a7703379eca",
-    "validation.json": "70888a9c07e8de2f0eb1ae8a94f842bc91ef8b67e32709ca1c2ed11d1389729c"
+    "validate_contract_v3.py": "ade82b2391344e73cd9858b81e4f3aba448d465ae6693596024d905dfe8af87f",
+    "validation.json": "d0fd65b55ed38d88d82541e7a2fe1ecec3903b0bb61c6bc41e3c24368cd5fd6e"
   },
   "goal": "FT2-08",
-  "highest_allowed_claim": "The scoped producer repair is complete and mechanically testable; Fable verification and delta-scoped fresh-seat review remain pending.",
+  "highest_allowed_claim": "The bounded delta-review repair is implemented and sealed; independent fresh-seat acceptance remains required.",
   "inputs": {
     "canonical_intent_fill_recheck_law": {
       "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
       "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
     },
-    "census_v4_receipt": {
+    "census_v5_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-      "sha256": "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
+      "sha256": "e327c5e90a29c4c68277b5ec046b518627a742cb66c6a015e7e649efd3284693"
     },
     "consolidated_authority": {
       "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
-      "sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
+      "sha256": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc"
     },
     "ft2_04_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
-      "sha256": "b4b29dcf9b96b0172adb614bf0aa975ab1c86ef9c92ba2d91423a14c4b52cffe"
+      "sha256": "0616e907af066836957f2891d33db54d1ed5782e86c9a753a575f135eb6251a5"
     },
     "graph_v2": {
       "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
-      "sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9"
+      "sha256": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08"
     },
     "rerun002_receipt": {
       "path": "v4/audit/autoresearch/protocol101_ft2_20_parallel_design_review_rerun002/receipt.json",
-      "sha256": "17cc72ea85c629ae9a2d23059ae13020782464705ee6049f577c9936dd2579ac"
+      "sha256": "17cc9983c38ef4c75b8fece0cd67d4662e559f84a27de8eba2a84a34f85d96ac"
     }
   },
   "outcome": "producer_repaired",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
   "repair_of": {
     "preservation_verified": true,
-    "preserved_path": "superseded/v3_pre_scoped_final_round_20260730/receipt.json",
-    "receipt_sha256": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c",
-    "schema_version": "Protocol101FT208NodeReceiptV3"
+    "preserved_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+    "preserved_git_path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+    "receipt_sha256": "4a061275dc7fd58c4a8f7774aeb464462f4101795a583ab5150f8f224d7eb484",
+    "schema_version": "Protocol101FT208NodeReceiptV4"
   },
-  "schema_version": "Protocol101FT208NodeReceiptV4",
+  "schema_version": "Protocol101FT208NodeReceiptV5",
   "side_effects": {
     "broker_recorder_or_paid_data_access": false,
     "protected_or_outer_data_access": false,

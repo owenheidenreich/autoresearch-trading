@@ -21,7 +21,7 @@ AUTHORITY = REPO / (
     "PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md"
 )
 AUTHORITY_HASH = (
-    "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
+    "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc"
 )
 LAW_PRODUCT_CONTRACT_HASH = (
     "2363d3f986daba20bd5087ed751dc5b2d839e76cd6413aeca0bcd255eb98857a"
@@ -61,8 +61,8 @@ def main() -> int:
         ft204_receipt["outcome"] == "labels_frozen_v2"
         and ft204_receipt["product_contract_hash"] == AUTHORITY_HASH
     )
-    checks["ft205_v4"] = (
-        ft205_receipt["schema_version"] == "Protocol101FT205NodeReceiptV4"
+    checks["ft205_current"] = (
+        ft205_receipt["schema_version"] == "Protocol101FT205NodeReceiptV5"
         and ft205_receipt["product_contract_hash"] == AUTHORITY_HASH
         and ft205_receipt["session_count"] == 45
     )

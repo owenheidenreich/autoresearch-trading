@@ -2,7 +2,7 @@
   "schema_version": "Protocol101FT210RealizedLabelAuditComposerSpecV1",
   "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
   "status": "owner_authorized_scoped_final_round",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
   "purpose": "Define one model-free, one-pass source of WAIT and exact-contract regret training targets without consulting the runtime composer or any model output.",
   "authorities": {
     "label_families": {

@@ -1,25 +1,56 @@
 {
-  "schema_version": "Protocol101FT210ComposerSpecV4",
-  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
-  "status": "scoped_final_round_repaired",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
-  "intent_fill_recheck_law": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
-    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  "action_space": {
+    "contract_action": "BUY one exact eligible SPXW 0DTE call or put contract",
+    "contract_actions": 42,
+    "no_upstream_p5_rule": true,
+    "total_actions": 43,
+    "wait_action_index": 0
+  },
+  "causal_horizon_availability": {
+    "entry_fill_minute": "e=t+1 completed minute",
+    "family_applicability": "early_drawdown uses h3,h5,h10 only; every other family uses its registered horizons",
+    "finite_horizon_rule": "hN is available at decision t iff e+N is not later than 15:55 America/New_York and the registered model emits finite outputs for every composer-required head at hN",
+    "forbidden_inputs": [
+      "target_valid",
+      "forecast_valid derived from labels",
+      "label_join_present",
+      "future bid availability",
+      "future censoring state",
+      "any label-partition field"
+    ],
+    "historical_runtime_invariant": "remove every label partition and every label-derived mask before composition; action index, ordered contract scores, WAIT reasons, available horizons, and tie-break trace must remain bit-identical",
+    "near_close": "a nominal horizon extending beyond 15:55 is unavailable to the runtime composer; it is never shortened and future label censoring never changes this decision",
+    "remaining_session_rule": "remaining_session is available iff e is not later than 15:30 and at least one causal clock minute exists in (e,15:55]"
   },
   "causal_role": {
-    "order": "downstream of frozen RLAC targets, fitted heads, and same-final-model disjoint calibration",
     "may_construct_training_targets": false,
-    "may_select_target_population": false,
     "may_recalibrate_heads": false,
+    "may_select_target_population": false,
+    "order": "downstream of frozen RLAC targets, fitted heads, and same-final-model disjoint calibration",
     "runtime_outputs_feed_back_into_rlac_or_training": false
   },
-  "action_space": {
-    "wait_action_index": 0,
-    "contract_actions": 42,
-    "total_actions": 43,
-    "contract_action": "BUY one exact eligible SPXW 0DTE call or put contract",
-    "no_upstream_p5_rule": true
+  "complete_ladder_and_safety": {
+    "authority": "FT2-08 tensor_schema.json flat_state_masks.action_mask and intent_fill_recheck_law.json decision_time_intent",
+    "fail_closed": true,
+    "flat_incomplete_ladder": "all 42 BUY actions are false and WAIT is the only legal action",
+    "future_tplus1_information_in_action_mask": false,
+    "global_requirements": [
+      "complete_ladder_mask true",
+      "complete_history_streak_at_least_15_mask true",
+      "synchronized_context_fresh_mask true",
+      "soft_close_active false",
+      "daily_stop_active false"
+    ],
+    "mask_is_alpha": false,
+    "per_contract_requirements": [
+      "current quote available",
+      "tradability and source-neutral identity valid",
+      "A_t is the last known executable ask through decision t and is at least 100 cents",
+      "affordable from A_t and the causal policy ledger",
+      "D48 time-t premium-cap intent mask true from A_t",
+      "policy-ledger-specific D49 time-t budget intent mask true from A_t"
+    ],
+    "post_selection_resolution": "after one exact identity is selected at t, recheck only that identity at t+1; a failed floor, identity/freshness, affordability, D48, or D49 recheck charges zero premium and fee, opens no position, permits no substitute, and returns to flat no earlier than t+2"
   },
   "composer_order": [
     "complete_ladder_and_physical_safety_action_mask",
@@ -33,46 +64,147 @@
     "mandatory_action_conditioned_gate_check",
     "deterministic_tie_break"
   ],
-  "complete_ladder_and_safety": {
-    "authority": "FT2-08 tensor_schema.json flat_state_masks.action_mask and intent_fill_recheck_law.json decision_time_intent",
-    "flat_incomplete_ladder": "all 42 BUY actions are false and WAIT is the only legal action",
-    "per_contract_requirements": [
-      "current quote available",
-      "tradability and source-neutral identity valid",
-      "A_t is the last known executable ask through decision t and is at least 100 cents",
-      "affordable from A_t and the causal policy ledger",
-      "D48 time-t premium-cap intent mask true from A_t",
-      "policy-ledger-specific D49 time-t budget intent mask true from A_t"
-    ],
-    "global_requirements": [
-      "complete_ladder_mask true",
-      "complete_history_streak_at_least_15_mask true",
-      "synchronized_context_fresh_mask true",
-      "soft_close_active false",
-      "daily_stop_active false"
-    ],
-    "mask_is_alpha": false,
-    "fail_closed": true,
-    "future_tplus1_information_in_action_mask": false,
-    "post_selection_resolution": "after one exact identity is selected at t, recheck only that identity at t+1; a failed floor, identity/freshness, affordability, D48, or D49 recheck charges zero premium and fee, opens no position, permits no substitute, and returns to flat no earlier than t+2"
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
   },
-  "causal_horizon_availability": {
-    "entry_fill_minute": "e=t+1 completed minute",
-    "finite_horizon_rule": "hN is available at decision t iff e+N is not later than 15:55 America/New_York and the registered model emits finite outputs for every composer-required head at hN",
-    "remaining_session_rule": "remaining_session is available iff e is not later than 15:30 and at least one causal clock minute exists in (e,15:55]",
-    "family_applicability": "early_drawdown uses h3,h5,h10 only; every other family uses its registered horizons",
-    "near_close": "a nominal horizon extending beyond 15:55 is unavailable to the runtime composer; it is never shortened and future label censoring never changes this decision",
-    "forbidden_inputs": [
-      "target_valid",
-      "forecast_valid derived from labels",
-      "label_join_present",
-      "future bid availability",
-      "future censoring state",
-      "any label-partition field"
+  "joint_calibration": {
+    "census_activity_is_report_only_not_target_or_gate": true,
+    "details": "calibration_spec.json",
+    "parameters": [
+      "guardrail_anchor_alpha",
+      "uncertainty_multiplier_k"
     ],
-    "historical_runtime_invariant": "remove every label partition and every label-derived mask before composition; action index, ordered contract scores, WAIT reasons, available horizons, and tie-break trace must remain bit-identical"
+    "selection_source": "chronological nested inner-fit evidence only",
+    "tail_guard_is_gate": true
   },
+  "mandatory_action_conditioned_gate": {
+    "calibration_and_pass_contract": "calibration_spec.json action_conditioned_gate",
+    "cannot_be_skipped": true,
+    "ft2_11_dependency": "FT2-11 repair must place this gate in the required entry-component pass checklist",
+    "heads": "forecast_heads.json action_conditioned_outputs",
+    "missing_untrained_uncalibrated_or_failed": "candidate is ineligible for component freeze and confidence-controlled runtime behavior; composer emits WAIT in any shadow/runtime rehearsal",
+    "selected_contract_regret_action_constraint": {
+      "equality": "passes the regret magnitude threshold but all other strict composer margins still apply",
+      "maximum": 0.1,
+      "missing_nonfinite_or_above": "WAIT",
+      "not_report_only": true,
+      "pass": "finite bound<=0.10",
+      "quantity": "same-final-model conformalized q90 upper bound for the signed normalized RLAC regret target; the upper bound is at most 1"
+    }
+  },
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "schema_version": "Protocol101FT210ComposerSpecV5",
   "stage_1_quality_screen": {
+    "anchor_interpretation": "candidate bottom-tail exclusion level; 0.0 is the mandatory no-screen control, and nonzero settings are quality exclusions rather than upside ranks",
+    "canonical_guardrail_components": [
+      {
+        "conservative_forecast": "calibrated_q10",
+        "direction": "higher",
+        "family": "early_drawdown",
+        "horizon": "h10",
+        "metric": "worst",
+        "units": [
+          "dollars",
+          "return"
+        ]
+      },
+      {
+        "conservative_forecast": "calibrated_q90_event_minute_with_no_event_mapped_to_available_minutes_plus_one",
+        "direction": "lower",
+        "family": "time_to_first_real_profit",
+        "horizon": "remaining_session",
+        "metric": "event_minute",
+        "units": [
+          "minutes"
+        ]
+      },
+      {
+        "conservative_forecast": "calibrated_q10",
+        "direction": "higher",
+        "family": "pre_profit_adverse_excursion",
+        "horizon": "remaining_session",
+        "metric": "pre_profit_adverse_excursion",
+        "units": [
+          "dollars",
+          "return"
+        ]
+      },
+      {
+        "conservative_forecast": "calibrated_q90",
+        "direction": "lower",
+        "family": "underwater_burden",
+        "horizon": "remaining_session",
+        "metric": "depth_duration_integral",
+        "units": [
+          "dollar_minutes",
+          "return_minutes"
+        ]
+      },
+      {
+        "conservative_forecast": "calibrated_q10",
+        "direction": "higher",
+        "family": "profitable_window_stability",
+        "horizon": "remaining_session",
+        "metric": "fraction_positive_minutes",
+        "units": [
+          "share"
+        ]
+      }
+    ],
+    "census_v4_provenance": {
+      "census_results": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
+        "sha256": "fdadd3ebae79021b9f363f4c2f81a2b5070e23537bf30a5635f65ff96932e91c"
+      },
+      "excluded_winners": {
+        "overall_joint_excluded_big_winner_rate_by_anchor": {
+          "0.00": 0.0,
+          "0.10": 0.0682094827459779,
+          "0.20": 0.1773358558082919,
+          "0.25": 0.2501356563567835,
+          "0.30": 0.3171572293839002
+        },
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv",
+        "sha256": "3e67b86aa763570a201d7960e618a9189ebd942f9d6c310e9983286a561bb1ec"
+      },
+      "guardrail_curves": {
+        "overall_quality_plus_positive_upside_qualifying_minute_share_by_anchor": {
+          "0.00": 0.7872607260726072,
+          "0.10": 0.7671947194719472,
+          "0.20": 0.7303630363036303,
+          "0.25": 0.6913531353135314,
+          "0.30": 0.6534653465346535
+        },
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_curves.csv",
+        "sha256": "810651d12d6701765254173102fdde2c93c7246f4d34c1c93daf2d8f43a9334d"
+      },
+      "guardrail_threshold_curves": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_threshold_curves.json",
+        "sha256": "0613ca2b1a420a6639b2b9774fa94cc38310893e9d6761f36a27dfd28d10fdc5"
+      },
+      "guardrail_trade_rates": {
+        "overall_mean_trades_per_session_by_anchor": {
+          "0.00": 2.6,
+          "0.10": 2.6,
+          "0.20": 2.6666666666666665,
+          "0.25": 2.6666666666666665,
+          "0.30": 2.6666666666666665
+        },
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
+        "sha256": "6fdd5e75e94e4eb97f60584efabb5263cd79d32648ebbd6418be0f5a1c2b3a3b"
+      },
+      "receipt": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+        "sha256": "4ba3c1cc89505066e80a7abb4877c121356234cde6ce7be112eb150a38747c43"
+      },
+      "role": "45-session embargo-free multi-trade oracle design diagnostic only; report-only and never a model-quality gate, calibration-selection gate, component acceptance criterion, or neutral-lifecycle trade-count target",
+      "v3_v4_impact": {
+        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json",
+        "sha256": "3bbacacfa3f116b03e0a3859e2f9ba7c12ce577b20880a52d0c52d0a9959ee56"
+      }
+    },
     "guardrail_anchor_grid": [
       0.0,
       0.1,
@@ -80,221 +212,66 @@
       0.25,
       0.3
     ],
+    "missing_component_rule": "fail the contract; missing required causal forecast state cannot be converted to a favorable value",
     "no_screen_control_arm": {
       "alpha": 0.0,
-      "semantics": "skip every learned quality-threshold comparison while retaining physical/safety masks, causal horizon rules, positive-after-fee checks, uncertainty abstention, and the mandatory action-conditioned gate",
       "mandatory_every_campaign_evaluation": true,
       "may_be_dropped_or_replaced": false,
+      "semantics": "skip every learned quality-threshold comparison while retaining physical/safety masks, causal horizon rules, positive-after-fee checks, uncertainty abstention, and the mandatory action-conditioned gate",
       "tail_guard": "objective_spec.json tail_guard_relative_capture"
     },
-    "anchor_interpretation": "candidate bottom-tail exclusion level; 0.0 is the mandatory no-screen control, and nonzero settings are quality exclusions rather than upside ranks",
-    "census_v4_provenance": {
-      "census_results": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
-        "sha256": "a7a4001223d2c06babbb10098639d15e82ea0a2a6dd44448e3b1e517bb10e8f8"
-      },
-      "guardrail_threshold_curves": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_threshold_curves.json",
-        "sha256": "0613ca2b1a420a6639b2b9774fa94cc38310893e9d6761f36a27dfd28d10fdc5"
-      },
-      "guardrail_curves": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_curves.csv",
-        "sha256": "810651d12d6701765254173102fdde2c93c7246f4d34c1c93daf2d8f43a9334d",
-        "overall_quality_plus_positive_upside_qualifying_minute_share_by_anchor": {
-          "0.00": 0.7872607260726072,
-          "0.10": 0.7671947194719472,
-          "0.20": 0.7303630363036303,
-          "0.25": 0.6913531353135314,
-          "0.30": 0.6534653465346535
-        }
-      },
-      "excluded_winners": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/excluded_winners.csv",
-        "sha256": "3e67b86aa763570a201d7960e618a9189ebd942f9d6c310e9983286a561bb1ec",
-        "overall_joint_excluded_big_winner_rate_by_anchor": {
-          "0.00": 0.0,
-          "0.10": 0.0682094827459779,
-          "0.20": 0.1773358558082919,
-          "0.25": 0.2501356563567835,
-          "0.30": 0.3171572293839002
-        }
-      },
-      "guardrail_trade_rates": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
-        "sha256": "fb47b66ec08b74edc96bcd28bdcaac94cb41ef3bc36dee432cdff316d8897209",
-        "overall_mean_trades_per_session_by_anchor": {
-          "0.00": 2.6,
-          "0.10": 2.6,
-          "0.20": 2.6666666666666665,
-          "0.25": 2.6666666666666665,
-          "0.30": 2.6666666666666665
-        }
-      },
-      "v3_v4_impact": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json",
-        "sha256": "913f127563daf9e5dff25cb8da72b4c3cdefd7a06d7e5edf569ca3c736806c3e"
-      },
-      "receipt": {
-        "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-        "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
-      },
-      "role": "45-session embargo-free multi-trade oracle design diagnostic only; report-only and never a model-quality gate, calibration-selection gate, component acceptance criterion, or neutral-lifecycle trade-count target"
-    },
-    "canonical_guardrail_components": [
-      {
-        "family": "early_drawdown",
-        "horizon": "h10",
-        "metric": "worst",
-        "conservative_forecast": "calibrated_q10",
-        "direction": "higher",
-        "units": [
-          "dollars",
-          "return"
-        ]
-      },
-      {
-        "family": "time_to_first_real_profit",
-        "horizon": "remaining_session",
-        "metric": "event_minute",
-        "conservative_forecast": "calibrated_q90_event_minute_with_no_event_mapped_to_available_minutes_plus_one",
-        "direction": "lower",
-        "units": [
-          "minutes"
-        ]
-      },
-      {
-        "family": "pre_profit_adverse_excursion",
-        "horizon": "remaining_session",
-        "metric": "pre_profit_adverse_excursion",
-        "conservative_forecast": "calibrated_q10",
-        "direction": "higher",
-        "units": [
-          "dollars",
-          "return"
-        ]
-      },
-      {
-        "family": "underwater_burden",
-        "horizon": "remaining_session",
-        "metric": "depth_duration_integral",
-        "conservative_forecast": "calibrated_q90",
-        "direction": "lower",
-        "units": [
-          "dollar_minutes",
-          "return_minutes"
-        ]
-      },
-      {
-        "family": "profitable_window_stability",
-        "horizon": "remaining_session",
-        "metric": "fraction_positive_minutes",
-        "conservative_forecast": "calibrated_q10",
-        "direction": "higher",
-        "units": [
-          "share"
-        ]
-      }
-    ],
-    "threshold_rule": "For alpha>0 and every component/unit, use only the nested training-reference distribution frozen by objective_spec.json: quantile alpha when higher is favorable and 1-alpha when lower is favorable. A contract passes only if every required comparison passes. Alpha=0.0 applies no learned quality threshold.",
-    "missing_component_rule": "fail the contract; missing required causal forecast state cannot be converted to a favorable value",
-    "screen_is_ranking": false
+    "screen_is_ranking": false,
+    "threshold_rule": "For alpha>0 and every component/unit, use only the nested training-reference distribution frozen by objective_spec.json: quantile alpha when higher is favorable and 1-alpha when lower is favorable. A contract passes only if every required comparison passes. Alpha=0.0 applies no learned quality threshold."
   },
   "stage_2_conservative_upside_rank": {
-    "input_contracts": "only contracts passing stage_1 and the complete-ladder physical/safety action mask",
+    "available_horizon_rule": "use exactly the horizons admitted by causal_horizon_availability; a contract with no causally available registered horizon fails",
+    "expected_upside_gate": {
+      "calibrated_lower_bound": "predicted conditional mean plus the same-head one-sided 90 percent lower confidence correction for mean residual from calibration_spec.json; this is not an individual-outcome lower prediction quantile",
+      "central_statistic": "conditional arithmetic mean",
+      "fee_threshold": "strictly zero because every target is already fee-adjusted; equality fails",
+      "horizon_set": "every causally available registered horizon, including h3 and h5",
+      "required_axes": [
+        "expected_mfe_dollars_lower_confidence_bound",
+        "expected_mfe_return_lower_confidence_bound",
+        "expected_profit_area_dollar_minutes_lower_confidence_bound",
+        "expected_profit_area_return_minutes_lower_confidence_bound"
+      ],
+      "satisfiability_guard": "the gate must reference forecast_heads.json central_tendency_entry_gate_outputs; calibrated q10, q10 aliases, and individual-outcome conformal lower bounds are forbidden gate statistics"
+    },
+    "dollar_percent_arbitration": {
+      "across_horizons": "arithmetic mean over causally available registered horizons",
+      "reason": "dual-unit protection is retained without comparing mechanically premium-scaled values across premium bands",
+      "within_horizon": "minimum(balanced_mfe_percentile, balanced_profit_area_percentile)",
+      "within_metric_horizon": "minimum(within-band dollar favorable percentile, within-band return favorable percentile)"
+    },
+    "favorable_percentile_rule": "Map each conservative component through the metric+horizon+unit+premium-band+market-phase nested empirical CDF in objective_spec.json. Dollar and return ranks therefore compare within the same causal premium band.",
     "horizon_components": [
       "calibrated_q10_mfe",
       "calibrated_q10_profit_area"
     ],
+    "input_contracts": "only contracts passing stage_1 and the complete-ladder physical/safety action mask",
+    "positive_after_fee_rule": "the equal-horizon mean calibrated conservative lower confidence bound on conditional expected MFE must be strictly greater than zero in both fee-adjusted dollars and fee-adjusted return, and the equal-horizon mean calibrated conservative lower confidence bound on conditional expected profit area must be strictly greater than zero in both fee-adjusted dollar-minutes and fee-adjusted return-minutes; use every causally available registered horizon including h3 and h5; equality, missingness, or nonfinite state fails",
+    "premium_band_at_decision": {
+      "bands_copied_from_census_v4": {
+        "cheap_le_1": "ask_cents<=100",
+        "large_8_20": "800<ask_cents<=2000",
+        "medium_3_8": "300<ask_cents<=800",
+        "small_1_3": "100<ask_cents<=300",
+        "very_large_20p": "ask_cents>2000"
+      },
+      "missing_or_nonpositive": "contract fails closed",
+      "quote": "current completed-minute executable ask at decision t; never the future t+1 fill ask"
+    },
+    "primary_rank_score": "mean_balanced_upside_percentile",
+    "quaternary_rank_score": "equal-horizon mean calibrated q10 MFE dollars",
+    "secondary_rank_score": "minimum_balanced_upside_percentile_across_causally_available_horizons",
+    "tertiary_rank_score": "equal-horizon mean calibrated q10 MFE return",
     "units": [
       "fee_adjusted_dollars",
       "fee_adjusted_return_on_premium"
-    ],
-    "available_horizon_rule": "use exactly the horizons admitted by causal_horizon_availability; a contract with no causally available registered horizon fails",
-    "positive_after_fee_rule": "the equal-horizon mean calibrated q10 MFE must be strictly greater than zero in both dollars and return, and the equal-horizon mean calibrated q10 profit area must be strictly greater than zero in both dollar-minutes and return-minutes",
-    "premium_band_at_decision": {
-      "quote": "current completed-minute executable ask at decision t; never the future t+1 fill ask",
-      "bands_copied_from_census_v4": {
-        "cheap_le_1": "ask_cents<=100",
-        "small_1_3": "100<ask_cents<=300",
-        "medium_3_8": "300<ask_cents<=800",
-        "large_8_20": "800<ask_cents<=2000",
-        "very_large_20p": "ask_cents>2000"
-      },
-      "missing_or_nonpositive": "contract fails closed"
-    },
-    "favorable_percentile_rule": "Map each conservative component through the metric+horizon+unit+premium-band+market-phase nested empirical CDF in objective_spec.json. Dollar and return ranks therefore compare within the same causal premium band.",
-    "dollar_percent_arbitration": {
-      "within_metric_horizon": "minimum(within-band dollar favorable percentile, within-band return favorable percentile)",
-      "within_horizon": "minimum(balanced_mfe_percentile, balanced_profit_area_percentile)",
-      "across_horizons": "arithmetic mean over causally available registered horizons",
-      "reason": "dual-unit protection is retained without comparing mechanically premium-scaled values across premium bands"
-    },
-    "primary_rank_score": "mean_balanced_upside_percentile",
-    "secondary_rank_score": "minimum_balanced_upside_percentile_across_causally_available_horizons",
-    "tertiary_rank_score": "equal-horizon mean calibrated q10 MFE return",
-    "quaternary_rank_score": "equal-horizon mean calibrated q10 MFE dollars"
-  },
-  "uncertainty_wait": {
-    "directional_substitute_cluster": {
-      "membership": "same expiry and right as the selected contract and absolute strike_milli_points difference<=10000 (plus or minus two standard 5-point ladder steps); only surviving ranked contracts may belong",
-      "breadth_points_each_side": 10,
-      "breadth_strike_milli_points_each_side": 10000,
-      "selected_cluster_score": "maximum primary_rank_score inside the selected contract's cluster",
-      "outside_cluster_comparator": "highest primary_rank_score among surviving contracts outside that cluster; if none survives, WAIT with score 0 is the outside comparator",
-      "inside_cluster_substitute": "never used as the WAIT comparator; exact-contract regret is separately constrained by the mandatory q90 regret action rule"
-    },
-    "model_gap_error": "On predictions from the same frozen model evaluated on its disjoint calibration sessions, take the finite-sample 0.90 one-sided conformal quantile of absolute predicted-minus-realized selected-cluster-versus-best-outside-cluster score-gap error.",
-    "source_transfer_error": "Candidate-specific p95 absolute selected-cluster-versus-best-outside-cluster score-gap drift from calibration_spec.json source_transfer_gate; zero only when bit identity is proved.",
-    "multiplier_grid": [
-      1.0,
-      1.25,
-      1.5,
-      2.0
-    ],
-    "wait_margin": "k * (model_gap_error + source_transfer_error)",
-    "wait_score": 0.0,
-    "rules": [
-      "WAIT unless selected_cluster_score minus outside_cluster_comparator score is strictly greater than wait_margin",
-      "WAIT unless both conservative MFE means exceed their own 0.90 conformal upper-error margins in dollars and return",
-      "WAIT unless the selected exact contract's same-final-model conformalized q90 normalized-regret upper bound is finite and <=0.10",
-      "equality with any margin produces WAIT"
     ]
   },
-  "mandatory_action_conditioned_gate": {
-    "heads": "forecast_heads.json action_conditioned_outputs",
-    "calibration_and_pass_contract": "calibration_spec.json action_conditioned_gate",
-    "cannot_be_skipped": true,
-    "missing_untrained_uncalibrated_or_failed": "candidate is ineligible for component freeze and confidence-controlled runtime behavior; composer emits WAIT in any shadow/runtime rehearsal",
-    "ft2_11_dependency": "FT2-11 repair must place this gate in the required entry-component pass checklist",
-    "selected_contract_regret_action_constraint": {
-      "quantity": "same-final-model conformalized q90 upper bound for the signed normalized RLAC regret target; the upper bound is at most 1",
-      "maximum": 0.1,
-      "pass": "finite bound<=0.10",
-      "equality": "passes the regret magnitude threshold but all other strict composer margins still apply",
-      "missing_nonfinite_or_above": "WAIT",
-      "not_report_only": true
-    }
-  },
-  "joint_calibration": {
-    "parameters": [
-      "guardrail_anchor_alpha",
-      "uncertainty_multiplier_k"
-    ],
-    "selection_source": "chronological nested inner-fit evidence only",
-    "census_activity_is_report_only_not_target_or_gate": true,
-    "tail_guard_is_gate": true,
-    "details": "calibration_spec.json"
-  },
-  "wait_conditions": [
-    "flat ladder is incomplete or any global entry-safety mask is false",
-    "no contract survives the policy-ledger-specific physical and safety action mask",
-    "required causal market, contract, mask, phase, account, forecast, CDF, or calibration state is missing",
-    "no contract clears every active quality guardrail",
-    "no surviving contract has conservative upside strictly above zero after fees on both dollar and return axes",
-    "selected directional substitute cluster is inside the calibrated model/source uncertainty margin versus the best outside cluster or WAIT",
-    "selected exact contract q90 normalized-regret upper bound is missing, nonfinite, or greater than 0.10",
-    "mandatory action-conditioned gate is missing, uncalibrated, failed, or not accepted"
-  ],
+  "status": "scoped_final_round_repaired",
   "tie_break": [
     "higher primary_rank_score",
     "higher secondary_rank_score",
@@ -309,5 +286,41 @@
     "slot index as contract identity",
     "future outcome",
     "label availability"
+  ],
+  "uncertainty_wait": {
+    "directional_substitute_cluster": {
+      "breadth_points_each_side": 10,
+      "breadth_strike_milli_points_each_side": 10000,
+      "inside_cluster_substitute": "never used as the WAIT comparator; exact-contract regret is separately constrained by the mandatory q90 regret action rule",
+      "membership": "same expiry and right as the selected contract and absolute strike_milli_points difference<=10000 (plus or minus two standard 5-point ladder steps); only surviving ranked contracts may belong",
+      "outside_cluster_comparator": "highest primary_rank_score among surviving contracts outside that cluster; if none survives, WAIT with score 0 is the outside comparator",
+      "selected_cluster_score": "maximum primary_rank_score inside the selected contract's cluster"
+    },
+    "model_gap_error": "On predictions from the same frozen model evaluated on its disjoint calibration sessions, take the finite-sample 0.90 one-sided conformal quantile of absolute predicted-minus-realized selected-cluster-versus-best-outside-cluster score-gap error.",
+    "multiplier_grid": [
+      1.0,
+      1.25,
+      1.5,
+      2.0
+    ],
+    "rules": [
+      "WAIT unless selected_cluster_score minus outside_cluster_comparator score is strictly greater than wait_margin",
+      "WAIT unless both conservative MFE means exceed their own 0.90 conformal upper-error margins in dollars and return",
+      "WAIT unless the selected exact contract's same-final-model conformalized q90 normalized-regret upper bound is finite and <=0.10",
+      "equality with any margin produces WAIT"
+    ],
+    "source_transfer_error": "Candidate-specific p95 absolute selected-cluster-versus-best-outside-cluster score-gap drift from calibration_spec.json source_transfer_gate; zero only when bit identity is proved.",
+    "wait_margin": "k * (model_gap_error + source_transfer_error)",
+    "wait_score": 0.0
+  },
+  "wait_conditions": [
+    "flat ladder is incomplete or any global entry-safety mask is false",
+    "no contract survives the policy-ledger-specific physical and safety action mask",
+    "required causal market, contract, mask, phase, account, forecast, CDF, or calibration state is missing",
+    "no contract clears every active quality guardrail",
+    "no surviving contract has conservative upside strictly above zero after fees on both dollar and return axes",
+    "selected directional substitute cluster is inside the calibrated model/source uncertainty margin versus the best outside cluster or WAIT",
+    "selected exact contract q90 normalized-regret upper bound is missing, nonfinite, or greater than 0.10",
+    "mandatory action-conditioned gate is missing, uncalibrated, failed, or not accepted"
   ]
 }

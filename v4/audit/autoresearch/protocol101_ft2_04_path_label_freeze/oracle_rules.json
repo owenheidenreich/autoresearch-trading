@@ -4,7 +4,7 @@
   "status": "owner_authorized_scoped_refreeze_causal_intent_law",
   "purpose": "The small, transparent, preregistered set of hindsight oracle exit rules FT2-05 will REPLAY to compute label-side opportunity ceilings. These are ceiling references, never learned policies and never entry targets.",
   "authority": {
-    "document_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+    "document_sha256": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
     "governing_sections": ["7.1 FT2-04 oracle semantics", "7.2 FT2-05 census", "1.4 D48 premium cap / D49 budget-aware", "6.1 G4 v2 / daily stop"]
   },
   "canonical_intent_fill_recheck_law": {

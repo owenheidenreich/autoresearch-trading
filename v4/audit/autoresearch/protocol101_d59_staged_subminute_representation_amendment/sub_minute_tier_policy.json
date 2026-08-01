@@ -1,0 +1,75 @@
+{
+  "amendment_id": "A7",
+  "authority_sha256": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "combined_evaluation": {
+    "tier_s_earliest_session": "2025-02-20",
+    "uses_resolution_intersection_selected_before_training_or_evaluation": true
+  },
+  "current_cadence_boundary": {
+    "a7_activates_one_second_runtime_or_training": false,
+    "current_ft2_08_completed_minute_contract_unchanged": true,
+    "one_second_exit_decision_representation_status": "eligible only for a separately governed lifecycle/tensor authorization"
+  },
+  "d57_minute_backfill_remains_deferred": true,
+  "graph_sha256": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+  "new_corpus_registration": {
+    "canonical_registry": "sub_minute_corpus_registry.json",
+    "embedded_fields_required": [
+      "sub_minute_corpus_tier",
+      "source_schema",
+      "floor_stop_label_fidelity",
+      "allowed_consumers",
+      "promotion_grade"
+    ],
+    "unregistered_or_untagged": "fail_closed"
+  },
+  "schema_version": "Protocol101D59StagedSubMinuteTierPolicyV1",
+  "scoped_acquisition_sanction": {
+    "a7_executes_download": false,
+    "allowed_schema": "cbbo-1s",
+    "cmbp_1_purchase_authorized": false,
+    "explicit_owner_green_light_per_acquisition": true,
+    "free_cost_estimate_required": true,
+    "hard_cost_cap_required": true,
+    "quarantined_output_required": true
+  },
+  "tier_s": {
+    "allowed_consumers": [
+      "cross_vendor_parity_probe",
+      "walking_skeleton",
+      "prototype_iteration",
+      "feasibility"
+    ],
+    "allowed_purpose_tags": [
+      "skeleton",
+      "prototype",
+      "probe"
+    ],
+    "floor_stop_label_fidelity": "1-second-approximate",
+    "forbidden_consumers": [
+      "promotion",
+      "paper_readiness",
+      "paper",
+      "real_money"
+    ],
+    "promotion_grade": false,
+    "source_schema": "cbbo-1s"
+  },
+  "tier_t": {
+    "derived_model_input_representation": "1-second consolidated BBO using vendor last-BBO-per-interval rule",
+    "downsampler_certified_against_owned_30_session_cbbo_1s_pilot": true,
+    "floor_stop_label_fidelity": "raw-event-trusted",
+    "floor_stop_label_event_source": "raw cmbp-1 consolidated top-of-book event path before downsampling",
+    "purpose_tag": "trusted",
+    "raw_event_stream_retained": true,
+    "raw_ticks_are_model_inputs": false,
+    "required_consumers": [
+      "promotion",
+      "paper_readiness",
+      "paper",
+      "real_money"
+    ],
+    "source_schema": "cmbp-1-derived",
+    "trusted_floor_stop_labels": true
+  }
+}

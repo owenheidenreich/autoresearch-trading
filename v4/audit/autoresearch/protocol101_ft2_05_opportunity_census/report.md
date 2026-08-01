@@ -1,4 +1,4 @@
-# Protocol101 FT2-05 Opportunity Census V4
+# Protocol101 FT2-05 Opportunity Census V5
 
 ## Owner Memo
 
@@ -12,7 +12,7 @@ day. A deliberately loose 25%-tail quality screen plus positive conservative
 upside left about `232.8` qualifying minutes per day. This is a
 curve diagnostic, not a selected guardrail.
 
-The hindsight `best_session` selector made `$340,736.00` under one-account
+The hindsight `best_session` selector made `$339,686.00` under one-account
 simulator-v5 semantics, D48, D49, fees, and the daily stop. P5 using the same
 hindsight exit rule made `$154,008.00`. These are ceilings: they prove paths
 exist, not that present-time features can identify them. The median entry
@@ -54,7 +54,7 @@ recheck population. These denominators answer different questions and are
 never interchanged.
 
 The 45-session cluster calculation estimates that a best-session improvement
-would need to be roughly `$63,474.90` in total PnL to achieve conventional
+would need to be roughly `$63,338.25` in total PnL to achieve conventional
 95%/80% detection under the observed session variance. FT2-11 must refine this
 before paid training.
 
@@ -78,7 +78,7 @@ selection, holdout access, shadow operation, or paper trading.
 ## Frozen Scope
 
 - Node: `FT2-05-OPPORTUNITY-CENSUS`.
-- Product-contract SHA-256: `d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca`.
+- Product-contract SHA-256: `1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc`.
 - Sessions: exactly 45 from the repaired FT2-04 manifest.
 - Horizons: `(3, 5, 10, 20, 45, 90, 'remaining_session')`.
 - Entry/exit accounting: BUY masks at `t` use only `A_t`; the selected exact
@@ -110,9 +110,12 @@ isolate its entry choice.
 
 ## Friction, Power, And Regimes
 
-Premium-band friction includes spread crossing plus the $3 fee. MDE tables use
-session clusters and separately show cluster-adjusted trade-count projections.
-Regime headline tables split every replay by month and SPX range tercile.
+Premium-band friction includes spread crossing plus the $3 fee and is
+conditional on successful `t+1` fill rechecks. The table separately reports
+the time-`t` intent-row count, fill-pass/rejection counts, friction-valid count,
+and decision-time spread-valid count. MDE tables use session clusters and
+separately show cluster-adjusted trade-count projections. Regime headline
+tables split every replay by month and SPX range tercile.
 
 ## Compute
 

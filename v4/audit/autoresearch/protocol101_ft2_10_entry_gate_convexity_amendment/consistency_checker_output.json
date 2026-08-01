@@ -1,0 +1,877 @@
+{
+  "attempt": 1,
+  "check_count": 32,
+  "checks": {
+    "FT2_10_FT2_11_comparator_identity": {
+      "evidence": {
+        "FT2-10": {
+          "attempt_count": 8,
+          "authority_path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/matched_random_generator_spec.json",
+          "authority_sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+          "consumer_requirement": "implement the authority file byte-for-byte, report all attempts and the fixed aggregate, and retain every incomplete or invalid identity in multiplicity",
+          "ft2_11_dependency": "FT2-11 must reference this same authority path and exact file hash and may not derive a candidate-specific seed namespace",
+          "local_algorithm_or_namespace_override": false,
+          "sole_generator_source": true
+        },
+        "FT2-11": {
+          "aggregate": "When and only when all eight attempts are valid, report every individual schedule and the authority-file frozen equal-weight mean of their session statistics.",
+          "aggregate_is_selectable": false,
+          "any_attempt_incomplete_or_mismatched_with_valid_inputs": "INSUFFICIENT_MATCHED_CONTROL",
+          "attempt_ids": [
+            10121001,
+            10121002,
+            10121003,
+            10121004,
+            10121005,
+            10121006,
+            10121007,
+            10121008
+          ],
+          "attempt_random_key": "exactly matched_random_generator_spec.json:/canonical_random_key; no prefix, base seed, candidate artifact, grid hash, or consumer namespace may be added",
+          "bounded_attempt_count": 8,
+          "candidate_specific_seed_namespace": false,
+          "consumer_local_override": false,
+          "implementation_deviates_from_authority_file_or_hash": "invalid_evidence",
+          "no_best_attempt_selection": true,
+          "no_outcome_conditioning": true,
+          "no_redraw": true,
+          "no_replacement_attempt": true,
+          "pre_outcome_construction": "exactly matched_random_generator_spec.json:/candidate_specific_matching_budget, /decision_time_legal_pair_population, and /schedule_construction",
+          "selected_identity_fill_resolution": "exactly matched_random_generator_spec.json:/selected_identity_fill_resolution",
+          "serial_replay_and_matching": "exactly matched_random_generator_spec.json:/serial_replay and /post_replay_matching",
+          "single_algorithm": true,
+          "sole_generator_source": true,
+          "source_contract": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/matched_random_generator_spec.json",
+          "source_sha256": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+          "validity": "All eight registered attempts must be complete and pass every authority-file pre-outcome and post-replay rule."
+        }
+      },
+      "pass": true
+    },
+    "MNAR_alternate_full_refit": {
+      "evidence": {
+        "artifact_requirement": "separate complete model/CDF/calibrator/composer/action-head hashes and selection traces for both views",
+        "cross_view_artifact_reuse": "forbidden for every label-dependent artifact",
+        "held_identical_between_views": [
+          "causal feature schema and masks",
+          "architecture family and hyperparameter grid",
+          "loss definitions and weights",
+          "folds, embargoes, fit/calibration roles, and session identities",
+          "seed IDs",
+          "alpha and uncertainty grids",
+          "canonical comparator identities",
+          "serial population and fee paths",
+          "tie-breaks, multiplicity, and terminal resolver"
+        ],
+        "no_training_now": "This packet freezes the later procedure only; no model is fit by FT2-FINAL-REPAIR.",
+        "only_changed_input": "primary full-loss labels versus no-bid-excluded sensitivity labels and the deterministic downstream artifacts fit from that label view",
+        "primary_outcome_tuning": false,
+        "refit_all_label_dependent_machinery": [
+          "all path-family forecast heads",
+          "all nested empirical CDF knots and fallback manifests",
+          "all continuous, binary, survival, count, WAIT, and regret calibrators",
+          "all guardrail/composer thresholds",
+          "WAIT-probability and expected/q90 regret action heads",
+          "inner selection and frozen ensemble construction"
+        ],
+        "refit_required": true
+      },
+      "pass": true
+    },
+    "SE_h_and_SE_h_star_numeric_fixture": {
+      "evidence": {
+        "SE_h": 0.9128709291752769,
+        "SE_h_star_b": 0.9128709291752769,
+        "observed_delete_means": [
+          4.0,
+          3.3333333333333335,
+          2.6666666666666665,
+          2.0
+        ],
+        "observed_variance": 0.8333333333333334,
+        "replicate_delete_means": [
+          0.6666666666666666,
+          0.0,
+          -0.6666666666666666,
+          -1.3333333333333333
+        ],
+        "replicate_variance": 0.8333333333333334,
+        "t_h": 3.2863353450309964,
+        "t_h_star_b": -0.4381780460041329
+      },
+      "pass": true
+    },
+    "action_head_target_provenance_has_no_composer_output": {
+      "evidence": {
+        "independence_law": {
+          "checker_rule": "Every action-head target provenance trace must terminate in frozen labels, causal intent masks, fit-side CDFs, and frozen anchor thresholds without a composer-output or model-output ancestor.",
+          "fixed_point_allowed": false,
+          "iteration_allowed": false,
+          "model_outputs_allowed": false,
+          "post_composer_relabeling_allowed": false,
+          "runtime_composer_code_import_allowed": false,
+          "runtime_composer_outputs_allowed": false,
+          "single_pass": true
+        },
+        "target_firewall": {
+          "action_conditioned_targets_exist_only_in_training_label_join": true,
+          "action_head_target_may_reference_runtime_composer_output": false,
+          "action_head_target_producer": "the frozen model-free one-pass realized_label_audit_composer_spec.json only",
+          "future_path_fields_are_model_inputs": false,
+          "hindsight_exit_minute_is_a_target": false,
+          "label_validity_is_composer_input": false,
+          "labels_are_model_inputs": false,
+          "max_future_price_is_a_complete_target": false,
+          "mfe_is_allowed_only_as_one_registered_component_of_the_six-family_path_forecast": true,
+          "oracle_action_is_a_runtime_target": false,
+          "protected_data_access": false,
+          "runtime_loader_can_read_labels": false
+        },
+        "target_provenance": {
+          "allowed_ancestors": [
+            "frozen_FT2_04_label_families",
+            "canonical_time_t_intent_masks",
+            "fit_role_session_balanced_nested_CDFs",
+            "fit_role_frozen_anchor_thresholds",
+            "deterministic_RLAC_formula_and_tie_break"
+          ],
+          "model_output_changes_membership": false,
+          "runtime_composer_selection_changes_membership": false,
+          "runtime_or_model_ancestors": []
+        }
+      },
+      "pass": true
+    },
+    "all_47_rerun_findings_answered": {
+      "evidence": {
+        "fresh": 19,
+        "original": 28,
+        "total": 47,
+        "verdicts": [
+          "ANSWERED"
+        ]
+      },
+      "pass": true
+    },
+    "all_FT2_10_FT2_11_intent_refs_exact": {
+      "evidence": {
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/controls_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/matched_random_generator_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/multiplicity_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/terminal_decision_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/tripwire_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+      },
+      "pass": true
+    },
+    "all_spec_product_contract_hash_match_authority": {
+      "evidence": {
+        "FT2-04/oracle_rules:/authority/document_sha256": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2"
+      },
+      "pass": true
+    },
+    "authority_hash": {
+      "evidence": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+      "pass": true
+    },
+    "authority_recorded_graph_hash_matches_live_graph": {
+      "evidence": {
+        "live": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+        "recorded": [
+          "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08"
+        ]
+      },
+      "pass": true
+    },
+    "canonical_generator_hash": {
+      "evidence": "8bdbe8beb4734852526cd2981be76098f792d5c4b9fee30f89f8a2d952abf754",
+      "pass": true
+    },
+    "census_activity_report_only": {
+      "evidence": {
+        "role": "report-only multi-trade oracle diagnostic; it cannot discard, retain, rank, select, or fail a neutral-lifecycle component setting",
+        "selection_order": [
+          "retain and evaluate every alpha=0.0 no-screen arm",
+          "discard any selectable setting that fails the FT2-11 tail guard",
+          "maximize the diagnostic inner objective in objective_spec.json",
+          "prefer larger k",
+          "prefer smaller nonzero alpha; alpha=0.0 remains a control and is selectable only if it wins the same frozen rule",
+          "canonical numeric order"
+        ]
+      },
+      "pass": true
+    },
+    "census_v4_chain_and_scope": {
+      "evidence": {
+        "builder_sha256": "0d1052bf4401632e518dc11beb9feb3dad9fbc5438a6156ae97701be5a10b6b9",
+        "created_at_utc": "2026-07-30T05:45:59.807524+00:00",
+        "deliverable_hashes": {
+          "census_results.json": "1eee5dc6aef42fe0ef5c492636e80dc70662165096b9332b2702e98ace1fdeaf",
+          "checkpoint/session_labels/2025-01-02.parquet": "eeb45e89ff502dcccb9a4dc768a623f4a7c5af8e5e5baa233356a76438142406",
+          "checkpoint/session_labels/2025-01-03.parquet": "609643c514da8d6cadf1201851258fefe262d1772cd56771a51da16b2af08891",
+          "checkpoint/session_labels/2025-01-06.parquet": "e30431a63af731313badd927b567b90b552326a472d80fa3cea0f0e1da67fb67",
+          "checkpoint/session_labels/2025-01-07.parquet": "04bdef69813fa3c76deb7fc01ac886a2c942be616f09a518190dfd8877b7f3c0",
+          "checkpoint/session_labels/2025-01-08.parquet": "ec6ffa51461965061ee5c44e6d7b5220e8d23eab0c60e7fdc0afbdb2f4d76c61",
+          "checkpoint/session_labels/2025-01-10.parquet": "23a1eea1aa8760d77615b10267d9f57f84dc5fa2e542d06babd218fcefe628f3",
+          "checkpoint/session_labels/2025-01-13.parquet": "dac3fed78147534ce1824908f6a63846845ae8539be0f8604f90a6c46b026794",
+          "checkpoint/session_labels/2025-01-14.parquet": "6e08be358db9bab213f352c65e6dac3b949220dc3ebecd47e64703c92dc14a60",
+          "checkpoint/session_labels/2025-01-15.parquet": "8fa927a3ccb10c12ffb4e24b3d8d1fe164b233511c38fea67302240503a87601",
+          "checkpoint/session_labels/2025-01-16.parquet": "e76c9dc224d3362745b77ba08a783740b0be8f8ecb9975b7d2357022e83a7eb7",
+          "checkpoint/session_labels/2025-01-17.parquet": "a8445c569e35a1e732bc9c1bb89df84907a77cf53eae1b8353ac9ccc6bd2ba4b",
+          "checkpoint/session_labels/2025-01-21.parquet": "cb737a3f18d4408c01c2edb02d34c690aadea2f6be35a52bbd643b9bb76f6223",
+          "checkpoint/session_labels/2025-01-22.parquet": "0804d81a0deb3bfbdc0df2c77916e9cf64cc03f9fd91d8f9fa56980d570fecd6",
+          "checkpoint/session_labels/2025-01-23.parquet": "2372dace8bc925de66313b990953ed31193ff2210e0378869c4104c8bb0d1c24",
+          "checkpoint/session_labels/2025-01-24.parquet": "9d4ab1ba45a7e6c1dbcd0d02cd460d725508e61eb4b5ed2442af6666cb93f27e",
+          "checkpoint/session_labels/2025-01-27.parquet": "ad150bf3f21aecb30f070af5bcea56546140bc6d6ec26d5c31206d2c99664946",
+          "checkpoint/session_labels/2025-01-28.parquet": "5679505f47ef173273dc46e804a5085f16bf1c4032f8e1d8ae8f668283e623ee",
+          "checkpoint/session_labels/2025-01-29.parquet": "cd326b842c772672c028558d70d151e3e12be30bc417db4046cec1a4a42a13b5",
+          "checkpoint/session_labels/2025-01-30.parquet": "674e336de5fa62c712f6bc5e19d9f28a4bf825a8f36a17f2a453722ef1d155d6",
+          "checkpoint/session_labels/2025-01-31.parquet": "2ed075b6cedc447ca40b457a88e786a1c1f12c759b4a7de7f1b09b2b252c9468",
+          "checkpoint/session_labels/2025-02-03.parquet": "cd88c753531c872e7c5ebd3edbebdcddd01fa29358ddddd80d9f1f347f6d1665",
+          "checkpoint/session_labels/2025-02-04.parquet": "d36d78ff7772cc7ffaa8e7bc7d62384dab2f26f8f991188686998d0d6c6179c6",
+          "checkpoint/session_labels/2025-02-05.parquet": "58a821dc885f9293bb89b15a092e1e2363e4b6338505a559ac2b2fc2767d44bd",
+          "checkpoint/session_labels/2025-02-06.parquet": "e3b1a8605454e9bedd82c923c34fa76e705a70222e8526955834de902bda7963",
+          "checkpoint/session_labels/2025-02-07.parquet": "7fcd4c53371a06285e8a5ca54455a010a5720e28f2049aee8dd9eebd22178c80",
+          "checkpoint/session_labels/2025-02-10.parquet": "7025007da38455dc6b1dc2ac72e7a1ff42fa5a9a857070d747fbe9f69bffe0bc",
+          "checkpoint/session_labels/2025-02-11.parquet": "6e4a133ad063744c9f0ed1ee3d1f0717e1390fdb8f57319f6b7805fb95d906ce",
+          "checkpoint/session_labels/2025-02-12.parquet": "d313fb2683a2162c0f1c342168ca182446dbe8254e4ae536aa75ba4193576ae6",
+          "checkpoint/session_labels/2025-02-13.parquet": "e0e0a0571d59bb061a2f91b2c0de1c362aa840bb6b710ef6a6cdd5ebb2ea9bc1",
+          "checkpoint/session_labels/2025-02-14.parquet": "c4b06c3a7f55939313e00fad09f556dcd0e995ef2b1698365132cd2ef3c37f0c",
+          "checkpoint/session_labels/2025-02-18.parquet": "5ff9aaf052c723fd27b8007e885c5bdd2b696184d4355c984e5dff7e297fd25d",
+          "checkpoint/session_labels/2025-02-19.parquet": "da051a18e36c99b2307ca326dea2e5bf84b38c2d37492e8392b4fb389c242100",
+          "checkpoint/session_labels/2025-02-20.parquet": "192c61451c2df86661729ebb8d3d41808c8dc62bf20f56eaf7f5183ef689db00",
+          "checkpoint/session_labels/2025-02-21.parquet": "34cfea471e4e765213575f0e0deed93811ef0944070ef7a0f01dd25aee09f4b9",
+          "checkpoint/session_labels/2025-02-24.parquet": "19b5eeb908dee0bf91ed03dcb63d56ecaa5cd9a13fb23b045f5d1f21a773b2d7",
+          "checkpoint/session_labels/2025-02-25.parquet": "59d5fed212f58479887f7424ec87caf2a63c92b8845d6e3a27d1fc262dfa3820",
+          "checkpoint/session_labels/2025-02-26.parquet": "8dd8ddf7015506e91503737bf9b184019c2f52b392ce66153bdc948250e2390a",
+          "checkpoint/session_labels/2025-02-27.parquet": "063787ac4ded37f4f72c2564a160fc97cc03847de02e107d8749556df632b2b3",
+          "checkpoint/session_labels/2025-02-28.parquet": "129904f104631d167fb2ed205949454b4efdbee98410dda6f8b2fc51c16eb6bd",
+          "checkpoint/session_labels/2025-03-03.parquet": "5bcc2025ad44a85b81c42e12b2b89d86afb68dbf67e6f5860e912d9899011d23",
+          "checkpoint/session_labels/2025-03-04.parquet": "12912ca4d97c35f3c11e23796c67717e6a0e76a58b2f7cf84acfcabe54aeb291",
+          "checkpoint/session_labels/2025-03-05.parquet": "f1b359bc21e137073e158214f1e62a8a492e4d7eb4bd52affcf0a21795bed9d0",
+          "checkpoint/session_labels/2025-03-06.parquet": "cf2d807c3084fc09a5c0984cb13941cdcea090e998340fede7788068c4514b4e",
+          "checkpoint/session_labels/2025-03-07.parquet": "5ecc0c0f5e03aa2981267560ecd579bc5636aca41ac98e24aec4f73da6a3bc0f",
+          "checkpoint/session_labels/2025-03-10.parquet": "95f6d0f8fd3578fceac9c4b99d2d87a3e42f22fa242173383c2a28776ad96430",
+          "checkpoint/session_summaries/2025-01-02.json": "aa285f835be4687322ba6b351609d29e380f47467a23801dc51b13254625d01c",
+          "checkpoint/session_summaries/2025-01-03.json": "9fe5c671edcb2c807a83193b0148d8a690826af5ff55bdc77e022bae4846ef15",
+          "checkpoint/session_summaries/2025-01-06.json": "d432881311d64cb8415aa3781caae3f2e1c12fa27323a90f3366c228a2a48e6d",
+          "checkpoint/session_summaries/2025-01-07.json": "11e389d4b9e41f7cf29ab39d0076c1726cce668e387a215f7a6dcdb889cdf133",
+          "checkpoint/session_summaries/2025-01-08.json": "f94e19e95c10c68ebaf746a04933ec9de7aad8ccbea7fdb79fb4a7ca89378a7a",
+          "checkpoint/session_summaries/2025-01-10.json": "8f5bddbf73490a20ec03dacdafcbc5eb1a7a333e6759a87291a6eae5ef9c140d",
+          "checkpoint/session_summaries/2025-01-13.json": "62611d957af49f8b8cd214d632cf11961fbf20ad3cb5a4470e6bacc444958291",
+          "checkpoint/session_summaries/2025-01-14.json": "72e9be94ad8466ad411fae22338ca2c687139acd84ace5c2503a3241259eb73e",
+          "checkpoint/session_summaries/2025-01-15.json": "9f3dfeeace876136e785c53c9f7e605a49623305ee2063a83a7b153f2d85cc5a",
+          "checkpoint/session_summaries/2025-01-16.json": "4e75b3028786fc346655cc51e2130e5347085f4bb0a6c1770aded37f6df0ae83",
+          "checkpoint/session_summaries/2025-01-17.json": "2c6080c7ced1a4328d0275ebf0862a779678cbbe6d8534dbd168625fa91b80f4",
+          "checkpoint/session_summaries/2025-01-21.json": "da4fe8696dd8a93f2bae6720f9f96fdaccd6f110b47e549afc913ecb8a874ca5",
+          "checkpoint/session_summaries/2025-01-22.json": "f5ba41249e183f53f2c0adb5a641123881343af4bd8c92d6ebb6af18fe0bc93e",
+          "checkpoint/session_summaries/2025-01-23.json": "4008f03dbbd0c4092f7b12e4e22aec629ee507a669a33348fb4371ce7e21e60d",
+          "checkpoint/session_summaries/2025-01-24.json": "c0308983fcf372eb9dc44307ba3ec9cee8af4c7dc2d0f10f2d61fa85bd9177fb",
+          "checkpoint/session_summaries/2025-01-27.json": "bcb9d059cfa5fc014f04dfd3ce6a3d616d0b11298eeba5b4273816620a61468f",
+          "checkpoint/session_summaries/2025-01-28.json": "138085e4c168bbac7988f77ebf1fd16951a45f7d5195d96ff78c995f5aeb5128",
+          "checkpoint/session_summaries/2025-01-29.json": "a80d4dfcdd681ad666c7dfb9ad0bdbe3c185161987d6cb8b251f92564b698b31",
+          "checkpoint/session_summaries/2025-01-30.json": "3d77e351f45b4acc521fc8cebd2e300bb2e7728219075efc96928e0843f601ff",
+          "checkpoint/session_summaries/2025-01-31.json": "5177740e8c3c60efadbdf68982341443a78a0cefd55e37d41468e14dee6b9a0c",
+          "checkpoint/session_summaries/2025-02-03.json": "4e72bccac62c40dbfe4b71d494a4731c2877ac5fb84c446e28399ad0a552dee2",
+          "checkpoint/session_summaries/2025-02-04.json": "9c481b6d8b8d685ecbea6b76519036a54e53448b7ec708d128592b22726dbdbb",
+          "checkpoint/session_summaries/2025-02-05.json": "d215339a58797310b4ffa495b4f91cf9879e7c74ed6459c7041347e235d7469a",
+          "checkpoint/session_summaries/2025-02-06.json": "44f81ffe3f93e06d12db80fbea5e557a6d9672303264a0f5a9ecacb457098518",
+          "checkpoint/session_summaries/2025-02-07.json": "c76ede5a9599f33e16966252ec4300616e7e7925fa6b8ce064285a2909a64d62",
+          "checkpoint/session_summaries/2025-02-10.json": "8ba15eda428be4f4da16517edd1154abc69e152bcf8c75cc8052caff8699fb26",
+          "checkpoint/session_summaries/2025-02-11.json": "88557a10b3d0b42c770e63d5cdffd1c0983c158654955c2ed4d39ef5b2b855bc",
+          "checkpoint/session_summaries/2025-02-12.json": "8b1baa463e98fa0a87caba4c39464536121e9f05f7e425edd9bc56861ce8b16e",
+          "checkpoint/session_summaries/2025-02-13.json": "89bdab0c93753cb236bc3bbd6dae640b941b474f76eb9c7c0df72d6fc7aeb703",
+          "checkpoint/session_summaries/2025-02-14.json": "b85b22090a39462aa43eed76cc4e1e0e5c8adf297431ca6e1b046b04688a3062",
+          "checkpoint/session_summaries/2025-02-18.json": "d24b6355c0a55e61c1e9d26057968e5a48a37a78037021dd4d654b95051a9b02",
+          "checkpoint/session_summaries/2025-02-19.json": "71c736ed58b4496c25e06afd13338c50516c11311afdc35bee6102666c446f3f",
+          "checkpoint/session_summaries/2025-02-20.json": "bbfb802282eea0d161044ad582cdecac9110f30cecd74448f6f7093b11a7690e",
+          "checkpoint/session_summaries/2025-02-21.json": "0dfdf50e2fbf2673bc65878ee50eb3c37e1f2877233a2c3268c12fb643ed8843",
+          "checkpoint/session_summaries/2025-02-24.json": "c88bf57f607136146a01e5511cc19c02383d2a711c1f466555dbcc07063f2d2f",
+          "checkpoint/session_summaries/2025-02-25.json": "c9b707b7f3edea38ebf9284d26a8adb5b9b3064b8b67dc4f6c006a6d8c3f0848",
+          "checkpoint/session_summaries/2025-02-26.json": "82e698b659def730c5a508a8f0c08585cdbb2ce72d267bddd06619252ead72ba",
+          "checkpoint/session_summaries/2025-02-27.json": "0915e4e0fc2de82bbfa86f17355d03074bfb5a2ccac4400f8399900461d2eee4",
+          "checkpoint/session_summaries/2025-02-28.json": "588c3ef52bac4c29861ec7d3f0b0cdab9d6defe9548a957ee101b0f8020adc88",
+          "checkpoint/session_summaries/2025-03-03.json": "c4ab98b7cd195996da0c15798554a209409f79b4c403a913214c11fac44a5a52",
+          "checkpoint/session_summaries/2025-03-04.json": "23a9ee35f45d62383601d53c0672c06cb3aac99583bee7ac43d0c99fa82576af",
+          "checkpoint/session_summaries/2025-03-05.json": "e4d00cfe6f8211bc6d127012e3520621e4f51a62f7eebdfb9b4f484c76f26127",
+          "checkpoint/session_summaries/2025-03-06.json": "c9ae5d6490f7e8d02993e8defd5bc1a3cade5e59a85c67cd0cc19cc04d62e6b7",
+          "checkpoint/session_summaries/2025-03-07.json": "7fb1aa9b0bcbe89a2ae748e71a66e8721e07c1a8ea9da5cca09914b91d3183f4",
+          "checkpoint/session_summaries/2025-03-10.json": "72887f63e4c10e7de66129a24d7088432a0fc6468afcf2acfaee3b90a9b5babb",
+          "checkpoint/state.json": "729d4ec96979e6ed955048540345fcd51b88eacfe8927a39da827b907703d3e4",
+          "d48_reference_transition_audit.csv": "17c53e6225924ab311be3ee10fa52a313ab2210129abd478962b9621817ea96a",
+          "d48_reference_transition_audit.json": "49fa356adee1814e0fd85cf9c1dc52c2a8eb1c99e282378dc0744bcbad181019",
+          "excluded_winners.csv": "3e67b86aa763570a201d7960e618a9189ebd942f9d6c310e9983286a561bb1ec",
+          "family_distributions.csv": "c1707bc22161c6af24a8205fbedbb8c5c7cbc3dbfb9ae2bb9f7d85b307ec193c",
+          "fill_recheck_rejections.csv": "8826b4b5c485afe23e082fb6bf8030896867fa2ec0c0756286f6c8945313ad63",
+          "friction_by_premium_band.csv": "3ef0b704f23fd3425b07b1105fb4eb6d2f0935b78d8e22b384d864a47e8ecd68",
+          "governance_receipt.json": "478c50ecac6900add262cb2d438f4cfc0e89ccbe1363fc031a94e787967f48ff",
+          "guardrail_curves.csv": "810651d12d6701765254173102fdde2c93c7246f4d34c1c93daf2d8f43a9334d",
+          "guardrail_threshold_curves.json": "0613ca2b1a420a6639b2b9774fa94cc38310893e9d6761f36a27dfd28d10fdc5",
+          "guardrail_trade_rates.csv": "6fdd5e75e94e4eb97f60584efabb5263cd79d32648ebbd6418be0f5a1c2b3a3b",
+          "label_build_compute.json": "571ed5b6492f0056a64da826c3086e80c3ec3be8db8241c6dbd7b869eea42576",
+          "label_session_inventory.csv": "ab5592894514064119c19d1aa443e98841248f6b9ec76159bb1429df369abb6b",
+          "minimum_detectable_improvement.csv": "019cf68ce47e3989dff566efa061579e3c9992c5a03da9ef8e6e3d93637a07a9",
+          "mnar_sensitivity.csv": "462e5a676c82064959e3d94649672fa55938dc03377b2d403d2c3832f3ba0d2a",
+          "oracle_ceiling_summary.csv": "e470954df52f27dbd72b918241323571c43767dfd608cb541d37fb2fa467c8e0",
+          "oracle_replay_audit.json": "cde6dc5f9add5cb75d1d7db35c83ea0bfa0761c9ec5b0bd79bbbcc2fd75ced02",
+          "oracle_session_results.csv": "9411aded9e5b4ddc75d6ee046e7441a3f34c19932a5d2f911077cd9ec09a1046",
+          "oracle_trade_results.csv": "8d2c857c2fcea79f9be0bb1cd2c62c7d24d262296ebb4373b71771236e328894",
+          "pareto_frontier.csv": "39e7dd578cede9dde593ed3ce7dcb62bf067e1e79230b1aaae11a2b4814c7f5c",
+          "progress.json": "6a41de8106565ec2e7754c48fdf61d8646e926b93eab59e3083e13b72a7d5a78",
+          "regime_headlines.csv": "2bf810b999e36168b5d2f8bdb972b9e2599ec97c024ff65b63823e1309791c8f",
+          "report.md": "7849fe8455668d93a99488ba616512c6948510b7da2f21c0ce4f4b35b77c5fc2",
+          "session_variance_components.csv": "e6343834bb36c7dda87591a18152df995cd92fbca8c83085f27be9f9bd3adc42",
+          "v2_v3_impact.json": "5341e2ead4ff6e0d4bbdbb59ba6312180c457e41a89ab6e8dfc7b28796d9f9a1",
+          "v3_v4_impact.json": "74b0b70f1997ee61a7dbcafc11488c08a97e0cb8d3efda5d18c716589e72a938"
+        },
+        "governance_hash": "d3fd26fb0b9350d7874183d217a24caf91a7f876472932096711e8293d435590",
+        "graph_sha256": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+        "input_hashes": {
+          "census_sessions.json": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
+          "intent_fill_recheck_law.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+          "label_spec.json": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
+          "oracle_rules.json": "841541aa53d43830a06d3b42c16ffd5ffdb91a13862bbbd2aba9241458c8448e"
+        },
+        "next": "FT2-08-DATA-TENSOR-LABEL-CONTRACT",
+        "node": "FT2-05-OPPORTUNITY-CENSUS",
+        "outcome": "feasible",
+        "product_contract_hash": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+        "repair_of": {
+          "preservation_verified": true,
+          "preserved_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+          "preserved_git_path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+          "receipt_sha256": "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d",
+          "schema_version": "Protocol101FT205NodeReceiptV4"
+        },
+        "schema_version": "Protocol101FT205NodeReceiptV5",
+        "session_count": 45,
+        "session_manifest_hash": "276cf3e7f6ee6e5079b525d7d76a1a3814721b6e045a600c46b0681bb338750a",
+        "side_effects": {
+          "broker_or_api": false,
+          "ft2_08_started": false,
+          "gpu_or_paid_compute": false,
+          "model_fitting": false,
+          "model_training": false,
+          "outer_test_access": false,
+          "paid_download": false,
+          "promotion_or_paper": false,
+          "protected_holdout_access": false,
+          "recorder_day_access": false,
+          "runtime_change": false,
+          "threshold_tuning": false
+        }
+      },
+      "pass": true
+    },
+    "census_v4_receipt_deliverables": {
+      "evidence": {
+        "deliverable_count": 117,
+        "failures": {}
+      },
+      "pass": true
+    },
+    "census_v4_receipt_hash": {
+      "evidence": "3493afd12a0dfc85bde24736346d89995b4fce6c3480579062d462253d3add06",
+      "pass": true
+    },
+    "cross_contract_constants_identical": {
+      "evidence": {
+        "FT2-08": {
+          "contract_multiplier": 100,
+          "daily_budget": "floor(session_start_equity_cents*5/100)",
+          "fee_3_floor_cost_cents": 10300,
+          "fee_3_round_trip_cents": 300,
+          "fee_4_floor_cost_cents": 10400,
+          "fee_4_round_trip_cents": 400,
+          "numeric_unit": "integer USD cents",
+          "premium_floor_quote_cents": 100
+        },
+        "FT2-10": {
+          "contract_multiplier": 100,
+          "daily_budget": "floor(session_start_equity_cents*5/100)",
+          "fee_3_floor_cost_cents": 10300,
+          "fee_3_round_trip_cents": 300,
+          "fee_4_floor_cost_cents": 10400,
+          "fee_4_round_trip_cents": 400,
+          "numeric_unit": "integer USD cents",
+          "premium_floor_quote_cents": 100
+        },
+        "FT2-11": {
+          "contract_multiplier": 100,
+          "daily_budget": "floor(session_start_equity_cents*5/100)",
+          "fee_3_floor_cost_cents": 10300,
+          "fee_3_round_trip_cents": 300,
+          "fee_4_floor_cost_cents": 10400,
+          "fee_4_round_trip_cents": 400,
+          "numeric_unit": "integer USD cents",
+          "premium_floor_quote_cents": 100
+        }
+      },
+      "pass": true
+    },
+    "crosswalk_citations_resolve": {
+      "evidence": [],
+      "pass": true
+    },
+    "deterministic_session_start_equity": {
+      "evidence": {
+        "account_scope": {
+          "configured_account": "the one explicitly configured Protocol101 paper account",
+          "dedication_requirement": "the account must be declared dedicated to this Protocol101 evidence run for the entire session",
+          "failure": "block all new entries; never subtract or estimate unrelated state",
+          "verification_source": "authenticated account, position, order, execution, commission, and cash-flow snapshots joined to the immutable Protocol101 ledger",
+          "zero_external_state_required": [
+            "no non-Protocol101 open position",
+            "no non-Protocol101 pending order",
+            "no non-Protocol101 execution or commission event since the prior session close",
+            "no unexplained deposit, withdrawal, fee, interest, dividend, or manual cash adjustment since the prior session close"
+          ]
+        },
+        "canonical_frozen_timestamp": "session date 09:30:00 America/New_York",
+        "live_paper_value": {
+          "canonical_selection": "Select the authenticated snapshot with the greatest broker source timestamp in the closed interval [09:29:00,09:30:00] America/New_York for the session date; break a source-timestamp tie only by the greatest authenticated broker update sequence.",
+          "maximum_source_age_at_freeze_seconds": 60,
+          "missing_stale_ambiguous_or_late": "block all new entries for the session and log SESSION_START_EQUITY_UNAVAILABLE",
+          "normalization": "parse the broker value exactly as decimal USD, round once to nearest cent using ROUND_HALF_EVEN, and freeze the resulting integer cents for the session",
+          "receipt_deadline": "09:30:05 America/New_York",
+          "required_account_class": "paper",
+          "single_source": "the selected authenticated IBKR NetLiquidation snapshot; no fallback to AvailableFunds, BuyingPower, prior-day values, estimates, or operator guesses",
+          "source_field": "IBKR paper-account NetLiquidation"
+        },
+        "missing_or_multiple_accounts": "block all new entries",
+        "offline_value": {
+          "first_governed_session": 1000000,
+          "later_governed_session": "the policy-specific simulator cash cents immediately after the prior governed session's exact forced-flat/exit realization and all booked fee/commission events, carried unchanged to the current 09:30 boundary",
+          "mark_to_market_or_future_cashflow_allowed": false,
+          "single_source": "the immutable policy causal cash ledger"
+        },
+        "snapshot_fields_logged": [
+          "account_id",
+          "NetLiquidation raw text",
+          "normalized cents",
+          "broker source timestamp",
+          "receipt timestamp",
+          "broker update sequence",
+          "session date"
+        ],
+        "timezone": "America/New_York"
+      },
+      "pass": true
+    },
+    "directional_substitute_cluster_widened": {
+      "evidence": {
+        "breadth_points_each_side": 10,
+        "breadth_strike_milli_points_each_side": 10000,
+        "inside_cluster_substitute": "never used as the WAIT comparator; exact-contract regret is separately constrained by the mandatory q90 regret action rule",
+        "membership": "same expiry and right as the selected contract and absolute strike_milli_points difference<=10000 (plus or minus two standard 5-point ladder steps); only surviving ranked contracts may belong",
+        "outside_cluster_comparator": "highest primary_rank_score among surviving contracts outside that cluster; if none survives, WAIT with score 0 is the outside comparator",
+        "selected_cluster_score": "maximum primary_rank_score inside the selected contract's cluster"
+      },
+      "pass": true
+    },
+    "entry_gate_uses_satisfiable_central_tendency_statistic": {
+      "evidence": {
+        "expected_calibration": {
+          "bootstrap_replicates": 2000,
+          "calibrated_lower_bound": "seed-ensemble predicted conditional mean plus the one-sided lower confidence correction",
+          "confidence_level": 0.9,
+          "correction": "the empirical 0.10 quantile of the deterministic session-cluster bootstrap distribution of the equally weighted mean residual; add this signed correction to every same-head prediction",
+          "finite_horizon_filter": "the unchanged full-window filter applies before residual construction",
+          "horizon_set": "all causally available registered horizons including h3 and h5",
+          "individual_outcome_quantile_forbidden": true,
+          "minimum_distinct_calibration_sessions": 20,
+          "no_post_calibration_refit": true,
+          "outcome_conformal_alias_forbidden": "an individual-row residual quantile, q10 outcome bound, or conformal lower prediction interval may not be called a confidence bound on the conditional mean",
+          "prediction_source": "the frozen final conditional-mean gate-support heads in forecast_heads.json predicted once on the disjoint calibration sessions",
+          "residual": "realized unchanged fee-adjusted target minus seed-ensemble predicted conditional mean",
+          "scope": "one correction per metric, horizon, and unit; global across calibration phases for this amendment",
+          "seed_rule": "derive a deterministic uint32 bootstrap seed from SHA-256 of product_contract_hash plus the canonical head name; consumer-local seed overrides are forbidden",
+          "session_cluster": "average finite residual rows within each calibration session first, then weight every distinct session equally",
+          "target_membership": "all label-complete rows for the head; runtime composer output and model-selected membership are forbidden",
+          "terminology": "session-clustered lower confidence correction for expected/mean upside; not an outcome-conformal guarantee"
+        },
+        "expected_outputs": {
+          "calibration": "calibration_spec.json entry_gate_expected_upside_calibration",
+          "composer_role": "positive-after-fee gate only; the existing calibrated-q10 favorable percentiles remain the unchanged rank statistics",
+          "ensemble": "median across the three seed-specific conditional-mean forecasts before the disjoint-calibration lower-confidence correction",
+          "head_family": "required fixed-weight gate-support companions to the existing upside family; they do not delete, replace, retune, or reweight any existing quantile head",
+          "horizons": [
+            "h3",
+            "h5",
+            "h10",
+            "h20",
+            "h45",
+            "h90",
+            "remaining_session"
+          ],
+          "loss": "masked mean squared error on the unchanged full-window fee-adjusted labels",
+          "metrics": [
+            "expected_mfe",
+            "expected_profit_area"
+          ],
+          "output": "unbounded conditional arithmetic mean in each native fee-adjusted unit",
+          "required_output_count": 28,
+          "units_for_each_metric": [
+            "fee_adjusted_dollars_or_dollar_minutes_per_contract",
+            "fee_adjusted_return_or_return_minutes_on_entry_premium"
+          ]
+        },
+        "expected_upside_gate": {
+          "calibrated_lower_bound": "predicted conditional mean plus the same-head one-sided 90 percent lower confidence correction for mean residual from calibration_spec.json; this is not an individual-outcome lower prediction quantile",
+          "central_statistic": "conditional arithmetic mean",
+          "fee_threshold": "strictly zero because every target is already fee-adjusted; equality fails",
+          "horizon_set": "every causally available registered horizon, including h3 and h5",
+          "required_axes": [
+            "expected_mfe_dollars_lower_confidence_bound",
+            "expected_mfe_return_lower_confidence_bound",
+            "expected_profit_area_dollar_minutes_lower_confidence_bound",
+            "expected_profit_area_return_minutes_lower_confidence_bound"
+          ],
+          "satisfiability_guard": "the gate must reference forecast_heads.json central_tendency_entry_gate_outputs; calibrated q10, q10 aliases, and individual-outcome conformal lower bounds are forbidden gate statistics"
+        },
+        "positive_after_fee_rule": "the equal-horizon mean calibrated conservative lower confidence bound on conditional expected MFE must be strictly greater than zero in both fee-adjusted dollars and fee-adjusted return, and the equal-horizon mean calibrated conservative lower confidence bound on conditional expected profit area must be strictly greater than zero in both fee-adjusted dollar-minutes and fee-adjusted return-minutes; use every causally available registered horizon including h3 and h5; equality, missingness, or nonfinite state fails",
+        "ranking": {
+          "primary": "mean_balanced_upside_percentile",
+          "quaternary": "equal-horizon mean calibrated q10 MFE dollars",
+          "tertiary": "equal-horizon mean calibrated q10 MFE return"
+        }
+      },
+      "pass": true
+    },
+    "entry_legality_law_hash_identity_all_pins": {
+      "evidence": {
+        "FT2-04/oracle_rules": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "FT2-05/receipt": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "FT2-05/results": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "FT2-08/canonical_file": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/controls_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/matched_random_generator_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/bootstrap_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/multiplicity_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/terminal_decision_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+        "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/tripwire_spec.json": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+      },
+      "pass": true
+    },
+    "every_emitted_phase_F_outcome_has_graph_edge": {
+      "evidence": {
+        "FT2-92-IBKR-DECISION-SHADOW": {
+          "emitted": [
+            "fail",
+            "insufficient_evidence",
+            "pass"
+          ],
+          "legal": [
+            "fail",
+            "insufficient_evidence",
+            "pass"
+          ],
+          "missing_edges": []
+        },
+        "FT2-93-NO-ORDER-LIVE-SHADOW": {
+          "emitted": [
+            "fail",
+            "producer_complete"
+          ],
+          "legal": [
+            "fail",
+            "producer_complete"
+          ],
+          "missing_edges": []
+        }
+      },
+      "pass": true
+    },
+    "fee_path_threshold_formula": {
+      "evidence": {
+        "fee_3": 10300,
+        "fee_4": 10400
+      },
+      "pass": true
+    },
+    "finite_censored_CDF_rows_excluded": {
+      "evidence": {
+        "filter_source": "FT2-04 label metadata only inside the label-side fit pipeline; the filter is never exposed to runtime composition",
+        "finite_but_censored_near_close": "excluded from every empirical-CDF reference population; never treated as a shorter full horizon",
+        "finite_horizon": "include hN continuous/count/CDF reference values only when censored=false, deadline_ns=entry_fill_time_ns+N*60 seconds, nominal_minutes=N, available_minutes=N, and every required mark in (entry_fill_time,deadline] is represented under the primary no-bid-as-full-loss rule",
+        "remaining_session": "include continuous/count/CDF reference values only when censored=false, deadline is exact 15:55 America/New_York, and the complete registered remaining-session grid is represented",
+        "time_to_event_exception": "right-censored first-profit targets are handled only by the registered discrete-survival likelihood and its censoring indicator; they do not enter continuous empirical-CDF references as finite events"
+      },
+      "pass": true
+    },
+    "intent_law_hash": {
+      "evidence": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
+      "pass": true
+    },
+    "no_current_v1_v2_census_spec_reference": {
+      "evidence": [],
+      "pass": true
+    },
+    "phase_F_hard_floor_matches_AR_coverage": {
+      "evidence": {
+        "bootstrap": {
+          "applies_to": [
+            "WAIT versus ENTER",
+            "exact contract when both ENTER",
+            "HOLD versus EXIT",
+            "action mask and block reason",
+            "safety-action agreement"
+          ],
+          "cluster": "complete live session",
+          "decision_level_Wilson_allowed": false,
+          "hard_lower_bound": "minimum one-sided 95% lower bound across block lengths",
+          "hard_upper_bound": "maximum one-sided 95% upper bound across block lengths",
+          "minimum_complete_sessions_for_hard_bounds": 45,
+          "point_statistic": "sum agreement numerators across selected session clusters divided by sum denominators across those clusters",
+          "resampling": "For each L in {3,5,8}, apply the same noncircular within-phase chronological block bootstrap to complete sessions; each selected session contributes all of its paired decisions as an indivisible cluster.",
+          "sessions_1_through_44": "report point estimates and descriptive raw counts only; hard bounds, pass/fail gates, and activation claims are forbidden and the route is insufficient_shadow_evidence",
+          "too_few_sessions_or_uncomputable_length": "insufficient_shadow_evidence",
+          "zero_sessions": "insufficient_shadow_evidence with no interval"
+        },
+        "shadow": {
+          "below_any_minimum": "continue_collecting_authorized_no_order_shadow_with_no_emitted_graph_outcome",
+          "complete_session_definition": "Every scheduled flat and open decision boundary reconstructs with timestamps, masks, exact identities, feature hashes, scores, actions, block reasons, account state, and lifecycle state.",
+          "complete_sessions_for_hard_gate": 45,
+          "flat_state_decisions": 3000,
+          "model_ENTER_intents": 30,
+          "new_session_collection_authorized_by_this_spec": false,
+          "open_state_HOLD_EXIT_decisions": 100,
+          "regime_coverage": "at least one complete session in the training-defined top volatility tercile",
+          "sessions_1_through_44": "report-only point estimates and raw denominators; FT2-93 remains active, emits no graph outcome, and makes no hard pass/fail or activation claim",
+          "sessions_with_ENTER_intent": 5
+        }
+      },
+      "pass": true
+    },
+    "regret_bound_constrains_action": {
+      "evidence": {
+        "equality": "passes the regret magnitude threshold but all other strict composer margins still apply",
+        "maximum": 0.1,
+        "missing_nonfinite_or_above": "WAIT",
+        "not_report_only": true,
+        "pass": "finite bound<=0.10",
+        "quantity": "same-final-model conformalized q90 upper bound for the signed normalized RLAC regret target; the upper bound is at most 1"
+      },
+      "pass": true
+    },
+    "simulator_v5_unchanged": {
+      "evidence": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548",
+      "pass": true
+    },
+    "source_transfer_graph_topology": {
+      "evidence": {
+        "evidence": {
+          "FT2_92_entry_prerequisite": "FT2-91 pass and frozen candidate bundle; a preexisting transfer pass is not required",
+          "FT2_92_output_vocabulary": [
+            "pass",
+            "fail",
+            "insufficient_evidence"
+          ],
+          "FT2_93_prerequisite": "FT2-92 transfer pass",
+          "entry_component_acceptance_transfer_state": "transfer_not_yet_run is allowed and is not a component-acceptance failure",
+          "graph_order": [
+            "FT2-91-PROTECTED-HOLDOUT pass",
+            "FT2-92-IBKR-DECISION-SHADOW executes candidate-specific historical/IBKR tensor-and-action transfer measurement",
+            "FT2-92 pass -> FT2-93-NO-ORDER-LIVE-SHADOW",
+            "FT2-92 fail -> STOP-CANDIDATE-REJECTED",
+            "FT2-92 insufficient_evidence -> STOP-OWNER-DECISION"
+          ],
+          "paper_or_order_authorization": false
+        },
+        "shadow": {
+          "FT2_91_pass_to_FT2_92": true,
+          "FT2_92_fail_to_STOP_CANDIDATE_REJECTED": true,
+          "FT2_92_insufficient_evidence_to_STOP_OWNER_DECISION": true,
+          "FT2_92_pass_to_FT2_93": true,
+          "FT2_92_produces_transfer_outcome": true,
+          "circular_precondition_forbidden": true,
+          "entry_component_may_enter_FT2_92_with": "transfer_not_yet_run",
+          "ordered_nodes": [
+            "FT2-91-PROTECTED-HOLDOUT",
+            "FT2-92-IBKR-DECISION-SHADOW",
+            "FT2-93-NO-ORDER-LIVE-SHADOW"
+          ]
+        }
+      },
+      "pass": true
+    },
+    "standardized_chained_packet_receipts": {
+      "evidence": {
+        "FT2-08": {
+          "deliverable_hashes_exact": true,
+          "has_authority_sha256_field": false,
+          "outcome": "producer_repaired",
+          "pass": true,
+          "product_contract_hash": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+          "repair_of": {
+            "preservation_verified": true,
+            "preserved_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+            "preserved_git_path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+            "receipt_sha256": "4a061275dc7fd58c4a8f7774aeb464462f4101795a583ab5150f8f224d7eb484",
+            "schema_version": "Protocol101FT208NodeReceiptV4"
+          },
+          "schema_version": "Protocol101FT208NodeReceiptV5"
+        },
+        "FT2-10": {
+          "deliverable_hashes_exact": true,
+          "has_authority_sha256_field": false,
+          "outcome": "producer_repaired",
+          "pass": true,
+          "product_contract_hash": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+          "repair_of": {
+            "preservation_verified": true,
+            "preserved_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+            "preserved_git_path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json",
+            "receipt_sha256": "91ca7032c3d11bb6fb59229e2c8ae083209d7b59085460c48adae4cc14de36e3",
+            "schema_version": "Protocol101FT210NodeReceiptV4"
+          },
+          "schema_version": "Protocol101FT210NodeReceiptV5"
+        },
+        "FT2-11": {
+          "deliverable_hashes_exact": true,
+          "has_authority_sha256_field": false,
+          "outcome": "producer_repaired",
+          "pass": true,
+          "product_contract_hash": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+          "repair_of": {
+            "preservation_verified": true,
+            "preserved_git_commit": "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd",
+            "preserved_git_path": "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json",
+            "receipt_sha256": "4daebddf61df1d22896c67fa783bf2e0d983ee3df3ab61def71661103065b452",
+            "schema_version": "Protocol101FT211NodeReceiptV4"
+          },
+          "schema_version": "Protocol101FT211NodeReceiptV5"
+        }
+      },
+      "pass": true
+    },
+    "terminal_boundary_no_learned_exit_at_1555": {
+      "evidence": {
+        "actions_at_1555": [],
+        "actions_before_1555": [
+          "HOLD",
+          "EXIT"
+        ],
+        "dedicated_open_contract_record": {
+          "current_exact_fields": [
+            "open_quote_observation_time_ns",
+            "open_quote_source_time_ns",
+            "open_bid_cents",
+            "open_ask_cents",
+            "open_quote_age_ms",
+            "open_quote_available"
+          ],
+          "entry_fields": [
+            "entry_decision_time_ns",
+            "entry_fill_time_ns",
+            "entry_ask_cents",
+            "entry_fee_reserve_cents"
+          ],
+          "history": "open_contract_path_core_fp32[90,10] plus exact arrays and masks",
+          "identity_fields": [
+            "open_source_neutral_contract_id",
+            "open_contract_dictionary_index",
+            "open_strike_milli_points",
+            "open_right_code",
+            "open_expiry_yyyymmdd"
+          ],
+          "independent_of_current_ladder": true,
+          "outside_current_ladder": "record remains required and valid"
+        },
+        "incomplete_flat_ladder": "does not remove a fresh executable EXIT for the existing open contract",
+        "last_learned_exit_decision_et": "15:54",
+        "last_learned_exit_fill_et": "15:55",
+        "missing_open_quote": "block learned EXIT fill, retain HOLD/retry, and preserve forced-flat recovery path",
+        "new_entry_allowed": false,
+        "source_row_minutes_et": {
+          "end_inclusive": "15:55",
+          "note": "15:30 through 15:54 can be learned manage/exit rows. 15:55 is a non-model forced-flat terminal event row.",
+          "start_inclusive": "15:30"
+        },
+        "terminal_minute_1555": {
+          "execution": "If the 15:54 learned EXIT filled at 15:55 the state is already flat and no duplicate event is emitted; otherwise the forced-flat law owns the exact 15:55 bid-or-zero realization without a t+1 fill.",
+          "learned_action_exposed": false,
+          "model_invoked": false,
+          "state": "FORCED_FLAT_TERMINAL"
+        }
+      },
+      "pass": true
+    },
+    "three_worked_terminal_examples_executed": {
+      "evidence": [
+        {
+          "expected_terminal": "entry_component_freeze_pass",
+          "expected_triggered_predicates": [],
+          "id": "TOY-PASS-001",
+          "pass": true,
+          "terminal": "entry_component_freeze_pass",
+          "triggered_predicates": []
+        },
+        {
+          "expected_terminal": "insufficient_evidence",
+          "expected_triggered_predicates": [
+            "quality interval contains zero and DeltaQ MDE exceeds 0.05",
+            "bounded fifth-fold attribution is ambiguous",
+            "action-calibration distinct-session minimum is unmet",
+            "action-calibration ECE bound overlaps 0.10",
+            "serial-dollar no-harm intervals contain zero with negative lower bounds"
+          ],
+          "id": "TOY-INSUFFICIENT-001",
+          "pass": true,
+          "terminal": "insufficient_evidence",
+          "triggered_predicates": [
+            "quality interval contains zero and DeltaQ MDE exceeds 0.05",
+            "bounded fifth-fold attribution is ambiguous",
+            "action-calibration distinct-session minimum is unmet",
+            "action-calibration ECE bound overlaps 0.10",
+            "serial-dollar no-harm intervals contain zero with negative lower bounds"
+          ]
+        },
+        {
+          "expected_terminal": "no_genuine_entry_signal",
+          "expected_triggered_predicates": [
+            "serial-dollar no-harm adjusted upper bound is below zero on $3",
+            "serial-dollar no-harm adjusted upper bound is below zero on $4"
+          ],
+          "id": "TOY-NO-SIGNAL-001",
+          "pass": true,
+          "terminal": "no_genuine_entry_signal",
+          "triggered_predicates": [
+            "serial-dollar no-harm adjusted upper bound is below zero on $3",
+            "serial-dollar no-harm adjusted upper bound is below zero on $4"
+          ]
+        }
+      ],
+      "pass": true
+    }
+  },
+  "failed_checks": [],
+  "goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
+  "outcome": "pass",
+  "product_contract_hash": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+  "schema_version": "Protocol101FT2ScopedFinalRoundConsistencyOutputV4EntryGateConvexity"
+}

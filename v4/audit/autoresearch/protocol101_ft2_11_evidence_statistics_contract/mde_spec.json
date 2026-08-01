@@ -1,106 +1,114 @@
 {
-  "schema_version": "Protocol101FT211MDESpecV4",
-  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
-  "status": "scoped_final_round_repaired",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
-  "intent_fill_recheck_law": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
-    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  "census_v4_provenance": {
+    "census_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "sha256": "4ba3c1cc89505066e80a7abb4877c121356234cde6ce7be112eb150a38747c43"
+    },
+    "census_results": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
+      "sha256": "fdadd3ebae79021b9f363f4c2f81a2b5070e23537bf30a5635f65ff96932e91c"
+    },
+    "guardrail_trade_rates": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
+      "role": "diagnostic only and excluded from neutral-lifecycle trade projections",
+      "sha256": "6fdd5e75e94e4eb97f60584efabb5263cd79d32648ebbd6418be0f5a1c2b3a3b"
+    },
+    "minimum_detectable_improvement": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/minimum_detectable_improvement.csv",
+      "role": "v4 census planning table only; its raw-n session-cluster rows are not the FT2-11 pilot result",
+      "sha256": "019cf68ce47e3989dff566efa061579e3c9992c5a03da9ef8e6e3d93637a07a9"
+    },
+    "role": "planning-only context; never a spend authorization and never candidate evidence",
+    "session_variance_components": {
+      "interpretation": "This v4 row is a hindsight best-entry-oracle minus P5 ceiling under the hold-to-forced-flat variant. It is not the candidate-minus-comparator pilot estimand and its variance cannot authorize spend.",
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/session_variance_components.csv",
+      "planning_row": {
+        "mean_session_increment": 2042.3111111111111,
+        "regime_dimension": "overall",
+        "regime_value": "all",
+        "session_count": 45,
+        "session_increment_std": 2889.073292929619,
+        "session_increment_variance": 8346744.4919191925,
+        "variant": "hold_to_forced_flat"
+      },
+      "sha256": "e6343834bb36c7dda87591a18152df995cd92fbca8c83085f27be9f9bd3adc42"
+    },
+    "v3_v4_impact": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json",
+      "sha256": "3bbacacfa3f116b03e0a3859e2f9ba7c12ce577b20880a52d0c52d0a9959ee56"
+    }
   },
-  "purpose": "Require dependence-aware pilot power evidence before GPU tranche 1; census-v4 variance is planning context only and can never authorize spend.",
+  "confidence_power_and_multiplicity": {
+    "family_size": "the exact pre-outcome ordered multiplicity ledger count from multiplicity_spec.json",
+    "final_inference": "bootstrap_spec.json synchronized studentized maxT; the Bonferroni value is spend planning only",
+    "one_sided_familywise_alpha": 0.05,
+    "planning_critical_value": "z_(1-alpha/m)+z_0.80 for the one-sided Bonferroni planning approximation",
+    "power": 0.8
+  },
+  "dependence_adjusted_MDE": {
+    "ESS_estimator": "bootstrap_spec.json:/corrected_effective_sample_size",
+    "block_power_check": "Also simulate power by shifting the measured pilot session-delta series by the stated bound and applying the frozen {3,5,8} bootstrap envelope with bootstrap_spec.json contiguous delete-L SE_h and replicate-specific SE_h_star. If analytic and simulated MDE disagree on the spend route, use the larger MDE.",
+    "equivalent_LRV_formula": "MDE=(z_(1-alpha/m)+z_0.80)*sqrt(LRV/n)",
+    "formula": "MDE_dollars_per_session=(z_(1-alpha/m)+z_0.80)*marginal_session_SD/sqrt(corrected_ESS)",
+    "input_series": "paired neutral-lifecycle serial-dollar session deltas from training-side inner-fold pilot results",
+    "marginal_session_SD": "ordinary sample SD of the same paired session-delta series",
+    "per_fold": "Compute from that fold's paired series, SD, corrected ESS, and active family count.",
+    "pooled": "Use fold-specific LRV/n contributions under fixed fold weights; do not estimate dependence across folds and do not replace pooled ESS with raw session count.",
+    "quality_DeltaQ": "If reported for resource planning, repeat on the DeltaQ session series with its own SD and corrected ESS; it cannot substitute for the economic MDE."
+  },
   "estimands": {
     "candidate_minus_P5": "For each governed session, candidate neutral-lifecycle serial PnL dollars minus exact P5-under-cap neutral-lifecycle serial PnL dollars.",
     "candidate_minus_matched_random": "For each governed session, candidate neutral-lifecycle serial PnL dollars minus the frozen equal-weight aggregate of the eight valid matched-random schedules' neutral-lifecycle serial PnL dollars.",
-    "population": "FT2-10 universal serial grid and separate policy-causal ledgers",
-    "lifecycle": "hold successful t+1 entry fills to exact 15:55 forced flat",
     "fees": "Compute separately for the causal $3 and causal $4 trajectories.",
-    "no_trade_session": "retained with zero policy PnL",
     "forbidden_estimands": [
       "oracle minus P5 as actual campaign variance",
       "decision-local DeltaQ as economic variance",
       "trade-level PnL treated as independent",
       "marginal candidate PnL without a paired comparator"
-    ]
+    ],
+    "lifecycle": "hold successful t+1 entry fills to exact 15:55 forced flat",
+    "no_trade_session": "retained with zero policy PnL",
+    "population": "FT2-10 universal serial grid and separate policy-causal ledgers"
   },
-  "confidence_power_and_multiplicity": {
-    "one_sided_familywise_alpha": 0.05,
-    "power": 0.8,
-    "family_size": "the exact pre-outcome ordered multiplicity ledger count from multiplicity_spec.json",
-    "planning_critical_value": "z_(1-alpha/m)+z_0.80 for the one-sided Bonferroni planning approximation",
-    "final_inference": "bootstrap_spec.json synchronized studentized maxT; the Bonferroni value is spend planning only"
+  "first_GPU_tranche_gate": {
+    "all_required": [
+      "checkpoint/resume dry-run proof cost is at most $10",
+      "actual ordered multiplicity ledger is frozen and hashed",
+      "pilot paired session-delta variance, LRV, ESS, and trade count are present for both comparators",
+      "larger of analytic and block-power MDE is at most $2,042.3111111111111/session for both required comparators on the $3 trajectory",
+      "$4 trajectory MDE is reported and does not contradict resource feasibility",
+      "all inputs are training-side pilot evidence or hash-cited census-v4 planning context"
+    ],
+    "automatic_spend_authorization": false,
+    "census_only_result": "resource_owner_decision_required",
+    "detectable_improvement_exceeds_bound": "resource_owner_decision_required",
+    "timing": "before GPU tranche 1"
   },
-  "dependence_adjusted_MDE": {
-    "ESS_estimator": "bootstrap_spec.json:/corrected_effective_sample_size",
-    "input_series": "paired neutral-lifecycle serial-dollar session deltas from training-side inner-fold pilot results",
-    "marginal_session_SD": "ordinary sample SD of the same paired session-delta series",
-    "formula": "MDE_dollars_per_session=(z_(1-alpha/m)+z_0.80)*marginal_session_SD/sqrt(corrected_ESS)",
-    "equivalent_LRV_formula": "MDE=(z_(1-alpha/m)+z_0.80)*sqrt(LRV/n)",
-    "per_fold": "Compute from that fold's paired series, SD, corrected ESS, and active family count.",
-    "pooled": "Use fold-specific LRV/n contributions under fixed fold weights; do not estimate dependence across folds and do not replace pooled ESS with raw session count.",
-    "block_power_check": "Also simulate power by shifting the measured pilot session-delta series by the stated bound and applying the frozen {3,5,8} bootstrap envelope with bootstrap_spec.json contiguous delete-L SE_h and replicate-specific SE_h_star. If analytic and simulated MDE disagree on the spend route, use the larger MDE.",
-    "quality_DeltaQ": "If reported for resource planning, repeat on the DeltaQ session series with its own SD and corrected ESS; it cannot substitute for the economic MDE."
+  "forbidden_stale_claims": [
+    "any fractional haircut of a prior oracle ceiling",
+    "any prior-census session count or hash",
+    "any multi-trade-per-session projection for the neutral lifecycle",
+    "census variance green-lights training"
+  ],
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
   },
-  "serial_trade_count_projection": {
-    "neutral_lifecycle_rule": "A successful entry occupies the only position until 15:55, so no policy can execute more than one trade in a governed session.",
-    "one_outer_fold_sessions": 45,
-    "one_outer_fold_executed_trade_cap": 45,
-    "pooled_five_fold_sessions": 225,
-    "pooled_executed_trade_cap": 225,
-    "minimum_projected_executed_trades": 0,
-    "projection_rule": "Report the pilot's session-level entry probability and projected count, clipped to [0,number_of_sessions]. Never multiply a multi-trade census rate by sessions.",
-    "census_trade_rate_role": "FT2-05 v4 guardrail trade rates are report-only multi-trade oracle diagnostics, are incompatible with the neutral one-trade component population, and are not a selection rule or trade-count projection."
-  },
-  "census_v4_provenance": {
-    "role": "planning-only context; never a spend authorization and never candidate evidence",
-    "census_results": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
-      "sha256": "a7a4001223d2c06babbb10098639d15e82ea0a2a6dd44448e3b1e517bb10e8f8"
-    },
-    "census_receipt": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
-      "sha256": "ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928"
-    },
-    "session_variance_components": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/session_variance_components.csv",
-      "sha256": "b35bc341dc04d8c2cc6368681eb9892b4666ea28d5d7b9de4f9184c86328fc43",
-      "planning_row": {
-        "regime_dimension": "overall",
-        "regime_value": "all",
-        "variant": "hold_to_forced_flat",
-        "session_count": 45,
-        "mean_session_increment": 2049.4222222222224,
-        "session_increment_variance": 8460883.704040406,
-        "session_increment_std": 2908.7598223367304
-      },
-      "interpretation": "This v4 row is a hindsight best-entry-oracle minus P5 ceiling under the hold-to-forced-flat variant. It is not the candidate-minus-comparator pilot estimand and its variance cannot authorize spend."
-    },
-    "minimum_detectable_improvement": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/minimum_detectable_improvement.csv",
-      "sha256": "f641fe3aef329073395227ab4484887dae20a38e2acf383d4d75d887f6ad1fa7",
-      "role": "v4 census planning table only; its raw-n session-cluster rows are not the FT2-11 pilot result"
-    },
-    "guardrail_trade_rates": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
-      "sha256": "fb47b66ec08b74edc96bcd28bdcaac94cb41ef3bc36dee432cdff316d8897209",
-      "role": "diagnostic only and excluded from neutral-lifecycle trade projections"
-    },
-    "v3_v4_impact": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json",
-      "sha256": "913f127563daf9e5dff25cb8da72b4c3cdefd7a06d7e5edf569ca3c736806c3e"
-    }
-  },
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
   "plausible_detectable_improvement_bound": {
-    "value_dollars_per_session": 2049.4222222222224,
+    "FT2_21_owner_change": "Any tighter, looser, or non-census bound requires an explicit owner-set FT2-21 amendment before results; it may not be chosen after pilot outcomes.",
     "basis": "The exact FT2-05 v4 overall/all hold_to_forced_flat mean_session_increment row cited above.",
     "derivation": "Use 100% of the existing hindsight neutral-lifecycle oracle-minus-P5 mean as an empirical planning ceiling; no unsupported fractional haircut or uplift is applied.",
-    "why_defensible_for_spend_screen": "P5 is the harder required comparator in the component game, and a learned candidate cannot be presumed to exceed the hindsight best-entry ceiling. This is deliberately generous and can block only when the pilot design cannot detect even that ceiling.",
     "not_a_target": true,
     "not_evidence_of_expected_edge": true,
-    "FT2_21_owner_change": "Any tighter, looser, or non-census bound requires an explicit owner-set FT2-21 amendment before results; it may not be chosen after pilot outcomes."
+    "value_dollars_per_session": 2042.3111111111111,
+    "why_defensible_for_spend_screen": "P5 is the harder required comparator in the component game, and a learned candidate cannot be presumed to exceed the hindsight best-entry ceiling. This is deliberately generous and can block only when the pilot design cannot detect even that ceiling."
   },
   "pre_tranche_1_pilot": {
+    "census_variance_substitution_allowed": false,
+    "missing_pilot_measurement": "resource_owner_decision_required",
     "must_happen_before_spend_authorization": true,
-    "role": "training-side inner-fold pilot results only",
+    "outer_validation_or_protected_holdout_allowed": false,
     "required_first": [
       "freeze and hash the candidate identities and ordered multiplicity ledger",
       "run the exact FT2-10 serial state machine on inner-fold pilot predictions",
@@ -110,29 +118,21 @@
       "recompute analytic and block-power MDE for both comparators and both fee trajectories",
       "produce the <=$10 checkpoint/resume dry-run proof"
     ],
-    "census_variance_substitution_allowed": false,
-    "outer_validation_or_protected_holdout_allowed": false,
-    "missing_pilot_measurement": "resource_owner_decision_required",
-    "result_is_not_campaign_evidence": true
+    "result_is_not_campaign_evidence": true,
+    "role": "training-side inner-fold pilot results only"
   },
-  "first_GPU_tranche_gate": {
-    "all_required": [
-      "checkpoint/resume dry-run proof cost is at most $10",
-      "actual ordered multiplicity ledger is frozen and hashed",
-      "pilot paired session-delta variance, LRV, ESS, and trade count are present for both comparators",
-      "larger of analytic and block-power MDE is at most $2,049.4222222222224/session for both required comparators on the $3 trajectory",
-      "$4 trajectory MDE is reported and does not contradict resource feasibility",
-      "all inputs are training-side pilot evidence or hash-cited census-v4 planning context"
-    ],
-    "detectable_improvement_exceeds_bound": "resource_owner_decision_required",
-    "census_only_result": "resource_owner_decision_required",
-    "timing": "before GPU tranche 1",
-    "automatic_spend_authorization": false
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "purpose": "Require dependence-aware pilot power evidence before GPU tranche 1; census-v4 variance is planning context only and can never authorize spend.",
+  "schema_version": "Protocol101FT211MDESpecV5",
+  "serial_trade_count_projection": {
+    "census_trade_rate_role": "FT2-05 v4 guardrail trade rates are report-only multi-trade oracle diagnostics, are incompatible with the neutral one-trade component population, and are not a selection rule or trade-count projection.",
+    "minimum_projected_executed_trades": 0,
+    "neutral_lifecycle_rule": "A successful entry occupies the only position until 15:55, so no policy can execute more than one trade in a governed session.",
+    "one_outer_fold_executed_trade_cap": 45,
+    "one_outer_fold_sessions": 45,
+    "pooled_executed_trade_cap": 225,
+    "pooled_five_fold_sessions": 225,
+    "projection_rule": "Report the pilot's session-level entry probability and projected count, clipped to [0,number_of_sessions]. Never multiply a multi-trade census rate by sessions."
   },
-  "forbidden_stale_claims": [
-    "any fractional haircut of a prior oracle ceiling",
-    "any prior-census session count or hash",
-    "any multi-trade-per-session projection for the neutral lifecycle",
-    "census variance green-lights training"
-  ]
+  "status": "scoped_final_round_repaired"
 }

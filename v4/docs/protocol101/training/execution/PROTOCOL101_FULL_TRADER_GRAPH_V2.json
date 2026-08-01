@@ -2,7 +2,7 @@
   "schema_version": "Protocol101FullTraderGraphV2",
   "graph_id": "protocol101-full-trader-v2",
   "effective_date": "2026-07-30",
-  "status": "consolidated_with_scoped_owner_amendment",
+  "status": "ft2_21_owner_design_approved",
   "provenance": {
     "consolidated_by": "FT2-01 Consolidated Authority goal (Fable / Claude Opus)",
     "authority_precedence": [
@@ -14,7 +14,8 @@
     "codex_brief_sha256": "765591b130ccc6d1e9a12d65252808027a08c02118d9be2ace22bd2834ee2e3f",
     "consolidation_invents_new_science": false,
     "scoped_owner_amendment": "2026-07-30: add the FT2-92 insufficient_evidence -> STOP-OWNER-DECISION edge; every other node and edge remains frozen.",
-    "note": "Same schema family as Protocol101FullTraderGraphV1. This is the consolidated graph plus the single scoped FT2-92 outcome edge authorized in the narrative authority amendment. It is not a training authorization."
+    "ft2_21_owner_approval": "2026-07-30: Owen Heidenreich approved FT2-21 and adopted D54-D60 via the signed bundle SHA-256 b27145b81b1e667b4071e4bb69d429cad768452c3cd5b3f071d691f93a1b8bce. This records approval metadata only; node and edge topology are unchanged.",
+    "note": "Same schema family as Protocol101FullTraderGraphV1. This is the consolidated graph plus the single scoped FT2-92 outcome edge authorized in the narrative authority amendment and the metadata-only FT2-21 owner-approval record. It is not a training, data-download, broker, paid-compute, tensor-build, or paper authorization."
   },
   "reset_node": "FT2-00-GRAPH-RESET",
   "entry_node": "FT2-01-CONSOLIDATED-AUTHORITY",
@@ -302,7 +303,38 @@
       "independent_acceptance": false,
       "owner_gate": true,
       "model_training": false,
-      "purpose": "Owner approves the complete split scientific contract before any machinery or admission work"
+      "purpose": "Owner approves the complete split scientific contract before any machinery or admission work",
+      "approval_state": {
+        "status": "approved",
+        "outcome": "approved",
+        "owner_identity": "Owen Heidenreich",
+        "approved_on": "2026-07-30",
+        "signed_bundle": {
+          "path": "v4/docs/protocol101/training/execution/FT2_21_APPROVAL_BUNDLE_DRAFT_2026_07_30.md",
+          "sha256": "b27145b81b1e667b4071e4bb69d429cad768452c3cd5b3f071d691f93a1b8bce"
+        },
+        "receipt_path": "v4/audit/autoresearch/protocol101_ft2_21_owner_approval/owner_approval_receipt.json",
+        "adopted_decisions": [
+          "D54",
+          "D55",
+          "D56",
+          "D57",
+          "D58",
+          "D59",
+          "D60"
+        ],
+        "scope": "formalize_design_approval_and_prepare_walking_skeleton_stage0_spec_only",
+        "does_not_authorize": [
+          "model_training_or_fitting",
+          "data_download_or_purchase",
+          "broker_or_api_contact",
+          "paid_compute",
+          "tensor_build",
+          "protected_holdout_or_confirmation_or_sealed_evidence_access",
+          "paper_order_submission",
+          "stage_1_start"
+        ]
+      }
     },
     {
       "id": "FT2-24-PAIRED-EVIDENCE-MANIFEST-INVENTORY",

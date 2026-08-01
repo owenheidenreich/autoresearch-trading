@@ -3,7 +3,7 @@
 Status: `scoped_final_round_repaired`
 
 Authority:
-`d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca`
+`1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc`
 
 This packet is the scoped final-round entry-component design.
 It freezes a research contract only. It performs no training, fitting,
@@ -50,15 +50,19 @@ The sole action-conditioned target producer is:
 
 ```text
 v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json
-sha256 d833297dbaf2a547d8246cdf3cf404dea0d8ff4234026ceac37797e462a8422f
+sha256 adcbec44bc254fe9a968562df77ca6a5736aa5d39d9f8e69dcf477a378df4f09
 ```
 
 The RLAC executes once over the complete label-eligible intent population
 before any model head is fit. It uses only frozen label families, fit-role
 reference distributions, and deterministic anchor-specific thresholds. It
-produces a WAIT target for every label-complete governed flat minute and a
-nonnegative per-contract regret target for every label-complete intent-eligible
-contract on every included minute, including RLAC WAIT minutes. A runtime
+produces a WAIT target for every label-auditable governed flat minute with at
+least one time-`t` intent-eligible contract and a nonnegative per-contract
+regret target for every label-complete intent-eligible contract on every
+included minute, including RLAC WAIT minutes. Zero-intent-eligible and
+label-incomplete flat minutes are excluded from the WAIT population and both
+counts are reported. `y_wait` is exactly the RLAC `WAIT_justified` verdict; no
+scalar `U_label` threshold may replace that conjunction. A runtime
 composer, fitted model output, composer-selected
 contract, or model-selected action may neither create a target nor select its
 membership. Calibrated heads freeze before the runtime composer runs, so there
@@ -104,7 +108,7 @@ again on complete combined-system ledgers at FT2-80.
 2. Causal state and horizon checks.
 3. Registered quality screen, including the mandatory alpha-zero arm.
 4. Conservative upside rank.
-5. Positive-after-fee check.
+5. Calibrated expected-upside positive-after-fee check.
 6. Directional substitute-cluster uncertainty check.
 7. Selected exact-contract q90 regret magnitude check.
 8. Mandatory action-conditioned calibration gate.
@@ -114,6 +118,16 @@ The substitute cluster is same expiry and right within plus or minus 10 strike
 points, or 10,000 milli-points, of the selected contract. It prevents a smooth
 three-or-more-strike directional surface from creating an artificial
 near-duplicate WAIT comparison.
+
+The positive-after-fee gate uses the session-cluster-calibrated one-sided 90%
+lower confidence bound on conditional-mean MFE and conditional-mean profit area
+in both fee-adjusted dollars and return. The arithmetic mean over every
+causally available registered horizon, including h3 and h5, must be strictly
+positive on all four axes. An individual-outcome q10 or conformal lower
+prediction quantile is forbidden as a gate alias because the frozen 45-session
+development evidence shows that statistic is structurally nonpositive. Among
+gate-passers, the existing calibrated-q10 percentile rank and deterministic
+tie-break order are unchanged.
 
 The same-final-model conformalized q90 normalized selected-contract regret
 upper bound is a hard action constraint, not a report. ENTER requires a finite
@@ -141,7 +155,7 @@ The current census receipt is:
 
 ```text
 v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json
-sha256 ddc6167abdf763070416f5e729225ece97d594a9b21b64893b8d2bd1f25d6928
+sha256 ecaa16c923d4834c314816bca471597e09b9668ec5f1fe76d956be9c9d97d168
 ```
 
 The census is a 45-session multi-trade hindsight/oracle design diagnostic. Its
@@ -154,7 +168,7 @@ The v3-to-v4 impact note is:
 
 ```text
 v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json
-sha256 913f127563daf9e5dff25cb8da72b4c3cdefd7a06d7e5edf569ca3c736806c3e
+sha256 cd5ec600ea7a5e4870cb4b46a23a391f77f3d2eb6404d65dbc0d284b7242fe2d
 ```
 
 ## 8. Acceptance and graph boundary

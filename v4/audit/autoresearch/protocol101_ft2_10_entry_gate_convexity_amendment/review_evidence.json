@@ -1,0 +1,48 @@
+{
+  "authority_pre_amendment_sha256": "edcbee06ebfc5ac3a26fa13da043754589ba55fbbd11b207906e19459d4103f3",
+  "diagnosis": {
+    "eligible_full45_rows": 120229,
+    "mfe_return_q10_by_horizon": {
+      "h3": -0.160976,
+      "h5": -0.146512,
+      "h10": -0.126,
+      "h20": -0.108333,
+      "h45": -0.089189,
+      "h90": -0.072222,
+      "remaining_session": -0.066667
+    },
+    "profit_area_return_q10_is_zero_at_every_horizon": true,
+    "current_strict_four_axis_q10_gate_satisfiable": false
+  },
+  "horizon_review": {
+    "decision": "retain_all_causally_available_registered_horizons",
+    "full45_mean_mfe_return_h3": 0.028498,
+    "full45_mean_mfe_return_h5": 0.083918,
+    "cluster_lcb_pass_rate_all_horizons": 0.713195,
+    "cluster_lcb_pass_rate_excluding_h3_h5": 0.707468
+  },
+  "mean_head_prototype": {
+    "eligible_replay_rows": 4191,
+    "raw_mean_pass_count": 3545,
+    "raw_mean_pass_rate": 0.84586,
+    "session_clustered_90pct_lcb_pass_count": 2989,
+    "session_clustered_90pct_lcb_pass_rate": 0.713195,
+    "individual_outcome_q90_subtraction_pass_count": 0,
+    "individual_outcome_q90_subtraction_pass_rate": 0.0,
+    "interpretation": "ordinary individual-outcome conformalization recreates the pessimistic-tail defect; session-clustered mean-residual uncertainty is required"
+  },
+  "second_order": {
+    "prior_action_gate_realized_wait_outcomes": 19,
+    "required_realized_wait_outcomes": 50,
+    "action_gate_was_available": false,
+    "downstream_binding_must_be_remeasured": true
+  },
+  "source_artifacts": {
+    "option_d_full45_tensor": {
+      "path": "v4/audit/autoresearch/protocol101_walking_skeleton_stage1/protocol101_walking_skeleton_throwaway_paper_only_option_d_full45_entry_tensor.parquet",
+      "sha256": "31147c6b8dc9167b80911fe7ee0f6508fe620266ec29b79ff588a0cf076f411f"
+    },
+    "prior_option_d_receipt_hash": "7f1125417ffe2bbdfdd3c76fdeae698f7aec44dbd82da10edaa822ad6d84232b"
+  },
+  "verdict": "ENDORSED_WITH_REQUIRED_STATISTICAL_CLARIFICATION"
+}

@@ -6,69 +6,69 @@
   "interpretation": "v4 corrects only the D48 reference/distribution universe from successful t+1 rechecks to canonical time-t intent eligibility; the added rows are the disclosed t+1 rejections",
   "oracle_changes": [
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -10223.0,
       "pooled_pnl_v3": 956657.0,
-      "pooled_pnl_v4": 956657.0,
+      "pooled_pnl_v4": 946434.0,
       "selector": "oracle",
-      "trade_count_delta": 0,
+      "trade_count_delta": -19,
       "trade_count_v3": 2021,
-      "trade_count_v4": 2021,
+      "trade_count_v4": 2002,
       "variant": "best_10"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -6945.0,
       "pooled_pnl_v3": 830226.0,
-      "pooled_pnl_v4": 830226.0,
+      "pooled_pnl_v4": 823281.0,
       "selector": "oracle",
-      "trade_count_delta": 0,
+      "trade_count_delta": -5,
       "trade_count_v3": 1118,
-      "trade_count_v4": 1118,
+      "trade_count_v4": 1113,
       "variant": "best_20"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -16465.000000000116,
       "pooled_pnl_v3": 1052262.0000000002,
-      "pooled_pnl_v4": 1052262.0000000002,
+      "pooled_pnl_v4": 1035797.0000000001,
       "selector": "oracle",
-      "trade_count_delta": 0,
+      "trade_count_delta": -40,
       "trade_count_v3": 4846,
-      "trade_count_v4": 4846,
+      "trade_count_v4": 4806,
       "variant": "best_3"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -8017.0,
       "pooled_pnl_v3": 671662.0,
-      "pooled_pnl_v4": 671662.0,
+      "pooled_pnl_v4": 663645.0,
       "selector": "oracle",
-      "trade_count_delta": 0,
+      "trade_count_delta": -1,
       "trade_count_v3": 536,
-      "trade_count_v4": 536,
+      "trade_count_v4": 535,
       "variant": "best_45"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -11885.999999999884,
       "pooled_pnl_v3": 1052452.0,
-      "pooled_pnl_v4": 1052452.0,
+      "pooled_pnl_v4": 1040566.0000000001,
       "selector": "oracle",
-      "trade_count_delta": 0,
+      "trade_count_delta": -28,
       "trade_count_v3": 3456,
-      "trade_count_v4": 3456,
+      "trade_count_v4": 3428,
       "variant": "best_5"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -1643.0,
       "pooled_pnl_v3": 525006.0,
-      "pooled_pnl_v4": 525006.0,
+      "pooled_pnl_v4": 523363.0,
       "selector": "oracle",
-      "trade_count_delta": 0,
+      "trade_count_delta": 1,
       "trade_count_v3": 288,
-      "trade_count_v4": 288,
+      "trade_count_v4": 289,
       "variant": "best_90"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -1050.0,
       "pooled_pnl_v3": 340736.0,
-      "pooled_pnl_v4": 340736.0,
+      "pooled_pnl_v4": 339686.0,
       "selector": "oracle",
       "trade_count_delta": 0,
       "trade_count_v3": 108,
@@ -76,19 +76,19 @@
       "variant": "best_session"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -2616.0,
       "pooled_pnl_v3": 217187.00000000003,
-      "pooled_pnl_v4": 217187.00000000003,
+      "pooled_pnl_v4": 214571.00000000003,
       "selector": "oracle",
-      "trade_count_delta": 0,
+      "trade_count_delta": 7,
       "trade_count_v3": 1336,
-      "trade_count_v4": 1336,
+      "trade_count_v4": 1343,
       "variant": "first_real_profit_exit"
     },
     {
-      "pooled_pnl_delta": 0.0,
+      "pooled_pnl_delta": -320.0,
       "pooled_pnl_v3": 86905.0,
-      "pooled_pnl_v4": 86905.0,
+      "pooled_pnl_v4": 86585.0,
       "selector": "oracle",
       "trade_count_delta": 0,
       "trade_count_v3": 45,
@@ -186,7 +186,7 @@
       "variant": "hold_to_forced_flat"
     }
   ],
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
   "scalar_changes": {
     "distinct_d48_reference_minutes": {
       "v3": 15106,
@@ -240,5 +240,5 @@
     "intent_eligible_fee3_rows": 128758
   },
   "v4_intent_fill_recheck_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
-  "v4_oracle_rules_sha256": "1989a42bc3cf62d97db3fc4f45b5936e8c0dee9fc365aee9b439be734158f639"
+  "v4_oracle_rules_sha256": "4c558964153f7a8d8a8f70948e7bbc822463a4539bf25c0dee5f453cf847d755"
 }

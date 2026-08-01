@@ -1,38 +1,14 @@
 {
-  "schema_version": "Protocol101FT211EvidenceStandardV4",
-  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
-  "status": "scoped_final_round_repaired",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
-  "intent_fill_recheck_law": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
-    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
-  },
-  "cross_contract_constants": {
-    "numeric_unit": "integer USD cents",
-    "contract_multiplier": 100,
-    "premium_floor_quote_cents": 100,
-    "fee_3_round_trip_cents": 300,
-    "fee_4_round_trip_cents": 400,
-    "fee_3_floor_cost_cents": 10300,
-    "fee_4_floor_cost_cents": 10400,
-    "daily_budget": "floor(session_start_equity_cents*5/100)"
-  },
-  "scope": {
-    "design_only": true,
-    "model_training_or_fitting": false,
-    "new_session_statistics": false,
-    "allowed_numeric_source": "FT2-05 census v4 tables cited by exact SHA-256",
-    "owner_decisions": [
-      "component freeze",
-      "tail guard: relative-capture tripwire",
-      "recorder deliberately stopped"
-    ]
-  },
   "authoritative_population": {
+    "no_trade_session_value": "zero policy PnL; the session is retained",
+    "policy_specific_account_state": true,
+    "population_may_not_be_changed_by_FT2_11": true,
+    "separate_fee_trajectories": [
+      "$3 round trip",
+      "$4 round trip"
+    ],
     "source": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json:/serial_primary_population",
     "source_sha256": "3b5148c79a52977b2d849f4185e5f5dd676604357b5e5d762bc4084ed77f41f0",
-    "unit": "one governed session on each policy's complete causal neutral-lifecycle serial ledger",
-    "universal_grid_retained": true,
     "structural_states_retained": [
       "FLAT_WAIT",
       "FLAT_BUY_COMMIT",
@@ -41,46 +17,160 @@
       "SOFT_CLOSED",
       "DAILY_STOPPED"
     ],
-    "no_trade_session_value": "zero policy PnL; the session is retained",
-    "policy_specific_account_state": true,
-    "separate_fee_trajectories": [
-      "$3 round trip",
-      "$4 round trip"
+    "unit": "one governed session on each policy's complete causal neutral-lifecycle serial ledger",
+    "universal_grid_retained": true
+  },
+  "cross_contract_constants": {
+    "contract_multiplier": 100,
+    "daily_budget": "floor(session_start_equity_cents*5/100)",
+    "fee_3_floor_cost_cents": 10300,
+    "fee_3_round_trip_cents": 300,
+    "fee_4_floor_cost_cents": 10400,
+    "fee_4_round_trip_cents": 400,
+    "numeric_unit": "integer USD cents",
+    "premium_floor_quote_cents": 100
+  },
+  "highest_allowed_component_claim": "The entry component earned a component freeze for lifecycle work; this is not selection eligibility and makes no incremental-edge claim.",
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "mnar_no_bid_sensitivity": {
+    "alternate_refit_protocol": {
+      "artifact_requirement": "separate complete model/CDF/calibrator/composer/action-head hashes and selection traces for both views",
+      "cross_view_artifact_reuse": "forbidden for every label-dependent artifact",
+      "held_identical_between_views": [
+        "causal feature schema and masks",
+        "architecture family and hyperparameter grid",
+        "loss definitions and weights",
+        "folds, embargoes, fit/calibration roles, and session identities",
+        "seed IDs",
+        "alpha and uncertainty grids",
+        "canonical comparator identities",
+        "serial population and fee paths",
+        "tie-breaks, multiplicity, and terminal resolver"
+      ],
+      "no_training_now": "This packet freezes the later procedure only; no model is fit by FT2-FINAL-REPAIR.",
+      "only_changed_input": "primary full-loss labels versus no-bid-excluded sensitivity labels and the deterministic downstream artifacts fit from that label view",
+      "primary_outcome_tuning": false,
+      "refit_all_label_dependent_machinery": [
+        "all path-family forecast heads",
+        "all nested empirical CDF knots and fallback manifests",
+        "all continuous, binary, survival, count, WAIT, and regret calibrators",
+        "all guardrail/composer thresholds",
+        "WAIT-probability and expected/q90 regret action heads",
+        "inner selection and frozen ensemble construction"
+      ],
+      "refit_required": true
+    },
+    "authority": "Owner amendment A2 in the consolidated authority",
+    "failure_with_complete_sensitivity": "no_genuine_entry_signal",
+    "hard_ranking_stability": [
+      "the selected lineage and composer variant are identical under both conventions",
+      "entry-component terminal is identical under both conventions",
+      "every pairwise ordering involving the selected lineage is unchanged",
+      "Spearman rank correlation across all serious selectable identities is at least 0.95"
     ],
-    "population_may_not_be_changed_by_FT2_11": true
+    "missing_or_unreproducible_sensitivity": "invalid_evidence",
+    "primary_convention": "no-bid-as-full-loss",
+    "ranking_score": "the preregistered component quality score used before outer results, with identical tie-breaks",
+    "required_evaluation_output": "For every serious candidate, seed, frozen ensemble, alpha arm, and comparator, independently fit and evaluate the complete FT2-10 machinery under primary no-bid-as-full-loss labels and the preregistered no-bid-excluded sensitivity labels.",
+    "sensitivity_only": "no-bid-excluded",
+    "threshold_basis": {
+      "census_v4_artifact": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv",
+      "census_v4_minimum_path_metric_rank_correlation": 0.983762571807032,
+      "interpretation": "The 0.95 candidate-ranking floor is below the observed census-v4 label-surface diagnostic and is still subordinate to exact selected-identity and terminal invariance.",
+      "sha256": "462e5a676c82064959e3d94649672fa55938dc03377b2d403d2c3832f3ba0d2a"
+    },
+    "too_few_serious_identities_for_rank_correlation": "Report not_applicable for Spearman only; exact selected-identity, terminal, and pairwise rules remain hard."
+  },
+  "node_id": "FT2-11-EVIDENCE-STATISTICS-CONTRACT",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "recorder_latency_study": {
+    "authority": "Consolidated authority owner amendment A1",
+    "current_gate_effect": "none; no missing recorder day can fail or pass entry component acceptance or FT2-80",
+    "data_dependency": "Only data already lawfully available or data later collected after a separate owner authorization may be used.",
+    "no_collection_authorized_here": true,
+    "no_new_day_assumption": true,
+    "question": "Compare first executable +5s fills with next-completed-minute fills on development-class paired recorder data.",
+    "role": "report_only",
+    "source_feasibility_receipt": {
+      "finding": "normalized history contains only one retained quote snapshot per contract-minute and cannot reconstruct +5s fills",
+      "path": "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/step0_data_feasibility.json",
+      "sha256": "5c829f7399cc00b60dc6988afc463e376f9110ddca89a17c4e1dbc9799a8ad21"
+    },
+    "status": "owner_blocked_recorder_deliberately_stopped",
+    "when_lawfully_available_report": [
+      "paired fill availability",
+      "entry and exit price gap in dollars and return-on-premium",
+      "spread, premium band, phase, and fast-market strata",
+      "candidate and comparator dollar-ranking sensitivity"
+    ]
+  },
+  "schema_version": "Protocol101FT211EvidenceStandardV5",
+  "scope": {
+    "allowed_numeric_source": "FT2-05 census v4 tables cited by exact SHA-256",
+    "design_only": true,
+    "model_training_or_fitting": false,
+    "new_session_statistics": false,
+    "owner_decisions": [
+      "component freeze",
+      "tail guard: relative-capture tripwire",
+      "recorder deliberately stopped"
+    ]
+  },
+  "source_transfer_graph_topology": {
+    "FT2_92_entry_prerequisite": "FT2-91 pass and frozen candidate bundle; a preexisting transfer pass is not required",
+    "FT2_92_output_vocabulary": [
+      "pass",
+      "fail",
+      "insufficient_evidence"
+    ],
+    "FT2_93_prerequisite": "FT2-92 transfer pass",
+    "entry_component_acceptance_transfer_state": "transfer_not_yet_run is allowed and is not a component-acceptance failure",
+    "graph_order": [
+      "FT2-91-PROTECTED-HOLDOUT pass",
+      "FT2-92-IBKR-DECISION-SHADOW executes candidate-specific historical/IBKR tensor-and-action transfer measurement",
+      "FT2-92 pass -> FT2-93-NO-ORDER-LIVE-SHADOW",
+      "FT2-92 fail -> STOP-CANDIDATE-REJECTED",
+      "FT2-92 insufficient_evidence -> STOP-OWNER-DECISION"
+    ],
+    "paper_or_order_authorization": false
+  },
+  "status": "scoped_final_round_repaired",
+  "terminal_resolution": {
+    "authority": "terminal_decision_spec.json",
+    "calibration_mapping": {
+      "all_required_bounds_pass": "continue",
+      "below_any_frozen_minimum_or_bound_overlaps_threshold": "insufficient_evidence",
+      "missing_or_unreproducible_head_or_artifact": "invalid_evidence",
+      "sufficient_interval_wholly_fails_threshold": "no_genuine_entry_signal"
+    },
+    "precedence": [
+      "invalid_evidence",
+      "resource_owner_decision_required",
+      "owner_decision_required",
+      "insufficient_evidence",
+      "no_genuine_entry_signal",
+      "entry_component_freeze_pass"
+    ]
   },
   "two_layer_acceptance": {
-    "relationship": "ENTRY_COMPONENT_ACCEPTANCE implements the owner's component-freeze decision and authorizes lifecycle work only. PROMOTABLE_COMBINED_SYSTEM implements the signed D1 V2 incremental-dollar law at FT2-80. The component layer cannot satisfy, replace, weaken, or pre-spend alpha from the promotable layer.",
     "entry_component_acceptance": {
-      "claim": "The entry forecasts and composer may be frozen as a component for lifecycle research.",
-      "selection_eligibility": false,
-      "incremental_edge_claim": false,
       "all_required": {
-        "integrity": [
-          "every authority and upstream hash matches the receipt",
-          "FT2-08 identity, role, causality, mask, label, ledger, and replay contracts reproduce",
-          "FT2-10 serial population, exact P5-under-cap algorithm, action heads, composer, calibrators, and controls reproduce",
-          "no outer-validation or protected-holdout feedback",
-          "independent auditor recomputes from source ledgers"
-        ],
-        "quality_evidence": {
-          "metric": "DeltaQ_session and the five family deltas on the FT2-10 serial population",
-          "role": "diagnostic channel proving component quality only; never a dollar or promotion claim",
-          "comparators": [
-            "P5_VWAP_SIDE_NEAREST_ELIGIBLE_UNDER_CAP_V2",
-            "constant_output",
-            "strong_shuffled_targets"
-          ],
-          "pooled_rule": "For each required comparator the synchronized studentized-maxT adjusted one-sided 95% lower bound for DeltaQ_session is strictly greater than zero and adjusted p is at most 0.05.",
-          "upside_rule": "DeltaU_session point estimate is strictly positive and its adjusted upper bound is not below zero.",
-          "family_rule": "All five quality-family deltas are reported; at least four point estimates are nonnegative and no family has an adjusted upper bound below zero.",
-          "chronology_seed_regime_rules": "terminal_decision_spec.json:/statistic_specific_sufficiency"
-        },
         "action_conditioned_calibration": {
-          "required": true,
+          "below_any_minimum": "insufficient_evidence",
           "cannot_be_skipped_or_ablated": true,
-          "source": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/action_conditioned_gate",
-          "source_sha256": "921e8d70c363f6206afe3f7c10c35f2d01c358e6c496c941815412a159c6dc5d",
+          "interval_rule": "Session-clustered simultaneous bounds must lie on the passing side of every threshold. A bound overlapping a threshold is insufficient_evidence; a bound wholly on the failing side is no_genuine_entry_signal.",
+          "minimum_evidence": {
+            "distinct_sessions": 20,
+            "flat_decisions": 100,
+            "realized_enter_outcomes": 50,
+            "realized_wait_outcomes": 50,
+            "rlac_contract_targets": 50
+          },
+          "missing_head_or_artifact": "invalid_evidence",
+          "required": true,
           "required_artifacts": [
             "same-final-model disjoint-calibrated p_wait",
             "same-final-model expected per-contract RLAC regret",
@@ -89,41 +179,71 @@
             "disjoint calibration-session identity manifest",
             "calibrator hashes and action-head model hash"
           ],
-          "minimum_evidence": {
-            "distinct_sessions": 20,
-            "flat_decisions": 100,
-            "realized_wait_outcomes": 50,
-            "realized_enter_outcomes": 50,
-            "rlac_contract_targets": 50
-          },
-          "wait_reliability": {
-            "expected_calibration_error_max": 0.1,
-            "maximum_bin_gap_max": 0.2,
-            "brier_skill_vs_constant_rate_min": 0.0
-          },
-          "selected_contract_regret": {
-            "target_denominator": "every label-complete intent-eligible contract on every included RLAC minute, including WAIT minutes; runtime composer selections exclude zero rows",
-            "absolute_mean_expected_regret_calibration_error_max": 0.1,
-            "nominal_upper_bound_coverage": 0.9,
-            "empirical_upper_bound_coverage_min": 0.85,
-            "empirical_upper_bound_coverage_max": 0.95,
-            "composer_q90_normalized_regret_upper_bound_max": 0.1,
-            "action_rule": "every ENTER requires a finite selected-contract q90 normalized-regret upper bound<=0.10; missing, nonfinite, or larger emits WAIT"
-          },
           "runtime_selected_subset_coverage": {
-            "role": "report-only conditional diagnostic after the frozen composer runs",
-            "hard_guarantee": false,
+            "collapse": "owner_decision_required tripwire; never automatic recalibration, relabeling, or acceptance",
             "denominators_required": [
               "distinct sessions",
               "runtime-composer ENTER minutes",
               "selected exact contracts"
             ],
-            "collapse": "owner_decision_required tripwire; never automatic recalibration, relabeling, or acceptance"
+            "hard_guarantee": false,
+            "role": "report-only conditional diagnostic after the frozen composer runs"
           },
-          "interval_rule": "Session-clustered simultaneous bounds must lie on the passing side of every threshold. A bound overlapping a threshold is insufficient_evidence; a bound wholly on the failing side is no_genuine_entry_signal.",
-          "missing_head_or_artifact": "invalid_evidence",
-          "below_any_minimum": "insufficient_evidence",
-          "sufficient_failed_gate": "no_genuine_entry_signal"
+          "selected_contract_regret": {
+            "absolute_mean_expected_regret_calibration_error_max": 0.1,
+            "action_rule": "every ENTER requires a finite selected-contract q90 normalized-regret upper bound<=0.10; missing, nonfinite, or larger emits WAIT",
+            "composer_q90_normalized_regret_upper_bound_max": 0.1,
+            "empirical_upper_bound_coverage_max": 0.95,
+            "empirical_upper_bound_coverage_min": 0.85,
+            "nominal_upper_bound_coverage": 0.9,
+            "target_denominator": "every label-complete intent-eligible contract on every included RLAC minute, including WAIT minutes; runtime composer selections exclude zero rows"
+          },
+          "source": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json:/action_conditioned_gate",
+          "source_sha256": "dc461bc8f3f38f9da36d72cf22c7b93cb5b3ea04fdd55effec18aa42a2cb2b42",
+          "sufficient_failed_gate": "no_genuine_entry_signal",
+          "wait_reliability": {
+            "brier_skill_vs_constant_rate_min": 0.0,
+            "expected_calibration_error_max": 0.1,
+            "maximum_bin_gap_max": 0.2
+          }
+        },
+        "integrity": [
+          "every authority and upstream hash matches the receipt",
+          "FT2-08 identity, role, causality, mask, label, ledger, and replay contracts reproduce",
+          "FT2-10 serial population, exact P5-under-cap algorithm, action heads, composer, calibrators, and controls reproduce",
+          "no outer-validation or protected-holdout feedback",
+          "independent auditor recomputes from source ledgers"
+        ],
+        "quality_evidence": {
+          "chronology_seed_regime_rules": "terminal_decision_spec.json:/statistic_specific_sufficiency",
+          "comparators": [
+            "P5_VWAP_SIDE_NEAREST_ELIGIBLE_UNDER_CAP_V2",
+            "constant_output",
+            "strong_shuffled_targets"
+          ],
+          "family_rule": "All five quality-family deltas are reported; at least four point estimates are nonnegative and no family has an adjusted upper bound below zero.",
+          "metric": "DeltaQ_session and the five family deltas on the FT2-10 serial population",
+          "pooled_rule": "For each required comparator the synchronized studentized-maxT adjusted one-sided 95% lower bound for DeltaQ_session is strictly greater than zero and adjusted p is at most 0.05.",
+          "role": "diagnostic channel proving component quality only; never a dollar or promotion claim",
+          "upside_rule": "DeltaU_session point estimate is strictly positive and its adjusted upper bound is not below zero."
+        },
+        "serial_dollar_no_harm_vs_P5": {
+          "adjusted_p": "At most 0.05 for the one-sided no-harm null on both fee trajectories.",
+          "ambiguous": "If the simultaneous interval contains zero and the lower bound is below zero, route insufficient_evidence.",
+          "equality": "An adjusted lower bound exactly at zero satisfies no-harm but does not prove superiority.",
+          "estimand": "For every governed session, DeltaDollar_session=(candidate neutral-lifecycle serial PnL cents-P5 neutral-lifecycle serial PnL cents)/100 on the two complete policy-causal ledgers; no-trade sessions contribute zero.",
+          "forbidden_substitutes": [
+            "DeltaQ",
+            "absolute positive candidate PnL",
+            "oracle PnL",
+            "fixed-exit PnL",
+            "a common account ledger shared by candidate and P5"
+          ],
+          "margin_dollars_per_session": 0.0,
+          "margin_interpretation": "Exact no-harm: no positive harm tolerance is granted.",
+          "null": "mean DeltaDollar_session < 0",
+          "pass": "The multiplicity-adjusted session-clustered one-sided 95% lower confidence bound is at least 0.00 dollars/session on both the $3 primary and separately replayed $4 stress trajectories.",
+          "sufficient_harm": "If the adjusted upper confidence bound is below 0.00 dollars/session, route no_genuine_entry_signal."
         },
         "signed_safety": {
           "all_required": [
@@ -137,33 +257,17 @@
             "exact 15:55 forced-flat accounting",
             "$3 and $4 are separate causal account trajectories"
           ],
-          "wrong_or_unreconstructable_safety_replay": "invalid_evidence",
-          "observed_safety_breach_with_valid_replay": "no_genuine_entry_signal"
-        },
-        "serial_dollar_no_harm_vs_P5": {
-          "estimand": "For every governed session, DeltaDollar_session=(candidate neutral-lifecycle serial PnL cents-P5 neutral-lifecycle serial PnL cents)/100 on the two complete policy-causal ledgers; no-trade sessions contribute zero.",
-          "margin_dollars_per_session": 0.0,
-          "margin_interpretation": "Exact no-harm: no positive harm tolerance is granted.",
-          "null": "mean DeltaDollar_session < 0",
-          "pass": "The multiplicity-adjusted session-clustered one-sided 95% lower confidence bound is at least 0.00 dollars/session on both the $3 primary and separately replayed $4 stress trajectories.",
-          "adjusted_p": "At most 0.05 for the one-sided no-harm null on both fee trajectories.",
-          "equality": "An adjusted lower bound exactly at zero satisfies no-harm but does not prove superiority.",
-          "sufficient_harm": "If the adjusted upper confidence bound is below 0.00 dollars/session, route no_genuine_entry_signal.",
-          "ambiguous": "If the simultaneous interval contains zero and the lower bound is below zero, route insufficient_evidence.",
-          "forbidden_substitutes": [
-            "DeltaQ",
-            "absolute positive candidate PnL",
-            "oracle PnL",
-            "fixed-exit PnL",
-            "a common account ledger shared by candidate and P5"
-          ]
+          "observed_safety_breach_with_valid_replay": "no_genuine_entry_signal",
+          "wrong_or_unreconstructable_safety_replay": "invalid_evidence"
         },
         "tail_and_missingness": [
           "tripwire_spec.json passes without an owner route, or the owner explicitly resolves the route",
           "the MNAR no-bid ranking-stability output in this file passes"
         ]
       },
-      "success_terminal": "entry_component_freeze_pass",
+      "claim": "The entry forecasts and composer may be frozen as a component for lifecycle research.",
+      "incremental_edge_claim": false,
+      "selection_eligibility": false,
       "success_authorizes": "FT2-52 owner freeze and lifecycle work only",
       "success_does_not_authorize": [
         "selection eligibility",
@@ -172,134 +276,30 @@
         "protected holdout",
         "shadow activation",
         "paper orders"
-      ]
+      ],
+      "success_terminal": "entry_component_freeze_pass"
     },
     "promotable_combined_system": {
-      "owner": "FT2-80 complete combined-system evaluation",
-      "applies_to": "the assembled learned entry plus learned lifecycle on complete serial ledgers",
-      "all_required": {
-        "candidate_minus_exposure_matched_random": {
-          "multiplicity_adjusted_one_sided_p_max": 0.05,
-          "multiplicity_adjusted_one_sided_95_lower_bound": "strictly greater than 0 dollars"
-        },
-        "candidate_minus_P5": {
-          "multiplicity_adjusted_one_sided_p_max": 0.05,
-          "multiplicity_adjusted_one_sided_95_lower_bound": "strictly greater than 0 dollars"
-        },
-        "ledger": "complete policy-causal serial ledgers, every governed session retained, all costs included, $3 primary and $4 stress separately replayed",
-        "D1": "all signed matching dimensions, shuffled-control validity, identity hashes, and independent reproduction pass"
-      },
       "DeltaQ_substitute_allowed": false,
-      "component_freeze_substitute_allowed": false,
       "absolute_profit_substitute_allowed": false,
+      "all_required": {
+        "D1": "all signed matching dimensions, shuffled-control validity, identity hashes, and independent reproduction pass",
+        "candidate_minus_P5": {
+          "multiplicity_adjusted_one_sided_95_lower_bound": "strictly greater than 0 dollars",
+          "multiplicity_adjusted_one_sided_p_max": 0.05
+        },
+        "candidate_minus_exposure_matched_random": {
+          "multiplicity_adjusted_one_sided_95_lower_bound": "strictly greater than 0 dollars",
+          "multiplicity_adjusted_one_sided_p_max": 0.05
+        },
+        "ledger": "complete policy-causal serial ledgers, every governed session retained, all costs included, $3 primary and $4 stress separately replayed"
+      },
+      "applies_to": "the assembled learned entry plus learned lifecycle on complete serial ledgers",
+      "claim": "Only this layer can establish a promotable incremental-dollar result.",
+      "component_freeze_substitute_allowed": false,
       "equality_at_zero": "fail",
-      "claim": "Only this layer can establish a promotable incremental-dollar result."
-    }
-  },
-  "mnar_no_bid_sensitivity": {
-    "authority": "Owner amendment A2 in the consolidated authority",
-    "required_evaluation_output": "For every serious candidate, seed, frozen ensemble, alpha arm, and comparator, independently fit and evaluate the complete FT2-10 machinery under primary no-bid-as-full-loss labels and the preregistered no-bid-excluded sensitivity labels.",
-    "primary_convention": "no-bid-as-full-loss",
-    "sensitivity_only": "no-bid-excluded",
-    "ranking_score": "the preregistered component quality score used before outer results, with identical tie-breaks",
-    "alternate_refit_protocol": {
-      "refit_required": true,
-      "refit_all_label_dependent_machinery": [
-        "all path-family forecast heads",
-        "all nested empirical CDF knots and fallback manifests",
-        "all continuous, binary, survival, count, WAIT, and regret calibrators",
-        "all guardrail/composer thresholds",
-        "WAIT-probability and expected/q90 regret action heads",
-        "inner selection and frozen ensemble construction"
-      ],
-      "held_identical_between_views": [
-        "causal feature schema and masks",
-        "architecture family and hyperparameter grid",
-        "loss definitions and weights",
-        "folds, embargoes, fit/calibration roles, and session identities",
-        "seed IDs",
-        "alpha and uncertainty grids",
-        "canonical comparator identities",
-        "serial population and fee paths",
-        "tie-breaks, multiplicity, and terminal resolver"
-      ],
-      "only_changed_input": "primary full-loss labels versus no-bid-excluded sensitivity labels and the deterministic downstream artifacts fit from that label view",
-      "primary_outcome_tuning": false,
-      "cross_view_artifact_reuse": "forbidden for every label-dependent artifact",
-      "artifact_requirement": "separate complete model/CDF/calibrator/composer/action-head hashes and selection traces for both views",
-      "no_training_now": "This packet freezes the later procedure only; no model is fit by FT2-FINAL-REPAIR."
+      "owner": "FT2-80 complete combined-system evaluation"
     },
-    "hard_ranking_stability": [
-      "the selected lineage and composer variant are identical under both conventions",
-      "entry-component terminal is identical under both conventions",
-      "every pairwise ordering involving the selected lineage is unchanged",
-      "Spearman rank correlation across all serious selectable identities is at least 0.95"
-    ],
-    "threshold_basis": {
-      "census_v4_artifact": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/mnar_sensitivity.csv",
-      "sha256": "462e5a676c82064959e3d94649672fa55938dc03377b2d403d2c3832f3ba0d2a",
-      "census_v4_minimum_path_metric_rank_correlation": 0.983762571807032,
-      "interpretation": "The 0.95 candidate-ranking floor is below the observed census-v4 label-surface diagnostic and is still subordinate to exact selected-identity and terminal invariance."
-    },
-    "failure_with_complete_sensitivity": "no_genuine_entry_signal",
-    "missing_or_unreproducible_sensitivity": "invalid_evidence",
-    "too_few_serious_identities_for_rank_correlation": "Report not_applicable for Spearman only; exact selected-identity, terminal, and pairwise rules remain hard."
-  },
-  "recorder_latency_study": {
-    "authority": "Consolidated authority owner amendment A1",
-    "question": "Compare first executable +5s fills with next-completed-minute fills on development-class paired recorder data.",
-    "status": "owner_blocked_recorder_deliberately_stopped",
-    "role": "report_only",
-    "current_gate_effect": "none; no missing recorder day can fail or pass entry component acceptance or FT2-80",
-    "data_dependency": "Only data already lawfully available or data later collected after a separate owner authorization may be used.",
-    "no_new_day_assumption": true,
-    "no_collection_authorized_here": true,
-    "when_lawfully_available_report": [
-      "paired fill availability",
-      "entry and exit price gap in dollars and return-on-premium",
-      "spread, premium band, phase, and fast-market strata",
-      "candidate and comparator dollar-ranking sensitivity"
-    ],
-    "source_feasibility_receipt": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_08_repair_attempt001/step0_data_feasibility.json",
-      "sha256": "5c829f7399cc00b60dc6988afc463e376f9110ddca89a17c4e1dbc9799a8ad21",
-      "finding": "normalized history contains only one retained quote snapshot per contract-minute and cannot reconstruct +5s fills"
-    }
-  },
-  "terminal_resolution": {
-    "authority": "terminal_decision_spec.json",
-    "precedence": [
-      "invalid_evidence",
-      "resource_owner_decision_required",
-      "owner_decision_required",
-      "insufficient_evidence",
-      "no_genuine_entry_signal",
-      "entry_component_freeze_pass"
-    ],
-    "calibration_mapping": {
-      "missing_or_unreproducible_head_or_artifact": "invalid_evidence",
-      "below_any_frozen_minimum_or_bound_overlaps_threshold": "insufficient_evidence",
-      "sufficient_interval_wholly_fails_threshold": "no_genuine_entry_signal",
-      "all_required_bounds_pass": "continue"
-    }
-  },
-  "source_transfer_graph_topology": {
-    "graph_order": [
-      "FT2-91-PROTECTED-HOLDOUT pass",
-      "FT2-92-IBKR-DECISION-SHADOW executes candidate-specific historical/IBKR tensor-and-action transfer measurement",
-      "FT2-92 pass -> FT2-93-NO-ORDER-LIVE-SHADOW",
-      "FT2-92 fail -> STOP-CANDIDATE-REJECTED",
-      "FT2-92 insufficient_evidence -> STOP-OWNER-DECISION"
-    ],
-    "entry_component_acceptance_transfer_state": "transfer_not_yet_run is allowed and is not a component-acceptance failure",
-    "FT2_92_entry_prerequisite": "FT2-91 pass and frozen candidate bundle; a preexisting transfer pass is not required",
-    "FT2_92_output_vocabulary": [
-      "pass",
-      "fail",
-      "insufficient_evidence"
-    ],
-    "FT2_93_prerequisite": "FT2-92 transfer pass",
-    "paper_or_order_authorization": false
-  },
-  "highest_allowed_component_claim": "The entry component earned a component freeze for lifecycle work; this is not selection eligibility and makes no incremental-edge claim."
+    "relationship": "ENTRY_COMPONENT_ACCEPTANCE implements the owner's component-freeze decision and authorizes lifecycle work only. PROMOTABLE_COMBINED_SYSTEM implements the signed D1 V2 incremental-dollar law at FT2-80. The component layer cannot satisfy, replace, weaken, or pre-spend alpha from the promotable layer."
+  }
 }

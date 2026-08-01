@@ -12,8 +12,8 @@ substantive was resolved silently.
 
 Machine-readable companion (same schema family as Graph V1):
 `v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json`
-(SHA-256 `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9`;
-amended 2026-07-30 — see amendment A4 in the Deliverable-hashes section).
+(SHA-256 `9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08`;
+amended 2026-07-30 — see amendments A4–A5 in the Deliverable-hashes section).
 
 Source authority chain and precedence (highest first):
 
@@ -420,6 +420,24 @@ validation, confirmation, holdout, or live results.
 must set them jointly against a census-derived design trade-rate band — a
 calibration target, not a gate — so independently-paranoid settings cannot
 silently starve the trader into `insufficient_evidence`.
+
+**Entry-gate convexity amendment (A6, 2026-07-31).** The positive-after-fee
+**gate** uses a calibrated conservative lower confidence bound on the
+conditional **mean** MFE and profit area, in both fee-adjusted dollars and
+fee-adjusted return, averaged equally over every causally available registered
+horizon. All four averages must be strictly greater than zero. The lower
+confidence correction is estimated from equally weighted disjoint-calibration
+session means of `realized - predicted_mean`; an individual-outcome residual
+quantile or q10 lower prediction bound is forbidden because it recreates the
+structurally unsatisfiable pessimistic-outcome gate. The existing calibrated
+q10 favorable percentiles remain the primary and deterministic secondary
+**ranking** statistics among gate-passers. All registered horizons, including
+h3 and h5, remain in the gate: their fee-adjusted expected upside is positive,
+and §4.1 retains them for the owner-emphasized 3–8 minute resolution. The
+strict-zero threshold clears the already-applied fee; no additional percentage
+threshold is introduced. RLAC targets, labels, folds, fees, simulator, D48,
+D49, lifecycle/exit design, guardrail screen, downstream uncertainty/regret/
+action-conditioned thresholds, and graph topology are unchanged.
 
 ### 4.6 Uncertainty-aware abstention and the G8 v2 gate
 
@@ -1008,6 +1026,126 @@ Post-signature amendments:
     v2-to-v3-to-v4 D48 transition accounting, and both governed-row and
     intent-conditional fill-recheck rejection denominators. It authorizes no
     new session, model fit, feature selection, or threshold tuning.
+- **Owner amendment A5 (2026-07-30) — FT2-21 design approval and D54–D60
+  adoption.** Owner Owen Heidenreich signed
+  `v4/docs/protocol101/training/execution/FT2_21_APPROVAL_BUNDLE_DRAFT_2026_07_30.md`
+  on July 30, 2026 (exact SHA-256
+  `b27145b81b1e667b4071e4bb69d429cad768452c3cd5b3f071d691f93a1b8bce`).
+  The signed bundle approves the Protocol101 Full Trader Graph V2 design,
+  adopts the following decisions without reopening or altering the frozen
+  FT2-08, FT2-10, or FT2-11 contract content, and authorizes preparation of
+  the Walking-Skeleton Stage-0 specification only:
+  - **D54 — G-ENTRY-FEASIBILITY.** Before any neural/GPU spend, a
+    simple-model entry candidate (heuristic or gradient-boosted tree from the
+    governed model-family ladder) must run the governed five-fold
+    one-account serial replay with full costs. Its multiplicity-adjusted 95%
+    confidence interval must not show it worse than P5. Passing unlocks a
+    later neural-campaign authorization gate; failure routes to
+    `no_genuine_entry_signal` and stops that spend.
+  - **D55 — 1-second pilot resolved.** The owner adopts the completed pilot
+    evidence: forward-fill was benign at 0.067%; the minute fill assumption
+    was unbiased (mean -0.03 index points and approximately 50/50 optimistic);
+    and exit/floor behavior was not validatable from minute paths alone (74%
+    pooled hidden intra-minute dip and $34–$141 per-contract p95 floor-trigger
+    gaps). Minute data remains the broad-history substrate; sub-minute data is
+    the exit-label, validation, and calibration instrument.
+  - **D56 — Tier-1 admission candidates.** Calendar/event flags (including
+    FOMC, CPI, OPEX, and half-days) and prior-day levels (prior close,
+    prior high/low, and overnight gap) may enter only through the existing
+    admission and parity ladder. Term-structure and VIX candidates remain
+    deferred.
+  - **D57 — 2022–2024 minute backfill deferred.** No purchase is authorized.
+    The backfill remains deferred pending later owner review; this amendment
+    authorizes neither download nor spend.
+  - **D58 — lifecycle labels require sub-minute calibration.** Future
+    lifecycle exit/floor labels must use sub-minute data. Minute-only paths
+    may not support a claim of intra-minute floor protection. A
+    1-second-corrected early-drawdown entry-ranking comparison is required as
+    a report-only check.
+  - **D59 — staged canonical 1-second representation (A7).** Canonical
+    sub-minute model input remains 1-second, but acquisition and evidentiary
+    use are staged by corpus tier:
+    - **Tier S — skeleton / prototype / probe.** Official vendor `cbbo-1s` is
+      accepted for cross-vendor 1-second parity probes, quarantined Walking-
+      Skeleton/prototype iteration, and as the 1-second input representation
+      for a separately governed 1-second exit-decision cadence. Every Tier-S
+      corpus carries exactly one purpose tag from `skeleton`, `prototype`, or
+      `probe`; its floor/stop labels are explicitly
+      `1-second-approximate`, because the last CBBO retained for an instrument-
+      second can miss a consolidated-bid cross and recovery inside that second.
+      Tier-S evidence may inform parity, iteration, and feasibility, but may
+      not support a promotion-grade loss-control claim or feed a promotion,
+      paper-readiness, paper, or real-money floor/stop-label gate.
+    - **Tier T — trusted / promotion.** The trusted floor-crossing/stop-loss
+      label corpus required before any promotion, paper-readiness, paper, or
+      real-money path must be derived from raw `cmbp-1`, retain the raw event
+      stream, and be downsampler-certified. Floor/stop crossing and executable-
+      state labels inspect the raw consolidated top-of-book event path; the
+      derived 1-second representation, not raw ticks, is the model input. This
+      distinction is mandatory: downsampling first and labeling only the last
+      state in each second would recreate Tier S's missed-cross limitation.
+    - **Original Tier-T guarantee preserved verbatim from A5:** “Canonical
+      sub-minute model input and labels are 1-second. Any later historical
+      acquisition uses raw `cmbp-1`, retains the raw ticks, and derives
+      1-second consolidated BBO using the vendor last-BBO-per-interval rule.
+      The in-house downsampler must be certified against the owned 30-session
+      official `cbbo-1s` pilot before derived 1-second data may be trusted. Raw
+      ticks are not model inputs.” Under A7, “any later historical acquisition”
+      in this preserved guarantee is scoped to Tier T; Tier S is the explicit
+      staged exception above.
+    - **D58 interaction.** D58's trusted intra-minute floor-protection
+      calibration is Tier T. A Tier-S floor/stop calibration is provisional
+      and report-only.
+    - **Combined-evaluation window.** A Tier-S combined minute-entry plus
+      1-second-exit replay uses only the intersection where both resolutions
+      exist, no earlier than 2025-02-20. The intersection is selected before
+      training or evaluation.
+    - **Scoped acquisition sanction.** `cbbo-1s` parity/skeleton acquisitions
+      are permitted only after a free per-acquisition cost estimate, an
+      explicit hard cap, an explicit owner green-light, and quarantined output.
+      A7 itself executes no download. It authorizes no `cmbp-1` purchase, and
+      D57 remains deferred.
+    - **Cadence boundary.** A7 accepts the Tier-S representation as technically
+      eligible for a separately governed 1-second exit-decision design; it does
+      not by itself activate training, replace the current completed-minute
+      FT2-08 tensor contract, or change any runtime. Those changes remain for a
+      later lifecycle/tensor authorization.
+  - **D60 — Replay & Visualize.** Every accepted candidate's governed
+    validation replay must emit an owner-facing equity curve, trades plotted
+    on the SPX price graph, and the four-bucket Pickles outcome distribution.
+    This is a formal evidence step, not a report-optional convenience.
+  - **D48 disposition retained.** The first run keeps the 5% per-trade premium
+    cap. Widening toward approximately 10% remains only the leading hypothesis
+    to be evaluated from realized trained-model band behavior at D54; no
+    premium band is hard-coded.
+  - **FT2-21 graph state.** The
+    `FT2-21-OWNER-DESIGN-APPROVAL` node is recorded as `approved` through
+    metadata pinned to the signed bundle. The node IDs and all 104 edges are
+    unchanged. This is not a synthetic controller transition and does not
+    rewrite the graph's immutable initial-state history.
+  - **Stop line.** This amendment authorizes no model training or fitting,
+    tensor build, data download or purchase, broker/API contact, paid compute,
+    protected holdout/fresh-confirmation/sealed-evidence access, paper order,
+    runtime change, or Walking-Skeleton Stage 1 start. Recorder-on and guarded
+    IBKR paper authority remain separate owner decisions before Walking-
+    Skeleton Stages 4–5.
+
+  The highest allowed claim for A5 is: “FT2-21 approval is formalized into the
+  binding authority and graph state; Walking-Skeleton Stage-0 spec is ready for
+  review.”
+- **Owner-authorized amendment A7 (2026-07-31) — staged D59 sub-minute
+  representation.** The owner authorizes the Tier-S/Tier-T data-use split in
+  D59. Official `cbbo-1s` is accepted for quarantined parity, skeleton, and
+  prototype work with `1-second-approximate` floor/stop labels. A trusted
+  promotion/paper/real-money floor/stop-label corpus remains raw-`cmbp-1`-
+  derived, raw-event-retaining, and downsampler-certified; trusted crossing
+  labels inspect the raw event path. Tier-S combined evaluation begins no
+  earlier than the 2025-02-20 resolution-overlap boundary. A7 sanctions only
+  explicitly owner-green-lit, cost-estimated, hard-capped `cbbo-1s`
+  acquisitions; it makes no purchase, authorizes no `cmbp-1` purchase, leaves
+  D57 deferred, and changes no graph, training, broker, recorder, runtime, or
+  default state. A7 also requires a machine-readable corpus-tier registry and
+  the fail-closed checker rule `sub_minute_corpus_tier_tag_required`.
 
 Every owner-gate packet in Graph V2 must open with a one-page plain-English memo:
 the question, the options, the evidence in trader terms, the recommendation, and
@@ -1099,8 +1237,8 @@ present.
 
 **Deliverable hashes.**
 
-- Graph V2 JSON: SHA-256 `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9`
-  (amended 2026-07-30 — see amendment A4 below).
+- Graph V2 JSON: SHA-256 `9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08`
+  (amended 2026-07-30 — see amendments A4–A5 below).
 - This narrative authority: SHA-256 recorded in the FT2-01 completion note
   (a file cannot contain its own final hash); recompute with
   `shasum -a 256 <this file>`.
@@ -1113,7 +1251,8 @@ finding `RERUN002-S2-PHASE-F-OUTCOMES`). This is a topology amendment in the
 same schema family; it invents no new science and changes no contract text.
 The Graph V2 JSON SHA-256 therefore moved from
 `b06a26be59307c130da84f2dc5b6f3224c272e6c4093e83abd5bc0b280ca6d09` (pre-round)
-to `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9` (current),
+to `35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9`
+(A4-sealed),
 and both deliverable-hash references above were corrected to match. This
 amendment was recorded 2026-07-30 during the owner-authorized authority↔graph
 hash-drift repair; before it, this authority still recorded the pre-round graph
@@ -1121,5 +1260,46 @@ hash while the live graph carried the new edge. The consistency checker was
 extended in the same repair to fail if the authority's recorded graph hash ever
 again diverges from the live Graph V2 JSON.
 
+**Owner amendment A5 (2026-07-30): FT2-21 metadata re-seal.** Recording the
+owner-signed FT2-21 approval added approval metadata to the existing
+`FT2-21-OWNER-DESIGN-APPROVAL` node and graph provenance, moving the Graph V2
+JSON SHA-256 from
+`35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9`
+(A4-sealed) to
+`9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08`.
+The topology is unchanged: the canonical node-ID-set SHA-256 remains
+`9f3cadd978c0bdb8b638ec26c3e70b85b810c9c566dfcc8e126748b1cc344dee`
+and the canonical 104-edge SHA-256 remains
+`4504e177b78f8da46232bba136e8e1725e6cf03f82da05656e40d65323949a76`.
+
+**Owner-authorized amendment A6 (2026-07-31): FT2-10 entry-gate convexity
+repair.** The Option-D walking-skeleton dry-run proved that realized
+fee-adjusted MFE-return q10 is negative and profit-area-return q10 is zero at
+every registered horizon, so the former strict-positive four-axis q10 gate
+could not admit a contract regardless of model quality. Section 4.5 now gates
+on a session-cluster-calibrated lower confidence bound for conditional mean
+upside while preserving calibrated q10 ranking and every unrelated contract.
+The Graph V2 JSON is byte-unchanged at SHA-256
+`9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08`;
+the canonical 47-node and 104-edge identity hashes are unchanged. The governed
+review and empirical falsification evidence are recorded under
+`v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/`.
+
+**Owner-authorized amendment A7 (2026-07-31): D59 staged sub-minute
+representation.** D59 now separates Tier S (`cbbo-1s`, purpose-tagged
+`skeleton|prototype|probe`, `1-second-approximate` floor/stop labels,
+non-trusted uses only) from Tier T (raw-`cmbp-1`-derived, raw event stream
+retained, downsampler-certified, raw-event floor/stop label construction,
+required for promotion/paper-readiness/paper/real-money). The original A5 D59
+Tier-T guarantee is preserved verbatim in the amended D59 block. Tier-S
+combined evaluation is restricted to the minute/1-second overlap beginning
+2025-02-20. Any Tier-S acquisition remains separately owner-green-lit,
+cost-estimated, hard-capped, and quarantined; no `cmbp-1` purchase is
+authorized and D57 remains deferred. The Graph V2 JSON is byte-unchanged at
+SHA-256 `9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08`.
+The governed review, machine policy/registry, checker output, and implementation
+receipt are recorded under
+`v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/`.
+
 **Validation.** Graph V2 validator: `valid: true`, 0 errors (§11);
-47 nodes / 104 edges after amendment A4.
+47 nodes / 104 edges after amendment A5.

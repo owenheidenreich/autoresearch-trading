@@ -1,16 +1,63 @@
 {
-  "schema_version": "Protocol101FT210CalibrationSpecV4",
-  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
-  "status": "scoped_final_round_repaired",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
-  "intent_fill_recheck_law": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
-    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
-  },
-  "realized_label_audit_composer": {
-    "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
-    "sha256": "d833297dbaf2a547d8246cdf3cf404dea0d8ff4234026ceac37797e462a8422f",
-    "execution_order": "construct the complete WAIT and per-contract regret target tables exactly once before fitting any model head; freeze their identity and provenance manifests; runtime composer output is never read"
+  "action_conditioned_gate": {
+    "cannot_skip": true,
+    "failed_gate": "entry_component_not_frozen",
+    "ft2_11_requirement": "FT2-11 repair must include every threshold, minimum, and artifact above in the all-required entry-component checklist",
+    "head_contract": "forecast_heads.json action_conditioned_outputs",
+    "insufficient_result": "insufficient_calibration_evidence",
+    "minimum_evidence": {
+      "distinct_sessions": 20,
+      "flat_decisions": 100,
+      "realized_enter_outcomes": 50,
+      "realized_wait_outcomes": 50,
+      "rlac_contract_targets": 50
+    },
+    "missing_head_or_artifact": "invalid_evidence",
+    "name": "Protocol101EntryActionConditionedCalibrationGateV3",
+    "runtime_before_independent_acceptance_and_owner_signature": "WAIT only",
+    "runtime_selected_subset_diagnostic": {
+      "claim": "report-only conditional diagnostic; no conditional-coverage guarantee is asserted",
+      "collapse": "route owner_decision_required through the existing tripwire vocabulary; do not silently accept, recalibrate, or relabel",
+      "may_refit_recalibrate_relabel_or_select": false,
+      "quantity": "empirical q90-regret upper-bound coverage on the runtime-composer-selected exact-contract subset, with distinct-session, minute, and contract denominators",
+      "timing": "post-hoc after the frozen runtime composer is run on out-of-fold predictions"
+    },
+    "selected_contract_regret": {
+      "action_use": "The conformalized q90 normalized-regret upper bound is a hard composer action constraint: finite and <=0.10 is required to ENTER; missing, nonfinite, or >0.10 emits WAIT.",
+      "denominator": "all label-complete intent-eligible contracts on every included minute in the disjoint calibration sessions",
+      "excluded_rows": "label-incomplete rows and zero-eligible minutes only; runtime model or composer selections may exclude zero rows",
+      "prediction": "same-final-model expected regret and conformalized 90 percent upper bound from forecast_heads.json",
+      "realized_regret": "the pre-model RLAC per-contract target r(t,c)=U_label(t,c_star_regret)-U_label(t,c) in [0,1] on every label-complete intent-eligible contract of every included minute, including RLAC WAIT minutes",
+      "report_only": false,
+      "thresholds": {
+        "absolute_mean_expected_regret_calibration_error_max": 0.1,
+        "composer_q90_normalized_regret_upper_bound_max": 0.1,
+        "empirical_upper_bound_coverage_max": 0.95,
+        "empirical_upper_bound_coverage_min": 0.85,
+        "nominal_upper_bound_coverage": 0.9
+      }
+    },
+    "status": "mandatory_non_skippable_ft2_11_pass_checklist_pending",
+    "wait_reliability": {
+      "binning": "10 equal-frequency bins ordered by calibrated p_wait; ties remain together; merge the smallest adjacent bins left-to-right until every bin has at least 10 observations",
+      "denominator": "all label-auditable governed flat minutes with at least one time-t intent-eligible contract in the disjoint calibration sessions",
+      "excluded_rows": "label-incomplete governed flat minutes and zero-intent-eligible governed flat minutes only; report both excluded minute counts",
+      "outcome": "the exact pre-model RLAC target y_wait(t)=1 if WAIT_justified(t) else 0 over the RLAC WAIT population; target construction never substitutes a scalar U_label threshold and never invokes or conditions on runtime composer output",
+      "prediction": "same-final-model disjoint-calibrated p_wait",
+      "target_authority": {
+        "formula": "y_wait(t)=1 if WAIT_justified(t) else 0",
+        "json_pointer": "/targets/WAIT_head",
+        "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+        "scalar_U_label_threshold_allowed": false,
+        "sha256": "31a7a7d6c7da34852da499688432315f875d59f321c3036483bc25d9cde40a1b",
+        "zero_intent_eligible_minutes": "excluded_and_counted"
+      },
+      "thresholds": {
+        "brier_skill_vs_constant_rate_min": 0.0,
+        "expected_calibration_error_max": 0.1,
+        "maximum_bin_gap_max": 0.2
+      }
+    }
   },
   "action_head_one_pass_order": [
     "construct anchor-specific RLAC targets independently inside each inner-train and disjoint inner-calibration role",
@@ -19,38 +66,62 @@
     "freeze the heads, calibrators, target manifests, and hashes",
     "run the runtime composer only after that freeze"
   ],
-  "post_composer_recalibration_or_relabeling": "forbidden; any implementation or provenance trace that conditions targets or calibration membership on composer output is invalid_evidence",
-  "outer_firewall": {
-    "fit_or_calibrate_on_outer_validation": false,
-    "select_thresholds_on_outer_validation": false,
-    "mutate_after_outer_validation": false,
-    "confirmation_access": false,
-    "protected_holdout_access": false
-  },
   "chronological_nested_search": {
-    "outer_training_role_only": true,
-    "partition": "split ordered outer-training sessions into five contiguous blocks with sizes differing by at most one; assign any remainder to earlier blocks",
-    "prediction_blocks": "for block j in {2,3,4,5}, fit model, transforms, nested CDFs, and guardrail references only on blocks before j after removing the chronologically last preceding session as a one-session embargo; score block j exactly once",
     "first_block": "fit warmup only; it produces no scored prediction",
-    "no_transduction": "a scored block, chronological future block, outer validation, census-only row outside the fit sessions, live row, and protected row may not enter its model, transform, CDF, threshold, or calibrator",
     "identity_rule": "each prediction carries outer_fold, inner_block, session, decision_time, exact source-neutral contract identity, model hash, feature hash, label hash, CDF hash, and action-mask hash",
+    "insufficient_action": "calibration_insufficient_evidence",
     "minimum_scored_evidence": {
       "distinct_sessions": 20,
       "distinct_universal_grid_minutes": 1000,
       "valid_contract_rows": 10000
     },
-    "insufficient_action": "calibration_insufficient_evidence"
+    "no_transduction": "a scored block, chronological future block, outer validation, census-only row outside the fit sessions, live row, and protected row may not enter its model, transform, CDF, threshold, or calibrator",
+    "outer_training_role_only": true,
+    "partition": "split ordered outer-training sessions into five contiguous blocks with sizes differing by at most one; assign any remainder to earlier blocks",
+    "prediction_blocks": "for block j in {2,3,4,5}, fit model, transforms, nested CDFs, and guardrail references only on blocks before j after removing the chronologically last preceding session as a one-session embargo; score block j exactly once"
+  },
+  "distribution_calibration": {
+    "binary": "isotonic regression fit on same-final-model disjoint calibration predictions with increasing mapping, deterministic pooled-adjacent-violators ties, and clipped [0,1] output",
+    "continuous": {
+      "calibrated_pair": "[predicted_lower-qhat,predicted_upper+qhat]",
+      "central_pairs": [
+        {
+          "coverage": 0.8,
+          "lower": 0.1,
+          "upper": 0.9
+        },
+        {
+          "coverage": 0.5,
+          "lower": 0.25,
+          "upper": 0.75
+        }
+      ],
+      "composer_use": "higher-good conservative q10 uses calibrated lower endpoint; lower-good conservative q90 uses calibrated upper endpoint",
+      "finite_sample_order": "k=min(n,ceil((n+1)*coverage)); qhat is the kth sorted nonconformity score using one-based indexing",
+      "fit_source": "predictions from the frozen final model on only its disjoint calibration sessions",
+      "method": "same-final-model disjoint split conformalized quantile regression",
+      "nonconformity": "max(predicted_lower-y,y-predicted_upper)",
+      "q50": "raw same-model q50 with calibration error reported; it does not define a conservative bound"
+    },
+    "count": "isotonic calibration of cumulative probabilities on the disjoint calibration sessions",
+    "discrete_survival": "isotonic cumulative-incidence calibration separately at every registered causally available horizon on the disjoint calibration sessions",
+    "forbidden": [
+      "reuse of residuals from a different earlier-block model for the final model",
+      "post-calibration refit",
+      "outer-validation calibration",
+      "label-validity-driven runtime behavior"
+    ],
+    "phase_specific_rule": {
+      "fallback": "globally pooled disjoint-calibration mapping of the same head and horizon",
+      "fallback_receipt_required": true,
+      "global_insufficient": "calibration_insufficient_evidence",
+      "required_distinct_sessions": 8,
+      "required_valid_rows": 2000
+    }
   },
   "final_outer_fit_and_disjoint_calibration": {
-    "ordered_sessions": "sort the outer-training role by session date",
     "calibration_session_count": "max(20,ceil(0.20*N_outer_training_sessions))",
     "calibration_sessions": "the chronologically last calibration_session_count sessions",
-    "embargo": "remove the single session immediately preceding the calibration sessions from every model, transform, CDF, threshold, calibration, and score fit",
-    "final_model_fit_sessions": "all earlier outer-training sessions before the embargo",
-    "minimum_final_model_fit_sessions": 20,
-    "same_model_rule": "fit the final model once on final_model_fit_sessions, predict disjoint calibration_sessions once, fit every final calibrator from those predictions, and never refit or update the model afterward",
-    "composer_choices": "architecture, loss weights, alpha, k, CDF algorithm, and every thresholding rule freeze from chronological nested search before the disjoint calibration labels are inspected",
-    "reference_distributions": "nested empirical CDFs and guardrail reference distributions use final_model_fit_sessions only",
     "calibration_uses": [
       "continuous path forecast intervals",
       "binary probabilities",
@@ -60,51 +131,36 @@
       "WAIT probability",
       "selected-contract regret mean and upper bound"
     ],
+    "composer_choices": "architecture, loss weights, alpha, k, CDF algorithm, and every thresholding rule freeze from chronological nested search before the disjoint calibration labels are inspected",
+    "embargo": "remove the single session immediately preceding the calibration sessions from every model, transform, CDF, threshold, calibration, and score fit",
+    "final_model_fit_sessions": "all earlier outer-training sessions before the embargo",
+    "insufficient_action": "final_disjoint_calibration_insufficient",
+    "minimum_final_model_fit_sessions": 20,
+    "ordered_sessions": "sort the outer-training role by session date",
     "outer_validation": "predicted once after all artifacts hash-freeze; it never alters them",
-    "insufficient_action": "final_disjoint_calibration_insufficient"
+    "reference_distributions": "nested empirical CDFs and guardrail reference distributions use final_model_fit_sessions only",
+    "same_model_rule": "fit the final model once on final_model_fit_sessions, predict disjoint calibration_sessions once, fit every final calibrator from those predictions, and never refit or update the model afterward"
   },
-  "distribution_calibration": {
-    "continuous": {
-      "method": "same-final-model disjoint split conformalized quantile regression",
-      "central_pairs": [
-        {
-          "lower": 0.1,
-          "upper": 0.9,
-          "coverage": 0.8
-        },
-        {
-          "lower": 0.25,
-          "upper": 0.75,
-          "coverage": 0.5
-        }
-      ],
-      "nonconformity": "max(predicted_lower-y,y-predicted_upper)",
-      "finite_sample_order": "k=min(n,ceil((n+1)*coverage)); qhat is the kth sorted nonconformity score using one-based indexing",
-      "calibrated_pair": "[predicted_lower-qhat,predicted_upper+qhat]",
-      "q50": "raw same-model q50 with calibration error reported; it does not define a conservative bound",
-      "composer_use": "higher-good conservative q10 uses calibrated lower endpoint; lower-good conservative q90 uses calibrated upper endpoint",
-      "fit_source": "predictions from the frozen final model on only its disjoint calibration sessions"
-    },
-    "binary": "isotonic regression fit on same-final-model disjoint calibration predictions with increasing mapping, deterministic pooled-adjacent-violators ties, and clipped [0,1] output",
-    "discrete_survival": "isotonic cumulative-incidence calibration separately at every registered causally available horizon on the disjoint calibration sessions",
-    "count": "isotonic calibration of cumulative probabilities on the disjoint calibration sessions",
-    "phase_specific_rule": {
-      "required_distinct_sessions": 8,
-      "required_valid_rows": 2000,
-      "fallback": "globally pooled disjoint-calibration mapping of the same head and horizon",
-      "fallback_receipt_required": true,
-      "global_insufficient": "calibration_insufficient_evidence"
-    },
-    "forbidden": [
-      "reuse of residuals from a different earlier-block model for the final model",
-      "post-calibration refit",
-      "outer-validation calibration",
-      "label-validity-driven runtime behavior"
-    ]
+  "entry_gate_expected_upside_calibration": {
+    "bootstrap_replicates": 2000,
+    "calibrated_lower_bound": "seed-ensemble predicted conditional mean plus the one-sided lower confidence correction",
+    "confidence_level": 0.9,
+    "correction": "the empirical 0.10 quantile of the deterministic session-cluster bootstrap distribution of the equally weighted mean residual; add this signed correction to every same-head prediction",
+    "finite_horizon_filter": "the unchanged full-window filter applies before residual construction",
+    "horizon_set": "all causally available registered horizons including h3 and h5",
+    "individual_outcome_quantile_forbidden": true,
+    "minimum_distinct_calibration_sessions": 20,
+    "no_post_calibration_refit": true,
+    "outcome_conformal_alias_forbidden": "an individual-row residual quantile, q10 outcome bound, or conformal lower prediction interval may not be called a confidence bound on the conditional mean",
+    "prediction_source": "the frozen final conditional-mean gate-support heads in forecast_heads.json predicted once on the disjoint calibration sessions",
+    "residual": "realized unchanged fee-adjusted target minus seed-ensemble predicted conditional mean",
+    "scope": "one correction per metric, horizon, and unit; global across calibration phases for this amendment",
+    "seed_rule": "derive a deterministic uint32 bootstrap seed from SHA-256 of product_contract_hash plus the canonical head name; consumer-local seed overrides are forbidden",
+    "session_cluster": "average finite residual rows within each calibration session first, then weight every distinct session equally",
+    "target_membership": "all label-complete rows for the head; runtime composer output and model-selected membership are forbidden",
+    "terminology": "session-clustered lower confidence correction for expected/mean upside; not an outcome-conformal guarantee"
   },
   "guardrail_thresholds": {
-    "method": "objective_spec.json nested session-balanced empirical distribution with higher-good q=alpha and lower-good q=1-alpha",
-    "implementation_requirement": "FT2-30 must prove canonical knot, tie, interpolation, weighting, premium-band, phase, and fallback behavior on synthetic fixtures",
     "anchor_grid": [
       0.0,
       0.1,
@@ -112,10 +168,6 @@
       0.25,
       0.3
     ],
-    "zero_arm": "alpha=0.0 skips quality thresholds and remains a mandatory control arm",
-    "phase_and_premium_band_specific": true,
-    "fallback": "same premium band pooled across model-fit phases; no cross-premium-band fallback",
-    "thresholds_frozen_before_disjoint_calibration_and_outer_access": true,
     "emitted_artifacts_per_outer_fold": [
       "nested_cdf_manifest.json",
       "nested_cdf_manifest.sha256",
@@ -124,173 +176,13 @@
       "final_model_fit_identity_manifest.json",
       "final_calibration_identity_manifest.json",
       "calibration_identity_manifests.sha256"
-    ]
-  },
-  "joint_conservatism": {
-    "parameters": {
-      "guardrail_alpha": [
-        0.0,
-        0.1,
-        0.2,
-        0.25,
-        0.3
-      ],
-      "uncertainty_multiplier_k": [
-        1.0,
-        1.25,
-        1.5,
-        2.0
-      ],
-      "positive_upside_floor": "strictly_zero_after_the_frozen_fee"
-    },
-    "selection_order": [
-      "retain and evaluate every alpha=0.0 no-screen arm",
-      "discard any selectable setting that fails the FT2-11 tail guard",
-      "maximize the diagnostic inner objective in objective_spec.json",
-      "prefer larger k",
-      "prefer smaller nonzero alpha; alpha=0.0 remains a control and is selectable only if it wins the same frozen rule",
-      "canonical numeric order"
     ],
-    "census_v4_trade_rate_provenance": {
-      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
-      "sha256": "fb47b66ec08b74edc96bcd28bdcaac94cb41ef3bc36dee432cdff316d8897209",
-      "session_count": 45,
-      "embargo_intersection_count": 0,
-      "overall_mean_trades_per_session_by_anchor": {
-        "0.00": 2.6,
-        "0.10": 2.6,
-        "0.20": 2.6666666666666665,
-        "0.25": 2.6666666666666665,
-        "0.30": 2.6666666666666665
-      },
-      "role": "report-only multi-trade oracle diagnostic; it cannot discard, retain, rank, select, or fail a neutral-lifecycle component setting"
-    },
-    "design_trade_rate_band_mean_trades_per_session": {
-      "reference": 2.6,
-      "reference_source": "census-v4 alpha=0.0 no-screen overall row",
-      "lower": 0.65,
-      "upper": 5.2,
-      "formula": "[max(0.3,2.6/4),min(6.0,2*2.6)]",
-      "purpose": "descriptive comparison to the multi-trade oracle census only",
-      "hard_component_freeze_gate": false,
-      "selection_gate": false,
-      "calibration_gate": false,
-      "ranking_or_tie_break_input": false,
-      "per_day_cap": false,
-      "population_reconciliation": "FT2-05 v4 reports multi-trade oracle activity. FT2-10 component evaluation holds a successful entry to 15:55 and therefore permits at most one successful trade per session. The census band never governs the component population."
-    },
-    "no_setting_in_band": "report the diagnostic mismatch; continue under the frozen inner objective and all actual safety, quality, tail, regret, and evidence gates"
-  },
-  "uncertainty": {
-    "model_ensemble": "three independent seeds with median quantile aggregation",
-    "epistemic": "1.4826 times median absolute deviation of seed q50 values",
-    "cluster_definition": "composer_spec.json directional_substitute_cluster (same expiry/right, plus or minus 10 points)",
-    "gap_conformal": "same-final-model disjoint 0.90 finite-sample conformal quantile of selected-cluster-versus-best-outside-cluster gap error",
-    "source_transfer": "candidate-specific p95 absolute cluster-gap drift from source_transfer_gate",
-    "composer_margin": "k*(gap_conformal+source_transfer)",
-    "activation_without_source_evidence": "historical component research may remain source_transfer_unavailable; any live, decision-shadow, or paper activation fails closed"
-  },
-  "action_conditioned_gate": {
-    "name": "Protocol101EntryActionConditionedCalibrationGateV3",
-    "status": "mandatory_non_skippable_ft2_11_pass_checklist_pending",
-    "head_contract": "forecast_heads.json action_conditioned_outputs",
-    "wait_reliability": {
-      "prediction": "same-final-model disjoint-calibrated p_wait",
-      "outcome": "the pre-model RLAC target y_wait(t) over every label-complete governed flat minute; target construction never invokes or conditions on runtime composer output",
-      "denominator": "all label-complete governed flat minutes in the disjoint calibration sessions",
-      "excluded_rows": "label-incomplete governed flat minutes only",
-      "binning": "10 equal-frequency bins ordered by calibrated p_wait; ties remain together; merge the smallest adjacent bins left-to-right until every bin has at least 10 observations",
-      "thresholds": {
-        "expected_calibration_error_max": 0.1,
-        "maximum_bin_gap_max": 0.2,
-        "brier_skill_vs_constant_rate_min": 0.0
-      }
-    },
-    "selected_contract_regret": {
-      "realized_regret": "the pre-model RLAC per-contract target r(t,c)=U_label(t,c_star_regret)-U_label(t,c) in [0,1] on every label-complete intent-eligible contract of every included minute, including RLAC WAIT minutes",
-      "prediction": "same-final-model expected regret and conformalized 90 percent upper bound from forecast_heads.json",
-      "denominator": "all label-complete intent-eligible contracts on every included minute in the disjoint calibration sessions",
-      "excluded_rows": "label-incomplete rows and zero-eligible minutes only; runtime model or composer selections may exclude zero rows",
-      "thresholds": {
-        "absolute_mean_expected_regret_calibration_error_max": 0.1,
-        "nominal_upper_bound_coverage": 0.9,
-        "empirical_upper_bound_coverage_min": 0.85,
-        "empirical_upper_bound_coverage_max": 0.95,
-        "composer_q90_normalized_regret_upper_bound_max": 0.1
-      },
-      "action_use": "The conformalized q90 normalized-regret upper bound is a hard composer action constraint: finite and <=0.10 is required to ENTER; missing, nonfinite, or >0.10 emits WAIT.",
-      "report_only": false
-    },
-    "runtime_selected_subset_diagnostic": {
-      "timing": "post-hoc after the frozen runtime composer is run on out-of-fold predictions",
-      "quantity": "empirical q90-regret upper-bound coverage on the runtime-composer-selected exact-contract subset, with distinct-session, minute, and contract denominators",
-      "claim": "report-only conditional diagnostic; no conditional-coverage guarantee is asserted",
-      "may_refit_recalibrate_relabel_or_select": false,
-      "collapse": "route owner_decision_required through the existing tripwire vocabulary; do not silently accept, recalibrate, or relabel"
-    },
-    "minimum_evidence": {
-      "distinct_sessions": 20,
-      "flat_decisions": 100,
-      "realized_wait_outcomes": 50,
-      "realized_enter_outcomes": 50,
-      "rlac_contract_targets": 50
-    },
-    "insufficient_result": "insufficient_calibration_evidence",
-    "cannot_skip": true,
-    "missing_head_or_artifact": "invalid_evidence",
-    "failed_gate": "entry_component_not_frozen",
-    "runtime_before_independent_acceptance_and_owner_signature": "WAIT only",
-    "ft2_11_requirement": "FT2-11 repair must include every threshold, minimum, and artifact above in the all-required entry-component checklist"
-  },
-  "source_transfer_gate": {
-    "name": "Protocol101EntryHistoricalIBKRTransferV2",
-    "authority_boundary": "candidate-specific transfer measurement contract executed by graph node FT2-92; it is not an entry-component acceptance precondition and is not satisfied by two implementations consuming the same IBKR observation",
-    "population": {
-      "allowed": "only already-recorded paired sessions classified development by the sealed-day governance manifest",
-      "forbidden": [
-        "burned",
-        "validation",
-        "sealed",
-        "protected holdout",
-        "unassigned sessions",
-        "new recorder collection under this repair"
-      ],
-      "pair_key": "session_date_yyyymmdd, completed decision_time_ns, source_neutral_contract_id, expiry_yyyymmdd, strike_milli_points, right_code",
-      "minimum_distinct_sessions": 3,
-      "minimum_paired_flat_decisions": 500,
-      "strata": [
-        "market phase including opening warmup",
-        "ATM recenter event",
-        "missing or stale quote",
-        "reconnect/reset when present",
-        "each active extension channel",
-        "open-state outside-current-ladder row when present"
-      ],
-      "missing_required_natural_stratum": "insufficient_evidence; synthetic fixtures may prove machinery but cannot manufacture empirical source evidence",
-      "recorder_status": "deliberately stopped by owner decision; no pass condition assumes another paired day will appear"
-    },
-    "field_tolerances": {
-      "identity_slot_map_masks_actions_integer_cents_and_clock": "exact equality",
-      "fp32_model_fields": "abs(reference-runtime)<=1e-6+1e-5*abs(reference)",
-      "extension_inactive": "exact inactive mask and zero model contribution",
-      "complete_ladder_and_reset_actions": "exact WAIT agreement",
-      "candidate_action_agreement_min": 0.99
-    },
-    "score_gap_margin": {
-      "quantity": "absolute difference between historical and IBKR selected-cluster-versus-best-outside-cluster primary-score gaps on paired decisions",
-      "p95": "nearest-rank order statistic k=ceil(0.95*n), one-based, no interpolation",
-      "zero_allowed": "only when every paired gap is bit-identical",
-      "artifact": "candidate-specific source_transfer_gap_p95.json plus identity manifest and hashes"
-    },
-    "activation": "FT2-92 emits pass only when all exact fields, numeric tolerances, action agreement, minimum evidence, present strata, and p95 artifact pass; identity/tolerance/action failures emit fail; an otherwise valid run below frozen evidence or natural-stratum minima emits insufficient_evidence",
-    "emitted_outcome_vocabulary": [
-      "pass",
-      "fail",
-      "insufficient_evidence"
-    ],
-    "graph_order": "FT2-91 pass -> FT2-92 executes this measurement -> pass routes to FT2-93, fail routes to STOP-CANDIDATE-REJECTED, and insufficient_evidence routes to STOP-OWNER-DECISION",
-    "entry_component_freeze_state_before_FT2_92": "transfer_not_yet_run is permitted and is not an entry-component failure",
-    "insufficient_existing_data": "FT2-92 emits insufficient_evidence; FT2-93/live/paper activation remains blocked and no new collection is authorized here"
+    "fallback": "same premium band pooled across model-fit phases; no cross-premium-band fallback",
+    "implementation_requirement": "FT2-30 must prove canonical knot, tie, interpolation, weighting, premium-band, phase, and fallback behavior on synthetic fixtures",
+    "method": "objective_spec.json nested session-balanced empirical distribution with higher-good q=alpha and lower-good q=1-alpha",
+    "phase_and_premium_band_specific": true,
+    "thresholds_frozen_before_disjoint_calibration_and_outer_access": true,
+    "zero_arm": "alpha=0.0 skips quality thresholds and remains a mandatory control arm"
   },
   "hashing": {
     "algorithm": "sha256",
@@ -308,5 +200,140 @@
       "source-transfer population, tolerances, and margin when applicable",
       "all alpha=0.0 control-arm traces"
     ]
+  },
+  "intent_fill_recheck_law": {
+    "path": "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/intent_fill_recheck_law.json",
+    "sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+  },
+  "joint_conservatism": {
+    "census_v4_trade_rate_provenance": {
+      "embargo_intersection_count": 0,
+      "overall_mean_trades_per_session_by_anchor": {
+        "0.00": 2.6,
+        "0.10": 2.6,
+        "0.20": 2.6666666666666665,
+        "0.25": 2.6666666666666665,
+        "0.30": 2.6666666666666665
+      },
+      "path": "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/guardrail_trade_rates.csv",
+      "role": "report-only multi-trade oracle diagnostic; it cannot discard, retain, rank, select, or fail a neutral-lifecycle component setting",
+      "session_count": 45,
+      "sha256": "6fdd5e75e94e4eb97f60584efabb5263cd79d32648ebbd6418be0f5a1c2b3a3b"
+    },
+    "design_trade_rate_band_mean_trades_per_session": {
+      "calibration_gate": false,
+      "formula": "[max(0.3,2.6/4),min(6.0,2*2.6)]",
+      "hard_component_freeze_gate": false,
+      "lower": 0.65,
+      "per_day_cap": false,
+      "population_reconciliation": "FT2-05 v4 reports multi-trade oracle activity. FT2-10 component evaluation holds a successful entry to 15:55 and therefore permits at most one successful trade per session. The census band never governs the component population.",
+      "purpose": "descriptive comparison to the multi-trade oracle census only",
+      "ranking_or_tie_break_input": false,
+      "reference": 2.6,
+      "reference_source": "census-v4 alpha=0.0 no-screen overall row",
+      "selection_gate": false,
+      "upper": 5.2
+    },
+    "no_setting_in_band": "report the diagnostic mismatch; continue under the frozen inner objective and all actual safety, quality, tail, regret, and evidence gates",
+    "parameters": {
+      "guardrail_alpha": [
+        0.0,
+        0.1,
+        0.2,
+        0.25,
+        0.3
+      ],
+      "positive_upside_floor": "strictly_zero_after_the_frozen_fee",
+      "uncertainty_multiplier_k": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ]
+    },
+    "selection_order": [
+      "retain and evaluate every alpha=0.0 no-screen arm",
+      "discard any selectable setting that fails the FT2-11 tail guard",
+      "maximize the diagnostic inner objective in objective_spec.json",
+      "prefer larger k",
+      "prefer smaller nonzero alpha; alpha=0.0 remains a control and is selectable only if it wins the same frozen rule",
+      "canonical numeric order"
+    ]
+  },
+  "node_id": "FT2-10-ENTRY-SCIENCE-CONTRACT",
+  "outer_firewall": {
+    "confirmation_access": false,
+    "fit_or_calibrate_on_outer_validation": false,
+    "mutate_after_outer_validation": false,
+    "protected_holdout_access": false,
+    "select_thresholds_on_outer_validation": false
+  },
+  "post_composer_recalibration_or_relabeling": "forbidden; any implementation or provenance trace that conditions targets or calibration membership on composer output is invalid_evidence",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "realized_label_audit_composer": {
+    "execution_order": "construct the complete WAIT and per-contract regret target tables exactly once before fitting any model head; freeze their identity and provenance manifests; runtime composer output is never read",
+    "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+    "sha256": "31a7a7d6c7da34852da499688432315f875d59f321c3036483bc25d9cde40a1b"
+  },
+  "schema_version": "Protocol101FT210CalibrationSpecV5",
+  "source_transfer_gate": {
+    "activation": "FT2-92 emits pass only when all exact fields, numeric tolerances, action agreement, minimum evidence, present strata, and p95 artifact pass; identity/tolerance/action failures emit fail; an otherwise valid run below frozen evidence or natural-stratum minima emits insufficient_evidence",
+    "authority_boundary": "candidate-specific transfer measurement contract executed by graph node FT2-92; it is not an entry-component acceptance precondition and is not satisfied by two implementations consuming the same IBKR observation",
+    "emitted_outcome_vocabulary": [
+      "pass",
+      "fail",
+      "insufficient_evidence"
+    ],
+    "entry_component_freeze_state_before_FT2_92": "transfer_not_yet_run is permitted and is not an entry-component failure",
+    "field_tolerances": {
+      "candidate_action_agreement_min": 0.99,
+      "complete_ladder_and_reset_actions": "exact WAIT agreement",
+      "extension_inactive": "exact inactive mask and zero model contribution",
+      "fp32_model_fields": "abs(reference-runtime)<=1e-6+1e-5*abs(reference)",
+      "identity_slot_map_masks_actions_integer_cents_and_clock": "exact equality"
+    },
+    "graph_order": "FT2-91 pass -> FT2-92 executes this measurement -> pass routes to FT2-93, fail routes to STOP-CANDIDATE-REJECTED, and insufficient_evidence routes to STOP-OWNER-DECISION",
+    "insufficient_existing_data": "FT2-92 emits insufficient_evidence; FT2-93/live/paper activation remains blocked and no new collection is authorized here",
+    "name": "Protocol101EntryHistoricalIBKRTransferV2",
+    "population": {
+      "allowed": "only already-recorded paired sessions classified development by the sealed-day governance manifest",
+      "forbidden": [
+        "burned",
+        "validation",
+        "sealed",
+        "protected holdout",
+        "unassigned sessions",
+        "new recorder collection under this repair"
+      ],
+      "minimum_distinct_sessions": 3,
+      "minimum_paired_flat_decisions": 500,
+      "missing_required_natural_stratum": "insufficient_evidence; synthetic fixtures may prove machinery but cannot manufacture empirical source evidence",
+      "pair_key": "session_date_yyyymmdd, completed decision_time_ns, source_neutral_contract_id, expiry_yyyymmdd, strike_milli_points, right_code",
+      "recorder_status": "deliberately stopped by owner decision; no pass condition assumes another paired day will appear",
+      "strata": [
+        "market phase including opening warmup",
+        "ATM recenter event",
+        "missing or stale quote",
+        "reconnect/reset when present",
+        "each active extension channel",
+        "open-state outside-current-ladder row when present"
+      ]
+    },
+    "score_gap_margin": {
+      "artifact": "candidate-specific source_transfer_gap_p95.json plus identity manifest and hashes",
+      "p95": "nearest-rank order statistic k=ceil(0.95*n), one-based, no interpolation",
+      "quantity": "absolute difference between historical and IBKR selected-cluster-versus-best-outside-cluster primary-score gaps on paired decisions",
+      "zero_allowed": "only when every paired gap is bit-identical"
+    }
+  },
+  "status": "scoped_final_round_repaired",
+  "uncertainty": {
+    "activation_without_source_evidence": "historical component research may remain source_transfer_unavailable; any live, decision-shadow, or paper activation fails closed",
+    "cluster_definition": "composer_spec.json directional_substitute_cluster (same expiry/right, plus or minus 10 points)",
+    "composer_margin": "k*(gap_conformal+source_transfer)",
+    "epistemic": "1.4826 times median absolute deviation of seed q50 values",
+    "gap_conformal": "same-final-model disjoint 0.90 finite-sample conformal quantile of selected-cluster-versus-best-outside-cluster gap error",
+    "model_ensemble": "three independent seeds with median quantile aggregation",
+    "source_transfer": "candidate-specific p95 absolute cluster-gap drift from source_transfer_gate"
   }
 }

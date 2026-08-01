@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,12 @@ GRAPH_PATH = ROOT / (
     "v4/docs/protocol101/training/execution/"
     "PROTOCOL101_FULL_TRADER_GRAPH_V2.json"
 )
+A7_ROOT = (
+    PACKET_ROOT
+    / "protocol101_d59_staged_subminute_representation_amendment"
+)
+A7_POLICY = A7_ROOT / "sub_minute_tier_policy.json"
+A7_REGISTRY = A7_ROOT / "sub_minute_corpus_registry.json"
 LEGACY_CROSSWALK = (
     PACKET_ROOT
     / "protocol101_ft2_final_repair_attempt002"
@@ -38,7 +45,7 @@ POINTER_ALIASES = {
 }
 
 AUTHORITY_HASH = (
-    "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca"
+    "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc"
 )
 INTENT_LAW_HASH = (
     "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
@@ -50,12 +57,12 @@ SIMULATOR_HASH = (
     "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
 )
 CENSUS_RECEIPT_HASH = (
-    "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
+    "e327c5e90a29c4c68277b5ec046b518627a742cb66c6a015e7e649efd3284693"
 )
 PARENT_RECEIPTS = {
-    "FT2-08": "731cc6fb4c44bd0650d658e71fffbdac7c3e0f5d68701b2e05b8576b014b078c",
-    "FT2-10": "c04a591fd3034a2caba756e8f9dc1d7f5c24c397170894b0b6b0eca7a083fa6f",
-    "FT2-11": "bdb52c4f9178da1cab75ec4a80bd13c1db8c0074c1c398f380729d1df80c5ef9",
+    "FT2-08": "4a061275dc7fd58c4a8f7774aeb464462f4101795a583ab5150f8f224d7eb484",
+    "FT2-10": "91ca7032c3d11bb6fb59229e2c8ae083209d7b59085460c48adae4cc14de36e3",
+    "FT2-11": "4daebddf61df1d22896c67fa783bf2e0d983ee3df3ab61def71661103065b452",
 }
 PACKETS = {
     "FT2-08": FT208,
@@ -77,6 +84,166 @@ def load(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise AssertionError(f"expected object: {path}")
     return payload
+
+
+def validate_sub_minute_policy(
+    policy: dict[str, Any],
+    registry: dict[str, Any],
+    discovered_manifests: list[str],
+) -> tuple[bool, dict[str, Any]]:
+    """Validate A7 tier semantics, registry coverage, and trusted consumers."""
+    failures: list[str] = []
+    tier_s = policy.get("tier_s", {})
+    tier_t = policy.get("tier_t", {})
+    allowed_s_tags = set(tier_s.get("allowed_purpose_tags", []))
+    allowed_s_consumers = set(tier_s.get("allowed_consumers", []))
+    forbidden_s_consumers = set(tier_s.get("forbidden_consumers", []))
+    required_t_consumers = set(tier_t.get("required_consumers", []))
+    corpora = registry.get("corpora", [])
+    by_path: dict[str, dict[str, Any]] = {}
+
+    if policy.get("authority_sha256") != AUTHORITY_HASH:
+        failures.append("policy authority hash is stale")
+    if registry.get("authority_sha256") != AUTHORITY_HASH:
+        failures.append("registry authority hash is stale")
+    if policy.get("graph_sha256") != sha256(GRAPH_PATH):
+        failures.append("policy graph hash differs from live graph")
+    if registry.get("graph_sha256") != sha256(GRAPH_PATH):
+        failures.append("registry graph hash differs from live graph")
+    if allowed_s_tags != {"skeleton", "prototype", "probe"}:
+        failures.append("Tier-S purpose-tag vocabulary differs from A7")
+    if forbidden_s_consumers != {
+        "promotion",
+        "paper_readiness",
+        "paper",
+        "real_money",
+    }:
+        failures.append("Tier-S forbidden-consumer vocabulary differs from A7")
+    if required_t_consumers != forbidden_s_consumers:
+        failures.append("Tier-T required consumers do not cover every trusted path")
+    if tier_s.get("source_schema") != "cbbo-1s":
+        failures.append("Tier-S source schema is not cbbo-1s")
+    if tier_s.get("floor_stop_label_fidelity") != "1-second-approximate":
+        failures.append("Tier-S label fidelity is not explicitly approximate")
+    if tier_s.get("promotion_grade") is not False:
+        failures.append("Tier-S is not fail-closed from promotion")
+    if tier_t.get("source_schema") != "cmbp-1-derived":
+        failures.append("Tier-T source is not cmbp-1-derived")
+    if tier_t.get("floor_stop_label_fidelity") != "raw-event-trusted":
+        failures.append("Tier-T label fidelity does not require raw events")
+    if tier_t.get("raw_event_stream_retained") is not True:
+        failures.append("Tier-T does not retain raw event stream")
+    if tier_t.get(
+        "downsampler_certified_against_owned_30_session_cbbo_1s_pilot"
+    ) is not True:
+        failures.append("Tier-T downsampler certification is not mandatory")
+    if tier_t.get("raw_ticks_are_model_inputs") is not False:
+        failures.append("Tier-T permits raw tick model inputs")
+    if not str(tier_t.get("floor_stop_label_event_source", "")).startswith(
+        "raw cmbp-1 consolidated top-of-book event path"
+    ):
+        failures.append("Tier-T floor/stop labels do not inspect raw event path")
+    if policy.get("d57_minute_backfill_remains_deferred") is not True:
+        failures.append("D57 is no longer deferred")
+    sanction = policy.get("scoped_acquisition_sanction", {})
+    if not (
+        sanction.get("a7_executes_download") is False
+        and sanction.get("allowed_schema") == "cbbo-1s"
+        and sanction.get("cmbp_1_purchase_authorized") is False
+        and sanction.get("explicit_owner_green_light_per_acquisition") is True
+        and sanction.get("free_cost_estimate_required") is True
+        and sanction.get("hard_cost_cap_required") is True
+        and sanction.get("quarantined_output_required") is True
+    ):
+        failures.append("A7 acquisition sanction is broader than authorized")
+    cadence = policy.get("current_cadence_boundary", {})
+    if not (
+        cadence.get("a7_activates_one_second_runtime_or_training") is False
+        and cadence.get("current_ft2_08_completed_minute_contract_unchanged")
+        is True
+    ):
+        failures.append("A7 silently changes active cadence or runtime")
+
+    for corpus in corpora:
+        path = str(corpus.get("corpus_path", ""))
+        if not path or path in by_path:
+            failures.append(f"missing or duplicate corpus path: {path!r}")
+            continue
+        by_path[path] = corpus
+        if not (ROOT / path).exists():
+            failures.append(f"registered corpus path does not exist: {path}")
+        tier = corpus.get("sub_minute_corpus_tier")
+        consumers = set(corpus.get("allowed_consumers", []))
+        if tier in allowed_s_tags:
+            if corpus.get("source_schema") != tier_s.get("source_schema"):
+                failures.append(f"Tier-S corpus has wrong source: {path}")
+            if corpus.get("floor_stop_label_fidelity") != tier_s.get(
+                "floor_stop_label_fidelity"
+            ):
+                failures.append(f"Tier-S corpus lacks approximate label tag: {path}")
+            if corpus.get("promotion_grade") is not False:
+                failures.append(f"Tier-S corpus is marked promotion-grade: {path}")
+            if not consumers <= allowed_s_consumers:
+                failures.append(f"Tier-S corpus has non-Tier-S consumer: {path}")
+            if consumers & forbidden_s_consumers:
+                failures.append(f"Tier-S corpus reaches trusted consumer: {path}")
+        elif tier == tier_t.get("purpose_tag"):
+            if corpus.get("source_schema") != tier_t.get("source_schema"):
+                failures.append(f"Tier-T corpus is not cmbp-1-derived: {path}")
+            if corpus.get("floor_stop_label_fidelity") != tier_t.get(
+                "floor_stop_label_fidelity"
+            ):
+                failures.append(f"Tier-T corpus lacks raw-event fidelity: {path}")
+            if corpus.get("promotion_grade") is not True:
+                failures.append(f"Tier-T corpus is not promotion-grade: {path}")
+            for flag in (
+                "raw_event_stream_retained",
+                "raw_event_floor_stop_labels",
+                "downsampler_certified",
+            ):
+                if corpus.get(flag) is not True:
+                    failures.append(f"Tier-T corpus lacks {flag}: {path}")
+        else:
+            failures.append(f"invalid sub-minute tier tag for {path}: {tier!r}")
+
+    uncovered = [
+        manifest
+        for manifest in discovered_manifests
+        if not any(
+            manifest.startswith(f"{corpus_path}/")
+            for corpus_path in by_path
+        )
+    ]
+    if uncovered:
+        failures.extend(f"unregistered sub-minute manifest: {path}" for path in uncovered)
+
+    trusted_bindings = registry.get("trusted_consumer_bindings", [])
+    for binding in trusted_bindings:
+        consumer = binding.get("consumer")
+        corpus = by_path.get(str(binding.get("corpus_path", "")))
+        if consumer not in required_t_consumers:
+            failures.append(f"unknown trusted consumer binding: {consumer!r}")
+        if corpus is None or corpus.get("sub_minute_corpus_tier") != "trusted":
+            failures.append(f"trusted consumer lacks Tier-T corpus: {consumer!r}")
+
+    return not failures, {
+        "failures": failures,
+        "registered_corpus_count": len(corpora),
+        "registered_paths": sorted(by_path),
+        "discovered_sub_minute_manifest_count": len(discovered_manifests),
+        "trusted_consumer_binding_count": len(trusted_bindings),
+        "tier_s_allowed_tags": sorted(allowed_s_tags),
+        "tier_s_forbidden_consumers": sorted(forbidden_s_consumers),
+        "tier_t_required_consumers": sorted(required_t_consumers),
+    }
+
+
+def git_blob_sha256(commit: str, path: str) -> str:
+    blob = subprocess.check_output(
+        ["git", "show", f"{commit}:{path}"],
+        cwd=ROOT,
+    )
+    return hashlib.sha256(blob).hexdigest()
 
 
 def validate_target_provenance(provenance: dict[str, Any]) -> bool:
@@ -254,6 +421,96 @@ def main() -> int:
         len(recorded_graph_refs) >= 1
         and recorded_graph_refs == {live_graph_hash},
         {"recorded": sorted(recorded_graph_refs), "live": live_graph_hash},
+    )
+
+    # Guard C (A7, 2026-07-31): sub-minute corpora are explicitly tiered.
+    # Tier-S cbbo-1s may support quarantined parity/skeleton/prototype work but
+    # may never provide trusted floor/stop labels. A trusted consumer must bind
+    # to a registered Tier-T corpus with raw-event label construction and the
+    # original D59 downsampler guarantee. Pre-A7 immutable manifests receive
+    # their tag through the canonical sidecar registry; all later corpora must
+    # also embed and register it.
+    sub_minute_policy = load(A7_POLICY)
+    sub_minute_registry = load(A7_REGISTRY)
+    discovered_sub_minute_manifests: list[str] = []
+    for manifest_path in sorted((ROOT / "v4/raw").glob("*/*/manifest.json")):
+        manifest = load(manifest_path)
+        schema = manifest.get("request", {}).get("schema")
+        if schema in {"cbbo-1s", "cmbp-1"}:
+            discovered_sub_minute_manifests.append(
+                str(manifest_path.relative_to(ROOT))
+            )
+    sub_minute_ok, sub_minute_evidence = validate_sub_minute_policy(
+        sub_minute_policy,
+        sub_minute_registry,
+        discovered_sub_minute_manifests,
+    )
+
+    # Negative fixtures prove the rule is behavioral, not a prose-presence
+    # assertion: promotion-marking Tier S, binding a trusted consumer to Tier
+    # S, or dropping registry coverage must each fail validation.
+    tier_s_promotion_fixture = json.loads(json.dumps(sub_minute_registry))
+    tier_s_promotion_fixture["corpora"][0]["promotion_grade"] = True
+    tier_s_promotion_rejected = not validate_sub_minute_policy(
+        sub_minute_policy,
+        tier_s_promotion_fixture,
+        discovered_sub_minute_manifests,
+    )[0]
+    trusted_consumer_fixture = json.loads(json.dumps(sub_minute_registry))
+    trusted_consumer_fixture["trusted_consumer_bindings"] = [
+        {
+            "consumer": "promotion",
+            "corpus_path": trusted_consumer_fixture["corpora"][0]["corpus_path"],
+        }
+    ]
+    trusted_tier_s_rejected = not validate_sub_minute_policy(
+        sub_minute_policy,
+        trusted_consumer_fixture,
+        discovered_sub_minute_manifests,
+    )[0]
+    missing_registry_fixture = json.loads(json.dumps(sub_minute_registry))
+    missing_registry_fixture["corpora"] = [
+        corpus
+        for corpus in missing_registry_fixture["corpora"]
+        if corpus["corpus_path"] != "v4/raw/opra_1s_pilot"
+    ]
+    unregistered_corpus_rejected = not validate_sub_minute_policy(
+        sub_minute_policy,
+        missing_registry_fixture,
+        discovered_sub_minute_manifests,
+    )[0]
+    authority_a7_ok = all(
+        token in authority_text
+        for token in (
+            "D59 — staged canonical 1-second representation (A7)",
+            "Original Tier-T guarantee preserved verbatim from A5",
+            "sub_minute_corpus_tier_tag_required",
+            "1-second-approximate",
+            "raw consolidated top-of-book event path",
+            "2025-02-20",
+            "D57 remains deferred",
+        )
+    )
+    check(
+        "sub_minute_corpus_tier_tag_required",
+        sub_minute_ok
+        and authority_a7_ok
+        and tier_s_promotion_rejected
+        and trusted_tier_s_rejected
+        and unregistered_corpus_rejected,
+        {
+            **sub_minute_evidence,
+            "authority_a7_semantics_present": authority_a7_ok,
+            "negative_fixtures": {
+                "Tier_S_promotion_mark_rejected": tier_s_promotion_rejected,
+                "trusted_consumer_bound_to_Tier_S_rejected": trusted_tier_s_rejected,
+                "unregistered_current_corpus_rejected": unregistered_corpus_rejected,
+            },
+            "policy_path": str(A7_POLICY.relative_to(ROOT)),
+            "policy_sha256": sha256(A7_POLICY),
+            "registry_path": str(A7_REGISTRY.relative_to(ROOT)),
+            "registry_sha256": sha256(A7_REGISTRY),
+        },
     )
 
     # Guard B (added in the same repair): every active spec that pins the
@@ -504,9 +761,9 @@ def main() -> int:
 
     census_receipt = load(FT205 / "receipt.json")
     census_hashes_ok = (
-        census_receipt["schema_version"] == "Protocol101FT205NodeReceiptV4"
+        census_receipt["schema_version"] == "Protocol101FT205NodeReceiptV5"
         and census_receipt["repair_of"]["receipt_sha256"]
-        == "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
+        == "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
         and census_receipt["input_hashes"]["intent_fill_recheck_law.json"]
         == INTENT_LAW_HASH
         and census_receipt["session_count"] == 45
@@ -541,6 +798,50 @@ def main() -> int:
 
     composer = load(FT210 / "composer_spec.json")
     calibration = load(FT210 / "calibration_spec.json")
+    forecast = load(FT210 / "forecast_heads.json")
+    upside_stage = composer["stage_2_conservative_upside_rank"]
+    expected_gate = upside_stage.get("expected_upside_gate", {})
+    expected_outputs = forecast.get("central_tendency_entry_gate_outputs", {})
+    expected_calibration = calibration.get(
+        "entry_gate_expected_upside_calibration", {}
+    )
+    positive_rule = str(upside_stage.get("positive_after_fee_rule", ""))
+    satisfiable_central_tendency_ok = (
+        expected_gate.get("central_statistic")
+        == "conditional arithmetic mean"
+        and "conditional expected" in positive_rule
+        and "q10" not in positive_rule.lower()
+        and expected_outputs.get("loss")
+        == "masked mean squared error on the unchanged full-window fee-adjusted labels"
+        and expected_outputs.get("required_output_count") == 28
+        and expected_outputs.get("horizons")
+        == ["h3", "h5", "h10", "h20", "h45", "h90", "remaining_session"]
+        and expected_calibration.get("individual_outcome_quantile_forbidden")
+        is True
+        and expected_calibration.get("session_cluster", "").startswith(
+            "average finite residual rows within each calibration session"
+        )
+        and expected_calibration.get("confidence_level") == 0.9
+        and upside_stage.get("primary_rank_score")
+        == "mean_balanced_upside_percentile"
+        and "calibrated q10" in upside_stage.get("tertiary_rank_score", "")
+        and "calibrated q10" in upside_stage.get("quaternary_rank_score", "")
+    )
+    check(
+        "entry_gate_uses_satisfiable_central_tendency_statistic",
+        satisfiable_central_tendency_ok,
+        {
+            "positive_after_fee_rule": positive_rule,
+            "expected_upside_gate": expected_gate,
+            "expected_outputs": expected_outputs,
+            "expected_calibration": expected_calibration,
+            "ranking": {
+                "primary": upside_stage.get("primary_rank_score"),
+                "tertiary": upside_stage.get("tertiary_rank_score"),
+                "quaternary": upside_stage.get("quaternary_rank_score"),
+            },
+        },
+    )
     cluster = composer["uncertainty_wait"]["directional_substitute_cluster"]
     regret = composer["mandatory_action_conditioned_gate"][
         "selected_contract_regret_action_constraint"
@@ -793,6 +1094,19 @@ def main() -> int:
     receipts_ok = True
     for name, packet in PACKETS.items():
         receipt = load(packet / "receipt.json")
+        repair = receipt.get("repair_of", {})
+        if "preserved_path" in repair:
+            preserved_actual = sha256(packet / repair["preserved_path"])
+        elif (
+            isinstance(repair.get("preserved_git_commit"), str)
+            and isinstance(repair.get("preserved_git_path"), str)
+        ):
+            preserved_actual = git_blob_sha256(
+                repair["preserved_git_commit"],
+                repair["preserved_git_path"],
+            )
+        else:
+            preserved_actual = "MISSING_PRESERVATION_REFERENCE"
         result = {
             "schema_version": receipt.get("schema_version"),
             "outcome": receipt.get("outcome"),
@@ -808,16 +1122,13 @@ def main() -> int:
             ),
         }
         result["pass"] = (
-            str(receipt.get("schema_version", "")).endswith("V4")
+            str(receipt.get("schema_version", "")).endswith("V5")
             and receipt.get("outcome") == "producer_repaired"
             and receipt.get("product_contract_hash") == AUTHORITY_HASH
             and "authority_sha256" not in receipt
             and receipt["repair_of"]["receipt_sha256"]
             == PARENT_RECEIPTS[name]
-            and sha256(
-                packet / receipt["repair_of"]["preserved_path"]
-            )
-            == PARENT_RECEIPTS[name]
+            and preserved_actual == PARENT_RECEIPTS[name]
             and result["deliverable_hashes_exact"]
         )
         receipts_ok &= result["pass"]
@@ -826,7 +1137,7 @@ def main() -> int:
 
     failed = [name for name, value in checks.items() if not value["pass"]]
     output = {
-        "schema_version": "Protocol101FT2ScopedFinalRoundConsistencyOutputV3",
+        "schema_version": "Protocol101FT2ScopedFinalRoundConsistencyOutputV5D59StagedSubMinute",
         "goal": "FT2-SCOPED-FINAL-ROUND-5-FIXES",
         "attempt": 1,
         "product_contract_hash": AUTHORITY_HASH,

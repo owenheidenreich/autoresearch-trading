@@ -1,0 +1,44 @@
+{
+  "authority_sha256": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "corpora": [
+    {
+      "allowed_consumers": [
+        "cross_vendor_parity_probe",
+        "walking_skeleton"
+      ],
+      "corpus_path": "v4/raw/opra_1s_pilot",
+      "floor_stop_label_fidelity": "1-second-approximate",
+      "pre_a7_immutable_manifest_tag_carrier": "this canonical registry sidecar",
+      "promotion_grade": false,
+      "source_schema": "cbbo-1s",
+      "sub_minute_corpus_tier": "probe"
+    },
+    {
+      "allowed_consumers": [
+        "walking_skeleton"
+      ],
+      "corpus_path": "v4/raw/opra_1s_walking_skeleton",
+      "floor_stop_label_fidelity": "1-second-approximate",
+      "pre_a7_immutable_manifest_tag_carrier": "this canonical registry sidecar",
+      "promotion_grade": false,
+      "source_schema": "cbbo-1s",
+      "sub_minute_corpus_tier": "skeleton"
+    },
+    {
+      "allowed_consumers": [
+        "walking_skeleton"
+      ],
+      "corpus_path": "v4/audit/autoresearch/protocol101_walking_skeleton_stage2_3",
+      "floor_stop_label_fidelity": "1-second-approximate",
+      "pre_a7_immutable_manifest_tag_carrier": "this canonical registry sidecar",
+      "promotion_grade": false,
+      "source_schema": "cbbo-1s",
+      "sub_minute_corpus_tier": "skeleton"
+    }
+  ],
+  "graph_sha256": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+  "new_corpus_rule": "Every post-A7 sub-minute corpus embeds the required tier fields in its own manifest and is registered here before any consumer may use it.",
+  "schema_version": "Protocol101D59SubMinuteCorpusRegistryV1",
+  "trusted_consumer_bindings": [],
+  "trusted_corpus_status": "none_currently_registered; any trusted consumer binding fails until a valid Tier-T corpus is registered"
+}

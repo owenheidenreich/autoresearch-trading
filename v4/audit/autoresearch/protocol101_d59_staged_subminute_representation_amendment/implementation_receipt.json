@@ -1,0 +1,139 @@
+{
+  "amendment_id": "A7",
+  "artifacts": {
+    "authority": {
+      "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+      "sha256": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc"
+    },
+    "codex_review": {
+      "path": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/codex_review.md",
+      "sha256": "56cb6dde5392b983aa36abdabf8a67f9f9ea868393563a1914f519a4c9fd0c42"
+    },
+    "consistency_checker_output": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/consistency_checker_output.json",
+      "sha256": "98571b62439d7f49be98f4c8cd2e8d9d8c78b4638f8436096d50d440293a2798"
+    },
+    "graph": {
+      "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+      "sha256": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08"
+    },
+    "learnings_ledger": {
+      "path": "v4/docs/protocol101/training/execution/PROTOCOL101_WALKING_SKELETON_LEARNINGS_LEDGER_2026_07_30.md",
+      "sha256": "ea23376808e60cd4d95992c05e6baf7bc59db5972ba260018526c7e6113461b3"
+    },
+    "proposal": {
+      "path": "v4/docs/protocol101/training/execution/PROTOCOL101_D59_STAGED_SUBMINUTE_REPRESENTATION_AMENDMENT_PROPOSAL_2026_07_31.md",
+      "sha256": "fbb0cea79fee4c50979cdedb9b29f985eb7b6fe991e5c6c615ee81b23a486f09"
+    },
+    "reseal_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/reseal_receipt.json",
+      "sha256": "dd82d3e945a906441d01dadb27b62d4b92e24170648d56dad0639c46d1666bbc"
+    },
+    "sub_minute_corpus_registry": {
+      "path": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/sub_minute_corpus_registry.json",
+      "sha256": "5c57ad53bfcbcf2e4aae8eeaf0a45e2393736a0e00aeb2d93b95132ac6a7e263"
+    },
+    "sub_minute_tier_policy": {
+      "path": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/sub_minute_tier_policy.json",
+      "sha256": "ef0728309a55b0dfe0d47dd84e526604f63439ae2d9c190d935cccdea20cc23b"
+    }
+  },
+  "authority": {
+    "new_sha256": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+    "old_sha256": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+    "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md"
+  },
+  "checker": {
+    "checks_passed": 33,
+    "checks_total": 33,
+    "discovered_sub_minute_manifest_count": 41,
+    "failed_checks": [],
+    "negative_fixtures": {
+      "Tier_S_promotion_mark_rejected": true,
+      "trusted_consumer_bound_to_Tier_S_rejected": true,
+      "unregistered_current_corpus_rejected": true
+    },
+    "new_rule": "sub_minute_corpus_tier_tag_required",
+    "new_rule_pass": true,
+    "outcome": "pass",
+    "path": "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/consistency_checker_output.json",
+    "registered_corpus_count": 3,
+    "sha256": "98571b62439d7f49be98f4c8cd2e8d9d8c78b4638f8436096d50d440293a2798"
+  },
+  "graph": {
+    "changed": false,
+    "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+    "sha256_after": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+    "sha256_before": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08"
+  },
+  "highest_allowed_claim": "D59 staged into Tier-S/Tier-T via A7; trusted floor/stop guarantee preserved; graph unchanged; awaiting Claude verification + owner signature.",
+  "receipt_hash": "be5ae5cda5979db815134289dfb29072c4c210c2c2c00ca9df8e5df83307ef84",
+  "repin": {
+    "already_new_pinned_files": [
+      "v4/audit/autoresearch/protocol101_ft2_scoped_final_round_5_fixes_attempt001/check_cross_contract_consistency_v3.py"
+    ],
+    "ft2_04_receipt_sha256": "0616e907af066836957f2891d33db54d1ed5782e86c9a753a575f135eb6251a5",
+    "ft2_05_receipt_sha256": "e327c5e90a29c4c68277b5ec046b518627a742cb66c6a015e7e649efd3284693",
+    "repinned_file_count": 20,
+    "repinned_files": [
+      "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/oracle_rules.json",
+      "v4/audit/autoresearch/protocol101_ft2_04_path_label_freeze/receipt.json",
+      "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/census_results.json",
+      "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/d48_reference_transition_audit.json",
+      "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/receipt.json",
+      "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/report.md",
+      "v4/audit/autoresearch/protocol101_ft2_05_opportunity_census/v3_v4_impact.json",
+      "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/receipt.json",
+      "v4/audit/autoresearch/protocol101_ft2_08_data_tensor_label_contract/validate_contract_v3.py",
+      "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json",
+      "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json",
+      "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/contract.md",
+      "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json",
+      "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/realized_label_audit_composer_spec.json",
+      "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/receipt.json",
+      "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/contract.md",
+      "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/evidence_standard.json",
+      "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/mde_spec.json",
+      "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/receipt.json",
+      "v4/audit/autoresearch/protocol101_ft2_11_evidence_statistics_contract/shadow_sufficiency_spec.json"
+    ]
+  },
+  "review": {
+    "path": "v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/codex_review.md",
+    "required_clarifications": [
+      "cbbo-1s is last consolidated BBO in time space and not an event-complete path",
+      "cmbp-1 is the consolidated top-of-book event stream relevant to crossings",
+      "trusted floor/stop labels inspect raw events before downsampling",
+      "A7 does not silently activate one-second training/runtime cadence",
+      "tier enforcement uses a machine-readable policy and corpus registry"
+    ],
+    "sha256": "56cb6dde5392b983aa36abdabf8a67f9f9ea868393563a1914f519a4c9fd0c42",
+    "verdict": "ENDORSED_WITH_REQUIRED_IMPLEMENTATION_CLARIFICATIONS"
+  },
+  "schema_version": "Protocol101D59StagedSubMinuteA7ImplementationReceiptV1",
+  "side_effects": {
+    "broker_contacted": false,
+    "cmbp_1_purchase_or_download": false,
+    "data_download_or_purchase": false,
+    "graph_edited": false,
+    "model_training_or_fitting": false,
+    "protected_resource_access": false,
+    "recorder_contacted_or_activated": false,
+    "runtime_or_default_change": false
+  },
+  "status": "IMPLEMENTED_PENDING_CLAUDE_VERIFICATION_AND_OWNER_SIGNATURE",
+  "stop": "STOP_FOR_CLAUDE_VERIFICATION",
+  "tier_contract": {
+    "cbbo_1s_acquisition_requires": [
+      "free per-acquisition cost estimate",
+      "hard cost cap",
+      "explicit owner green-light",
+      "quarantined output"
+    ],
+    "cmbp_1_purchase_authorized": false,
+    "d57_remains_deferred": true,
+    "tier_s": "cbbo-1s; skeleton|prototype|probe; floor/stop labels 1-second-approximate; never trusted-consumer eligible",
+    "tier_s_combined_evaluation_earliest_session": "2025-02-20",
+    "tier_t": "cmbp-1-derived 1-second model input; raw events retained and used for trusted floor/stop labels; downsampler certified"
+  }
+}

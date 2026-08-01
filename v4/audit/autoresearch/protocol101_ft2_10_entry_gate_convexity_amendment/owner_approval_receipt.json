@@ -1,0 +1,102 @@
+{
+  "schema_version": "Protocol101FT210EntryGateConvexityOwnerApprovalReceiptV1",
+  "node_id": "FT2-10-ENTRY-GATE-CONVEXITY-AMENDMENT-OWNER-APPROVAL",
+  "outcome": "approved",
+  "owner_approved": true,
+  "owner_identity": "Owen Heidenreich",
+  "approval_date": "2026-07-31",
+  "amendment_summary": "Move the FT2-10 Stage-2 entry GATE from the structurally unsatisfiable pessimistic-decile (q10) upside test to a calibrated conservative lower-confidence bound on the conditional arithmetic-mean expected upside (MFE and profit area, dollars and return), computed via a session-clustered mean-residual bootstrap; keep calibrated q10 only as a RANK statistic among gate-passers. Downside protection is unchanged and remains with the exit model + D48 per-trade cap + D49 daily breaker. Scope is the entry-gate criterion and the mean-head/calibration support strictly required to compute it; RLAC targets, labels, 20/1/20/4 roles, fees, simulator, exit design, guardrails, graph topology, and downstream thresholds are unchanged.",
+  "authority": {
+    "path": "v4/docs/protocol101/training/contracts/PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md",
+    "previous_sha256": "edcbee06ebfc5ac3a26fa13da043754589ba55fbbd11b207906e19459d4103f3",
+    "sha256": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2"
+  },
+  "graph_v2": {
+    "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FULL_TRADER_GRAPH_V2.json",
+    "sha256": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+    "topology_changed": false
+  },
+  "provenance_chain": {
+    "committed_head_authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
+    "ft2_21_owner_signed_authority_sha256": "edcbee06ebfc5ac3a26fa13da043754589ba55fbbd11b207906e19459d4103f3",
+    "convexity_amendment_authority_sha256": "82d9573e120d6395825aa8a5f2d66fdac9bf32d825190737876b204dd112e2f2",
+    "note": "The edcbee06 base is the uncommitted owner-signed FT2-21 authority (see protocol101_ft2_21_owner_approval/owner_approval_receipt.json). This amendment is the single next transition edcbee06 -> 82d9573e."
+  },
+  "roles_flip": "Claude wrote the amendment proposal; Codex critically reviewed (adding a required statistical correction), implemented, and resealed; Claude independently verified; owner signed.",
+  "amendment_artifacts": {
+    "proposal": {
+      "path": "v4/docs/protocol101/training/execution/PROTOCOL101_FT2_10_ENTRY_GATE_CONVEXITY_AMENDMENT_PROPOSAL_2026_07_30.md",
+      "sha256": "b87aa6f2b8846d6cc7ede2df58aee6cc648beb55c0382fc101685bdb7b1230b9"
+    },
+    "codex_review": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/codex_review.md",
+      "sha256": "34d2328fd120d1a13f6850fa7ab8d507a8fd42834a300a20a60aacd14ff0ba16"
+    },
+    "implementation_report": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/implementation_report.md",
+      "sha256": "ff6cc48108f42523014978955fc7095b6f5bc55414e5672ace3c98d326ab691d"
+    },
+    "reseal_script": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/reseal_entry_gate_convexity_amendment.py",
+      "sha256": "be4b4f8726501a9441aaf9a3e5c78273a4fd179a8b69085b49c410e61ab4f5d8"
+    },
+    "reseal_receipt": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/reseal_receipt.json",
+      "sha256": "31e90628494ce0d25950476b1c30402b7217274c73bf8f9be42d1ecd08df2e38"
+    },
+    "consistency_checker_output": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/consistency_checker_output.json",
+      "sha256": "72f4c0ae689d1b738ae6ed818ce1f3599da11078b7cf5a67d462ce77358ef795"
+    },
+    "review_evidence": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/review_evidence.json",
+      "sha256": "4e0ee02aea1a546ea493c31b30d8941d56bb0849664942b829afbba183764e29"
+    }
+  },
+  "amended_specs": {
+    "composer_spec": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/composer_spec.json",
+      "sha256": "7d49757f48a0fc4dfab88882014c689bfa72538038184b3072ddcd86b2666ff0"
+    },
+    "calibration_spec": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/calibration_spec.json",
+      "sha256": "dc461bc8f3f38f9da36d72cf22c7b93cb5b3ea04fdd55effec18aa42a2cb2b42"
+    },
+    "forecast_heads": {
+      "path": "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/forecast_heads.json",
+      "sha256": "6eeaa1beb7b504e619982c1b86a8b9611710cae138cf06b28d5244048db5c1a6"
+    }
+  },
+  "independent_claude_verification": {
+    "verifier": "Claude (Opus 4.8)",
+    "date": "2026-07-31",
+    "method": "Reproduced load-bearing hashes and re-ran governance checks against source, not trusting Codex's summary.",
+    "results": {
+      "authority_new_hash_reproduced": true,
+      "graph_unchanged_reproduced": true,
+      "provenance_chain_owner_signed_base_confirmed": true,
+      "anti_regression_checker_rule": "entry_gate_uses_satisfiable_central_tendency_statistic",
+      "anti_regression_rule_is_substantive": "Forbids 'q10' in the gate rule string, requires conditional-arithmetic-mean central statistic, session-clustered calibration with individual_outcome_quantile_forbidden=true and confidence_level=0.9, and retains calibrated q10 only in the tertiary/quaternary RANK scores. A regression back to a q10 gate or an individual-outcome conformal bound flips it to fail.",
+      "consistency_checker_reran_independently": "32/32 pass, outcome=pass, named guard present and passing",
+      "entry_gate_now_satisfiable": "552 proposals cleared the amended entry gate on the Option-D Stage-1 replay (was 0/4191 under the q10 gate)"
+    }
+  },
+  "known_open_issue_not_resolved_by_this_amendment": {
+    "summary": "The full trader still produces 0 BUY on the Option-D Stage-1 replay. This is a SEPARATE downstream issue, not a defect in this entry-gate amendment.",
+    "mechanism": "All 552 entry-gate passers were rejected downstream. Every frozen numeric downstream gate individually rejected all 552 (uncertainty_cluster_gap, unchanged q10 MFE error margin, q90 regret), and the action-conditioned gate was unavailable (19 realized WAIT outcomes < 50 minimum). The uncertainty-margin gate requires the predicted directional cluster-gap (<=0.08, median 0.015) to exceed the model's own 90% conformal prediction-error bar (wait_margin=0.7038); the deliberately weak/thin walking-skeleton GBT on 45 sessions cannot clear it.",
+    "classification": "Unlike the L1 entry-gate defect (unsatisfiable for any model on any data), this is a weak-model + thin-data limitation that shrinks with a stronger model and more development data. It is the confidence gates working as designed (correct abstention).",
+    "status": "Owner has submitted a separate correction to Codex on the downstream gate behavior; results pending and will be independently verified before any further action. Tracked as learnings-ledger L4 (resolved) and L9 (open)."
+  },
+  "scope_assertions": {
+    "model_training_or_fitting": false,
+    "tensor_build": false,
+    "data_download_or_purchase": false,
+    "broker_or_api_contact": false,
+    "paid_compute": false,
+    "protected_holdout_confirmation_or_sealed_evidence_access": false,
+    "paper_order_submission": false,
+    "runtime_or_promotion_change": false
+  },
+  "next": "STOP_FOR_DOWNSTREAM_CORRECTION_RESULTS",
+  "highest_allowed_claim": "The FT2-10 entry-gate convexity amendment (authority 82d9573e) is owner-adopted and folded into the binding authority; the entry gate is now satisfiable. This makes no claim of profitability, alpha, or that the full trader trades; the downstream 0-BUY behavior is a separate open item under active correction."
+}

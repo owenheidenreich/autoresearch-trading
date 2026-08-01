@@ -1,68 +1,68 @@
 {
-  "schema_version": "Protocol101FT204NodeReceiptV4",
-  "graph_id": "protocol101-full-trader-v2",
-  "node_id": "FT2-04-PATH-LABEL-FREEZE",
-  "outcome": "labels_frozen_v2",
-  "created_at_utc": "2026-07-30T02:48:10Z",
-  "producer": "Codex scoped final round executor",
-  "scope": "owner_authorized_oracle_rules_intent_universe_refreeze_only",
-  "product_contract_hash": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
-  "repair_of": {
-    "schema_version": "Protocol101FT204NodeReceiptV3",
-    "receipt_sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
-    "preserved_directory": "superseded/v3_pre_scoped_final_round_20260730/"
-  },
-  "role_counts": {
-    "governed_corpus": 301,
-    "outer_test_union": 225,
-    "protected_holdout": 30,
-    "embargo_union": 5,
-    "census": 45
-  },
-  "intersection_counts": {
-    "outer_test": 0,
-    "protected_holdout": 0,
-    "embargo": 0,
-    "missing_from_expected_census": 0,
-    "extra_in_census": 0
-  },
-  "deliverable_hashes": {
-    "label_spec.json": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
-    "oracle_rules.json": "4c558964153f7a8d8a8f70948e7bbc822463a4539bf25c0dee5f453cf847d755",
-    "census_sessions.json": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
-    "intersection_proof.json": "74433f97822a7e2fd49f45acf321654399aadfc5405fb1c00dbdf6f41c51fcc9",
-    "compute_census_outer_test_intersection.py": "152bb61785d9d82e5dddfe34f4eb2037107fc162e078dd01633646df8a65501c",
-    "test_compute_census_intersection.py": "7fcc8b2dbb910c2a1a0b3336baa5e7b79f859f399933b69ae5d3f39bbb0e2415",
-    "report.md": "01cd4f7380916b4f7da2b5e5ec25b040035733cc2e40e1e71b483b4282e007d1"
-  },
-  "source_hashes": {
-    "consolidated_authority_sha256": "d115b953d8959fe777923ca5c1e375246754a181847ae77b57d37d24f0a279ca",
-    "consolidated_authority_pre_repair_sha256": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
-    "graph_v2_json_sha256": "35859a40747ebbd75cbb222345b24f45c23beff80a740fb45170b894b01581e9",
-    "runner_plan_sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",
-    "canonical_processed_session_manifest_sha256": "e4801126f9c8d6ff79c44aebae633c710ce3206161588c4ca0dcc1f703bcea8d",
-    "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
-    "protected_holdout_hash": "29ef78401a422d27875a2bf85b7c75cd05be9649ec8058d82a8984822d53d79e",
-    "serial_simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
-  },
   "assertions": {
     "buy_decision_t_fills_at_t_plus_1_ask": true,
-    "exit_decision_v_fills_at_v_plus_1_bid": true,
-    "entry_fill_minute_excluded_from_descriptive_path": true,
-    "no_bid_minutes_valued_at_full_loss": true,
-    "forced_flat_uses_exact_1555_boundary": true,
+    "canonical_intent_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0",
     "embargo_sessions_excluded": true,
-    "protected_holdout_remains_sealed": true,
-    "no_real_label_values_computed": true,
+    "entry_fill_minute_excluded_from_descriptive_path": true,
+    "exit_decision_v_fills_at_v_plus_1_bid": true,
+    "forced_flat_uses_exact_1555_boundary": true,
+    "no_bid_minutes_valued_at_full_loss": true,
     "no_census_statistics_computed": true,
     "no_model_training_or_tuning": true,
-    "no_simulator_v5_source_change": true,
+    "no_real_label_values_computed": true,
     "no_recorder_broker_paid_data_runtime_or_paper_access": true,
+    "no_simulator_v5_source_change": true,
+    "protected_holdout_remains_sealed": true,
+    "selected_only_tplus1_recheck_cannot_redefine_intent_population": true,
     "superseded_v1_packet_preserved": true,
     "superseded_v3_packet_preserved": true,
-    "time_t_intent_universe_is_canonical": true,
-    "selected_only_tplus1_recheck_cannot_redefine_intent_population": true,
-    "canonical_intent_law_sha256": "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
+    "time_t_intent_universe_is_canonical": true
   },
-  "legal_next": "FT2-05 opportunity census v4 rebuild under this exact refrozen contract"
+  "created_at_utc": "2026-07-30T02:48:10Z",
+  "deliverable_hashes": {
+    "census_sessions.json": "76cc65e87d26dd2c4d40fd10df3abc9d6565d36bf0f20f876816489a67c9f6e0",
+    "compute_census_outer_test_intersection.py": "152bb61785d9d82e5dddfe34f4eb2037107fc162e078dd01633646df8a65501c",
+    "intersection_proof.json": "74433f97822a7e2fd49f45acf321654399aadfc5405fb1c00dbdf6f41c51fcc9",
+    "label_spec.json": "3a8518724a7c8b707007968c5dad279f70ee85919051669455b381e04e7bbf60",
+    "oracle_rules.json": "b046e53afa6a5853cb9bb4e20bb5e9960e70f70da1e713172d19f5dadfe871bc",
+    "report.md": "01cd4f7380916b4f7da2b5e5ec25b040035733cc2e40e1e71b483b4282e007d1",
+    "test_compute_census_intersection.py": "7fcc8b2dbb910c2a1a0b3336baa5e7b79f859f399933b69ae5d3f39bbb0e2415"
+  },
+  "graph_id": "protocol101-full-trader-v2",
+  "intersection_counts": {
+    "embargo": 0,
+    "extra_in_census": 0,
+    "missing_from_expected_census": 0,
+    "outer_test": 0,
+    "protected_holdout": 0
+  },
+  "legal_next": "FT2-05 opportunity census v4 rebuild under this exact refrozen contract",
+  "node_id": "FT2-04-PATH-LABEL-FREEZE",
+  "outcome": "labels_frozen_v2",
+  "producer": "Codex scoped final round executor",
+  "product_contract_hash": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+  "repair_of": {
+    "preserved_directory": "superseded/v3_pre_scoped_final_round_20260730/",
+    "receipt_sha256": "c763dee85293d73a4f367627e8f483a209565d3f486f82fb5b1c17f3ff611775",
+    "schema_version": "Protocol101FT204NodeReceiptV3"
+  },
+  "role_counts": {
+    "census": 45,
+    "embargo_union": 5,
+    "governed_corpus": 301,
+    "outer_test_union": 225,
+    "protected_holdout": 30
+  },
+  "schema_version": "Protocol101FT204NodeReceiptV4",
+  "scope": "owner_authorized_oracle_rules_intent_universe_refreeze_only",
+  "source_hashes": {
+    "canonical_processed_session_manifest_sha256": "e4801126f9c8d6ff79c44aebae633c710ce3206161588c4ca0dcc1f703bcea8d",
+    "consolidated_authority_pre_repair_sha256": "893aa0664944680e053ffd12a4d44c8a798397cbeed6ad56cd682fd864d9f832",
+    "consolidated_authority_sha256": "1d215845cf7b853550c5cf27af5bafca66db2355e0f12493e2c5a8922278d4bc",
+    "fold_governance_hash": "c02c19feafbac7888a2317ddd7ef6753888b2b10a704d230355b622eb350b920",
+    "graph_v2_json_sha256": "9955085a31840da63057761a620a5ec2995e04f05ff2aa5f4906afd795726a08",
+    "protected_holdout_hash": "29ef78401a422d27875a2bf85b7c75cd05be9649ec8058d82a8984822d53d79e",
+    "runner_plan_sha256": "3b0c01b216d1d5928c256060ce38c62ef2c4f912aef9b6ef98f40bc4ee7fcc73",
+    "serial_simulator_v5_sha256": "7296a437577ed006326d2ad35ad1f3499c4925334556d64d8c5fb75e4985f548"
+  }
 }
