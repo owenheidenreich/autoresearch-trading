@@ -91,3 +91,35 @@ ART squared.heic
 
 # Local transcript history backup (never commit session contents)
 _history_backup/
+
+# Local agent state and iCloud conflict copies (never commit)
+.claude/
+* 2
+* 2.*
+.deploy-state *
+
+# v4 market data and derived normalized corpora (keep only tracked sentinels)
+/v4/raw/*
+!/v4/raw/.gitkeep
+/v4/normalized/*
+!/v4/normalized/.gitkeep
+/v4/normalized_*/
+*.parquet
+*.dbn
+*.dbn.zst
+market_events.jsonl
+
+# Generated model and compressed data artifacts
+*.joblib
+*.npz
+*.npy
+*.zst
+*.gz
+
+# Run-scoped autoresearch packets are generated local evidence. Governed
+# amendment packets must be named exceptions and committed intentionally.
+/v4/audit/autoresearch/*/
+!/v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/
+!/v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/**
+!/v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/
+!/v4/audit/autoresearch/protocol101_d59_staged_subminute_representation_amendment/**
