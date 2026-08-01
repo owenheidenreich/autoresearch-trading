@@ -1079,3 +1079,41 @@ against source — all CONFIRMED. Corrections to prior claims:
   truth across all 17+49 features; P3 record size_imbalance (+sizes) as pre-vetted live-safe
   widen-entry follow-up (entry stays signed-17 this run). Codex goal drafted; applies at pre-fit
   pause. NEXT: Codex applies -> Claude verifies -> then the fit.
+
+---
+
+## Phase update 2026-08-01 (w) — Codex corrections APPLIED + Claude-VERIFIED (PASS)
+
+Codex applied the 3-correction proposal and returned `STOP_FOR_CLAUDE_VERIFICATION` at the pre-fit
+boundary. Corrected build root: `protocol101_pathd_entry_exit_model_research_corrected_2026_08_01/`
+(supersedes the original frozen root). Claude verified independently (reproduced hashes, not
+rubber-stamped) — **PASS**:
+
+- **P1 (drift/folds):** corrected prereg SHA-256 `4a01f145…` reproduced byte-identically (matches
+  sidecar + restoration receipt); `foundation_generation_sha256 caf3e086…` matches. Root cause =
+  a synthetic TEST authorization reached the real validator before capability auth → classified
+  `BENIGN_TEST_CONTAMINATION`. All 5 outer folds restored (`PRISTINE_ABSENT`), acceptance still
+  pooled AND ≥4/5. Burn preserved immutably (`access_count:0`, all receipts null, `BURNED_NO_REOPEN`).
+  Stability gate is real: `_rehash_dataset_source_files` rehashes sealed source bytes, blocks
+  symlink/traversal/malformed receipts, FAILS LOUD on mismatch (55 = 47+5+1+2 frozen hashes).
+- **P2 (OI/live-twin):** entry = exactly signed-17 (byte match, `entry_microstructure_enrichment:false`);
+  exit 49→48, delta = precisely `last_causal_open_interest` removed (now `NO_INTRADAY_LIVE_TWIN`/EOD);
+  `last_causal_minute_volume` retained but `minute_volume_adapter_receipt_required_before_exit_fit:True`
+  (exit fit blocked); `implementation_receipt_required_before_fit:True`; `feature_without_live_twin`
+  fixture rejects OI-as-intraday.
+- **P3 (lead):** `size_imbalance` recorded as `p3_forward_only_entry_enrichment` (fresh separate
+  prereg required; forbidden as current-run alpha), enforced by `test_p3_widen_entry_lead_is_forward_only`.
+- **No fit / no holdout:** `model_fit_executed:false`, `holdout_open_count:0`, folds pristine. Ran
+  `test_pathd_foundation_correction.py` + `test_pathd_evidence_gate.py` independently → **20/20 pass**
+  (safety-scanned: no broker/data/network).
+- **Honest caveat carried:** 30-session firewall protected from model/economic inspection but not
+  pristine from already-published full-corpus aggregate label statistics. Highest claim = Tier-S
+  feasibility, not-promotable.
+
+**TWO GATES REMAIN before any fit** (verdict `owner_decision_required`): (1) owner/Claude decision on
+`COMPOSITE_CALIBRATION_TERMINAL_RULE` (before machinery/stability sealing); (2) the `minute_volume`
+live adapter receipt (before exit fit). NEXT: owner resolves the terminal-rule decision.
+
+GitHub health: 3 curated commits (gitignore hardening / path_d + Path-D package / worktree sync) were
+already made + pushed after plan approval; this round adds the verified correction unit
+(`v4/research/` code, Path-D scripts + tests, corrected audit dir, gitignore corrected-dir exception).
