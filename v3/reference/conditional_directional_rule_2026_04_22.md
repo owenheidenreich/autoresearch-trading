@@ -86,7 +86,7 @@ reliably add value at this sample size. Revisit only if:
 | R1 | 13 disjoint 60-day OOS windows generated (780 OOS days) |
 | R2 | 9 new intraday-developing features spec'd (6 Cat A + 3 Cat B) |
 | R3 | 13 per-window L2 models retrained with 51-feature input (1.0 min CPU) |
-| R4 | V0 beats V1 in 10/13 windows; agg PF V0 1.132 > V1 0.888 |
+| R4 | V0 wins 12/13 strict, 10/13 by `> 0.10 PF`; agg PF V0 1.132 > V1 0.888 |
 | **R5** | **Conditional rule ties blanket V0 (1.092 vs 1.132); V0 is champion** |
 
 ## What's next

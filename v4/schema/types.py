@@ -65,6 +65,6 @@ class TimestampPrecision(str, Enum):
     NANO = "ns"
 
 
-SCHEMA_VERSION = "v1.0.0"
+SCHEMA_VERSION = "v1.0.1"
 """Bumped only via documented schema change. CI compares deterministic-rebuild
 hash across runs; mismatch without a schema bump is a critical error."""

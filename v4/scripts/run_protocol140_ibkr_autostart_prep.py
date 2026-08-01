@@ -23,6 +23,8 @@ DEFAULT_LAUNCHD_RUNTIME_DIR = Path.home() / ".autoresearch-trading/launchd"
 GATEWAY_LABEL = "com.autoresearch.ibgateway.paper"
 PREFLIGHT_LABEL = "com.autoresearch.protocol101.paper-preflight"
 SESSION_LABEL = "com.autoresearch.protocol101.paper-session"
+MONITOR_LABEL = "com.autoresearch.protocol101.daily-monitor"
+PREMIUM_BLEND_AUTOTEST_LABEL = "com.autoresearch.premiumblend.no-order-surface-check"
 DEFAULT_IBKR_PAPER_API_PORT = 4002
 DEFAULT_PROJECT_PYTHON = REPO_ROOT / ".venv/bin/python"
 
@@ -40,6 +42,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--preflight-minute", type=int, default=29)
     parser.add_argument("--session-hour", type=int, default=6)
     parser.add_argument("--session-minute", type=int, default=30)
+    parser.add_argument("--monitor-hour", type=int, default=6)
+    parser.add_argument("--monitor-minute", type=int, default=31)
+    parser.add_argument("--premium-blend-autotest-hour", type=int, default=6)
+    parser.add_argument("--premium-blend-autotest-minute", type=int, default=33)
+    parser.add_argument("--premium-blend-autotest-target-date", default="2026-05-26")
     parser.add_argument("--no-ledger", action="store_true")
     return parser.parse_args()
 
@@ -66,6 +73,11 @@ def main() -> int:
         preflight_minute=int(args.preflight_minute),
         session_hour=int(args.session_hour),
         session_minute=int(args.session_minute),
+        monitor_hour=int(args.monitor_hour),
+        monitor_minute=int(args.monitor_minute),
+        premium_blend_autotest_hour=int(args.premium_blend_autotest_hour),
+        premium_blend_autotest_minute=int(args.premium_blend_autotest_minute),
+        premium_blend_autotest_target_date=str(args.premium_blend_autotest_target_date),
     )
     write_install_scripts(args.launchd_dir)
     decision = "ready_to_install_ib_gateway_paper_autostart" if all(check["passed"] for check in checks) else "blocked_ib_gateway_autostart_config"
@@ -151,11 +163,18 @@ def write_launchd_assets(
     preflight_minute: int,
     session_hour: int,
     session_minute: int,
+    monitor_hour: int,
+    monitor_minute: int,
+    premium_blend_autotest_hour: int,
+    premium_blend_autotest_minute: int,
+    premium_blend_autotest_target_date: str,
 ) -> dict[str, str]:
     app = str(app_path or "")
     gateway_plist = launchd_dir / f"{GATEWAY_LABEL}.plist"
     preflight_plist = launchd_dir / f"{PREFLIGHT_LABEL}.plist"
     session_plist = launchd_dir / f"{SESSION_LABEL}.plist"
+    monitor_plist = launchd_dir / f"{MONITOR_LABEL}.plist"
+    premium_blend_autotest_plist = launchd_dir / f"{PREMIUM_BLEND_AUTOTEST_LABEL}.plist"
     gateway_payload = launchd_payload(
         label=GATEWAY_LABEL,
         program_arguments=[
@@ -209,8 +228,22 @@ def write_launchd_assets(
             "IB_GATEWAY_API_PORT": str(api_port),
             "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
             "PROTOCOL101_SESSION_MODE": "no-order-shadow",
+            "PROTOCOL101_ENTRY_BRIDGE_MODE": "paper-submit",
+            "PROTOCOL101_ENABLE_PAPER_ORDERS": "YES",
+            "PROTOCOL101_ACKNOWLEDGE_PAPER_LOSS": "YES",
+            "V4_ALLOW_IBKR_PAPER_ORDERS": "YES",
+            "PROTOCOL101_SESSION_KIND": "persistent",
+            "PROTOCOL101_PERSISTENT_QUOTE_LOOP_SECONDS": "1",
+            "PROTOCOL101_PERSISTENT_ENTRY_DECISION_INTERVAL_SECONDS": "60",
+            "PROTOCOL101_PERSISTENT_ENTRY_DECISION_MODE": "minute",
+            "PROTOCOL101_PERSISTENT_HEARTBEAT_SECONDS": "30",
+            "PROTOCOL101_PERSISTENT_CONTRACT_REFRESH_SECONDS": "60",
+            "PROTOCOL101_PERSISTENT_REFRESH_DRIFT_POINTS": "15",
             "PROTOCOL101_SESSION_CYCLE_SECONDS": "60",
             "PROTOCOL101_SESSION_CAPTURE_SECONDS": "45",
+            "PROTOCOL101_ENTRY_BRIDGE_SECONDS": "15",
+            "PROTOCOL101_ENTRY_BRIDGE_MAX_DECISIONS": "3",
+            "PROTOCOL101_ENTRY_BRIDGE_STRIKES_AROUND_ATM": "10",
             "PROTOCOL101_SESSION_MAX_CYCLES": "390",
             "PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS": "120",
             "PROTOCOL101_SESSION_PAPER_CASH": "10000",
@@ -219,13 +252,63 @@ def write_launchd_assets(
             "REPO_ROOT": str(REPO_ROOT),
         },
     )
+    monitor_payload = launchd_payload(
+        label=MONITOR_LABEL,
+        program_arguments=[
+            "/bin/bash",
+            str(DEFAULT_LAUNCHD_RUNTIME_DIR / "run_protocol101_daily_monitor.sh"),
+            "--watch",
+        ],
+        hour=monitor_hour,
+        minute=monitor_minute,
+        stdout=DEFAULT_LOG_DIR / "protocol101-daily-monitor.out.log",
+        stderr=DEFAULT_LOG_DIR / "protocol101-daily-monitor.err.log",
+        environment={
+            "PROTOCOL101_MONITOR_REFRESH_SECONDS": "30",
+            "PROTOCOL101_MONITOR_EVENT_LIMIT": "250",
+            "PROTOCOL101_MONITOR_MAX_ITERATIONS": "780",
+            "PYTHON_BIN": str(DEFAULT_PROJECT_PYTHON),
+            "PYTHONPATH": str(REPO_ROOT),
+            "REPO_ROOT": str(REPO_ROOT),
+        },
+    )
+    target_parts = [int(part) for part in premium_blend_autotest_target_date.split("-")]
+    premium_blend_autotest_payload = launchd_payload(
+        label=PREMIUM_BLEND_AUTOTEST_LABEL,
+        program_arguments=[
+            "/bin/bash",
+            str(DEFAULT_LAUNCHD_RUNTIME_DIR / "run_premium_blend_live_surface_autotest.sh"),
+        ],
+        hour=premium_blend_autotest_hour,
+        minute=premium_blend_autotest_minute,
+        stdout=DEFAULT_LOG_DIR / "premiumblend-live-surface-autotest.out.log",
+        stderr=DEFAULT_LOG_DIR / "premiumblend-live-surface-autotest.err.log",
+        environment={
+            "IB_GATEWAY_API_PORT": str(api_port),
+            "IB_GATEWAY_API_PORTS": ",".join(str(port) for port in api_ports),
+            "PREMIUM_BLEND_AUTOTEST_TARGET_DATE": premium_blend_autotest_target_date,
+            "PREMIUM_BLEND_AUTOTEST_CAPTURE_SECONDS": "300",
+            "PREMIUM_BLEND_AUTOTEST_DECISION_INTERVAL_SECONDS": "60",
+            "PREMIUM_BLEND_AUTOTEST_STRIKES_AROUND_ATM": "10",
+            "PREMIUM_BLEND_AUTOTEST_MIN_VALID_CANDIDATES": "30",
+            "PREMIUM_BLEND_AUTOTEST_PAPER_CASH": "10000",
+            "PYTHON_BIN": str(DEFAULT_PROJECT_PYTHON),
+            "PYTHONPATH": str(REPO_ROOT),
+            "REPO_ROOT": str(REPO_ROOT),
+        },
+        calendar_extra={"Month": target_parts[1], "Day": target_parts[2]},
+    )
     gateway_plist.write_bytes(plistlib.dumps(gateway_payload, sort_keys=True))
     preflight_plist.write_bytes(plistlib.dumps(preflight_payload, sort_keys=True))
     session_plist.write_bytes(plistlib.dumps(session_payload, sort_keys=True))
+    monitor_plist.write_bytes(plistlib.dumps(monitor_payload, sort_keys=True))
+    premium_blend_autotest_plist.write_bytes(plistlib.dumps(premium_blend_autotest_payload, sort_keys=True))
     return {
         "gateway_plist": str(gateway_plist),
         "preflight_plist": str(preflight_plist),
         "session_plist": str(session_plist),
+        "monitor_plist": str(monitor_plist),
+        "premium_blend_autotest_plist": str(premium_blend_autotest_plist),
         "install_script": str(launchd_dir / "install_ibkr_paper_autostart.sh"),
         "uninstall_script": str(launchd_dir / "uninstall_ibkr_paper_autostart.sh"),
     }
@@ -240,11 +323,15 @@ def launchd_payload(
     stdout: Path,
     stderr: Path,
     environment: dict[str, str],
+    calendar_extra: dict[str, int] | None = None,
 ) -> dict[str, Any]:
+    calendar = {"Hour": int(hour), "Minute": int(minute)}
+    if calendar_extra:
+        calendar.update({str(key): int(value) for key, value in calendar_extra.items()})
     return {
         "Label": label,
         "ProgramArguments": program_arguments,
-        "StartCalendarInterval": {"Hour": int(hour), "Minute": int(minute)},
+        "StartCalendarInterval": calendar,
         "RunAtLoad": False,
         "StandardOutPath": str(stdout),
         "StandardErrorPath": str(stderr),
@@ -272,6 +359,8 @@ cp "{REPO_ROOT / 'v4/ops/ibkr/install_ibc_macos.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/start_ib_gateway_paper_ibc.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_paper_preflight.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_paper_session.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/run_protocol101_daily_monitor.sh'}" "$RUNTIME_DIR/"
+cp "{REPO_ROOT / 'v4/ops/ibkr/run_premium_blend_live_surface_autotest.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/run_ibkr_autostart_status.sh'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/wait_for_ibkr_api.py'}" "$RUNTIME_DIR/"
 cp "{REPO_ROOT / 'v4/ops/ibkr/write_ibc_runtime_config.py'}" "$RUNTIME_DIR/"
@@ -281,16 +370,24 @@ chmod 600 "$RUNTIME_DIR"/*.py
 launchctl bootout "gui/$UID/{GATEWAY_LABEL}" 2>/dev/null || true
 launchctl bootout "gui/$UID/{PREFLIGHT_LABEL}" 2>/dev/null || true
 launchctl bootout "gui/$UID/{SESSION_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/$UID/{MONITOR_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/$UID/{PREMIUM_BLEND_AUTOTEST_LABEL}" 2>/dev/null || true
 cp "{launchd_dir / (GATEWAY_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
 cp "{launchd_dir / (PREFLIGHT_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
 cp "{launchd_dir / (SESSION_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
-launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{GATEWAY_LABEL}.plist"
-launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{PREFLIGHT_LABEL}.plist"
-launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{SESSION_LABEL}.plist"
+cp "{launchd_dir / (MONITOR_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
+cp "{launchd_dir / (PREMIUM_BLEND_AUTOTEST_LABEL + '.plist')}" "$HOME/Library/LaunchAgents/"
 launchctl enable "gui/$UID/{GATEWAY_LABEL}"
 launchctl enable "gui/$UID/{PREFLIGHT_LABEL}"
 launchctl enable "gui/$UID/{SESSION_LABEL}"
-echo "Installed IB Gateway paper autostart, Protocol101 preflight, and Protocol101 paper-session LaunchAgents."
+launchctl enable "gui/$UID/{MONITOR_LABEL}"
+launchctl enable "gui/$UID/{PREMIUM_BLEND_AUTOTEST_LABEL}"
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{GATEWAY_LABEL}.plist"
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{PREFLIGHT_LABEL}.plist"
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{SESSION_LABEL}.plist"
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{MONITOR_LABEL}.plist"
+launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/{PREMIUM_BLEND_AUTOTEST_LABEL}.plist"
+echo "Installed IB Gateway paper autostart, Protocol101 preflight, Protocol101 paper-session, daily monitor, and premium-blend no-order surface autotest LaunchAgents."
 """
     )
     uninstall.write_text(
@@ -299,9 +396,13 @@ set -euo pipefail
 launchctl bootout "gui/$UID/{GATEWAY_LABEL}" 2>/dev/null || true
 launchctl bootout "gui/$UID/{PREFLIGHT_LABEL}" 2>/dev/null || true
 launchctl bootout "gui/$UID/{SESSION_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/$UID/{MONITOR_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/$UID/{PREMIUM_BLEND_AUTOTEST_LABEL}" 2>/dev/null || true
 rm -f "$HOME/Library/LaunchAgents/{GATEWAY_LABEL}.plist"
 rm -f "$HOME/Library/LaunchAgents/{PREFLIGHT_LABEL}.plist"
 rm -f "$HOME/Library/LaunchAgents/{SESSION_LABEL}.plist"
+rm -f "$HOME/Library/LaunchAgents/{MONITOR_LABEL}.plist"
+rm -f "$HOME/Library/LaunchAgents/{PREMIUM_BLEND_AUTOTEST_LABEL}.plist"
 echo "Removed IB Gateway paper autostart LaunchAgents."
 """
     )
@@ -357,6 +458,8 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
             f"- Gateway LaunchAgent: `{payload['launchd_assets']['gateway_plist']}`",
             f"- Preflight LaunchAgent: `{payload['launchd_assets']['preflight_plist']}`",
             f"- Paper-session LaunchAgent: `{payload['launchd_assets']['session_plist']}`",
+            f"- Daily monitor LaunchAgent: `{payload['launchd_assets']['monitor_plist']}`",
+            f"- Premium-blend no-order surface autotest LaunchAgent: `{payload['launchd_assets']['premium_blend_autotest_plist']}`",
             f"- Install script: `{payload['launchd_assets']['install_script']}`",
             f"- Uninstall script: `{payload['launchd_assets']['uninstall_script']}`",
             "",

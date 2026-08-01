@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal
+import pickle
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -16,8 +18,13 @@ from v4.dataset.spxw_0dte_neural import (
     build_neural_dataset,
 )
 from v4.live.protocol101_feature_contract import FEATURE_CONTRACT_VERSION
+from v4.model.protocol101_regimen_repair import (
+    LEGACY_PROCESSED_ROW_SCHEMA,
+    TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+)
 from v4.schema.normalized import NORMALIZED_SCHEMA
 from v4.schema.types import SCHEMA_VERSION, VendorSource
+from v4.scripts.build_databento_neural_dataset import _existing_outputs
 
 
 def _record(
@@ -497,3 +504,94 @@ def test_build_neural_dataset_emits_empty_row_when_greeks_cannot_be_repaired() -
     assert row0["candidate_mask"].sum() == 0
     assert np.isnan(row0["option_ladder"]).all()
     assert np.isnan(row0["labels_net_pnl"]).all()
+
+
+def test_two_clock_schema_is_additive_and_preserves_label_bytes() -> None:
+    t0 = datetime(2026, 1, 2, 14, 31, tzinfo=timezone.utc)
+    t1 = datetime(2026, 1, 2, 14, 32, tzinfo=timezone.utc)
+    table = _table(
+        [
+            _record(ts=t0, right="C", bid=2.90, ask=3.10),
+            _record(ts=t1, right="C", bid=5.00, ask=5.20),
+        ]
+    )
+    common = {
+        "market_window_minutes": 2,
+    }
+    legacy = build_neural_dataset(
+        table,
+        _spx_bars(),
+        config=NeuralDatasetConfig(
+            **common,
+            processed_row_schema_version=LEGACY_PROCESSED_ROW_SCHEMA,
+        ),
+    )
+    repaired = build_neural_dataset(
+        table,
+        _spx_bars(),
+        config=NeuralDatasetConfig(
+            **common,
+            processed_row_schema_version=TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+        ),
+    )
+    assert len(legacy) == len(repaired)
+    for old, new in zip(legacy, repaired):
+        for name in ("labels_net_pnl", "labels_mid_pnl"):
+            left = np.asarray(old[name])
+            right = np.asarray(new[name])
+            assert left.tobytes() == right.tobytes()
+            assert np.array_equal(np.isnan(left), np.isnan(right))
+        assert (
+            new["processed_row_schema_version"]
+            == TWO_CLOCK_PROCESSED_ROW_SCHEMA
+        )
+        assert new["label_realized_exit_time_ns"].shape == (
+            *new["labels_net_pnl"].shape,
+        )
+
+
+def test_two_clock_skip_existing_requires_matching_immutable_schema(
+    tmp_path: Path,
+) -> None:
+    normalized = tmp_path / "normalized"
+    processed = tmp_path / "processed"
+    normalized.mkdir()
+    processed.mkdir()
+    session = "2025-01-02"
+    (normalized / f"databento_spxw_0dte_{session}.parquet").touch()
+    (
+        normalized
+        / f"databento_spxw_0dte_{session}_derived_context.parquet"
+    ).touch()
+    path = processed / f"{session}.pkl"
+    with path.open("wb") as handle:
+        pickle.dump([{"legacy": True}], handle)
+    assert not _existing_outputs(
+        session=session,
+        normalized_dir=normalized,
+        processed_dir=processed,
+        context_mode="derived",
+        official_spx_dir=None,
+        official_vix_dir=None,
+        processed_row_schema_version=TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+    )
+    with path.open("wb") as handle:
+        pickle.dump(
+            [
+                {
+                    "processed_row_schema_version": (
+                        TWO_CLOCK_PROCESSED_ROW_SCHEMA
+                    )
+                }
+            ],
+            handle,
+        )
+    assert _existing_outputs(
+        session=session,
+        normalized_dir=normalized,
+        processed_dir=processed,
+        context_mode="derived",
+        official_spx_dir=None,
+        official_vix_dir=None,
+        processed_row_schema_version=TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+    )

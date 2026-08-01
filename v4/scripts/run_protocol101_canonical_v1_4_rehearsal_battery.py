@@ -65,6 +65,8 @@ L0_PREREG = AUDIT / "protocol101_canonical_v1_l0_l2_design_audit_attempt001/prer
 BURNED = ("2026-06-30", "2026-07-01", "2026-07-02")
 BURNED_PREFIX = "protocol101_live_v2_candidate_universe_parity_source_aligned"
 REPAIRED_PROBES = ("option_mid_momentum", "internal_iv_expansion_compression")
+EXPECTED_TRACE_ROWS_PER_SESSION = 360
+EXPECTED_SLOT_ROWS_PER_SESSION = 360 * 42
 
 
 def sha256_path(path: Path) -> str:
@@ -99,6 +101,53 @@ def build_frame(args: argparse.Namespace, prefix: str, sessions: tuple[str, ...]
         trace_prefix=prefix,
     )
     return v14.build_paired_frame(ns)
+
+
+def full_session_trace_blockers(
+    readiness: dict[str, Any], sessions: tuple[str, ...]
+) -> list[str]:
+    """Reject partial captures before they can be scored as parity failures."""
+    trace_sessions = (readiness.get("trace_readiness") or {}).get("sessions") or {}
+    blockers: list[str] = []
+    for session in sessions:
+        evidence = trace_sessions.get(session) or {}
+        for plane in ("historical", "ibkr"):
+            rows = evidence.get(f"{plane}_rows")
+            slot_rows = evidence.get(f"{plane}_slot_rows")
+            if rows != EXPECTED_TRACE_ROWS_PER_SESSION:
+                blockers.append(
+                    f"incomplete_{plane}_trace_rows:{session}:"
+                    f"{rows}!={EXPECTED_TRACE_ROWS_PER_SESSION}"
+                )
+            if slot_rows != EXPECTED_SLOT_ROWS_PER_SESSION:
+                blockers.append(
+                    f"incomplete_{plane}_slot_rows:{session}:"
+                    f"{slot_rows}!={EXPECTED_SLOT_ROWS_PER_SESSION}"
+                )
+    return blockers
+
+
+def count_material_true_reorderings(merged: pd.DataFrame) -> int:
+    """Count material reorderings under either supported merged-frame schema."""
+    material_column = next(
+        (
+            column
+            for column in (
+                "selected_slot_swap_economically_material",
+                "economically_material",
+            )
+            if column in merged.columns
+        ),
+        None,
+    )
+    if material_column is None or "true_score_reordering" not in merged.columns:
+        raise ValueError("merged decisions lack material-reordering columns")
+    return int(
+        (
+            (merged["true_score_reordering"] == True)  # noqa: E712
+            & (merged[material_column] == True)  # noqa: E712
+        ).sum()
+    )
 
 
 def frozen_l1_thresholds(contract: dict[str, Any], l1_summary: dict[str, Any]) -> dict[str, Any]:
@@ -316,10 +365,12 @@ def main() -> None:
         eval_sessions, eval_prefix = tuple(args.eval_sessions), args.eval_prefix
 
     eval_frame, admitted, readiness = build_frame(args, eval_prefix, eval_sessions)
-    if readiness["blockers"]:
+    readiness_blockers = list(readiness["blockers"])
+    readiness_blockers.extend(full_session_trace_blockers(readiness, eval_sessions))
+    if readiness_blockers:
         write_json(out_dir / "routing_decision.json", {
             "routing_decision": "rehearsal_insufficient_artifacts",
-            "blockers": readiness["blockers"]})
+            "blockers": readiness_blockers})
         return
     if args.mode == "burned_validation":
         train_frame = eval_frame
@@ -358,8 +409,7 @@ def main() -> None:
     n_col = "mutually_confident_enter_n"
     slot_rows = non_random[pd.to_numeric(non_random[n_col], errors="coerce") >= 30]
     slot_fail = slot_rows[pd.to_numeric(slot_rows[slot_col], errors="coerce") < 0.99]
-    material_reorder = int(((merged.get("true_score_reordering") == True)  # noqa: E712
-                            & (merged.get("selected_slot_swap_economically_material") == True)).sum())  # noqa: E712
+    material_reorder = count_material_true_reorderings(merged)
     allowance = int(2 * len(eval_sessions) / 10)
     per_day_fail = per_day[per_day["agree"] < 0.98]
 

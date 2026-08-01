@@ -1,52 +1,87 @@
 """Tests for the guarded Protocol101 fair-contract training runner."""
 from __future__ import annotations
 
+import argparse
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from v4.model.protocol101_governed_loader import GovernedLoaderArtifacts, file_sha256
 from v4.scripts.build_protocol101_protected_holdout_artifact import build_artifact
 from v4.scripts.run_protocol101_owned_raw_acceptance_verifier import compute_registry_hash
-from v4.model.supervised_pilot import DecisionCandidates, PilotConfig
+from v4.live.protocol101_feature_contract import FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED
+from v4.model.supervised_pilot import (
+    DecisionCandidates,
+    FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE,
+    PilotConfig,
+)
 from v4.scripts.run_protocol101_fair_contract_training_runner import (
+    POLICY_META,
     _attach_teacher_labels,
     _average_predictions,
     _balanced_classifier_sample_weight,
     _flatten_training_examples_with_rights,
     _split_fit_and_calibration_decisions,
+    _targets_for_decision,
     build_runner_plan,
     choose_threshold_with_rule,
     parse_ensemble_seeds,
     paths_by_split,
 )
+from v4.scripts import run_protocol101_fair_contract_training_runner as runner_module
+
+
+def _sessions() -> list[str]:
+    return [
+        "2026-01-02",
+        "2026-01-05",
+        "2026-01-06",
+        "2026-01-07",
+        "2026-01-08",
+        "2026-01-09",
+        "2026-01-12",
+        "2026-03-03",
+    ]
+
+
+def _folds() -> list[dict]:
+    sessions = _sessions()
+    return [
+        {
+            "fold_index": idx,
+            "fold_id": f"expanding_fold_{idx:02d}",
+            "train_sessions": sessions[:idx],
+            "validation_sessions": [sessions[idx + 1]],
+            "embargoed_sessions": [
+                {
+                    "session": sessions[idx],
+                    "reason": "one_trading_session_embargo",
+                }
+            ],
+        }
+        for idx in range(1, 6)
+    ]
 
 
 def _manifest() -> dict:
     return {
         "included_sessions": [
             {
-                "session": "2026-01-02",
-                "processed_file": "/tmp/protocol101/2026-01-02.pkl",
-            },
-            {
-                "session": "2026-01-05",
-                "processed_file": "/tmp/protocol101/2026-01-05.pkl",
-            },
-            {
-                "session": "2026-03-03",
-                "processed_file": "/tmp/protocol101/2026-03-03.pkl",
-            },
+                "session": session,
+                "processed_file": f"/tmp/protocol101/{session}.pkl",
+            }
+            for session in _sessions()
         ]
     }
 
 
 def _design() -> dict:
     return {
-        "selected_feature_contract": "protocol101-live-v1",
+        "selected_feature_contract": FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED,
         "paper_submit_allowed": False,
         "allowed_data": {
             "canonical_manifest": "/tmp/protocol101/manifest.json",
@@ -54,6 +89,10 @@ def _design() -> dict:
             "glob_loading_allowed": False,
         },
         "split_policy": {
+            "required_expanding_window_cv": True,
+            "required_fold_count": 5,
+            "fold_count": 5,
+            "folds": _folds(),
             "train_sessions": ["2026-01-02"],
             "validation_sessions": ["2026-01-05"],
             "diagnostic_test_sessions": ["2026-03-03"],
@@ -68,7 +107,7 @@ def _design() -> dict:
 
 
 def _governed_manifest_and_artifacts(tmp_path: Path) -> tuple[dict, GovernedLoaderArtifacts]:
-    sessions = ["2026-01-02", "2026-01-05", "2026-03-03"]
+    sessions = _sessions()
     manifest_sessions = []
     records = []
     for session in sessions:
@@ -100,9 +139,8 @@ def _governed_manifest_and_artifacts(tmp_path: Path) -> tuple[dict, GovernedLoad
     era_manifest = {
         "status": "pass",
         "sessions": [
-            {"session": "2026-01-02", "era": "q1_2026_development"},
-            {"session": "2026-01-05", "era": "q1_2026_development"},
-            {"session": "2026-03-03", "era": "q1_2026_development"},
+            {"session": session, "era": "q1_2026_development"}
+            for session in sessions
         ],
     }
     role_policy = {
@@ -149,6 +187,51 @@ def test_training_mode_requires_explicit_owner_approval_flags(tmp_path: Path) ->
     assert "missing_owner_approved_model_training_flag" in plan["blockers"]
     assert "missing_owner_approved_threshold_selection_flag" in plan["blockers"]
     assert "missing_owner_approval_note" in plan["blockers"]
+    assert "fold_aware_training_requires_hgb_tabular_model_family" in plan["blockers"]
+
+
+def test_training_mode_rejects_old_single_split_even_with_owner_flags(tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    old_design = {
+        **_design(),
+        "split_policy": {
+            "train_sessions": ["2026-01-02"],
+            "validation_sessions": ["2026-01-05"],
+            "diagnostic_test_sessions": ["2026-03-03"],
+        },
+    }
+    plan = build_runner_plan(
+        design=old_design,
+        manifest=manifest,
+        governance_artifacts=governance,
+        mode="train",
+        policy_index=1,
+        model_family="sklearn_hist_gradient_boosting",
+        owner_approved_model_training=True,
+        owner_approved_threshold_selection=True,
+        owner_approval_note="unit-test owner approval",
+    )
+
+    assert plan["status"] == "blocked"
+    assert "expanding_window_cv_required_for_training" in plan["blockers"]
+
+
+def test_training_mode_ready_with_fold_aware_hgb_and_owner_flags(tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    plan = build_runner_plan(
+        design=_design(),
+        manifest=manifest,
+        governance_artifacts=governance,
+        mode="train",
+        policy_index=1,
+        model_family="sklearn_hist_gradient_boosting",
+        owner_approved_model_training=True,
+        owner_approved_threshold_selection=True,
+        owner_approval_note="unit-test owner approval",
+    )
+
+    assert plan["status"] == "ready_to_train"
+    assert plan["blockers"] == []
 
 
 def test_dry_run_plan_is_ready_without_training_authorization(tmp_path: Path) -> None:
@@ -165,8 +248,195 @@ def test_dry_run_plan_is_ready_without_training_authorization(tmp_path: Path) ->
     assert plan["decision"] == "manifest_and_split_ready_no_training_executed"
     assert plan["model_training_executed"] is False
     assert plan["threshold_selection_executed"] is False
+    assert plan["model_scoring_feature_transform"] == (
+        FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE
+    )
     assert plan["split_sessions"]["train"] == ["2026-01-02"]
     assert plan["governance"]["governance_hash"]
+    assert sorted(plan["expanding_folds"]["fold_sessions"]) == [
+        "expanding_fold_01",
+        "expanding_fold_02",
+        "expanding_fold_03",
+        "expanding_fold_04",
+        "expanding_fold_05",
+    ]
+    assert plan["expanding_folds"]["fold_sessions"]["expanding_fold_05"]["validation"] == [
+        "2026-01-12"
+    ]
+
+
+def test_dry_run_blocks_protected_holdout_inside_any_fold(tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    protected_governance = replace(
+        governance,
+        protected_holdout=build_artifact(
+            sessions=["2026-01-06"],
+            owner_note="unit-test protected fold session",
+        ),
+    )
+    plan = build_runner_plan(
+        design=_design(),
+        manifest=manifest,
+        governance_artifacts=protected_governance,
+        mode="dry-run",
+        policy_index=1,
+        model_family="sklearn_hist_gradient_boosting",
+    )
+
+    assert plan["status"] == "blocked"
+    assert any("fold_session_not_placeable:expanding_fold_01:validation:2026-01-06" in item for item in plan["blockers"])
+    assert any("2026-01-06:protected_holdout_session_requested" in item for item in plan["blockers"])
+
+
+def test_dry_run_blocks_report_only_session_inside_any_fold(tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    acceptance = dict(governance.acceptance_registry)
+    sessions = []
+    for row in acceptance["sessions"]:
+        updated = dict(row)
+        if updated["session"] == "2026-01-06":
+            updated["status"] = "report_only"
+        sessions.append(updated)
+    acceptance["sessions"] = sessions
+    acceptance["registry_hash"] = compute_registry_hash(acceptance)
+    blocked_governance = replace(governance, acceptance_registry=acceptance)
+    plan = build_runner_plan(
+        design=_design(),
+        manifest=manifest,
+        governance_artifacts=blocked_governance,
+        mode="dry-run",
+        policy_index=1,
+        model_family="sklearn_hist_gradient_boosting",
+    )
+
+    assert plan["status"] == "blocked"
+    assert any("fold_session_not_placeable:expanding_fold_01:validation:2026-01-06" in item for item in plan["blockers"])
+    assert any("expanding_fold_01:2026-01-06:session_acceptance_not_pass" in item for item in plan["blockers"])
+
+
+def test_expanding_fold_plan_keeps_embargoed_sessions_out_of_fold_inputs(tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    plan = build_runner_plan(
+        design=_design(),
+        manifest=manifest,
+        governance_artifacts=governance,
+        mode="dry-run",
+        policy_index=1,
+        model_family="sklearn_hist_gradient_boosting",
+    )
+
+    fold_01 = plan["expanding_folds"]["fold_sessions"]["expanding_fold_01"]
+    assert "2026-01-05" not in fold_01["train"]
+    assert "2026-01-05" not in fold_01["validation"]
+    assert fold_01["train"] == ["2026-01-02"]
+    assert fold_01["validation"] == ["2026-01-06"]
+
+
+def test_fold_aware_training_dispatches_all_five_folds(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    plan = build_runner_plan(
+        design=_design(),
+        manifest=manifest,
+        governance_artifacts=governance,
+        mode="train",
+        policy_index=1,
+        model_family="sklearn_hist_gradient_boosting",
+        owner_approved_model_training=True,
+        owner_approved_threshold_selection=True,
+        owner_approval_note="unit-test owner approval",
+    )
+    calls: list[dict] = []
+
+    def fake_single_split_training(fold_plan: dict, args) -> dict:
+        calls.append(fold_plan["split_sessions"])
+        return {
+            "config": {"policy_index": int(args.policy_index), "feature_transform": str(args.feature_transform)},
+            "experiment": {"model_family": str(args.model_family)},
+            "model_out": str(args.model_out),
+            "chosen_threshold": 1.0 + len(calls),
+            "split_summary": {
+                "train": {"sessions": len(fold_plan["split_sessions"]["train"]), "decisions": 1, "candidates": 1},
+                "validation": {"sessions": len(fold_plan["split_sessions"]["validation"]), "decisions": 1, "candidates": 1},
+                "diagnostic_test": {"sessions": 0, "decisions": 0, "candidates": 0},
+            },
+            "fit_calibration_summary": {},
+            "training_preview": {},
+            "training_history": [],
+            "model_family_preview": {},
+            "neural": {
+                "validation": {
+                    "metrics": {
+                        "trades": 2,
+                        "total_pnl": 100.0,
+                        "profit_factor": 2.0,
+                        "max_drawdown": -10.0,
+                    }
+                }
+            },
+            "baselines": {},
+        }
+
+    monkeypatch.setattr(runner_module, "run_single_split_training", fake_single_split_training)
+    args = argparse.Namespace(
+        policy_index=1,
+        model_family="sklearn_hist_gradient_boosting",
+        target_mode="return_on_premium_regression",
+        target_clip=5.0,
+        threshold_rule="max_validation_stressed_pnl",
+        threshold_stress_per_trade=20.0,
+        feature_transform=FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE,
+        model_out=tmp_path / "fold_index.pt",
+    )
+
+    result = runner_module.run_training(plan, args)
+
+    assert result["execution_mode"] == "fold_aware_expanding_cv"
+    assert result["fold_count"] == 5
+    assert len(calls) == 5
+    assert calls[0]["train"] == ["2026-01-02"]
+    assert calls[0]["validation"] == ["2026-01-06"]
+    assert calls[-1]["train"] == [
+        "2026-01-02",
+        "2026-01-05",
+        "2026-01-06",
+        "2026-01-07",
+        "2026-01-08",
+    ]
+    assert calls[-1]["validation"] == ["2026-01-12"]
+    assert result["fold_summary"]["aggregate_validation_metrics"]["trades"] == 10
+
+
+def test_runner_policy_meta_includes_all_trade_shape_menu_v2_labels(tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    plan = build_runner_plan(
+        design=_design(),
+        manifest=manifest,
+        governance_artifacts=governance,
+        mode="dry-run",
+        policy_index=6,
+    )
+
+    assert sorted(POLICY_META) == list(range(7))
+    assert POLICY_META[3] == ("ask_to_bid_stop50_target200_hold90m", 90)
+    assert POLICY_META[6] == ("ask_to_bid_stop100_target9900_hold384m", 384)
+    assert plan["status"] == "dry_run_ready"
+    assert plan["policy_name"] == "ask_to_bid_stop100_target9900_hold384m"
+    assert plan["cooldown_minutes"] == 384
+
+
+def test_v2_runner_blocks_non_certified_model_scoring_transform(tmp_path: Path) -> None:
+    manifest, governance = _governed_manifest_and_artifacts(tmp_path)
+    plan = build_runner_plan(
+        design=_design(),
+        manifest=manifest,
+        governance_artifacts=governance,
+        mode="dry-run",
+        policy_index=1,
+        feature_transform="none",
+    )
+
+    assert plan["status"] == "blocked"
+    assert "unexpected_model_scoring_feature_transform" in plan["blockers"]
 
 
 def test_jan_fit_feb_calibration_split_uses_train_sessions_only() -> None:
@@ -230,6 +500,28 @@ def test_train_tail20_calibration_uses_chronological_train_tail_only() -> None:
     assert fit[-1].session == "2026-01-06"
     assert "2026-01-07" not in {decision.session for decision in fit}
     assert summary["fallback_used"] is False
+
+
+def test_return_on_premium_target_uses_premium_at_risk() -> None:
+    decision = DecisionCandidates(
+        session="2026-01-02",
+        decision_time=datetime(2026, 1, 2, 14, 32, tzinfo=timezone.utc),
+        features=np.ones((3, 2), dtype=np.float32),
+        labels=np.asarray([50.0, -25.0, 300.0], dtype=np.float32),
+        offsets=np.asarray([0.0, 5.0, 10.0], dtype=np.float32),
+        rights=np.asarray(["C", "P", "C"], dtype=object),
+        market_last=np.zeros(7, dtype=np.float32),
+        entry_asks=np.asarray([2.0, 1.0, 0.5], dtype=np.float32),
+    )
+    config = replace(
+        PilotConfig(),
+        target_mode="return_on_premium_regression",
+        target_clip=5.0,
+    )
+
+    targets = _targets_for_decision(decision, config=config)
+
+    np.testing.assert_allclose(targets, np.asarray([0.25, -0.25, 5.0], dtype=np.float32))
 
 
 def test_stressed_threshold_rule_can_prefer_fewer_higher_edge_trades() -> None:

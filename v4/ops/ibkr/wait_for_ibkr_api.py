@@ -3,11 +3,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import socket
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+
+TRANSIENT_PROBE_ERRORS = (
+    "Resource deadlock avoided",
+    "Errno 11",
+    "EDEADLK",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -80,9 +88,7 @@ def candidate_ports(args: argparse.Namespace) -> list[int]:
 
 
 def run_entitlement_probe(args: argparse.Namespace, *, port: int) -> int:
-    python = args.repo_root / ".venv/bin/python"
-    if not python.exists():
-        python = Path(sys.executable)
+    python = Path(sys.executable)
     cmd = [
         str(python),
         "-m",
@@ -94,7 +100,36 @@ def run_entitlement_probe(args: argparse.Namespace, *, port: int) -> int:
         "--ibkr-auto-ports",
         "4002,4000,7497,7496,4001",
     ]
-    return subprocess.call(cmd, cwd=str(args.repo_root))
+    attempts = max(1, int(os.environ.get("IBKR_ENTITLEMENT_PROBE_ATTEMPTS", "3")))
+    for attempt in range(1, attempts + 1):
+        proc = subprocess.run(cmd, cwd=str(args.repo_root), capture_output=True, text=True, check=False)
+        if proc.stdout:
+            print(proc.stdout, end="")
+        if proc.stderr:
+            print(proc.stderr, end="", file=sys.stderr)
+        if proc.returncode == 0:
+            return 0
+        combined = f"{proc.stdout}\n{proc.stderr}"
+        if not is_transient_probe_failure(combined) or attempt >= attempts:
+            return int(proc.returncode)
+        print(
+            json.dumps(
+                {
+                    "status": "retrying",
+                    "reason": "transient_entitlement_probe_import_failure",
+                    "attempt": attempt,
+                    "next_attempt": attempt + 1,
+                },
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+        )
+        time.sleep(min(5.0, 1.5 * attempt))
+    return 1
+
+
+def is_transient_probe_failure(text: str) -> bool:
+    return any(marker in text for marker in TRANSIENT_PROBE_ERRORS)
 
 
 if __name__ == "__main__":

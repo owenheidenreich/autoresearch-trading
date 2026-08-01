@@ -1,14 +1,14 @@
 {
-  "blocked_reason": null,
+  "blocked_reason": "missing_live_market_data_entitlements",
   "chain_meta": {
-    "atm_strike": 7350,
+    "atm_strike": 7395,
     "chain_exchange": "SMART",
-    "expiry": "20260519",
+    "expiry": "20260612",
     "qualified_contracts": 6,
     "requested_contracts": 6,
     "strike_count": 3
   },
-  "checked_at": "2026-05-19T11:09:54.979918-04:00",
+  "checked_at": "2026-06-12T09:29:05.778321-04:00",
   "connection_attempts": [
     {
       "host": "127.0.0.1",
@@ -16,18 +16,18 @@
       "status": "connected"
     }
   ],
-  "decision": "pass",
+  "decision": "blocked",
   "feed_status": {
     "spx": {
       "live_price_available": true,
       "market_data_type": "live",
-      "price": 7352.45
+      "price": 7394.3
     },
     "spxw_options": {
       "contracts_qualified": 6,
       "contracts_requested": 6,
       "delayed_nbbo_rows": 0,
-      "live_nbbo_rows": 6,
+      "live_nbbo_rows": 0,
       "market_data_type_counts": {
         "live": 6
       }
@@ -35,7 +35,7 @@
     "vix": {
       "live_price_available": true,
       "market_data_type": "live",
-      "price": 18.12
+      "price": 19.26
     }
   },
   "ibkr_connected": true,
@@ -59,24 +59,6 @@
       "req_id": -1
     },
     {
-      "contract": "Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD', localSymbol='SPX')",
-      "error_code": 10197,
-      "error_string": "No market data during competing live session",
-      "req_id": 4
-    },
-    {
-      "contract": "Index(conId=13455763, symbol='VIX', exchange='CBOE', currency='USD', localSymbol='VIX')",
-      "error_code": 10197,
-      "error_string": "No market data during competing live session",
-      "req_id": 6
-    },
-    {
-      "contract": null,
-      "error_code": 2119,
-      "error_string": "Market data farm is connecting:usopt",
-      "req_id": -1
-    },
-    {
       "contract": null,
       "error_code": 2119,
       "error_string": "Market data farm is connecting:usopt",
@@ -94,7 +76,7 @@
     "broker_order_endpoint_called": false,
     "order_intent_non_null_rows": 0
   },
-  "regular_market_hours": true,
+  "regular_market_hours": false,
   "required_actions": [
     {
       "item": "Market Data API Acknowledgement",

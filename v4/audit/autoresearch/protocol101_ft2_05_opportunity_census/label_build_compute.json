@@ -1,17 +1,18 @@
 {
+  "aggregate_only_from_sealed_checkpoints": true,
   "checkpoint_resume_used": true,
   "core_hours": 0.17031008055555558,
   "execution_window_note": "Full run started outside the 05:30-13:15 local recorder window.",
   "host_cpu_count": 10,
   "latest_checkpoint_load": {
-    "core_hours": 0.000942675,
-    "system_cpu_seconds": 1.033694,
-    "user_cpu_seconds": 2.359936,
-    "wall_seconds": 1.435384000011254
+    "core_hours": 0.0009415005555555554,
+    "system_cpu_seconds": 1.059416,
+    "user_cpu_seconds": 2.329986,
+    "wall_seconds": 1.6850420419941656
   },
-  "overall_system_cpu_seconds": 5.423513,
-  "overall_user_cpu_seconds": 80.555325,
-  "overall_wall_seconds": 85.62622116704006,
+  "overall_system_cpu_seconds": 5.770607999999999,
+  "overall_user_cpu_seconds": 80.376388,
+  "overall_wall_seconds": 86.03392862499459,
   "per_session": [
     {
       "decision_rows": 359,
@@ -914,7 +915,7 @@
       "wall_seconds": 22.42825133400038
     }
   ],
-  "process_max_rss_platform_units": 4539580416,
+  "process_max_rss_platform_units": 4735369216,
   "recorder_hours_observed": false,
   "system_cpu_seconds": 4.26871,
   "user_cpu_seconds": 608.84758,

@@ -4,13 +4,19 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
+
 from v4.model.protocol101_governed_loader import (
     GovernedLoaderArtifacts,
     PROTECTED_HOLDOUT_OWNER_OVERRIDE_TOKEN,
+    _manifest_by_session,
     file_sha256,
     resolve_governed_split_paths,
     validate_governance_artifacts,
     validate_session_for_role,
+)
+from v4.model.protocol101_regimen_repair import (
+    Protocol101DuplicateSessionMembershipError,
 )
 from v4.scripts.build_protocol101_protected_holdout_artifact import build_artifact
 from v4.scripts.run_protocol101_owned_raw_acceptance_verifier import compute_registry_hash
@@ -196,3 +202,14 @@ def test_protected_holdout_artifact_blocks_session_without_owner_override(tmp_pa
     )
     assert test_with_override["placeable"] is True
     assert test_with_override["protected_holdout_override_used"] is True
+
+
+def test_manifest_duplicate_fails_before_dictionary_overwrite() -> None:
+    manifest = {
+        "included_sessions": [
+            {"session": "2025-01-02", "processed_file": "first.pkl"},
+            {"session": "2025-01-02", "processed_file": "second.pkl"},
+        ]
+    }
+    with pytest.raises(Protocol101DuplicateSessionMembershipError):
+        _manifest_by_session(manifest)

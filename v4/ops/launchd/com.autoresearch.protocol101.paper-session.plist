@@ -8,10 +8,40 @@
 		<string>4002</string>
 		<key>IB_GATEWAY_API_PORTS</key>
 		<string>4002,4000,7497,7496,4001</string>
+		<key>DAILY_PAPER_AUTOPILOT_MODEL_REGISTRY</key>
+		<string>/Users/gduby/Documents/autoresearch-trading/v4/promotion/PAPER_TRADING_DEFAULT.json</string>
+		<key>DAILY_PAPER_AUTOPILOT_MODE</key>
+		<string>paper-submit</string>
+		<key>PROTOCOL101_ACKNOWLEDGE_PAPER_LOSS</key>
+		<string>YES</string>
+		<key>PROTOCOL101_ENABLE_PAPER_ORDERS</key>
+		<string>YES</string>
+		<key>PROTOCOL101_ENTRY_BRIDGE_MAX_DECISIONS</key>
+		<string>3</string>
+		<key>PROTOCOL101_ENTRY_BRIDGE_MODE</key>
+		<string>paper-submit</string>
+		<key>PROTOCOL101_ENTRY_BRIDGE_SECONDS</key>
+		<string>15</string>
+		<key>PROTOCOL101_ENTRY_BRIDGE_STRIKES_AROUND_ATM</key>
+		<string>10</string>
+		<key>PROTOCOL101_PERSISTENT_CONTRACT_REFRESH_SECONDS</key>
+		<string>60</string>
+		<key>PROTOCOL101_PERSISTENT_ENTRY_DECISION_INTERVAL_SECONDS</key>
+		<string>60</string>
+		<key>PROTOCOL101_PERSISTENT_ENTRY_DECISION_MODE</key>
+		<string>minute</string>
+		<key>PROTOCOL101_PERSISTENT_HEARTBEAT_SECONDS</key>
+		<string>30</string>
+		<key>PROTOCOL101_PERSISTENT_QUOTE_LOOP_SECONDS</key>
+		<string>1</string>
+		<key>PROTOCOL101_PERSISTENT_REFRESH_DRIFT_POINTS</key>
+		<string>15</string>
 		<key>PROTOCOL101_SESSION_CAPTURE_SECONDS</key>
 		<string>45</string>
 		<key>PROTOCOL101_SESSION_CYCLE_SECONDS</key>
 		<string>60</string>
+		<key>PROTOCOL101_SESSION_KIND</key>
+		<string>persistent</string>
 		<key>PROTOCOL101_SESSION_MAX_CYCLES</key>
 		<string>390</string>
 		<key>PROTOCOL101_SESSION_MODE</key>
@@ -26,6 +56,8 @@
 		<string>/Users/gduby/Documents/autoresearch-trading/.venv/bin/python</string>
 		<key>REPO_ROOT</key>
 		<string>/Users/gduby/Documents/autoresearch-trading</string>
+		<key>V4_ALLOW_IBKR_PAPER_ORDERS</key>
+		<string>YES</string>
 	</dict>
 	<key>Label</key>
 	<string>com.autoresearch.protocol101.paper-session</string>

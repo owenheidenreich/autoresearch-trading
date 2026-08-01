@@ -22,6 +22,7 @@ from v4.scripts.run_protocol140_ibkr_autostart_prep import (
     DEFAULT_LOG_DIR,
     DEFAULT_LAUNCHD_RUNTIME_DIR,
     GATEWAY_LABEL,
+    MONITOR_LABEL,
     PREFLIGHT_LABEL,
     SESSION_LABEL,
     candidate_api_ports,
@@ -32,6 +33,7 @@ DEFAULT_OUT_DIR = Path("v4/audit/autoresearch/v4_aplus_hypothesis_156_ibkr_autos
 DEFAULT_LEDGER = Path("v4/ledger/RESEARCH_LEDGER.md")
 DEFAULT_ENTITLEMENT_SUMMARY = Path("v4/audit/ibkr_live_data_entitlements/summary.json")
 PACIFIC = ZoneInfo("America/Los_Angeles")
+PREMIUM_BLEND_AUTOTEST_LABEL = "com.autoresearch.premiumblend.no-order-surface-check"
 KNOWN_LOG_FILES = {
     "gateway_stdout": "ibgateway-paper.out.log",
     "gateway_stderr": "ibgateway-paper.err.log",
@@ -39,8 +41,12 @@ KNOWN_LOG_FILES = {
     "preflight_stderr": "protocol101-paper-preflight.err.log",
     "session_stdout": "protocol101-paper-session.out.log",
     "session_stderr": "protocol101-paper-session.err.log",
+    "monitor_stdout": "protocol101-daily-monitor.out.log",
+    "monitor_stderr": "protocol101-daily-monitor.err.log",
+    "premium_blend_autotest_stdout": "premiumblend-live-surface-autotest.out.log",
+    "premium_blend_autotest_stderr": "premiumblend-live-surface-autotest.err.log",
 }
-LABELS = [GATEWAY_LABEL, PREFLIGHT_LABEL, SESSION_LABEL]
+LABELS = [GATEWAY_LABEL, PREFLIGHT_LABEL, SESSION_LABEL, MONITOR_LABEL, PREMIUM_BLEND_AUTOTEST_LABEL]
 
 
 PATTERNS = {
@@ -235,7 +241,12 @@ def collect_logs(log_dir: Path, *, tail_lines: int) -> dict[str, Any]:
 def collect_runtime_wrappers(runtime_dir: Path) -> dict[str, Any]:
     expanded = runtime_dir.expanduser()
     wrappers: dict[str, Any] = {"runtime_dir": str(expanded)}
-    for name in ("run_protocol101_paper_session.sh", "run_protocol101_paper_preflight.sh", "run_ibkr_autostart_status.sh"):
+    for name in (
+        "run_protocol101_paper_session.sh",
+        "run_protocol101_paper_preflight.sh",
+        "run_ibkr_autostart_status.sh",
+        "run_premium_blend_live_surface_autotest.sh",
+    ):
         path = expanded / name
         text = path.read_text(errors="replace") if path.exists() else ""
         wrappers[name] = {
@@ -381,10 +392,13 @@ def decide(
     entitlement: dict[str, Any] | None = None,
 ) -> str:
     loaded = [label for label, status in launchd.items() if status.get("loaded")]
-    if len(loaded) < len(LABELS):
+    if launchd and len(loaded) < len(launchd):
         return "blocked_launchagents_not_loaded"
-    if entitlement_live_ready(entitlement or {}):
+    port_open = any(probe.open for probe in ports)
+    if entitlement_live_ready(entitlement or {}) and port_open:
         return "pass_live_market_data_entitlements"
+    if entitlement_live_ready(entitlement or {}):
+        return "observe_previous_live_market_data_entitlements_no_current_port"
     session_wrapper = (runtime_wrappers or {}).get("run_protocol101_paper_session.sh", {})
     preflight_wrapper = (runtime_wrappers or {}).get("run_protocol101_paper_preflight.sh", {})
     if (signals.get("launchd_python_runtime_failed") or signals.get("launchd_permission_denied")) and not (
@@ -399,7 +413,7 @@ def decide(
         return "blocked_live_market_data_entitlements"
     if signals.get("ibkr_keepalive_socket_disconnect") or signals.get("socket_disconnect"):
         return "blocked_gateway_keepalive_disconnect"
-    if any(probe.open for probe in ports):
+    if port_open:
         return "pass_ibkr_api_port_reachable"
     if signals.get("ibkr_api_connected_detected") or signals.get("pass_status_detected"):
         return "observe_previous_ibkr_api_connection_no_current_port"
@@ -430,6 +444,7 @@ def interpretation(decision: str, signals: Counter[str]) -> list[str]:
         "blocked_gateway_keepalive_disconnect": "Gateway connected and then disconnected during keepalive. The next check is whether Gateway stayed logged in and API settings remained enabled.",
         "pass_ibkr_api_port_reachable": "An IBKR API port is currently reachable from localhost.",
         "pass_live_market_data_entitlements": "The latest no-order entitlement probe confirms live SPX, live VIX, and live SPXW option NBBO are available.",
+        "observe_previous_live_market_data_entitlements_no_current_port": "A previous no-order entitlement probe passed, but no IBKR API port is reachable right now. This is acceptable off-hours if Gateway is closed; Tuesday still needs the scheduled startup to open Gateway.",
         "observe_previous_ibkr_api_connection_no_current_port": "Recent logs show a prior successful API connection, but no API port is currently reachable.",
         "blocked_ibkr_autostart_no_api_confirmation": "The logs and current port probes do not yet prove that IB Gateway reached the API listener.",
     }
@@ -452,6 +467,8 @@ def next_action(decision: str) -> str:
         return "Run the generated install script from Protocol140, then rerun this status report."
     if decision.startswith("pass_"):
         return "Run Protocol101 no-order/paper session and inspect the live JSONL plus this status report after the session."
+    if decision == "observe_previous_live_market_data_entitlements_no_current_port":
+        return "LaunchAgents are loaded, but Gateway is not currently reachable. Let the Tuesday startup run, then check this report plus the premium-blend live surface autotest output."
     return "Rerun this status report after Gateway is expected to be open, then inspect the report's log tails for the first failing stage."
 
 

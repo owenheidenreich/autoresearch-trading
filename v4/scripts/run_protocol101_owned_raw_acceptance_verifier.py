@@ -24,6 +24,10 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 from v4.dataset.spxw_0dte_neural import MARKET_FEATURE_NAMES
+from v4.live.protocol101_feature_contract import (
+    FEATURE_CONTRACT_VERSION,
+    FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED,
+)
 
 
 SCHEMA_VERSION = "Protocol101OwnedRawAcceptanceRegistryV3_5"
@@ -45,13 +49,13 @@ DEFAULT_ROLE_POLICY = Path("v4/audit/autoresearch/protocol101_era_role_policy/su
 NY = ZoneInfo("America/New_York")
 
 EARLY_CLOSE_TIMES_ET = {
-    # Observed exchange-calendar behavior in local processed artifacts.
+    # Cboe U.S. Options RTH early closes only. Keep in sync with the
+    # neural dataset builder; do not import bond-market early closes here.
     "2024-11-29": "13:00",
     "2024-12-24": "13:15",
     "2025-07-03": "13:00",
     "2025-11-28": "13:00",
     "2025-12-24": "13:15",
-    "2026-07-02": "13:00",
 }
 MARKET_HOLIDAYS = {
     "2024-11-28",
@@ -67,6 +71,16 @@ MARKET_HOLIDAYS = {
     "2025-09-01",
     "2025-11-27",
     "2025-12-25",
+    "2026-01-01",
+    "2026-01-19",
+    "2026-02-16",
+    "2026-04-03",
+    "2026-05-25",
+    "2026-06-19",
+    "2026-07-03",
+    "2026-09-07",
+    "2026-11-26",
+    "2026-12-25",
 }
 
 PRODUCTS = {
@@ -291,6 +305,17 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def index_file_path(directory: Path, session: str, symbol: str) -> Path:
+    """Return the canonical index file, including v2 official-index fallback names."""
+    simple = directory / f"{session}.parquet"
+    if simple.exists():
+        return simple
+    official = directory / f"{session}.official_{symbol.lower()}.parquet"
+    if official.exists():
+        return official
+    return simple
+
+
 def expected_decision_minutes(session: str) -> int:
     close_text = EARLY_CLOSE_TIMES_ET.get(session, "16:00")
     hour, minute = [int(part) for part in close_text.split(":", 1)]
@@ -303,6 +328,15 @@ def expected_decision_minutes(session: str) -> int:
     return max(int((last - first).total_seconds() // 60) + 1, 0)
 
 
+def expected_decision_minutes_for_contract(session: str, feature_contract_version: str) -> int:
+    minutes = expected_decision_minutes(session)
+    if feature_contract_version == FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED:
+        # v2 uses completed index context through t-1m and refuses to fabricate
+        # a 09:31 ET row from unavailable pre-open context.
+        return max(minutes - 1, 0)
+    return minutes
+
+
 def expected_decision_bounds(session: str) -> tuple[datetime, datetime]:
     close_text = EARLY_CLOSE_TIMES_ET.get(session, "16:00")
     hour, minute = [int(part) for part in close_text.split(":", 1)]
@@ -313,6 +347,13 @@ def expected_decision_bounds(session: str) -> tuple[datetime, datetime]:
     else:
         last = datetime.combine(session_date, time(hour, minute), tzinfo=NY) - timedelta(minutes=1)
     return first.astimezone(ZoneInfo("UTC")), last.astimezone(ZoneInfo("UTC"))
+
+
+def expected_decision_bounds_for_contract(session: str, feature_contract_version: str) -> tuple[datetime, datetime]:
+    first, last = expected_decision_bounds(session)
+    if feature_contract_version == FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED:
+        return first + timedelta(minutes=1), last
+    return first, last
 
 
 def to_utc_datetime(value: Any) -> datetime | None:
@@ -351,7 +392,6 @@ def thresholds_are_defaults(thresholds: AcceptanceThresholds) -> bool:
 def processed_quality(session: str, processed_dir: Path) -> dict[str, Any]:
     path = processed_dir / f"{session}.pkl"
     rows = load_pickle_rows(path)
-    expected = expected_decision_minutes(session)
     if not rows:
         return {
             "processed_path": str(path),
@@ -359,7 +399,7 @@ def processed_quality(session: str, processed_dir: Path) -> dict[str, Any]:
             "processed_bytes": path.stat().st_size if path.exists() else 0,
             "processed_sha256": file_sha256(path) if path.exists() else "",
             "neural_rows": 0,
-            "expected_decision_minutes": expected,
+            "expected_decision_minutes": expected_decision_minutes(session),
             "ladder_shape_ok_share": 0.0,
             "tradable_minute_share": 0.0,
             "mean_tradable_candidates": 0.0,
@@ -419,6 +459,8 @@ def processed_quality(session: str, processed_dir: Path) -> dict[str, Any]:
     labels_flat = np.concatenate(label_values) if label_values else np.asarray([], dtype=float)
     finite_labels = labels_flat[np.isfinite(labels_flat)]
     nonzero_labels = finite_labels[np.abs(finite_labels) > 1e-9]
+    feature_contract_version = ",".join(sorted(feature_contract_versions))
+    expected = expected_decision_minutes_for_contract(session, feature_contract_version)
     return {
         "processed_path": str(path),
         "processed_exists": path.exists(),
@@ -439,7 +481,7 @@ def processed_quality(session: str, processed_dir: Path) -> dict[str, Any]:
         "label_negative_share": float((finite_labels < 0).mean()) if len(finite_labels) else 0.0,
         "first_decision_time": rows[0].get("decision_time").isoformat() if hasattr(rows[0].get("decision_time"), "isoformat") else str(rows[0].get("decision_time")),
         "last_decision_time": rows[-1].get("decision_time").isoformat() if hasattr(rows[-1].get("decision_time"), "isoformat") else str(rows[-1].get("decision_time")),
-        "feature_contract_version": ",".join(sorted(feature_contract_versions)),
+        "feature_contract_version": feature_contract_version,
         "decision_grid": ",".join(sorted(decision_grid_versions)),
     }
 
@@ -447,7 +489,7 @@ def processed_quality(session: str, processed_dir: Path) -> dict[str, Any]:
 def index_quality(session: str, spx_dir: Path, vix_dir: Path) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for symbol, directory in (("spx", spx_dir), ("vix", vix_dir)):
-        path = directory / f"{session}.parquet"
+        path = index_file_path(directory, session, symbol)
         count = parquet_row_count(path) if path.exists() else None
         out[f"{symbol}_path"] = str(path)
         out[f"{symbol}_exists"] = path.exists()
@@ -851,8 +893,8 @@ def context_reconstruction_quality(
             "vix_close_finite_share": 0.0,
             "examples": [],
         }
-    spx = _normalize_vendor_index_frame(spx_dir / f"{session}.parquet", "SPX")
-    vix = _normalize_vendor_index_frame(vix_dir / f"{session}.parquet", "VIX")
+    spx = _normalize_vendor_index_frame(index_file_path(spx_dir, session, "spx"), "SPX")
+    vix = _normalize_vendor_index_frame(index_file_path(vix_dir, session, "vix"), "VIX")
     comparable = 0
     feature_matches = 0
     feature_mismatches = 0
@@ -1262,9 +1304,17 @@ def label_spot_check_quality(
     }
 
 
-def context_causality_quality(session: str, processed_dir: Path) -> dict[str, Any]:
+def context_causality_quality(
+    session: str,
+    processed_dir: Path,
+    *,
+    feature_contract_version: str = FEATURE_CONTRACT_VERSION,
+) -> dict[str, Any]:
     rows = load_pickle_rows(processed_dir / f"{session}.pkl")
-    expected_first, expected_last = expected_decision_bounds(session)
+    expected_first, expected_last = expected_decision_bounds_for_contract(
+        session,
+        feature_contract_version,
+    )
     if not rows:
         return {
             "first_decision_time": None,
@@ -1353,7 +1403,7 @@ def index_context_gap_quality(
         freq="min",
         tz="UTC",
     )
-    spx = _normalize_vendor_index_frame(spx_dir / f"{session}.parquet", "SPX")
+    spx = _normalize_vendor_index_frame(index_file_path(spx_dir, session, "spx"), "SPX")
     vendor_minutes = (
         set(pd.to_datetime(spx["event_time"], utc=True)) if not spx.empty else set()
     )
@@ -1506,7 +1556,12 @@ def verify_session(
     raw = raw_quality(session, raw_root)
     index = index_quality(session, spx_dir, vix_dir)
     processed = processed_quality(session, processed_dir)
-    context = context_causality_quality(session, processed_dir)
+    processed_feature_contract = str(processed.get("feature_contract_version") or "")
+    context = context_causality_quality(
+        session,
+        processed_dir,
+        feature_contract_version=processed_feature_contract,
+    )
     context_reconstruction = context_reconstruction_quality(
         session,
         spx_dir=spx_dir,
@@ -1573,7 +1628,8 @@ def verify_session(
         and int(entry_ladder_sweep.get("ladder_quote_mismatch_count") or 0) == 0
         and float(entry_ladder_sweep.get("ladder_quote_match_share") or 0.0)
         >= thresholds.min_ladder_quote_sweep_match_share,
-        "feature_contract_version_present": processed.get("feature_contract_version") == "protocol101-live-v1",
+        "feature_contract_version_present": processed_feature_contract
+        in {FEATURE_CONTRACT_VERSION, FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED},
         "decision_timestamps_match_calendar": bool(context.get("first_decision_matches_calendar"))
         and bool(context.get("last_decision_matches_calendar"))
         and bool(context.get("one_minute_decision_steps")),

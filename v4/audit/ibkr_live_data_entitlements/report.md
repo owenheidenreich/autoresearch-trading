@@ -2,11 +2,11 @@
 
 No orders were created or submitted.
 
-- Decision: `pass`
-- Blocked reason: `None`
+- Decision: `blocked`
+- Blocked reason: `missing_live_market_data_entitlements`
 - IBKR connected: `True`
 - IBKR port: `4002`
-- Regular market hours: `True`
+- Regular market hours: `False`
 
 ## Feed Status
 
@@ -15,13 +15,13 @@ No orders were created or submitted.
   "spx": {
     "live_price_available": true,
     "market_data_type": "live",
-    "price": 7352.45
+    "price": 7394.3
   },
   "spxw_options": {
     "contracts_qualified": 6,
     "contracts_requested": 6,
     "delayed_nbbo_rows": 0,
-    "live_nbbo_rows": 6,
+    "live_nbbo_rows": 0,
     "market_data_type_counts": {
       "live": 6
     }
@@ -29,7 +29,7 @@ No orders were created or submitted.
   "vix": {
     "live_price_available": true,
     "market_data_type": "live",
-    "price": 18.12
+    "price": 19.26
   }
 }
 ```

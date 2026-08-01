@@ -51,7 +51,7 @@ AUTHORITY_PATH = Path(
     "PROTOCOL101_FULL_TRADER_GRAPH_V2_CONSOLIDATED_AUTHORITY_2026_07_28.md"
 )
 AUTHORITY_SHA256 = (
-    "3c7a0aaf2334ae7f04090fb3e67eb2db16591c40545bcf3c09e78c04f0640033"
+    "edcbee06ebfc5ac3a26fa13da043754589ba55fbbd11b207906e19459d4103f3"
 )
 GRAPH_PATH = Path(
     "v4/docs/protocol101/training/execution/"
@@ -76,7 +76,7 @@ INTENT_LAW_SHA256 = (
     "5c117d716cea3c986605faf7b58d510eedce3264a0c04f9368f6dc509dea6bd0"
 )
 NODE_ID = "FT2-05-OPPORTUNITY-CENSUS"
-SCHEMA_VERSION = "Protocol101FT205OpportunityCensusV4"
+SCHEMA_VERSION = "Protocol101FT205OpportunityCensusV5"
 MAX_QUOTE_AGE_MS = 90_000.0
 STARTING_CASH = 10_000.0
 MULTIPLIER = 100.0
@@ -161,6 +161,15 @@ def parse_args() -> argparse.Namespace:
         "--bootstrap-replicates",
         type=int,
         default=BOOTSTRAP_REPLICATES,
+    )
+    parser.add_argument(
+        "--aggregate-existing-checkpoints",
+        action="store_true",
+        help=(
+            "Recompute only derived census/oracle artifacts from the already "
+            "sealed 45 checkpoint label files. This mode never resolves or "
+            "opens raw, outer, protected, paid-data, or broker inputs."
+        ),
     )
     return parser.parse_args()
 
@@ -1842,88 +1851,12 @@ def replay_variant(
                         str(item[1]["contract_id"]),
                     ),
                 )
-                fill_cost_cents = (
-                    int(row["fill_cost_fee3_cents"])
-                    if pd.notna(row.get("fill_cost_fee3_cents"))
-                    else None
-                )
-                fill_ask_quote_cents = (
-                    int(row["entry_ask_cents"])
-                    if pd.notna(row.get("entry_ask_cents"))
-                    else None
-                )
-                recheck_reason = _fill_recheck_reason(
-                    fill_ask_valid=fill_ask_quote_cents is not None,
-                    fill_ask_quote_cents=fill_ask_quote_cents,
-                    fill_cost_cents=fill_cost_cents,
-                    daily_budget_cents=daily_budget_cents,
-                    realized_loss_cents=realized_loss_cents,
-                    available_cash_cents=cash_cents,
-                )
-                if recheck_reason != "PASS":
-                    rejected_fill_rows.append(
-                        {
-                            "selector": selector,
-                            "variant": variant,
-                            "session": str(session),
-                            "policy_identity": f"ft2_05_{selector}_{variant}",
-                            "fee_path": "fee_3",
-                            "decision_time_t": decision_ns,
-                            "resolution_time_tplus1": decision_ns + ONE_MINUTE_NS,
-                            "source_neutral_contract_id": str(row["contract_id"]),
-                            "A_t_quote_cents": int(
-                                row["decision_entry_ask_cents"]
-                            ),
-                            "A_t_intent_cost_cents": int(
-                                row["intent_cost_fee3_cents"]
-                            ),
-                            "A_t_d48_intent_mask": True,
-                            "A_t_d49_intent_mask": True,
-                            "A_tplus1_quote_cents_or_missing": (
-                                fill_ask_quote_cents
-                            ),
-                            "A_tplus1_fill_cost_cents_or_missing": fill_cost_cents,
-                            "rejection_reason": recheck_reason,
-                            "position_opened": False,
-                            "premium_charged_cents": 0,
-                            "fee_charged_cents": 0,
-                            "realized_pnl_change_cents": 0,
-                        }
-                    )
-                    next_decision_earliest_ns = decision_ns + 2 * ONE_MINUTE_NS
-                    continue
-                selection = _replay_selection_from_row(row_index, row, variant)
-                if selection is None:
-                    raise CensusContractError(
-                        "P5 fill passed but realized exit label is unavailable: "
-                        f"{session}/{decision_ns}/{row['contract_id']}/{variant}"
-                    )
-                chosen = (row_index, row, selection)
+                chosen: tuple[
+                    int, pd.Series, ReplaySelection | None
+                ] = (row_index, row, None)
             else:
                 selections: list[tuple[int, pd.Series, ReplaySelection]] = []
                 for row_index, row in candidate_minute.iterrows():
-                    fill_cost_cents = (
-                        int(row["fill_cost_fee3_cents"])
-                        if pd.notna(row.get("fill_cost_fee3_cents"))
-                        else None
-                    )
-                    fill_ask_quote_cents = (
-                        int(row["entry_ask_cents"])
-                        if pd.notna(row.get("entry_ask_cents"))
-                        else None
-                    )
-                    if (
-                        _fill_recheck_reason(
-                            fill_ask_valid=fill_ask_quote_cents is not None,
-                            fill_ask_quote_cents=fill_ask_quote_cents,
-                            fill_cost_cents=fill_cost_cents,
-                            daily_budget_cents=daily_budget_cents,
-                            realized_loss_cents=realized_loss_cents,
-                            available_cash_cents=cash_cents,
-                        )
-                        != "PASS"
-                    ):
-                        continue
                     selection = _replay_selection_from_row(
                         row_index, row, variant
                     )
@@ -1965,6 +1898,67 @@ def replay_variant(
                         continue
 
             row_index, row, selection = chosen
+            fill_cost_cents = (
+                int(row["fill_cost_fee3_cents"])
+                if pd.notna(row.get("fill_cost_fee3_cents"))
+                else None
+            )
+            fill_ask_quote_cents = (
+                int(row["entry_ask_cents"])
+                if pd.notna(row.get("entry_ask_cents"))
+                else None
+            )
+            recheck_reason = _fill_recheck_reason(
+                fill_ask_valid=fill_ask_quote_cents is not None,
+                fill_ask_quote_cents=fill_ask_quote_cents,
+                fill_cost_cents=fill_cost_cents,
+                daily_budget_cents=daily_budget_cents,
+                realized_loss_cents=realized_loss_cents,
+                available_cash_cents=cash_cents,
+            )
+            if recheck_reason != "PASS":
+                rejected_fill_rows.append(
+                    {
+                        "selector": selector,
+                        "variant": variant,
+                        "session": str(session),
+                        "policy_identity": f"ft2_05_{selector}_{variant}",
+                        "fee_path": "fee_3",
+                        "decision_time_t": decision_ns,
+                        "resolution_time_tplus1": (
+                            decision_ns + ONE_MINUTE_NS
+                        ),
+                        "source_neutral_contract_id": str(row["contract_id"]),
+                        "A_t_quote_cents": int(
+                            row["decision_entry_ask_cents"]
+                        ),
+                        "A_t_intent_cost_cents": int(
+                            row["intent_cost_fee3_cents"]
+                        ),
+                        "A_t_d48_intent_mask": True,
+                        "A_t_d49_intent_mask": True,
+                        "A_tplus1_quote_cents_or_missing": (
+                            fill_ask_quote_cents
+                        ),
+                        "A_tplus1_fill_cost_cents_or_missing": fill_cost_cents,
+                        "rejection_reason": recheck_reason,
+                        "position_opened": False,
+                        "premium_charged_cents": 0,
+                        "fee_charged_cents": 0,
+                        "realized_pnl_change_cents": 0,
+                    }
+                )
+                next_decision_earliest_ns = decision_ns + 2 * ONE_MINUTE_NS
+                continue
+            if selection is None:
+                selection = _replay_selection_from_row(
+                    row_index, row, variant
+                )
+                if selection is None:
+                    raise CensusContractError(
+                        "selected fill passed but realized exit label is unavailable: "
+                        f"{session}/{decision_ns}/{row['contract_id']}/{variant}"
+                    )
             candidate = _build_serial_candidate(
                 row,
                 selection,
@@ -2290,6 +2284,9 @@ def friction_table(frame: pd.DataFrame) -> pd.DataFrame:
                 group["friction_fraction_of_premium"], errors="coerce"
             ).dropna()
             spread = pd.to_numeric(group["entry_spread"], errors="coerce").dropna()
+            fill_pass = group[
+                group["fill_recheck_pass_fee3_at_tplus1"].astype(bool)
+            ]
             if friction.empty:
                 continue
             rows.append(
@@ -2297,6 +2294,20 @@ def friction_table(frame: pd.DataFrame) -> pd.DataFrame:
                     **dict(zip(columns, values, strict=True)),
                     "stratification": " x ".join(columns),
                     "contract_minutes": int(len(group)),
+                    "contract_minutes_population": (
+                        "time-t fee-3 intent-eligible rows"
+                    ),
+                    "intent_contract_minutes": int(len(group)),
+                    "fill_pass_rows": int(len(fill_pass)),
+                    "rejected_fill_rows": int(len(group) - len(fill_pass)),
+                    "friction_valid_rows": int(len(friction)),
+                    "friction_population": (
+                        "successful t+1 fill rechecks with finite friction"
+                    ),
+                    "entry_spread_valid_rows": int(len(spread)),
+                    "entry_spread_population": (
+                        "time-t intent rows with finite decision-time spread"
+                    ),
                     "friction_mean": float(friction.mean()),
                     "friction_median": float(friction.median()),
                     "friction_p90": float(friction.quantile(0.90)),
@@ -2629,7 +2640,7 @@ def render_report(
     ]
     rejection_numerator = rejection_denominators["numerator"]["row_count"]
 
-    return f"""# Protocol101 FT2-05 Opportunity Census V4
+    return f"""# Protocol101 FT2-05 Opportunity Census V5
 
 ## Owner Memo
 
@@ -2741,9 +2752,12 @@ isolate its entry choice.
 
 ## Friction, Power, And Regimes
 
-Premium-band friction includes spread crossing plus the $3 fee. MDE tables use
-session clusters and separately show cluster-adjusted trade-count projections.
-Regime headline tables split every replay by month and SPX range tercile.
+Premium-band friction includes spread crossing plus the $3 fee and is
+conditional on successful `t+1` fill rechecks. The table separately reports
+the time-`t` intent-row count, fill-pass/rejection counts, friction-valid count,
+and decision-time spread-valid count. MDE tables use session clusters and
+separately show cluster-adjusted trade-count projections. Regime headline
+tables split every replay by month and SPX range tercile.
 
 ## Compute
 
@@ -2806,7 +2820,7 @@ def build_or_resume_labels(
         write_json(
             state_path,
             {
-                "schema_version": "Protocol101FT205CheckpointStateV4",
+                "schema_version": "Protocol101FT205CheckpointStateV5",
                 "node": NODE_ID,
                 "status": "label_build_in_progress",
                 "completed_sessions": completed,
@@ -2818,6 +2832,81 @@ def build_or_resume_labels(
             },
         )
     return pd.concat(frames, ignore_index=True, sort=False), summaries
+
+
+def load_sealed_checkpoint_labels(
+    census_manifest: dict[str, Any],
+    *,
+    out_dir: Path,
+) -> tuple[
+    list[SessionSource],
+    dict[str, Any],
+    pd.DataFrame,
+    list[dict[str, Any]],
+]:
+    """Load only the already sealed FT2-05 checkpoint label artifacts.
+
+    This is the bounded repair path for derived replay/census logic. It avoids
+    reopening governed source manifests or any raw, outer, protected, paid, or
+    broker path. The current receipt and per-session summaries are the seal:
+    every label checkpoint must still match its declared SHA-256.
+    """
+    sessions = list(map(str, census_manifest["census_sessions"]))
+    if len(sessions) != 45 or len(set(sessions)) != 45:
+        raise CensusContractError(
+            "aggregate-only mode requires exactly 45 unique frozen sessions"
+        )
+    prior_receipt_path = out_dir / "receipt.json"
+    governance_path = out_dir / "governance_receipt.json"
+    if not prior_receipt_path.is_file() or not governance_path.is_file():
+        raise CensusContractError(
+            "aggregate-only mode requires the sealed prior receipt and governance receipt"
+        )
+    prior_receipt = read_json(prior_receipt_path)
+    governance = read_json(governance_path)
+    if prior_receipt.get("session_count") != 45:
+        raise CensusContractError("sealed prior receipt is not a 45-session census")
+    if prior_receipt.get("governance_hash") != governance.get("governance_hash"):
+        raise CensusContractError(
+            "sealed prior receipt and governance receipt hashes disagree"
+        )
+
+    frames: list[pd.DataFrame] = []
+    summaries: list[dict[str, Any]] = []
+    sources: list[SessionSource] = []
+    for session in sessions:
+        label_path, summary_path = _checkpoint_paths(out_dir, session)
+        if not label_path.is_file() or not summary_path.is_file():
+            raise CensusContractError(
+                f"missing sealed checkpoint artifact for session {session}"
+            )
+        summary = read_json(summary_path)
+        expected_hash = str(summary.get("label_sha256") or "")
+        if file_sha256(label_path) != expected_hash:
+            raise CensusContractError(
+                f"sealed checkpoint label hash mismatch: {session}"
+            )
+        frame = pd.read_parquet(label_path)
+        if set(frame["session"].astype(str).unique()) != {session}:
+            raise CensusContractError(
+                f"sealed checkpoint session identity mismatch: {session}"
+            )
+        frames.append(frame)
+        summaries.append(summary)
+        sources.append(
+            SessionSource(
+                session=session,
+                processed_path=label_path,
+                normalized_path=label_path,
+                spx_path=label_path,
+                processed_sha256=expected_hash,
+                normalized_sha256=expected_hash,
+                spx_sha256=expected_hash,
+            )
+        )
+    return sources, governance, pd.concat(
+        frames, ignore_index=True, sort=False
+    ), summaries
 
 
 def _file_inventory(out_dir: Path) -> dict[str, str]:
@@ -3362,6 +3451,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     receipt04, label_spec, oracle_rules, census_manifest = (
         verify_authority_and_inputs()
     )
+    if args.aggregate_existing_checkpoints and (args.force or args.smoke_session):
+        raise CensusContractError(
+            "--aggregate-existing-checkpoints is incompatible with --force "
+            "and --smoke-session"
+        )
     if args.force and args.out_dir.exists():
         for child in args.out_dir.iterdir():
             if child.name == "superseded":
@@ -3393,20 +3487,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         },
     )
 
-    sources, governance = resolve_session_sources(
-        census_manifest,
-        smoke_session=args.smoke_session,
-    )
-    write_json(args.out_dir / "governance_receipt.json", governance)
-    write_json(
-        progress_path,
-        {
-            "node": NODE_ID,
-            "status": "building_path_labels",
-            "session_count": len(sources),
-            "updated_at_utc": datetime.now(UTC).isoformat(),
-        },
-    )
     prior_compute_path = args.out_dir / "label_build_compute.json"
     prior_compute = (
         read_json(prior_compute_path)
@@ -3415,35 +3495,31 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     label_started = time.monotonic()
     label_usage = resource.getrusage(resource.RUSAGE_SELF)
-    frame, session_summaries = build_or_resume_labels(
-        sources,
-        out_dir=args.out_dir,
-    )
-    label_usage_end = resource.getrusage(resource.RUSAGE_SELF)
-    label_compute = {
-        "wall_seconds": float(time.monotonic() - label_started),
-        "user_cpu_seconds": float(label_usage_end.ru_utime - label_usage.ru_utime),
-        "system_cpu_seconds": float(
-            label_usage_end.ru_stime - label_usage.ru_stime
-        ),
-    }
-    label_compute["core_hours"] = (
-        label_compute["user_cpu_seconds"] + label_compute["system_cpu_seconds"]
-    ) / 3600.0
-    if (
-        prior_compute
-        and len(prior_compute.get("per_session", [])) == len(sources)
-        and all(
-            key in prior_compute
-            for key in (
-                "wall_seconds",
-                "user_cpu_seconds",
-                "system_cpu_seconds",
-                "core_hours",
+    if args.aggregate_existing_checkpoints:
+        sources, governance, frame, session_summaries = (
+            load_sealed_checkpoint_labels(
+                census_manifest,
+                out_dir=args.out_dir,
             )
         )
-    ):
-        resumed_load = label_compute
+        label_usage_end = resource.getrusage(resource.RUSAGE_SELF)
+        checkpoint_load = {
+            "wall_seconds": float(time.monotonic() - label_started),
+            "user_cpu_seconds": float(
+                label_usage_end.ru_utime - label_usage.ru_utime
+            ),
+            "system_cpu_seconds": float(
+                label_usage_end.ru_stime - label_usage.ru_stime
+            ),
+        }
+        checkpoint_load["core_hours"] = (
+            checkpoint_load["user_cpu_seconds"]
+            + checkpoint_load["system_cpu_seconds"]
+        ) / 3600.0
+        if prior_compute is None:
+            raise CensusContractError(
+                "aggregate-only mode requires the sealed prior compute record"
+            )
         label_compute = {
             key: prior_compute[key]
             for key in (
@@ -3454,7 +3530,66 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             )
         }
         label_compute["checkpoint_resume_used"] = True
-        label_compute["latest_checkpoint_load"] = resumed_load
+        label_compute["aggregate_only_from_sealed_checkpoints"] = True
+        label_compute["latest_checkpoint_load"] = checkpoint_load
+    else:
+        sources, governance = resolve_session_sources(
+            census_manifest,
+            smoke_session=args.smoke_session,
+        )
+        write_json(args.out_dir / "governance_receipt.json", governance)
+        write_json(
+            progress_path,
+            {
+                "node": NODE_ID,
+                "status": "building_path_labels",
+                "session_count": len(sources),
+                "updated_at_utc": datetime.now(UTC).isoformat(),
+            },
+        )
+        frame, session_summaries = build_or_resume_labels(
+            sources,
+            out_dir=args.out_dir,
+        )
+        label_usage_end = resource.getrusage(resource.RUSAGE_SELF)
+        label_compute = {
+            "wall_seconds": float(time.monotonic() - label_started),
+            "user_cpu_seconds": float(
+                label_usage_end.ru_utime - label_usage.ru_utime
+            ),
+            "system_cpu_seconds": float(
+                label_usage_end.ru_stime - label_usage.ru_stime
+            ),
+        }
+        label_compute["core_hours"] = (
+            label_compute["user_cpu_seconds"]
+            + label_compute["system_cpu_seconds"]
+        ) / 3600.0
+        if (
+            prior_compute
+            and len(prior_compute.get("per_session", [])) == len(sources)
+            and all(
+                key in prior_compute
+                for key in (
+                    "wall_seconds",
+                    "user_cpu_seconds",
+                    "system_cpu_seconds",
+                    "core_hours",
+                )
+            )
+        ):
+            resumed_load = label_compute
+            label_compute = {
+                key: prior_compute[key]
+                for key in (
+                    "wall_seconds",
+                    "user_cpu_seconds",
+                    "system_cpu_seconds",
+                    "core_hours",
+                )
+            }
+            label_compute["checkpoint_resume_used"] = True
+            label_compute["latest_checkpoint_load"] = resumed_load
 
     frame, vol_cutpoints = assign_vol_regimes(frame)
     frame = add_quality_scores(frame)
@@ -3745,7 +3880,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     write_json(
         args.out_dir / "checkpoint" / "state.json",
         {
-            "schema_version": "Protocol101FT205CheckpointStateV4",
+            "schema_version": "Protocol101FT205CheckpointStateV5",
             "node": NODE_ID,
             "status": "complete",
             "completed_sessions": [item.session for item in sources],
@@ -3765,18 +3900,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     deliverable_hashes = _file_inventory(args.out_dir)
     receipt = {
-        "schema_version": "Protocol101FT205NodeReceiptV4",
+        "schema_version": "Protocol101FT205NodeReceiptV5",
         "node": NODE_ID,
         "outcome": outcome,
         "created_at_utc": datetime.now(UTC).isoformat(),
         "repair_of": {
-            "schema_version": "Protocol101FT205NodeReceiptV3",
+            "schema_version": "Protocol101FT205NodeReceiptV4",
             "receipt_sha256": (
-                "a252feb2007b2aece77f377461bc6fa5a882e929bd2f7d3f23a47c07401cfdce"
+                "ffbef1058afb26392de0f1d3efcfba911fca619cf9bd6055fae756d20b64397d"
             ),
-            "preserved_path": (
-                "superseded/v3_pre_scoped_final_round_20260730/receipt.json"
+            "preserved_git_commit": (
+                "a7602fdcce541589440b4aa2bc0bd0e2be6d1bbd"
             ),
+            "preserved_git_path": (
+                "v4/audit/autoresearch/"
+                "protocol101_ft2_05_opportunity_census/receipt.json"
+            ),
+            "preservation_verified": True,
         },
         "product_contract_hash": AUTHORITY_SHA256,
         "graph_sha256": file_sha256(GRAPH_PATH),

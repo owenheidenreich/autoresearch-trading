@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable
+from zoneinfo import ZoneInfo
 
 import pyarrow as pa
 
@@ -41,6 +42,7 @@ from v4.schema.types import (
 # Column-name strip rules: OptionsDX ships columns wrapped like "[QUOTE_DATE]"
 # and prefixes call/put metrics with C_ / P_.
 _BRACKET_RE = ("[", "]")
+_NY = ZoneInfo("America/New_York")
 
 
 @dataclass(frozen=True)
@@ -92,6 +94,19 @@ def _parse_int_or_none(s: str) -> int | None:
         return None
 
 
+def _settlement_style(root: ContractRoot) -> str | None:
+    if root == ContractRoot.SPXW:
+        return "PM"
+    if root == ContractRoot.SPX:
+        return "AM"
+    return None
+
+
+def _pm_settlement_time_utc(expiry: date) -> datetime | None:
+    local_close = datetime.combine(expiry, time(16, 0), tzinfo=_NY)
+    return local_close.astimezone(timezone.utc)
+
+
 def _row_to_records(
     row: dict[str, str],
     *,
@@ -134,20 +149,37 @@ def _row_to_records(
             "receive_time": event_dt,  # OptionsDX is EOD-published; no separate receive
             "timestamp_source": "optionsdx_quote_unixtime",
             "contract_id": cid.to_canonical(),
+            "raw_symbol": cid.to_occ21(),
+            "instrument_id": None,
             "root": root.value,
             "expiry": expiry,
             "strike": strike_d,
             "right": right.value,
+            "settlement_style": _settlement_style(root),
+            "settlement_time_utc": (
+                _pm_settlement_time_utc(expiry)
+                if root == ContractRoot.SPXW
+                else None
+            ),
+            "min_price_increment": None,
+            "contract_multiplier": 100,
             "bid": bid,
             "ask": ask,
+            "bid_size": None,
+            "ask_size": None,
             "mid": mid,
             "last_trade": last,
             "last_trade_size": None,
+            "quote_time": event_dt,
+            "last_trade_time": event_dt if last is not None else None,
             "quote_age_ms": None,
+            "quote_gap_seconds": 0.0 if last is not None else None,
             "open_interest": None,  # OptionsDX intraday does not ship OI per row
             "open_interest_asof_date": None,
+            "stat_open_interest": None,
             "volume": volume,
             "volume_asof_time": event_dt,
+            "option_ohlcv_volume": volume,
             "underlying_price": underlying,
             "iv": iv,
             "iv_source": GreekSource.OPTIONSDX.value if iv is not None else None,

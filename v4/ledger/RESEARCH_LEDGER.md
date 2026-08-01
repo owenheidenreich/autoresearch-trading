@@ -16,6 +16,136 @@ Next Gate:
 Owner:
 ```
 
+## 2026-05-22 EXP_2026_05_22_UNIFIED_ENTRY_LIFECYCLE_SEQUENCE_V1
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Trained CHALLENGER_UNIFIED_ENTRY_LIFECYCLE_SEQUENCE_V1, historically Protocol209, as a shared neural model for entry-slot value and hold/exit lifecycle value.
+Reason: AUDIT_CONTEXT_CALIBRATED_RECENT_GAP_V1 showed the recent miss was dominated by same-entry exit timing, not extra bad entries or slot-blocked winners. The next hypothesis was that one shared sequence objective might reduce churn and premature exits better than separate entry/lifecycle pieces.
+Data Used: Existing Protocol194-lineage candidate entries, existing normalized official-context SPXW rows, and existing PAPER_DEFAULT_PROTOCOL101 strict-serial trades. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision reject_unified_sequence_does_not_beat_paper_default. The unified model improved recent_2026 versus PAPER_DEFAULT_PROTOCOL101 ($14,070 vs $7,450), but failed Q1 2026 ($83,580 vs $95,010) and March 2026 ($17,710 vs $41,790). It also failed the stronger lifecycle baseline on every common scored split. Invariants still passed with zero overlap, unaffordable, or NaN-time rows, so this was a model/objective failure, not accounting.
+Next Gate: Reject this unified formulation. Return to full-action candidate-generation feature parity and the stronger CHALLENGER_FULL_ACTION_SURFACE_EDGE_V1 lineage rather than continuing to tweak the joint MLP thresholds.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_CONTEXT_CALIBRATED_RECENT_GAP_V1
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Ran AUDIT_CONTEXT_CALIBRATED_RECENT_GAP_V1, historically Protocol208, to explain why CHALLENGER_LIFECYCLE_CONTEXT_CALIBRATED_V1 still missed the stronger lifecycle baseline on recent_2026.
+Reason: EXP_2026_05_22_LIFECYCLE_CONTEXT_CALIBRATION_V1 beat PAPER_DEFAULT_PROTOCOL101 on common scored splits but still failed the stronger lifecycle baseline on recent_2026. Before changing the model again, the project needed to know whether the gap came from same-entry exit timing, slot-blocked baseline winners, or extra bad challenger trades.
+Data Used: Existing Protocol207 challenger trades and lifecycle baseline trades only. No paid data was downloaded, no model was trained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision recent_gap_dominated_by_same_entry_lifecycle_exit_timing. Same-entry exit changes contributed -$44,185, baseline-only missed/blocked rows contributed +$21,270, and challenger-only extra trades contributed $0, for net -$22,915. The miss was concentrated in calls (-$40,960 net) and midday/late-afternoon exit timing. Puts were positive (+$18,045).
+Next Gate: Build CHALLENGER_UNIFIED_ENTRY_LIFECYCLE_SEQUENCE_V1. The repeated failure is not candidate selection alone; the model needs one sequence objective that learns entry, hold, and exit together under the same one-account serial game.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_LIFECYCLE_CONTEXT_CALIBRATION_V1
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Ran CHALLENGER_LIFECYCLE_CONTEXT_CALIBRATED_V1, historically Protocol207, as a validation-only side/time residual calibration experiment on top of the slot-aware lifecycle model.
+Reason: AUDIT_RECENT_GAP_SLOT_AWARE_V1 showed the strongest lifecycle challenger was still giving back recent_2026 PnL in context-specific ways. This experiment tested whether the issue was prediction miscalibration by side/time rather than needing another exit rule or architecture knob.
+Data Used: Existing Protocol194-lineage candidate entries, existing normalized official-context SPXW rows, and existing PAPER_DEFAULT_PROTOCOL101 strict-serial trades. No live-paper logs were used for training or promotion scoring.
+Cost: $0 incremental paid data.
+Result: Decision mixed_context_calibration_beats_paper_default_but_not_lifecycle_baseline. The challenger beat PAPER_DEFAULT_PROTOCOL101 on the common scored splits: Q1 2026 $264,650 vs $95,010, March 2026 $108,830 vs $41,790, and recent_2026 $21,310 vs $7,450. It did not beat the stronger lifecycle baseline on recent_2026: $21,310 vs $25,295. Stress remained positive at $0.10 and $0.25 per side, and serial invariants passed with zero overlap, unaffordable, or NaN-time rows.
+Next Gate: Do not change the paper default. Treat this as research-only evidence that the Protocol194 entry stream remains much stronger than PAPER_DEFAULT_PROTOCOL101, while lifecycle calibration alone still does not solve the recent gap. Next work should attribute the recent miss against the lifecycle baseline and then move toward a unified entry-plus-lifecycle sequence objective if the miss is not a simple calibration failure.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 206 Protocol202 Research Challenger Freeze
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Froze Protocol202 as a research challenger packet, with Protocol101 explicitly remaining the paper-trading default.
+Reason: Protocol202 is the strongest lifecycle challenger so far because it learns single-slot lifecycle opportunity cost, but it still failed the protected recent_2026 baseline comparison. The project needed a clean boundary before any further architecture work so we do not accidentally promote or keep retuning a mixed result.
+Data Used: Existing Protocol202, Protocol203, and Protocol205 artifacts only. No paid data was downloaded, no model was trained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision freeze_protocol202_as_research_challenger_not_paper_default. Protocol202 beat the matching serial baseline on Q1 2026 by $67,190 median and March 2026 by $27,585 median, but missed recent_2026 by $3,080 median. Protocol205 attributed the recent gap mostly to same-entry exit changes and call-heavy late-afternoon/midday behavior, with no Protocol202-only extra-trade contribution.
+Next Gate: Keep Protocol101 as paper default. Use Protocol202 only for offline comparison or no-order shadow analysis. Do not add another lifecycle architecture knob unless the same call-heavy late-afternoon/midday gap repeats by more than $5,000 median on a new locked block or live-paper replay.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 205 Protocol202 Recent Gap Attribution
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Ran a narrow recent_2026 attribution for Protocol202 against the matching frozen Protocol194/081 serial baseline.
+Reason: Protocol202 is the strongest lifecycle challenger but missed recent_2026 by a small amount. Before changing architecture or adding another knob, the project needed to know whether the gap came from same-entry exit timing, missed slot opportunities, model-only extra trades, side behavior, time buckets, or a few concentrated days.
+Data Used: Protocol202 model serial trades and frozen Protocol194/081 baseline serial trades only. No paid data was downloaded, no model was trained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision recent_gap_broad_across_combo_seeds. Median combo-seed delta versus matching baseline seed was -$2,575. Net contribution was -$5,900: same-entry exit changes -$4,770, baseline-only missed/blocked trades -$1,130, and Protocol202-only extra trades $0. The gap is mostly calls (-$23,105 net) and late afternoon/midday exit timing; puts were positive (+$17,205 net). Baseline-only rows were all blocked by Protocol202 already being in a position, but their net contribution was small.
+Next Gate: Do not add an architecture knob for this small recent miss. Keep Protocol202 as the strongest lifecycle challenger, keep Protocol101 as paper default, and only test a narrow call/late-afternoon lifecycle calibration if the same recent-gap pattern repeats on additional data or live-paper logs.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 204 Recurrent Slot-Aware Lifecycle
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Tested a recurrent GRU holding-state model using the Protocol202 slot-aware lifecycle target.
+Reason: Protocol203 showed the slot-aware MLP fixed the major Q1/March lifecycle issue but still missed recent 2026 slightly, suggesting the model might need to read the shape of the post-entry path rather than per-minute summary features alone.
+Data Used: Existing Protocol194 candidate entries and existing normalized official-context SPXW quote paths. No paid data was downloaded, no live data was used, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision mixed_protocol204_slot_aware_lifecycle_signal_requires_attribution. The recurrent model improved recent 2026 versus baseline by $2,785 median, but damaged Q1 2026 and March materially: Q1 median -$8,390 vs baseline $202,720, March -$9,010 vs baseline $73,440. Invariants still passed with zero overlaps, unaffordable trades, or NaN time rows.
+Next Gate: Do not promote Protocol204. The recurrent architecture helped the recent block but failed broader generalization, so Protocol202 remains the better lifecycle challenger. Next work should either attribute Protocol202's recent gap or move toward a unified entry/lifecycle policy rather than switching architectures based on regime.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 203 Protocol202 Mixed Result Attribution
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Attributed Protocol202's mixed result against the frozen Protocol194/081 serial baseline.
+Reason: Protocol202 beat Q1/March but missed recent 2026 by a small amount. Before changing the model again, we needed to know whether the gap came from over-holding, missed slot opportunities, side behavior, or matched trade lifecycle changes.
+Data Used: Protocol202 model serial trades and frozen Protocol194/081 baseline serial trades only. No paid data was downloaded, no model was trained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision protocol202_improves_q1_but_recent_gap_is_missed_slot_opportunity. Protocol202 strongly improved matched trade PnL in Q1 and March and exited much earlier than baseline, but recent 2026 had a small net proxy gap of about -$5,900. The recent gap was not the original over-holding problem; it was a small lifecycle timing/slot miss after the slot-aware correction.
+Next Gate: Treat Protocol202 as the strongest lifecycle research challenger, but not a promotion candidate because recent 2026 still fails the baseline comparison. Avoid paper/live replacement until this is confirmed or repaired.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 202 Slot-Aware Lifecycle Policy
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Trained a slot-aware lifecycle MLP using a dynamic-programming target that compares holding the current contract against exiting and preserving the single account slot for future candidate entries.
+Reason: Protocol200 learned current-contract continuation but ignored opportunity cost; Protocol201 showed it over-held and blocked profitable later entries. Protocol202 tests the correct lifecycle framing: whether this contract is still worth occupying the only position slot.
+Data Used: Existing Protocol194 candidate entries and existing normalized official-context SPXW quote paths. No paid data was downloaded, no live data was used, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision mixed_protocol202_slot_aware_lifecycle_signal_requires_attribution. Protocol202 beat the frozen serial baseline on Q1 2026 and March 2026: Q1 median $269,910 vs $202,720, March $101,025 vs $73,440. It slightly missed recent 2026: $22,215 vs $25,295. PF was high across scored splits and invariants passed with zero overlaps, unaffordable trades, or NaN time rows.
+Next Gate: Keep Protocol202 as a research challenger, not paper/live default. Attribute the recent gap before adding another model knob or using it operationally.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 201 Protocol200 Failure Attribution
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Attributed why Protocol200 failed despite the strong lifecycle oracle signal.
+Reason: Protocol200 was profitable but far below the frozen serial baseline. We needed to understand whether it was exiting too early, over-holding, or breaking serial slot behavior before changing the objective.
+Data Used: Protocol200 model serial trades and frozen Protocol194/081 baseline serial trades only. No paid data was downloaded, no model was trained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision protocol200_overheld_and_blocked_profitable_later_entries. Protocol200's matched trades lost substantial PnL versus baseline in Q1/March, and it missed many profitable later baseline trades because it held the slot too long. Q1 missed baseline PnL was about $1.45M across model-seed comparisons; March missed about $439.8k.
+Next Gate: Replace current-contract-only continuation labels with slot-aware lifecycle labels that account for future candidate opportunities.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 200 Lifecycle Continuation Policy
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Trained the first causal lifecycle continuation model for the frozen Protocol194 entry stream.
+Reason: Protocol198 and Protocol199 showed same-side churn and large post-exit continuation labels. Protocol200 tested whether a causal post-entry model could learn hold/exit decisions without hardcoded target, stop, or minimum-hold rules.
+Data Used: Existing Protocol194 candidate entries and existing normalized official-context SPXW quote paths. No paid data was downloaded, no live data was used, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision reject_protocol200_no_test_improvement. Protocol200 remained profitable but failed the frozen serial baseline: Q1 median $70,575 vs baseline $202,720, March $25,650 vs $73,440, recent $20,055 vs $25,295. Invariants passed, so the failure was model objective/behavior, not accounting.
+Next Gate: Attribute the failure before changing the lifecycle objective.
+Owner: Codex
+```
+
 ## 2026-05-13 Protocol 089 Shadow-Paper Ledger
 
 ```text
@@ -27,6 +157,157 @@ Cost: $0 incremental paid data.
 Result: Shadow parity passed with 0 failed rows and 0 warnings. The ledger found 0 broker order fields, enforced intended_size=1, enforced SPXW PM contracts, and reconstructed bid/ask-only PnL for 50 closed trades. Closed-trade realized PnL sum was 36,150 with median 260; side mix was 44 calls and 6 puts. Two warnings remain because this input is a selected-trade rehearsal, not a real live stream: 19 trades had rows after an exit/stop/forced-flat action, and max observed concurrency was 8.
 Decision: Protocol 089 is useful promotion-readiness infrastructure, not paper/live approval. It should be rerun on the eventual live JSONL with --require-all-closed --enforce-global-one-position.
 Next Gate: Wait for IBKR market-data eligibility, then rerun no-order live capture and strict Protocol 089. In the meantime, keep work offline and no-paid-data.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 199 Lifecycle Full-Path Oracle
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Added and ran a full-path lifecycle oracle over the frozen Protocol194 entries.
+Reason: Protocol198 showed same-side churn can be harmful, but a churn counterfactual alone does not prove that a neural hold/exit model has enough signal. Protocol199 measures whether the same contract often had material executable continuation value after the frozen Protocol081 exit.
+Data Used: Existing Protocol194 serial trades and existing normalized official-context SPXW quote paths. No paid data was downloaded, no model was trained, no live data was used, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision strong_lifecycle_training_signal. Full executable paths were available for all 12,076 trades. The hindsight oracle is not tradable, but it shows large continuation labels: material post-exit continuation appeared in 80.4% to 85.7% of rows across scored splits, and the frozen exit occurred before the path oracle in roughly 64.5% to 66.8% of historical rows. This confirms a large label surface for a causal hold/exit sequence model, while forced-flat deltas remain mixed and warn against naive hard-hold behavior.
+Next Gate: Build Protocol200 as an entry-plus-lifecycle sequence training path using causal post-entry state. It must evaluate through one-account serial replay with new hold/exit decisions because changing exits changes which later entries are actually available.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 198 Lifecycle Churn Hold Counterfactual
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Added and ran a diagnostic audit for same-side exit/re-entry churn in the frozen Protocol194 + Protocol081 serial trade stream.
+Reason: The user correctly reframed timing fragility as a lifecycle intelligence problem: the model may be taking local exits and re-entering the same directional idea instead of learning whether to hold, exit, cut, or let the trade run.
+Data Used: Existing Protocol194 strict serial trades and existing normalized official-context quote paths. No paid data was downloaded, no model was trained, no live data was used, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision lifecycle_churn_failure_mode_detected. With a 30-minute diagnostic re-entry horizon, 2,793 same-side chains covered 8,582 of 12,076 trades. Continuous hold counterfactuals were executable for 2,791 chains. Q3 2025 and Q4 2025 showed harmful churn: holding the first contract through the later same-side exit beat the actual exit/re-entry sequence by $15,080 and $52,545 respectively. Q1 2026, March 2026, and recent 2026 were mixed or favored the re-entry sequence in aggregate, so this is not a hard-hold rule.
+Next Gate: Build a true entry-plus-lifecycle sequence training path: flat actions wait/enter call/enter put, holding actions hold/exit, using causal post-entry state such as MFE/MAE shape, PnL velocity, gamma/theta decay, spread/liquidity, and account state. The objective should learn continuation utility rather than hardcoded hold times or fixed percentage exits.
+Owner: Codex
+```
+
+## 2026-05-22 Protocol 197 Protocol194 Runtime Parity And Latency Harness
+
+```text
+Date: 2026-05-22
+Decision / Experiment: Built and ran a no-order Protocol194 challenger runtime parity and latency harness while keeping Protocol101 as the live-paper default.
+Reason: Protocol194 is the strongest research challenger, but Protocol195/196 showed its edge is entry-timing sensitive. The next gate is therefore runtime parity and latency logging, not another entry-side model knob.
+Data Used: Already-collected Protocol189 full-action surface-edge dataset, existing Protocol190/192 model artifacts, and local replay rows only. No paid data was downloaded, no model was trained, no live or paper orders were submitted, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision runtime_parity_latency_harness_ready_protocol101_default_unchanged. Protocol197 replayed 250 recent_2026 decision events through a live-safe Protocol194 path that does not use candidate_exit_dt, candidate_pnl, or future path/exit labels for runtime selection. Runtime JSONL schema validation passed with 0 errors and 0 warnings. Latency was well inside the provisional budget on this local replay: total decision p50 1.189ms, p95 2.711ms, max 4.069ms; model inference p95 0.529ms; candidate validation p95 1.591ms. The harness logged 245 waits and 5 no-order enter decisions, with live_orders_enabled false and broker_endpoint_called false on every row. Report: v4/audit/autoresearch/v4_aplus_hypothesis_197_protocol194_runtime_parity_latency/report.md
+Important Caveat: This is a historical replay proxy and does not prove IBKR live-feed latency, entitlement freshness, or paper-order fill quality. It proves the local Protocol194 challenger path can be evaluated quickly and safely without future labels and without touching orders.
+Next Gate: Wire this Protocol194 challenger logger into the daily live monitor as no-order shadow-only alongside Protocol101, capture real live candidate freshness and decision-to-order-intent latency, and compare it to the historical replay budget before considering any paper-runtime replacement.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 196 Protocol194 Timing Attribution
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Attributed Protocol194's one-minute timing fragility by split, side, time bucket, premium bucket, spread bucket, score bucket, offset bucket, and exit reason.
+Reason: Protocol195 showed the candidate breaks under one-minute entry+exit delay, but the useful research question is whether the problem is exit management, entry timing, a side imbalance, or a specific fragile contract region.
+Data Used: Protocol194 serial trades and Protocol195 minute-delay rows only. No paid data was downloaded, no model was trained, no live orders were placed, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision entry_timing_is_primary_fragility. Across all scored blocks, entry +1m delta was sharply negative while exit +1m delta was near flat: March entry -$513,195 vs exit -$3,205; Q1 2026 entry -$1,236,325 vs exit -$32,175; Q3 2025 entry -$599,485 vs exit -$19,905; Q4 2025 entry -$921,360 vs exit +$1,080; recent 2026 entry -$165,885 vs exit -$2,710. Worst aggregate timing groups were mandatory_time_flat exits, 3k-4k premium, 1-2% spreads, post-open morning, and higher score bucket entries. Report: v4/audit/autoresearch/v4_aplus_hypothesis_196_protocol194_timing_attribution/report.md
+Important Caveat: This is an execution/timing finding, not proof that the model lacks edge. It says the model's edge is in recognizing short-lived entry windows; paper replacement requires continuous evaluation, fresh quotes, and measured decision-to-order latency.
+Next Gate: Prepare Protocol194 as a fast-entry research candidate: build a shared live candidate-generation contract and runtime latency logger before replacing Protocol101. If model work continues offline, avoid hiding the issue with a threshold tweak; test entry-persistence or low-latency-compatible features explicitly.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 195 Protocol194 Timing Fragility
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Audited Protocol194's five-seed selected trades under delayed execution using already-collected normalized one-minute quote paths and existing one-second high-resolution audit files where coverage existed.
+Reason: Protocol194 beat the frozen strict-serial Protocol101 baseline, but the project cannot promote a new model unless its edge can plausibly survive live execution timing. Earlier Protocol101 audits showed timing was the main fragility.
+Data Used: Protocol194 serial trades, v4 normalized official-context quote paths, and existing protocol101_highres_opra cbbo-1s parquet files. No paid data was downloaded, no model was trained, no live orders were placed, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision timing_fragile: one-minute both-side delay breaks at least one split. The one-minute delay audit had near-complete coverage, but median both-side delayed PnL became negative on every scored block: March 2026 -$27,880, Q1 2026 -$47,310, Q3 2025 -$42,560, Q4 2025 -$43,490, and recent 2026 -$11,530. The asymmetry matters: exit +1m remained positive, while entry +1m broke the model. Partial one-second coverage was only ~18-21% on historical blocks and 0% on recent 2026, but covered rows stayed positive at 1s and 5s and degraded sharply by 30-60s. Report: v4/audit/autoresearch/v4_aplus_hypothesis_195_protocol194_timing_fragility/report.md
+Important Caveat: One-minute both-side delay is intentionally harsh for a live bot expected to evaluate and route continuously. This does not reject Protocol194 as a research candidate; it says replacement approval requires a persistent low-latency live runtime and fresh-quote order path, plus more direct 1s/live-shadow evidence.
+Next Gate: Do not add more entry knobs yet. The next research question is whether Protocol194's entry edge is specifically a fast-entry edge: build entry-timing attribution by side/time/premium/spread/score and prepare a live/training parity contract that can evaluate and route at one-second cadence.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 192-194 Full-Action Five-Seed Confirmation
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Ran seeds 4-5 for the full-coverage surface-edge two-stage full-action policy, replayed those selected entries through frozen Protocol081 lifecycle exits, and consolidated seeds 1-5 into Protocol194.
+Reason: Protocol190/191 was a strong three-seed research signal, but a model candidate should not be treated as demonstrably better without a wider seed check and strict one-account replay invariants.
+Data Used: Already-collected official-context processed rows, normalized SPXW quote paths, the Protocol189 full-action surface-edge dataset, frozen Protocol081 lifecycle artifact, and Protocol190/192 selected entries. No paid data was downloaded, no live orders were placed, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Protocol194 decision keep_research_candidate: 5-seed full-action policy survives Protocol081 serial replay. Across five seeds it beat frozen strict-serial Protocol101 on every scored block: March 2026 median $73,440 vs $41,790, Q1 2026 $202,720 vs $95,010, Q3 2025 $81,870 vs $59,130, Q4 2025 $138,895 vs $92,460, and recent 2026 $25,295 vs $7,450. Median PF stayed >= 1.77, stress $0.10 and $0.25 stayed positive on every block, positive seed fraction was 1.00 everywhere, and serial invariants found zero overlap, zero unaffordable trades, zero non-positive premiums, and zero missing timestamps. Report: v4/audit/autoresearch/v4_aplus_hypothesis_194_full_action_surface_edge_5seed_confirmation/report.md
+Important Caveat: Protocol190/192 trained on fast executable baseline-exit labels, then Protocol191/193/194 confirmed only the selected entries under frozen Protocol081 replay. This is a materially better research candidate, not yet approval to replace the Protocol101 live-paper default. It still needs timing/delay stress, serial equity/trade visual inspection, and a shared live candidate-generation/runtime contract before paper trading can switch to it.
+Next Gate: Stop adding entry-side knobs. Run timing fragility and visual inspection for Protocol194 selected trades, then decide whether to build a direct Protocol081-label training subset or prepare the live runtime parity contract for the new full-action policy.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 185-191 Full-Coverage Surface-Edge Recovery
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Repaired the full-action feature-parity gap and ran a full-calendar research screen for a broader neural entry policy.
+Reason: The prior full-action Protocol164/183 tests were not fair: the balanced screen only had five sessions per split, so March 2026 had no events, and the full-action models were missing Protocol101's causal surface `edge` signal. The next valid question was whether a full-ladder model can learn serial entries when it sees complete calendar coverage and the same causal edge features Protocol101 used.
+Data Used: Already-collected official-context processed rows, normalized SPXW quote paths, frozen Protocol051/A+ surface artifacts, and frozen Protocol081 lifecycle artifact. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Protocol185 enriched the 30-session Protocol164 screen with surface-edge features at 100.0% row match, but Protocol186 still failed because the screen coverage was too small. Protocol188 then built a full-calendar baseline-exit full-action screening dataset across 346 collected sessions and 3,516,386 candidate rows: q1_2025 627,540, q2_2025 634,772, q3_2025 613,174, q4_2025 634,960, q1_2026 637,481, recent_2026 368,459. Protocol189 enriched that full dataset with surface-edge features at 99.999% match. Protocol190 trained a two-stage full-action neural policy on this full-coverage baseline-exit screen with seeds 1-3 and cleared the research screen: Q3 2025 median $64,290 PF 1.85, Q4 2025 $138,765 PF 1.69, Q1 2026 $202,720 PF 2.23, March 2026 $73,440 PF 2.04, recent 2026 $15,755 PF 2.29; stress $0.10 stayed positive on every block. Protocol191 replayed the frozen Protocol190 selected entries through frozen Protocol081 exits and strict serial account rules; all 7,719 selected entries had paths, zero serial skips, and the same positive block medians survived.
+Important Caveat: Protocol190's training labels came from the fast executable baseline stop/target/25m exit, not from full-candidate Protocol081 lifecycle exits. Protocol191 only proves the selected entries survive Protocol081 replay; it does not yet prove a model trained directly on full-action Protocol081 labels. This is a strong research candidate, not paper-runtime replacement approval.
+Next Gate: Run a 5-seed confirmation or train the same full-action architecture on a targeted Protocol081 candidate set. Before replacing Protocol101 in paper trading, produce serial equity/trades artifacts for Protocol191, run timing/delay stress on its selected entries, and define the live candidate-generation contract for this new full-action surface-edge policy.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 179-182 Full-Action Expansion And Protocol101 Anchor Overlay
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Expanded Protocol164 full-action coverage from 3 to 5 sessions per split, reran the full-action value learner, tested nonnegative value thresholds, then screened a frozen Protocol101-anchor plus Protocol175 additive overlay.
+Reason: Protocol165/172 may have failed because the full-action screen was too thin. If full-action learning still failed, the alternate research path was to preserve Protocol101 and test whether Protocol175 could add value only when the account was flat.
+Data Used: Already-collected official-context processed/normalized rows, frozen Protocol081 lifecycle labels, frozen Protocol172/175 artifacts, Protocol101 serial trades, and recent Protocol101 serial replay. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Protocol164 expanded to 30 sessions and 289,150 full-action candidate rows with zero skipped candidates. Protocol179 full-action value policy still failed badly versus frozen Protocol101: Q3 median -$835, Q4 $610, Q1 $3,995, March $0, recent $8,600. Protocol180 nonnegative value-threshold replay mostly abstained and failed. Protocol181 Protocol101-anchor overlay improved Q3 median delta by $560 but did not improve Q4/recent and slightly hurt Q1. Protocol182 positive-score overlay added zero trades and was rejected.
+Decision: No Protocol179-182 candidate is promotable. Expanded full-action data did not fix the current value architecture; additive overlay value comes from weakly calibrated negative-score regions and is not reliable enough to pursue as-is.
+Next Gate: Keep Protocol101 as operational paper default. The next serious neural step should not be another small threshold/overlay tweak; it should redesign full-action learning around richer sequence/state context or wait for broader historical coverage before training a larger unified policy.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 177-178 Protocol175 Attribution And Threshold Replay
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Compared Protocol175 against frozen Protocol101 trade by trade on Q3/Q4, then replayed Protocol175 with validation recall-constrained thresholds.
+Reason: Protocol175 nearly closed the Q4 gap but was not promotable. Attribution was needed before adding another model knob.
+Data Used: Existing Protocol101 serial trade JSON, Protocol175 serial trade CSV/model artifacts, and Protocol175 serial dataset. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Protocol177 found Q4 underperformance was concentrated in post-open calls and especially seed 3. The largest Q4 component was flat decision loss: Protocol175 skipped Protocol101 trades while flat, producing a -$21,290 aggregate flat-decision delta across seeds; Q4 total aggregate delta was -$17,510. Protocol178 tested recall floors of 90%, 95%, and 100% without retraining. Best objective recall_100 narrowed/held the Q4 gap but still did not beat Protocol101: Q4 median $91,250 vs Protocol101 $92,460; Q1 and March stayed positive versus Protocol101, recent stayed tied.
+Decision: Keep for research only. The failure is not simply threshold selectivity; Protocol175's score/ranking does not consistently recover Q4 post-open call opportunities that Protocol101 captures.
+Next Gate: Do not promote Protocol175. Next useful work is either (1) broader full-action Protocol164 coverage so the neural model learns the full ladder directly, or (2) a constrained Protocol101-anchor/additive overlay screen, explicitly treated as research-only until validated chronologically.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 167-176 Serial And Full-Action Model Search
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Ran the next autoresearch loop after Protocol164-166 realignment, stopping after five non-promotable hypotheses.
+Reason: The goal was to find a demonstrably better model than frozen Protocol101 under source-of-truth serial account replay, not to improve overlapping candidate diagnostics.
+Data Used: Already-collected official-context historical/recent data, Protocol092/163 serial candidate datasets, the Protocol164 full-action 3-session screen, and the already-collected Q4 2024 external serial dataset. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Protocol167/169/170/171 Protocol163 variants remained research-only; Protocol169 was the best regular serial-candidate candidate but still did not beat frozen Protocol101 across Q4 2025, Q1 2026, March 2026, and recent 2026. Protocol165 full-action classification failed on the 3-session screen despite a positive full-action oracle. Protocol172 value/advantage scoring and Protocol173 nonnegative value-threshold replay also failed. Protocol175 added Q4 2024 prehistory and nearly closed the Q4 gap, but still missed frozen Protocol101 on Q3 2025 (-$930) and Q4 2025 (-$1,210). Protocol176 hidden48 regularization worsened Q4 transfer.
+Decision: No new model is promotable over frozen Protocol101 today. Keep Protocol101 as paper-trading default. Keep Protocol175 as useful attribution evidence, not a replacement.
+Next Gate: Do Q4/Q3 attribution on Protocol175 versus Protocol101 and/or expand full-action Protocol164 coverage before adding more knobs. The current failure mode is not lack of profitability; it is failure to beat the frozen Protocol101 strict-serial baseline on every locked split.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 167-171 Serial Candidate Model Search
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Ran a no-paid-data serial model search around Protocol163 after Protocol165 full-action infrastructure was added.
+Reason: The user requested continuous experiments until the next demonstrably better model. Before spending many hours on exact full-action Protocol081 scoring, test whether the existing serial candidate neural path was capacity-, threshold-, or regularization-limited.
+Data Used: Existing Protocol163 serial one-account dataset and existing repaired recent Protocol101 lifecycle paths. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Protocol167 wider/longer improved recent median PnL to $9,510 versus the repaired Protocol101 recent serial baseline of $7,450, but still lagged Protocol101 on Q3/Q4. Protocol168 threshold-only replay did not fix Q4. Protocol169 smaller/longer was the best regularized candidate: it beat the strict serial baseline on Q3, Q4, Q1 2026, March 2026, and recent 2026, with recent median PnL $8,490 and Q4 median PnL $90,790. Protocol170 added epochs and converged to the same result. Protocol171 hidden48 improved Q4 baseline delta but weakened Q1/recent. None of these replaces frozen Protocol101 because Q4/Q1/March still do not all beat Protocol101's locked medians.
+Next Gate: Stop small MLP/threshold nudging. The next serious model improvement must come from Protocol164/165 full-action candidate-universe work or from live timing/fill evidence, not from more hidden-size tweaks on Protocol101-exposed candidates.
 Owner: Codex
 ```
 
@@ -1852,7 +2133,1622 @@ Decision / Experiment: Added a single IBKR morning autostart observability repor
 Reason: The user needs to know whether the automatic IBKR login/session path is working and where it fails before Tuesday's paper-trading run.
 Data Used: Local launchd state and local logs only. No paid data was downloaded, no broker order endpoint was called, and no orders were placed.
 Cost: $0 incremental paid data.
-Result: Decision blocked_live_market_data_entitlements. Report: v4/audit/autoresearch/v4_aplus_hypothesis_156_ibkr_autostart_observability/report.md
+Result: Decision blocked_launchagents_not_loaded. Report: v4/audit/autoresearch/protocol101_june22_autostart_prep/report.md
 Next Gate: Use the report after the scheduled 6:28/6:29/6:30 Pacific automation to diagnose startup, preflight, session, and market-data blockers.
 Owner: Codex
 ```
+
+## 2026-05-21 Protocol 161 May 2026 Historical Replay
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Downloaded the approved May 19-20 2026 historical SPXW 0DTE replay slice and ran frozen Protocol101 entry inference across both sessions.
+Reason: Live paper/shadow had taken no trades for three days, so the project needed to test whether the frozen model would have seen trades on the same sessions with historical OPRA + official SPX/VIX context.
+Data Used: Databento OPRA.PILLAR definition, cbbo-1m, ohlcv-1m, and statistics for 2026-05-19 through 2026-05-20; ThetaData SPX/VIX 1m index bars for the same sessions; existing frozen Protocol051/Protocol101 artifacts. No model was retrained and no broker endpoint was called.
+Cost: Approved hard Databento cap $5.00; actual estimated Databento spend $1.1209. ThetaData used the existing subscription.
+Result: Decision historical_replay_produced_protocol101_entries. Historical replay produced 0 entries on 2026-05-19 and 12 entry signals on 2026-05-20, all in post-open morning. Live logs did not capture candidate sets until about 11:01 ET on 2026-05-20, after the historical entry window.
+Next Gate: Treat the no-trade live conclusion as invalid for May 20. Fix/verify early-session live coverage and live-vs-historical feature parity before changing the model or lowering the edge gate.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 162 May 2026 Serial Lifecycle Replay
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Converted Protocol161 May 20 entry signals into a one-position serial replay with frozen Protocol081 lifecycle exits.
+Reason: Protocol161 counted independent entry opportunities, but the live paper bot can hold only one contract at a time; this audit checks whether the apparent May 20 edge survives real slot occupancy.
+Data Used: Already-downloaded May 19-20 2026 normalized official-context SPXW rows and existing frozen Protocol081 lifecycle artifact. No paid data was downloaded, no model was retrained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision reject_independent_entry_pnl_as_evidence: serial replay is not profitable. Independent entries showed 12 trades, +$6,810 PnL, 92% win rate; serial one-position replay showed 3 trades, -$1,090 PnL, 67% win rate. The first 10:12 ET put lost -$1,930 and occupied the slot while later call winners appeared.
+Next Gate: Future historical/live equity artifacts must be serial/account-aware. The next model hypothesis should focus on same-window opportunity cost and side arbitration so the bot can reject a weak put when better call opportunities are emerging, rather than treating every entry independently.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 163 Recent Data Catch-Up Request
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Prepared the Protocol163 recent-data catch-up request manifest before retraining the serial account policy.
+Reason: The official-context training stream ends at 2026-03-31, while recent April-May 2026 market action should be available before retraining the account-level opportunity-cost model.
+Data Used: Local file coverage and existing Databento audit logs only. Databento metadata was attempted but stalled, so the final manifest uses local calibrated cost estimates. No Databento timeseries.get_range call, no ThetaData historical download, no broker endpoint, and no model retraining occurred.
+Cost: $0 incremental paid data. Estimated Databento spend for 33 missing sessions from 2026-04-01 through 2026-05-18 is $17.6462; conservative estimate $21.1491; proposed hard cap $30.00. Existing local May 19-20 files are reused.
+Result: Decision approval_required_before_paid_download. Request: v4/audit/autoresearch/v4_aplus_hypothesis_163_recent_data_catchup_request/request.md. Manifest: v4/promotion/PROTOCOL_163_RECENT_DATA_CATCHUP_REQUEST.json.
+Next Gate: Ask for exact user approval text from the manifest before any Databento/ThetaData paid download endpoint is called.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 163 Recent Data Catch-Up Build And Integrity
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Downloaded the approved recent-data catch-up block, rebuilt official-context neural rows, and added a Protocol163-specific integrity gate.
+Reason: The next training path must use clean, official-context rows and must not train on candidates with missing contract-quality Greeks.
+Data Used: Databento OPRA.PILLAR definition, cbbo-1m, ohlcv-1m, and statistics for missing sessions from 2026-04-01 through 2026-05-18; reused local May 19-20 files; ThetaData SPX/VIX 1m official index bars for 2026-04-01 through 2026-05-20. No broker endpoint was called and no model was trained.
+Cost: Approved Databento hard cap $30.00; estimated cumulative Databento spend $18.8406. ThetaData used the existing subscription.
+Result: Decision ready_for_protocol163_training. Built 35 sessions, 12,599 neural decision rows, and 366,276 tradable candidates. Added a conservative Greek-validity candidate filter so quote-valid but Greek-invalid contracts are excluded before training. Report: v4/audit/autoresearch/v4_aplus_hypothesis_163_recent_data_integrity/report.md
+Next Gate: Use the cleaned block to train the serial one-account policy, while keeping May 19-20 marked as prior live-parity diagnostic data.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 163 Recent Frozen Protocol101 Serial Baseline
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Ran the frozen Protocol101 entry stack and frozen Protocol081 lifecycle exits across the new April-May 2026 block before retraining.
+Reason: Establish an account-real baseline on the new data so retraining cannot hide whether the old model was only benefiting from overlapping independent entries.
+Data Used: Cleaned Protocol163 official-context processed rows, normalized SPXW rows, and existing frozen Protocol051/Protocol101/Protocol081 artifacts. No paid data was downloaded by the runner, no model was retrained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Frozen Protocol101 emitted 627 independent entry signals; strict one-position serial replay took 90 trades, total PnL $7,330, PF 1.274, win rate 48.9%, calls +$4,160 and puts +$3,170. Independent replay showed $53,030 and overstated tradable opportunity due to 537 overlapping skipped signals. Report: v4/audit/autoresearch/v4_aplus_hypothesis_163_recent_protocol101_serial_lifecycle_replay/report.md
+Next Gate: Protocol163 training should optimize account-level slot occupancy directly: enter only when the current contract is worth occupying the single position slot, and penalize weak early trades that block better later opportunities.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 163 Greek Repair Rebuild
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Rebuilt the Protocol163 recent official-context neural block after replacing blunt missing/invalid Greek skipping with a repair-first path.
+Reason: The user correctly rejected silently skipping repairable candidates. Contracts should only be excluded when Greeks cannot be calculated from observable bid/mid/ask prices and contract metadata.
+Data Used: Already-downloaded Databento OPRA + ThetaData SPX/VIX files for 2026-04-01 through 2026-05-20. No paid data was downloaded, no model was trained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision ready_for_protocol163_training. Built 35 sessions and 12,599 neural decision rows; tradable candidate count increased from 366,276 to 368,459 after repair. The repair path uses mid first, then executable ask, then bid, and skips only if all observable prices fail. Report: v4/audit/autoresearch/v4_aplus_hypothesis_163_recent_data_integrity/report.md
+Next Gate: Re-run the frozen Protocol101 serial baseline and Protocol163 training on the repaired block.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 163 Repaired Frozen Protocol101 Baseline
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Re-ran frozen Protocol101 entry inference and frozen Protocol081 serial lifecycle replay on the repaired-Greek recent block.
+Reason: Protocol163 must compare against a baseline built from the same cleaned candidate universe.
+Data Used: Repaired Protocol163 processed rows, normalized official-context SPXW rows, and existing frozen Protocol051/Protocol101/Protocol081 artifacts. No paid data was downloaded, no model was retrained, and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Frozen Protocol101 emitted 631 independent entry signals. Strict one-position serial replay took 90 trades, total PnL $7,450, PF 1.278, win rate 50.0%, calls +$4,700 and puts +$2,750. Report: v4/audit/autoresearch/v4_aplus_hypothesis_163_recent_protocol101_serial_lifecycle_replay/report.md
+Next Gate: Protocol163 must beat this repaired strict one-account baseline, not the old overlapping or pre-repair artifacts.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 163 Serial One-Account Training
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Implemented and ran Protocol163, a serial one-account neural entry policy with $10,000 starting cash, one contract max, affordability checks, one open position max, ask-entry/bid-exit labels, and frozen Protocol081 exits.
+Reason: The training/evaluation path must match the future paper bot more closely: when the bot takes a trade, that trade occupies the only position slot and blocks other opportunities until exit.
+Data Used: Existing Protocol092 historical candidate dataset plus the repaired Protocol163 recent candidate lifecycle paths. No paid data was downloaded by the runner and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Decision keep_for_attribution_only: Protocol163 was profitable but did not clear the one-account improvement gate. Recent 2026 median model PnL was $6,310 across five seeds versus the repaired frozen Protocol101 serial baseline of $7,450; PF 1.241, 88 median trades, stress $0.10 still +$4,550 and stress $0.25 +$1,910. It improved Q3 2025, Q1 2026, and March 2026 medians, but underperformed Q4 2025 and the new recent block. Report: v4/audit/autoresearch/v4_aplus_hypothesis_163_serial_one_account_training/report.md
+Next Gate: Do not promote Protocol163 over Protocol101. Use Protocol163 for attribution to identify which recent trades it skipped or filtered, especially seed 5 versus the median seeds, before adding another model knob.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 164-166 Full Action-Space Realignment
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Implemented the next full-action-space training path: Protocol164 dataset builder, Protocol165 serial neural policy runner, and Protocol166 live/training parity contract.
+Reason: Protocol163 was still learning from Protocol101-exposed candidates. The next research path must let the neural policy see the full SPXW 0DTE ATM +/- $50 ladder while flat, decide wait versus one specific long call/put, and score under the same one-account serial constraints intended for paper trading.
+Data Used: Already-collected official-context processed and normalized rows only. Smoke verification used one existing recent session. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: Protocol164 smoke built 42 full-ladder candidates with no Protocol101 min-edge, preferred-time-bucket, or selected-candidate gate. Protocol165 smoke trained/evaluated on that smoke dataset and remained research-only, as expected for a one-event smoke. Protocol166 wrote a parity contract declaring SPXW PM-only, $5-aligned ATM +/- $50 candidates, ask-entry/bid-exit accounting, one contract, one open position max, and disallowed Protocol101 pre-entry gates.
+Next Gate: Build the full Protocol164 dataset across collected blocks, train Protocol165 on chronological folds, and compare against the frozen strict-serial Protocol101 baseline before considering any paper-runtime replacement.
+Owner: Codex
+```
+
+## 2026-05-21 Protocol 179-184 Full-Action And Prehistory Search Batch
+
+```text
+Date: 2026-05-21
+Decision / Experiment: Ran five follow-up hypotheses after Protocol164-166: Protocol179 full-action value policy on the expanded 30-session full-ladder screen, Protocol180 nonnegative value-threshold discipline, Protocol181/182 Protocol101-anchor overlays, Protocol183 two-stage full-action event/ranking policy, and Protocol184 Q4-2024-prehistory smaller/longer serial policy.
+Reason: The goal was to keep searching one hypothesis at a time for a model that could beat frozen Protocol101 under strict serial account replay, without buying data or using live broker endpoints.
+Data Used: Already-collected official-context historical blocks, Protocol164 full-action screen, existing Protocol101/Protocol163/Protocol175 artifacts, and existing Q4 2024 prehistory data. No paid data was downloaded and no broker endpoint was called.
+Cost: $0 incremental paid data.
+Result: No candidate cleared the frozen Protocol101 gate. Protocol183 separated trade/no-trade from contract ranking but still underperformed Protocol101 materially: Q3 2025 median $0 vs $59,130, Q4 2025 $4,805 vs $92,460, Q1 2026 $1,625 vs $95,010, March $0 vs $41,790, recent 2026 $7,270 vs $7,450. Protocol184 stayed profitable but also failed: Q3 $58,620 vs Protocol101 $59,130, Q4 $79,210 vs $92,460, Q1 $90,310 vs $95,010, March $40,170 vs $41,790, recent $7,450 vs $7,450.
+Key Finding: The full-action path is not yet a fair replacement for Protocol101 because Protocol164 omitted the causal surface `edge` feature that Protocol101 depends on. The next research move should be feature-parity repair, not another threshold or architecture knob: build/score a full-action dataset with causal surface-edge features and history summaries, then rerun the full-action serial policy.
+Next Gate: Freeze Protocol101 as operational paper default. Stop model-tweak searching until Protocol164 full-action feature parity is repaired and verified.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_FULL_ACTION_FEATURE_PARITY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol210
+What is this: Diagnostic / audit.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_189_full_coverage_surface_edge_enrichment/protocol185_full_action_with_surface_edge.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision repair_missing_causal_history_features. The full-action surface-edge dataset had all surface-edge fields but was missing 14 Protocol101-style causal short-history fields, including previous/rolling candidate count, gamma, theta burden, spread, call/put counts, and call-minus-put edge.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_210_full_action_feature_parity_audit/report.md
+Next Experiment: Repair the full-action dataset by adding the missing causal short-history features before rerunning the two-stage full-action policy.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_FULL_ACTION_HISTORY_FEATURE_REPAIR_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol211
+What is this: Dataset repair experiment.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_189_full_coverage_surface_edge_enrichment/protocol185_full_action_with_surface_edge.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision ready_for_full_action_history_policy_test. Built v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet with 3,516,386 rows. All repaired history feature NaN counts were zero. The history features are causal: each decision row only uses earlier decision events from the same session.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/report.md
+Next Experiment: Run the two-stage full-action policy using surface-edge plus repaired causal-history features.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_FULL_ACTION_SURFACE_EDGE_HISTORY_POLICY_SMOKE_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol212 smoke, using the Protocol183 two-stage policy runner.
+What is this: Smoke experiment, not a promotion score.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: One complete q1_2025 session carved from the Protocol211 repaired dataset: 2025-02-21, 360 decision events, 11,535 full-action candidate rows.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: The repaired feature set trained and evaluated successfully through the two-stage full-action policy path with one seed and four epochs. Decision remained research_only as expected because the smoke fold contains no protected scoring blocks.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_212_full_action_surface_edge_history_policy_smoke/report.md
+Next Experiment: Run the repaired full-action surface-edge-history policy on the all-session dataset as a controlled long research run, then compare against PAPER_DEFAULT_PROTOCOL101 under strict one-account serial replay.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_FULL_ACTION_SURFACE_EDGE_HISTORY_POLICY_SCREEN_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol213, using the Protocol183 two-stage policy runner.
+What is this: One-seed all-session research screen.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Other Baselines: First-affordable, matched-random, and full-action oracle from the reusable full-action runner.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: One-seed screen passed the reusable runner gate but is not a promotion decision. It beat PAPER_DEFAULT_PROTOCOL101 on every scored block: q3_2025 +$35,345, q4_2025 +$25,550, q1_2026 +$109,120, March 2026 +$18,910, and recent_2026 +$22,540. It also passed serial/account invariants with 0 unaffordable trades, 0 overlap violations, and valid exit ordering.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_213_full_action_surface_edge_history_policy_screen/report.md
+Next Experiment: Run the same repaired full-action surface-edge/history policy across additional seeds before any promotion decision. If the multi-seed confirmation survives, do attribution and runtime parity before any paper-default replacement.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_FULL_ACTION_SURFACE_EDGE_HISTORY_ADDITIONAL_SEEDS_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol214, using the Protocol183 two-stage policy runner.
+What is this: Additional seed confirmation run.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Seeds 2-5 independently beat PAPER_DEFAULT_PROTOCOL101 on every scored block under strict serial replay. Median deltas versus Protocol101 across the four seeds were q3_2025 +$48,497.50, q4_2025 +$36,520.00, q1_2026 +$102,002.50, March 2026 +$20,062.50, and recent_2026 +$15,522.50.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_214_full_action_surface_edge_history_policy_additional_seeds/report.md
+Next Experiment: Combine seed 1 and seeds 2-5 into one five-seed confirmation artifact.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_FULL_ACTION_SURFACE_EDGE_HISTORY_5SEED_CONFIRMATION_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol215, combined from Protocol213 seed 1 and Protocol214 seeds 2-5.
+What is this: Five-seed research confirmation.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision confirmed_research_challenger_not_paper_default. The candidate beat PAPER_DEFAULT_PROTOCOL101 on every protected block with positive seed fraction 1.00: q3_2025 median $104,840 vs $59,130, q4_2025 $128,755 vs $92,460, q1_2026 $204,130 vs $95,010, March 2026 $60,700 vs $41,790, and recent_2026 $25,150 vs $7,450. $0.10 and $0.25 per-side stress remained positive on every scored block. Serial invariants passed with 0 unaffordable trades, 0 overlap violations, and 0 bad exit ordering.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_215_full_action_surface_edge_history_5seed_confirmation/report.md
+Next Experiment: Do attribution and live/training parity checks for CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1 before any paper-default replacement. Specifically inspect whether it reduces churn, whether fills/timing remain plausible, and whether the live runtime can generate the same full-action feature set.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_CHALLENGER_FULL_ACTION_HISTORY_VS_PROTOCOL101_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol216.
+What is this: Diagnostic / attribution audit.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol215 confirmed challenger trades, Protocol101 historical serial trades, Protocol101 recent serial replay, and local normalized official-context quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision attribution_supports_challenger_next_runtime_parity. Exact trade overlap was tiny, so the challenger is not just replaying Protocol101. It won by taking more full-action entries, especially larger directional-move captures. Median duration was generally 25 minutes for the challenger versus 8-14 minutes for Protocol101 on historical blocks. Directional move capture improved materially: for example q3_2025 >=10 SPX-point directional captures were 274 challenger trades for $449,230 versus 28 Protocol101 trades for $30,700. The challenger still has same-side re-entry/churn, but same-contract hold counterfactuals did not show a broad simple-hold fix for the challenger.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_216_full_action_history_vs_protocol101_attribution/report.md
+Next Experiment: Build the no-order runtime parity path for CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1 before any paper-default replacement.
+Owner: Codex
+```
+
+## 2026-05-22 RUNTIME_FULL_ACTION_HISTORY_NO_ORDER_PARITY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol217.
+What is this: Runtime / no-order parity harness.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action surface-edge/history dataset, fold4 seed1 challenger model artifact, and Protocol215 historical selected trades for parity comparison.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision runtime_parity_ready_no_order_protocol101_default_unchanged. Replayed 750 recent_2026 decision events with no orders. Runtime schema validation passed, feature audit passed with no future-only columns and all repaired history features present, latency budget pass fraction was 1.0, p95 total decision latency was 1.793 ms, and the runtime selected exactly the same 18 trades as the frozen historical artifact inside the replayed event window.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_217_full_action_history_runtime_parity/report.md
+Next Experiment: Inspect selected-trade charts and produce a replacement-readiness packet only after confirming the runtime can build the same full-action history features from live data, not just replayed parquet rows.
+Owner: Codex
+```
+
+## 2026-05-22 DIAGNOSTIC_CHALLENGER_FULL_ACTION_HISTORY_TRADE_CHARTS_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol218.
+What is this: Diagnostic / visual inspection artifact.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_215_full_action_surface_edge_history_5seed_confirmation/model_trades_5seed.csv plus local SPX and normalized option quote files for quote-path backfill.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision visual_inspection_artifacts_ready_paper_default_unchanged. Built serial one-account charts for seed 1 with $10,000 starting equity, one affordable contract at a time, ask-entry/bid-exit replay, and no duplicated March slice. The paper replay contained 1,950 trades, 0 skipped trades, 100% premium/path quote coverage, $446,605 total PnL, max drawdown -$9,550, and $417,605 stressed ending equity at $0.10 per side.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_218_challenger_full_action_history_trade_charts/report.md
+Next Experiment: Inspect biggest winners, biggest losers, worst days, and churn chains before any paper-default replacement decision.
+Owner: Codex
+```
+
+## 2026-05-22 RUNTIME_FULL_ACTION_HISTORY_FEATURE_BUILDER_PARITY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol219.
+What is this: Runtime / parity harness.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Baseline Compared: Historical Protocol211 parquet feature build.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision live_style_history_feature_builder_parity_passed. A live-style one-event-at-a-time builder reproduced the repaired causal history features over all collected blocks: 123,782 decision events, 3,516,386 candidate rows, 0 mismatch events, max absolute diff 6.82e-13, and every split passed. This confirms the challenger's short-history features are compatible with a streaming/no-order runtime path rather than requiring future parquet context.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_219_live_style_history_feature_builder_parity/report.md
+Next Experiment: Wire the stream-safe feature builder into a no-order challenger shadow path while keeping PAPER_DEFAULT_PROTOCOL101 unchanged until that live-safe path passes.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_CHALLENGER_MONEYNESS_AND_PROMOTION_BLOCKERS_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol220.
+What is this: Diagnostic / audit.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol218 seed-1 serial replay trades, Protocol215 five-seed selected trades, and local ThetaData SPX bars for entry moneyness reconstruction.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision moneyness_audit_complete_paper_default_unchanged. The candidate is overwhelmingly ITM/high-premium. In the source-of-truth seed-1 serial replay, trader-ladder moneyness was 1,747 ITM trades for $419,295 PnL, 100 ATM-band trades for $22,125 PnL, and 103 OTM trades for $5,185 PnL. Across all five research seeds with the duplicate March slice removed, trader-ladder moneyness was 9,850 ITM trades for $2,165,160 PnL, 540 ATM-band trades for $88,720 PnL, and 642 OTM trades for $30,450 PnL. The $3k-$4k premium bucket dominated all five seeds: 8,092 trades for $1,845,270 PnL. 872 all-seed rows used offset fallback for moneyness because the local SPX entry bar was missing.
+Interpretation: The challenger appears to capture larger SPX directional moves partly by buying higher-delta/intrinsic contracts rather than cheaper OTM convexity. This is not an automatic rejection, but it is an operational promotion issue because live paper must prove the same premium/moneyness selection is affordable, fresh, and executable.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_220_challenger_moneyness_promotion_audit/report.md
+Next Experiment: Run a no-order live-shadow challenger using the stream-safe full-action/history feature path, then compare live candidate surface, premium distribution, and selected strikes against this audit before any paper-default replacement.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_RETURN_ON_PREMIUM_FULL_ACTION_POLICY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol221.
+What is this: Experiment / model change.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_RETURN_ON_PREMIUM_FULL_ACTION_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Baseline Challenger: CHALLENGER_FULL_ACTION_SURFACE_EDGE_HISTORY_V1.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_only_return_on_premium_objective_did_not_clear_frozen_protocol101_gate. The pure return-on-premium objective worked mechanically but overcorrected. Median premiums collapsed from the existing challenger's roughly $2k-$3.2k range to $100-$175 on scored splits, and the trade profile became mostly OTM: 1,774 OTM trades, 110 ATM-band trades, and 33 ITM trades. Capital efficiency and profit factor improved, but dollar PnL fell below PAPER_DEFAULT_PROTOCOL101 on Q3 2025, Q4 2025, Q1 2026, and March 2026. It only beat the paper default on recent_2026: $9,555 vs $7,450.
+Interpretation: Premium-normalized training is useful, but pure return-on-premium is too aggressive. The next model hypothesis should be a blended dollar-plus-premium utility that preserves the existing challenger's directional-move capture while penalizing overpaying for high-premium ITM contracts.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_221_return_on_premium_full_action_policy/report.md
+Next Experiment: Test a single pre-registered blended utility, not a grid: keep dollar-PnL opportunity cost as the main target but add premium-normalized regret/efficiency as an auxiliary objective.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_CONFIDENCE_SCALED_PREMIUM_SIZING_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol222.
+What is this: Experiment / offline sizing simulator.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_RETURN_ON_PREMIUM_FULL_ACTION_V1_WITH_CONFIDENCE_SIZING.
+Entry/Exit Source: CHALLENGER_RETURN_ON_PREMIUM_FULL_ACTION_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_221_return_on_premium_full_action_policy/model_trades.csv plus entry ask-size joins from v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision confidence_sizing_improves_return_on_premium_candidate_offline. The sizing overlay materially increased dollar PnL versus the one-contract return-on-premium candidate on every scored split: q3_2025 $313,715 vs $20,715, q4_2025 $479,270 vs $43,640, q1_2026 $783,185 vs $48,415, March 2026 $286,740 vs $19,010, and recent_2026 $140,650 vs $9,555. However, this is not promotion-ready: the 20-contract research cap bound on 96.5% of trades, median size was 20 contracts, max drawdown increased sharply, and $0.25 per-side stress turned q3_2025 and q4_2025 negative.
+Interpretation: The user's multi-contract hypothesis is worth pursuing, but not as a blunt leverage overlay. A max-one diagnostic showed the same return-on-premium trade set stayed positive under $0.25 per-side stress on every split, so the failure is aggressive risk allocation under stress rather than the cheap-OTM candidate set itself. The next model needs liquidity/slippage-aware confidence sizing, drawdown-aware risk throttling, or a blended dollar-plus-premium objective that chooses better contracts before increasing quantity.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_222_confidence_scaled_premium_sizing/report.md
+Next Experiment: Do not promote multi-contract sizing. Test a single blended dollar-plus-premium utility and/or a liquidity-aware sizing policy that reduces size when edge is spread-sensitive, instead of saturating at max contracts.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_ACCOUNT_AWARE_CONFIDENCE_SIZING_V2
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol223.
+What is this: Experiment / offline account-aware sizing simulator.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_RETURN_ON_PREMIUM_FULL_ACTION_V1_WITH_ACCOUNT_AWARE_SIZING.
+Entry/Exit Source: CHALLENGER_RETURN_ON_PREMIUM_FULL_ACTION_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_221_return_on_premium_full_action_policy/model_trades.csv plus entry ask-size joins already present in the Protocol223 input stream.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision account_aware_sizing_candidate_clears_initial_offline_gate. At $10,000 starting cash with no added slippage, the account-aware sizing rule beat PAPER_DEFAULT_PROTOCOL101 on every scored split: q3_2025 $70,760 vs $59,130, q4_2025 $141,955 vs $92,460, q1_2026 $403,720 vs $95,010, March 2026 $109,510 vs $41,790, and recent_2026 $65,515 vs $7,450. The rule stayed positive under $0.25 per-side stress on every scored split, with max drawdown percentage 20.6% at $10,000. It failed under $0.50 per-side stress, which is a useful blocker against overconfidence.
+Risk Controls Tested: hard premium cap 12% of equity, max risk fraction 10%, drawdown throttle, 25% of displayed ask-size liquidity cap, absolute 100-contract cap, and 50% account halt guard. Across account scales from $10,000 to $1,000,000, the rule scaled quantity without full-porting; p90 premium exposure was 2.3% of equity and max realized premium exposure was 11.7%.
+Interpretation: This is the first multi-contract result that looks directionally plausible rather than absurd compounding. It is still research-only because sizing has not been trained as a model action, $0.50 stress breaks, and scale-in/scale-out behavior is not yet learned.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_223_account_aware_confidence_sizing/report.md
+Next Experiment: Build the scale-in/scale-out path audit before adding actions. Specifically measure whether adding tends to press winners or average down into losers, and whether exits leave continuation value that a lifecycle model could learn.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_2026_05_22_SCALE_IN_OUT_PATH_OPPORTUNITY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol224.
+What is this: Diagnostic / scale-in scale-out path opportunity audit.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_RETURN_ON_PREMIUM_FULL_ACTION_V1_WITH_ACCOUNT_AWARE_SIZING.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_223_account_aware_confidence_sizing/account_aware_sized_trades.csv and local normalized official-context option quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision scale_in_requires_caution_many_best_adds_are_average_down. The audit found large lifecycle opportunity: at $10,000/no-stress account-aware sizing, best full-path PnL was far above baseline selected exits on every scored split, and material post-exit continuation appeared in 35%-49% of trades depending on split. However, the best hindsight add opportunity often occurred while the existing position was red: 68.8% of positive March add opportunities, 65.6% of Q1, 56.2% of Q3, and 67.3% of Q4 were average-down cases. Recent_2026 was the exception: only 46.8% average-down and 52.3% adding-to-winner.
+Greek Repair: Entry and best-add Greeks were repaired from quote path fields with Black-Scholes where normalized path Greeks were missing. Entry delta coverage was 99.95%; best-add delta coverage was 99.69%.
+Interpretation: Scale-out/hold improvement is clearly worth pursuing because current exits leave continuation value. Scale-in must be treated carefully: naive adding would learn to average down into losers too often. The next model should first learn position management and scale-out/hold/exit; add actions should be gated by learned recovery quality, not a blind lower-average-cost objective.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_224_scale_in_out_path_opportunity/report.md
+Next Experiment: Build a supervised position-management dataset with actions hold/reduce/exit first, and add a separate candidate label for add-one-contract only when the path evidence shows it is not merely averaging down.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_ACCOUNT_AWARE_LIFECYCLE_EXIT_POLICY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol225.
+What is this: Experiment / causal lifecycle exit model.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_ACCOUNT_AWARE_LIFECYCLE_EXIT_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol223 account-aware sized trade stream and local normalized quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision reject_account_aware_lifecycle_exit_no_improvement. The model cut trades too early and destroyed move capture: March $34,500 vs Protocol223 baseline $109,510, Q1 $42,235 vs $403,720, and recent $3,955 vs $65,515.
+Interpretation: A naive causal exit model learns risk reduction, not profitable lifecycle management. Do not promote.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_225_account_aware_lifecycle_exit_policy/report.md
+Next Experiment: Test lifecycle changes that do not allow the model to clip winners before the frozen baseline exit.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_BASELINE_ANCHORED_CONTINUATION_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol226.
+What is this: Experiment / continuation-only lifecycle model.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_BASELINE_ANCHORED_CONTINUATION_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol223 trade stream and local normalized quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision reject_baseline_anchored_continuation_no_improvement. After fixing the exact-baseline accounting bug, the result matched baseline PnL on March, Q1, and recent; true extensions were rare and not useful.
+Interpretation: Current causal continuation signal does not extract the large hindsight post-exit opportunity.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_226_baseline_anchored_continuation/report.md
+Next Experiment: Audit scale-out and early-exit behavior rather than adding another continuation knob.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_SCALE_OUT_RUNNER_SCREEN_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol227.
+What is this: Experiment / scale-out runner screen.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_SCALE_OUT_RUNNER_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol223 account-aware sized trade stream and local normalized quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision reject_scale_out_runner_no_improvement. Validation selected no runner; forced-flat runners reduced PnL across validation paths.
+Interpretation: Simple scale-out by holding a runner to close is not a good proxy for learned lifecycle intelligence.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_227_scale_out_runner_screen/report.md
+Next Experiment: Test learned early-exit/hold targets instead of hardcoded runner fractions.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_BASELINE_RELATIVE_EARLY_EXIT_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol228.
+What is this: Experiment / early-exit model.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_BASELINE_RELATIVE_EARLY_EXIT_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol223 trade stream and local normalized quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision reject_baseline_relative_early_exit_no_improvement. Median results matched the frozen baseline; the model did not find a robust generalizable early-exit improvement.
+Interpretation: Path-local baseline-relative labels were too weak; the lifecycle target needs a clearer action-state formulation.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_228_baseline_relative_early_exit/report.md
+Next Experiment: Build a position-action oracle to understand the reachable hold/reduce/exit label surface.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_2026_05_22_POSITION_ACTION_DP_ORACLE_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol229.
+What is this: Diagnostic / hindsight position-action oracle.
+Does it change the paper-trading default: No.
+Candidate Being Tested: Protocol223 account-aware trade stream.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol223 trades and local normalized quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision position_action_oracle_supports_exit_training_only. The oracle shows huge theoretical lifecycle upside: Q1 baseline $403,720 vs oracle $3,099,895, Q4 baseline $141,955 vs oracle $864,960, and recent baseline $65,515 vs oracle $268,330. But reduce/scale-out labels were rare; the oracle is mostly hold then exit-all.
+Interpretation: Do not force scale-out. The immediate learnable target is better hold/exit timing.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_229_position_action_dp_oracle/report.md
+Next Experiment: Train a sparse oracle-exit classifier and require executable-dollar improvement, not just cleaner risk.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_ORACLE_EXIT_ACTION_CLASSIFIER_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol230.
+What is this: Experiment / sparse oracle exit classifier.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_ORACLE_EXIT_ACTION_CLASSIFIER_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol229 oracle labels and local normalized quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision reject_oracle_exit_classifier_no_improvement. The classifier improved PF and drawdown but gave up median PnL: March $108,255 vs $109,510, Q1 $388,630 vs $403,720, and recent $63,545 vs $65,515.
+Interpretation: The risk-adjusted behavior is interesting, but the project objective still requires beating executable PnL before promotion.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_230_oracle_exit_action_classifier/report.md
+Next Experiment: Return to contract-quality and premium-efficiency objectives before more lifecycle knobs.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_2026_05_22_ACCOUNT_AWARE_SIZING_RISK_SCREENS_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol231.
+What is this: Diagnostic / sizing risk screen.
+Does it change the paper-trading default: No.
+Candidate Being Tested: Protocol223 account-aware sizing variants.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol221 trade stream.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Conservative and balanced variants did not improve the original Protocol223 overlay. Conservative risk reduced PnL and failed Q4 under $0.25 stress; balanced risk lowered PnL without solving the key stress fragility.
+Interpretation: The better path is not simply lowering risk fractions. Improve contract selection/objective first.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_231_conservative_account_aware_sizing_screen/report.md and v4/audit/autoresearch/v4_aplus_hypothesis_231_balanced_account_aware_sizing_screen/report.md
+Next Experiment: Train a blended dollar-plus-premium objective.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_BLENDED_DOLLAR_PREMIUM_POLICY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol232.
+What is this: Experiment / model objective change.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_BLENDED_DOLLAR_PREMIUM_FULL_ACTION_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Baseline Challenger: CHALLENGER_RETURN_ON_PREMIUM_FULL_ACTION_V1.
+Data Used: v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_candidate_survives_frozen_protocol101_gate_with_blended_dollar_premium_training. The 65/35 dollar/premium utility beat Protocol101 on every required split but still leaned heavily ITM with median premium about $3,030.
+Interpretation: Blending dollar and premium utility works, but a more premium-leaning version may better match capital-efficient option trading without losing the edge.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_232_blended_dollar_premium_policy/report.md
+Next Experiment: Screen a premium-leaning blend.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_2026_05_22_BLENDED_POLICY_ACCOUNT_AWARE_SIZING_SCREEN_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol233.
+What is this: Diagnostic / sizing overlay screen.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_BLENDED_DOLLAR_PREMIUM_FULL_ACTION_V1 with account-aware sizing.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol232 model trades.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_only_account_aware_sizing_improves_capital_efficiency_but_not_protocol101. The overlay helped Q1 and recent but failed to beat Protocol101 on March, Q3, and Q4 at $10,000/no-stress and became fragile under stress.
+Interpretation: The sizing overlay is not the promoted path for this candidate.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_233_blended_policy_account_aware_sizing_screen/report.md
+Next Experiment: Test a premium-leaning one-contract objective before revisiting sizing.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_PREMIUM_LEANING_BLEND_SCREEN_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol234.
+What is this: Experiment / model objective change.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action history dataset.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_candidate_survives_frozen_protocol101_gate_with_blended_dollar_premium_training. The 45/55 dollar/premium utility beat Protocol101 on every required split in the one-seed screen while lowering median premium to about $1,660 and increasing OTM participation.
+Interpretation: This is the best capital-efficiency tradeoff found so far.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_234_premium_leaning_blend_screen/report.md
+Next Experiment: Screen sizing and then run seed stability if sizing remains fragile.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_2026_05_22_PREMIUM_LEANING_ACCOUNT_AWARE_SIZING_SCREEN_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol235.
+What is this: Diagnostic / sizing overlay screen.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1 with account-aware sizing.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol234 model trades.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_only_account_aware_sizing_fails_slippage_stress. The overlay amplified Q4 and March stress losses and was not better than Protocol101 across the strict $10,000 gate.
+Interpretation: Keep multi-contract sizing research-only. Promote only one-contract evidence for this challenger.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_235_premium_leaning_account_aware_sizing_screen/report.md
+Next Experiment: Test whether an even stronger premium blend improves contract efficiency or just buys too much cheap convexity.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_STRONG_PREMIUM_BLEND_SCREEN_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol236.
+What is this: Experiment / model objective change.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_STRONG_PREMIUM_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action history dataset.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_candidate_survives_frozen_protocol101_gate_with_blended_dollar_premium_training. The 25/75 dollar/premium utility became much more OTM and dropped median premium to about $380, but total PnL fell below the 45/55 blend on most splits.
+Interpretation: The capital-efficiency signal is real, but pushing too hard toward cheap contracts gives up too much dollar edge.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_236_strong_premium_blend_screen/report.md
+Next Experiment: Do not promote this over the 45/55 blend unless sizing proves uniquely better.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_2026_05_22_STRONG_PREMIUM_ACCOUNT_AWARE_SIZING_SCREEN_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol237.
+What is this: Diagnostic / sizing overlay screen.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_STRONG_PREMIUM_BLENDED_UTILITY_V1 with account-aware sizing.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol236 model trades.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_only_account_aware_sizing_fails_slippage_stress. The overlay produced strong no-stress March/Q1/Q3 results but failed Q4 and became sharply stress-fragile, including negative Q3/Q4 under $0.25 per-side stress.
+Interpretation: Cheaper contracts do not automatically make multi-contract sizing safe.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_237_strong_premium_account_aware_sizing_screen/report.md
+Next Experiment: Run seed stability on the 45/55 premium-leaning one-contract challenger.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_PREMIUM_LEANING_BLEND_SEED_STABILITY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol238.
+What is this: Experiment / seed stability run.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action history dataset.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_candidate_survives_frozen_protocol101_gate_with_blended_dollar_premium_training. Seeds 1-3 survived: median q3_2025 $94,430 vs Protocol101 $59,130, q4_2025 $143,855 vs $92,460, q1_2026 $181,640 vs $95,010, March $64,665 vs $41,790, and recent $54,805 vs $7,450.
+Interpretation: The challenger is not a one-seed accident.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_238_premium_leaning_blend_seed_stability/report.md
+Next Experiment: Run seeds 4-5 as a holdout stability check.
+Owner: Codex
+```
+
+## 2026-05-22 EXP_2026_05_22_PREMIUM_LEANING_BLEND_SEED_HOLDOUT_4_5_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol239.
+What is this: Experiment / seed holdout run.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action history dataset.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision research_candidate_survives_frozen_protocol101_gate_with_blended_dollar_premium_training. Seeds 4-5 also survived, beating Protocol101 on every required split in median.
+Interpretation: Combine with Protocol238 into a five-seed decision packet.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_239_premium_leaning_blend_seed_holdout_4_5/report.md
+Next Experiment: Freeze the five-seed challenger as research-only and build runtime parity before any paper-default replacement.
+Owner: Codex
+```
+
+## 2026-05-22 DECISION_2026_05_22_PREMIUM_LEANING_BLEND_FIVE_SEED_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol240.
+What is this: Freeze / promotion decision packet.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol238 and Protocol239 summaries/trades, both from the Protocol211 repaired full-action history dataset.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision freeze_research_challenger_premium_leaning_blend_five_seed_survives. The candidate survived five seeds and beat Protocol101 under strict one-account serial replay: q3_2025 median $87,055 vs $59,130, q4_2025 $143,855 vs $92,460, q1_2026 $165,125 vs $95,010, March $64,665 vs $41,790, and recent $62,575 vs $7,450. Positive seed fraction was 1.00 on every split; beat-Protocol101 seed fraction was 0.80 on q3_2025 and 1.00 on all other required splits. $0.10 and $0.25 per-side stress stayed positive on every required split.
+Trade Profile: Combined five-seed replay had 12,633 trades, $2,616,745 total research PnL, median entry premium $1,790, PnL per entry premium 0.1136, 5,929 calls for $1,048,795, and 6,704 puts for $1,567,950.
+Interpretation: This is now the strongest research challenger, but it is not the paper default. The next work is no-order runtime parity and trade-level attribution against Protocol101 before any replacement decision.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_240_premium_leaning_blend_five_seed_decision/report.md
+Next Experiment: Build no-order runtime parity for CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1 and compare live-style features/candidate selection against historical replay.
+Owner: Codex
+```
+
+## 2026-05-22 RUNTIME_PREMIUM_LEANING_BLEND_NO_ORDER_PARITY_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol241.
+What is this: Runtime / no-order parity harness.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action history dataset, Protocol238 fold4 seed1 model artifact, and Protocol240 five-seed trade file for historical match.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision runtime_parity_ready_no_order_protocol101_default_unchanged. Replayed 750 recent_2026 decision events with no orders. Runtime validation passed, feature audit passed, budget pass fraction was 1.0, p95 total decision latency was 2.907 ms, and runtime selected exactly the same 21 trades as the frozen historical artifact inside the replayed event window.
+Interpretation: The frozen research challenger can be evaluated through a live-style no-order runtime path without changing the paper default. This is historical replay parity, not live-market parity.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_241_premium_blend_runtime_parity/report.md
+Next Experiment: Run attribution versus Protocol101 and prepare a replacement-readiness checklist. Do not replace PAPER_DEFAULT_PROTOCOL101 until live/no-order feature parity is demonstrated.
+Owner: Codex
+```
+
+## 2026-05-22 AUDIT_PREMIUM_LEANING_BLEND_VS_PROTOCOL101_V1
+
+```text
+Date: 2026-05-22
+Historical ID: Protocol242.
+What is this: Diagnostic / attribution audit.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol240 five-seed challenger trades, Protocol101 serial policy trades, recent Protocol101 serial lifecycle replay, and local normalized official-context quote paths.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision attribution_supports_challenger_paper_default_unchanged. The challenger outperformed Protocol101 primarily through more full-action trades and better directional-move capture, not exact trade overlap. Exact overlap was tiny: q3_2025 had only 5 common exact trades, q4_2025 28, March 41, Q1 67, and recent 10. Directional move capture improved materially: q4_2025 >=10 SPX-point directional captures were 523 challenger trades for $910,415 versus 74 Protocol101 trades for $114,240; q3_2025 was 184 challenger trades for $308,240 versus 28 Protocol101 trades for $30,700. The challenger traded longer, with median duration 25 minutes across scored splits, and used both calls and puts, with puts contributing more total PnL in the combined attribution.
+Caveat: The challenger also has more same-side re-entry/churn chains because it trades much more often. This is not an immediate rejection because those chains are profitable, but it remains a lifecycle behavior to monitor before replacement.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_242_premium_blend_vs_protocol101_attribution/report.md
+Next Experiment: Draft a replacement-readiness checklist and run live/no-order feature parity for the premium-leaning challenger before any paper-default replacement.
+Owner: Codex
+```
+
+## 2026-05-23 RUNTIME_PREMIUM_BLEND_OFFHOURS_STACK_BRIDGE_V1
+
+```text
+Date: 2026-05-23
+Historical ID: Protocol243.
+What is this: Runtime / off-hours stack bridge and promotion-workaround audit.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action history dataset, Protocol238 fold4 seed1 challenger artifact manifest, and recorded Protocol101/081 live-shadow JSONL logs from May 19-20.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision conditional_bridge_ready_but_recorded_live_logs_too_narrow_for_promotion. Added a live-style full-action challenger adapter and verified all 64 model features have causal live-style sources. The adapter rebuilt 3,789 historical candidate rows across 120 May 19-20 decision events with max feature difference 4.55e-13 versus the training parquet. Historical full-action May 19-20 events had median 32 candidates/event, while the recorded Protocol101 live-shadow logs had median 10 contracts/event, so those recorded logs are too narrow to prove full challenger live-surface breadth off-hours.
+Interpretation: The model-construction gap is mostly solved off-hours: the challenger can build the same feature surface it was trained on from point-in-time quote/context objects. The remaining replacement blocker is live quote breadth/freshness for the broader ATM +/- $50 full-action ladder, not the neural model artifact itself.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_243_premium_blend_offhours_stack_bridge/report.md
+Next Experiment: Wire the challenger adapter into a no-order/paper-dry-run variant of the persistent trader, then require an automatic premarket live-surface breadth/freshness gate before any paper-default switch.
+Owner: Codex
+```
+
+## 2026-05-23 RUNTIME_PREMIUM_BLEND_PAPER_RUNTIME_SHELL_V1
+
+```text
+Date: 2026-05-23
+Historical ID: Protocol244.
+What is this: Runtime / paper-style no-broker shell.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol211 repaired full-action history dataset and Protocol238 fold4 seed1 challenger artifact manifest.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Decision paper_runtime_shell_ready_no_broker_protocol101_default_unchanged. The shell replayed May 20, 2026 through the live-style full-action adapter and emitted monitorable paper-log events using the shared paper-trading JSONL/CSV contract. It replayed 166 decision events, emitted 5 enter intents, all 5 passed the paper order-intent risk validation, and trade-log validation passed across 831 rows with zero broker endpoint rows.
+Interpretation: The challenger can now produce the same style of operational logs that the paper monitor/analyzer expects, without touching IBKR. This moves the blocker from "model construction/log format" to "broker-connected live candidate breadth and freshness."
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_244_premium_blend_paper_runtime_shell/report.md
+Next Experiment: Use this same shell shape in a broker-connected challenger no-order runner. Only switch paper default after live surface breadth/freshness and log validation pass automatically.
+Owner: Codex
+```
+
+## 2026-05-23 RUNTIME_PREMIUM_BLEND_LIVE_SURFACE_AUTOTEST_V1
+
+```text
+Date: 2026-05-23
+Historical ID: Protocol245.
+What is this: Runtime / Tuesday broker-connected no-order live surface breadth and challenger scoring check.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Configuration/artifact validation only today; Tuesday run will use IBKR live market data. No paid historical data is downloaded.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Added a no-order live-surface autotest runner plus LaunchAgent wiring for Tuesday May 26, 2026 at 06:33 PT. The config-only smoke passed and confirmed the challenger artifact loads, the surface-edge artifact loads, and the expected SPXW ATM +/- $50 0DTE ladder is 42 raw contracts before NBBO/live-safe filters.
+Interpretation: This is the off-hours workaround for the recorded-log breadth blocker. Tuesday's automated check must prove IBKR is feeding the broader live candidate surface before any paper-default replacement can be considered.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_245_premium_blend_live_surface_autotest/2026-05-23/protocol245_config_check_2026-05-23/report.md
+Next Experiment: Let the scheduled no-order live surface check run on Tuesday during market hours, then compare the challenger decisions with PAPER_DEFAULT_PROTOCOL101 for the same live session.
+Owner: Codex
+```
+
+## 2026-05-23 AUDIT_PREMIUM_BLEND_METRIC_RECONCILIATION_V1
+
+```text
+Date: 2026-05-23
+Historical ID: Protocol247.
+What is this: Diagnostic / metric reconciliation.
+Does it change the paper-trading default: No.
+Candidate Being Tested: CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: Protocol246 single-seed challenger chart trades, Protocol113 Protocol101 chart trades, Protocol163 recent Protocol101 serial replay, and Protocol242 attribution trades.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Confirmed the previous comparison mixed three scopes: five-seed promotion medians, five-seed directional-move attribution, and a one-seed paper-account equity chart. The $910,415 Q4 figure was directional-capture attribution across all five seeds, not Q4 net account PnL. In the single-seed visual chart, the challenger made $465,340 total and $158,830 in Q4; Protocol101 has materially higher win rate and average PnL per trade.
+Interpretation: The challenger remains a stronger total-PnL historical research candidate, but the lower win rate, higher trade count, and confusing attribution scope mean it should not be promoted from the old narrative alone. Future comparison language must state metric scope explicitly.
+Report: v4/audit/autoresearch/v4_aplus_hypothesis_247_premium_blend_metric_reconciliation/report.md
+Next Experiment: Use the corrected apples-to-apples framing when reviewing challenger trade charts and wait for live/no-order surface parity before any paper-default replacement.
+Owner: Codex
+```
+
+## 2026-05-23 GUIDE_MODEL_IMPROVEMENT_DISCIPLINE_V1
+
+```text
+Date: 2026-05-23
+Historical ID: None; governing documentation.
+What is this: Guideline / model-improvement rulebook.
+Does it change the paper-trading default: No.
+Candidate Being Tested: None.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: No market data; documentation only.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Added v4/docs/MODEL_IMPROVEMENT_GUIDELINES.md and linked it from README, OPERATING_MEMORY, and NAMING_GUIDE. The guide defines the strict game definition, pre-registration workflow, metric-scope rules, evaluation views, replacement bar, chart rules, failure handling, and paid-data guardrails for future model-improvement work.
+Interpretation: The premium-blend metric mismatch showed that profitable research artifacts are not enough. Future challengers must be compared against PAPER_DEFAULT_PROTOCOL101 under explicit metric scope before they can be called better, and lower win rate / higher churn must be treated as a tradeoff requiring attribution rather than ignored.
+Report: v4/docs/MODEL_IMPROVEMENT_GUIDELINES.md
+Next Experiment: Use this guideline as the required preflight for any new challenger experiment or replacement discussion.
+Owner: Codex
+```
+
+## 2026-05-23 GUIDE_HYPOTHESIS_TO_PROMOTION_PROCESS_V1
+
+```text
+Date: 2026-05-23
+Historical ID: None; governing documentation.
+What is this: Guideline / stage-gate research and promotion process.
+Does it change the paper-trading default: No.
+Candidate Being Tested: None.
+Paper Default Baseline: PAPER_DEFAULT_PROTOCOL101.
+Data Used: No market data; documentation only.
+Paid Data Downloaded: No.
+Broker Endpoint Called: No.
+Result: Added v4/docs/HYPOTHESIS_TO_PROMOTION_PROCESS.md and linked it from README, MODEL_IMPROVEMENT_GUIDELINES, OPERATING_MEMORY, NAMING_GUIDE, and PROMOTION_SEQUENCE. The document defines the required path from observation to hypothesis, experiment, validation, research freeze, runtime parity, paper promotion, paper operation, and real-money review.
+Interpretation: This is the process guardrail that should prevent a research-useful challenger from skipping directly into promotion. A model can now only move forward by satisfying explicit stage transitions with clear artifacts, metric scope, and blocker decisions.
+Report: v4/docs/HYPOTHESIS_TO_PROMOTION_PROCESS.md
+Next Experiment: Use this process for the next model-improvement hypothesis; do not discuss replacing PAPER_DEFAULT_PROTOCOL101 unless the challenger has passed validation and runtime parity.
+Owner: Codex
+```
+
+## Protocol249 - EXP_ENTRY_QUALITY_CALIBRATOR_V1
+
+- What is this: experiment / model change
+- Changes paper default: no
+- Candidate: CHALLENGER_ENTRY_QUALITY_CALIBRATED_PREMIUM_BLEND_V1
+- Baseline: PAPER_DEFAULT_PROTOCOL101
+- Data used: `v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet`
+- Paid data downloaded: false
+- Broker endpoint called: false
+- Decision: `rejected_entry_quality_calibrator_no_clear_improvement`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_249_entry_quality_calibrator/report.md`
+
+## Protocol250 - EXP_CONTRACT_VALUE_SELECTION_HEAD_V1
+
+- What is this: experiment / model change
+- Changes paper default: no
+- Candidate: CHALLENGER_CONTRACT_VALUE_SELECTION_HEAD_V1
+- Baseline: PAPER_DEFAULT_PROTOCOL101
+- Data used: `v4/audit/autoresearch/v4_aplus_hypothesis_211_full_action_history_feature_repair/full_action_surface_edge_with_history.parquet`
+- Paid data downloaded: false
+- Broker endpoint called: false
+- Decision: `rejected_contract_value_head_did_not_clear_protocol101_gate`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_250_contract_value_selection_head/report.md`
+
+## Protocol251 - EXP_PREMIUM_BLEND_SLOT_AWARE_LIFECYCLE_V1
+
+- What is this: experiment / lifecycle screen
+- Changes paper default: no
+- Candidate: CHALLENGER_PREMIUM_BLEND_SLOT_AWARE_LIFECYCLE_V1
+- Baseline: PAPER_DEFAULT_PROTOCOL101
+- Data used: `v4/audit/autoresearch/v4_aplus_hypothesis_240_premium_leaning_blend_five_seed_decision/five_seed_model_trades.csv` plus existing normalized quote paths
+- Paid data downloaded: false
+- Broker endpoint called: false
+- Decision: `rejected_premium_blend_lifecycle_does_not_beat_paper_default`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_251_premium_blend_slot_aware_lifecycle_screen/report.md`
+
+## Protocol252 - EXP_BASELINE_PRESERVING_LIFECYCLE_EXTENSION_V1
+
+- What is this: experiment / conservative lifecycle extension screen
+- Changes paper default: no
+- Candidate: CHALLENGER_BASELINE_PRESERVING_LIFECYCLE_EXTENSION_V1
+- Baseline: PAPER_DEFAULT_PROTOCOL101
+- Data used: `v4/audit/autoresearch/v4_aplus_hypothesis_240_premium_leaning_blend_five_seed_decision/five_seed_model_trades.csv` plus existing normalized quote paths
+- Paid data downloaded: false
+- Broker endpoint called: false
+- Decision: `research_only_extension_beats_paper_but_not_base`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_252_baseline_preserving_lifecycle_extension_screen/report.md`
+
+## Protocol253 - EXP_RISK_ADJUSTED_UTILITY_GATE_V1
+
+- What: risk-adjusted utility gate over `CHALLENGER_PREMIUM_LEANING_BLENDED_UTILITY_V1`.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `rejected_risk_adjusted_gate_no_clear_improvement`.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_253_risk_adjusted_utility_gate/report.md`.
+
+## Protocol254 - EXP_POLICY_ROUTER_UNION_SLOT_AWARE_V1
+
+- What: policy-router event model over Protocol101 and premium-blend proposal streams from the existing attribution ledger.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `rejected_policy_router_does_not_clear_protocol101_gate`.
+- Interpretation: Partial-screen signal only. The router beat both streams on Q1/March but lost to premium-blend on recent 2026, and the input artifact lacked q1/q2 proposal rows needed for q3/q4 protected validation.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_254_policy_router_union_slot_aware/report.md`.
+
+## Protocol255 - EXP_POLICY_ROUTER_HISTORY_FEATURES_V1
+
+- What: policy-router event model with causal short-history features over Protocol101 and premium-blend proposal streams.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `rejected_policy_router_does_not_clear_protocol101_gate`.
+- Interpretation: Strongest router screen so far. It improved combined Q1/March/recent PnL and win rate versus Protocol254, but still underperformed premium-blend on recent 2026 and lacks complete q3/q4 validation coverage.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_255_policy_router_history_features/report.md`.
+
+## Protocol256 - EXP_POLICY_ROUTER_RELATIVE_STREAM_FEATURES_V1
+
+- What: policy-router event model with same-decision comparative stream features added to Protocol255.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `rejected_policy_router_does_not_clear_protocol101_gate`.
+- Interpretation: Comparative stream features did not beat the history router. The failure mode remains recent-2026 Protocol101 substitution weakness plus incomplete early-fold proposal coverage.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_256_policy_router_relative_stream_features/report.md`.
+
+## Protocol254 - EXP_POLICY_ROUTER_UNION_SLOT_AWARE_V1
+
+- What: policy-router event model over Protocol101 and premium-blend proposal streams.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `rejected_policy_router_does_not_clear_protocol101_gate`.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_254_policy_router_union_slot_aware/report.md`.
+
+## Protocol255 - EXP_POLICY_ROUTER_HISTORY_FEATURES_V1
+
+- What: policy-router event model over Protocol101 and premium-blend proposal streams.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `rejected_policy_router_does_not_clear_protocol101_gate`.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_255_policy_router_history_features/report.md`.
+
+## Protocol256 - EXP_POLICY_ROUTER_RELATIVE_STREAM_FEATURES_V1
+
+- What: policy-router event model over Protocol101 and premium-blend proposal streams.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `rejected_policy_router_does_not_clear_protocol101_gate`.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_256_policy_router_relative_stream_features/report.md`.
+
+## Protocol258 - EXP_POLICY_ROUTER_COMPLETE_STREAM_HISTORY_V1
+
+- What: policy-router event model over Protocol101 and premium-blend proposal streams.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `research_only_policy_router_beats_protocol101_but_not_best_challenger_stream`.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_258_policy_router_complete_stream_history/report.md`.
+
+## Protocol260 - EXP_POLICY_ROUTER_RELIABILITY_PRIORS_V1
+
+- What: policy-router event model over Protocol101 and premium-blend proposal streams.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `research_only_policy_router_beats_protocol101_but_not_best_challenger_stream`.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_260_policy_router_reliability_priors/report.md`.
+
+## Protocol261 - EXP_ROUTER_SOURCE_PENALTY_CALIBRATION_V1
+
+- What: policy-router event model over Protocol101 and premium-blend proposal streams.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `research_only_policy_router_beats_protocol101_but_not_best_challenger_stream`.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_261_router_source_penalty_calibration/report.md`.
+
+## Protocol262 - EXP_SOURCE_PENALTY_ROUTER_SLOT_LIFECYCLE_V1
+
+- What: position-state lifecycle hold/exit model over the frozen Protocol261 entry stream.
+- Paper default changed: no.
+- Paid data downloaded: no.
+- Broker endpoint called: no.
+- Decision: `research_only_premium_blend_lifecycle_beats_paper_but_not_base`.
+- Interpretation: This is the first lifecycle-style model in this loop that beats PAPER_DEFAULT_PROTOCOL101 on Q1 2026, March 2026, and recent 2026 common lifecycle-harness splits. It does not yet replace the paper default because it still trails the Protocol261 base stream on recent 2026 and needs attribution/runtime parity.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_262_source_penalty_slot_lifecycle/report.md`.
+
+## Protocol263 - AUDIT_SOURCE_PENALTY_LIFECYCLE_ATTRIBUTION_V1
+
+- What is this: diagnostic / lifecycle attribution audit
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `lifecycle_beats_paper_but_recent_gap_is_base_stream_opportunity_loss`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_263_source_penalty_lifecycle_attribution/report.md`
+
+## Protocol264 - EXP_SOURCE_PENALTY_ROUTER_UNIFIED_ENTRY_LIFECYCLE_V1
+
+- What is this: experiment / research challenger training run
+- Changes paper default: no
+- Candidate: `CHALLENGER_SOURCE_PENALTY_UNIFIED_ENTRY_LIFECYCLE_V1`
+- Baseline: `PAPER_DEFAULT_PROTOCOL101`; secondary baseline `CHALLENGER_ROUTER_SOURCE_PENALTY_CALIBRATED_V1`
+- Data used: frozen Protocol261 source-penalty router entry stream plus normalized official-context SPXW rows
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `mixed_unified_sequence_beats_paper_default_but_not_lifecycle_baseline`
+- Interpretation: Unified entry-plus-hold training still beats PAPER_DEFAULT_PROTOCOL101 on March 2026, Q1 2026, and recent 2026, but it remains research-only because it trails the Protocol261 base stream on recent 2026.
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_264_source_penalty_unified_entry_lifecycle/report.md`
+
+## Protocol265 - EXP_SOURCE_PENALTY_BASELINE_ANCHORED_CONTINUATION_V1
+
+- What is this: experiment / baseline-anchored lifecycle continuation model
+- Changes paper default: no
+- Candidate: CHALLENGER_SOURCE_PENALTY_BASELINE_ANCHORED_CONTINUATION_V1
+- Baseline: PAPER_DEFAULT_PROTOCOL101; secondary baseline CHALLENGER_ROUTER_SOURCE_PENALTY_CALIBRATED_V1
+- Data used: `v4/audit/autoresearch/v4_aplus_hypothesis_261_router_source_penalty_calibration/model_trades.csv` plus normalized quote paths
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `research_only_source_penalty_baseline_anchor_beats_paper_but_not_base`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_265_source_penalty_baseline_anchored_continuation/report.md`
+
+## Protocol266 - AUDIT_PROTOCOL265_ARTIFACT_REPRODUCTION_V1
+
+- What is this: audit / saved-artifact replay reproduction for Protocol265
+- Changes paper default: no
+- Candidate audited: CHALLENGER_SOURCE_PENALTY_BASELINE_ANCHORED_CONTINUATION_V1
+- Source protocol: `Protocol265`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `pass_protocol265_artifact_reproduction_exact`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_266_protocol265_artifact_reproduction/report.md`
+
+## Protocol267 - DECISION_FREEZE_PROTOCOL265_RESEARCH_ONLY_V1
+
+- What is this: freeze / research-only decision packet
+- Changes paper default: no
+- Candidate: `CHALLENGER_SOURCE_PENALTY_BASELINE_ANCHORED_CONTINUATION_V1`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `freeze_protocol265_research_only_protocol101_unchanged`
+- Report: `v4/promotion/PROTOCOL_265_RESEARCH_FREEZE.md`
+
+## Protocol268 - AUDIT_PROTOCOL265_EXTENSION_REGIME_ATTRIBUTION_V1
+
+- What is this: diagnostic / extension-regime attribution audit
+- Changes paper default: no
+- Candidate: `CHALLENGER_SOURCE_PENALTY_BASELINE_ANCHORED_CONTINUATION_V1`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `extension_value_is_regime_dependent_and_learnable`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_268_protocol265_extension_regime_attribution/report.md`
+
+## Protocol269 - RUNTIME_PROTOCOL265_NO_ORDER_PARITY_V1
+
+- What is this: runtime / no-order historical replay proxy for Protocol265
+- Changes paper default: no
+- Candidate: `CHALLENGER_SOURCE_PENALTY_BASELINE_ANCHORED_CONTINUATION_V1`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `runtime_protocol265_no_order_parity_passed_historical_proxy`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_269_protocol265_no_order_runtime_parity/report.md`
+
+## Protocol270 - DATASET_FULL_SURFACE_ACTION_ADVANTAGE_V1
+
+- What is this: dataset / full-surface serial action-advantage labels
+- Changes paper default: no
+- Candidate: `CHALLENGER_UNIFIED_ACTION_ADVANTAGE_POLICY_V1_INPUT`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `action_advantage_dataset_ready_for_unified_policy_training`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_270_full_surface_action_advantage_dataset/report.md`
+
+## Protocol271 - CHALLENGER_UNIFIED_ACTION_ADVANTAGE_POLICY_V1
+
+- What is this: model / unified full-surface action-advantage challenger
+- Changes paper default: no
+- Candidate: `CHALLENGER_UNIFIED_ACTION_ADVANTAGE_POLICY_V1`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `research_only_unified_action_advantage_policy_not_yet_paper_default`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_271_unified_action_advantage_policy/report.md`
+
+## Protocol272 - AUDIT_FILL_MODEL_READINESS_V1
+
+- What is this: diagnostic / fill-model calibration readiness audit
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `blocked_insufficient_fill_observations_keep_stress_replay`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_272_fill_model_readiness/report.md`
+
+## Protocol273 - AUDIT_MODEL_SELECTION_OVERFIT_RISK_V1
+
+- What is this: diagnostic / model-selection overfit and false-discovery risk audit
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `model_selection_overfit_risk_confirmed_reserve_new_untouched_block`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_273_model_selection_overfit_risk/report.md`
+
+## Protocol274 - DATASET_POSITION_STATE_ACTION_ADVANTAGE_V1
+
+- What is this: dataset / holding-state hold-vs-exit action-advantage labels
+- Changes paper default: no
+- Candidate: `CHALLENGER_UNIFIED_ACTION_ADVANTAGE_POLICY_V2_INPUT`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `position_state_action_advantage_dataset_ready_for_lifecycle_training`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_274_position_state_action_advantage_dataset/report.md`
+
+## Protocol275 - CHALLENGER_POSITION_STATE_LIFECYCLE_POLICY_V1
+
+- What is this: model / holding-state lifecycle advantage policy
+- Changes paper default: no
+- Candidate: `CHALLENGER_POSITION_STATE_LIFECYCLE_POLICY_V1`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `position_lifecycle_policy_has_learned_signal_needs_serial_integration`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_275_position_state_lifecycle_policy/report.md`
+
+## Protocol276 - CHALLENGER_INTEGRATED_ENTRY_LIFECYCLE_SERIAL_REPLAY_V1
+
+- What is this: model integration / strict one-account serial replay of full-action entry plus lifecycle hold-exit policies
+- Changes paper default: no
+- Candidate: `CHALLENGER_INTEGRATED_ENTRY_LIFECYCLE_SERIAL_REPLAY_V1`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `research_only_integrated_entry_lifecycle_does_not_surpass_protocol101`
+- Report: `v4/audit/autoresearch/v4_aplus_hypothesis_276_integrated_entry_lifecycle_serial_replay/report.md`
+
+## FOUNDATION_HARDENING_READINESS_PACKET_V1
+
+- What is this: implementation audit / foundation hardening packet
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Decision: `foundation_hardening_required_before_model_experiments`
+- Report: `v4/audit/autoresearch/foundation_hardening_review/report.md`
+- Result: Open-ended model experiments remain paused until the blocked foundation gates close.
+
+## AUDIT_PROTOCOL276_INTEGRATED_LIFECYCLE_FAILURE_ATTRIBUTION_V1
+
+- What is this: foundation audit / Protocol276 failure attribution
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `protocol276_failure_attribution_complete_foundation_work_required`
+- Report: `v4/audit/autoresearch/protocol276_integrated_lifecycle_failure_attribution/report.md`
+- Result: Protocol276 failure remains foundation work; no new model search is authorized by this audit.
+
+## FOUNDATION_UNIFIED_CONSERVATIVE_OFFLINE_POLICY_V1
+
+- What is this: foundation spec / unified conservative offline policy direction
+- Changes paper default: no
+- Paper default baseline: `PAPER_DEFAULT_PROTOCOL101`
+- Abandoned candidate: `CHALLENGER_INTEGRATED_ENTRY_LIFECYCLE_SERIAL_REPLAY_V1 / Protocol276`
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `unified_conservative_offline_policy_foundation_frozen_no_model_training`
+- Report: `v4/audit/autoresearch/unified_conservative_offline_policy_foundation/report.md`
+
+## DATASET_UNIFIED_POLICY_TRAJECTORY_FOUNDATION_V1
+
+- What is this: dataset foundation / unified conservative policy trajectory manifest
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `unified_trajectory_foundation_ready_training_blocked_by_foundation_gates`
+- Report: `v4/audit/autoresearch/unified_policy_trajectory_foundation/report.md`
+
+## FOUNDATION_UNTOUCHED_EVAL_BLOCK_RESERVATION_V1
+
+- What is this: foundation gate / untouched evaluation block reservation
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `untouched_holdout_reserved_pending_new_data_collection`
+- Report: `v4/audit/autoresearch/unified_untouched_holdout_reservation/report.md`
+- Result: Existing Q3/Q4/Q1/March/recent blocks are diagnostics; a future unseen block is reserved for final claims.
+
+## FOUNDATION_UNIFIED_NEURAL_TRAINING_READINESS_V1
+
+- What is this: foundation gate / unified conservative policy neural-training readiness
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Training decision: `neural_training_not_ready_foundation_gates_blocked`
+- Protocol101 challenge decision: `protocol101_challenge_not_ready_foundation_gates_blocked`
+- Report: `v4/audit/autoresearch/unified_neural_training_readiness/report.md`
+- Training blockers: `['Full serial wait/enter/hold/exit DP oracle', 'Protocol101 baseline action attachment']`
+
+## DATASET_PROTOCOL101_BASELINE_ACTION_ATTACHMENT_V1
+
+- What is this: dataset foundation / Protocol101 baseline action attachment
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `protocol101_baseline_attachment_partial_missing_trajectory_split_baselines`
+- Report: `v4/audit/autoresearch/unified_protocol101_baseline_attachment/report.md`
+
+## DATASET_UNIFIED_SERIAL_DP_ORACLE_V1
+
+- What is this: dataset foundation / unified serial DP oracle training-scope manifest
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `unified_serial_dp_oracle_ready_for_baseline_aligned_training_scope`
+- Report: `v4/audit/autoresearch/unified_serial_dp_oracle/report.md`
+
+## CHALLENGER_UNIFIED_CONSERVATIVE_NEURAL_POLICY_V1
+
+- What is this: preregistered model training / conservative unified neural policy
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: yes
+- Decision: `conservative_neural_policy_trained_replay_and_challenge_still_blocked`
+- Report: `v4/audit/autoresearch/unified_conservative_neural_policy_v1/report.md`
+- Result: Trained only; Protocol101 challenge remains blocked.
+
+## REPLAY_UNIFIED_CONSERVATIVE_NEURAL_POLICY_STRICT_SERIAL_V1
+
+- What is this: strict one-account serial replay of the trained conservative neural policy with Protocol101 defer fallback
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `strict_replay_complete_model_deferred_to_protocol101_flat_gate_too_conservative`
+- Report: `v4/audit/autoresearch/unified_conservative_neural_policy_strict_replay_v1/report.md`
+- Result: Strict replay complete; Protocol101 challenge remains blocked.
+
+## DIAGNOSTIC_UNIFIED_CONSERVATIVE_FLAT_GATE_V1
+
+- What is this: diagnostic / flat-entry conservative gate abstention analysis
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `flat_entry_gate_overconservative_zero_model_overrides`
+- Report: `v4/audit/autoresearch/unified_conservative_flat_gate_diagnostic/report.md`
+
+## CHALLENGER_UNIFIED_CONSERVATIVE_NEURAL_POLICY_FLAT_CALIBRATED_V1
+
+- What is this: preregistered flat-entry calibration repair for conservative unified neural policy
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: yes
+- Decision: `conservative_neural_policy_trained_replay_and_challenge_still_blocked`
+- Report: `v4/audit/autoresearch/unified_conservative_neural_policy_flat_calibrated_v1/report.md`
+- Result: Calibration produced nonzero candidate overrides but remained research-only pending strict replay.
+
+## REPLAY_UNIFIED_CONSERVATIVE_NEURAL_POLICY_FLAT_CALIBRATED_STRICT_SERIAL_V1
+
+- What is this: strict one-account serial replay of flat-calibrated conservative neural policy
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `strict_replay_complete_protocol101_challenge_still_blocked`
+- Report: `v4/audit/autoresearch/unified_conservative_neural_policy_flat_calibrated_strict_replay_v1/report.md`
+- Result: Positive same-scope total PnL but mixed split deltas; Protocol101 challenge remains blocked.
+
+## DIAGNOSTIC_UNIFIED_CONSERVATIVE_FLAT_GATE_FLAT_CALIBRATED_V1
+
+- What is this: diagnostic / flat-calibrated entry gate override analysis
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `flat_entry_gate_produces_model_overrides_needs_replay_attribution`
+- Report: `v4/audit/autoresearch/unified_conservative_flat_gate_diagnostic_flat_calibrated_v1/report.md`
+
+## ATTRIBUTION_UNIFIED_CONSERVATIVE_NEURAL_OVERRIDES_V1
+
+- What is this: attribution / calibrated conservative neural challenger overrides
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `override_attribution_mixed_split_research_only`
+- Report: `v4/audit/autoresearch/unified_conservative_neural_policy_flat_calibrated_override_attribution_v1/report.md`
+
+## ATTRIBUTION_UNIFIED_CONSERVATIVE_Q1_Q3_UNDERPERFORMANCE_V1
+
+- What is this: attribution / flat-calibrated Q1-Q3 underperformance versus same-scope Protocol101
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `q1_q3_underperformance_explained_by_missed_protocol101_opportunity_cost`
+- Report: `v4/audit/autoresearch/unified_conservative_q1_q3_underperformance_attribution_v1/report.md`
+
+## FOUNDATION_UNIFIED_SLOT_OPPORTUNITY_DEFER_OVERLAY_V1
+
+- What is this: foundation / slot opportunity-cost defer overlay contract and oracle diagnostic
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `slot_opportunity_defer_overlay_oracle_target_repairs_q1_q3_ready_for_learned_estimator`
+- Report: `v4/audit/autoresearch/unified_slot_opportunity_defer_overlay_foundation/report.md`
+
+## DATASET_UNIFIED_SLOT_OPPORTUNITY_COST_LABELS_V1
+
+- What is this: dataset / candidate-level blocked-Protocol101 opportunity-cost labels
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `slot_opportunity_cost_labels_ready_for_causal_estimator`
+- Report: `v4/audit/autoresearch/unified_slot_opportunity_cost_label_dataset/report.md`
+
+## FOUNDATION_UNIFIED_SLOT_OPPORTUNITY_COST_ESTIMATOR_V1
+
+- What is this: foundation estimator / causal Protocol101 slot opportunity-cost model
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: yes
+- Decision: `slot_opportunity_cost_estimator_ready_for_defer_overlay_replay`
+- Report: `v4/audit/autoresearch/unified_slot_opportunity_cost_estimator/report.md`
+
+## REPLAY_UNIFIED_SLOT_OPPORTUNITY_LEARNED_DEFER_OVERLAY_V1
+
+- What is this: strict replay / learned slot opportunity-cost defer overlay on the flat-calibrated conservative policy
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `learned_slot_opportunity_defer_overlay_replay_safe_but_deferred_all_overconservative`
+- Report: `v4/audit/autoresearch/unified_slot_opportunity_learned_defer_overlay_replay/report.md`
+
+## PREREGISTERED_UNIFIED_CONSERVATIVE_NEURAL_POLICY_LEARNED_DEFER_V1
+
+- What is this: preregistration / exactly one learned-defer neural policy run
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `preregistered_single_run_before_training`
+- Report: `v4/docs/UNIFIED_CONSERVATIVE_NEURAL_POLICY_LEARNED_DEFER_PREREGISTERED_SPEC_V1.md`
+
+## CHALLENGER_UNIFIED_CONSERVATIVE_NEURAL_POLICY_LEARNED_DEFER_PREREGISTERED_V1
+
+- What is this: preregistered model training / conservative unified neural policy with learned-defer replay frozen in advance
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: yes
+- Decision: `conservative_neural_policy_trained_replay_and_challenge_still_blocked`
+- Report: `v4/audit/autoresearch/unified_conservative_neural_policy_learned_defer_preregistered_v1/report.md`
+
+## REPLAY_UNIFIED_CONSERVATIVE_NEURAL_POLICY_LEARNED_DEFER_PREREGISTERED_V1
+
+- What is this: strict replay / preregistered learned-defer neural policy with frozen slot opportunity-cost overlay
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Decision: `learned_slot_opportunity_defer_overlay_replay_ready_for_next_preregistered_training`
+- Result: Diagnostic same-scope deltas versus Protocol101 were positive at `$0.00`, `$0.10`, and `$0.25` slippage stress, but Protocol101 challenge remains blocked.
+- Report: `v4/audit/autoresearch/unified_conservative_neural_policy_learned_defer_preregistered_replay_v1/report.md`
+
+## VALIDATION_LEARNED_DEFER_CHALLENGER_RESEARCH_PACKET_V1
+
+- What is this: research-only validation packet for the frozen learned-defer challenger
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `learned_defer_packet_complete_holdout_blocked_by_calibration`
+- Result: Frozen replay reproduction passed exactly; flat-entry anomaly was resolved as policy-weighting mismatch; concentration passed with Q4/top-trade warnings; holdout scoring remains blocked by slot-cost calibration instability plus fill, live parity, untouched data, and formal validation gates.
+- Report: `v4/audit/autoresearch/learned_defer_challenger_research_packet_v1/report.md`
+
+## STRATEGY_AUDIT_TRADING_BOT_ENGINEER_HANDOFF_2026_05_24
+
+- What is this: strategy-forensics handoff / Protocol101-centered audit for outside trading bot engineer guidance
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `strategy_audit_complete_model_experiments_paused_until_protocol101_trade_questions_answered`
+- Result: Reframed the next phase away from generic challenger training and toward Protocol101 trade anatomy, weak-point attribution, missed-winner/runners/slot-cost diagnostics, execution realism, and validation integrity. Protocol101 remains paper default.
+- Report folder: `v4/docs/trading_bot_engineer_strategy_audit_2026_05_24/`
+
+## AUDIT_PROTOCOL101_STRATEGY_FORENSICS_PACKET_V1
+
+- What is this: research-only Protocol101 strategy-forensics packet / claim-by-claim analysis of the outside response
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_strategy_forensics_packet_complete_model_training_still_blocked`
+- Result: The response is directionally supported, but promotion/model work remains blocked. Current evidence answers the trade-atlas, hard-stop, losing-day, score-proxy, and timing-fragility questions from existing artifacts; runner, missed-winner, internal slot-cost, fill realism, and formal validation questions require new counterfactual or live evidence artifacts.
+- Report: `v4/audit/autoresearch/protocol101_strategy_forensics_packet_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_STRATEGY_FORENSICS_PACKET_V1.md`
+
+## FOUNDATION_TRUTH_GROUNDED_REPLACEMENT_PROGRAM_V1
+
+- What is this: foundation / truth-grounded Protocol101 replacement research program
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `truth_grounded_replacement_program_created_training_and_replacement_blocked`
+- Result: Created the three-track replacement program: Protocol101 forensics, named alpha playbooks, and a playbook-aware replacement ML stack. Seeded the strategy hypothesis registry, Protocol101 weakness matrix, research data layer, stage-gate rulebook, and replacement candidate protocol spec. Training and replacement claims remain blocked by execution realism, formal strategy-matrix validation, and untouched-holdout gates.
+- Report: `v4/audit/autoresearch/truth_grounded_replacement_program_v1/report.md`
+- Doc: `v4/docs/TRUTH_GROUNDED_REPLACEMENT_PROGRAM_V1.md`
+
+## AUDIT_PROTOCOL101_TRACK_A_FORENSICS_V1
+
+- What is this: Track A Protocol101 forensics / hard-stop, losing-day, runner, internal slot-cost, side, and score diagnostics
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_track_a_forensics_partial_complete_training_still_blocked`
+- Result: Created executable Track A diagnostics from current artifacts. Seed-1 Protocol101 has `1,028` trades, `$319,050` PnL, `0.761` win rate, and `4.421` PF. Hard stops remain severe but sparse: `11` rows for `-$14,470`; current causal proxy rules classify `2` rows as path-management candidates, `1` as fast-adverse, and `8` as unclassified/unavoidable pending manual chart/path review. Exact selected-trade runner paths now cover `709 / 1,028` selected trades and show `517` runner/giveback-guard rows, but this remains hindsight diagnostic evidence until a causal in-trade runner/giveback rule is defined. Track A now also references `198,261` Protocol101 hold/exit action-advantage rows; the high future-best hold signal is explicitly blocked from training until slot opportunity, switching cost, fill/latency, distributional risk, and validation terms are added. The prior internal slot-cost blocker has been replaced by a counterfactual-flat diagnostic: `3,723` model-approved Protocol101 entries were blocked while actual Protocol101 was already holding, with `$399,510` best-blocked-minus-open total, but this is still an upper-bound/non-additive diagnostic and not a training label.
+- Report: `v4/audit/autoresearch/protocol101_track_a_forensics_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_TRACK_A_FORENSICS_V1.md`
+
+## AUDIT_PROTOCOL101_EXACT_SELECTED_TRADE_RUNNER_PATHS_V1
+
+- What is this: exact selected-trade Protocol101 post-exit runner/giveback path audit
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_exact_selected_runner_paths_complete_training_still_blocked`
+- Result: Attached normalized quote paths to `709 / 1,028` Protocol101 selected trades. Hindsight post-exit best delta is `$1,147,620`, but naive forced-flat delta is `-$123,260`, so the runner question is real but cannot be answered with a blanket hold-longer rule. The exact-path state summary shows `314` runner-extension candidates and `203` giveback-guard-required rows. Runner research must now define causal in-trade confirmation and giveback guards before any model training.
+- Report: `v4/audit/autoresearch/protocol101_exact_selected_trade_runner_paths_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_EXACT_SELECTED_TRADE_RUNNER_PATHS_V1.md`
+
+## FOUNDATION_PROTOCOL101_HOLD_EXIT_ACTION_ADVANTAGE_V1
+
+- What is this: Protocol101 hold/exit action-advantage foundation, aligned to `engineer-response.md` lifecycle guidance
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_hold_exit_action_advantage_foundation_complete_training_blocked`
+- Result: Built `198,261` holding-state rows over `709 / 1,028` Protocol101 selected trades. The audit labels `A_hold = Q(hold) - Q(exit now at bid)` and keeps future/path labels out of the causal feature contract. At Protocol101 exits, oracle-best hold fraction is `0.917`, but one-step hold fraction is only `0.258`, reinforcing that this is not a blanket hold-longer recommendation. Training remains blocked pending counterfactual flat-slot opportunity cost, switching cost, calibrated fill/latency realism, distributional risk targets, train/live parity, untouched validation, and formal overfit controls.
+- Report: `v4/audit/autoresearch/protocol101_hold_exit_action_advantage_foundation_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_HOLD_EXIT_ACTION_ADVANTAGE_FOUNDATION_V1.md`
+
+## AUDIT_PROTOCOL101_INTERNAL_SLOT_COST_COUNTERFACTUAL_V1
+
+- What is this: Track A counterfactual-flat Protocol101 internal slot-cost diagnostic
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_internal_slot_cost_counterfactual_complete_training_still_blocked`
+- Result: Scored the frozen Protocol101 event policy at every eligible event as if the account were flat. The audit found `8,179` hypothetical flat Protocol101 entries and `3,723` entries blocked by actual open Protocol101 positions. `2,291` open trades had at least one blocked entry; `1,109` had a best blocked entry whose frozen candidate PnL exceeded the actual open-trade PnL. Aggregate best-blocked-minus-open was `$399,510`, concentrated mostly in Q1/March, but blocked events inside one open interval are mutually exclusive and live fill/latency realism is not calibrated.
+- Report: `v4/audit/autoresearch/protocol101_internal_slot_cost_counterfactual_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_INTERNAL_SLOT_COST_COUNTERFACTUAL_V1.md`
+
+## AUDIT_PROTOCOL101_SLOT_COST_ARCHETYPE_DECOMPOSITION_V1
+
+- What is this: Track A internal slot-cost archetype decomposition
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_slot_cost_archetype_decomposition_complete_model_design_ready_training_blocked`
+- Result: Decomposed the `3,723` blocked Protocol101 internal slot-cost events into open-trade and blocked-signal archetypes with `0` actual-trade join failures. Top hypotheses are losing open trade blocks positive later signal (`485` rows, `$635,240`), opposite-side later signal blocked (`428`, `$572,430`), sequence residual slot cost (`741`, `$472,930`), long-duration slot cost (`396`, `$409,130`), and same-side later signal blocked (`681`, `$287,560`). This reaches the Track A stopping point: manual trading review must choose exactly one named hypothesis before model design.
+- Report: `v4/audit/autoresearch/protocol101_slot_cost_archetype_decomposition_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_SLOT_COST_ARCHETYPE_DECOMPOSITION_V1.md`
+
+## SYNTHESIS_PROTOCOL101_TRACK_A_FOUNDATIONAL_TRUTH_V1
+
+- What is this: Track A stopping-point synthesis for the 0DTE trading bot / ML problem
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `track_a_foundational_truth_complete_manual_strategy_selection_required`
+- Result: Consolidated Track A findings into the foundational truth: Protocol101 remains best because it encodes a real deployable trader playbook, while the most promising improvement paths are narrow playbook hypotheses around loss/reversal exits, opposite-side regime flips, same-side switch/runner behavior, and long-duration/fallback slot cost. Generic neural model work remains blocked until one hypothesis is selected, reviewed manually, and converted into causal labels plus mutually exclusive replay with fill/latency realism.
+- Doc: `v4/docs/PROTOCOL101_TRACK_A_FOUNDATIONAL_TRUTH_V1.md`
+
+## AUDIT_PROTOCOL101_STRATEGY_SELECTION_PACKET_V1
+
+- What is this: Track A strategy-selection packet / single next hypothesis recommendation
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_strategy_selection_complete_first_diagnostic_recommended_training_blocked`
+- Result: Ranked the immediate Protocol101 improvement hypotheses from the slot-cost archetype diagnostics. The selected first diagnostic is `PROTOCOL101_LOSS_REVERSAL_EXIT_GATE_V1`: `485` evidence rows, `$635,240` positive slot-cost total, and a strong overlap with the regime-flip subcase (`325` rows, `$517,980`, `0.815` of loss-reversal positive slot cost). This authorizes only manual review and a no-training mutually exclusive diagnostic replay; neural training and Protocol101 replacement remain blocked.
+- Report: `v4/audit/autoresearch/protocol101_strategy_selection_packet_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_STRATEGY_SELECTION_PACKET_V1.md`
+
+## AUDIT_PROTOCOL101_LOSS_REVERSAL_EXIT_GATE_DIAGNOSTIC_V1
+
+- What is this: no-training diagnostic for the selected `PROTOCOL101_LOSS_REVERSAL_EXIT_GATE_V1` hypothesis
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_loss_reversal_exit_gate_diagnostic_partial_causal_state_coverage_training_blocked`
+- Result: Confirmed the key label risk before model work. The slot-cost artifact has `485` final-loss candidates and `$635,240` positive slot-cost total, but causal holding state at the later blocked-signal time matched only `65 / 485` rows. Among matched rows, `46` were actually losing at the blocked signal, while `19` were not. The first live-test bucket is current-loss plus opposite-side plus one-step-hold-negative (`20` rows, `$32,790`). Final-loser status is not a valid live ML label; the next step is full causal state attachment plus mutually exclusive keep-hold vs exit/switch replay.
+- Report: `v4/audit/autoresearch/protocol101_loss_reversal_exit_gate_diagnostic_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_LOSS_REVERSAL_EXIT_GATE_DIAGNOSTIC_V1.md`
+
+## AUDIT_PROTOCOL101_LOSS_REVERSAL_CAUSAL_STATE_ATTACHMENT_V1
+
+- What is this: direct quote-path causal-state attachment for the selected loss-reversal hypothesis
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_loss_reversal_causal_state_attachment_partial_quote_coverage_replay_scaffold_ready_training_blocked`
+- Result: Recomputed live state directly from normalized quote paths instead of relying on the seed-1 hold/exit foundation. Coverage improved to `441 / 485` rows (`0.909`). Among matched rows, `293` were currently losing at the blocked signal, `148` were not, and `145` fell into the strongest current-loss/opposite-side/negative-next/exit-deteriorates bucket. Neural training remains blocked; the next step is action pricing and then full serial replay.
+- Report: `v4/audit/autoresearch/protocol101_loss_reversal_causal_state_attachment_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_LOSS_REVERSAL_CAUSAL_STATE_ATTACHMENT_V1.md`
+
+## AUDIT_PROTOCOL101_LOSS_REVERSAL_LOCAL_ACTION_PRICING_V1
+
+- What is this: local action pricing for the selected loss-reversal hypothesis
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_loss_reversal_local_action_pricing_complete_full_serial_replay_required_training_blocked`
+- Result: Priced `441` matched rows as mutually exclusive local actions: keep holding, exit now, or exit and switch into the later Protocol101-approved signal. Switch-minus-keep totals `$511,500`, `$502,680` under `$0.10` two-side stress, and `$489,450` under `$0.25` two-side stress. The priority-1 bucket has `145` rows and remains `$223,120` positive under `$0.25` stress. This supports the playbook as a candidate for full serial replay, not for neural training or paper-default change.
+- Report: `v4/audit/autoresearch/protocol101_loss_reversal_local_action_pricing_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_LOSS_REVERSAL_LOCAL_ACTION_PRICING_V1.md`
+
+## AUDIT_PROTOCOL101_LOSS_REVERSAL_FULL_SERIAL_REPLAY_V1
+
+- What is this: full serial flat-stream replay for the selected priority-1 loss-reversal overlay
+- Changes paper default: no
+- Paid data downloaded: no
+- Broker endpoint called: no
+- Model training: no
+- Untouched holdout scored: no
+- Decision: `protocol101_loss_reversal_full_serial_replay_complete_training_still_blocked`
+- Result: Replayed the frozen hypothetical-flat Protocol101 proposal stream under one-position serial constraints and applied only the priority-1 loss-reversal release rule. The baseline reproduces `4,456` trades at zero stress in the diagnostic fold/seed/split scope. The overlay fires `145` exits and improves same-scope baseline by `$201,350` at zero stress, `$198,990` at `$0.10` per-side stress, and `$195,450` at `$0.25` per-side stress; every diagnostic split is positive under all three stress settings. This is the first Track A result that looks like a concrete Protocol101 improvement playbook, but neural training and paper-default change remain blocked by exposed splits, fill/latency/quote-freshness realism, missing quote-state rows, and live no-order parity.
+- Report: `v4/audit/autoresearch/protocol101_loss_reversal_full_serial_replay_v1/report.md`
+- Doc: `v4/docs/PROTOCOL101_LOSS_REVERSAL_FULL_SERIAL_REPLAY_V1.md`
+
+## PROTOCOL101_WALKING_SKELETON_FORCED_BUY_STAGE2_3_V1
+
+- What is this: quarantined forced-BUY downstream plumbing harness, 1-second lifecycle baseline, serial replay, and D60 visualization for walking-skeleton Stages 2–3
+- Quarantine labels: `walking_skeleton / throwaway / paper-only / forced_buy_plumbing_harness`
+- Changes paper default: no
+- Paid data downloaded: no; used only the exact 13-session firewall-safe official `cbbo-1s` slice pinned by Stage 0
+- Broker endpoint called: no
+- Model training: yes, one throwaway HGB HOLD/EXIT baseline on the frozen 8-session fit slice with threshold derived only from the 2-session calibration slice
+- Untouched/protected/outer/holdout data scored: no
+- Decision: `walking_skeleton_stages2_3_independently_verified_stop_before_stage4_owner_authorizations`
+- Result: The real frozen Stage-1 composer remains `ABSTAINS`; its owned replay output contained exactly `552` real A6-passing proposals. A downstream-only wrapper selected six deterministic fill-safe, D48-safe proposals per each of 13 sessions (`78` intents) and built `771,018` canonical official 1-second lifecycle rows. Simulator v5 accepted `9` one-account replay trades across the three owned validation sessions (`6 / 2 / 1`), with `4` learned exits, `4` floor triggers, `1` forced flat, `31,454` logged HOLD states, zero simulator skips, and all accepted entries passing D48/D49. Descriptive estimated P&L was `-$552` after fees; the four buckets were `0` big wins, `4` scratch/small wins, `2` small losses, and `3` big losses.
+- Learning: The 1-second HGB baseline produced descriptive calibration ROC AUC `0.8372` but average precision only `0.0664`; disposition: retain strictly as plumbing evidence, make no quality/alpha claim, and do not progress to Stage 4. The D58 report-only minute-vs-1-second early-drawdown comparison had Spearman `0.9857` and worst-quartile overlap `1.0`; disposition: record but do not use for entry admission or promotion. The negative replay and missing big-win column are shaped by explicit branch canaries and are not an optimizable profile; disposition: no threshold/floor tuning from this replay. Independent verification corrected an exact-15:30 admission boundary, preserved the raw exchange-event clock and nonzero quote age alongside simulator-v5's frozen occupancy-clock adapter, and fixed global-to-dense bar coordinates in the multi-session trade chart. Local browser QA then confirmed the three-session span and marker-bearing views. Disposition: Stages 2–3 plumbing independently verified; stop before Stage 4 pending its separate owner authorizations.
+- Evidence: `v4/audit/autoresearch/protocol101_walking_skeleton_stage2_3/receipt.json`
+- Delta review: `v4/audit/autoresearch/protocol101_walking_skeleton_stage2_3/delta_scoped_review.json` (`PASS`, `38 / 38` checks, including D52 floor-off comparison, exact entry cutoff, dual-clock provenance, dense three-session chart coordinates, and separately attested local-browser visual QA)
+- Report: `v4/audit/autoresearch/protocol101_walking_skeleton_stage2_3/report.md`

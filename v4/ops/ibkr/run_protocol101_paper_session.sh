@@ -2,35 +2,12 @@
 set -euo pipefail
 
 REPO_ROOT="${REPO_ROOT:-/Users/gduby/Documents/autoresearch-trading}"
-DEFAULT_PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
-PYTHON_BIN="${PYTHON_BIN:-$DEFAULT_PYTHON_BIN}"
-if [[ -x "$DEFAULT_PYTHON_BIN" && "$PYTHON_BIN" == "/usr/bin/python3" ]]; then
-  PYTHON_BIN="$DEFAULT_PYTHON_BIN"
-fi
-if [[ ! -x "$PYTHON_BIN" ]]; then
-  PYTHON_BIN="$(command -v python3)"
-fi
-PROTOCOL101_SESSION_MODE="${PROTOCOL101_SESSION_MODE:-no-order-shadow}"
-PROTOCOL101_SESSION_CYCLE_SECONDS="${PROTOCOL101_SESSION_CYCLE_SECONDS:-60}"
-PROTOCOL101_SESSION_CAPTURE_SECONDS="${PROTOCOL101_SESSION_CAPTURE_SECONDS:-45}"
-PROTOCOL101_SESSION_MAX_CYCLES="${PROTOCOL101_SESSION_MAX_CYCLES:-390}"
-PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS="${PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS:-120}"
-PROTOCOL101_SESSION_PAPER_CASH="${PROTOCOL101_SESSION_PAPER_CASH:-10000}"
-IB_GATEWAY_API_PORT="${IB_GATEWAY_API_PORT:-4002}"
-IB_GATEWAY_API_PORTS="${IB_GATEWAY_API_PORTS:-4002,4000,7497,7496,4001}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-export PYTHON_BIN
-case ":${PYTHONPATH:-}:" in
-  *":$REPO_ROOT:"*) ;;
-  *) export PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" ;;
-esac
-cd "$REPO_ROOT"
-exec "$PYTHON_BIN" -m v4.scripts.run_protocol147_protocol101_morning_session \
-  --mode "$PROTOCOL101_SESSION_MODE" \
-  --ibkr-port "$IB_GATEWAY_API_PORT" \
-  --ibkr-auto-ports "$IB_GATEWAY_API_PORTS" \
-  --cycle-seconds "$PROTOCOL101_SESSION_CYCLE_SECONDS" \
-  --capture-seconds "$PROTOCOL101_SESSION_CAPTURE_SECONDS" \
-  --max-cycles "$PROTOCOL101_SESSION_MAX_CYCLES" \
-  --preflight-timeout-seconds "$PROTOCOL101_SESSION_PREFLIGHT_TIMEOUT_SECONDS" \
-  --paper-cash "$PROTOCOL101_SESSION_PAPER_CASH"
+# Backward-compatible wrapper. The launchd label is historical, but the feature
+# is now the generic daily paper autopilot and resolves its model from
+# v4/promotion/PAPER_TRADING_DEFAULT.json at run time.
+if [[ -x "$SCRIPT_DIR/run_daily_paper_autopilot.sh" ]]; then
+  exec /bin/bash "$SCRIPT_DIR/run_daily_paper_autopilot.sh" "$@"
+fi
+exec /bin/bash "$REPO_ROOT/v4/ops/ibkr/run_daily_paper_autopilot.sh" "$@"

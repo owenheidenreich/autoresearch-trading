@@ -24,21 +24,34 @@ NORMALIZED_SCHEMA = pa.schema(
         pa.field("timestamp_source", pa.string(), nullable=False),
         # --- contract identity ---
         pa.field("contract_id", pa.string(), nullable=False),
+        pa.field("raw_symbol", pa.string(), nullable=True),
+        pa.field("instrument_id", pa.int64(), nullable=True),
         pa.field("root", pa.string(), nullable=False),
         pa.field("expiry", pa.date32(), nullable=False),
         pa.field("strike", pa.decimal128(18, 6), nullable=False),
         pa.field("right", pa.string(), nullable=False),
+        pa.field("settlement_style", pa.string(), nullable=True),
+        pa.field("settlement_time_utc", pa.timestamp("us", tz="UTC"), nullable=True),
+        pa.field("min_price_increment", pa.float64(), nullable=True),
+        pa.field("contract_multiplier", pa.int64(), nullable=True),
         # --- market data ---
         pa.field("bid", pa.float64(), nullable=True),
         pa.field("ask", pa.float64(), nullable=True),
+        pa.field("bid_size", pa.int64(), nullable=True),
+        pa.field("ask_size", pa.int64(), nullable=True),
         pa.field("mid", pa.float64(), nullable=True),
         pa.field("last_trade", pa.float64(), nullable=True),
         pa.field("last_trade_size", pa.int64(), nullable=True),
+        pa.field("quote_time", pa.timestamp("us", tz="UTC"), nullable=True),
+        pa.field("last_trade_time", pa.timestamp("us", tz="UTC"), nullable=True),
         pa.field("quote_age_ms", pa.int64(), nullable=True),
+        pa.field("quote_gap_seconds", pa.float64(), nullable=True),
         pa.field("open_interest", pa.int64(), nullable=True),
         pa.field("open_interest_asof_date", pa.date32(), nullable=True),
+        pa.field("stat_open_interest", pa.int64(), nullable=True),
         pa.field("volume", pa.int64(), nullable=True),
         pa.field("volume_asof_time", pa.timestamp("us", tz="UTC"), nullable=True),
+        pa.field("option_ohlcv_volume", pa.int64(), nullable=True),
         # --- underlying ---
         pa.field("underlying_price", pa.float64(), nullable=True),
         # --- Greeks / IV (nullable; iv_source/greek_source discriminate) ---
@@ -80,6 +93,28 @@ def validate_normalized_table(table: pa.Table) -> None:
     bad_rights = rights_in_data - valid_rights
     if bad_rights:
         raise ValueError(f"Invalid right(s) in normalized data: {bad_rights}")
+
+    valid_settlement_styles = {"AM", "PM"}
+    settlement_styles = {
+        s for s in table["settlement_style"].to_pylist() if s is not None
+    }
+    bad_settlement_styles = settlement_styles - valid_settlement_styles
+    if bad_settlement_styles:
+        raise ValueError(
+            f"Invalid settlement_style(s) in normalized data: {bad_settlement_styles}"
+        )
+
+    for i, (root, settlement_style) in enumerate(
+        zip(table["root"].to_pylist(), table["settlement_style"].to_pylist(), strict=True)
+    ):
+        if root == "SPXW" and settlement_style not in (None, "PM"):
+            raise ValueError(
+                f"SPXW rows must be PM-settled; row {i} has {settlement_style!r}"
+            )
+        if root == "SPX" and settlement_style not in (None, "AM"):
+            raise ValueError(
+                f"SPX rows must be AM-settled; row {i} has {settlement_style!r}"
+            )
 
     valid_vendors = set(VendorSource.values())
     bad_vendors = set(table["vendor_source"].to_pylist()) - valid_vendors

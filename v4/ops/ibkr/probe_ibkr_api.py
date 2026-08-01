@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import socket
 import time
-from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 def parse_args() -> argparse.Namespace:
@@ -83,16 +83,15 @@ def candidate_ports(text: str) -> list[int]:
 
 
 def probe_once(host: str, ports: list[int], client_id: int) -> dict[str, Any]:
-    try:
-        from ib_insync import IB  # type: ignore
-    except ImportError:
-        return {"connected": False, "blocked_reason": "missing_ib_insync"}
+    ib_cls, import_error = load_ib_class()
+    if import_error is not None:
+        return {"connected": False, **import_error}
     attempts: list[dict[str, Any]] = []
     for port in ports:
         if not socket_open(host, port):
             attempts.append({"port": port, "status": "socket_closed"})
             continue
-        ib = IB()
+        ib = ib_cls()
         try:
             ib.connect(host, port, clientId=client_id, timeout=8)
             accounts = list(ib.managedAccounts() or [])
@@ -137,13 +136,50 @@ def sanitize_attempts(attempts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def load_ib_class(
+    *,
+    attempts: int = 3,
+    sleep_seconds: float = 2.0,
+) -> tuple[Callable[[], Any] | None, dict[str, Any] | None]:
+    import_failures: list[dict[str, str]] = []
+    for attempt in range(1, max(1, attempts) + 1):
+        try:
+            module = importlib.import_module("ib_insync")
+            return module.IB, None
+        except ImportError as exc:
+            return (
+                None,
+                {
+                    "blocked_reason": "missing_ib_insync",
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                },
+            )
+        except Exception as exc:
+            import_failures.append(
+                {
+                    "attempt": str(attempt),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                }
+            )
+            if attempt < max(1, attempts):
+                time.sleep(max(0.0, sleep_seconds))
+    return (
+        None,
+        {
+            "blocked_reason": "ib_insync_import_failed",
+            "import_failures": import_failures,
+        },
+    )
+
+
 def hold_connection(*, host: str, port: int, client_id: int, hold_seconds: float, poll_seconds: float) -> int:
-    try:
-        from ib_insync import IB  # type: ignore
-    except ImportError:
-        print(json.dumps({"status": "blocked", "blocked_reason": "missing_ib_insync"}))
+    ib_cls, import_error = load_ib_class()
+    if import_error is not None:
+        print(json.dumps({"status": "blocked", **import_error}))
         return 1
-    ib = IB()
+    ib = ib_cls()
     deadline = time.monotonic() + max(0.0, hold_seconds)
     try:
         ib.connect(host, port, clientId=client_id, timeout=8)

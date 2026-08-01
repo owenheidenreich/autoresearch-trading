@@ -6,128 +6,111 @@
 > in design repair; Phase-1 training/backtest and learned-trader paper readiness
 > are not authorized.
 
-## First Steps
+## Current Bootstrap (2026-05-26)
 
-1. Read `v2/ART2_LOOP.md` — the canonical hill-climbing protocol. This is the operating loop definition.
-2. Read `v2/docs/founder_intent.md` — founder voice, standards, anti-goals.
-3. Read `v2/docs/current_state.md` — current system state snapshot.
-4. Read `v2/COMMANDS.md` — what the human can ask you to do.
-5. Before making architecture decisions, read `v2/docs/domain/` — 0DTE options domain knowledge. Understand the instrument.
+This file is the agent front door. Older v2-first instructions were stale and are superseded by this section.
 
-## Document Precedence (when docs disagree)
+1. Read [PROJECT_SECTION_AND_FEATURE_MAP.md](PROJECT_SECTION_AND_FEATURE_MAP.md) first for the current repo map.
+2. Read [docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md](docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md) for the current trading-bot truth, while checking runtime evidence when claims conflict.
+3. Read [research_ops/AI_AGENT_OPERATING_CONTRACT.md](research_ops/AI_AGENT_OPERATING_CONTRACT.md) for practical operator workflow. Its formal binding status is still unresolved in the map.
+4. Read [v4/README.md](v4/README.md), [v4/docs/PROTOCOL101_DAILY_PAPER_TRADING.md](v4/docs/PROTOCOL101_DAILY_PAPER_TRADING.md), and [v4/docs/DATA_CONTRACT.md](v4/docs/DATA_CONTRACT.md) before changing or validating the v4 system.
+5. Treat `v2/`, `v3/`, `archive/`, and `archive_quarantine/` as protected history unless there is current import, runtime, test, log, registry, or owner evidence that a specific file is active.
 
-1. **Code** (`metrics.py`, `config.py`, `simulator.py`, etc.) — ground truth
-2. `v2/ART2_LOOP.md` — operating loop definition
-3. `v2/docs/current_state.md` — current system state
-4. `v2/docs/evaluator.md` — scoring and evaluation rules
-5. `v2/COMMANDS.md` — command reference
-6. `v2/PIPELINE.md` — system map
-7. `v2/program.md` — historical protocol (reference only, not current operating truth)
-8. Everything else — reference/history
+## Current Operating Truth
 
-## Naming
+- Current controlled paper spine: `PAPER_DEFAULT_PROTOCOL101`.
+- Current intended path: daily autopilot -> Protocol160 persistent paper trader -> Protocol101 entry -> Protocol051/054 surface scorer -> Protocol081/066 lifecycle/exit -> IBKR paper guard/executor -> paper logs and monitoring.
+- Paper trading is guarded paper-submit infrastructure only. It is separate from real-money trading.
+- A paper fill proves execution capability only. It does not prove alpha, profitability, approval, or normal-threshold readiness.
+- "Active" means currently used in the pipeline or owner workflow. It does not mean profitable, fully validated, promotion-approved, or real-money ready.
+- If evidence is missing, mark the answer `UNKNOWN`. If docs conflict, report the conflict instead of resolving it silently.
 
-`v2/` is the **current canonical system**. The name is historical (it replaced a v1 prototype). The GitHub repo references "v4 exact chain" which describes the *data schema version*, not a separate system. There is only one active system and it lives in `v2/`.
+## Document Precedence
 
-## Project Structure
+When docs disagree, use this order:
 
+1. Runtime evidence: selected registry entry, configs, manifests, logs, tests, and actual imports.
+2. [PROJECT_SECTION_AND_FEATURE_MAP.md](PROJECT_SECTION_AND_FEATURE_MAP.md).
+3. [docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md](docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md).
+4. `research_ops/` operating docs, subject to unresolved binding status.
+5. Current `v4/docs/` documents.
+6. Root README and agent docs after 2026-05-26 cleanup.
+7. Older v2/v3/archive docs, old promotion packets, readiness claims, and stale runbooks as historical evidence only.
+
+## Hard Safety Rules
+
+Do not casually run commands that can trade, contact a broker, download paid data, mutate runtime posture, install launchd jobs, train models, tune thresholds, or promote challengers.
+
+Commands involving the following require explicit owner authorization and a fresh safety read:
+
+- IBKR, broker, order, live, paper-submit, no-order-trading, or market-data scripts.
+- Paid Databento/Polygon downloads or broad backfills.
+- Model training, threshold tuning, challenger promotion, or artifact promotion.
+- Runtime flag edits, launchd install/uninstall, `bootstrap`, `bootout`, `enable`, `disable`, or plist mutation.
+- Cleanup moves outside a reviewed, manifest-backed quarantine batch.
+
+Safe read/validation examples include registry print-selection, targeted pytest suites that do not contact broker/data endpoints, static file inspection, and chart export from local artifacts.
+
+## Current Project Structure
+
+| Path | Meaning |
+|------|---------|
+| `PROJECT_SECTION_AND_FEATURE_MAP.md` | Current high-level cartography and active/stale split. |
+| `docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md` | Current trading-bot truth doc, subject to runtime evidence. |
+| `research_ops/` | Practical current operator/agent front door. |
+| `v4/` | Current research, validation, paper runtime, guard, monitoring, and artifact surface. |
+| `v4/artifacts/`, `v4/audit/`, `v4/logs/`, `v4/runtime/` | Generated evidence, reports, logs, charts, flags, and runtime state. Inspect before trusting. |
+| `data/`, `raw/`, `cache/`, `vendor/`, `processed/`, `v4/raw/`, `v4/normalized/`, `v4/feature/`, `v4/label/` | Protected data areas. Do not delete or reorganize casually. |
+| `v2/`, `v3/`, `archive/`, `archive_quarantine/` | Protected history unless proven active per-file. |
+| `_cleanup_quarantine/` | Manifest-backed quarantine moves. Files here were moved, not deleted. |
+
+## Current Paper Spine
+
+The current controlled paper path should be understood in plain English as:
+
+1. A daily autopilot selects the paper default.
+2. The selected Protocol101 runner starts the persistent paper trader.
+3. Protocol101 decides whether a candidate trade should exist.
+4. Protocol051/054 provide the option-surface scoring dependency.
+5. Protocol081/066 handle lifecycle, exit, and inference lineage.
+6. Guard/executor code controls whether a paper order can be submitted.
+7. Logs, audit files, chart exports, and monitor reports provide reconstruction evidence.
+
+This path is active infrastructure, not an approval to trade real money.
+
+## Safe Validation Commands
+
+These are examples of read/local validation commands that should not call the broker or train models:
+
+```bash
+PYTHONPATH=. python -m v4.scripts.run_daily_paper_autopilot --session-date 2026-05-26 --print-selection
+
+PYTHONPATH=. python -m pytest \
+  v4/tests/test_daily_paper_autopilot.py \
+  v4/tests/test_protocol101_entry.py \
+  v4/tests/test_protocol051_surface_edge.py \
+  v4/tests/test_protocol066_inference.py \
+  v4/tests/test_protocol113_trade_charts.py \
+  v4/tests/test_paid_data_guard.py
+
+PYTHONPATH=. python -m v4.scripts.export_protocol101_trade_charts \
+  --out-dir /tmp/protocol101_trade_charts \
+  --skip-train-validation
 ```
-root/
-├── CLAUDE.md              ← you are here
-├── ARCHIVE_POLICY.md      ← explains archive/ vs archive_quarantine/
-├── v2/                    ← the working system (all code, data, docs)
-│   ├── train.py           ← model architecture, training loop
-│   ├── replay.py          ← evaluation, baselines, traces
-│   ├── plot_trades.py     ← generates trades.html, equity.html, trades.csv
-│   ├── plot_progress.py   ← generates progress.png
-│   ├── core/              ← policy, simulator, metrics, schema, features, chain_data
-│   ├── ops/               ← deploy.sh, monitor.py, model_manage.py, pre_run_gate.py
-│   ├── pipeline/          ← build_v2_dataset.py, compute_features.py, download_full_chain.py
-│   ├── analysis/          ← harness_eval.py, policy_sweep.py
-│   ├── docs/              ← all documentation including domain knowledge
-│   ├── data.pt            ← canonical dataset
-│   ├── data_sidecars/     ← per-day contract snapshots and labels
-│   ├── models/            ← active model checkpoints
-│   ├── artifacts/         ← experiment artifacts (exp_NNN/)
-│   ├── output/            ← trades.html, equity.html, progress.png, trades.csv
-│   ├── ART2_LOOP.md, COMMANDS.md, program.md, PIPELINE.md
-│   ├── lab_notebook.md, results.tsv
-│   └── __init__.py
-└── archive/               ← historical reference only, do not read unless asked
-```
 
-## Key File Map
+Before running broader tests, inspect them for broker, paid-data, launchd, training, and runtime-mutation behavior.
 
-**Training & model:**
-- `v2/train.py` — model architecture (`TradingModel`), `forward()`, `compute_loss()`, training loop
-- `v2/core/policy.py` — `DecisionPolicy` dataclass (stops, targets, trade window, trailing exit params)
+## Cleanup Rules
 
-**Trade simulation (NOT in replay.py):**
-- `v2/core/simulator.py` — `simulate_trade()`, `TRAILING_TIERS`, stop/TP/trailing exit logic, MFE tracking, spread cost model
-- `v2/core/schema.py` — `TradeIntent`, `SimulatedTrade` dataclasses
-
-**Replay & evaluation:**
-- `v2/replay.py` — orchestrates replay: loads model, runs inference, calls `simulator.simulate_trade()`, computes baselines, collects traces
-- `v2/core/metrics.py` — score formula, hard gates, baseline computation
-
-**Stage contracts:**
-- `v2/core/config.py` — `RuntimeConfig` (single source of truth for shared constants)
-- `v2/core/eval_report.py` — `EvalReport` (durable eval artifact with stored trades)
-
-**Data pipeline:**
-- `v2/core/chain_data.py` — `CONTRACT_FEATURE_FIELDS` (22 features), `build_contract_row()`, `padded_snapshot()`
-- `v2/pipeline/compute_features.py` — `bs_greeks_vec()` (Black-Scholes greeks + charm), 52 context features
-- `v2/pipeline/build_v2_dataset.py` — builds `data.pt` + sidecar `.pt` files, oracle label computation
-
-**Visualization:**
-- `v2/plot_trades.py` — generates trades.html, equity.html, trades.csv
-- `v2/plot_progress.py` — generates progress.png
-- `v2/ops/monitor.py` — live monitoring dashboard
-
-**Operations:**
-- `v2/ops/deploy.sh` — GPU lifecycle: boot/start/run_screen/run_one/stop
-- `v2/ops/model_manage.py` — keep/revert promoted model
-- `v2/ops/health.py` — pipeline health checks: `python -m v2.ops.health`
-
-**Domain knowledge (read for trading context):**
-- `v2/docs/domain/` — 0DTE Greeks, dealer mechanics, Pickles practitioner journal, volatility trading theory
-
-## Experiment Pipeline
-
-An **experiment** (exp_NNN) means: code change → commit → train from scratch on GPU → evaluate. A local replay is NOT an experiment.
-
-1. **Edit** `v2/train.py` and/or `v2/core/policy.py` (the mutable surface)
-2. **Compile check**: `python -m py_compile v2/train.py`
-3. **Commit** the code change with the experiment ID in the message
-4. **Pre-GPU gate**: `python3 -m v2.ops.pre_run_gate --data v2/data.pt`
-5. **Boot GPU**: `./v2/ops/deploy.sh boot` then `./v2/ops/deploy.sh start`
-6. **Screen** (1-fold): `./v2/ops/deploy.sh run_screen exp_NNN`
-7. **If screening passes**, run official (5-fold): `./v2/ops/deploy.sh run_one exp_NNN`
-8. **Post-run checklist** (see COMMANDS.md): validate, trace, keep/revert, plot, analyze, document, commit
-
-**Local replay** (not an experiment):
-- Validate model: `python3 -m v2.replay --model v2/models/model.pt --mask promote`
-- Policy sweeps: modify policy, replay, compare — useful signal but cannot be promoted
-
-**Label consistency warning:** Oracle labels in `v2/data_sidecars/` are computed with the policy active at build time. Small policy tweaks are acceptable (model learns general contract quality). Large policy changes may require a sidecar rebuild.
-
-## Hard Rules
-
-- **Default mutable surface:** `v2/train.py` and `v2/core/policy.py`.
-- **One hypothesis per experiment.** No bundling unrelated changes.
-- **Promotion is score-gated.** Must beat all four baselines with no gate failure.
-- **Every experiment trains from scratch.** No warm-starting.
-- **Log everything** in `v2/results.tsv` and `v2/lab_notebook.md`.
-- **All training runs on Akash H100 GPU, never locally.**
-- **Run harness eval before GPU spend.**
-- **Do not read `archive/` as default context.** Only consult when explicitly asked.
+- Cleanup should happen one small reviewed batch at a time.
+- Use a dated quarantine directory with a manifest, rationale, original paths, dependency notes, and rollback notes.
+- Move files only after checking for current imports, runtime references, tests, logs, owner workflow, and docs that still depend on them.
+- Do not delete in the first pass. Do not move active data, current model artifacts, runtime flags, current logs, launchd files, or broker-related configs casually.
+- Tests follow the feature they cover: active-feature tests are protected; research-history tests move only with their family after review.
 
 ## Code Quality
 
-- Run `python -m py_compile <file>` on every changed file before reporting complete.
-- Commit every time a change is made.
-- Re-read files before editing (especially after 10+ messages).
-
-## Live Documentation
-
-See `v2/docs/README.md` for the full documentation index.
+- Read files before editing them, especially in this dirty worktree.
+- Preserve user changes and unrelated dirty files.
+- Use targeted tests proportional to the risk of the change.
+- For documentation-only cleanup, prefer clear status labels over silent rewrites of project history.

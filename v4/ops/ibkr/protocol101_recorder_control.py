@@ -39,6 +39,8 @@ def parse_args() -> argparse.Namespace:
         item.add_argument("--require-live", action="store_true")
         item.add_argument("--require-ladder", action="store_true")
         item.add_argument("--require-complete-session", action="store_true")
+        item.add_argument("--require-checkpoint-progress", action="store_true")
+        item.add_argument("--max-checkpoint-lag-seconds", type=float, default=150.0)
         item.add_argument("--port", type=int, default=4002)
     return parser.parse_args()
 
@@ -81,6 +83,52 @@ def expected_minutes(session: str) -> list[str]:
     day = datetime.strptime(session, "%Y-%m-%d").date()
     current = datetime.combine(day, datetime.min.time(), tzinfo=NY).replace(hour=9, minute=30)
     return [(current + timedelta(minutes=index)).isoformat() for index in range(390)]
+
+
+def checkpoint_decision_time(checkpoint_minute: Any) -> datetime | None:
+    completed = parse_time(checkpoint_minute)
+    if completed is None:
+        return None
+    return completed + timedelta(minutes=1)
+
+
+def checkpoint_progress_status(
+    session: str,
+    last_checkpoint_minute: Any,
+    *,
+    max_lag_seconds: float,
+    now: datetime | None = None,
+) -> tuple[bool, dict[str, Any]]:
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    current = current.astimezone(timezone.utc)
+    day = datetime.strptime(session, "%Y-%m-%d").date()
+    first_decision = datetime.combine(day, datetime.min.time(), tzinfo=NY).replace(hour=9, minute=31).astimezone(timezone.utc)
+    grace_deadline = first_decision + timedelta(seconds=max(0.0, float(max_lag_seconds)))
+    if current < grace_deadline:
+        return True, {
+            "required": False,
+            "reason": "before_first_checkpoint_grace_deadline",
+            "now_utc": current.isoformat(),
+            "first_decision_utc": first_decision.isoformat(),
+            "grace_deadline_utc": grace_deadline.isoformat(),
+            "last_checkpoint_minute_et": last_checkpoint_minute,
+            "max_lag_seconds": float(max_lag_seconds),
+        }
+    decision = checkpoint_decision_time(last_checkpoint_minute)
+    lag = (current - decision).total_seconds() if decision is not None else None
+    ok = lag is not None and lag <= float(max_lag_seconds)
+    return ok, {
+        "required": True,
+        "now_utc": current.isoformat(),
+        "first_decision_utc": first_decision.isoformat(),
+        "grace_deadline_utc": grace_deadline.isoformat(),
+        "last_checkpoint_minute_et": last_checkpoint_minute,
+        "last_checkpoint_decision_utc": decision.isoformat() if decision else None,
+        "checkpoint_lag_seconds": lag,
+        "max_lag_seconds": float(max_lag_seconds),
+    }
 
 
 def checkpoint_overlay_path(paths: CapturePaths) -> Path:
@@ -359,6 +407,11 @@ def health(args: argparse.Namespace) -> int:
     state = load_json(paths.state)
     last_heartbeat = parse_time(state.get("last_heartbeat_at_utc"))
     age = (datetime.now(timezone.utc) - last_heartbeat).total_seconds() if last_heartbeat else None
+    checkpoint_ok, checkpoint_progress = checkpoint_progress_status(
+        args.session,
+        state.get("last_checkpoint_minute_et"),
+        max_lag_seconds=float(args.max_checkpoint_lag_seconds),
+    )
     checks = {
         "state_exists": paths.state.exists(),
         "events_exists": paths.events.exists(),
@@ -371,6 +424,7 @@ def health(args: argparse.Namespace) -> int:
         "no_write_errors": int(state.get("write_errors") or 0) == 0,
         "no_subscription_errors": int(state.get("subscription_errors") or 0) == 0,
         "no_order_endpoint": state.get("broker_order_endpoint_called") is not True,
+        "checkpoint_progress_fresh": checkpoint_ok if args.require_checkpoint_progress else True,
     }
     payload = {
         "schema_version": "Protocol101RecorderHealthV1",
@@ -379,6 +433,7 @@ def health(args: argparse.Namespace) -> int:
         "session": args.session,
         "capture_id": paths.root.name,
         "heartbeat_age_seconds": age,
+        "checkpoint_progress": checkpoint_progress,
         "checks": checks,
         "state": state,
     }

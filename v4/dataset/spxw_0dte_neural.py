@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from decimal import Decimal
+from bisect import bisect_right
 from typing import Iterable, Sequence
 
 import numpy as np
@@ -20,12 +21,27 @@ from v4.greeks.repair import compute_repaired_greeks
 from v4.live.protocol101_feature_contract import (
     FEATURE_CONTRACT_VERSION,
     DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT,
+    candidate_filter_diagnostics,
     candidate_is_tradable_values,
+    candidate_ladder_slots,
     feature_contract_metadata,
+    feature_contract_requires_model_scoring_greeks,
     feature_contract_version,
     is_live_feature_contract,
+    missing_candidate_slot_diagnostics,
     option_feature_values,
     quote_source_metadata,
+    round_to_strike_step,
+    strike_ladder_context,
+)
+from v4.model.protocol101_regimen_repair import (
+    INT64_MISSING,
+    LEGACY_PROCESSED_ROW_SCHEMA,
+    TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+    ExitReason,
+    InvalidReason,
+    Protocol101DuplicatePathQuoteIdentityError,
+    TwoClockLabel,
 )
 from v4.schema.types import OptionRight
 
@@ -35,13 +51,13 @@ _SECONDS_PER_YEAR = 365.0 * 24.0 * 60.0 * 60.0
 DECISION_GRID_VERSION = "calendar_v2"
 MARKET_OPEN_ET = time(9, 30)
 EARLY_CLOSE_TIMES_ET = {
-    # Keep in sync with the acceptance verifier's exchange-calendar behavior.
+    # Cboe U.S. Options RTH early closes only. Keep in sync with the
+    # acceptance verifier; do not import bond-market early closes here.
     "2024-11-29": time(13, 0),
     "2024-12-24": time(13, 15),
     "2025-07-03": time(13, 0),
     "2025-11-28": time(13, 0),
     "2025-12-24": time(13, 15),
-    "2026-07-02": time(13, 0),
 }
 
 
@@ -84,6 +100,7 @@ class NeuralDatasetConfig:
     diagnostic_index_context_lag_minutes: int | None = None
     diagnostic_source_policy: str | None = None
     compute_policy_labels: bool = True
+    processed_row_schema_version: str = LEGACY_PROCESSED_ROW_SCHEMA
     # Trade-shape menu v2, owner-approved 2026-07-07 (see
     # v4/docs/PROTOCOL101_TRADE_SHAPE_MENU_V2_PROPOSAL.md). Shapes 3-6 add
     # patient/asymmetric profiles: stop=1.00 means the premium is the stop
@@ -158,7 +175,7 @@ def _strike_float(value) -> float:
 
 
 def _round_to_step(value: float, step: int) -> int:
-    return int(round(value / step) * step)
+    return round_to_strike_step(value, step)
 
 
 def _time_to_expiry_years(row: pd.Series, decision_time: pd.Timestamp) -> float | None:
@@ -522,38 +539,207 @@ def _label_for_policy(
     policy: LabelPolicy,
     config: NeuralDatasetConfig,
 ) -> tuple[float, float]:
+    label = label_for_policy_two_clock_reference(
+        contract_quotes,
+        decision_time=decision_time,
+        entry_row=entry_row,
+        policy=policy,
+        config=config,
+        enforce_unique_path=False,
+    )
+    return label.net_pnl, label.mid_pnl
+
+
+def _deadline_exit_reason(
+    decision_time: pd.Timestamp,
+    policy: LabelPolicy,
+    config: NeuralDatasetConfig,
+) -> ExitReason:
+    max_hold = decision_time + pd.Timedelta(minutes=policy.max_hold_minutes)
+    local_day = decision_time.tz_convert(_NY_TZ).date()
+    forced_flat = pd.Timestamp.combine(
+        local_day,
+        config.forced_flat_before,
+    ).tz_localize(_NY_TZ).tz_convert("UTC")
+    return (
+        ExitReason.FORCED_FLAT
+        if forced_flat <= max_hold
+        else ExitReason.MAX_HOLD
+    )
+
+
+def _label_pnl(
+    *,
+    entry_ask: float,
+    entry_mid: float,
+    exit_bid: float,
+    exit_mid: float,
+    config: NeuralDatasetConfig,
+) -> tuple[float, float]:
+    net = (exit_bid - entry_ask) * config.contract_multiplier
+    if config.fee_per_contract:
+        net -= 2.0 * config.fee_per_contract
+    mid_net = (
+        (exit_mid - entry_mid) * config.contract_multiplier
+        if np.isfinite(exit_mid)
+        else np.nan
+    )
+    if np.isfinite(mid_net) and config.fee_per_contract:
+        mid_net -= 2.0 * config.fee_per_contract
+    return float(net), float(mid_net)
+
+
+def _valid_two_clock_label(
+    *,
+    decision_time: pd.Timestamp,
+    deadline: pd.Timestamp,
+    source_time_ns: int,
+    reason: ExitReason,
+    entry_ask: float,
+    entry_mid: float,
+    exit_bid: float,
+    exit_mid: float,
+    config: NeuralDatasetConfig,
+) -> TwoClockLabel:
+    source_time = pd.Timestamp(source_time_ns, unit="ns", tz="UTC")
+    realized_time = (
+        source_time
+        if reason
+        in {
+            ExitReason.STOP_LOSS,
+            ExitReason.TAKE_PROFIT,
+            ExitReason.NO_BID_STOP,
+        }
+        else deadline
+    )
+    if source_time <= decision_time:
+        return TwoClockLabel.invalid(
+            InvalidReason.SOURCE_QUOTE_NOT_STRICTLY_AFTER_ENTRY,
+            policy_deadline_ns=int(deadline.value),
+        )
+    if (
+        source_time.tz_convert(_NY_TZ).date()
+        != decision_time.tz_convert(_NY_TZ).date()
+        or realized_time.tz_convert(_NY_TZ).date()
+        != decision_time.tz_convert(_NY_TZ).date()
+    ):
+        return TwoClockLabel.invalid(
+            InvalidReason.EXIT_CLOCK_CROSSES_SESSION,
+            policy_deadline_ns=int(deadline.value),
+        )
+    if not np.isfinite(exit_bid) or exit_bid < 0.0:
+        return TwoClockLabel.invalid(
+            InvalidReason.NONFINITE_EXECUTABLE_EXIT_BID,
+            policy_deadline_ns=int(deadline.value),
+        )
+    net, mid_net = _label_pnl(
+        entry_ask=entry_ask,
+        entry_mid=entry_mid,
+        exit_bid=exit_bid,
+        exit_mid=exit_mid,
+        config=config,
+    )
+    age_ms = (int(realized_time.value) - int(source_time.value)) / 1_000_000.0
+    return TwoClockLabel(
+        net_pnl=net,
+        mid_pnl=mid_net,
+        realized_exit_time_ns=int(realized_time.value),
+        source_exit_quote_time_ns=int(source_time.value),
+        exit_quote_age_ms=float(age_ms),
+        exit_reason_code=int(reason),
+        executable_exit_bid=float(exit_bid),
+        policy_deadline_ns=int(deadline.value),
+        invalid_reason_code=int(InvalidReason.NONE),
+    )
+
+
+def label_for_policy_two_clock_reference(
+    contract_quotes: pd.DataFrame,
+    *,
+    decision_time: pd.Timestamp,
+    entry_row: pd.Series,
+    policy: LabelPolicy,
+    config: NeuralDatasetConfig,
+    enforce_unique_path: bool = True,
+) -> TwoClockLabel:
+    """Reference two-clock implementation over a quote DataFrame."""
+
     entry_ask = float(entry_row["ask"])
     entry_mid = float(entry_row["mid"])
     deadline = _policy_exit_deadline(decision_time, policy, config)
+    if not np.isfinite(entry_ask) or entry_ask <= 0.0:
+        return TwoClockLabel.invalid(
+            InvalidReason.NONFINITE_OR_NONPOSITIVE_ENTRY_ASK,
+            policy_deadline_ns=int(deadline.value),
+        )
+    if deadline <= decision_time:
+        return TwoClockLabel.invalid(
+            InvalidReason.DEADLINE_BEFORE_OR_AT_ENTRY,
+            policy_deadline_ns=int(deadline.value),
+        )
     future = contract_quotes[
         (contract_quotes["quote_time"] > decision_time)
         & (contract_quotes["quote_time"] <= deadline)
-    ].sort_values("quote_time")
+    ].sort_values("quote_time", kind="mergesort")
     if future.empty:
-        return np.nan, np.nan
+        return TwoClockLabel.invalid(
+            InvalidReason.NO_CAUSAL_FUTURE_QUOTE_AT_OR_BEFORE_DEADLINE,
+            policy_deadline_ns=int(deadline.value),
+        )
+    if enforce_unique_path and future["quote_time"].duplicated(keep=False).any():
+        duplicate_time = future.loc[
+            future["quote_time"].duplicated(keep=False), "quote_time"
+        ].iloc[0]
+        raise Protocol101DuplicatePathQuoteIdentityError(
+            "duplicate contract/source-time path quote identity",
+            canonical_key=(
+                str(entry_row.get("contract_id") or ""),
+                pd.Timestamp(duplicate_time).isoformat(),
+            ),
+            observed_count=int((future["quote_time"] == duplicate_time).sum()),
+            boundary="two-clock reference label path",
+        )
 
     stop_bid = entry_ask * (1.0 - policy.stop_loss_pct)
     target_bid = entry_ask * (1.0 + policy.take_profit_pct)
     exit_row = future.iloc[-1]
+    exit_reason = _deadline_exit_reason(decision_time, policy, config)
     for _, row in future.iterrows():
         # No-bid convention: absent bid is an executable 0.00 on the exit path.
         bid = 0.0 if pd.isna(row.get("bid")) else float(row.get("bid"))
-        if bid <= stop_bid or bid >= target_bid:
+        if bid <= 0.0:
             exit_row = row
+            exit_reason = ExitReason.NO_BID_STOP
+            break
+        if bid <= stop_bid:
+            exit_row = row
+            exit_reason = ExitReason.STOP_LOSS
+            break
+        if bid >= target_bid:
+            exit_row = row
+            exit_reason = ExitReason.TAKE_PROFIT
             break
 
     exit_bid = 0.0 if pd.isna(exit_row["bid"]) else float(exit_row["bid"])
     exit_mid = float(exit_row["mid"]) if pd.notna(exit_row["mid"]) else np.nan
-    net = (exit_bid - entry_ask) * config.contract_multiplier
-    if config.fee_per_contract:
-        net -= 2.0 * config.fee_per_contract
-    mid_net = (exit_mid - entry_mid) * config.contract_multiplier if np.isfinite(exit_mid) else np.nan
-    if np.isfinite(mid_net) and config.fee_per_contract:
-        mid_net -= 2.0 * config.fee_per_contract
-    return net, mid_net
+    return _valid_two_clock_label(
+        decision_time=decision_time,
+        deadline=deadline,
+        source_time_ns=int(pd.Timestamp(exit_row["quote_time"]).value),
+        reason=exit_reason,
+        entry_ask=entry_ask,
+        entry_mid=entry_mid,
+        exit_bid=exit_bid,
+        exit_mid=exit_mid,
+        config=config,
+    )
 
 
-def _contract_quote_path(contract_quotes: pd.DataFrame) -> ContractQuotePath:
+def _contract_quote_path(
+    contract_quotes: pd.DataFrame,
+    *,
+    enforce_unique_path: bool = False,
+) -> ContractQuotePath:
     """Convert one contract quote path into arrays for label computation.
 
     No-bid convention (pinned 2026-07-07): an absent bid on the exit path is
@@ -563,13 +749,25 @@ def _contract_quote_path(contract_quotes: pd.DataFrame) -> ContractQuotePath:
     honest exit for a long option. Applies to the LABEL path only — features
     and entry tradability keep NaN semantics.
     """
-    quotes = contract_quotes.sort_values("quote_time")
+    quotes = contract_quotes.sort_values("quote_time", kind="mergesort")
     quote_ns = (
         pd.to_datetime(quotes["quote_time"], utc=True)
         .astype("datetime64[ns, UTC]")
         .astype("int64")
         .to_numpy()
     )
+    if enforce_unique_path and len(quote_ns) != len(np.unique(quote_ns)):
+        duplicate_ns, counts = np.unique(quote_ns, return_counts=True)
+        selected = int(duplicate_ns[np.flatnonzero(counts > 1)[0]])
+        raise Protocol101DuplicatePathQuoteIdentityError(
+            "duplicate contract/source-time path quote identity",
+            canonical_key=(
+                str(quotes.iloc[0].get("contract_id") or ""),
+                selected,
+            ),
+            observed_count=int(counts[np.flatnonzero(counts > 1)[0]]),
+            boundary="two-clock vectorized label path",
+        )
     return ContractQuotePath(
         quote_ns=quote_ns,
         bid=pd.to_numeric(quotes["bid"], errors="coerce").fillna(0.0).to_numpy(dtype=float),
@@ -586,18 +784,57 @@ def _label_for_policy_from_path(
     policy: LabelPolicy,
     config: NeuralDatasetConfig,
 ) -> tuple[float, float]:
-    """Vectorized equivalent of `_label_for_policy` for bulk historical builds."""
+    """Legacy return shape backed by the two-clock vectorized kernel."""
+    label = label_for_policy_two_clock_from_path(
+        quote_path,
+        decision_time=decision_time,
+        entry_ask=entry_ask,
+        entry_mid=entry_mid,
+        policy=policy,
+        config=config,
+    )
+    return label.net_pnl, label.mid_pnl
+
+
+def label_for_policy_two_clock_from_path(
+    quote_path: ContractQuotePath,
+    *,
+    decision_time: pd.Timestamp,
+    entry_ask: float,
+    entry_mid: float,
+    policy: LabelPolicy,
+    config: NeuralDatasetConfig,
+) -> TwoClockLabel:
+    """Vectorized two-clock label kernel for bulk historical builds."""
+
     deadline = _policy_exit_deadline(decision_time, policy, config)
+    if not np.isfinite(entry_ask) or entry_ask <= 0.0:
+        return TwoClockLabel.invalid(
+            InvalidReason.NONFINITE_OR_NONPOSITIVE_ENTRY_ASK,
+            policy_deadline_ns=int(deadline.value),
+        )
+    if deadline <= decision_time:
+        return TwoClockLabel.invalid(
+            InvalidReason.DEADLINE_BEFORE_OR_AT_ENTRY,
+            policy_deadline_ns=int(deadline.value),
+        )
     start = int(np.searchsorted(quote_path.quote_ns, decision_time.value, side="right"))
     end = int(np.searchsorted(quote_path.quote_ns, deadline.value, side="right"))
     if start >= end:
-        return np.nan, np.nan
+        return TwoClockLabel.invalid(
+            InvalidReason.NO_CAUSAL_FUTURE_QUOTE_AT_OR_BEFORE_DEADLINE,
+            policy_deadline_ns=int(deadline.value),
+        )
 
     future_bid = quote_path.bid[start:end]
     finite_bid = np.isfinite(future_bid)
     stop_bid = entry_ask * (1.0 - policy.stop_loss_pct)
     target_bid = entry_ask * (1.0 + policy.take_profit_pct)
-    hit_mask = finite_bid & ((future_bid <= stop_bid) | (future_bid >= target_bid))
+    hit_mask = finite_bid & (
+        (future_bid <= 0.0)
+        | (future_bid <= stop_bid)
+        | (future_bid >= target_bid)
+    )
     if hit_mask.any():
         exit_idx = start + int(np.flatnonzero(hit_mask)[0])
     else:
@@ -605,17 +842,90 @@ def _label_for_policy_from_path(
 
     exit_bid = float(quote_path.bid[exit_idx])
     exit_mid = float(quote_path.mid[exit_idx])
-    net = (exit_bid - entry_ask) * config.contract_multiplier
-    if np.isfinite(net) and config.fee_per_contract:
-        net -= 2.0 * config.fee_per_contract
-    mid_net = (
-        (exit_mid - entry_mid) * config.contract_multiplier
-        if np.isfinite(exit_mid)
-        else np.nan
+    if hit_mask.any():
+        reason = (
+            ExitReason.NO_BID_STOP
+            if exit_bid <= 0.0
+            else ExitReason.STOP_LOSS
+            if exit_bid <= stop_bid
+            else ExitReason.TAKE_PROFIT
+        )
+    else:
+        reason = _deadline_exit_reason(decision_time, policy, config)
+    return _valid_two_clock_label(
+        decision_time=decision_time,
+        deadline=deadline,
+        source_time_ns=int(quote_path.quote_ns[exit_idx]),
+        reason=reason,
+        entry_ask=float(entry_ask),
+        entry_mid=float(entry_mid),
+        exit_bid=exit_bid,
+        exit_mid=exit_mid,
+        config=config,
     )
-    if np.isfinite(mid_net) and config.fee_per_contract:
-        mid_net -= 2.0 * config.fee_per_contract
-    return net, mid_net
+
+
+def label_for_policy_two_clock_scalar_reference_from_path(
+    quote_path: ContractQuotePath,
+    *,
+    decision_time: pd.Timestamp,
+    entry_ask: float,
+    entry_mid: float,
+    policy: LabelPolicy,
+    config: NeuralDatasetConfig,
+) -> TwoClockLabel:
+    """Independent scalar array oracle used by non-economic corpus checks."""
+
+    deadline = _policy_exit_deadline(decision_time, policy, config)
+    if not np.isfinite(entry_ask) or entry_ask <= 0.0:
+        return TwoClockLabel.invalid(
+            InvalidReason.NONFINITE_OR_NONPOSITIVE_ENTRY_ASK,
+            policy_deadline_ns=int(deadline.value),
+        )
+    if deadline <= decision_time:
+        return TwoClockLabel.invalid(
+            InvalidReason.DEADLINE_BEFORE_OR_AT_ENTRY,
+            policy_deadline_ns=int(deadline.value),
+        )
+    stop_bid = entry_ask * (1.0 - policy.stop_loss_pct)
+    target_bid = entry_ask * (1.0 + policy.take_profit_pct)
+    selected_index: int | None = None
+    selected_reason: ExitReason | None = None
+    start = bisect_right(quote_path.quote_ns, int(decision_time.value))
+    for index in range(start, len(quote_path.quote_ns)):
+        quote_time_ns = int(quote_path.quote_ns[index])
+        if quote_time_ns > int(deadline.value):
+            break
+        selected_index = index
+        bid = float(quote_path.bid[index])
+        if np.isfinite(bid) and bid <= 0.0:
+            selected_reason = ExitReason.NO_BID_STOP
+            break
+        if np.isfinite(bid) and bid <= stop_bid:
+            selected_reason = ExitReason.STOP_LOSS
+            break
+        if np.isfinite(bid) and bid >= target_bid:
+            selected_reason = ExitReason.TAKE_PROFIT
+            break
+    if selected_index is None:
+        return TwoClockLabel.invalid(
+            InvalidReason.NO_CAUSAL_FUTURE_QUOTE_AT_OR_BEFORE_DEADLINE,
+            policy_deadline_ns=int(deadline.value),
+        )
+    reason = selected_reason or _deadline_exit_reason(
+        decision_time, policy, config
+    )
+    return _valid_two_clock_label(
+        decision_time=decision_time,
+        deadline=deadline,
+        source_time_ns=int(quote_path.quote_ns[selected_index]),
+        reason=reason,
+        entry_ask=entry_ask,
+        entry_mid=entry_mid,
+        exit_bid=float(quote_path.bid[selected_index]),
+        exit_mid=float(quote_path.mid[selected_index]),
+        config=config,
+    )
 
 
 def _prepare_options(normalized: pa.Table | pd.DataFrame, config: NeuralDatasetConfig) -> pd.DataFrame:
@@ -659,7 +969,26 @@ def build_neural_dataset(
     mask, contract IDs, and ask-entry/bid-exit labels for each candidate.
     """
     config = config or NeuralDatasetConfig()
+    if config.processed_row_schema_version not in {
+        LEGACY_PROCESSED_ROW_SCHEMA,
+        TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+    }:
+        raise ValueError(
+            "unsupported processed_row_schema_version: "
+            f"{config.processed_row_schema_version}"
+        )
+    two_clock_rows = (
+        config.processed_row_schema_version == TWO_CLOCK_PROCESSED_ROW_SCHEMA
+    )
+    if two_clock_rows and not config.compute_policy_labels:
+        raise ValueError(
+            "two-clock processed rows require computed offline policy labels"
+        )
     policies = tuple(label_policies) if label_policies is not None else config.label_policies
+    if two_clock_rows and policies != NeuralDatasetConfig().label_policies:
+        raise ValueError(
+            "two-clock processed rows require the exact signed seven-policy axis"
+        )
     options = _prepare_options(normalized, config)
     if options.empty:
         return []
@@ -676,7 +1005,10 @@ def build_neural_dataset(
         for cid, group in options.groupby("contract_id")
     }
     by_contract_path = {
-        cid: _contract_quote_path(group)
+        cid: _contract_quote_path(
+            group,
+            enforce_unique_path=two_clock_rows,
+        )
         for cid, group in by_contract.items()
     }
     strike_offsets = np.arange(
@@ -689,8 +1021,9 @@ def build_neural_dataset(
     rows: list[dict] = []
     live_contract = is_live_feature_contract(config.feature_contract)
     contract_version = feature_contract_version(config.feature_contract)
+    require_model_scoring_greeks = feature_contract_requires_model_scoring_greeks(contract_version)
     if config.diagnostic_index_context_lag_minutes is not None and not live_contract:
-        raise ValueError("diagnostic_index_context_lag_minutes is only supported for protocol101-live-v1 rows")
+        raise ValueError("diagnostic_index_context_lag_minutes is only supported for live feature-contract rows")
     context_lag_minutes = (
         DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT.index_context_lag_minutes
         if live_contract
@@ -721,6 +1054,10 @@ def build_neural_dataset(
         if not np.isfinite(spx_close):
             continue
         atm_strike = _round_to_step(spx_close, config.strike_step)
+        ladder_context = strike_ladder_context(
+            spx_for_ladder=spx_close,
+            strike_step=config.strike_step,
+        )
         context_summary = _market_context_summary(spx, context_time, config)
         ladder_quotes = _latest_quotes_at(options, decision_time, config)
         by_key = (
@@ -746,67 +1083,196 @@ def build_neural_dataset(
             else np.zeros(label_shape, dtype=float)
         )
         labels_mid = labels_net.copy()
+        label_policy_index = np.arange(len(policies), dtype=np.uint8)
+        label_realized_exit_time_ns = np.full(
+            label_shape, INT64_MISSING, dtype=np.int64
+        )
+        label_source_exit_quote_time_ns = np.full(
+            label_shape, INT64_MISSING, dtype=np.int64
+        )
+        label_exit_quote_age_ms = np.full(label_shape, np.nan, dtype=np.float64)
+        label_exit_reason_code = np.full(
+            label_shape, int(ExitReason.INVALID), dtype=np.uint8
+        )
+        label_executable_exit_bid = np.full(
+            label_shape, np.nan, dtype=np.float64
+        )
+        label_policy_deadline_ns = np.full(
+            label_shape, INT64_MISSING, dtype=np.int64
+        )
+        label_invalid_reason_code = np.full(
+            label_shape,
+            int(InvalidReason.AXIS_OR_POLICY_ALIGNMENT_FAILURE),
+            dtype=np.uint8,
+        )
         candidate_quote_metadata: dict[str, dict] = {}
 
-        for strike_idx, offset in enumerate(strike_offsets):
-            strike = atm_strike + int(offset)
-            for right_idx, right in enumerate(rights):
-                row = by_key.get((strike, right))
-                if row is None:
-                    continue
-                contract_ids[strike_idx, right_idx] = row["contract_id"]
-                metadata = quote_source_metadata(
-                    row,
-                    decision_time=decision_time,
-                    feature_contract_name=config.feature_contract,
-                )
-                metadata.update(
-                    {
-                        "contract_id": row["contract_id"],
-                        "bid": float(row["bid"]) if pd.notna(row.get("bid")) else None,
-                        "ask": float(row["ask"]) if pd.notna(row.get("ask")) else None,
-                        "mid": float(row["mid"]) if pd.notna(row.get("mid")) else None,
-                        "bid_size": float(row["bid_size"]) if pd.notna(row.get("bid_size")) else None,
-                        "ask_size": float(row["ask_size"]) if pd.notna(row.get("ask_size")) else None,
-                        "option_ohlcv_volume": 0.0
-                        if live_contract
-                        else (float(row["option_ohlcv_volume"]) if pd.notna(row.get("option_ohlcv_volume")) else None),
-                        "stat_open_interest": 0.0
-                        if live_contract
-                        else (float(row["stat_open_interest"]) if pd.notna(row.get("stat_open_interest")) else None),
-                    }
-                )
-                if not _candidate_is_tradable(row, config):
-                    candidate_quote_metadata[str(row["contract_id"])] = metadata
-                    continue
-                features = _option_features(
-                    row,
-                    decision_time=decision_time,
-                    atm_strike=atm_strike,
-                    config=config,
-                    underlying_price=spx_close if live_contract else None,
-                )
-                if not _candidate_has_required_greeks(features):
-                    candidate_quote_metadata[str(row["contract_id"])] = metadata
-                    continue
-                for idx, name in enumerate(OPTION_FEATURE_NAMES):
-                    metadata[name] = float(features[idx]) if np.isfinite(features[idx]) else None
-                candidate_mask[strike_idx, right_idx] = True
-                option_ladder[strike_idx, right_idx, :] = features
+        for slot in candidate_ladder_slots(
+            spx_for_ladder=spx_close,
+            ladder_dollars=config.ladder_dollars,
+            strike_step=config.strike_step,
+            rights=rights,
+        ):
+            strike_idx = int(slot["strike_idx"])
+            right_idx = int(slot["right_idx"])
+            offset = float(slot["offset"])
+            strike = int(slot["strike"])
+            right = str(slot["right"])
+            row = by_key.get((strike, right))
+            if row is None:
+                contract_id = f"SPXW-{decision_time.tz_convert(_NY_TZ).strftime('%Y%m%d')}-{float(strike):09.3f}-{right}"
+                contract_ids[strike_idx, right_idx] = contract_id
+                no_quote = missing_candidate_slot_diagnostics("no_historical_quote_at_decision")
+                candidate_quote_metadata[contract_id] = {
+                    "feature_contract_version": contract_version,
+                    "contract_id": contract_id,
+                    **slot,
+                    "source_quote_time": None,
+                    "source_quote_ts": None,
+                    "source_context_time": None,
+                    "source_context_ts": None,
+                    "quote_age_ms": None,
+                    "quote_age_source": "no_historical_quote_at_decision",
+                    "raw_quote_timestamp_utc": None,
+                    "received_timestamp_utc": None,
+                    "decision_timestamp_utc": decision_time.isoformat(),
+                    "bid": None,
+                    "ask": None,
+                    "mid": None,
+                    "bid_size": None,
+                    "ask_size": None,
+                    "option_ohlcv_volume": None,
+                    "stat_open_interest": None,
+                    "pre_filter_candidate": False,
+                    "post_filter_candidate": False,
+                    "candidate_filter": no_quote,
+                    "filter_reasons": list(no_quote["reasons"]),
+                    "tradability_pass": False,
+                    "freshness_pass": None,
+                }
+                continue
+            contract_ids[strike_idx, right_idx] = row["contract_id"]
+            metadata = quote_source_metadata(
+                row,
+                decision_time=decision_time,
+                feature_contract_name=config.feature_contract,
+            )
+            metadata.update(
+                {
+                    "contract_id": row["contract_id"],
+                    "strike": float(strike),
+                    "right": str(right),
+                    "offset": float(offset),
+                    "strike_idx": int(strike_idx),
+                    "right_idx": int(right_idx),
+                    **ladder_context,
+                    "bid": float(row["bid"]) if pd.notna(row.get("bid")) else None,
+                    "ask": float(row["ask"]) if pd.notna(row.get("ask")) else None,
+                    "mid": float(row["mid"]) if pd.notna(row.get("mid")) else None,
+                    "bid_size": float(row["bid_size"]) if pd.notna(row.get("bid_size")) else None,
+                    "ask_size": float(row["ask_size"]) if pd.notna(row.get("ask_size")) else None,
+                    "option_ohlcv_volume": 0.0
+                    if live_contract
+                    else (float(row["option_ohlcv_volume"]) if pd.notna(row.get("option_ohlcv_volume")) else None),
+                    "stat_open_interest": 0.0
+                    if live_contract
+                    else (float(row["stat_open_interest"]) if pd.notna(row.get("stat_open_interest")) else None),
+                }
+            )
+            filter_values = {
+                "bid": metadata.get("bid"),
+                "ask": metadata.get("ask"),
+                "mid": metadata.get("mid"),
+                "bid_size": metadata.get("bid_size"),
+                "ask_size": metadata.get("ask_size"),
+                "quote_age_ms": metadata.get("quote_age_ms"),
+                "iv": row.get("iv"),
+                "delta": row.get("delta"),
+                "gamma": row.get("gamma"),
+                "theta": row.get("theta"),
+            }
+            filter_diagnostics = candidate_filter_diagnostics(
+                filter_values,
+                DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT,
+                require_greeks=False,
+                enforce_freshness=True,
+            )
+            metadata.update(
+                {
+                    "pre_filter_candidate": True,
+                    "post_filter_candidate": False,
+                    "candidate_filter": filter_diagnostics,
+                    "filter_reasons": list(filter_diagnostics.get("reasons") or []),
+                    "tradability_pass": filter_diagnostics.get("tradability_pass"),
+                    "freshness_pass": filter_diagnostics.get("freshness_pass"),
+                }
+            )
+            if not _candidate_is_tradable(row, config):
                 candidate_quote_metadata[str(row["contract_id"])] = metadata
-                if config.compute_policy_labels:
-                    contract_path = by_contract_path[row["contract_id"]]
-                    for policy_idx, policy in enumerate(policies):
-                        net, mid_net = _label_for_policy_from_path(
-                            contract_path,
-                            decision_time=decision_time,
-                            entry_ask=float(row["ask"]),
-                            entry_mid=float(row["mid"]),
-                            policy=policy,
-                            config=config,
+                continue
+            features = _option_features(
+                row,
+                decision_time=decision_time,
+                atm_strike=atm_strike,
+                config=config,
+                underlying_price=spx_close if live_contract else None,
+            )
+            if require_model_scoring_greeks and not _candidate_has_required_greeks(features):
+                reasons = sorted(set((metadata.get("filter_reasons") or []) + ["missing_model_scoring_greeks"]))
+                metadata["filter_reasons"] = reasons
+                metadata["model_scoring_greek_pass"] = False
+                if isinstance(metadata.get("candidate_filter"), dict):
+                    metadata["candidate_filter"]["reasons"] = reasons
+                    metadata["candidate_filter"]["passed"] = False
+                candidate_quote_metadata[str(row["contract_id"])] = metadata
+                continue
+            for idx, name in enumerate(OPTION_FEATURE_NAMES):
+                metadata[name] = float(features[idx]) if np.isfinite(features[idx]) else None
+            metadata["post_filter_candidate"] = True
+            metadata["model_scoring_greek_pass"] = True
+            candidate_mask[strike_idx, right_idx] = True
+            option_ladder[strike_idx, right_idx, :] = features
+            candidate_quote_metadata[str(row["contract_id"])] = metadata
+            if config.compute_policy_labels:
+                contract_path = by_contract_path[row["contract_id"]]
+                for policy_idx, policy in enumerate(policies):
+                    two_clock_label = label_for_policy_two_clock_from_path(
+                        contract_path,
+                        decision_time=decision_time,
+                        entry_ask=float(row["ask"]),
+                        entry_mid=float(row["mid"]),
+                        policy=policy,
+                        config=config,
+                    )
+                    labels_net[strike_idx, right_idx, policy_idx] = (
+                        two_clock_label.net_pnl
+                    )
+                    labels_mid[strike_idx, right_idx, policy_idx] = (
+                        two_clock_label.mid_pnl
+                    )
+                    if two_clock_rows:
+                        index = (strike_idx, right_idx, policy_idx)
+                        label_realized_exit_time_ns[index] = (
+                            two_clock_label.realized_exit_time_ns
                         )
-                        labels_net[strike_idx, right_idx, policy_idx] = net
-                        labels_mid[strike_idx, right_idx, policy_idx] = mid_net
+                        label_source_exit_quote_time_ns[index] = (
+                            two_clock_label.source_exit_quote_time_ns
+                        )
+                        label_exit_quote_age_ms[index] = (
+                            two_clock_label.exit_quote_age_ms
+                        )
+                        label_exit_reason_code[index] = (
+                            two_clock_label.exit_reason_code
+                        )
+                        label_executable_exit_bid[index] = (
+                            two_clock_label.executable_exit_bid
+                        )
+                        label_policy_deadline_ns[index] = (
+                            two_clock_label.policy_deadline_ns
+                        )
+                        label_invalid_reason_code[index] = (
+                            two_clock_label.invalid_reason_code
+                        )
 
         if not candidate_mask.any():
             labels_net = np.full(label_shape, np.nan)
@@ -823,6 +1289,18 @@ def build_neural_dataset(
                 source_context_time.isoformat() if hasattr(source_context_time, "isoformat") else source_context_time
             )
             metadata["source_context_ts"] = metadata["source_context_time"]
+        ladder_context["source_context_time"] = (
+            source_context_time.isoformat() if hasattr(source_context_time, "isoformat") else source_context_time
+        )
+        ladder_context["source_context_ts"] = ladder_context["source_context_time"]
+        candidate_filter_trace = sorted(
+            [dict(item) for item in candidate_quote_metadata.values()],
+            key=lambda item: (
+                int(item.get("strike_idx") or 0),
+                int(item.get("right_idx") or 0),
+                str(item.get("contract_id") or ""),
+            ),
+        )
         max_quote_age_ms = max(
             [
                 float(item["quote_age_ms"])
@@ -830,6 +1308,23 @@ def build_neural_dataset(
                 if item.get("quote_age_ms") is not None
             ],
             default=np.nan,
+        )
+        two_clock_payload = (
+            {
+                "processed_row_schema_version": TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+                "label_realized_exit_time_ns": label_realized_exit_time_ns,
+                "label_source_exit_quote_time_ns": (
+                    label_source_exit_quote_time_ns
+                ),
+                "label_exit_quote_age_ms": label_exit_quote_age_ms,
+                "label_exit_reason_code": label_exit_reason_code,
+                "label_executable_exit_bid": label_executable_exit_bid,
+                "label_policy_deadline_ns": label_policy_deadline_ns,
+                "label_policy_index": label_policy_index,
+                "label_invalid_reason_code": label_invalid_reason_code,
+            }
+            if two_clock_rows
+            else {}
         )
         rows.append(
             {
@@ -851,6 +1346,7 @@ def build_neural_dataset(
                 "label_names": tuple(policy.name for policy in policies),
                 "labels_net_pnl": labels_net,
                 "labels_mid_pnl": labels_mid,
+                **two_clock_payload,
                 "market_feature_names": tuple(MARKET_FEATURE_NAMES),
                 "market_window": _market_window(
                     spx,
@@ -860,6 +1356,8 @@ def build_neural_dataset(
                     session_only=live_contract,
                 ),
                 "contract_quote_metadata": candidate_quote_metadata,
+                "candidate_filter_trace": candidate_filter_trace,
+                "ladder_context": dict(ladder_context),
                 **context_summary,
             }
         )

@@ -83,7 +83,8 @@ equal to starting capital, not with historical drawdown baked in.
 ## Implications for R5 / deployment
 
 ### For R5 (conditional rule):
-V0 wins in 10 of 13 windows. V1 wins in window 7. If we could
+V0 wins in 12 of 13 windows on a strict comparison and in 10 of 13
+by `> 0.10 PF`. V1 wins only window 7. If we could
 *detect at session-open* whether today/this-week is a window-7-like
 chop-bearish regime and defensively switch to V1 for those days,
 we'd get the best of both. That's exactly what R5 will test, this
@@ -107,7 +108,7 @@ This config was:
 - Validated on one 20-day window where V1 happened to win
 
 New direction (before R5/R6 finalization):
-- V0 as the default (wins 10/13 windows)
+- V0 as the default (wins 12/13 strict windows, 10/13 by `> 0.10 PF`)
 - Aggregate V0 PF 1.132 is modest but positive across 780 OOS days
 - Layer-3 (A3) still adds value but needs re-evaluation on V0 trades
 

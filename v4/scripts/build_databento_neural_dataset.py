@@ -12,10 +12,19 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 from v4.dataset.spxw_0dte_neural import NeuralDatasetConfig, build_neural_dataset
-from v4.live.protocol101_feature_contract import FEATURE_CONTRACT_VERSION, feature_contract_version
+from v4.live.protocol101_feature_contract import (
+    FEATURE_CONTRACT_VERSION,
+    FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED,
+    feature_contract_version,
+    is_live_feature_contract,
+)
 from v4.ingest.databento_opra import normalize_spxw_0dte_day
 from v4.ingest.derived_context import write_derived_context
 from v4.ingest.index_bars import load_spx_1m, load_vix_1m
+from v4.model.protocol101_regimen_repair import (
+    LEGACY_PROCESSED_ROW_SCHEMA,
+    TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+)
 
 
 @dataclass(frozen=True)
@@ -42,6 +51,7 @@ class BuildRecord:
     production_contract_mutation: bool = False
     compute_policy_labels: bool = True
     label_mode: str = "historical_default"
+    processed_row_schema_version: str = LEGACY_PROCESSED_ROW_SCHEMA
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,11 +103,13 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--feature-contract",
-        choices=("historical-default", FEATURE_CONTRACT_VERSION),
+        choices=("historical-default", FEATURE_CONTRACT_VERSION, FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED),
         default="historical-default",
         help=(
             "historical-default preserves legacy dataset behavior; "
-            "protocol101-live-v1 builds causal live-reproducible rows for parity/sanity gates"
+            "protocol101-live-v1 builds causal live-reproducible rows for parity/sanity gates; "
+            "protocol101-live-v2-microstructure-masked additionally declares the model-scoring "
+            "mask for vendor-sensitive option microstructure"
         ),
     )
     p.add_argument(
@@ -121,6 +133,18 @@ def parse_args() -> argparse.Namespace:
             "offline training-only mode for protocol101-live-v1: keep live-reproducible "
             "features but compute future ask-entry/bid-exit labels. Use a separate "
             "processed directory; this does not mutate the production feature contract."
+        ),
+    )
+    p.add_argument(
+        "--processed-row-schema",
+        choices=(
+            LEGACY_PROCESSED_ROW_SCHEMA,
+            TWO_CLOCK_PROCESSED_ROW_SCHEMA,
+        ),
+        default=LEGACY_PROCESSED_ROW_SCHEMA,
+        help=(
+            "legacy preserves historical row shape; the owner-signed additive "
+            "v2 schema persists source-pricing and occupancy-exit clocks"
         ),
     )
     return p.parse_args()
@@ -157,6 +181,7 @@ def _existing_outputs(
     context_mode: str,
     official_spx_dir: Path | None,
     official_vix_dir: Path | None,
+    processed_row_schema_version: str = LEGACY_PROCESSED_ROW_SCHEMA,
 ) -> bool:
     neural_path = processed_dir / f"{session}.pkl"
     normalized_path = normalized_dir / f"databento_spxw_0dte_{session}.parquet"
@@ -167,7 +192,28 @@ def _existing_outputs(
     )
     context_suffix = "official_context" if use_official else "derived_context"
     context_path = normalized_dir / f"databento_spxw_0dte_{session}_{context_suffix}.parquet"
-    return neural_path.exists() and normalized_path.exists() and context_path.exists()
+    complete = (
+        neural_path.exists()
+        and normalized_path.exists()
+        and context_path.exists()
+    )
+    if (
+        not complete
+        or processed_row_schema_version != TWO_CLOCK_PROCESSED_ROW_SCHEMA
+    ):
+        return complete
+    with neural_path.open("rb") as handle:
+        rows = pickle.load(handle)
+    return bool(
+        isinstance(rows, list)
+        and rows
+        and all(
+            isinstance(row, dict)
+            and row.get("processed_row_schema_version")
+            == TWO_CLOCK_PROCESSED_ROW_SCHEMA
+            for row in rows
+        )
+    )
 
 
 def _read(path: Path) -> pd.DataFrame:
@@ -235,6 +281,7 @@ def _build_session(
     diagnostic_index_context_lag_minutes: int | None = None,
     diagnostic_source_policy: str | None = None,
     compute_live_policy_labels: bool = False,
+    processed_row_schema_version: str = LEGACY_PROCESSED_ROW_SCHEMA,
 ) -> BuildRecord | None:
     paths = _paths(raw_root, session)
     if not paths["definition"].exists() or not paths["cbbo"].exists():
@@ -254,6 +301,15 @@ def _build_session(
     spx_path = raw_root / "index" / "spx_1m" / f"{session}.derived_spxw_parity.parquet"
     vix_path = raw_root / "index" / "vix_1m" / f"{session}.derived_spxw_atm_iv.parquet"
     neural_path = processed_dir / f"{session}.pkl"
+    if (
+        processed_row_schema_version == TWO_CLOCK_PROCESSED_ROW_SCHEMA
+        and neural_path.exists()
+    ):
+        raise FileExistsError(
+            "two-clock processed output already exists and is immutable; "
+            "use --skip-existing only for a matching v2 packet or choose a "
+            f"new processed namespace: {neural_path}"
+        )
 
     official_spx_path = _find_index_file(official_spx_dir, session)
     official_vix_path = _find_index_file(official_vix_dir, session)
@@ -266,7 +322,7 @@ def _build_session(
             f"spx={official_spx_path} vix={official_vix_path}"
         )
 
-    live_contract = feature_contract_version(feature_contract) == FEATURE_CONTRACT_VERSION
+    live_contract = is_live_feature_contract(feature_contract)
     compute_policy_labels = (not live_contract) or bool(compute_live_policy_labels)
     label_mode = (
         "live_contract_offline_training_labels"
@@ -285,6 +341,7 @@ def _build_session(
         compute_policy_labels=compute_policy_labels,
         diagnostic_index_context_lag_minutes=diagnostic_index_context_lag_minutes,
         diagnostic_source_policy=diagnostic_source_policy,
+        processed_row_schema_version=processed_row_schema_version,
     )
 
     if use_official:
@@ -364,6 +421,7 @@ def _build_session(
         production_contract_mutation=False,
         compute_policy_labels=compute_policy_labels,
         label_mode=label_mode,
+        processed_row_schema_version=processed_row_schema_version,
     )
 
 
@@ -380,6 +438,7 @@ def main() -> int:
             context_mode=args.context_mode,
             official_spx_dir=args.official_spx_dir,
             official_vix_dir=args.official_vix_dir,
+            processed_row_schema_version=args.processed_row_schema,
         ):
             existing_skipped.append(session)
             print(f"{session}: skipped existing outputs", flush=True)
@@ -396,6 +455,7 @@ def main() -> int:
             diagnostic_index_context_lag_minutes=args.diagnostic_index_context_lag_minutes,
             diagnostic_source_policy=args.diagnostic_source_policy,
             compute_live_policy_labels=bool(args.compute_live_policy_labels),
+            processed_row_schema_version=args.processed_row_schema,
         )
         if record is None:
             skipped.append(session)
@@ -422,6 +482,7 @@ def main() -> int:
         "diagnostic_index_context_lag_minutes": args.diagnostic_index_context_lag_minutes,
         "diagnostic_source_policy": args.diagnostic_source_policy,
         "compute_live_policy_labels": bool(args.compute_live_policy_labels),
+        "processed_row_schema_version": args.processed_row_schema,
         "production_contract_mutation": False,
         "sessions_considered": len(_requested_sessions(args)),
         "sessions_built": len(records),

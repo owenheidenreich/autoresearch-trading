@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from v4.scripts.run_protocol147_protocol101_morning_session import main as morning_main
+from v4.scripts.run_protocol147_protocol101_morning_session import main as morning_main, protocol124_args
 
 
 def test_protocol147_dry_run_writes_analyzable_trade_log(tmp_path: Path, monkeypatch) -> None:
@@ -38,3 +38,25 @@ def test_protocol147_dry_run_writes_analyzable_trade_log(tmp_path: Path, monkeyp
     assert summary["timing_evidence"]["summary"]["decision"] == "blocked_protocol155_no_closed_one_contract_paper_trades_yet"
     assert log_path.exists()
     assert log_path.with_suffix(".csv").exists()
+
+
+def test_protocol147_protocol124_args_use_cycle_local_readiness() -> None:
+    cycle_dir = Path("v4/audit/example_session/cycle_0007")
+
+    args = protocol124_args(cycle_dir, out_name="protocol124")
+
+    assert "--protocol119-summary" in args
+    assert str(cycle_dir / "protocol119" / "summary.json") in args
+    assert "--ibkr-summary" in args
+    assert "v4/audit/ibkr_live_data_entitlements/summary.json" in args
+
+
+def test_protocol147_protocol124_args_can_validate_current_capture() -> None:
+    cycle_dir = Path("v4/audit/example_session/cycle_0007")
+    capture_summary = cycle_dir / "live_capture" / "ibkr-live-capture_summary.json"
+
+    args = protocol124_args(cycle_dir, out_name="protocol124_after_live_capture", delayed_capture_summary=capture_summary)
+
+    assert str(cycle_dir / "protocol124_after_live_capture") in args
+    assert "--delayed-capture-summary" in args
+    assert str(capture_summary) in args

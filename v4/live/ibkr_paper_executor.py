@@ -15,7 +15,7 @@ from v4.live.ibkr_paper_guard import (
     paper_order_permission,
     validate_order_intent,
 )
-from v4.live.paper_trade_log import append_trade_event, executor_result_event, trade_log_path
+from v4.live.paper_trade_log import append_trade_event, executor_result_event, make_intent_id, trade_log_path
 
 
 @dataclass(frozen=True)
@@ -45,6 +45,10 @@ def execute_guarded_paper_order(
     trade_log_root: Any | None = None,
     trade_log_run_id: str | None = None,
     trade_uid: str | None = None,
+    artifact_ids: dict[str, Any] | None = None,
+    runtime_flag_digest: str | None = None,
+    wait_for_fill_seconds: float = 0.0,
+    cancel_unfilled: bool = True,
 ) -> dict[str, Any]:
     """Validate, optionally submit, and return a broker-safe execution record."""
 
@@ -63,15 +67,28 @@ def execute_guarded_paper_order(
         context=context,
         config=config.guard,
     )
+    intent_payload = intent.__dict__
+    intent_id = make_intent_id(
+        {
+            "run_id": trade_log_run_id or "protocol101_paper",
+            "trade_uid": trade_uid or "",
+            "selected_contract": intent_payload,
+            "order": intent_payload,
+        }
+    )
     base = {
         "permission": permission,
         "validation": validation,
         "dry_run": bool(dry_run),
         "broker_order_endpoint_called": False,
         "paper_order_submitted": False,
-        "intent": intent.__dict__,
+        "intent": intent_payload,
+        "intent_id": intent_id,
         "quote": quote,
         "context": context,
+        "guard_config_digest": validation.get("guard_config_digest") or permission.get("guard_config_digest"),
+        "artifact_ids": artifact_ids or {},
+        "runtime_flag_digest": runtime_flag_digest or "",
         "account": {
             "account_id_redacted": permission.get("account_id_redacted"),
             "cash": validation.get("account_cash"),
@@ -104,6 +121,13 @@ def execute_guarded_paper_order(
             contract = qualified_contracts[0]
 
     trade = ib.placeOrder(contract, order)
+    fill_summary = wait_for_order_resolution(
+        ib=ib,
+        trade=trade,
+        order=order,
+        seconds=float(wait_for_fill_seconds),
+        cancel_unfilled=bool(cancel_unfilled),
+    )
     result = {
         **base,
         "status": "submitted",
@@ -114,6 +138,7 @@ def execute_guarded_paper_order(
         "contract_preview": contract_preview(contract),
         "order_preview": order_preview(order),
         "trade_preview": trade_preview(trade),
+        "fill_summary": fill_summary,
     }
     maybe_log_executor_result(result, trade_log_root=trade_log_root, trade_log_run_id=trade_log_run_id, trade_uid=trade_uid)
     return result
@@ -165,6 +190,8 @@ def contract_preview(contract: Any) -> dict[str, Any]:
 
 def order_preview(order: Any) -> dict[str, Any]:
     return {
+        "order_id": getattr(order, "orderId", None),
+        "perm_id": getattr(order, "permId", None),
         "action": getattr(order, "action", None),
         "totalQuantity": getattr(order, "totalQuantity", None),
         "lmtPrice": getattr(order, "lmtPrice", None),
@@ -179,7 +206,86 @@ def trade_preview(trade: Any) -> dict[str, Any]:
     return {
         "contract": contract_preview(contract) if contract is not None else None,
         "order": order_preview(order) if order is not None else None,
+        "order_id": getattr(order, "orderId", None) if order is not None else None,
+        "perm_id": getattr(order, "permId", None) if order is not None else None,
     }
+
+
+def wait_for_order_resolution(
+    *,
+    ib: Any,
+    trade: Any,
+    order: Any,
+    seconds: float,
+    cancel_unfilled: bool,
+) -> dict[str, Any]:
+    deadline = max(0.0, float(seconds))
+    if deadline > 0.0:
+        import time
+
+        end = time.monotonic() + deadline
+        while time.monotonic() < end:
+            summary = order_status_summary(trade)
+            if summary["filled"]:
+                return summary
+            if str(summary.get("status") or "").lower() in {"cancelled", "inactive", "apicancelled"}:
+                return summary
+            if hasattr(ib, "sleep"):
+                ib.sleep(0.25)
+            else:
+                time.sleep(0.25)
+    summary = order_status_summary(trade)
+    if not summary["filled"] and cancel_unfilled and hasattr(ib, "cancelOrder"):
+        try:
+            ib.cancelOrder(order)
+            summary = {**summary, "cancel_requested": True}
+        except Exception as exc:
+            summary = {**summary, "cancel_requested": False, "cancel_error": str(exc)}
+    return summary
+
+
+def order_status_summary(trade: Any) -> dict[str, Any]:
+    status_obj = getattr(trade, "orderStatus", None)
+    status = getattr(status_obj, "status", None)
+    filled = _float_or_zero(getattr(status_obj, "filled", 0.0))
+    remaining = _float_or_zero(getattr(status_obj, "remaining", 0.0))
+    avg_fill_price = _float_or_none(getattr(status_obj, "avgFillPrice", None))
+    fills = list(getattr(trade, "fills", []) or [])
+    if fills and (avg_fill_price is None or avg_fill_price <= 0):
+        prices = []
+        sizes = []
+        for fill in fills:
+            execution = getattr(fill, "execution", None)
+            price = _float_or_none(getattr(execution, "price", None))
+            shares = _float_or_none(getattr(execution, "shares", None))
+            if price is not None and shares is not None and shares > 0:
+                prices.append(price * shares)
+                sizes.append(shares)
+        if sizes:
+            filled = max(filled, sum(sizes))
+            avg_fill_price = sum(prices) / sum(sizes)
+    return {
+        "status": status,
+        "filled_quantity": filled,
+        "remaining_quantity": remaining,
+        "avg_fill_price": avg_fill_price,
+        "fill_count": len(fills),
+        "filled": bool(str(status).lower() == "filled" or filled > 0),
+        "cancel_requested": False,
+    }
+
+
+def _float_or_zero(value: Any) -> float:
+    out = _float_or_none(value)
+    return 0.0 if out is None else out
+
+
+def _float_or_none(value: Any) -> float | None:
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    return out if out == out else None
 
 
 def maybe_log_executor_result(

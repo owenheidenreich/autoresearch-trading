@@ -19,6 +19,21 @@ from .simulator import (
     OrderIntent,
     Simulator,
 )
+from .paper_replay import (
+    DEFAULT_SLIPPAGE_SCENARIOS,
+    PaperReplayConfig,
+    SlippageScenario,
+    apply_slippage,
+    build_replay_frame,
+    concentration_metrics,
+    live_data_parity_checks,
+    load_lifecycle_steps,
+    load_selected_trades,
+    order_state_summary,
+    promotion_gate_status,
+    summarize_by_split_seed,
+)
+from .shadow_paper import ShadowPaperConfig, ShadowTradeLedger, replay_shadow_paper
 
 __all__ = [
     "ALLOWED_TRANSITIONS",
@@ -29,8 +44,23 @@ __all__ = [
     "OrderIntent",
     "OrderRecord",
     "OrderState",
+    "PaperReplayConfig",
     "SIMULATOR_VERSION",
+    "ShadowPaperConfig",
+    "ShadowTradeLedger",
     "Simulator",
+    "SlippageScenario",
+    "DEFAULT_SLIPPAGE_SCENARIOS",
+    "apply_slippage",
+    "build_replay_frame",
+    "concentration_metrics",
+    "live_data_parity_checks",
+    "load_lifecycle_steps",
+    "load_selected_trades",
+    "order_state_summary",
+    "promotion_gate_status",
+    "replay_shadow_paper",
+    "summarize_by_split_seed",
     "terminal_states",
     "transition_allowed",
 ]

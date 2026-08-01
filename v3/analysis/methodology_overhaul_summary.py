@@ -61,6 +61,22 @@ def _variant_win_counts(eval_data: dict) -> dict[str, dict[str, int]]:
     return out
 
 
+def _pairwise_win_count(
+    eval_data: dict,
+    lhs_variant: str,
+    rhs_variant: str,
+) -> int:
+    per_win = eval_data["per_window_per_variant"]
+    lhs_pf_by_window = {
+        r["window_idx"]: r["pf"] for r in per_win if r["variant"] == lhs_variant
+    }
+    rhs_pf_by_window = {
+        r["window_idx"]: r["pf"] for r in per_win if r["variant"] == rhs_variant
+    }
+    common_windows = sorted(set(lhs_pf_by_window) & set(rhs_pf_by_window))
+    return sum(1 for wi in common_windows if lhs_pf_by_window[wi] > rhs_pf_by_window[wi])
+
+
 def main() -> int:
     args = parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
@@ -76,6 +92,7 @@ def main() -> int:
     v0 = variants["V0"]
     v1 = variants["V1"]
     v2 = variants["V2"]
+    v1_strict_wins_vs_v0 = _pairwise_win_count(eval_data, "V1", "V0")
 
     cond_agg = cond_data["aggregate"]
 
@@ -203,7 +220,7 @@ def main() -> int:
     print(f"  V1 + A3 L3 @ 0.19 had OOS PF 2.847 on 20 days")
     print(f"  In the 13-window methodology overhaul, V1 aggregate PF = {v1['agg_pf']:.3f}")
     print(
-        f"  V1 strictly beats V0 in: {win_counts['V1']['strict']}/13 windows "
+        f"  V1 strictly beats V0 in: {v1_strict_wins_vs_v0}/13 windows "
         f"(V0 wins in {win_counts['V0']['strict']}/13)"
     )
     print(flush=True)

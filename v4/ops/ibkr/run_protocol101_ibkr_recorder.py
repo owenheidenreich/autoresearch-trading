@@ -195,6 +195,14 @@ def round_to_5(value: float) -> int:
 
 
 def connect(IB: Any, args: argparse.Namespace) -> tuple[Any | None, int | None, list[dict[str, Any]]]:
+    """Connect without ib_insync's account/order synchronization.
+
+    The recorder needs contract discovery and market data only.  ``IB.connect``
+    also starts account, position, order, and execution synchronization; rapid
+    watchdog recovery can leave those server-side requests outstanding and hit
+    IBKR's account-summary limit.  Connecting the underlying client preserves
+    the market-data API while avoiding that unrelated account traffic.
+    """
     attempts: list[dict[str, Any]] = []
     for text in str(args.ports).split(","):
         try:
@@ -203,8 +211,10 @@ def connect(IB: Any, args: argparse.Namespace) -> tuple[Any | None, int | None, 
             continue
         ib = IB()
         try:
-            ib.connect(args.host, port, clientId=int(args.client_id), timeout=8)
-            attempts.append({"port": port, "status": "connected"})
+            client_id = int(args.client_id)
+            ib.wrapper.clientId = client_id
+            ib.run(ib.client.connectAsync(args.host, port, client_id, timeout=8))
+            attempts.append({"port": port, "status": "connected", "connection_mode": "market_data_only"})
             return ib, port, attempts
         except Exception as exc:
             attempts.append({"port": port, "status": "failed", "error": str(exc)})
@@ -231,22 +241,45 @@ def discover_contracts(
     timeout_seconds: float = 15.0,
 ) -> tuple[list[Any], dict[str, Any]]:
     expiry = session.replace("-", "")
-    chains = ib.run(
-        asyncio.wait_for(
-            ib.reqSecDefOptParamsAsync("SPX", "", "IND", int(spx_contract.conId)),
-            timeout=timeout_seconds,
+    chain = None
+    chain_discovery_mode = "secdef_option_chain"
+    try:
+        chains = ib.run(
+            asyncio.wait_for(
+                ib.reqSecDefOptParamsAsync("SPX", "", "IND", int(spx_contract.conId)),
+                timeout=timeout_seconds,
+            )
         )
-    )
-    matching = [
-        chain for chain in chains
-        if str(getattr(chain, "tradingClass", "")) == "SPXW" and expiry in set(getattr(chain, "expirations", ()))
-    ]
-    if not matching:
-        return [], {"expiry": expiry, "blocked_reason": "no_spxw_0dte_option_chain", "chains_returned": len(chains)}
-    chain = sorted(matching, key=lambda item: (0 if getattr(item, "exchange", "") == "SMART" else 1, str(getattr(item, "exchange", ""))))[0]
+        matching = [
+            item for item in chains
+            if str(getattr(item, "tradingClass", "")) == "SPXW"
+            and expiry in set(getattr(item, "expirations", ()))
+        ]
+        if not matching:
+            return [], {
+                "expiry": expiry,
+                "blocked_reason": "no_spxw_0dte_option_chain",
+                "chains_returned": len(chains),
+            }
+        chain = sorted(
+            matching,
+            key=lambda item: (
+                0 if getattr(item, "exchange", "") == "SMART" else 1,
+                str(getattr(item, "exchange", "")),
+            ),
+        )[0]
+    except asyncio.TimeoutError:
+        # Direct qualification preserves the exact static ladder when IBKR's
+        # option-chain metadata service stalls but contract details remain live.
+        chain_discovery_mode = "direct_contract_fallback_after_secdef_timeout"
+
     atm = round_to_5(spx)
     wanted = {float(atm + offset * 5) for offset in range(-width, width + 1)}
-    available = {float(value) for value in getattr(chain, "strikes", ())}
+    available = (
+        {float(value) for value in getattr(chain, "strikes", ())}
+        if chain is not None
+        else wanted
+    )
     strikes = sorted(wanted & available)
     requested = [Option("SPX", expiry, strike, right, "SMART", currency="USD", tradingClass="SPXW") for strike in strikes for right in ("C", "P")]
     qualified = list(
@@ -258,7 +291,8 @@ def discover_contracts(
         "strikes": strikes,
         "requested_contracts": len(requested),
         "qualified_contracts": len(qualified),
-        "chain_exchange": str(getattr(chain, "exchange", "")),
+        "chain_exchange": str(getattr(chain, "exchange", "")) if chain is not None else "SMART",
+        "chain_discovery_mode": chain_discovery_mode,
     }
 
 

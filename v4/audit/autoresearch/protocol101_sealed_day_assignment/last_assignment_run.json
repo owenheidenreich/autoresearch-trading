@@ -44,13 +44,34 @@
       "action": "left_in_place",
       "class": "validation",
       "session": "2026-07-10"
+    },
+    {
+      "action": "left_in_place",
+      "class": "development",
+      "session": "2026-07-13"
+    },
+    {
+      "action": "left_in_place",
+      "class": "development",
+      "session": "2026-07-14"
+    },
+    {
+      "action": "left_in_place",
+      "class": "development",
+      "session": "2026-07-20"
+    },
+    {
+      "action": "sealed",
+      "class": "sealed",
+      "files": 469,
+      "session": "2026-07-28"
     }
   ],
   "capture_root": "/Users/gduby/.autoresearch-trading/live_runtime/ibkr_capture",
-  "dry_run": true,
+  "dry_run": false,
   "mode": "assign",
   "rule_sha256": "05bce7c5efa7af3857b27f7d5e902fda6faf58865abe2f97b9d4c4b3255d625b",
-  "run_at_utc": "2026-07-10T22:47:44.134566+00:00",
+  "run_at_utc": "2026-07-28T20:32:54.978558+00:00",
   "schema_version": "Protocol101SealedDayAssignmentRunV1",
   "sealed_root": "/Users/gduby/.autoresearch-trading/live_runtime/ibkr_capture_sealed"
 }

@@ -1,9 +1,9 @@
 """Protocol 147: unattended Protocol101 morning paper-session runner.
 
-This is the launchd target that starts at the equity market open. It is built
-to fail closed: it can analyze and log automatically, but broker order
-submission remains disabled unless a later executor explicitly clears the live
-parity and paper-order gates.
+This is the launchd target that starts at the equity market open. It records
+the no-order shadow/parity trail and can optionally run the Protocol101 entry
+bridge in guarded IBKR paper-submit mode when the persistent paper-only gates
+are explicitly enabled.
 """
 from __future__ import annotations
 
@@ -33,11 +33,20 @@ NY = ZoneInfo("America/New_York")
 LA = ZoneInfo("America/Los_Angeles")
 DEFAULT_OUT_ROOT = Path("v4/audit/autoresearch/v4_aplus_hypothesis_147_protocol101_morning_session")
 DEFAULT_LIVE_SHADOW_ROOT = Path("v4/logs/live_shadow")
+DEFAULT_IBKR_ENTITLEMENT_SUMMARY = Path("v4/audit/ibkr_live_data_entitlements/summary.json")
+DEFAULT_PROTOCOL121_SUMMARY = Path(
+    "v4/audit/autoresearch/v4_aplus_hypothesis_121_protocol101_entry_router_smoke/summary.json"
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("no-order-shadow", "paper"), default="no-order-shadow")
+    parser.add_argument(
+        "--entry-bridge-mode",
+        choices=("none", "intent-shadow", "paper-dry-run", "paper-submit"),
+        default=os.environ.get("PROTOCOL101_ENTRY_BRIDGE_MODE", "none"),
+    )
     parser.add_argument("--session-date", default=None)
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--out-root", type=Path, default=DEFAULT_OUT_ROOT)
@@ -50,6 +59,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--paper-cash", type=float, default=10_000.0)
     parser.add_argument("--cycle-seconds", type=float, default=60.0)
     parser.add_argument("--capture-seconds", type=float, default=45.0)
+    parser.add_argument("--entry-bridge-seconds", type=float, default=float(os.environ.get("PROTOCOL101_ENTRY_BRIDGE_SECONDS", "15")))
+    parser.add_argument("--entry-bridge-max-decisions", type=int, default=int(os.environ.get("PROTOCOL101_ENTRY_BRIDGE_MAX_DECISIONS", "3")))
+    parser.add_argument("--entry-bridge-strikes-around-atm", type=int, default=int(os.environ.get("PROTOCOL101_ENTRY_BRIDGE_STRIKES_AROUND_ATM", "10")))
+    parser.add_argument("--enable-paper-orders", action="store_true", default=env_flag("PROTOCOL101_ENABLE_PAPER_ORDERS"))
+    parser.add_argument("--acknowledge-paper-loss", action="store_true", default=env_flag("PROTOCOL101_ACKNOWLEDGE_PAPER_LOSS"))
     parser.add_argument("--max-cycles", type=int, default=390)
     parser.add_argument("--preflight-timeout-seconds", type=float, default=120.0)
     parser.add_argument("--skip-market-clock", action="store_true")
@@ -77,13 +91,19 @@ def main() -> int:
         mode=args.mode,
         paper_cash=args.paper_cash,
         reason="session_started",
-        extra={"session_config": public_config(args), "orders_fail_closed": True},
+        extra={
+            "session_config": public_config(args),
+            "orders_fail_closed": args.entry_bridge_mode != "paper-submit",
+            "paper_submit_guarded": args.entry_bridge_mode == "paper-submit",
+        },
     )
     commands: list[dict[str, Any]] = []
     decision = "completed_no_order_analysis"
     cycles_run = 0
     live_capture_passes = 0
     live_capture_blocks = 0
+    entry_bridge_passes = 0
+    entry_bridge_blocks = 0
 
     if args.mode == "paper":
         append_session_event(
@@ -135,7 +155,7 @@ def main() -> int:
             )
             parity = run_module(
                 "v4.scripts.run_protocol124_protocol101_live_data_parity_checkpoint",
-                ["--out-dir", str(cycle_dir / "protocol124"), "--no-ledger"],
+                protocol124_args(cycle_dir, out_name="protocol124"),
                 out_dir=cycle_dir,
             )
             commands.extend([readiness, parity])
@@ -177,6 +197,48 @@ def main() -> int:
                         "blocked_reason": capture_summary.get("blocked_reason"),
                     },
                 )
+                post_capture_parity = run_module(
+                    "v4.scripts.run_protocol124_protocol101_live_data_parity_checkpoint",
+                    protocol124_args(
+                        cycle_dir,
+                        out_name="protocol124_after_live_capture",
+                        delayed_capture_summary=cycle_dir / "live_capture" / "ibkr-live-capture_summary.json",
+                    ),
+                    out_dir=cycle_dir,
+                    name="run_protocol124_after_live_capture",
+                )
+                commands.append(post_capture_parity)
+                if args.entry_bridge_mode != "none":
+                    bridge = run_entry_bridge(args, cycle_dir, session=session, run_id=run_id)
+                    commands.append(bridge)
+                    bridge_summary = load_json(cycle_dir / "entry_bridge" / session / run_id / "summary.json")
+                    bridge_decision = str(bridge_summary.get("decision") or "unknown")
+                    entry_bridge_passes += int(
+                        bridge_decision.startswith("pass_")
+                        or bridge_decision in {"paper_order_submitted", "pass_live_entry_intent_shadow_logged"}
+                    )
+                    entry_bridge_blocks += int(
+                        not (
+                            bridge_decision.startswith("pass_")
+                            or bridge_decision in {"paper_order_submitted", "pass_live_entry_intent_shadow_logged"}
+                        )
+                    )
+                    append_session_event(
+                        trade_log,
+                        event_type="risk_gate",
+                        session=session,
+                        run_id=run_id,
+                        mode=args.mode,
+                        paper_cash=args.paper_cash,
+                        reason=f"entry_bridge_{bridge_decision}",
+                        extra={
+                            "entry_bridge": command_brief(bridge),
+                            "entry_bridge_decision": bridge_decision,
+                            "enter_intents": bridge_summary.get("enter_intents"),
+                            "paper_orders_submitted": bridge_summary.get("paper_orders_submitted"),
+                            "broker_order_endpoint_called": bridge_summary.get("broker_order_endpoint_called"),
+                        },
+                    )
             else:
                 live_capture_blocks += 1
                 append_session_event(
@@ -232,6 +294,9 @@ def main() -> int:
         "cycles_run": cycles_run,
         "live_capture_passes": live_capture_passes,
         "live_capture_blocks": live_capture_blocks,
+        "entry_bridge_mode": args.entry_bridge_mode,
+        "entry_bridge_passes": entry_bridge_passes,
+        "entry_bridge_blocks": entry_bridge_blocks,
         "trade_log": {
             "jsonl": str(trade_log),
             "csv": str(csv_log),
@@ -312,11 +377,78 @@ def run_live_capture(args: argparse.Namespace, cycle_dir: Path) -> dict[str, Any
     )
 
 
-def run_module(module: str, extra_args: list[str], *, out_dir: Path) -> dict[str, Any]:
+def run_entry_bridge(args: argparse.Namespace, cycle_dir: Path, *, session: str, run_id: str) -> dict[str, Any]:
+    values = [
+        "--mode",
+        str(args.entry_bridge_mode),
+        "--out-root",
+        str(cycle_dir / "entry_bridge"),
+        "--session-date",
+        session,
+        "--run-id",
+        run_id,
+        "--trade-log-root",
+        str(args.trade_log_root),
+        "--ibkr-host",
+        args.ibkr_host,
+        "--ibkr-port",
+        str(args.ibkr_port),
+        "--ibkr-auto-ports",
+        args.ibkr_auto_ports,
+        "--ibkr-client-id",
+        str(args.ibkr_client_id + 1000),
+        "--paper-cash",
+        str(args.paper_cash),
+        "--live-capture-seconds",
+        str(args.entry_bridge_seconds),
+        "--live-sample-interval-seconds",
+        "5",
+        "--max-decisions",
+        str(args.entry_bridge_max_decisions),
+        "--live-strikes-around-atm",
+        str(args.entry_bridge_strikes_around_atm),
+        "--skip-market-clock",
+    ]
+    if bool(args.enable_paper_orders):
+        values.append("--enable-paper-orders")
+    if bool(args.acknowledge_paper_loss):
+        values.append("--acknowledge-paper-loss")
+    return run_module(
+        "v4.scripts.run_protocol158_protocol101_live_entry_paper_bridge",
+        values,
+        out_dir=cycle_dir,
+        name="run_protocol158_live_entry_paper_bridge",
+    )
+
+
+def protocol124_args(
+    cycle_dir: Path,
+    *,
+    out_name: str,
+    delayed_capture_summary: Path | None = None,
+) -> list[str]:
+    """Build Protocol124 args using this cycle's fresh readiness summary."""
+    values = [
+        "--out-dir",
+        str(cycle_dir / out_name),
+        "--no-ledger",
+        "--ibkr-summary",
+        str(DEFAULT_IBKR_ENTITLEMENT_SUMMARY),
+        "--protocol119-summary",
+        str(cycle_dir / "protocol119" / "summary.json"),
+        "--protocol121-summary",
+        str(DEFAULT_PROTOCOL121_SUMMARY),
+    ]
+    if delayed_capture_summary is not None:
+        values.extend(["--delayed-capture-summary", str(delayed_capture_summary)])
+    return values
+
+
+def run_module(module: str, extra_args: list[str], *, out_dir: Path, name: str | None = None) -> dict[str, Any]:
     return run_command(
         [os.environ.get("PYTHON_BIN", "/usr/bin/python3"), "-m", module, *extra_args],
         out_dir=out_dir,
-        name=module.rsplit(".", 1)[-1],
+        name=name or module.rsplit(".", 1)[-1],
     )
 
 
@@ -391,9 +523,19 @@ def public_config(args: argparse.Namespace) -> dict[str, Any]:
         "paper_cash": args.paper_cash,
         "cycle_seconds": args.cycle_seconds,
         "capture_seconds": args.capture_seconds,
+        "entry_bridge_mode": args.entry_bridge_mode,
+        "enable_paper_orders": bool(args.enable_paper_orders),
+        "acknowledge_paper_loss": bool(args.acknowledge_paper_loss),
+        "entry_bridge_seconds": args.entry_bridge_seconds,
+        "entry_bridge_max_decisions": args.entry_bridge_max_decisions,
+        "entry_bridge_strikes_around_atm": args.entry_bridge_strikes_around_atm,
         "max_cycles": args.max_cycles,
         "skip_timing_evidence": bool(args.skip_timing_evidence),
     }
+
+
+def env_flag(name: str) -> bool:
+    return str(os.environ.get(name, "")).strip().upper() in {"1", "TRUE", "YES", "Y", "ON"}
 
 
 def command_brief(item: dict[str, Any]) -> dict[str, Any]:
@@ -427,7 +569,7 @@ def latest_protocol155_summary(root: Path, session: str, run_id: str) -> dict[st
 
 def next_gate(decision: str, live_capture_passes: int) -> str:
     if live_capture_passes > 0:
-        return "Review the live shadow rows and trade log, then run order-state rehearsal before enabling paper orders."
+        return "Review the live shadow rows, paper-order rows, fills/cancels, and monitor output against the frozen historical replay assumptions."
     if decision.startswith("blocked_"):
         return "Fix preflight/live-data blockers; the session will keep logging blocked paper-order state until parity passes."
     return "Use the generated JSONL/CSV trade logs to diagnose why live parity did or did not clear."
@@ -437,7 +579,7 @@ def write_report(path: Path, payload: dict[str, Any]) -> None:
     lines = [
         "# Protocol 147: Protocol101 Morning Session",
         "",
-        "This is the unattended morning session runner. It starts fail-closed: no real-money trading and no broker order endpoint.",
+        "This is the unattended morning session runner. Real-money trading is disabled; broker calls are limited to guarded IBKR paper orders when paper-submit mode is enabled.",
         "",
         f"- Decision: `{payload['decision']}`",
         f"- Mode: `{payload['mode']}`",

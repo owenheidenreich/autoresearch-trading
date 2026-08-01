@@ -18,9 +18,39 @@ from v4.schema.types import OptionRight
 
 
 FEATURE_CONTRACT_VERSION = "protocol101-live-v1"
+FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED = "protocol101-live-v2-microstructure-masked"
 HISTORICAL_FEATURE_CONTRACT_VERSION = "historical-default"
+LIVE_FEATURE_CONTRACT_VERSIONS = frozenset(
+    {
+        FEATURE_CONTRACT_VERSION,
+        FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED,
+    }
+)
 RUNTIME_ZERO_FEATURES = frozenset({"option_ohlcv_volume", "stat_open_interest"})
 REQUIRED_GREEK_FIELDS = ("iv", "delta", "gamma", "theta")
+MODEL_SCORING_FEATURE_TRANSFORM_NONE = "none"
+MODEL_SCORING_FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_MICROSTRUCTURE = (
+    "mask_vendor_sensitive_option_microstructure"
+)
+MODEL_SCORING_FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE = (
+    "mask_vendor_sensitive_option_quote_greek_microstructure"
+)
+MODEL_SCORING_VENDOR_SENSITIVE_OPTION_FEATURES = (
+    "bid",
+    "ask",
+    "mid",
+    "spread",
+    "spread_frac",
+    "bid_size",
+    "ask_size",
+    "option_ohlcv_volume",
+    "stat_open_interest",
+    "iv",
+    "delta",
+    "gamma",
+    "theta",
+    "breakeven_distance",
+)
 SECONDS_PER_YEAR = 365.0 * 24.0 * 60.0 * 60.0
 
 
@@ -57,25 +87,142 @@ class Protocol101LiveFeatureContractV1:
 DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT = Protocol101LiveFeatureContractV1()
 
 
+@dataclass(frozen=True)
+class Protocol101LiveFeatureContractV2MicrostructureMasked(Protocol101LiveFeatureContractV1):
+    """Live contract that preserves raw quotes but masks vendor-sensitive tokens."""
+
+    version: str = FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED
+    model_scoring_feature_transform: str = (
+        MODEL_SCORING_FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE
+    )
+    model_scoring_masked_option_features: tuple[str, ...] = MODEL_SCORING_VENDOR_SENSITIVE_OPTION_FEATURES
+    raw_vendor_fields_preserved: bool = True
+    tradability_uses_raw_bid_ask_mid: bool = True
+    fills_and_pnl_use_raw_bid_ask: bool = True
+    model_scoring_policy: str = (
+        "raw_bid_ask_mid_remain_available_for_tradability_fills_and_audit;"
+        "vendor_sensitive_option_microstructure_is_zeroed_before_model_score"
+    )
+
+
+DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT_V2_MICROSTRUCTURE_MASKED = (
+    Protocol101LiveFeatureContractV2MicrostructureMasked()
+)
+LIVE_FEATURE_CONTRACTS = {
+    FEATURE_CONTRACT_VERSION: DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT,
+    FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED: (
+        DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT_V2_MICROSTRUCTURE_MASKED
+    ),
+}
+
+
 def is_live_feature_contract(name: str | None) -> bool:
-    return str(name or "").strip().lower() == FEATURE_CONTRACT_VERSION
+    return str(name or "").strip().lower() in LIVE_FEATURE_CONTRACT_VERSIONS
 
 
 def feature_contract_version(name: str | None) -> str:
-    return FEATURE_CONTRACT_VERSION if is_live_feature_contract(name) else HISTORICAL_FEATURE_CONTRACT_VERSION
+    normalized = str(name or "").strip().lower()
+    return normalized if normalized in LIVE_FEATURE_CONTRACTS else HISTORICAL_FEATURE_CONTRACT_VERSION
 
 
 def feature_contract_metadata(name: str | None) -> dict[str, Any]:
-    if is_live_feature_contract(name):
-        return DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT.to_dict()
+    contract = LIVE_FEATURE_CONTRACTS.get(str(name or "").strip().lower())
+    if contract is not None:
+        return contract.to_dict()
     return {
         "version": HISTORICAL_FEATURE_CONTRACT_VERSION,
         "timestamp_policy": "legacy_historical_builder",
     }
 
 
+def feature_contract_model_transform(name: str | None) -> str:
+    if feature_contract_version(name) == FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED:
+        return MODEL_SCORING_FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE
+    return MODEL_SCORING_FEATURE_TRANSFORM_NONE
+
+
+def feature_contract_requires_model_scoring_greeks(name: str | None) -> bool:
+    """Whether candidate inclusion requires finite Greeks used by the model.
+
+    V2 masks vendor-sensitive quote and Greek microstructure before model
+    scoring, so finite Greeks must remain audit data rather than an implicit
+    candidate-universe filter.  Raw bid/ask/mid still gate tradability.
+    """
+
+    return (
+        feature_contract_model_transform(name)
+        != MODEL_SCORING_FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE
+    )
+
+
 def round_to_strike_step(value: float, step: int = 5) -> int:
     return int(round(float(value) / float(step)) * int(step))
+
+
+def strike_ladder_context(*, spx_for_ladder: float, strike_step: int = 5) -> dict[str, Any]:
+    """Return auditable metadata for the strike-ladder anchor."""
+
+    atm = round_to_strike_step(spx_for_ladder, strike_step)
+    return {
+        "spx_for_ladder": finite_or_none(spx_for_ladder),
+        "atm_strike": int(atm),
+        "strike_step": int(strike_step),
+        "rounding_tie_policy": "python_round_half_to_even",
+    }
+
+
+def candidate_ladder_slots(
+    *,
+    spx_for_ladder: float,
+    ladder_dollars: int = 50,
+    strike_step: int = 5,
+    rights: tuple[str, ...] = ("C", "P"),
+) -> list[dict[str, Any]]:
+    """Return shared strike/right slot metadata for Protocol101 candidates."""
+
+    context = strike_ladder_context(spx_for_ladder=spx_for_ladder, strike_step=strike_step)
+    atm = int(context["atm_strike"])
+    offsets = range(-int(ladder_dollars), int(ladder_dollars) + int(strike_step), int(strike_step))
+    slots: list[dict[str, Any]] = []
+    for strike_idx, offset in enumerate(offsets):
+        strike = float(atm + int(offset))
+        for right_idx, right in enumerate(rights):
+            slots.append(
+                {
+                    **context,
+                    "strike": strike,
+                    "right": str(right).upper(),
+                    "offset": float(offset),
+                    "strike_idx": int(strike_idx),
+                    "right_idx": int(right_idx),
+                }
+            )
+    return slots
+
+
+def missing_candidate_slot_diagnostics(reason: str) -> dict[str, Any]:
+    """Return a standard filter diagnostic for an absent ladder-slot quote."""
+
+    return {
+        "passed": False,
+        "tradability_pass": False,
+        "freshness_pass": None,
+        "greek_pass": None,
+        "bid_size_pass": None,
+        "ask_size_pass": None,
+        "reasons": [str(reason)],
+        "thresholds": {},
+        "observed": {
+            "bid": None,
+            "ask": None,
+            "mid": None,
+            "spread": None,
+            "spread_frac": None,
+            "bid_size": None,
+            "ask_size": None,
+            "quote_age_ms": None,
+        },
+    }
 
 
 def runtime_feature_value(name: str, value: Any, *, live_contract: bool) -> float:
@@ -206,30 +353,99 @@ def candidate_is_tradable_values(
     *,
     require_greeks: bool = True,
 ) -> bool:
+    return bool(
+        candidate_filter_diagnostics(
+            values,
+            contract,
+            require_greeks=require_greeks,
+            enforce_freshness=False,
+        )["passed"]
+    )
+
+
+def candidate_filter_diagnostics(
+    values: Mapping[str, Any],
+    contract: Protocol101LiveFeatureContractV1 | None = None,
+    *,
+    require_greeks: bool = True,
+    enforce_freshness: bool = False,
+) -> dict[str, Any]:
+    """Explain the shared candidate-level tradability decision."""
+
     contract = contract or DEFAULT_PROTOCOL101_LIVE_FEATURE_CONTRACT
+    reasons: list[str] = []
     bid = finite_or_nan(values.get("bid"))
     ask = finite_or_nan(values.get("ask"))
     mid = finite_or_nan(values.get("mid"))
     spread = ask - bid if math.isfinite(ask) and math.isfinite(bid) else math.nan
+    spread_frac = spread / mid if math.isfinite(spread) and math.isfinite(mid) and mid > 0 else math.nan
+    quote_age_ms = finite_or_nan(values.get("quote_age_ms"))
+    max_quote_age_ms = float(contract.max_quote_age_seconds) * 1000.0
+    freshness_pass: bool | None = None
+    if math.isfinite(quote_age_ms):
+        freshness_pass = quote_age_ms <= max_quote_age_ms
+        if not freshness_pass and enforce_freshness:
+            reasons.append("stale_quote")
     if not all(math.isfinite(value) for value in (bid, ask, mid)):
-        return False
+        reasons.append("missing_bid_ask_mid")
     if bid < 0 or ask <= 0 or ask < bid:
-        return False
+        reasons.append("invalid_bid_ask")
     if mid < contract.min_mid or mid > contract.max_mid:
-        return False
+        reasons.append("mid_out_of_bounds")
+    if not math.isfinite(spread):
+        reasons.append("missing_spread")
     if spread > contract.max_spread_abs:
-        return False
-    if mid > 0 and spread / mid > contract.max_spread_frac:
-        return False
+        reasons.append("spread_abs_too_wide")
+    if math.isfinite(spread_frac) and spread_frac > contract.max_spread_frac:
+        reasons.append("spread_frac_too_wide")
     bid_size = finite_or_nan(values.get("bid_size"))
     ask_size = finite_or_nan(values.get("ask_size"))
+    bid_size_pass: bool | None = None
     if math.isfinite(bid_size) and int(bid_size) < contract.min_bid_size:
-        return False
+        bid_size_pass = False
+        reasons.append("bid_size_too_small")
+    elif math.isfinite(bid_size):
+        bid_size_pass = True
+    ask_size_pass: bool | None = None
     if math.isfinite(ask_size) and int(ask_size) < contract.min_ask_size:
-        return False
-    if not require_greeks:
-        return True
-    return all(math.isfinite(finite_or_nan(values.get(name))) for name in REQUIRED_GREEK_FIELDS)
+        ask_size_pass = False
+        reasons.append("ask_size_too_small")
+    elif math.isfinite(ask_size):
+        ask_size_pass = True
+    greek_pass = all(math.isfinite(finite_or_nan(values.get(name))) for name in REQUIRED_GREEK_FIELDS)
+    if require_greeks and not greek_pass:
+        reasons.append("missing_required_greeks")
+    tradability_reasons = [reason for reason in reasons if reason != "stale_quote"]
+    return {
+        "passed": len(reasons) == 0,
+        "tradability_pass": len(tradability_reasons) == 0,
+        "freshness_pass": freshness_pass,
+        "greek_pass": bool(greek_pass),
+        "bid_size_pass": bid_size_pass,
+        "ask_size_pass": ask_size_pass,
+        "reasons": sorted(set(reasons)),
+        "thresholds": {
+            "max_quote_age_ms": max_quote_age_ms,
+            "min_mid": float(contract.min_mid),
+            "max_mid": float(contract.max_mid),
+            "max_spread_abs": float(contract.max_spread_abs),
+            "max_spread_frac": float(contract.max_spread_frac),
+            "min_bid_size": int(contract.min_bid_size),
+            "min_ask_size": int(contract.min_ask_size),
+            "require_greeks": bool(require_greeks),
+            "enforce_freshness": bool(enforce_freshness),
+        },
+        "observed": {
+            "bid": finite_or_none(bid),
+            "ask": finite_or_none(ask),
+            "mid": finite_or_none(mid),
+            "spread": finite_or_none(spread),
+            "spread_frac": finite_or_none(spread_frac),
+            "bid_size": finite_or_none(bid_size),
+            "ask_size": finite_or_none(ask_size),
+            "quote_age_ms": finite_or_none(quote_age_ms),
+        },
+    }
 
 
 def quote_source_metadata(

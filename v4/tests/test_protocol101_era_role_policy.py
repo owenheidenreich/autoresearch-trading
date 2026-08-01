@@ -51,5 +51,37 @@ def test_build_policy_artifact_passes_for_default_manifest(tmp_path: Path) -> No
     assert "train" not in payload["policy"]["q1_2026_development"]["permitted_roles"]
 
 
+def test_build_policy_artifact_can_emit_q1_training_readiness_variant(tmp_path: Path) -> None:
+    manifest_path = tmp_path / "summary.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "manifest_hash": "abc123",
+                "counts_by_era": {
+                    "pre_program_oct2024_jun2025": 10,
+                    "owned_jul_dec2025": 20,
+                    "q1_2026_development": 30,
+                    "post_q1_gap_apr_may2026": 5,
+                    "confirmation_jun_jul2026": 3,
+                },
+            }
+        )
+    )
+
+    payload = build_policy_artifact(
+        manifest_path,
+        q1_development_training_readiness=True,
+        q1_development_training_readiness_note="unit-test fair-contract design note",
+    )
+
+    assert payload["status"] == "pass"
+    assert payload["policy_variant"] == "q1_2026_development_training_readiness"
+    assert payload["policy"]["q1_2026_development"]["permitted_roles"] == [
+        "train",
+        "test",
+        "diagnostics_only",
+    ]
+
+
 def test_default_policy_never_allows_unassigned_sessions() -> None:
     assert DEFAULT_POLICY["unassigned_requires_decision"]["permitted_roles"] == []

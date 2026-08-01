@@ -8,7 +8,7 @@
     "contract_dependent_features_not_global": true,
     "deterministic_session_start_equity": true,
     "ft204_v2": true,
-    "ft205_v4": true,
+    "ft205_current": true,
     "golden_feature_vector": true,
     "golden_fee_path_soft_close": true,
     "golden_intent_fill_recheck": true,

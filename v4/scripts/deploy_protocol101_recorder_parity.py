@@ -289,24 +289,27 @@ def plist_payload(
     packet_dates: tuple[str, ...],
     development_session: str,
     gate_mode: str,
+    extra_environment: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     label = f"{LABEL_PREFIX}.{suffix}"
+    environment = {
+        "BUNDLE_ROOT": str(bundle),
+        "CAPTURE_ROOT": str(Path.home() / ".autoresearch-trading/live_runtime/ibkr_capture"),
+        "MODEL_PYTHON": str(Path.home() / ".autoresearch-trading/runtime-venv/bin/python"),
+        "RECORDER_PYTHON": "/usr/bin/python3",
+        "PROTOCOL101_PACKET_ALLOWED_SESSIONS": ",".join(packet_dates),
+        "PROTOCOL101_PACKET_DEVELOPMENT_SESSION": development_session,
+        "PROTOCOL101_PACKET_GATE_MODE": gate_mode,
+        "PROTOCOL101_RECORDER_LABEL_PREFIX": LABEL_PREFIX,
+        "PYTHONPATH": str(bundle),
+        "PYTHONUNBUFFERED": "1",
+    }
+    environment.update(extra_environment or {})
     return {
         "Label": label,
         "ProgramArguments": ["/bin/bash", str(bundle / "v4/ops/ibkr/run_protocol101_recorder_packet.sh"), action],
         "WorkingDirectory": str(bundle),
-        "EnvironmentVariables": {
-            "BUNDLE_ROOT": str(bundle),
-            "CAPTURE_ROOT": str(Path.home() / ".autoresearch-trading/live_runtime/ibkr_capture"),
-            "MODEL_PYTHON": str(Path.home() / ".autoresearch-trading/runtime-venv/bin/python"),
-            "RECORDER_PYTHON": "/usr/bin/python3",
-            "PROTOCOL101_PACKET_ALLOWED_SESSIONS": ",".join(packet_dates),
-            "PROTOCOL101_PACKET_DEVELOPMENT_SESSION": development_session,
-            "PROTOCOL101_PACKET_GATE_MODE": gate_mode,
-            "PROTOCOL101_RECORDER_LABEL_PREFIX": LABEL_PREFIX,
-            "PYTHONPATH": str(bundle),
-            "PYTHONUNBUFFERED": "1",
-        },
+        "EnvironmentVariables": environment,
         "StartCalendarInterval": schedules,
         "RunAtLoad": False,
         "ProcessType": "Interactive",
@@ -343,16 +346,27 @@ def install_launchd(bundle: Path, *, packet_dates: tuple[str, ...], development_
         launchctl("bootout", f"gui/{uid}/{label}")
 
     definitions = {
-        "gateway": ("gateway", 5, 30),
-        "preflight": ("preflight", 5, 40),
-        "recorder": ("recorder", 5, 45),
-        "shutdown": ("shutdown", 13, 5),
-        "finalize": ("finalize", 13, 10),
-        "audit": ("audit", 13, 15),
-        "watchdog": ("watchdog", 5, 50),
+        "gateway": ("gateway", 4, 45, {"IB_GATEWAY_WAIT_SECONDS": "2700"}),
+        "preflight": ("preflight", 5, 25, {
+            "RETRY_ATTEMPTS": "360",
+            "RETRY_INITIAL_SLEEP_SECONDS": "2",
+            "RETRY_MAX_SLEEP_SECONDS": "10",
+        }),
+        "recorder": ("recorder", 5, 40, {
+            "RETRY_ATTEMPTS": "240",
+            "RETRY_INITIAL_SLEEP_SECONDS": "2",
+            "RETRY_MAX_SLEEP_SECONDS": "20",
+        }),
+        "shutdown": ("shutdown", 13, 5, {}),
+        "finalize": ("finalize", 13, 10, {}),
+        "audit": ("audit", 13, 15, {}),
+        "watchdog": ("watchdog", 6, 5, {
+            "WATCHDOG_RESTART_COOLDOWN_SECONDS": "120",
+            "WATCHDOG_MAX_RESTART_COOLDOWN_SECONDS": "300",
+        }),
     }
     payloads: dict[str, dict[str, Any]] = {}
-    for suffix, (action, hour, minute) in definitions.items():
+    for suffix, (action, hour, minute, extra_environment) in definitions.items():
         payloads[suffix] = plist_payload(
             bundle,
             suffix,
@@ -361,11 +375,12 @@ def install_launchd(bundle: Path, *, packet_dates: tuple[str, ...], development_
             packet_dates=packet_dates,
             development_session=development_session,
             gate_mode=gate_mode,
+            extra_environment=extra_environment,
         )
     health_schedules = [
         calendar(date, hour, minute)
         for date in packet_dates
-        for hour, minute in ((5, 50), (6, 0), (6, 15), (6, 28))
+        for hour, minute in ((5, 50), (6, 0), (6, 10), (6, 20), (6, 28))
     ]
     payloads["health"] = plist_payload(
         bundle,

@@ -31,6 +31,8 @@ class FakeLimitOrder:
 class FakeTrade:
     contract: FakeOption
     order: FakeLimitOrder
+    orderStatus: object | None = None
+    fills: tuple = ()
 
 
 class FakeIB:
@@ -43,6 +45,12 @@ class FakeIB:
     def placeOrder(self, contract, order):
         self.placed.append((contract, order))
         return FakeTrade(contract, order)
+
+    def sleep(self, seconds):
+        return None
+
+    def cancelOrder(self, order):
+        self.cancelled = order
 
 
 def _intent() -> PaperOrderIntent:
@@ -149,3 +157,37 @@ def test_executor_submit_calls_place_order_only_after_guard_passes() -> None:
     assert result["status"] == "submitted"
     assert result["broker_order_endpoint_called"] is True
     assert len(ib.placed) == 1
+
+
+def test_executor_waits_and_reports_fill_summary() -> None:
+    class Status:
+        status = "Filled"
+        filled = 1
+        remaining = 0
+        avgFillPrice = 10.0
+
+    class FilledIB(FakeIB):
+        def placeOrder(self, contract, order):
+            self.placed.append((contract, order))
+            return FakeTrade(contract, order, orderStatus=Status())
+
+    ib = FilledIB()
+    result = execute_guarded_paper_order(
+        ib=ib,
+        option_cls=FakeOption,
+        order_cls=FakeLimitOrder,
+        intent=_intent(),
+        account_id="DU12345",
+        account_cash=10_000.0,
+        open_positions=0,
+        quote={"bid": 9.9, "ask": 10.0, "reference_ask": 10.0, "quote_age_ms": 100},
+        context={"context_age_ms": 100},
+        enable_paper_orders=True,
+        acknowledge_paper_loss=True,
+        environ={"V4_ALLOW_IBKR_PAPER_ORDERS": "YES"},
+        dry_run=False,
+        wait_for_fill_seconds=0.1,
+    )
+
+    assert result["fill_summary"]["filled"] is True
+    assert result["fill_summary"]["avg_fill_price"] == 10.0

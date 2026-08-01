@@ -76,9 +76,11 @@
   },
   "paid_data_downloaded": false,
   "policy": {
+    "daily_new_entry_stop_fraction_of_equity": null,
     "daily_new_entry_stop_loss": -750.0,
     "equity_for_three_contracts": 100000.0,
     "equity_for_two_contracts": 30000.0,
+    "exposure_cap_applies_to_initial_contract": true,
     "initial_contracts": 1,
     "max_contracts": 3,
     "max_drawdown_for_scaling": 0.025,

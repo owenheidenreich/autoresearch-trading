@@ -9,6 +9,7 @@ from v4.scripts.run_protocol101_ft2_05_opportunity_census import (
     QuotePath,
     add_quality_scores,
     compute_horizon_labels,
+    friction_table,
     guardrail_curve_tables,
     outcome_bucket,
     pareto_frontier_table,
@@ -124,12 +125,108 @@ def test_d48_d49_selection_replays_through_simulator_v5() -> None:
     assert sessions["trade_count"].sum() == 1
 
 
+def test_oracle_commits_before_selected_only_fill_recheck_without_substitute() -> None:
+    decision = pd.Timestamp("2025-01-02 09:32", tz="America/New_York")
+    decision_ns = int(decision.tz_convert("UTC").value)
+    deadline_ns = decision_ns + 3 * ONE_MINUTE_NS
+    rows = []
+    for contract_id, pnl, fill_ask in (
+        ("future-best-rejects", 197.0, 6.0),
+        ("lower-but-fill-passes", 97.0, 4.0),
+    ):
+        decision_ask = 4.0
+        exit_bid = fill_ask + (pnl + 3.0) / 100.0
+        rows.append(
+            {
+                "session": "2025-01-02",
+                "month": "2025-01",
+                "vol_regime": "low",
+                "decision_time_ns": decision_ns,
+                "contract_id": contract_id,
+                "right": "C",
+                "strike_idx": 10,
+                "offset": 0.0 if contract_id.startswith("future") else 5.0,
+                "premium_band": "medium_3_8",
+                "moneyness_band": "atm",
+                "decision_entry_ask": decision_ask,
+                "decision_entry_ask_cents": 400,
+                "decision_quote_base_eligible": True,
+                "intent_cost_fee3_cents": 40_300,
+                "intent_eligible_fee3_at_t": True,
+                "entry_ask": fill_ask,
+                "entry_ask_cents": int(round(fill_ask * 100)),
+                "fill_cost_fee3_cents": int(round(fill_ask * 10_000)) + 300,
+                "fill_recheck_pass_fee3_at_tplus1": fill_ask <= 4.97,
+                "premium_plus_fee": fill_ask * 100.0 + 3.0,
+                "vwap_side": "C",
+                "best_exit_time_ns": deadline_ns,
+                "best_source_time_ns": deadline_ns,
+                "h3_best_exit_time_ns": deadline_ns,
+                "h3_deadline_ns": deadline_ns,
+                "h3_best_exit_bid": exit_bid,
+                "h3_mfe_dollars": pnl,
+                "conservative_upside_return": pnl / (fill_ask * 100.0),
+            }
+        )
+    sessions, payload = replay_variant(
+        pd.DataFrame(rows),
+        variant="best_3",
+        selector="oracle",
+    )
+    assert payload["summary"]["trade_count"] == 0
+    assert payload["summary"]["pooled_pnl"] == 0.0
+    assert payload["summary"]["rejected_fill_count"] == 1
+    assert sessions["trade_count"].sum() == 0
+    rejected = payload["rejected_fills"]
+    assert len(rejected) == 1
+    event = rejected.iloc[0]
+    assert event["source_neutral_contract_id"] == "future-best-rejects"
+    assert bool(event["position_opened"]) is False
+    assert event["premium_charged_cents"] == 0
+    assert event["fee_charged_cents"] == 0
+
+
 def test_four_bucket_boundaries_are_fee_aware() -> None:
     assert outcome_bucket(0.40) == "big_win"
     assert outcome_bucket(0.05) == "scratch_or_small_win"
     assert outcome_bucket(-0.05) == "scratch_or_small_win"
     assert outcome_bucket(-0.10) == "small_loss"
     assert outcome_bucket(-0.30) == "big_loss"
+
+
+def test_friction_table_discloses_intent_fill_and_valid_populations() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "d48_reference_eligible": True,
+                "premium_band": "small_1_3",
+                "month": "2025-01",
+                "vol_regime": "low",
+                "moneyness_band": "atm",
+                "fill_recheck_pass_fee3_at_tplus1": True,
+                "friction_fraction_of_premium": 0.05,
+                "entry_spread": 0.10,
+            },
+            {
+                "d48_reference_eligible": True,
+                "premium_band": "small_1_3",
+                "month": "2025-01",
+                "vol_regime": "low",
+                "moneyness_band": "atm",
+                "fill_recheck_pass_fee3_at_tplus1": False,
+                "friction_fraction_of_premium": np.nan,
+                "entry_spread": 0.20,
+            },
+        ]
+    )
+    table = friction_table(frame)
+    overall = table[table["stratification"] == "premium_band"].iloc[0]
+    assert overall["contract_minutes"] == 2
+    assert overall["intent_contract_minutes"] == 2
+    assert overall["fill_pass_rows"] == 1
+    assert overall["rejected_fill_rows"] == 1
+    assert overall["friction_valid_rows"] == 1
+    assert overall["entry_spread_valid_rows"] == 2
 
 
 def test_headline_curves_are_stratified_without_rethresholding() -> None:

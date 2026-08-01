@@ -22,6 +22,10 @@ from v4.scripts.run_protocol101_owned_raw_acceptance_verifier import (
 from v4.scripts.build_protocol101_protected_holdout_artifact import (
     compute_protected_holdout_hash,
 )
+from v4.model.protocol101_regimen_repair import (
+    assert_fold_session_identities,
+    assert_manifest_session_identities,
+)
 
 
 SCHEMA_VERSION = "Protocol101GovernedLoaderV1"
@@ -31,6 +35,10 @@ DEFAULT_SPLIT_ROLE_MAP = {
     "train": "train",
     "validation": "test",
     "diagnostic_test": "diagnostics_only",
+}
+DEFAULT_FOLD_ROLE_MAP = {
+    "train": "train",
+    "validation": "test",
 }
 
 
@@ -88,8 +96,10 @@ def load_governed_loader_artifacts(
 
 
 def _manifest_by_session(manifest: dict[str, Any]) -> dict[str, Path]:
+    included = list(manifest.get("included_sessions") or [])
+    assert_manifest_session_identities(included)
     out: dict[str, Path] = {}
-    for item in manifest.get("included_sessions") or []:
+    for item in included:
         session = str(item.get("session") or "")
         processed_file = item.get("processed_file")
         if session and processed_file:
@@ -281,3 +291,126 @@ def resolve_governed_split_paths(
     }
     governance_payload["governance_hash"] = stable_hash(governance_payload)
     return paths, sorted(set(blockers)), governance_payload
+
+
+def validate_expanding_fold_structure(
+    split_policy: dict[str, Any],
+    *,
+    required_fold_count: int = 5,
+    required_embargo_sessions: int = 1,
+) -> list[str]:
+    blockers: list[str] = []
+    folds = split_policy.get("folds") or []
+    assert_fold_session_identities(
+        folds,
+        attempt_id=str(
+            split_policy.get("schema_version")
+            or "Protocol101GovernedExpandingFoldLoader"
+        ),
+    )
+    if split_policy.get("required_expanding_window_cv") is not True:
+        blockers.append("expanding_window_cv_not_required_by_design")
+    if len(folds) != required_fold_count:
+        blockers.append(f"unexpected_expanding_fold_count:{len(folds)}")
+    previous_train_count = 0
+    seen_validation_sessions: set[str] = set()
+    for expected_index, fold in enumerate(folds, start=1):
+        fold_id = str(fold.get("fold_id") or f"fold_{expected_index}")
+        try:
+            fold_index = int(fold.get("fold_index") or 0)
+        except (TypeError, ValueError):
+            fold_index = 0
+        if fold_index != expected_index:
+            blockers.append(f"{fold_id}:unexpected_fold_index:{fold_index}")
+        train_sessions = [str(session) for session in fold.get("train_sessions") or []]
+        validation_sessions = [str(session) for session in fold.get("validation_sessions") or []]
+        embargoed_sessions = [
+            str(row.get("session") or "")
+            for row in fold.get("embargoed_sessions") or []
+            if isinstance(row, dict)
+        ]
+        if not train_sessions:
+            blockers.append(f"{fold_id}:empty_train_sessions")
+        if not validation_sessions:
+            blockers.append(f"{fold_id}:empty_validation_sessions")
+        if len(embargoed_sessions) != required_embargo_sessions:
+            blockers.append(f"{fold_id}:unexpected_embargo_session_count:{len(embargoed_sessions)}")
+        if train_sessions != sorted(train_sessions):
+            blockers.append(f"{fold_id}:train_sessions_not_chronological")
+        if validation_sessions != sorted(validation_sessions):
+            blockers.append(f"{fold_id}:validation_sessions_not_chronological")
+        if set(train_sessions) & set(validation_sessions):
+            blockers.append(f"{fold_id}:train_validation_overlap")
+        if set(embargoed_sessions) & (set(train_sessions) | set(validation_sessions)):
+            blockers.append(f"{fold_id}:embargo_session_overlap")
+        if train_sessions and validation_sessions and max(train_sessions) >= min(validation_sessions):
+            blockers.append(f"{fold_id}:train_not_strictly_before_validation")
+        if set(validation_sessions) & seen_validation_sessions:
+            blockers.append(f"{fold_id}:validation_sessions_overlap_prior_fold")
+        seen_validation_sessions.update(validation_sessions)
+        if len(train_sessions) <= previous_train_count:
+            blockers.append(f"{fold_id}:train_window_not_expanding")
+        previous_train_count = len(train_sessions)
+    return blockers
+
+
+def resolve_governed_expanding_fold_paths(
+    *,
+    design: dict[str, Any],
+    manifest: dict[str, Any],
+    artifacts: GovernedLoaderArtifacts,
+    fold_role_map: dict[str, str] | None = None,
+) -> tuple[dict[str, dict[str, list[Path]]], list[str], dict[str, Any]]:
+    role_map = fold_role_map or DEFAULT_FOLD_ROLE_MAP
+    split_policy = design.get("split_policy") or {}
+    folds = split_policy.get("folds") or []
+    by_session = _manifest_by_session(manifest)
+    fold_paths: dict[str, dict[str, list[Path]]] = {}
+    blockers = validate_expanding_fold_structure(split_policy)
+    validations: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    governance_blockers = validate_governance_artifacts(artifacts)
+    for fold in folds:
+        fold_id = str(fold.get("fold_id") or f"fold_{fold.get('fold_index', '')}")
+        fold_paths[fold_id] = {"train": [], "validation": []}
+        validations[fold_id] = {"train": [], "validation": []}
+        for split_name, key in (
+            ("train", "train_sessions"),
+            ("validation", "validation_sessions"),
+        ):
+            role = role_map[split_name]
+            for session in fold.get(key) or []:
+                session_text = str(session)
+                path = by_session.get(session_text)
+                if path is None:
+                    blockers.append(f"fold_manifest_missing_session:{fold_id}:{split_name}:{session_text}")
+                    continue
+                validation = validate_session_for_role(
+                    session=session_text,
+                    role=role,
+                    processed_path=path,
+                    artifacts=artifacts,
+                    governance_blockers=governance_blockers,
+                )
+                validations[fold_id][split_name].append(validation)
+                if validation["placeable"]:
+                    fold_paths[fold_id][split_name].append(path)
+                else:
+                    blockers.append(f"fold_session_not_placeable:{fold_id}:{split_name}:{session_text}")
+                    blockers.extend(f"{fold_id}:{session_text}:{item}" for item in validation["blockers"])
+        for split_name, paths in fold_paths[fold_id].items():
+            if not paths:
+                blockers.append(f"empty_fold_split:{fold_id}:{split_name}")
+    payload = {
+        "schema_version": "Protocol101GovernedExpandingFoldLoaderV1",
+        "required_fold_count": 5,
+        "fold_count": len(folds),
+        "required_embargo_sessions": 1,
+        "fold_role_map": role_map,
+        "validations": validations,
+        "fold_session_counts": {
+            fold_id: {split: len(paths) for split, paths in splits.items()}
+            for fold_id, splits in fold_paths.items()
+        },
+    }
+    payload["fold_governance_hash"] = stable_hash(payload)
+    return fold_paths, sorted(set(blockers)), payload

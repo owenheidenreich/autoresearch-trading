@@ -16,7 +16,9 @@ from typing import Any, Iterable
 from zoneinfo import ZoneInfo
 
 
-PROTOCOL101_SERIAL_SIMULATOR_VERSION = "protocol101_serial_simulator_v2"
+PROTOCOL101_SERIAL_SIMULATOR_VERSION = (
+    "protocol101_serial_simulator_v4_account_continuity_fee_reserve"
+)
 DAILY_LOSS_BASIS = "raw_realized_net_pnl"
 CASH_BASIS = "raw_realized_net_pnl"
 STRESS_APPLICATION = "metrics_only"
@@ -36,7 +38,9 @@ class SerialSimulatorConfig:
     contract_multiplier: float = 100.0
     max_trades_per_session: int = 0
     max_daily_loss: float = 0.0
+    max_daily_loss_fraction_of_session_start_equity: float = 0.0
     stress_per_trade: float = 0.0
+    affordability_reserve_per_trade: float = 0.0
     enforce_affordability: bool = True
     no_new_entries_after_et: str = NO_NEW_ENTRIES_AFTER_ET
     forced_flat_before_et: str = FORCED_FLAT_BEFORE_ET
@@ -65,8 +69,14 @@ class SerialSimulatorConfig:
             "contract_multiplier": float(self.contract_multiplier),
             "max_trades_per_session": int(self.max_trades_per_session),
             "max_daily_loss": float(self.max_daily_loss),
+            "max_daily_loss_fraction_of_session_start_equity": float(
+                self.max_daily_loss_fraction_of_session_start_equity
+            ),
             "stress_per_trade": float(self.stress_per_trade),
             "stress_per_trade_dollars": float(self.stress_per_trade),
+            "affordability_reserve_per_trade": float(
+                self.affordability_reserve_per_trade
+            ),
             "enforce_affordability": bool(self.enforce_affordability),
             "no_new_entries_after": self.no_new_entries_after_et,
             "forced_flat_before": self.forced_flat_before_et,
@@ -327,12 +337,31 @@ def simulate_serial_candidates(
     pending_by_session: dict[tuple[str, str], SerialReplayTrade | None] = {}
     trades_by_session: dict[tuple[str, str], int] = {}
     realized_raw_pnl_by_session: dict[tuple[str, str], float] = {}
+    session_start_cash: dict[tuple[str, str], float] = {}
+    active_session_by_account: dict[str, tuple[str, str]] = {}
 
     for candidate in ordered:
         account = _account_key(candidate)
         session_key = _session_key(candidate)
         cash = cash_by_account.setdefault(account, float(cfg.starting_cash))
         equity_by_account.setdefault(account, [float(cfg.starting_cash)])
+        previous_session_key = active_session_by_account.get(account)
+        if previous_session_key is not None and previous_session_key != session_key:
+            previous_pending = pending_by_session.get(previous_session_key)
+            if previous_pending is not None:
+                _realize_pending(
+                    pending=previous_pending,
+                    config=cfg,
+                    account=account,
+                    session_key=previous_session_key,
+                    cash_by_account=cash_by_account,
+                    equity_by_account=equity_by_account,
+                    realized_raw_pnl_by_session=realized_raw_pnl_by_session,
+                )
+                pending_by_session[previous_session_key] = None
+                cash = cash_by_account[account]
+        active_session_by_account[account] = session_key
+        session_start_cash.setdefault(session_key, float(cash))
         if _is_tz_naive(candidate.decision_time):
             skipped["tz_naive_decision_time"] += 1
             continue
@@ -373,11 +402,23 @@ def simulate_serial_candidates(
         ):
             skipped["daily_loss_stop"] += 1
             continue
+        fractional_daily_limit = (
+            float(cfg.max_daily_loss_fraction_of_session_start_equity)
+            * float(session_start_cash[session_key])
+        )
+        if (
+            fractional_daily_limit > 0.0
+            and realized_raw_pnl_by_session.get(session_key, 0.0)
+            <= -fractional_daily_limit
+        ):
+            skipped["daily_loss_stop"] += 1
+            continue
         if candidate.entry_ask <= 0.0:
             skipped["nonpositive_ask"] += 1
             continue
         premium = float(candidate.entry_ask) * float(cfg.contract_multiplier)
-        if cfg.enforce_affordability and premium > cash + 1e-9:
+        required_cash = premium + float(cfg.affordability_reserve_per_trade)
+        if cfg.enforce_affordability and required_cash > cash + 1e-9:
             skipped["unaffordable"] += 1
             continue
         raw_pnl = float(candidate.raw_label_pnl)

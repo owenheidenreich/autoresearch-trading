@@ -22,11 +22,14 @@ import torch
 from v4.model.protocol101_governed_loader import (
     DEFAULT_PROTECTED_HOLDOUT_PATH,
     load_governed_loader_artifacts,
+    resolve_governed_expanding_fold_paths,
     resolve_governed_split_paths,
 )
+from v4.live.protocol101_feature_contract import FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED
 from v4.model.supervised_pilot import (
     CLASSIFIER_TARGET_MODES,
     FEATURE_NOISE_AUGMENTATION_CHOICES,
+    FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE,
     LISTWISE_TARGET_MODES,
     SELECTION_MODE_CHOICES,
     SELECTION_MODE_TOP_SCORE,
@@ -55,28 +58,36 @@ from v4.model.supervised_pilot import (
 
 
 DEFAULT_DESIGN = Path(
-    "v4/audit/autoresearch/protocol101_fair_contract_training_labels_design/summary.json"
+    "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_design/summary.json"
 )
 DEFAULT_OUT_DIR = Path(
-    "v4/audit/autoresearch/protocol101_fair_contract_training_runner"
+    "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_runner"
 )
 DEFAULT_MODEL_OUT = Path(
-    "v4/audit/autoresearch/protocol101_fair_contract_training_runner/model.pt"
+    "v4/audit/autoresearch/protocol101_live_v2_microstructure_masked_15mo_training_runner/model.pt"
 )
 DEFAULT_TEACHER_EVENTS = Path(
     "v4/audit/autoresearch/unified_protocol101_baseline_attachment/"
     "protocol101_baseline_event_actions_training_scope.parquet"
 )
 DEFAULT_ACCEPTANCE_REGISTRY = Path(
-    "v4/audit/autoresearch/protocol101_owned_raw_acceptance/summary.json"
+    "v4/audit/autoresearch/"
+    "protocol101_live_v2_microstructure_masked_15mo_training_scope_acceptance/summary.json"
 )
 DEFAULT_ERA_MANIFEST = Path("v4/audit/autoresearch/protocol101_session_era_manifest/summary.json")
-DEFAULT_ROLE_POLICY = Path("v4/audit/autoresearch/protocol101_era_role_policy/summary.json")
+DEFAULT_ROLE_POLICY = Path(
+    "v4/audit/autoresearch/"
+    "protocol101_live_v2_microstructure_masked_training_role_policy/summary.json"
+)
 DEFAULT_PROTECTED_HOLDOUT = DEFAULT_PROTECTED_HOLDOUT_PATH
 POLICY_META = {
     0: ("ask_to_bid_stop35_target60_hold10m", 10),
     1: ("ask_to_bid_stop50_target100_hold25m", 25),
     2: ("ask_to_bid_stop65_target150_hold45m", 45),
+    3: ("ask_to_bid_stop50_target200_hold90m", 90),
+    4: ("ask_to_bid_stop100_target300_hold120m", 120),
+    5: ("ask_to_bid_stop100_target999_hold384m", 384),
+    6: ("ask_to_bid_stop100_target9900_hold384m", 384),
 }
 
 
@@ -143,6 +154,7 @@ def parse_args() -> argparse.Namespace:
             "decision_top_profit_listwise",
             "decision_relative_regression",
             "blended_relative_regression",
+            "return_on_premium_regression",
             "protocol101_teacher_classifier",
             "protocol101_teacher_profitable_classifier",
             "protocol101_teacher_edge_regression",
@@ -252,7 +264,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--feature-transform",
         choices=tuple(sorted(FEATURE_TRANSFORM_CHOICES)),
-        default="none",
+        default=FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE,
         help=(
             "Named model-facing feature transform. This never changes labels, raw data, "
             "candidate masks, fills, or broker behavior; it only controls which fair-contract "
@@ -357,6 +369,8 @@ def validate_plan(
     *,
     design: dict[str, Any],
     mode: str,
+    feature_transform: str,
+    model_family: str = "mlp",
     owner_approved_model_training: bool,
     owner_approved_threshold_selection: bool,
     owner_approval_note: str,
@@ -369,9 +383,21 @@ def validate_plan(
         blockers.append("glob_loading_not_disabled_by_design")
     if design.get("paper_submit_allowed") is not False:
         blockers.append("design_allows_paper_submit")
-    if design.get("selected_feature_contract") != "protocol101-live-v1":
+    if design.get("selected_feature_contract") != FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED:
         blockers.append("unexpected_feature_contract")
+    if str(feature_transform) != FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE:
+        blockers.append("unexpected_model_scoring_feature_transform")
     if mode == "train":
+        split_policy = design.get("split_policy") or {}
+        if split_policy.get("required_expanding_window_cv") is not True:
+            blockers.append("expanding_window_cv_required_for_training")
+        if len(split_policy.get("folds") or []) != 5:
+            blockers.append(f"unexpected_expanding_fold_count_for_training:{len(split_policy.get('folds') or [])}")
+        if str(model_family) not in {
+            "sklearn_hist_gradient_boosting",
+            "sklearn_hist_gradient_boosting_by_right",
+        }:
+            blockers.append("fold_aware_training_requires_hgb_tabular_model_family")
         if not owner_approved_model_training:
             blockers.append("missing_owner_approved_model_training_flag")
         if not owner_approved_threshold_selection:
@@ -388,12 +414,21 @@ def build_runner_plan(
     governance_artifacts: Any | None = None,
     mode: str,
     policy_index: int,
+    model_family: str = "mlp",
+    feature_transform: str = FEATURE_TRANSFORM_MASK_VENDOR_SENSITIVE_OPTION_QUOTE_GREEK_MICROSTRUCTURE,
     owner_approved_model_training: bool = False,
     owner_approved_threshold_selection: bool = False,
     owner_approval_note: str = "",
 ) -> dict[str, Any]:
     if governance_artifacts is None:
         paths, split_blockers = paths_by_split(design, manifest)
+        fold_paths: dict[str, dict[str, list[Path]]] = {}
+        fold_blockers = ["governance_artifacts_required"]
+        fold_payload = {
+            "schema_version": "Protocol101GovernedExpandingFoldLoaderV1",
+            "status": "missing",
+            "blocker": "governance_artifacts_required",
+        }
         governance_payload = {
             "schema_version": "Protocol101GovernedLoaderV1",
             "status": "missing",
@@ -406,14 +441,22 @@ def build_runner_plan(
             manifest=manifest,
             artifacts=governance_artifacts,
         )
+        fold_paths, fold_blockers, fold_payload = resolve_governed_expanding_fold_paths(
+            design=design,
+            manifest=manifest,
+            artifacts=governance_artifacts,
+        )
     blockers = validate_plan(
         design=design,
         mode=mode,
+        feature_transform=feature_transform,
+        model_family=str(model_family),
         owner_approved_model_training=owner_approved_model_training,
         owner_approved_threshold_selection=owner_approved_threshold_selection,
         owner_approval_note=owner_approval_note,
     )
     blockers.extend(split_blockers)
+    blockers.extend(fold_blockers)
     policy_name, cooldown_minutes = POLICY_META[int(policy_index)]
     status = "ready_to_train" if mode == "train" and not blockers else "dry_run_ready"
     if blockers:
@@ -434,6 +477,8 @@ def build_runner_plan(
         "policy_index": int(policy_index),
         "policy_name": policy_name,
         "cooldown_minutes": cooldown_minutes,
+        "model_family": str(model_family),
+        "model_scoring_feature_transform": str(feature_transform),
         "model_training_executed": False,
         "threshold_selection_executed": False,
         "broker_endpoint_called": False,
@@ -443,6 +488,24 @@ def build_runner_plan(
         "owner_approval_note_present": bool(owner_approval_note.strip()),
         "manifest_path": str((design.get("allowed_data") or {}).get("canonical_manifest") or ""),
         "governance": governance_payload,
+        "expanding_folds": {
+            "schema_version": "Protocol101FairContractExpandingFoldPlanV1",
+            "fold_governance": fold_payload,
+            "fold_sessions": {
+                fold_id: {
+                    split_name: [path.name.removesuffix(".pkl") for path in split_paths]
+                    for split_name, split_paths in splits.items()
+                }
+                for fold_id, splits in fold_paths.items()
+            },
+            "fold_files": {
+                fold_id: {
+                    split_name: [str(path) for path in split_paths]
+                    for split_name, split_paths in splits.items()
+                }
+                for fold_id, splits in fold_paths.items()
+            },
+        },
         "split_sessions": {
             name: [path.name.removesuffix(".pkl") for path in split_paths]
             for name, split_paths in paths.items()
@@ -726,6 +789,12 @@ def _balanced_classifier_sample_weight(
 def _targets_for_decision(decision, *, config: PilotConfig) -> np.ndarray:
     """Build per-candidate training targets using the same fair labels everywhere."""
     labels = np.asarray(decision.labels, dtype=np.float32)
+    entry_asks = (
+        np.asarray(decision.entry_asks, dtype=np.float32)
+        if decision.entry_asks is not None
+        else np.full(len(labels), np.nan, dtype=np.float32)
+    )
+    premium_at_risk = np.asarray(entry_asks * 100.0, dtype=np.float32)
     if config.target_mode in {
         "protocol101_teacher_classifier",
         "protocol101_teacher_profitable_classifier",
@@ -786,6 +855,14 @@ def _targets_for_decision(decision, *, config: PilotConfig) -> np.ndarray:
             targets = ((1.0 - weight) * absolute + weight * relative).astype(np.float32)
         else:
             targets = relative
+    elif config.target_mode == "return_on_premium_regression":
+        with np.errstate(divide="ignore", invalid="ignore"):
+            returns = labels / premium_at_risk
+        targets = np.clip(
+            np.nan_to_num(returns, nan=0.0, posinf=config.target_clip, neginf=-config.target_clip),
+            -config.target_clip,
+            config.target_clip,
+        ).astype(np.float32)
     else:
         targets = (
             np.clip(labels, -config.target_clip, config.target_clip) / config.target_scale
@@ -1560,7 +1637,7 @@ def choose_threshold_with_rule(
     return float(best["threshold"]), sweep
 
 
-def run_training(plan: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+def run_single_split_training(plan: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
     policy_name, cooldown_minutes = POLICY_META[int(args.policy_index)]
     parsed_ensemble_seeds = parse_ensemble_seeds(str(args.ensemble_seeds))
     member_seeds = parsed_ensemble_seeds if parsed_ensemble_seeds else [int(args.seed)]
@@ -1837,6 +1914,7 @@ def run_training(plan: dict[str, Any], args: argparse.Namespace) -> dict[str, An
         neural[split_name] = {
             "threshold": float(threshold),
             "metrics": metrics_for_trades(trades),
+            "trades": [asdict(trade) for trade in trades],
             "sample_trades": [asdict(trade) for trade in trades[:10]],
         }
     baselines = {
@@ -1913,6 +1991,172 @@ def run_training(plan: dict[str, Any], args: argparse.Namespace) -> dict[str, An
     }
 
 
+def _copy_args_with_model_out(args: argparse.Namespace, model_out: Path) -> argparse.Namespace:
+    payload = vars(args).copy()
+    payload["model_out"] = model_out
+    return argparse.Namespace(**payload)
+
+
+def _aggregate_fold_validation_metrics(fold_results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    metrics = [
+        ((result.get("neural") or {}).get("validation") or {}).get("metrics") or {}
+        for result in fold_results.values()
+    ]
+    trades = int(sum(int(item.get("trades") or 0) for item in metrics))
+    total_pnl = float(sum(float(item.get("total_pnl") or 0.0) for item in metrics))
+    finite_profit_factors = [
+        float(item.get("profit_factor") or 0.0)
+        for item in metrics
+        if np.isfinite(float(item.get("profit_factor") or 0.0))
+    ]
+    drawdowns = [float(item.get("max_drawdown") or 0.0) for item in metrics]
+    positive_folds = int(sum(1 for item in metrics if float(item.get("total_pnl") or 0.0) > 0.0))
+    return {
+        "fold_count": len(metrics),
+        "trades": trades,
+        "total_pnl": total_pnl,
+        "profit_factor": min(finite_profit_factors) if finite_profit_factors else 0.0,
+        "max_drawdown": min(drawdowns) if drawdowns else 0.0,
+        "positive_fold_count": positive_folds,
+        "positive_fold_fraction": float(positive_folds / len(metrics)) if metrics else 0.0,
+        "min_fold_total_pnl": min((float(item.get("total_pnl") or 0.0) for item in metrics), default=0.0),
+        "max_fold_total_pnl": max((float(item.get("total_pnl") or 0.0) for item in metrics), default=0.0),
+    }
+
+
+def _fold_plan(
+    plan: dict[str, Any],
+    *,
+    fold_id: str,
+    fold_files: dict[str, list[str]],
+) -> dict[str, Any]:
+    split_files = {
+        "train": list(fold_files.get("train") or []),
+        "validation": list(fold_files.get("validation") or []),
+        "diagnostic_test": [],
+    }
+    return {
+        **plan,
+        "fold_id": fold_id,
+        "execution_mode": "fold_aware_expanding_cv_fold",
+        "split_files": split_files,
+        "split_sessions": {
+            name: [Path(path).name.removesuffix(".pkl") for path in paths]
+            for name, paths in split_files.items()
+        },
+    }
+
+
+def run_fold_aware_training(plan: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    folds = ((plan.get("expanding_folds") or {}).get("fold_files") or {})
+    if len(folds) != 5:
+        raise ValueError(f"expected 5 governed expanding folds, got {len(folds)}")
+    if str(args.model_family) not in {
+        "sklearn_hist_gradient_boosting",
+        "sklearn_hist_gradient_boosting_by_right",
+    }:
+        raise ValueError("fold-aware execution is restricted to HGB/tabular model families")
+    base_model_out = Path(args.model_out)
+    fold_model_dir = base_model_out.parent / "fold_models"
+    fold_model_dir.mkdir(parents=True, exist_ok=True)
+    fold_results: dict[str, dict[str, Any]] = {}
+    thresholds: list[float] = []
+    for fold_id in sorted(folds):
+        fold_model_out = fold_model_dir / f"{fold_id}.pt"
+        fold_args = _copy_args_with_model_out(args, fold_model_out)
+        result = run_single_split_training(
+            _fold_plan(plan, fold_id=fold_id, fold_files=folds[fold_id]),
+            fold_args,
+        )
+        fold_results[fold_id] = {
+            "config": result.get("config"),
+            "experiment": result.get("experiment"),
+            "model_out": result.get("model_out"),
+            "chosen_threshold": result.get("chosen_threshold"),
+            "split_summary": result.get("split_summary"),
+            "fit_calibration_summary": result.get("fit_calibration_summary"),
+            "training_preview": result.get("training_preview"),
+            "training_history": result.get("training_history"),
+            "model_family_preview": result.get("model_family_preview"),
+            "neural": result.get("neural"),
+            "baselines": result.get("baselines"),
+        }
+        thresholds.append(float(result.get("chosen_threshold") or 0.0))
+    aggregate_validation = _aggregate_fold_validation_metrics(fold_results)
+    first_fold = next(iter(fold_results.values()))
+    model_index = {
+        "model_family": "fold_aware_expanding_cv",
+        "base_model_family": str(args.model_family),
+        "fold_models": {
+            fold_id: str(payload.get("model_out") or "")
+            for fold_id, payload in fold_results.items()
+        },
+        "config": first_fold.get("config") or {},
+    }
+    torch.save(model_index, base_model_out)
+    median_threshold = float(np.median(np.asarray(thresholds, dtype=float))) if thresholds else 0.0
+    return {
+        "execution_mode": "fold_aware_expanding_cv",
+        "fold_count": len(fold_results),
+        "config": first_fold.get("config") or {},
+        "experiment": {
+            "execution_mode": "fold_aware_expanding_cv",
+            "model_family": str(args.model_family),
+            "target_mode": str(args.target_mode),
+            "threshold_rule": str(args.threshold_rule),
+            "threshold_stress_per_trade": float(args.threshold_stress_per_trade),
+            "feature_transform": str(args.feature_transform),
+            "trained_at_utc": datetime.now(UTC).isoformat(),
+        },
+        "fold_results": fold_results,
+        "fold_summary": {
+            "fold_count": len(fold_results),
+            "fold_ids": sorted(fold_results),
+            "thresholds": thresholds,
+            "median_threshold": median_threshold,
+            "aggregate_validation_metrics": aggregate_validation,
+        },
+        "split_summary": {
+            fold_id: payload.get("split_summary") or {}
+            for fold_id, payload in fold_results.items()
+        },
+        "model_family": "fold_aware_expanding_cv",
+        "base_model_family": str(args.model_family),
+        "model_family_preview": {
+            "model_family": "fold_aware_expanding_cv",
+            "base_model_family": str(args.model_family),
+            "fold_count": len(fold_results),
+        },
+        "chosen_threshold": median_threshold,
+        "threshold_sweep_validation": [],
+        "neural": {
+            "validation": {
+                "threshold": median_threshold,
+                "metrics": aggregate_validation,
+                "sample_trades": [],
+            },
+            "diagnostic_test": {
+                "threshold": median_threshold,
+                "metrics": {
+                    "trades": 0,
+                    "total_pnl": 0.0,
+                    "profit_factor": 0.0,
+                    "max_drawdown": 0.0,
+                },
+                "sample_trades": [],
+            },
+        },
+        "baselines": {},
+        "model_out": str(base_model_out),
+    }
+
+
+def run_training(plan: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    if ((plan.get("expanding_folds") or {}).get("fold_files") or {}):
+        return run_fold_aware_training(plan, args)
+    raise ValueError("fold-aware expanding-window plan is required for training")
+
+
 def render_report(plan: dict[str, Any], result: dict[str, Any] | None = None) -> str:
     lines = [
         "# Protocol101 Fair-Contract Training Runner",
@@ -1936,6 +2180,16 @@ def render_report(plan: dict[str, Any], result: dict[str, Any] | None = None) ->
         lines.append(
             f"- `{split_name}`: `{len(plan['split_sessions'][split_name])}` sessions."
         )
+    folds = ((plan.get("expanding_folds") or {}).get("fold_sessions") or {})
+    lines.extend(["", "## Expanding Folds", ""])
+    if folds:
+        for fold_id, splits in sorted(folds.items()):
+            lines.append(
+                f"- `{fold_id}`: train=`{len(splits.get('train') or [])}`, "
+                f"validation=`{len(splits.get('validation') or [])}`."
+            )
+    else:
+        lines.append("- None.")
     lines.extend(["", "## Blockers", ""])
     lines.extend(f"- `{item}`" for item in plan["blockers"]) if plan["blockers"] else lines.append("- None.")
     if result:
@@ -1988,6 +2242,8 @@ def main() -> int:
         governance_artifacts=governance_artifacts,
         mode=str(args.mode),
         policy_index=int(args.policy_index),
+        model_family=str(args.model_family),
+        feature_transform=str(args.feature_transform),
         owner_approved_model_training=bool(args.owner_approved_model_training),
         owner_approved_threshold_selection=bool(args.owner_approved_threshold_selection),
         owner_approval_note=str(args.owner_approval_note),

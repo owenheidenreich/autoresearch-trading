@@ -7,6 +7,7 @@ manifest hash whenever governance rules are revised.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -87,6 +88,20 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session-manifest", type=Path, default=DEFAULT_SESSION_MANIFEST)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument(
+        "--q1-development-training-readiness",
+        action="store_true",
+        help=(
+            "Emit a separate policy artifact that permits q1_2026_development "
+            "train/test/diagnostics placement after explicit fair-contract "
+            "training design review. This does not authorize model training."
+        ),
+    )
+    parser.add_argument(
+        "--q1-development-training-readiness-note",
+        default="",
+        help="Required note when --q1-development-training-readiness is used.",
+    )
     return parser.parse_args()
 
 
@@ -121,26 +136,49 @@ def validate_policy(policy: dict[str, dict[str, Any]], manifest: dict[str, Any])
     }
 
 
-def build_policy_artifact(session_manifest: Path) -> dict[str, Any]:
+def build_policy_artifact(
+    session_manifest: Path,
+    *,
+    q1_development_training_readiness: bool = False,
+    q1_development_training_readiness_note: str = "",
+) -> dict[str, Any]:
     manifest = load_session_manifest(session_manifest)
-    validation = validate_policy(DEFAULT_POLICY, manifest)
+    policy = copy.deepcopy(DEFAULT_POLICY)
+    policy_variant = "default"
+    if q1_development_training_readiness:
+        policy_variant = "q1_2026_development_training_readiness"
+        policy["q1_2026_development"] = {
+            "permitted_roles": ["train", "test", "diagnostics_only"],
+            "evidence_tier": "development_training_readiness_after_fair_contract_design",
+            "notes": (
+                "Q1 2026 may be placed for offline fair-contract train/test/diagnostics "
+                "only after the certified v2 training design and governed acceptance "
+                "artifacts pass. This does not authorize model training, threshold "
+                "selection, paper-submit, promotion, or real-money trading."
+            ),
+            "readiness_note": str(q1_development_training_readiness_note),
+        }
+    validation = validate_policy(policy, manifest)
     policy_hash = stable_hash(
         {
             "schema_version": SCHEMA_VERSION,
-            "policy": DEFAULT_POLICY,
+            "policy_variant": policy_variant,
+            "policy": policy,
         }
     )
     return {
         "schema_version": SCHEMA_VERSION,
         "status": "pass" if validation["pass"] else "fail",
+        "policy_variant": policy_variant,
         "policy_hash": policy_hash,
         "session_manifest": str(session_manifest),
         "session_manifest_hash": manifest.get("manifest_hash", ""),
         "known_roles": validation["known_roles"],
         "role_taxonomy": ROLE_TAXONOMY,
         "promotion_guards": PROMOTION_GUARDS,
-        "policy": DEFAULT_POLICY,
+        "policy": policy,
         "validation": validation,
+        "q1_development_training_readiness_note": str(q1_development_training_readiness_note),
     }
 
 
@@ -185,7 +223,25 @@ def render_report(payload: dict[str, Any]) -> str:
 
 def main() -> int:
     args = parse_args()
-    payload = build_policy_artifact(args.session_manifest)
+    if args.q1_development_training_readiness and not str(
+        args.q1_development_training_readiness_note
+    ).strip():
+        print(
+            json.dumps(
+                {
+                    "status": "blocked",
+                    "blocker": "missing_q1_development_training_readiness_note",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 2
+    payload = build_policy_artifact(
+        args.session_manifest,
+        q1_development_training_readiness=bool(args.q1_development_training_readiness),
+        q1_development_training_readiness_note=str(args.q1_development_training_readiness_note),
+    )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     policy_path = args.out_dir / "era_role_policy.json"
     summary_path = args.out_dir / "summary.json"

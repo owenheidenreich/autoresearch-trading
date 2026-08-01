@@ -2,15 +2,18 @@
 name = "autoresearch-trading"
 version = "1.0.0"
 description = "Autonomous AI research for SPX 0DTE options trading on H100 GPU"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
-    "torch>=2.5",
-    "numpy>=1.24",
-    "pandas>=2.0",
+    "torch>=2.5,<2.6",
+    "numpy>=1.24,<2.1",
+    "pandas>=2.0,<3; python_version < '3.12'",
+    "pandas>=3.0,<4; python_version >= '3.12'",
     "polygon-api-client>=1.13",
-    "pyarrow>=14.0",
+    "pyarrow>=14.0,<21",
     "matplotlib>=3.7",
-    "scipy>=1.11",
+    "scipy>=1.11,<1.15",
+    "scikit-learn>=1.5,<1.6",
     "tzdata>=2024.1",
     "ib_insync>=0.9.86",
+    "databento>=0.76",
 ]

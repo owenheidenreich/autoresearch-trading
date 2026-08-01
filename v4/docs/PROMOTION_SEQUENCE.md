@@ -2,6 +2,8 @@
 
 This document preserves the current promotion logic for the SPXW 0DTE trading bot. It exists so we do not accidentally treat a promising historical sizing result as paper-trading or live-trading approval.
 
+For the broader process that every model must follow before reaching promotion, see [HYPOTHESIS_TO_PROMOTION_PROCESS.md](HYPOTHESIS_TO_PROMOTION_PROCESS.md).
+
 ## Current Rule
 
 The operational paper bot starts in one-contract mode.

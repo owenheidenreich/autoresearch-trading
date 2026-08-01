@@ -15,8 +15,10 @@ from v4.scripts.run_protocol101_owned_raw_acceptance_verifier import (
     databento_symbol_from_contract_id,
     entry_ladder_sweep_quality,
     expected_decision_bounds,
+    expected_decision_minutes_for_contract,
     expected_decision_minutes,
     fold_placement_predicate,
+    index_file_path,
     index_context_gap_quality,
     processed_quality,
     raw_entry_quote_at,
@@ -25,6 +27,7 @@ from v4.scripts.run_protocol101_owned_raw_acceptance_verifier import (
     verify_session,
     _raw_path_label,
 )
+from v4.live.protocol101_feature_contract import FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED
 
 
 def test_expected_decision_minutes_handles_full_and_early_close_days() -> None:
@@ -45,6 +48,28 @@ def test_sessions_between_excludes_market_holidays_but_keeps_early_closes() -> N
         "2024-11-27",
         "2024-11-29",
     ]
+    assert sessions_between("2026-01-16", "2026-01-20") == [
+        "2026-01-16",
+        "2026-01-20",
+    ]
+
+
+def test_v2_expected_minutes_drop_unavailable_open_context() -> None:
+    assert expected_decision_minutes("2026-01-02") == 360
+    assert (
+        expected_decision_minutes_for_contract(
+            "2026-01-02",
+            FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED,
+        )
+        == 359
+    )
+
+
+def test_index_file_path_supports_official_v2_names(tmp_path: Path) -> None:
+    path = tmp_path / "2026-01-02.official_spx.parquet"
+    path.write_bytes(b"placeholder")
+
+    assert index_file_path(tmp_path, "2026-01-02", "spx") == path
 
 
 def test_context_causality_quality_requires_one_minute_lag_and_no_open_backfill(tmp_path: Path) -> None:
@@ -71,6 +96,39 @@ def test_context_causality_quality_requires_one_minute_lag_and_no_open_backfill(
     assert quality["first_decision_matches_calendar"] is True
     assert quality["context_lag_exact_one_minute_share"] == 1.0
     assert quality["future_context_row_count"] == 0
+    assert quality["opening_no_leading_backfill"] is True
+
+
+def test_context_causality_quality_accepts_v2_first_live_decision(tmp_path: Path) -> None:
+    rows = [
+        {
+            "decision_time": "2026-01-02T14:32:00+00:00",
+            "source_context_time": "2026-01-02T14:31:00+00:00",
+            "context_start_timestamp": "2026-01-02T14:31:00+00:00",
+            "context_last_timestamp": "2026-01-02T14:31:00+00:00",
+            "context_minute_rows": 1,
+            "context_ready": False,
+        },
+        {
+            "decision_time": "2026-01-02T14:33:00+00:00",
+            "source_context_time": "2026-01-02T14:32:00+00:00",
+            "context_start_timestamp": "2026-01-02T14:31:00+00:00",
+            "context_last_timestamp": "2026-01-02T14:32:00+00:00",
+            "context_minute_rows": 2,
+            "context_ready": False,
+        },
+    ]
+    with (tmp_path / "2026-01-02.pkl").open("wb") as handle:
+        pickle.dump(rows, handle)
+
+    quality = context_causality_quality(
+        "2026-01-02",
+        tmp_path,
+        feature_contract_version=FEATURE_CONTRACT_VERSION_MICROSTRUCTURE_MASKED,
+    )
+
+    assert quality["first_decision_matches_calendar"] is True
+    assert quality["context_lag_exact_one_minute_share"] == 1.0
     assert quality["opening_no_leading_backfill"] is True
 
 

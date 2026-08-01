@@ -39,6 +39,7 @@ def test_normalized_columns_populated() -> None:
     mids = tbl["mid"].to_pylist()
     for b, a, m in zip(bids, asks, mids, strict=True):
         assert m == pytest.approx((b + a) / 2.0)
+    assert all(v is not None for v in tbl["option_ohlcv_volume"].to_pylist())
 
 
 def test_normalized_has_both_call_and_put_rows() -> None:

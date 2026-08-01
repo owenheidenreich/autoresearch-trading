@@ -8,7 +8,8 @@ PF **1.132** across 780 OOS days over 13 disjoint 60-day windows.
 The previous champion — "V1 (always_put) + A3 L3 @ 0.19, OOS PF 2.847
 on 20 days" — is retired. That claim was built on a single
 chop-bearish window. In the broader 13-window rolling re-evaluation,
-V1 loses to V0 in **12 of 13 windows** and has aggregate PF 0.888.
+V1 loses to V0 in **12 of 13 windows** on a strict comparison and in
+**10 of 13 windows** by a wider `> 0.10 PF` margin; aggregate PF is 0.888.
 
 The switch from V1 to V0 is the single most important methodological
 correction in this project's history.
@@ -22,7 +23,7 @@ correction in this project's history.
 | R1 | Build rolling-window harness (60d non-overlap, 180d min train) | 13 windows, 780 OOS days |
 | R2 | Audit L2 features + engineer 9 intraday-developing additions | 6 Cat A + 3 Cat B, 0 NaN |
 | R3 | Retrain Layer-2 per window with 51-feature input | 13 models, 1.0 min CPU total |
-| R4 | Per-window V0 vs V1 evaluation | V0 beats V1 in 10/13 windows |
+| R4 | Per-window V0 vs V1 evaluation | V0 wins 12/13 strict, 10/13 by `> 0.10 PF` |
 | R5 | Conditional V0/V1 rule using entry-bar intraday features | TIE (oracle ceiling only +0.17 above blanket V0) |
 | R6 | Lock new champion, honest comparison | V0 + time-stop, PF 1.132 |
 
@@ -223,7 +224,7 @@ capital commitment.
 
 ## Retired claims
 
-1. ~~"V1 (always_put) is the right default"~~ — V0 wins 10/13 windows
+1. ~~"V1 (always_put) is the right default"~~ — V0 wins 12/13 strict windows, 10/13 by `> 0.10 PF`
 2. ~~"OOS PF 2.847 is reproducible"~~ — window-specific artifact
 3. ~~"V1+L3@0.19 is a deployable champion"~~ — uses leaked L3 + wrong direction
 

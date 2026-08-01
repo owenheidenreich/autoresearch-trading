@@ -1,6 +1,7 @@
 """Tests for the canonical Protocol101 serial simulator contract."""
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -91,6 +92,68 @@ def test_daily_loss_stop_blocks_after_raw_loss_threshold_is_crossed() -> None:
 
     assert [trade.raw_label_pnl for trade in trades] == [-600.0]
     assert state.skipped["daily_loss_stop"] == 2
+
+
+def test_fractional_daily_loss_stop_uses_session_start_equity() -> None:
+    trades, state = simulate_serial_candidates(
+        [
+            _candidate(minute=32, raw_pnl=-510.0),
+            _candidate(minute=34, raw_pnl=900.0),
+            _candidate(minute=36, raw_pnl=900.0),
+        ],
+        config=SerialSimulatorConfig(
+            starting_cash=10_000.0,
+            max_daily_loss_fraction_of_session_start_equity=0.05,
+        ),
+    )
+
+    assert [trade.raw_label_pnl for trade in trades] == [-510.0]
+    assert state.skipped["daily_loss_stop"] == 2
+    assert (
+        state.semantics["max_daily_loss_fraction_of_session_start_equity"]
+        == 0.05
+    )
+
+
+def test_account_cash_is_realized_before_the_next_session_entry() -> None:
+    first = _candidate(
+        minute=32,
+        raw_pnl=-600.0,
+        session="2026-01-02",
+    )
+    second = replace(
+        _candidate(
+            minute=32,
+            raw_pnl=100.0,
+            ask=95.0,
+            session="2026-01-05",
+        ),
+        decision_time=datetime(2026, 1, 5, 14, 32, tzinfo=timezone.utc),
+    )
+
+    trades, state = simulate_serial_candidates(
+        [first, second],
+        config=SerialSimulatorConfig(starting_cash=10_000.0),
+    )
+
+    assert [trade.session for trade in trades] == ["2026-01-02"]
+    assert state.skipped["unaffordable"] == 1
+    assert state.cash_by_account["validation"] == 9_400.0
+
+
+def test_affordability_reserves_round_trip_fee() -> None:
+    trades, state = simulate_serial_candidates(
+        [_candidate(minute=32, raw_pnl=-10_003.0, ask=100.0)],
+        config=SerialSimulatorConfig(
+            starting_cash=10_000.0,
+            affordability_reserve_per_trade=3.0,
+        ),
+    )
+
+    assert trades == []
+    assert state.skipped["unaffordable"] == 1
+    assert state.cash_by_account["validation"] == 10_000.0
+    assert state.semantics["affordability_reserve_per_trade"] == 3.0
 
 
 def test_cash_affordability_uses_raw_realized_pnl_not_stressed_metrics() -> None:

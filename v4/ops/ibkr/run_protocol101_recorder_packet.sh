@@ -104,20 +104,45 @@ case "$action" in
     if (( current_hm >= 615 )); then
       health_args+=(--require-live --require-ladder)
     fi
+    if (( current_hm >= 633 )); then
+      health_args+=(--require-checkpoint-progress --max-checkpoint-lag-seconds 150)
+    fi
     exec "$RECORDER_PYTHON" -m v4.ops.ibkr.protocol101_recorder_control "${health_args[@]}"
     ;;
   watchdog)
+    restart_sleep="${WATCHDOG_RESTART_COOLDOWN_SECONDS:-120}"
+    max_restart_sleep="${WATCHDOG_MAX_RESTART_COOLDOWN_SECONDS:-300}"
     while (( $(local_hhmm_decimal) < 1305 )); do
       health_args=(health --session "$SESSION" --capture-id "$CAPTURE_ID" --capture-root "$CAPTURE_ROOT" --max-heartbeat-age-seconds 20 --port 4002)
       current_hm="$(local_hhmm_decimal)"
       if (( current_hm >= 615 )); then
         health_args+=(--require-live --require-ladder)
       fi
+      if (( current_hm >= 633 )); then
+        health_args+=(--require-checkpoint-progress --max-checkpoint-lag-seconds 150)
+      fi
       if ! "$RECORDER_PYTHON" -m v4.ops.ibkr.protocol101_recorder_control "${health_args[@]}"; then
         printf '%s recorder evidence unhealthy; restarting %s.recorder\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$LABEL_PREFIX" >>"$LOG_DIR/protocol101-parityrecorder-watchdog.log"
+        if ! /usr/bin/nc -z 127.0.0.1 4002 >/dev/null 2>&1; then
+          printf '%s gateway API port closed; restarting %s.gateway before recorder\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$LABEL_PREFIX" >>"$LOG_DIR/protocol101-parityrecorder-watchdog.log"
+          launchctl kickstart -k "gui/$UID/$LABEL_PREFIX.gateway" 2>>"$LOG_DIR/protocol101-parityrecorder-watchdog.log" || true
+          "$RECORDER_PYTHON" -m v4.ops.ibkr.protocol101_gateway_ready \
+            --port 4002 --client-id 158 --timeout-seconds 300 --stable-seconds 10 \
+            >>"$LOG_DIR/protocol101-parityrecorder-watchdog.log" \
+            2>>"$LOG_DIR/protocol101-parityrecorder-watchdog.log" || true
+        fi
+        launchctl kill TERM "gui/$UID/$LABEL_PREFIX.recorder" 2>>"$LOG_DIR/protocol101-parityrecorder-watchdog.log" || true
+        pkill -TERM -f "v4.ops.ibkr.run_protocol101_ibkr_recorder.*--session $SESSION" 2>/dev/null || true
+        sleep 5
+        pkill -KILL -f "v4.ops.ibkr.run_protocol101_ibkr_recorder.*--session $SESSION" 2>/dev/null || true
         launchctl kickstart -k "gui/$UID/$LABEL_PREFIX.recorder" 2>>"$LOG_DIR/protocol101-parityrecorder-watchdog.log" || true
-        sleep 30
+        sleep "$restart_sleep"
+        restart_sleep=$((restart_sleep * 2))
+        if (( restart_sleep > max_restart_sleep )); then
+          restart_sleep="$max_restart_sleep"
+        fi
       else
+        restart_sleep="${WATCHDOG_RESTART_COOLDOWN_SECONDS:-120}"
         sleep 60
       fi
     done
@@ -141,8 +166,17 @@ case "$action" in
       --session "$SESSION" --capture-id "$CAPTURE_ID" --capture-root "$CAPTURE_ROOT"
     ;;
   audit)
+    recovery_status=0
+    set +e
+    "$RECORDER_PYTHON" -m v4.ops.ibkr.protocol101_recorder_control recover-checkpoints \
+      --session "$SESSION" --capture-id "$CAPTURE_ID" --capture-root "$CAPTURE_ROOT"
+    recovery_status=$?
+    set -e
     "$RECORDER_PYTHON" -m v4.ops.ibkr.protocol101_recorder_control audit \
       --session "$SESSION" --capture-id "$CAPTURE_ID" --capture-root "$CAPTURE_ROOT" --require-complete-session
+    if (( recovery_status != 0 )); then
+      exit "$recovery_status"
+    fi
     "$MODEL_PYTHON" - "$REGISTRY" "$BUNDLE_ROOT" "$SESSION" "$CAPTURE_ROOT" "$GATE_PATH" "$DEVELOPMENT_SESSION" <<'PY'
 import json
 import subprocess
