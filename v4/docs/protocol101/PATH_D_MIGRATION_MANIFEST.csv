@@ -1,0 +1,14 @@
+legacy_path,path_d_target,status,compatibility_surface,behavior_change,notes
+v4/dataset/spxw_0dte_neural.py,v4/path_d/features/source_neutral.py,ADDITIVE_PARITY_PROVED,v4/path_d/compat/legacy_features.py,NONE,"Legacy consumers untouched; exact float64 byte/hash tests"
+v4/live/protocol101_feature_contract.py,v4/path_d/features/source_neutral.py,ADDITIVE_REUSE_DIRECTION,existing shared option-feature contract,NONE,"Existing in-progress legacy edits preserved"
+v4/live/protocol101_live_entry.py,v4/path_d/decision/service.py,DEFERRED_CONSUMER_MIGRATION,canonical market events,NONE,"No live rewiring in steps 1-6"
+v4/live/ibkr_paper_guard.py,v4/path_d/risk/governor.py,ADDITIVE_NOT_REPLACEMENT,GovernorDecisionV1,NONE,"Current paper guard remains active only in legacy runtime"
+v4/live/ibkr_paper_executor.py,v4/path_d/contracts/executor_port.py,ADDITIVE_PORT_ONLY,ExecutionIntentV1+GovernorDecisionV1,NONE,"Real Path-D adapter deferred"
+v4/sim/order_state.py,v4/path_d/execution/state_machine.py,ADDITIVE_NOT_REPLACEMENT,ExecutionEventV1,NONE,"Adds cancel race and unknown reconciliation for Path-D only"
+v4/scripts/run_protocol123_order_state_rehearsal.py,v4/path_d/execution/simulated.py,ADDITIVE_OFFLINE_REPLACEMENT_CANDIDATE,virtual monotonic clock,NONE,"No legacy rehearsal edit"
+v4/scripts/run_protocol158_live_entry_paper_bridge.py,,EXCLUDED,,NONE,"Explicitly untouched"
+v4/scripts/run_protocol160_protocol101_persistent_paper_trader.py,,EXCLUDED,,NONE,"Explicitly untouched"
+v4/promotion/PAPER_TRADING_DEFAULT.json,,EXCLUDED,,NONE,"No default or registry change"
+v4/runtime/,,EXCLUDED,,NONE,"No runtime flag/state change"
+v4/ops/launchd/,,EXCLUDED,,NONE,"No scheduling change"
+

@@ -53,10 +53,16 @@ decision_time            # when the model would commit to a decision (typically 
 
 ```
 contract_id              # canonical (root, expiry, strike, right) — see ../parser/
+raw_symbol               # vendor raw symbol, e.g. OPRA/OCC-21 representation
+instrument_id            # vendor instrument id when supplied
 expiry                   # ISO date
 strike                   # decimal
 right                    # 'C' | 'P'
 root                     # 'SPX' | 'SPXW' | 'SPY' | ...
+settlement_style         # 'PM' for SPXW, 'AM' for standard SPX monthlies
+settlement_time_utc      # expected exercise-settlement anchor for 0DTE labels
+min_price_increment
+contract_multiplier
 ```
 
 ### 2.3 Market data (Normalized, Feature)
@@ -64,14 +70,21 @@ root                     # 'SPX' | 'SPXW' | 'SPY' | ...
 ```
 bid                      # best bid, decimal
 ask                      # best ask, decimal
+bid_size
+ask_size
 mid                      # (bid + ask) / 2; computed, not vendor-supplied
 last_trade               # last trade price
 last_trade_size
+quote_time
+last_trade_time
 quote_age_ms             # how stale was the NBBO at decision_time
+quote_gap_seconds        # quote_time - last_trade_time, when last trade time is known
 open_interest            # last EOD value
 open_interest_asof_date  # when that EOD OI was published
+stat_open_interest       # Databento statistics.stat_type == 9 only
 volume                   # cumulative session volume at event_time
 volume_asof_time         # the event_time this volume was computed at
+option_ohlcv_volume      # option volume from an actual OHLCV/trade-bar schema
 ```
 
 ### 2.4 Greeks / IV (Normalized only after computation; Feature consumes)
@@ -148,7 +161,9 @@ A 10-minute OptionsDepth dealer-flow snapshot carried into a 1-minute decision l
 ### 4.2 Databento OPRA (paid, Phase 1 only)
 
 - Coverage: full OPRA history including SPXW, 2018+ available, 0DTE coverage clean.
-- Provides: trades, NBBO/CBBO, definitions, statistics (including OI). **Does NOT provide pre-calculated IV or Greeks.**
+- Provides: NBBO/CBBO, definitions, statistics, optional trade bars such as `ohlcv-1m`. **Does NOT provide pre-calculated IV or Greeks.**
+- `cbbo-1m` last-sale fields are not volume. Populate `volume` only from `ohlcv-1m` or another actual trade-volume schema.
+- For the first economic pilot, use SPXW definitions + `cbbo-1m` + separate SPX/VIX index bars as the minimum viable quote dataset. Add `ohlcv-1m` if the estimator cost is acceptable.
 - Greeks for Databento data are computed by [../greeks/](../greeks/) using Black-Scholes from underlying + risk-free + dividend assumptions.
 - Cost: usage-based PAYG, billed by uncompressed GB. Use Databento's pricing estimator before committing.
 - Schema: documented at https://databento.com/docs/venues-and-datasets/opra-pillar — capture the schema version per ingest.
@@ -160,7 +175,7 @@ A 10-minute OptionsDepth dealer-flow snapshot carried into a 1-minute decision l
 - Greeks come from IBKR's model when option + underlying are both subscribed.
 - Live data subs cost ~$10–15/mo all-in for SPX 0DTE coverage.
 
-### 4.4 OptionsDepth (Phase 1 one-cycle / Phase 3+ recurring)
+### 4.4 OptionsDepth (deferred until after Block-1 proof)
 
 - **Not usable in v4 unless written terms confirm** (see protocol Section 4.2):
   1. Historical intraday snapshots are exportable in machine-readable form

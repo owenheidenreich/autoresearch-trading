@@ -1,0 +1,18 @@
+{
+  "account_id_redacted": "FAKE-***",
+  "available_funds_micros": 1000000000,
+  "captured_at_utc": "2026-06-30T13:30:02Z",
+  "connectivity": "CONNECTED",
+  "daily_pnl_micros": 0,
+  "open_positions": [
+    {
+      "average_cost_micros": 2500000,
+      "opened_at_utc": "2026-06-30T13:30:00Z",
+      "osi_symbol": "SPXW  260630C07490000",
+      "quantity": 1
+    }
+  ],
+  "schema_version": "pathd.broker_state_snapshot.v1",
+  "snapshot_version": "fake-state-1",
+  "source": "FAKE_GATEWAY"
+}

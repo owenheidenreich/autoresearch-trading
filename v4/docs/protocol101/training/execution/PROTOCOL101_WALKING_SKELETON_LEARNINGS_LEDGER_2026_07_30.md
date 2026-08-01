@@ -818,3 +818,264 @@ against source — all CONFIRMED. Corrections to prior claims:
   owner signs overlay → implement (build FT2-08 1s exit tensor/labels on cbbo-1s, wire fill
   law, train GBT baseline exit on OOF-from-frozen-entry, run serial-replay Tier-S backtest)
   → Tier-S feasibility gate.
+
+---
+
+## Phase update 2026-08-01 (k) — Codex Phase-1 re-review = NEEDS-CHANGES (round 2)
+
+- **Codex re-review: NEEDS-CHANGES again** (Claude accepts — findings correct). Closed:
+  Tier-S consistency, broker-state-in-principle, additive FT2-08/fill existence, OOF,
+  PR/AP-diagnostic. STILL OPEN (blocking): (1) Q_hold still CIRCULAR (defined via "the same
+  learned exit policy" we're training; no frozen reference/Bellman/H/terminal value);
+  (2) fill law non-executable + CONTRADICTS FT2-08 (entry ask+tick vs legacy A1) + fee
+  double-count vs frozen $3/$4 round-trip reserve + Δ unfrozen + 15:55 minute-language;
+  (3) clock concepts listed but no frozen fields/endpoints/quote-age numerics/watermark-fail;
+  (4) floor is an EXAMPLE not a preregistered rule (formula/params/priority absent);
+  (5) economic terms double-count risk (flat-slot vs switching overlap, no equation).
+  High: allowlist asserted-not-frozen; historical(simulated-fill)/live(broker-fill) lineage
+  law missing; EXIT calibration only named; overlay hashes placeholder + "no training" vs
+  learned-backtest authorization conflict.
+- **META (Claude own-error pattern):** two rounds bounced because I wrote design-level PROSE,
+  not FROZEN EXECUTABLE contracts. Fix requires a different KIND of doc (equations/params/
+  tables). Genuine correctness issues (circular Q_hold, contradictory fills, undefined floor)
+  must be fixed regardless; production edge-case formalism is an owner rigor decision for a
+  Tier-S throwaway. Concrete Q_hold fix available: advantage vs a FROZEN hold-to-flat
+  reference policy (non-circular, deployable, path-computable).
+- **DECISION PENDING (owner):** rigor level for the 3rd revision — Tier-S bar (fix
+  correctness, defer production edge-cases w/ sign-off) vs full production bar vs step-back.
+
+---
+
+## Phase update 2026-08-01 (l) — SEQUENCING RESET: architecture transition BEFORE model work
+
+- **Owner correction (accepted):** stop jumping to model-training/backtest questions —
+  we are still TRANSITIONING the architecture to Databento-live-OPRA-decide. Sub-minute
+  structure question is CLOSED (already measured: 93% of minutes move; median within-minute
+  bid range ~$80-165/contract; latency sweep confirms seconds-scale movement). The
+  descriptive spike + the 5 governance contracts + the model backtest were all premature.
+- **Correct order:** (1) make the Path-D architecture real — Databento-live decide -> IBKR
+  execute — with a FUNCTIONAL, TESTABLE decide->execute boundary + latency measurement, and
+  a codebase reorg other AIs can build on; THEN (2) model training/backtest; THEN (3) the
+  governance contracts (Codex's Phase-1 findings become the checklist for that later
+  formalization). The 5 Phase-1 contracts (model-plane v2, FT2-60 v2, FT2-08 exit, fill law,
+  overlay) are SHELVED pending the architecture transition + evidence.
+- **Dispatched:** Codex transition-architecture audit + reorg plan (3 planes: decision
+  service / execution adapter / decide->execute boundary + risk governor; reorg map;
+  boundary testability; latency-test harness; incremental migration + orientation). Audit/
+  design only — no refactor/live/training/contracts yet.
+- **CLAUDE self-note:** repeatedly over-ran the owner's sequencing (proposed model work
+  while still mid-transition). Hold the line: transition architecture first.
+
+---
+
+## Phase update 2026-08-01 (m) — Path-D exit research pipeline BUILT + smoke-validated
+
+- **Built (Claude, research-grade, quarantined):** the full Path-D exit pipeline on real
+  cbbo-1s — non-circular label builder (a_hold = advantage vs FROZEN hold-to-flat; proven
+  NON-ORACLE: a_hold <= oracle_adv on 100% of rows, mean -$0.81 vs oracle +$4.38), GBT
+  trainer with leave-one-day-out OOF, conservative-fill serial replay, baseline panel.
+  Scripts: run_pathd_exit_label_smoke.py, run_pathd_exit_backtest_smoke.py; artifacts in
+  protocol101_pathd_exit_research/.
+- **Smoke result (6 days, deterministic entry fixture — machinery validation, NOT
+  feasibility):** OOF a_hold R^2 = **-0.54 (negative)** = NO genuine out-of-sample skill at
+  6-day scale (expected; thin data, echoes WS1). PnL table LOOKS like learned wins (-$9.67
+  vs hold-to-flat -$95) but this is an EARLY-EXIT CONFOUND, not skill: exit-immediate also
+  beats hold-to-flat (-$36), and R^2 is negative. **Not claimed as signal** (no-reward-hack
+  discipline). The guard baselines (exit-immediate + OOF R^2) that expose the confound carry
+  to the real run.
+- **Status:** pipeline machinery COMPLETE + validated end-to-end on real data. Real
+  feasibility answer requires 12-month cbbo-1s (download pending) + frozen-entry OOF (not the
+  fixture). Runs in parallel with Codex's transition-architecture audit.
+
+---
+
+## Phase update 2026-08-01 (n) — Codex transition-architecture audit VERIFIED + endorsed
+
+- **Codex transition audit received + Claude-verified** (5 foundational findings confirmed:
+  NullSimulator reject-all; PaperOrderIntent broker-shaped-only; executor LMT/DAY+cancel-
+  without-proof; paper-default dispatches Protocol160; Protocol160 monolithic). Verdict
+  ENDORSED: additive `v4/path_d/` overlay, DON'T touch Protocol160 until the boundary passes
+  offline+latency+fake-gateway+authorized-paper evidence.
+- **Architecture (sound + safe):** clean planes — contracts (stdlib-only) / decision (no IBKR
+  imports) / risk governor (sole submit-authorizer, forced-flat on holding-feed-loss) /
+  execution (isolated; full order state machine w/ no-fill escalation + reconciliation) /
+  observability / runtime orchestrator. Decide->execute boundary = ExecutionIntentV1 strict
+  JSON + ExecutorPort (same port for SimulatedExecutor and IbkrGatewayExecutor -> no `if live`
+  branch) -> functional + latency-testable OFFLINE (the owner's requirement). Closes the
+  adversarial review's critical findings. Migration steps 1-6 offline (buildable now), 7-11
+  live/cutover (gated). Respects CLAUDE.md cleanup rules.
+- **Integration:** Claude's exit-model pipeline = the "frozen model / deterministic exit
+  policy" node (decision brain); Codex's architecture = the plumbing (nervous system).
+  Complementary, parallel, non-blocking.
+- **THREE PARALLEL TRACKS:** (1) Codex implements the offline Path-D foundation (steps 1-6 +
+  harness; goal drafted); (2) Claude's exit-model research (blocked on 12mo data + entry
+  trajectories); (3) owner downloads 12mo cbbo-1s (unblocks track 2). None touch live/broker.
+
+---
+
+## Phase update 2026-08-01 (o) — Path-D data-acquisition plan written (Codex download goal)
+
+- **Planning doc written:** PROTOCOL101_PATH_D_DATA_ACQUISITION_PLAN_2026_08_01.md (owner-
+  approved plan). Contains the copy-paste Codex download goal.
+- **Confirmed tooling exists (owner was right):** download_thetadata_index_bars.py (ThetaData
+  SPX/VIX, --auth-check, paid-data guard, out data/vendor/thetadata/index) — 429 SPX + 439 VIX
+  days already on disk from 2024-10-01 (gap-fill only). Plus Databento cbbo-1s/context-proxy
+  scripts + build_databento_neural_dataset (official context) + paid_data_guard.
+- **Plan (5 phases):** A subscription+auth safety (get_cost=$0 assert; ThetaData --auth-check);
+  B acquire trailing-12mo free-under-sub OPRA (definition/ohlcv-1m/statistics/cbbo-1m/cbbo-1s;
+  NOT cmbp-1/tcbbo) + auto-approved ~$9 ES/VX futures + ThetaData gap-fill; C process via
+  build_databento_neural_dataset --context-mode official -> aligned corpus (minute entry + 1s
+  exit substrates); D analyze+test (data-quality report + spend ledger + test_paid_data_guard
+  + re-run run_pathd_exit_label_smoke.py at 12mo scale); E starting-line handoff.
+- **Spend policy (owner-set):** free-under-sub default; auto-approve ES/VX ~$9; STOP for any
+  other paid. Storage outside iCloud, parquet only, ~4.2 GB.
+- **NEXT:** owner hands Codex the download goal; Claude verifies on completion -> then the
+  entry+exit model plan.
+
+---
+
+## Phase update 2026-08-01 (p) — 12mo corpus acquired + Claude-VERIFIED
+
+- **Codex acquisition COMPLETE + Claude-verified.** Window 2025-08-01→2026-07-31, 251 aligned
+  OPRA sessions × 5 schemas; official SPX/VIX pairing 251/251; ES/VX futures context present.
+  Exit-label pipeline re-run at scale: 37,047,600 rows, non-oracle (a_hold<=oracle 100%,
+  is_oracle=False) + no-leakage PASS. Integrity 3,708 files/21.48 GB hashed; 38 tests pass.
+- **Spend VERIFIED within authorization:** $8.55 of $9 — OPRA subscription $0 (free),
+  ThetaData $0 (existing sub), ES/VX $8.55 (authorized). No cmbp-1/tcbbo/older-L1 (129 on-disk
+  cmbp files are 2024 legacy; 0 in-window). Evidence: protocol101_pathd_data_acquisition/
+  {handoff, data_quality_report, spend_ledger, pathd_exit_label_validation_12m}.
+- **HONEST NOTE:** corr(pnl,a_hold) collapsed -0.42 (6-day smoke) -> +0.019 (12mo). The smoke
+  "hint" was small-sample noise; real feasibility needs the full model (all features + proper
+  OOF), not naive correlations. No false expectation into modeling.
+- **STARTING LINE REACHED:** corpus ready for the entry+exit model plan. Parallel: Codex offline
+  execution-architecture implementation (steps 1-6). NEXT: plan the entry + exit models.
+
+---
+
+## Phase update 2026-08-01 (q) — offline execution foundation VERIFIED; model-plan goal drafted
+
+- **Codex offline execution foundation (steps 1-6) Claude-VERIFIED + endorsed.** v4/path_d/
+  package (contracts/decision/risk/execution/features/compat) matches the audit. Import-boundary
+  invariant TESTED + passing (test_path_d_import_boundaries_forbid_ibkr...; no ib-lib imports
+  anywhere — "IBKR" hits are enum strings only). Feature-shim byte/hash equivalence TESTED
+  (legacy preserved). ExecutionIntentV1 semantic-hash, governor forced-flat-on-feed-loss,
+  disconnect->UNKNOWN->reconcile, received-clock offline E2E all TESTED + passing. Artifacts:
+  offline_e2e_transcript.jsonl + latency_bounds.md (24 rows, 6 sessions x 4 rungs). 24 dedicated
+  path_d tests pass; Codex's "48" = path_d + shim-affected legacy (reconciled, legitimate). No
+  Protocol158/160/runtime/registry edits. Step 7 (live IBKR adapter) + cutover deferred.
+- **Entry+exit MODEL-PLAN Codex goal drafted** (owner-approved plan): a Codex goal that PRODUCES
+  the research-grade entry+exit model plan (design), binding to the built v4/path_d/ boundary,
+  reusing the verified corpus + validated exit pipeline + shelved FT2-60/model-plane/A6 designs,
+  with self-fooling guards (exit-immediate baseline, OOF R², non-circular target) baked in; build
+  deferred to a later goal after Claude-verify + owner-review.
+- **State:** two parallel tracks healthy — (execution plumbing) offline foundation done+verified;
+  (decision brain) model plan next. NEXT: owner hands Codex the model-plan goal; Claude verifies
+  its output; then owner review -> build goal -> feasibility gate.
+
+---
+
+## Phase update 2026-08-01 (r) — entry+exit model PLAN Claude-VERIFIED (review-ready)
+
+- **Codex entry+exit model plan** (PROTOCOL101_PATHD_ENTRY_EXIT_MODEL_PLAN_2026_08_01.md)
+  Claude-verified: PASS, review-ready. Fixes ALL prior-round defects + bakes in guards:
+  non-circular A_ref = H_t - E_t (frozen hold-to-flat vs exit-until-filled; oracle audit-only/
+  forbidden); A6 gate on conditional MEAN (q10 rank-only, drops h3/h5); leak-free fold-specific
+  OOF-from-frozen-entry (never full-fit); economic acceptance Box D beats best honest comparator
+  pooled + >=4/5 outer folds + bootstrap LB + action-conditioned calibration gate (PR/AP
+  diagnostic-only); deterministic floor floor_bid=max(0,0.5*P_entry+3/100); one shared fill-law
+  hash ($1.50/side once, entry fee cancels — no double-count); binds to ExecutionIntentV1 +
+  DeterministicGovernor + SimulatedExecutor; self-fooling guards (must beat exit-immediate +
+  matched-random, OOF-R2 tripwire, negative controls, mutate-future, large-win skepticism,
+  scale-lesson). Firewall arithmetic checks (70+5+140+36=251; 30 protected holdout, opened once).
+- **Honesty catch:** 30-holdout is protected-from-model/economic-inspection but NOT pristine raw
+  (aggregate label stats already leaked) — caveat must appear in every result.
+- **5 OPEN OWNER DECISIONS (Claude recommends CONFIRM all):** (1) entry=signed 17, enrichment
+  exit-only; (2) H=300s, 0.25 penalty, 90% levels; (3) fixed net -50% floor (vs governor moving
+  80%); (4) VIX/ES/VX = diagnostics/strata not alpha; (5) accept holdout-not-pristine caveat.
+- **NEXT:** owner confirms the 5 -> BUILD goal (execute the plan: entry HGB->neural, freeze,
+  exit OOF, four-box replay through the boundary) -> Tier-S feasibility gate. Nothing built yet.
+
+---
+
+## Phase update 2026-08-01 (s) — 5 decisions confirmed; BUILD goal drafted + handed off
+
+- **Owner confirmed all 5 open decisions:** (1) entry=signed 17, enrichment exit-only; (2) H=300s,
+  0.25 penalty, 90% levels; (3) fixed net -50% deterministic floor; (4) VIX/ES/VX diagnostics/
+  strata not alpha; (5) holdout-not-pristine caveat accepted. (Owner asked + understood the
+  "deterministic backstop" rationale: a catastrophic floor must be fixed/mechanical/knowable, not
+  trailing/forecast-based — a seatbelt/airbag, not a second decision-maker.)
+- **BUILD goal drafted + handed to Codex:** execute PROTOCOL101_PATHD_ENTRY_EXIT_MODEL_PLAN as the
+  binding spec, per §8 sequence with stops (freeze prereg -> entry HGB->neural + gate [stop if entry
+  fails] -> freeze entry -> exit trajectories/labels from frozen OOF -> exit HGB->neural + §7 guards
+  -> four-box replay through the v4/path_d/ boundary + §6.3 economic acceptance -> open 30-holdout
+  ONCE). Tier-S/quarantined; no live/broker/paper/promotion/governance-freeze/runtime/cmbp-1.
+  Verdict = PASS / no_genuine_signal / insufficient_evidence / owner_decision_required.
+- **THIS IS THE FEASIBILITY-GATE RUN** — the honest "does a Path-D entry+exit show edge?" answer
+  the whole pivot built toward. Nothing built yet; Codex executes; Claude verifies the result
+  (reproduce guards, confirm holdout opened once, no self-fooling) -> owner decides next phase.
+
+---
+
+## Phase update 2026-08-01 (t) — background feature-signal probe (entry microstructure)
+
+- **Model-free directional probe** (while Codex builds signed-17): do the Path-D re-admitted
+  microstructure fields carry incremental ENTRY-ranking signal? Training-only (14 sampled
+  fit-history sessions, 57 hourly decision-minutes, 406 band candidates), within-minute Spearman
+  vs forward-30min upside; incremental = vs moneyness-residual. NO holdout, NO model.
+  Artifacts: protocol101_pathd_feature_research/{entry_feature_probe.json, FINDING_...md}.
+- **FINDING: order-book SIZE IMBALANCE is the standout** — raw within-minute rho +0.167,
+  incremental-over-moneyness +0.129, t~2.59 (58% of minutes positive) — STRONGER than the
+  moneyness geometry the signed-17 relies on, and genuinely additive to it. Open interest weak
+  secondary (+0.089 incr). Spread/volume/quote-age negligible. bid_size/ask_size are exactly the
+  fields the parity mask REMOVED -> the mask was discarding a real (moderate) entry signal Path D
+  re-admits. Supports the owner's "widen the entry" hypothesis.
+- **CAVEATS (honest):** moderate magnitude, directional probe only, moneyness-only control
+  (delta/gamma null in base view), rank-signal != tradeable-edge-after-costs (imbalance decays
+  fast on 0DTE). A hypothesis to TEST, not proven edge.
+- **DISPOSITION:** do NOT add to the current run (would break decision #1's clean signed-17
+  baseline / change two things at once). IF the signed-17 build underwhelms (or as a follow-up),
+  test widened entry = signed-17 + order-book imbalance (+OI) under the SAME fair firewall +
+  guards. Extra-features direction now has concrete, prioritized support.
+
+---
+
+## Phase update 2026-08-01 (u) — Databento historical->live FIELD PARITY (owner catch)
+
+- **Owner catch (correct + important):** "same vendor" != "same fields"; the live OPRA feed isn't
+  automatically the training download. Ran a field-parity inventory (FINDING_databento_live_field_
+  parity_2026_08_01.md).
+- **Findings:** (a) live OPRA = CONSOLIDATED schemas cbbo-1s/cmbp-1/cbbo-1m; MBP-1/TBBO RETIRED for
+  OPRA May 2025 -> our training (cbbo-1s/cbbo-1m) matches the live family; do NOT build on mbp-1/
+  tbbo. (b) bid/ask + bid_size/ask_size ARE live (consolidated CBBO carries sizes; confirmed in our
+  own cbbo-1s parquet bid_sz_00/ask_sz_00). (c) **open_interest / stat_open_interest are STATISTICS
+  schema = DAILY/EOD, NOT real-time** -> barred as intraday features (prior-day static only).
+  (d) greeks self-computed (live-reproducible); SPX via ThetaData live.
+- **Impact on the feature finding:** size_imbalance (standout, +0.129 incr) is LIVE-USABLE ->
+  widen-entry direction is deployable. open_interest (weak secondary) DISQUALIFIED as intraday
+  (EOD-only). So the widen-entry candidate narrows to order-book imbalance (+ always-safe
+  price/spread), NOT OI.
+- **Governance hook:** the model plan §3 already requires a per-feature "historical/live twin"
+  fail-closed; THIS inventory is its ground truth. Enforce: only live-usable fields as model
+  inputs; EOD-only fields barred intraday; live adapter (step 8) must reproduce the exact cbbo-1s
+  schema/sampling (or cmbp-1->1s with the same rule) — verify on the first live-shadow day.
+
+---
+
+## Phase update 2026-08-01 (v) — build-correction proposal (research vs frozen build)
+
+- **Checked Codex's build state (filesystem, read-only):** prereg FROZEN (feature_lineage.json,
+  preregistration.json, session_assignments.json); building decoder/dataset/model machinery
+  (v4/research/pathd_entry_*.py, path_d/execution/research_*.py); PRE-FIT, PRE-EVIDENCE
+  (holdout_open_count=0). Build dir: protocol101_pathd_entry_exit_model_research_2026_08_01/.
+- **Findings vs build:** (1) ENTRY clean — signed-17 only; OI/sizes/volume FORBIDDEN as entry alpha.
+  (2) EXIT uses live-safe microstructure (bid/ask sizes, imbalance, spread) BUT also
+  last_causal_open_interest w/ 90s carry — OI is EOD-only (no real-time twin) -> live-parity gap.
+  (3) BURNED outer-fold-1 primary: reason FROZEN_FOUNDATION_DRIFT_BEFORE_DECODE, access_count=0,
+  no-reopen -> weakens >=4/5 gate + signals foundation instability.
+- **Correction proposal written** (PROTOCOL101_PATHD_BUILD_CORRECTION_PROPOSAL_2026_08_01.md,
+  evidence->build->fix): P1 root-cause the drift + re-freeze/restore-5-folds-if-benign (or restate
+  gate if real) + add byte-identical foundation-stability gate before fold decode; P2 drop/redefine
+  last_causal_open_interest (EOD) + verify minute_volume live + enforce field-parity live-twin ground
+  truth across all 17+49 features; P3 record size_imbalance (+sizes) as pre-vetted live-safe
+  widen-entry follow-up (entry stays signed-17 this run). Codex goal drafted; applies at pre-fit
+  pause. NEXT: Codex applies -> Claude verifies -> then the fit.

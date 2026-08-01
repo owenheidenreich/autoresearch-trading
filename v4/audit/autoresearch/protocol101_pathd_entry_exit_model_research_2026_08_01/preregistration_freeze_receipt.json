@@ -1,0 +1,30 @@
+{
+  "claim_boundary": "Tier-S feasibility evidence for a Path-D entry+exit trader; guarded and holdout-honest; no promotion/paper/real-money claim.",
+  "feature_lineage_path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_2026_08_01/feature_lineage.json",
+  "feature_lineage_sha256": "1534bd8784715e257e6a89701b05e36512f2dfaf66cc50cfdb2fa4d3506f970a",
+  "fill_law_hash": "a95a18a3521d6a11f07ea54a991c06631c2462c23952cc658b06dfc617b56cf7",
+  "fit_gate": {
+    "entry_machinery_receipt_required": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_2026_08_01/entry_machinery_receipt.json",
+    "function": "v4.research.pathd_entry_exit::assert_entry_fit_ready",
+    "lineage_implementation_receipt_required": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_2026_08_01/feature_lineage_implementation_receipt.json"
+  },
+  "frozen_at_utc": "2026-08-01T19:51:02.310489Z",
+  "holdout_caveat": "The final 30-session firewall is protected from model/economic inspection but is not pristine from the already published full-corpus aggregate label statistics.",
+  "holdout_open_count": 0,
+  "model_fit_executed": false,
+  "plan_sha256": "6b694226d0fbb84c5b4ae2cc05009daf5d847d2d94f1bcf38923cfb622be4ec9",
+  "preregistration_path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_2026_08_01/preregistration.json",
+  "preregistration_sha256": "c811acf57f8d57c9067e9534314957da64b3a1f3860b877c3cdc2a842fcdf60a",
+  "quarantine_labels": [
+    "tier-s",
+    "research",
+    "quarantined",
+    "not-promotable",
+    "no-paper",
+    "no-real-money"
+  ],
+  "schema_version": "pathd.entry_exit.preregistration_freeze_receipt.v1",
+  "session_assignments_path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_2026_08_01/session_assignments.json",
+  "session_assignments_sha256": "8455127b950269e966f378790ff77b2c3d7f8565518c2ad581fbd9dfc288f9a2",
+  "status": "FROZEN_BEFORE_ANY_MODEL_FIT"
+}

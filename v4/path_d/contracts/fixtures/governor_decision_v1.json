@@ -1,0 +1,10 @@
+{
+  "authorization_token": "sha256:5ae1bfd7bd9d993e7bbd53ac6a7e4efb4cf2fa739ef08581b46e2bc975d1b47a",
+  "broker_state_version": "fake-state-1",
+  "decision_id": "sha256:2da9f41cb0ab827f2ef012b331d96df88ed9a8c2b307563012b813007a846c95",
+  "disposition": "ALLOW",
+  "evaluated_at_utc": "2026-06-30T13:30:02Z",
+  "intent_id": "sha256:32b232a225f2fc03488cc260e85eed6700fe5a73f4676071cf1cae7dd66281a1",
+  "reason_codes": ["ALL_GOVERNOR_CHECKS_PASSED"],
+  "schema_version": "pathd.governor_decision.v1"
+}

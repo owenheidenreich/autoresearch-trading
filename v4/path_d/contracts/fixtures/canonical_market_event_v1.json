@@ -1,0 +1,17 @@
+{
+  "ask_price_micros": null,
+  "ask_size": null,
+  "bid_price_micros": null,
+  "bid_size": null,
+  "event_id": "sha256:211f546d10b88c992dfd873f8ab9d453ecfee6c438a2b9de2806bac5d9d6b48b",
+  "event_type": "SPX_INDEX",
+  "index_price_micros": 7490000000,
+  "index_symbol": "SPX",
+  "osi_symbol": null,
+  "received_timestamp_utc": "2026-06-30T13:30:00Z",
+  "schema_version": "pathd.canonical_market_event.v1",
+  "session_date": "2026-06-30",
+  "source": "THETADATA_SPX",
+  "source_timestamp_utc": "2026-06-30T13:30:00Z",
+  "volume": 10
+}

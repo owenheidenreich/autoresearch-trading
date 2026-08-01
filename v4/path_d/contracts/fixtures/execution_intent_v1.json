@@ -1,0 +1,58 @@
+{
+  "clocks": {
+    "decision_available_at_utc": "2026-06-30T13:30:02Z",
+    "decision_clock": "received_timestamp_utc",
+    "event_interval_end_utc": "2026-06-30T13:30:01Z",
+    "intent_emitted_at_utc": "2026-06-30T13:30:02Z",
+    "model_finished_at_utc": "2026-06-30T13:30:02Z",
+    "model_started_at_utc": "2026-06-30T13:30:02Z",
+    "option_received_watermark_utc": "2026-06-30T13:30:02Z",
+    "spx_received_watermark_utc": "2026-06-30T13:30:01Z",
+    "valid_until_utc": "2026-06-30T13:30:04Z"
+  },
+  "contract": {
+    "currency": "USD",
+    "expiry": "2026-06-30",
+    "multiplier": 100,
+    "osi_symbol": "SPXW  260630C07490000",
+    "right": "C",
+    "settlement": "PM",
+    "strike_milli": 7490000,
+    "trading_class": "SPXW",
+    "underlying": "SPX"
+  },
+  "decision": {
+    "action": "CLOSE_LONG",
+    "position_effect": "CLOSE",
+    "quantity": 1,
+    "reason_code": "DETERMINISTIC_UPWARD_FLOOR",
+    "side": "SELL",
+    "urgency": "PROTECTIVE_EXIT"
+  },
+  "execution_profile_version": "pathd.offline-limit-profile.v1",
+  "intent_id": "sha256:32b232a225f2fc03488cc260e85eed6700fe5a73f4676071cf1cae7dd66281a1",
+  "origin": "DETERMINISTIC_EXIT",
+  "parent_intent_id": null,
+  "price_budget": {
+    "hard_limit_micros": 1900000,
+    "max_adverse_move_micros": 100000,
+    "reference_ask_micros": 2100000,
+    "reference_bid_micros": 2000000,
+    "reference_vendor": "DATABENTO_OPRA",
+    "unit": "USD_OPTION_PRICE_MICROS"
+  },
+  "producer": {
+    "artifact_sha256": null,
+    "component_version": "pathd.offline-decision-service.v1",
+    "feature_contract_version": "pathd.source-neutral-feature-builder.v1",
+    "feature_snapshot_sha256": "sha256:b07ef5cd7c4810180bb2247406f750e90d425551b97b528ffa4ab4b7f3c62e3a",
+    "strategy_id": "pathd.deterministic-exit-fixture.v1"
+  },
+  "schema_version": "pathd.execution_intent.v1",
+  "state_precondition": {
+    "expected_position": "LONG_ONE",
+    "held_osi_symbol": "SPXW  260630C07490000",
+    "position_snapshot_version": "fake-state-1"
+  },
+  "trace_id": "offline-b07ef5cd7c481018"
+}

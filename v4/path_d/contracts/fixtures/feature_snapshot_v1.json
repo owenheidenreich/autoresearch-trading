@@ -1,0 +1,38 @@
+{
+  "decision_available_at_utc": "2026-06-30T13:30:02Z",
+  "decision_clock": "received_timestamp_utc",
+  "feature_contract_version": "pathd.source-neutral-feature-builder.v1",
+  "features": [
+    {"name": "momentum_15m", "value": 0.0},
+    {"name": "momentum_5m", "value": 0.0},
+    {"name": "moneyness_points", "value": 1.0},
+    {"name": "omar", "value": 1.0},
+    {"name": "option_ask", "value": 2.1},
+    {"name": "option_ask_size", "value": 8.0},
+    {"name": "option_bid", "value": 2.0},
+    {"name": "option_bid_size", "value": 10.0},
+    {"name": "option_mid", "value": 2.05},
+    {"name": "option_spread", "value": 0.10000000000000009},
+    {"name": "option_spread_frac", "value": 0.0487804878048781},
+    {"name": "session_range", "value": 1.0},
+    {"name": "spx_close", "value": 7491.0},
+    {"name": "spx_vwap", "value": 7490.666666666667}
+  ],
+  "option_watermark_received_timestamp_utc": "2026-06-30T13:30:02Z",
+  "position_state": "LONG_ONE",
+  "schema_version": "pathd.feature_snapshot.v1",
+  "selected_contract": {
+    "currency": "USD",
+    "expiry": "2026-06-30",
+    "multiplier": 100,
+    "osi_symbol": "SPXW  260630C07490000",
+    "right": "C",
+    "settlement": "PM",
+    "strike_milli": 7490000,
+    "trading_class": "SPXW",
+    "underlying": "SPX"
+  },
+  "session_date": "2026-06-30",
+  "snapshot_id": "sha256:b07ef5cd7c4810180bb2247406f750e90d425551b97b528ffa4ab4b7f3c62e3a",
+  "spx_watermark_received_timestamp_utc": "2026-06-30T13:30:01Z"
+}

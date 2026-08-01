@@ -1,0 +1,553 @@
+{
+  "additional_properties": false,
+  "contract_id": "pathd-tier-s-entry-signed17-lineage-v1",
+  "entry_feature_count": 17,
+  "entry_feature_names_in_exact_order": [
+    "spx_vwap_gap_points",
+    "spx_vwap_gap_bps",
+    "spx_vwap_gap_over_session_range",
+    "session_range_bps",
+    "momentum_5m_bps",
+    "momentum_15m_bps",
+    "momentum_5m_over_session_range",
+    "momentum_15m_over_session_range",
+    "omar_clipped_neg3_pos3",
+    "vwap_side_alignment_flag",
+    "omar_side_alignment_flag",
+    "momentum15_side_alignment_flag",
+    "D.near_atm.straddle_mid_spot_bps",
+    "D.near_atm.put_call_mid_ratio",
+    "D.near_atm.side_smile_slope_bps_per_5pt",
+    "E.bs.delta",
+    "E.bs.gamma"
+  ],
+  "entry_feature_order_sha256": "a3c7d3420309722324ce827ddd833d86ffec517e5b841a7c9b480e172707c469",
+  "entry_microstructure_enrichment": false,
+  "fail_closed_negative_fixtures": [
+    "ibkr_bid_renamed_pnl",
+    "vendor_greek_renamed_internal_delta",
+    "future_ts_recv",
+    "unregistered_feature",
+    "feature_without_live_twin"
+  ],
+  "feature_transform_tick_note": "the signed-17 authority's fixed $0.05 mid quantization is an alpha transform and is distinct from the $0.05/$0.10 execution tick law",
+  "features": [
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "spx_vwap_gap_points",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "spx_close",
+        "spx_vwap"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "spx_vwap_gap_bps",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "spx_close",
+        "spx_vwap"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "spx_vwap_gap_over_session_range",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "spx_close",
+        "spx_vwap",
+        "session_range"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "session_range_bps",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "spx_close",
+        "session_range"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "momentum_5m_bps",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "spx_close",
+        "momentum_5m"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "momentum_15m_bps",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "spx_close",
+        "momentum_15m"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "momentum_5m_over_session_range",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "momentum_5m",
+        "session_range"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "momentum_15m_over_session_range",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "momentum_15m",
+        "session_range"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "omar_clipped_neg3_pos3",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "omar"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "vwap_side_alignment_flag",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "spx_close",
+        "spx_vwap",
+        "right"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "omar_side_alignment_flag",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "omar",
+        "right"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "momentum15_side_alignment_flag",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX"
+      ],
+      "transitive_source_leaves": [
+        "momentum_15m",
+        "right"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "D.near_atm.straddle_mid_spot_bps",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window",
+        "aligned/processed/minute_entry.option_ladder",
+        "aligned/processed/minute_entry.contract_quote_metadata"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX",
+        "DATABENTO_OPRA"
+      ],
+      "transitive_source_leaves": [
+        "all_near_atm_quantized_mids",
+        "spx_close",
+        "strike_offsets",
+        "rights"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "D.near_atm.put_call_mid_ratio",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window",
+        "aligned/processed/minute_entry.option_ladder",
+        "aligned/processed/minute_entry.contract_quote_metadata"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX",
+        "DATABENTO_OPRA"
+      ],
+      "transitive_source_leaves": [
+        "all_near_atm_quantized_mids",
+        "strike_offsets",
+        "rights"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "D.near_atm.side_smile_slope_bps_per_5pt",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window",
+        "aligned/processed/minute_entry.option_ladder",
+        "aligned/processed/minute_entry.contract_quote_metadata"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX",
+        "DATABENTO_OPRA"
+      ],
+      "transitive_source_leaves": [
+        "all_same_side_near_atm_quantized_mids",
+        "spx_close",
+        "strike_offsets",
+        "rights"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "E.bs.delta",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window",
+        "aligned/processed/minute_entry.option_ladder",
+        "aligned/processed/minute_entry.contract_quote_metadata"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX",
+        "DATABENTO_OPRA"
+      ],
+      "transitive_source_leaves": [
+        "action_quantized_mid",
+        "spx_close",
+        "atm_strike",
+        "strike_offset",
+        "right",
+        "decision_time",
+        "risk_free_rate_0.05",
+        "dividend_yield_0.0",
+        "feature_quantization_tick_0.05"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    },
+    {
+      "clock_semantics": "option receipt clocks and the official ThetaData SPX available_at clock must be <=decision_time; ThetaData event_time is a BAR_OPEN_TIMESTAMP and official SPX available_at=event_time+60 seconds; completed minute only",
+      "future_live_twin_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs",
+      "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+      "ibkr_market_alpha": false,
+      "name": "E.bs.gamma",
+      "namespace": "entry",
+      "raw_vendor_greek": false,
+      "reference_implementation": "v4/model/protocol101_canonical_stage1_contract.py::feature_matrix",
+      "reference_implementation_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+      "role": "alpha",
+      "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+      "source_schemas": [
+        "aligned/processed/minute_entry.market_window",
+        "aligned/processed/minute_entry.option_ladder",
+        "aligned/processed/minute_entry.contract_quote_metadata"
+      ],
+      "source_vendors": [
+        "THETADATA_OFFICIAL_SPX",
+        "DATABENTO_OPRA"
+      ],
+      "transitive_source_leaves": [
+        "action_quantized_mid",
+        "spx_close",
+        "atm_strike",
+        "strike_offset",
+        "right",
+        "decision_time",
+        "risk_free_rate_0.05",
+        "dividend_yield_0.0",
+        "feature_quantization_tick_0.05"
+      ],
+      "twin_semantics": "both adapters create the same canonical snapshot consumed by one pure kernel; the online-replay adapter performs no connection and supports no live-parity claim"
+    }
+  ],
+  "implementation_receipt_required_before_fit": true,
+  "planned_adapter_contract": {
+    "byte_equality": {
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    "historical_adapter": "v4.research.pathd_entry_features::historical_snapshot_from_processed_row",
+    "meaning_of_future_twin": "offline-importable source-neutral adapter over a canonical causal snapshot; no broker/live connection and no live-parity claim",
+    "shared_kernel": "v4.research.pathd_entry_features::signed17_from_snapshot",
+    "source_neutral_online_replay_adapter": "v4.research.pathd_entry_features::source_neutral_snapshot_from_causal_inputs"
+  },
+  "raw_leaf_registry": {
+    "official_spx": {
+      "available_at": "event_time+60 seconds",
+      "derivations": "completed close; cumulative VWAP=sum(close*volume)/sum(volume), mean-close fallback at zero volume; range=max(close)-min(close); open=first close; OMAR=(close-open)/range else 0; momentum=current-minus-lagged close",
+      "fields": [
+        "event_time",
+        "symbol",
+        "close",
+        "volume",
+        "context_source",
+        "is_derived",
+        "is_proxy",
+        "is_official_index_data"
+      ],
+      "integrity_partition": "CORE_AUTHORITATIVE",
+      "path": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "row_invariants": {
+        "context_source": "thetadata_index_history_ohlc",
+        "is_derived": false,
+        "is_official_index_data": true,
+        "is_proxy": false,
+        "symbol": "SPX"
+      },
+      "selection": "latest available_at<=decision_time with decision_time-available_at in [0,90 seconds]; no forward fill",
+      "source_receipt": "bind exact manifest relative path/file SHA-256 plus selected parquet row-group, row-index, canonical-row SHA-256, event_time, and available_at",
+      "timestamp_semantics": "BAR_OPEN_TIMESTAMP",
+      "vendor": "THETADATA"
+    },
+    "option_quotes": {
+      "derivations": "normalized mid from completed quote; canonical feature transform quantizes at $0.05",
+      "fields": [
+        "contract_id",
+        "bid",
+        "ask",
+        "mid",
+        "received_timestamp_utc",
+        "strike",
+        "right",
+        "offset"
+      ],
+      "path": "aligned/processed/minute_entry.contract_quote_metadata",
+      "vendor": "DATABENTO_OPRA"
+    },
+    "structural": [
+      "decision_time",
+      "atm_strike",
+      "strike_offsets",
+      "rights",
+      "source_neutral_contract_id"
+    ]
+  },
+  "schema_version": "pathd.entry_exit.feature_lineage.v1",
+  "signed17_reference_builder_sha256": "cf062784426986af0607560a73dfae89a75e5e7c3c1a47dfdf00224a929f4f39",
+  "source_mutation_canaries": {
+    "causally_available_official_thetadata_spx_close_mutation": "signed17_hash_must_change",
+    "legacy_processed_vix_mutation": "signed17_and_prediction_byte_invariant",
+    "official_spx_available_at_after_decision": "reject",
+    "official_spx_event_time_treated_as_completed_without_plus_60": "reject",
+    "raw_index_spx_alias_for_official_thetadata": "reject",
+    "raw_index_vix_cache_mutation": "signed17_and_prediction_byte_invariant_and_cache_path_never_opened"
+  },
+  "training_allowed_at_preregistration": false,
+  "vix_es_vx_model_alpha": false
+}

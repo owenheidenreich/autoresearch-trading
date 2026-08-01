@@ -1,0 +1,118 @@
+{
+ "sessions_sampled": 14,
+ "decision_minutes": 57,
+ "candidate_rows": 406,
+ "fwd_horizon_min": 30,
+ "band": [
+  3.0,
+  8.0
+ ],
+ "univariate_within_minute_rank_signal": {
+  "spread": {
+   "mean_within_minute_spearman": -0.0262,
+   "minutes": 57
+  },
+  "spread_frac": {
+   "mean_within_minute_spearman": -0.022,
+   "minutes": 57
+  },
+  "bid_size": {
+   "mean_within_minute_spearman": 0.0871,
+   "minutes": 57
+  },
+  "ask_size": {
+   "mean_within_minute_spearman": -0.1262,
+   "minutes": 57
+  },
+  "size_imbalance": {
+   "mean_within_minute_spearman": 0.1665,
+   "minutes": 57
+  },
+  "quote_age_ms": {
+   "mean_within_minute_spearman": null,
+   "minutes": 0
+  },
+  "open_interest": {
+   "mean_within_minute_spearman": 0.0378,
+   "minutes": 57
+  },
+  "volume": {
+   "mean_within_minute_spearman": 0.0323,
+   "minutes": 57
+  },
+  "depth_total": {
+   "mean_within_minute_spearman": -0.0263,
+   "minutes": 57
+  },
+  "abs_moneyness": {
+   "mean_within_minute_spearman": -0.1167,
+   "minutes": 57
+  }
+ },
+ "incremental_over_geometry": {
+  "spread": {
+   "mean_within_minute_spearman_vs_residual": -0.0061,
+   "minutes": 38
+  },
+  "spread_frac": {
+   "mean_within_minute_spearman_vs_residual": 0.0428,
+   "minutes": 38
+  },
+  "bid_size": {
+   "mean_within_minute_spearman_vs_residual": 0.0773,
+   "minutes": 38
+  },
+  "ask_size": {
+   "mean_within_minute_spearman_vs_residual": -0.0833,
+   "minutes": 38
+  },
+  "size_imbalance": {
+   "mean_within_minute_spearman_vs_residual": 0.1289,
+   "minutes": 38
+  },
+  "quote_age_ms": {
+   "mean_within_minute_spearman_vs_residual": null,
+   "minutes": 0
+  },
+  "open_interest": {
+   "mean_within_minute_spearman_vs_residual": 0.0886,
+   "minutes": 38
+  },
+  "volume": {
+   "mean_within_minute_spearman_vs_residual": 0.003,
+   "minutes": 38
+  },
+  "depth_total": {
+   "mean_within_minute_spearman_vs_residual": 0.0706,
+   "minutes": 38
+  }
+ },
+ "robustness": {
+  "size_imbalance": {
+   "mean_rho": 0.1665,
+   "frac_positive": 0.579,
+   "t_stat_of_per_minute_rhos": 2.59,
+   "n_minutes": 57
+  },
+  "bid_size": {
+   "mean_rho": 0.0871,
+   "frac_positive": 0.561,
+   "t_stat_of_per_minute_rhos": 1.4,
+   "n_minutes": 57
+  },
+  "ask_size": {
+   "mean_rho": -0.1262,
+   "frac_positive": 0.351,
+   "t_stat_of_per_minute_rhos": -2.21,
+   "n_minutes": 57
+  },
+  "abs_moneyness": {
+   "mean_rho": -0.1167,
+   "frac_positive": 0.404,
+   "t_stat_of_per_minute_rhos": -1.79,
+   "n_minutes": 57
+  }
+ },
+ "labels": "tier-s|research|model-free-probe|training-only|no-holdout",
+ "note": "Directional feature-signal probe on fit-history sessions. Within-minute Spearman of each field vs forward-30min upside; incremental = same vs geometry-residual. |mean rho| ~<0.03 = negligible; ~0.05-0.10 = weak; >0.10 = worth pursuing. NOT a model, NOT feasibility, NO holdout touched."
+}
