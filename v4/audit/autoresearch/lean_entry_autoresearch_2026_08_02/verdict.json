@@ -1,0 +1,24 @@
+{
+ "schema_version": "lean_autoresearch.verdict.v1",
+ "n_trials": 144,
+ "n_survivors": 27,
+ "selection_metric": "worst_fold_econ",
+ "holdout_opened": false,
+ "result": "ENTRY_HYPOTHESIS_REJECTED_HOLDOUT_SEALED",
+ "winner": {
+  "feature_set": "S3",
+  "max_depth": 3,
+  "min_samples_leaf": 30,
+  "threshold": "gt_session_q60",
+  "exit_policy": "ask_to_bid_stop50_target100_hold25m",
+  "mean_oof_rho": 0.0792738492213682,
+  "fold5_oof_rho": 0.08606984411790154,
+  "mean_econ": 28.94882720489354,
+  "worst_fold_econ": 25.303091374434583
+ },
+ "note": "research-grade feasibility; NULL is first-class; not promotable.",
+ "holdout_sealed_status": "SEALED_PRESERVED (0 opens; owner declined the one-shot)",
+ "owner_decision": "Do not fire the holdout; the entry-feature hypothesis failed.",
+ "honest_conclusion": "27/144 configs survived the forward-stability + control + economic guards, but survival is FLAT across feature sets (S0=7,S1=6,S2=7,S3=7) and 100% concentrated in the SHORT 25-min exit (0/48 mid, 0/48 long). => the widen-entry/microstructure hypothesis is FALSIFIED (signed-17 alone does as well as the widened sets); the only forward-stable effect is an EXIT-POLICY effect, not an entry-selection edge, and it is weak (OOF rho +0.05-0.09, worst-fold econ +$9-25/session). Owner correctly declined to spend the one-shot holdout on an exit artifact. Holdout remains SEALED.",
+ "forward_lead": "The short 25-min hold being the ONLY forward-stable exit is a lead for the EXIT/lifecycle direction (data-limited this era), NOT entry."
+}

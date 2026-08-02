@@ -1259,3 +1259,62 @@ the verified foundation. VIX index full-year; VX futures intentionally partial.
 
 **Next gate: entry feasibility fit against released v3.2** — now UNBLOCKED (release present, gate
 green). Retarget the fit goal from v3.1 to the released v3.2 executable.
+
+---
+
+## Phase update 2026-08-02 (bb) — LEAN fit RAN; signed-17 entry = weak/decaying signal; owner accepts + reconsiders scope
+
+**v3.3 verification FAILED** (real fit faked in 100% of tests: `_install_fixture` stubs
+`_fit_outer_scope` + `opportunities_from_authorized_dataset`; the "real fit orchestrator" test
+monkeypatches every `fit_*`; the regression guard is `inspect.getsource`, not runtime). Same
+consumer-only gap as v3.2, one layer deeper. Owner chose the LEAN path.
+
+**LEAN feasibility fit executed on real data (first real fit in 6 generations).** Direct script
+(scratchpad/lean_entry_feasibility_v2.py) reusing the frozen decisions (signed-17, HGB params,
+$3-8 band, OOF, holdout NEVER loaded) with processed net-PnL labels under one fixed shared exit.
+5-fold OOF Spearman(pred, realized net PnL):
+  fold1 +0.146 | fold2 +0.061 | fold3 +0.061 | fold4 +0.003 | fold5 **-0.110**
+Signal **decays monotonically and reverses** by the most recent/largest fold. Mean rho +0.03
+(negligible); econ +$32/session (3/5 positive). Negative controls behaved (shuffled ~0,
+sign-reversed = -real); in folds 4-5 shuffled ties/beats real -> no signal left in recent data.
+Classic illusory/early-regime signature (cf. attempt_131 PF 1.87->1.03). **Leans no_genuine_signal.**
+Caveats: faithful-not-exact signed-17, one exit policy (not forward-MFE composer), single seed,
+per-session (not per-minute) economics, no B-R/P5. Research-grade indication, not the frozen verdict.
+
+**Owner decision: ACCEPT the signal is weak; reconsider scope.** signed-17 entry-as-is has no
+robust standalone edge in this 12-month window. The science CODE is sound (causal/no-leak/calibrated
+per the deep audit), so the finding is trustworthy. Meta-lesson reaffirmed: governance apparatus
+(~30k lines, 6 generations) massively outran the research question; the lean fit answered it in ~1hr.
+
+**Open leads for scope reconsideration:** (1) widen-entry with `size_imbalance`/order-book (the
+FINDING_entry_microstructure_signal probe found it the STRONGEST incremental signal, +0.129 > the
+moneyness geometry signed-17 relies on; substrate has bid_size/ask_size) — cheapest evidence-backed
+next probe; (2) exit/lifecycle focus (data-limited this era); (3) different strategy class/question;
+(4) bank infrastructure + pause. v3.3 working tree is uncommitted/unused pending owner decision.
+
+---
+
+## Phase update 2026-08-02 (cc) — honest autoresearch loop BUILT + RAN; entry-feature hypothesis FALSIFIED; holdout SEALED
+
+Built the honest autoresearch loop (`v4/research/lean_autoresearch/`): pre-registered 144-config grid
+(4 feature sets S0-S3 x depth x leaf x threshold x 3 exits), 5 disqualifier guards (negative controls
+fail, forward-stability incl. fold-5, min-power, economic bar, leakage tripwire), fixed budget (no
+"iterate until pass"), one-shot sealed-holdout protocol. Preregistration frozen + hashed BEFORE running
+(prereg_sha256 9db41e6d). Self-proven it can say NO (pure noise fails the guards).
+
+**Full 144-trial run: 27 survivors, but the result FALSIFIES the entry hypothesis.** Survival is FLAT
+across feature sets (S0=7, S1=6, S2=7, S3=7) and 100% concentrated in the SHORT 25-min exit (0/48 mid,
+0/48 long). So: (1) the widen-entry/microstructure lead is DEAD — signed-17 alone does as well as
++size_imbalance/depth/spread/iv/theta; the earlier "+0.129 incremental" probe did NOT become a
+model-level edge. (2) The only forward-stable effect is an EXIT-POLICY effect (quick 25-min hold), not
+entry selection, and it's weak (OOF rho +0.05-0.09, worst-fold econ +$9-25/session).
+
+**Owner decision: do NOT fire the one-shot holdout** — declined to spend it on an exit artifact where
+the entry features don't discriminate. **Holdout remains SEALED (0 opens), preserved for a future
+genuine entry hypothesis.** This is the disciplined outcome: the loop found forward-stable survivors,
+we read them honestly (features irrelevant), and we did not manufacture a "pass."
+
+**Durable takeaways:** (a) no robust signed-17 OR widen-entry ENTRY edge in this 12-month window;
+(b) FORWARD LEAD: the short 25-min hold is the only forward-stable exit -> points at the EXIT/lifecycle
+direction (data-limited this era), not entry; (c) the lean autoresearch loop is reusable honest
+infra for the next hypothesis. Meta: lean path answered in ~1 day what 6 governed generations couldn't.

@@ -1,0 +1,132 @@
+{
+ "schema_version": "lean_autoresearch.preregistration.v1",
+ "purpose": "0DTE entry-edge feasibility; NULL is first-class; research-grade, not promotable",
+ "budget_trials": 144,
+ "search_space": {
+  "feature_sets": {
+   "S0": [
+    "spx_vwap_gap_points",
+    "spx_vwap_gap_bps",
+    "spx_vwap_gap_over_session_range",
+    "session_range_bps",
+    "momentum_5m_bps",
+    "momentum_15m_bps",
+    "momentum_5m_over_session_range",
+    "momentum_15m_over_session_range",
+    "omar_clipped",
+    "vwap_side_align",
+    "omar_side_align",
+    "momentum15_side_align",
+    "straddle_mid_spot_bps",
+    "put_call_mid_ratio",
+    "side_smile_slope",
+    "bs_delta",
+    "bs_gamma",
+    "is_call"
+   ],
+   "S1": [
+    "spx_vwap_gap_points",
+    "spx_vwap_gap_bps",
+    "spx_vwap_gap_over_session_range",
+    "session_range_bps",
+    "momentum_5m_bps",
+    "momentum_15m_bps",
+    "momentum_5m_over_session_range",
+    "momentum_15m_over_session_range",
+    "omar_clipped",
+    "vwap_side_align",
+    "omar_side_align",
+    "momentum15_side_align",
+    "straddle_mid_spot_bps",
+    "put_call_mid_ratio",
+    "side_smile_slope",
+    "bs_delta",
+    "bs_gamma",
+    "is_call",
+    "size_imbalance"
+   ],
+   "S2": [
+    "spx_vwap_gap_points",
+    "spx_vwap_gap_bps",
+    "spx_vwap_gap_over_session_range",
+    "session_range_bps",
+    "momentum_5m_bps",
+    "momentum_15m_bps",
+    "momentum_5m_over_session_range",
+    "momentum_15m_over_session_range",
+    "omar_clipped",
+    "vwap_side_align",
+    "omar_side_align",
+    "momentum15_side_align",
+    "straddle_mid_spot_bps",
+    "put_call_mid_ratio",
+    "side_smile_slope",
+    "bs_delta",
+    "bs_gamma",
+    "is_call",
+    "size_imbalance",
+    "depth_total",
+    "opt_spread"
+   ],
+   "S3": [
+    "spx_vwap_gap_points",
+    "spx_vwap_gap_bps",
+    "spx_vwap_gap_over_session_range",
+    "session_range_bps",
+    "momentum_5m_bps",
+    "momentum_15m_bps",
+    "momentum_5m_over_session_range",
+    "momentum_15m_over_session_range",
+    "omar_clipped",
+    "vwap_side_align",
+    "omar_side_align",
+    "momentum15_side_align",
+    "straddle_mid_spot_bps",
+    "put_call_mid_ratio",
+    "side_smile_slope",
+    "bs_delta",
+    "bs_gamma",
+    "is_call",
+    "size_imbalance",
+    "depth_total",
+    "opt_spread",
+    "iv",
+    "theta"
+   ]
+  },
+  "max_depth": [
+   3,
+   4
+  ],
+  "min_samples_leaf": [
+   30,
+   50
+  ],
+  "threshold": [
+   "gt0",
+   "gt_fee_reserve",
+   "gt_session_q60"
+  ],
+  "exit_policy": [
+   "ask_to_bid_stop50_target100_hold25m",
+   "ask_to_bid_stop100_target300_hold120m",
+   "ask_to_bid_stop100_target999_hold384m"
+  ]
+ },
+ "guards": {
+  "G1_negative_controls_fail": "mean real OOF rho > mean shuffled rho + 0.01 AND mean econ > mean shuffled econ AND mean econ > mean sign-reversed econ",
+  "G2_forward_stability": "fold5 oof_rho>=0 AND fold5 econ>=0 AND oof_rho>0 in >=4/5 AND econ>0 in >=4/5",
+  "G3_minimum_power": "min over folds n_enter>=40 AND n_sessions>=20",
+  "G4_economic_bar": "mean econ (vs matched-random) > 0 AND econ>0 in >=4/5 folds",
+  "G5_leakage_tripwire": "max fold oof_rho <= 0.5 (else disqualify + flag)"
+ },
+ "selection_metric": "worst_fold_econ",
+ "holdout_protocol": {
+  "sealed_during_search": true,
+  "holdout_sessions": "protected_holdout_primary_non_degraded_29",
+  "open_count_allowed": 1,
+  "pass_bar": "session-clustered econ>0 AND Bonferroni one-sided bootstrap LCB(alpha=0.05/144)>0"
+ },
+ "grid_sha256": "9b028974783ef935b465795b7b41ac9b7702d5bc4a07f678a44803e90973b994",
+ "preregistration_sha256": "9db41e6d9403342b34d65ed6787f233ab509f67ffec05f7dc2b9309fe7cfd0d0"
+}
