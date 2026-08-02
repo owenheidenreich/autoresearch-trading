@@ -1231,3 +1231,31 @@ failed**; release file still absent; hashes unchanged.
 
 **Next gate:** the v3.2 RELEASE generation (owner post-verification release, like v3.1 was for v3) ->
 then the entry feasibility fit against the released v3.2 executable. Tier-S, quarantined, not-promotable.
+
+---
+
+## Phase update 2026-08-01 (aa) — corrected-v3.2 RELEASE issued + VERIFIED (PASS)
+
+Owner post-verification release for the gate-hardened v3.2 executable, via a distinct superseding
+release document (NOT a prereg mutation): `claude_verification_release.json` (self-hash `17c028d5`,
+bound to prereg `c69e763a` / foundation_generation `5d0d5728`). Claude-verified independently:
+- Release flags authorize machinery_seal/foundation_stability_seal/model_fit/corpus_decode/
+  nested_or_outer_evidence_open; protected_holdout_open=False; live/broker not granted.
+- FROZEN prereg still reads UNRELEASED (model_fit_authorized=False, claude_verification_pending=True)
+  — authorization lives only in the release doc; foundation byte-identical.
+- ADVERSARIAL check: temporarily removed the release artifact -> production guard
+  `_assert_corrected_v32_release_if_present` FAILS CLOSED ("release chain is incomplete"); restored
+  byte-identical. So the release is load-bearing and the state-aware tests still enforce fail-closed.
+- Full 11-file suite: 175 passed (release present). Science (feature_lineage/session_assignments/
+  A_ref/B-R/entry-17/exit-47), v1-v3.1, and fold-1 burn all byte-identical. Folds PRISTINE_ABSENT,
+  holdout 0, nothing fit/decoded/sealed/evidence-opened.
+
+**VX backfill decision: NO** (owner-facing analysis). VX futures gap (only ~2026-04->07, ~$16 to
+backfill ~167 sessions at ~$0.095/session) is NOT worth it: VX is non-alpha context-diagnostics-only
+(absent from entry-17/exit-47; vix_es_vx_model_alpha=False), the gap is already frozen into the
+contract (VX availability_boundary_session=2026-04-01, pre_boundary NOT_REQUESTED, dedicated vx_era
+bin), the primary vol context (VIX index) is 251/251, and using backfilled VX would require breaking
+the verified foundation. VIX index full-year; VX futures intentionally partial.
+
+**Next gate: entry feasibility fit against released v3.2** — now UNBLOCKED (release present, gate
+green). Retarget the fit goal from v3.1 to the released v3.2 executable.

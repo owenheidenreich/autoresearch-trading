@@ -223,4 +223,13 @@ def test_build_creates_no_execution_evidence_or_holdout_namespace() -> None:
     assert not (foundation.V32_ROOT / "execution_inputs").exists()
     assert not science.ENTRY_FOLD_ARTIFACT_ROOT.exists()
     assert not science.PROTECTED_HOLDOUT_ROOT.exists()
-    assert not runner.V32_CLAUDE_RELEASE_PATH.exists()
+    if runner.V32_CLAUDE_RELEASE_PATH.exists():
+        release = runner.assert_corrected_v32_fit_release()
+        assert release["status"] == "CLAUDE_VERIFIED_GATE_HARDENING_FIT_RELEASE"
+        assert release["model_fit_executed"] is False
+        assert release["corpus_decoded"] is False
+        assert release["evidence_opened"] is False
+        assert release["foundation_or_machinery_sealed_against_corpus"] is False
+        assert release["holdout_opened"] is False
+        assert release["holdout_open_count"] == 0
+        assert release["live_or_broker_action_executed"] is False

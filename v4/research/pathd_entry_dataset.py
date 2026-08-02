@@ -57,6 +57,9 @@ CORRECTED_V32_TEST_RECONCILIATION_AUTHORIZATION_PATH = (
 CORRECTED_V32_TEST_RECONCILIATION_RECEIPT_PATH = (
     CORRECTED_V32_EXECUTABLE_ROOT / "registered_test_reconciliation_receipt.json"
 )
+CORRECTED_V32_CLAUDE_RELEASE_PATH = (
+    CORRECTED_V32_EXECUTABLE_ROOT / "claude_verification_release.json"
+)
 CORRECTED_V32_REGISTERED_TEST_PATHS = (
     "v4/tests/test_pathd_entry_exit_gate_frozen.py",
     "v4/tests/test_pathd_entry_exit_research.py",
@@ -220,6 +223,65 @@ def _validate_v32_test_reconciliation(
     }
 
 
+def _validate_v32_released_reconciliation(
+    *, generation: dict[str, Any], preregistration: dict[str, Any],
+    current_implementations: list[dict[str, str]], base_bridge_sha256: str,
+) -> dict[str, Any]:
+    """Bind post-verification source/test corrections without mutating v3.2."""
+
+    release = prereg.read_json(CORRECTED_V32_CLAUDE_RELEASE_PATH)
+    _validate_self_hashed_mapping(release, "receipt_sha256")
+    current_tests = [
+        {"path": label, "sha256": prereg.sha256_path(prereg.REPO_ROOT / label)}
+        for label in CORRECTED_V32_REGISTERED_TEST_PATHS
+    ]
+    pause = release.get("foundation_correction", {}).get("prefit_pause", {})
+    if (
+        release.get("schema_version")
+        != "pathd.corrected_v32.claude_fit_release.v1"
+        or release.get("status")
+        != "CLAUDE_VERIFIED_GATE_HARDENING_FIT_RELEASE"
+        or release.get("verification_outcome") != "PASS"
+        or release.get("foundation_generation_sha256")
+        != generation["foundation_generation_sha256"]
+        or release.get("preregistration_sha256")
+        != generation["foundation_preregistration_sha256"]
+        or release.get("source_hash_policy_sha256")
+        != generation["source_hash_policy_sha256"]
+        or release.get("implementation_receipt_sha256") != base_bridge_sha256
+        or release.get("prior_test_reconciliation_authorization_sha256")
+        != prereg.sha256_path(CORRECTED_V32_TEST_RECONCILIATION_AUTHORIZATION_PATH)
+        or release.get("prior_test_reconciliation_receipt_sha256")
+        != prereg.sha256_path(CORRECTED_V32_TEST_RECONCILIATION_RECEIPT_PATH)
+        or release.get("released_implementations") != current_implementations
+        or release.get("released_registered_tests") != current_tests
+        or any(release.get(key) is not True for key in (
+            "machinery_seal_authorized", "foundation_stability_seal_authorized",
+            "corpus_decode_authorized", "model_fit_authorized",
+            "nested_or_outer_evidence_open_authorized",
+        ))
+        or release.get("protected_holdout_open_authorized") is not False
+        or release.get("live_or_broker_action_authorized") is not False
+        or release.get("holdout_open_count") != 0
+        or pause.get("foundation_stability_gate_implemented") is not True
+        or pause.get("machinery_seal_authorized") is not True
+        or pause.get("foundation_stability_seal_authorized") is not True
+        or pause.get("model_fit_authorized") is not True
+        or pause.get("corpus_decode_authorized") is not True
+        or pause.get("nested_or_outer_evidence_open_authorized") is not True
+        or pause.get("protected_holdout_open_authorized") is not False
+        or pause.get("claude_verification_pending") is not False
+        or pause.get("separate_post_verification_release_required") is not False
+        or any(release.get(key) is not False for key in (
+            "model_fit_executed", "corpus_decoded", "evidence_opened",
+            "foundation_or_machinery_sealed_against_corpus", "holdout_opened",
+            "live_or_broker_action_executed",
+        ))
+    ):
+        raise RuntimeError("corrected-v3.2 released reconciliation drift")
+    return release
+
+
 def assert_corrected_v32_executable_bridge() -> dict[str, Any]:
     """Rehash the v3.2 foundation and implementation chain before decode."""
 
@@ -281,6 +343,15 @@ def assert_corrected_v32_executable_bridge() -> dict[str, Any]:
     ):
         raise RuntimeError("corrected-v3.2 executable bridge drift")
     if current_implementations != frozen_implementations:
+        if CORRECTED_V32_CLAUDE_RELEASE_PATH.exists():
+            return _validate_v32_released_reconciliation(
+                generation=generation,
+                preregistration=preregistration,
+                current_implementations=current_implementations,
+                base_bridge_sha256=prereg.sha256_path(
+                    CORRECTED_V32_EXECUTABLE_BRIDGE_PATH
+                ),
+            )
         return _validate_v32_test_reconciliation(
             preregistration=preregistration,
             frozen_implementations=frozen_implementations,
