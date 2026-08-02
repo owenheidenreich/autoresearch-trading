@@ -974,17 +974,36 @@ def test_preholdout_packet_runs_all_six_semantic_validators_and_rejects_declared
     with pytest.raises(holdout.ProtectedHoldoutError):
         holdout._validate_named_prepacket_artifacts(packet)
 
-def test_exit_diagnostic_targets_are_gradient_isolated_from_action_model() -> None:
+def test_aref_decision_critical_support_closure_and_gradient_boundaries() -> None:
+    topology = prereg.aref_decision_critical_topology_spec()
     spec = prereg.exit_diagnostic_model_isolation_spec()
     action = spec['action_model']
     assert action['targets'] == ['A_ref_mean', 'A_ref_q10']
     assert action['action_consumers'] == ['A_ref_mean', 'A_ref_q10']
+    assert topology['direct_action_inputs'] == ['A_ref_mean', 'A_ref_q10']
+    assert topology['decision_critical_calibration_support'] == ['A_ref_q10', 'A_ref_q50', 'A_ref_q90']
+    assert topology['complete_required_aref_outputs'] == ['A_ref_mean', 'A_ref_q10', 'A_ref_q50', 'A_ref_q90']
+    assert topology['diagnostic_only_families'] == ['downside_300', 'recovery_300', 'giveback_300', 'remaining_tail_300']
+    assert not set(topology['complete_required_aref_outputs']) & set(topology['diagnostic_only_families'])
     assert action['shared_parameters_with_diagnostics'] is False
     assert action['shared_preprocessor_or_target_scaler_with_diagnostics'] is False
     assert action['shared_optimizer_or_gradient_graph_with_diagnostics'] is False
-    assert spec['diagnostic_family_count'] == 6
+    assert spec['diagnostic_family_count'] == 4
+    assert tuple(spec['diagnostic_models']) == ('downside_300', 'recovery_300', 'giveback_300', 'remaining_tail_300')
+    support = spec['aref_decision_critical_support']
+    assert support['targets'] == ['A_ref_q10', 'A_ref_q50', 'A_ref_q90']
+    assert support['q50_support_can_backpropagate_into_action'] is False
+    assert support['q90_support_can_backpropagate_into_action_or_q50'] is False
+    assert support['q50_calibration_edge_is_binding'] is True
+    assert support['q90_exit_reliability_edge_is_binding'] is True
+    assert support['missing_or_nonfinite_effect'] == 'invalid_result'
     assert all(row['separate_model_bundle'] and row['separate_parameters'] and row['separate_feature_preprocessor'] and row['separate_target_scaler'] and row['separate_calibration'] and row['separate_optimizer_and_gradient_graph'] for row in spec['diagnostic_models'].values())
     payload = prereg.preregistration_payload()[0]
+    targets = payload['exit']['distributional_targets']
+    assert targets['A_ref_action_inputs'] == ['mean', 'q10']
+    assert targets['A_ref_decision_critical_calibration_support'] == ['q10', 'q50', 'q90']
+    assert targets['A_ref_complete_required_outputs'] == ['mean', 'q10', 'q50', 'q90']
+    assert 'A_ref_diagnostic_only' not in targets
     power = payload['exit']['power_count_semantics']
     assert power['minimum_model_fit_sessions'] == 60
     assert power['known_exit_weight_session_counts_by_fold'] == [0, 0, 19, 48, 56]
@@ -992,7 +1011,72 @@ def test_exit_diagnostic_targets_are_gradient_isolated_from_action_model() -> No
     assert power['consequence'].startswith('if entry clears, exit fitting must stop insufficient_evidence before weights')
     forbidden_current_run_apis = tuple(name for name in _api_names() if '.pathd_exit_models.' in name or name.rsplit('.', 1)[-1].startswith(('fit_exit', 'build_exit_action', 'build_exit_diagnostic')))
     assert forbidden_current_run_apis == ()
-    _assert_prereg_mutations_rejected((lambda value: value['exit']['diagnostic_target_isolation']['action_model'].update(shared_parameters_with_diagnostics=True), lambda value: value['exit']['power_count_semantics'].update(minimum_model_fit_sessions=50)))
+    _assert_prereg_mutations_rejected((
+        lambda value: value['exit']['diagnostic_target_isolation']['action_model'].update(shared_parameters_with_diagnostics=True),
+        lambda value: value['exit']['diagnostic_target_isolation']['diagnostic_models'].update(A_ref_q90={}),
+        lambda value: value['exit']['distributional_targets']['A_ref_decision_critical_calibration_support'].remove('q50'),
+        lambda value: value['exit']['composer']['action_inputs'].append('A_ref_q90'),
+        lambda value: value['exit']['power_count_semantics'].update(minimum_model_fit_sessions=50),
+    ))
+
+def test_aref_hgb_and_neural_topologies_are_exact() -> None:
+    topology = prereg.aref_decision_critical_topology_spec()
+    hgb = topology['hgb']
+    assert hgb['ensemble_seeds'] == [301, 302, 303]
+    assert hgb['estimator_fits_per_seed'] == 16
+    assert hgb['estimator_fits_total'] == 48
+    assert len(hgb['decision_critical_estimators_per_seed']) == 4
+    assert len(hgb['diagnostic_estimators_per_seed']) == 12
+    assert hgb['constructor_kwargs'] == {
+        'learning_rate': 0.05, 'max_iter': 100, 'max_leaf_nodes': 31,
+        'max_depth': 3, 'min_samples_leaf': 50, 'l2_regularization': 1.0,
+        'max_features': 1.0, 'max_bins': 255, 'categorical_features': None,
+        'monotonic_cst': None, 'interaction_cst': None, 'warm_start': False,
+        'early_stopping': False, 'scoring': 'loss', 'validation_fraction': 0.1,
+        'n_iter_no_change': 10, 'tol': 1e-7, 'verbose': 0,
+        'random_state': 'exact ensemble seed',
+    }
+    assert hgb['assembly'].startswith('q10=r10_frozen;')
+    assert 'support fitting cannot change the frozen r10 estimator' in hgb['loss_gradient_rule']
+    assert hgb['serialization_manifest_order'][2:6] == ['A_ref_mean', 'A_ref_q10', 'A_ref_q50_support', 'A_ref_q90_support']
+    neural = topology['neural']
+    assert neural['ensemble_seeds'] == [311, 312, 313]
+    assert neural['independent_modules_per_seed'] == 7
+    assert tuple(neural['modules']) == ('A_REF_ACTION_CORE', 'A_REF_Q50_SUPPORT', 'A_REF_Q90_SUPPORT', 'DOWNSIDE_300', 'RECOVERY_300', 'GIVEBACK_300', 'REMAINING_TAIL_300')
+    assert neural['modules']['A_REF_ACTION_CORE']['loss'] == '0.5*MSE(mean)+0.5*pinball_tau_0.10(q10)'
+    assert neural['modules']['A_REF_Q50_SUPPORT']['detached_inputs'] == ['A_ref_q10']
+    assert neural['modules']['A_REF_Q90_SUPPORT']['detached_inputs'] == ['A_ref_q10', 'A_ref_q50']
+    assert neural['optimizer_state_parameter_gradient_or_mutable_scaler_sharing'] is False
+    assert neural['graph']['causal_conv1d_channels'] == [32, 32, 32]
+    assert neural['graph']['explicit_left_pads'] == [2, 8, 32]
+    assert topology['training_order'] == ['A_REF_ACTION_CORE', 'A_REF_Q50_SUPPORT', 'A_REF_Q90_SUPPORT', 'A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR']
+    assert topology['shared_read_only_contract']['mutable_object_sharing'] is False
+
+def test_aref_exit_coverage_identity_and_dependency_tamper_fail_closed() -> None:
+    topology = prereg.aref_decision_critical_topology_spec()
+    assert topology['exit_coverage_identity'] == 'A_ref<=calibrated_q90_upper iff -A_ref>=-calibrated_q90_upper'
+    for aref in (-2.0, -1.0, -1.0, 0.0, 1.0, 1.0, 2.0):
+        for q90_upper in (-1.0, -1.0, 0.0, 1.0, 1.0):
+            assert (aref <= q90_upper) == (-aref >= -q90_upper)
+    raw_q10 = -2.0
+    s_low = 0.5
+    calibrated_q10_a = 0.0 - s_low * (0.0 - raw_q10)
+    calibrated_q10_b = 1.0 - s_low * (1.0 - raw_q10)
+    assert calibrated_q10_a != calibrated_q10_b
+    def utility(mean_lcb: float, calibrated_q10: float) -> float:
+        return mean_lcb + 0.25 * min(calibrated_q10, 0.0)
+    composer_before = utility(0.2, -0.4)
+    composer_after_q90_perturbation = utility(0.2, -0.4)
+    exit_lower_before, exit_lower_after = -1.0, -2.0
+    assert composer_before == composer_after_q90_perturbation
+    assert exit_lower_before != exit_lower_after
+    _assert_prereg_mutations_rejected((
+        lambda value: value['exit']['aref_decision_critical_topology']['complete_required_aref_outputs'].remove('A_ref_q90'),
+        lambda value: value['exit']['aref_decision_critical_topology']['diagnostic_only_families'].append('A_ref_q50'),
+        lambda value: value['exit']['aref_decision_critical_topology']['q50_support_bundle'].update(backpropagation_into_action_bundle=True),
+        lambda value: value['exit']['aref_decision_critical_topology']['calibration'].update(missing_or_nonfinite_required_output='diagnostic_incomplete_only'),
+        lambda value: value['metrics_and_gates']['action_calibration']['actions']['EXIT'].pop('coverage_identity'),
+    ))
 
 def test_context_diagnostics_are_fixed_one_dimensional_post_primary_nonalpha_tables() -> None:
     from v4.scripts import run_pathd_entry_exit_research as runner

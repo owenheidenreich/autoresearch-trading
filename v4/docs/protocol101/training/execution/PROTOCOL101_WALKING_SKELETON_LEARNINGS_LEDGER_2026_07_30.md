@@ -1117,3 +1117,47 @@ live adapter receipt (before exit fit). NEXT: owner resolves the terminal-rule d
 GitHub health: 3 curated commits (gitignore hardening / path_d + Path-D package / worktree sync) were
 already made + pushed after plan approval; this round adds the verified correction unit
 (`v4/research/` code, Path-D scripts + tests, corrected audit dir, gitignore corrected-dir exception).
+
+---
+
+## Phase update 2026-08-01 (x) — corrected v2 -> v3 + governance decisions VERIFIED (PASS)
+
+Two more correction rounds landed and were Claude-verified independently (hashes reproduced,
+tests run, no rubber-stamp).
+
+**Corrected-v2** (`..._corrected_v2_2026_08_01`, prereg `f5e8ed8b`): dropped `last_causal_minute_volume`
+too (no proven live adapter), so exit 48->47; corrected entry-D `D.near_atm` lineage to completed
+OPRA `cbbo-1m` (live-derivable). Entry still exactly signed-17. Drift re-confirmed
+BENIGN_TEST_CONTAMINATION via timeline (burn 19:45:37 predates freeze 19:51:02 by ~325s; txn id =
+test fixture) + semantic session-assignment identity (canonical hash match; raw bytes differ only by
+JSON formatting). Committed 9d8df1d8.
+
+**Terminal-rule investigation:** Codex's read-only analysis reconciled the "<60" discrepancy exactly
+(`known_exit_weight_session_counts_by_fold = [0,0,19,48,56]`, min 60 -> ALL five learned-exit folds
+abstain, not just fold 1) and found a hole in my Candidate-A lean (fold-scoped abstain has
+survivor-selection risk: dropping a hard-era fold can inflate pooled economics). It recommended
+**B-R** (status-preserving whole-run hard stop) and surfaced a NEW blocker: the A_ref q50/q90
+role contradiction (q90 both EXIT-gate-required and diagnostic-isolated). Both independently verified
+against the prereg.
+
+**Corrected-v3** (`..._corrected_v3_2026_08_01`, prereg `8ed2b729`, foundation_generation `da65e572`):
+- **B-R adopted** at `/calibration_and_statistics/composite_calibration_terminal_rule`:
+  `policy=B_R_STATUS_PRESERVING_WHOLE_RUN_HARD_STOP`; all-five-valid before the >=4/5 economic gate;
+  `four_as_five_or_survivor_pooling=False`; status_precedence [invalid_result, insufficient_evidence,
+  owner_decision_required, no_genuine_signal, PASS]; failure_mapping keeps INVALID_TARGET_COVERAGE->
+  invalid_result vs INSUFFICIENT_EVIDENCE->insufficient_evidence; `forbidden_rescue` bans fold/target
+  deletion, survivor pooling, status relabeling, same-generation reseed. 11 nested_structural_skip
+  blocks match the [0,0,19,48,56] geometry.
+- **A_ref contradiction resolved** (Codex Option 1): A_ref q10/q50/q90 = one atomic decision-critical
+  node; only the 4 local-path families (downside/recovery/giveback/remaining_tail_300) stay
+  diagnostic-only; q90 = binding EXIT upper-coverage support; guarded against the naive
+  `q10(-A_ref)=-q90(A_ref)` tie claim.
+- `resolved_owner_decisions=[AREF_ACTION_CALIBRATION_ROLE, COMPOSITE_CALIBRATION_TERMINAL_RULE]`,
+  `unresolved_owner_decision=None`. entry-17 / exit-47; folds PRISTINE_ABSENT; model_fit/seal/holdout
+  all False/0; burn preserved; v2 preserved byte-for-byte. Independent tests: 172 passed across the
+  Path-D suite.
+
+Remaining before any fit (per v3 prefit_pause, all authorizations still False): Claude verification
+(this, PASS) -> a SEPARATE post-verification release, then machinery/stability seal. Known geometry:
+exit abstains this data era (all folds <60 exit-weight sessions); entry feasibility is what this run
+can produce. Tier-S, quarantined, not-promotable.

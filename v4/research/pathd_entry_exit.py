@@ -63,6 +63,22 @@ CORRECTION_PROPOSAL_PATH = (
     / "v4/docs/protocol101/training/execution/"
     "PROTOCOL101_PATHD_BUILD_CORRECTION_PROPOSAL_2026_08_01.md"
 )
+TERMINAL_RULE_RECONCILIATION_PATH = (
+    REPO_ROOT
+    / "v4/docs/protocol101/training/execution/"
+    "PROTOCOL101_PATHD_TERMINAL_RULE_RECONCILIATION_AND_AREF_BLOCKER_2026_08_01.md"
+)
+CORRECTED_V3_OWNER_AUTHORIZATION_PATH = (
+    REPO_ROOT
+    / "v4/docs/protocol101/training/execution/"
+    "PROTOCOL101_PATHD_CORRECTED_V3_OWNER_AUTHORIZATION_2026_08_01.json"
+)
+TERMINAL_RULE_RECONCILIATION_SHA256 = (
+    "194ebc35df8018e6f8290b869da4fbcfb785161028d40d1502e094efa1bd4bc0"
+)
+CORRECTED_V3_OWNER_AUTHORIZATION_SHA256 = (
+    "dc3d6b70a491b0e764f18cbf93d8cdeed1295c517ff94b7f98fcb6850bef9038"
+)
 FIELD_PARITY_FINDING_PATH = (
     REPO_ROOT
     / "v4/audit/autoresearch/protocol101_pathd_feature_research/"
@@ -83,6 +99,11 @@ INTERMEDIATE_CORRECTED_AUDIT_ROOT = (
     / "v4/audit/autoresearch/"
     "protocol101_pathd_entry_exit_model_research_corrected_2026_08_01"
 )
+PREVIOUS_CORRECTED_V2_AUDIT_ROOT = (
+    REPO_ROOT
+    / "v4/audit/autoresearch/"
+    "protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01"
+)
 TEST_CONTAMINATION_QUARANTINE_ROOT = (
     REPO_ROOT
     / "v4/audit/autoresearch/pathd_test_contamination_quarantine_2026_08_01"
@@ -90,7 +111,7 @@ TEST_CONTAMINATION_QUARANTINE_ROOT = (
 AUDIT_ROOT = (
     REPO_ROOT
     / "v4/audit/autoresearch/"
-    "protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01"
+    "protocol101_pathd_entry_exit_model_research_corrected_v3_2026_08_01"
 )
 PREREG_PATH = AUDIT_ROOT / "preregistration.json"
 PREREG_HASH_PATH = AUDIT_ROOT / "preregistration.sha256"
@@ -220,6 +241,45 @@ INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS = (
         "bytes": 103_609,
         "sha256": "431cd14879ad6a14b278cb2683e4f3b860eef960e6b74a4f0edb3e620cf82475",
     },
+)
+
+# Corrected-v2 is the immediate immutable predecessor.  Corrected-v3 resolves
+# the A_ref role contradiction and terminal-rule ambiguity in a new namespace;
+# it must never rewrite or regenerate these six files in place.
+PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS = (
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01/feature_lineage.json",
+        "bytes": 156_333,
+        "sha256": "4521b3e62982f672daaba73d98ce5a9ce72df170b083cd40df7dc979983d1ef0",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01/foundation_restoration_receipt.json",
+        "bytes": 6_619,
+        "sha256": "b7b370a2779900bf72e2bf825ed2fdc94ead246fe3c863daf35261d94da11f88",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01/preregistration.json",
+        "bytes": 350_870,
+        "sha256": "f5e8ed8b99da21b6a4b1d83cdf3e23729ced1eb0e038da1467b5aa64d833c04e",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01/preregistration.sha256",
+        "bytes": 87,
+        "sha256": "0acdba512a2705f5dd841c426e5c6af62d79e5baae192654a02a1afbf2ac08e9",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01/preregistration_freeze_receipt.json",
+        "bytes": 2_788,
+        "sha256": "fddd07870fd8400b71a59c0ccef5f073810580fcffa030bac9dc4969bac76f7d",
+    },
+    {
+        "path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v2_2026_08_01/session_assignments.json",
+        "bytes": 103_609,
+        "sha256": "431cd14879ad6a14b278cb2683e4f3b860eef960e6b74a4f0edb3e620cf82475",
+    },
+)
+PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256 = (
+    "c1a0b31383524197a383281f9fb43526d4a20174b6557def2794b2eb7994b79a"
 )
 QUARANTINED_TEST_BURN_BINDING = {
     "path": (
@@ -481,7 +541,9 @@ FIXED_SCIENCE_GATE_TEST_NAMES = (
     "test_fixed_holdout_trace_rejects_all_payload_identity_partition_and_hash_tamper",
     "test_fixed_holdout_evaluator_rejects_caller_authored_summary",
     "test_preholdout_packet_runs_all_six_semantic_validators_and_rejects_declared_pass",
-    "test_exit_diagnostic_targets_are_gradient_isolated_from_action_model",
+    "test_aref_decision_critical_support_closure_and_gradient_boundaries",
+    "test_aref_hgb_and_neural_topologies_are_exact",
+    "test_aref_exit_coverage_identity_and_dependency_tamper_fail_closed",
     "test_context_diagnostics_are_fixed_one_dimensional_post_primary_nonalpha_tables",
 )
 FEATURE_LIVE_TWIN_TEST_NAMES = (
@@ -523,6 +585,9 @@ EVIDENCE_CAPABILITY_HARDENING_TEST_NAMES = (
 FOUNDATION_CORRECTION_TEST_NAMES = (
     "test_p1_forensic_contract_is_benign_zero_access_and_restores_five",
     "test_corrected_generation_binds_restoration_and_stability_receipts",
+    "test_v3_preserves_corrected_v2_bytes_and_remains_build_only",
+    "test_refined_br_requires_exact_five_valid_folds_and_rejects_rescue",
+    "test_refined_br_preserves_entry_verdict_on_exit_power_stop",
     "test_foundation_byte_root_changes_on_any_file_or_generation_change",
     "test_stability_seal_requires_all_corrected_fold_namespaces_pristine",
     "test_p2_live_twin_inventory_keeps_signed17_and_corrects_exit47",
@@ -546,6 +611,8 @@ IMMUTABLE_SOURCE_PATHS_AT_FIT = (
     "v4/docs/protocol101/training/execution/PROTOCOL101_PATHD_ENTRY_EXIT_MODEL_PLAN_2026_08_01.md",
     "v4/docs/protocol101/training/execution/PROTOCOL101_PATHD_ENTRY_EXIT_OWNER_DECISIONS_2026_08_01.json",
     "v4/docs/protocol101/training/execution/PROTOCOL101_PATHD_BUILD_CORRECTION_PROPOSAL_2026_08_01.md",
+    "v4/docs/protocol101/training/execution/PROTOCOL101_PATHD_TERMINAL_RULE_RECONCILIATION_AND_AREF_BLOCKER_2026_08_01.md",
+    "v4/docs/protocol101/training/execution/PROTOCOL101_PATHD_CORRECTED_V3_OWNER_AUTHORIZATION_2026_08_01.json",
     "v4/audit/autoresearch/protocol101_pathd_feature_research/FINDING_databento_live_field_parity_2026_08_01.md",
     "v4/audit/autoresearch/protocol101_pathd_feature_research/FINDING_entry_microstructure_signal_2026_08_01.md",
     "v4/research/__init__.py",
@@ -890,6 +957,60 @@ def validated_owner_authorization() -> dict[str, Any]:
     return record
 
 
+def validated_corrected_v3_owner_authorization() -> dict[str, Any]:
+    """Load the exact owner approval for the corrected-v3 foundation-only build."""
+
+    if (
+        sha256_path(TERMINAL_RULE_RECONCILIATION_PATH)
+        != TERMINAL_RULE_RECONCILIATION_SHA256
+    ):
+        raise ValueError("terminal-rule reconciliation byte hash drift")
+    if (
+        sha256_path(CORRECTED_V3_OWNER_AUTHORIZATION_PATH)
+        != CORRECTED_V3_OWNER_AUTHORIZATION_SHA256
+    ):
+        raise ValueError("corrected-v3 owner authorization byte hash drift")
+    record = read_json(CORRECTED_V3_OWNER_AUTHORIZATION_PATH)
+    if (
+        type(record) is not dict
+        or record.get("schema_version")
+        != "pathd.corrected_v3.owner_authorization.v1"
+        or record.get("status") != "OWNER_CONFIRMED_CORRECTED_V3_BUILD_ONLY"
+        or record.get("aref_action_calibration_role", {}).get("decision")
+        != "ADOPT_WITH_ADVERSARIAL_CONDITIONS"
+        or record.get("composite_calibration_terminal_rule", {}).get("decision")
+        != "ADOPT_REFINED_B_R"
+        or record.get("composite_calibration_terminal_rule", {}).get(
+            "failure_precedence"
+        )
+        != [
+            "invalid_result",
+            "insufficient_evidence",
+            "owner_decision_required",
+            "no_genuine_signal",
+            "PASS",
+        ]
+        or record.get("build_permissions")
+        != {
+            "source_spec_and_test_changes": True,
+            "distinct_corrected_v3_preregistration_freeze": True,
+            "distinct_corrected_v3_restoration_receipt": True,
+            "preserve_corrected_v2_byte_for_byte": True,
+            "machinery_seal": False,
+            "foundation_stability_seal": False,
+            "model_fit": False,
+            "corpus_decode": False,
+            "nested_or_outer_evidence_open": False,
+            "protected_holdout_open": False,
+            "live_or_broker_action": False,
+        }
+        or record.get("required_terminal_marker")
+        != "STOP_FOR_CLAUDE_VERIFICATION"
+    ):
+        raise ValueError("corrected-v3 owner authorization semantic drift")
+    return record
+
+
 def repo_path_label(path: Path) -> str:
     return str(path.relative_to(REPO_ROOT)) if path.is_relative_to(REPO_ROOT) else str(path)
 
@@ -1216,6 +1337,27 @@ def _outer_fold_artifact_path(outer_fold: int, name: str) -> Path:
 
 def outer_evidence_open_gate_spec() -> dict[str, Any]:
     return {
+        "composite_calibration_terminal_rule_sha256": stable_hash(
+            composite_calibration_terminal_rule_spec()
+        ),
+        "outer_calibration_scope_gate_receipts": [
+            repo_path_label(
+                _outer_fold_artifact_path(
+                    fold, "entry_calibration_scope_gate_receipt.json"
+                )
+            )
+            for fold in range(1, 6)
+        ],
+        "nested_calibration_scope_gate_receipts": [
+            repo_path_label(
+                _outer_fold_artifact_path(
+                    fold,
+                    f"nested_inner_{inner}_calibration_scope_gate_receipt.json",
+                )
+            )
+            for fold in range(1, 6)
+            for inner in range(1, 5)
+        ],
         "preopen_receipts": [
             repo_path_label(_outer_fold_artifact_path(fold, "preopen_receipt.json"))
             for fold in range(1, 6)
@@ -1289,7 +1431,7 @@ def outer_evidence_open_gate_spec() -> dict[str, Any]:
             "outer_primary_result.json",
         ],
         "nested_rule": "process inner blocks 1..4 in order. A calibration-valid block has one preopen receipt binding exact HGB+neural bundles/calibrators/composers and replay config, then a durable exclusive access receipt changing its validation_access_count from zero to exactly one before decode, then one result receipt binding the exact sealed dataset, complete journal traces, and paired HGB/neural serial results. A calibration-invalid block has instead exactly one self-hashed INSUFFICIENT_CALIBRATION skip receipt proving no preopen/access/dataset/result exists. Each block requires the correct result-or-skip receipts for every prior block and forbids every artifact/receipt for later blocks. Nested HGB/neural outcomes are mandatory attribution and multiplicity evidence only and can never select or replace the preregistered global HGB candidate",
-        "preopen_rule": "before outer fold k primary authorization, both HGB and mandatory nonselectable neural model/calibration/composer triplets, control-exit, complete preopen negative-control manifest, outcome-free replay config, and a self-hashed preopen receipt must exist. The receipt binds only HGB as the selected candidate plus its exact model/calibrator/composer hashes, exact prior-fold result receipts, exact four nested result-or-skip receipts, environment and source hashes, outer_evidence_access_count=0, and every path/hash/session role. An O_EXCL durable outer_primary_access_receipt changes count to exactly one before any primary source decode; reissue/reopen is forbidden",
+        "preopen_rule": "before outer fold k primary authorization, every required calibration node for OUTER_k must be VALID and a write-once calibration-scope gate receipt must bind the exact ordered node manifest with evidence_access_count=0; both HGB and mandatory nonselectable neural model/calibration/composer triplets, control-exit, complete preopen negative-control manifest, outcome-free replay config, and a self-hashed preopen receipt must then exist. The receipt binds only HGB as the selected candidate plus its exact model/calibrator/composer hashes, exact prior-fold result receipts, exact four nested result-or-lawful-structural-skip receipts, environment and source hashes, outer_evidence_access_count=0, and every path/hash/session role. An O_EXCL durable outer_primary_access_receipt changes count to exactly one before any primary source decode; reissue/reopen is forbidden",
         "sequential_rule": "outer fold k preopen may be sealed only after folds <k outer result receipts are frozen; no later fold outcome or artifact may exist or enter selection",
         "result_rule": "the primary outer result receipt validates the durable access receipt, exact evidence dataset/source receipt root, both typed HGB and mandatory neural-challenger evaluations embedded inside outer_primary_result.json (there are no standalone hgb/neural evaluation files), full journal/trace coverage, post-open negative-control panel and replay result, globally frozen HGB candidate identity, result envelope, and every preopen artifact hash. Neural outcomes cannot select, replace, or rescue HGB. Post-open outcomes may not appear in a preopen manifest/config",
         "pooled_rule": "pooled entry statistics use a FrozenResultAggregationAuthorization over the five immutable outer result/evaluation/trace receipts only. No pooled EntryEvidenceDatasetV1 exists and raw corpus rows may not be decoded or replayed a second time for pooled selection/statistics",
@@ -3161,10 +3303,10 @@ def receipt_contract_spec() -> dict[str, Any]:
         "machinery_test_evidence_schema_version": "pathd.entry_exit.entry_machinery_test_evidence.v1",
         "corpus_integrity_receipt_schema_version": "pathd.entry_exit.corpus_integrity_verification_receipt.v1",
         "foundation_restoration_receipt_schema_version": (
-            "pathd.entry_exit.foundation_restoration_receipt.v2"
+            "pathd.entry_exit.foundation_restoration_receipt.v3"
         ),
         "foundation_stability_receipt_schema_version": (
-            "pathd.entry_exit.foundation_stability_receipt.v2"
+            "pathd.entry_exit.foundation_stability_receipt.v3"
         ),
         "context_diagnostic_inventory_receipt_schema_version": "pathd.entry_exit.context_diagnostic_inventory_receipt.v1",
         "core_corpus_integrity_receipt": core_corpus_integrity_receipt_spec(),
@@ -3285,12 +3427,17 @@ def receipt_contract_spec() -> dict[str, Any]:
             "protected_holdout_trace_tamper_rejected",
             "protected_holdout_caller_summary_rejected",
             "preholdout_all_six_semantic_validators_fail_closed",
-            "exit_diagnostic_gradient_and_parameter_isolation",
+            "aref_decision_critical_support_closure",
+            "aref_hgb_neural_topology_and_gradient_boundaries",
+            "aref_exit_coverage_identity_and_dependency_tamper",
             "context_diagnostics_closed_post_primary_nonalpha",
             "context_diagnostics_prereg_exact",
             "owner_locked_operational_contract_cross_binding",
             "postfreeze_result_caveat_classification",
             "benign_test_contamination_restores_five_folds",
+            "corrected_v2_immutable_predecessor_and_build_only_pause",
+            "refined_br_exact_five_valid_and_no_rescue",
+            "refined_br_entry_verdict_preserved_on_exit_power_stop",
             "foundation_byte_root_is_mutation_sensitive",
             "foundation_stability_seal_requires_pristine_folds",
             "detached_authorization_cannot_touch_fixed_scope",
@@ -3351,12 +3498,17 @@ def receipt_contract_spec() -> dict[str, Any]:
             "protected_holdout_trace_tamper_rejected": "test_fixed_holdout_trace_rejects_all_payload_identity_partition_and_hash_tamper",
             "protected_holdout_caller_summary_rejected": "test_fixed_holdout_evaluator_rejects_caller_authored_summary",
             "preholdout_all_six_semantic_validators_fail_closed": "test_preholdout_packet_runs_all_six_semantic_validators_and_rejects_declared_pass",
-            "exit_diagnostic_gradient_and_parameter_isolation": "test_exit_diagnostic_targets_are_gradient_isolated_from_action_model",
+            "aref_decision_critical_support_closure": "test_aref_decision_critical_support_closure_and_gradient_boundaries",
+            "aref_hgb_neural_topology_and_gradient_boundaries": "test_aref_hgb_and_neural_topologies_are_exact",
+            "aref_exit_coverage_identity_and_dependency_tamper": "test_aref_exit_coverage_identity_and_dependency_tamper_fail_closed",
             "context_diagnostics_closed_post_primary_nonalpha": "test_context_diagnostics_are_fixed_one_dimensional_post_primary_nonalpha_tables",
             "context_diagnostics_prereg_exact": "test_pathd_vix_es_vx_diagnostic_contract_is_closed_and_nonalpha",
             "owner_locked_operational_contract_cross_binding": "test_pathd_owner_locked_operational_contract_tamper_matrix",
             "postfreeze_result_caveat_classification": "test_pathd_every_postfreeze_result_carries_exact_holdout_caveat",
             "benign_test_contamination_restores_five_folds": "test_p1_forensic_contract_is_benign_zero_access_and_restores_five",
+            "corrected_v2_immutable_predecessor_and_build_only_pause": "test_v3_preserves_corrected_v2_bytes_and_remains_build_only",
+            "refined_br_exact_five_valid_and_no_rescue": "test_refined_br_requires_exact_five_valid_folds_and_rejects_rescue",
+            "refined_br_entry_verdict_preserved_on_exit_power_stop": "test_refined_br_preserves_entry_verdict_on_exit_power_stop",
             "foundation_byte_root_is_mutation_sensitive": "test_foundation_byte_root_changes_on_any_file_or_generation_change",
             "foundation_stability_seal_requires_pristine_folds": "test_stability_seal_requires_all_corrected_fold_namespaces_pristine",
             "foundation_mismatch_stops_before_fold_dispatch": "test_fold_stage_preflight_stops_before_dispatch_on_foundation_mismatch",
@@ -3913,7 +4065,246 @@ def entry_global_family_spec() -> dict[str, Any]:
     }
 
 
+def aref_decision_critical_topology_spec() -> dict[str, Any]:
+    """Freeze the corrected-v3 A_ref roles, losses, gradients, and serialization."""
+
+    diagnostic_families = [
+        "downside_300",
+        "recovery_300",
+        "giveback_300",
+        "remaining_tail_300",
+    ]
+    hgb_constructor = {
+        "learning_rate": 0.05,
+        "max_iter": 100,
+        "max_leaf_nodes": 31,
+        "max_depth": 3,
+        "min_samples_leaf": 50,
+        "l2_regularization": 1.0,
+        "max_features": 1.0,
+        "max_bins": 255,
+        "categorical_features": None,
+        "monotonic_cst": None,
+        "interaction_cst": None,
+        "warm_start": False,
+        "early_stopping": False,
+        "scoring": "loss",
+        "validation_fraction": 0.1,
+        "n_iter_no_change": 10,
+        "tol": 1e-7,
+        "verbose": 0,
+        "random_state": "exact ensemble seed",
+    }
+    decision_nodes = [
+        "A_REF_MEAN_RAW",
+        "A_REF_Q10_RAW",
+        "A_REF_Q50_CALIBRATION_LOCATION",
+        "A_REF_Q90_EXIT_SUPPORT",
+        "A_REF_MONOTONE_TRIPLET",
+        "A_REF_MEAN_LCB90",
+        "A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR",
+        "EXIT_COMPOSER_MEAN_Q10",
+        "HOLD_RELIABILITY_Q10",
+        "EXIT_RELIABILITY_NEGATED_Q90",
+    ]
+    diagnostic_nodes = [
+        f"{family.upper()}_{quantile.upper()}"
+        for family in diagnostic_families
+        for quantile in ("q10", "q50", "q90")
+    ]
+    return {
+        "schema_version": "pathd.aref_decision_critical_topology.v1",
+        "direct_action_inputs": ["A_ref_mean", "A_ref_q10"],
+        "decision_critical_calibration_support": [
+            "A_ref_q10",
+            "A_ref_q50",
+            "A_ref_q90",
+        ],
+        "complete_required_aref_outputs": [
+            "A_ref_mean",
+            "A_ref_q10",
+            "A_ref_q50",
+            "A_ref_q90",
+        ],
+        "roles": {
+            "A_ref_mean": "direct composer input and HOLD/EXIT predicted mean",
+            "A_ref_q10": "direct downside input and binding HOLD lower-coverage support",
+            "A_ref_q50": "joint-calibration location and transitive dependency of calibrated q10",
+            "A_ref_q90": "binding EXIT upper-coverage support only; never a direct utility input",
+        },
+        "decision_critical_nodes": decision_nodes,
+        "diagnostic_only_families": diagnostic_families,
+        "diagnostic_only_nodes": diagnostic_nodes,
+        "complete_output_count": 16,
+        "dependency_edges": [
+            "A_REF_MEAN_RAW->A_REF_MEAN_LCB90->EXIT_COMPOSER_MEAN_Q10",
+            "A_REF_Q10_RAW+A_REF_Q50_CALIBRATION_LOCATION->A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR.q10->EXIT_COMPOSER_MEAN_Q10",
+            "A_REF_Q10_RAW+A_REF_Q50_CALIBRATION_LOCATION->A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR.q10->HOLD_RELIABILITY_Q10",
+            "A_REF_Q50_CALIBRATION_LOCATION->A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR.q10,q90",
+            "A_REF_Q90_EXIT_SUPPORT->A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR.q90->EXIT_RELIABILITY_NEGATED_Q90",
+            "LOCAL_PATH_DIAGNOSTIC_NODES->DIAGNOSTIC_REPORTS_ONLY",
+        ],
+        "forbidden_edges": [
+            "A_ref_q90->A_ref_mean",
+            "A_ref_q90->calibrated_A_ref_q10",
+            "A_ref_q90->EXIT_COMPOSER_MEAN_Q10",
+            "A_ref_q90->HOLD_RELIABILITY_Q10",
+            "local_path_diagnostic->A_ref_artifact",
+            "local_path_diagnostic->action_or_gate_or_verdict_or_family_selection",
+        ],
+        "shared_read_only_contract": {
+            "feature_transform": "same frozen byte-identical payload for all three A_ref bundles",
+            "target_scaler": "same frozen A_ref affine scaler payload",
+            "target_validity_mask": "same preregistered mask",
+            "row_identities_and_weights": "same exact ordered rows and session/trajectory-balanced weights",
+            "partition": "same chronologically earlier model-fit/calibration partition",
+            "mutable_object_sharing": False,
+            "serialization_rule": "independently serialized references must validate byte-identical before any fit or inference",
+        },
+        "training_order": [
+            "A_REF_ACTION_CORE",
+            "A_REF_Q50_SUPPORT",
+            "A_REF_Q90_SUPPORT",
+            "A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR",
+        ],
+        "action_bundle": {
+            "targets": ["A_ref_mean", "A_ref_q10"],
+            "losses": {
+                "A_ref_mean": "squared_error",
+                "A_ref_q10": "pinball_tau_0.10",
+            },
+            "loss_weights": {"A_ref_mean": 0.5, "A_ref_q10": 0.5},
+            "fit_order": 1,
+            "frozen_before_support_fit": True,
+            "mutable_from_support_losses": False,
+        },
+        "q50_support_bundle": {
+            "target": "A_ref_q50",
+            "loss": "pinball_tau_0.50",
+            "fit_order": 2,
+            "q10_anchor_detached_and_frozen": True,
+            "backpropagation_into_action_bundle": False,
+        },
+        "q90_support_bundle": {
+            "target": "A_ref_q90",
+            "loss": "pinball_tau_0.90",
+            "fit_order": 3,
+            "q50_and_upstream_anchors_detached_and_frozen": True,
+            "backpropagation_into_action_or_q50_bundles": False,
+        },
+        "raw_noncrossing": {
+            "formula": "q10=frozen_action_q10; q50=q10+softplus(gap50); q90=q50+softplus(gap90)",
+            "support_anchor_rule": "support fitting consumes detached frozen anchors",
+            "sorting_or_projection": False,
+        },
+        "hgb": {
+            "library": "scikit-learn 1.5.2 HistGradientBoostingRegressor",
+            "ensemble_seeds": [301, 302, 303],
+            "estimator_fits_per_seed": 16,
+            "estimator_fits_total": 48,
+            "decision_critical_estimators_per_seed": [
+                "A_ref_mean_squared_error",
+                "A_ref_q10_quantile_0.10",
+                "A_ref_q50_location_quantile_0.50",
+                "A_ref_q90_location_quantile_0.90",
+            ],
+            "diagnostic_estimators_per_seed": [
+                f"{family}_{quantile}"
+                for family in diagnostic_families
+                for quantile in ("q10", "q50", "q90")
+            ],
+            "constructor_kwargs": hgb_constructor,
+            "loss_and_quantile_by_estimator": {
+                "A_ref_mean": {"loss": "squared_error", "quantile": None},
+                "A_ref_q10": {"loss": "quantile", "quantile": 0.10},
+                "A_ref_q50_location": {"loss": "quantile", "quantile": 0.50},
+                "A_ref_q90_location": {"loss": "quantile", "quantile": 0.90},
+            },
+            "assembly": "q10=r10_frozen; gap50=r50-q10; q50=q10+softplus(gap50); gap90=r90-q50; q90=q50+softplus(gap90)",
+            "loss_gradient_rule": "independent HGB estimators have no shared gradients; q50/q90 support fitting cannot change the frozen r10 estimator",
+            "aggregation": "assemble per seed in common standardized A_ref units, median each output over seeds, inverse the common scaler, then jointly calibrate",
+            "serialization_manifest_order": [
+                "feature_transform",
+                "A_ref_target_scaler",
+                "A_ref_mean",
+                "A_ref_q10",
+                "A_ref_q50_support",
+                "A_ref_q90_support",
+                "joint_monotone_calibration",
+                "four_local_path_diagnostic_bundles",
+            ],
+        },
+        "neural": {
+            "ensemble_seeds": [311, 312, 313],
+            "independent_modules_per_seed": 7,
+            "modules": {
+                "A_REF_ACTION_CORE": {
+                    "outputs": ["A_ref_mean", "A_ref_q10"],
+                    "loss": "0.5*MSE(mean)+0.5*pinball_tau_0.10(q10)",
+                },
+                "A_REF_Q50_SUPPORT": {
+                    "outputs": ["gap50", "A_ref_q50"],
+                    "loss": "pinball_tau_0.50(q50)",
+                    "detached_inputs": ["A_ref_q10"],
+                },
+                "A_REF_Q90_SUPPORT": {
+                    "outputs": ["gap90", "A_ref_q90"],
+                    "loss": "pinball_tau_0.90(q90)",
+                    "detached_inputs": ["A_ref_q10", "A_ref_q50"],
+                },
+                **{
+                    family.upper(): {
+                        "outputs": [f"{family}_q10", f"{family}_q50", f"{family}_q90"],
+                        "loss": "equal_one_third_pinball_tau_0.10_0.50_0.90",
+                    }
+                    for family in diagnostic_families
+                },
+            },
+            "graph": {
+                "input": "301x47 values concatenated with 301x47 finite masks",
+                "causal_conv1d_channels": [32, 32, 32],
+                "kernel": 3,
+                "dilations": [1, 4, 16],
+                "explicit_left_pads": [2, 8, 32],
+                "pooling": ["masked_mean", "masked_max", "current"],
+                "mlp_hidden": [128, 64],
+                "activation": "GELU",
+                "dropout": 0.10,
+            },
+            "optimizer": "independent AdamW(beta1=0.9,beta2=0.999,eps=1e-8) per module",
+            "optimizer_state_parameter_gradient_or_mutable_scaler_sharing": False,
+            "gradient_clip_norm": 1.0,
+            "epochs": 20,
+            "maximum_gradient_updates": 4_000,
+            "batch_size": 4096,
+            "data_loader_workers": 0,
+            "serialization_manifest_order": [
+                "A_REF_ACTION_CORE",
+                "A_REF_Q50_SUPPORT",
+                "A_REF_Q90_SUPPORT",
+                "DOWNSIDE_300",
+                "RECOVERY_300",
+                "GIVEBACK_300",
+                "REMAINING_TAIL_300",
+                "A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR",
+            ],
+        },
+        "calibration": {
+            "fit_after_all_raw_outputs_frozen": True,
+            "q50_affects_calibrated_q10_only_through_declared_joint_calibration_edge": True,
+            "q90_affects_only_calibrated_q90_and_exit_reliability": True,
+            "complete_triplet_required": True,
+            "missing_or_nonfinite_required_output": "INVALID_TARGET_COVERAGE->invalid_result",
+            "partial_or_survivor_calibration": False,
+        },
+        "exit_coverage_identity": "A_ref<=calibrated_q90_upper iff -A_ref>=-calibrated_q90_upper",
+        "forbidden_quantile_claim": "literal q10(-A_ref)=-q90(A_ref) without a tie-compatible quantile convention",
+        "sharpness_reporting": "q90 width and pinball performance versus unconditional baseline are nonbinding diagnostics; coverage alone is not tail skill",
+    }
+
+
 def exit_action_composer_spec() -> dict[str, Any]:
+    topology = aref_decision_critical_topology_spec()
     return {
         "reference_target": "A_ref(t)=H_t-E_t",
         "mean_bound": {
@@ -3931,9 +4322,15 @@ def exit_action_composer_spec() -> dict[str, Any]:
         ),
         "action_rule": "HOLD iff U_hold>0; otherwise request EXIT",
         "action_inputs": ["A_ref_mean", "A_ref_q10"],
-        "diagnostic_targets_forbidden": [
+        "decision_critical_calibration_support": [
+            "A_ref_q10",
             "A_ref_q50",
             "A_ref_q90",
+        ],
+        "transitive_composer_support": ["A_ref_q50"],
+        "exit_reliability_only_support": ["A_ref_q90"],
+        "topology_sha256": stable_hash(topology),
+        "diagnostic_targets_forbidden": [
             "downside_300",
             "recovery_300",
             "giveback_300",
@@ -3945,6 +4342,7 @@ def exit_action_composer_spec() -> dict[str, Any]:
 def exit_diagnostic_model_isolation_spec() -> dict[str, Any]:
     """Keep path-attribution heads physically separate from the action network."""
 
+    topology = aref_decision_critical_topology_spec()
     return {
         "action_model": {
             "targets": ["A_ref_mean", "A_ref_q10"],
@@ -3952,6 +4350,16 @@ def exit_diagnostic_model_isolation_spec() -> dict[str, Any]:
             "shared_parameters_with_diagnostics": False,
             "shared_preprocessor_or_target_scaler_with_diagnostics": False,
             "shared_optimizer_or_gradient_graph_with_diagnostics": False,
+        },
+        "aref_decision_critical_support": {
+            "targets": ["A_ref_q10", "A_ref_q50", "A_ref_q90"],
+            "complete_required_outputs": topology["complete_required_aref_outputs"],
+            "topology_sha256": stable_hash(topology),
+            "q50_support_can_backpropagate_into_action": False,
+            "q90_support_can_backpropagate_into_action_or_q50": False,
+            "q50_calibration_edge_is_binding": True,
+            "q90_exit_reliability_edge_is_binding": True,
+            "missing_or_nonfinite_effect": "invalid_result",
         },
         "diagnostic_models": {
             target: {
@@ -3964,15 +4372,13 @@ def exit_diagnostic_model_isolation_spec() -> dict[str, Any]:
                 "separate_optimizer_and_gradient_graph": True,
             }
             for target, targets in (
-                ("A_ref_q50", ["A_ref_q50"]),
-                ("A_ref_q90", ["A_ref_q90"]),
                 ("downside_300", ["downside_300_q10", "downside_300_q50", "downside_300_q90"]),
                 ("recovery_300", ["recovery_300_q10", "recovery_300_q50", "recovery_300_q90"]),
                 ("giveback_300", ["giveback_300_q10", "giveback_300_q50", "giveback_300_q90"]),
                 ("remaining_tail_300", ["remaining_tail_300_q10", "remaining_tail_300_q50", "remaining_tail_300_q90"]),
             )
         },
-        "hgb_isolation": "each diagnostic family uses independent estimator/preprocessor/scaler/calibrator artifacts and cannot alter any A_ref estimator parameter or selection input",
+        "hgb_isolation": "each of the four local-path diagnostic families uses independent estimator/preprocessor/scaler/calibrator artifacts and cannot alter any A_ref estimator parameter or selection input",
         "neural_isolation": "each diagnostic family uses an independent module, optimizer, loss, preprocessor, scaler, calibration bundle, and detached input copy; no shared trunk, parameter, gradient, optimizer state, or action loss",
         "forbidden_effects": [
             "A_ref weights",
@@ -3983,7 +4389,7 @@ def exit_diagnostic_model_isolation_spec() -> dict[str, Any]:
             "HOLD/EXIT action",
             "threshold or mask",
         ],
-        "diagnostic_family_count": 6,
+        "diagnostic_family_count": 4,
         "diagnostic_failure_effect": "diagnostic_incomplete_only; never changes the primary action model or verdict",
     }
 
@@ -3996,6 +4402,326 @@ def entry_negative_control_policy_ids() -> tuple[str, ...]:
         for family in ("HGB", "NEURAL")
         for control_id in ENTRY_NEGATIVE_CONTROL_IDS
     )
+
+
+def exit_negative_control_policy_ids() -> tuple[str, ...]:
+    """Closed corrected-v3 exit-control identities used by calibration topology."""
+
+    return (
+        "CONSTANT",
+        "SIGN_REVERSED_HGB",
+        "SIGN_REVERSED_NEURAL",
+        "TIME_SHIFTED_HGB",
+        "TIME_SHIFTED_NEURAL",
+        *(f"SHUFFLED_TARGET_HGB_{index:02d}" for index in range(1, 9)),
+        *(f"SHUFFLED_TARGET_NEURAL_{index:02d}" for index in range(1, 9)),
+    )
+
+
+def entry_required_calibration_node_ids(scope: str) -> tuple[str, ...]:
+    """Expand the closed entry calibration-node grammar for one exact scope."""
+
+    if re.fullmatch(r"NESTED_OUTER_[1-5]_INNER_[1-4]", scope) or scope == (
+        "FULL_PRE_HOLDOUT"
+    ):
+        bundles = ("HGB", "NEURAL")
+    elif re.fullmatch(r"OUTER_[1-5]", scope):
+        bundles = ("HGB", "NEURAL", *entry_negative_control_policy_ids())
+    else:
+        raise ValueError("invalid entry calibration scope")
+    nodes: list[str] = []
+    for bundle in bundles:
+        nodes.extend(
+            f"ENTRY::{scope}::{bundle}::MEAN_LCB::{head}"
+            for head in ENTRY_HEAD_TARGETS
+        )
+        nodes.extend(
+            f"ENTRY::{scope}::{bundle}::Q10_CONFORMAL::{head}"
+            for head in ENTRY_HEAD_TARGETS
+        )
+        nodes.extend(
+            (
+                f"ENTRY::{scope}::{bundle}::ACTION_COMPOSITE::ENTER",
+                f"ENTRY::{scope}::{bundle}::ACTION_COMPOSITE::WAIT",
+            )
+        )
+    if len(nodes) != len(set(nodes)):
+        raise AssertionError("duplicate entry calibration node id")
+    return tuple(nodes)
+
+
+def exit_required_calibration_node_ids(scope: str) -> tuple[str, ...]:
+    """Expand the closed decision-critical exit calibration-node grammar."""
+
+    if scope == "FULL_PRE_HOLDOUT":
+        bundles = ("HGB", "NEURAL")
+    elif re.fullmatch(r"OUTER_[1-5]", scope):
+        bundles = ("HGB", "NEURAL", *exit_negative_control_policy_ids())
+    else:
+        raise ValueError("invalid exit calibration scope")
+    nodes = tuple(
+        node
+        for bundle in bundles
+        for node in (
+            f"EXIT::{scope}::{bundle}::MEAN_LCB::A_REF_MEAN",
+            f"EXIT::{scope}::{bundle}::MONOTONE_Q10_Q50_Q90::A_REF",
+        )
+    )
+    if len(nodes) != len(set(nodes)):
+        raise AssertionError("duplicate exit calibration node id")
+    return nodes
+
+
+def composite_calibration_terminal_rule_spec() -> dict[str, Any]:
+    """Freeze refined B-R without opening evidence or releasing model fitting."""
+
+    entry_manifests = []
+    for scope in (
+        *(f"NESTED_OUTER_{outer}_INNER_{inner}" for outer in range(1, 6) for inner in range(1, 5)),
+        *(f"OUTER_{outer}" for outer in range(1, 6)),
+        "FULL_PRE_HOLDOUT",
+    ):
+        nodes = entry_required_calibration_node_ids(scope)
+        entry_manifests.append(
+            {
+                "scope": scope,
+                "required_node_count": len(nodes),
+                "required_node_ids_sha256": stable_hash(list(nodes)),
+            }
+        )
+    exit_manifests = []
+    for scope in (*(f"OUTER_{outer}" for outer in range(1, 6)), "FULL_PRE_HOLDOUT"):
+        nodes = exit_required_calibration_node_ids(scope)
+        exit_manifests.append(
+            {
+                "scope": scope,
+                "required_node_count": len(nodes),
+                "required_node_ids_sha256": stable_hash(list(nodes)),
+            }
+        )
+    structural_skips = [
+        {"outer_fold": outer, "inner_fold": inner}
+        for outer, last_invalid in ((1, 4), (2, 3), (3, 2), (4, 1))
+        for inner in range(1, last_invalid + 1)
+    ] + [{"outer_fold": 5, "inner_fold": 1}]
+    return {
+        "schema_version": "pathd.composite_calibration_terminal_rule.v1",
+        "decision_id": "COMPOSITE_CALIBRATION_TERMINAL_RULE",
+        "policy": "B_R_STATUS_PRESERVING_WHOLE_RUN_HARD_STOP",
+        "generation_scope": "corrected-v3 exact five-fold design",
+        "node_id_grammar": "{PLANE}::{SCOPE}::{BUNDLE_ID}::{CALIBRATOR_KIND}::{TARGET}",
+        "node_statuses": [
+            "VALID",
+            "INSUFFICIENT_EVIDENCE",
+            "INVALID_TARGET_COVERAGE",
+            "DIAGNOSTIC_INCOMPLETE_ONLY",
+            "NOT_EVALUATED_UPSTREAM_TERMINAL",
+            "PREREGISTERED_STRUCTURAL_SKIP",
+        ],
+        "status_precedence": [
+            "invalid_result",
+            "insufficient_evidence",
+            "owner_decision_required",
+            "no_genuine_signal",
+            "PASS",
+        ],
+        "failure_mapping": {
+            "INVALID_TARGET_COVERAGE": "invalid_result",
+            "INSUFFICIENT_EVIDENCE": "insufficient_evidence",
+            "ADEQUATELY_POWERED_SIGNAL_OR_ACTION_GATE_FAILURE": "no_genuine_signal",
+            "DIAGNOSTIC_INCOMPLETE_ONLY": "diagnostic_incomplete_only",
+        },
+        "node_registry": {
+            "entry": {
+                "head_targets_in_exact_order": list(ENTRY_HEAD_TARGETS),
+                "nodes_per_bundle": 42,
+                "nested_and_full_bundles": ["HGB", "NEURAL"],
+                "outer_bundles": [
+                    "HGB",
+                    "NEURAL",
+                    *entry_negative_control_policy_ids(),
+                ],
+                "manifests": entry_manifests,
+                "composite_dependency": "ENTER and WAIT each consume the complete ordered 40-node marginal vector for their bundle; marginal failure makes the composite NOT_EVALUATED_UPSTREAM_TERMINAL",
+            },
+            "exit": {
+                "required_aref_outputs": [
+                    "A_ref_mean",
+                    "A_ref_q10",
+                    "A_ref_q50",
+                    "A_ref_q90",
+                ],
+                "atomic_triplet_outputs": ["A_ref_q10", "A_ref_q50", "A_ref_q90"],
+                "nodes_per_bundle": 2,
+                "full_bundles": ["HGB", "NEURAL"],
+                "outer_bundles": [
+                    "HGB",
+                    "NEURAL",
+                    *exit_negative_control_policy_ids(),
+                ],
+                "manifests": exit_manifests,
+                "diagnostic_only_triplets": [
+                    "downside_300",
+                    "recovery_300",
+                    "giveback_300",
+                    "remaining_tail_300",
+                ],
+            },
+            "required_fields_per_node": [
+                "node_id",
+                "stage",
+                "scope",
+                "family_or_control_identity",
+                "target_head_or_action",
+                "consumer",
+                "observed_count",
+                "minimum_count",
+                "decision_critical_or_diagnostic",
+                "failure_mapping",
+            ],
+        },
+        "stage_chronology": [
+            "for OUTER_1 through OUTER_5 sequentially: process nested inner 1 through 4 sequentially",
+            "for each calibration-valid nested scope: fit/calibrate, validate every required node, seal a VALID scope gate, then and only then open nested evidence",
+            "fit/calibrate outer entry, validate every required outer-entry node, seal a VALID scope gate, then and only then open that fold evidence",
+            "freeze each outer entry result before any later-fold artifact",
+            "require an exact all-five VALID manifest before pooled or at-least-four-of-five entry economics",
+            "freeze an immutable entry-only pooled verdict",
+            "only after entry PASS, fit/calibrate/freeze FULL_PRE_HOLDOUT entry and validate all full-entry nodes",
+            "evaluate exit minimum power before any exit weights",
+            "only if exit power passes, process exit outer folds 1 through 5 with required-node validation before each evidence open",
+            "only after exact five valid exit folds, evaluate/freeze combined verdict and FULL_PRE_HOLDOUT exit",
+            "validate the complete pre-holdout packet before a single protected-holdout open",
+        ],
+        "outer_open_gate": {
+            "required_before_decode": "write-once pathd.calibration_scope_gate_receipt.v1 with status VALID for the exact scope and complete ordered node manifest",
+            "scope_gate_evidence_access_count": 0,
+            "computed_failure_can_be_skip": False,
+            "later_fold_before_prior_immutable_terminal": False,
+        },
+        "all_five_manifest": {
+            "outer_folds_in_exact_order": [1, 2, 3, 4, 5],
+            "required_status_each": "VALID",
+            "valid_fold_count": 5,
+            "pooled_population": "exact concatenation of five valid chronological outer results",
+            "economic_fold_gate": "at least four positive economic deltas among exactly five valid folds",
+            "four_as_five_or_survivor_pooling": False,
+        },
+        "nested_structural_skip": {
+            "source_of_truth": "session_assignments inner block frozen calibration_valid=false",
+            "exact_blocks": structural_skips,
+            "receipt_status": "SKIPPED_INSUFFICIENT_CALIBRATION",
+            "access_count": 0,
+            "dataset_opened": False,
+            "result_generated": False,
+            "computed_failure_in_calibration_valid_block_can_be_relabelled_skip": False,
+        },
+        "failure_receipts": {
+            "pathd.calibration_node_failure_receipt.v1": {
+                "write_once": True,
+                "failure_only": True,
+                "required": [
+                    "node_id",
+                    "raw_node_status",
+                    "closed_failure_code",
+                    "counts_and_minima",
+                    "scope_bundle_target_consumer_role",
+                    "upstream_hashes",
+                    "evidence_access_count_zero",
+                    "holdout_open_count_zero",
+                    "receipt_sha256",
+                ],
+            },
+            "pathd.calibration_scope_gate_receipt.v1": {
+                "write_once": True,
+                "success_only": True,
+                "status": "VALID",
+                "condition": "exact ordered required-node vector is complete and every required node is VALID",
+            },
+            "pathd.calibration_campaign_failure_receipt.v1": {
+                "write_once": True,
+                "failure_only": True,
+                "condition": "references first failing scope, all node-failure receipts there, prior immutable stages, and precedence-resolved terminal status",
+            },
+            "invalid_result_scientific_success_receipt_allowed": False,
+        },
+        "current_run_exit_power_stop": {
+            "known_exit_weight_session_counts_by_fold": [0, 0, 19, 48, 56],
+            "minimum_model_fit_sessions": 60,
+            "terminal_status_after_entry_pass": "insufficient_evidence",
+            "stop_reason": "insufficient_exit_evidence",
+            "entry_only_verdict_preserved_by_hash": True,
+            "exit_fit_executed": False,
+            "four_box_instantiated": False,
+            "full_exit_fit_executed": False,
+            "preholdout_packet_frozen": False,
+            "holdout_open_count": 0,
+        },
+        "forbidden_rescue": [
+            "fold deletion",
+            "node deletion",
+            "target or quantile deletion",
+            "horizon or action deletion",
+            "required control deletion",
+            "row deletion after prediction",
+            "null imputation",
+            "zero imputation",
+            "target substitution",
+            "composite reweighting",
+            "status relabeling",
+            "survivor-only pooling",
+            "treating four valid folds as five",
+            "same-generation refit retry reseed threshold change or alternate calibrator",
+            "diagnostic veto or rescue of primary result",
+            "evidence open without a VALID scope-gate receipt",
+        ],
+        "same_generation_retry_after_invalid_result": False,
+        "full_preholdout": {
+            "entry_instantiation": "only after immutable outer entry PASS",
+            "exit_instantiation": "only after immutable combined PASS",
+            "validation": "every required full-scope calibration node is VALID before protected-holdout open",
+            "entry_only_pass_authorizes_combined_full_exit_or_holdout": False,
+        },
+    }
+
+
+def validate_br_five_fold_manifest(rows: Any) -> None:
+    """Pure pre-fit validator for the exact all-five VALID entry manifest."""
+
+    required_keys = {
+        "outer_fold",
+        "scope",
+        "status",
+        "required_node_count",
+        "valid_node_count",
+        "required_node_ids_sha256",
+        "scope_gate_receipt_sha256",
+        "outer_result_receipt_sha256",
+        "deleted_node_count",
+        "imputed_node_count",
+    }
+    if type(rows) is not list or len(rows) != 5:
+        raise ValueError("B-R requires exactly five outer calibration rows")
+    for fold, row in enumerate(rows, 1):
+        scope = f"OUTER_{fold}"
+        nodes = entry_required_calibration_node_ids(scope)
+        if (
+            type(row) is not dict
+            or set(row) != required_keys
+            or row.get("outer_fold") != fold
+            or row.get("scope") != scope
+            or row.get("status") != "VALID"
+            or row.get("required_node_count") != len(nodes)
+            or row.get("valid_node_count") != len(nodes)
+            or row.get("required_node_ids_sha256") != stable_hash(list(nodes))
+            or row.get("deleted_node_count") != 0
+            or row.get("imputed_node_count") != 0
+            or re.fullmatch(r"[0-9a-f]{64}", str(row.get("scope_gate_receipt_sha256", "")))
+            is None
+            or re.fullmatch(r"[0-9a-f]{64}", str(row.get("outer_result_receipt_sha256", "")))
+            is None
+        ):
+            raise ValueError("B-R outer calibration manifest is not exact all-five VALID")
 
 
 def entry_matched_random_owner_policy_ids() -> tuple[str, ...]:
@@ -4073,6 +4799,13 @@ def entry_pooled_gate_input_spec() -> dict[str, Any]:
     }
     return {
         "schema_version": "pathd.entry_pooled_gate_inputs.v1",
+        "br_all_five_valid_prerequisite": {
+            "manifest_validator": "v4.research.pathd_entry_exit::validate_br_five_fold_manifest",
+            "fold_order": [1, 2, 3, 4, 5],
+            "status_each": "VALID",
+            "required_before_reconstruction": True,
+            "survivor_only_pooling": False,
+        },
         "top_level_keys_in_order": [
             "schema_version", "fold_order", "per_fold", "pooled",
             "action_calibration", "matched_random", "negative_controls",
@@ -4150,6 +4883,7 @@ def entry_pooled_acceptance_spec() -> dict[str, Any]:
             ],
             "ordered_primary_session_count": 138,
             "aggregation_authorization": "FrozenResultAggregationAuthorization over exactly those five revalidated result/evaluation/trace receipts",
+            "br_all_five_valid_manifest": "validate_br_five_fold_manifest succeeds on exact folds 1..5 before any pooled or >=4/5 economic reconstruction",
         },
         "fixed_paths": {
             "result": repo_path_label(ENTRY_POOLED_ACCEPTANCE_RESULT_PATH),
@@ -4681,6 +5415,8 @@ def context_diagnostics_spec() -> dict[str, Any]:
 
 def calibration_and_statistics_spec() -> dict[str, Any]:
     return {
+        "aref_decision_critical_topology": aref_decision_critical_topology_spec(),
+        "composite_calibration_terminal_rule": composite_calibration_terminal_rule_spec(),
         "input_validity": "target-validity is frozen from source/label completeness before predictions exist; a nonfinite prediction, residual, or predicted width on any target-valid row invalidates that head/bundle and may never be post-hoc dropped; only preregistered nonfinite-label rows are masked",
         "seed_derivation": {
             "key_object": "canonical compact sorted-key JSON object with exactly {campaign:'pathd.tier_s.v1',plan_sha256:<binding hash>,purpose:<closed purpose>,model_family:<closed token>,fold_scope:<closed token>,statistic:<closed token>}; UTF-8, allow_nan=false, no local aliases or display labels",
@@ -4772,6 +5508,8 @@ def calibration_and_statistics_spec() -> dict[str, Any]:
             "noncrossing": "s_low and s_high are nonnegative and raw widths are nonnegative by model parameterization, so q10_cal<=q50_cal<=q90_cal by construction; sorting/projection is forbidden",
             "failure": "only rows whose labels were preregistered invalid before prediction are excluded; any nonfinite prediction/width on a target-valid row invalidates the head; if either side cannot attain 0.90 coverage because of permanent zero-width failures or no finite candidate scale, invalidate the head; no epsilon, row dropping, or posthoc rescue",
             "minimum_sessions": 10,
+            "aref_role": "the A_ref q10/q50/q90 triplet is one atomic decision-critical calibration node; q50 is the registered location supporting calibrated q10 and q90, and q90 is binding EXIT reliability support",
+            "aref_complete_triplet_rule": "all three raw predictions and both side corrections must be finite and valid; target, row, side, or fold deletion and partial/survivor calibration are invalid_result",
         },
         "calibration_bootstrap": {
             "seed": "derived per model/fold/head/action by seed_derivation purpose calibration_uncertainty and statistic CALIBRATION::<exact head/action>",
@@ -4794,6 +5532,7 @@ def calibration_and_statistics_spec() -> dict[str, Any]:
 def action_calibration_spec() -> dict[str, Any]:
     return {
         "scope": "pooled five outer folds with fold-specific earlier calibrators; fold tables remain diagnostic",
+        "preopen_node_scope": "these post-evidence action-trajectory coverage, decile, and bootstrap gates are not pre-open calibration nodes; B-R pre-open nodes are frozen separately in composite_calibration_terminal_rule_spec",
         "distinct_unit": "unique underlying policy trajectory; repeated seconds/episodes on the same filled position never add power for HOLD or EXIT",
         "actions": {
             "ENTER": {
@@ -4822,9 +5561,11 @@ def action_calibration_spec() -> dict[str, Any]:
             "EXIT": {
                 "unit": "one filled position trajectory that emits EXIT; anchor is that trajectory's first EXIT intent, and retries/later EXIT episodes do not add power",
                 "predicted_mean": "negative calibrated conditional mean of A_ref at episode anchor",
-                "predicted_lower": "negative calibrated A_ref q90 at episode anchor",
+                "predicted_lower": "negative calibrated A_ref q90 upper-coverage bound at episode anchor",
                 "realized": "-A_ref(anchor)=E_anchor-H_anchor under the shared fill law",
                 "coverage": "realized >= predicted_lower",
+                "coverage_identity": "A_ref(anchor)<=calibrated_q90_upper iff -A_ref(anchor)>=-calibrated_q90_upper",
+                "quantile_identity_caveat": "do not claim literal q10(-A_ref)=-q90(A_ref) without a tie-compatible empirical-quantile convention",
             },
         },
         "minimum_distinct_trajectories_per_action": 30,
@@ -5126,6 +5867,7 @@ def holdout_open_spec() -> dict[str, Any]:
         "public_api": "execute_protected_holdout_once() takes no arguments and synchronously performs access-receipt creation, decode, fixed evaluation, result write, and terminal seal; no public begin/load/seal/abort exists and no live authorization is returned. inspect/recover are read-only with respect to corpus decode, and recovery can only burn an interrupted transaction",
         "threat_model": "this is an accidental-misuse and researcher-self-fooling firewall enforced by a clean hash-verified registered Python process, not a security sandbox against a hostile same-process debugger/monkeypatcher or an operator with direct corpus filesystem access. The supported holdout command must run from the frozen dependency closure with no injected code, debugger, plugin, or interactive hook",
         "prerequisites": [
+            "refined B-R has an exact five-VALID entry and exit manifest; an entry-only PASS is insufficient",
             "all five outer-fold entry and exit bundles/composers/thresholds frozen",
             "complete four-box packet and guard panel frozen with immutable root hash",
             "every outer acceptance gate passed",
@@ -5134,6 +5876,7 @@ def holdout_open_spec() -> dict[str, Any]:
             "immutable-source hashes and the exact fit/scoring environment are current and packet-bound",
             "holdout_access_receipt absent and holdout_open_count zero",
         ],
+        "full_preholdout_order": "FULL_PRE_HOLDOUT entry exists only after immutable outer entry PASS; FULL_PRE_HOLDOUT exit and the complete packet exist only after immutable combined PASS; every required full-scope calibration node is VALID before open",
         "transaction": [
             "validate and hash the complete pre-open packet",
             "atomically write OPENING receipt with count=1, exact protected-session hash, packet hash, and timestamp before model/economic reads",
@@ -5336,10 +6079,13 @@ def floor_law() -> dict[str, Any]:
 def foundation_correction_spec() -> dict[str, Any]:
     """Return the exact pre-fit P1/P2/P3 correction authority and boundaries."""
 
+    corrected_v3_authorization = validated_corrected_v3_owner_authorization()
     authority_paths = (
         CORRECTION_PROPOSAL_PATH,
         FIELD_PARITY_FINDING_PATH,
         ENTRY_MICROSTRUCTURE_FINDING_PATH,
+        TERMINAL_RULE_RECONCILIATION_PATH,
+        CORRECTED_V3_OWNER_AUTHORIZATION_PATH,
     )
     authority = [
         {
@@ -5350,8 +6096,8 @@ def foundation_correction_spec() -> dict[str, Any]:
         for path in authority_paths
     ]
     return {
-        "schema_version": "pathd.entry_exit.foundation_correction.v2",
-        "status": "CORRECTED_GENERATION_REQUIRED_BEFORE_FIT",
+        "schema_version": "pathd.entry_exit.foundation_correction.v3",
+        "status": "CORRECTED_V3_BUILD_ONLY_PENDING_CLAUDE_VERIFICATION",
         "authority": authority,
         "superseded_audit_root": repo_path_label(SUPERSEDED_AUDIT_ROOT),
         "intermediate_corrected_audit_root": repo_path_label(
@@ -5360,6 +6106,15 @@ def foundation_correction_spec() -> dict[str, Any]:
         "intermediate_corrected_foundation_files": [
             dict(row) for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
         ],
+        "previous_corrected_v2_audit_root": repo_path_label(
+            PREVIOUS_CORRECTED_V2_AUDIT_ROOT
+        ),
+        "previous_corrected_v2_foundation_files": [
+            dict(row) for row in PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS
+        ],
+        "previous_corrected_v2_foundation_generation_sha256": (
+            PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
+        ),
         "corrected_audit_root": repo_path_label(AUDIT_ROOT),
         "p1_foundation_restoration": {
             "classification": "BENIGN_TEST_CONTAMINATION",
@@ -5403,23 +6158,41 @@ def foundation_correction_spec() -> dict[str, Any]:
             "current_run_alpha_allowed": False,
             "future_test_rule": "fresh separately preregistered widen-entry experiment only",
         },
+        "adopted_owner_decisions": {
+            "authorization_schema_version": corrected_v3_authorization[
+                "schema_version"
+            ],
+            "authorization_sha256": CORRECTED_V3_OWNER_AUTHORIZATION_SHA256,
+            "AREF_ACTION_CALIBRATION_ROLE": {
+                "decision": corrected_v3_authorization[
+                    "aref_action_calibration_role"
+                ]["decision"],
+                "topology": aref_decision_critical_topology_spec(),
+            },
+            "COMPOSITE_CALIBRATION_TERMINAL_RULE": {
+                "decision": corrected_v3_authorization[
+                    "composite_calibration_terminal_rule"
+                ]["decision"],
+                "rule": composite_calibration_terminal_rule_spec(),
+            },
+        },
         "prefit_pause": {
             "terminal_marker": "STOP_FOR_CLAUDE_VERIFICATION",
             "foundation_stability_gate_implemented": True,
             "foundation_stability_receipt_sealed": False,
+            "machinery_seal_authorized": False,
+            "foundation_stability_seal_authorized": False,
             "model_fit_authorized": False,
-            "unresolved_owner_decision": {
-                "id": "COMPOSITE_CALIBRATION_TERMINAL_RULE",
-                "reason": (
-                    "a calibration-valid session-count block can still produce an "
-                    "INVALID_TARGET_COVERAGE or INSUFFICIENT_EVIDENCE composite "
-                    "correction; choosing its durable terminal/minimum-power rule "
-                    "changes scientific topology and is outside P1/P2/P3"
-                ),
-                "required_before": (
-                    "machinery/stability seal or any model fit"
-                ),
-            },
+            "corpus_decode_authorized": False,
+            "nested_or_outer_evidence_open_authorized": False,
+            "protected_holdout_open_authorized": False,
+            "unresolved_owner_decision": None,
+            "resolved_owner_decisions": [
+                "AREF_ACTION_CALIBRATION_ROLE",
+                "COMPOSITE_CALIBRATION_TERMINAL_RULE",
+            ],
+            "claude_verification_pending": True,
+            "separate_post_verification_release_required": True,
         },
         "holdout_open_count": 0,
         "model_fit_executed": False,
@@ -5432,12 +6205,17 @@ def assert_correction_prefit_release(payload: Mapping[str, Any]) -> None:
     pause = payload.get("foundation_correction", {}).get("prefit_pause", {})
     if (
         pause.get("foundation_stability_gate_implemented") is not True
-        or pause.get("model_fit_authorized") is not True
         or pause.get("unresolved_owner_decision") is not None
+        or pause.get("machinery_seal_authorized") is not True
+        or pause.get("foundation_stability_seal_authorized") is not True
+        or pause.get("model_fit_authorized") is not True
+        or pause.get("claude_verification_pending") is not False
+        or pause.get("separate_post_verification_release_required") is not False
     ):
         raise RuntimeError(
-            "owner_decision_required: composite calibration terminal rule remains "
-            "unresolved at the corrected pre-fit verification pause"
+            "STOP_FOR_CLAUDE_VERIFICATION: corrected-v3 decisions are resolved, but "
+            "the build-only authorization does not release machinery, stability, "
+            "corpus decode, evidence opening, or model fitting"
         )
 
 
@@ -5468,6 +6246,7 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
     assignments = session_assignments()
     lineage = feature_lineage()
     owner_authorization = validated_owner_authorization()
+    corrected_v3_authorization = validated_corrected_v3_owner_authorization()
     source_hashes = _source_hashes()
     integrity_contract = integrity_manifest_contract()
     hgb = HGBConfig(
@@ -5490,7 +6269,7 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
     )
     calibration_statistics = calibration_and_statistics_spec()
     payload = {
-        "schema_version": "pathd.entry_exit.preregistration.v1",
+        "schema_version": "pathd.entry_exit.preregistration.v2",
         "status": "FROZEN_BEFORE_ANY_MODEL_FIT",
         "semantic_contract_excludes_wall_clock": True,
         "quarantine_labels": list(QUARANTINE_LABELS),
@@ -5519,6 +6298,14 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                 "insufficient_evidence",
                 "owner_decision_required",
             ],
+            "out_of_band_terminal_statuses": ["invalid_result"],
+            "status_precedence": [
+                "invalid_result",
+                "insufficient_evidence",
+                "owner_decision_required",
+                "no_genuine_signal",
+                "PASS",
+            ],
             "entry_failure_mapping": {
                 "adequate_power_but_signal_or_action_gate_fails": {
                     "feasibility_verdict": "no_genuine_signal",
@@ -5530,6 +6317,20 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                     "reason": "distinguishes an underpowered result from an adequately powered genuine no-signal result",
                 },
             },
+            "exit_and_composite_failure_mapping": {
+                "INVALID_TARGET_COVERAGE": {
+                    "terminal_status": "invalid_result",
+                    "success_receipt_allowed": False,
+                },
+                "INSUFFICIENT_EVIDENCE": {
+                    "feasibility_verdict": "insufficient_evidence",
+                    "stop_reason": "insufficient_exit_evidence",
+                },
+                "ADEQUATELY_POWERED_SIGNAL_OR_ACTION_GATE_FAILURE": {
+                    "feasibility_verdict": "no_genuine_signal",
+                    "stop_reason": "no_genuine_exit_or_combined_signal",
+                },
+            },
             "terminal_marker": "STOP_FOR_CLAUDE_VERIFICATION",
         },
         "binding_plan": {
@@ -5537,7 +6338,9 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
             "sha256": sha256_path(PLAN_PATH),
         },
         "owner_authorization": owner_authorization,
+        "corrected_v3_owner_authorization": corrected_v3_authorization,
         "foundation_correction": foundation_correction_spec(),
+        "composite_calibration_terminal_rule": composite_calibration_terminal_rule_spec(),
         "corpus": {
             "root": str(CORPUS_ROOT),
             "entry_substrate": "aligned/processed/minute_entry",
@@ -5816,6 +6619,7 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
             "local_horizon_seconds": 300,
             "downside_penalty": 0.25,
             "composer": exit_action_composer_spec(),
+            "aref_decision_critical_topology": aref_decision_critical_topology_spec(),
             "hgb": {
                 **exit_hgb.to_dict(),
                 "family": "sklearn_hgb_monotone_latent_stack",
@@ -5823,15 +6627,16 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                 "ensemble_seeds": [301, 302, 303],
                 "ensemble_aggregation": "median prediction per head",
                 "mean_loss": "squared_error",
-                "quantile_loss": "three latent HGB regressors use sklearn quantile loss at 0.10/0.50/0.90 respectively",
-                "monotone_parameterization": "given latent predictions r10,r50,r90, emit q50=r50; q10=r50-softplus(r50-r10); q90=r50+softplus(r90-r50), with stable softplus(x)=log1p(exp(-abs(x)))+max(x,0); this registered transform is part of predict(), not sorting/projection",
+                "quantile_loss": "independent frozen-order A_ref q10, q50-location, and q90-location HGB estimators use sklearn quantile loss at 0.10/0.50/0.90 respectively",
+                "monotone_parameterization": "q10=r10_frozen; gap50=r50-q10; q50=q10+softplus(gap50); gap90=r90-q50; q90=q50+softplus(gap90), with stable softplus(x)=log1p(exp(-abs(x)))+max(x,0); support estimators never mutate the frozen q10 estimator",
                 "posthoc_sort_or_projection": False,
                 "hyperparameter_candidates": 1,
                 "seed_count": 3,
                 "early_stopping": False,
                 "max_bins": 255,
                 "warm_start": False,
-                "implementation_gate": "latent-stack exact-formula, monotonicity, serialization, seed, and library-version tests must pass before exit fit",
+                "exact_topology": aref_decision_critical_topology_spec()["hgb"],
+                "implementation_gate": "corrected-v3 exact constructor, frozen-anchor formula, monotonicity, scaler identity, serialization, seed, and library-version tests must pass before exit fit",
             },
             "neural": {
                 "family": "small_causal_temporal_conv_mlp",
@@ -5852,7 +6657,7 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                 "learning_rate": 0.001,
                 "weight_decay": 0.0001,
                 "optimizer": "AdamW(beta1=0.9,beta2=0.999,eps=1e-8)",
-                "losses": "the action network has only A_ref mean squared error and A_ref q10 pinball_tau_0.10. A_ref q50/q90 and all four local-path diagnostic families use six separate modules, optimizers, scalers, calibrators, and gradient graphs under exit.diagnostic_target_isolation",
+                "losses": "A_REF_ACTION_CORE uses exactly 0.5*MSE(mean)+0.5*pinball_tau_0.10(q10); independent A_REF_Q50_SUPPORT uses pinball_tau_0.50(q50) with q10 detached; independent A_REF_Q90_SUPPORT uses pinball_tau_0.90(q90) with q10/q50 detached; four independent local-path triplet modules use equal one-third pinball losses",
                 "gradient_clip_norm": 1.0,
                 "scheduler": "none",
                 "data_loader_workers": 0,
@@ -5865,10 +6670,18 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                 "determinism": "seed Python/NumPy/Torch; deterministic algorithms; record device and library versions",
                 "monotone_parameterization": "per target family emit z10,gap50,gap90; q10=z10; q50=q10+softplus(gap50); q90=q50+softplus(gap90) before loss and inference",
                 "posthoc_sort_or_projection": False,
+                "exact_topology": aref_decision_critical_topology_spec()["neural"],
             },
             "distributional_targets": {
-                "A_ref_action": ["mean", "q10"],
-                "A_ref_diagnostic_only": ["q50", "q90"],
+                "A_ref_action_inputs": ["mean", "q10"],
+                "A_ref_decision_critical_calibration_support": ["q10", "q50", "q90"],
+                "A_ref_complete_required_outputs": ["mean", "q10", "q50", "q90"],
+                "diagnostic_only_families": [
+                    "downside_300",
+                    "recovery_300",
+                    "giveback_300",
+                    "remaining_tail_300",
+                ],
                 "downside_300": ["q10", "q50", "q90"],
                 "recovery_300": ["q10", "q50", "q90"],
                 "giveback_300": ["q10", "q50", "q90"],
@@ -5901,10 +6714,20 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                 "policy_economics": "must also beat exit-immediate, full honest comparator panel, and matched-rate random; R2 alone never passes",
             },
             "action_loss": {
-                "target_transform": "one session/trajectory-balanced affine mean/std transform shared only by A_ref mean and A_ref q10 in the action bundle",
+                "target_transform": "one frozen session/trajectory-balanced A_ref affine mean/std payload is independently serialized byte-identically for action, q50-support, and q90-support bundles; no mutable scaler object is shared",
                 "weights": {"A_ref_mean": 0.5, "A_ref_q10": 0.5},
-                "diagnostic_loss_or_gradient_contribution": 0.0,
-                "missing_targets": "mask preregistered invalid targets before loss; either action target absent for the complete fit role invalidates the action bundle",
+                "support_losses": {
+                    "A_ref_q50": "pinball_tau_0.50; action q10 anchor detached and frozen",
+                    "A_ref_q90": "pinball_tau_0.90; q10/q50 anchors detached and frozen",
+                },
+                "local_diagnostic_loss_or_gradient_contribution_to_aref": 0.0,
+                "missing_targets": "mask only preregistered invalid labels before loss; any missing/nonfinite required A_ref mean/q10/q50/q90 prediction or calibration support invalidates the atomic decision-critical bundle",
+                "fit_and_serialization_order": [
+                    "A_REF_ACTION_CORE",
+                    "A_REF_Q50_SUPPORT",
+                    "A_REF_Q90_SUPPORT",
+                    "A_REF_JOINT_Q10_Q50_Q90_CALIBRATOR",
+                ],
             },
             "family_evaluation": {
                 "selectable_candidate": "HGB",
@@ -5923,6 +6746,14 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                 "known_exit_calibration_session_counts_by_fold": [0, 15, 19, 23, 28],
                 "minimum_model_fit_sessions": 60,
                 "consequence": "if entry clears, exit fitting must stop insufficient_evidence before weights because every fold has fewer than 60 valid nested-entry-OOF exit-weight sessions; invalid inner bundles are never counted or used",
+                "entry_only_verdict": "the immutable entry pooled verdict and receipt remain authoritative and are referenced by hash; the exit-power stop cannot overwrite, relabel, or erase them",
+                "combined_terminal": {
+                    "status": "insufficient_evidence",
+                    "stop_reason": "insufficient_exit_evidence",
+                    "exit_fit_executed": False,
+                    "four_box_instantiated": False,
+                    "holdout_open_count": 0,
+                },
                 "eligible_trajectory": "distinct filled OOF entry intent with complete exact-contract 1-second path and valid reference labels; seconds are not samples for power",
                 "minimum_eligible_trajectories_per_fit_fold": 500,
             },
@@ -5944,6 +6775,7 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
             "execution_and_selection": comparator_replay_spec(),
         },
         "combined_evaluation": {
+            "composite_calibration_terminal_rule": composite_calibration_terminal_rule_spec(),
             "four_boxes": {
                 "A": "P5-under-cap entry plus the fold-specific shared transparent control exit",
                 "B": "frozen learned entry plus that exact same fold-specific shared transparent control exit",
@@ -5964,7 +6796,7 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
                 "floor": "pass the frozen floor-on/off large-win-capture and harvest-ratio rule",
                 "pr_ap": "diagnostic only and never a gate/selector",
             },
-            "known_run_consequence": "the frozen exit model-fit session counts are all <60, so this run must stop insufficient_evidence before exit weights and will not lawfully instantiate C/D or claim a combined pass unless a new data-era plan changes the evidence geometry",
+            "known_run_consequence": "after preserving any immutable entry-only verdict, the frozen exit model-fit session counts [0,0,19,48,56] are all <60, so this run stops insufficient_evidence before exit weights and cannot instantiate C/D, full-exit, pre-holdout, or holdout artifacts",
         },
         "economics": {
             "starting_equity_dollars": 10_000,
@@ -5983,6 +6815,7 @@ def preregistration_payload() -> tuple[dict[str, Any], dict[str, Any], dict[str,
             "pooled": "strictly positive one-sided 95% session-block-bootstrap lower bound",
             "fold_consistency": "positive paired delta in at least 4 of 5 outer folds",
             "action_calibration": action_calibration_spec(),
+            "composite_calibration_terminal_rule": composite_calibration_terminal_rule_spec(),
             "pr_ap": "diagnostic_only",
             "floor_ablation_harvest_collapse_threshold": 0.20,
             "floor_ablation_metrics": {
@@ -6235,8 +7068,11 @@ def validate_owner_locked_operational_contract(
     """Cross-bind every owner lock to the exact executable prereg structures."""
 
     owner = validated_owner_authorization()
+    corrected_v3_owner = validated_corrected_v3_owner_authorization()
     if payload.get("owner_authorization") != owner:
         raise ValueError("owner authorization payload drift")
+    if payload.get("corrected_v3_owner_authorization") != corrected_v3_owner:
+        raise ValueError("corrected-v3 owner authorization payload drift")
     if payload.get("owner_locked_decisions") != owner["decisions"]:
         raise ValueError("owner decision projection drift")
     if owner["required_holdout_caveat"] != HOLDOUT_CAVEAT:
@@ -6276,8 +7112,15 @@ def validate_owner_locked_operational_contract(
         raise ValueError("exit feature operational binding drift")
     horizon = owner["decisions"]["exit_local_horizon_seconds"]
     expected_targets = {
-        "A_ref_action": ["mean", "q10"],
-        "A_ref_diagnostic_only": ["q50", "q90"],
+        "A_ref_action_inputs": ["mean", "q10"],
+        "A_ref_decision_critical_calibration_support": ["q10", "q50", "q90"],
+        "A_ref_complete_required_outputs": ["mean", "q10", "q50", "q90"],
+        "diagnostic_only_families": [
+            "downside_300",
+            "recovery_300",
+            "giveback_300",
+            "remaining_tail_300",
+        ],
         "downside_300": ["q10", "q50", "q90"],
         "recovery_300": ["q10", "q50", "q90"],
         "giveback_300": ["q10", "q50", "q90"],
@@ -6292,6 +7135,25 @@ def validate_owner_locked_operational_contract(
         raise ValueError("exit H=300 target/history/name binding drift")
     if exit_spec.get("composer") != exit_action_composer_spec():
         raise ValueError("structured exit composer drift")
+    aref_topology = aref_decision_critical_topology_spec()
+    if (
+        exit_spec.get("aref_decision_critical_topology") != aref_topology
+        or payload.get("calibration_and_statistics", {}).get(
+            "aref_decision_critical_topology"
+        )
+        != aref_topology
+        or any(
+            value.startswith("A_ref")
+            for value in aref_topology["diagnostic_only_families"]
+        )
+        or exit_spec["composer"].get("action_inputs")
+        != ["A_ref_mean", "A_ref_q10"]
+        or exit_spec["composer"].get("transitive_composer_support")
+        != ["A_ref_q50"]
+        or exit_spec["composer"].get("exit_reliability_only_support")
+        != ["A_ref_q90"]
+    ):
+        raise ValueError("A_ref decision-critical dependency closure drift")
     if (
         exit_spec["composer"]["mean_bound"]["level"]
         != owner["decisions"]["calibration_level"]
@@ -6313,6 +7175,19 @@ def validate_owner_locked_operational_contract(
 
     if payload.get("calibration_and_statistics") != calibration_and_statistics_spec():
         raise ValueError("calibration/statistics operational binding drift")
+    terminal_rule = composite_calibration_terminal_rule_spec()
+    if (
+        payload.get("composite_calibration_terminal_rule") != terminal_rule
+        or payload.get("metrics_and_gates", {}).get(
+            "composite_calibration_terminal_rule"
+        )
+        != terminal_rule
+        or payload.get("combined_evaluation", {}).get(
+            "composite_calibration_terminal_rule"
+        )
+        != terminal_rule
+    ):
+        raise ValueError("composite calibration B-R cross-binding drift")
     if payload.get("metrics_and_gates", {}).get("action_calibration") != (
         action_calibration_spec()
     ):
@@ -6378,6 +7253,47 @@ def validate_preregistration_payload(
     correction = payload.get("foundation_correction")
     if correction != foundation_correction_spec():
         raise ValueError("corrected-generation authority binding drift")
+    _assert_superseded_foundation_history()
+    if (
+        correction.get("previous_corrected_v2_audit_root")
+        != repo_path_label(PREVIOUS_CORRECTED_V2_AUDIT_ROOT)
+        or correction.get("previous_corrected_v2_foundation_files")
+        != [dict(row) for row in PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS]
+        or correction.get("previous_corrected_v2_foundation_generation_sha256")
+        != PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
+    ):
+        raise ValueError("corrected-v2 immutable predecessor binding drift")
+    pause = correction.get("prefit_pause", {})
+    if (
+        pause.get("unresolved_owner_decision") is not None
+        or pause.get("resolved_owner_decisions")
+        != [
+            "AREF_ACTION_CALIBRATION_ROLE",
+            "COMPOSITE_CALIBRATION_TERMINAL_RULE",
+        ]
+        or pause.get("claude_verification_pending") is not True
+        or pause.get("machinery_seal_authorized") is not False
+        or pause.get("foundation_stability_seal_authorized") is not False
+        or pause.get("model_fit_authorized") is not False
+        or pause.get("corpus_decode_authorized") is not False
+        or pause.get("nested_or_outer_evidence_open_authorized") is not False
+        or pause.get("protected_holdout_open_authorized") is not False
+    ):
+        raise ValueError("corrected-v3 build-only prefit pause drift")
+    terminal_rule = payload.get("composite_calibration_terminal_rule")
+    if terminal_rule != composite_calibration_terminal_rule_spec():
+        raise ValueError("refined B-R terminal rule drift")
+    current_exit_stop = terminal_rule["current_run_exit_power_stop"]
+    if (
+        current_exit_stop["known_exit_weight_session_counts_by_fold"]
+        != [0, 0, 19, 48, 56]
+        or current_exit_stop["minimum_model_fit_sessions"] != 60
+        or current_exit_stop["terminal_status_after_entry_pass"]
+        != "insufficient_evidence"
+        or current_exit_stop["entry_only_verdict_preserved_by_hash"] is not True
+        or current_exit_stop["holdout_open_count"] != 0
+    ):
+        raise ValueError("refined B-R exit-power stop drift")
     p1 = correction["p1_foundation_restoration"]
     if (
         p1.get("classification") != "BENIGN_TEST_CONTAMINATION"
@@ -6796,7 +7712,7 @@ def freeze_preregistration() -> dict[str, Any]:
     )
     receipt_contracts = payload["source_hash_policy"]["receipt_contracts"]
     receipt = {
-        "schema_version": "pathd.entry_exit.preregistration_freeze_receipt.v3",
+        "schema_version": "pathd.entry_exit.preregistration_freeze_receipt.v4",
         "status": "FROZEN_BEFORE_ANY_MODEL_FIT",
         "frozen_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "preregistration_path": receipt_contracts["preregistration_path"],
@@ -6811,9 +7727,27 @@ def freeze_preregistration() -> dict[str, Any]:
         ),
         "correction_proposal_path": repo_path_label(CORRECTION_PROPOSAL_PATH),
         "correction_proposal_sha256": sha256_path(CORRECTION_PROPOSAL_PATH),
+        "terminal_rule_reconciliation_path": repo_path_label(
+            TERMINAL_RULE_RECONCILIATION_PATH
+        ),
+        "terminal_rule_reconciliation_sha256": (
+            TERMINAL_RULE_RECONCILIATION_SHA256
+        ),
+        "corrected_v3_owner_authorization_path": repo_path_label(
+            CORRECTED_V3_OWNER_AUTHORIZATION_PATH
+        ),
+        "corrected_v3_owner_authorization_sha256": (
+            CORRECTED_V3_OWNER_AUTHORIZATION_SHA256
+        ),
         "superseded_audit_root": repo_path_label(SUPERSEDED_AUDIT_ROOT),
         "intermediate_corrected_audit_root": repo_path_label(
             INTERMEDIATE_CORRECTED_AUDIT_ROOT
+        ),
+        "previous_corrected_v2_audit_root": repo_path_label(
+            PREVIOUS_CORRECTED_V2_AUDIT_ROOT
+        ),
+        "previous_corrected_v2_foundation_generation_sha256": (
+            PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
         ),
         "holdout_open_count": 0,
         "holdout_caveat": HOLDOUT_CAVEAT,
@@ -6894,8 +7828,14 @@ def assert_preregistration_frozen() -> dict[str, Any]:
         "foundation_correction_sha256",
         "correction_proposal_path",
         "correction_proposal_sha256",
+        "terminal_rule_reconciliation_path",
+        "terminal_rule_reconciliation_sha256",
+        "corrected_v3_owner_authorization_path",
+        "corrected_v3_owner_authorization_sha256",
         "superseded_audit_root",
         "intermediate_corrected_audit_root",
+        "previous_corrected_v2_audit_root",
+        "previous_corrected_v2_foundation_generation_sha256",
         "holdout_open_count",
         "holdout_caveat",
         "claim_boundary",
@@ -6907,7 +7847,7 @@ def assert_preregistration_frozen() -> dict[str, Any]:
     if (
         set(receipt) != expected_receipt_keys
         or receipt.get("schema_version")
-        != "pathd.entry_exit.preregistration_freeze_receipt.v3"
+        != "pathd.entry_exit.preregistration_freeze_receipt.v4"
         or receipt.get("status") != "FROZEN_BEFORE_ANY_MODEL_FIT"
         or re.fullmatch(r"\d{4}-\d{2}-\d{2}T[^\s]+Z", str(receipt.get("frozen_at_utc", "")))
         is None
@@ -6922,10 +7862,22 @@ def assert_preregistration_frozen() -> dict[str, Any]:
         != repo_path_label(CORRECTION_PROPOSAL_PATH)
         or receipt.get("correction_proposal_sha256")
         != sha256_path(CORRECTION_PROPOSAL_PATH)
+        or receipt.get("terminal_rule_reconciliation_path")
+        != repo_path_label(TERMINAL_RULE_RECONCILIATION_PATH)
+        or receipt.get("terminal_rule_reconciliation_sha256")
+        != TERMINAL_RULE_RECONCILIATION_SHA256
+        or receipt.get("corrected_v3_owner_authorization_path")
+        != repo_path_label(CORRECTED_V3_OWNER_AUTHORIZATION_PATH)
+        or receipt.get("corrected_v3_owner_authorization_sha256")
+        != CORRECTED_V3_OWNER_AUTHORIZATION_SHA256
         or receipt.get("superseded_audit_root")
         != repo_path_label(SUPERSEDED_AUDIT_ROOT)
         or receipt.get("intermediate_corrected_audit_root")
         != repo_path_label(INTERMEDIATE_CORRECTED_AUDIT_ROOT)
+        or receipt.get("previous_corrected_v2_audit_root")
+        != repo_path_label(PREVIOUS_CORRECTED_V2_AUDIT_ROOT)
+        or receipt.get("previous_corrected_v2_foundation_generation_sha256")
+        != PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
     ):
         raise RuntimeError("Path-D preregistration freeze receipt semantic drift")
     try:
@@ -7201,6 +8153,11 @@ def _assert_superseded_foundation_history() -> dict[str, Any]:
             raise RuntimeError(
                 f"intermediate corrected foundation history drift: {expected['path']}"
             )
+    for expected in PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS:
+        if _raw_regular_file_binding(expected["path"]) != expected:
+            raise RuntimeError(
+                f"corrected-v2 foundation history drift: {expected['path']}"
+            )
     expected_burn_file = {
         key: QUARANTINED_TEST_BURN_BINDING[key]
         for key in ("path", "bytes", "sha256")
@@ -7270,7 +8227,7 @@ def _foundation_generation_sha256(
 ) -> str:
     return stable_hash(
         {
-            "schema_version": "pathd.entry_exit.corrected_foundation_generation.v2",
+            "schema_version": "pathd.entry_exit.corrected_foundation_generation.v3",
             "corrected_audit_root": repo_path_label(AUDIT_ROOT),
             "corrected_files": corrected_files,
             "correction_sha256": correction_sha256,
@@ -7281,6 +8238,16 @@ def _foundation_generation_sha256(
                 dict(row)
                 for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
             ],
+            "previous_corrected_v2_audit_root": repo_path_label(
+                PREVIOUS_CORRECTED_V2_AUDIT_ROOT
+            ),
+            "previous_corrected_v2_foundation_files": [
+                dict(row)
+                for row in PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS
+            ],
+            "previous_corrected_v2_foundation_generation_sha256": (
+                PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
+            ),
             "quarantined_burn_file_sha256": QUARANTINED_TEST_BURN_BINDING[
                 "sha256"
             ],
@@ -7327,6 +8294,16 @@ def seal_foundation_restoration_receipt() -> dict[str, Any]:
                 dict(row)
                 for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
             ],
+            "previous_corrected_v2_audit_root": repo_path_label(
+                PREVIOUS_CORRECTED_V2_AUDIT_ROOT
+            ),
+            "previous_corrected_v2_foundation_files": [
+                dict(row)
+                for row in PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS
+            ],
+            "previous_corrected_v2_foundation_generation_sha256": (
+                PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
+            ),
             "quarantined_burn": dict(QUARANTINED_TEST_BURN_BINDING),
             "fold_namespaces": folds,
             "restored_outer_folds": [1, 2, 3, 4, 5],
@@ -7373,6 +8350,9 @@ def assert_foundation_restoration_frozen() -> dict[str, Any]:
         "superseded_foundation_files",
         "intermediate_corrected_audit_root",
         "intermediate_corrected_foundation_files",
+        "previous_corrected_v2_audit_root",
+        "previous_corrected_v2_foundation_files",
+        "previous_corrected_v2_foundation_generation_sha256",
         "quarantined_burn",
         "fold_namespaces",
         "restored_outer_folds",
@@ -7411,6 +8391,12 @@ def assert_foundation_restoration_frozen() -> dict[str, Any]:
         != [
             dict(row) for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
         ]
+        or receipt.get("previous_corrected_v2_audit_root")
+        != repo_path_label(PREVIOUS_CORRECTED_V2_AUDIT_ROOT)
+        or receipt.get("previous_corrected_v2_foundation_files")
+        != [dict(row) for row in PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS]
+        or receipt.get("previous_corrected_v2_foundation_generation_sha256")
+        != PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
         or receipt.get("superseded_audit_root")
         != repo_path_label(SUPERSEDED_AUDIT_ROOT)
         or receipt.get("quarantined_burn") != dict(QUARANTINED_TEST_BURN_BINDING)
@@ -7470,6 +8456,9 @@ def _foundation_stability_file_bindings(
     labels.extend(
         row["path"] for row in INTERMEDIATE_CORRECTED_FOUNDATION_FILE_BINDINGS
     )
+    labels.extend(
+        row["path"] for row in PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS
+    )
     labels.append(QUARANTINED_TEST_BURN_BINDING["path"])
     ordered = list(dict.fromkeys(labels))
     if len(ordered) != len(set(ordered)):
@@ -7485,7 +8474,7 @@ def _foundation_root_sha256(
 ) -> str:
     return stable_hash(
         {
-            "schema_version": "pathd.entry_exit.foundation_byte_snapshot.v2",
+            "schema_version": "pathd.entry_exit.foundation_byte_snapshot.v3",
             "foundation_generation_sha256": generation_sha256,
             "files": files,
             "fit_environment_sha256": fit_environment_sha256,

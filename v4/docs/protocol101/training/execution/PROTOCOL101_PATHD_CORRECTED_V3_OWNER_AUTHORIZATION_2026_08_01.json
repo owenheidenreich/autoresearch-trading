@@ -1,0 +1,115 @@
+{
+  "schema_version": "pathd.corrected_v3.owner_authorization.v1",
+  "status": "OWNER_CONFIRMED_CORRECTED_V3_BUILD_ONLY",
+  "authorized_on": "2026-08-01",
+  "authorization_evidence": "Owner confirmed in the active Codex task: confirmed. proceed with the corrected-v3 build.",
+  "scope": "distinct corrected-v3 preregistration and restoration foundation only",
+  "aref_action_calibration_role": {
+    "decision": "ADOPT_WITH_ADVERSARIAL_CONDITIONS",
+    "runtime_composer_unchanged": "U_hold=LCB90(mean[A_ref|s_t])+0.25*min(calibrated_q10_A_ref,0); HOLD iff U_hold>0",
+    "roles": {
+      "A_ref_mean": "direct runtime composer input and HOLD/EXIT predicted mean",
+      "A_ref_q10": "direct runtime composer input, HOLD reliability lower bound, and joint monotone calibration member",
+      "A_ref_q50": "decision-critical transitive dependency of calibrated q10 and joint monotone calibration location",
+      "A_ref_q90": "decision-critical EXIT reliability upper-coverage support only; never a direct runtime utility term"
+    },
+    "exit_coverage_identity": "A_ref<=calibrated_q90_upper iff -A_ref>=-calibrated_q90_upper",
+    "forbidden_quantile_claim": "do not claim literal q10(-A_ref)=-q90(A_ref) without a tie-compatible quantile convention",
+    "training_topology": {
+      "action_bundle": {
+        "targets": [
+          "A_ref_mean",
+          "A_ref_q10"
+        ],
+        "loss_weights": {
+          "A_ref_mean": 0.5,
+          "A_ref_q10": 0.5
+        },
+        "fit_order": 1,
+        "mutable_from_support_losses": false
+      },
+      "q50_support_bundle": {
+        "target": "A_ref_q50",
+        "loss": "pinball_tau_0.50",
+        "fit_order": 2,
+        "action_bundle_frozen_first": true,
+        "backpropagation_into_action_bundle": false
+      },
+      "q90_support_bundle": {
+        "target": "A_ref_q90",
+        "loss": "pinball_tau_0.90",
+        "fit_order": 3,
+        "action_and_q50_bundles_frozen_first": true,
+        "backpropagation_into_action_or_q50_bundles": false
+      },
+      "shared_read_only_contract": "all A_ref bundles use the same frozen feature transform, A_ref target scaler, target-validity mask, row identities, weights, and earlier-session partition",
+      "raw_noncrossing": "q10 is the frozen action-bundle output; q50=q10+softplus(gap50); q90=q50+softplus(gap90), with detached frozen anchors during support fitting",
+      "joint_calibration": "the registered q10/q50/q90 monotone calibration is fit only after all three raw outputs are frozen; q50 may affect calibrated q10 only through this declared calibration edge",
+      "serialization_order": [
+        "action_bundle",
+        "q50_support_bundle",
+        "q90_support_bundle",
+        "joint_monotone_calibration"
+      ]
+    },
+    "diagnostic_only_families": [
+      "downside_300",
+      "recovery_300",
+      "giveback_300",
+      "remaining_tail_300"
+    ],
+    "sharpness_reporting": "report q90 width and pinball performance versus the unconditional baseline as nonbinding diagnostics; coverage alone cannot support a tail-skill claim"
+  },
+  "composite_calibration_terminal_rule": {
+    "decision": "ADOPT_REFINED_B_R",
+    "generation_scope": "corrected-v3 exact five-fold design",
+    "chronology": "validate every required fold-local calibration node before opening that fold; retain folds 1 through 5 sequentially; require an exact all-five VALID manifest before pooled or at-least-four-of-five economic evaluation",
+    "stage_scope": {
+      "entry": "entry B-R governs entry outer folds and preserves an immutable entry-only verdict",
+      "exit": "known exit-weight counts [0,0,19,48,56] below 60 stop exit/combined evaluation before exit weights without erasing entry-only evidence",
+      "full_pre_holdout": "instantiate only after outer entry PASS and validate before any protected-holdout open"
+    },
+    "nested_skip_rule": "only a session-assignment block frozen calibration_valid=false may emit the lawful no-decode nested skip; a computed failure in a calibration-valid block is never relabeled as skip",
+    "failure_precedence": [
+      "invalid_result",
+      "insufficient_evidence",
+      "owner_decision_required",
+      "no_genuine_signal",
+      "PASS"
+    ],
+    "failure_mapping": {
+      "INVALID_TARGET_COVERAGE": "invalid_result with failure-only terminal receipt and no scientific success receipt",
+      "INSUFFICIENT_EVIDENCE": "insufficient_evidence",
+      "ADEQUATELY_POWERED_SIGNAL_OR_ACTION_GATE_FAILURE": "no_genuine_signal"
+    },
+    "same_generation_retry_after_invalid_result": false,
+    "required_node_registry": "bind stage, fold or full scope, family/control identity, target/head/action, consumer, minimum, decision-critical versus diagnostic role, and failure mapping",
+    "forbidden_rescue": [
+      "fold deletion",
+      "target deletion",
+      "row deletion after prediction",
+      "null imputation",
+      "zero imputation",
+      "target substitution",
+      "reweighting",
+      "status relabeling",
+      "survivor-only pooling",
+      "same-generation retry after invalid_result"
+    ],
+    "economic_fold_gate": "at least 4 of 5 always means at least four positive economic deltas among exactly five valid chronological folds"
+  },
+  "build_permissions": {
+    "source_spec_and_test_changes": true,
+    "distinct_corrected_v3_preregistration_freeze": true,
+    "distinct_corrected_v3_restoration_receipt": true,
+    "preserve_corrected_v2_byte_for_byte": true,
+    "machinery_seal": false,
+    "foundation_stability_seal": false,
+    "model_fit": false,
+    "corpus_decode": false,
+    "nested_or_outer_evidence_open": false,
+    "protected_holdout_open": false,
+    "live_or_broker_action": false
+  },
+  "required_terminal_marker": "STOP_FOR_CLAUDE_VERIFICATION"
+}

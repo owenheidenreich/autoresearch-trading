@@ -49,6 +49,118 @@ def test_corrected_generation_binds_restoration_and_stability_receipts() -> None
     assert foundation.AUDIT_ROOT != foundation.INTERMEDIATE_CORRECTED_AUDIT_ROOT
 
 
+def test_v3_preserves_corrected_v2_bytes_and_remains_build_only() -> None:
+    correction = foundation.foundation_correction_spec()
+    assert foundation.AUDIT_ROOT != foundation.PREVIOUS_CORRECTED_V2_AUDIT_ROOT
+    assert correction['previous_corrected_v2_audit_root'] == foundation.repo_path_label(
+        foundation.PREVIOUS_CORRECTED_V2_AUDIT_ROOT
+    )
+    assert correction['previous_corrected_v2_foundation_files'] == [
+        dict(row) for row in foundation.PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS
+    ]
+    assert correction['previous_corrected_v2_foundation_generation_sha256'] == (
+        foundation.PREVIOUS_CORRECTED_V2_FOUNDATION_GENERATION_SHA256
+    )
+    for expected in foundation.PREVIOUS_CORRECTED_V2_FOUNDATION_FILE_BINDINGS:
+        assert foundation._raw_regular_file_binding(expected['path']) == expected
+    pause = correction['prefit_pause']
+    assert pause['unresolved_owner_decision'] is None
+    assert pause['resolved_owner_decisions'] == [
+        'AREF_ACTION_CALIBRATION_ROLE',
+        'COMPOSITE_CALIBRATION_TERMINAL_RULE',
+    ]
+    assert pause['claude_verification_pending'] is True
+    assert pause['machinery_seal_authorized'] is False
+    assert pause['foundation_stability_seal_authorized'] is False
+    assert pause['model_fit_authorized'] is False
+    assert pause['corpus_decode_authorized'] is False
+    assert pause['nested_or_outer_evidence_open_authorized'] is False
+    assert pause['protected_holdout_open_authorized'] is False
+    payload, _assignments, _lineage = foundation.preregistration_payload()
+    with pytest.raises(RuntimeError, match='STOP_FOR_CLAUDE_VERIFICATION'):
+        foundation.assert_correction_prefit_release(payload)
+
+
+def test_refined_br_requires_exact_five_valid_folds_and_rejects_rescue() -> None:
+    spec = foundation.composite_calibration_terminal_rule_spec()
+    assert spec['policy'] == 'B_R_STATUS_PRESERVING_WHOLE_RUN_HARD_STOP'
+    assert spec['status_precedence'] == [
+        'invalid_result', 'insufficient_evidence', 'owner_decision_required',
+        'no_genuine_signal', 'PASS',
+    ]
+    assert spec['all_five_manifest']['outer_folds_in_exact_order'] == [1, 2, 3, 4, 5]
+    assert spec['all_five_manifest']['valid_fold_count'] == 5
+    assert spec['all_five_manifest']['four_as_five_or_survivor_pooling'] is False
+    expected_skips = [
+        {'outer_fold': 1, 'inner_fold': 1}, {'outer_fold': 1, 'inner_fold': 2},
+        {'outer_fold': 1, 'inner_fold': 3}, {'outer_fold': 1, 'inner_fold': 4},
+        {'outer_fold': 2, 'inner_fold': 1}, {'outer_fold': 2, 'inner_fold': 2},
+        {'outer_fold': 2, 'inner_fold': 3}, {'outer_fold': 3, 'inner_fold': 1},
+        {'outer_fold': 3, 'inner_fold': 2}, {'outer_fold': 4, 'inner_fold': 1},
+        {'outer_fold': 5, 'inner_fold': 1},
+    ]
+    assert spec['nested_structural_skip']['exact_blocks'] == expected_skips
+    assert spec['nested_structural_skip']['computed_failure_in_calibration_valid_block_can_be_relabelled_skip'] is False
+    manifest = []
+    for fold in range(1, 6):
+        scope = f'OUTER_{fold}'
+        nodes = foundation.entry_required_calibration_node_ids(scope)
+        manifest.append({
+            'outer_fold': fold,
+            'scope': scope,
+            'status': 'VALID',
+            'required_node_count': len(nodes),
+            'valid_node_count': len(nodes),
+            'required_node_ids_sha256': foundation.stable_hash(list(nodes)),
+            'scope_gate_receipt_sha256': f'{fold:x}' * 64,
+            'outer_result_receipt_sha256': f'{fold + 5:x}' * 64,
+            'deleted_node_count': 0,
+            'imputed_node_count': 0,
+        })
+    foundation.validate_br_five_fold_manifest(manifest)
+    invalid_manifests = []
+    invalid_manifests.append(copy.deepcopy(manifest[:-1]))
+    changed = copy.deepcopy(manifest); changed[2]['status'] = 'INSUFFICIENT_EVIDENCE'; invalid_manifests.append(changed)
+    changed = copy.deepcopy(manifest); changed[1]['valid_node_count'] -= 1; invalid_manifests.append(changed)
+    changed = copy.deepcopy(manifest); changed[1]['deleted_node_count'] = 1; invalid_manifests.append(changed)
+    changed = copy.deepcopy(manifest); changed[1]['imputed_node_count'] = 1; invalid_manifests.append(changed)
+    changed = copy.deepcopy(manifest); changed[1]['required_node_ids_sha256'] = '0' * 64; invalid_manifests.append(changed)
+    for changed in invalid_manifests:
+        with pytest.raises(ValueError, match='B-R'):
+            foundation.validate_br_five_fold_manifest(changed)
+    payload, assignments, lineage = foundation.preregistration_payload()
+    changed_payload = copy.deepcopy(payload)
+    changed_payload['composite_calibration_terminal_rule']['forbidden_rescue'].remove('zero imputation')
+    with pytest.raises(ValueError):
+        foundation.validate_preregistration_payload(changed_payload, assignments, lineage)
+
+
+def test_refined_br_preserves_entry_verdict_on_exit_power_stop() -> None:
+    spec = foundation.composite_calibration_terminal_rule_spec()
+    stop = spec['current_run_exit_power_stop']
+    assert stop == {
+        'known_exit_weight_session_counts_by_fold': [0, 0, 19, 48, 56],
+        'minimum_model_fit_sessions': 60,
+        'terminal_status_after_entry_pass': 'insufficient_evidence',
+        'stop_reason': 'insufficient_exit_evidence',
+        'entry_only_verdict_preserved_by_hash': True,
+        'exit_fit_executed': False,
+        'four_box_instantiated': False,
+        'full_exit_fit_executed': False,
+        'preholdout_packet_frozen': False,
+        'holdout_open_count': 0,
+    }
+    assert max(stop['known_exit_weight_session_counts_by_fold']) < stop['minimum_model_fit_sessions']
+    assert spec['full_preholdout']['entry_instantiation'] == 'only after immutable outer entry PASS'
+    assert spec['full_preholdout']['entry_only_pass_authorizes_combined_full_exit_or_holdout'] is False
+    assert spec['failure_mapping']['INVALID_TARGET_COVERAGE'] == 'invalid_result'
+    assert spec['failure_mapping']['INSUFFICIENT_EVIDENCE'] == 'insufficient_evidence'
+    assert spec['same_generation_retry_after_invalid_result'] is False
+    assert {'fold deletion', 'target or quantile deletion', 'row deletion after prediction',
+            'null imputation', 'zero imputation', 'status relabeling',
+            'survivor-only pooling', 'treating four valid folds as five'} <= set(spec['forbidden_rescue'])
+
+
 def test_foundation_byte_root_changes_on_any_file_or_generation_change() -> None:
     files = [{"path": "a", "bytes": 1, "sha256": "a" * 64}]
     baseline = foundation._foundation_root_sha256(
@@ -162,20 +274,22 @@ def test_p3_widen_entry_lead_is_forward_only() -> None:
         "terminal_marker": "STOP_FOR_CLAUDE_VERIFICATION",
         "foundation_stability_gate_implemented": True,
         "foundation_stability_receipt_sealed": False,
+        "machinery_seal_authorized": False,
+        "foundation_stability_seal_authorized": False,
         "model_fit_authorized": False,
-        "unresolved_owner_decision": {
-            "id": "COMPOSITE_CALIBRATION_TERMINAL_RULE",
-            "reason": (
-                "a calibration-valid session-count block can still produce an "
-                "INVALID_TARGET_COVERAGE or INSUFFICIENT_EVIDENCE composite "
-                "correction; choosing its durable terminal/minimum-power rule "
-                "changes scientific topology and is outside P1/P2/P3"
-            ),
-            "required_before": "machinery/stability seal or any model fit",
-        },
+        "corpus_decode_authorized": False,
+        "nested_or_outer_evidence_open_authorized": False,
+        "protected_holdout_open_authorized": False,
+        "unresolved_owner_decision": None,
+        "resolved_owner_decisions": [
+            "AREF_ACTION_CALIBRATION_ROLE",
+            "COMPOSITE_CALIBRATION_TERMINAL_RULE",
+        ],
+        "claude_verification_pending": True,
+        "separate_post_verification_release_required": True,
     }
     payload, _assignments, _lineage = foundation.preregistration_payload()
-    with pytest.raises(RuntimeError, match="owner_decision_required"):
+    with pytest.raises(RuntimeError, match="STOP_FOR_CLAUDE_VERIFICATION"):
         foundation.assert_correction_prefit_release(payload)
 
 

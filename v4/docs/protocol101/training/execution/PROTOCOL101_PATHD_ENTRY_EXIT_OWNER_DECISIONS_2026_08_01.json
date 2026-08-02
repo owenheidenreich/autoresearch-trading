@@ -1,0 +1,62 @@
+{
+  "schema_version": "pathd.entry_exit.owner_decisions.v1",
+  "status": "OWNER_CONFIRMED_BEFORE_RESEARCH_PREREGISTRATION",
+  "recorded_date": "2026-08-01",
+  "binding_plan_path": "v4/docs/protocol101/training/execution/PROTOCOL101_PATHD_ENTRY_EXIT_MODEL_PLAN_2026_08_01.md",
+  "binding_plan_sha256": "6b694226d0fbb84c5b4ae2cc05009daf5d847d2d94f1bcf38923cfb622be4ec9",
+  "authority": "The active user-created Codex execution goal is the separately authorized build/train goal contemplated by the earlier plan-only instruction. It authorizes this quarantined Tier-S research run and resolves the five open questions in section 10 of the reviewed plan.",
+  "authorization_source": {
+    "kind": "active_user_created_codex_goal",
+    "thread_id": "019fbd34-55cc-7563-b571-c16788cff353",
+    "objective_title": "EXECUTE THE PATH-D ENTRY+EXIT MODEL PLAN — Tier-S research build + feasibility gate",
+    "objective_scope": "Build, fit, validate, conditionally run four-box replay, and conditionally open the protected holdout exactly once under the binding plan and owner locks.",
+    "relationship_to_plan_only_instruction": "This is the later separate build/train goal expressly deferred by the earlier plan-only instruction."
+  },
+  "scope": {
+    "research_only": true,
+    "quarantined_not_promotable": true,
+    "governance_contract": false,
+    "promotion_paper_real_money_authority": false
+  },
+  "execution_authorization": {
+    "authorized": true,
+    "purpose": "Execute the reviewed Path-D Tier-S entry+exit research build and feasibility gate under the owner-confirmed decisions in this receipt.",
+    "authorized_stages_in_order": [
+      "freeze_research_preregistration",
+      "build_and_verify_entry_machinery",
+      "fit_entry_hgb_then_nonselectable_neural_challenger",
+      "freeze_each_fold_specific_oof_entry_artifact_before_its_outer_open",
+      "evaluate_complete_entry_gate_from_the_five_frozen_outer_results",
+      "fit_and_freeze_full_fit_entry_artifact_only_if_complete_entry_gate_passes",
+      "build_exit_trajectories_from_fold_specific_oof_entry_artifacts_only_if_complete_entry_gate_passes",
+      "fit_exit_only_if_entry_and_exit_minimum_power_gates_allow",
+      "run_four_box_serial_replay_only_if_entry_exit_and_guard_gates_allow",
+      "open_protected_holdout_exactly_once_only_if_every_outer_exit_four_box_minimum_power_survival_and_preopen_freeze_gate_passes"
+    ],
+    "forbidden": [
+      "broker_or_ibkr_connectivity",
+      "live_market_data_capture",
+      "paper_or_real_money_orders",
+      "training_registry_runtime_launchd_or_default_changes",
+      "Protocol158_or_Protocol160_edits",
+      "parent_authority_or_governance_contract_freeze",
+      "cmbp_1_or_Tier_T_acquisition",
+      "paid_data_downloads",
+      "v4_env_access_or_edit",
+      "promotion_or_deployment_claim"
+    ]
+  },
+  "decisions": {
+    "entry_alpha": "exactly_signed_17_exit_microstructure_only",
+    "entry_self_computed_greek_grandfathering": "E.bs.delta and E.bs.gamma are two fields inside the owner-locked signed17; they remain entry alpha; the exit-only restriction applies to new enrichment and raw vendor Greeks remain forbidden",
+    "exit_local_horizon_seconds": 300,
+    "exit_downside_penalty": 0.25,
+    "calibration_level": 0.9,
+    "catastrophic_floor": "max(0,0.50*P_entry+3/100)",
+    "vix_es_vx": "diagnostics_and_strata_only",
+    "holdout_not_pristine_caveat_accepted": true
+  },
+  "required_holdout_caveat": "The final 30-session firewall is protected from model/economic inspection but is not pristine from the already published full-corpus aggregate label statistics.",
+  "claim_boundary": "Tier-S feasibility evidence for a Path-D entry+exit trader; guarded and holdout-honest; no promotion/paper/real-money claim.",
+  "terminal_marker": "STOP_FOR_CLAUDE_VERIFICATION"
+}
