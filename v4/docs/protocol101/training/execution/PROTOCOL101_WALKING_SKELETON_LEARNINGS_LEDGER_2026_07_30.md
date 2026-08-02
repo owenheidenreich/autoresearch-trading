@@ -1161,3 +1161,35 @@ Remaining before any fit (per v3 prefit_pause, all authorizations still False): 
 (this, PASS) -> a SEPARATE post-verification release, then machinery/stability seal. Known geometry:
 exit abstains this data era (all folds <60 exit-weight sessions); entry feasibility is what this run
 can produce. Tier-S, quarantined, not-promotable.
+
+---
+
+## Phase update 2026-08-01 (y) — seal goal failed-closed (my error) -> corrected-v3.1 release generation VERIFIED (PASS)
+
+**Seal-only goal was impossible by design (my mistake, not Codex's).** Codex stopped fail-closed and
+wrote nothing. Verified the frozen contract: `assert_correction_prefit_release` requires
+machinery_seal + foundation_stability_seal + **model_fit** all authorized together (plus
+claude_verification_pending=False, separate_post_verification_release_required=False), and
+`seal_foundation_stability_receipt` internally calls that release gate AND requires a corpus-integrity
+receipt. So seal-without-fit and seal-without-corpus are both contradictory: seal+corpus+fit are ONE
+atomic owner-authorized, Claude-verified release. My separate-seal-gate framing was wrong.
+
+**Decision (owner):** release-generation path (NOT Codex's contract-repair-to-separate). Chosen for
+leverage: the contract bundles them by design, v3 is already verified, and the fit has an internal
+fail-loud stability gate — separating seal from fit would be unnecessary surgery.
+
+**corrected-v3.1** (`..._corrected_v3_1_2026_08_01`, prereg `7fa621d6`, foundation_generation
+`1b6eb620`): authorization-only superseding generation. Claude-verified independently:
+- feature_lineage.json + session_assignments.json **byte-identical** to v3.
+- Full recursive prereg diff = **exactly 8 leaves**: 7 authorization flag flips
+  (machinery_seal/foundation_stability_seal/model_fit/corpus_decode/nested_or_outer_evidence_open
+  ->True; claude_verification_pending/separate_post_verification_release_required->False) + the
+  `supersedes` pointer (relationship AUTHORIZATION_ONLY_SCIENCE_BYTE_IDENTICAL). No science changed.
+- protected_holdout_open_authorized, foundation_stability_receipt_sealed, live_or_broker_action all
+  stay False. `assert_correction_prefit_release(v3.1)` PASS. Folds PRISTINE_ABSENT;
+  model_fit_executed=False; holdout 0. v2/v3/burn byte-identical; no seal receipts written.
+
+**Next gate = the entry feasibility fit (Goal 2)** fires against v3.1: seal machinery/lineage ->
+corpus-integrity -> foundation-stability -> fit entry (HGB->neural) OOF on 5 outer folds under B-R ->
+economics vs P5 + matched-random under the shared transparent exit -> negative controls must fail ->
+mutate-future audit -> typed verdict. Exit abstains this era; protected holdout stays sealed.
