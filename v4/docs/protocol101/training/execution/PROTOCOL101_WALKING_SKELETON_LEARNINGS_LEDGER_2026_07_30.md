@@ -1193,3 +1193,41 @@ fail-loud stability gate — separating seal from fit would be unnecessary surge
 corpus-integrity -> foundation-stability -> fit entry (HGB->neural) OOF on 5 outer folds under B-R ->
 economics vs P5 + matched-random under the shared transparent exit -> negative controls must fail ->
 mutate-future audit -> typed verdict. Exit abstains this era; protected holdout stays sealed.
+
+---
+
+## Phase update 2026-08-01 (z) — build gaps + corrected-v3.2 gate-hardening VERIFIED (PASS after reconciliation)
+
+The fit-only goal was premature: the EXECUTABLE pipeline wasn't built (runner bound to v3, no
+end-to-end campaign entrypoint, P5/matched-random/negative-control/SPX-ref producers uninstalled).
+Codex fail-closed correctly. During the build it found a real governance hole: the immutable
+`pathd_evidence_gate.py` could increment access_count / open evidence BEFORE validating the B-R
+calibration-scope-gate receipt (0 references to it in the gate) — a bypassable fail-closed rail.
+
+**Decision (owner):** corrected-v3.2 — fix the immutable gate + refreeze (not a bypassable wrapper),
+per the "safety rails must be hard" standard.
+
+**corrected-v3.2** (prereg `c69e763a`, foundation_generation `5d0d5728`, source_policy `618525ce`):
+- GATE FIX verified at code level: `_validated_calibration_scope_gate_before_open` requires a VALID
+  `pathd.calibration_scope_gate_receipt.v1` (evidence_access_count==0) and is called BEFORE lock,
+  capability, and any access-count mutation (fail-before-open at the immutable layer).
+- Science byte-identical to v3.1 (feature_lineage + session_assignments identical; A_ref `b30e57ef`
+  + B-R `84b3467f` unchanged; entry-17 / exit-47). Only gate source + source_hash_policy + supersedes
+  changed. Executable-generation enforcement added (fixes runner-bound-to-v3).
+- Real deterministic producers built: P5, shared control-exit selection, HGB/NEURAL, 22 negative
+  controls, 8 matched-random schedules, common replay, causal SPX-reference; caller-authored PnL/
+  verdicts/pass-flags rejected.
+- Correctly UNRELEASED (model_fit_authorized=False, claude_verification_pending=True); folds
+  PRISTINE_ABSENT; nothing fit/decoded/sealed/holdout-opened; v1/v2/v3/v3.1 + burn byte-identical.
+
+**Verify-don't-rubber-stamp caught a real gap:** Codex reported "all passed" but my independent full
+11-file suite showed **4 registered governance tests RED** — a new `_assert_corrected_v32_release_
+if_present` guard fail-closing (correctly) because `claude_verification_release.json` is absent, plus
+one SPX-ref source-inspection mismatch; Codex's checkpoint subsets missed them. Reconciliation goal
+issued. Codex reconciled honestly: tests now assert the guard fails closed when unreleased AND assert
+original tamper/stale/missing-lineage behavior via an in-process monkeypatch fixture (NO on-disk
+release file faked, no guard weakened, no science changed). My independent re-run: **175 passed, 0
+failed**; release file still absent; hashes unchanged.
+
+**Next gate:** the v3.2 RELEASE generation (owner post-verification release, like v3.1 was for v3) ->
+then the entry feasibility fit against the released v3.2 executable. Tier-S, quarantined, not-promotable.

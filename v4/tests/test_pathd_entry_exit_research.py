@@ -271,6 +271,14 @@ def test_pathd_freeze_is_idempotent_and_prereg_alone_cannot_fit(
     assert first["preregistration_sha256"] == second["preregistration_sha256"]
     with pytest.raises(RuntimeError, match="lineage implementation receipt is absent"):
         research.assert_lineage_implementation_frozen()
+    with pytest.raises(
+        RuntimeError,
+        match="STOP_FOR_CLAUDE_VERIFICATION: corrected-v3.2 release chain is incomplete",
+    ):
+        research.assert_entry_fit_ready(role="outer_weights", outer_fold=1)
+    monkeypatch.setattr(
+        research, "_assert_corrected_v32_release_if_present", lambda: None
+    )
     with pytest.raises(RuntimeError, match="lineage implementation receipt is absent"):
         research.assert_entry_fit_ready(role="outer_weights", outer_fold=1)
 
@@ -669,6 +677,14 @@ def test_pathd_stale_or_altered_fit_authorization_is_rejected(
         entry_pooled_acceptance_receipt_sha256=None,
     )
     monkeypatch.setattr(research, "assert_entry_fit_ready", lambda **_: base)
+    with pytest.raises(
+        RuntimeError,
+        match="STOP_FOR_CLAUDE_VERIFICATION: corrected-v3.2 release chain is incomplete",
+    ):
+        research.assert_fit_authorization_current(base)
+    monkeypatch.setattr(
+        research, "_assert_corrected_v32_release_if_present", lambda: None
+    )
     assert research.assert_fit_authorization_current(base) == base
     altered = replace(base, machinery_receipt_sha256="7" * 64)
     with pytest.raises(RuntimeError, match="stale or altered"):

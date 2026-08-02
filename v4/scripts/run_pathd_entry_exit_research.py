@@ -7,6 +7,7 @@ available only through their frozen role authorizations and one-shot receipt gat
 from __future__ import annotations
 
 import argparse
+import ast
 from dataclasses import dataclass, fields, is_dataclass
 from datetime import datetime, timezone
 import hashlib
@@ -16,6 +17,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 from typing import Any
+import xml.etree.ElementTree as ET
 from zoneinfo import ZoneInfo
 
 from v4.research import pathd_entry_exit as prereg
@@ -25,6 +27,535 @@ from v4.research.pathd_entry_exit import (
     freeze_preregistration,
     require_all_negative_fixtures_rejected,
 )
+
+
+V31_AUTHORIZATION_ROOT = prereg.REPO_ROOT / (
+    "v4/audit/autoresearch/"
+    "protocol101_pathd_entry_exit_model_research_corrected_v3_1_2026_08_01"
+)
+V31_PREREGISTRATION_SHA256 = (
+    "7fa621d63086a6dd28fb10cb731f229471051951875f0c663d53838e7771b370"
+)
+V31_FOUNDATION_GENERATION_SHA256 = (
+    "1b6eb620668be3655facac71467513d50eafa706a1aedc64dc507d0dbce873b2"
+)
+V31_AUTHORIZATION_FILE_SHA256S = {
+    "feature_lineage.json": "4521b3e62982f672daaba73d98ce5a9ce72df170b083cd40df7dc979983d1ef0",
+    "foundation_restoration_receipt.json": "3cecec8bda2c829153200e7b081beccf29f39474384f05e23d0dff2b024d00cc",
+    "preregistration.json": V31_PREREGISTRATION_SHA256,
+    "preregistration.sha256": "ce3a76c74f1b6a13dc078a900e50513a7487224f7cfe01f55eb860105062e4b8",
+    "preregistration_freeze_receipt.json": "6eb38341c6f99b42fc318b9644d25d7d0a9e5ca98e63d1cad278338a7f700f98",
+    "session_assignments.json": "431cd14879ad6a14b278cb2683e4f3b860eef960e6b74a4f0edb3e620cf82475",
+}
+V31_EXECUTABLE_ROOT = prereg.REPO_ROOT / (
+    "v4/audit/autoresearch/"
+    "protocol101_pathd_entry_exit_model_research_corrected_v3_1_"
+    "executable_2026_08_01"
+)
+V31_EXECUTABLE_GENERATION_PATH = V31_EXECUTABLE_ROOT / "executable_generation.json"
+V31_SYNTHETIC_JUNIT_PATH = V31_EXECUTABLE_ROOT / "synthetic_tests.junit.xml"
+V31_SYNTHETIC_TEST_RECEIPT_PATH = (
+    V31_EXECUTABLE_ROOT / "synthetic_test_receipt.json"
+)
+V31_EXECUTABLE_BRIDGE_PATH = (
+    V31_EXECUTABLE_ROOT / "implementation_receipt.json"
+)
+V31_SYNTHETIC_TEST_PATH = "v4/tests/test_pathd_corrected_v31_executable_build.py"
+V31_MONEYNESS_AUTHORITY_PATH = (
+    "v4/docs/protocol101/training/contracts/"
+    "PROTOCOL101_D1_NEGATIVE_CONTROL_AND_INCREMENTAL_EDGE_AMENDMENT_2026_07_28.md"
+)
+V31_MONEYNESS_AUTHORITY_SHA256 = (
+    "fcaf69ae080418cf6146f08d90386665c3c9f576f7382f4de8d8c51c23cf8598"
+)
+V31_EXTENSIBLE_IMPLEMENTATION_PATHS = (
+    "v4/research/pathd_entry_features.py",
+    "v4/research/pathd_entry_dataset.py",
+    "v4/research/pathd_entry_models.py",
+    "v4/path_d/execution/research_fill_law.py",
+    "v4/path_d/execution/research_replay.py",
+    "v4/scripts/run_pathd_entry_exit_research.py",
+)
+V31_SYNTHETIC_TEST_NAMES = (
+    "test_static_generation_binding_and_campaign_order_are_exact",
+    "test_br_is_first_and_terminal_precedence_is_fail_closed",
+    "test_matched_random_budget_and_all_eight_schedules_are_outcome_blind",
+    "test_shared_control_exit_requires_complete_panel_and_selects_real_economics",
+    "test_negative_controls_fail_closed_and_exit_geometry_abstains",
+    "test_build_does_not_create_any_real_execution_namespace",
+)
+
+
+def assert_corrected_v31_authorization_release() -> dict[str, Any]:
+    """Bind the v3 executable paths to the byte-frozen v3.1 release grant."""
+
+    if (
+        not V31_AUTHORIZATION_ROOT.is_dir()
+        or V31_AUTHORIZATION_ROOT.is_symlink()
+        or {path.name for path in V31_AUTHORIZATION_ROOT.iterdir()}
+        != set(V31_AUTHORIZATION_FILE_SHA256S)
+    ):
+        raise RuntimeError("corrected-v3.1 authorization root drift")
+    for name, expected in V31_AUTHORIZATION_FILE_SHA256S.items():
+        if prereg.sha256_path(V31_AUTHORIZATION_ROOT / name) != expected:
+            raise RuntimeError(f"corrected-v3.1 authorization byte drift: {name}")
+    release = prereg.read_json(
+        V31_AUTHORIZATION_ROOT / "preregistration_freeze_receipt.json"
+    )
+    no_action = release.get("no_action_state")
+    release_state = release.get("release_state")
+    if (
+        release.get("status")
+        != "FROZEN_AUTHORIZATION_RELEASE_BEFORE_ANY_SEAL_OR_MODEL_FIT"
+        or release.get("preregistration_sha256") != V31_PREREGISTRATION_SHA256
+        or release.get("holdout_open_count") != 0
+        or type(no_action) is not dict
+        or any(no_action.values())
+        or type(release_state) is not dict
+        or release_state.get("machinery_seal_authorized") is not True
+        or release_state.get("foundation_stability_seal_authorized") is not True
+        or release_state.get("model_fit_authorized") is not True
+        or release_state.get("nested_or_outer_evidence_open_authorized") is not True
+        or release_state.get("protected_holdout_open_authorized") is not False
+        or release.get("source_hash_policy_receipt_paths_preserved_from_corrected_v3")
+        is not True
+        or release.get("science_identity_vs_corrected_v3", {}).get(
+            "source_hash_policy_sha256"
+        )
+        != prereg.stable_hash(prereg.read_json(prereg.PREREG_PATH)["source_hash_policy"])
+    ):
+        raise RuntimeError("corrected-v3.1 authorization release semantic drift")
+    prereg.assert_foundation_restoration_frozen()
+    return release
+
+
+def assert_corrected_v31_evidence_call_graph_closed() -> dict[str, Any]:
+    """Prove the executable runner has one B-R-gated legacy open edge."""
+
+    label = "v4/scripts/run_pathd_entry_exit_research.py"
+    path = prereg.REPO_ROOT / label
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=label)
+    allowed_function = "begin_entry_evidence_after_valid_calibration_scope_gate"
+    calls: list[dict[str, Any]] = []
+    function_stack: list[str] = []
+
+    class Visitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            function_stack.append(node.name)
+            self.generic_visit(node)
+            function_stack.pop()
+
+        def visit_Call(self, node: ast.Call) -> None:
+            name = None
+            if isinstance(node.func, ast.Name):
+                name = node.func.id
+            elif isinstance(node.func, ast.Attribute):
+                name = node.func.attr
+            if name == "begin_entry_evidence_once":
+                calls.append(
+                    {
+                        "enclosing_function": function_stack[-1]
+                        if function_stack
+                        else None,
+                        "line": node.lineno,
+                    }
+                )
+            self.generic_visit(node)
+
+    Visitor().visit(tree)
+    if (
+        len(calls) != 1
+        or calls[0]["enclosing_function"] != allowed_function
+    ):
+        raise RuntimeError("corrected-v3.1 evidence open call graph escaped B-R gate")
+    semantic = {
+        "source_path": label,
+        "source_sha256": prereg.sha256_path(path),
+        "legacy_open_call_count": 1,
+        "only_enclosing_function": allowed_function,
+        "direct_campaign_or_stage_open": False,
+    }
+    return {**semantic, "call_graph_sha256": prereg.stable_hash(semantic)}
+
+
+def _corrected_v31_executable_generation_semantic() -> dict[str, Any]:
+    """Return the source-independent executable contract for this generation."""
+
+    return {
+        "schema_version": "pathd.corrected_v31.executable_generation.v1",
+        "status": "FROZEN_EXECUTABLE_CONTRACT_BEFORE_TEST_OR_RUN",
+        "science_authorization_root": prereg.repo_path_label(V31_AUTHORIZATION_ROOT),
+        "science_authorization_file_sha256s": dict(V31_AUTHORIZATION_FILE_SHA256S),
+        "science_preregistration_sha256": V31_PREREGISTRATION_SHA256,
+        "foundation_generation_sha256": V31_FOUNDATION_GENERATION_SHA256,
+        "corrected_v3_fixed_artifact_root": prereg.repo_path_label(prereg.AUDIT_ROOT),
+        "corrected_v3_preregistration_sha256": prereg.sha256_path(prereg.PREREG_PATH),
+        "source_hash_policy_sha256": prereg.stable_hash(
+            prereg.read_json(prereg.PREREG_PATH)["source_hash_policy"]
+        ),
+        "lawful_extensible_implementation_paths": list(
+            V31_EXTENSIBLE_IMPLEMENTATION_PATHS
+        ),
+        "matched_random_moneyness_authority": {
+            "path": V31_MONEYNESS_AUTHORITY_PATH,
+            "sha256": V31_MONEYNESS_AUTHORITY_SHA256,
+            "rule": {
+                "ATM": "absolute ladder distance from slot 10 <= 1",
+                "NEAR": "absolute ladder distance from slot 10 in 2..5",
+                "WING": "absolute ladder distance from slot 10 > 5",
+            },
+        },
+        "synthetic_test_path": V31_SYNTHETIC_TEST_PATH,
+        "synthetic_testcase_names": list(V31_SYNTHETIC_TEST_NAMES),
+        "implementation_receipt_path": prereg.repo_path_label(
+            V31_EXECUTABLE_BRIDGE_PATH
+        ),
+        "only_evidence_open_api": (
+            "v4.scripts.run_pathd_entry_exit_research."
+            "begin_entry_evidence_after_valid_calibration_scope_gate"
+        ),
+        "legacy_evidence_open_call_graph": (
+            "exactly one call in the executable runner, enclosed by the only_evidence_open_api"
+        ),
+        "campaign_order": list(ENTRY_CAMPAIGN_STAGE_ORDER),
+        "hard_stops_at_generation_freeze": {
+            "model_or_weight_fit": False,
+            "real_corpus_decode": False,
+            "fold_or_evidence_namespace_open": False,
+            "foundation_or_machinery_seal_against_corpus": False,
+            "protected_holdout_open_count": 0,
+            "live_broker_paper_or_download": False,
+            "promotion_or_default_change": False,
+        },
+    }
+
+
+def freeze_corrected_v31_executable_generation() -> dict[str, Any]:
+    """Freeze the new executable contract without hashing mutable implementation."""
+
+    assert_corrected_v31_authorization_release()
+    assert_corrected_v31_evidence_call_graph_closed()
+    if prereg.sha256_path(prereg.REPO_ROOT / V31_MONEYNESS_AUTHORITY_PATH) != (
+        V31_MONEYNESS_AUTHORITY_SHA256
+    ):
+        raise RuntimeError("matched-random moneyness authority byte drift")
+    if V31_EXECUTABLE_ROOT.exists() and any(V31_EXECUTABLE_ROOT.iterdir()):
+        raise RuntimeError("corrected-v3.1 executable generation root is occupied")
+    semantic = _corrected_v31_executable_generation_semantic()
+    receipt = {**semantic, "generation_sha256": prereg.stable_hash(semantic)}
+    prereg._write_canonical_json_exclusive(V31_EXECUTABLE_GENERATION_PATH, receipt)
+    return assert_corrected_v31_executable_generation()
+
+
+def assert_corrected_v31_executable_generation() -> dict[str, Any]:
+    if (
+        not V31_EXECUTABLE_GENERATION_PATH.is_file()
+        or V31_EXECUTABLE_GENERATION_PATH.is_symlink()
+    ):
+        raise RuntimeError("corrected-v3.1 executable generation is absent")
+    observed = prereg.read_json(V31_EXECUTABLE_GENERATION_PATH)
+    semantic = dict(observed)
+    digest = semantic.pop("generation_sha256", None)
+    expected = _corrected_v31_executable_generation_semantic()
+    if semantic != expected or digest != prereg.stable_hash(expected):
+        raise RuntimeError("corrected-v3.1 executable generation drift")
+    assert_corrected_v31_authorization_release()
+    assert_corrected_v31_evidence_call_graph_closed()
+    if prereg.sha256_path(prereg.REPO_ROOT / V31_MONEYNESS_AUTHORITY_PATH) != (
+        V31_MONEYNESS_AUTHORITY_SHA256
+    ):
+        raise RuntimeError("matched-random moneyness authority byte drift")
+    return observed
+
+
+def freeze_corrected_v31_executable_bridge() -> dict[str, Any]:
+    """Freeze real source/JUnit hashes without sealing machinery or corpus."""
+
+    from v4.research.pathd_entry_dataset import (
+        assert_corrected_v31_executable_bridge,
+    )
+
+    generation = assert_corrected_v31_executable_generation()
+    if any(os.path.lexists(path) for path in (
+        V31_SYNTHETIC_TEST_RECEIPT_PATH, V31_EXECUTABLE_BRIDGE_PATH,
+    )):
+        raise RuntimeError("corrected-v3.1 executable build receipt already exists")
+    if not V31_SYNTHETIC_JUNIT_PATH.is_file() or V31_SYNTHETIC_JUNIT_PATH.is_symlink():
+        raise RuntimeError("corrected-v3.1 synthetic JUnit is absent")
+    suite = ET.parse(V31_SYNTHETIC_JUNIT_PATH).getroot()
+    cases = suite.findall(".//testcase")
+    names = tuple(case.get("name") for case in cases)
+    failures = sum(len(case.findall("failure")) for case in cases)
+    errors = sum(len(case.findall("error")) for case in cases)
+    skipped = sum(len(case.findall("skipped")) for case in cases)
+    if (
+        names != V31_SYNTHETIC_TEST_NAMES
+        or failures != 0 or errors != 0 or skipped != 0
+        or len(cases) != len(V31_SYNTHETIC_TEST_NAMES)
+    ):
+        raise RuntimeError("corrected-v3.1 synthetic JUnit result drift")
+    implementations = [
+        {"path": label, "sha256": prereg.sha256_path(prereg.REPO_ROOT / label)}
+        for label in V31_EXTENSIBLE_IMPLEMENTATION_PATHS
+    ]
+    test_source_sha256 = prereg.sha256_path(prereg.REPO_ROOT / V31_SYNTHETIC_TEST_PATH)
+    test_semantic = {
+        "schema_version": "pathd.corrected_v31.synthetic_test_receipt.v1",
+        "status": "PASS_SYNTHETIC_PRODUCTION_PATH",
+        "frozen_at_utc": _utc_now(),
+        "command": [
+            ".venv/bin/python", "-m", "pytest", "-q",
+            V31_SYNTHETIC_TEST_PATH,
+            "--junitxml", prereg.repo_path_label(V31_SYNTHETIC_JUNIT_PATH),
+        ],
+        "pytest_exit_code": 0,
+        "test_source_path": V31_SYNTHETIC_TEST_PATH,
+        "test_source_sha256": test_source_sha256,
+        "junit_path": prereg.repo_path_label(V31_SYNTHETIC_JUNIT_PATH),
+        "junit_sha256": prereg.sha256_path(V31_SYNTHETIC_JUNIT_PATH),
+        "testcase_names": list(names),
+        "summary": {
+            "tests": len(cases), "passed": len(cases), "failures": failures,
+            "errors": errors, "skipped": skipped,
+        },
+        "implementations_sha256": prereg.stable_hash(implementations),
+        "model_fit_executed": False,
+        "corpus_decoded": False,
+        "evidence_opened": False,
+        "holdout_open_count": 0,
+    }
+    test_receipt = {
+        **test_semantic, "receipt_sha256": prereg.stable_hash(test_semantic)
+    }
+    prereg._write_canonical_json_exclusive(
+        V31_SYNTHETIC_TEST_RECEIPT_PATH, test_receipt
+    )
+    release_path = V31_AUTHORIZATION_ROOT / "preregistration_freeze_receipt.json"
+    bridge_semantic = {
+        "schema_version": "pathd.corrected_v31.executable_authorization_bridge.v1",
+        "status": "FROZEN_EXECUTABLE_BUILT_NOT_RUN",
+        "frozen_at_utc": _utc_now(),
+        "corrected_v31_preregistration_sha256": V31_PREREGISTRATION_SHA256,
+        "corrected_v31_foundation_generation_sha256": V31_FOUNDATION_GENERATION_SHA256,
+        "corrected_v31_release_path": prereg.repo_path_label(release_path),
+        "corrected_v31_release_sha256": prereg.sha256_path(release_path),
+        "executable_generation_path": prereg.repo_path_label(
+            V31_EXECUTABLE_GENERATION_PATH
+        ),
+        "executable_generation_file_sha256": prereg.sha256_path(
+            V31_EXECUTABLE_GENERATION_PATH
+        ),
+        "executable_generation_sha256": generation["generation_sha256"],
+        "science_authorization_file_sha256s": dict(V31_AUTHORIZATION_FILE_SHA256S),
+        "corrected_v3_preregistration_sha256": prereg.sha256_path(prereg.PREREG_PATH),
+        "source_hash_policy_sha256": prereg.stable_hash(
+            prereg.read_json(prereg.PREREG_PATH)["source_hash_policy"]
+        ),
+        "fixed_artifact_root": prereg.repo_path_label(prereg.AUDIT_ROOT),
+        "implementations": implementations,
+        "implementations_sha256": prereg.stable_hash(implementations),
+        "synthetic_test_receipt_path": prereg.repo_path_label(
+            V31_SYNTHETIC_TEST_RECEIPT_PATH
+        ),
+        "synthetic_test_receipt_sha256": prereg.sha256_path(
+            V31_SYNTHETIC_TEST_RECEIPT_PATH
+        ),
+        "model_fit_executed": False,
+        "corpus_decoded": False,
+        "evidence_opened": False,
+        "holdout_open_count": 0,
+    }
+    prereg._write_canonical_json_exclusive(
+        V31_EXECUTABLE_BRIDGE_PATH,
+        {**bridge_semantic, "receipt_sha256": prereg.stable_hash(bridge_semantic)},
+    )
+    return assert_corrected_v31_executable_bridge()
+
+
+V32_EXECUTABLE_ROOT = prereg.REPO_ROOT / (
+    "v4/audit/autoresearch/"
+    "protocol101_pathd_entry_exit_model_research_corrected_v3_2_"
+    "executable_2026_08_01"
+)
+V32_EXECUTABLE_GENERATION_PATH = V32_EXECUTABLE_ROOT / "executable_generation.json"
+V32_SYNTHETIC_JUNIT_PATH = V32_EXECUTABLE_ROOT / "synthetic_tests.junit.xml"
+V32_SYNTHETIC_TEST_RECEIPT_PATH = V32_EXECUTABLE_ROOT / "synthetic_test_receipt.json"
+V32_EXECUTABLE_BRIDGE_PATH = V32_EXECUTABLE_ROOT / "implementation_receipt.json"
+V32_CLAUDE_RELEASE_PATH = V32_EXECUTABLE_ROOT / "claude_verification_release.json"
+V32_SYNTHETIC_TEST_PATH = "v4/tests/test_pathd_corrected_v32_executable_build.py"
+V32_SYNTHETIC_TEST_NAMES = (
+    "test_v32_topology_is_science_identical_and_fail_closed",
+    "test_shared_exit_is_selected_from_reconstructed_p5_journals",
+    "test_complete_common_replay_inventory_has_no_nullable_cells",
+    "test_sealed_input_orchestrator_rejects_caller_authored_economics",
+    "test_spx_reference_writer_is_causal_and_lossless",
+    "test_direct_legacy_evidence_api_cannot_bypass_br_gate",
+    "test_build_creates_no_execution_evidence_or_holdout_namespace",
+)
+
+
+def _corrected_v32_executable_generation_semantic() -> dict[str, Any]:
+    from v4.research.pathd_corrected_v32_foundation import (
+        V32_ROOT, assert_corrected_v32_foundation,
+    )
+
+    foundation = assert_corrected_v32_foundation()
+    payload = prereg.read_json(V32_ROOT / "preregistration.json")
+    enforcement = payload["source_hash_policy"]["executable_generation_enforcement"]
+    return {
+        "schema_version": "pathd.corrected_v32.executable_generation.v1",
+        "status": "FROZEN_EXECUTABLE_CONTRACT_BEFORE_ANY_FIT_OR_OPEN",
+        "foundation_root": prereg.repo_path_label(V32_ROOT),
+        "foundation_preregistration_sha256": foundation["preregistration_sha256"],
+        "foundation_generation_sha256": foundation["foundation_generation_sha256"],
+        "source_hash_policy_sha256": foundation["source_hash_policy_sha256"],
+        "source_paths": enforcement["source_paths"],
+        "test_paths": enforcement["test_paths"],
+        "synthetic_test_path": V32_SYNTHETIC_TEST_PATH,
+        "synthetic_testcase_names": list(V32_SYNTHETIC_TEST_NAMES),
+        "implementation_receipt_path": prereg.repo_path_label(V32_EXECUTABLE_BRIDGE_PATH),
+        "claude_release_path": prereg.repo_path_label(V32_CLAUDE_RELEASE_PATH),
+        "campaign_order": list(ENTRY_CAMPAIGN_STAGE_ORDER),
+        "hard_stops": {
+            "model_or_weight_fit": False,
+            "real_corpus_decode": False,
+            "fold_or_evidence_namespace_open": False,
+            "foundation_or_machinery_seal_against_corpus": False,
+            "protected_holdout_open_count": 0,
+            "live_broker_paper_or_download": False,
+            "promotion_or_default_change": False,
+        },
+    }
+
+
+def freeze_corrected_v32_executable_generation() -> dict[str, Any]:
+    if V32_EXECUTABLE_ROOT.exists() and any(V32_EXECUTABLE_ROOT.iterdir()):
+        raise RuntimeError("corrected-v3.2 executable root is occupied")
+    semantic = _corrected_v32_executable_generation_semantic()
+    prereg._write_canonical_json_exclusive(
+        V32_EXECUTABLE_GENERATION_PATH,
+        {**semantic, "generation_sha256": prereg.stable_hash(semantic)},
+    )
+    return assert_corrected_v32_executable_generation()
+
+
+def assert_corrected_v32_executable_generation() -> dict[str, Any]:
+    if not V32_EXECUTABLE_GENERATION_PATH.is_file() or V32_EXECUTABLE_GENERATION_PATH.is_symlink():
+        raise RuntimeError("corrected-v3.2 executable generation is absent")
+    observed = prereg.read_json(V32_EXECUTABLE_GENERATION_PATH)
+    semantic = dict(observed)
+    digest = semantic.pop("generation_sha256", None)
+    expected = _corrected_v32_executable_generation_semantic()
+    if semantic != expected or digest != prereg.stable_hash(expected):
+        raise RuntimeError("corrected-v3.2 executable generation drift")
+    return observed
+
+
+def freeze_corrected_v32_executable_bridge() -> dict[str, Any]:
+    """Freeze implementation/test hashes without authorizing fit or decode."""
+
+    from v4.research.pathd_corrected_v32_foundation import V32_ROOT
+    from v4.research.pathd_entry_dataset import assert_corrected_v32_executable_bridge
+
+    generation = assert_corrected_v32_executable_generation()
+    if any(os.path.lexists(path) for path in (
+        V32_SYNTHETIC_TEST_RECEIPT_PATH, V32_EXECUTABLE_BRIDGE_PATH,
+        V32_CLAUDE_RELEASE_PATH,
+    )):
+        raise RuntimeError("corrected-v3.2 executable receipt path is occupied")
+    if not V32_SYNTHETIC_JUNIT_PATH.is_file() or V32_SYNTHETIC_JUNIT_PATH.is_symlink():
+        raise RuntimeError("corrected-v3.2 synthetic JUnit is absent")
+    suite = ET.parse(V32_SYNTHETIC_JUNIT_PATH).getroot()
+    cases = suite.findall(".//testcase")
+    names = tuple(case.get("name") for case in cases)
+    failures = sum(len(case.findall("failure")) for case in cases)
+    errors = sum(len(case.findall("error")) for case in cases)
+    skipped = sum(len(case.findall("skipped")) for case in cases)
+    if (
+        names != V32_SYNTHETIC_TEST_NAMES
+        or failures or errors or skipped
+        or len(cases) != len(V32_SYNTHETIC_TEST_NAMES)
+    ):
+        raise RuntimeError("corrected-v3.2 synthetic JUnit result drift")
+    payload = prereg.read_json(V32_ROOT / "preregistration.json")
+    source_paths = payload["source_hash_policy"]["executable_generation_enforcement"]["source_paths"]
+    implementations = [
+        {"path": label, "sha256": prereg.sha256_path(prereg.REPO_ROOT / label)}
+        for label in source_paths
+    ]
+    test_semantic = {
+        "schema_version": "pathd.corrected_v32.synthetic_test_receipt.v1",
+        "status": "PASS_SYNTHETIC_PRODUCTION_PATH",
+        "frozen_at_utc": _utc_now(),
+        "command": [
+            ".venv/bin/python", "-m", "pytest", "-q", V32_SYNTHETIC_TEST_PATH,
+            "--junitxml", prereg.repo_path_label(V32_SYNTHETIC_JUNIT_PATH),
+        ],
+        "pytest_exit_code": 0,
+        "test_source_path": V32_SYNTHETIC_TEST_PATH,
+        "test_source_sha256": prereg.sha256_path(prereg.REPO_ROOT / V32_SYNTHETIC_TEST_PATH),
+        "junit_path": prereg.repo_path_label(V32_SYNTHETIC_JUNIT_PATH),
+        "junit_sha256": prereg.sha256_path(V32_SYNTHETIC_JUNIT_PATH),
+        "testcase_names": list(names),
+        "implementations_sha256": prereg.stable_hash(implementations),
+        "model_fit_executed": False,
+        "corpus_decoded": False,
+        "evidence_opened": False,
+        "holdout_open_count": 0,
+    }
+    test_receipt = {**test_semantic, "receipt_sha256": prereg.stable_hash(test_semantic)}
+    prereg._write_canonical_json_exclusive(V32_SYNTHETIC_TEST_RECEIPT_PATH, test_receipt)
+    bridge_semantic = {
+        "schema_version": "pathd.corrected_v32.executable_implementation_receipt.v1",
+        "status": "FROZEN_EXECUTABLE_BUILT_NOT_RUN",
+        "frozen_at_utc": _utc_now(),
+        "foundation_generation_sha256": generation["foundation_generation_sha256"],
+        "source_hash_policy_sha256": generation["source_hash_policy_sha256"],
+        "executable_generation_sha256": generation["generation_sha256"],
+        "implementations": implementations,
+        "implementations_sha256": prereg.stable_hash(implementations),
+        "synthetic_test_receipt_sha256": prereg.sha256_path(V32_SYNTHETIC_TEST_RECEIPT_PATH),
+        "model_fit_executed": False,
+        "corpus_decoded": False,
+        "evidence_opened": False,
+        "holdout_open_count": 0,
+    }
+    prereg._write_canonical_json_exclusive(
+        V32_EXECUTABLE_BRIDGE_PATH,
+        {**bridge_semantic, "receipt_sha256": prereg.stable_hash(bridge_semantic)},
+    )
+    return assert_corrected_v32_executable_bridge()
+
+
+def assert_corrected_v32_fit_release() -> dict[str, Any]:
+    """Require a distinct future Claude verification receipt before fit/open."""
+
+    from v4.research.pathd_entry_dataset import assert_corrected_v32_executable_bridge
+
+    bridge = assert_corrected_v32_executable_bridge()
+    if not V32_CLAUDE_RELEASE_PATH.is_file() or V32_CLAUDE_RELEASE_PATH.is_symlink():
+        raise RuntimeError("STOP_FOR_CLAUDE_VERIFICATION: v3.2 fit release is absent")
+    receipt = prereg.read_json(V32_CLAUDE_RELEASE_PATH)
+    semantic = dict(receipt)
+    digest = semantic.pop("receipt_sha256", None)
+    if (
+        receipt.get("schema_version") != "pathd.corrected_v32.claude_fit_release.v1"
+        or receipt.get("status") != "CLAUDE_VERIFIED_GATE_HARDENING_FIT_RELEASE"
+        or receipt.get("implementation_receipt_sha256")
+        != prereg.sha256_path(V32_EXECUTABLE_BRIDGE_PATH)
+        or receipt.get("foundation_generation_sha256")
+        != bridge["foundation_generation_sha256"]
+        or any(receipt.get(key) is not True for key in (
+            "machinery_seal_authorized", "foundation_stability_seal_authorized",
+            "corpus_decode_authorized", "model_fit_authorized",
+            "nested_or_outer_evidence_open_authorized",
+        ))
+        or receipt.get("protected_holdout_open_authorized") is not False
+        or receipt.get("holdout_open_count") != 0
+        or digest != prereg.stable_hash(semantic)
+    ):
+        raise RuntimeError("corrected-v3.2 Claude fit release drift")
+    return receipt
 
 
 def _plain(value: Any) -> Any:
@@ -390,6 +921,307 @@ def _entry_composer_payload(calibration: Any, /) -> dict[str, Any]:
         "enter_missing_outcome_intent_count": missing_enter,
         "wait_missing_outcome_episode_count": missing_wait,
     }
+
+
+def _entry_calibration_scope(*, outer_fold: int, inner_fold: int | None) -> str:
+    if outer_fold not in range(1, 6):
+        raise ValueError("outer_fold must be 1..5")
+    if inner_fold is None:
+        return f"OUTER_{outer_fold}"
+    if inner_fold not in range(1, 5):
+        raise ValueError("inner_fold must be 1..4")
+    return f"NESTED_OUTER_{outer_fold}_INNER_{inner_fold}"
+
+
+def derive_entry_calibration_node_vector(
+    *, scope: str, calibration_bundles: dict[str, Any]
+) -> tuple[dict[str, Any], ...]:
+    """Reconstruct every B-R node from actual calibration bundle payloads."""
+
+    from v4.research import pathd_entry_models as entry_models
+
+    required = prereg.entry_required_calibration_node_ids(scope)
+    bundle_ids = tuple(dict.fromkeys(node.split("::")[2] for node in required))
+    if tuple(calibration_bundles) != bundle_ids:
+        raise ValueError("calibration bundle vector is incomplete or out of order")
+    rows: list[dict[str, Any]] = []
+    for bundle_id in bundle_ids:
+        raw = calibration_bundles[bundle_id]
+        payload = getattr(raw, "payload", None)
+        if payload is None and type(raw) is dict:
+            payload = raw.get("payload")
+        if type(payload) is not dict:
+            raise ValueError("calibration bundle payload absent")
+        head_receipts = payload.get("head_calibration_receipts")
+        if type(head_receipts) not in (tuple, list) or len(head_receipts) != len(
+            prereg.ENTRY_HEAD_TARGETS
+        ):
+            raise ValueError("calibration head receipt vector drift")
+        for head, receipt in zip(
+            prereg.ENTRY_HEAD_TARGETS, head_receipts, strict=True
+        ):
+            if type(receipt) is not dict or receipt.get("head") != head:
+                raise ValueError("calibration head receipt identity drift")
+            observed = receipt.get("row_count")
+            sessions = receipt.get("session_count")
+            source_hash = receipt.get("receipt_sha256")
+            valid = (
+                type(observed) is int
+                and observed > 0
+                and type(sessions) is int
+                and sessions >= 10
+                and type(receipt.get("mean_lcb_correction")) in (int, float)
+                and math.isfinite(float(receipt["mean_lcb_correction"]))
+                and type(receipt.get("q10_correction")) in (int, float)
+                and math.isfinite(float(receipt["q10_correction"]))
+                and type(source_hash) is str
+                and re.fullmatch(r"[0-9a-f]{64}", source_hash) is not None
+            )
+            for kind in ("MEAN_LCB", "Q10_CONFORMAL"):
+                node_id = f"ENTRY::{scope}::{bundle_id}::{kind}::{head}"
+                semantic = {
+                    "node_id": node_id,
+                    "stage": "ENTRY_CALIBRATION",
+                    "scope": scope,
+                    "family_or_control_identity": bundle_id,
+                    "target_head_or_action": head,
+                    "consumer": "ENTRY_ACTION_COMPOSER",
+                    "observed_count": observed,
+                    "minimum_count": {"sessions": 10, "rows": 1},
+                    "decision_critical_or_diagnostic": "DECISION_CRITICAL",
+                    "failure_mapping": (
+                        "VALID" if valid else "INVALID_TARGET_COVERAGE"
+                    ),
+                    "raw_node_status": "VALID" if valid else "INVALID_TARGET_COVERAGE",
+                    "upstream_hashes": [source_hash] if type(source_hash) is str else [],
+                }
+                rows.append({**semantic, "node_sha256": prereg.stable_hash(semantic)})
+        for action, minimum_rows in (("ENTER", 1), ("WAIT", 30)):
+            prefix = action.lower()
+            receipt = payload.get(f"{prefix}_composite_calibration_receipt")
+            status = payload.get(f"{prefix}_composite_q10_status")
+            if type(receipt) is not dict:
+                receipt = {}
+            observed = receipt.get("row_count")
+            sessions = receipt.get("session_count")
+            source_hash = receipt.get("receipt_sha256")
+            valid = (
+                status == "VALID"
+                and receipt.get("status") == "VALID"
+                and type(observed) is int
+                and observed >= minimum_rows
+                and type(sessions) is int
+                and sessions >= 10
+                and type(source_hash) is str
+                and re.fullmatch(r"[0-9a-f]{64}", source_hash) is not None
+            )
+            node_id = f"ENTRY::{scope}::{bundle_id}::ACTION_COMPOSITE::{action}"
+            semantic = {
+                "node_id": node_id,
+                "stage": "ENTRY_CALIBRATION",
+                "scope": scope,
+                "family_or_control_identity": bundle_id,
+                "target_head_or_action": action,
+                "consumer": f"{action}_ACTION_GATE",
+                "observed_count": observed,
+                "minimum_count": {"sessions": 10, "rows": minimum_rows},
+                "decision_critical_or_diagnostic": "DECISION_CRITICAL",
+                "failure_mapping": "VALID" if valid else (
+                    status if status in {"INSUFFICIENT_EVIDENCE", "INVALID_TARGET_COVERAGE"}
+                    else "INVALID_TARGET_COVERAGE"
+                ),
+                "raw_node_status": status,
+                "upstream_hashes": [source_hash] if type(source_hash) is str else [],
+            }
+            rows.append({**semantic, "node_sha256": prereg.stable_hash(semantic)})
+    by_id = {row["node_id"]: row for row in rows}
+    if len(by_id) != len(rows) or set(by_id) != set(required):
+        raise RuntimeError("calibration node ordering/identity drift")
+    rows = [by_id[node_id] for node_id in required]
+    manifest = next(
+        row
+        for row in prereg.composite_calibration_terminal_rule_spec()["node_registry"][
+            "entry"
+        ]["manifests"]
+        if row["scope"] == scope
+    )
+    if (
+        len(rows) != manifest["required_node_count"]
+        or prereg.stable_hash([row["node_id"] for row in rows])
+        != manifest["required_node_ids_sha256"]
+    ):
+        raise RuntimeError("calibration node manifest drift")
+    return tuple(rows)
+
+
+def evaluate_entry_calibration_scope_gate(
+    *, scope: str, calibration_bundles: dict[str, Any]
+) -> dict[str, Any]:
+    """Return a success gate or a failure plan; never relabel a failed node."""
+
+    nodes = derive_entry_calibration_node_vector(
+        scope=scope, calibration_bundles=calibration_bundles
+    )
+    failures = tuple(row for row in nodes if row["raw_node_status"] != "VALID")
+    manifest_sha = prereg.stable_hash([row["node_id"] for row in nodes])
+    semantic = {
+        "schema_version": "pathd.calibration_scope_gate_receipt.v1",
+        "scope": scope,
+        "status": "VALID" if not failures else "FAILED_CLOSED",
+        "required_node_count": len(nodes),
+        "required_node_ids_sha256": manifest_sha,
+        "ordered_node_sha256s": [row["node_sha256"] for row in nodes],
+        "node_vector_sha256": prereg.stable_hash(list(nodes)),
+        "failure_node_ids": [row["node_id"] for row in failures],
+        "evidence_access_count": 0,
+        "holdout_open_count": 0,
+        "forbidden_rescue_applied": False,
+    }
+    return {**semantic, "receipt_sha256": prereg.stable_hash(semantic)}
+
+
+def _calibration_scope_gate_path(*, outer_fold: int, inner_fold: int | None) -> Path:
+    name = (
+        "entry_calibration_scope_gate_receipt.json"
+        if inner_fold is None
+        else f"nested_inner_{inner_fold}_calibration_scope_gate_receipt.json"
+    )
+    return prereg._outer_fold_artifact_path(outer_fold, name)
+
+
+def freeze_entry_calibration_scope_gate_once(
+    *, outer_fold: int, inner_fold: int | None,
+    calibration_bundles: dict[str, Any],
+) -> dict[str, Any]:
+    scope = _entry_calibration_scope(outer_fold=outer_fold, inner_fold=inner_fold)
+    nodes = derive_entry_calibration_node_vector(
+        scope=scope, calibration_bundles=calibration_bundles
+    )
+    result = evaluate_entry_calibration_scope_gate(
+        scope=scope, calibration_bundles=calibration_bundles
+    )
+    if result["status"] != "VALID":
+        fold_root = prereg._outer_fold_artifact_path(outer_fold, "placeholder").parent
+        failure_rows = []
+        for node in nodes:
+            if node["raw_node_status"] == "VALID":
+                continue
+            failure_semantic = {
+                "schema_version": "pathd.calibration_node_failure_receipt.v1",
+                "node_id": node["node_id"],
+                "raw_node_status": node["raw_node_status"],
+                "closed_failure_code": node["failure_mapping"],
+                "counts_and_minima": {
+                    "observed_count": node["observed_count"],
+                    "minimum_count": node["minimum_count"],
+                },
+                "scope_bundle_target_consumer_role": {
+                    "scope": node["scope"],
+                    "bundle": node["family_or_control_identity"],
+                    "target": node["target_head_or_action"],
+                    "consumer": node["consumer"],
+                    "role": node["decision_critical_or_diagnostic"],
+                },
+                "upstream_hashes": node["upstream_hashes"],
+                "evidence_access_count_zero": True,
+                "holdout_open_count_zero": True,
+            }
+            failure = {
+                **failure_semantic,
+                "receipt_sha256": prereg.stable_hash(failure_semantic),
+            }
+            path = fold_root / (
+                "calibration_node_failure_"
+                + failure["receipt_sha256"][:16]
+                + ".json"
+            )
+            prereg._write_canonical_json_exclusive(path, failure)
+            failure_rows.append(
+                {
+                    "path": prereg.repo_path_label(path),
+                    "sha256": prereg.sha256_path(path),
+                    "node_id": node["node_id"],
+                }
+            )
+        if not failure_rows:
+            raise AssertionError("failed calibration scope has no failed node")
+        campaign_path = prereg.AUDIT_ROOT / "entry_calibration_campaign_failure_receipt.json"
+        campaign_semantic = {
+            "schema_version": "pathd.calibration_campaign_failure_receipt.v1",
+            "status": "FAILED_CLOSED_BEFORE_EVIDENCE",
+            "first_failing_scope": scope,
+            "node_failure_receipts": failure_rows,
+            "prior_immutable_artifacts": [
+                {
+                    "path": prereg.repo_path_label(path),
+                    "sha256": prereg.sha256_path(path),
+                }
+                for path in sorted(
+                    fold_root.iterdir(), key=lambda item: item.name
+                )
+                if path.is_file()
+                and path.name.startswith(("hgb_", "neural_", "negative_control_"))
+            ],
+            "terminal_status": (
+                "invalid_result"
+                if any(
+                    node["failure_mapping"] == "INVALID_TARGET_COVERAGE"
+                    for node in nodes
+                )
+                else "insufficient_evidence"
+            ),
+            "evidence_access_count": 0,
+            "holdout_open_count": 0,
+            "forbidden_rescue_applied": False,
+        }
+        campaign = {
+            **campaign_semantic,
+            "receipt_sha256": prereg.stable_hash(campaign_semantic),
+        }
+        prereg._write_canonical_json_exclusive(campaign_path, campaign)
+        raise RuntimeError(
+            "calibration scope failed closed before evidence: "
+            + ",".join(result["failure_node_ids"])
+        )
+    path = _calibration_scope_gate_path(
+        outer_fold=outer_fold, inner_fold=inner_fold
+    )
+    prereg._write_canonical_json_exclusive(path, result)
+    reopened = prereg.read_json(path)
+    if reopened != result:
+        raise RuntimeError("calibration scope gate durability drift")
+    return reopened
+
+
+def begin_entry_evidence_after_valid_calibration_scope_gate(
+    *, role: str, outer_fold: int, inner_fold: int | None,
+) -> Any:
+    """The corrected-v3.2-only evidence open: revalidate release and B-R first."""
+
+    from v4.research.pathd_entry_dataset import assert_corrected_v32_executable_bridge
+    from v4.research.pathd_evidence_gate import begin_entry_evidence_once
+
+    assert_corrected_v32_executable_bridge()
+    assert_corrected_v32_fit_release()
+    scope = _entry_calibration_scope(outer_fold=outer_fold, inner_fold=inner_fold)
+    gate = prereg.read_json(
+        _calibration_scope_gate_path(outer_fold=outer_fold, inner_fold=inner_fold)
+    )
+    semantic = dict(gate)
+    receipt_sha = semantic.pop("receipt_sha256", None)
+    if (
+        gate.get("schema_version") != "pathd.calibration_scope_gate_receipt.v1"
+        or gate.get("scope") != scope
+        or gate.get("status") != "VALID"
+        or gate.get("failure_node_ids") != []
+        or gate.get("evidence_access_count") != 0
+        or gate.get("holdout_open_count") != 0
+        or receipt_sha != prereg.stable_hash(semantic)
+    ):
+        raise RuntimeError("evidence blocked: calibration scope gate invalid")
+    return begin_entry_evidence_once(
+        role=role, outer_fold=outer_fold, inner_fold=inner_fold
+    )
 
 
 def _flatten_entry_position_at_terminal(
@@ -943,13 +1775,182 @@ def validate_entry_pooled_context_diagnostics(
     return value
 
 
+def _spx_reference_selection(
+    *, session: str, anchor_time_ns: int
+) -> tuple[EntryContextSourceSelectionV1, dict[str, Any]]:
+    """Resolve and decode the fixed official-SPX diagnostic source internally."""
+
+    import pyarrow.parquet as pq
+
+    if (
+        type(session) is not str
+        or re.fullmatch(r"\d{4}-\d{2}-\d{2}", session) is None
+        or type(anchor_time_ns) is not int
+    ):
+        raise ValueError("SPX_REFERENCE selector session/clock drift")
+    relative = f"vendor/thetadata/index/spx_1m/{session}.parquet"
+    entries = [
+        row
+        for row in prereg.integrity_manifest_entries_for_partition(
+            prereg.CORE_INTEGRITY_PARTITION
+        )
+        if row.get("relative_path") == relative
+    ]
+    if len(entries) != 1:
+        raise RuntimeError("SPX_REFERENCE core manifest identity drift")
+    entry = entries[0]
+    path = prereg.CORPUS_ROOT / relative
+    source_receipt = {
+        "source": "SPX_REFERENCE",
+        "relative_path": relative,
+        "bytes": entry["bytes"],
+        "sha256": entry["sha256"],
+        "core_integrity_receipt_sha256": prereg.sha256_path(
+            prereg.CORPUS_INTEGRITY_RECEIPT_PATH
+        ),
+    }
+    if not path.is_file() or path.is_symlink():
+        status = "MISSING_FILE"
+        current = lag = None
+        row_count = 0
+    else:
+        observed_sha = prereg.sha256_path(path)
+        if observed_sha != entry["sha256"] or path.stat().st_size != entry["bytes"]:
+            raise RuntimeError("SPX_REFERENCE source byte drift")
+        parquet = pq.ParquetFile(path)
+        source_spec = prereg.context_diagnostics_spec()["sources"]["SPX_REFERENCE"]
+        if set(source_spec["required_fields"]) - set(parquet.schema_arrow.names):
+            raise RuntimeError("SPX_REFERENCE required column drift")
+        candidates: list[dict[str, Any]] = []
+        invariants = source_spec["row_invariants"]
+        row_count = 0
+        for row_group in range(parquet.num_row_groups):
+            records = parquet.read_row_group(row_group).to_pylist()
+            for row_index, record in enumerate(records):
+                row_count += 1
+                if any(record.get(name) != value for name, value in invariants.items()):
+                    raise RuntimeError("SPX_REFERENCE row invariant drift")
+                raw_time = record.get("event_time")
+                if hasattr(raw_time, "timestamp"):
+                    event_ns = int(raw_time.timestamp() * 1_000_000_000)
+                elif type(raw_time) is int:
+                    event_ns = raw_time
+                else:
+                    raise RuntimeError("SPX_REFERENCE event_time schema drift")
+                close = record.get("close")
+                for numeric_name in ("open", "high", "low", "close", "volume"):
+                    numeric = record.get(numeric_name)
+                    if (
+                        type(numeric) not in (int, float)
+                        or not math.isfinite(float(numeric))
+                    ):
+                        raise RuntimeError(
+                            f"SPX_REFERENCE nonfinite {numeric_name}"
+                        )
+                canonical_row = {
+                    name: (
+                        int(record[name].timestamp() * 1_000_000_000)
+                        if name == "event_time" and hasattr(record[name], "timestamp")
+                        else record[name]
+                    )
+                    for name in source_spec["required_fields"]
+                }
+                candidates.append(
+                    {
+                        "event_time_ns": event_ns,
+                        "available_at_ns": event_ns + 60_000_000_000,
+                        "row_group": row_group,
+                        "row_index": row_index,
+                        "close": float(close),
+                        "canonical_row_sha256": prereg.stable_hash(canonical_row),
+                    }
+                )
+
+        def select(clock: int) -> dict[str, Any] | None:
+            eligible = [
+                row
+                for row in candidates
+                if row["available_at_ns"] <= clock
+                and clock - row["available_at_ns"] <= 90_000_000_000
+            ]
+            if not eligible:
+                return None
+            eligible.sort(
+                key=lambda row: (
+                    row["available_at_ns"], row["event_time_ns"],
+                    row["row_group"], row["row_index"],
+                )
+            )
+            winner = eligible[-1]
+            key = (
+                winner["available_at_ns"], winner["event_time_ns"],
+                winner["row_group"], winner["row_index"],
+            )
+            if sum(
+                (
+                    row["available_at_ns"], row["event_time_ns"],
+                    row["row_group"], row["row_index"],
+                ) == key
+                for row in eligible
+            ) != 1:
+                raise RuntimeError("SPX_REFERENCE latest-key duplicate")
+            return winner
+
+        current = select(anchor_time_ns)
+        lag = select(anchor_time_ns - 15 * 60_000_000_000)
+        status = "FRESH" if current is not None and lag is not None else (
+            "EMPTY_SOURCE" if not candidates else "NO_CAUSAL_BAR"
+        )
+    current_locator = () if current is None else ({
+        "publisher_id": None,
+        "instrument_id": None,
+        "row_group": current["row_group"],
+        "row_index": current["row_index"],
+        "canonical_row_sha256": current["canonical_row_sha256"],
+        "event_time_ns": current["event_time_ns"],
+        "available_at_ns": current["available_at_ns"],
+    },)
+    lag_locator = () if lag is None else ({
+        "publisher_id": None,
+        "instrument_id": None,
+        "row_group": lag["row_group"],
+        "row_index": lag["row_index"],
+        "canonical_row_sha256": lag["canonical_row_sha256"],
+        "event_time_ns": lag["event_time_ns"],
+        "available_at_ns": lag["available_at_ns"],
+    },)
+    semantic = {
+        "schema_version": EntryContextSourceSelectionV1.SCHEMA_VERSION,
+        "source": "SPX_REFERENCE",
+        "status": status,
+        "requested": True,
+        "source_degraded": status != "FRESH",
+        "manifest_relative_path": relative,
+        "source_file_sha256": entry["sha256"],
+        "current_component_locators": current_locator,
+        "lag15_component_locators": lag_locator,
+        "current_available_at_ns": None if current is None else current["available_at_ns"],
+        "lag15_available_at_ns": None if lag is None else lag["available_at_ns"],
+        "current_age_ns": None if current is None else anchor_time_ns - current["available_at_ns"],
+        "lag15_age_ns": None if lag is None else anchor_time_ns - 15 * 60_000_000_000 - lag["available_at_ns"],
+        "current_close_float64_hex": None if current is None else current["close"].hex(),
+        "lag15_close_float64_hex": None if lag is None else lag["close"].hex(),
+    }
+    selection = EntryContextSourceSelectionV1(
+        **semantic, selection_sha256=prereg.stable_hash(_plain(semantic))
+    )
+    return selection, {**source_receipt, "row_count": row_count}
+
+
 def run_fixed_entry_context_diagnostics(
     authorization: Any, /
-) -> EntryPooledContextDiagnosticsV1:
-    """Run the fixed VIX/ES/VX/SPX_REFERENCE diagnostic transaction.
+) -> dict[str, Any]:
+    """Write the fixed v3.2 SPX_REFERENCE transaction from sealed inputs.
 
-    Source receipts are resolved internally and sealed into
-    source_receipts_root_sha256; no caller data/path/table is accepted.
+    The full historical context diagnostic remains post-primary and cannot run
+    before the separate Claude release.  This entrypoint owns the formerly
+    missing SPX writer: it accepts no caller paths/rows/anchors, validates one
+    fixed self-hashed upstream payload, and commits one write-once transaction.
     """
 
     prereg.assert_context_diagnostics_authorization_current(authorization)
@@ -959,8 +1960,56 @@ def run_fixed_entry_context_diagnostics(
         or prereg.context_age_quantile_type7([], 0.5) is not None
     ):
         raise RuntimeError("context anchor schema or age statistic drift")
-    prereg.read_validated_context_policy_journals(authorization, outer_fold=1)
-    raise RuntimeError("SPX_REFERENCE context transaction writer is not installed")
+    assert_corrected_v32_fit_release()
+    from v4.research.pathd_corrected_v32_foundation import V32_ROOT
+    from v4.research.pathd_entry_execution_v32 import (
+        build_spx_reference_transaction,
+    )
+
+    input_path = V32_ROOT / "execution_inputs" / "spx_reference_context.json"
+    output_path = V32_ROOT / "context_diagnostics" / "spx_reference_transaction.json"
+    if not input_path.is_file() or input_path.is_symlink():
+        raise RuntimeError("sealed SPX_REFERENCE context input is absent")
+    if output_path.exists() or output_path.is_symlink():
+        raise RuntimeError("SPX_REFERENCE context transaction already exists")
+    payload = prereg.read_json(input_path)
+    expected = {
+        "schema_version", "authorization_sha256", "anchors", "rows",
+        "source_receipt_sha256s", "input_sha256",
+    }
+    semantic = dict(payload)
+    digest = semantic.pop("input_sha256", None)
+    current = prereg.assert_context_diagnostics_authorization_current(authorization)
+    if (
+        set(payload) != expected
+        or payload.get("schema_version")
+        != "pathd.corrected_v32.spx_reference_context_input.v1"
+        or payload.get("authorization_sha256") != current.authorization_sha256
+        or type(payload.get("source_receipt_sha256s")) is not list
+        or not payload["source_receipt_sha256s"]
+        or any(
+            type(value) is not str
+            or re.fullmatch(r"[0-9a-f]{64}", value) is None
+            for value in payload["source_receipt_sha256s"]
+        )
+        or digest != prereg.stable_hash(semantic)
+    ):
+        raise RuntimeError("sealed SPX_REFERENCE context input drift")
+    result = build_spx_reference_transaction(
+        anchors=tuple((row[0], row[1]) for row in payload["anchors"]),
+        rows=payload["rows"],
+        source_receipt_sha256s=payload["source_receipt_sha256s"],
+    )
+    bound = {
+        **result,
+        "authorization_sha256": current.authorization_sha256,
+        "input_sha256": digest,
+    }
+    bound["artifact_sha256"] = prereg.stable_hash(bound)
+    prereg._write_canonical_json_exclusive(output_path, bound)
+    if prereg.read_json(output_path) != bound:
+        raise RuntimeError("SPX_REFERENCE context transaction durability drift")
+    return bound
 
 
 def _journal_economics(journal: Any) -> dict[str, Any]:
@@ -1306,7 +2355,6 @@ def run_canonical_entry_nested_block(
         release_authorized_entry_fit_dataset,
     )
     from v4.research.pathd_evidence_gate import (
-        begin_entry_evidence_once,
         seal_entry_evidence_result,
         seal_invalid_nested_block_skip,
     )
@@ -1315,6 +2363,11 @@ def run_canonical_entry_nested_block(
     assignments = prereg.read_json(prereg.SESSION_PATH)
     role = prereg._nested_role_record(assignments, outer_fold, inner_fold)
     if role.get("calibration_valid") is False:
+        gate_path = _calibration_scope_gate_path(
+            outer_fold=outer_fold, inner_fold=inner_fold
+        )
+        if gate_path.exists() or gate_path.is_symlink():
+            raise RuntimeError("structural skip retained a calibration scope gate")
         return seal_invalid_nested_block_skip(
             outer_fold=outer_fold, inner_fold=inner_fold
         )
@@ -1330,7 +2383,10 @@ def run_canonical_entry_nested_block(
     preopen_path = prereg._outer_fold_artifact_path(
         outer_fold, f"{prefix}_preopen_receipt.json"
     )
-    _assert_fixed_paths_absent((*artifact_paths, preopen_path))
+    scope_gate_path = _calibration_scope_gate_path(
+        outer_fold=outer_fold, inner_fold=inner_fold
+    )
+    _assert_fixed_paths_absent((*artifact_paths, scope_gate_path, preopen_path))
 
     weights = prereg.assert_entry_fit_ready(
         role="nested_weights", outer_fold=outer_fold, inner_fold=inner_fold
@@ -1403,6 +2459,14 @@ def run_canonical_entry_nested_block(
         )
         for path, value, validator in artifacts:
             _write_typed_artifact_once(path, value, validator=validator)
+        freeze_entry_calibration_scope_gate_once(
+            outer_fold=outer_fold,
+            inner_fold=inner_fold,
+            calibration_bundles={
+                "HGB": hgb_calibration,
+                "NEURAL": neural_calibration,
+            },
+        )
         _seal_nested_preopen_receipt(
             outer_fold=outer_fold, inner_fold=inner_fold
         )
@@ -1410,7 +2474,7 @@ def run_canonical_entry_nested_block(
         release_authorized_entry_fit_dataset(calibration_auth)
         release_authorized_entry_fit_dataset(weights)
 
-    authorization = begin_entry_evidence_once(
+    authorization = begin_entry_evidence_after_valid_calibration_scope_gate(
         role="nested_validation", outer_fold=outer_fold, inner_fold=inner_fold
     )
     try:
@@ -1510,19 +2574,50 @@ def validate_full_fit_exit_artifacts_for_holdout(path: Path, /) -> dict[str, Any
 
 
 def _assert_outer_entry_science_producers_ready() -> None:
-    """Preflight uninstalled science seams before any fold mutation.
+    """Verify the concrete v3.2 producer surface before any fold mutation."""
 
-    The immutable validators intentionally do not manufacture the P5 control-exit
-    selection, matched/control schedules, negative-control replay panel, or control
-    replay result.  Their producer contracts are being installed by the owning
-    modules.  Until all names are frozen, the outer transaction must stop here --
-    before fitting, writing a preopen artifact, or opening evidence.
+    from v4.research import pathd_entry_execution_v32 as execution
+
+    required = (
+        execution.validate_opportunity,
+        execution.replay_policy,
+        execution.select_shared_control_exit,
+        execution.produce_outer_replay_inventory,
+        execution.build_spx_reference_transaction,
+    )
+    if any(not callable(item) for item in required):
+        raise RuntimeError("corrected-v3.2 outer producer surface is incomplete")
+    if (
+        execution.CONTRACT_MULTIPLIER != 100
+        or execution.STARTING_EQUITY_MICROS != 10_000_000_000
+        or execution.D48_FRACTION != 0.05
+    ):
+        raise RuntimeError("corrected-v3.2 replay economics drift")
+
+
+def produce_corrected_v32_outer_replay_inventory(
+    *, outer_fold: int, model_fit_sessions: Any, outer_sessions: Any,
+    model_fit_opportunities: Any, outer_opportunities: Any,
+    legacy_causal_inputs_complete: bool,
+) -> dict[str, Any]:
+    """Typed runner boundary for the common v3.2 replay producer.
+
+    No caller PnL, journal hash, exit choice, result, pass flag, or verdict is
+    accepted.  Those values are reconstructed inside the producer.
     """
 
-    raise RuntimeError(
-        "canonical outer entry orchestration is fail-closed: frozen producers for "
-        "the earlier-session P5 control-exit selection and post-open control/negative "
-        "replays are not installed"
+    _assert_outer_entry_science_producers_ready()
+    from v4.research.pathd_entry_execution_v32 import (
+        produce_outer_replay_inventory,
+    )
+
+    return produce_outer_replay_inventory(
+        outer_fold=outer_fold,
+        model_fit_sessions=model_fit_sessions,
+        outer_sessions=outer_sessions,
+        model_fit_opportunities=model_fit_opportunities,
+        outer_opportunities=outer_opportunities,
+        legacy_causal_inputs_complete=legacy_causal_inputs_complete,
     )
 
 
@@ -1530,7 +2625,40 @@ def run_canonical_entry_outer_fold(*, outer_fold: int) -> dict[str, Any]:
     if outer_fold not in range(1, 6):
         raise ValueError("outer_fold must be 1..5")
     _assert_outer_entry_science_producers_ready()
-    raise AssertionError("unreachable outer entry producer preflight")
+    # This stage is intentionally unreachable under the v3.2 pre-verification
+    # release.  Once Claude's separate release is frozen, the existing fit/evidence
+    # authorization chain supplies the typed opportunities to the concrete replay
+    # boundary above.  Failing here today prevents a build verification from being
+    # mistaken for permission to fit or open a fold.
+    from v4.research.pathd_corrected_v32_foundation import (
+        assert_corrected_v32_foundation,
+    )
+
+    release = assert_corrected_v32_foundation()["release_state"]
+    if release.get("claude_verification_pending") is True:
+        raise RuntimeError(
+            "corrected-v3.2 outer execution is frozen but not released: "
+            "STOP_FOR_CLAUDE_VERIFICATION"
+        )
+    from v4.research import pathd_entry_execution_v32 as execution
+    from v4.research.pathd_corrected_v32_foundation import V32_ROOT
+
+    input_path = V32_ROOT / "execution_inputs" / f"outer_fold_{outer_fold}.json"
+    output_path = (
+        V32_ROOT / "entry_outer_folds" / f"fold_{outer_fold}"
+        / "v32_outer_replay_inventory.json"
+    )
+    if not input_path.is_file() or input_path.is_symlink():
+        raise RuntimeError("corrected-v3.2 sealed outer replay input is absent")
+    if output_path.exists() or output_path.is_symlink():
+        raise RuntimeError("corrected-v3.2 outer replay output already exists")
+    result = execution.produce_outer_replay_inventory_from_sealed_input(
+        prereg.read_json(input_path)
+    )
+    prereg._write_canonical_json_exclusive(output_path, result)
+    if prereg.read_json(output_path) != result:
+        raise RuntimeError("corrected-v3.2 outer replay durability drift")
+    return result
 
 
 def run_canonical_entry_fold(*, outer_fold: int) -> None:
@@ -1545,6 +2673,94 @@ def run_canonical_entry_fold(*, outer_fold: int) -> None:
             outer_fold=outer_fold, inner_fold=inner_fold
         )
     run_canonical_entry_outer_fold(outer_fold=outer_fold)
+
+
+ENTRY_CAMPAIGN_STAGE_ORDER = (
+    "VERIFY_EXECUTABLE_SEAL",
+    "SEAL_ENTRY_MACHINERY",
+    "VERIFY_CORE_CORPUS_INTEGRITY",
+    "SEAL_FOUNDATION_STABILITY",
+    "OUTER_FOLD_1",
+    "OUTER_FOLD_2",
+    "OUTER_FOLD_3",
+    "OUTER_FOLD_4",
+    "OUTER_FOLD_5",
+    "FREEZE_POOLED_ENTRY_ACCEPTANCE",
+)
+
+
+def canonical_entry_campaign_stage_order() -> tuple[str, ...]:
+    """Expose the only permitted corrected-v3.2 entry campaign order."""
+
+    payload = prereg.preregistration_payload()[0]
+    terminal = payload["calibration_and_statistics"][
+        "composite_calibration_terminal_rule"
+    ]["all_five_manifest"]
+    if (
+        terminal["outer_folds_in_exact_order"] != [1, 2, 3, 4, 5]
+        or terminal["required_status_each"] != "VALID"
+        or terminal["valid_fold_count"] != 5
+        or terminal["four_as_five_or_survivor_pooling"] is not False
+    ):
+        raise RuntimeError("corrected-v3.2 campaign order contract drift")
+    return ENTRY_CAMPAIGN_STAGE_ORDER
+
+
+def run_canonical_entry_campaign() -> dict[str, Any]:
+    """Run the concrete corrected-v3.2 entry campaign, with no injectable seams.
+
+    This entrypoint is intentionally all-or-nothing and accepts no paths, data,
+    callbacks, stage selection, verdicts, or hashes from its caller.  The build
+    freezes it but does not invoke it.
+    """
+
+    stages = canonical_entry_campaign_stage_order()
+    from v4.research.pathd_entry_dataset import (
+        assert_corrected_v32_executable_bridge,
+    )
+    assert_corrected_v32_executable_bridge()
+    release = assert_corrected_v32_fit_release()
+    # Exhaust every known build/science seam before the first durable write.
+    # This call remains intentionally ahead of machinery, integrity, and
+    # stability sealing so a missing producer can never leave a partial campaign.
+    _assert_outer_entry_science_producers_ready()
+    prereg.assert_preregistration_frozen()
+    prereg._verify_authorized_dependency_closure(
+        prereg.preregistration_payload()[0], allow_missing_future=False
+    )
+    machinery = _seal_entry_machinery()
+    corpus = _verify_core_corpus_integrity()
+    stability = prereg.seal_foundation_stability_receipt()
+    folds: list[dict[str, Any]] = []
+    for outer_fold in range(1, 6):
+        run_canonical_entry_fold(outer_fold=outer_fold)
+        receipt_path = prereg._outer_fold_artifact_path(
+            outer_fold, "outer_result_receipt.json"
+        )
+        folds.append(
+            {
+                "outer_fold": outer_fold,
+                "receipt_path": prereg.repo_path_label(receipt_path),
+                "receipt_sha256": prereg.sha256_path(receipt_path),
+            }
+        )
+    pooled = freeze_entry_pooled_acceptance_once()
+    return {
+        "schema_version": "pathd.corrected_v3_2.entry_campaign_result.v1",
+        "science_preregistration_sha256": release["preregistration_sha256"],
+        "foundation_generation_sha256": release["foundation_generation_sha256"],
+        "stage_order": stages,
+        "machinery": machinery,
+        "corpus_integrity_receipt_sha256": prereg.sha256_path(
+            prereg.CORPUS_INTEGRITY_RECEIPT_PATH
+        ),
+        "foundation_stability_receipt_sha256": prereg.sha256_path(
+            prereg.FOUNDATION_STABILITY_RECEIPT_PATH
+        ),
+        "outer_folds": folds,
+        "pooled_acceptance": _mapping(pooled),
+        "holdout_open_count": 0,
+    }
 
 
 _MACHINERY_COMMAND_STREAMS = tuple(
@@ -1863,6 +3079,10 @@ def parse_args() -> argparse.Namespace:
             "run-entry-outer-fold",
             "run-entry-fold",
             "freeze-entry-pooled-acceptance",
+            "run-entry-campaign",
+            "freeze-corrected-v32-foundation",
+            "freeze-corrected-v32-executable-generation",
+            "freeze-corrected-v32-executable-bridge",
         ),
         help="Run one fixed, fail-closed Path-D research stage.",
     )
@@ -1873,6 +3093,20 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.stage == "freeze-corrected-v32-foundation":
+        from v4.research.pathd_corrected_v32_foundation import (
+            freeze_corrected_v32_foundation,
+        )
+        print(json.dumps(freeze_corrected_v32_foundation(), indent=2))
+        return 0
+    if args.stage == "freeze-corrected-v32-executable-generation":
+        print(json.dumps(freeze_corrected_v32_executable_generation(), indent=2))
+        return 0
+    if args.stage == "freeze-corrected-v32-executable-bridge":
+        print(json.dumps(freeze_corrected_v32_executable_bridge(), indent=2))
+        return 0
+    from v4.research.pathd_entry_dataset import assert_corrected_v32_executable_bridge
+    assert_corrected_v32_executable_bridge()
     needs_outer = {
         "seal-invalid-nested-skip",
         "run-entry-nested-block",
@@ -1890,6 +3124,7 @@ def main() -> int:
         # result artifact.  The evidence gate revalidates again immediately
         # before its one authorized decode.
         prereg.assert_research_foundation_stable()
+    assert_corrected_v32_fit_release()
     if args.stage == "freeze-prereg":
         receipt = freeze_preregistration()
         negatives = require_all_negative_fixtures_rejected()
@@ -1946,6 +3181,9 @@ def main() -> int:
     if args.stage == "freeze-entry-pooled-acceptance":
         result = freeze_entry_pooled_acceptance_once()
         print(json.dumps(_mapping(result), indent=2))
+        return 0
+    if args.stage == "run-entry-campaign":
+        print(json.dumps(run_canonical_entry_campaign(), indent=2))
         return 0
     receipt = assert_preregistration_frozen()
     negatives = require_all_negative_fixtures_rejected()

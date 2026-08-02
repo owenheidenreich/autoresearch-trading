@@ -667,6 +667,8 @@ LINEAGE_IMPLEMENTATION_PATHS = (
 MACHINERY_IMPLEMENTATION_PATHS = (
     "v4/research/pathd_entry_dataset.py",
     "v4/research/pathd_entry_models.py",
+    "v4/research/pathd_entry_execution_v32.py",
+    "v4/research/pathd_corrected_v32_foundation.py",
     "v4/path_d/execution/research_fill_law.py",
     "v4/path_d/execution/research_replay.py",
     "v4/scripts/run_pathd_entry_exit_research.py",
@@ -10894,12 +10896,70 @@ def _assert_outer_evidence_open_gate(
     return tuple(hashes)
 
 
+def _assert_corrected_v32_release_if_present() -> None:
+    """Fail closed on a partial/unverified v3.2 generation without new imports."""
+
+    root = REPO_ROOT / (
+        "v4/audit/autoresearch/"
+        "protocol101_pathd_entry_exit_model_research_corrected_v3_2_2026_08_01"
+    )
+    if not root.exists():
+        return
+    executable = REPO_ROOT / (
+        "v4/audit/autoresearch/"
+        "protocol101_pathd_entry_exit_model_research_corrected_v3_2_"
+        "executable_2026_08_01"
+    )
+    preregistration_path = root / "preregistration.json"
+    restoration_path = root / "foundation_restoration_receipt.json"
+    bridge_path = executable / "implementation_receipt.json"
+    release_path = executable / "claude_verification_release.json"
+    for path in (preregistration_path, restoration_path, bridge_path, release_path):
+        if not path.is_file() or path.is_symlink():
+            raise RuntimeError(
+                "STOP_FOR_CLAUDE_VERIFICATION: corrected-v3.2 release chain is incomplete"
+            )
+    restoration = read_json(restoration_path)
+    bridge = read_json(bridge_path)
+    release = read_json(release_path)
+    for value, field in (
+        (restoration, "receipt_sha256"),
+        (bridge, "receipt_sha256"),
+        (release, "receipt_sha256"),
+    ):
+        _validate_self_hashed_receipt(value, field=field)
+    if (
+        release.get("schema_version") != "pathd.corrected_v32.claude_fit_release.v1"
+        or release.get("status")
+        != "CLAUDE_VERIFIED_GATE_HARDENING_FIT_RELEASE"
+        or release.get("implementation_receipt_sha256") != sha256_path(bridge_path)
+        or release.get("foundation_generation_sha256")
+        != restoration.get("foundation_generation_sha256")
+        or release.get("preregistration_sha256")
+        != sha256_path(preregistration_path)
+        or any(
+            release.get(key) is not True
+            for key in (
+                "machinery_seal_authorized",
+                "foundation_stability_seal_authorized",
+                "corpus_decode_authorized",
+                "model_fit_authorized",
+                "nested_or_outer_evidence_open_authorized",
+            )
+        )
+        or release.get("protected_holdout_open_authorized") is not False
+        or release.get("holdout_open_count") != 0
+    ):
+        raise RuntimeError("corrected-v3.2 Claude fit release drift")
+
+
 def assert_entry_fit_ready(
     *,
     role: str,
     outer_fold: int | None = None,
     inner_fold: int | None = None,
 ) -> FrozenFitAuthorization:
+    _assert_corrected_v32_release_if_present()
     """Authorize one exact frozen role; callers cannot supply arbitrary sessions."""
 
     from v4.research.pathd_holdout_gate import _assert_protected_holdout_unopened
@@ -11034,6 +11094,7 @@ def assert_entry_evidence_ready(
 def assert_entry_evidence_authorization_current(
     authorization: FrozenEvidenceAuthorization,
 ) -> FrozenEvidenceAuthorization:
+    _assert_corrected_v32_release_if_present()
     from v4.research.pathd_evidence_gate import validate_entry_evidence_access
 
     return validate_entry_evidence_access(authorization)
@@ -13185,6 +13246,7 @@ def assert_entry_context_diagnostics_ready() -> FrozenContextDiagnosticsAuthoriz
 def assert_fit_authorization_current(
     authorization: FrozenFitAuthorization,
 ) -> FrozenFitAuthorization:
+    _assert_corrected_v32_release_if_present()
     """Revalidate immediately before a dataset read or model/calibrator fit."""
 
     if type(authorization) is not FrozenFitAuthorization:

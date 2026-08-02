@@ -7,7 +7,7 @@ implementation seam.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import asdict, dataclass, fields, is_dataclass
 from datetime import datetime
 import hashlib
 import json
@@ -474,6 +474,38 @@ class EntryControlExitSelectionV1:
     selected_policy_id: str
     selection_rule: str
     artifact_sha256: str
+
+
+@dataclass(frozen=True)
+class EntryControlExitCandidateEvaluationV1:
+    SCHEMA_VERSION: ClassVar[str] = "pathd.entry_control_exit_candidate_evaluation.v1"
+
+    schema_version: str
+    outer_fold: int
+    policy_id: str
+    model_fit_sessions_sha256_newline: str
+    session_pnl_micros: tuple[int, ...]
+    session_terminal_journal_sha256s: tuple[str, ...]
+    valid_session_count: int
+    total_net_pnl_micros: int
+    evaluation_sha256: str
+
+
+@dataclass(frozen=True)
+class EntryMatchedRandomCandidateBudgetV1:
+    """Outcome-blind exact candidate BUY-intent counts for one replay game."""
+
+    SCHEMA_VERSION: ClassVar[str] = "pathd.entry_matched_random_candidate_budget.v1"
+
+    schema_version: str
+    outer_fold: int
+    owner_policy_id: str
+    channel: str
+    fee_path: int
+    matching_fields: tuple[str, ...]
+    ordered_cells_and_counts: tuple[tuple[tuple[Any, ...], int], ...]
+    source_action_decision_sha256s: tuple[str, ...]
+    candidate_budget_sha256: str
 
 
 @dataclass(frozen=True)
@@ -1370,6 +1402,195 @@ def _proposal_random_key(
     return int.from_bytes(bytes.fromhex(digest)[:8], "big"), digest
 
 
+_MATCHED_RANDOM_FIELDS = (
+    "outer_fold",
+    "session",
+    "call_or_put",
+    "ATM_NEAR_WING",
+    "decision_time_premium_band",
+)
+_MATCHED_RANDOM_MONEYNESS = ("ATM", "NEAR", "WING")
+_MATCHED_RANDOM_PREMIUM_BANDS = (
+    "cheap_le_1",
+    "small_1_3",
+    "medium_3_8",
+    "large_8_20",
+    "very_large_20p",
+)
+
+
+def _validated_matched_random_cell(row: Mapping[str, Any], /) -> tuple[Any, ...]:
+    """Validate one cell after its bands were derived from a sealed decision."""
+
+    if type(row) is not dict or any(name not in row for name in _MATCHED_RANDOM_FIELDS):
+        raise ValueError("matched-random candidate row lacks a frozen matching field")
+    cell = tuple(row[name] for name in _MATCHED_RANDOM_FIELDS)
+    if (
+        type(cell[0]) is not int
+        or cell[0] not in range(1, 6)
+        or type(cell[1]) is not str
+        or re.fullmatch(r"\d{4}-\d{2}-\d{2}", cell[1]) is None
+        or cell[2] not in {"C", "P"}
+        or cell[3] not in _MATCHED_RANDOM_MONEYNESS
+        or cell[4] not in _MATCHED_RANDOM_PREMIUM_BANDS
+    ):
+        raise ValueError("matched-random frozen matching cell drift")
+    return cell
+
+
+def _matched_random_moneyness_from_action_index(index: int, /) -> str:
+    """Canonical ladder distance from ATM slot 10, independently per right."""
+
+    if type(index) is not int or index not in range(42):
+        raise ValueError("matched-random action index drift")
+    distance = abs((index % 21) - 10)
+    if distance <= 1:
+        return "ATM"
+    if distance <= 5:
+        return "NEAR"
+    return "WING"
+
+
+def _matched_random_premium_band(ask_micros: int, /) -> str:
+    if type(ask_micros) is not int or ask_micros <= 0:
+        raise ValueError("matched-random decision ask drift")
+    ask_cents = ask_micros / 10_000
+    if ask_cents <= 100:
+        return "cheap_le_1"
+    if ask_cents <= 300:
+        return "small_1_3"
+    if ask_cents <= 800:
+        return "medium_3_8"
+    if ask_cents <= 2_000:
+        return "large_8_20"
+    return "very_large_20p"
+
+
+def matched_random_candidate_row_from_decision(
+    *, outer_fold: int, session: str, decision: EntryActionDecisionV1,
+) -> dict[str, Any]:
+    """Derive the complete outcome-blind match cell from a sealed ENTER decision."""
+
+    if type(decision) is not EntryActionDecisionV1:
+        raise TypeError("matched-random budget requires EntryActionDecisionV1")
+    semantic = {
+        field.name: _canonical(getattr(decision, field.name))
+        for field in fields(decision)
+        if field.name != "decision_sha256"
+    }
+    contract = decision.selected_contract
+    index = decision.selected_action_index
+    right = _member(contract, "right") if contract is not None else None
+    if (
+        decision.schema_version != decision.SCHEMA_VERSION
+        or decision.decision_sha256 != prereg.stable_hash(semantic)
+        or decision.action != "ENTER"
+        or type(index) is not int
+        or index not in range(42)
+        or right not in {"C", "P"}
+        or type(session) is not str
+        or re.fullmatch(r"\d{4}-\d{2}-\d{2}", session) is None
+        or outer_fold not in range(1, 6)
+    ):
+        raise ValueError("matched-random candidate decision identity drift")
+    return {
+        "outer_fold": outer_fold,
+        "session": session,
+        "call_or_put": right,
+        "ATM_NEAR_WING": _matched_random_moneyness_from_action_index(index),
+        "decision_time_premium_band": _matched_random_premium_band(
+            decision.reference_ask_micros
+        ),
+        "action": "ENTER",
+        "decision_sha256": decision.decision_sha256,
+    }
+
+
+def derive_matched_random_candidate_budget(
+    *, outer_fold: int, owner_policy_id: str, channel: str, fee_path: int,
+    candidate_buy_intents: Sequence[Mapping[str, Any]],
+) -> EntryMatchedRandomCandidateBudgetV1:
+    """Count decision-derived BUY intents before any comparator outcome is read.
+
+    Public callers should construct rows only with
+    :func:`matched_random_candidate_row_from_decision`; the outer producer does
+    so directly from validated journal transitions.
+    """
+
+    if (
+        type(outer_fold) is not int
+        or outer_fold not in range(1, 6)
+        or owner_policy_id not in prereg.entry_matched_random_owner_policy_ids()
+        or channel not in prereg.ENTRY_REPLAY_CHANNELS
+        or fee_path not in (3, 4)
+    ):
+        raise ValueError("matched-random candidate budget scope drift")
+    rows = tuple(candidate_buy_intents)
+    exact = {
+        *_MATCHED_RANDOM_FIELDS,
+        "action",
+        "decision_sha256",
+    }
+    counts: dict[tuple[Any, ...], int] = {}
+    decisions: list[str] = []
+    for row in rows:
+        if type(row) is not dict or set(row) != exact:
+            raise ValueError("matched-random candidate budget row schema drift")
+        if row["action"] != "ENTER" or not _is_hex64(row["decision_sha256"]):
+            raise ValueError("matched-random budget accepts only sealed ENTER decisions")
+        cell = _validated_matched_random_cell(row)
+        if cell[0] != outer_fold:
+            raise ValueError("matched-random budget cross-fold row")
+        counts[cell] = counts.get(cell, 0) + 1
+        decisions.append(row["decision_sha256"])
+    if not rows or len(decisions) != len(set(decisions)):
+        raise ValueError("matched-random budget is empty or reuses a decision")
+    ordered = tuple(sorted(counts.items(), key=lambda item: _canonical(item[0])))
+    semantic = {
+        "schema_version": EntryMatchedRandomCandidateBudgetV1.SCHEMA_VERSION,
+        "outer_fold": outer_fold,
+        "owner_policy_id": owner_policy_id,
+        "channel": channel,
+        "fee_path": fee_path,
+        "matching_fields": _MATCHED_RANDOM_FIELDS,
+        "ordered_cells_and_counts": ordered,
+        "source_action_decision_sha256s": tuple(decisions),
+    }
+    return EntryMatchedRandomCandidateBudgetV1(
+        **semantic,
+        candidate_budget_sha256=prereg.stable_hash(_canonical(semantic)),
+    )
+
+
+def matched_random_budget_quotas(
+    budget: EntryMatchedRandomCandidateBudgetV1, /
+) -> dict[tuple[Any, ...], int]:
+    row = _coerce_exact_dataclass(budget, EntryMatchedRandomCandidateBudgetV1)
+    semantic = asdict(row)
+    digest = semantic.pop("candidate_budget_sha256")
+    if (
+        row.schema_version != row.SCHEMA_VERSION
+        or tuple(row.matching_fields) != _MATCHED_RANDOM_FIELDS
+        or not _is_hex64(digest)
+        or digest != prereg.stable_hash(_canonical(semantic))
+    ):
+        raise ValueError("matched-random candidate budget self-seal drift")
+    quotas: dict[tuple[Any, ...], int] = {}
+    for cell, count in row.ordered_cells_and_counts:
+        canonical_cell = tuple(cell)
+        if canonical_cell in quotas or canonical_cell[0] != row.outer_fold:
+            raise ValueError("matched-random candidate budget cell drift")
+        _validated_matched_random_cell(
+            dict(zip(_MATCHED_RANDOM_FIELDS, canonical_cell, strict=True))
+        )
+        if type(count) is not int or count <= 0:
+            raise ValueError("matched-random candidate budget count drift")
+        quotas[canonical_cell] = count
+    if not quotas or sum(quotas.values()) != len(row.source_action_decision_sha256s):
+        raise ValueError("matched-random candidate budget arithmetic drift")
+    return quotas
+
+
 def build_matched_random_schedule(
     *, proposals: Sequence[Mapping[str, Any]], quotas: Mapping[Any, int],
     seed: int, policy_id: str, outer_fold: int,
@@ -1446,7 +1667,19 @@ def build_matched_random_schedule(
         "seed": seed,
         "ordered_ids": selected,
         "eligible_population_sha256": prereg.stable_hash(rows),
-        "matching_budget_sha256": prereg.stable_hash(dict(quotas)),
+        "matching_budget_sha256": prereg.stable_hash(
+            dict(quotas)
+            if all(type(cell) is str for cell in quotas)
+            else [
+                {"cell": _canonical(cell), "count": quotas[cell]}
+                for cell in sorted(
+                    quotas,
+                    key=lambda value: json.dumps(
+                        _canonical(value), sort_keys=True, separators=(",", ":")
+                    ),
+                )
+            ]
+        ),
     }
     return {**semantic, "schedule_sha256": prereg.stable_hash(semantic)}
 
@@ -3735,7 +3968,6 @@ def _shuffled_target_frames(
                     allow_nan=False,
                 ).encode("utf-8")
             )
-        validity &= frame.inputs.physical_action_mask[:, None]
         transformed.append(
             _EntryFitFrame(
                 example=frame.example,
@@ -4288,6 +4520,80 @@ def validate_entry_control_replay_config(
 ENTRY_CONTROL_EXIT_SELECTION_RULE = (
     "MAX_TOTAL_FEE3_NET_PNL_THEN_LEXICOGRAPHIC_CANONICAL_COMPARATOR_ID"
 )
+
+
+def entry_control_exit_policy_ids() -> tuple[str, ...]:
+    fixed = tuple(
+        f"FIXED_STOP_{stop}_TARGET_{target}_TIME_{seconds}"
+        for stop in ("M25", "M50")
+        for target in ("P25", "P50", "P100")
+        for seconds in (60, 300, 900)
+    )
+    return (
+        "EXIT_IMMEDIATE",
+        "HOLD_TO_FLAT",
+        "TIME_60",
+        "TIME_300",
+        "TIME_900",
+        *fixed,
+        "LEGACY_P5_LIFECYCLE",
+    )
+
+
+def validate_entry_control_exit_candidate_evaluation(
+    value: Any, /
+) -> EntryControlExitCandidateEvaluationV1:
+    row = _coerce_exact_dataclass(value, EntryControlExitCandidateEvaluationV1)
+    sessions = tuple(
+        prereg.session_assignments()["folds"][row.outer_fold - 1]["model_fit"]
+    ) if type(row.outer_fold) is int and row.outer_fold in range(1, 6) else ()
+    if (
+        row.schema_version != row.SCHEMA_VERSION
+        or row.policy_id not in entry_control_exit_policy_ids()
+        or row.model_fit_sessions_sha256_newline != prereg.canonical_session_hash(sessions)
+        or len(row.session_pnl_micros) != len(sessions)
+        or len(row.session_terminal_journal_sha256s) != len(sessions)
+        or any(type(item) is not int for item in row.session_pnl_micros)
+        or any(not _is_hex64(item) for item in row.session_terminal_journal_sha256s)
+        or row.valid_session_count != len(sessions)
+        or row.total_net_pnl_micros != sum(row.session_pnl_micros)
+    ):
+        raise ValueError("entry control-exit candidate evaluation drift")
+    _validate_artifact_hash(row, hash_field="evaluation_sha256")
+    return row
+
+
+def select_entry_control_exit(
+    *, outer_fold: int,
+    evaluations: Sequence[EntryControlExitCandidateEvaluationV1],
+) -> EntryControlExitSelectionV1:
+    """Select the shared transparent exit from complete earlier-session replays."""
+
+    rows = tuple(validate_entry_control_exit_candidate_evaluation(item) for item in evaluations)
+    expected = entry_control_exit_policy_ids()
+    if tuple(row.policy_id for row in rows) != expected:
+        raise ValueError("entry control-exit panel is incomplete or out of order")
+    if any(row.outer_fold != outer_fold for row in rows):
+        raise ValueError("entry control-exit evaluation fold drift")
+    best_pnl = max(row.total_net_pnl_micros for row in rows)
+    selected = min(row.policy_id for row in rows if row.total_net_pnl_micros == best_pnl)
+    session_hash = rows[0].model_fit_sessions_sha256_newline
+    semantic = {
+        "schema_version": EntryControlExitSelectionV1.SCHEMA_VERSION,
+        "holdout_caveat": prereg.HOLDOUT_CAVEAT,
+        "outer_fold": outer_fold,
+        "model_fit_sessions_sha256_newline": session_hash,
+        "candidate_policy_ids": tuple(row.policy_id for row in rows),
+        "candidate_evaluation_sha256s": tuple(row.evaluation_sha256 for row in rows),
+        "valid_session_counts": tuple(row.valid_session_count for row in rows),
+        "total_net_pnl_micros": tuple(row.total_net_pnl_micros for row in rows),
+        "selected_policy_id": selected,
+        "selection_rule": ENTRY_CONTROL_EXIT_SELECTION_RULE,
+    }
+    result = EntryControlExitSelectionV1(
+        **semantic, artifact_sha256=prereg.stable_hash(_canonical(semantic))
+    )
+    return validate_entry_control_exit_selection(result)
 
 
 def validate_entry_control_exit_selection(
@@ -4897,3 +5203,166 @@ def compose_entry_action(
         **semantic,
         decision_sha256=prereg.stable_hash(_canonical(semantic)),
     )
+
+
+_P5_OBJECTIVE_SPEC_PATH = (
+    prereg.REPO_ROOT
+    / "v4/audit/autoresearch/protocol101_ft2_10_entry_science_contract/objective_spec.json"
+)
+_P5_OBJECTIVE_SPEC_SHA256 = (
+    "3b5148c79a52977b2d849f4185e5f5dd676604357b5e5d762bc4084ed77f41f0"
+)
+
+
+def compose_p5_under_cap_action(
+    example: Any, /, *, journal: Any, dataset: Any, authorization: Any,
+    fill_law: Any,
+) -> EntryActionDecisionV1:
+    """Compute the frozen P5 VWAP-side nearest-eligible comparator decision."""
+
+    from v4.model.protocol101_canonical_stage1_contract import FEATURE_NAMES
+    from v4.path_d.execution import research_replay
+    from v4.research.pathd_entry_dataset import validate_entry_evidence_dataset
+
+    if prereg.sha256_path(_P5_OBJECTIVE_SPEC_PATH) != _P5_OBJECTIVE_SPEC_SHA256:
+        raise RuntimeError("P5 objective authority byte drift")
+    authority = json.loads(_P5_OBJECTIVE_SPEC_PATH.read_text(encoding="utf-8"))
+    spec = authority.get("p5_under_cap_algorithm")
+    if type(spec) is not dict or spec.get("name") != "P5_VWAP_SIDE_NEAREST_ELIGIBLE_UNDER_CAP_V2":
+        raise RuntimeError("P5 objective authority semantic drift")
+    current = prereg.assert_entry_evidence_authorization_current(authorization)
+    validated_dataset = validate_entry_evidence_dataset(dataset, authorization=current)
+    active_journal = research_replay.validate_research_ledger_journal(
+        journal, authorization=current
+    )
+    example_hash = getattr(example, "canonical_sha256", lambda: None)()
+    members = [
+        row for row in validated_dataset.examples
+        if row.canonical_sha256() == example_hash
+    ]
+    if len(members) != 1 or members[0] is not example:
+        raise ValueError("P5 example is not the exact sealed dataset member")
+    if (
+        getattr(fill_law, "fill_law_hash", None)
+        != prereg.preregistration_payload()[0]["fill_law"]["fill_law_hash"]
+    ):
+        raise ValueError("P5 fill-law drift")
+    inputs = model_input_from_example(example)
+    dynamic_mask, hard_limits = _dynamic_entry_mask(
+        example=example, inputs=inputs, journal=active_journal
+    )
+    gap_index = tuple(FEATURE_NAMES).index("spx_vwap_gap_points")
+    flattened = np.asarray(inputs.signed17_frame.values, dtype=np.float64).reshape(
+        42, len(FEATURE_NAMES)
+    )
+    gaps = flattened[:, gap_index]
+    finite_gaps = gaps[np.isfinite(gaps)]
+    side = None if len(finite_gaps) == 0 else ("C" if float(finite_gaps[0]) >= 0.0 else "P")
+    if len(finite_gaps) and not np.all(finite_gaps == finite_gaps[0]):
+        raise ValueError("P5 SPX/VWAP state differs across the current ladder")
+    facts = tuple(example.action_execution_facts)
+    combined = inputs.physical_action_mask & dynamic_mask
+    candidates = [] if side is None else [
+        index for index in np.flatnonzero(combined).tolist()
+        if str(inputs.current_rights[index]) == side
+    ]
+    selected_index = None
+    if candidates:
+        selected_index = min(
+            candidates,
+            key=lambda index: (
+                abs(float(inputs.current_offsets[index])),
+                float(inputs.current_offsets[index]),
+                0 if str(inputs.current_rights[index]) == "C" else 1,
+                int(str(facts[index].contract.expiry).replace("-", "")),
+                int(facts[index].contract.strike_milli),
+                str(facts[index].contract.right),
+                str(facts[index].source_neutral_contract_id),
+            ),
+        )
+    fact = None if selected_index is None else facts[selected_index]
+    available_horizons = _entry_available_horizons(inputs)
+    action = "ENTER" if selected_index is not None else "WAIT"
+    reason = (
+        "P5_VWAP_SIDE_NEAREST_ELIGIBLE_UNDER_CAP_V2"
+        if selected_index is not None
+        else (
+            "P5_WAIT_MISSING_SPX_VWAP"
+            if side is None
+            else "P5_WAIT_NO_SELECTED_SIDE_ELIGIBLE"
+        )
+    )
+    authority_hash = prereg.stable_hash(
+        {
+            "objective_spec_sha256": _P5_OBJECTIVE_SPEC_SHA256,
+            "algorithm": spec,
+            "side": side,
+        }
+    )
+    semantic = {
+        "schema_version": EntryActionDecisionV1.SCHEMA_VERSION,
+        "action": action,
+        "reason": reason,
+        "selected_action_index": selected_index,
+        "selected_source_neutral_contract_id": None if fact is None else fact.source_neutral_contract_id,
+        "selected_contract": None if fact is None else fact.contract,
+        "reference_bid_micros": None if fact is None else fact.bid_micros,
+        "reference_ask_micros": None if fact is None else fact.ask_micros,
+        "buy_hard_limit_micros": None if selected_index is None else hard_limits[selected_index],
+        "available_horizons": available_horizons,
+        "mean_lcb_dollars": 0.0,
+        "mean_lcb_return": 0.0,
+        "q10_dollars": 0.0,
+        "q10_return": 0.0,
+        "physical_action_mask": tuple(bool(value) for value in inputs.physical_action_mask),
+        "dynamic_account_mask": tuple(bool(value) for value in dynamic_mask),
+        "combined_action_mask": tuple(bool(value) for value in combined),
+        "authorization_sha256": prereg.stable_hash(current.to_dict()),
+        "dataset_sha256": validated_dataset.dataset_sha256,
+        "example_sha256": example_hash,
+        "model_input_sha256": inputs.canonical_sha256(),
+        "prediction_sha256": authority_hash,
+        "composer_sha256": _P5_OBJECTIVE_SPEC_SHA256,
+        "prior_journal_root_sha256": active_journal.journal_root_sha256,
+        "fill_law_hash": fill_law.fill_law_hash,
+    }
+    return EntryActionDecisionV1(
+        **semantic, decision_sha256=prereg.stable_hash(_canonical(semantic))
+    )
+
+
+def compose_exit_action_from_calibrated_aref(
+    *, mean_lcb_aref: float, q10_aref: float, q50_aref: float, q90_aref: float,
+) -> dict[str, Any]:
+    """Apply the frozen corrected-v3.1 HOLD/EXIT geometry or abstain invalid."""
+
+    topology = prereg.preregistration_payload()[0]["calibration_and_statistics"][
+        "aref_decision_critical_topology"
+    ]
+    composer = prereg.exit_action_composer_spec()
+    values = (mean_lcb_aref, q10_aref, q50_aref, q90_aref)
+    valid = all(type(value) in (int, float) and math.isfinite(float(value)) for value in values)
+    valid = valid and float(q10_aref) <= float(q50_aref) <= float(q90_aref)
+    if not valid:
+        semantic = {
+            "schema_version": "pathd.exit_action_decision.v1",
+            "status": "invalid_result",
+            "action": None,
+            "utility_hold": None,
+            "reason": "INVALID_OR_NONMONOTONE_COMPLETE_AREF_OUTPUT",
+            "topology_sha256": composer["topology_sha256"],
+        }
+        return {**semantic, "decision_sha256": prereg.stable_hash(semantic)}
+    if topology["direct_action_inputs"] != ["A_ref_mean", "A_ref_q10"]:
+        raise RuntimeError("A_ref direct-action topology drift")
+    utility = float(mean_lcb_aref) + 0.25 * min(float(q10_aref), 0.0)
+    action = "HOLD" if utility > 0.0 else "EXIT"
+    semantic = {
+        "schema_version": "pathd.exit_action_decision.v1",
+        "status": "VALID",
+        "action": action,
+        "utility_hold": utility,
+        "reason": "FROZEN_AREF_MEAN_Q10_GEOMETRY",
+        "topology_sha256": composer["topology_sha256"],
+    }
+    return {**semantic, "decision_sha256": prereg.stable_hash(semantic)}

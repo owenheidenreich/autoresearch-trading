@@ -1988,6 +1988,17 @@ def test_fit_gate_tamper_matrix(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
 
     authorization = _dummy_authorization()
     monkeypatch.setattr(prereg, "assert_entry_fit_ready", lambda **kwargs: authorization)
+    with pytest.raises(
+        RuntimeError,
+        match="STOP_FOR_CLAUDE_VERIFICATION: corrected-v3.2 release chain is incomplete",
+    ):
+        prereg.assert_fit_authorization_current(authorization)
+    # Test-scoped verified-release fixture: the production guard is exercised
+    # above and remains fail-closed; this fixture reaches the original stale-auth
+    # governance assertions without creating a real Claude release artifact.
+    monkeypatch.setattr(
+        prereg, "_assert_corrected_v32_release_if_present", lambda: None
+    )
     assert prereg.assert_fit_authorization_current(authorization) == authorization
     for field_name, value in (
         ("role", "full_weights"),

@@ -651,6 +651,7 @@ def _authorization_from_access(
 
 def _gate_paths(paths: _ScopePaths) -> tuple[Path, ...]:
     fold_dir = ENTRY_FOLD_ARTIFACT_ROOT / f"fold_{paths.outer_fold}"
+    calibration = _calibration_scope_gate_path(paths)
     if paths.role == "nested_validation":
         prior: list[Path] = []
         assert paths.inner_fold is not None
@@ -662,19 +663,110 @@ def _gate_paths(paths: _ScopePaths) -> tuple[Path, ...]:
                     "entry evidence blocked: prior nested terminal receipt ambiguity"
                 )
             prior.append(result if result.exists() else skip)
-        return tuple([*prior, paths.preopen])
+        return tuple([calibration, *prior, paths.preopen])
     if paths.role == "outer_test_primary":
         return tuple(
-            [
+            [calibration]
+            + [
                 ENTRY_FOLD_ARTIFACT_ROOT / f"fold_{fold}" / "outer_result_receipt.json"
                 for fold in range(1, paths.outer_fold)
             ]
             + [paths.preopen]
         )
     return (
+        calibration,
         fold_dir / "outer_result_receipt.json",
         paths.preopen,
     )
+
+
+def _calibration_scope_gate_path(paths: _ScopePaths) -> Path:
+    fold_dir = ENTRY_FOLD_ARTIFACT_ROOT / f"fold_{paths.outer_fold}"
+    if paths.role == "nested_validation":
+        if paths.inner_fold is None:
+            raise EntryEvidenceGateError(
+                "entry evidence blocked: nested calibration scope is absent"
+            )
+        return fold_dir / (
+            f"nested_inner_{paths.inner_fold}_calibration_scope_gate_receipt.json"
+        )
+    if paths.role == "outer_test_primary":
+        return fold_dir / "entry_calibration_scope_gate_receipt.json"
+    # Shortened diagnostics consume an already-sealed outer result and do not
+    # create a new calibration population.
+    return fold_dir / "entry_calibration_scope_gate_receipt.json"
+
+
+def _validated_calibration_scope_gate_before_open(
+    paths: _ScopePaths,
+) -> tuple[Path, dict[str, Any]]:
+    """Validate exact B-R success before any access-count mutation."""
+
+    path = _calibration_scope_gate_path(paths)
+    receipt = _read_canonical_json(path)
+    scope = (
+        f"NESTED_OUTER_{paths.outer_fold}_INNER_{paths.inner_fold}"
+        if paths.role == "nested_validation"
+        else f"OUTER_{paths.outer_fold}"
+    )
+    required_ids = _foundation.entry_required_calibration_node_ids(scope)
+    expected_keys = {
+        "schema_version",
+        "scope",
+        "status",
+        "required_node_count",
+        "required_node_ids_sha256",
+        "ordered_node_sha256s",
+        "node_vector_sha256",
+        "failure_node_ids",
+        "evidence_access_count",
+        "holdout_open_count",
+        "forbidden_rescue_applied",
+        "receipt_sha256",
+    }
+    _validate_self_hash(receipt)
+    node_hashes = receipt.get("ordered_node_sha256s")
+    if (
+        set(receipt) != expected_keys
+        or receipt.get("schema_version")
+        != "pathd.calibration_scope_gate_receipt.v1"
+        or receipt.get("scope") != scope
+        or receipt.get("status") != "VALID"
+        or receipt.get("required_node_count") != len(required_ids)
+        or receipt.get("required_node_ids_sha256")
+        != _stable_hash(list(required_ids))
+        or type(node_hashes) is not list
+        or len(node_hashes) != len(required_ids)
+        or len(node_hashes) != len(set(node_hashes))
+        or any(type(value) is not str or _HEX64.fullmatch(value) is None for value in node_hashes)
+        or type(receipt.get("node_vector_sha256")) is not str
+        or _HEX64.fullmatch(receipt["node_vector_sha256"]) is None
+        or receipt.get("failure_node_ids") != []
+        or receipt.get("evidence_access_count") != 0
+        or receipt.get("holdout_open_count") != 0
+        or receipt.get("forbidden_rescue_applied") is not False
+    ):
+        raise EntryEvidenceGateError(
+            "entry evidence blocked: exact VALID B-R calibration scope gate absent"
+        )
+    return path, receipt
+
+
+def _prepare_claim_after_calibration_scope_gate(
+    paths: _ScopePaths,
+) -> dict[str, Any]:
+    gate_path, _gate = _validated_calibration_scope_gate_before_open(paths)
+    claim = _prepare_entry_evidence_authorization_claim(
+        role=paths.role,
+        outer_fold=paths.outer_fold,
+        inner_fold=paths.inner_fold,
+    )
+    existing = tuple(claim["open_gate_receipts_sha256"])
+    gate_sha256 = _sha256_nofollow(gate_path)
+    claim["open_gate_receipts_sha256"] = (
+        existing if existing[:1] == (gate_sha256,) else (gate_sha256, *existing)
+    )
+    return claim
 
 
 def _validate_claim_foundation(
@@ -889,15 +981,21 @@ def begin_entry_evidence_once(
     paths = _scope_paths(
         role=role, outer_fold=outer_fold, inner_fold=inner_fold
     )
+    # Pure path/order checks are safe before the B-R read and preserve the
+    # closed terminal precedence for already-skipped/burned/later scopes.
+    _assert_scope_order(paths)
+    _assert_no_later_artifacts(paths)
+    _assert_unopened(paths)
+    # This must remain before lock acquisition and every write.  A missing,
+    # wrong-scope, failed, noncanonical, or drifted B-R receipt therefore has no
+    # access-count side effect and cannot issue a process capability.
+    claim = _prepare_claim_after_calibration_scope_gate(paths)
     lock_fd = _acquire_lock(paths.lock)
     keep_lock = False
     try:
         _assert_scope_order(paths)
         _assert_no_later_artifacts(paths)
         _assert_unopened(paths)
-        claim = _prepare_entry_evidence_authorization_claim(
-            role=role, outer_fold=outer_fold, inner_fold=inner_fold
-        )
         claim_json = _claim_to_json(claim)
         transaction_id = str(uuid.uuid4())
         access = _access_receipt(

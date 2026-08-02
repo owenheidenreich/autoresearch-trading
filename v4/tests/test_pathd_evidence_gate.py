@@ -89,6 +89,31 @@ def isolated_gate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, 
         )
         paths.preopen.parent.mkdir(parents=True, exist_ok=True)
         paths.preopen.write_bytes(b"preopen\n")
+        scope = (
+            f"NESTED_OUTER_{outer_fold}_INNER_{inner_fold}"
+            if role == "nested_validation"
+            else f"OUTER_{outer_fold}"
+        )
+        node_ids = foundation.entry_required_calibration_node_ids(scope)
+        gate_semantic = {
+            "schema_version": "pathd.calibration_scope_gate_receipt.v1",
+            "scope": scope,
+            "status": "VALID",
+            "required_node_count": len(node_ids),
+            "required_node_ids_sha256": gate._stable_hash(list(node_ids)),
+            "ordered_node_sha256s": [
+                f"{index + 1:064x}" for index in range(len(node_ids))
+            ],
+            "node_vector_sha256": "a" * 64,
+            "failure_node_ids": [],
+            "evidence_access_count": 0,
+            "holdout_open_count": 0,
+            "forbidden_rescue_applied": False,
+        }
+        gate._write_exclusive_json(
+            gate._calibration_scope_gate_path(paths),
+            {**gate_semantic, "receipt_sha256": gate._stable_hash(gate_semantic)},
+        )
         return paths
 
     def claim(
@@ -256,6 +281,39 @@ def test_access_count_zero_to_one_and_decode_precedence(
     assert observed == [True]
     with pytest.raises(gate.EntryEvidenceGateError, match="already consumed"):
         gate.claim_entry_evidence_decode_once(authorization)
+
+
+@pytest.mark.parametrize("failure", ("ABSENT", "WRONG_SCOPE", "FAILED"))
+def test_direct_gate_call_requires_exact_valid_br_before_any_open(
+    isolated_gate: dict[str, Any], failure: str
+) -> None:
+    paths = _install_claim(isolated_gate)
+    scope_path = gate._calibration_scope_gate_path(paths)
+    receipt = gate._read_canonical_json(scope_path)
+    scope_path.unlink()
+    if failure != "ABSENT":
+        semantic = dict(receipt)
+        semantic.pop("receipt_sha256")
+        if failure == "WRONG_SCOPE":
+            semantic["scope"] = "NESTED_OUTER_1_INNER_2"
+        else:
+            semantic["status"] = "FAILED_CLOSED"
+            semantic["failure_node_ids"] = [
+                "ENTRY::NESTED_OUTER_1_INNER_1::HGB::ACTION_COMPOSITE::WAIT"
+            ]
+        gate._write_exclusive_json(
+            scope_path,
+            {**semantic, "receipt_sha256": gate._stable_hash(semantic)},
+        )
+
+    with pytest.raises(gate.EntryEvidenceGateError):
+        gate.begin_entry_evidence_once(
+            role="nested_validation", outer_fold=1, inner_fold=1
+        )
+
+    assert not paths.access.exists()
+    assert not paths.lock.exists()
+    assert gate._ACTIVE_CAPABILITIES == {}
 
 
 def test_concurrent_and_repeated_open_are_impossible(

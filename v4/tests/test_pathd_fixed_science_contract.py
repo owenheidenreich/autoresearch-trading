@@ -646,6 +646,28 @@ def test_nested_and_outer_evidence_scopes_open_and_seal_exactly_once(tmp_path: P
     sessions = ('2026-01-02',)
     claim = {'role': 'nested_validation', 'outer_fold': 1, 'inner_fold': 1, 'sessions': sessions, 'sessions_sha256_newline': prereg.canonical_session_hash(sessions), 'preregistration_sha256': '1' * 64, 'session_assignments_sha256': '2' * 64, 'source_hash_policy_sha256': '3' * 64, 'corpus_integrity_receipt_sha256': '4' * 64, 'lineage_receipt_sha256': '5' * 64, 'machinery_receipt_sha256': '6' * 64, 'fit_environment_sha256': '7' * 64, 'open_gate_receipts_sha256': ('8' * 64,)}
     monkeypatch.setattr(gate, '_prepare_entry_evidence_authorization_claim', lambda **_kw: claim)
+    scope = 'NESTED_OUTER_1_INNER_1'
+    nodes = prereg.entry_required_calibration_node_ids(scope)
+    gate_semantic = {
+        'schema_version': 'pathd.calibration_scope_gate_receipt.v1',
+        'scope': scope,
+        'status': 'VALID',
+        'required_node_count': len(nodes),
+        'required_node_ids_sha256': prereg.stable_hash(list(nodes)),
+        'ordered_node_sha256s': [f'{index + 1:064x}' for index in range(len(nodes))],
+        'node_vector_sha256': 'f' * 64,
+        'failure_node_ids': [],
+        'evidence_access_count': 0,
+        'holdout_open_count': 0,
+        'forbidden_rescue_applied': False,
+    }
+    gate_path = gate._calibration_scope_gate_path(
+        gate._scope_paths(role='nested_validation', outer_fold=1, inner_fold=1)
+    )
+    gate._write_exclusive_json(
+        gate_path,
+        {**gate_semantic, 'receipt_sha256': prereg.stable_hash(gate_semantic)},
+    )
     authorization = gate.begin_entry_evidence_once(role='nested_validation', outer_fold=1, inner_fold=1)
     assert gate.inspect_entry_evidence_state(role='nested_validation', outer_fold=1, inner_fold=1)['state'] == gate.OPEN_ACTIVE
     monkeypatch.setattr(gate, 'read_frozen_entry_evidence_authorization', lambda **_kwargs: authorization)
@@ -1186,9 +1208,11 @@ def test_context_diagnostics_are_fixed_one_dimensional_post_primary_nonalpha_tab
         missing_spx = {'source_receipts': [{'source': source} for source in ('VIX', 'ES', 'VX')], 'source_receipts_root_sha256': '0' * 64}
         with pytest.raises((RuntimeError, TypeError, ValueError)):
             validator(missing_spx, **kwargs)
-    source = inspect.getsource(runner.run_fixed_entry_context_diagnostics)
-    assert 'SPX_REFERENCE' in source and 'source_receipts_root_sha256' in source
-    assert 'assert_context_diagnostics_authorization_current' in source
-    assert 'EntryContextAnchorRowV1' in source and 'context_age_quantile_type7' in source
+    from v4.research import pathd_entry_execution_v32 as execution
+    producer_source = inspect.getsource(execution.build_spx_reference_transaction)
+    writer_source = inspect.getsource(runner.run_fixed_entry_context_diagnostics)
+    assert 'SPX_REFERENCE' in producer_source and 'source_receipts_root_sha256' in producer_source
+    assert 'assert_context_diagnostics_authorization_current' in writer_source
+    assert 'EntryContextAnchorRowV1' in writer_source and 'context_age_quantile_type7' in writer_source
     pooled_gate_json = json.dumps(prereg.entry_pooled_gate_input_spec(), sort_keys=True).lower()
     assert not any(token in pooled_gate_json for token in ('vix', 'spx_reference', 'context_diagnostics', 'anchor_context_rows', 'diagnostic_inventory_receipt'))

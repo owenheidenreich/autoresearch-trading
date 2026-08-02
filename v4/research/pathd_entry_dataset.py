@@ -15,6 +15,7 @@ import re
 import stat
 from typing import Any
 import uuid
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import pandas as pd
@@ -38,6 +39,259 @@ assert_fit_authorization_current = prereg.assert_fit_authorization_current
 assert_entry_evidence_authorization_current = (
     prereg.assert_entry_evidence_authorization_current
 )
+
+CORRECTED_V32_EXECUTABLE_ROOT = prereg.REPO_ROOT / (
+    "v4/audit/autoresearch/"
+    "protocol101_pathd_entry_exit_model_research_corrected_v3_2_"
+    "executable_2026_08_01"
+)
+CORRECTED_V32_EXECUTABLE_GENERATION_PATH = (
+    CORRECTED_V32_EXECUTABLE_ROOT / "executable_generation.json"
+)
+CORRECTED_V32_EXECUTABLE_BRIDGE_PATH = (
+    CORRECTED_V32_EXECUTABLE_ROOT / "implementation_receipt.json"
+)
+CORRECTED_V32_TEST_RECONCILIATION_AUTHORIZATION_PATH = (
+    CORRECTED_V32_EXECUTABLE_ROOT / "registered_test_reconciliation_authorization.json"
+)
+CORRECTED_V32_TEST_RECONCILIATION_RECEIPT_PATH = (
+    CORRECTED_V32_EXECUTABLE_ROOT / "registered_test_reconciliation_receipt.json"
+)
+CORRECTED_V32_REGISTERED_TEST_PATHS = (
+    "v4/tests/test_pathd_entry_exit_gate_frozen.py",
+    "v4/tests/test_pathd_entry_exit_research.py",
+    "v4/tests/test_pathd_evidence_gate.py",
+    "v4/tests/test_pathd_holdout_gate.py",
+    "v4/tests/test_pathd_fixed_science_contract.py",
+    "v4/tests/test_pathd_feature_live_twin.py",
+    "v4/tests/test_pathd_evidence_gate_capability_hardening.py",
+    "v4/tests/test_pathd_foundation_correction.py",
+    "v4/tests/test_pathd_corrected_v32_executable_build.py",
+)
+CORRECTED_V32_RECONCILER_SOURCE_PATH = (
+    "v4/research/pathd_v32_test_reconciliation.py"
+)
+
+
+def _validate_self_hashed_mapping(value: dict[str, Any], field: str) -> None:
+    semantic = dict(value)
+    digest = semantic.pop(field, None)
+    if digest != prereg.stable_hash(semantic):
+        raise RuntimeError(f"corrected-v3.2 {field} self-hash drift")
+
+
+def _v32_foundation_from_frozen_generation(
+    generation: dict[str, Any],
+) -> tuple[Path, dict[str, Any]]:
+    root = prereg.REPO_ROOT / generation["foundation_root"]
+    expected_names = {
+        "feature_lineage.json", "foundation_restoration_receipt.json",
+        "preregistration.json", "preregistration.sha256",
+        "preregistration_freeze_receipt.json", "session_assignments.json",
+    }
+    if (
+        root.is_symlink()
+        or not root.is_dir()
+        or {path.name for path in root.iterdir()} != expected_names
+        or prereg.sha256_path(root / "preregistration.json")
+        != generation["foundation_preregistration_sha256"]
+    ):
+        raise RuntimeError("corrected-v3.2 frozen foundation byte inventory drift")
+    restoration = prereg.read_json(root / "foundation_restoration_receipt.json")
+    freeze = prereg.read_json(root / "preregistration_freeze_receipt.json")
+    _validate_self_hashed_mapping(restoration, "receipt_sha256")
+    _validate_self_hashed_mapping(freeze, "receipt_sha256")
+    if (
+        restoration.get("foundation_generation_sha256")
+        != generation["foundation_generation_sha256"]
+        or freeze.get("preregistration_sha256")
+        != generation["foundation_preregistration_sha256"]
+        or freeze.get("source_hash_policy_sha256")
+        != generation["source_hash_policy_sha256"]
+    ):
+        raise RuntimeError("corrected-v3.2 frozen foundation semantic drift")
+    return root, prereg.read_json(root / "preregistration.json")
+
+
+def _validate_v32_test_reconciliation(
+    *, preregistration: dict[str, Any], frozen_implementations: list[dict[str, str]],
+    current_implementations: list[dict[str, str]], base_bridge_sha256: str,
+    foundation_generation_sha256: str, source_hash_policy_sha256: str,
+) -> dict[str, Any]:
+    authorization = prereg.read_json(
+        CORRECTED_V32_TEST_RECONCILIATION_AUTHORIZATION_PATH
+    )
+    _validate_self_hashed_mapping(authorization, "receipt_sha256")
+    source_changes = [
+        {"path": frozen["path"], "frozen_sha256": frozen["sha256"], "current_sha256": current["sha256"]}
+        for frozen, current in zip(
+            frozen_implementations, current_implementations, strict=True
+        )
+        if frozen != current
+    ]
+    test_labels = authorization.get("registered_test_paths")
+    if test_labels != list(CORRECTED_V32_REGISTERED_TEST_PATHS):
+        raise RuntimeError("corrected-v3.2 reconciliation test registry drift")
+    test_changes = []
+    for label in test_labels:
+        frozen = preregistration["source_hashes_at_freeze"].get(label)
+        current = prereg.sha256_path(prereg.REPO_ROOT / label)
+        if frozen != current:
+            test_changes.append(
+                {"path": label, "frozen_sha256": frozen, "current_sha256": current}
+            )
+    if (
+        authorization.get("schema_version")
+        != "pathd.corrected_v32.registered_test_reconciliation_authorization.v1"
+        or authorization.get("status")
+        != "AUTHORIZED_TEST_ONLY_UNRELEASED_NO_EXECUTION"
+        or authorization.get("base_implementation_receipt_sha256")
+        != base_bridge_sha256
+        or authorization.get("foundation_generation_sha256")
+        != foundation_generation_sha256
+        or authorization.get("source_hash_policy_sha256")
+        != source_hash_policy_sha256
+        or authorization.get("reconciler_source_path")
+        != CORRECTED_V32_RECONCILER_SOURCE_PATH
+        or authorization.get("reconciler_source_sha256")
+        != prereg.sha256_path(prereg.REPO_ROOT / CORRECTED_V32_RECONCILER_SOURCE_PATH)
+        or authorization.get("source_changes") != source_changes
+        or authorization.get("test_changes") != test_changes
+        or any(authorization.get(key) is not False for key in (
+            "model_fit_executed", "corpus_decoded", "evidence_opened",
+            "foundation_or_machinery_sealed_against_corpus",
+            "holdout_opened", "live_or_broker_action_executed",
+        ))
+        or authorization.get("holdout_open_count") != 0
+    ):
+        raise RuntimeError("corrected-v3.2 test reconciliation authorization drift")
+    if not CORRECTED_V32_TEST_RECONCILIATION_RECEIPT_PATH.exists():
+        return {
+            "schema_version": authorization["schema_version"],
+            "status": "TEST_RECONCILIATION_AUTHORIZED_UNRELEASED",
+            "foundation_generation_sha256": authorization[
+                "foundation_generation_sha256"
+            ],
+            "test_reconciliation_authorization_sha256": prereg.sha256_path(
+                CORRECTED_V32_TEST_RECONCILIATION_AUTHORIZATION_PATH
+            ),
+            "holdout_open_count": 0,
+        }
+    receipt = prereg.read_json(CORRECTED_V32_TEST_RECONCILIATION_RECEIPT_PATH)
+    _validate_self_hashed_mapping(receipt, "receipt_sha256")
+    junit_path = prereg.REPO_ROOT / receipt.get("junit_path", "")
+    if not junit_path.is_file() or junit_path.is_symlink():
+        raise RuntimeError("corrected-v3.2 reconciliation JUnit is absent or unsafe")
+    suite = ET.parse(junit_path).getroot()
+    cases = suite.findall(".//testcase")
+    failures = sum(len(case.findall("failure")) for case in cases)
+    errors = sum(len(case.findall("error")) for case in cases)
+    skipped = sum(len(case.findall("skipped")) for case in cases)
+    if (
+        receipt.get("schema_version")
+        != "pathd.corrected_v32.registered_test_reconciliation_receipt.v1"
+        or receipt.get("status") != "PASS_FULL_REGISTERED_PATHD_SUITE_UNRELEASED"
+        or receipt.get("authorization_sha256")
+        != prereg.sha256_path(CORRECTED_V32_TEST_RECONCILIATION_AUTHORIZATION_PATH)
+        or receipt.get("source_changes") != source_changes
+        or receipt.get("test_changes") != test_changes
+        or receipt.get("registered_test_paths")
+        != list(CORRECTED_V32_REGISTERED_TEST_PATHS)
+        or receipt.get("junit_sha256") != prereg.sha256_path(junit_path)
+        or receipt.get("summary")
+        != {
+            "tests": len(cases), "passed": len(cases), "failures": failures,
+            "errors": errors, "skipped": skipped,
+        }
+        or failures != 0 or errors != 0 or skipped != 0
+        or any(receipt.get(key) is not False for key in (
+            "model_fit_executed", "corpus_decoded", "evidence_opened",
+            "foundation_or_machinery_sealed_against_corpus",
+            "holdout_opened", "live_or_broker_action_executed",
+        ))
+        or receipt.get("holdout_open_count") != 0
+    ):
+        raise RuntimeError("corrected-v3.2 registered test reconciliation drift")
+    return {
+        **receipt,
+        "foundation_generation_sha256": authorization[
+            "foundation_generation_sha256"
+        ],
+    }
+
+
+def assert_corrected_v32_executable_bridge() -> dict[str, Any]:
+    """Rehash the v3.2 foundation and implementation chain before decode."""
+
+    generation = prereg.read_json(CORRECTED_V32_EXECUTABLE_GENERATION_PATH)
+    generation_semantic = dict(generation)
+    generation_digest = generation_semantic.pop("generation_sha256", None)
+    if generation_digest != prereg.stable_hash(generation_semantic):
+        raise RuntimeError("corrected-v3.2 executable generation drift")
+    V32_ROOT, preregistration = _v32_foundation_from_frozen_generation(generation)
+    if not V32_ROOT.exists() and not CORRECTED_V32_EXECUTABLE_ROOT.exists():
+        return {"status": "PRE_V32_FOUNDATION_BUILD_ONLY"}
+    if (
+        not CORRECTED_V32_EXECUTABLE_GENERATION_PATH.is_file()
+        or CORRECTED_V32_EXECUTABLE_GENERATION_PATH.is_symlink()
+        or not CORRECTED_V32_EXECUTABLE_BRIDGE_PATH.is_file()
+        or CORRECTED_V32_EXECUTABLE_BRIDGE_PATH.is_symlink()
+    ):
+        raise RuntimeError("corrected-v3.2 executable generation is incomplete")
+    policy = preregistration["source_hash_policy"]
+    enforcement = policy["executable_generation_enforcement"]
+    frozen_implementations = [
+        {"path": label, "sha256": preregistration["source_hashes_at_freeze"][label]}
+        for label in enforcement["source_paths"]
+    ]
+    current_implementations = [
+        {"path": label, "sha256": prereg.sha256_path(prereg.REPO_ROOT / label)}
+        for label in enforcement["source_paths"]
+    ]
+    test_path = CORRECTED_V32_EXECUTABLE_ROOT / "synthetic_test_receipt.json"
+    test_receipt = prereg.read_json(test_path)
+    test_semantic = dict(test_receipt)
+    test_digest = test_semantic.pop("receipt_sha256", None)
+    receipt = prereg.read_json(CORRECTED_V32_EXECUTABLE_BRIDGE_PATH)
+    semantic = dict(receipt)
+    digest = semantic.pop("receipt_sha256", None)
+    if (
+        generation_digest != prereg.stable_hash(generation_semantic)
+        or generation.get("foundation_generation_sha256")
+        != prereg.read_json(V32_ROOT / "foundation_restoration_receipt.json")["foundation_generation_sha256"]
+        or generation.get("source_hash_policy_sha256")
+        != prereg.stable_hash(preregistration["source_hash_policy"])
+        or test_digest != prereg.stable_hash(test_semantic)
+        or test_receipt.get("status") != "PASS_SYNTHETIC_PRODUCTION_PATH"
+        or test_receipt.get("pytest_exit_code") != 0
+        or receipt.get("schema_version")
+        != "pathd.corrected_v32.executable_implementation_receipt.v1"
+        or receipt.get("status") != "FROZEN_EXECUTABLE_BUILT_NOT_RUN"
+        or receipt.get("foundation_generation_sha256")
+        != generation["foundation_generation_sha256"]
+        or receipt.get("executable_generation_sha256") != generation_digest
+        or receipt.get("implementations") != frozen_implementations
+        or receipt.get("implementations_sha256") != prereg.stable_hash(frozen_implementations)
+        or receipt.get("synthetic_test_receipt_sha256") != prereg.sha256_path(test_path)
+        or any(receipt.get(key) is not False for key in (
+            "model_fit_executed", "corpus_decoded", "evidence_opened",
+        ))
+        or receipt.get("holdout_open_count") != 0
+        or digest != prereg.stable_hash(semantic)
+    ):
+        raise RuntimeError("corrected-v3.2 executable bridge drift")
+    if current_implementations != frozen_implementations:
+        return _validate_v32_test_reconciliation(
+            preregistration=preregistration,
+            frozen_implementations=frozen_implementations,
+            current_implementations=current_implementations,
+            base_bridge_sha256=prereg.sha256_path(CORRECTED_V32_EXECUTABLE_BRIDGE_PATH),
+            foundation_generation_sha256=generation["foundation_generation_sha256"],
+            source_hash_policy_sha256=generation["source_hash_policy_sha256"],
+        )
+    return receipt
+
+
 
 _MINUTE_NS = 60_000_000_000
 _SECOND_NS = 1_000_000_000
@@ -882,11 +1136,13 @@ def _validate_dataset(
 
 
 def validate_entry_fit_dataset(dataset: Any, /, *, authorization: Any) -> Any:
+    assert_corrected_v32_executable_bridge()
     current = assert_fit_authorization_current(authorization)
     return _validate_dataset(dataset, authorization=current, expected_type=EntryFitDatasetV1)
 
 
 def validate_entry_evidence_dataset(dataset: Any, /, *, authorization: Any) -> Any:
+    assert_corrected_v32_executable_bridge()
     current = assert_entry_evidence_authorization_current(authorization)
     return _validate_dataset(
         dataset, authorization=current, expected_type=EntryEvidenceDatasetV1
@@ -1685,6 +1941,7 @@ def _decode_verified_entry_files(rows: tuple[dict[str, Any], ...]) -> Any:
 
 
 def read_verified_entry_session(authorization: Any, /, *, session: str) -> _VerifiedEntrySessionRead:
+    assert_corrected_v32_executable_bridge()
     current = assert_fit_authorization_current(authorization)
     if session not in current.sessions:
         raise RuntimeError("session is outside fit authorization")
@@ -1698,6 +1955,7 @@ def read_verified_entry_session(authorization: Any, /, *, session: str) -> _Veri
 def read_verified_entry_evidence_session(
     authorization: Any, /, *, session: str
 ) -> _VerifiedEntrySessionRead:
+    assert_corrected_v32_executable_bridge()
     current = assert_entry_evidence_authorization_current(authorization)
     if session not in current.sessions:
         raise RuntimeError("session is outside evidence authorization")
@@ -1754,6 +2012,7 @@ def _assemble_dataset(authorization: Any, reads: tuple[_VerifiedEntrySessionRead
 
 
 def load_authorized_entry_dataset(authorization: Any, /) -> EntryFitDatasetV1:
+    assert_corrected_v32_executable_bridge()
     current = assert_fit_authorization_current(authorization)
     authorization_sha256 = prereg.stable_hash(current.to_dict())
     cached = _FIT_DATASET_CACHE.get(authorization_sha256)
@@ -1804,6 +2063,7 @@ def release_authorized_entry_fit_dataset(authorization: Any, /) -> None:
 
 
 def load_authorized_entry_evidence_dataset(authorization: Any, /) -> EntryEvidenceDatasetV1:
+    assert_corrected_v32_executable_bridge()
     from v4.research.pathd_evidence_gate import claim_entry_evidence_decode_once
 
     current = assert_entry_evidence_authorization_current(authorization)
