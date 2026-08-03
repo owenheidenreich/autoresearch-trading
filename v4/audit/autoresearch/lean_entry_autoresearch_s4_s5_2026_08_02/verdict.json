@@ -1,0 +1,16 @@
+{
+ "candidate_trials": 72,
+ "claim_boundary": "research-only; not promotable; no live/broker/runtime change",
+ "holdout_opened": false,
+ "model_artifact_created": false,
+ "n_survivors": 0,
+ "next_direction_if_null": "exit/lifecycle",
+ "paired_control_trials": 72,
+ "preregistration_sha256": "e0a9a6a434efb395380c7e54325c54ec12a30c5530aee0ff21c5232b4df50347",
+ "result": "NULL_NO_NEW_ENTRY_EDGE",
+ "schema_version": "lean_autoresearch.s4_s5.verdict.v1",
+ "search_results_sha256": "ee0d9eceb1eb4d02293e62f708ba3cd7c11a04f0c37b5bee9ee2a610bbc61ab4",
+ "selection_metric": "worst_fold_econ_then_incremental_econ",
+ "verdict_sha256": "fa0087c15f80cf73c29ef8396895909b6fe395530cf7f99dfd7cf696d76b57f6",
+ "winner": null
+}

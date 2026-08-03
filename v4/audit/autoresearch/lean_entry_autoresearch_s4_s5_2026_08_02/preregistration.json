@@ -1,0 +1,169 @@
+{
+ "budget": {
+  "multiplicity_denominator": 144,
+  "new_candidate_configurations": 72,
+  "paired_attribution_control_configurations": 72,
+  "total_evaluated_configurations": 144
+ },
+ "candidate_grid_sha256": "90f463f69f50dbed822f1b4386af505d8d8f4088e66bbb669f85d6641f5d4b2b",
+ "created_at_utc": "2026-08-03T00:26:00.147967+00:00",
+ "development_corpus": {
+  "corpus_root": "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31",
+  "development_session_count": 214,
+  "files_sha256": "1b4ce88c05915dc1ceaa90fdffcf03b534e2a20d15b8b31cbab3e9299f95dcec",
+  "source_file_count": 642
+ },
+ "feature_hypothesis": {
+  "S4": [
+   "spx_vwap_gap_points",
+   "spx_vwap_gap_bps",
+   "spx_vwap_gap_over_session_range",
+   "session_range_bps",
+   "momentum_5m_bps",
+   "momentum_15m_bps",
+   "momentum_5m_over_session_range",
+   "momentum_15m_over_session_range",
+   "omar_clipped",
+   "vwap_side_align",
+   "omar_side_align",
+   "momentum15_side_align",
+   "straddle_mid_spot_bps",
+   "put_call_mid_ratio",
+   "side_smile_slope",
+   "bs_delta",
+   "bs_gamma",
+   "is_call",
+   "vix_level",
+   "vix_change_5m",
+   "vix_change_15m",
+   "vix_minus_spx_rv15_pct_points",
+   "minute_of_session",
+   "minutes_to_1555",
+   "spx_rv_5m_annualized_pct",
+   "spx_rv_15m_annualized_pct",
+   "range_expansion_5m_bps",
+   "range_expansion_15m_bps"
+  ],
+  "S5": [
+   "spx_vwap_gap_points",
+   "spx_vwap_gap_bps",
+   "spx_vwap_gap_over_session_range",
+   "session_range_bps",
+   "momentum_5m_bps",
+   "momentum_15m_bps",
+   "momentum_5m_over_session_range",
+   "momentum_15m_over_session_range",
+   "omar_clipped",
+   "vwap_side_align",
+   "omar_side_align",
+   "momentum15_side_align",
+   "straddle_mid_spot_bps",
+   "put_call_mid_ratio",
+   "side_smile_slope",
+   "bs_delta",
+   "bs_gamma",
+   "is_call",
+   "size_imbalance",
+   "depth_total",
+   "opt_spread",
+   "iv",
+   "theta",
+   "vix_level",
+   "vix_change_5m",
+   "vix_change_15m",
+   "vix_minus_spx_rv15_pct_points",
+   "minute_of_session",
+   "minutes_to_1555",
+   "spx_rv_5m_annualized_pct",
+   "spx_rv_15m_annualized_pct",
+   "range_expansion_5m_bps",
+   "range_expansion_15m_bps"
+  ],
+  "causal_source": "Official ThetaData SPX/VIX 1m history rebuilt under v3.2 BAR_OPEN_TIMESTAMP +60-second availability; both current source clocks must be <= decision_time",
+  "formulas": {
+   "range_expansion": "(cumulative session_range[t]-session_range[t-5 or t-15])/SPX[t]*1e4",
+   "spx_realized_vol": "5m/15m annualized RMS log-return volatility using completed minutes",
+   "time": "New_York minutes since 09:30 and minutes remaining to 15:55",
+   "vix_change_15m": "vix[t] - vix[t-15]",
+   "vix_change_5m": "vix[t] - vix[t-5]",
+   "vix_level": "current completed-minute vix_close",
+   "vix_realized_spread": "vix[t] - 100*sqrt(mean(last 15 one-minute SPX log-return^2)*252*390)"
+  },
+  "live_twin": "v4.live.protocol101_live_entry LiveIndexState.market_window supplies the same completed-minute SPX/VIX values and derives cumulative session_range with a completed-minute cutoff; exact historical selection is event_time+60<=decision",
+  "new_family": [
+   "vix_level",
+   "vix_change_5m",
+   "vix_change_15m",
+   "vix_minus_spx_rv15_pct_points",
+   "minute_of_session",
+   "minutes_to_1555",
+   "spx_rv_5m_annualized_pct",
+   "spx_rv_15m_annualized_pct",
+   "range_expansion_5m_bps",
+   "range_expansion_15m_bps"
+  ],
+  "paired_baseline": {
+   "S4": "S0",
+   "S5": "S3"
+  },
+  "role": "model inputs only; never gates"
+ },
+ "guards": {
+  "G1_controls_and_feature_attribution": "candidate mean OOF rho > shuffled +0.01; candidate mean econ > shuffled and sign-reversed; candidate mean rho > paired old-family baseline +0.01; candidate mean econ > paired baseline; incremental rho/econ nonnegative in fold5; and incremental econ >0 in >=4/5 folds",
+  "G2_forward_stability": "fold5 candidate rho>=0 and econ>=0; candidate rho>0 in >=4/5 and econ>0 in >=4/5",
+  "G3_minimum_power": "min over folds n_enter>=40 and n_sessions>=20",
+  "G4_economic_bar": "mean candidate econ>0 and candidate econ>0 in >=4/5 folds",
+  "G5_leakage_tripwire": "max absolute fold OOF rho<=0.5"
+ },
+ "hard_rule": "No entry-model artifact unless one candidate passes all development guards, is selected before holdout access, and passes the one-shot holdout bar",
+ "holdout_protocol": {
+  "bootstrap_draws": 100000,
+  "bootstrap_seed": 5105,
+  "model_artifact_rule": "write only after pass; otherwise no model artifact",
+  "open_count_allowed": 1,
+  "pass_bar": "OOF-style holdout rho>0, session-clustered econ>0, n_enter>=40, n_sessions>=20, and conservative one-sided bootstrap LCB at alpha=0.05/144>0",
+  "sealed_during_search": true,
+  "sessions": "protected_holdout_primary_non_degraded_29",
+  "winner_frozen_before_access": true
+ },
+ "paired_control_grid_sha256": "d6194d5ea96665d9c1a3f9ae58424e5d1f18c61efa0baff22a72853fd65091aa",
+ "preregistration_sha256": "e0a9a6a434efb395380c7e54325c54ec12a30c5530aee0ff21c5232b4df50347",
+ "purpose": "Fresh causal volatility/regime/time entry hypothesis; NULL is first-class; research-only and not promotable",
+ "schema_version": "lean_autoresearch.s4_s5.preregistration.v1",
+ "search_space": {
+  "exit_policy": [
+   "ask_to_bid_stop50_target100_hold25m",
+   "ask_to_bid_stop100_target300_hold120m",
+   "ask_to_bid_stop100_target999_hold384m"
+  ],
+  "feature_sets": [
+   "S4",
+   "S5"
+  ],
+  "max_depth": [
+   3,
+   4
+  ],
+  "min_samples_leaf": [
+   30,
+   50
+  ],
+  "threshold": [
+   "gt0",
+   "gt_fee_reserve",
+   "gt_session_q60"
+  ]
+ },
+ "selection": {
+  "eligible": "all five guards pass",
+  "metric": "worst_fold_econ_then_incremental_econ",
+  "ordering": "descending worst-fold econ, descending mean paired incremental econ, descending mean OOF rho, then ascending canonical config SHA-256"
+ },
+ "source_hashes": {
+  "harness.py": "c85ea6763e321d4fc83ab56a31ddac71b009f2f4a26760f39c0629f8a1703a5b",
+  "search_s4_s5.py": "769bd135202c39f27f8dc62452597cfe25ef81c83015c5342f260748b0b372a3",
+  "session_assignments.json": "431cd14879ad6a14b278cb2683e4f3b860eef960e6b74a4f0edb3e620cf82475",
+  "spent_s0_s3_preregistration.json": "11165f4f6c804ab72209ab1246ad85871e373bccf6b881c2e956e8bb277b0e2a"
+ },
+ "supersedes_spent_grid": "v4/audit/autoresearch/lean_entry_autoresearch_2026_08_02/preregistration.json"
+}

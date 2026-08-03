@@ -1,0 +1,11 @@
+{
+  "holdout_open_count": 1,
+  "model_sha256": "c5d0115ba187ae8f443ac57ea813fa74cc689c03bbf546cb72d8262bc65f463e",
+  "preregistration_sha256": "a579adf4ca868cdbce5c544fe25495d372eaf6136618066637e562d3c43b1aa7",
+  "receipt_sha256": "b7295f80570ff2f3386f19881c15784d850a430266cb915cd1a2a58793af57a3",
+  "result_sha256": "8c8095c08a5d2ff4d378cf4d9978ebf907d6ec51cc57e6c7bc146516582ba040",
+  "result_status": "CONFIRMED_EDGE",
+  "schema_version": "autoresearch_v2.holdout_access_receipt.v1",
+  "sessions_sha256": "9b5cff779cb422a5f871d3ef67d8001586f767c3ce91a71077cd214f1b00e11b",
+  "status": "ACCESS_COMPLETE"
+}

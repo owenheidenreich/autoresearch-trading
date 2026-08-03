@@ -1,0 +1,69 @@
+{
+  "candidate_policies": [
+    "signed18_model_side_nearest",
+    "signed18_momentum_side_nearest",
+    "full25_momentum_side_nearest"
+  ],
+  "contract_rule": "nearest absolute moneyness at signal time on the selected side",
+  "development_observation": "Prior corrected attribution found timing/side policy value but no contract-ranking value; this family removes learned contract ranking.",
+  "epoch_id": "development_2025-08-01_2026-06-09_corrected_v3_two_clock",
+  "family": [
+    "signed18_model_side_nearest_vs_deterministic",
+    "signed18_model_side_nearest_vs_shuffled_momentum_side_nearest",
+    "signed18_momentum_side_nearest_vs_deterministic",
+    "signed18_momentum_side_nearest_vs_shuffled_momentum_side_nearest",
+    "full25_momentum_side_nearest_vs_deterministic",
+    "full25_momentum_side_nearest_vs_shuffled_momentum_side_nearest",
+    "signed18_model_side_nearest_vs_signed18_momentum_side_nearest",
+    "full25_momentum_side_nearest_vs_signed18_momentum_side_nearest"
+  ],
+  "frozen_exit": "ask_to_bid_stop50_target100_hold25m",
+  "holdout_access_count": 0,
+  "hypotheses": [
+    {
+      "hypothesis_id": "entry_signal_policy_signed18_model_side_nearest_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_signal_policy_2026_08_02/entry_signal_policy_signed18_model_side_nearest_short25_v1.json",
+      "semantic_hash": "d418256aa639c0b14e335cc561f77c7493f4156b5b5e5447f8e1ed7b69bd3fd1"
+    },
+    {
+      "hypothesis_id": "entry_signal_policy_signed18_momentum_side_nearest_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_signal_policy_2026_08_02/entry_signal_policy_signed18_momentum_side_nearest_short25_v1.json",
+      "semantic_hash": "3c32c445aad2db236e19236b3f42d5f5e9cfe866cbbf7c69a9e5e2ce760772f5"
+    },
+    {
+      "hypothesis_id": "entry_signal_policy_full25_momentum_side_nearest_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_signal_policy_2026_08_02/entry_signal_policy_full25_momentum_side_nearest_short25_v1.json",
+      "semantic_hash": "7139cc42c0f2581c88c7a691601ebbe07af0733d608a21551c575b75d8512d45"
+    }
+  ],
+  "preregistration_sha256": "fa023990a71a0efc8b2efc2c0a5ae205acbe65245c75f3aede958c9043752e49",
+  "qualification": {
+    "absolute_candidate": "positive strict-serial PnL in at least 4 of 5 folds and total PnL>0",
+    "maximum_mde_dollars_per_session": 250.0,
+    "practical_effect_dollars_per_session": 100.0,
+    "required_for_each_control": [
+      "family_maxT_p<=0.05",
+      "screen_mean_delta>=100",
+      "screen_MDE80<=250",
+      "strict_serial_mean_delta>=100",
+      "strict_serial_one_sided_p<=0.05",
+      "strict_serial_MDE80<=250",
+      "strict_serial_delta_positive_in_at_least_4_of_5_folds"
+    ],
+    "winner_order": [
+      "signed18_model_side_nearest",
+      "signed18_momentum_side_nearest",
+      "full25_momentum_side_nearest"
+    ]
+  },
+  "required_controls": {
+    "deterministic": "first decision per fixed block, momentum side, nearest ATM",
+    "shuffled_momentum_side_nearest": "first qualifying within-training-session shuffled-target signal per block, momentum side, nearest ATM"
+  },
+  "schema_version": "autoresearch_v2.signal_policy_preregistration.v1",
+  "side_rules": {
+    "model_side": "side of the highest OOF candidate at the first qualifying block decision",
+    "momentum_side": "call iff completed-minute momentum_15m_bps>=0 else put"
+  },
+  "status": "FROZEN_BEFORE_RESULTS"
+}

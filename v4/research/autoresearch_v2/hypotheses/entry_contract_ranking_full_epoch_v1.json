@@ -1,0 +1,203 @@
+{
+  "arms": [
+    "model_ranked_contract",
+    "nearest_atm"
+  ],
+  "claim": "OOF within-minute contract ranking improves frozen-exit value beyond nearest ATM over the full two-clock development epoch.",
+  "component": "contract_choice",
+  "compute_budget": {
+    "max_minutes": 45,
+    "max_permutations": 4999
+  },
+  "development_epoch": {
+    "allowed_role": "development",
+    "confirmation_rule": "fresh_epoch_once_then_roll_to_development",
+    "epoch_id": "development_2025-08-01_2026-03-31_two_clock",
+    "session_manifest": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v3_2_2026_08_01/session_assignments.json"
+  },
+  "feature_families": {
+    "add": [
+      "signed17"
+    ],
+    "remove": []
+  },
+  "features": [
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "spx_vwap_gap_points"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "spx_vwap_gap_bps"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "spx_vwap_gap_over_session_range"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "session_range_bps"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "momentum_5m_bps"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "momentum_15m_bps"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "momentum_5m_over_session_range"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "momentum_15m_over_session_range"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "omar_clipped"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "vwap_side_align"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "omar_side_align"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "momentum15_side_align"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "straddle_mid_spot_bps"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "put_call_mid_ratio"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 completed-minute SPX/VIX context",
+      "name": "side_smile_slope"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 live option ladder",
+      "name": "bs_delta"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 live option ladder",
+      "name": "bs_gamma"
+    },
+    {
+      "available_at": "completed_minute_plus_60s",
+      "family": "signed17",
+      "live_twin": "Protocol101 live option ladder",
+      "name": "is_call"
+    }
+  ],
+  "hypothesis_id": "entry_contract_ranking_full_epoch_v1",
+  "model": {
+    "family": "hist_gradient_boosting",
+    "hyperparameters": {
+      "early_stopping": false,
+      "l2_regularization": 1.0,
+      "learning_rate": 0.05,
+      "loss": "squared_error",
+      "max_bins": 255,
+      "max_depth": 3,
+      "max_iter": 100,
+      "max_leaf_nodes": 31,
+      "min_samples_leaf": 80
+    },
+    "max_fits": 5,
+    "seeds": [
+      101
+    ]
+  },
+  "paired_baseline": {
+    "exposure_matching": [
+      "decision_time",
+      "side",
+      "premium_caliper"
+    ],
+    "name": "nearest_atm"
+  },
+  "power": {
+    "alpha": 0.05,
+    "maximum_mde_dollars_per_session": 25.0,
+    "power": 0.8,
+    "practical_effect_dollars_per_session": 10.0
+  },
+  "primary_contrast": "model_ranked_contract",
+  "schema_version": "autoresearch_v2.hypothesis.v1",
+  "target": {
+    "fields": [
+      "ask_to_bid_stop100_target300_hold120m"
+    ],
+    "frozen_reference_exit": "ask_to_bid_stop100_target300_hold120m",
+    "kind": "single_policy_pnl",
+    "required_materialized_fields": [
+      "policy_net_pnl",
+      "policy_mid_pnl",
+      "realized_exit_time",
+      "source_exit_quote_time",
+      "exit_quote_age",
+      "exit_reason",
+      "executable_exit_bid",
+      "policy_deadline"
+    ],
+    "weights": [
+      1.0
+    ]
+  },
+  "terminal_statuses": [
+    "INVALID_EXPERIMENT",
+    "MECHANICAL_FAILURE",
+    "UNDERPOWERED",
+    "NO_INCREMENTAL_EDGE",
+    "EXIT_ARTIFACT",
+    "PROVISIONAL_EDGE",
+    "CONFIRMED_EDGE"
+  ],
+  "threshold": {
+    "fit_role": "none",
+    "kind": "fixed",
+    "value": 20.0
+  }
+}

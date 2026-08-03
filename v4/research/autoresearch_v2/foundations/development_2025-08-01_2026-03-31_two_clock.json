@@ -1,0 +1,1161 @@
+{
+  "first_session": "2025-08-01",
+  "foundation_sha256": "9916e8aaa7753f7cc671ff15a98c44c34dfee8cd0ffac24e81803f20ba05b349",
+  "holdout_access_count": 0,
+  "last_session": "2026-03-31",
+  "role": "development",
+  "schema_version": "autoresearch_v2.development_foundation.v1",
+  "session_count": 164,
+  "session_manifest": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v3_2_2026_08_01/session_assignments.json",
+  "session_manifest_sha256": "431cd14879ad6a14b278cb2683e4f3b860eef960e6b74a4f0edb3e620cf82475",
+  "sessions": [
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-01.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-01.json",
+      "receipt_sha256": "30b462bb9b872fc0df7f120536af042d3b6660eef6f8a006aeac1c9d208156b2",
+      "session": "2025-08-01",
+      "sha256": "b6739496d648696c5391e3ae3444ad1c1f9b08a1405dc5b3d86db9c518b911dd"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-04.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-04.json",
+      "receipt_sha256": "33bfef5e7a5169ba29d8c436c1b89c1c73861a64f3b62ee06686648fad4fe05b",
+      "session": "2025-08-04",
+      "sha256": "41bba10b15893f92d5cbe490de06ddeab9cf8eaf0efa674a361c3080949e814a"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-05.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-05.json",
+      "receipt_sha256": "c1b43ff2c1d80929fa3300fb70344e7f59738e68ff5d4921d8fd354135ead922",
+      "session": "2025-08-05",
+      "sha256": "d4bd2f51f581d8604cc9ecdd3e698dc3f5df20e763b18540a4e1a98dd12ff6ad"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-06.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-06.json",
+      "receipt_sha256": "b756af070f78ff5647a7f72c4087ac5940f5d6b0cb6f5538695be889a8a4adbd",
+      "session": "2025-08-06",
+      "sha256": "1c25c312bf4972a82b6c5d0b6e0e9597b31d11b52eb606d60ee74ee3a794cd2d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-07.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-07.json",
+      "receipt_sha256": "429a6232f5b35d80a7909f9d761a51315d67d4a34386962ee1771928bcf67022",
+      "session": "2025-08-07",
+      "sha256": "db5556abfdb742dded43fdf5ed4d2176b127523f9490c945473c2e17a99a3c1f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-08.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-08.json",
+      "receipt_sha256": "8fdb6850fb377786269158f407a77bfeff902a462a03224e1bed2c759b1b3cd6",
+      "session": "2025-08-08",
+      "sha256": "588217ac7ca05ed477b3dec6268bb2438c417d34b4ab4bf766c35c8990f73f7e"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-11.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-11.json",
+      "receipt_sha256": "ecff0de3ce964b641990fe253ba8c690364ea4507d4796dc5bc18bcd147573eb",
+      "session": "2025-08-11",
+      "sha256": "46a606ca32574215723a482a495d1232d271c0a3127cdbaa2fcce185ce422b42"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-12.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-12.json",
+      "receipt_sha256": "3d38226a41969037864d999f02738ee03eb237d5bc463264f9696da3724f5a9c",
+      "session": "2025-08-12",
+      "sha256": "6df315f0c9e4fb56cf8d768e3b7249c17b1c7f750e8152634e875e5f4822309d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-13.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-13.json",
+      "receipt_sha256": "a75277a08d2551e471c63dca57bddb577f8a080b835f6565f642d83b942b014d",
+      "session": "2025-08-13",
+      "sha256": "310cf8f1a478f6fe12bff2693df007b5ae958651fc3a6281fee2d1839dd505aa"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-14.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-14.json",
+      "receipt_sha256": "6e397b56a51d1aa9edccdace9e9374f78f7cda2c04ba429aae5a958f50aab34d",
+      "session": "2025-08-14",
+      "sha256": "46d336f039ffd33661563127573e223a97a814de49119ee4e6ad0191c3dbf44d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-15.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-15.json",
+      "receipt_sha256": "cac98048d67225f22bc43eb17749200ac57b48444598dbaa51d0d3cd6c421707",
+      "session": "2025-08-15",
+      "sha256": "af87f1a85bf740550059fe6406e0fde073b5ed6cdbe045016158cb64b41027f5"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-18.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-18.json",
+      "receipt_sha256": "fa19484aebfd55a32e332ca3cd63e5c15b7c83ff5ccff582077e07d0b71b6800",
+      "session": "2025-08-18",
+      "sha256": "242ab723655d517e6b6d16f6fc19750e1e2af06568b63a1614326e670b0bc0ac"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-19.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-19.json",
+      "receipt_sha256": "b2e566759fb69cd633f942bc8066a9fc2375a2d6c596dd247e35ab700f0fbf74",
+      "session": "2025-08-19",
+      "sha256": "fc8d030de50db8ebc06df6d50c34693a7deaee77e2400207f3f122f131c2f7e0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-20.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-20.json",
+      "receipt_sha256": "ad645d021d5eaf9ba6966e93f4342184de3290620f4225ef42643d9a89ba966a",
+      "session": "2025-08-20",
+      "sha256": "07340bd98eadaa518493c59f720db28bfb8a0fd57ef79dc9e3244e46526b9b68"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-21.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-21.json",
+      "receipt_sha256": "e25e9f3783bf9ccf332ff576148191b0c0070cde6b6ef3bbca02df3bbfb8ae61",
+      "session": "2025-08-21",
+      "sha256": "50ac1c7ad66190d007f8d018d37905ba1f39ce4c87136459633a0472e9414d06"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-22.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-22.json",
+      "receipt_sha256": "9cf2cb8f27018110e1e4d7945b9cfcd72fc4cb2f3d9dc9dd13ce428e54d8175c",
+      "session": "2025-08-22",
+      "sha256": "0c82903fa443f738a27afc44a9b4bc75d3c701d6bf6d9e0f6f1579414c0e1cb3"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-25.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-25.json",
+      "receipt_sha256": "27762d5fb64a3237aa0d3f2a9243c3f85cef0d93481aae7abe6c5b7ba10a4920",
+      "session": "2025-08-25",
+      "sha256": "51dc5d1a776cdfd87bc33f6fcc6a45404eff6b0e9e145e9ea8bc95a65c92c698"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-26.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-26.json",
+      "receipt_sha256": "c1baadb8c6308fbf2fd4a73137564cf5a4c9e6086865fc716752955aed891097",
+      "session": "2025-08-26",
+      "sha256": "116ae284bddb2c8c2962b758f1cc9650edfc0f6318635c09b3275abe34b7d143"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-27.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-27.json",
+      "receipt_sha256": "377723cd63fe86ff544bfeab322d5765da13f8032d2dc18f35f8f98f04604565",
+      "session": "2025-08-27",
+      "sha256": "3ab9cfe7f62c6f830268c8736afce688717af13adee03790bb2de9bee727ab67"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-28.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-28.json",
+      "receipt_sha256": "fa188ddce064c5aade9333c65c1920901c6591f722edd87da61a8a175de9fa55",
+      "session": "2025-08-28",
+      "sha256": "245a9ca1f8bdc1e3fc9cb138f40f05a3dad1d6c90a979b0cd0033c867e938a85"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-08-29.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-08-29.json",
+      "receipt_sha256": "ae99d6a1245c24dd9472f64e4fb767bd67f54223e8022c49969aa8f79829da57",
+      "session": "2025-08-29",
+      "sha256": "94d94e4500ea80c6ee08b45b01728377515628931d9a93c8916e27718ec4b848"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-02.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-02.json",
+      "receipt_sha256": "0658a7c3eba463dfec041097e4b8e9884c5ca137f2e9cabe2bc7a404f940b961",
+      "session": "2025-09-02",
+      "sha256": "26c92c051ea602770fe6a48243532630c4ee9bcc514b7dd043ab877bb15ea85e"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-03.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-03.json",
+      "receipt_sha256": "153f7e3b50179e43c82c2ec264bc230a3504f71ea105f0d8965ed9d06a406df1",
+      "session": "2025-09-03",
+      "sha256": "46c93f87d985d59bd8e931d1a532a55976cb6b779d99c44ec5ffce08a89516b7"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-04.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-04.json",
+      "receipt_sha256": "097e2f05acd1a70830bbcbb564d58da0367d05c2c7e68eefa4af655be245a322",
+      "session": "2025-09-04",
+      "sha256": "c7647410bbd56761207278a5b69a338231ecf0ab2806d803db8ed6543976a23d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-05.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-05.json",
+      "receipt_sha256": "66b1d4cc15f2d8521654d6f931249950837065c97c12bd560eafedbaa231aa62",
+      "session": "2025-09-05",
+      "sha256": "75763958fa808f31ba7e9548d6917743b7ec1945f0ca54442006a7323d6d4f10"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-08.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-08.json",
+      "receipt_sha256": "b5e4a8b2bcb9b8c590b1d806998d25cab39f8d696cb2eae99be5b58ba30ea096",
+      "session": "2025-09-08",
+      "sha256": "f008b9dba78eb8e1d63118b26ba0378d35409454c1bb43e8dea740cfdc8b2c07"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-09.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-09.json",
+      "receipt_sha256": "308235f9b4badd12c04dbaf756f5b9db4c50d38bd70496825703941d541ae4e2",
+      "session": "2025-09-09",
+      "sha256": "d98f70be7b7edbef64b8a05b5d04a56ebd7db7d0cf81e11babad97fe8516f871"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-10.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-10.json",
+      "receipt_sha256": "ad6a66c14944b5372a365ed375f8e848f6858be9071ead0e7af3999c483098e3",
+      "session": "2025-09-10",
+      "sha256": "08ccc263f7330d554ff5219ba019df0743715b329a64c00b5930db133dba9806"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-11.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-11.json",
+      "receipt_sha256": "43c3b44d6163910f38ef93e67b45d1e15a85f6eb685d786a71eca82b056c3e3f",
+      "session": "2025-09-11",
+      "sha256": "7b4c30fedc00fbb7b98dfc62cef24c7bd1eb8075e4979adae098af931b74d274"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-12.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-12.json",
+      "receipt_sha256": "0b5e71a277e45bd3c1ec38e2ce15748d550b44781408c60a2193749737415cd9",
+      "session": "2025-09-12",
+      "sha256": "0687e4530960c79633bad7104b08a45582982252a44755aa49d151116be39fb6"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-15.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-15.json",
+      "receipt_sha256": "60cd98fd736c58841f2adbd6014c15207eba54a02a7abc22bd0a81001a1cd8c3",
+      "session": "2025-09-15",
+      "sha256": "b16db9a359b4e292f3f641cce039f669db73e54ec6a8065eeece0aac2edf8066"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-16.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-16.json",
+      "receipt_sha256": "484e28ce53b4b6503dc8f62fcb6aea4d1bafb641194d3e95160fe595c6ea815b",
+      "session": "2025-09-16",
+      "sha256": "d6590e402bf244d012be7cbd757163778e89fcacfe67814013a8d91249ab2ff1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-17.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-17.json",
+      "receipt_sha256": "a7419fd79d4f87ecb8d26655614acb003fb372bc3139d6ea82972aa091c90b22",
+      "session": "2025-09-17",
+      "sha256": "629797093cb5137660c4a2b0fdee5991d604f5641e8fd4758c821f17836e465e"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-18.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-18.json",
+      "receipt_sha256": "e6026b0f7fa2905f206377eab8e3741a2000654be98f8f6d10ba9026cbee486c",
+      "session": "2025-09-18",
+      "sha256": "3784482c6b051e3da3dbab49dafc89c9552607d444b8a744b0065bf19b460721"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-19.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-19.json",
+      "receipt_sha256": "187ee47ea7092e294f15c23d951116f196c77573312112bbddc23ac5f5eec9ad",
+      "session": "2025-09-19",
+      "sha256": "f892e31174ba5b29e0517833c0e3285dc05f8896f7a5c8df84e292af2cd4893f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-22.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-22.json",
+      "receipt_sha256": "43994b07572cacc8a25c4c371897f88a12bda2c9005c2d4df9dc1336acbde909",
+      "session": "2025-09-22",
+      "sha256": "16211570004079cf18eb1f3b1533ea9e182367c0252d997a020d030d08588b1d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-23.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-23.json",
+      "receipt_sha256": "cb5f8361137d9e9eda7eddfe50faf799e95071007683878f2b4c1b027205b860",
+      "session": "2025-09-23",
+      "sha256": "191f641fbf9cb79b4dbe13f73c91e3bfd9f20e347e58be50445178a9f021cd1a"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-24.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-24.json",
+      "receipt_sha256": "4ae440313be5e6f087f2825e173d78fada6d269722035e1bb006cf1e86400a9c",
+      "session": "2025-09-24",
+      "sha256": "fe506398976c90f6f7ca66e1969b9e457938b5debc2989f33f2bbf22e950e106"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-25.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-25.json",
+      "receipt_sha256": "ecf27d0dea64c7feb09acf9b4c2157fbac69a19e0de49f891c08f130c1a9a845",
+      "session": "2025-09-25",
+      "sha256": "227667a446a047eba826c6fb1115601cb2e7410f98e598a1cd2675baad22c505"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-26.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-26.json",
+      "receipt_sha256": "08c2ffd7a998894405eb96082db61cc983e551c88b0634d1d990b62cadb0f542",
+      "session": "2025-09-26",
+      "sha256": "4de73a37f298c13e1ab1fb30e6d8a56b2313184939d3f8d80cf5eaa38f4db4b8"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-29.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-29.json",
+      "receipt_sha256": "b7a531c3838698a132e9f19a657d504476a92318af83aec8ffcc8ac443c37d77",
+      "session": "2025-09-29",
+      "sha256": "f08636eaf91708156afb87ea2a9b1b25ffeacd49173bf961935562448b69cb33"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-09-30.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-09-30.json",
+      "receipt_sha256": "3e1be310f72eb74aa0ff194894c05392c7f020b05a53672f87d0018948642a42",
+      "session": "2025-09-30",
+      "sha256": "86a3debcf75ea157bf4ba2eae13fd666b40dfd891d59819619abf94664a4e3b1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-01.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-01.json",
+      "receipt_sha256": "88024d89d8e62384d35add939a07d249820b22216430380cb783a9d8cf19a860",
+      "session": "2025-10-01",
+      "sha256": "5117315e0dc415ce2ab23fa74d87f52a73e1824f415721c7f773b6791f884ee1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-02.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-02.json",
+      "receipt_sha256": "8f31c696b7abe697da0cfe4de5f41a9a302c75eb30d6574b46d473cd029d5699",
+      "session": "2025-10-02",
+      "sha256": "c03e36d5bdb5f45e4c646a05f1c59f70214037a6642151e1b5040a36ca7b2645"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-03.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-03.json",
+      "receipt_sha256": "72ed961f1285005f65871ecd0470d676fe194817b5222a16aeb24eaaaef60e05",
+      "session": "2025-10-03",
+      "sha256": "a211f2b5db2279947fda65aed07bb39ad0c34688f4fefa09c5e54c7a7e572047"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-06.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-06.json",
+      "receipt_sha256": "02082989171ea26cde4158121b3f6a3e6cc5544f4cbf81737a9a3b045b102527",
+      "session": "2025-10-06",
+      "sha256": "7b6cbf7b1fa7ee2d446231f84c53a1485c8584d21f5a474964b4d090879c7524"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-07.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-07.json",
+      "receipt_sha256": "e0e024c1dc7f153473f0aed6568fdb1e5d11ae67de2c4f7e3b5051c567319387",
+      "session": "2025-10-07",
+      "sha256": "b60a941b5bb0df6b90d780e00c26ddae2563410cf98d88dd0a84d75e5a2a60f2"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-08.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-08.json",
+      "receipt_sha256": "1b57d943173d848c0baa41671f476296c0994c21bef7df5a8e1450fca25dacda",
+      "session": "2025-10-08",
+      "sha256": "c3ce6f663e48bf32d7f270350afc76caf0b96d29e9d2aca202d81b6410e736d7"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-09.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-09.json",
+      "receipt_sha256": "cf79212afa84f13d1b233bdbe876c0794d5a45309815c6f972d76c2b60a94c11",
+      "session": "2025-10-09",
+      "sha256": "37e168939f52aae2f9907458cbcaf1f916163003c07f249d11b48d30b918574f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-10.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-10.json",
+      "receipt_sha256": "0822b74193bfc3e4b92e2a81519f24b4deb28be8f0683c7dffb8a949d5725666",
+      "session": "2025-10-10",
+      "sha256": "e6860cc5616bb852b8ee9b977b4b638e6f88eaf91f9fe4bba24a4a6ea67fa213"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-13.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-13.json",
+      "receipt_sha256": "21ebe106fa2dd4ef70277ee3bbec99d914698a17be4275fd3bf7b1e1aaf1a6a8",
+      "session": "2025-10-13",
+      "sha256": "46e8d64a14874723c1779fdeb19583570ca9f9aa8159a0f1d3b434b2c7f125d9"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-14.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-14.json",
+      "receipt_sha256": "8a8186b1c98cb5ddfe21cce7ee538a7f57e8e3b056537074cd9746c5e4b1565e",
+      "session": "2025-10-14",
+      "sha256": "fe6aa17ec5cbfd59a24bf8b37cbdab18fde002035facf32852dd2da843f2ca67"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-15.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-15.json",
+      "receipt_sha256": "7a1c88c302cd5f336452b379bb583610a8e58eef0b63f5444b2b3e7f6685eec0",
+      "session": "2025-10-15",
+      "sha256": "2b79a4cfc8bf1b7e8f99830f11fdcd01e8eb4871e00cd4e617b995b384a82ae5"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-16.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-16.json",
+      "receipt_sha256": "3b44aed368d2af648b5c5c6131967e4b4e5145006a9f69884da2a155a58e2823",
+      "session": "2025-10-16",
+      "sha256": "7b8af94894e65faf228933f5ab7b82e8636490315fb1d75d56c7fcb47ee8a6a1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-17.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-17.json",
+      "receipt_sha256": "bc91ceaa1b9c2c6cbdfbb2c63796fc01b67070caf17f5afb3ed6926ca674c442",
+      "session": "2025-10-17",
+      "sha256": "b6354779e98a9c272661fe22c2ae6c25a8a895fb29b1236f00ce4302117f7cf6"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-20.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-20.json",
+      "receipt_sha256": "be6d6a51426f43f27bfe09541302f90c3622458c499d317d71a6a387fcd5edb0",
+      "session": "2025-10-20",
+      "sha256": "5286589b8580b9e4a3451b8b8d2533d50948dda37706e3dee11564eadbbd3ce2"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-21.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-21.json",
+      "receipt_sha256": "39d126a3c56095165ba710059ac63ba056d38b0336433bbc86ff597cb86e305c",
+      "session": "2025-10-21",
+      "sha256": "340301d16704449f151da564825792358d1c4aa44f404a17606e4da307da7772"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-23.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-23.json",
+      "receipt_sha256": "92bd8f63d7639ca424a2e26bf61dcad818905931f767854284603edcd57e608a",
+      "session": "2025-10-23",
+      "sha256": "dcf13f029b32dafbe86dcb75e39291c806c5fb5c53db9101f4c3442ee83b3a27"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-24.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-24.json",
+      "receipt_sha256": "ec5e18ddf9c0bab82981c18309148e6922e00c933487941cb813e31ad597777f",
+      "session": "2025-10-24",
+      "sha256": "edc491db47ba69bb0e77c380e73b36944d8b19e23701ffd7614ee480a3150a61"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-27.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-27.json",
+      "receipt_sha256": "b186a31fe96a6547541562b672641d848c8a24fe190d92d4aa57ea96d69500da",
+      "session": "2025-10-27",
+      "sha256": "2c3ad8fcf545e03156f01e48655c14bfa0a09adb3bf8bf31d07c64b1ba7c55b0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-28.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-28.json",
+      "receipt_sha256": "386f9510498fc75256947b96d229828793a39757987f0932c6d815f3a7ddc248",
+      "session": "2025-10-28",
+      "sha256": "23c2fdf707715d59ecd1972a4514d33945d7b0412101f04492b7a276cc658eba"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-29.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-29.json",
+      "receipt_sha256": "02f6fbdde82f508b43a485bc6e953d5f06bc4b48bd88c379368e2c7e8c334612",
+      "session": "2025-10-29",
+      "sha256": "edbcfd6d536f1218ee15124feb17b4548bd5c5c573bbb55180ddc4da1a4c46bc"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-30.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-30.json",
+      "receipt_sha256": "7837d4fc383462e208978bdc60a4bd40f87e2954efa5704a75d39bfcb176f3e1",
+      "session": "2025-10-30",
+      "sha256": "62bdc614485d88950ad9d73ea0b5d6102879b5440801049f74d2a915cfe078e3"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-10-31.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-10-31.json",
+      "receipt_sha256": "a9a52134c4a76a8cf552ec7996510a2c97eab4fa4940cd27550e9d1576f4853b",
+      "session": "2025-10-31",
+      "sha256": "b8a842a0d8df20c772b3b4de1255e22a3034d285a1a23469e62e4aef3df93d99"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-03.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-03.json",
+      "receipt_sha256": "60dd4eb77dce026e45a91bce9bdb46c5140748e6acab88d66344d59d9554a602",
+      "session": "2025-11-03",
+      "sha256": "035c1400ba3e9ead5064c70f0b03625267e161b4996bb33d9bc9e0f1e1f2cc05"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-04.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-04.json",
+      "receipt_sha256": "7c5c3f5837f65e7f845185c1a261195d5e21ba82a7341ec679774d8d4cf8115c",
+      "session": "2025-11-04",
+      "sha256": "615b617a054ef56adb8ba6f8d98243d8f75b178aced16a711bb5d0451ff6b0ed"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-05.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-05.json",
+      "receipt_sha256": "dc2bcab9499c2d20366f64c6ecf985dced188b371cdfd57d8fc332c076909835",
+      "session": "2025-11-05",
+      "sha256": "171a11b47c2b3da8c3f8e00b04503fdc7f407d09ccd23364ed5c645ba0c98b07"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-06.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-06.json",
+      "receipt_sha256": "676a7f1a70dae7a0a63e263042ea9a3471bd427fcb2e9ef54d2f4e82b798c154",
+      "session": "2025-11-06",
+      "sha256": "1646c3750fe6dd1f6eafe80706b7ea9e3a46a4675afbb93639f177f53148cd55"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-07.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-07.json",
+      "receipt_sha256": "d148d96ee877e997b646d9c2cfc7d6ae646104825de189f1e2aa61abbea1c238",
+      "session": "2025-11-07",
+      "sha256": "8cb886f98bcb58588da20f687bc335a872cbf60eb41506bd9e458c3c97df68ac"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-10.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-10.json",
+      "receipt_sha256": "0b0b151fa0402161eb14470b5a0e158f42f1a97fd9574392420b4587fb9a5b8e",
+      "session": "2025-11-10",
+      "sha256": "68ba84aef03832e696316c049dd2ce16b4677678e66592a5c6ff5a178bd7969f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-11.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-11.json",
+      "receipt_sha256": "7bce216c8bca45b7ed34fba4d94f0248d096df71597178f067cf394321d610a0",
+      "session": "2025-11-11",
+      "sha256": "54dfc875298e4566be6a96f9478bd43ea3b7d0c0236a814286e23af3850e2ef0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-12.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-12.json",
+      "receipt_sha256": "04fd067a861fb9d2f4c367b25b2cb620752cfebf6393a4c9fbbbc7fff325d63d",
+      "session": "2025-11-12",
+      "sha256": "7b6e9c8ab570a6034f8eaf7522ee62f3a244cdb86da69153edae80335f2612b4"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-13.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-13.json",
+      "receipt_sha256": "0313cabff582d93974401785e72db6871d4c4810541c2af27d97cb6f69056e53",
+      "session": "2025-11-13",
+      "sha256": "31a3ff4aa55f567a57b99dd3cf8fb115b2900429045eee6bdb090ae7656f5f82"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-14.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-14.json",
+      "receipt_sha256": "a1e014f582893907e69d230c591c1a903d6190f4fca3ba7999abee1ce72dc5bc",
+      "session": "2025-11-14",
+      "sha256": "bddb3553b2ff37798a3c641a2de094d30ea8be9dedf64ce5efb32b19a40a0c5e"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-17.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-17.json",
+      "receipt_sha256": "839de1c05b5ec27667509e4faadc20571470166c3efcb27f94931e1b0ad45704",
+      "session": "2025-11-17",
+      "sha256": "431b4aef23577958f0f667b1a5c68ecc0d41e960543c5602cc91fb187b439f6b"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-18.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-18.json",
+      "receipt_sha256": "245a30e7f6ed215a75e16a3aa60f9b7030ed09b553582b02d8dfde9640225d2d",
+      "session": "2025-11-18",
+      "sha256": "42dc67eac3d1b8db3ed97613e7ffc24c63929fc93cda909f061a3cc6f6f6130b"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-19.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-19.json",
+      "receipt_sha256": "d768b28d370e7e36b4633cd3369d65eba0bb072a8af0405c9858f653a88263f4",
+      "session": "2025-11-19",
+      "sha256": "ee1e089b4eddb484d81e7658b988232c239a6c4b1707cb9cc504f91bc9920dcc"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-20.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-20.json",
+      "receipt_sha256": "84d7b68c409f3f24568e196913d72863afcf06afc7673518206d34e6370e42b2",
+      "session": "2025-11-20",
+      "sha256": "18d302db52fe5a6e2e37ec41ddc77fd14b82dea47d578fbc7554384ffccc472a"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-21.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-21.json",
+      "receipt_sha256": "44da94caf57c54f0d2a55c6bcb6e0bd5418912d19164744713790276fc7e6a4f",
+      "session": "2025-11-21",
+      "sha256": "5557be2284de98027cb836365b39e1c9b784dbb551075c3446ba42ed39b1c05e"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-24.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-24.json",
+      "receipt_sha256": "d55adfef6d8c982109e8aa933400b59e011eca2ed21f6db2199360d2c99078a4",
+      "session": "2025-11-24",
+      "sha256": "d927197e22172d0ff3b29822d707e60f2ab8a5db3853350204245a94e66657d8"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-25.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-25.json",
+      "receipt_sha256": "8731a5f44bee2ec91f4598964ef2f7b507abb0233cfc0730fbe6604e2cda8258",
+      "session": "2025-11-25",
+      "sha256": "bb50fbfb0af1996174fc77b116ec5ce352d58382c128e183ecb33b4814a4141d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-11-26.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-11-26.json",
+      "receipt_sha256": "4caf6e7018fa5ed4a9232e285093db818cc75770da048b7ed73ec98e54a2894f",
+      "session": "2025-11-26",
+      "sha256": "92b6369594d62a741d2dd306cc9d9e8e7d2c1faa588f5a4bb014d8c3ad30dc47"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-01.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-01.json",
+      "receipt_sha256": "9c7a4d936171d39c397821131ae6247410f11f9068e8c80ca0c1d16ca3471991",
+      "session": "2025-12-01",
+      "sha256": "62a371f374508c39ac31c2a7c879376316129489331b60c44c576963a0eaa6d5"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-02.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-02.json",
+      "receipt_sha256": "de260cc5563b829f53d09515ee95387ee9f205d4203cde8179a793eaa9f50cfa",
+      "session": "2025-12-02",
+      "sha256": "74ecbc388a9d58564120dd6cf0306a2e5c6de447f7cb193caf0f49cf2acc6d24"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-03.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-03.json",
+      "receipt_sha256": "58ef516bb4020dba5e21fdfa87a582e982041fa831b584e224d3b88b872cbbc3",
+      "session": "2025-12-03",
+      "sha256": "352a90a40267ef63c13831d76486e254b577c47b6d5c92f4ca1752768e26284f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-04.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-04.json",
+      "receipt_sha256": "bdccdf8bc1d4e261c744d47738899b4cd790bb62ad23f20bfa239eed1c96a105",
+      "session": "2025-12-04",
+      "sha256": "573433b335e519d03965ec5befd63379756da1493d26a2d5ec215c14b894adb4"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-05.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-05.json",
+      "receipt_sha256": "35b46be9fde9ff3828662bff558a1700325ad28b86e20cafac3178d085338c11",
+      "session": "2025-12-05",
+      "sha256": "6ca628ae2d7deef0f524aadfacd24c7d7da8640ae858360eec39053de220b58f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-08.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-08.json",
+      "receipt_sha256": "f476374051bef85bea1efaf9c42b04631bd6abaab9556752a1fc89407c16119a",
+      "session": "2025-12-08",
+      "sha256": "d50e1fa5886ce0c915180aa96782ba0d426ac1578ed3257b196edc3461fccb51"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-09.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-09.json",
+      "receipt_sha256": "8ea9395bd938de42caf95ad3fa567f58f71814f35e34dc8afcf6e915f4c12c91",
+      "session": "2025-12-09",
+      "sha256": "8dfa4164838ad794b4fddc274765f88a156d92b42222325b8ae3c6cdcec199c1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-10.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-10.json",
+      "receipt_sha256": "eb4ebf9c49a77b613dd622669a813a6bb4a3fe4419b7d8b6917ec38dde7ad94e",
+      "session": "2025-12-10",
+      "sha256": "f23c163d2560046f7775acdad02d5905357577adbbd2cae5943b89706ec35920"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-11.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-11.json",
+      "receipt_sha256": "123c2cb0c29ec096d6ac26f89e3aa09a91efbc9070629c9a2a654f423ee062d4",
+      "session": "2025-12-11",
+      "sha256": "eb40b73905ca02aad9dd21ae9379bb33e5c997c765b1a0ed43ed30c2416f4be3"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-12.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-12.json",
+      "receipt_sha256": "e4cc963c7dfc5bb8d7c778256267d5bd39ed5465913092e26a14cdacf0614f42",
+      "session": "2025-12-12",
+      "sha256": "a4c1d0dbdc0110740b079c9b2d77138c1b30c81816c08cb979174f2044da7b13"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-15.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-15.json",
+      "receipt_sha256": "d12cdff9c6727ae16d4f6baf727a777a7c1c9555eae358c54028c19cfc141c65",
+      "session": "2025-12-15",
+      "sha256": "3839de4e7e3f51143bd447fe241e28b347d6e9037321760b60e3fede19146cef"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-16.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-16.json",
+      "receipt_sha256": "e8f1e81869115f9f01aaac6607a1b75c62f0012f5c769492905f68db18cb2ca7",
+      "session": "2025-12-16",
+      "sha256": "83e41c94f2e8cf7118e09ad61dc7a08de8d8ec0a871126dc5a5a5aeb55600491"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-17.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-17.json",
+      "receipt_sha256": "48bada4d1544b4330e1cc6990e83a51e44ace5a968fdfbf6b43becb25cd3bff0",
+      "session": "2025-12-17",
+      "sha256": "f4be7dffee431f20df054881032493479763129899a167e196b54bfda1f12583"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-18.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-18.json",
+      "receipt_sha256": "4c559e9431fe6c7517a9c004766329160c57a3947b35524091b504937ad2ea04",
+      "session": "2025-12-18",
+      "sha256": "c9f095e31fd68f3c7c69969f1beb72ecc6139b9068793c7196ba9474450806d0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-19.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-19.json",
+      "receipt_sha256": "29e85780210b9c5ea39e1b7a13bac0a9dee3e48db65ec2afc7d32e3f9a6ee448",
+      "session": "2025-12-19",
+      "sha256": "ff88bbe8be22ecd4ec1296436124fd84f347a952b0f904f91bf229715bfd8eb5"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-22.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-22.json",
+      "receipt_sha256": "4367a6d5289c8a14fb53aa9b2b3fd716928915762cf4663e30e7ae02896d70cd",
+      "session": "2025-12-22",
+      "sha256": "e21f47efb159bd9ee27ccf6a34c066c259c048b0b04da933ddb97a802b4dc6b5"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-23.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-23.json",
+      "receipt_sha256": "4cfc2be9753f97d4b7b30cc9b71e991d06e5369853860118ab82e981487b2a79",
+      "session": "2025-12-23",
+      "sha256": "7a07f74b1de67f15d7aaff22ce5167bf786709c7b7d756caa6a8e9bf224a9fcf"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-26.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-26.json",
+      "receipt_sha256": "3ece7d8aead9c30f39103d7d5a34a1831fd81e965cfeb426b7b5e1dc129431bf",
+      "session": "2025-12-26",
+      "sha256": "723618ec78472129b16261c585459b141c8a8dd7f33b1d8620a4c2c59a84d4f0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-29.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-29.json",
+      "receipt_sha256": "54ec7035003b24a6136216dfbc6aeadf01da49b6495df95ebe6be1f3cb97b8e4",
+      "session": "2025-12-29",
+      "sha256": "4c428d4a2c2bdb6d724738b155d7a924bdee34da5d05e34ad25a5f5cf4566485"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-30.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-30.json",
+      "receipt_sha256": "154ecf71d15a50915de6333a815890a642e5811a79c7db1cde19b97a49bd0658",
+      "session": "2025-12-30",
+      "sha256": "247a66847f20e97525d5ef622febc1b615c96355227209204853156068526d73"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2025-12-31.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2025-12-31.json",
+      "receipt_sha256": "66c6aaa0717af416bf883d942bf6b6ee65837546cf0956fda8722933014ebc90",
+      "session": "2025-12-31",
+      "sha256": "a231a1ab08fed445206363ecc43d162d4701355d87557e145bfbe21906cf5146"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-02.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-02.json",
+      "receipt_sha256": "0811f54b8be14f0c444e65ad29e1003100c079147e97e26612f6cc1a5a3f4e3c",
+      "session": "2026-01-02",
+      "sha256": "ce4da3762436514e71bd2d5f66517f6947788c19c4efb93049014e85f60ee076"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-05.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-05.json",
+      "receipt_sha256": "f0734659a94c07fb255d63658cd4c4e753dc66528a93c178ad3f5533e9c386e5",
+      "session": "2026-01-05",
+      "sha256": "4b7e8e6607cb33b79ccb5718e1b42b49dcc539263e1fd877dc55b5860c7a35b0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-06.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-06.json",
+      "receipt_sha256": "ab4d9cf0bea34c8d06e4a154461c50a45bfeb301689b693c0d8c15b93472e4d7",
+      "session": "2026-01-06",
+      "sha256": "85a47d91a5320c96bdc50cb59c0810a752246893f95bd8a900d917dc036f091a"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-07.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-07.json",
+      "receipt_sha256": "78aed772994cf8d866efce70f4bc1aa024c5a18982137062f55afc4ee211ea11",
+      "session": "2026-01-07",
+      "sha256": "b87a6efa14e198390ca53027e14bf4916a4699aa6c0591f13d2bcbf01bde072d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-08.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-08.json",
+      "receipt_sha256": "034318af29b49629ccfdf59cfb5288a85d5ea55c9d087ac6cfcbd95ad12f4c35",
+      "session": "2026-01-08",
+      "sha256": "7e842848cfbe27b7d10e82f29d15eb7282ccbc4ff3b4e5df797ee7f5a4d9718c"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-09.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-09.json",
+      "receipt_sha256": "2f28365b3c305d9cc9af17fd119ad87f2cf5a2a41c2de3147b2839765da7d65b",
+      "session": "2026-01-09",
+      "sha256": "90d02a074c351002caaa2dacce657c38d4ddaf4c4816b0e609910aef39292ebc"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-12.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-12.json",
+      "receipt_sha256": "50f02c790a96e5fda80b2f5c5e33513544f3df53e8577b24e13c83c6c7d6f93e",
+      "session": "2026-01-12",
+      "sha256": "957d506f379d3a29155579575cd0830df509187261b6f3ae43b9088cb1d5489f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-13.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-13.json",
+      "receipt_sha256": "b95367d888fe4a2da87b6eb9632b2cd5d52a3e8c34ad5672008eebb42c89e74d",
+      "session": "2026-01-13",
+      "sha256": "230ddb5452518ee626b40b94269e2923ae4f8df5df46667813182012290e3c04"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-14.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-14.json",
+      "receipt_sha256": "85e14316f944e9ab9042ea5dcb1548ac8cf85b11930763329a5bce22d87329d2",
+      "session": "2026-01-14",
+      "sha256": "fe2484db548012f305df9a79456461f005fac8c1c262efbb9a09d1553454aaa8"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-15.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-15.json",
+      "receipt_sha256": "2ceaa2aa3e385b31a44936b130af4a6d99f7584149e25c8a6191fc7b27e1f921",
+      "session": "2026-01-15",
+      "sha256": "aef40d6a078a3fa4685e3344a3f813d7e3325e8d4926f7231697a075016d77e2"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-16.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-16.json",
+      "receipt_sha256": "fd7d7378bff2756e9646a227ede37948043a2ac90dacb7201004c1f222b9d7aa",
+      "session": "2026-01-16",
+      "sha256": "4a4acac70002a9d1d9b4ce78f86a6a2b25d171ada9038dddcb9c15e1e37bbe48"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-20.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-20.json",
+      "receipt_sha256": "7de25985b697deebb7643ac5898d214e4fcda11b738a58c6c3bfa89d928bedf0",
+      "session": "2026-01-20",
+      "sha256": "4fe92b3a1e10d6d4b5d144df91e73a3be08c96e0d434af5d9fdd91eaadf4d732"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-21.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-21.json",
+      "receipt_sha256": "e061d5d55592cc01d736bc4c6460af0bbf4c2d7ddb457458b135563c8a378c20",
+      "session": "2026-01-21",
+      "sha256": "97edad74b9e2955d7a5954b17eb629e74d67c12959b3d291b58fbdc2e1c8b3ce"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-22.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-22.json",
+      "receipt_sha256": "f3e7f69d00929989dffcaec2431cfc8443b08f27553c9a3a532a61bfee25950d",
+      "session": "2026-01-22",
+      "sha256": "d2a2b290c8e28757380bf2cc3a9a9e5b1c905a78e14cff01b5fc42e49707c6f1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-23.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-23.json",
+      "receipt_sha256": "c5411a43efd4de109fa6df011deb31d1d8a9eee255b1b69034c622bc039c2a01",
+      "session": "2026-01-23",
+      "sha256": "2812e2390f648b09301431ee3b7d6120fc6183dcd49d9270c82b04096b6c6a87"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-26.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-26.json",
+      "receipt_sha256": "d0ad6bffae0832d8bc4f1ba95683d0a7f4fc8fda759e0ee3b8302112758b3cf9",
+      "session": "2026-01-26",
+      "sha256": "2273625fbe58655b7a41330cd815645deaa6cb67fe9cdb1b1f24e04a36ee1002"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-27.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-27.json",
+      "receipt_sha256": "61d3c829df63127f548f1707f043c52d6a4c8687d97a7bbcf76499197e3161cb",
+      "session": "2026-01-27",
+      "sha256": "caa7352407526c8f7f26a03a0cdbbc964f3ee3dc13c02ffeb9a24674a3747fb0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-28.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-28.json",
+      "receipt_sha256": "f5d12bd166b0e14e4fb46dad214c6936cabf7c25c9b6ad8521f19b1f749af200",
+      "session": "2026-01-28",
+      "sha256": "4489cc04eab2f318b7917e4d945fd46221914bc2d111ff37bc3f172150a3d7d3"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-29.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-29.json",
+      "receipt_sha256": "d7824e10cf2cd07530d1e294d309864f744d205f92af68e90c4af2e1d5e35323",
+      "session": "2026-01-29",
+      "sha256": "b7a82408a0c9734f5d316af50e1172891b84a2fee34e353520896b0da29d9b4f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-01-30.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-01-30.json",
+      "receipt_sha256": "3786f0726abf9c3d0a13ac586aa88e0026e2eb7df873da63f742c4683e47012d",
+      "session": "2026-01-30",
+      "sha256": "32a935f8fd7cf70387bbe5f7f733734767bc7dc7ea4e2ae7d290128b49d78952"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-02.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-02.json",
+      "receipt_sha256": "bf7d39ab9d99f27283a88de5d8689566e1e80038693f8e400c34fed0f89f64ae",
+      "session": "2026-02-02",
+      "sha256": "37e53d4279aa4620578a8c776421707d05ae06c8bbf5ad0c90739da21ad3932f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-03.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-03.json",
+      "receipt_sha256": "4e97b345f0620970d8b55625f997ad365cc88b6abfb685bd7dfc39d372d2490c",
+      "session": "2026-02-03",
+      "sha256": "e3fc0f6dc52f643d952944100fd6d91d0a0e1870464b60e50cb9238f231e03d0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-04.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-04.json",
+      "receipt_sha256": "d8a202f37a9105e605bc86395008ab1077477cf74f38c86979d2e41053c7c961",
+      "session": "2026-02-04",
+      "sha256": "d0751d9c23ca89a92bf60c6b84789cbc00ab9a882939aee9dcf00ac0d0205020"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-05.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-05.json",
+      "receipt_sha256": "ee91890a65a14e5db671f585cd0b60eeebb035d438f5d39a1505b8a19cffc5b9",
+      "session": "2026-02-05",
+      "sha256": "98114ea36fd108aa277a79091c457928a8afaf5058f4279d740734b3e6e89541"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-06.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-06.json",
+      "receipt_sha256": "2f4f8e6cd74357d6747ab3dd028e52d038adf56fbe14193954c6ee44d0e68d53",
+      "session": "2026-02-06",
+      "sha256": "05a04569e59c35937b342662a31b51f97a8113379f2bad13daf839a6095ca750"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-09.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-09.json",
+      "receipt_sha256": "e75b2925491a39f5cbaecae7dfec34279d94161dc300b6af8c392b00e9221a96",
+      "session": "2026-02-09",
+      "sha256": "724cb30964e026587e370a1abea4cb0854508a67b72cb39a32c6b3adaaf6e90f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-10.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-10.json",
+      "receipt_sha256": "0f9ea4aecaa7655b163c9597da69a0d88c5add5c3552514fbf4a5e2ebfa657e1",
+      "session": "2026-02-10",
+      "sha256": "643f6146628a61dff5e0b24ecfaa1ee4342101d30dc48d2c2ba0063cb43227b2"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-11.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-11.json",
+      "receipt_sha256": "32da22dfc785bdff6ebc106d598066323df923770af564331acaf1cb357058ac",
+      "session": "2026-02-11",
+      "sha256": "f7946104c7c4022a2f300b284587c5fa4e27a44ee817a4855737f81a35e2a4a8"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-12.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-12.json",
+      "receipt_sha256": "4ada06ae3f7abec20f9e84955c2e990d04a8e77ce807af20af4dc82dd4da19f2",
+      "session": "2026-02-12",
+      "sha256": "9a0f80cd43d8f949e0f9e7f10340513511274113ef50cc7b90f77073d49f7588"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-13.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-13.json",
+      "receipt_sha256": "873b454ddf5c2aa029e55c2056a2fb05a69ff4c9e7da40b8aaf8d05ecb8d7027",
+      "session": "2026-02-13",
+      "sha256": "07f9ac3381c069c095eb6b5b668338e2872d2c2fca82d702847bf4623c5fa26a"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-17.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-17.json",
+      "receipt_sha256": "7d899a967a1f0f999a3d2203e8a536db43856864478057f5429becdd6c7763e5",
+      "session": "2026-02-17",
+      "sha256": "e8b6e86fbcfbd12652ebc6ce34088606597b2d4e581bc419163e1e6f39fc6e3f"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-18.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-18.json",
+      "receipt_sha256": "346e6c8c109ae7efef00cef42bf7725609bd6aa9c770b6734c285283a19a3b71",
+      "session": "2026-02-18",
+      "sha256": "55f2c129d67735deddc4e08f5c6fada453f86dc10e58e92473e29378f91d0fad"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-19.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-19.json",
+      "receipt_sha256": "3ebb871694ca29e93d162d9c9947c1eb000e2ba76fc75e2fdc71cda47ddab552",
+      "session": "2026-02-19",
+      "sha256": "a8fe5bf60f5a9ce15c4f137713e510f2d5e7b49c3dddf1d6357bf04d19e7a818"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-20.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-20.json",
+      "receipt_sha256": "73ab303efb82edbec080cf34da5d48861bf6dfd15127cce1047620c9ba9684ac",
+      "session": "2026-02-20",
+      "sha256": "988fc48d44688fd68e2b2e36a3764ab00e724eab1adfd741a97244f343224488"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-23.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-23.json",
+      "receipt_sha256": "51b4b2b0219c5a8870dc37e58bdb0741e604a00582397c09d679577dd436ed1e",
+      "session": "2026-02-23",
+      "sha256": "cde76e6b75b2235d5d08d75b32a3abbd98622a4e0ad462dfc82bf6d5386a4df1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-24.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-24.json",
+      "receipt_sha256": "c4f54e99c3fbf2f49de3743d0cb553f37cb848ab4885b02f2334aaeaa4b14df2",
+      "session": "2026-02-24",
+      "sha256": "35ef4d40d434b2373f744309a677e09ea1d3b2fff8620e53fb200aa54956d54d"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-25.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-25.json",
+      "receipt_sha256": "b22d022003582529b3b5e7fab5b4e084c6c67833dd2582b3103e8ca0856fe8db",
+      "session": "2026-02-25",
+      "sha256": "06c681392b899e8464f5c8cc6ac52ec064b1d5b2e4cc83006c84709b81fed5d4"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-26.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-26.json",
+      "receipt_sha256": "5769991fff9796024cb4465ca8fbc9c3ec0d68a8c71d6080d60d3a315ff10b42",
+      "session": "2026-02-26",
+      "sha256": "89d4e9ac5f1d66431464011e8b522557cc5f119a3966573cc56f8f521f17d73a"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-02-27.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-02-27.json",
+      "receipt_sha256": "52a23d5fa6beefc2ccf271e3f6852ce636c1de788a07c5f56c30a484e897dd9e",
+      "session": "2026-02-27",
+      "sha256": "bdbc2b7c6582ad406320b1e75dbbb650e8933b111d12e1a5cc5d5a53b9f4abc6"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-02.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-02.json",
+      "receipt_sha256": "dabacf24d59b24686ac4c786fd931fdaa5bc3026e7effba1523bcc01c3ca3608",
+      "session": "2026-03-02",
+      "sha256": "711a9438ccf48125152f00b0e9f532679741a7496c51099b022737d659c5efd4"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-03.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-03.json",
+      "receipt_sha256": "0a59d9bc402aebebcf9b5d3e8288742c2678c90dc4c07fa9afa54a2722469ed1",
+      "session": "2026-03-03",
+      "sha256": "baf0374aee9ba21f6578a03e943544b2b0446f3e920e576d12f75d0e38c323c2"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-04.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-04.json",
+      "receipt_sha256": "689f88bec6eb7ca3db39747797a432d9b09ece9823636398bbf2d0cec38b53d5",
+      "session": "2026-03-04",
+      "sha256": "20a2e858e4f7490df1e480f614b4939c30a95adbbe128eb49677fe0276777f34"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-05.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-05.json",
+      "receipt_sha256": "602d5886aaa0f6f176f254d1672e5d4656ebdb21132bace51f73e664af25a6a2",
+      "session": "2026-03-05",
+      "sha256": "752f68f3b300bdad65571f34bf02f450d814c977fe580467ff2a2c80ee4b5aa1"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-06.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-06.json",
+      "receipt_sha256": "3cf4b1054ba3de520b8f30ced1d4668c0429af179c47073eab412d99dc08c2b8",
+      "session": "2026-03-06",
+      "sha256": "4a956fe23b3a10cff9e6e57e09443695860029da3b328d4c68ba50441ab58bcb"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-09.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-09.json",
+      "receipt_sha256": "d4836188cc0266916519f212ab1a08e819c457ef2598f85695286aea7da9ca04",
+      "session": "2026-03-09",
+      "sha256": "b428b06f7dcef07fdc3063589bf84ccd21263b3ea231b8be40b5e789a7a712e6"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-10.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-10.json",
+      "receipt_sha256": "5647fd4ead7622c29baf976d13aba75122eb3af4239778299b2051033438be55",
+      "session": "2026-03-10",
+      "sha256": "8146554593521b1ecac7748ea25e71eb8996196ee24f5de7453bab373887d583"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-11.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-11.json",
+      "receipt_sha256": "2ef50ffd58b741da7116eb81dadbc2c52366859c09f4c2927d24293e82e6d25b",
+      "session": "2026-03-11",
+      "sha256": "3e2b8d9949d26ee8fedbbf18d08b8ca50dab917ffb41f7a888c54f6bc1ca8ce2"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-12.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-12.json",
+      "receipt_sha256": "cc343bb376e9dfe2e9f911430f8ed0ba35089b4ce4599d075e41de40475bb32a",
+      "session": "2026-03-12",
+      "sha256": "4f2b810b3153dac7757425a95065c8ee8cdb010ecde5d69762673b686ba2ad27"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-13.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-13.json",
+      "receipt_sha256": "712064055281fb859094a408bc3bf07314969eba9e883dde2150348b6ced15d0",
+      "session": "2026-03-13",
+      "sha256": "90799b203ef4da88ac1efcc6822912f8e8e10a1ca74dd4f091b443eac0bdf8b9"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-16.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-16.json",
+      "receipt_sha256": "e088913a24a76539d54b679e2cb989bfde3517a669a3fe9a03d5f5bfa800735c",
+      "session": "2026-03-16",
+      "sha256": "2a4bca41b05222bcd1426d1177d57dce31ecd14f4de2f3b817cc301421208bdf"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-17.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-17.json",
+      "receipt_sha256": "a0eb4d408d6ae32a2007159b3483f1064ed9790c898a354f304d1615f1c6c30d",
+      "session": "2026-03-17",
+      "sha256": "3e4e45967bbb03915ac9fc41c1794c9d0a1e66d91ee76cfbe586609eb7da988b"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-18.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-18.json",
+      "receipt_sha256": "f937cfba857d2d53107359b741acb047574d47e1008dbdb75c43ba1331eea88a",
+      "session": "2026-03-18",
+      "sha256": "0ac5da33ae253339d66a4602bee51dc18737d5cfa967aff4c3f3034c7993d3bf"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-19.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-19.json",
+      "receipt_sha256": "15ad5a8062850efd46b350240b484db8fa559dc0cb59c4214298d495f3354f95",
+      "session": "2026-03-19",
+      "sha256": "2d4daa066a611f75fc4f26d883df49e42de5fb28996bb078f2ea07471e2d1f31"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-20.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-20.json",
+      "receipt_sha256": "4d3b9363a27f78d3294da65abd0369e97c05448feb11e7c095d77b6e197a25a9",
+      "session": "2026-03-20",
+      "sha256": "c25c7c6d9ff159f3df3f3e48dace4d558f29f12ad06dd617b7f7511f3615b4e0"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-23.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-23.json",
+      "receipt_sha256": "e8db200b009002f3d565c0c42859536a60861b7e3dcf225dffec5c33087d224e",
+      "session": "2026-03-23",
+      "sha256": "f59dfe161f0bb4af67846679d2bd66960e8287387d1ef95961a533e8ef11ac8a"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-24.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-24.json",
+      "receipt_sha256": "20c757aa664db565d73cde3ee21b4ee85736ecaecf4a32b15fac5d816b84f62a",
+      "session": "2026-03-24",
+      "sha256": "187b9a671beacecc8fc96d3ad5f32fd295493ba6cf281129f7d4aff86a9a4ce5"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-25.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-25.json",
+      "receipt_sha256": "5c561ad4ab9d74dc7195e3b06b301d03f166fb5ced479a93df660950fd7dcc85",
+      "session": "2026-03-25",
+      "sha256": "a08bb0985c9566e52f58f17f1ed88e42343f713c12d907d0f42f765a00a4ca44"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-26.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-26.json",
+      "receipt_sha256": "7ad140f50ee35eb2fc69f210d7b811cb259f03401725ba6f5ca6bd29255183cf",
+      "session": "2026-03-26",
+      "sha256": "8bf7ceeb6a55b3075c52269c296fd432850409b8e18deb89abfaf977e082db8e"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-27.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-27.json",
+      "receipt_sha256": "ddc1f9a7cbed9a9c9d72ed69a39c69f54cff08ac38d286c748459f65ee151751",
+      "session": "2026-03-27",
+      "sha256": "a45c860c6cc8ad91669e1dd225f1b155027e44b72ce5eeb9a41c1d4ffc4e3306"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-30.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-30.json",
+      "receipt_sha256": "dcbb8269bd6a3ab8a5646eb5b0ddd8da49d0947c66ee3aa33a65e57590f92e60",
+      "session": "2026-03-30",
+      "sha256": "063625e25e6f8d301e680a3a27674c594bb57c1b876ad3330a3bdbd8a2265b92"
+    },
+    {
+      "path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_processed/2026-03-31.pkl",
+      "receipt_path": "v4/audit/autoresearch/protocol101_full_trader_stage1_entry_campaign_execution_attempt001/two_clock_materialization_receipts/2026-03-31.json",
+      "receipt_sha256": "52b722a3f67c70b5cfa1da7ae6c79854d6a16fb2cec709d16c1695f2d6f32ac7",
+      "session": "2026-03-31",
+      "sha256": "94bdc8fed131451c2cd93ea44056b34751386b589522e25750d5527c3a5c0fc3"
+    }
+  ]
+}

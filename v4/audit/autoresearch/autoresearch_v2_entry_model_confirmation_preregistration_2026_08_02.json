@@ -1,0 +1,81 @@
+{
+  "candidate_contract": {
+    "account": "protocol101_serial_simulator_v5 defaults",
+    "contract": "nearest absolute moneyness on selected side",
+    "exit": "ask_to_bid_stop50_target100_hold25m",
+    "features": [
+      "spx_vwap_gap_points",
+      "spx_vwap_gap_bps",
+      "spx_vwap_gap_over_session_range",
+      "session_range_bps",
+      "momentum_5m_bps",
+      "momentum_15m_bps",
+      "momentum_5m_over_session_range",
+      "momentum_15m_over_session_range",
+      "omar_clipped",
+      "vwap_side_align",
+      "omar_side_align",
+      "momentum15_side_align",
+      "straddle_mid_spot_bps",
+      "put_call_mid_ratio",
+      "side_smile_slope",
+      "bs_delta",
+      "bs_gamma",
+      "is_call"
+    ],
+    "model": {
+      "early_stopping": false,
+      "l2_regularization": 1.0,
+      "learning_rate": 0.05,
+      "loss": "squared_error",
+      "max_bins": 255,
+      "max_depth": 3,
+      "max_iter": 100,
+      "max_leaf_nodes": 31,
+      "min_samples_leaf": 80,
+      "random_state": 211
+    },
+    "opportunity": "first qualifying OOF-equivalent score per six fixed ET blocks",
+    "side": "side of highest-scoring candidate at signal decision",
+    "target": "ask_to_bid_stop50_target100_hold25m",
+    "threshold": 0.0
+  },
+  "confirmation_session_count": 29,
+  "confirmation_sessions_sha256": "9b5cff779cb422a5f871d3ef67d8001586f767c3ce91a71077cd214f1b00e11b",
+  "development_engine_source_hash": "133aad17d4e834127627e642421793427b789de3d02b9fd8a910b6409dba8569",
+  "development_foundation_sha256": "361c19a064e84b81a25db2ecc6b7d9dc37fad4b2b07396dedcaf328a5f681bfc",
+  "development_packet": "v4/audit/autoresearch/autoresearch_v2_corrected_v3_signal_policy_2026_08_02_attempt001",
+  "holdout_open_count_allowed": 1,
+  "holdout_open_count_before": 0,
+  "power_check": {
+    "alpha": 0.05,
+    "alternative_mean_from_development": 542.1470588235294,
+    "estimated_power_against_zero": 0.8583877007530094,
+    "required_power": 0.8,
+    "standard_deviation_from_development": 1074.1711248514694
+  },
+  "preregistration_sha256": "a579adf4ca868cdbce5c544fe25495d372eaf6136618066637e562d3c43b1aa7",
+  "schema_version": "autoresearch_v2.confirmation_preregistration.v1",
+  "single_primary_test": {
+    "alpha": 0.05,
+    "contrast": "signed18_model_side_nearest_vs_deterministic",
+    "pass_if_all": [
+      "one_sided_permutation_p<=0.05",
+      "paired_mean_dollars_per_session>=100",
+      "positive_session_count>=15_of_29",
+      "candidate_total_pnl>0",
+      "candidate_trade_count>=100"
+    ],
+    "permutation_method": "session_sign_flip_monte_carlo",
+    "permutations": 99999,
+    "seed": 509
+  },
+  "status": "FROZEN_BEFORE_HOLDOUT_OPEN",
+  "terminal_rule": {
+    "fail": "NO_INCREMENTAL_EDGE",
+    "no_rescue_or_secondary_winner": true,
+    "pass": "CONFIRMED_EDGE"
+  },
+  "winner": "signed18_model_side_nearest",
+  "winner_semantic_hash": "d418256aa639c0b14e335cc561f77c7493f4156b5b5e5447f8e1ed7b69bd3fd1"
+}

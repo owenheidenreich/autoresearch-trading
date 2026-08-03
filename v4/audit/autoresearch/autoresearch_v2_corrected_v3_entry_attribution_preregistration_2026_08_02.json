@@ -1,0 +1,55 @@
+{
+  "candidate_policies": [
+    "signed18",
+    "full25"
+  ],
+  "controls": {
+    "deterministic": "first decision per fixed block; momentum15-aligned side; nearest ATM",
+    "exact_random": "same model signal time and side; fixed SHA-256 choice within $1.50 premium caliper",
+    "nearest_atm": "same model signal time and side; nearest ATM within $1.50 premium caliper",
+    "shuffled": "same model and policy with target values deterministically permuted within training session"
+  },
+  "development_observation": "The immediate-entry reference arm in the prior preregistered timing family had positive absolute strict-serial PnL in five folds; this family tests attribution.",
+  "epoch_id": "development_2025-08-01_2026-06-09_corrected_v3_two_clock",
+  "family": [
+    "signed18_vs_deterministic",
+    "signed18_vs_shuffled",
+    "signed18_vs_nearest_atm",
+    "signed18_vs_exact_random",
+    "full25_vs_deterministic",
+    "full25_vs_shuffled",
+    "full25_vs_nearest_atm",
+    "full25_vs_exact_random",
+    "full25_vs_signed18"
+  ],
+  "frozen_exit": "ask_to_bid_stop50_target100_hold25m",
+  "holdout_access_count": 0,
+  "hypotheses": [
+    {
+      "hypothesis_id": "entry_block_first_signed18_short25_attribution_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_entry_attribution_2026_08_02/entry_block_first_signed18_short25_attribution_v1.json",
+      "semantic_hash": "6f83c112f37ee8f6640cff037170d491b2adec09ce4393992c6f6630272ad588"
+    },
+    {
+      "hypothesis_id": "entry_block_first_full25_short25_attribution_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_entry_attribution_2026_08_02/entry_block_first_full25_short25_attribution_v1.json",
+      "semantic_hash": "9bd09904c9a2f8c7db047a311dcb80fca5abfd33577160cccc80fb420758571f"
+    }
+  ],
+  "preregistration_sha256": "3f80c99ebc29d8e2a2fd511ed514457b0ae0e1a9fb9c97e0250c726699ee0146",
+  "qualification": {
+    "absolute_candidate": "positive strict-serial PnL in at least 4 of 5 folds and total PnL>0",
+    "each_required_control": [
+      "family_maxT_p<=0.05",
+      "screen_mean_delta>=10",
+      "screen_MDE80<=25",
+      "strict_serial_mean_delta>=10",
+      "strict_serial_one_sided_p<=0.05",
+      "strict_serial_MDE80<=25",
+      "strict_serial_delta_positive_in_at_least_4_of_5_folds"
+    ],
+    "winner": "prefer signed18 if both qualify; otherwise qualifying candidate"
+  },
+  "schema_version": "autoresearch_v2.entry_attribution_preregistration.v1",
+  "status": "FROZEN_BEFORE_RESULTS"
+}

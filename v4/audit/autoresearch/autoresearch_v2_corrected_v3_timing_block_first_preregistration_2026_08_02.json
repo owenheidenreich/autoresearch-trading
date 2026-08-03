@@ -1,0 +1,138 @@
+{
+  "epoch_id": "development_2025-08-01_2026-06-09_corrected_v3_two_clock",
+  "family_correction": "session_blocked_sign_flip_maxT_over_all_six_variants",
+  "features": [
+    "spx_vwap_gap_points",
+    "spx_vwap_gap_bps",
+    "spx_vwap_gap_over_session_range",
+    "session_range_bps",
+    "momentum_5m_bps",
+    "momentum_15m_bps",
+    "momentum_5m_over_session_range",
+    "momentum_15m_over_session_range",
+    "omar_clipped",
+    "vwap_side_align",
+    "omar_side_align",
+    "momentum15_side_align",
+    "straddle_mid_spot_bps",
+    "put_call_mid_ratio",
+    "side_smile_slope",
+    "bs_delta",
+    "bs_gamma",
+    "is_call",
+    "size_imbalance",
+    "depth_total",
+    "opt_spread",
+    "iv",
+    "theta",
+    "minute_of_session",
+    "minutes_to_1555"
+  ],
+  "frozen_exit": "ask_to_bid_stop50_target100_hold25m",
+  "holdout_access_count": 0,
+  "hypotheses": [
+    {
+      "hypothesis_id": "entry_block_first_learned_wait5_gt0_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_timing_block_first_2026_08_02/entry_block_first_learned_wait5_gt0_short25_v1.json",
+      "semantic_hash": "5b8b0bd372d16492055272ebac04bb2f2da3ac3072376c3c63dd998c16190d81"
+    },
+    {
+      "hypothesis_id": "entry_block_first_learned_wait5_gt10_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_timing_block_first_2026_08_02/entry_block_first_learned_wait5_gt10_short25_v1.json",
+      "semantic_hash": "3414fd2101524a10796449aea431248189aaf8f495fef66d0414bdda1f7ee054"
+    },
+    {
+      "hypothesis_id": "entry_block_first_always_wait5_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_timing_block_first_2026_08_02/entry_block_first_always_wait5_short25_v1.json",
+      "semantic_hash": "1439a05384278d764880225364671d083e1e795e9ab6bc037c9e938e8649eef2"
+    },
+    {
+      "hypothesis_id": "entry_block_first_learned_wait15_gt0_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_timing_block_first_2026_08_02/entry_block_first_learned_wait15_gt0_short25_v1.json",
+      "semantic_hash": "f432e05022bb04db165e5414fd1d19720fac80604ab779d5c2648edd08711704"
+    },
+    {
+      "hypothesis_id": "entry_block_first_learned_wait15_gt10_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_timing_block_first_2026_08_02/entry_block_first_learned_wait15_gt10_short25_v1.json",
+      "semantic_hash": "ca6db99d7f5d5f4405c878d779f0da3f82a1ab77c6677e6494484788edf35d5e"
+    },
+    {
+      "hypothesis_id": "entry_block_first_always_wait15_short25_v1",
+      "path": "v4/research/autoresearch_v2/hypotheses_corrected_v3_timing_block_first_2026_08_02/entry_block_first_always_wait15_short25_v1.json",
+      "semantic_hash": "6eb2a85891ef43740b626f8f4c8764af1d93e4072effacaa5db1e9f831952516"
+    }
+  ],
+  "model": {
+    "early_stopping": false,
+    "l2_regularization": 1.0,
+    "learning_rate": 0.05,
+    "loss": "squared_error",
+    "max_bins": 255,
+    "max_depth": 3,
+    "max_iter": 100,
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 80,
+    "random_state": 211
+  },
+  "opportunity_definition": {
+    "blocks_et": [
+      "10:01-10:59",
+      "11:00-11:59",
+      "12:00-12:59",
+      "13:00-13:59",
+      "14:00-14:59",
+      "15:00-15:20"
+    ],
+    "candidate_tie_break": "descending OOF reference prediction then candidate_uid",
+    "rule": "first decision in each block whose top OOF candidate prediction is greater than zero",
+    "unavailable_after_wait": "NO_TRADE with zero arm PnL"
+  },
+  "preregistration_sha256": "58b613a9e27985862e2df9a9862ad6271a75859e171d7cabe7a03abdaf398c9e",
+  "routing": {
+    "cheap_screen": "mean policy delta per causal signal within session",
+    "final_gate": "raw strict one-account total dollar delta per session",
+    "requirements": [
+      "family_maxT_p<=0.05",
+      "mean_delta>=10",
+      "MDE80<=25",
+      "strict_serial_one_sided_p<=0.05",
+      "strict_serial_delta_positive_in_at_least_4_of_5_folds",
+      "absolute_arm_PnL_positive_in_at_least_4_of_5_folds"
+    ],
+    "winner": "highest worst-fold strict-serial delta then mean delta then semantic hash"
+  },
+  "schema_version": "autoresearch_v2.timing_family_preregistration.v1",
+  "status": "FROZEN_BEFORE_RESULTS",
+  "variants": [
+    {
+      "delay_minutes": 5,
+      "name": "learned_wait5_gt0",
+      "wait_advantage_gate": 0.0
+    },
+    {
+      "delay_minutes": 5,
+      "name": "learned_wait5_gt10",
+      "wait_advantage_gate": 10.0
+    },
+    {
+      "delay_minutes": 5,
+      "name": "always_wait5",
+      "wait_advantage_gate": null
+    },
+    {
+      "delay_minutes": 15,
+      "name": "learned_wait15_gt0",
+      "wait_advantage_gate": 0.0
+    },
+    {
+      "delay_minutes": 15,
+      "name": "learned_wait15_gt10",
+      "wait_advantage_gate": 10.0
+    },
+    {
+      "delay_minutes": 15,
+      "name": "always_wait15",
+      "wait_advantage_gate": null
+    }
+  ]
+}

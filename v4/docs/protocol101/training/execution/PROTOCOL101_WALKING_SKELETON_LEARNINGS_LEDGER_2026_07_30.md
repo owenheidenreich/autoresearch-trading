@@ -1318,3 +1318,36 @@ we read them honestly (features irrelevant), and we did not manufacture a "pass.
 (b) FORWARD LEAD: the short 25-min hold is the only forward-stable exit -> points at the EXIT/lifecycle
 direction (data-limited this era), not entry; (c) the lean autoresearch loop is reusable honest
 infra for the next hypothesis. Meta: lean path answered in ~1 day what 6 governed generations couldn't.
+
+---
+
+## Phase update 2026-08-03 (dd) — CORRECTION: lean-loop leakage bug; autoresearch_v2 CONFIRMED a modest entry edge
+
+**Correction to (cc):** Codex's audit found my committed lean loop had a NON-CAUSAL bug — `gt_session_q60`
+computed the entry threshold from the whole test session's scores (future minutes), tainting 16/27
+S0-S3 survivors. Plus the sign-reversed guard never fired and matched-random used process-randomized
+`hash(session)`. So my confident "signed-17 entry FALSIFIED" was PREMATURE — made under a buggy,
+crude, non-serial evaluator with the wrong (120-min) exit. Owning this: verify-my-own-work failed here;
+I committed a leaky evaluator and over-claimed a negative.
+
+**autoresearch_v2 (Codex-built, ~5,420 LOC) replaced the lean loop + the governed Path-D orchestration.**
+Experiment-compiler design: agents submit TYPED JSON hypotheses; the ENGINE owns causality lint
+(`assert_mutate_future_invariant` — mutate future outcomes, assert decision-time scores unchanged; my
+q60 bug would FAIL this), threshold-free OOF caching, paired component screens, session-blocked maxT
+correction, strict one-account serial replay (simulator-v5), power routing, semantic-hypothesis dedup,
+and 7 canonical terminal statuses (dev runs cannot emit CONFIRMED_EDGE).
+
+**Result: CONFIRMED_EDGE (Claude-verified, calibrated).** Winner `signed18_model_side_nearest`: HGB on
+the 18-col signed-17 (microstructure/vol-time REMOVED — didn't help; learned contract-ranking REMOVED —
+didn't beat nearest-ATM), contributing TIMING (first score>0 per block) + SIDE (call/put); deterministic
+nearest-ATM entry; frozen 25-min exit. Dev: +$542/session vs momentum-side control, 5/5 folds. One-shot
+holdout (29 sessions, opened ONCE, model frozen before access, verified holdout_open_count=1):
+**+$540.79/session, 95% CI +$90-$991, p=0.0092, 21/29 positive**; candidate $153/trade vs control
+$67/trade; model avoids the daily-loss-stop 15x more (3 vs 18). Verified: causal (mutate-future guards),
+one-shot discipline clean, 12 adversarial engine tests pass. CALIBRATION: real but MODEST + UNCERTAIN
+(CI low end +$90 ~ the $100 practical bar; regression-to-mean after selection likely), OFFLINE only
+(not live), holdout now SPENT, one model family. First genuinely credible positive signal in the project.
+
+**Next gate = runtime DECISION parity via Databento LIVE OPRA (+ ThetaData live), NOT old IBKR** (Path-D
+made decide-parity same-vendor; IBKR is execution-only = fill parity). Then a separate paper-promotion
+review. Model SHA c5d0115b; confirmation prereg a579adf4.
