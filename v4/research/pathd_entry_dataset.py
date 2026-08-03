@@ -74,6 +74,123 @@ CORRECTED_V32_REGISTERED_TEST_PATHS = (
 CORRECTED_V32_RECONCILER_SOURCE_PATH = (
     "v4/research/pathd_v32_test_reconciliation.py"
 )
+CORRECTED_V32_SUPERSESSION_PATH = prereg.REPO_ROOT / (
+    "v4/audit/autoresearch/pathd_v32_release_supersession_2026_08_03.json"
+)
+CORRECTED_V32_RELEASE_SHA256 = (
+    "17c028d56b5473357717abac598057f6fdf183b41905420e13286a930cc3d6a7"
+)
+CORRECTED_V32_INVALIDATION_SHA256 = (
+    "6b4d3fd66cf575aa7db4e1f51bd1452baf42a33018b34e121ab43df019fc0e56"
+)
+CORRECTED_V32_SUPERSESSION_SHA256 = (
+    "e6bf396633994a70c35d42fae1da3c07a1f20fde118f54b84f6978697422a512"
+)
+
+
+class V32SupersessionError(RuntimeError):
+    """The v3.2 retirement marker or its bound evidence drifted."""
+
+
+def _read_safe_json(path: Path) -> dict[str, Any]:
+    if not path.is_file() or path.is_symlink():
+        raise V32SupersessionError(f"required v3.2 supersession evidence is unsafe: {path}")
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if type(value) is not dict:
+        raise V32SupersessionError(f"required v3.2 supersession evidence is not an object: {path}")
+    return value
+
+
+def assert_v32_release_superseded() -> dict[str, Any]:
+    """Verify the retirement marker, immutable release, and invalidation packet."""
+
+    marker = _read_safe_json(CORRECTED_V32_SUPERSESSION_PATH)
+    semantic = dict(marker)
+    marker_sha256 = semantic.pop("marker_sha256", None)
+    expected_fields = {
+        "schema_version", "status", "superseded_release_path",
+        "superseded_release_sha256", "invalidation_path",
+        "invalidation_sha256", "invalidation_status",
+        "invalidation_classification", "fit_candidate_rows",
+        "fit_candidate_rows_with_context_unavailable_at_decision", "successor",
+        "successor_status_path", "legacy_release_reconciliation_required",
+        "legacy_model_fit_authorized", "legacy_corpus_decode_authorized",
+        "legacy_evidence_open_authorized", "protected_holdout_open_authorized",
+        "broker_paper_promotion_authorized", "immutable_release_preserved", "reason",
+    }
+    if set(semantic) != expected_fields:
+        raise V32SupersessionError("v3.2 supersession marker schema drift")
+    if (
+        marker_sha256 != CORRECTED_V32_SUPERSESSION_SHA256
+        or marker_sha256 != prereg.stable_hash(semantic)
+        or marker.get("schema_version")
+        != "pathd.corrected_v32.release_supersession.v1"
+        or marker.get("status") != "SUPERSEDED_INVALID_EXPERIMENT"
+        or marker.get("superseded_release_sha256")
+        != CORRECTED_V32_RELEASE_SHA256
+        or marker.get("invalidation_sha256")
+        != CORRECTED_V32_INVALIDATION_SHA256
+        or marker.get("invalidation_status") != "OFFLINE_DECISION_PARITY_FAILED"
+        or marker.get("invalidation_classification")
+        != "FROZEN_MODEL_TRAINED_ON_CONTEXT_UNAVAILABLE_AT_DECLARED_DECISION_CLOCK"
+        or marker.get("fit_candidate_rows") != 445_063
+        or marker.get("fit_candidate_rows_with_context_unavailable_at_decision")
+        != 445_063
+        or marker.get("successor") != "PATH_D_PHASE1_CAUSAL_REBUILD"
+        or marker.get("legacy_release_reconciliation_required") is not False
+        or marker.get("immutable_release_preserved") is not True
+        or any(
+            marker.get(field) is not False
+            for field in (
+                "legacy_model_fit_authorized", "legacy_corpus_decode_authorized",
+                "legacy_evidence_open_authorized", "protected_holdout_open_authorized",
+                "broker_paper_promotion_authorized",
+            )
+        )
+    ):
+        raise V32SupersessionError("v3.2 supersession marker semantic drift")
+
+    release_path = prereg.REPO_ROOT / str(marker["superseded_release_path"])
+    invalidation_path = prereg.REPO_ROOT / str(marker["invalidation_path"])
+    if prereg.sha256_path(release_path) != CORRECTED_V32_RELEASE_SHA256:
+        raise V32SupersessionError("immutable v3.2 Claude release bytes drifted")
+    if prereg.sha256_path(invalidation_path) != CORRECTED_V32_INVALIDATION_SHA256:
+        raise V32SupersessionError("v3.2 decision-parity invalidation bytes drifted")
+
+    invalidation = _read_safe_json(invalidation_path)
+    root_cause = invalidation.get("root_cause")
+    clock_audit = invalidation.get("fitted_training_clock_audit")
+    hard_stops = invalidation.get("hard_stop_attestation")
+    if (
+        invalidation.get("schema_version")
+        != "autoresearch_v2.runtime_decision_parity.v1"
+        or invalidation.get("status") != marker["invalidation_status"]
+        or type(root_cause) is not dict
+        or root_cause.get("classification") != marker["invalidation_classification"]
+        or not str(root_cause.get("immutable_model_disposition", "")).startswith(
+            "INVALID_EXPERIMENT_AND_NOT_RUNTIME_DECISION_PARITY_ELIGIBLE"
+        )
+        or type(clock_audit) is not dict
+        or clock_audit.get("fit_candidate_rows") != marker["fit_candidate_rows"]
+        or clock_audit.get("fit_candidate_rows_with_context_unavailable_at_decision")
+        != marker["fit_candidate_rows_with_context_unavailable_at_decision"]
+        or clock_audit.get("fit_candidate_rows_with_context_available_at_decision") != 0
+        or clock_audit.get("unavailable_context_fit_row_rate") != 1.0
+        or type(hard_stops) is not dict
+        or any(value is not False and value != 0 for value in hard_stops.values())
+    ):
+        raise V32SupersessionError("v3.2 decision-parity invalidation semantics drifted")
+    return marker
+
+
+def assert_v32_execution_retired() -> None:
+    """Fail closed for an attempted v3.2 fit, decode, evidence, or execution."""
+
+    marker = assert_v32_release_superseded()
+    raise V32SupersessionError(
+        "corrected-v3.2 execution is retired: "
+        f"{marker['status']} (use the distinct Path-D Phase-1 causal rebuild)"
+    )
 
 
 def _validate_self_hashed_mapping(value: dict[str, Any], field: str) -> None:
@@ -223,67 +340,8 @@ def _validate_v32_test_reconciliation(
     }
 
 
-def _validate_v32_released_reconciliation(
-    *, generation: dict[str, Any], preregistration: dict[str, Any],
-    current_implementations: list[dict[str, str]], base_bridge_sha256: str,
-) -> dict[str, Any]:
-    """Bind post-verification source/test corrections without mutating v3.2."""
-
-    release = prereg.read_json(CORRECTED_V32_CLAUDE_RELEASE_PATH)
-    _validate_self_hashed_mapping(release, "receipt_sha256")
-    current_tests = [
-        {"path": label, "sha256": prereg.sha256_path(prereg.REPO_ROOT / label)}
-        for label in CORRECTED_V32_REGISTERED_TEST_PATHS
-    ]
-    pause = release.get("foundation_correction", {}).get("prefit_pause", {})
-    if (
-        release.get("schema_version")
-        != "pathd.corrected_v32.claude_fit_release.v1"
-        or release.get("status")
-        != "CLAUDE_VERIFIED_GATE_HARDENING_FIT_RELEASE"
-        or release.get("verification_outcome") != "PASS"
-        or release.get("foundation_generation_sha256")
-        != generation["foundation_generation_sha256"]
-        or release.get("preregistration_sha256")
-        != generation["foundation_preregistration_sha256"]
-        or release.get("source_hash_policy_sha256")
-        != generation["source_hash_policy_sha256"]
-        or release.get("implementation_receipt_sha256") != base_bridge_sha256
-        or release.get("prior_test_reconciliation_authorization_sha256")
-        != prereg.sha256_path(CORRECTED_V32_TEST_RECONCILIATION_AUTHORIZATION_PATH)
-        or release.get("prior_test_reconciliation_receipt_sha256")
-        != prereg.sha256_path(CORRECTED_V32_TEST_RECONCILIATION_RECEIPT_PATH)
-        or release.get("released_implementations") != current_implementations
-        or release.get("released_registered_tests") != current_tests
-        or any(release.get(key) is not True for key in (
-            "machinery_seal_authorized", "foundation_stability_seal_authorized",
-            "corpus_decode_authorized", "model_fit_authorized",
-            "nested_or_outer_evidence_open_authorized",
-        ))
-        or release.get("protected_holdout_open_authorized") is not False
-        or release.get("live_or_broker_action_authorized") is not False
-        or release.get("holdout_open_count") != 0
-        or pause.get("foundation_stability_gate_implemented") is not True
-        or pause.get("machinery_seal_authorized") is not True
-        or pause.get("foundation_stability_seal_authorized") is not True
-        or pause.get("model_fit_authorized") is not True
-        or pause.get("corpus_decode_authorized") is not True
-        or pause.get("nested_or_outer_evidence_open_authorized") is not True
-        or pause.get("protected_holdout_open_authorized") is not False
-        or pause.get("claude_verification_pending") is not False
-        or pause.get("separate_post_verification_release_required") is not False
-        or any(release.get(key) is not False for key in (
-            "model_fit_executed", "corpus_decoded", "evidence_opened",
-            "foundation_or_machinery_sealed_against_corpus", "holdout_opened",
-            "live_or_broker_action_executed",
-        ))
-    ):
-        raise RuntimeError("corrected-v3.2 released reconciliation drift")
-    return release
-
-
 def assert_corrected_v32_executable_bridge() -> dict[str, Any]:
-    """Rehash the v3.2 foundation and implementation chain before decode."""
+    """Validate frozen v3.2 history and its hash-bound supersession marker."""
 
     generation = prereg.read_json(CORRECTED_V32_EXECUTABLE_GENERATION_PATH)
     generation_semantic = dict(generation)
@@ -342,16 +400,16 @@ def assert_corrected_v32_executable_bridge() -> dict[str, Any]:
         or digest != prereg.stable_hash(semantic)
     ):
         raise RuntimeError("corrected-v3.2 executable bridge drift")
+    if CORRECTED_V32_CLAUDE_RELEASE_PATH.exists():
+        supersession = assert_v32_release_superseded()
+        return {
+            **receipt,
+            "historical_status": receipt["status"],
+            "status": supersession["status"],
+            "supersession_marker_sha256": supersession["marker_sha256"],
+            "legacy_release_reconciliation_required": False,
+        }
     if current_implementations != frozen_implementations:
-        if CORRECTED_V32_CLAUDE_RELEASE_PATH.exists():
-            return _validate_v32_released_reconciliation(
-                generation=generation,
-                preregistration=preregistration,
-                current_implementations=current_implementations,
-                base_bridge_sha256=prereg.sha256_path(
-                    CORRECTED_V32_EXECUTABLE_BRIDGE_PATH
-                ),
-            )
         return _validate_v32_test_reconciliation(
             preregistration=preregistration,
             frozen_implementations=frozen_implementations,
@@ -2605,6 +2663,10 @@ def read_verified_official_spx_row(
 
 
 __all__ = [
+    "V32SupersessionError",
+    "CORRECTED_V32_SUPERSESSION_PATH",
+    "assert_v32_release_superseded",
+    "assert_v32_execution_retired",
     "EntryFuturePathV1",
     "EntryExampleV1",
     "EntryActionExecutionFactV1",

@@ -87,7 +87,7 @@ V31_SYNTHETIC_TEST_NAMES = (
 
 
 def assert_corrected_v31_authorization_release() -> dict[str, Any]:
-    """Bind the v3 executable paths to the byte-frozen v3.1 release grant."""
+    """Validate the byte-frozen v3.1 release strictly as historical evidence."""
 
     if (
         not V31_AUTHORIZATION_ROOT.is_dir()
@@ -122,10 +122,13 @@ def assert_corrected_v31_authorization_release() -> dict[str, Any]:
         or release.get("science_identity_vs_corrected_v3", {}).get(
             "source_hash_policy_sha256"
         )
-        != prereg.stable_hash(prereg.read_json(prereg.PREREG_PATH)["source_hash_policy"])
+        != prereg.stable_hash(
+            prereg.read_json(V31_AUTHORIZATION_ROOT / "preregistration.json")[
+                "source_hash_policy"
+            ]
+        )
     ):
         raise RuntimeError("corrected-v3.1 authorization release semantic drift")
-    prereg.assert_foundation_restoration_frozen()
     return release
 
 
@@ -528,34 +531,12 @@ def freeze_corrected_v32_executable_bridge() -> dict[str, Any]:
 
 
 def assert_corrected_v32_fit_release() -> dict[str, Any]:
-    """Require a distinct future Claude verification receipt before fit/open."""
+    """Reject v3.2 fit/open after its signed18 result was invalidated."""
 
-    from v4.research.pathd_entry_dataset import assert_corrected_v32_executable_bridge
+    from v4.research.pathd_entry_dataset import assert_v32_execution_retired
 
-    bridge = assert_corrected_v32_executable_bridge()
-    if not V32_CLAUDE_RELEASE_PATH.is_file() or V32_CLAUDE_RELEASE_PATH.is_symlink():
-        raise RuntimeError("STOP_FOR_CLAUDE_VERIFICATION: v3.2 fit release is absent")
-    receipt = prereg.read_json(V32_CLAUDE_RELEASE_PATH)
-    semantic = dict(receipt)
-    digest = semantic.pop("receipt_sha256", None)
-    if (
-        receipt.get("schema_version") != "pathd.corrected_v32.claude_fit_release.v1"
-        or receipt.get("status") != "CLAUDE_VERIFIED_GATE_HARDENING_FIT_RELEASE"
-        or receipt.get("implementation_receipt_sha256")
-        != prereg.sha256_path(V32_EXECUTABLE_BRIDGE_PATH)
-        or receipt.get("foundation_generation_sha256")
-        != bridge["foundation_generation_sha256"]
-        or any(receipt.get(key) is not True for key in (
-            "machinery_seal_authorized", "foundation_stability_seal_authorized",
-            "corpus_decode_authorized", "model_fit_authorized",
-            "nested_or_outer_evidence_open_authorized",
-        ))
-        or receipt.get("protected_holdout_open_authorized") is not False
-        or receipt.get("holdout_open_count") != 0
-        or digest != prereg.stable_hash(semantic)
-    ):
-        raise RuntimeError("corrected-v3.2 Claude fit release drift")
-    return receipt
+    assert_v32_execution_retired()
+    raise AssertionError("unreachable: v3.2 execution retirement must fail closed")
 
 
 def _plain(value: Any) -> Any:

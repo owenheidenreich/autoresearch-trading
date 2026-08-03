@@ -5,6 +5,7 @@ from dataclasses import asdict, replace
 import pytest
 
 from v4.research import pathd_corrected_v32_foundation as foundation
+from v4.research import pathd_entry_dataset as dataset
 from v4.research import pathd_entry_execution_v32 as execution
 from v4.research import pathd_entry_exit as science
 from v4.scripts import run_pathd_entry_exit_research as runner
@@ -224,12 +225,13 @@ def test_build_creates_no_execution_evidence_or_holdout_namespace() -> None:
     assert not science.ENTRY_FOLD_ARTIFACT_ROOT.exists()
     assert not science.PROTECTED_HOLDOUT_ROOT.exists()
     if runner.V32_CLAUDE_RELEASE_PATH.exists():
-        release = runner.assert_corrected_v32_fit_release()
-        assert release["status"] == "CLAUDE_VERIFIED_GATE_HARDENING_FIT_RELEASE"
-        assert release["model_fit_executed"] is False
-        assert release["corpus_decoded"] is False
-        assert release["evidence_opened"] is False
-        assert release["foundation_or_machinery_sealed_against_corpus"] is False
-        assert release["holdout_opened"] is False
-        assert release["holdout_open_count"] == 0
-        assert release["live_or_broker_action_executed"] is False
+        supersession = dataset.assert_v32_release_superseded()
+        assert supersession["status"] == "SUPERSEDED_INVALID_EXPERIMENT"
+        assert supersession["immutable_release_preserved"] is True
+        assert supersession["legacy_model_fit_authorized"] is False
+        assert supersession["legacy_corpus_decode_authorized"] is False
+        assert supersession["legacy_evidence_open_authorized"] is False
+        assert supersession["protected_holdout_open_authorized"] is False
+        assert supersession["broker_paper_promotion_authorized"] is False
+        with pytest.raises(dataset.V32SupersessionError, match="execution is retired"):
+            runner.assert_corrected_v32_fit_release()

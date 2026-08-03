@@ -1,0 +1,23 @@
+{
+  "broker_paper_promotion_authorized": false,
+  "fit_candidate_rows": 445063,
+  "fit_candidate_rows_with_context_unavailable_at_decision": 445063,
+  "immutable_release_preserved": true,
+  "invalidation_classification": "FROZEN_MODEL_TRAINED_ON_CONTEXT_UNAVAILABLE_AT_DECLARED_DECISION_CLOCK",
+  "invalidation_path": "v4/audit/autoresearch/autoresearch_v2_frozen_entry_runtime_decision_parity_2026_08_03_attempt003/parity_result.json",
+  "invalidation_sha256": "6b4d3fd66cf575aa7db4e1f51bd1452baf42a33018b34e121ab43df019fc0e56",
+  "invalidation_status": "OFFLINE_DECISION_PARITY_FAILED",
+  "legacy_corpus_decode_authorized": false,
+  "legacy_evidence_open_authorized": false,
+  "legacy_model_fit_authorized": false,
+  "legacy_release_reconciliation_required": false,
+  "marker_sha256": "e6bf396633994a70c35d42fae1da3c07a1f20fde118f54b84f6978697422a512",
+  "protected_holdout_open_authorized": false,
+  "reason": "The v3.2 signed18 confirmation used unavailable ThetaData SPX context on every fitted row; current-source reconciliation against that invalidated release is no longer a valid precondition for invariant-only legacy utilities.",
+  "schema_version": "pathd.corrected_v32.release_supersession.v1",
+  "status": "SUPERSEDED_INVALID_EXPERIMENT",
+  "successor": "PATH_D_PHASE1_CAUSAL_REBUILD",
+  "successor_status_path": "v4/docs/protocol101/training/research/PATHD_PHASE1_RECOVERY_IMPLEMENTATION_STATUS_2026_08_03.md",
+  "superseded_release_path": "v4/audit/autoresearch/protocol101_pathd_entry_exit_model_research_corrected_v3_2_executable_2026_08_01/claude_verification_release.json",
+  "superseded_release_sha256": "17c028d56b5473357717abac598057f6fdf183b41905420e13286a930cc3d6a7"
+}
