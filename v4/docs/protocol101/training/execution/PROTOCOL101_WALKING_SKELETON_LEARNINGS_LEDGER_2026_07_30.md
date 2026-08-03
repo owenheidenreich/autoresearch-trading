@@ -1351,3 +1351,32 @@ one-shot discipline clean, 12 adversarial engine tests pass. CALIBRATION: real b
 **Next gate = runtime DECISION parity via Databento LIVE OPRA (+ ThetaData live), NOT old IBKR** (Path-D
 made decide-parity same-vendor; IBKR is execution-only = fill parity). Then a separate paper-promotion
 review. Model SHA c5d0115b; confirmation prereg a579adf4.
+
+---
+
+## Phase update 2026-08-03 (ee) — signed18 edge INVALIDATED by parity gate; causal Phase-1 rebuild; purchase-ready
+
+The autoresearch_v2 "confirmed edge" (signed18, +$540/session) was **INVALIDATED** by the runtime
+decision-parity gate: training used a **60-second SPX look-ahead** (ThetaData bar stamped t; its close
+is only causally available at t+60s). Under the correct t−60s clock only 18% of decisions reproduce, so
+the edge was largely the leak. My verification missed it — I checked the future-outcome guard + one-shot
+discipline but NOT feature-availability-clock parity (the exact train↔live parity Path-D exists for);
+the parity gate caught it before any live/paper. signed18 quarantined INVALID_EXPERIMENT; holdout SPENT.
+
+**Causal Phase-1 rebuild committed (cba15b1a):** pathd_phase1_entry/exit/replay/storage.py rebuild the
+signed-18 from raw at the causal t−60s clock (bar stamped t structurally excluded); conservative
+one-tick-through fill; 5 OOF folds + prequential initial-history training-only receipts; full-dev shadow
+can't make exit trajectories; 52 causal 1-second exit features; four-box + matched-random. Claude-audited
+PASS (clock, fill/label, entry→exit OOF firewall). Live-OPRA parity proven (914/914 exact CBBO-1m);
+emission lag 2336ms measured. Runtime boundary = read-only databento-no-order + ibkr-paper-dry-run.
+
+**Purchase-ready (Phase A verified):** footprint 89.69 GB < 150 GB cap (corrected my earlier ~5-15GB
+under-estimate; trajectories run to 15:55 not 25min, 9 label copies); suite 193 passed / 4 failed (the 4
+= legacy v3.2 release-reconciliation drift, NOT Phase-1); SSD runbook fail-closed (5-guard destructive
+erase). Owner buying a 2TB (workspace, not data — 12mo corpus already local). Next: Phase B
+owner-supervised setup -> Phase C causal training. NO_INCREMENTAL_EDGE is the honest likely outcome;
+holdout spent so even a promising causal result needs fresh months to confirm.
+
+Open housekeeping: retire the superseded v3.2 release-reconciliation gate so the 4 governance tests run
+their real assertions (do NOT xfail — that would suppress genuine invariant coverage; do NOT rewrite the
+immutable receipt). Codex task.
