@@ -7,11 +7,18 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .entry_live_feature_catalog import lint_executable_live_twin
 from .schema import COMPONENTS, SCHEMA_VERSION, TERMINAL_STATUSES, HypothesisSpec
 
 
 CAUSAL_AVAILABILITY = frozenset(
-    {"decision_time", "completed_minute_plus_60s", "prior_day_eod_static"}
+    {
+        "decision_time",
+        "decision_emission",
+        "interval_end_plus_frozen_lag",
+        "session_open_static",
+        "prior_day_eod_static",
+    }
 )
 CAUSAL_THRESHOLDS = frozenset({"fixed", "training_quantile"})
 KNOWN_MATERIALIZED_FIELDS = frozenset(
@@ -79,7 +86,7 @@ class CompiledHypothesis:
         }
 
 
-def _lint(spec: HypothesisSpec) -> list[str]:
+def _lint(spec: HypothesisSpec, *, require_fit_ready: bool = True) -> list[str]:
     errors: list[str] = []
     if spec.schema_version != SCHEMA_VERSION:
         errors.append(f"unsupported schema_version={spec.schema_version}")
@@ -91,8 +98,9 @@ def _lint(spec: HypothesisSpec) -> list[str]:
     for feature in spec.features:
         if feature.available_at not in CAUSAL_AVAILABILITY:
             errors.append(f"future_or_unknown_feature_availability:{feature.name}:{feature.available_at}")
-        if not feature.live_twin.strip():
-            errors.append(f"feature_without_live_twin:{feature.name}")
+        errors.extend(
+            lint_executable_live_twin(feature, require_fit_ready=require_fit_ready)
+        )
         if feature.name == "last_causal_open_interest" and feature.available_at != "prior_day_eod_static":
             errors.append("feature_without_live_twin:last_causal_open_interest:intraday")
     if spec.threshold.kind not in CAUSAL_THRESHOLDS:
@@ -140,12 +148,14 @@ def _lint(spec: HypothesisSpec) -> list[str]:
     return errors
 
 
-def compile_hypothesis(value: Mapping[str, Any] | HypothesisSpec) -> CompiledHypothesis:
+def compile_hypothesis(
+    value: Mapping[str, Any] | HypothesisSpec, *, require_fit_ready: bool = True
+) -> CompiledHypothesis:
     try:
         spec = value if isinstance(value, HypothesisSpec) else HypothesisSpec.from_mapping(value)
     except (KeyError, TypeError, ValueError) as exc:
         raise ExperimentCompileError((f"malformed_hypothesis:{exc}",)) from exc
-    errors = _lint(spec)
+    errors = _lint(spec, require_fit_ready=require_fit_ready)
     if errors:
         raise ExperimentCompileError(errors)
     return CompiledHypothesis(
@@ -154,7 +164,7 @@ def compile_hypothesis(value: Mapping[str, Any] | HypothesisSpec) -> CompiledHyp
         executable_guards=(
             "development_role_only",
             "foundation_hash_before_decode",
-            "feature_live_twin_and_availability",
+            "executable_feature_live_twin_and_availability",
             "future_session_threshold_rejected",
             "mutate_future_invariance",
             "oof_cache_key_excludes_threshold",

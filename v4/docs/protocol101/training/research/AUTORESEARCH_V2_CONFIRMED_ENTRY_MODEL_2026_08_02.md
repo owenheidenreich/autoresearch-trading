@@ -2,9 +2,21 @@
 
 Date: 2026-08-02
 
-Status: `CONFIRMED_EDGE` research artifact; not promoted and not runtime-enabled
+Status: `INVALID_EXPERIMENT` (clock-contract violation); former
+`CONFIRMED_EDGE` artifact quarantined, not promoted, and not runtime-enabled
 
-## Outcome
+> Clock audit update (2026-08-03): the immutable model **failed** the offline
+> Databento-live-OPRA decision-parity gate. More importantly, all 445,063 fitted
+> rows violated the hypothesis' declared `completed_minute_plus_60s` context
+> clock. The training path used the ThetaData SPX bar stamped at decision minute
+> `t`; that bar represents `[t,t+60s)` and its close is available only at
+> `t+60s`. The lawful SPX bar for the OPRA minute ending `t` is stamped `t-60s`.
+> Therefore the old confirmation is a diagnostic result for a crossed-time
+> simulation, not valid evidence for the preregistered causal experiment. The
+> raw-source replay reproduced 100% only under that invalid clock and 10.34% of
+> complete fixed-block outcomes under the lawful clock.
+
+## Recorded outcome before clock invalidation
 
 Autoresearch v2 produced and independently confirmed a fully trained entry
 model. The winning policy is `signed18_model_side_nearest`:
@@ -79,16 +91,19 @@ Every preregistered confirmation check passed, yielding `CONFIRMED_EDGE`.
 
 ## Claim boundary and next gate
 
-This proves an offline historical entry-policy edge under the frozen causal
-data, execution assumptions, and simulator-v5 trading game. It does not prove
-live profitability and does not authorize a paper-default, runtime, broker,
-promotion, or real-money change.
+This no longer proves an offline causal entry-policy edge. It records what the
+policy did in the crossed-time simulator and is useful only for debugging and
+hypothesis history. It does not authorize live shadow, paper-default, runtime,
+broker, promotion, or real-money work.
 
 The protected sessions may never be reused as confirmation data. They roll
-into development history. The next legitimate work is runtime-parity packaging
-for this exact immutable model and policy, followed by a separate owner-reviewed
-paper-promotion packet and guarded paper evidence. Any model or threshold change
-creates a new research generation and cannot cite this confirmation as its own.
+into development history. Runtime-parity packaging for this exact immutable
+model was attempted on 2026-08-03 and failed because its SPX context clock is
+one minute ahead of causal live availability. No adapter-only repair is lawful:
+the next research candidate would have to be a distinct generation trained and
+validated on the completed-minute live-twin clock. Any such model or threshold
+change cannot cite this confirmation as its own and would need a new independent
+confirmation epoch; the spent holdout cannot be reopened.
 
 ## Evidence
 
@@ -101,6 +116,12 @@ creates a new research generation and cannot cite this confirmation as its own.
   `v4/audit/autoresearch/autoresearch_v2_entry_model_confirmation_preregistration_2026_08_02.json`
 - Frozen model and one-shot confirmation:
   `v4/audit/autoresearch/autoresearch_v2_entry_model_confirmation_2026_08_02_attempt001/`
+- Runtime decision-parity failure packet:
+  `v4/audit/autoresearch/autoresearch_v2_frozen_entry_runtime_decision_parity_2026_08_03_attempt003/`
+- No-order Databento Live OPRA comparison and replacement clock:
+  `v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_attempt002/`
 
-No broker, live market-data endpoint, paper runtime, default registry, promotion
-state, or real-money path was accessed or changed.
+The clock audit accessed no broker, paper runtime, order path, default registry,
+promotion state, or real-money path. A separate owner-authorized, bounded
+no-order Databento Live OPRA sample was captured on 2026-08-03 to define the
+replacement historical/live twin; it loaded no model and opened no holdout.

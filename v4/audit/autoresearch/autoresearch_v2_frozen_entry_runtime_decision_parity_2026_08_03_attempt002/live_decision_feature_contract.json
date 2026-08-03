@@ -1,0 +1,178 @@
+{
+  "contract_sha256": "8a4007d29c7ad36234927e0a82f1fd7c365e04a208c1b1ad580fccf53946f4f6",
+  "features": [
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "spx_vwap_gap_points",
+      "formula": "spx_close - cumulative_spx_vwap",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 1,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "spx_vwap_gap_bps",
+      "formula": "gap / spx_close * 10000",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 2,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "spx_vwap_gap_over_session_range",
+      "formula": "gap / session_range, else 0",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 3,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "session_range_bps",
+      "formula": "session_range / spx_close * 10000",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 4,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "momentum_5m_bps",
+      "formula": "(close - close[t-5]) / spx_close * 10000",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 5,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "momentum_15m_bps",
+      "formula": "(close - close[t-15]) / spx_close * 10000",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 6,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "momentum_5m_over_session_range",
+      "formula": "momentum_5m / session_range, else 0",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 7,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "momentum_15m_over_session_range",
+      "formula": "momentum_15m / session_range, else 0",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 8,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "omar_clipped",
+      "formula": "clip((close-first_close)/session_range, -3, 3)",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 9,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "vwap_side_align",
+      "formula": "1 iff gap has the candidate side sign",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 10,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "omar_side_align",
+      "formula": "1 iff OMAR has the candidate side sign",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 11,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session only; no forward observation and no cross-session carry",
+      "causal_availability_clock": "bar-open event_time + 60 seconds; latest completed same-session bar with available_at<=decision_time and age<=90 seconds",
+      "feature": "momentum15_side_align",
+      "formula": "1 iff 15m momentum has the candidate side sign",
+      "historical_twin": "vendor/thetadata/index/spx_1m/{session}.parquet",
+      "index": 12,
+      "source_plane": "THETADATA_LIVE_OFFICIAL_SPX_1M"
+    },
+    {
+      "carry": "same session and exact contract only; no cross-session carry",
+      "causal_availability_clock": "CBBO-1m ts_recv is the completed interval boundary; latest exact-contract quote with ts_recv<=decision_time and age<=90 seconds",
+      "feature": "straddle_mid_spot_bps",
+      "formula": "(ATM call mid + ATM put mid) / SPX * 10000",
+      "historical_twin": "raw/databento/opra_spxw_cbbo_1m/{session}.cbbo-1m.parquet",
+      "index": 13,
+      "source_plane": "DATABENTO_LIVE_OPRA_CBBO_1M_COMPLETED"
+    },
+    {
+      "carry": "same session and exact contract only; no cross-session carry",
+      "causal_availability_clock": "CBBO-1m ts_recv is the completed interval boundary; latest exact-contract quote with ts_recv<=decision_time and age<=90 seconds",
+      "feature": "put_call_mid_ratio",
+      "formula": "ATM put mid / ATM call mid",
+      "historical_twin": "raw/databento/opra_spxw_cbbo_1m/{session}.cbbo-1m.parquet",
+      "index": 14,
+      "source_plane": "DATABENTO_LIVE_OPRA_CBBO_1M_COMPLETED"
+    },
+    {
+      "carry": "same session and exact contract only; no cross-session carry",
+      "causal_availability_clock": "CBBO-1m ts_recv is the completed interval boundary; latest exact-contract quote with ts_recv<=decision_time and age<=90 seconds",
+      "feature": "side_smile_slope",
+      "formula": "(call mid at +5 - call mid at -5) / SPX * 10000",
+      "historical_twin": "raw/databento/opra_spxw_cbbo_1m/{session}.cbbo-1m.parquet",
+      "index": 15,
+      "source_plane": "DATABENTO_LIVE_OPRA_CBBO_1M_COMPLETED"
+    },
+    {
+      "carry": "none; recompute from current causal inputs with r=0.05 and q=0.0",
+      "causal_availability_clock": "after both causal quote and completed SPX inputs pass",
+      "feature": "bs_delta",
+      "formula": "repaired Black-Scholes delta from causal BBO mid/ask/bid",
+      "historical_twin": "v4.greeks.repair.compute_repaired_greeks",
+      "index": 16,
+      "source_plane": "SELF_COMPUTED_FROM_DATABENTO_CBBO_AND_THETADATA_SPX"
+    },
+    {
+      "carry": "none; recompute from current causal inputs with r=0.05 and q=0.0",
+      "causal_availability_clock": "after both causal quote and completed SPX inputs pass",
+      "feature": "bs_gamma",
+      "formula": "repaired Black-Scholes gamma from causal BBO mid/ask/bid",
+      "historical_twin": "v4.greeks.repair.compute_repaired_greeks",
+      "index": 17,
+      "source_plane": "SELF_COMPUTED_FROM_DATABENTO_CBBO_AND_THETADATA_SPX"
+    },
+    {
+      "carry": "contract-scoped static metadata for the same session",
+      "causal_availability_clock": "definition known before the decision; SPXW 0DTE PM only",
+      "feature": "is_call",
+      "formula": "1 for OPRA call definition, else 0",
+      "historical_twin": "raw/databento/opra_spxw_definition/{session}.definition.parquet",
+      "index": 18,
+      "source_plane": "DATABENTO_LIVE_OPRA_DEFINITION"
+    }
+  ],
+  "float_comparison": {
+    "atol": 1e-12,
+    "rtol": 0.0
+  },
+  "ibkr_decision_features": false,
+  "live_network_required": false,
+  "model_sha256": "c5d0115ba187ae8f443ac57ea813fa74cc689c03bbf546cb72d8262bc65f463e",
+  "ordered_feature_count": 18,
+  "policy_id": "signed18_model_side_nearest",
+  "schema_version": "autoresearch_v2.live_decision_feature_contract.v1",
+  "vix_context_disposition": "ThetaData VIX may coexist on the context plane but is not consumed by any of the frozen 18 columns; changing VIX cannot change model input or score."
+}

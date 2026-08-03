@@ -21,7 +21,17 @@ from v4.research.autoresearch_v2.statistics import session_blocked_max_t
 
 
 def _valid_spec():
-    return deepcopy(builtin_hypotheses()["entry_direction_call_vs_put_v1"])
+    spec = deepcopy(builtin_hypotheses()["entry_direction_call_vs_put_v1"])
+    spec["feature_families"] = {"add": ["contract_clock"], "remove": []}
+    spec["features"] = [
+        {
+            "name": "is_call",
+            "family": "contract_clock",
+            "available_at": "decision_time",
+            "live_twin": "entry.contract_clock.v1",
+        }
+    ]
+    return spec
 
 
 def test_future_session_threshold_fails_compilation() -> None:
@@ -45,12 +55,33 @@ def test_intraday_open_interest_without_live_twin_fails() -> None:
         compile_hypothesis(spec)
 
 
+def test_prose_claim_is_not_an_executable_live_twin() -> None:
+    spec = _valid_spec()
+    spec["features"][0]["live_twin"] = "Protocol101 live option ladder"
+    with pytest.raises(ExperimentCompileError, match="feature_without_executable_live_twin"):
+        compile_hypothesis(spec)
+
+
+def test_observed_but_unproved_cbbo_feature_is_not_fit_ready() -> None:
+    spec = _valid_spec()
+    spec["features"] = [
+        {
+            "name": "size_imbalance",
+            "family": "live_safe_microstructure",
+            "available_at": "interval_end_plus_frozen_lag",
+            "live_twin": "entry.opra_cbbo1m_native.v1",
+        }
+    ]
+    with pytest.raises(ExperimentCompileError, match="PENDING_SAME_SESSION_REPLAY"):
+        compile_hypothesis(spec)
+
+
 def test_renaming_cannot_evade_semantic_registry(tmp_path) -> None:
-    first = compile_hypothesis(_valid_spec())
+    first = compile_hypothesis(_valid_spec(), require_fit_ready=False)
     renamed = _valid_spec()
     renamed["hypothesis_id"] = "same_mechanics_new_goal_name"
     renamed["claim"] = "rewritten prose"
-    second = compile_hypothesis(renamed)
+    second = compile_hypothesis(renamed, require_fit_ready=False)
     assert first.semantic_hash == second.semantic_hash
     path = tmp_path / "registry.jsonl"
     register(path, first, status="NO_INCREMENTAL_EDGE", result_path="first.json")
@@ -158,15 +189,9 @@ def test_corrected_development_and_confirmation_boundaries_are_disjoint() -> Non
     assert development.isdisjoint(confirmation)
 
 
-def test_integrated_entry_policy_is_typed_and_compilable() -> None:
-    compiled = compile_hypothesis(hypothesis_payload("signed18_model_side_nearest"))
-    assert compiled.spec.component == "entry_policy"
-    assert compiled.spec.exposure_matching == (
-        "session",
-        "fixed_time_block",
-        "frozen_exit",
-        "account_rules",
-    )
+def test_invalidated_integrated_entry_policy_cannot_compile_on_prose_twins() -> None:
+    with pytest.raises(ExperimentCompileError, match="feature_without_executable_live_twin"):
+        compile_hypothesis(hypothesis_payload("signed18_model_side_nearest"))
 
 
 def test_confirmation_sign_flip_canary_detects_uniform_positive_effect() -> None:

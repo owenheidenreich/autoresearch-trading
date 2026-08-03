@@ -1,0 +1,76 @@
+{
+  "schema_version": "autoresearch.live-opra-training-twin-foundation.v1",
+  "generation_id": "live_opra_training_twin_v1_2026_08_03",
+  "status": "FOUNDATION_BUILT_NOT_FIT_READY",
+  "supersedes_for_future_training_only": "development_2025-08-01_2026-06-09_corrected_v3_two_clock",
+  "quarantined_model_sha256": "c5d0115ba187ae8f443ac57ea813fa74cc689c03bbf546cb72d8262bc65f463e",
+  "fit_authorized": false,
+  "holdout_open_authorized": false,
+  "paper_or_broker_authorized": false,
+  "clock_law": {
+    "feature_interval": "[t-60s,t)",
+    "option_feature_source": "DATABENTO_OPRA_CBBO_1M_NATIVE_TS_RECV_EQUALS_T",
+    "official_spx_source": "THETADATA_EVENT_TIME_EQUALS_T_MINUS_60S",
+    "decision_emission": "T_PLUS_FIXED_L_AFTER_ACTUAL_RECEIPT_OF_BOTH_SOURCES",
+    "entry_reference": "LATEST_FRESH_EXACT_CONTRACT_DATABENTO_OPRA_CBBO_1S_AT_FROZEN_ARRIVAL",
+    "label_origin": "ENTRY_ARRIVAL_OR_FILL",
+    "frozen_reference_exit": "ENTRY_ARRIVAL_PLUS_25_MINUTES",
+    "crossed_time_wait_60_adapter": "FORBIDDEN"
+  },
+  "contract_identity": {
+    "stable": "RAW_OSI_SYMBOL",
+    "session_binding": "CURRENT_SESSION_LIVE_DEFINITION_OR_SYMBOL_MAPPING",
+    "prior_day_instrument_id": "FORBIDDEN",
+    "definition_update_law": "LATEST_CAUSAL_ADD_OR_MODIFY_SURVIVES; DELETE_REMOVES"
+  },
+  "known_parameters": {
+    "option_entry_quote_max_age_ms": 2000,
+    "feature_boundary_alignment": "EXACT_UTC_MINUTE",
+    "warmup_minimum_complete_minutes": 1,
+    "reconnect_resets_warmup": true
+  },
+  "unfrozen_fit_blocking_parameters": {
+    "decision_emission_lag_ms": null,
+    "order_arrival_latency_ms": null,
+    "reason": "requires live ThetaData completed-minute receipt timing plus multi-session OPRA distribution"
+  },
+  "implementation": {
+    "path": "v4/research/autoresearch_v2/live_opra_training_twin.py",
+    "sha256": "30322c68019b29a90b3e056da86fa7db2b42f496e1f30b5751351f5321e78755"
+  },
+  "entry_feature_catalog": {
+    "path": "v4/research/autoresearch_v2/entry_live_feature_catalog.py",
+    "sha256": "baf7a87d1b5abbd5895a422ca1c5a8a5c3c881b5eebd18206fed1bd1dd399781",
+    "compiler_policy": "EXACT_EXECUTABLE_CONTRACT_ID_AND_FIT_READY_STATUS_REQUIRED",
+    "prose_live_twin_claims": "FORBIDDEN"
+  },
+  "evidence": {
+    "runtime_clock_audit_path": "v4/audit/autoresearch/autoresearch_v2_frozen_entry_runtime_decision_parity_2026_08_03_attempt003/parity_result.json",
+    "runtime_clock_audit_file_sha256": "6b4d3fd66cf575aa7db4e1f51bd1452baf42a33018b34e121ab43df019fc0e56",
+    "runtime_clock_audit_result_sha256": "59cd203fc4f546a703f5cb41189a34b11b3e17edb8998a46f08583be894a311b",
+    "live_comparison_path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_attempt002/comparison_result.json",
+    "live_comparison_file_sha256": "177cf050f16683f834d269223cc05268fb03c5d397ec7642ad0b040f9f462762",
+    "live_comparison_result_sha256": "6794716942749706a970a4fae30d3f29de54fd8196d3fc161c47064d06546e1e",
+    "live_cbbo_capture_summary_sha256": "dab8c7ca6ba8cbcdbcf84ae3f3be5c58d58f1de943c6433b1e038d53f5c5e1bc",
+    "live_definition_capture_summary_sha256": "b070cc1f5e8e7907b64e7ad4b3b43012ed4e94eb057659a33905c11dda3787cb",
+    "live_feature_surface_capture_path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/feature_surface_attempt001/capture_summary.json",
+    "live_feature_surface_capture_file_sha256": "9183ae5fb3f58f4fb4f751de39852d80d71542115b2b0045f58f436b4dd3d5c6",
+    "live_feature_surface_capture_result_sha256": "7073a5117239a4a3d9809a0ca7d91376b982600a0ae41d833e07ae1261609f94",
+    "live_feature_surface_analysis_path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/feature_surface_analysis_attempt001/feature_surface_analysis.json",
+    "live_feature_surface_analysis_file_sha256": "1755609aa10b71ab838dce3054f102f8565df5e91cb475f78dc9799b108913a0",
+    "live_feature_surface_analysis_result_sha256": "d93a013b853c089fcfd15c6fe82db56d19d48c25b26c20ab38f7f0f5e2f2b2f1"
+  },
+  "required_before_fit": [
+    "freeze decision_emission_lag_ms from both live source receipt distributions",
+    "freeze order_arrival_latency_ms and use it in entry fill and label origin",
+    "prove same-session live DBN to post-session historical API value identity",
+    "bind current-session definition replay into candidate construction",
+    "prove sparse OPRA OHLCV minutes with explicit zero-fill and no prior-bar carry",
+    "choose bounded-ladder or isolated ingestion if CMBP-1 is acquired; full-universe combined capture had multi-second tails",
+    "keep trade aggressor inference out until TCBBO quote-rule validation passes; native OPRA side was N in the live sample",
+    "pass multi-session cold-start reconnect duplicate missing-row early-close and numeric parity tests",
+    "materialize a distinct development-only dataset without opening the spent holdout",
+    "obtain Claude and owner verification of the completed foundation"
+  ],
+  "highest_allowed_claim": "model-free historical/live training-twin foundation built; not fit-ready; no edge claimed"
+}

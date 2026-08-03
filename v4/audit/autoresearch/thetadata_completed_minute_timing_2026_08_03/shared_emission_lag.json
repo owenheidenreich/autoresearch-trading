@@ -1,0 +1,30 @@
+{
+  "broker_or_order_path": false,
+  "clock_law": {
+    "decision_emission": "t plus frozen_emission_lag_ms",
+    "opra_cbbo_1m_boundary": "completed interval end t",
+    "thetadata_bar": "event_time t-60s becomes complete when bar t first appears"
+  },
+  "databento_summary": {
+    "cbbo_p99_ns": 319521000,
+    "path": "/Users/gduby/Documents/autoresearch-trading/v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/attempt002/capture_summary.json",
+    "sha256": "ea15614ca4ab09397fa21b1c9ef4d1ef56716e5610165ddd794ab0ef5cad58cc"
+  },
+  "frozen_emission_lag_ms": 2336,
+  "protected_holdout_opened": false,
+  "receipt_sha256": "1af6f4f400211fa58ecba48630ebfa17475a9be030d0b60ed9006b82e0769daf",
+  "schema_version": "pathd.shared-emission-lag.v1",
+  "status": "FROZEN",
+  "theta_p99_ns": 2335230000,
+  "theta_receipts": [
+    {
+      "path": "/Users/gduby/Documents/autoresearch-trading/v4/audit/autoresearch/thetadata_completed_minute_timing_2026_08_03/attempt003.json",
+      "sha256": "426b425f4ad0296624d6ef84ace1a5d8adda22531e45d2245c2fcd78acc5ef0d"
+    },
+    {
+      "path": "/Users/gduby/Documents/autoresearch-trading/v4/audit/autoresearch/thetadata_completed_minute_timing_2026_08_03/attempt004.json",
+      "sha256": "686ae3109789bae87acc13de3f23e9759b25027aedb59735d3320d2765e53712"
+    }
+  ],
+  "theta_sample_count": 5
+}

@@ -53,11 +53,33 @@ Every experiment terminates as one of `INVALID_EXPERIMENT`,
 `CONFIRMED_EDGE`; that status requires a separately preregistered one-shot fresh
 research epoch.
 
-## Confirmed research artifact
+## Quarantined former confirmation
 
-The 2026-08-02 corrected-v3.2 campaign produced one `CONFIRMED_EDGE` entry
-policy after a separately powered, preregistered 29-session one-shot
-confirmation. The immutable evidence and claim boundary are recorded in
+The 2026-08-02 corrected-v3.2 campaign originally emitted one `CONFIRMED_EDGE`
+entry policy after a separately powered 29-session one-shot confirmation. The
+subsequent clock audit found that all 445,063 fitted rows violated the declared
+completed-minute context clock, so the experiment is now classified
+`INVALID_EXPERIMENT` and the model is quarantined. The immutable evidence and
+claim boundary are recorded in
 `v4/docs/protocol101/training/research/AUTORESEARCH_V2_CONFIRMED_ENTRY_MODEL_2026_08_02.md`.
 The confirmation set is spent and cannot be reused. The artifact is research
-evidence only; runtime parity and paper promotion remain separate gates.
+evidence only. Its 2026-08-03 offline runtime decision-parity gate failed: the
+training context consumed the ThetaData SPX bar at its bar-open timestamp,
+while the live twin can consume its close only 60 seconds later. The exact
+raw-source adapter reproduced the training path at 100% under the diagnostic
+training clock, isolating the clock mismatch. The frozen model must not proceed
+to live shadow or paper promotion; a causal-clock replacement would be a
+distinct research generation.
+
+The model-free shared source selector for that future generation is
+`live_opra_training_twin.py`. It aligns native OPRA `cbbo-1m` at interval end
+`t` with the official SPX bar stamped `t-60s`, then starts entry execution and
+the exit horizon from a fresh `cbbo-1s` arrival quote. Its emission lag remains
+unfrozen pending a live ThetaData receipt-timing sample, so it does not
+authorize fitting.
+
+The live-first entry feature catalog is `entry_live_feature_catalog.py`. Every
+new feature must bind to an exact executable contract ID, clock, missing/carry
+law, and fit-readiness state. Prose claims such as "live option ladder" are
+rejected. The catalog and expanded OPRA schema findings are documented in
+`v4/docs/protocol101/training/research/AUTORESEARCH_V2_LIVE_FIRST_ENTRY_FEATURE_AUDIT_2026_08_03.md`.

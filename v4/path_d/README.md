@@ -17,8 +17,8 @@ replace, register, schedule, or call it.
 - `execution/`: virtual-clock simulator, full order state machine, fake gateway
   stub, transcript logging, and offline paired-quote latency bounds.
 - `observability/`: reserved boundary for contract-based reporting.
-- `runtime/`: reserved future composition root; intentionally empty in steps
-  1–6.
+- `runtime/`: contains the read-only, paper-account-only IBKR compatibility
+  preview used by the separate Path-D development candidate.
 
 ## Import laws
 
@@ -31,8 +31,12 @@ risk      -> contracts only
 execution -> contracts; offline evidence readers only
 ```
 
-Only a future `ibkr_adapter.py` may import `ib_insync` or `ibapi`. There is no
-real adapter in this stage. `fake_gateway_stub.py` is an in-memory test seam.
+The decision, risk, and execution packages remain broker-free. The separate
+candidate runner imports `ib_insync` only after selecting
+`ibkr-paper-dry-run`, connects read-only, and delegates exact-contract
+qualification/local order construction to `runtime/ibkr_paper_dry_run.py`.
+That adapter has no submission operation. `fake_gateway_stub.py` remains the
+in-memory execution test seam.
 
 ## Clock and identity
 
@@ -53,4 +57,3 @@ PYTHONPATH=. ~/.autoresearch-trading/runtime-venv/bin/python \
 This reads only local owned files and writes
 `v4/audit/autoresearch/path_d_offline_foundation/`. It does not download data,
 contact a broker, fit a model, or mutate runtime state.
-

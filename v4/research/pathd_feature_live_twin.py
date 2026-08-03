@@ -56,6 +56,9 @@ AVAILABLE_AT_EVENT_PLUS_60_SECONDS: Final = "event_time+60_seconds"
 SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION: Final = (
     "latest_available_at_less_than_or_equal_to_decision_time"
 )
+SELECT_EXACT_COMPLETED_INTERVAL_OR_ZERO_AFTER_CUTOFF: Final = (
+    "exact_completed_interval_or_zero_after_healthy_frozen_cutoff"
+)
 
 
 @dataclass(frozen=True)
@@ -99,6 +102,7 @@ class IntradayLiveTwinBinding:
     latest_exact_contract: bool
     max_feature_age_seconds: int
     cross_session_carry: bool
+    missing_exact_interval_is_zero_after_cutoff: bool
     adapter_implementation_sha256: str
     adapter_receipt_sha256: str
 
@@ -345,11 +349,12 @@ EXIT49_LIVE_TWIN_INVENTORY: Final = _ordered(
             DATABENTO_OPRA_TRADES_1M_COMPLETED,
         ),
         clock_semantics=(
-            "ts_event is bar-open; available_at=ts_event+60 seconds; latest completed "
-            "exact-contract bar; age<=90 seconds; no cross-session carry"
+            "ts_event is bar-open; available only after ts_event+60 seconds and the "
+            "frozen receipt cutoff; use the exact completed contract-minute bar or "
+            "synthesize zero after a healthy cutoff when no bar prints"
         ),
-        selection_rule=SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION,
-        carry_policy="same-session latest completed exact-contract minute; age<=90 seconds",
+        selection_rule=SELECT_EXACT_COMPLETED_INTERVAL_OR_ZERO_AFTER_CUTOFF,
+        carry_policy="exact contract-minute only; never carry a prior minute's volume",
         max_feature_age_seconds=90,
         recommended_action=DROP_UNTIL_EXACT_ADAPTER_RECEIPT,
     )
@@ -481,8 +486,13 @@ def validate_intraday_live_twin_binding(
         raise ValueError("intraday features must consume completed observations only")
     if type(binding.cross_session_carry) is not bool or binding.cross_session_carry:
         raise ValueError("cross-session feature carry is forbidden")
-    if binding.selection_rule != SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION:
-        raise ValueError("adapter must select latest available_at at or before decision")
+    expected_selection = (
+        SELECT_EXACT_COMPLETED_INTERVAL_OR_ZERO_AFTER_CUTOFF
+        if binding.feature_name == "last_causal_minute_volume"
+        else SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION
+    )
+    if binding.selection_rule != expected_selection:
+        raise ValueError("adapter selection rule does not match the feature contract")
     if (
         type(binding.selected_available_at_ns) is not int
         or type(binding.decision_time_ns) is not int
@@ -510,6 +520,10 @@ def validate_intraday_live_twin_binding(
             raise ValueError("minute volume is unavailable before bar close")
         if not binding.latest_exact_contract:
             raise ValueError("minute volume must use the latest exact-contract bar")
+        if not binding.missing_exact_interval_is_zero_after_cutoff:
+            raise ValueError(
+                "sparse minute volume must finalize a missing exact interval as zero"
+            )
         if binding.max_feature_age_seconds > 90:
             raise ValueError("minute-volume carry exceeds the 90-second bound")
     return record

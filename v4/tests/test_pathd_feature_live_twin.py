@@ -33,6 +33,7 @@ from v4.research.pathd_feature_live_twin import (
     LIVE_NATIVE_CAUSAL_STATE,
     NO_INTRADAY_LIVE_TWIN,
     PRIOR_DAY_EOD_STATIC,
+    SELECT_EXACT_COMPLETED_INTERVAL_OR_ZERO_AFTER_CUTOFF,
     SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION,
     live_twin_record,
     validate_intraday_live_twin_binding,
@@ -48,13 +49,14 @@ def _volume_binding(**changes: object) -> IntradayLiveTwinBinding:
         adapter="v4.future.pathd_exit_live::completed_option_minute_volume",
         event_time_semantics=BAR_OPEN_TIMESTAMP,
         available_at_rule=AVAILABLE_AT_EVENT_PLUS_60_SECONDS,
-        selection_rule=SELECT_LATEST_AVAILABLE_AT_OR_BEFORE_DECISION,
+        selection_rule=SELECT_EXACT_COMPLETED_INTERVAL_OR_ZERO_AFTER_CUTOFF,
         selected_available_at_ns=61_000_000_000,
         decision_time_ns=61_000_000_000,
         completed_only=True,
         latest_exact_contract=True,
         max_feature_age_seconds=90,
         cross_session_carry=False,
+        missing_exact_interval_is_zero_after_cutoff=True,
         adapter_implementation_sha256="a" * 64,
         adapter_receipt_sha256="b" * 64,
     )
@@ -212,6 +214,7 @@ def test_feature_without_live_twin_fixture_rejects_intraday_open_interest_even_w
         latest_exact_contract=True,
         max_feature_age_seconds=90,
         cross_session_carry=False,
+        missing_exact_interval_is_zero_after_cutoff=False,
         adapter_implementation_sha256="a" * 64,
         adapter_receipt_sha256="b" * 64,
     )
@@ -229,7 +232,7 @@ def test_feature_without_live_twin_fixture_rejects_intraday_open_interest_even_w
         ({"live_source": DATABENTO_OPRA_STATISTICS_EOD}, "live source"),
         ({"event_time_semantics": "BAR_CLOSE_TIMESTAMP"}, "bar-open"),
         ({"available_at_rule": "event_time"}, "bar close"),
-        ({"selection_rule": "latest_event_time"}, "available_at at or before"),
+        ({"selection_rule": "latest_event_time"}, "selection rule"),
         (
             {
                 "selected_available_at_ns": 61_000_000_001,
@@ -250,6 +253,10 @@ def test_feature_without_live_twin_fixture_rejects_intraday_open_interest_even_w
         ({"max_feature_age_seconds": 91}, "90-second"),
         ({"max_feature_age_seconds": -1}, "nonnegative"),
         ({"cross_session_carry": True}, "Cross-session|cross-session"),
+        (
+            {"missing_exact_interval_is_zero_after_cutoff": False},
+            "missing exact interval as zero",
+        ),
     ],
 )
 def test_minute_volume_fails_without_exact_completed_bar_semantics(
@@ -276,3 +283,9 @@ def test_minute_volume_is_conditionally_live_derivable_with_exact_receipt(
     assert record.adapter_receipt_required_before_fit is True
     assert record.recommended_action == DROP_UNTIL_EXACT_ADAPTER_RECEIPT
     assert record.feature_name not in EXIT47_CORRECTED_FEATURE_NAMES
+
+
+def test_minute_volume_inventory_forbids_prior_bar_carry() -> None:
+    record = live_twin_record("exit", "last_causal_minute_volume")
+    assert record.selection_rule == SELECT_EXACT_COMPLETED_INTERVAL_OR_ZERO_AFTER_CUTOFF
+    assert "never carry" in record.carry_policy

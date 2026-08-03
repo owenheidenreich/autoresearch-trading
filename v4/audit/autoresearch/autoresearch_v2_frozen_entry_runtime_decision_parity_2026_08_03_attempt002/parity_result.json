@@ -1,0 +1,1167 @@
+{
+  "aggregate": {
+    "bit_identical_score_count": 4803,
+    "bit_identical_score_rate": 0.2400779766070179,
+    "block_count": 58,
+    "block_enter_wait_match_rate": 0.9827586206896551,
+    "block_selected_contract_match_rate": 0.43103448275862066,
+    "block_side_match_rate": 0.7241379310344828,
+    "block_signal_score_match_rate": 0.13793103448275862,
+    "block_signal_time_match_rate": 0.3620689655172414,
+    "candidate_set_identical": false,
+    "complete_block_policy_match_count": 6,
+    "complete_block_policy_match_rate": 0.10344827586206896,
+    "complete_decision_match_count": 558,
+    "complete_decision_match_rate": 0.1844018506278916,
+    "decision_count": 3026,
+    "enter_wait_match_rate": 0.9758757435558493,
+    "feature_cell_count": 360108,
+    "feature_cell_match_count": 85971,
+    "feature_within_tolerance_rate": 0.23873671231963745,
+    "score_candidate_union_count": 20006,
+    "selected_contract_match_rate": 0.9742233972240582,
+    "side_match_rate": 0.9745538664904164
+  },
+  "claim": "offline decision-parity is not certified; the frozen training and causal live-twin paths diverge.",
+  "diagnostic_training_clock_only_noncertifying": {
+    "all_ten_sessions_exact": true,
+    "purpose": "isolates causal +60s ThetaData availability-clock effects; never a live contract",
+    "sessions": [
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 320,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 320,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 1735,
+          "feature_cell_count": 31230,
+          "feature_cell_match_count": 31230,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 1735,
+          "matched_candidate_count": 1735,
+          "training_candidate_count": 1735
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 1735,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 1735,
+          "matched_candidate_count": 1735,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2025-10-03"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 5,
+          "both_paths_enter_count": 5,
+          "complete_block_policy_match_count": 5,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 5,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 243,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 243,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 1683,
+          "feature_cell_count": 30294,
+          "feature_cell_match_count": 30294,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 1683,
+          "matched_candidate_count": 1683,
+          "training_candidate_count": 1683
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 1683,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 1683,
+          "matched_candidate_count": 1683,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2025-11-20"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 5,
+          "both_paths_enter_count": 5,
+          "complete_block_policy_match_count": 5,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 5,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 241,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 241,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 1771,
+          "feature_cell_count": 31878,
+          "feature_cell_match_count": 31878,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 1771,
+          "matched_candidate_count": 1771,
+          "training_candidate_count": 1771
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 1771,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 1771,
+          "matched_candidate_count": 1771,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2025-11-21"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 320,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 320,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 1444,
+          "feature_cell_count": 25992,
+          "feature_cell_match_count": 25992,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 1444,
+          "matched_candidate_count": 1444,
+          "training_candidate_count": 1444
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 1444,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 1444,
+          "matched_candidate_count": 1444,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2026-01-12"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 320,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 320,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 1740,
+          "feature_cell_count": 31320,
+          "feature_cell_match_count": 31320,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 1740,
+          "matched_candidate_count": 1740,
+          "training_candidate_count": 1740
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 1740,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 1740,
+          "matched_candidate_count": 1740,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2026-01-13"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 313,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 313,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 2312,
+          "feature_cell_count": 41616,
+          "feature_cell_match_count": 41616,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 2312,
+          "matched_candidate_count": 2312,
+          "training_candidate_count": 2312
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 2312,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 2312,
+          "matched_candidate_count": 2312,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2026-03-03"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 320,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 320,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 2231,
+          "feature_cell_count": 40158,
+          "feature_cell_match_count": 40158,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 2231,
+          "matched_candidate_count": 2231,
+          "training_candidate_count": 2231
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 2231,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 2231,
+          "matched_candidate_count": 2231,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2026-03-04"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 320,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 320,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 2331,
+          "feature_cell_count": 41958,
+          "feature_cell_match_count": 41958,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 2331,
+          "matched_candidate_count": 2331,
+          "training_candidate_count": 2331
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 2331,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 2331,
+          "matched_candidate_count": 2331,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2026-04-21"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 320,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 320,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 2134,
+          "feature_cell_count": 38412,
+          "feature_cell_match_count": 38412,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 2134,
+          "matched_candidate_count": 2134,
+          "training_candidate_count": 2134
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 2134,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 2134,
+          "matched_candidate_count": 2134,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2026-04-22"
+      },
+      {
+        "block_policy": {
+          "action_match_rate": 1.0,
+          "bit_identical_signal_score_rate": 1.0,
+          "block_count": 6,
+          "both_paths_enter_count": 6,
+          "complete_block_policy_match_count": 6,
+          "complete_block_policy_match_rate": 1.0,
+          "same_signal_time_side_contract_count": 6,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0,
+          "signal_time_match_rate": 1.0
+        },
+        "decision": {
+          "complete_decision_match_count": 309,
+          "complete_decision_match_rate": 1.0,
+          "decision_count": 309,
+          "enter_wait_match_rate": 1.0,
+          "score_match_rate": 1.0,
+          "selected_contract_match_rate": 1.0,
+          "side_match_rate": 1.0
+        },
+        "feature": {
+          "candidate_set_identical": true,
+          "candidate_union_count": 2203,
+          "feature_cell_count": 39654,
+          "feature_cell_match_count": 39654,
+          "feature_within_tolerance_rate": 1.0,
+          "live_candidate_count": 2203,
+          "matched_candidate_count": 2203,
+          "training_candidate_count": 2203
+        },
+        "max_feature_divergence": 0.0,
+        "score": {
+          "bit_identical_score_count": 2203,
+          "bit_identical_score_rate": 1.0,
+          "candidate_union_count": 2203,
+          "matched_candidate_count": 2203,
+          "max_abs_score_divergence": 0.0
+        },
+        "session": "2026-06-09"
+      }
+    ]
+  },
+  "float_comparison": {
+    "atol": 1e-12,
+    "rtol": 0.0
+  },
+  "foundation_path": "v4/research/autoresearch_v2/foundations/development_2025-08-01_2026-06-09_corrected_v3_two_clock.json",
+  "foundation_sha256": "361c19a064e84b81a25db2ecc6b7d9dc37fad4b2b07396dedcaf328a5f681bfc",
+  "frozen_binding": {
+    "features": [
+      "spx_vwap_gap_points",
+      "spx_vwap_gap_bps",
+      "spx_vwap_gap_over_session_range",
+      "session_range_bps",
+      "momentum_5m_bps",
+      "momentum_15m_bps",
+      "momentum_5m_over_session_range",
+      "momentum_15m_over_session_range",
+      "omar_clipped",
+      "vwap_side_align",
+      "omar_side_align",
+      "momentum15_side_align",
+      "straddle_mid_spot_bps",
+      "put_call_mid_ratio",
+      "side_smile_slope",
+      "bs_delta",
+      "bs_gamma",
+      "is_call"
+    ],
+    "freeze_path": "v4/audit/autoresearch/autoresearch_v2_entry_model_confirmation_2026_08_02_attempt001/pre_holdout_model_freeze.json",
+    "freeze_sha256": "ff97f5a9a5ae6e3dd68489539f30d33693a23d83a11c8f61429a61c73376f954",
+    "model_path": "v4/audit/autoresearch/autoresearch_v2_entry_model_confirmation_2026_08_02_attempt001/model/entry_model.pkl",
+    "model_sha256": "c5d0115ba187ae8f443ac57ea813fa74cc689c03bbf546cb72d8262bc65f463e",
+    "prior_holdout_open_count": 1,
+    "protected_holdout_status": "SPENT_AND_SEALED_NOT_OPENED_BY_THIS_GATE",
+    "sklearn_version": "1.5.2",
+    "winner": "signed18_model_side_nearest"
+  },
+  "hard_stop_attestation": {
+    "broker_contacted": false,
+    "execution_or_fill_parity_claimed": false,
+    "holdout_open_count_this_gate": 0,
+    "live_market_data_contacted": false,
+    "model_refit_or_retune": false,
+    "paper_default_or_promotion_changed": false,
+    "paper_or_order_action": false,
+    "protected_holdout_reopened": false
+  },
+  "per_feature": [
+    {
+      "exact_bit_match_count": 0,
+      "feature": "spx_vwap_gap_points",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 32.87394996059902,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 0,
+      "within_tolerance_rate_on_matched": 0.0
+    },
+    {
+      "exact_bit_match_count": 0,
+      "feature": "spx_vwap_gap_bps",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 45.872900444263436,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 0,
+      "within_tolerance_rate_on_matched": 0.0
+    },
+    {
+      "exact_bit_match_count": 0,
+      "feature": "spx_vwap_gap_over_session_range",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 0.296005708276975,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 0,
+      "within_tolerance_rate_on_matched": 0.0
+    },
+    {
+      "exact_bit_match_count": 33,
+      "feature": "session_range_bps",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 24.577147518283994,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 33,
+      "within_tolerance_rate_on_matched": 0.0017289254466390737
+    },
+    {
+      "exact_bit_match_count": 0,
+      "feature": "momentum_5m_bps",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 36.88484680754931,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 0,
+      "within_tolerance_rate_on_matched": 0.0
+    },
+    {
+      "exact_bit_match_count": 0,
+      "feature": "momentum_15m_bps",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 52.109091186390984,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 0,
+      "within_tolerance_rate_on_matched": 0.0
+    },
+    {
+      "exact_bit_match_count": 25,
+      "feature": "momentum_5m_over_session_range",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 0.5038568951214927,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 25,
+      "within_tolerance_rate_on_matched": 0.0013097920050296012
+    },
+    {
+      "exact_bit_match_count": 8,
+      "feature": "momentum_15m_over_session_range",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 0.4729784640390281,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 22,
+      "within_tolerance_rate_on_matched": 0.0011526169644260492
+    },
+    {
+      "exact_bit_match_count": 117,
+      "feature": "omar_clipped",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 0.2971608832807526,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 117,
+      "within_tolerance_rate_on_matched": 0.006129826583538534
+    },
+    {
+      "exact_bit_match_count": 18559,
+      "feature": "vwap_side_align",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 1.0,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 18559,
+      "within_tolerance_rate_on_matched": 0.9723371928537748
+    },
+    {
+      "exact_bit_match_count": 18878,
+      "feature": "omar_side_align",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 1.0,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 18878,
+      "within_tolerance_rate_on_matched": 0.9890501388379526
+    },
+    {
+      "exact_bit_match_count": 16769,
+      "feature": "momentum15_side_align",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 1.0,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 16769,
+      "within_tolerance_rate_on_matched": 0.8785560852936554
+    },
+    {
+      "exact_bit_match_count": 58,
+      "feature": "straddle_mid_spot_bps",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 6.77652959236541,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 10,
+      "within_tolerance_count": 58,
+      "within_tolerance_rate_on_matched": 0.003038717451668675
+    },
+    {
+      "exact_bit_match_count": 12279,
+      "feature": "put_call_mid_ratio",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 11.30631465184499,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 10,
+      "within_tolerance_count": 12279,
+      "within_tolerance_rate_on_matched": 0.643317441190339
+    },
+    {
+      "exact_bit_match_count": 78,
+      "feature": "side_smile_slope",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 4.618771291833962,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 34,
+      "within_tolerance_count": 78,
+      "within_tolerance_rate_on_matched": 0.004086551055692356
+    },
+    {
+      "exact_bit_match_count": 33,
+      "feature": "bs_delta",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 0.35813668925764364,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 33,
+      "within_tolerance_rate_on_matched": 0.0017289254466390737
+    },
+    {
+      "exact_bit_match_count": 33,
+      "feature": "bs_gamma",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 0.03145469869556564,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 33,
+      "within_tolerance_rate_on_matched": 0.0017289254466390737
+    },
+    {
+      "exact_bit_match_count": 19087,
+      "feature": "is_call",
+      "matched_candidate_count": 19087,
+      "max_abs_divergence": 0.0,
+      "missing_candidate_count": 919,
+      "nonfinite_mismatch_count": 0,
+      "within_tolerance_count": 19087,
+      "within_tolerance_rate_on_matched": 1.0
+    }
+  ],
+  "residual_live_risk_checklist": [
+    {
+      "check": "feed_timing",
+      "future_shadow_proof": "record event, receive, adapter-available, and decision clocks; fail on late/out-of-order data"
+    },
+    {
+      "check": "cross_feed_watermark",
+      "future_shadow_proof": "prove ThetaData SPX and Databento OPRA observations were both complete before one decision watermark"
+    },
+    {
+      "check": "quote_age",
+      "future_shadow_proof": "enforce exact-contract same-session age<=90s and log stale/no-quote abstentions"
+    },
+    {
+      "check": "cbbo_consolidation",
+      "future_shadow_proof": "compare direct live CBBO-1m with historical CBBO-1m, or prove CBBO-1s/CMBP-1 aggregation boundary and last-update rule"
+    },
+    {
+      "check": "duplicates_corrections_reconnect",
+      "future_shadow_proof": "exercise duplicate, corrected, missing, reconnect, and sequence-gap messages without changing a sealed decision"
+    },
+    {
+      "check": "definition_identity",
+      "future_shadow_proof": "bind live instrument_id to SPXW 0DTE PM right/strike/expiry before ladder construction"
+    },
+    {
+      "check": "candidate_filter_and_ties",
+      "future_shadow_proof": "log every guard input and deterministic score/side/nearest-ATM tie break"
+    },
+    {
+      "check": "runtime_numeric_environment",
+      "future_shadow_proof": "pin Python/numpy/sklearn/model hashes and compare live-shadow feature/score bytes"
+    },
+    {
+      "check": "scheduler_and_early_close",
+      "future_shadow_proof": "prove ET block boundaries, holidays, early close, clock sync, and decision cadence"
+    },
+    {
+      "check": "execution_parity_out_of_scope",
+      "future_shadow_proof": "separate owner-authorized gate for IBKR discovery, orders, fills, cancels, and flattening"
+    }
+  ],
+  "result_sha256": "6b51a7ef1943c055212ec9e02581ae052c7494df704cb4fa91336fa0375e3617",
+  "root_cause": {
+    "causal_live_behavior": "ThetaData event_time is a bar-open label, so the same close becomes available only at event_time+60 seconds",
+    "classification": "TRAINING_CONTEXT_CLOCK_ONE_MINUTE_AHEAD_OF_LIVE_AVAILABILITY",
+    "downstream_effect": "the prior completed SPX minute changes context, ATM geometry, Greek repair eligibility, model scores, signal time, side, and selected contract",
+    "immutable_model_disposition": "NOT_RUNTIME_DECISION_PARITY_ELIGIBLE; an adapter cannot repair this without using unavailable data, and this gate forbids refit or retuning",
+    "isolating_evidence": "All ten sessions reproduce identical candidate sets, every feature cell, every model score, every decision, and every fixed-block outcome when the raw-source adapter is run with the training path's non-causal zero-second availability offset. Only the causal +60-second clock is changed in the certifying path.",
+    "training_behavior": "the frozen training rows consume ThetaData SPX event_time at the same decision timestamp"
+  },
+  "schema_version": "autoresearch_v2.runtime_decision_parity.v1",
+  "session_count": 10,
+  "session_selection_rule": "first and last outer-test session from each of five fixed rolling development folds",
+  "sessions": [
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.0,
+        "block_count": 6,
+        "both_paths_enter_count": 6,
+        "complete_block_policy_match_count": 0,
+        "complete_block_policy_match_rate": 0.0,
+        "same_signal_time_side_contract_count": 0,
+        "selected_contract_match_rate": 0.16666666666666666,
+        "side_match_rate": 0.5,
+        "signal_time_match_rate": 0.16666666666666666
+      },
+      "decision": {
+        "complete_decision_match_count": 47,
+        "complete_decision_match_rate": 0.146875,
+        "decision_count": 320,
+        "enter_wait_match_rate": 0.96875,
+        "score_match_rate": 0.146875,
+        "selected_contract_match_rate": 0.965625,
+        "side_match_rate": 0.96875
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 1736,
+        "feature_cell_count": 31248,
+        "feature_cell_match_count": 8016,
+        "feature_within_tolerance_rate": 0.2565284178187404,
+        "live_candidate_count": 1729,
+        "matched_candidate_count": 1728,
+        "training_candidate_count": 1735
+      },
+      "fold": 1,
+      "position": "first",
+      "score": {
+        "bit_identical_score_count": 393,
+        "bit_identical_score_rate": 0.22638248847926268,
+        "candidate_union_count": 1736,
+        "matched_candidate_count": 1728,
+        "max_abs_score_divergence": 241.95037716702717
+      },
+      "session": "2025-10-03"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.2,
+        "block_count": 5,
+        "both_paths_enter_count": 5,
+        "complete_block_policy_match_count": 1,
+        "complete_block_policy_match_rate": 0.2,
+        "same_signal_time_side_contract_count": 3,
+        "selected_contract_match_rate": 0.6,
+        "side_match_rate": 1.0,
+        "signal_time_match_rate": 0.6
+      },
+      "decision": {
+        "complete_decision_match_count": 40,
+        "complete_decision_match_rate": 0.1646090534979424,
+        "decision_count": 243,
+        "enter_wait_match_rate": 0.9835390946502057,
+        "score_match_rate": 0.1646090534979424,
+        "selected_contract_match_rate": 0.9835390946502057,
+        "side_match_rate": 0.9835390946502057
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 1789,
+        "feature_cell_count": 32202,
+        "feature_cell_match_count": 6638,
+        "feature_within_tolerance_rate": 0.20613626482827155,
+        "live_candidate_count": 1664,
+        "matched_candidate_count": 1558,
+        "training_candidate_count": 1683
+      },
+      "fold": 1,
+      "position": "last",
+      "score": {
+        "bit_identical_score_count": 335,
+        "bit_identical_score_rate": 0.18725544997205143,
+        "candidate_union_count": 1789,
+        "matched_candidate_count": 1558,
+        "max_abs_score_divergence": 245.74534276313773
+      },
+      "session": "2025-11-20"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.2,
+        "block_count": 5,
+        "both_paths_enter_count": 5,
+        "complete_block_policy_match_count": 1,
+        "complete_block_policy_match_rate": 0.2,
+        "same_signal_time_side_contract_count": 2,
+        "selected_contract_match_rate": 0.4,
+        "side_match_rate": 0.8,
+        "signal_time_match_rate": 0.4
+      },
+      "decision": {
+        "complete_decision_match_count": 50,
+        "complete_decision_match_rate": 0.2074688796680498,
+        "decision_count": 241,
+        "enter_wait_match_rate": 0.975103734439834,
+        "score_match_rate": 0.21161825726141079,
+        "selected_contract_match_rate": 0.975103734439834,
+        "side_match_rate": 0.975103734439834
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 1830,
+        "feature_cell_count": 32940,
+        "feature_cell_match_count": 7575,
+        "feature_within_tolerance_rate": 0.22996357012750454,
+        "live_candidate_count": 1769,
+        "matched_candidate_count": 1710,
+        "training_candidate_count": 1771
+      },
+      "fold": 2,
+      "position": "first",
+      "score": {
+        "bit_identical_score_count": 440,
+        "bit_identical_score_rate": 0.24043715846994534,
+        "candidate_union_count": 1830,
+        "matched_candidate_count": 1710,
+        "max_abs_score_divergence": 512.5986071307891
+      },
+      "session": "2025-11-21"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.16666666666666666,
+        "block_count": 6,
+        "both_paths_enter_count": 6,
+        "complete_block_policy_match_count": 1,
+        "complete_block_policy_match_rate": 0.16666666666666666,
+        "same_signal_time_side_contract_count": 2,
+        "selected_contract_match_rate": 0.5,
+        "side_match_rate": 0.8333333333333334,
+        "signal_time_match_rate": 0.5
+      },
+      "decision": {
+        "complete_decision_match_count": 97,
+        "complete_decision_match_rate": 0.303125,
+        "decision_count": 320,
+        "enter_wait_match_rate": 0.98125,
+        "score_match_rate": 0.303125,
+        "selected_contract_match_rate": 0.978125,
+        "side_match_rate": 0.978125
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 1449,
+        "feature_cell_count": 26082,
+        "feature_cell_match_count": 6903,
+        "feature_within_tolerance_rate": 0.26466528640441683,
+        "live_candidate_count": 1442,
+        "matched_candidate_count": 1437,
+        "training_candidate_count": 1444
+      },
+      "fold": 2,
+      "position": "last",
+      "score": {
+        "bit_identical_score_count": 497,
+        "bit_identical_score_rate": 0.34299516908212563,
+        "candidate_union_count": 1449,
+        "matched_candidate_count": 1437,
+        "max_abs_score_divergence": 67.6655927840448
+      },
+      "session": "2026-01-12"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.16666666666666666,
+        "block_count": 6,
+        "both_paths_enter_count": 6,
+        "complete_block_policy_match_count": 0,
+        "complete_block_policy_match_rate": 0.0,
+        "same_signal_time_side_contract_count": 0,
+        "selected_contract_match_rate": 0.5,
+        "side_match_rate": 1.0,
+        "signal_time_match_rate": 0.0
+      },
+      "decision": {
+        "complete_decision_match_count": 40,
+        "complete_decision_match_rate": 0.125,
+        "decision_count": 320,
+        "enter_wait_match_rate": 0.9625,
+        "score_match_rate": 0.125,
+        "selected_contract_match_rate": 0.9625,
+        "side_match_rate": 0.9625
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 1745,
+        "feature_cell_count": 31410,
+        "feature_cell_match_count": 7914,
+        "feature_within_tolerance_rate": 0.25195797516714424,
+        "live_candidate_count": 1737,
+        "matched_candidate_count": 1732,
+        "training_candidate_count": 1740
+      },
+      "fold": 3,
+      "position": "first",
+      "score": {
+        "bit_identical_score_count": 350,
+        "bit_identical_score_rate": 0.20057306590257878,
+        "candidate_union_count": 1745,
+        "matched_candidate_count": 1732,
+        "max_abs_score_divergence": 137.9503707852651
+      },
+      "session": "2026-01-13"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 0.8333333333333334,
+        "bit_identical_signal_score_rate": 0.0,
+        "block_count": 6,
+        "both_paths_enter_count": 5,
+        "complete_block_policy_match_count": 0,
+        "complete_block_policy_match_rate": 0.0,
+        "same_signal_time_side_contract_count": 0,
+        "selected_contract_match_rate": 0.0,
+        "side_match_rate": 0.3333333333333333,
+        "signal_time_match_rate": 0.0
+      },
+      "decision": {
+        "complete_decision_match_count": 55,
+        "complete_decision_match_rate": 0.1757188498402556,
+        "decision_count": 313,
+        "enter_wait_match_rate": 0.9648562300319489,
+        "score_match_rate": 0.18210862619808307,
+        "selected_contract_match_rate": 0.9648562300319489,
+        "side_match_rate": 0.9648562300319489
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 2373,
+        "feature_cell_count": 42714,
+        "feature_cell_match_count": 10037,
+        "feature_within_tolerance_rate": 0.2349815048930093,
+        "live_candidate_count": 2321,
+        "matched_candidate_count": 2260,
+        "training_candidate_count": 2312
+      },
+      "fold": 3,
+      "position": "last",
+      "score": {
+        "bit_identical_score_count": 563,
+        "bit_identical_score_rate": 0.23725242309313105,
+        "candidate_union_count": 2373,
+        "matched_candidate_count": 2260,
+        "max_abs_score_divergence": 261.4908395300082
+      },
+      "session": "2026-03-03"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.3333333333333333,
+        "block_count": 6,
+        "both_paths_enter_count": 6,
+        "complete_block_policy_match_count": 2,
+        "complete_block_policy_match_rate": 0.3333333333333333,
+        "same_signal_time_side_contract_count": 2,
+        "selected_contract_match_rate": 0.5,
+        "side_match_rate": 0.6666666666666666,
+        "signal_time_match_rate": 0.5
+      },
+      "decision": {
+        "complete_decision_match_count": 70,
+        "complete_decision_match_rate": 0.21875,
+        "decision_count": 320,
+        "enter_wait_match_rate": 0.98125,
+        "score_match_rate": 0.21875,
+        "selected_contract_match_rate": 0.978125,
+        "side_match_rate": 0.978125
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 2250,
+        "feature_cell_count": 40500,
+        "feature_cell_match_count": 10159,
+        "feature_within_tolerance_rate": 0.2508395061728395,
+        "live_candidate_count": 2235,
+        "matched_candidate_count": 2216,
+        "training_candidate_count": 2231
+      },
+      "fold": 4,
+      "position": "first",
+      "score": {
+        "bit_identical_score_count": 657,
+        "bit_identical_score_rate": 0.292,
+        "candidate_union_count": 2250,
+        "matched_candidate_count": 2216,
+        "max_abs_score_divergence": 146.46659650537347
+      },
+      "session": "2026-03-04"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.0,
+        "block_count": 6,
+        "both_paths_enter_count": 6,
+        "complete_block_policy_match_count": 0,
+        "complete_block_policy_match_rate": 0.0,
+        "same_signal_time_side_contract_count": 1,
+        "selected_contract_match_rate": 0.5,
+        "side_match_rate": 0.5,
+        "signal_time_match_rate": 0.3333333333333333
+      },
+      "decision": {
+        "complete_decision_match_count": 68,
+        "complete_decision_match_rate": 0.2125,
+        "decision_count": 320,
+        "enter_wait_match_rate": 0.975,
+        "score_match_rate": 0.2125,
+        "selected_contract_match_rate": 0.971875,
+        "side_match_rate": 0.971875
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 2338,
+        "feature_cell_count": 42084,
+        "feature_cell_match_count": 10695,
+        "feature_within_tolerance_rate": 0.2541345879669233,
+        "live_candidate_count": 2325,
+        "matched_candidate_count": 2318,
+        "training_candidate_count": 2331
+      },
+      "fold": 4,
+      "position": "last",
+      "score": {
+        "bit_identical_score_count": 649,
+        "bit_identical_score_rate": 0.27758768177929855,
+        "candidate_union_count": 2338,
+        "matched_candidate_count": 2318,
+        "max_abs_score_divergence": 323.1379570549225
+      },
+      "session": "2026-04-21"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.16666666666666666,
+        "block_count": 6,
+        "both_paths_enter_count": 6,
+        "complete_block_policy_match_count": 1,
+        "complete_block_policy_match_rate": 0.16666666666666666,
+        "same_signal_time_side_contract_count": 1,
+        "selected_contract_match_rate": 0.3333333333333333,
+        "side_match_rate": 0.6666666666666666,
+        "signal_time_match_rate": 0.3333333333333333
+      },
+      "decision": {
+        "complete_decision_match_count": 57,
+        "complete_decision_match_rate": 0.178125,
+        "decision_count": 320,
+        "enter_wait_match_rate": 0.975,
+        "score_match_rate": 0.178125,
+        "selected_contract_match_rate": 0.971875,
+        "side_match_rate": 0.971875
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 2136,
+        "feature_cell_count": 38448,
+        "feature_cell_match_count": 9555,
+        "feature_within_tolerance_rate": 0.24851747815230962,
+        "live_candidate_count": 2126,
+        "matched_candidate_count": 2124,
+        "training_candidate_count": 2134
+      },
+      "fold": 5,
+      "position": "first",
+      "score": {
+        "bit_identical_score_count": 572,
+        "bit_identical_score_rate": 0.26779026217228463,
+        "candidate_union_count": 2136,
+        "matched_candidate_count": 2124,
+        "max_abs_score_divergence": 130.30708440211632
+      },
+      "session": "2026-04-22"
+    },
+    {
+      "block_policy": {
+        "action_match_rate": 1.0,
+        "bit_identical_signal_score_rate": 0.16666666666666666,
+        "block_count": 6,
+        "both_paths_enter_count": 6,
+        "complete_block_policy_match_count": 0,
+        "complete_block_policy_match_rate": 0.0,
+        "same_signal_time_side_contract_count": 5,
+        "selected_contract_match_rate": 0.8333333333333334,
+        "side_match_rate": 1.0,
+        "signal_time_match_rate": 0.8333333333333334
+      },
+      "decision": {
+        "complete_decision_match_count": 34,
+        "complete_decision_match_rate": 0.11003236245954692,
+        "decision_count": 309,
+        "enter_wait_match_rate": 0.9935275080906149,
+        "score_match_rate": 0.11003236245954692,
+        "selected_contract_match_rate": 0.9935275080906149,
+        "side_match_rate": 0.9935275080906149
+      },
+      "feature": {
+        "candidate_set_identical": false,
+        "candidate_union_count": 2360,
+        "feature_cell_count": 42480,
+        "feature_cell_match_count": 8479,
+        "feature_within_tolerance_rate": 0.19959981167608287,
+        "live_candidate_count": 2161,
+        "matched_candidate_count": 2004,
+        "training_candidate_count": 2203
+      },
+      "fold": 5,
+      "position": "last",
+      "score": {
+        "bit_identical_score_count": 347,
+        "bit_identical_score_rate": 0.14703389830508476,
+        "candidate_union_count": 2360,
+        "matched_candidate_count": 2004,
+        "max_abs_score_divergence": 251.01167376869455
+      },
+      "session": "2026-06-09"
+    }
+  ],
+  "status": "OFFLINE_DECISION_PARITY_FAILED"
+}
