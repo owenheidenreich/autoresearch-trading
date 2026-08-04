@@ -155,13 +155,36 @@ def verify_manifest(root: Path, manifest: Mapping[str, object]) -> dict[str, obj
     return observed
 
 
+def _filesystem_mountpoint(path: Path) -> Path:
+    """Resolve an existing path to the root of its backing filesystem."""
+
+    candidate = path.expanduser().resolve(strict=True)
+    if candidate.is_file():
+        candidate = candidate.parent
+    device = candidate.stat().st_dev
+    while candidate.parent != candidate:
+        parent = candidate.parent
+        if parent.stat().st_dev != device:
+            break
+        candidate = parent
+    return candidate
+
+
 def _diskutil_info(path: Path) -> dict[str, object]:
-    command = ["diskutil", "info", "-plist", str(path)]
+    mountpoint = _filesystem_mountpoint(path)
+    command = ["diskutil", "info", "-plist", str(mountpoint)]
     try:
         completed = subprocess.run(command, check=True, capture_output=True)
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
         raise StorageContractError(f"unable to inspect storage volume for {path}") from exc
     return plistlib.loads(completed.stdout)
+
+
+def _apple_volume_is_encrypted(info: Mapping[str, object]) -> bool:
+    """Accept the equivalent diskutil plist keys emitted across macOS versions."""
+
+    flags = [info[key] for key in ("Encrypted", "Encryption") if key in info]
+    return bool(flags) and all(flag is True for flag in flags)
 
 
 def validate_apple_volume_info(
@@ -170,8 +193,7 @@ def validate_apple_volume_info(
     personality = str(info.get("FilesystemType") or info.get("FileSystemPersonality") or "")
     if "apfs" not in personality.lower():
         raise StorageContractError(f"research volume must use APFS, observed {personality!r}")
-    encrypted = info.get("Encrypted")
-    if encrypted is not True:
+    if not _apple_volume_is_encrypted(info):
         raise StorageContractError("research volume must be encrypted APFS")
     name = str(info.get("VolumeName") or "")
     if name != expected_volume_name:
@@ -256,7 +278,7 @@ def preflight_roots(
         "roots": {name: str(value) for name, value in asdict(roots).items()},
         "volume_name": info.get("VolumeName"),
         "filesystem": info.get("FilesystemType") or info.get("FileSystemPersonality"),
-        "encrypted": info.get("Encrypted"),
+        "encrypted": _apple_volume_is_encrypted(info),
         "external": info.get("Internal") is False,
         "capacity": capacity,
         "phase1_allocation": allocation,

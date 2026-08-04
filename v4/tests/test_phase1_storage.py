@@ -44,6 +44,18 @@ def test_volume_contract_fails_closed(change: dict[str, object], message: str) -
         storage.validate_apple_volume_info(info)
 
 
+def test_volume_contract_accepts_current_macos_encryption_key() -> None:
+    info = {key: value for key, value in EXTERNAL_APFS.items() if key != "Encrypted"}
+    storage.validate_apple_volume_info({**info, "Encryption": True})
+
+
+def test_volume_contract_rejects_contradictory_encryption_keys() -> None:
+    with pytest.raises(storage.StorageContractError, match="encrypted"):
+        storage.validate_apple_volume_info(
+            {**EXTERNAL_APFS, "Encryption": False}
+        )
+
+
 def test_manifest_detects_mutation_and_relocation_preserves_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -79,4 +91,3 @@ def test_low_disk_fails_closed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(storage.shutil, "disk_usage", lambda _: usage)
     with pytest.raises(storage.StorageContractError, match="minimum is 25%"):
         storage.validate_capacity(tmp_path)
-
