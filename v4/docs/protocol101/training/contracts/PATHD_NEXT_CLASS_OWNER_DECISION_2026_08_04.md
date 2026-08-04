@@ -1,6 +1,6 @@
 # Path-D — Owner Decision: what class do we research next?
 
-Status: **RESOLVED (2026-08-04) — the decision key now points to OPTION C.** Option 0's survivor was
+Status: **CLOSED (2026-08-04) — the owner chose OPTION C and the directional research programme is STOOD DOWN.** Terminal record: [`PATHD_PROGRAMME_STAND_DOWN_RECORD_2026_08_04.md`](PATHD_PROGRAMME_STAND_DOWN_RECORD_2026_08_04.md), which also **corrects** the closure report's claim that an unspent protected holdout survives — it does not; it was opened once on 2026-08-02 for `signed18` and is SPENT.
 re-validated against drift-repaired nulls and **closed**; see
 [the closure at the end of this document](#the-numerator-is-identified-and-it-is-negative--2026-08-04).
 Options A (executed) and B (hard stop) are no longer live questions.
