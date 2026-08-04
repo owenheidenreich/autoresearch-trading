@@ -105,4 +105,41 @@ Fable 5). Binding constraints on the rerun:
 3. Options A and B remain undecided and unauthorized. Option B stays a hard stop. The decision key
    above stands.
 
-*Prepared: Claude Opus 5 — 2026-08-04. Owner decision recorded by Claude Fable 5 — 2026-08-04.*
+---
+
+## Option 0 has now RUN — the decision key resolves to Option A
+
+Result: [`PATHD_SPX_EXCESS_SKILL_RESCREEN_RESULTS_2026_08_04.md`](../research/PATHD_SPX_EXCESS_SKILL_RESCREEN_RESULTS_2026_08_04.md)
+(pre-registration `b29ed007`, executed 2026-08-04). Verdict **`EXCESS_SKILL_CANDIDATE`** — **one survivor
+of sixty members.**
+
+**`omar_clipped_neg3_pos3`** — the position of price within the session's own realized range — survives at
+all three horizons, negative sign, excess IC `+0.052 / +0.063 / +0.078` at 15/30/60 m, maxT
+`p ≤ 0.0002`, 5/5 sign-stable folds, **and both independently-constructed nulls agree.** The negative
+control (a held-out surrogate substituted for the real path) is clean.
+
+**Everything else died**, including three things that had looked alive:
+
+- `spx_vwap_gap_*` — the two nulls **disagree** (block `p 0.001–0.005`, wild `maxT p 0.21–0.99`), which is
+  exactly the case the two-null rule was pre-registered to catch.
+- `session_range_bps` — maxT `p 0.986–1.000`, sign-stable in 1–2 of 5 folds. Its run-1 residual was
+  block-bootstrap mis-specification.
+- **`minute_of_session` — dead** (`maxT p 0.87`). The time-of-session hypothesis, added specifically to be
+  tested directly, **is not supported.**
+
+**Economic size (post-hoc, descriptive).** Bias-corrected bottom-minus-top decile spread is **+1.63 SPX
+points** — the raw spread is +22.92, so **93% of it was the artifact**. That is ≈ **0.82 points per trade
+≈ $41 on one ES contract**, against an **assumed** $17 round-trip friction. **≈2.4× friction, and the first
+number in this programme on the right side of that comparison** — carrying five caveats, of which the two
+that matter most are that the corrected decile profile is **not monotone at the extremes** (decile 8 beats
+decile 10) and that **ES friction is assumed, not measured.**
+
+**Per the decision key, this points to Option A.** Fable's calibration in §"Owner decision" above
+anticipated the excess might be zero or momentum-side; it is neither, but it is also a fifth of the
+headline, on the same 213 sessions that generated the hypothesis, and diagnostic-only by construction.
+
+**Still requiring owner authorization:** Option A is a **paid-data** download and is not authorized by the
+Option 0 sign-off. **Check existing entitlements first.** Option B remains a hard stop.
+
+*Prepared: Claude Opus 5 — 2026-08-04. Owner decision recorded by Claude Fable 5 — 2026-08-04.
+Option 0 result appended by Claude Opus 5 — 2026-08-04.*

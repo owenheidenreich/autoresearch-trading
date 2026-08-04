@@ -1,0 +1,51 @@
+{
+  "bottom_minus_top_decile_points_bias_corrected": 1.6331911797610914,
+  "bottom_minus_top_decile_points_raw": 22.922594174928623,
+  "decile_mean_forward_move_points_bias_corrected": [
+    0.8710933492985742,
+    0.7969095913322999,
+    0.26806832815448756,
+    0.4373233492443558,
+    0.18474331608410022,
+    -0.7957903566023148,
+    -0.7646436241022838,
+    -1.4248618055277782,
+    -1.0759440996246346,
+    -0.7620978304625172
+  ],
+  "decile_mean_forward_move_points_real": [
+    12.218295289091612,
+    7.046881075441279,
+    3.9533187527817026,
+    2.4925445073090953,
+    0.9956602762759708,
+    -1.1074633054152168,
+    -2.3502498937080345,
+    -4.588384025830633,
+    -6.577037183214547,
+    -10.70429888583701
+  ],
+  "decile_mean_forward_move_points_surrogate": [
+    11.347201939793038,
+    6.249971484108979,
+    3.685250424627215,
+    2.0552211580647395,
+    0.8109169601918705,
+    -0.31167294881290203,
+    -1.5856062696057507,
+    -3.163522220302855,
+    -5.501093083589913,
+    -9.942201055374493
+  ],
+  "es_assumed_friction_is_measured": false,
+  "es_assumed_round_trip_dollars": 17.0,
+  "es_per_trade_expected_dollars": 40.829779494027285,
+  "horizon_minutes": 60,
+  "model_trained": false,
+  "note": "POST-HOC and DESCRIPTIVE. No hypothesis test, no p-values.",
+  "per_trade_expected_points": 0.8165955898805457,
+  "protected_holdout_opened": false,
+  "schema_version": "pathd.omar-economic-sizing.v1",
+  "sessions": 215,
+  "surrogates_per_session": 100
+}
