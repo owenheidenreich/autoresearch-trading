@@ -33,6 +33,13 @@ completed with the authoritative verdict `UNDERPOWERED`.** The learned entry+exi
 best comparator `-$4,474`, its bootstrap LCB was negative, only 1/3 observed fold deltas was positive,
 and all 8 fee/latency cells were negative. The learned subset had 60 sessions but only 3 outer folds,
 which triggers the code-defined power stop. Stage 2 is not authorized; do not build ahead of this gate.
+**PHASE-1 IS NOW CLOSED — `NO_INCREMENTAL_EDGE`.** Terminal record:
+[`PATHD_PHASE1_CLOSEOUT_2026_08_03.md`](PATHD_PHASE1_CLOSEOUT_2026_08_03.md). A Claude failure-mode
+diagnostic then a fix-research pass established that **the entry model is not the defect**: with **all**
+friction removed (buy at bid, sell at bid, zero fees) the average trade still loses **−$13.00**, median
+−$90, win 35.7%, **negative in 5/5 folds**. Buying SPXW 0DTE premium at minute cadence is
+**negative-expectancy before any cost is paid** — that is theta, and no model, feature, or execution fix
+repairs it. **No further training is recommended on this strategy class.**
 
 ## Immediate next actions (gated; see the roadmap for exact commands)
 1. **Stage 0 — COMPLETE; owner waived Claude verification.** Preflight and relocation passed; source and
@@ -44,8 +51,26 @@ which triggers the code-defined power stop. Stage 2 is not authorized; do not bu
    and exit-skill conditions passed. Reproduction hashes matched byte-for-byte.
 3. **Suite-green — COMPLETE:** superseded v3.2 release reconciliation retired in `fa1d9b08`; immutable
    evidence preserved and the governance test file passes 7/7.
-4. Stages 2–5 (parity → live-shadow → guarded paper → real-money) remain gated and are **not authorized**;
+4. **Fix research — COMPLETE (`d05f0137`): `FIX_CANDIDATE` (execution) / `NO_FIX` (profitability).**
+   Passive entry at the bid (60 s window) instead of crossing at ask+tick is worth **+$22.76/trade**,
+   83.3% fill, adverse selection only −$0.72, and **stable 5/5 folds** — the only effect in this project
+   that does not decay, because it is *mechanical* rather than predictive. It still leaves −$18.56/trade,
+   so **not trading ($0) dominates**. The frozen `FILL_LAW` was NOT modified; this is a costing correction.
+5. **Phase-1 — CLOSED.** No further training on this strategy class. **The next step is a feasibility
+   study, not a training run:** does any instrument/horizon reachable through IBKR have non-negative
+   *gross* expectancy? That is measurable from quotes and needs no fitting. If nothing clears zero gross,
+   no modelling helps.
+6. Stages 2–5 (parity → live-shadow → guarded paper → real-money) remain gated and are **not authorized**;
    **do not build ahead of the failed Stage-1 gate.**
+
+**Two corrections to the earlier record (Claude, 2026-08-03) — do not re-inherit these mistakes:**
+- The learned exit model is **not a policy**. `learned_exit_index == 0` in 980/1031 (95.1%) trajectories
+  and `learned_exit_value` is *identical* to `exit_immediate` in 982/1031 (95.2%). Its whole benefit is
+  one bit: *don't hold 0DTE premium*. An earlier Claude note calling it "real skill, preserve this asset"
+  was overstated.
+- The 18-feature contract has **zero ranking power**: the decile curve is flat and non-monotonic
+  (top −$16.37, bottom −$17.75, middle best at −$11.48), and the top decile is 0/4 folds positive even
+  after gifting it the entire +$22.76 execution improvement. Same-feature retrains are wasted compute.
 
 ## Critical rules & hard-won lessons (do not repeat these)
 - **The holdout is SPENT.** Never reopen the 36-session firewall (protected 30 + 6 smoke). Forward

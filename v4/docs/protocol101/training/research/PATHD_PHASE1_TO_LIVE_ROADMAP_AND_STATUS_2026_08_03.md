@@ -15,7 +15,22 @@ status + signature block whenever a phase advances.
 
 ## Status legend
 `DONE` · `READY` (built + fixture-validated, awaiting a prerequisite) · `BLOCKED_ON_DRIVE` ·
-`PENDING_CODEX` · `NOT_STARTED` · `GATE` (a stop/continue decision point).
+`PENDING_CODEX` · `NOT_STARTED` · `GATE` (a stop/continue decision point) · `CLOSED`.
+
+> # PHASE-1 IS CLOSED — `NO_INCREMENTAL_EDGE` (2026-08-03)
+>
+> Terminal record: **[`PATHD_PHASE1_CLOSEOUT_2026_08_03.md`](PATHD_PHASE1_CLOSEOUT_2026_08_03.md)** —
+> read that first. Stage 2 is **not authorized** and **no further training is recommended on this
+> strategy class**.
+>
+> **The terminal finding:** with **all** friction removed (buy at bid, sell at bid, zero fees) the average
+> trade still loses **−$13.00**, median −$90, win 35.7%, **negative in 5/5 folds**. Buying SPXW 0DTE
+> premium at minute cadence is **negative-expectancy before any cost is paid**. That is theta — no model,
+> feature, or execution fix repairs it.
+>
+> **Do not open a new training round against this class.** The honest next step is a **feasibility study,
+> not a training run**: does any instrument/horizon reachable through IBKR have non-negative *gross*
+> expectancy? Gross expectancy is measurable from quotes and needs no fitting.
 
 ## Status board
 
@@ -29,10 +44,36 @@ status + signature block whenever a phase advances.
 | Suite-green (retire stale v3.2 reconciliation) | DONE (`fa1d9b08`; governance file 7/7 passed) | Claude independent verification |
 | Stage 0 — drive setup | DONE (preflight + relocation + independent hashes passed) | Owner waived Claude verification |
 | Stage 1 — causal training + four-box | DONE — `UNDERPOWERED`; GATE 1 STOP | — |
+| Failure-mode diagnostic (Claude) | DONE — loss flat across 5/5 folds; no positive subpopulation | — |
+| Fix research: execution / holding / direction | DONE — `FIX_CANDIDATE` (execution) / `NO_FIX` (profitability) (`d05f0137`) | — |
+| **Phase-1 close-out** | **CLOSED — `NO_INCREMENTAL_EDGE`** | — |
 | Stage 2 — runtime decision-parity | NOT AUTHORIZED | Stage 1 did not establish edge |
 | Stage 3 — live-shadow orchestration | NOT_STARTED (needs building) | Stage 2 pass + live days |
 | Stage 4 — guarded paper submit + confirmation | NOT_STARTED (needs building) | Stage 3 + live days |
 | Stage 5 — real-money decision | OUT OF SCOPE | separate owner+governance packet |
+| **Next: gross-expectancy feasibility study** | NOT_STARTED (recommended) | owner decision — this is a *study*, not training |
+
+### Durable assets carried out of Phase-1
+
+1. **The causal t−60s pipeline** — audited, works end-to-end, and correctly produced a negative answer.
+   Reusable for any future hypothesis.
+2. **The passive-execution costing correction** — posting at the bid (60 s window) instead of crossing at
+   ask+tick is worth **+$22.76/trade**, stable **5/5 folds** ($20.06–$24.50), adverse selection −$0.72.
+   Quote future Path-D economics at −$18.56, not −$41.32. This is a *costing* correction, not a strategy;
+   the frozen `FILL_LAW` was NOT modified.
+3. **The knowledge that this class is negative-EV before costs** — it closes a direction permanently
+   rather than leaving it to be re-litigated.
+
+### Preconditions for any future training round (gates, not suggestions)
+
+1. **Change the position** — negative gross expectancy cannot be fixed by predicting it better.
+2. **Change the features** — the 18-feature contract has zero ranking power (decile curve is flat and
+   non-monotonic: top −$16.37, bottom −$17.75, middle best at −$11.48). Same-feature retrains are wasted
+   compute.
+3. **Re-pose the target** — predict the gross move and subtract the observable known cost separately;
+   the current label buries a small noisy signal under a large deterministic cost. Second-order.
+4. **Governance** — holdout SPENT: pre-registration + hard budget under family maxT, forward validation on
+   fresh live paper only, never on these 215 sessions.
 
 ---
 

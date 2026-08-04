@@ -1443,3 +1443,57 @@ feature matrix with all eight pre-optimization hashes preserved (`0b2da32b`).
 
 **Decision:** stop. Do not proceed to runtime parity, live shadow, paper promotion, or holdout reuse.
 This is honest no-edge/insufficient-coverage evidence, not a candidate for rescue by tuning.
+
+---
+
+## 2026-08-03 — PHASE-1 CLOSE-OUT: `NO_INCREMENTAL_EDGE` (Claude Opus 5)
+
+Terminal record: `v4/docs/protocol101/training/research/PATHD_PHASE1_CLOSEOUT_2026_08_03.md`.
+
+GATE 1's `UNDERPOWERED` verdict raised the obvious follow-up — was the stop a coverage artefact or a real
+no-edge? A failure-mode diagnostic and a fix-research pass answered it: **real, and structural.**
+
+**The entry model is not the defect.** Across 156,950 causal OOF candidates the mean trade loses
+**−$39.48** at ~33% win rate, and the loss is **flat across all five chronological folds**
+(−45.91 / −40.81 / −38.02 / −35.54 / −37.03) — a constant structural cost, not a decaying edge. No
+subpopulation is positive: not any hour, side, moneyness bucket, quoted-spread bucket, or premium quintile.
+
+**The terminal finding.** With **all** friction removed (buy at bid, sell at bid, zero fees) the average
+trade still loses **−$13.00**, median −$90, win 35.7%, **negative in 5/5 folds**. Buying SPXW 0DTE premium
+at minute cadence is **negative-expectancy before any cost is paid**. That is theta. No model, feature, or
+execution improvement repairs it.
+
+**Execution is recoverable; profitability is not.** Posting passively at the bid (60 s window) instead of
+crossing at ask+tick improves **−$41.32 → −$18.56/trade (+$22.76, 55%)** at 83.3% fill with adverse
+selection of only −$0.72, and is **stable 5/5 folds** ($20.06–$24.50) — the only effect in this programme
+that does not decay, because it is *mechanical* rather than predictive. Still **0/5 folds profitable**:
+not trading ($0) dominates. Upper bound — the fill model has no queue priority. The frozen `FILL_LAW` was
+**not** modified; this is a costing correction (`d05f0137`).
+
+**Two corrections to Claude's own earlier record.** (a) The learned exit model is **not a policy** —
+`learned_exit_index == 0` in 980/1031 (95.1%) and `learned_exit_value` is identical to `exit_immediate` in
+982/1031 (95.2%); its whole benefit is one bit, *don't hold 0DTE premium*. An earlier note calling it
+"real skill, preserve this asset" was overstated. (b) A first version of the passive-entry analysis was
+**discarded as invalid** — it required the fill index to precede `learned_exit_index`, which is 0 for 95%
+of rows, making passive fills structurally impossible; the 2–5% fill rates it produced were an artefact of
+the test. Also, Claude's earlier "condition 5 power floor already satisfied" note was wrong (it read the
+full evaluation index instead of the `LEARNED_OOF` subset the gate tests) and was retracted.
+
+**Feature contract has zero ranking power.** Decile curve by model score is flat and non-monotonic
+(top −$16.37, bottom −$17.75, middle best at −$11.48); top decile is 0/4 folds positive even after being
+gifted the entire +$22.76 execution improvement. Same-feature retrains are wasted compute.
+
+**Decision:** **Phase-1 CLOSED.** No further training on this strategy class. The next honest step is a
+**feasibility study, not a training run** — does any instrument/horizon reachable through IBKR have
+non-negative *gross* expectancy? That is measurable from quotes and requires no fitting; if nothing clears
+zero gross, no modelling helps. Governance at close: firewall CLOSED (`holdout_open_count = 0`), no
+broker/paper/promotion/paid-download activity, frozen clock and fill/label law unmodified (verified by
+`git diff`), paper default unchanged.
+
+**Meta-lesson (reaffirmed).** The governed apparatus reached six frozen generations and ~30k lines without
+once running a real fit; the lean causal path answered the question in a day; the first "confirmed edge"
+it produced was a clock leak that a rubber-stamp verification missed and cost the protected holdout to
+disprove. **Run the cheap real experiment before the elaborate fake-tested pipeline, and verify the
+feature-availability clock, not just the future-outcome guard.** `NO_INCREMENTAL_EDGE` was the predicted
+honest outcome at the start of Phase-1, and it is the outcome — a successful research programme, not a
+failed one.
