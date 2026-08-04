@@ -1,0 +1,149 @@
+{
+  "schema_version": "v4.paid_data_approval.v1",
+  "created": "2026-08-04",
+  "purpose": "Measure the ES bid-ask spread so the Path-D feasibility hurdle for ES stops depending on an assumed 1-tick constant. The assumption is load-bearing: at a 2-tick spread ES's advantage over passive 0DTE options disappears entirely.",
+  "why_a_new_manifest": "The existing paid_data_approval_manifest.json authorizes ES/VX ohlcv-1m only, caps paid spend at USD 9.00, and lists forbidden as 'any other paid item'. bbo-1s is NOT within that scope. Rather than edit a frozen approval record, this manifest declares a separate, narrower authorization.",
+  "approval_required": {
+    "exact_approval_text": "Owner authorizes GLBX.MDP3 ES.FUT bbo-1s for the 20 named sessions at DST-aware 09:30-16:00 America/New_York windows up to USD 3.00 to measure ES spread; no other paid data.",
+    "supplied_via": "V4_PAID_DATA_APPROVAL_TEXT environment variable, set by the owner or by the operator under owner direction",
+    "note": "Claude drafted this manifest but must NOT also supply the approval text. The guard's protection comes from a human providing it at execution time."
+  },
+  "authorized_scope": {
+    "dataset": "GLBX.MDP3",
+    "symbols": [
+      "ES.FUT"
+    ],
+    "stype_in": "parent",
+    "schema": "bbo-1s",
+    "paid_cap_usd": 3.0,
+    "estimated_cost_usd": 1.478327,
+    "estimate_basis": "Read-only metadata.get_cost preflight 2026-08-03 for the corrected DST-aware windows: USD 1.478327. Re-verified read-only before any download.",
+    "sessions": [
+      "2025-08-01",
+      "2025-08-20",
+      "2025-09-08",
+      "2025-09-25",
+      "2025-10-14",
+      "2025-10-31",
+      "2025-11-19",
+      "2025-12-08",
+      "2025-12-23",
+      "2026-01-13",
+      "2026-01-30",
+      "2026-02-18",
+      "2026-03-09",
+      "2026-03-26",
+      "2026-04-14",
+      "2026-05-01",
+      "2026-05-20",
+      "2026-06-08",
+      "2026-06-25",
+      "2026-07-14"
+    ],
+    "session_count": 20,
+    "session_selection_rationale": "Evenly spaced across the owned 2025-08-01..2026-07-31 ES corpus to capture regime variation. 2025-12-25 was replaced with 2025-12-23 because it is a market holiday.",
+    "session_windows_utc": {
+      "2025-08-01": {
+        "start": "2025-08-01T13:30:00Z",
+        "end": "2025-08-01T20:00:00Z"
+      },
+      "2025-08-20": {
+        "start": "2025-08-20T13:30:00Z",
+        "end": "2025-08-20T20:00:00Z"
+      },
+      "2025-09-08": {
+        "start": "2025-09-08T13:30:00Z",
+        "end": "2025-09-08T20:00:00Z"
+      },
+      "2025-09-25": {
+        "start": "2025-09-25T13:30:00Z",
+        "end": "2025-09-25T20:00:00Z"
+      },
+      "2025-10-14": {
+        "start": "2025-10-14T13:30:00Z",
+        "end": "2025-10-14T20:00:00Z"
+      },
+      "2025-10-31": {
+        "start": "2025-10-31T13:30:00Z",
+        "end": "2025-10-31T20:00:00Z"
+      },
+      "2025-11-19": {
+        "start": "2025-11-19T14:30:00Z",
+        "end": "2025-11-19T21:00:00Z"
+      },
+      "2025-12-08": {
+        "start": "2025-12-08T14:30:00Z",
+        "end": "2025-12-08T21:00:00Z"
+      },
+      "2025-12-23": {
+        "start": "2025-12-23T14:30:00Z",
+        "end": "2025-12-23T21:00:00Z"
+      },
+      "2026-01-13": {
+        "start": "2026-01-13T14:30:00Z",
+        "end": "2026-01-13T21:00:00Z"
+      },
+      "2026-01-30": {
+        "start": "2026-01-30T14:30:00Z",
+        "end": "2026-01-30T21:00:00Z"
+      },
+      "2026-02-18": {
+        "start": "2026-02-18T14:30:00Z",
+        "end": "2026-02-18T21:00:00Z"
+      },
+      "2026-03-09": {
+        "start": "2026-03-09T13:30:00Z",
+        "end": "2026-03-09T20:00:00Z"
+      },
+      "2026-03-26": {
+        "start": "2026-03-26T13:30:00Z",
+        "end": "2026-03-26T20:00:00Z"
+      },
+      "2026-04-14": {
+        "start": "2026-04-14T13:30:00Z",
+        "end": "2026-04-14T20:00:00Z"
+      },
+      "2026-05-01": {
+        "start": "2026-05-01T13:30:00Z",
+        "end": "2026-05-01T20:00:00Z"
+      },
+      "2026-05-20": {
+        "start": "2026-05-20T13:30:00Z",
+        "end": "2026-05-20T20:00:00Z"
+      },
+      "2026-06-08": {
+        "start": "2026-06-08T13:30:00Z",
+        "end": "2026-06-08T20:00:00Z"
+      },
+      "2026-06-25": {
+        "start": "2026-06-25T13:30:00Z",
+        "end": "2026-06-25T20:00:00Z"
+      },
+      "2026-07-14": {
+        "start": "2026-07-14T13:30:00Z",
+        "end": "2026-07-14T20:00:00Z"
+      }
+    }
+  },
+  "forbidden": [
+    "mbp-1",
+    "tbbo",
+    "cmbp-1",
+    "any schema other than bbo-1s",
+    "any session date not in the authorized list",
+    "any expansion of the RTH window",
+    "any symbol other than ES.FUT",
+    "re-running the download to acquire additional sessions without a new manifest",
+    "any window that does not resolve to exactly 09:30-16:00 America/New_York"
+  ],
+  "hard_requirements": [
+    "Run metadata.get_cost for the exact request BEFORE any timeseries download and abort if it exceeds paid_cap_usd",
+    "Record the actual cost returned and the bytes received in a receipt alongside the data",
+    "Do not open the protected 36-session firewall; holdout_open_count must remain 0",
+    "Do not modify FILL_LAW, the causal t-60s clock, the label law, or the OOF firewall",
+    "No broker, order, live, paper-submit, promotion, or runtime-flag activity"
+  ],
+  "source": "Owner authorization 2026-08-03 for ES spread measurement, reaffirmed 2026-08-04 ('proceed to option A') after Claude recommended against it. The recommendation and the owner's override are both recorded in PATHD_NEXT_CLASS_OWNER_DECISION_2026_08_04.md.",
+  "supersedes": "paid_data_approval_manifest_es_bbo1s_2026_08_03.json",
+  "why_superseded": "The 2026-08-03 manifest declared a single fixed UTC window 13:30-20:00, which is correct RTH on the 14 EDT sessions but resolves to 08:30-15:00 EST on 2025-11-19, 2025-12-08, 2025-12-23, 2026-01-13, 2026-01-30 and 2026-02-18 -- adding a premarket hour and omitting the closing RTH hour, the period most likely to matter for the elevated-volatility conditional spread. This manifest declares explicit DST-aware per-session windows instead. The 2026-08-03 manifest is left unchanged and unspent."
+}
