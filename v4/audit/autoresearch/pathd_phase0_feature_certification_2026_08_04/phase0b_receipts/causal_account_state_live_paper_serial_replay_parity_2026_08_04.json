@@ -1,0 +1,20 @@
+{
+  "incremental_equals_full_replay": true,
+  "receipt_sha256": "6bd07e9c53c5790bb6ef85edd01b9ea267b766510ee0d60da1f7bd3346aaf66f",
+  "schema_version": "pathd.phase0b.account-serial-replay-parity-live.v1",
+  "source": {
+    "account_redacted": "DU***40",
+    "entry_utc": "2026-08-04T18:36:05+00:00",
+    "exit_utc": "2026-08-04T18:37:04+00:00",
+    "observed_occupancy_sequence": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "paper_evidence": "v4/audit/autoresearch/pathd_phase0b_trackc_paper_transitions_2026_08_04/trackc_transition_evidence.json",
+    "realized_pnl_dollars": -3.08
+  },
+  "status": "PASS",
+  "supplements": "causal_account_state_serial_replay_parity.json (offline; unchanged)"
+}

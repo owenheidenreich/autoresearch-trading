@@ -1,19 +1,10 @@
 {
-  "incremental_equals_full_replay": true,
-  "receipt_sha256": "ccdd3c38230da160a696b64df7760ed22e75e4d0d88b7935f43cbb77ca38b269",
-  "schema_version": "pathd.phase0b.account-serial-replay-parity.v1",
-  "source": {
-    "account_redacted": "DU***40",
-    "entry_utc": "2026-08-04T18:36:05+00:00",
-    "exit_utc": "2026-08-04T18:37:04+00:00",
-    "observed_occupancy_sequence": [
-      0,
-      1,
-      1,
-      0
-    ],
-    "paper_evidence": "v4/audit/autoresearch/pathd_phase0b_trackc_paper_transitions_2026_08_04/trackc_transition_evidence.json",
-    "realized_pnl_dollars": -3.08
-  },
+  "availability_clock_kind": "measured_local_account_transition_compute_p99",
+  "batch_stepwise_exact_identity": true,
+  "event_count": 4,
+  "local_adapter_compute_p99_ms": 0.002396,
+  "receipt_sha256": "84b69bcb11f08eadd3be5d869d968c8009c74970426fb8435217f05ff2f092ba",
+  "schema_version": "pathd.phase0b.account-serial-parity-receipt.v1",
+  "state_sequence_sha256": "43ce6d563fc5ae7c21a6b422eb24517204ae4da1200dd491d4b0ed13c9613adf",
   "status": "PASS"
 }

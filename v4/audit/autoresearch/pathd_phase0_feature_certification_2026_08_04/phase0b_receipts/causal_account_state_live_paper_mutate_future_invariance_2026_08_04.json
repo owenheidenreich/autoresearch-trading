@@ -1,0 +1,21 @@
+{
+  "method": "append an ENTRY_FILL 600 s after the exit; a snapshot at entry+30 s must be identical",
+  "receipt_sha256": "daaa1840dedf3b061e37aa5980a588fd2eb061add9bbf9253ab5ec99b9da392b",
+  "schema_version": "pathd.phase0b.account-mutate-future-invariance-live.v1",
+  "snapshot_unchanged_by_later_event": true,
+  "source": {
+    "account_redacted": "DU***40",
+    "entry_utc": "2026-08-04T18:36:05+00:00",
+    "exit_utc": "2026-08-04T18:37:04+00:00",
+    "observed_occupancy_sequence": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "paper_evidence": "v4/audit/autoresearch/pathd_phase0b_trackc_paper_transitions_2026_08_04/trackc_transition_evidence.json",
+    "realized_pnl_dollars": -3.08
+  },
+  "status": "PASS",
+  "supplements": "causal_account_state_mutate_future_invariance.json (offline; unchanged)"
+}

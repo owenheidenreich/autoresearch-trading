@@ -1,20 +1,17 @@
 {
-  "method": "append an ENTRY_FILL 600 s after the exit; a decision snapshot at entry+30 s must be identical",
-  "receipt_sha256": "c99b2034b2fba6cc5618d4b684e21f6215adabddb760a62b17d7e63d12bc9a3b",
-  "schema_version": "pathd.phase0b.account-mutate-future-invariance.v1",
-  "snapshot_unchanged_by_later_event": true,
-  "source": {
-    "account_redacted": "DU***40",
-    "entry_utc": "2026-08-04T18:36:05+00:00",
-    "exit_utc": "2026-08-04T18:37:04+00:00",
-    "observed_occupancy_sequence": [
-      0,
-      1,
-      1,
-      0
-    ],
-    "paper_evidence": "v4/audit/autoresearch/pathd_phase0b_trackc_paper_transitions_2026_08_04/trackc_transition_evidence.json",
-    "realized_pnl_dollars": -3.08
+  "cutoff_event_count": 2,
+  "cutoff_snapshot": {
+    "entries_so_far": 1.0,
+    "loss_streak_so_far": 1.0,
+    "position_occupancy": 0.0,
+    "realized_session_pnl_dollars": -25.0,
+    "remaining_entry_budget_dollars": 475.0,
+    "seconds_since_last_exit": 0.5
   },
-  "status": "PASS"
+  "cutoff_snapshot_exact_identity": true,
+  "future_suffixes_diverge": true,
+  "receipt_sha256": "4e05bd01a6572a940693cd293b21c18034f2bef7dfe80db82ab64eb4ef2a367d",
+  "schema_version": "pathd.phase0b.account-mutate-future-receipt.v1",
+  "status": "PASS",
+  "tolerance": 0.0
 }
