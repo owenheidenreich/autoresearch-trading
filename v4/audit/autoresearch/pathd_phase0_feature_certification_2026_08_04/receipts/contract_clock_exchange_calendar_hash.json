@@ -1,0 +1,38 @@
+{
+  "calendar_payload": {
+    "2024-11-29": "13:00:00",
+    "2024-12-24": "13:15:00",
+    "2025-07-03": "13:00:00",
+    "2025-11-28": "13:00:00",
+    "2025-12-24": "13:15:00",
+    "2026-07-02": "13:00:00",
+    "2026-11-27": "13:00:00",
+    "2026-12-24": "13:15:00"
+  },
+  "calendar_sha256": "c5b8114ab7e6e97b42a5493bec25ed88005dbfa65313cffaf047e5f0ffb039bb",
+  "early_close_session_vector": {
+    "day_of_week": 3.0,
+    "is_call": 0.0,
+    "is_early_close": 1.0,
+    "minute_of_session": 150.0,
+    "seconds_from_open": 9000.0,
+    "seconds_to_close": 3600.0,
+    "seconds_to_expiry": 3600.0,
+    "strike": 6000.0
+  },
+  "receipt_sha256": "6f8b1b83c32072c14dbe558b8f31c6c7ad2aae123864e4045d51a97d594e87c7",
+  "regular_session_vector": {
+    "day_of_week": 0.0,
+    "is_call": 1.0,
+    "is_early_close": 0.0,
+    "minute_of_session": 163.0,
+    "seconds_from_open": 9780.0,
+    "seconds_to_close": 13620.0,
+    "seconds_to_expiry": 13620.0,
+    "strike": 7665.0
+  },
+  "schema_version": "pathd.contract-clock-calendar-receipt.v1",
+  "shared_source_sha256": "0362e0f66a6a5f276010c1e81e24c775f00bcb0b7928b907e28581663333a4ae",
+  "status": "PASS",
+  "tolerance": 0.0
+}

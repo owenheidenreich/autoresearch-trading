@@ -1,0 +1,28 @@
+{
+  "availability_clock_kind": "measured_local_shared_iv_adapter_compute_p99",
+  "constants": {
+    "dividend_yield": 0.0,
+    "iterations": 100,
+    "iv_lower": 0.0001,
+    "iv_upper": 5.0,
+    "risk_free_rate": 0.04
+  },
+  "guarded_unavailable_sample_count": 1,
+  "guarded_unavailable_samples": [
+    {
+      "decision_time": "2026-07-28T19:46:00+00:00",
+      "reason": "missing fixed-wing IV pairs",
+      "session": "2026-07-28"
+    }
+  ],
+  "local_adapter_compute_p99_ms": 8.572375,
+  "max_solver_absolute_error": 2.6783769646598898e-11,
+  "numeric_tolerance": 1e-10,
+  "receipt_sha256": "5b4c41be1630cbd4ab1ab7756fcba1f4f45bd30436331496d405ba26bbee2252",
+  "schema_version": "pathd.phase0b.iv-solver-hash-receipt.v1",
+  "shared_source_path": "v4/research/pathd_opra_parity_features.py",
+  "shared_source_sha256": "0456e788e604fd5609b3f48cddbaee9633660fdbe63a7f62952d5d6cd93d2f1b",
+  "solver_callable_sha256": "b3b07d37f87088cd317d20df5ade8eafba7176c629255b205f26c8f90dbfaf3c",
+  "stability_vectors_sha256": "2738804e37c83b6e35363d47741ca747f802f677b17a15f546d983254ea00935",
+  "status": "PASS"
+}

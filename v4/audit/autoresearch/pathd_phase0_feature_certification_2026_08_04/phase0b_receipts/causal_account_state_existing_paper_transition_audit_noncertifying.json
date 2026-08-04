@@ -1,0 +1,29 @@
+{
+  "both_orders_filled": true,
+  "broker_or_paper_accessed_during_phase0b": false,
+  "finding": "the existing authorized paper log proves only a partial occupancy transition; it cannot certify exact historical/live identity for all six account-state features",
+  "missing_for_six_feature_identity": [
+    "post-exit account-state snapshot",
+    "entries_so_far at each decision",
+    "realized_session_pnl_dollars including commission policy",
+    "seconds_since_last_exit at a decision after the exit",
+    "loss_streak_so_far after the realized losing exit",
+    "remaining_entry_budget_dollars under the runtime budget policy"
+  ],
+  "observed_actions": [
+    "BUY",
+    "SELL"
+  ],
+  "observed_pre_action_position_occupancies": [
+    0,
+    1
+  ],
+  "paper_only_real_money_false": true,
+  "partial_entry_exit_transition_observed": true,
+  "receipt_sha256": "da3f43f2283aac9a98437788146b4310b278dc1a750f1ff3bb2ba05a6924c77a",
+  "schema_version": "pathd.phase0b.account-existing-paper-transition-audit.v1",
+  "source_path": "v4/logs/paper_trading/2026-08-03/aug3_2026_7595c_exit_stream_observation.jsonl",
+  "source_row_count": 2,
+  "source_sha256": "26afffb4a1ce53e63fcdd68aad43c3a4132f87b97206c93784393079e5ebb00a",
+  "status": "INSUFFICIENT_EXISTING_PAPER_EVIDENCE"
+}

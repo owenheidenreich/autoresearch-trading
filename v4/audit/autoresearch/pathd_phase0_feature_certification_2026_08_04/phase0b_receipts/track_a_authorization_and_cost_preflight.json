@@ -1,0 +1,35 @@
+{
+  "capture_attempted": false,
+  "connection_attempted": false,
+  "current_entitlement_status": "UNKNOWN_WITHOUT_ACCOUNT_PORTAL_OR_AUTHORIZED_CONNECTION",
+  "official_pricing_checked_2026_08_04": [
+    {
+      "finding": "subscription plans advertise live access/unlimited streaming; usage-based live terms can differ",
+      "url": "https://databento.com/pricing"
+    },
+    {
+      "finding": "OPRA usage-based live pricing was discontinued for new plans, but grandfathered active licenses may remain usage-based",
+      "url": "https://databento.com/blog/introducing-new-opra-pricing-plans"
+    },
+    {
+      "finding": "real-time access and venue fees depend on the active subscription/license in the account portal",
+      "url": "https://databento.com/docs/api-reference-live/basics/metered-pricing"
+    }
+  ],
+  "owner_authorization_for_five_session_capture": false,
+  "prior_live_entitlement_evidence": {
+    "authorization_path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/authorization.json",
+    "authorization_sha256": "c1c18babc3b8d21b1e09ffd59f78efa89f6bc4b6dfabb3c27ab1223cea8a8ca0",
+    "capture_path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/attempt002/capture_summary.json",
+    "capture_sha256": "ea15614ca4ab09397fa21b1c9ef4d1ef56716e5610165ddd794ab0ef5cad58cc",
+    "finding": "OPRA.PILLAR live capture succeeded on 2026-08-03 under a session-bounded authorization"
+  },
+  "receipt_sha256": "788e8dcccc58c93fe2ffb6bee8f8b7679d172ec61436d2730a2ee67c962aa8ff",
+  "required_next_evidence": [
+    "owner explicitly authorizes no-order Databento Live OPRA capture for at least five regular sessions",
+    "owner confirms the active account plan makes this stream zero marginal cost"
+  ],
+  "schema_version": "pathd.phase0b.track-a-preflight.v1",
+  "status": "BLOCKED_ACCOUNT_SPECIFIC_COST_AND_OWNER_AUTHORIZATION_REQUIRED",
+  "zero_marginal_cost_status": "UNKNOWN_ACCOUNT_PLAN"
+}

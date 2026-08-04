@@ -1,0 +1,54 @@
+{
+  "availability_clock_kind": "measured_local_shared_parity_adapter_compute_p99",
+  "candidate_identity_mismatches": 0,
+  "guarded_unavailable_sample_count": 2,
+  "guarded_unavailable_samples": [
+    {
+      "decision_time": "2026-07-29T20:01:00+00:00",
+      "reason": "insufficient exact-strike call/put pairs",
+      "session": "2026-07-29"
+    },
+    {
+      "decision_time": "2026-07-30T20:01:00+00:00",
+      "reason": "insufficient exact-strike call/put pairs",
+      "session": "2026-07-30"
+    }
+  ],
+  "identity_rows_sha256": "04ce5b4223db2b0954d4a953cd073d695961bdd78cd267a1176de35db2c10a69",
+  "identity_tolerance": 0.0,
+  "local_adapter_compute_p99_ms": 7.680593,
+  "receipt_sha256": "4c52ec4d1335670c3ca1c144d108839b3a49831a15a7c8b970e3bb6f4a557258",
+  "sample_count": 122,
+  "sample_every_minutes": 15,
+  "schema_version": "pathd.phase0b.parity-pair-identity-receipt.v1",
+  "session_count": 5,
+  "sources": [
+    {
+      "path": "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31/aligned/normalized/databento_spxw_0dte_2026-07-27.parquet",
+      "session": "2026-07-27",
+      "sha256": "a902f79e04a83b78a2a394c09234e90f8403587504412832cc0533064662ee06"
+    },
+    {
+      "path": "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31/aligned/normalized/databento_spxw_0dte_2026-07-28.parquet",
+      "session": "2026-07-28",
+      "sha256": "83419dd9c86197e75270c2edadd2623b08b0051f16838861a3016050866fb51b"
+    },
+    {
+      "path": "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31/aligned/normalized/databento_spxw_0dte_2026-07-29.parquet",
+      "session": "2026-07-29",
+      "sha256": "fae4f4ae2f0c1b14ae8af9e746630584590b36a150e849ddf03b61024e837c0d"
+    },
+    {
+      "path": "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31/aligned/normalized/databento_spxw_0dte_2026-07-30.parquet",
+      "session": "2026-07-30",
+      "sha256": "81c6a573e7a224e11da7c263e1942e6392260c73ddec3dfa5b1f7bdac36f7965"
+    },
+    {
+      "path": "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31/aligned/normalized/databento_spxw_0dte_2026-07-31.parquet",
+      "session": "2026-07-31",
+      "sha256": "46c7849e908da462f626c83629dcf27a6a88e0d006cfc037fff0c9d1559f5f6c"
+    }
+  ],
+  "status": "PASS",
+  "value_identity_mismatches": 0
+}

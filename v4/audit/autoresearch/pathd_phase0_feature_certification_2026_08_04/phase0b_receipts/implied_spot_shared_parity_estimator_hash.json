@@ -1,0 +1,22 @@
+{
+  "constants": {
+    "dividend_yield": 0.0,
+    "risk_free_rate": 0.04
+  },
+  "historical_path_callable_target_sha256": "57d18fe3c2cd6ef1bf01ab7e4404971e2c1b10e5af5c0bd36a7952c3478981b6",
+  "input_columns": [
+    "ask",
+    "bid",
+    "raw_symbol",
+    "right",
+    "strike"
+  ],
+  "live_path_callable_target_sha256": "57d18fe3c2cd6ef1bf01ab7e4404971e2c1b10e5af5c0bd36a7952c3478981b6",
+  "official_spx_accepted_as_feature_input": false,
+  "receipt_sha256": "bb07c4e508f577758bbe75dc5f6e97edcf081a1e0cf58d692c8d2b6dbf60dcd5",
+  "schema_version": "pathd.phase0b.shared-parity-estimator-receipt.v1",
+  "shared_callable_sha256": "57d18fe3c2cd6ef1bf01ab7e4404971e2c1b10e5af5c0bd36a7952c3478981b6",
+  "shared_source_path": "v4/research/pathd_opra_parity_features.py",
+  "shared_source_sha256": "0456e788e604fd5609b3f48cddbaee9633660fdbe63a7f62952d5d6cd93d2f1b",
+  "status": "PASS"
+}

@@ -1,0 +1,25 @@
+{
+  "broker_or_paper_accessed": false,
+  "finding": "byte-identical wrappers exist, but no authorized live/paper account transition observation was supplied; simulation is not historical/live transition identity",
+  "historical_snapshot": {
+    "entries_so_far": 2.0,
+    "loss_streak_so_far": 0.0,
+    "position_occupancy": 0.0,
+    "realized_session_pnl_dollars": 15.0,
+    "remaining_entry_budget_dollars": 515.0,
+    "seconds_since_last_exit": 1.0
+  },
+  "live_wrapper_snapshot_without_live_evidence": {
+    "entries_so_far": 2.0,
+    "loss_streak_so_far": 0.0,
+    "position_occupancy": 0.0,
+    "realized_session_pnl_dollars": 15.0,
+    "remaining_entry_budget_dollars": 515.0,
+    "seconds_since_last_exit": 1.0
+  },
+  "receipt_sha256": "8c31d65f0b3a2918d4aa3589f5809180e96a9916d789cfd372a5ff1664f0d70e",
+  "schema_version": "pathd.phase0b.account-offline-identity-finding.v1",
+  "shared_source_path": "v4/research/pathd_causal_account_state.py",
+  "shared_source_sha256": "331d75dc3c9b2833cd6a10c4f733975601480edb05f8afa999e7c85aa2700b4c",
+  "status": "NONCERTIFYING_OFFLINE_ONLY"
+}

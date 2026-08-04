@@ -1,0 +1,40 @@
+{
+  "max_solver_absolute_error": 2.6783769646598898e-11,
+  "mutate_future_checks": [
+    {
+      "cutoff": "2026-07-27T13:45:00+00:00",
+      "identical": true,
+      "prefix_rows": 15,
+      "session": "2026-07-27"
+    },
+    {
+      "cutoff": "2026-07-28T13:45:00+00:00",
+      "identical": true,
+      "prefix_rows": 15,
+      "session": "2026-07-28"
+    },
+    {
+      "cutoff": "2026-07-29T13:45:00+00:00",
+      "identical": true,
+      "prefix_rows": 15,
+      "session": "2026-07-29"
+    },
+    {
+      "cutoff": "2026-07-30T13:45:00+00:00",
+      "identical": true,
+      "prefix_rows": 15,
+      "session": "2026-07-30"
+    },
+    {
+      "cutoff": "2026-07-31T13:45:00+00:00",
+      "identical": true,
+      "prefix_rows": 15,
+      "session": "2026-07-31"
+    }
+  ],
+  "numerical_stability_vector_count": 24,
+  "receipt_sha256": "4d8e439a3d6da1e41dd5fab53ef3b3a98825021c6f3268df90f99676d56fb7e8",
+  "schema_version": "pathd.phase0b.iv-mutation-stability-receipt.v1",
+  "status": "PASS",
+  "tolerance": 1e-10
+}

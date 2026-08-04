@@ -1,0 +1,23 @@
+{
+  "parent_contract_id": "entry.opra_implied_spot.v1",
+  "parent_receipts": [
+    {
+      "name": "shared parity-estimator implementation hash",
+      "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+      "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+    },
+    {
+      "name": "historical/live candidate-pair identity",
+      "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+      "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+    },
+    {
+      "name": "comparison to completed official SPX for measurement only",
+      "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+      "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+    }
+  ],
+  "receipt_sha256": "0f9b8d98a357324a6966a27a192d0991e97ff1f93fb4157e78a110b1947027b7",
+  "schema_version": "pathd.phase0b.parent-admission-receipt.v1",
+  "status": "PASS"
+}

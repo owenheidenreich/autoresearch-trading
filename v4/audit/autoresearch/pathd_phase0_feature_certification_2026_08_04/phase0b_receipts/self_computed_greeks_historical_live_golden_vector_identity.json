@@ -1,0 +1,46 @@
+{
+  "availability_clock_kind": "measured_local_shared_greeks_adapter_compute_p99",
+  "expected": {
+    "E.bs.delta": 0.539827837277029,
+    "E.bs.gamma": 0.0198476273738506,
+    "bs_delta": 0.539827837277029,
+    "bs_gamma": 0.0198476273738506,
+    "bs_theta": -3.9695254747701156,
+    "bs_vega": 39.69525474770118,
+    "self_iv": 0.2
+  },
+  "historical": {
+    "E.bs.delta": 0.539827837277029,
+    "E.bs.gamma": 0.0198476273738506,
+    "bs_delta": 0.539827837277029,
+    "bs_gamma": 0.0198476273738506,
+    "bs_theta": -3.9695254747701156,
+    "bs_vega": 39.69525474770118,
+    "self_iv": 0.1999999999999999
+  },
+  "historical_live_exact_identity": true,
+  "inputs": {
+    "dividend": 0.0,
+    "option_price": 7.965567455405804,
+    "rate": 0.0,
+    "right": "C",
+    "spot": 100.0,
+    "strike": 100.0,
+    "years": 1.0
+  },
+  "live": {
+    "E.bs.delta": 0.539827837277029,
+    "E.bs.gamma": 0.0198476273738506,
+    "bs_delta": 0.539827837277029,
+    "bs_gamma": 0.0198476273738506,
+    "bs_theta": -3.9695254747701156,
+    "bs_vega": 39.69525474770118,
+    "self_iv": 0.1999999999999999
+  },
+  "local_adapter_compute_p99_ms": 0.084262,
+  "max_expected_absolute_error": 1.1102230246251565e-16,
+  "receipt_sha256": "c24ae2edc6995020303ad947b388871525641bf72ce6a9ea49542e100ebabe54",
+  "schema_version": "pathd.phase0b.greeks-golden-vector-receipt.v1",
+  "status": "PASS",
+  "tolerance": 1e-10
+}

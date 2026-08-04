@@ -1,0 +1,16 @@
+{
+  "availability_clock_measurement": "capture_finished_unix_ns-capture_started_unix_ns",
+  "definition_replay_warmup_ms": 30603.667,
+  "historical_callable": "historical_contract_clock_features",
+  "live_callable": "live_contract_clock_features",
+  "receipt_sha256": "d3fbc4d41a628cc340464902484cf6a49726cb8d5f516319d436a6676286ff2c",
+  "schema_version": "pathd.contract-clock-implementation-receipt.v1",
+  "shared_callable": "contract_clock_features",
+  "shared_source_path": "v4/research/pathd_contract_clock.py",
+  "shared_source_sha256": "0362e0f66a6a5f276010c1e81e24c775f00bcb0b7928b907e28581663333a4ae",
+  "source_definition_receipt": {
+    "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/definition_attempt001/definition_capture_summary.json",
+    "sha256": "ae9a37bfe62b0df5522ea34e0d4e7a539b6c1f339c14fe5bc94ce7638f05a1c8"
+  },
+  "status": "PASS"
+}

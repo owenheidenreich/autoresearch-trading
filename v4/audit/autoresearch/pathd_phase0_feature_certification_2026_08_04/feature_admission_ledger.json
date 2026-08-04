@@ -1,0 +1,1454 @@
+{
+  "features": [
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "D.near_atm.put_call_mid_ratio",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "D.near_atm.side_smile_slope_bps_per_5pt",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "D.near_atm.straddle_mid_spot_bps",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.self_computed_greeks.v1",
+      "family": "entry.self_computed_greeks.v1",
+      "name": "E.bs.delta",
+      "receipts": [
+        {
+          "name": "causal spot parent receipt",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_causal_spot_parent.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "historical/live golden-vector identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_historical_live_golden_vector_identity.json",
+          "sha256": "baa817878cdf3352ea4173bcb7ad5b38d30ca8cbe06b36a0d38a463fc9375832"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.self_computed_greeks.v1",
+      "family": "entry.self_computed_greeks.v1",
+      "name": "E.bs.gamma",
+      "receipts": [
+        {
+          "name": "causal spot parent receipt",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_causal_spot_parent.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "historical/live golden-vector identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_historical_live_golden_vector_identity.json",
+          "sha256": "baa817878cdf3352ea4173bcb7ad5b38d30ca8cbe06b36a0d38a463fc9375832"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.self_computed_greeks.v1",
+      "family": "entry.self_computed_greeks.v1",
+      "name": "bs_delta",
+      "receipts": [
+        {
+          "name": "causal spot parent receipt",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_causal_spot_parent.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "historical/live golden-vector identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_historical_live_golden_vector_identity.json",
+          "sha256": "baa817878cdf3352ea4173bcb7ad5b38d30ca8cbe06b36a0d38a463fc9375832"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.self_computed_greeks.v1",
+      "family": "entry.self_computed_greeks.v1",
+      "name": "bs_gamma",
+      "receipts": [
+        {
+          "name": "causal spot parent receipt",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_causal_spot_parent.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "historical/live golden-vector identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_historical_live_golden_vector_identity.json",
+          "sha256": "baa817878cdf3352ea4173bcb7ad5b38d30ca8cbe06b36a0d38a463fc9375832"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.self_computed_greeks.v1",
+      "family": "entry.self_computed_greeks.v1",
+      "name": "bs_theta",
+      "receipts": [
+        {
+          "name": "causal spot parent receipt",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_causal_spot_parent.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "historical/live golden-vector identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_historical_live_golden_vector_identity.json",
+          "sha256": "baa817878cdf3352ea4173bcb7ad5b38d30ca8cbe06b36a0d38a463fc9375832"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.self_computed_greeks.v1",
+      "family": "entry.self_computed_greeks.v1",
+      "name": "bs_vega",
+      "receipts": [
+        {
+          "name": "causal spot parent receipt",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_causal_spot_parent.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "historical/live golden-vector identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_historical_live_golden_vector_identity.json",
+          "sha256": "baa817878cdf3352ea4173bcb7ad5b38d30ca8cbe06b36a0d38a463fc9375832"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "candidate_liquidity_rank",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "chain_depth_imbalance",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "chain_spread_median",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "daily_instrument_id_identity",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "day_of_week",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:historical/live ledger transition identity (existing paper evidence incomplete for all six fields)",
+      "contract_id": "entry.causal_account_state.v1",
+      "family": "entry.causal_account_state.v1",
+      "name": "entries_so_far",
+      "receipts": [
+        {
+          "name": "serial replay parity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_serial_replay_parity.json",
+          "sha256": "63fcfe2baa2a3d0955d815f357be9db03dc8abee386277342e3c75c08053e0c0"
+        },
+        {
+          "name": "mutate-future invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_mutate_future_invariance.json",
+          "sha256": "259f40830c3a9010068a0b6ed9e4481e59b5b4fd1b9a94f5203b95c2186c6c21"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "future_mae",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "future_mfe",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "future_pnl",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "intraday_open_interest",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "is_call",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "is_early_close",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session OHLCV receipt-latency distribution|sparse zero-fill invariance|native OHLCV versus live-trade aggregation identity",
+      "contract_id": "entry.opra_ohlcv1m_sparse.v1",
+      "family": "entry.opra_ohlcv1m_sparse.v1",
+      "name": "last_causal_minute_volume",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "last_causal_open_interest",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "last_interval_trade_price",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "last_interval_trade_size",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:historical/live ledger transition identity (existing paper evidence incomplete for all six fields)",
+      "contract_id": "entry.causal_account_state.v1",
+      "family": "entry.causal_account_state.v1",
+      "name": "loss_streak_so_far",
+      "receipts": [
+        {
+          "name": "serial replay parity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_serial_replay_parity.json",
+          "sha256": "63fcfe2baa2a3d0955d815f357be9db03dc8abee386277342e3c75c08053e0c0"
+        },
+        {
+          "name": "mutate-future invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_mutate_future_invariance.json",
+          "sha256": "259f40830c3a9010068a0b6ed9e4481e59b5b4fd1b9a94f5203b95c2186c6c21"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "microprice",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "minute_of_session",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_volatility.v1",
+      "family": "entry.opra_implied_volatility.v1",
+      "name": "opra_atm_iv",
+      "receipts": [
+        {
+          "name": "entry.opra_implied_spot.v1 receipts",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_parent_receipts.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "mutation and numerical-stability tests",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_mutation_numerical_stability.json",
+          "sha256": "0eea5d0023801e3dc0bd27191bde63abb2f5e87a205ecd7c7c5e559af19e8a05"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_volatility.v1",
+      "family": "entry.opra_implied_volatility.v1",
+      "name": "opra_atm_iv_change_5m",
+      "receipts": [
+        {
+          "name": "entry.opra_implied_spot.v1 receipts",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_parent_receipts.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "mutation and numerical-stability tests",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_mutation_numerical_stability.json",
+          "sha256": "0eea5d0023801e3dc0bd27191bde63abb2f5e87a205ecd7c7c5e559af19e8a05"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_volatility.v1",
+      "family": "entry.opra_implied_volatility.v1",
+      "name": "opra_call_skew",
+      "receipts": [
+        {
+          "name": "entry.opra_implied_spot.v1 receipts",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_parent_receipts.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "mutation and numerical-stability tests",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_mutation_numerical_stability.json",
+          "sha256": "0eea5d0023801e3dc0bd27191bde63abb2f5e87a205ecd7c7c5e559af19e8a05"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "opra_full_depth_queue_position",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_implied_spot",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_implied_spot_dispersion_bps",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_volatility.v1",
+      "family": "entry.opra_implied_volatility.v1",
+      "name": "opra_put_skew",
+      "receipts": [
+        {
+          "name": "entry.opra_implied_spot.v1 receipts",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_parent_receipts.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "mutation and numerical-stability tests",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_mutation_numerical_stability.json",
+          "sha256": "0eea5d0023801e3dc0bd27191bde63abb2f5e87a205ecd7c7c5e559af19e8a05"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_volatility.v1",
+      "family": "entry.opra_implied_volatility.v1",
+      "name": "opra_smile_curvature",
+      "receipts": [
+        {
+          "name": "entry.opra_implied_spot.v1 receipts",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_parent_receipts.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "mutation and numerical-stability tests",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_mutation_numerical_stability.json",
+          "sha256": "0eea5d0023801e3dc0bd27191bde63abb2f5e87a205ecd7c7c5e559af19e8a05"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_spot_omar_clipped",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_spot_return_15m_bps",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_spot_return_1m_bps",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_spot_return_5m_bps",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_spot_session_range_bps",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_spot.v1",
+      "family": "entry.opra_implied_spot.v1",
+      "name": "opra_spot_vwap_gap_bps",
+      "receipts": [
+        {
+          "name": "shared parity-estimator implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_shared_parity_estimator_hash.json",
+          "sha256": "a81d91c927de255e7eb08bb7448dcea7fc45753a70f28707cfbb50c63cd1dc17"
+        },
+        {
+          "name": "historical/live candidate-pair identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_historical_live_candidate_pair_identity.json",
+          "sha256": "2956d8e7bffd2c275974a49b589d8cf783d9e65c90f43cc65517a0d0076282ed"
+        },
+        {
+          "name": "comparison to completed official SPX for measurement only",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_spot_official_spx_measurement_only.json",
+          "sha256": "d2dd54801fb4e5f05fa1d7536a012f9c67787ca07f4a3299b9ae703dadb1cd9c"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_implied_volatility.v1",
+      "family": "entry.opra_implied_volatility.v1",
+      "name": "opra_straddle_bps",
+      "receipts": [
+        {
+          "name": "entry.opra_implied_spot.v1 receipts",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_parent_receipts.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "mutation and numerical-stability tests",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_mutation_numerical_stability.json",
+          "sha256": "0eea5d0023801e3dc0bd27191bde63abb2f5e87a205ecd7c7c5e559af19e8a05"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "option_ask",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "option_ask_size",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "option_bid",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "option_bid_size",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_imbalance_mean_15s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_imbalance_mean_5s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_log_mid_return_15s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_log_mid_return_1s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_log_mid_return_30s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_log_mid_return_5s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_log_mid_return_60s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "option_mid",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_quote_age_ms",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_quote_update_count_60s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "option_spread",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_spread_mean_15s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_spread_mean_5s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "option_spread_over_mid",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:same-session live-versus-Historical-API value identity|shared rolling-window implementation hash|no-update and reconnect mutation tests",
+      "contract_id": "entry.opra_cbbo1s_rolling.v1",
+      "family": "entry.opra_cbbo1s_rolling.v1",
+      "name": "option_spread_std_15s",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session OHLCV receipt-latency distribution|sparse zero-fill invariance|native OHLCV versus live-trade aggregation identity",
+      "contract_id": "entry.opra_ohlcv1m_sparse.v1",
+      "family": "entry.opra_ohlcv1m_sparse.v1",
+      "name": "option_trade_range_1m",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session OHLCV receipt-latency distribution|sparse zero-fill invariance|native OHLCV versus live-trade aggregation identity",
+      "contract_id": "entry.opra_ohlcv1m_sparse.v1",
+      "family": "entry.opra_ohlcv1m_sparse.v1",
+      "name": "option_trade_return_1m",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session OHLCV receipt-latency distribution|sparse zero-fill invariance|native OHLCV versus live-trade aggregation identity",
+      "contract_id": "entry.opra_ohlcv1m_sparse.v1",
+      "family": "entry.opra_ohlcv1m_sparse.v1",
+      "name": "option_trade_volume_1m",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "oracle_action",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:historical/live ledger transition identity (existing paper evidence incomplete for all six fields)",
+      "contract_id": "entry.causal_account_state.v1",
+      "family": "entry.causal_account_state.v1",
+      "name": "position_occupancy",
+      "receipts": [
+        {
+          "name": "serial replay parity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_serial_replay_parity.json",
+          "sha256": "63fcfe2baa2a3d0955d815f357be9db03dc8abee386277342e3c75c08053e0c0"
+        },
+        {
+          "name": "mutate-future invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_mutate_future_invariance.json",
+          "sha256": "259f40830c3a9010068a0b6ed9e4481e59b5b4fd1b9a94f5203b95c2186c6c21"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "put_call_depth_ratio",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "put_call_mid_ratio",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:historical/live ledger transition identity (existing paper evidence incomplete for all six fields)",
+      "contract_id": "entry.causal_account_state.v1",
+      "family": "entry.causal_account_state.v1",
+      "name": "realized_session_pnl_dollars",
+      "receipts": [
+        {
+          "name": "serial replay parity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_serial_replay_parity.json",
+          "sha256": "63fcfe2baa2a3d0955d815f357be9db03dc8abee386277342e3c75c08053e0c0"
+        },
+        {
+          "name": "mutate-future invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_mutate_future_invariance.json",
+          "sha256": "259f40830c3a9010068a0b6ed9e4481e59b5b4fd1b9a94f5203b95c2186c6c21"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:historical/live ledger transition identity (existing paper evidence incomplete for all six fields)",
+      "contract_id": "entry.causal_account_state.v1",
+      "family": "entry.causal_account_state.v1",
+      "name": "remaining_entry_budget_dollars",
+      "receipts": [
+        {
+          "name": "serial replay parity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_serial_replay_parity.json",
+          "sha256": "63fcfe2baa2a3d0955d815f357be9db03dc8abee386277342e3c75c08053e0c0"
+        },
+        {
+          "name": "mutate-future invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_mutate_future_invariance.json",
+          "sha256": "259f40830c3a9010068a0b6ed9e4481e59b5b4fd1b9a94f5203b95c2186c6c21"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "seconds_from_open",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:historical/live ledger transition identity (existing paper evidence incomplete for all six fields)",
+      "contract_id": "entry.causal_account_state.v1",
+      "family": "entry.causal_account_state.v1",
+      "name": "seconds_since_last_exit",
+      "receipts": [
+        {
+          "name": "serial replay parity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_serial_replay_parity.json",
+          "sha256": "63fcfe2baa2a3d0955d815f357be9db03dc8abee386277342e3c75c08053e0c0"
+        },
+        {
+          "name": "mutate-future invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/causal_account_state_mutate_future_invariance.json",
+          "sha256": "259f40830c3a9010068a0b6ed9e4481e59b5b4fd1b9a94f5203b95c2186c6c21"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "seconds_to_close",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "seconds_to_expiry",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_kind": null,
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.self_computed_greeks.v1",
+      "family": "entry.self_computed_greeks.v1",
+      "name": "self_iv",
+      "receipts": [
+        {
+          "name": "causal spot parent receipt",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_causal_spot_parent.json",
+          "sha256": "5aaf0a1b27ef206c346df040186d9bfb8f27f028bd7b181f03137774b955ec0c"
+        },
+        {
+          "name": "shared solver/constants hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/implied_volatility_shared_solver_constants_hash.json",
+          "sha256": "c1e3fd0692bb4149dfa159f91fab80367771cabf320dbc0ae2a4004458eb36bf"
+        },
+        {
+          "name": "historical/live golden-vector identity",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/phase0b_receipts/self_computed_greeks_historical_live_golden_vector_identity.json",
+          "sha256": "baa817878cdf3352ea4173bcb7ad5b38d30ca8cbe06b36a0d38a463fc9375832"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 1e-10
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "session_final_quantile",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "permanently_barred_no_matching_live_twin",
+      "contract_id": "entry.barred_no_live_twin.v1",
+      "family": "entry.barred_no_live_twin.v1",
+      "name": "session_final_rank",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "side_smile_slope",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "missing_required_receipts:multi-session local receipt-latency distribution|sparse-minute and freshness receipt",
+      "contract_id": "entry.opra_cbbo1m_native.v1",
+      "family": "entry.opra_cbbo1m_native.v1",
+      "name": "size_imbalance",
+      "receipts": [
+        {
+          "name": "same-session live-versus-Historical-API value identity",
+          "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+          "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+        }
+      ],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "smile_curvature",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": null,
+      "barred_reason": "parent_family_not_admitted:entry.opra_cbbo1m_native.v1",
+      "contract_id": "entry.opra_cbbo1m_cross_section.v1",
+      "family": "entry.opra_cbbo1m_cross_section.v1",
+      "name": "straddle_mid_spot_bps",
+      "receipts": [],
+      "status": "BARRED",
+      "tolerance": 0.0
+    },
+    {
+      "availability_clock_ms": 30603.667,
+      "barred_reason": null,
+      "contract_id": "entry.contract_clock.v1",
+      "family": "entry.contract_clock.v1",
+      "name": "strike",
+      "receipts": [
+        {
+          "name": "definition implementation hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_definition_implementation_hash.json",
+          "sha256": "1cfc9448d3f08358def60a4df0d22d37c63731ac114e8010c02e99352baa6f76"
+        },
+        {
+          "name": "historical/live OSI geometry invariance",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_historical_live_osi_geometry_invariance.json",
+          "sha256": "2c5686437f892b2c53854a907554920d26eaa8c7b9e75d2cd8722575daa889e1"
+        },
+        {
+          "name": "exchange-calendar hash",
+          "path": "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts/contract_clock_exchange_calendar_hash.json",
+          "sha256": "a31a574acfcfac07562fab5de644b6e6bd646051cece1a6392db9ec9abf8ae7e"
+        }
+      ],
+      "status": "ADMITTED",
+      "tolerance": 0.0
+    }
+  ],
+  "generated_at": "2026-08-04T17:22:08.230749+00:00",
+  "ledger_sha256": "04b5e9584b295c970847870d32111efce1268f0b7302f3ce830970f2411923e3",
+  "schema_version": "pathd.feature-admission-ledger.v1"
+}

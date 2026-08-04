@@ -1,0 +1,17 @@
+{
+  "cutoff_event_count": 2,
+  "cutoff_snapshot": {
+    "entries_so_far": 1.0,
+    "loss_streak_so_far": 1.0,
+    "position_occupancy": 0.0,
+    "realized_session_pnl_dollars": -25.0,
+    "remaining_entry_budget_dollars": 475.0,
+    "seconds_since_last_exit": 0.5
+  },
+  "cutoff_snapshot_exact_identity": true,
+  "future_suffixes_diverge": true,
+  "receipt_sha256": "4e05bd01a6572a940693cd293b21c18034f2bef7dfe80db82ab64eb4ef2a367d",
+  "schema_version": "pathd.phase0b.account-mutate-future-receipt.v1",
+  "status": "PASS",
+  "tolerance": 0.0
+}

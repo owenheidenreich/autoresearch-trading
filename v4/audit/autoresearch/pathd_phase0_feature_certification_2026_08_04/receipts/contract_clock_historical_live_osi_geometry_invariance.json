@@ -1,0 +1,20 @@
+{
+  "decision_time": "2026-08-03T16:13:00+00:00",
+  "exact_feature_vector_mismatches": 0,
+  "historical_cbbo_source": {
+    "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/historical_attempt001/2026-08-03.cbbo-1m.parquet",
+    "sha256": "493c709df86678c42f388333d71fb98da93122f48a52b0ff6846acc7b2fa28e6"
+  },
+  "historical_overlap_contracts": 492,
+  "live_current_session_contracts": 510,
+  "receipt_sha256": "b20b87b748cdd70a75011597f16e79b64fd8c993eec24df2c600e89454bfc5f4",
+  "same_day_additions": 18,
+  "same_session_comparison_source": {
+    "path": "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/comparison_same_session_attempt002/comparison_result.json",
+    "sha256": "67e30656167b7051a53d5deed27545c76baad8d0827ba7b3e6e589b0d63558d6"
+  },
+  "schema_version": "pathd.contract-clock-osi-identity-receipt.v1",
+  "session": "2026-08-03",
+  "status": "PASS",
+  "tolerance": 0.0
+}
