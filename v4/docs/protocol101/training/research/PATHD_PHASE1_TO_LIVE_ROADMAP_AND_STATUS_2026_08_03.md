@@ -28,9 +28,16 @@ status + signature block whenever a phase advances.
 > premium at minute cadence is **negative-expectancy before any cost is paid**. That is theta — no model,
 > feature, or execution fix repairs it.
 >
-> **Do not open a new training round against this class.** The honest next step is a **feasibility study,
-> not a training run**: does any instrument/horizon reachable through IBKR have non-negative *gross*
-> expectancy? Gross expectancy is measurable from quotes and needs no fitting.
+> **Do not open a new training round against this class.**
+>
+> **The feasibility study is now DONE** —
+> [`PATHD_GROSS_EXPECTANCY_FEASIBILITY_STUDY_2026_08_03.md`](PATHD_GROSS_EXPECTANCY_FEASIBILITY_STUDY_2026_08_03.md)
+> (`ac485174`). **The fatal choice was the CADENCE, not the instrument.** SPXW 0DTE at minute cadence with
+> the aggressive fill law required a **116.2% win rate** to break even — above 100%, i.e. impossible.
+> The model was never failing; the bar was unclearable. Holding the *same* option 60 minutes needs 57.2%
+> (55.0% passive). The only genuinely reachable cell measured is **ES futures at 15–60 min (52.1–54.2%)**;
+> VX is dead everywhere (best 80.6%). This establishes a hurdle is clearable — it does **not** claim ES is
+> profitable and does **not** license a training run.
 
 ## Status board
 
@@ -51,7 +58,8 @@ status + signature block whenever a phase advances.
 | Stage 3 — live-shadow orchestration | NOT_STARTED (needs building) | Stage 2 pass + live days |
 | Stage 4 — guarded paper submit + confirmation | NOT_STARTED (needs building) | Stage 3 + live days |
 | Stage 5 — real-money decision | OUT OF SCOPE | separate owner+governance packet |
-| **Next: gross-expectancy feasibility study** | NOT_STARTED (recommended) | owner decision — this is a *study*, not training |
+| **Gross-expectancy feasibility study** | **DONE (`ac485174`)** — cadence, not instrument, was fatal; ES 15–60m is the only reachable cell | — |
+| Next: confirm ES friction assumption (GLBX quotes) | NOT_STARTED (recommended) | owner decision — check existing entitlements before any purchase |
 
 ### Durable assets carried out of Phase-1
 
