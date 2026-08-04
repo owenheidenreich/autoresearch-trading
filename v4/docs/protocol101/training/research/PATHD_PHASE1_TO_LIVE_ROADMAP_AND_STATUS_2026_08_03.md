@@ -30,14 +30,21 @@ status + signature block whenever a phase advances.
 >
 > **Do not open a new training round against this class.**
 >
+> **Adversarially reviewed by Codex (`321b3bbd`):** the Phase-1 closure and the friction accounting are
+> UPHELD; **two feasibility claims were REFUTED and withdrawn** (the "116.2% = impossible" figure was a
+> median-in-an-EV-formula artefact — the mean-payoff screen gives 80.19%; and ES is **not** the only
+> reachable cell). **What survived: horizon dominates instrument choice.** Also withdrawn: "no
+> subpopulation is positive" (10:30–10:59 ET is +$5.99 gross, 4/5 folds — though net is still −$20.08).
+> Read the correction banners on the close-out and feasibility documents before using any number here.
+>
 > **The feasibility study is now DONE** —
 > [`PATHD_GROSS_EXPECTANCY_FEASIBILITY_STUDY_2026_08_03.md`](PATHD_GROSS_EXPECTANCY_FEASIBILITY_STUDY_2026_08_03.md)
-> (`ac485174`). **The fatal choice was the CADENCE, not the instrument.** SPXW 0DTE at minute cadence with
-> the aggressive fill law required a **116.2% win rate** to break even — above 100%, i.e. impossible.
-> The model was never failing; the bar was unclearable. Holding the *same* option 60 minutes needs 57.2%
-> (55.0% passive). The only genuinely reachable cell measured is **ES futures at 15–60 min (52.1–54.2%)**;
-> VX is dead everywhere (best 80.6%). This establishes a hurdle is clearable — it does **not** claim ES is
-> profitable and does **not** license a training run.
+> (`ac485174`, amended). **The fatal choice was the CADENCE, not the instrument** — this survived every
+> attack. The same option held 60 minutes rather than 1 clears a far lower bar on all three estimators:
+> 116.2%→57.2% (median), 80.2%→53.9% (mean-payoff), 76.5%→53.8% (first-window). VX is dead everywhere.
+> **ES's advantage over passive options is narrow and contingent on an unmeasured friction constant** — at
+> a 2-tick ES spread it disappears. Establishing a hurdle is clearable does **not** claim profitability and
+> does **not** license a training run.
 
 ## Status board
 
@@ -51,24 +58,27 @@ status + signature block whenever a phase advances.
 | Suite-green (retire stale v3.2 reconciliation) | DONE (`fa1d9b08`; governance file 7/7 passed) | Claude independent verification |
 | Stage 0 — drive setup | DONE (preflight + relocation + independent hashes passed) | Owner waived Claude verification |
 | Stage 1 — causal training + four-box | DONE — `UNDERPOWERED`; GATE 1 STOP | — |
-| Failure-mode diagnostic (Claude) | DONE — loss flat across 5/5 folds; no positive subpopulation | — |
+| Failure-mode diagnostic (Claude) | DONE — loss flat across 5/5 folds; no subpopulation positive **after costs** (10:30 ET is +$5.99 gross, −$20.08 net) | — |
 | Fix research: execution / holding / direction | DONE — `FIX_CANDIDATE` (execution) / `NO_FIX` (profitability) (`d05f0137`) | — |
 | **Phase-1 close-out** | **CLOSED — `NO_INCREMENTAL_EDGE`** | — |
 | Stage 2 — runtime decision-parity | NOT AUTHORIZED | Stage 1 did not establish edge |
 | Stage 3 — live-shadow orchestration | NOT_STARTED (needs building) | Stage 2 pass + live days |
 | Stage 4 — guarded paper submit + confirmation | NOT_STARTED (needs building) | Stage 3 + live days |
 | Stage 5 — real-money decision | OUT OF SCOPE | separate owner+governance packet |
-| **Gross-expectancy feasibility study** | **DONE (`ac485174`)** — cadence, not instrument, was fatal; ES 15–60m is the only reachable cell | — |
-| Next: confirm ES friction assumption (GLBX quotes) | NOT_STARTED (recommended) | owner decision — check existing entitlements before any purchase |
+| **Gross-expectancy feasibility study** | **DONE (`ac485174`)**, then **AMENDED** — cadence-dominates UPHELD; "impossible" + "ES only" REFUTED | — |
+| **Codex adversarial review** | **DONE (`321b3bbd`)** — 3 upheld / 3 weakened / 2 refuted; Claude reproduced the refutations | — |
+| Next: matched execution-aware feasibility gate (ES **and** passive 0DTE) | NOT_STARTED (recommended) | owner decision — neither branch is uniquely preferred |
+| ES friction measurement | BLOCKED — **paid-data hard stop** | GLBX quote schemas are priced, not entitled; owner authorization required |
 
 ### Durable assets carried out of Phase-1
 
 1. **The causal t−60s pipeline** — audited, works end-to-end, and correctly produced a negative answer.
    Reusable for any future hypothesis.
-2. **The passive-execution costing correction** — posting at the bid (60 s window) instead of crossing at
-   ask+tick is worth **+$22.76/trade**, stable **5/5 folds** ($20.06–$24.50), adverse selection −$0.72.
-   Quote future Path-D economics at −$18.56, not −$41.32. This is a *costing* correction, not a strategy;
-   the frozen `FILL_LAW` was NOT modified.
+2. **The passive-execution costing correction** — posting at the bid instead of crossing at ask+tick is a
+   real mechanical saving (positive in 5/5 folds), but its **magnitude is unidentified without queue
+   data**. Honest range from Codex's fill ladder: **+$22.76 (optimistic offer-touch) → +$12.57 (one-tick
+   penetration) → +$2.31 (two-tick)**. Quote the range, never the headline. This is a *costing*
+   correction, not a strategy; the frozen `FILL_LAW` was NOT modified.
 3. **The knowledge that this class is negative-EV before costs** — it closes a direction permanently
    rather than leaving it to be re-litigated.
 

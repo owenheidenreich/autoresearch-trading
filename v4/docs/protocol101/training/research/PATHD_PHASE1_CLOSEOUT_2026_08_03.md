@@ -4,6 +4,38 @@
 on this strategy class. This document is the terminal record for Phase-1; the roadmap status board points
 here.
 
+> ## ⚠ Amended 2026-08-03 after Codex adversarial review (`321b3bbd`)
+>
+> **The aggregate Phase-1 negative result is UPHELD.** Codex independently reproduced the core economics
+> from raw partitions: gross −$13.00, friction −$26.48 (67.06% of the loss, 4.683% of $565.39 premium),
+> realized −$39.48. A mid-to-mid recomputation off raw OPRA quotes (156,948/156,950 rows joined) gives
+> −$12.12 gross, still negative 5/5 folds. **Three claims below were weakened and must be read with these
+> corrections:**
+>
+> **1. "No subpopulation is positive" is FALSE — withdrawn.** The **10:30–10:59 ET** half-hour has
+> **+$5.99 mean GROSS** over 10,063 candidates across 120 sessions, positive in **4/5 folds**
+> (+9.8/+7.6/−17.3/+30.8/+6.4). Claude independently re-verified this. It is exploratory and
+> multiplicity-exposed (1 of 11 half-hours), and **net is still −$20.08** because friction is ~4× the
+> gross drift — so it reinforces the friction conclusion while refuting the universal-closure language.
+> Correct statement: *no subpopulation is positive after costs.*
+>
+> **2. The +$22.76 passive figure is an upper bound, not a point estimate.** It holds only under an
+> optimistic offer-touch fill. Codex's stress ladder: touch +$22.76 → two-second persistence +$21.54 →
+> touch-plus-one-tick +$20.11 → **one-tick penetration +$12.57** → **two-tick penetration +$2.31**.
+> The improvement stays positive in all five folds at one-tick penetration, so the mechanical spread saving
+> is real, but **its magnitude is unidentified without queue data.** Quote the range, not the headline.
+>
+> **3. "The learned exit model is not a policy" is imprecise — withdrawn.** Codex verified it is **not** a
+> serialization defect: sealed models reproduce stored predictions with zero error and utility
+> recomputation is exact. It is a **valid, degenerate, highly conservative learned policy** whose
+> risk-lower-bound calibration (fold `mean_lcb90` offsets −$813.64 to −$895.13) overwhelms nearly every
+> point prediction — only 17.46% of first-state `a_ref` labels are positive, and 171/180 of even those exit
+> at index zero. That is a better diagnosis than Claude's and is what should be debugged if the exit model
+> is ever revisited.
+>
+> Two feasibility-study claims were **refuted** — see that document's correction banner. The Phase-1
+> closure itself stands.
+
 ## What was asked, and what was answered
 
 **The question.** Does a maximally-honest learned SPXW 0DTE long-options trader — minute-cadence entry,

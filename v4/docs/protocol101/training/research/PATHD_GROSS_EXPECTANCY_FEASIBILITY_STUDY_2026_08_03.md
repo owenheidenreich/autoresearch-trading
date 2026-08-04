@@ -5,12 +5,67 @@ not a training run.** Does any instrument/horizon reachable through IBKR have a 
 that a directional edge could survive? Measured from the existing corpus — **no paid download, no
 training, no broker.**
 
+> ## ⚠ CORRECTED 2026-08-03 after adversarial review — read this first
+>
+> Codex adversarially reviewed this study
+> ([`CODEX_ADVERSARIAL_REVIEW_2026_08_03.md`](CODEX_ADVERSARIAL_REVIEW_2026_08_03.md), `321b3bbd`) and
+> **refuted two claims. Claude independently reproduced the refutations and accepts both.**
+>
+> **The "116.2% = mathematically impossible" claim is WITHDRAWN.** It was an artefact of using the
+> **median** |move| inside an **expected-value** formula. An EV breakeven is magnitude-weighted, so it
+> requires *mean* |move|. Recomputed: mean |move| = $43.86 → **80.19%**; one independent first window per
+> trajectory → **76.48%**. One-minute aggressive 0DTE is still deeply unattractive, but **"impossible" does
+> not follow**, and no scalar win rate is a feasibility theorem.
+>
+> **The "ES is the ONLY reachable cell" claim is WITHDRAWN.** Under the same EV screen, aggressive options
+> reach **55.51% at 30m** and **53.88% at 60m** — comparable to ES. This document also contradicted itself:
+> it declared "≤55% reachable" and then listed passive options at 60m as exactly **55.0%** while calling ES
+> the only reachable cell.
+>
+> **What SURVIVED every attack: horizon dominates instrument choice** (C7) — robust across all three
+> estimators (116.2%→57.16% median, 80.19%→53.88% mean, 76.48%→53.78% first-window). That is the finding
+> to keep.
+>
+> The corrected estimator-sensitivity table is in [Estimator sensitivity](#estimator-sensitivity) below.
+
 ## Headline
 
-**The fatal choice in Path-D was the CADENCE, not the instrument.** SPXW 0DTE at minute cadence with the
-frozen aggressive fill law required a **116.2% win rate** to break even. That is not a hard problem — it is
-an impossible one. Friction exceeded the median one-minute move. The model was never failing; it was being
-asked to clear a bar above 100%.
+**The fatal choice in Path-D was the CADENCE, not the instrument.** The same SPXW 0DTE option held for
+60 minutes rather than 1 clears a far lower bar on every estimator tried — 116.2%→57.2% (median),
+80.2%→53.9% (mean), 76.5%→53.8% (first-window). Friction is roughly fixed per round trip while the move
+being chased grows with horizon. **Trading less often is worth more than any model improvement measured
+anywhere in this project.**
+
+Path-D combined the highest-friction instrument with the shortest horizon — the worst available corner.
+
+## Estimator sensitivity
+
+A scalar "required win rate" is a **screen, not a theorem**. It assumes a symmetric ±M sign bet; options
+are convex and the real action is enter/wait, not long/short. The estimator choice moves the answer by
+tens of points:
+
+| Instrument / entry | Horizon | median screen | **mean-payoff screen** | first-window / non-overlap |
+|---|---|---|---|---|
+| SPXW aggressive | 1m | 116.20% | **80.19%** | 76.48% |
+| SPXW aggressive | 30m | 61.03% | **55.51%** | 59.46% |
+| SPXW aggressive | 60m | 57.16% | **53.88%** | 53.78% |
+| ES (assumed $17) | 15m | 54.25% | **52.82%** | 54.00% |
+| ES (assumed $17) | 30m | 52.96% | **52.01%** | 52.83% |
+| ES (assumed $17) | 60m | 52.06% | **51.42%** | 52.00% |
+
+**ES's advantage over options is far narrower than this study originally claimed, and it is entirely
+contingent on the unmeasured $17 friction constant.** Codex quantified that contingency:
+
+| ES spread | Friction | 15m | 30m | 60m |
+|---|---|---|---|---|
+| 1 tick | $17.00 | 54.25% | 52.96% | 52.06% |
+| 2 ticks | $29.50 | 57.38% | 55.13% | 53.58% |
+| 4 ticks | $54.50 | 63.63% | 59.48% | 56.61% |
+
+**At 2 ticks ES is no better than passive options; at 4 ticks it is worse.** Codex also established via a
+read-only `metadata.get_cost` probe (no purchase, no range request) that GLBX quote schemas are **priced,
+not free** — `mbp-1` $0.897, `tbbo` $0.822, `bbo-1s` $0.073, `bbo-1m` $0.0023 for a single session — so
+confirming ES friction is a **paid-data hard stop requiring owner authorization**.
 
 ## Method
 
@@ -127,16 +182,20 @@ only modestly, so the hurdle should improve — but that is a prediction, not a 
 a paid Databento request and a CLAUDE.md hard stop; **not recommended until the free ES result is either
 confirmed or discarded.**
 
-## Recommendation
+## Recommendation (revised after adversarial review)
 
-1. **Confirm the ES friction assumption before anything else.** It is the load-bearing number for the only
-   attractive result. This needs GLBX quote data (may already be within existing entitlements — check
-   before purchasing).
-2. **If confirmed, the candidate is ES futures at 15–60 minute horizons.** Required win rate 52–54%.
-   Run it as a *feasibility* fit under pre-registration, not as a Path-D-style campaign.
-3. **Do not revive SPXW 0DTE at minute cadence.** It required >100% accuracy. That is settled.
-4. **If 0DTE is revisited at all, it must be at 30–60 minute holds with passive entry** (55.0–57.7%), which
-   is a different strategy from the one Phase-1 tested.
+1. **Neither ES nor passive 0DTE is uniquely preferred.** The original "ES is the only reachable cell"
+   ranking did not survive. Both branches need a **matched, execution-aware, pre-registered comparison**
+   under executable fill assumptions before either is trained.
+2. **Do not revive SPXW 0DTE at one-minute aggressive cadence.** This survives the review — it is
+   unattractive on every estimator (76–116% depending on method). "Impossible" was withdrawn; "don't"
+   was not.
+3. **ES friction is unmeasured and is a paid-data hard stop.** GLBX quote schemas are priced, not
+   entitled. Do not purchase without owner authorization. Until measured, treat ES's edge over options as
+   unproven — at 2 ticks it disappears entirely.
+4. **Any 0DTE revisit must be at 30–60 minute holds with an executable fill model**, and must carry the
+   honest passive-improvement range (+$2.31 to +$22.76 depending on fill assumption), not the optimistic
+   touch-model point estimate.
 
 ## Reproduction
 
