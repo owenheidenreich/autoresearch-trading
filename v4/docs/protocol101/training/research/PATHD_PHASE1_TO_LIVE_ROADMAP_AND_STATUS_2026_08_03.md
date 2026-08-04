@@ -67,7 +67,7 @@ status + signature block whenever a phase advances.
 | Stage 5 — real-money decision | OUT OF SCOPE | separate owner+governance packet |
 | **Gross-expectancy feasibility study** | **DONE (`ac485174`)**, then **AMENDED** — cadence-dominates UPHELD; "impossible" + "ES only" REFUTED | — |
 | **Codex adversarial review** | **DONE (`321b3bbd`)** — 3 upheld / 3 weakened / 2 refuted; Claude reproduced the refutations | — |
-| Next: matched execution-aware feasibility gate (ES **and** passive 0DTE) | NOT_STARTED (recommended) | owner decision — neither branch is uniquely preferred |
+| **Matched execution-aware feasibility gate** | **PRE-REGISTERED + FROZEN** ([`PATHD_MATCHED_FEASIBILITY_PREREGISTRATION_2026_08_03.md`](PATHD_MATCHED_FEASIBILITY_PREREGISTRATION_2026_08_03.md)) — 9 tests, one maxT family, no model fitting | PENDING_CODEX execution |
 | ES friction measurement | BLOCKED — **paid-data hard stop** | GLBX quote schemas are priced, not entitled; owner authorization required |
 
 ### Durable assets carried out of Phase-1
