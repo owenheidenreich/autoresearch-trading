@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
 import json
 from pathlib import Path
@@ -87,6 +88,85 @@ def _frozen_lag(path: Path) -> int:
     return int(lag["frozen_emission_lag_ms"])
 
 
+def _build_trajectory_bundle(
+    task: tuple[str, str, str, int, bool]
+) -> dict[str, int]:
+    """Build one receipt's baseline and sensitivity partitions."""
+
+    receipt_path, corpus_text, scratch_text, lag_ms, resume = task
+    receipt = _receipt(Path(receipt_path))
+    corpus = Path(corpus_text)
+    scratch_root = Path(scratch_text)
+    feature_path = scratch_root / "exit_features" / f"session={receipt.session}" / f"{receipt.trajectory_id}.parquet"
+    label_path = scratch_root / "exit_labels" / f"session={receipt.session}" / f"{receipt.trajectory_id}.parquet"
+    baseline_complete = feature_path.is_file() and label_path.is_file()
+    if feature_path.exists() != label_path.exists():
+        raise StorageContractError(f"partial trajectory: {receipt.trajectory_id}")
+    sensitivity_specs = tuple(
+        (fee, latency)
+        for fee in (1.5, 2.0)
+        for latency in (0, 1, 2, 5)
+    )
+    sensitivity_paths = {
+        (fee, latency): sensitivity_label_path(
+            scratch_root,
+            session=receipt.session,
+            trajectory_id=receipt.trajectory_id,
+            fee_per_side_dollars=fee,
+            latency_seconds=latency,
+        )
+        for fee, latency in sensitivity_specs
+    }
+    if baseline_complete and not resume:
+        raise StorageContractError(f"partial or duplicate trajectory: {receipt.trajectory_id}")
+    if baseline_complete and all(path.is_file() for path in sensitivity_paths.values()):
+        return {"complete": 0, "skipped": 1, "sensitivity_written": 0}
+    cbbo = load_exact_cbbo_path(
+        corpus / "raw/databento/opra_spxw_cbbo_1s" / f"{receipt.session}.cbbo-1s.parquet",
+        receipt,
+    )
+    spx = load_completed_spx_context(
+        corpus / "raw/index/spx_1m" / f"{receipt.session}.official_spx.parquet",
+        emission_lag_ms=lag_ms,
+    )
+    complete = 0
+    sensitivity_written = 0
+    if not baseline_complete:
+        features, labels = build_trajectory_tables(receipt, cbbo, spx)
+        write_trajectory_partition(
+            features,
+            labels,
+            scratch_root=scratch_root,
+            session=receipt.session,
+            trajectory_id=receipt.trajectory_id,
+        )
+        complete = 1
+    for fee, latency in sensitivity_specs:
+        if sensitivity_paths[(fee, latency)].is_file() and resume:
+            continue
+        _, sensitivity_labels = build_trajectory_tables(
+            receipt,
+            cbbo,
+            spx,
+            fee_per_side_dollars=fee,
+            latency_seconds=latency,
+        )
+        write_sensitivity_label_partition(
+            sensitivity_labels,
+            scratch_root=scratch_root,
+            session=receipt.session,
+            trajectory_id=receipt.trajectory_id,
+            fee_per_side_dollars=fee,
+            latency_seconds=latency,
+        )
+        sensitivity_written += 1
+    return {
+        "complete": complete,
+        "skipped": 0,
+        "sensitivity_written": sensitivity_written,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         epilog=(
@@ -121,6 +201,7 @@ def parse_args() -> argparse.Namespace:
     build_all.add_argument("--entry-campaign", type=Path, required=True)
     build_all.add_argument("--emission-lag-receipt", type=Path, required=True)
     build_all.add_argument("--resume", action="store_true")
+    build_all.add_argument("--workers", type=int, choices=range(1, 9), default=1)
     train_exit = sub.add_parser("train-exit")
     _common(train_exit)
     train_exit.add_argument("--entry-campaign", type=Path, required=True)
@@ -240,65 +321,29 @@ def main() -> int:
             for fee in (1.5, 2.0)
             for latency in (0, 1, 2, 5)
         )
-        for row in index.sort_values(["session", "trajectory_id"]).to_dict("records"):
-            receipt = _receipt(Path(row["receipt_path"]))
-            feature_path = roots.scratch_root / "exit_features" / f"session={receipt.session}" / f"{receipt.trajectory_id}.parquet"
-            label_path = roots.scratch_root / "exit_labels" / f"session={receipt.session}" / f"{receipt.trajectory_id}.parquet"
-            baseline_complete = feature_path.is_file() and label_path.is_file()
-            if feature_path.exists() != label_path.exists():
-                raise StorageContractError(f"partial trajectory: {receipt.trajectory_id}")
-            sensitivity_paths = {
-                (fee, latency): sensitivity_label_path(
-                    roots.scratch_root,
-                    session=receipt.session,
-                    trajectory_id=receipt.trajectory_id,
-                    fee_per_side_dollars=fee,
-                    latency_seconds=latency,
-                )
-                for fee, latency in sensitivity_specs
-            }
-            if baseline_complete and not args.resume:
-                raise StorageContractError(f"partial or duplicate trajectory: {receipt.trajectory_id}")
-            if baseline_complete and all(path.is_file() for path in sensitivity_paths.values()):
-                skipped += 1
-                continue
-            cbbo = load_exact_cbbo_path(
-                corpus / "raw/databento/opra_spxw_cbbo_1s" / f"{receipt.session}.cbbo-1s.parquet",
-                receipt,
+        tasks = [
+            (
+                str(row["receipt_path"]),
+                str(corpus),
+                str(roots.scratch_root),
+                lag_ms,
+                bool(args.resume),
             )
-            spx = load_completed_spx_context(
-                corpus / "raw/index/spx_1m" / f"{receipt.session}.official_spx.parquet",
-                emission_lag_ms=lag_ms,
-            )
-            if not baseline_complete:
-                features, labels = build_trajectory_tables(receipt, cbbo, spx)
-                write_trajectory_partition(
-                    features,
-                    labels,
-                    scratch_root=roots.scratch_root,
-                    session=receipt.session,
-                    trajectory_id=receipt.trajectory_id,
-                )
-                complete += 1
-            for fee, latency in sensitivity_specs:
-                if sensitivity_paths[(fee, latency)].is_file() and args.resume:
-                    continue
-                _, sensitivity_labels = build_trajectory_tables(
-                    receipt,
-                    cbbo,
-                    spx,
-                    fee_per_side_dollars=fee,
-                    latency_seconds=latency,
-                )
-                write_sensitivity_label_partition(
-                    sensitivity_labels,
-                    scratch_root=roots.scratch_root,
-                    session=receipt.session,
-                    trajectory_id=receipt.trajectory_id,
-                    fee_per_side_dollars=fee,
-                    latency_seconds=latency,
-                )
-                sensitivity_written += 1
+            for row in index.sort_values(["session", "trajectory_id"]).to_dict("records")
+        ]
+        if args.workers == 1:
+            results = map(_build_trajectory_bundle, tasks)
+        else:
+            executor = ProcessPoolExecutor(max_workers=args.workers)
+            results = executor.map(_build_trajectory_bundle, tasks, chunksize=1)
+        try:
+            for result in results:
+                complete += result["complete"]
+                skipped += result["skipped"]
+                sensitivity_written += result["sensitivity_written"]
+        finally:
+            if args.workers != 1:
+                executor.shutdown(cancel_futures=True)
         print(json.dumps({
             "status": "COMPLETE",
             "trajectory_partitions_written": complete,
