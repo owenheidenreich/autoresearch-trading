@@ -1,0 +1,210 @@
+{
+  "block_minutes": 30,
+  "model_trained": false,
+  "note": "POST-HOC. Not part of the frozen pre-registration.",
+  "protected_holdout_opened": false,
+  "rows": [
+    {
+      "excess_ic": -0.06291612941121544,
+      "explained_fraction": 0.8061479647194808,
+      "feature": "omar_clipped_neg3_pos3",
+      "horizon_minutes": 15,
+      "measured_mean_ic": -0.32455748695220465,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.2616413575409892,
+      "surrogate_se": 0.0025597015031197695
+    },
+    {
+      "excess_ic": -0.08614329260374975,
+      "explained_fraction": 0.7942918479723426,
+      "feature": "omar_clipped_neg3_pos3",
+      "horizon_minutes": 30,
+      "measured_mean_ic": -0.4187646029320599,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.33262131032831016,
+      "surrogate_se": 0.0032058201898020906
+    },
+    {
+      "excess_ic": -0.11212595466645647,
+      "explained_fraction": 0.7850839947292705,
+      "feature": "omar_clipped_neg3_pos3",
+      "horizon_minutes": 60,
+      "measured_mean_ic": -0.5217198901738915,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.40959393550743506,
+      "surrogate_se": 0.003982709826240826
+    },
+    {
+      "excess_ic": -0.043184435417092604,
+      "explained_fraction": 0.8515110608579174,
+      "feature": "spx_vwap_gap_points",
+      "horizon_minutes": 15,
+      "measured_mean_ic": -0.2908259407508549,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.24764150533376228,
+      "surrogate_se": 0.0025752649063584326
+    },
+    {
+      "excess_ic": -0.05404560829472982,
+      "explained_fraction": 0.8555560568577258,
+      "feature": "spx_vwap_gap_points",
+      "horizon_minutes": 30,
+      "measured_mean_ic": -0.3741632021323045,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.32011759383757465,
+      "surrogate_se": 0.003328472325563644
+    },
+    {
+      "excess_ic": -0.07094088116312758,
+      "explained_fraction": 0.851814966878602,
+      "feature": "spx_vwap_gap_points",
+      "horizon_minutes": 60,
+      "measured_mean_ic": -0.4787317562969435,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.4077908751338159,
+      "surrogate_se": 0.004210743847324891
+    },
+    {
+      "excess_ic": -0.031381496722693414,
+      "explained_fraction": 0.861032763328944,
+      "feature": "spx_vwap_gap_over_session_range",
+      "horizon_minutes": 15,
+      "measured_mean_ic": -0.2258193907746423,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.1944378940519489,
+      "surrogate_se": 0.002652950202096547
+    },
+    {
+      "excess_ic": -0.0352051179550214,
+      "explained_fraction": 0.8772145380428452,
+      "feature": "spx_vwap_gap_over_session_range",
+      "horizon_minutes": 30,
+      "measured_mean_ic": -0.2867205725650647,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.2515154546100433,
+      "surrogate_se": 0.003215083246233758
+    },
+    {
+      "excess_ic": -0.037323800661878515,
+      "explained_fraction": 0.8973849457757759,
+      "feature": "spx_vwap_gap_over_session_range",
+      "horizon_minutes": 60,
+      "measured_mean_ic": -0.3637263649476061,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.32640256428572756,
+      "surrogate_se": 0.0038073070192950055
+    },
+    {
+      "excess_ic": 0.010503736323520252,
+      "explained_fraction": 1.1277595869793182,
+      "feature": "momentum_15m_bps",
+      "horizon_minutes": 15,
+      "measured_mean_ic": -0.08221485817123532,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.09271859449475557,
+      "surrogate_se": 0.0028046742131586223
+    },
+    {
+      "excess_ic": 0.012293075867702022,
+      "explained_fraction": 1.117796746382379,
+      "feature": "momentum_15m_bps",
+      "horizon_minutes": 30,
+      "measured_mean_ic": -0.10435836510965735,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.11665144097735937,
+      "surrogate_se": 0.0028778951265191464
+    },
+    {
+      "excess_ic": 0.024250468711324996,
+      "explained_fraction": 1.1861212758156339,
+      "feature": "momentum_15m_bps",
+      "horizon_minutes": 60,
+      "measured_mean_ic": -0.13029390973736274,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.15454437844868774,
+      "surrogate_se": 0.002805223652976196
+    },
+    {
+      "excess_ic": 0.005320434128386793,
+      "explained_fraction": 1.0880724023378499,
+      "feature": "momentum_5m_bps",
+      "horizon_minutes": 15,
+      "measured_mean_ic": -0.06040977635624562,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.06573021048463241,
+      "surrogate_se": 0.0020193877351191527
+    },
+    {
+      "excess_ic": 0.0004153061959119436,
+      "explained_fraction": 1.0051163898663975,
+      "feature": "momentum_5m_bps",
+      "horizon_minutes": 30,
+      "measured_mean_ic": -0.08117172591547689,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.08158703211138883,
+      "surrogate_se": 0.0018879698583051767
+    },
+    {
+      "excess_ic": 0.015468368999812257,
+      "explained_fraction": 1.1797520976065485,
+      "feature": "momentum_5m_bps",
+      "horizon_minutes": 60,
+      "measured_mean_ic": -0.08605389981968549,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": -0.10152226881949775,
+      "surrogate_se": 0.0017580113761492334
+    },
+    {
+      "excess_ic": 0.05001242938178972,
+      "explained_fraction": 0.6116174721812845,
+      "feature": "session_range_bps",
+      "horizon_minutes": 15,
+      "measured_mean_ic": 0.1287710589420076,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": 0.07875862956021788,
+      "surrogate_se": 0.003517240486652076
+    },
+    {
+      "excess_ic": 0.05782745618446419,
+      "explained_fraction": 0.5691169501186322,
+      "feature": "session_range_bps",
+      "horizon_minutes": 30,
+      "measured_mean_ic": 0.1342068484717267,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": 0.07637939228726251,
+      "surrogate_se": 0.004709995966870754
+    },
+    {
+      "excess_ic": 0.05688680318618383,
+      "explained_fraction": 0.5509999923401366,
+      "feature": "session_range_bps",
+      "horizon_minutes": 60,
+      "measured_mean_ic": 0.12669666417751602,
+      "n_sessions": 213,
+      "n_surrogates": 4260,
+      "surrogate_mean_ic": 0.06980986099133218,
+      "surrogate_se": 0.0062086889989372744
+    }
+  ],
+  "schema_version": "pathd.spx-screen-surrogate-diagnostic.v1",
+  "seed": 4111,
+  "sessions_used": 213,
+  "surrogates_per_session": 20
+}
