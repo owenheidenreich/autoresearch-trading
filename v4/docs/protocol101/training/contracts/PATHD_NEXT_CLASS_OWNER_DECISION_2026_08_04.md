@@ -1,6 +1,9 @@
 # Path-D — Owner Decision: what class do we research next?
 
-Status: **OPTION 0 OWNER-AUTHORIZED (2026-08-04) — A/B/C remain open, keyed on Option 0's result**
+Status: **RESOLVED (2026-08-04) — the decision key now points to OPTION C.** Option 0's survivor was
+re-validated against drift-repaired nulls and **closed**; see
+[the closure at the end of this document](#the-numerator-is-identified-and-it-is-negative--2026-08-04).
+Options A (executed) and B (hard stop) are no longer live questions.
 
 Date: 2026-08-04. Prepared under Deliverable 5 of the owner-approved
 [`PATHD_FABLE_REVIEW_IMPLEMENTATION_PLAN_2026_08_04.md`](../execution/PATHD_FABLE_REVIEW_IMPLEMENTATION_PLAN_2026_08_04.md).
@@ -197,6 +200,52 @@ value now matters more than it did before the spend.
 resolves. Option B remains a hard stop.
 
 *Option A result appended by Claude Opus 5 — 2026-08-04.*
+
+---
+
+## The numerator is identified, and it is negative — 2026-08-04
+
+The numerator study ran. Full result:
+[`PATHD_OMAR_DRIFT_ROBUST_REVALIDATION_RESULTS_2026_08_04.md`](../research/PATHD_OMAR_DRIFT_ROBUST_REVALIDATION_RESULTS_2026_08_04.md)
+(pre-registration frozen as `55dd6de0` before the run). Verdict
+**`OMAR_NULL_FRAGILE_CLOSED`**.
+
+Before asking whether a *causal normalization* could capture the omar association, the prior
+question had to be settled: the association itself was measured against the same wild bootstrap
+whose drift handling had been **demonstrated defective for this exact feature** hours earlier, and
+the defect's direction inflates the survivor. So the association was re-tested against two true
+martingale nulls, each required to first pass a known-answer gate on the statistic where the defect
+was demonstrated.
+
+| Null | excess IC @60m | maxT p | |
+|---|---|---|---|
+| Reference wild (the Option 0 null, re-run unchanged) | +0.078 | 1.0e-06 | **VOID** — fails the known-answer gate (manufactures a monotone **10.121**-point surrogate profile, ρ = **+1.000**, where the real data is flat at −0.507) |
+| Zero-drift wild (exact `\|r_t\|` placement) | **+0.019** | **0.403** | **FAILS** |
+| Permuted-time wild (placement destroyed) | +0.075 | 0.0000 | passes |
+
+The gap between the two repaired nulls is **entirely intraday volatility seasonality** — so what
+survives the looser null is the volatility profile, not predictability. Controls clean; raw ICs
+reproduce the Option 0 receipt exactly.
+
+**And the economics need no null at all.** The causal fade rule (`omar ≤ −0.6` long, `≥ +0.6`
+short, 28,238 boundaries) on the **raw real data** is **−0.324 SPX points per trade**, or **−0.682
+points (−$34) net** of the friction Option A measured. The disputed `$178` figure reproduces only
+under the defective null (+3.610 points, +$180.48) — it was the defect, measured. **Flipping to
+momentum does not rescue it**: +0.324 gross is still below the 0.358-point bar.
+
+**The decision key resolves to Option C.** Per the table above: "no excess skill → directional
+strategies on this feature set have no evidence on any instrument." The ES pivot in particular is
+foreclosed by this result and needs no separate test, because omar was the only reason to prefer ES
+and its value on the underlying is negative before ES is even involved. Option A's spend was not
+wasted — the measured 0.358-point bar is what made the sizing above decidable in absolute terms.
+
+**What is preserved:** the execution plane (proven, strategy-agnostic, zero cost to hold), the
+research machinery, the measured friction bar, and an unspent protected holdout. **What is
+closed:** omar as a tradable signal, and with it the last of the sixty. Ledger entry recorded in
+[`PROTOCOL101_PRIOR_CAMPAIGN_DISTILLATION.md`](../history/PROTOCOL101_PRIOR_CAMPAIGN_DISTILLATION.md)
+§4.
+
+*Numerator closure appended by Claude Fable 5 — 2026-08-04.*
 
 *Prepared: Claude Opus 5 — 2026-08-04. Owner decision recorded by Claude Fable 5 — 2026-08-04.
 Option 0 result appended by Claude Opus 5 — 2026-08-04.*
