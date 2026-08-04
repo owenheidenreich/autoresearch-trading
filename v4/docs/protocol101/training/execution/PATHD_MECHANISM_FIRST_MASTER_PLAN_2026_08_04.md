@@ -41,7 +41,35 @@ being said out loud — and dies on its own economics, not on a p-value.
 If nothing clears on Day 2, **that is the Monday deliverable** and no training happens. Two days spent
 instead of a campaign is the plan working, not failing.
 
-## 3. The mechanisms — FREEZE THIS LIST BEFORE RUNNING
+## 3. The mechanisms — ⚠ DO NOT FREEZE. FIVE OF SIX DIE ON VERIFICATION.
+
+> **CORRECTION 2026-08-04, after adversarial review by Codex and a second Opus reviewer.** I verified the
+> contested claims myself. **Three premises in the table below are false, and the table must not be frozen
+> as written.**
+>
+> **The root defect: the instrument is undeclared.** The 0.358-point bar is **ES futures** friction
+> ($4.50 commissions + 1.0734 ticks × $12.50, $50/point). But §5's exit language — convex tail, p99 $3,422
+> vs $86, "the entire reason to hold a long option" — is **option** language, and ledger row 180 closes the
+> option route for any exit policy. This is unavoidably an **ES** plan, and §5 describes the wrong
+> instrument. Most of the disagreement between the two reviews traces to this one ambiguity.
+>
+> | Mechanism | Verified status |
+> |---|---|
+> | **M3 overnight gap** | **DEAD — untestable on owned data.** The ES corpus is **RTH-only**: 390 rows, 09:30→15:59 ET, and **zero** pre-09:30 bars across 25 sampled sessions. There are no overnight bars to compute a gap from. *(This also kills two of the four members in Codex's proposed K=4 family, which assumed gap data exists.)* |
+> | **M4 VIX** | **DEAD — my premise was false.** VIX **has** entered models: `vix_level`, `vix_change_5m`, `vix_change_15m`, `vix_minus_spx_rv15_pct_points` are in `v4/research/lean_autoresearch/harness.py`, and that S4/S5 campaign returned **`NULL_NO_NEW_ENTRY_EDGE`**. I verified only the canonical Stage-1 path and generalised to "any model". Separately, `vix_change` is a `QUARANTINED_ALPHA_TOKEN` enforced by `assert_model_alpha_firewall`, so M4 could not run without editing a contract §6 declares frozen. |
+> | **M1 opening range** | **Survives, but reframed and not novel.** Minutes 31–350 is a **feature-warmup constraint, not an arbitrary exclusion**: `history_minutes=30` and `momentum_15m` needs 15 prior bars, so the kernel *structurally cannot* produce features before 10:01. M1 therefore needs a **new warmup law**, not a flipped filter. And "NEVER TESTED" overstates: V1A/V1B opening-structure reversion failed with controls. Different instrument, so not closed — but not virgin ground either. |
+> | **M2 closing/MOC** | **DROP from this wave.** Owned OHLCV contains **no signed MOC imbalance feed**; a clock window alone supplies no direction. Prior late-session trigger work went 0/8. |
+> | **M5 calendar** | **SPLIT AND DEFER.** Day-of-week, opex, month-end and FOMC are at least four distinct families, and none currently defines a signed trade. |
+> | **M6 SPX–ES basis** | **BLOCKED pending contract work.** Needs carry, dividends, rates, roll handling and synchronised causal clocks. `ES.c.0` **is** the stitched object Protocol 028 rejected, with 4 in-corpus rolls. |
+>
+> **Also corrected:** the owned-data counts in the handoff were inflated. SPX 1m is **251 official** (not
+> 505 — 254 are proxy files the kernel rejects) and VIX 1m is **251 official** (not 338). Of those 251, **36
+> are the spent holdout.**
+>
+> **Net: one mechanism survives, and only with new warmup work.** §4's per-trade bar is also wrong — see
+> the correction below.
+
+## 3b. The original list, retained as the audit trail — SUPERSEDED BY §3
 
 Each is tested on owned data, causal at decision time, scored in dollars per trade against the 0.537-point
 survival bar. **The declared list is the family; nothing may be added mid-week.**
@@ -57,6 +85,34 @@ survival bar. **The declared list is the family; nothing may be added mid-week.*
 
 **Excluded by the do-not-retest ledger and not to be revisited:** 0DTE long premium in any form; the nine
 side-free SPX context features; `omar` as a tradable directional signal; stitched ES VWAP as a feature.
+
+## 3c. The survival bar is wrong — CORRECTED 2026-08-04
+
+Both reviewers independently reached the conclusion I flagged as a suspected hole, and they are right.
+
+**A per-trade bar is not a survival rule.** One account holds one position. Over a 390-minute ES session
+the non-overlapping capacity is **26 / 13 / 6** trades at 15 / 30 / 60 minutes, and the existing six-block
+structure already caps a session at 6 entries. A mechanism firing 132 times per session cannot take them
+all, so a per-trade average overstates what is harvestable — and 0.537 points per trade at one trade per
+session leaves **0.179 points = $8.95** net for the whole session.
+
+**The primary screen statistic must be net points per calendar session under a frozen one-account serial
+allocator** — causal selection, frozen tie-breaking, one occupied position, no overlap, flat by close —
+reported with a session-bootstrap LCB and 4-of-5 fold sign-stability. The 0.537-point figure survives only
+as a **necessary microeconomic diagnostic**, never as sufficient.
+
+**Two further gaps, both real:**
+
+- **No capital-productivity hurdle is declared.** A minimum dollars-per-session or return-on-margin bar
+  must be frozen *before* results are seen; it cannot be inferred from the winning candidate. Currently
+  `UNKNOWN`.
+- **No comparator.** Against an absolute bar, ES drift alone can carry a long-biased mechanism over the
+  line. Flat must be the primary comparator, with sign-reversal, session-shuffle and constant-action as
+  invalidation controls.
+
+**And the hurdle should be said out loud:** clearing 1.5× friction at a 15-minute horizon on ES demands
+roughly **54.5% directional accuracy**. By this project's own calibration rule, a pass at that level is a
+bug until proven otherwise — not a celebration.
 
 ## 4. What the screen actually computes
 

@@ -61,6 +61,17 @@ that happen to run in sequence. This project already failed at exactly this:
 
 Answer these in a written response. Several are places I expect the plan is wrong.
 
+> **⚠ ANSWERED AND CORRECTED 2026-08-04.** Both reviewers found my Q1 premises false and I verified
+> it myself. **VIX has entered models** — `vix_level` / `vix_change_5m` / `vix_change_15m` are in
+> `v4/research/lean_autoresearch/harness.py`; that S4/S5 campaign returned `NULL_NO_NEW_ENTRY_EDGE`. I
+> checked only the canonical Stage-1 path and generalised to "any model". **The 10:01 boundary is a
+> feature-warmup constraint**, not an arbitrary exclusion (`history_minutes=30`, `momentum_15m` needs 15
+> prior bars). **The overnight-gap mechanism is untestable** — the ES corpus is RTH-only, 390 rows,
+> 09:30→15:59, zero pre-09:30 bars. **Owned data was overstated** — 251 official SPX and 251 official VIX,
+> not 505/338, of which 36 are the spent holdout. **And the instrument was never declared**, which is the
+> root defect: the 0.358 bar is ES futures while §2's exit language is options. See §3/§3c of the master
+> plan. Five of six mechanisms die; one survives.
+
 **Q1 — Is the mechanism list right?** §3 of the master plan declares six. I verified two claims today:
 every screen and campaign ran **10:00/10:01 → 15:00/15:20** (`pathd_phase1_entry.py:380`,
 `minute_of_session` 31..350), so the opening 30 minutes and closing 40 minutes are untested; and **VIX has
