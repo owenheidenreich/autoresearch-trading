@@ -260,6 +260,18 @@ Any of `INVALID` / `UNDERPOWERED` / `TIER_S_NOT_SUPPORTED` → **STOP** (honest 
 sessions and all 5 folds, but line 312 tests `learned_rows`, not the full index. The learned-entry subset
 has 60 sessions and only folds 0–2, so condition 5 fails and the verdict is `UNDERPOWERED`. Condition 7
 also fails: zero of eight fee/latency cells are directionally positive.
+Claude concurs — the earlier "power floor already satisfied" note in this section was Claude's error
+(it read the full evaluation index instead of the `LEARNED_OOF` subset) and has been retracted.
+
+**Condition 7 is weaker than it looks (Claude, 2026-08-03).** The sensitivity metric is
+`delta = learned − comparator`, and BOTH legs carry the same `fee_per_side`, so the fee term cancels
+exactly. This is confirmed empirically in `replay.json`: the `fee=3.00` and `fee=4.00` rows are
+bit-identical (`-2450, -2550, -2550, -2550` in both). **The 8-cell grid is therefore 4 distinct latency
+tests run twice, not 8 independent tests.** Fee robustness is NOT actually being measured by condition 7.
+If a future run needs a genuine fee-stress test, it must compare an *absolute* metric (e.g. learned
+pooled PnL at each fee) rather than a delta against a same-fee comparator. This did not affect the
+2026-08-03 verdict (all cells negative on the latency axis alone), but it must not be mistaken for
+fee robustness in any future `TIER_S_SUPPORTED` claim.
 
 **Hard stops:** decode ONLY the 215 development sessions; 36-firewall CLOSED (`holdout_open_count=0`); no
 broker/paper-order/promotion/default/cmbp-1; ABORT if allocation would exceed 150 GB or the drive would
