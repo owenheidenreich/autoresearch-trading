@@ -162,5 +162,41 @@ data at zero cost**, and it is the natural next step ahead of any purchase.
 **Still requiring owner authorization if ever taken:** Option A is a **paid-data** download and is not
 authorized by the Option 0 sign-off. Option B remains a hard stop.
 
+---
+
+## Option A EXECUTED by owner override — 2026-08-04
+
+The owner authorized Option A after the recommendation above ("proceed to option A", then "proceed.
+authorized"). **Executed. $1.478328 spent of a $3.00 cap.** Full result:
+[`PATHD_ES_SPREAD_MEASUREMENT_RESULTS_2026_08_04.md`](../research/PATHD_ES_SPREAD_MEASUREMENT_RESULTS_2026_08_04.md).
+
+**Verdict `ES_REMAINS_CREDIBLE_BRANCH` — the assumption held.** 1,095,818 quote states over 20 RTH
+sessions, 100% coverage:
+
+| | |
+|---|---|
+| Unconditional spread | **1.0397 ticks** |
+| Elevated-volatility spread | **1.0734 ticks** (only 3.2% wider) |
+| Per-session range | 1.0018 → 1.1534; **none above 1.25** |
+| **Measured friction** | **$17.9176** vs assumed $17.00 |
+| Hurdle 15 / 30 / 60m | **52.98% / 52.12% / 51.50%** vs passive 0DTE 53.9–56.6% |
+
+The load-bearing worry is dead: the 2-tick scenario that would have closed the ES branch (hurdle 57.38%
+@15m) does not occur. ES is a 1-tick market even in its noisiest quartile.
+
+**The measurement was worth having even though I advised against the timing** — it converts a standing
+assumption into a durable number, and it hands the next study a hard target:
+
+> **Any signal must be worth ≥ 0.358 ES points per trade to clear measured friction** ($17.9176 ÷ $50).
+
+That bar is horizon-independent in points, because friction is fixed per round trip. All three disputed
+omar estimators sit **above** it — the smallest, +0.82, is 2.3× — which is exactly why identifying the true
+value now matters more than it did before the spend.
+
+**Next: identify the numerator, owned data, zero cost.** No further purchase is warranted until it
+resolves. Option B remains a hard stop.
+
+*Option A result appended by Claude Opus 5 — 2026-08-04.*
+
 *Prepared: Claude Opus 5 — 2026-08-04. Owner decision recorded by Claude Fable 5 — 2026-08-04.
 Option 0 result appended by Claude Opus 5 — 2026-08-04.*

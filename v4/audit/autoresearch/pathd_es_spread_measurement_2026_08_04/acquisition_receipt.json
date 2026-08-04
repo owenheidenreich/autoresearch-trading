@@ -1,0 +1,240 @@
+{
+  "estimated_cost_usd": 1.478327661753,
+  "files": [
+    {
+      "dbn_bytes": 1362435,
+      "dbn_sha256": "e770e5507ef27785e2f128c7ce22c9d2d609587fd3053e0e72e96d5a2757bd2e",
+      "end_utc": "2025-08-01T20:00:00+00:00",
+      "estimated_cost_usd": 0.078366100788,
+      "parquet_bytes": 1375518,
+      "parquet_sha256": "fea76ba7c63f8b52f1798f3bfabde8695cc671e84dbfab68a64ff7c308418b99",
+      "rows": 58434,
+      "session": "2025-08-01",
+      "start_utc": "2025-08-01T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1342499,
+      "dbn_sha256": "03e9628402dfb860a777c095f779b83ed1ce3c922b97336d85933ccd9f91a4ac",
+      "end_utc": "2025-08-20T20:00:00+00:00",
+      "estimated_cost_usd": 0.075913220644,
+      "parquet_bytes": 1342251,
+      "parquet_sha256": "6a32d41ee79fc8737eea23f780b155dfc5ef78f04e45163998eb24f032f6585a",
+      "rows": 56605,
+      "session": "2025-08-20",
+      "start_utc": "2025-08-20T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1374317,
+      "dbn_sha256": "005d5d0b40e5ff8da96f03c088cd6d130167350eae4276f85f53fe79dbbb51ea",
+      "end_utc": "2025-09-08T20:00:00+00:00",
+      "estimated_cost_usd": 0.077586919069,
+      "parquet_bytes": 1364956,
+      "parquet_sha256": "f5ecb5b8ac9e30d4d7caf2f6370ec0600b4b90d5b6421f992566016b29df9b63",
+      "rows": 57853,
+      "session": "2025-09-08",
+      "start_utc": "2025-09-08T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1252388,
+      "dbn_sha256": "44704d139a06cd9f39a04acf973dfee64e85095f5fccbc51c88ebbcfddfd9c34",
+      "end_utc": "2025-09-25T20:00:00+00:00",
+      "estimated_cost_usd": 0.072254687548,
+      "parquet_bytes": 1299423,
+      "parquet_sha256": "6183bf1d016792308d190ca1096781e0a6d8b14d5927c14a6f6a991135288641",
+      "rows": 53877,
+      "session": "2025-09-25",
+      "start_utc": "2025-09-25T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1300044,
+      "dbn_sha256": "08642f5ce3c1d619cc83f6482c677f31bcb9d66fb06073a3ac2cb33623c57fa6",
+      "end_utc": "2025-10-14T20:00:00+00:00",
+      "estimated_cost_usd": 0.07469817996,
+      "parquet_bytes": 1332124,
+      "parquet_sha256": "269e8784fb27c4fd53f3e242fd4334a503480f2e16103b277dc5a064392b2355",
+      "rows": 55699,
+      "session": "2025-10-14",
+      "start_utc": "2025-10-14T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1317433,
+      "dbn_sha256": "0363fdc3d737cd5bdc8a306b752de3bcbdde15bc479ab51c55f0a3135e269af8",
+      "end_utc": "2025-10-31T20:00:00+00:00",
+      "estimated_cost_usd": 0.077387094498,
+      "parquet_bytes": 1353005,
+      "parquet_sha256": "e0829ed18ec1a515588cad11409d39d427690730ab42f5e587cf4e1624ca4faf",
+      "rows": 57704,
+      "session": "2025-10-31",
+      "start_utc": "2025-10-31T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1517000,
+      "dbn_sha256": "aa1ccd3dafa4f49ea1f809ab35fc7fda1c03ac645e9b7b189e373c244894026a",
+      "end_utc": "2025-11-19T21:00:00+00:00",
+      "estimated_cost_usd": 0.084332674742,
+      "parquet_bytes": 1462272,
+      "parquet_sha256": "fca8bf24de9aa20b1082f180be049616aebbd742b2137bf0daf309d1aa756d90",
+      "rows": 62883,
+      "session": "2025-11-19",
+      "start_utc": "2025-11-19T14:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1399881,
+      "dbn_sha256": "bb322d7b15a3e8c0d11fc02b77624c914692c72523f154063f6eff5deadf4a28",
+      "end_utc": "2025-12-08T21:00:00+00:00",
+      "estimated_cost_usd": 0.078248083591,
+      "parquet_bytes": 1409161,
+      "parquet_sha256": "ed3c8e800033510255fb90a444360374d8976b1737ea37ce6ba050fef159db19",
+      "rows": 58346,
+      "session": "2025-12-08",
+      "start_utc": "2025-12-08T14:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 960666,
+      "dbn_sha256": "f49d65f959ae44665a3399c308b895013390dbd99235976dbf7a8c542b29f2c6",
+      "end_utc": "2025-12-23T21:00:00+00:00",
+      "estimated_cost_usd": 0.056876242161,
+      "parquet_bytes": 1063783,
+      "parquet_sha256": "20c7c27de9689f0957927df8c7509ccf4df84c237100cb35fcb36044f01e9407",
+      "rows": 42410,
+      "session": "2025-12-23",
+      "start_utc": "2025-12-23T14:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1210054,
+      "dbn_sha256": "8cada5065dca4bb735312b5cbec9d237a422f4cc3acfa3fc25affc8439d2a33e",
+      "end_utc": "2026-01-13T21:00:00+00:00",
+      "estimated_cost_usd": 0.069247931242,
+      "parquet_bytes": 1245021,
+      "parquet_sha256": "14098d01ec27ab558ebc430cf6084efbaf99615923c885dbdd5d2bad0a4a92c1",
+      "rows": 51635,
+      "session": "2026-01-13",
+      "start_utc": "2026-01-13T14:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1422907,
+      "dbn_sha256": "c58ae1c8882a28142566854028de3558ad7bec810cc27683dd8ba591388205cc",
+      "end_utc": "2026-01-30T21:00:00+00:00",
+      "estimated_cost_usd": 0.079695135355,
+      "parquet_bytes": 1398440,
+      "parquet_sha256": "496f5831384f6e40c8a1a3b297b160254a05f475e6c1209dc7b68d77a29bcbdc",
+      "rows": 59425,
+      "session": "2026-01-30",
+      "start_utc": "2026-01-30T14:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1319165,
+      "dbn_sha256": "e03029bfcd07eb9ccc896660cfcaffc112900f322031aad5e8ec64976bd02b88",
+      "end_utc": "2026-02-18T21:00:00+00:00",
+      "estimated_cost_usd": 0.073251128197,
+      "parquet_bytes": 1317216,
+      "parquet_sha256": "86ab3ea97ac649e1cc4af6cfeeaceeba87d51b013f0e0410641b5f4cd4f9f97a",
+      "rows": 54620,
+      "session": "2026-02-18",
+      "start_utc": "2026-02-18T14:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1730463,
+      "dbn_sha256": "5114ea8238edb76f187959f7aa6ebf8c1c37871687129d06c7bd8171b79e2863",
+      "end_utc": "2026-03-09T20:00:00+00:00",
+      "estimated_cost_usd": 0.096264481544,
+      "parquet_bytes": 1691024,
+      "parquet_sha256": "a3d5a75081d0ff483e14883e3e26ca5fbfeea14438914e473574180909fa7841",
+      "rows": 71780,
+      "session": "2026-03-09",
+      "start_utc": "2026-03-09T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1151351,
+      "dbn_sha256": "b208343f3caadcf4447355c415cdad7dcd2256f08f468e4ac09dcfab36a4dae6",
+      "end_utc": "2026-03-26T20:00:00+00:00",
+      "estimated_cost_usd": 0.06519779563,
+      "parquet_bytes": 1172846,
+      "parquet_sha256": "50e229352d825dbbacfac4339a50467ea8dea61b6e7db4ef5fd4c5c02e9880cc",
+      "rows": 48615,
+      "session": "2026-03-26",
+      "start_utc": "2026-03-26T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1055738,
+      "dbn_sha256": "c247f9884cdae1502b2a34280b2e1141efd638e4e7d82c9eedf188bcddbd4dfe",
+      "end_utc": "2026-04-14T20:00:00+00:00",
+      "estimated_cost_usd": 0.065562576056,
+      "parquet_bytes": 1169796,
+      "parquet_sha256": "80fe1e6e583ec6f27aba65bf1311dc00a4c81e9f04a31c1f8422b9fa2356eb1d",
+      "rows": 47962,
+      "session": "2026-04-14",
+      "start_utc": "2026-04-14T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1114775,
+      "dbn_sha256": "0ff9f056a69974f2f5a9e7734567afe9aa06c06de9e82e8faad5bcb329ef8d9d",
+      "end_utc": "2026-05-01T20:00:00+00:00",
+      "estimated_cost_usd": 0.067193359137,
+      "parquet_bytes": 1201695,
+      "parquet_sha256": "28f6e925570c34c1ee579f72c3cf4a1aa55206fc9ec79de9e4342efc2b8ed49a",
+      "rows": 49132,
+      "session": "2026-05-01",
+      "start_utc": "2026-05-01T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1284701,
+      "dbn_sha256": "949ee5dd301240e593481c93aaaf51d472cb84b32365e7a6c4652e58f87a744c",
+      "end_utc": "2026-05-20T20:00:00+00:00",
+      "estimated_cost_usd": 0.07354080677,
+      "parquet_bytes": 1305508,
+      "parquet_sha256": "70c85d9bfe9eff2804476f08683c2fb76e77381fd893a12298243406f570cc6a",
+      "rows": 53675,
+      "session": "2026-05-20",
+      "start_utc": "2026-05-20T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1431244,
+      "dbn_sha256": "4cd0802f14cb1f8b639664fc33510b7e4408f6eebfe1b02a4a8ad89fdb1c1e2e",
+      "end_utc": "2026-06-08T20:00:00+00:00",
+      "estimated_cost_usd": 0.079917758703,
+      "parquet_bytes": 1411254,
+      "parquet_sha256": "0f74fbae9e5b2a77748ed29b2042682bd31b2954fc77194ace1166b50f9ed59c",
+      "rows": 58328,
+      "session": "2026-06-08",
+      "start_utc": "2026-06-08T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1253513,
+      "dbn_sha256": "9c026086a8a889bf1db3c3dcb208c32c19405d5f9b0a2d2fe8c06fcc135c34c7",
+      "end_utc": "2026-06-25T20:00:00+00:00",
+      "estimated_cost_usd": 0.069195628166,
+      "parquet_bytes": 1234117,
+      "parquet_sha256": "73516fb0664ae9dd2f62e48c6b34d661215323b63db46c1b3b97c400409043ce",
+      "rows": 50373,
+      "session": "2026-06-25",
+      "start_utc": "2026-06-25T13:30:00+00:00"
+    },
+    {
+      "dbn_bytes": 1092610,
+      "dbn_sha256": "b8031a1b734221792e2e6d7da499354596294808cdd203a8e4d31e13c4847183",
+      "end_utc": "2026-07-14T20:00:00+00:00",
+      "estimated_cost_usd": 0.063597857952,
+      "parquet_bytes": 1121297,
+      "parquet_sha256": "8b4682b8ad7fe481685f301a57a19d38321e59f777d452d3443b46f7564954fd",
+      "rows": 46462,
+      "session": "2026-07-14",
+      "start_utc": "2026-07-14T13:30:00+00:00"
+    }
+  ],
+  "guard_invoked_before_each_range_call": true,
+  "manifest_path": "v4/audit/autoresearch/protocol101_pathd_data_acquisition/paid_data_approval_manifest_es_bbo1s_2026_08_04.json",
+  "manifest_sha256": "c0fa14c8e58eeca3abeed4766d5d57a80915980d9d8504eb01ce48bc143660f6",
+  "paid_cap_usd": 3.0,
+  "request": {
+    "dataset": "GLBX.MDP3",
+    "schema": "bbo-1s",
+    "stype_in": "parent",
+    "symbols": [
+      "ES.FUT"
+    ]
+  },
+  "schema_version": "pathd.es-bbo1s-acquisition-receipt.v1",
+  "session_count": 20,
+  "timestamp_utc": "2026-08-04T21:15:50.103812+00:00"
+}
