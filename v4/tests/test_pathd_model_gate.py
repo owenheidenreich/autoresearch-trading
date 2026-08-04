@@ -160,18 +160,22 @@ def test_losing_to_comparator_is_no_edge() -> None:
 # --- charter-mandated diagnostics -------------------------------------------
 
 
-def test_four_bucket_gates_only_on_big_loss_share() -> None:
+def test_four_bucket_is_report_only_since_amendment_1() -> None:
+    """Charter Amendment 1 (2026-08-04) demoted the outcome profile to a report.
+
+    The big-loss ceiling behaves as a friction test on this instrument, so it must
+    not reject candidates. It must still MEASURE correctly.
+    """
     from v4.research.pathd_model_gate import four_bucket_distribution
 
-    # Pickles-like shape: rare big losses -> passes even though shares differ.
     good = [0.40] * 18 + [0.001] * 73 + [-0.10] * 8 + [-0.30] * 1
     assert four_bucket_distribution(good).passed
 
-    # Same big-win share, but the bottom row blows out -> fails.
+    # A blown-out bottom row still passes -- but the metric must report it honestly.
     bad = [0.40] * 18 + [0.001] * 62 + [-0.10] * 8 + [-0.30] * 12
     result = four_bucket_distribution(bad)
-    assert not result.passed
-    assert result.metrics["big_loss_share"] > 0.02
+    assert result.passed, "report-only: must not gate"
+    assert result.metrics["big_loss_share"] > 0.02, "but must still measure it"
 
 
 def test_four_bucket_does_not_gate_on_win_rate() -> None:

@@ -127,3 +127,55 @@ The charter therefore defines SUCCESS TIERS for year one of live trading:
 - **Tier 3 (ecstatic):** 3x+ — celebrate, then audit before believing.
 
 Owner signature:  Owen Heidenreich  Date: 07/25/2026
+
+---
+
+## AMENDMENT 1 — outcome profile becomes a REPORT, not a GATE (owner-directed 2026-08-04)
+
+The original signature above stands. This amendment changes only which parts of the charter *reject a
+candidate*, and it is recorded rather than rewritten so the original intent stays visible.
+
+### What remains HARD (unchanged, gating)
+
+1. **5% daily circuit breaker** on session-starting equity.
+2. **Survival floor** — never below half starting capital; every dollar of drawdown purchased by at least
+   a dollar of realized profit.
+3. **One contract, no martingale**, until an owner-signed sizing revision.
+4. **No style drift** without an owner decision. Long calls and long puts remain the committed style;
+   spreads and premium selling are a later, separate model.
+5. **Win rate is never an objective** — it stays a diagnostic.
+
+These bind any strategy and are not affected by anything below.
+
+### What becomes REPORT-ONLY (no longer gating)
+
+The **four-bucket Pickles outcome distribution** (big win / scratch / small loss / big loss), including the
+2% big-loss ceiling. Every packet still reports all four buckets. No candidate is rejected on them.
+
+### Why
+
+The profile was elicited as a description of a model trader and then hardened into an acceptance gate.
+Measurement on our own corpus shows the gate was calibrated for a different cost structure, not a
+different market:
+
+- At a **15-second** horizon, **70.4%** of SPXW 0DTE price moves fall inside the charter's ±5% scratch
+  band, and the band capturing 73% is **±5.4%**. The profile's *shape* is real and reachable on this
+  instrument.
+- Our measured round-trip friction is **4.68% of premium** — almost exactly one scratch-band width. It
+  shifts the entire outcome distribution down by nearly the full band, converting what would be scratches
+  into small and big losses. Observed scratch share is 21.7% against a 73% target.
+- Consequently the big-loss ceiling behaves as a *friction* test rather than a *risk-discipline* test on
+  this instrument. Immediate exit already satisfies it (0.5% big losses) while losing 8.32% per trade;
+  every horizon from 5 to 240 minutes fails it (23.1% → 68.9%).
+
+Gating on a bucket distribution that friction determines means rejecting candidates for a cost structure
+rather than for their risk behaviour. The buckets remain the honest report card; the hard commitments
+above remain the risk gate.
+
+**Explicitly retracted:** an earlier Claude analysis claimed the model trader's scratches "cost ~0%" and
+inferred a friction advantage. That figure was read from the table above and presented as a measured
+fact; the underlying instrument, size, and execution style are unknown here. The retained, supported claim
+is only the measurement of *our own* friction and its effect on *our own* distribution.
+
+*Amendment recorded by Claude Opus 5 at owner direction — 2026-08-04. The 07/25/2026 signature and the
+four commitments it covers are unchanged.*

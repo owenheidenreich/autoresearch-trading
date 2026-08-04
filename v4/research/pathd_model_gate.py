@@ -220,7 +220,13 @@ MAX_BIG_LOSS_SHARE = 0.02    # charter: "the killer discipline is the bottom row
 
 
 def four_bucket_distribution(returns_fraction: Sequence[float]) -> TestResult:
-    """Charter outcome profile, fee-aware. Gates ONLY on the big-loss share.
+    """Charter outcome profile, fee-aware. REPORT-ONLY since Amendment 1 (2026-08-04).
+
+    ``passed`` is always True. The big-loss ceiling no longer gates, because
+    measurement showed it behaves as a friction test rather than a risk test on
+    this instrument: 70.4% of 15-second moves fall inside the +/-5% scratch band,
+    while our 4.68% round-trip friction shifts the distribution down by nearly a
+    full band width. Read ``metrics`` for the shape; it is the report card.
 
     ``returns_fraction`` is per-trade return on premium paid, as a fraction
     (0.40 == +40%). Target shape, directional not literal: many scratches and
@@ -239,12 +245,13 @@ def four_bucket_distribution(returns_fraction: Sequence[float]) -> TestResult:
 
     return TestResult(
         name="four_bucket_distribution",
-        passed=bool(big_loss <= MAX_BIG_LOSS_SHARE),
+        passed=True,  # REPORT-ONLY per Charter Amendment 1 (2026-08-04)
         detail=(
             f"big win {100*big_win:.1f}% (Pickles 18%) | scratch {100*scratch:.1f}% (73%) | "
-            f"small loss {100*small_loss:.1f}% (8%) | BIG LOSS {100*big_loss:.2f}% "
-            f"(limit {100*MAX_BIG_LOSS_SHARE:.0f}%). Only the big-loss share gates; "
-            "the rest is the shape report."
+            f"small loss {100*small_loss:.1f}% (8%) | big loss {100*big_loss:.2f}% "
+            f"(reference {100*MAX_BIG_LOSS_SHARE:.0f}%). REPORT-ONLY: this does not gate. "
+            "Hard charter gates are the 5% daily breaker, the survival floor, one-contract "
+            "sizing, and no style drift."
         ),
         metrics={
             "big_win_share": big_win,
