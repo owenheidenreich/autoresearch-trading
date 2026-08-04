@@ -155,3 +155,59 @@ def test_maxt_failure_blocks_tier_a() -> None:
 
 def test_losing_to_comparator_is_no_edge() -> None:
     assert _tier(pooled_policy=10.0, pooled_comparator=50.0)["tier"] == "NO_EDGE"
+
+
+# --- charter-mandated diagnostics -------------------------------------------
+
+
+def test_four_bucket_gates_only_on_big_loss_share() -> None:
+    from v4.research.pathd_model_gate import four_bucket_distribution
+
+    # Pickles-like shape: rare big losses -> passes even though shares differ.
+    good = [0.40] * 18 + [0.001] * 73 + [-0.10] * 8 + [-0.30] * 1
+    assert four_bucket_distribution(good).passed
+
+    # Same big-win share, but the bottom row blows out -> fails.
+    bad = [0.40] * 18 + [0.001] * 62 + [-0.10] * 8 + [-0.30] * 12
+    result = four_bucket_distribution(bad)
+    assert not result.passed
+    assert result.metrics["big_loss_share"] > 0.02
+
+
+def test_four_bucket_does_not_gate_on_win_rate() -> None:
+    from v4.research.pathd_model_gate import four_bucket_distribution
+
+    # Very low win rate but disciplined tail: charter says this is acceptable.
+    losing_heavy = [0.40] * 5 + [-0.02] * 94 + [-0.30] * 1
+    assert four_bucket_distribution(losing_heavy).passed
+
+
+def test_harvest_ratio_measures_captured_upside() -> None:
+    from v4.research.pathd_model_gate import harvest_ratio
+
+    result = harvest_ratio([50.0, 25.0], [100.0, 100.0])
+    assert result["aggregate_harvest_ratio"] == pytest.approx(0.375)
+    assert result["n_trades_with_upside"] == 2
+
+
+def test_harvest_ratio_fails_closed_without_upside() -> None:
+    from v4.research.pathd_model_gate import GateError, harvest_ratio
+
+    with pytest.raises(GateError):
+        harvest_ratio([1.0, 2.0], [0.0, -1.0])
+
+
+def test_underwater_duration_finds_the_longest_drought() -> None:
+    from v4.research.pathd_model_gate import underwater_duration
+
+    curve = [100, 110, 105, 104, 103, 115, 114]  # 3 steps under, then new high
+    result = underwater_duration(curve)
+    assert result["longest_underwater_steps"] == 3
+    assert result["max_drawdown"] == pytest.approx(7.0)
+
+
+def test_pnl_concentration_is_report_only() -> None:
+    from v4.research.pathd_model_gate import pnl_concentration
+
+    result = pnl_concentration([1000.0] + [1.0] * 100)
+    assert result["top_5_share"] > 0.9  # lumpy, and that is fine per the charter

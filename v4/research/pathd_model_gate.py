@@ -202,6 +202,134 @@ def label_balance(labels: Sequence[float]) -> TestResult:
 
 
 # --------------------------------------------------------------------------
+# Charter-mandated diagnostics
+#
+# PROTOCOL101_TRADER_CHARTER.md (SIGNED 2026-07-25) lists these under
+# "New (to implement)", and PROTOCOL101_STAGE2_OBJECTIVE_AND_GATES_PROPOSAL.md
+# repeats the harvest ratio and concentration under Mandatory Diagnostics.
+# Every packet must report them.
+#
+# Charter discipline: win rate and concentration are REPORT-ONLY, never
+# objectives. "A system rewarded for win rate itself learns to scratch
+# everything and pay fees for nothing." Only the big-loss share is a gate.
+# --------------------------------------------------------------------------
+
+SCRATCH_BAND = 0.05          # charter: any exit between -5% and +5% is a scratch (fee-aware)
+BIG_LOSS_RETURN = -0.25      # charter big losses average -30%; boundary named so it is visible
+MAX_BIG_LOSS_SHARE = 0.02    # charter: "the killer discipline is the bottom row staying under 2%"
+
+
+def four_bucket_distribution(returns_fraction: Sequence[float]) -> TestResult:
+    """Charter outcome profile, fee-aware. Gates ONLY on the big-loss share.
+
+    ``returns_fraction`` is per-trade return on premium paid, as a fraction
+    (0.40 == +40%). Target shape, directional not literal: many scratches and
+    small wins, a real minority of big wins, big losses rare enough to count on
+    fingers.
+    """
+
+    r = _finite(returns_fraction)
+    if r.size == 0:
+        raise GateError("four_bucket_distribution received no returns")
+
+    big_win = float((r > SCRATCH_BAND).mean())
+    scratch = float(((r >= -SCRATCH_BAND) & (r <= SCRATCH_BAND)).mean())
+    small_loss = float(((r < -SCRATCH_BAND) & (r >= BIG_LOSS_RETURN)).mean())
+    big_loss = float((r < BIG_LOSS_RETURN).mean())
+
+    return TestResult(
+        name="four_bucket_distribution",
+        passed=bool(big_loss <= MAX_BIG_LOSS_SHARE),
+        detail=(
+            f"big win {100*big_win:.1f}% (Pickles 18%) | scratch {100*scratch:.1f}% (73%) | "
+            f"small loss {100*small_loss:.1f}% (8%) | BIG LOSS {100*big_loss:.2f}% "
+            f"(limit {100*MAX_BIG_LOSS_SHARE:.0f}%). Only the big-loss share gates; "
+            "the rest is the shape report."
+        ),
+        metrics={
+            "big_win_share": big_win,
+            "scratch_share": scratch,
+            "small_loss_share": small_loss,
+            "big_loss_share": big_loss,
+            "big_loss_limit": MAX_BIG_LOSS_SHARE,
+        },
+    )
+
+
+def harvest_ratio(
+    realized: Sequence[float], peak_available: Sequence[float]
+) -> dict[str, float]:
+    """Realized PnL / peak available PnL per trade. Stage-2's report card.
+
+    Report-only. It measures how much of the payoff the exit actually captured,
+    which is the metric the charter uses to judge tail harvesting.
+    """
+
+    real = np.asarray(realized, dtype=float)
+    peak = np.asarray(peak_available, dtype=float)
+    if real.shape != peak.shape:
+        raise GateError("harvest_ratio requires matching realized/peak lengths")
+    usable = np.isfinite(real) & np.isfinite(peak) & (peak > 0)
+    if not usable.any():
+        raise GateError("harvest_ratio found no trades with positive peak available PnL")
+
+    ratios = real[usable] / peak[usable]
+    return {
+        "n_trades_with_upside": int(usable.sum()),
+        "mean_harvest_ratio": float(ratios.mean()),
+        "median_harvest_ratio": float(np.median(ratios)),
+        "aggregate_harvest_ratio": float(real[usable].sum() / peak[usable].sum()),
+    }
+
+
+def underwater_duration(equity_curve: Sequence[float]) -> dict[str, float]:
+    """Longest stretch below the running high-water mark. Report-only.
+
+    Charter commitment 1: droughts should be FLAT, never deep. This makes
+    "flat vs clawback" visible per candidate.
+    """
+
+    equity = _finite(equity_curve)
+    if equity.size == 0:
+        raise GateError("underwater_duration received an empty equity curve")
+
+    high_water = np.maximum.accumulate(equity)
+    underwater = equity < high_water
+    longest = current = 0
+    for flag in underwater:
+        current = current + 1 if flag else 0
+        longest = max(longest, current)
+    drawdown = high_water - equity
+    return {
+        "longest_underwater_steps": int(longest),
+        "underwater_fraction": float(underwater.mean()),
+        "max_drawdown": float(drawdown.max()),
+    }
+
+
+def pnl_concentration(values: Sequence[float]) -> dict[str, float]:
+    """Share of positive PnL from the top trades. REPORT-ONLY per the charter.
+
+    "Not allergic to lumpy profits: the big-win column carrying most of the
+    profit is the design, not a red flag."
+    """
+
+    v = _finite(values)
+    if v.size == 0:
+        raise GateError("pnl_concentration received no values")
+    positive = v[v > 0]
+    total_positive = float(positive.sum())
+    if total_positive <= 0:
+        return {"top_5_share": float("nan"), "top_20_share": float("nan"), "positive_pnl": 0.0}
+    ordered = np.sort(positive)[::-1]
+    return {
+        "positive_pnl": total_positive,
+        "top_5_share": float(ordered[:5].sum() / total_positive),
+        "top_20_share": float(ordered[:20].sum() / total_positive),
+    }
+
+
+# --------------------------------------------------------------------------
 # Acceptance tiers (from the standing work order)
 # --------------------------------------------------------------------------
 
