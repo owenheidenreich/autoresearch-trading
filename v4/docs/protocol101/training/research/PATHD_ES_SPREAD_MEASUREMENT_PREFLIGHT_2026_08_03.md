@@ -56,4 +56,13 @@ A new or superseding owner-approved manifest must explicitly authorize DST-aware
 existing manifest must remain unchanged. Once supplied, the cost must be rechecked for the corrected exact
 request before the guarded download.
 
+The read-only corrected-window estimate is **$1.478327**, still below the $3.00 cap. The six corrected
+winter-session estimates are $0.084333 / $0.078248 / $0.056876 / $0.069248 / $0.079695 / $0.073251 in
+the session order listed above.
+
+The guarded runner is ready at `v4/scripts/measure_pathd_es_bbo1s_spread.py`. It rejects the current
+manifest before contacting the range endpoint, accepts only windows that resolve to exact 09:30–16:00
+New York time, refuses an existing acquisition directory, repeats the paid-data guard immediately before
+every session download, and implements duration-weighted unconditional/elevated-RV spread measurement.
+
 STOP_FOR_CLAUDE_VERIFICATION
