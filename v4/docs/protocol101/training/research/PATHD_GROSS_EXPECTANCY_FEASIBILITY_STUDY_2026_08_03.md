@@ -74,6 +74,27 @@ too large relative to VIX's move scale.
 negative. ES's is noise-scale relative to a $412 median move over the same horizon, and 261 sessions of a
 rising market is not evidence of tradable drift. **Do not read the drift column as free money.**
 
+## Correction — drift-adjusted hurdle (added 2026-08-03, Claude)
+
+The `required_win_rate` formula above accounts for **friction only**. Drift must be added, and it applies
+**asymmetrically**:
+
+- **Options: theta is a one-way tax.** It works against you whether you hold calls or puts, so `|drift|`
+  must be added to the hurdle.
+- **Futures: drift is two-sided.** A strategy that goes both long and short sees it roughly cancel, so
+  no adjustment (do not credit ES's positive drift — that is a long-only artefact of a rising sample).
+
+| Instrument | Horizon | friction-only | **drift-adjusted** |
+|---|---|---|---|
+| ES future | 30m | 53.0% | **53.0%** |
+| ES future | 60m | 52.1% | **52.1%** |
+| SPXW 0DTE (passive) | 30m | 57.7% | **59.5%** |
+| SPXW 0DTE (passive) | 60m | 55.0% | **56.6%** |
+| SPXW 0DTE (aggressive) | 60m | 57.2% | **58.7%** |
+
+**The corrected gap between the best options cell (56.6%) and the best ES cell (52.1%) is 4.5 points.**
+The conclusions above are unchanged in direction; the options hurdle is simply harder than first tabled.
+
 ## What this study does NOT say
 
 - **It does not say ES is profitable.** It says the *hurdle is reachable*. Nothing here demonstrates any
