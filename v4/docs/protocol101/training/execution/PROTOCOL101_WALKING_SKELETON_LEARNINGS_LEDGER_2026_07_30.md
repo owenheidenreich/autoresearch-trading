@@ -1380,3 +1380,30 @@ holdout spent so even a promising causal result needs fresh months to confirm.
 Open housekeeping: retire the superseded v3.2 release-reconciliation gate so the 4 governance tests run
 their real assertions (do NOT xfail — that would suppress genuine invariant coverage; do NOT rewrite the
 immutable receipt). Codex task.
+
+---
+
+## Phase update 2026-08-03 (ff) — Stage 0 SSD workspace COMPLETE; corpus independently verified
+
+Codex retired the invalidated v3.2 release-reconciliation gate without xfail, receipt rewrite, or
+invariant weakening (`fa1d9b08`; governance test file 7/7 passed). The verified external whole disk was
+`/dev/disk4`, 2,000,365,371,904 bytes. It was owner-confirmed, erased, and encrypted as ordinary APFS
+`AR_TRADING_DATA`; Time Machine is stopped/unconfigured and the volume has no Backup role.
+
+The real Mac exposed two fail-closed storage-preflight portability defects: current `diskutil -plist`
+uses boolean `Encryption` rather than `Encrypted`, and accepts a mountpoint but not arbitrary child
+directories. Codex added strict equivalent-key handling (missing/false/contradictory still fail) and
+same-device mountpoint resolution (`b0c5c73d`); the Phase-1 fixture set passes 19/19 and authoritative
+preflight now returns `PASS`.
+
+The first local-copy attempt was interrupted by an accidental owner eject after 637 files / 3.84 GiB.
+The incomplete marker worked: no manifest was issued and the partial tree was preserved, not trusted,
+under a manifest-backed quarantine at
+`/Volumes/AR_TRADING_DATA/reports/quarantine/relocation_interrupted_20260804T002438Z/`. `fsck_apfs -n`
+then passed. The clean retry returned `COPIED_AND_VERIFIED`, `source_preserved:true`, 3,708 files and
+21,484,792,678 bytes. Independent full re-hashes of source and destination matched manifest SHA-256
+`7929a43e6b3e3398991b78ba9e937e006531b76b1b0cd1e5480b35b12cb550d6`. Post-copy preflight reports
+98.704% free and 25,609,636,917 bytes allocated under the 150 GB cap.
+
+**Next gate:** independent Claude verification of Stage 0, then explicit owner authorization for Stage 1
+causal model training. No model fit, firewall opening, broker/paper action, or paid data request occurred.

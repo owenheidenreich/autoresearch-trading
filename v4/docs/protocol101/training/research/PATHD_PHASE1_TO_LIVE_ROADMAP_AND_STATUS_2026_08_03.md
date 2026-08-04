@@ -23,12 +23,12 @@ status + signature block whenever a phase advances.
 |---|---|---|
 | Causal Phase-1 implementation (entry/exit/replay/storage) | DONE (audited PASS, committed `cba15b1a`) | — |
 | Footprint estimate (89.69 GB < 150 GB cap) | DONE | — |
-| SSD setup runbook (fail-closed) | DONE (staged, not executed) | — |
-| Phase-1 fixture suite | DONE (green: entry/exit/replay/storage 17 passed; Phase-1 subset 20/20) | — |
+| SSD setup runbook (fail-closed) | DONE (executed on verified `/dev/disk4`) | — |
+| Phase-1 fixture suite | DONE (green: entry/exit/replay/storage 19 passed) | — |
 | Milestone commit + memory/ledger | DONE (`cba15b1a`, `9ae807f5`) | — |
-| Suite-green (retire stale v3.2 reconciliation) | PENDING_CODEX (goal drafted below) | Codex (frozen v3.2 machinery) |
-| Stage 0 — drive setup | BLOCKED_ON_DRIVE | physical 2 TB SSD + owner disk-ID confirm |
-| Stage 1 — causal training + four-box | BLOCKED_ON_DRIVE | Stage 0 |
+| Suite-green (retire stale v3.2 reconciliation) | DONE (`fa1d9b08`; governance file 7/7 passed) | Claude independent verification |
+| Stage 0 — drive setup | DONE (preflight + relocation + independent hashes passed) | Claude independent verification |
+| Stage 1 — causal training + four-box | READY | explicit owner training authorization |
 | Stage 2 — runtime decision-parity | NOT_STARTED | Stage 1 = edge |
 | Stage 3 — live-shadow orchestration | NOT_STARTED (needs building) | Stage 2 pass + live days |
 | Stage 4 — guarded paper submit + confirmation | NOT_STARTED (needs building) | Stage 3 + live days |
@@ -72,7 +72,21 @@ PYTHONPATH=. .venv/bin/python -m v4.scripts.run_phase1_exit_model relocate-corpu
 the original corpus at `~/.autoresearch-trading/...` is byte-unchanged (re-hash a sample file).
 **Abort if:** volume is internal, not encrypted, wrong name, <25% free, or manifest mismatch.
 
-*Signed: Claude Opus 4.8 — 2026-08-03 — status: BLOCKED_ON_DRIVE. Next: owner runs runbook + these 2 commands when SSD lands.*
+**Execution evidence (Codex, 2026-08-03):** verified external 2 TB `/dev/disk4`; encrypted ordinary
+APFS volume `AR_TRADING_DATA` with no Time Machine destination or Backup role; post-copy preflight
+`PASS` with `encrypted:true`, `external:true`, `free_fraction_after:0.9870410083`, and
+`phase1_allocation.projected_bytes:25609636917`. Relocation returned `COPIED_AND_VERIFIED`,
+`source_preserved:true`, 3,708 files / 21,484,792,678 bytes, manifest SHA-256
+`7929a43e6b3e3398991b78ba9e937e006531b76b1b0cd1e5480b35b12cb550d6`; an independent full source
+and destination re-hash matched, including sample `aligned/exit_labels/pathd_exit_labels_12m.parquet`
+SHA-256 `1959abf3510ba06db040722dc1c81cd435cf733676c6caf6fa16a3789ab40f94`.
+
+An accidental mid-copy eject was fail-closed and preserved at
+`/Volumes/AR_TRADING_DATA/reports/quarantine/relocation_interrupted_20260804T002438Z/`; APFS
+verification passed before the clean retry. Current-macOS `diskutil` compatibility fixes are committed
+as `b0c5c73d` and the 19-test Phase-1 fixture set passes.
+
+*Signed: Codex — 2026-08-03 — status: STAGE 0 COMPLETE; STOP_FOR_CLAUDE_VERIFICATION.*
 
 ---
 
@@ -82,7 +96,8 @@ Codex goal is drafted (below), ready to fire once Stage 0 verifies.
 controls FAIL; mutate-future clean; latency/fee sensitivities hold. `NO_INCREMENTAL_EDGE` → STOP/reconsider.
 Edge → freeze model + 18-feature contract by SHA; proceed to Stage 2.
 
-*Signed: Claude Opus 4.8 — 2026-08-03 — status: BLOCKED_ON_DRIVE (goal staged). Next: fire after Stage 0.*
+*Signed: Codex — 2026-08-03 — status: READY, awaiting explicit owner authorization for model training
+and independent Claude verification of Stage 0.*
 
 ---
 

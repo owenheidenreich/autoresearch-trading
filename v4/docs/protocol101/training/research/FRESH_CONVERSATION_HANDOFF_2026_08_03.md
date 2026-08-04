@@ -25,20 +25,21 @@ exit), trained on **Databento OPRA + ThetaData**, deciding live on **Databento l
 `INVALID_EXPERIMENT`; the protected holdout was opened on it and is **SPENT**. A **causal Phase-1
 rebuild** (entry/exit/replay/storage) now rebuilds features from raw at the **t−60s** clock; it is
 implemented, **Claude-audited PASS** (clock, conservative fill/label law, entry→exit OOF firewall),
-fixture-green, and **purchase-ready** (footprint 89.69 GB < 150 GB cap). It is **BLOCKED on a physical
-2 TB external encrypted-APFS SSD** (arriving 2026-08-03) that is the **training WORKSPACE, not a data
-download** (the 12-month corpus is already local at `~/.autoresearch-trading/pathd_2025-08-01_2026-07-31`).
-**No causal model has been trained yet.** `NO_INCREMENTAL_EDGE` is the likely honest outcome.
+fixture-green, and **purchase-ready** (footprint 89.69 GB < 150 GB cap). **Stage 0 is complete:** the
+2 TB external encrypted-APFS SSD is mounted at `/Volumes/AR_TRADING_DATA`, the already-owned 12-month
+corpus was copied and independently checksum-verified (manifest `7929a43e...550d6`), and the internal
+source remains preserved. The SSD is the training WORKSPACE, not a data download. **No causal model has
+been trained yet.** Stage 1 is ready but still requires explicit owner training authorization;
+`NO_INCREMENTAL_EDGE` is the likely honest outcome.
 
 ## Immediate next actions (gated; see the roadmap for exact commands)
-1. **Stage 0 — drive setup (owner-supervised).** Run `PHASE1_SSD_SETUP_RUNBOOK.md` (5-guard fail-closed
-   erase; owner types disk-ID + phrase) → `storage-preflight` → `relocate-corpus`. Claude verifies receipts.
-2. **Stage 1 — causal training (Codex, needs the drive).** `materialize-entry → train-entry →
+1. **Stage 0 — COMPLETE, pending Claude verification.** Preflight and relocation passed; source and
+   destination independently match 3,708 files / 21,484,792,678 bytes.
+2. **Stage 1 — causal training (Codex; explicit owner authorization required).** `materialize-entry → train-entry →
    build-trajectories → train-exit → replay` → four-box verdict. **GATE 1** = `TIER_S_SUPPORTED` (beat best
    comparator pooled + bootstrap LCB>0 + ≥4/5 positive fold deltas + no negative control accepted); else STOP.
-3. **Open, drive-independent (Codex, anytime):** retire the superseded **v3.2 release-reconciliation** gate
-   (`pathd_entry_dataset.py:403`) so the 4 legacy governance tests run their real assertions and pass — do
-   NOT xfail (suppresses coverage), do NOT rewrite the immutable receipt, do NOT weaken invariants.
+3. **Suite-green — COMPLETE:** superseded v3.2 release reconciliation retired in `fa1d9b08`; immutable
+   evidence preserved and the governance test file passes 7/7.
 4. Stages 2–5 (parity → live-shadow → guarded paper → real-money) are specified + gated in the roadmap;
    Stage 3–4 need building; **do not build ahead of a Stage-1 edge.**
 
@@ -74,11 +75,12 @@ supervised** (manual disk-ID confirmation). No paper-default or promotion change
 - **Codex:** read this handoff → the roadmap/status doc (engineer-grade Stage 0/1 commands + GATE 1
   acceptance) → CLAUDE.md safety rules. Execute only the goal the owner hands you; end with
   `STOP_FOR_CLAUDE_VERIFICATION`.
-- **Git:** branch `v4/phase-0`; HEAD at the latest roadmap/handoff commit; pushed to `origin`.
+- **Git:** branch `v4/phase-0`; local commits include `fa1d9b08` (v3.2 supersession) and `b0c5c73d`
+  (current-macOS storage-preflight compatibility); pushing is a separate owner action.
 
 ## Working style (owner)
 Plain language + trader analogies; `AskUserQuestion` for genuine forks (recommendation first); challenge
 owner assumptions with evidence; own your own errors and correct them; update the ledger + this handoff +
 the status board as phases advance; keep commits curated (no data/secrets/checkpoints/backlog).
 
-*Signed: Claude Opus 4.8 — 2026-08-03. Keep this current as phases advance.*
+*Signed: Codex — 2026-08-03 — Stage 0 complete; STOP_FOR_CLAUDE_VERIFICATION. Keep this current as phases advance.*
