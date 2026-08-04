@@ -11,7 +11,20 @@ Evidence: `v4/audit/autoresearch/pathd_omar_drift_robust_revalidation_2026_08_04
 
 213 of 215 development sessions (two half-days dropped for no fresh SPX row at the boundary),
 200 surrogates per session per null, 20,000 permutations. **Zero cost: owned data, no training, no
-broker, no purchase. `holdout_open_count` = 0, untouched.**
+broker, no purchase. This run did not open the protected holdout**
+(`protected_holdout_opened: false`).
+
+> **⚠ CORRECTION, same day.** This document originally stated `holdout_open_count` = 0 here and in
+> §5, and called the protected holdout an "unspent" surviving asset. **That is wrong. The holdout is
+> SPENT** — opened once on 2026-08-02 for the `signed18` confirmation later invalidated by a 60-second
+> look-ahead (`holdout_open_count: 1` in
+> `v4/audit/autoresearch/autoresearch_v2_entry_model_confirmation_2026_08_02_attempt001/holdout_access_receipt.json`).
+> My error was reading this run's per-run receipt flag `protected_holdout_opened: false` — which
+> means only that *this run* did not open it — as if it were the global counter. The two are easy to
+> conflate and are not the same field. The corrected statement of assets is in
+> [`PATHD_PROGRAMME_STAND_DOWN_RECORD_2026_08_04.md`](../contracts/PATHD_PROGRAMME_STAND_DOWN_RECORD_2026_08_04.md).
+> **There is no confirmation firewall left**, which strengthens rather than weakens this document's
+> conclusion: it removes the last route by which a surviving `omar` could have been confirmed.
 
 ---
 
@@ -112,9 +125,14 @@ description of a bounded path's arithmetic and its volatility seasonality, not a
 trader can hold.** That is a coherent, finished answer to the World A / World B question the last
 two months could not isolate — and the answer is World B.
 
-**Untouched.** The protected holdout (`holdout_open_count` = 0). The execution plane. The measured
-ES friction bar, which remains a durable, instrument-level number and is what made §4 decidable.
-The 0DTE long-premium class stays closed, structurally, and nothing here reopens it.
+**Preserved at zero cost.** The execution plane. The research machinery. The measured ES friction
+bar, which remains a durable, instrument-level number and is what made §4 decidable. The owned
+corpus. The 0DTE long-premium class stays closed, structurally, and nothing here reopens it.
+
+**Not preserved, contrary to this document's original claim — see the correction at the top.** The
+protected holdout is **SPENT** (`holdout_open_count` = 1, opened 2026-08-02). No confirmation
+firewall remains, so any future hypothesis needs fresh live paper or a newly reserved holdout drawn
+from unused data.
 
 ## 6. Reproduction
 
