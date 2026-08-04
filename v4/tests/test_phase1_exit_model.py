@@ -16,6 +16,7 @@ from v4.research.phase1_exit_model import (
     catastrophic_floor_triggered,
     expanding_outer_folds,
     fit_hgb_baseline,
+    load_exact_cbbo_path,
     load_completed_spx_context,
     stable_hash,
     validate_oof_entry_receipt,
@@ -150,6 +151,34 @@ def test_completed_spx_rejects_unapproved_source_path(tmp_path: Path) -> None:
     )
     with pytest.raises(ExitModelContractError, match="not official ThetaData"):
         load_completed_spx_context(path, emission_lag_ms=2_336)
+
+
+def test_exact_cbbo_accepts_unique_schema_local_instrument_id(tmp_path: Path) -> None:
+    path = tmp_path / "2025-08-01.cbbo-1s.parquet"
+    source = cbbo().assign(instrument_id=123 + 2**25)
+    source.to_parquet(path, index=False)
+    loaded = load_exact_cbbo_path(path, receipt())
+    assert loaded["symbol"].eq(receipt().raw_symbol).all()
+    assert loaded["instrument_id"].eq(123 + 2**25).all()
+
+
+def test_exact_cbbo_rejects_ambiguous_schema_local_instrument_ids(tmp_path: Path) -> None:
+    path = tmp_path / "2025-08-01.cbbo-1s.parquet"
+    source = cbbo()
+    duplicate = source.iloc[[0]].assign(instrument_id=123 + 2**25)
+    pd.concat([source, duplicate], ignore_index=True).to_parquet(path, index=False)
+    with pytest.raises(ExitModelContractError, match="predicate escaped"):
+        load_exact_cbbo_path(path, receipt())
+
+
+def test_stale_terminal_path_uses_frozen_zero_write_down(tmp_path: Path) -> None:
+    path = tmp_path / "2025-08-01.cbbo-1s.parquet"
+    source = cbbo().iloc[:-30].copy()
+    source.to_parquet(path, index=False)
+    loaded = load_exact_cbbo_path(path, receipt())
+    features, labels = build_trajectory_tables(receipt(), loaded, spx())
+    assert features["option_quote_age_ms"].iloc[-1] > 2_000
+    assert labels["hold_to_1555_value_dollars"].iloc[0] == -403.0
 
 
 def test_fill_law_sensitivities_and_floor() -> None:

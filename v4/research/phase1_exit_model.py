@@ -241,7 +241,7 @@ def load_exact_cbbo_path(
     *,
     terminal_time_ns: int | None = None,
 ) -> pd.DataFrame:
-    """Use Arrow filters so only one contract/session path reaches memory."""
+    """Load one canonical contract path while authenticating its local symbol map."""
 
     validate_oof_entry_receipt(receipt)
     parquet_path = parquet_path.resolve(strict=True)
@@ -261,8 +261,7 @@ def load_exact_cbbo_path(
     ]
     dataset = pads.dataset(parquet_path, format="parquet")
     expression = (
-        (pads.field("instrument_id") == receipt.instrument_id)
-        & (pads.field("symbol") == receipt.raw_symbol)
+        (pads.field("symbol") == receipt.raw_symbol)
         & (pads.field("ts_recv") >= pd.Timestamp(receipt.fill_time_ns, unit="ns", tz="UTC"))
         & (pads.field("ts_recv") <= pd.Timestamp(finish, unit="ns", tz="UTC"))
     )
@@ -271,7 +270,8 @@ def load_exact_cbbo_path(
     )
     if frame.empty:
         raise ExitModelContractError("exact-contract CBBO-1s join produced no rows")
-    if not frame["instrument_id"].eq(receipt.instrument_id).all() or not frame["symbol"].eq(receipt.raw_symbol).all():
+    source_instrument_ids = frame["instrument_id"].drop_duplicates()
+    if len(source_instrument_ids) != 1 or not frame["symbol"].eq(receipt.raw_symbol).all():
         raise ExitModelContractError("exact-contract predicate escaped")
     frame["ts_recv"] = pd.to_datetime(frame["ts_recv"], utc=True)
     frame = frame.sort_values("ts_recv", kind="mergesort").reset_index(drop=True)
@@ -279,8 +279,6 @@ def load_exact_cbbo_path(
         raise ExitModelContractError("duplicate completed-second exact-contract row")
     if not frame["ts_recv"].is_monotonic_increasing:
         raise ExitModelContractError("CBBO path is not chronological")
-    if int(frame["ts_recv"].iloc[-1].value) < finish - 5_000_000_000:
-        raise ExitModelContractError("exact-contract path is incomplete before forced flat")
     return frame
 
 
