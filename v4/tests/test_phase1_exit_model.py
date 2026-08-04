@@ -15,6 +15,7 @@ from v4.research.phase1_exit_model import (
     catastrophic_floor_triggered,
     expanding_outer_folds,
     fit_hgb_baseline,
+    load_completed_spx_context,
     stable_hash,
     validate_oof_entry_receipt,
 )
@@ -74,6 +75,25 @@ def spx() -> pd.DataFrame:
     return frame
 
 
+def official_spx_history(context_source: str) -> pd.DataFrame:
+    events = pd.date_range("2025-08-01 13:30:00", periods=20, freq="1min", tz="UTC")
+    return pd.DataFrame(
+        {
+            "event_time": events,
+            "symbol": "SPX",
+            "open": 6275.0,
+            "high": 6276.0,
+            "low": 6274.0,
+            "close": np.linspace(6275.0, 6280.0, len(events)),
+            "volume": 0,
+            "context_source": context_source,
+            "is_derived": False,
+            "is_proxy": False,
+            "is_official_index_data": True,
+        }
+    )
+
+
 def test_oof_receipt_rejects_full_fit_and_tamper() -> None:
     valid = receipt()
     validate_oof_entry_receipt(valid)
@@ -101,6 +121,34 @@ def test_features_are_causal_and_labels_are_separate() -> None:
     changed_features, changed_labels = build_trajectory_tables(receipt(), mutated, spx())
     pd.testing.assert_frame_equal(features.iloc[:40], changed_features.iloc[:40], check_exact=True)
     assert not labels["a_ref_dollars"].equals(changed_labels["a_ref_dollars"])
+
+
+@pytest.mark.parametrize(
+    "context_source",
+    (
+        "thetadata_index_history_ohlc",
+        "/Users/example/.autoresearch-trading/pathd/vendor/thetadata/index/spx_1m/2025-08-01.parquet",
+    ),
+)
+def test_completed_spx_accepts_authenticated_official_sources(
+    tmp_path: Path, context_source: str
+) -> None:
+    path = tmp_path / "official_spx.parquet"
+    official_spx_history(context_source).to_parquet(path, index=False)
+    loaded = load_completed_spx_context(path, emission_lag_ms=2_336)
+    assert loaded["context_source"].eq("thetadata_index_history_ohlc").all()
+    assert loaded["available_at"].equals(
+        loaded["event_time"] + pd.Timedelta(seconds=62, milliseconds=336)
+    )
+
+
+def test_completed_spx_rejects_unapproved_source_path(tmp_path: Path) -> None:
+    path = tmp_path / "unapproved_spx.parquet"
+    official_spx_history("/vendor/other/index/spx_1m/2025-08-01.parquet").to_parquet(
+        path, index=False
+    )
+    with pytest.raises(ExitModelContractError, match="not official ThetaData"):
+        load_completed_spx_context(path, emission_lag_ms=2_336)
 
 
 def test_fill_law_sensitivities_and_floor() -> None:

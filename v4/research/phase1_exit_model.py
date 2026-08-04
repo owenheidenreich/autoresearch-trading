@@ -300,14 +300,21 @@ def load_completed_spx_context(path: Path, *, emission_lag_ms: int) -> pd.DataFr
     }
     if required - set(frame):
         raise ExitModelContractError("official SPX context schema drift")
+    source = frame["context_source"].astype(str)
+    official_source = source.eq("thetadata_index_history_ohlc") | source.str.contains(
+        "/vendor/thetadata/index/spx_1m/", regex=False
+    )
     if not (
         frame["symbol"].astype(str).eq("SPX").all()
-        and frame["context_source"].astype(str).eq("thetadata_index_history_ohlc").all()
+        and official_source.all()
         and (~frame["is_derived"].astype(bool)).all()
         and (~frame["is_proxy"].astype(bool)).all()
         and frame["is_official_index_data"].astype(bool).all()
     ):
         raise ExitModelContractError("SPX context is not official ThetaData history")
+    # The owned corpus stores the immutable vendor path in context_source;
+    # normalize only after authenticating it against the same entry-plane law.
+    frame["context_source"] = "thetadata_index_history_ohlc"
     frame = frame.sort_values("event_time", kind="mergesort").reset_index(drop=True)
     frame["event_time"] = pd.to_datetime(frame["event_time"], utc=True)
     frame["available_at"] = frame["event_time"] + pd.Timedelta(seconds=60, milliseconds=emission_lag_ms)
