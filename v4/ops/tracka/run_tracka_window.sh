@@ -60,7 +60,8 @@ PYTHONPATH=. ./.venv/bin/python -m v4.scripts.capture_databento_live_opra_defini
     --session-date "$SESSION" \
     --duration-seconds 30 \
     --output-dir "$DEFDIR" \
-    --env-file v4/.env
+    --env-file v4/.env \
+    --approval-manifest "$APPROVAL"
 
 DEFPATH="$DEFDIR/opra_live_definitions.dbn.zst"
 [ -f "$DEFPATH" ] || { echo "FAILED: no definition payload at $DEFPATH"; exit 1; }
