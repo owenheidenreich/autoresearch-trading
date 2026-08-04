@@ -1,0 +1,68 @@
+{
+  "all_six_features_exercised": true,
+  "decision_points": [
+    "pre_entry",
+    "holding",
+    "post_exit_plus3",
+    "post_exit_plus300"
+  ],
+  "gap_closure": {
+    "entries_so_far at each decision": true,
+    "loss_streak_so_far after the realized losing exit": true,
+    "post-exit account-state snapshot": true,
+    "realized_session_pnl_dollars including commission policy": true,
+    "remaining_entry_budget_dollars under the runtime budget policy": true,
+    "seconds_since_last_exit at a decision after the exit": true
+  },
+  "mismatches": [],
+  "receipt_sha256": "b91ef394f80655c6d058c8027bd8f0842f9c36cded6425595d7dc71d94323cfe",
+  "schema_version": "pathd.phase0b.account-transition-identity.v1",
+  "snapshots": {
+    "holding": {
+      "entries_so_far": 1.0,
+      "loss_streak_so_far": 0.0,
+      "position_occupancy": 1.0,
+      "realized_session_pnl_dollars": 0.0,
+      "remaining_entry_budget_dollars": 500.0,
+      "seconds_since_last_exit": -1.0
+    },
+    "post_exit_plus3": {
+      "entries_so_far": 1.0,
+      "loss_streak_so_far": 1.0,
+      "position_occupancy": 0.0,
+      "realized_session_pnl_dollars": -3.08,
+      "remaining_entry_budget_dollars": 496.92,
+      "seconds_since_last_exit": 3.0
+    },
+    "post_exit_plus300": {
+      "entries_so_far": 1.0,
+      "loss_streak_so_far": 1.0,
+      "position_occupancy": 0.0,
+      "realized_session_pnl_dollars": -3.08,
+      "remaining_entry_budget_dollars": 496.92,
+      "seconds_since_last_exit": 300.0
+    },
+    "pre_entry": {
+      "entries_so_far": 0.0,
+      "loss_streak_so_far": 0.0,
+      "position_occupancy": 0.0,
+      "realized_session_pnl_dollars": 0.0,
+      "remaining_entry_budget_dollars": 500.0,
+      "seconds_since_last_exit": -1.0
+    }
+  },
+  "source": {
+    "account_redacted": "DU***40",
+    "entry_utc": "2026-08-04T18:36:05+00:00",
+    "exit_utc": "2026-08-04T18:37:04+00:00",
+    "observed_occupancy_sequence": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "paper_evidence": "v4/audit/autoresearch/pathd_phase0b_trackc_paper_transitions_2026_08_04/trackc_transition_evidence.json",
+    "realized_pnl_dollars": -3.08
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,9 @@
+{
+  "blocking": true,
+  "reason": "The three parity receipts PASS, but no fill-notification arrival clock was measured. Account state updates on a broker execution report, so its availability clock is IBKR's execution-report latency. That was not instrumented during the 2026-08-04 round trip.",
+  "receipt_sha256": "6009c8b6eb1e9344354d3aeb7d8f8818a56a86482a0770f225a3a8cbaf595631",
+  "schema_version": "pathd.phase0b.account-arrival-clock.v1",
+  "status": "NOT_MEASURED",
+  "what_would_close_it": "instrument order-submit -> execution-report receipt latency across multiple fills and record the p99 as an arrival-kind clock",
+  "why_this_blocks_admission": "Admitting on a computed or assumed clock is exactly the defect corrected in Track B on 2026-08-04, where implied_spot carried a 4.898 ms local COMPUTE p99 while its inputs arrive at ~585 ms. Barring Track B for that and then admitting account state on no clock at all would be incoherent."
+}
