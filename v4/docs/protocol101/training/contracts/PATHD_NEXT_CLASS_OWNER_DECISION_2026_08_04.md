@@ -1,6 +1,6 @@
 # Path-D — Owner Decision: what class do we research next?
 
-Status: **DECISION REQUESTED — options presented, not decided**
+Status: **OPTION 0 OWNER-AUTHORIZED (2026-08-04) — A/B/C remain open, keyed on Option 0's result**
 
 Date: 2026-08-04. Prepared under Deliverable 5 of the owner-approved
 [`PATHD_FABLE_REVIEW_IMPLEMENTATION_PLAN_2026_08_04.md`](../execution/PATHD_FABLE_REVIEW_IMPLEMENTATION_PLAN_2026_08_04.md).
@@ -87,4 +87,22 @@ it without your word, because it needs its own pre-registration.
 **Independent of all four:** the 0DTE long-premium class stays closed, structurally, and none of these
 options reopens it.
 
-*Prepared: Claude Opus 5 — 2026-08-04.*
+---
+
+## Owner decision — 2026-08-04
+
+**Option 0 is AUTHORIZED** (explicit owner sign-off in the Fable review session, recorded by Claude
+Fable 5). Binding constraints on the rerun:
+
+1. A fresh pre-registration is required and must declare the run **diagnostic-only**: this is a second
+   look at the same 213 sessions, with the hypothesis selected after seeing run 1. No outcome of the
+   rerun is confirmatory; a surviving excess feeds the Option A decision, nothing more.
+2. Independent-review context for calibration (Fable, 2026-08-04): pure-random-walk simulation gives
+   session-level Spearman(level, forward return) of −0.37/−0.48/−0.58 at 15/30/60 m — a *stronger*
+   mechanical pull than the −0.32/−0.42/−0.52 measured, so the excess may plausibly be zero or
+   slightly momentum-side. The surrogate construction (how it handles intraday vol seasonality and
+   drift) is therefore load-bearing and must be specified exactly in the pre-registration.
+3. Options A and B remain undecided and unauthorized. Option B stays a hard stop. The decision key
+   above stands.
+
+*Prepared: Claude Opus 5 — 2026-08-04. Owner decision recorded by Claude Fable 5 — 2026-08-04.*

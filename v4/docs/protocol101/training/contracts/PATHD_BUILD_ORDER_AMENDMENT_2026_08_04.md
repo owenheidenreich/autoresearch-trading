@@ -1,8 +1,13 @@
 # Path-D Build Order Amendment — Freeze the Certification Queue
 
-Status: **PROPOSED — REQUIRES OWNER SIGN-OFF**
+Status: **OWNER-AUTHORIZED AND BINDING**
 
-Effective date: on owner signature (drafted 2026-08-04)
+Effective date: 2026-08-04
+
+Signature record: owner signed 2026-08-04 via explicit sign-off in the Fable review session
+(recorded by Claude Fable 5). The §2 stand-down was executed by the owner the same day and
+independently verified: no `com.autoresearch.tracka.*` labels loaded in launchd, no tracka plists
+remaining in `~/Library/LaunchAgents/`.
 
 Authorization source: the owner-approved
 [`PATHD_FABLE_REVIEW_IMPLEMENTATION_PLAN_2026_08_04.md`](../execution/PATHD_FABLE_REVIEW_IMPLEMENTATION_PLAN_2026_08_04.md),
@@ -83,4 +88,5 @@ recording that its 5-session capture declaration (2026-08-05, 06, 07, 10, 11) wa
 - **Read-only analysis on owned data.** The SPX directional-skill screen ran under this allowance.
 - **The Trader Charter** and its Amendment 1.
 
-*Drafted: Claude Opus 5 — 2026-08-04. Not effective until the owner signs.*
+*Drafted: Claude Opus 5 — 2026-08-04. Signed by the owner and effective 2026-08-04; signature and
+stand-down verification recorded by Claude Fable 5.*
