@@ -11,6 +11,7 @@ from v4.research.phase1_exit_model import (
     EXIT_FEATURE_NAMES,
     ExitModelContractError,
     OOFEntryReceiptV1,
+    build_sensitivity_labels_from_features,
     build_trajectory_tables,
     catastrophic_floor_triggered,
     expanding_outer_folds,
@@ -164,6 +165,32 @@ def test_fill_law_sensitivities_and_floor() -> None:
     )
     assert catastrophic_floor_triggered(entry_price=4.0, current_bid=1.9)
     assert not catastrophic_floor_triggered(entry_price=4.0, current_bid=2.1)
+
+
+@pytest.mark.parametrize(
+    ("fee", "latency", "expected_hash"),
+    (
+        (1.5, 0, "173fb9ee39dec3bf2a7c83f67bcbdddbd9e57d9f0f7e49d2ee12867b6f290bfd"),
+        (1.5, 1, "8284ed3582281f45c1da7539e35c68b615d5a88ca9bf05dc01a961c54d1eaf49"),
+        (1.5, 2, "929e5a8de3a6f48b8c425bfcb6fb70728228804e2a5a41f110c4e4e62ced68df"),
+        (1.5, 5, "4ac1ef7c44caf86bfe9137b9214255812ce34f5ecc46c8d3b0d322e24e9e2cf0"),
+        (2.0, 0, "4b8cfdb7120b953a58b6d0d2e1bb6854857453cb1cd0c8a4b3c0b8a5dea28878"),
+        (2.0, 1, "3cc081ad4a1d7d6c92f087b67178d7fb709644170e1f9d1377abb4b8f2356241"),
+        (2.0, 2, "7752deba7b83540c2310b5322d1162a44ffb1b8accea3ffc81dfa527139347f5"),
+        (2.0, 5, "5719c5de0a66a8d70d49db2e92ac9ba5bf7c584399b6fe26555ddee10d664bf9"),
+    ),
+)
+def test_sensitivity_repricing_preserves_frozen_label_hashes(
+    fee: float, latency: int, expected_hash: str
+) -> None:
+    features, _ = build_trajectory_tables(receipt(), cbbo(), spx())
+    labels = build_sensitivity_labels_from_features(
+        receipt(),
+        features,
+        fee_per_side_dollars=fee,
+        latency_seconds=latency,
+    )
+    assert stable_hash(labels.to_dict(orient="records")) == expected_hash
 
 
 def test_five_expanding_folds_have_one_session_embargo() -> None:

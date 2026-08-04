@@ -372,6 +372,122 @@ def _actionable(frame: pd.DataFrame, max_quote_age_ms: int) -> pd.Series:
     )
 
 
+def build_sensitivity_labels_from_features(
+    receipt: OOFEntryReceiptV1,
+    features: pd.DataFrame,
+    *,
+    fee_per_side_dollars: float = DEFAULT_FEE_PER_SIDE,
+    latency_seconds: int = HEADLINE_LATENCY_SECONDS,
+    max_quote_age_ms: int = 2_000,
+) -> pd.DataFrame:
+    """Reprice labels from one already-built causal feature trajectory."""
+
+    validate_oof_entry_receipt(receipt)
+    if latency_seconds not in LATENCY_SENSITIVITIES:
+        raise ExitModelContractError("latency is outside the frozen sensitivity ladder")
+    if fee_per_side_dollars not in {DEFAULT_FEE_PER_SIDE, STRESS_FEE_PER_SIDE}:
+        raise ExitModelContractError("fee path must be $3 or $4 round trip")
+    required = {
+        "session", "trajectory_id", "decision_time_ns", "option_bid",
+        "option_ask", "option_quote_age_ms",
+    }
+    if required - set(features):
+        raise ExitModelContractError("sensitivity feature trajectory schema drift")
+    if (
+        not features["session"].astype(str).eq(receipt.session).all()
+        or not features["trajectory_id"].astype(str).eq(receipt.trajectory_id).all()
+    ):
+        raise ExitModelContractError("sensitivity feature trajectory identity drift")
+    decision_ns = pd.to_numeric(features["decision_time_ns"], errors="raise").to_numpy(
+        dtype="int64"
+    )
+    bids = pd.to_numeric(features["option_bid"], errors="coerce").to_numpy(float)
+    asks = pd.to_numeric(features["option_ask"], errors="coerce").to_numpy(float)
+    quote_age = pd.to_numeric(
+        features["option_quote_age_ms"], errors="coerce"
+    ).to_numpy(float)
+    actionable = (bids > 0.0) & (asks > bids) & (quote_age <= max_quote_age_ms)
+    n = len(features)
+    exit_value = np.full(n, np.nan, dtype=float)
+    for index in range(n - 1, -1, -1):
+        arrival = index + latency_seconds
+        limit = bids[index] - _tick(bids[index]) if np.isfinite(bids[index]) else np.nan
+        if (
+            actionable[index]
+            and arrival < n
+            and actionable[arrival]
+            and np.isfinite(limit)
+            and bids[arrival] >= limit
+        ):
+            exit_value[index] = (
+                (limit - receipt.fill_price) * CONTRACT_MULTIPLIER * receipt.quantity
+                - receipt.entry_fee_dollars
+                - fee_per_side_dollars
+            )
+        elif index + 1 < n:
+            exit_value[index] = exit_value[index + 1]
+        else:
+            exit_value[index] = (
+                (0.0 - receipt.fill_price) * CONTRACT_MULTIPLIER * receipt.quantity
+                - receipt.entry_fee_dollars
+                - fee_per_side_dollars
+            )
+    terminal_decision = max(0, n - 1 - latency_seconds)
+    terminal_limit = (
+        bids[terminal_decision] - _tick(bids[terminal_decision])
+        if actionable[terminal_decision] and np.isfinite(bids[terminal_decision])
+        else np.nan
+    )
+    terminal_bid = (
+        terminal_limit
+        if (
+            np.isfinite(terminal_limit)
+            and actionable[-1]
+            and bids[-1] >= terminal_limit
+        )
+        else 0.0
+    )
+    hold_value = (
+        (terminal_bid - receipt.fill_price) * CONTRACT_MULTIPLIER * receipt.quantity
+        - receipt.entry_fee_dollars
+        - fee_per_side_dollars
+    )
+    current = (
+        (bids - receipt.fill_price) * CONTRACT_MULTIPLIER * receipt.quantity
+        - receipt.entry_fee_dollars
+        - fee_per_side_dollars
+    )
+    label_rows: list[ExitLabelRowV1] = []
+    for index, timestamp in enumerate(decision_ns):
+        future = current[index : min(n, index + 301)]
+        peak = np.nanmax(future)
+        trough = np.nanmin(future)
+        label_rows.append(
+            _seal_label(
+                session=receipt.session,
+                trajectory_id=receipt.trajectory_id,
+                decision_time_ns=int(timestamp),
+                fill_law_sha256=receipt.fill_law_sha256,
+                latency_seconds=latency_seconds,
+                fee_per_side_dollars=fee_per_side_dollars,
+                a_ref_dollars=float(hold_value - exit_value[index]),
+                hold_to_1555_value_dollars=float(hold_value),
+                exit_until_filled_value_dollars=float(exit_value[index]),
+                downside_300_dollars=float(trough - current[index]),
+                recovery_300_dollars=float(peak - current[index]),
+                giveback_300_dollars=float(peak - future[-1]),
+                remaining_tail_300_dollars=float(hold_value - future[-1]),
+            )
+        )
+    labels = pd.DataFrame([asdict(row) for row in label_rows])
+    identity = ["session", "trajectory_id", "decision_time_ns"]
+    if features[identity].duplicated().any() or labels[identity].duplicated().any():
+        raise ExitModelContractError("duplicate trajectory row identity")
+    if not features[identity].reset_index(drop=True).equals(labels[identity]):
+        raise ExitModelContractError("feature/label identity alignment drift")
+    return labels
+
+
 def build_trajectory_tables(
     receipt: OOFEntryReceiptV1,
     cbbo: pd.DataFrame,
@@ -551,82 +667,13 @@ def build_trajectory_tables(
         ]
     )
 
-    actionable = _actionable(frame, max_quote_age_ms).to_numpy()
-    bids = frame["bid"].to_numpy(dtype=float)
-    n = len(frame)
-    exit_value = np.full(n, np.nan, dtype=float)
-    for index in range(n - 1, -1, -1):
-        arrival = index + latency_seconds
-        limit = bids[index] - _tick(bids[index]) if np.isfinite(bids[index]) else np.nan
-        if (
-            actionable[index]
-            and arrival < n
-            and actionable[arrival]
-            and np.isfinite(limit)
-            and bids[arrival] >= limit
-        ):
-            exit_value[index] = (
-                (limit - receipt.fill_price) * CONTRACT_MULTIPLIER * receipt.quantity
-                - receipt.entry_fee_dollars
-                - fee_per_side_dollars
-            )
-        elif index + 1 < n:
-            exit_value[index] = exit_value[index + 1]
-        else:
-            exit_value[index] = (
-                (0.0 - receipt.fill_price) * CONTRACT_MULTIPLIER * receipt.quantity
-                - receipt.entry_fee_dollars
-                - fee_per_side_dollars
-            )
-    terminal_decision = max(0, n - 1 - latency_seconds)
-    terminal_limit = (
-        bids[terminal_decision] - _tick(bids[terminal_decision])
-        if actionable[terminal_decision] and np.isfinite(bids[terminal_decision])
-        else np.nan
+    labels = build_sensitivity_labels_from_features(
+        receipt,
+        features,
+        fee_per_side_dollars=fee_per_side_dollars,
+        latency_seconds=latency_seconds,
+        max_quote_age_ms=max_quote_age_ms,
     )
-    terminal_bid = (
-        terminal_limit
-        if (
-            np.isfinite(terminal_limit)
-            and actionable[-1]
-            and bids[-1] >= terminal_limit
-        )
-        else 0.0
-    )
-    hold_value = (
-        (terminal_bid - receipt.fill_price) * CONTRACT_MULTIPLIER * receipt.quantity
-        - receipt.entry_fee_dollars
-        - fee_per_side_dollars
-    )
-    current = frame["net_pnl"].to_numpy(dtype=float)
-    label_rows: list[ExitLabelRowV1] = []
-    for index, timestamp in enumerate(decision_ns):
-        future = current[index : min(n, index + 301)]
-        peak = np.nanmax(future)
-        trough = np.nanmin(future)
-        label_rows.append(
-            _seal_label(
-                session=receipt.session,
-                trajectory_id=receipt.trajectory_id,
-                decision_time_ns=int(timestamp),
-                fill_law_sha256=receipt.fill_law_sha256,
-                latency_seconds=latency_seconds,
-                fee_per_side_dollars=fee_per_side_dollars,
-                a_ref_dollars=float(hold_value - exit_value[index]),
-                hold_to_1555_value_dollars=float(hold_value),
-                exit_until_filled_value_dollars=float(exit_value[index]),
-                downside_300_dollars=float(trough - current[index]),
-                recovery_300_dollars=float(peak - current[index]),
-                giveback_300_dollars=float(peak - future[-1]),
-                remaining_tail_300_dollars=float(hold_value - future[-1]),
-            )
-        )
-    labels = pd.DataFrame([asdict(row) for row in label_rows])
-    identity = ["session", "trajectory_id", "decision_time_ns"]
-    if features[identity].duplicated().any() or labels[identity].duplicated().any():
-        raise ExitModelContractError("duplicate trajectory row identity")
-    if not features[identity].equals(labels[identity]):
-        raise ExitModelContractError("feature/label identity alignment drift")
     return features, labels
 
 

@@ -12,6 +12,7 @@ import pandas as pd
 
 from v4.research.phase1_exit_model import (
     OOFEntryReceiptV1,
+    build_sensitivity_labels_from_features,
     build_trajectory_tables,
     load_completed_spx_context,
     load_exact_cbbo_path,
@@ -141,13 +142,14 @@ def _build_trajectory_bundle(
             trajectory_id=receipt.trajectory_id,
         )
         complete = 1
+    else:
+        features = pd.read_parquet(feature_path)
     for fee, latency in sensitivity_specs:
         if sensitivity_paths[(fee, latency)].is_file() and resume:
             continue
-        _, sensitivity_labels = build_trajectory_tables(
+        sensitivity_labels = build_sensitivity_labels_from_features(
             receipt,
-            cbbo,
-            spx,
+            features,
             fee_per_side_dollars=fee,
             latency_seconds=latency,
         )
