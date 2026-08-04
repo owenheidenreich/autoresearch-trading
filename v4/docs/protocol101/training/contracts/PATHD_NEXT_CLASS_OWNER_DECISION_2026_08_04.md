@@ -134,12 +134,33 @@ number in this programme on the right side of that comparison** — carrying fiv
 that matter most are that the corrected decile profile is **not monotone at the extremes** (decile 8 beats
 decile 10) and that **ES friction is assumed, not measured.**
 
-**Per the decision key, this points to Option A.** Fable's calibration in §"Owner decision" above
-anticipated the excess might be zero or momentum-side; it is neither, but it is also a fifth of the
-headline, on the same 213 sessions that generated the hypothesis, and diagnostic-only by construction.
+### ⚠ The economic size is WITHDRAWN, and Option A is NOT yet recommended
 
-**Still requiring owner authorization:** Option A is a **paid-data** download and is not authorized by the
-Option 0 sign-off. **Check existing entitlements first.** Option B remains a hard stop.
+**Correction, same day.** The `$41/trade` figure above is **not causal** — within-session decile cuts are
+computed from the whole session (the 10th-percentile cut ranges from −0.941 to +0.852 across 40 sessions).
+Redone on **fixed absolute omar thresholds** that a trader can actually act on, three defensible
+estimators give **+0.82 / +4.54 / +3.57 points per trade** ($41 / $227 / $178). **A number that moves 10×
+under a change of aggregation is not a number to spend money against.**
+
+**And the pooled table shows why.** At fixed omar the *real* forward move is **flat across every bin**
+(+0.73 to −0.97, no trend). The *surrogate* runs monotonically −5.43 → +4.51. **The entire corrected signal
+is the surrogate's slope**, which is a defect in the wild bootstrap: it imposes the session drift at every
+minute, so "high omar" implies "still drifting up" in the surrogate but not in the real path. **Drift
+handling — the exact thing flagged as load-bearing in the authorization above — is mis-specified for this
+statistic.**
+
+**Recommendation: do NOT proceed to Option A yet.** Option A measures the *denominator*. Measuring friction
+precisely buys nothing while the *numerator* is unidentified and its central estimate is manufactured by a
+mis-specified null. Nothing has been spent, and nothing needs to be.
+
+**What the §1 result still supports:** the association is real *within* sessions and survives both nulls at
+5/5 folds. What it does not support is a fixed-threshold rule. The open question is whether a **causal**
+normalization exists that captures the within-session association — realized-volatility scaling, or a
+causal running estimate of the session's eventual range. That is a new pre-registered study on **owned
+data at zero cost**, and it is the natural next step ahead of any purchase.
+
+**Still requiring owner authorization if ever taken:** Option A is a **paid-data** download and is not
+authorized by the Option 0 sign-off. Option B remains a hard stop.
 
 *Prepared: Claude Opus 5 — 2026-08-04. Owner decision recorded by Claude Fable 5 — 2026-08-04.
 Option 0 result appended by Claude Opus 5 — 2026-08-04.*

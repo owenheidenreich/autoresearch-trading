@@ -54,7 +54,15 @@ members to **1.1e-16**.
 **The negative control run 1 lacked now exists and passes.** A held-out surrogate substituted for the real
 path produces a null excess; no member clears. The artifact-removal machinery is not manufacturing signal.
 
-## 3. How big is it? — POST-HOC, DESCRIPTIVE
+## 3. How big is it? — **RETRACTED AND REPLACED, see §3b**
+
+> **⚠ CORRECTION 2026-08-04, same day.** The `$41/trade ≈ 2.4× friction` conclusion below is
+> **WITHDRAWN**. The decile buckets are **not causal** — a within-session decile cut is computed from the
+> whole session, and across just 40 sessions the 10th-percentile cut ranges from **−0.941 to +0.852**. An
+> omar of −0.20 is "bottom decile" in one session and mid-pack in another, and which one is unknowable
+> until the session is over. The table below is retained as the audit trail; **§3b supersedes it.**
+
+
 
 `v4/research/pathd_omar_economic_sizing.py`. An IC is not money. Mean forward 60-minute SPX move by
 within-session `omar` decile, 215 sessions, bias-corrected against 100 wild surrogates each:
@@ -88,16 +96,53 @@ that has ever been on the right side of that comparison. It is also carrying fiv
    serial occupancy with 60-minute holds, the realizable trade count is far lower than the decile counts
    imply.
 
+## 3b. Causal sizing — **the effect size is NOT IDENTIFIED**
+
+`v4/research/pathd_omar_causal_sizing.py`. Redone on **fixed absolute omar thresholds**, declared in
+advance and fully available at decision time (`omar ∈ [−1, +1]` by construction). The causal rule is
+*fade the extremes*: long at `omar ≤ −0.6`, short at `omar ≥ +0.6`.
+
+**Three defensible estimators of the same quantity:**
+
+| Estimator | pts/trade | on one ES contract |
+|---|---|---|
+| within-session deciles (**look-ahead**, §3) | +0.82 | $41 |
+| per-session bin-matched | +4.54 | $227 |
+| pooled bin-matched | +3.57 | $178 |
+
+**A number that moves 10× under a change of aggregation is not a number to spend money against.**
+
+**And the pooled table shows why.** At fixed absolute omar, the *real* forward 60-minute move is
+essentially **flat across every bin** — +0.73, −0.97, −0.31, −1.58, +0.32, +1.52, +0.36, +0.22, +0.44,
++0.31. That is what an efficient market looks like. The **surrogate** column, by contrast, runs monotonically
+from **−5.43 to +4.51**. The entire "corrected" fade signal is the surrogate's slope, not the data's.
+
+That slope is a **defect in my primary null**: the wild bootstrap imposes the session's drift at *every*
+minute, so a surrogate path climbs steadily and "high omar" implies "still drifting up". The real path's
+drift arrives in bursts and carries no such implication. **Drift handling is exactly what the owner flagged
+as load-bearing**, and it is mis-specified for this statistic.
+
+A secondary confound compounds it: pooling with fixed bins mixes within- and between-session variation, and
+trending sessions sit at one omar extreme *and* carry a forward drift (Simpson's paradox).
+
 ## 4. Bottom line
 
-**World B is refuted; World A is not yet established.** After removing the artifact that explained run 1,
-something survives — but it is one feature out of ten, at roughly a fifth of the headline, with a
-non-monotone decile profile, on the same 213 sessions that generated the hypothesis.
+**World B is refuted; World A is not established; and the effect cannot currently be sized.**
 
-This is a **diagnostic** result by construction. Its entire licensed use is to inform the Option A / B / C
-decision, and per the decision key an excess that survives points to **Option A — measure ES friction
-before any purchase or training question.** The pre-registration is explicit that the protected holdout is
-SPENT, so the only confirmation path for anything here is fresh live-paper observation.
+The pre-registered §1 result stands as an **association** finding: within a session, omar's rank
+relationship to forward returns exceeds both nulls, at 5/5 fold stability, with a clean negative control.
+That is committed and I have not weakened it.
+
+What §3b adds is that **the obvious causal implementation of that association does not capture it.** At a
+fixed, tradable omar threshold the real forward move is flat. The association is real *within* sessions,
+but you cannot act on it with a fixed threshold because you do not know where you are in the session's
+eventual range until the session ends.
+
+**Therefore I do not recommend proceeding to Option A yet.** Option A measures the *denominator* (ES
+friction). Measuring friction precisely is worth nothing while the *numerator* ranges over 10× and its
+central estimate is manufactured by a mis-specified null. The pre-registration is explicit that the
+protected holdout is SPENT, so the only confirmation path for anything here is fresh live-paper
+observation.
 
 **It does not reopen the 0DTE long-premium class**, which stays closed structurally.
 
