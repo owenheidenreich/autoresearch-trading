@@ -1,0 +1,24 @@
+{
+  "account_id_redacted": "DU***40",
+  "disabled_at": "2026-08-04T18:38:00.205438+00:00",
+  "disabled_reason": "bounded Track-C paper session complete 2026-08-04; account returned flat",
+  "enabled_at": "2026-08-04T18:33:09.065395+00:00",
+  "enablement_authorization": {
+    "bounded": true,
+    "exact_owner_text": "I authorize enabling paper_orders_enabled in the Protocol101 runtime flag for a bounded paper session, and acknowledge the 2026-07-03 synchronization-resolution block is superseded.",
+    "granted_at_utc": "2026-08-04T18:33:09.065395+00:00",
+    "must_be_disabled_after_session": true,
+    "purpose": "Phase-0b Track C: observe all six causal_account_state transitions (entry, hold, exit, realized-PnL update, budget update, post-exit snapshot). The existing round trip shows occupancies [0,1] only and lacks the post-exit snapshot.",
+    "supersedes": {
+      "disabled_at": "2026-07-03T01:24:25Z",
+      "disabled_reason": "Protocol101PaperReadinessGateV2 is blocked during synchronization resolution"
+    }
+  },
+  "paper_orders_enabled": false,
+  "real_money_trading": false,
+  "required_env": "V4_ALLOW_IBKR_PAPER_ORDERS=YES",
+  "run_id": "persistent_protocol101_daily_paper_trading",
+  "scope": "ibkr_paper_account_only_protocol101_one_contract",
+  "session": "persistent",
+  "source": "protocol101_synchronization_resolution_plan_2026-07-02"
+}
