@@ -61,8 +61,10 @@ central risk mechanism requires an outcome bucket this instrument does not produ
 - `n` falls at longer horizons (852 → 315) because full-length holds were required rather than truncating
   at forced flat. That biases long-horizon rows toward earlier entries. The conclusion does not rest on
   them: the 5-minute row uses the full 1,031 and is already 11.5× over.
-- Returns use the frozen `FILL_LAW` entry price. The owner's real fees are $0.65/side rather than $1.50,
-  but fees move the mean by ~$1.70 and cannot move a 23–69% big-loss share to 2%.
+- Returns use the frozen `FILL_LAW` entry price and its $1.50/side fee, which measurement has since
+  confirmed as very nearly correct ($1.54/side all-in). **Corrected 2026-08-04 by measurement.** `$0.65/side` is the **IBKR fixed commission line item only**, not the all-in cost. Per `PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md` (2026-07-19) the all-in is IBKR $0.65 + CBOE SPXW proprietary ~$0.70/side + regulatory ~$0.05-0.10/side. A guarded paper round trip on 2026-08-04 measured **$1.54/side = $3.08 round trip** (avgCost 81.54028 on a 0.80 fill; RealizedPnL -3.08 on a price-flat round trip). **The frozen `FILL_LAW` at $1.50/side is very nearly correct and slightly UNDERcharges.** Fees are not a source of conservatism; the $10.00 tick-through is the only real one.
+  The conclusion is unaffected either way: an $0.08/round-trip fee difference cannot move a 23–69%
+  big-loss share to 2%.
 - These are the existing OOF trajectories, so entry selection is the Phase-1 policy. A different entry
   would change *which* trades, not the instrument's gamma.
 

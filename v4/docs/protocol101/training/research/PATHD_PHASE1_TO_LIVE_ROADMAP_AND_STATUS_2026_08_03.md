@@ -30,6 +30,20 @@ status + signature block whenever a phase advances.
 >
 > **Do not open a new training round against this class.**
 >
+> **Owner-authorized Wave-1 exit-repair exception is complete — `NO_EDGE` (2026-08-03).** The bounded
+> eight-member recovery/balance/fallback/LCB family did not reopen the strategy class: two arms failed
+> pre-fit label balance; all six trained arms lost to their best comparator; no bootstrap LCB was
+> positive; no member survived maxT. See
+> [`PATHD_WAVE1_EXIT_REPAIR_RESULTS_2026_08_03.md`](PATHD_WAVE1_EXIT_REPAIR_RESULTS_2026_08_03.md).
+> This strengthens the closure. Stage 2 remains unauthorized.
+>
+> **Owner-authorized Wave-2 causal 60-minute discovery is complete — `NO_SIGNAL` (2026-08-03).** Three
+> fixed, non-fitted scores covering full-ladder surface continuation, option microstructure, and
+> SPX/ES/VIX alignment all lost the best 60-minute comparator, failed fold/LCB/maxT/decile/big-loss
+> gates, and produced no accepted negative control. See
+> [`PATHD_WAVE2_CAUSAL_60M_SIGNAL_DISCOVERY_RESULTS_2026_08_03.md`](PATHD_WAVE2_CAUSAL_60M_SIGNAL_DISCOVERY_RESULTS_2026_08_03.md).
+> No model-training gate was earned.
+>
 > **Adversarially reviewed by Codex (`321b3bbd`):** the Phase-1 closure and the friction accounting are
 > UPHELD; **two feasibility claims were REFUTED and withdrawn** (the "116.2% = impossible" figure was a
 > median-in-an-EV-formula artefact — the mean-payoff screen gives 80.19%; and ES is **not** the only
@@ -68,6 +82,10 @@ status + signature block whenever a phase advances.
 | **Gross-expectancy feasibility study** | **DONE (`ac485174`)**, then **AMENDED** — cadence-dominates UPHELD; "impossible" + "ES only" REFUTED | — |
 | **Codex adversarial review** | **DONE (`321b3bbd`)** — 3 upheld / 3 weakened / 2 refuted; Claude reproduced the refutations | — |
 | **Matched execution-aware feasibility gate** | **EXECUTED — `INVALID`** ([results](PATHD_MATCHED_FEASIBILITY_RESULTS_2026_08_03.md)); 9/9 individually `NOT_FEASIBLE`, but H2-30 reversed control cleared, so family discarded | New preregistration required for any rerun |
+| **Wave-1 exit repair (P065 / balance / fallback / LCB)** | **DONE — `NO_EDGE`** ([results](PATHD_WAVE1_EXIT_REPAIR_RESULTS_2026_08_03.md)); 8/8 family spent, 2 preflight rejects, 6 trained, 0 pooled wins, controls clean, 0 maxT survivors | Closed; materially different target/representation/horizon/game required |
+| **Wave-2 causal 60-minute signal discovery** | **DONE — `NO_SIGNAL`** ([results](PATHD_WAVE2_CAUSAL_60M_SIGNAL_DISCOVERY_RESULTS_2026_08_03.md)); 3/3 fixed scores lost the +$7,053 best comparator, only 1-2 positive folds, negative LCBs, maxT p 0.907-0.963, non-monotonic deciles, 58-60% big-loss shares; controls clean | No training gate; exact surface/microstructure/cross-market composites closed on entry-v2 OOF |
+| **Path-D Phase 0 feature certification** | **BUILT — `STOP_FOR_CLAUDE_VERIFICATION`** ([report](PATHD_PHASE0_FEATURE_CERTIFICATION_REPORT_2026_08_04.md)); 1/9 OPRA-only families `FIT_READY`, 8/73 features `ADMITTED`, 65/73 `BARRED`; signed ledger and fail-closed training-matrix enforcement implemented; no model fit | Independent hash/receipt/enforcement verification; no training until separately authorized |
+| **Path-D Phase 0b unblock certification / Track A** | **OFFLINE TRANSFORMS BUILT; ARRIVAL PARENT CORRECTION APPLIED; LIVE WINDOW DECLARED** ([report](PATHD_PHASE0B_UNBLOCK_CERTIFICATION_REPORT_2026_08_04.md)); the transform receipts remain valid but the corrected parent law bars them until native CBBO-1m arrival is certified, so the current ledger is 8/73 `ADMITTED`; Track-A sessions are frozen as 2026-08-05, 06, 07, 10, 11 with per-message receipt recording; zero marginal cost confirmed; no connection attempted | Explicit owner authorization in the current conversation before the first Databento Live connection; then collect every declared session and certify without weakening tolerances |
 | ES friction measurement | OWNER-AUTHORIZED, PREFLIGHT PAUSED ([preflight](PATHD_ES_SPREAD_MEASUREMENT_PREFLIGHT_2026_08_03.md)); exact cost $1.470344 < $3 cap, no download | Manifest's fixed UTC window misses final RTH hour on six EST sessions; corrected authorization required |
 
 ### Durable assets carried out of Phase-1

@@ -29,6 +29,14 @@ Win rate is a diagnostic, never an objective.
   regulatory (~$0.05-0.10/side) = ~$2.80-3.00 all-in round trip.
   Sensitivity reruns at $2.60 and $4.00. Final truth-up from actual
   paper-fill commission records once they exist.
+  **TRUTH-UP COMPLETE 2026-08-04: measured $1.54/side = $3.08 round trip** on a
+  guarded DU paper round trip (position avgCost 81.54028 on a 0.80 fill;
+  RealizedPnL -3.08 on a price-flat round trip). The $2.80-3.00 estimate above
+  was correct. The $3.00 overlay slightly UNDERcharges, by $0.08. Note that the
+  IBKR $0.65 line item is one of three components and is NOT the all-in cost --
+  treating it as such is the error corrected across the research docs on
+  2026-08-04. Evidence: v4/audit/autoresearch/
+  pathd_phase0b_trackc_paper_transitions_2026_08_04/trackc_transition_evidence.json
 
 ## Data law
 

@@ -1,0 +1,273 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 .SFNS-Regular_wdth_opsz220000_GRAD_wght3200000;\f1\fnil\fcharset0 .SFNS-Regular_wdth_opsz1F0000_GRAD_wght3200000;\f2\fnil\fcharset0 HelveticaNeue;
+\f3\fnil\fcharset0 HelveticaNeue-Bold;\f4\fnil\fcharset0 HelveticaNeue-Italic;\f5\fnil\fcharset0 HelveticaNeue-BoldItalic;
+\f6\fnil\fcharset0 .SFNS-Regular_wdth_opsz1A0000_GRAD_wght3200000;}
+{\colortbl;\red255\green255\blue255;\red225\green228\blue229;\red0\green0\blue0;\red224\green228\blue229;
+}
+{\*\expandedcolortbl;;\cssrgb\c90588\c91373\c91765;\cssrgb\c0\c0\c0;\cssrgb\c90196\c91373\c91765;
+}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs68 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Article 1:\
+From Loop Engineering to Graph Engineering?\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs62 \cf2 \cb3 What the shift in AI agent architecture is really about\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 Peter Steinberger just posted nine words that gathered thousands of likes: \cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/IntuitMachine/article/2078419526354378975/media/2078510859089846272"}}{\fldrslt 
+\fs30 \cf4 \
+\
+}}\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/steipete/status/2078277297791189132"}}{\fldrslt \cf2 \cb3 \ul \ulc2 \strokec2 https://x.com/steipete/status/2078277297791189132}}\
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 "Are we still talking loops or did we shift to graphs yet?" 
+\f3\b The joke needs no explanation to anyone building AI agents, which is precisely what made it land. 
+\f2\b0 A whole field recognized itself mid-stride, one foot on the pattern it was leaving and one on the pattern it was reaching for. 
+\f3\b Let me explain what those two patterns are, why the movement between them is happening now, what the shift genuinely fixes, and \'97 the part the meme leaves out \'97 what it doesn't.
+\f2\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\b\fs62 \cf2 \cb3 \strokec2 Why self-improvement turns out to be a network problem\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 A support team spends a quarter building something they are proud of: a feedback loop for their AI chatbot. They pick a metric \'97 ticket resolution rate \'97 measure it weekly, adjust the bot's prompts and policies whenever the number dips, and watch the line climb for five straight months. Then the renewal data arrives, and customers are leaving at twice the old rate. The bot learned to 
+\f4\i resolve
+\f2\i0  tickets by deflecting them: closing conversations quickly, discouraging follow-ups, marking problems solved that were merely abandoned. The loop worked flawlessly. The number went up. And the loop's success was the exact mechanism of the failure, because the loop could see only the number, and the number had quietly stopped meaning what everyone thought it meant.\cb1 \
+\cb3 This essay is about the skill that team was practicing \'97 the construction of self-improvement loops \'97 and about a shift now underway in how sophisticated builders think about that skill. The short version: the single loop is where everyone starts, the single loop fails in ways that are now well understood, and 
+\f3\b the emerging answer is not a better loop but a 
+\f5\i graph
+\f3\i0  of loops
+\f2\b0  \'97 
+\f3\b a network of improvement cycles that watch, feed, constrain, and correct one another.
+\f2\b0  The movement from loops to graphs is happening in machine-learning operations, in agent design, in company management, and i
+\f3\b t mirrors something biology and engineering each discovered long ago: getting better is not a cycle. It is a structure.
+\f2\b0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 The loop: the atom of getting better\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 Strip any self-improvement process to its skeleton and you find the same 
+\f3\b four-stroke engine
+\f2\b0 . 
+\f3\b Choose something to control 
+\f2\b0 \'97 a metric, a capability, a quality. Set a reference \'97 the target, where you want the thing to be. 
+\f3\b Measure the gap
+\f2\b0  between where it is and where you want it. A
+\f3\b ct to shrink the gap
+\f2\b0 , and 
+\f3\b go around again
+\f2\b0 . A thermostat is this skeleton in its purest form: temperature, setpoint, difference, heat. So is a team running weekly evals on a model and adjusting whatever scores worst. So is a person weighing themselves each morning. So is the classic management cycle taught for seventy years as plan-do-check-act, and its modern descendants \'97 OKRs, sprint retrospectives, A/B testing, the training loops that make machine learning learn at all.\cb1 \
+\cb3 The loop deserves its dominance. It is simple enough to teach in a sentence, cheap enough to build, and genuinely powerful: almost anything measured and iterated on improves, at least at first, and 
+\f3\b the experience of watching a number respond to your adjustments is so satisfying that it feels like the whole answer.
+\f2\b0  Building one good improvement loop is a real skill \'97 choosing a measurable thing, closing the cycle, resisting the urge to fiddle between measurements \'97 and organizations that have it outperform organizations that don't. The loop became the "hello world" of getting better, the pattern every tutorial teaches and every dashboard embodies.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 Where the single loop breaks\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 The failures arrive on schedule, and they are not random; they are 
+\f3\b four specific consequences of the loop's shape.
+\f2\b0 \cb1 \
+\cb3 The first is the one that caught the support team, and it has a name: 
+\f3\b Goodhart's law
+\f2\b0 , the observation that a measure optimized hard enough stops measuring what it once did. The deep reason is structural. A loop can only see its metric \'97 that is what makes it a loop \'97 and so it will find every way to move the metric, including the ways that betray the metric's purpose. The loop is not malfunctioning when it games its own measure. It is doing exactly what it was built to do, on a number that has silently detached from the reality it was standing in for.\cb1 \
+\cb3 The second failure is
+\f3\b  blindness upward.
+\f2\b0  A loop drives its variable toward a reference \'97 but nothing inside the loop can ask whether the reference is right. The thermostat cannot wonder whether sixty-eight degrees is the correct temperature; the sales team's loop cannot ask whether the quota was sane; the eval loop cannot question whether the benchmark measures anything customers feel. Somebody set that target, often long ago, often by instinct, and the loop will faithfully, tirelessly control toward a number somebody made up. The harder the loop works, the more thoroughly a wrong target gets achieved.\cb1 \
+\cb3 The third failure is 
+\f3\b conflict
+\f2\b0 . Real systems contain many loops, and 
+\f3\b loops built independently fight.
+\f2\b0  The loop optimizing response speed undermines the loop optimizing thoroughness; the hiring loop feeding growth strains the culture loop preserving quality; in a building with mismatched HVAC controllers, one loop heats a room while its neighbor cools it, forever, each performing beautifully by its own light. 
+\f3\b A single-loop mindset has no vocabulary for these collisions, because each loop, examined alone, is working.
+\f2\b0 \cb1 \
+\cb3 The fourth failure is the quietest: the loop's own 
+\f3\b measurement decays
+\f2\b0 , and no one is watching the watcher. Sensors drift. Data pipelines rot. Definitions shift under the metric while the dashboard stays green. Worst of all, measurement can slide from checking reality into checking paperwork \'97 the number on the report confirmed against the number on the other report \'97 so that the loop keeps cycling on data that touches nothing. A loop that runs on schedule while its measurements have detached from the world is not improving anything. It is theater with good attendance.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 The graph: loops watching loops\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 Look at how mature systems actually handle improvement and a pattern emerges: 
+\f3\b they are never one loop. They are networks \'97 loops connected to loops, with structure in the connections.
+\f2\b0 \cb1 \
+\cb3 Machine-learning operations grew this shape the hard way, one incident at a time. A serious deployment pipeline is not "retrain and ship." It is a champion-challenger loop (the candidate model must beat the incumbent on live traffic before replacing it), wired to drift-monitor loops (watching whether the data the model sees still resembles the data it learned from), wired to rollback machinery (if post-deployment metrics breach bounds, revert automatically), with held-out evaluation sets that the training loop is never allowed to see \'97 a deliberately blinded loop whose whole job is to catch the optimizing loop gaming its own test. Each piece is a loop. The reliability lives in the 
+\f4\i edges
+\f2\i0 : which loop feeds which, which loop watches which, which loop can veto which.\cb1 \
+\cb3 The same shape appears wherever improvement has been made trustworthy. A well-governed company is a graph of loops running at different speeds: fast operational loops (daily standups, weekly metrics) inside slower management loops (quarterly planning) inside slower audit loops (annual, and crucially 
+\f4\i independent
+\f2\i0  \'97 checking whether the operational loops' numbers still correspond to reality) inside the slowest loop of all, the board asking whether the targets themselves are still the right targets. The body does it too: temperature regulation is not one thermostat but a mesh of interacting reflexes, with an immune system that is essentially an audit loop over the whole organism, and slow developmental processes that reset what the fast loops defend. In every case the answers to the single loop's four failures are 
+\f4\i topological
+\f2\i0 . Goodhart is answered by pairing: every optimizing loop gets a watching loop on a counter-metric that catches the cheap way to win \'97 resolution rate paired with renewal rate, speed paired with error rate. Blindness upward is answered by hierarchy: a slower loop owns the faster loop's reference, and revising targets is itself a governed cycle rather than an accident of whoever set them first. Conflict is answered by explicit arbitration \'97 a loop above the fighting loops that owns the trade-off. And measurement decay is answered by audit loops whose only function is to check, periodically, that the other loops' numbers still touch the world.\cb1 \
+\cb3 Which is to say: the skill is changing. 
+\f3\b Building one clean loop was the craft of the previous era (a month ago).
+\f2\b0  The craft of the next one is 
+\f4\i loop architecture
+\f2\i0  \'97 knowing that a metric must never travel alone, that references need owners, that speeds must be separated so fast loops cannot thrash what slow loops steward, that some loop in the graph must answer for reality itself. The unit of design is no longer the cycle but the network of cycles.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 What the shift is actually about\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 It would be easy to conclude that the answer to improvement is simply 
+\f4\i more
+\f2\i0  loops, better arranged \'97 that topology is the cure. But push on the graph and a harder truth appears, and it is the real lesson of the transition.\cb1 \
+\cb3 Imagine a company that builds the full graph: paired metrics, audit loops, meta-loops tuning the lower loops' parameters \'97 and every one of those loops consumes reports. The audit loop checks the operations numbers against the finance numbers; the finance numbers come from the same systems operations feeds; the meta-loop tunes thresholds using dashboards built on all of it. Every loop watches another loop, and no loop touches the ground. This graph is 
+\f4\i circular
+\f2\i0 : an elaborate network of mutual confirmation in which everything is consistent and nothing is verified. It will fail exactly as the single loop failed, only later and more expensively, with far more green lights on the way down.
+\f3\b  The topology bought sophistication. It did not buy contact with reality.
+\f2\b0 \cb1 \
+\cb3 So 
+\f3\b the graph needs something no arrangement of edges can supply
+\f2\b0 : 
+\f5\i\b anchors
+\f2\i0\b0 . Some measurements in the network must be the kind that cannot be argued with \'97 revenue that landed in the bank, tests that actually executed, customers who actually stayed, the physical count that matches or doesn't. Some nodes must be frozen \'97 rules the optimizing loops are never allowed to tune, precisely because they are the rules the optimizer would be tempted to weaken, the way a training loop must never see the held-out set. And one thing must come from outside the graph entirely: the answer to what "better" means at the root. Loops optimize toward references; graphs of loops manage and revise references; but the 
+\f4\i original
+\f2\i0  judgment \'97 which things are worth controlling at all, where the frozen rules should sit \'97 cannot be generated by the machinery, because every loop in the graph presumes it. That judgment is supplied by people, through contact with real failures, and the most sophisticated improvement architectures are the ones honest enough to mark where their own authority ends.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 Where the trend goes\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 The safe prediction is that loop architecture becomes orthodoxy the way single loops did: the tutorials will turn over, "why one metric is never enough" will be conference-talk canon, and every serious system will ship with paired metrics and audit cycles the way every serious system now ships with version control. The deeper prediction follows from the pattern discovered here: 
+\f3\b graphs of loops will fail too, in their own characteristic way \'97 circularly, consistently, plausibly \'97 wherever they are built without anchors, and the discourse will lurch again toward whatever comes next.
+\f2\b0 \cb1 \
+\cb3 Which suggests
+\f3\b  the durable axis was never loops versus graphs at all.
+\f2\b0  It is 
+\f5\i\b ungrounded versus grounded
+\f3\i0 : whether the improvement machinery, however shaped, keeps touching the reality it claims to improve
+\f2\b0  \'97 whether its numbers settle against the world, whether its watchers are genuinely independent, whether its frozen rules stay frozen under pressure, and whether it admits that its deepest targets were chosen, not computed. The single loop was how systems learned to get better. The graph is how they are learning to get better without fooling themselves. 
+\f3\b Staying honest about what "better" means is a different lesson than either 
+\f2\b0 \'97 and it is the one that will still matter when today's loop diagrams look as quaint as last year's single metric, climbing so beautifully while the customers walked away.\cb1 \
+\cb3 My one regret about this viral idea was that the word "graph" was chosen to describe a more nuanced phenomenon. \cb1 \
+\cb3 Related: {\field{\*\fldinst{HYPERLINK "https://x.com/IntuitMachine/status/2068808668393451770"}}{\fldrslt \cf2 \ul \ulc2 \strokec2 https://x.com/IntuitMachine/status/2068808668393451770}} \cb1 \
+\cb3 QPT on loops: {\field{\*\fldinst{HYPERLINK "https://www.youtube.com/watch?v=53Y3SYR5vTU&list=PLoOMKjCBaDuX8vYGfcSUgw_84xj3wo62-&index=10"}}{\fldrslt \cf2 \ul \ulc2 \strokec2 https://www.youtube.com/watch?v=53Y3SYR5vTU&list=PLoOMKjCBaDuX8vYGfcSUgw_84xj3wo62-&index=10}}\cb1 \
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs68 \cf2 \cb3 \strokec2 Article 2:\
+How to Build the Loops That Just Replaced Entire Prompt Engineering \cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 For two years, getting more out of an AI agent meant writing a better prompt.\cb1 \
+\cb3 That era is quietly ending. The best engineers in the world stopped writing prompts a while ago and started writing loops - systems that prompt the agent, check the result, and keep running until the work is done.\cb1 \
+\cb3 Karpathy's overnight script found 20 optimizations he had missed in two decades of tuning by hand. Boris Cherny, who built Claude Code, has not written a line of code this year. Anthropic engineers now merge close to 8x more code per day than they did in 2024.\cb1 \
+\cb3 None of them typed anything smarter. They stopped typing at all.\cb1 \
+\cb3 Here is what a loop actually is, when you need one, when you do not, and how to build your first one.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf4 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 700 experiments while the human slept\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 March 2026. Andrej Karpathy pushes three files to GitHub. Around 630 lines of code.\cb1 \
+\cb3 One file held the model. One scored it. One told the agent what to explore and what to leave alone. The agent could only touch the training file. Nothing else.\cb1 \
+\cb3 The cycle was boring on purpose. Read the code, propose a change, train for five minutes, check if the score improved, keep the change if it did, roll back if it did not, then go again.\cb1 \
+\cb3 He pointed it at a model he had already tuned by hand for two decades. He let it run for two days.\cb1 \
+\cb3 It ran 700 experiments. It found 20 improvements. One of them was a missing scalar multiplier in the attention mechanism, subtle, not the kind of bug any linter would ever catch, but exactly the kind of thing a careful engineer could have found and never did.\cb1 \
+\cb3 Shopify's CEO ran the same trick overnight on an internal model. He woke up to a 19 percent quality gain on a model half the size of the previous one.\cb1 \
+\cb3 The insight is not "the AI is smarter." Humans get tired after experiment twelve. Loops do not get tired at all.\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/hanakoxbt/article/2077387678241141070/media/2077378563238481920"}}{\fldrslt 
+\fs30 \cf4 \strokec4 \
+\
+}}\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 A loop is not a prompt on a schedule\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 Most people hear "loop" and think cron. That misses the whole thing.\cb1 \
+\cb3 A prompt is one instruction. A loop is a goal the AI keeps working toward until it gets there, with nobody in the chair. It plans, executes, verifies its own result, feeds the result back in, and repeats.\cb1 \
+\cb3 Five stages: discover, plan, execute, verify, iterate. Three of them do the actual work.\cb1 \
+\cb3 The verifier is the heart of the loop. Without a real gate on the output, you do not have a loop, you have the agent grading its own homework forever. A gate is a test that passes or fails, a build that compiles or crashes, a linter that returns zero or non-zero. Not a second agent with an opinion.\cb1 \
+\cb3 State is what makes the loop learn. A file on the side, a Linear board, a project log, somewhere outside the conversation that records what was tried and what failed. Tomorrow's run resumes instead of starting from scratch.\cb1 \
+\cb3 A stop condition is what keeps it sane. Every real loop has two exits: the goal is met, or a hard cap fires. Skip this and you have built a machine that runs all night for nothing.\cb1 \
+\cb3 Miss any of the three and you have not built a loop. You have built an expensive script.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf4 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 The four conditions before you build one\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 Loops earn their cost only when four things are true at the same time. Miss one and the setup takes more than it returns.\cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0\cf4 \cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec4 The task repeats at least weekly. Less than that and the setup cost never amortizes.\cb1 \
+\ls1\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec4 Something can automatically fail the work. A test, a type check, a linter, a build.\cb1 \
+\ls1\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec4 Your token budget can absorb the waste. Loops re-read context, retry, explore.\cb1 \
+\ls1\ilvl0\cb3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec4 The agent has senior engineer tools. Logs, a reproduction environment, the ability to run the code it writes and see what breaks.\cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf4 \cb3 \strokec4 The honest version, the part nobody selling loops will tell you: most people do not need the heavy version yet. If you are on a consumer plan trying to run overnight verification loops on serious work, the token bill arrives before the productivity gain does.\cb1 \
+\cb3 Good first loops are the boring ones. CI triage. Dependency bumps. Lint-and-fix passes. Flaky test reproduction. Issue-to-PR drafts on a codebase with strong tests already in place.\cb1 \
+\cb3 Bad first loops are the interesting ones. Architecture rewrites. Auth code. Payments. Anything where "done" is a judgment call and a human still has to weigh in.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs30 \cf4 \strokec4 \
+\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 The five blocks that make a loop real\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 Every real loop is assembled from the same five pieces. Claude Code and Codex ship all of them now.\cb1 \
+\cb3 The first is automation. The heartbeat. Something that fires the loop on a schedule or an event. /loop runs on a cadence. /goal keeps going until a condition you defined actually holds. Without a heartbeat, the loop is a script you ran once and forgot about.\cb1 \
+\cb3 The second is a skill. Project knowledge saved as a claude-md file the agent reads on every run. Without it, the loop re-derives your context from zero each cycle. With it, intent compounds. The loop knows your conventions, your build steps, the thing you never do because of that one incident three months ago.\cb1 \
+\cb3 The third is sub-agents. The maker and the checker cannot be the same model. The one that wrote the code is far too generous grading its own work. The one that wrote the article misses its own weak sections. Writer fast and cheap. Reviewer slow and strict. That separation is most of the quality.\cb1 \
+\cb3 The fourth is connectors. The loop opens the pull request, closes the ticket, pings the channel when CI turns green. This is the difference between an agent that says "here is a suggested fix" and a report waiting for you in the morning saying the PR is already merged.\cb1 \
+\cb3 The fifth is the verifier. The test, type check, or build that fails bad work automatically. Everything else is plumbing. This is the block that decides whether the loop helps you or just spends your money.\cb1 \
+\cb3 Stack these together and you get what serious teams now run at scale. Dozens of loops, each owning one narrow job, running side by side while everyone sleeps. One engineer used a fleet loop like this to rewrite an entire codebase from one language to another in about six days, work that would have taken close to a year by hand.\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/hanakoxbt/article/2077387678241141070/media/2077379049018580992"}}{\fldrslt 
+\fs30 \cf4 \strokec4 \
+\
+}}\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 Where loops fail silently\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 Loops do not crash. They bill you in silence. Two failure modes worth naming, both of which get worse as the loop gets better, not easier.\cb1 \
+\cb3 The first is the Ralph Wiggum loop. Engineer Geoffrey Huntley documented it. The agent decides it is done too early, emits the completion signal on a half-finished job, and the loop exits satisfied. Without a hard objective gate, the loop keeps running the next night, keeps spending, keeps producing work nobody will accept.\cb1 \
+\cb3 The fix is not a smarter agent. It is a dumber gate. A test that passes or fails. A build that compiles or does not. Something with no opinion.\cb1 \
+\cb3 The second is subtler. Comprehension debt. The faster the loop ships code you did not write, the larger the gap between what your repo contains and what you actually understand. A smooth-running loop charges compound interest on that gap. The day you have to debug a system nobody on the team has read costs more than the tokens ever did.\cb1 \
+\cb3 Cognitive surrender comes with it. When the loop runs itself, it is tempting to stop forming an opinion and accept whatever comes back. Designing the loop is the cure when you do it with judgment. It is the accelerant when you do it to avoid thinking. Same action, opposite outcome.\cb1 \
+\cb3 Two people can build the exact same loop and end up in opposite places. One uses it to move faster on work they understand deeply. The other uses it to avoid understanding the work at all. The loop does not know the difference. You do.\cb1 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://x.com/hanakoxbt/article/2077387678241141070/media/2077378869523296258"}}{\fldrslt 
+\fs30 \cf4 \strokec4 \
+\
+}}\pard\pardeftab720\partightenfactor0
+
+\f6\b\fs52 \cf2 \cb3 \strokec2 Start with one loop, not ten\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f2\b0\fs34 \cf4 \cb3 \strokec4 The mistake everyone makes is trying to build the whole system on day one. Ten loops, a dashboard, a fleet. It collapses by the weekend because you cannot tell which loop did what.\cb1 \
+\cb3 Start with one. Pick the most annoying recurring task you have, the thing you check every morning out of habit, and turn that single job into a loop. Let it run for a few days. Watch where it overreaches. Watch where it misses. Tighten. Then add the second one.\cb1 \
+\cb3 The order matters more than the tools. Get one manual run reliable first, not fast, reliable. Turn that run into a claude-md skill. Wrap the skill in a loop with an objective gate and a hard stop condition. And then, only then, put it on a schedule. Skipping ahead, scheduling something you have not made reliable by hand, is exactly how loops blow up while you sleep.\cb1 \
+\cb3 The metric that decides if the loop is working is not tokens spent or tasks attempted or PRs opened. It is cost per accepted change. If your accepted-change rate is below 50 percent, you are doing the review work the loop was meant to remove, and the loop is losing.\cb1 \
+\cb3 Karpathy stopped writing training code. Cherny stopped prompting. Neither of them stopped thinking. If you take one thing from this, take that. The loop is a system that does the boring 95 percent while you keep your full attention on the 5 percent that actually carries risk.\cb1 \
+\cb3 You are paying for a fleet of agents and using one chat window.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\b \cf4 \cb3 Follow me and subscribe to my Telegram channel: {\field{\*\fldinst{HYPERLINK "https://t.me/+75nMf005jRpjMDU1"}}{\fldrslt 
+\f2\b0 \cf2 \cb3 \ul \ulc2 \strokec2 https://t.me/+75nMf005jRpjMDU1}}
+\f2\b0 \cb1 \
+}

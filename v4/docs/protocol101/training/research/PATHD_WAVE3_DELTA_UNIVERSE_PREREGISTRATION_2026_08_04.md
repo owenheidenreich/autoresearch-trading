@@ -63,10 +63,13 @@ filter to feature:
 Stacked friction reductions, both already measured:
 - **Passive entry**, one-tick-penetration model: **+$12.57/trade** (the honest figure, not the optimistic
   offer-touch +$22.76).
-- **Owner's real fee $0.65/side** rather than the frozen law's $1.50: **+$1.70/round trip**.
+- ~~Owner's real fee $0.65/side rather than the frozen law's $1.50: +$1.70/round trip.~~ **WITHDRAWN.**
+  **Corrected 2026-08-04 by measurement.** `$0.65/side` is the **IBKR fixed commission line item only**, not the all-in cost. Per `PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md` (2026-07-19) the all-in is IBKR $0.65 + CBOE SPXW proprietary ~$0.70/side + regulatory ~$0.05-0.10/side. A guarded paper round trip on 2026-08-04 measured **$1.54/side = $3.08 round trip** (avgCost 81.54028 on a 0.80 fill; RealizedPnL -3.08 on a price-flat round trip). **The frozen `FILL_LAW` at $1.50/side is very nearly correct and slightly UNDERcharges.** Fees are not a source of conservatism; the $10.00 tick-through is the only real one. There is **no fee saving**. The only friction reduction available is passive entry.
 
-Together these take round-trip friction from **$26.48 to roughly $14**. The frozen `FILL_LAW` is **not**
-modified; both are separate, explicitly labelled counterfactuals.
+Passive entry alone takes round-trip friction from **$26.48 to $13.91** ($26.48 − $12.57). That figure
+is unaffected by the withdrawn fee claim, because it was measured on the entry price rather than on fees.
+The frozen `FILL_LAW` is **not** modified; the passive model is a separate, explicitly labelled
+counterfactual. Downstream breakevens in §4 were computed at ~$14 and therefore still stand.
 
 ## 4. The charter risk ceiling — this bounds the experiment
 

@@ -151,7 +151,8 @@ roadmap status board. Then `STOP_FOR_CLAUDE_VERIFICATION`.
   launchd/plist/runtime-flag edits, without explicit owner authorization.
 
 **Note 1 — the fill law overcharges fees.** `ENTRY_FEE_PER_SIDE_DOLLARS = 1.50`; the owner's actual IBKR
-cost is **$0.65/side**. The frozen law is therefore conservative by ~$1.70 round trip. **Do not edit
+cost is **$1.54/side measured** ($0.65 IBKR commission + exchange + regulatory). The frozen law is
+therefore accurate on fees, NOT conservative. **Corrected 2026-08-04 by measurement.** `$0.65/side` is the **IBKR fixed commission line item only**, not the all-in cost. Per `PROTOCOL101_STAGE1_OBJECTIVE_AND_GATES_PROPOSAL.md` (2026-07-19) the all-in is IBKR $0.65 + CBOE SPXW proprietary ~$0.70/side + regulatory ~$0.05-0.10/side. A guarded paper round trip on 2026-08-04 measured **$1.54/side = $3.08 round trip** (avgCost 81.54028 on a 0.80 fill; RealizedPnL -3.08 on a price-flat round trip). **The frozen `FILL_LAW` at $1.50/side is very nearly correct and slightly UNDERcharges.** Fees are not a source of conservatism; the $10.00 tick-through is the only real one. **Do not edit
 `FILL_LAW`.** Report economics under the frozen law, and if you show a corrected-fee figure, label it
 explicitly as a separate counterfactual.
 

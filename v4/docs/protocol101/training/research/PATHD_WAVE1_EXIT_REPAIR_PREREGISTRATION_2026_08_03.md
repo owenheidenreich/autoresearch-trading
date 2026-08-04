@@ -35,7 +35,9 @@ and generic early-exit knobs remain blocked.
 - Five chronological OOF folds and their embargoes are inherited byte-for-byte from the entry campaign.
 - Target values remain `a_ref_dollars = hold_to_1555_value_dollars - exit_until_filled_value_dollars`.
 - `FILL_LAW`, the causal clock, and the entry-to-exit OOF firewall are not modified.
-- Headline fees remain the frozen `$1.50` per filled side. The owner's `$0.65` rate is not used to score
+- Headline fees remain the frozen `$1.50` per filled side. The `$0.65` rate is not used to score
+  (it is the **IBKR commission line item only**, not the all-in cost; measurement on 2026-08-04 gave
+  **$1.54/side all-in**, so the frozen $1.50 is very nearly correct). Original text continued:
   this wave.
 - Phase-1 timing remains 2,336 ms decision emission lag and 1,000 ms order latency. This does not alter
   the separate `live_opra_training_twin` foundation, whose blockers remain unresolved.
