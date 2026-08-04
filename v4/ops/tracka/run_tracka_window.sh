@@ -1,36 +1,80 @@
 #!/bin/zsh
-# Track A capture wrapper — fires from launchd, one invocation per window.
+# Track A capture wrapper -- one invocation per window, fired by launchd.
 #
-# Fail-closed by design. It refuses to run unless:
-#   1. today is one of the DECLARED sessions (never substitute a session),
-#   2. the declaration's authorization gate has been opened by the owner,
-#   3. the recorder's frozen hash still matches the declaration.
+# Fail-closed. It refuses unless today is one of the three DECLARED sessions.
+# launchd can only express weekdays, so a job left loaded WOULD fire on
+# 2026-08-12 and every later Wednesday; this check is what keeps the frozen
+# declaration honest. It is load-bearing, not decorative.
 #
-# A weekday-based launchd trigger would also fire on 2026-08-12 and beyond; the
-# session check below is what keeps the frozen declaration honest.
+# Sequence per window: capture definitions (30 s) -> capture market data.
+# The recorder requires --definition-path, and definitions must be current-session.
 
 set -euo pipefail
 
 REPO="/Users/gduby/Documents/autoresearch-trading"
 WINDOW="${1:?usage: run_tracka_window.sh <open|midday>}"
-DECL="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v4.json"
-LOGDIR="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/run_logs"
+ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
+DECL="$ROOT/capture_declaration_v5.json"
+APPROVAL="$ROOT/authorization.json"
+SESSION="$(date +%Y-%m-%d)"
+LOGDIR="$ROOT/run_logs"
 mkdir -p "$LOGDIR"
-STAMP="$(date +%Y-%m-%dT%H%M%S)"
-LOG="$LOGDIR/${STAMP}_${WINDOW}.log"
+exec >> "$LOGDIR/${SESSION}_${WINDOW}.log" 2>&1
 
-exec >> "$LOG" 2>&1
-echo "=== Track A ${WINDOW} window @ ${STAMP} ==="
-
+echo "=== Track A ${WINDOW} @ $(date -u +%Y-%m-%dT%H:%M:%SZ) (session ${SESSION}) ==="
 cd "$REPO"
 
-# Preflight: declared session, authorization gate, frozen hashes. Any failure
-# exits non-zero WITHOUT connecting, and leaves the reason in the log.
-PYTHONPATH=. ./.venv/bin/python -m v4.research.pathd_phase0b_tracka_preflight \
-    --declaration "$DECL" --window "$WINDOW"
+# --- gate 1: declared session -------------------------------------------------
+if ! /usr/bin/python3 -c "
+import json,sys
+d=json.load(open('$DECL'))
+sys.exit(0 if '$SESSION' in d['capture_window']['sessions'] else 1)
+"; then
+    echo "REFUSED: ${SESSION} is not a declared session. Sessions are frozen and may not be substituted."
+    exit 78
+fi
 
-echo "preflight passed; starting capture"
+# --- gate 2: duration for this window, read from the frozen declaration -------
+DURATION="$(/usr/bin/python3 -c "
+import json
+d=json.load(open('$DECL'))
+w=[x for x in d['capture_window']['windows'] if x['name']=='$WINDOW']
+print(w[0]['duration_seconds'] if w else '')
+")"
+[ -n "$DURATION" ] || { echo "REFUSED: window '$WINDOW' is not in the declaration"; exit 78; }
+echo "declared duration: ${DURATION}s"
+
+# --- approval text comes from the manifest, which records the owner's words ---
+V4_PAID_DATA_APPROVAL_TEXT="$(/usr/bin/python3 -c "
+import json; print(json.load(open('$APPROVAL'))['approval_required']['exact_approval_text'])
+")"
+export V4_PAID_DATA_APPROVAL_TEXT
+
+OUT="$ROOT/${SESSION}/${WINDOW}"
+DEFDIR="$OUT/definitions"
+mkdir -p "$(dirname "$OUT")"
+
+# --- definitions first: the recorder needs a current-session universe ---------
+echo "--- definition capture (30s) ---"
+PYTHONPATH=. ./.venv/bin/python -m v4.scripts.capture_databento_live_opra_definitions \
+    --session-date "$SESSION" \
+    --duration-seconds 30 \
+    --output-dir "$DEFDIR" \
+    --env-file v4/.env
+
+DEFPATH="$DEFDIR/opra_live_definitions.dbn.zst"
+[ -f "$DEFPATH" ] || { echo "FAILED: no definition payload at $DEFPATH"; exit 1; }
+
+# --- market capture -----------------------------------------------------------
+echo "--- market capture (${DURATION}s) ---"
 PYTHONPATH=. ./.venv/bin/python -m v4.scripts.capture_databento_live_opra_training_twin \
-    --declaration "$DECL" --window "$WINDOW"
+    --session-date "$SESSION" \
+    --definition-path "$DEFPATH" \
+    --duration-seconds "$DURATION" \
+    --expected-symbol-count 510 \
+    --schemas cbbo-1s cbbo-1m ohlcv-1m trades \
+    --output-dir "$OUT/market" \
+    --env-file v4/.env \
+    --approval-manifest "$APPROVAL"
 
-echo "=== window complete ==="
+echo "=== ${WINDOW} complete @ $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="

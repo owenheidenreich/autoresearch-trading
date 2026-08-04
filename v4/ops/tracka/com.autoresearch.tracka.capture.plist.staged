@@ -4,7 +4,7 @@
 
   Track A capture, Wed/Thu/Fri 2026-08-05..07, two windows per session.
   Times are LOCAL (America/Los_Angeles), which is what launchd uses:
-      06:25 PT = 09:25 ET  (open window,   900 s, through 09:40 ET)
+      06:28 PT = 09:28 ET  (open window,   300 s, through 09:33 ET)
       09:10 PT = 12:10 ET  (midday window, 180 s)
 
   Weekday 3/4/5 = Wednesday/Thursday/Friday. launchd cannot express "only these
@@ -34,9 +34,9 @@
 
     <key>StartCalendarInterval</key>
     <array>
-        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>25</integer></dict>
-        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>25</integer></dict>
-        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>25</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>28</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>28</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>28</integer></dict>
     </array>
 
     <key>RunAtLoad</key>

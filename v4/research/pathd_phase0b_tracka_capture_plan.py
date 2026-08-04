@@ -20,8 +20,8 @@ RUNBOOK = REPO_ROOT / "v4/docs/protocol101/training/research/CODEX_PHASE0B_TRACK
 PRIOR_CAPTURE = REPO_ROOT / "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/attempt002/capture_summary.json"
 PRIOR_FEATURE_CAPTURE = REPO_ROOT / "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/feature_surface_attempt001/capture_summary.json"
 OUTPUT_ROOT = REPO_ROOT / "v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-PRIOR_DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v3.json"
-DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v4.json"
+PRIOR_DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v4.json"
+DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v5.json"
 MARKET_RECORDER = REPO_ROOT / "v4/scripts/capture_databento_live_opra_training_twin.py"
 DEFINITION_RECORDER = REPO_ROOT / "v4/scripts/capture_databento_live_opra_definitions.py"
 RECEIPT_COMPILER = REPO_ROOT / "v4/research/pathd_phase0b_tracka_receipts.py"
@@ -55,10 +55,14 @@ DEFINITION_DURATION_SECONDS = 30.0
 # the WORST case across windows, never the mean -- see CLOCK_SELECTION_LAW.
 CAPTURE_WINDOWS = (
     {
+        # The recorder enforces 1 <= duration <= 300 s, so the original 900 s
+        # window was unrunnable. 300 s starting 09:28 ET covers the 09:30 bell and
+        # the first three minutes of the burst -- the actual volume peak -- which
+        # is better placed than the 09:25-09:40 span it replaces.
         "name": "open",
-        "start_local": "06:25:00 America/Los_Angeles",  # 09:25 ET, 5 min before the open
-        "duration_seconds": 900.0,                       # through 09:40 ET
-        "rationale": "peak message volume; the stressed end of the latency distribution",
+        "start_local": "06:28:00 America/Los_Angeles",  # 09:28 ET
+        "duration_seconds": 300.0,                       # through 09:33 ET
+        "rationale": "captures the 09:30 bell and the opening burst; the stressed end of the distribution",
     },
     {
         "name": "midday",
@@ -89,7 +93,7 @@ def _portable(path: Path) -> str:
 
 def declaration_payload() -> dict[str, Any]:
     payload: dict[str, Any] = {
-        "schema_version": "pathd.phase0b.tracka-capture-declaration.v4",
+        "schema_version": "pathd.phase0b.tracka-capture-declaration.v5",
         "status": "DECLARED_AWAITING_EXPLICIT_OWNER_AUTHORIZATION",
         "declared_at_utc": datetime.now(timezone.utc).isoformat(),
         "supersedes_preconnection_declaration": (
