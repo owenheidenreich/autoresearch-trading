@@ -20,20 +20,25 @@ RUNBOOK = REPO_ROOT / "v4/docs/protocol101/training/research/CODEX_PHASE0B_TRACK
 PRIOR_CAPTURE = REPO_ROOT / "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/attempt002/capture_summary.json"
 PRIOR_FEATURE_CAPTURE = REPO_ROOT / "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/feature_surface_attempt001/capture_summary.json"
 OUTPUT_ROOT = REPO_ROOT / "v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-PRIOR_DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v2.json"
-DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v3.json"
+PRIOR_DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v3.json"
+DECLARATION_PATH = OUTPUT_ROOT / "capture_declaration_v4.json"
 MARKET_RECORDER = REPO_ROOT / "v4/scripts/capture_databento_live_opra_training_twin.py"
 DEFINITION_RECORDER = REPO_ROOT / "v4/scripts/capture_databento_live_opra_definitions.py"
 RECEIPT_COMPILER = REPO_ROOT / "v4/research/pathd_phase0b_tracka_receipts.py"
 
 # Five consecutive regular sessions after declaration.  No session may be
 # dropped or substituted based on the data or volatility observed afterward.
+# Reduced to three consecutive sessions at owner direction 2026-08-04 (Codex is
+# out of usage until 2026-08-08; the owner will keep the machine running Wed-Fri).
+# Sampling is NOT reduced relative to the original declaration: v2 was 5 sessions
+# x 1 midday window = 5 windows; this is 3 sessions x 2 windows = 6 windows, and
+# unlike v2 it covers the open. What IS reduced is session-to-session regime
+# variation across 3 consecutive days rather than 5 spanning a weekend. That
+# limitation is declared in the payload and must be carried into the receipt.
 DECLARED_SESSIONS = (
-    date(2026, 8, 5),
-    date(2026, 8, 6),
-    date(2026, 8, 7),
-    date(2026, 8, 10),
-    date(2026, 8, 11),
+    date(2026, 8, 5),   # Wednesday
+    date(2026, 8, 6),   # Thursday
+    date(2026, 8, 7),   # Friday
 )
 SCHEMAS = ("cbbo-1s", "cbbo-1m", "ohlcv-1m", "trades")
 EXPECTED_SYMBOL_COUNT = 510
@@ -84,7 +89,7 @@ def _portable(path: Path) -> str:
 
 def declaration_payload() -> dict[str, Any]:
     payload: dict[str, Any] = {
-        "schema_version": "pathd.phase0b.tracka-capture-declaration.v3",
+        "schema_version": "pathd.phase0b.tracka-capture-declaration.v4",
         "status": "DECLARED_AWAITING_EXPLICIT_OWNER_AUTHORIZATION",
         "declared_at_utc": datetime.now(timezone.utc).isoformat(),
         "supersedes_preconnection_declaration": (
@@ -112,6 +117,11 @@ def declaration_payload() -> dict[str, Any]:
             "session_count": len(DECLARED_SESSIONS),
             "selection_law": "five consecutive regular sessions; never drop or substitute after observing data",
             "elevated_volatility_law": "if elevated volatility occurs inside the declared window it is necessarily included",
+            "declared_limitation": (
+                "three consecutive sessions (Wed-Fri) give less session-to-session regime "
+                "variation than five spanning a weekend; window count is 6 versus the "
+                "original declaration's 5, and unlike it these cover the open"
+            ),
             "definition_duration_seconds": DEFINITION_DURATION_SECONDS,
             "windows": [dict(window) for window in CAPTURE_WINDOWS],
             "window_count_per_session": len(CAPTURE_WINDOWS),
