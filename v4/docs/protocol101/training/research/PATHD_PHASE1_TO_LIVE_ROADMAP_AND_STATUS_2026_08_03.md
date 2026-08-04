@@ -27,9 +27,9 @@ status + signature block whenever a phase advances.
 | Phase-1 fixture suite | DONE (green: entry/exit/replay/storage 19 passed) | — |
 | Milestone commit + memory/ledger | DONE (`cba15b1a`, `9ae807f5`) | — |
 | Suite-green (retire stale v3.2 reconciliation) | DONE (`fa1d9b08`; governance file 7/7 passed) | Claude independent verification |
-| Stage 0 — drive setup | DONE (preflight + relocation + independent hashes passed) | Claude independent verification |
-| Stage 1 — causal training + four-box | READY | explicit owner training authorization |
-| Stage 2 — runtime decision-parity | NOT_STARTED | Stage 1 = edge |
+| Stage 0 — drive setup | DONE (preflight + relocation + independent hashes passed) | Owner waived Claude verification |
+| Stage 1 — causal training + four-box | DONE — `UNDERPOWERED`; GATE 1 STOP | — |
+| Stage 2 — runtime decision-parity | NOT AUTHORIZED | Stage 1 did not establish edge |
 | Stage 3 — live-shadow orchestration | NOT_STARTED (needs building) | Stage 2 pass + live days |
 | Stage 4 — guarded paper submit + confirmation | NOT_STARTED (needs building) | Stage 3 + live days |
 | Stage 5 — real-money decision | OUT OF SCOPE | separate owner+governance packet |
@@ -91,13 +91,44 @@ as `b0c5c73d` and the 19-test Phase-1 fixture set passes.
 ---
 
 ## Stage 1 — Causal training + four-box development verdict (GATE 1)
-Codex goal is drafted (below), ready to fire once Stage 0 verifies.
-**GATE 1:** learned entry/exit beats P5 / matched-random / nearest-ATM pooled AND ≥4/5 folds; negative
-controls FAIL; mutate-future clean; latency/fee sensitivities hold. `NO_INCREMENTAL_EDGE` → STOP/reconsider.
-Edge → freeze model + 18-feature contract by SHA; proceed to Stage 2.
+The owner explicitly waived independent Claude verification of Stage 0 and authorized Stage 1. Codex
+completed the full offline sequence over exactly the 215 development sessions. The 36-session firewall
+remained closed; no broker, paper order, paid download, runtime flag, default, or promotion path ran.
 
-*Signed: Codex — 2026-08-03 — status: READY, awaiting explicit owner authorization for model training
-and independent Claude verification of Stage 0.*
+**Authoritative verdict: `UNDERPOWERED` — STOP.** The learned-entry subset contains 153 trajectories
+across 60 sessions but only 3 distinct outer folds, so the code-defined power condition at
+`pathd_phase1_replay.py:311-313` fails. The full evaluation index has 1,031 trajectories over 166
+sessions and all 5 folds, but that is not the population the gate tests. Negative controls were all
+rejected, so `UNDERPOWERED` wins under the frozen verdict precedence.
+
+The result also fails on economics independently of the power stop: learned-entry/learned-exit pooled
+PnL was `-$7,024` versus best comparator `matched_random_3` at `-$4,474`; learned one-sided 95% session
+bootstrap LCB was `-$150.20`; paired fold deltas were `+$1,955`, `-$4,195`, and `-$310`; and all eight
+fee/latency cells were directionally negative (`-$2,450` at 0 s and `-$2,550` at 1/2/5 s). Exit target
+skill was positive in 4/5 folds and no negative control cleared the gate, but only 2/7 Gate 1 conditions
+passed.
+
+Evidence:
+- entry campaign SHA-256 `c7a9ae05b5c66f115a29bc08b7e6abfbde54ff38794cae7e503531964947e71c`;
+- exit campaign SHA-256 `69540b7570ba0cc11b2a961062579c4f90169d3972248cf1d051e5e13a443a36`;
+- replay semantic SHA-256 `b07784a0280344da8bce5a445804e2eae2cf2bf6bd0375080b6780e55df25807`;
+- `replay.json` file SHA-256 `b115b00a68da63f339fc2482a7010ad75b03b9a60c241cf63c2adeda56cc4cf9`;
+- `trajectory_outcomes.parquet` SHA-256
+  `9fa99aa69f80f3b8d0b333a4ce89d4879dcba130b84f40a341d089a04d53691b`.
+
+Independent reproduction under `reports/phase1_four_box_reproduction/` produced byte-identical replay
+and outcome files. All 1,167 baseline trajectories and 9,336 sensitivity partitions passed full
+identity/Parquet validation; 1,031 OOF prediction partitions matched the evaluation index exactly. The
+focused Phase-1 suite passes 33/33. Two corpus-exposed implementation contradictions were repaired
+without dropping receipts or relaxing economics: unique raw-symbol mapping across 18 schema-local
+Databento instrument-ID differences, and the frozen zero terminal write-down for 47 stale-at-boundary
+paths (`dd4b21bc`). Sensitivity repricing was made calculation-identical but faster (`0b2da32b`).
+
+**Do not proceed to Stage 2.** This result does not establish causal development edge, and the spent
+historical holdout must not be reopened to rescue it.
+
+*Signed: Codex — 2026-08-03 — status: STAGE 1 `UNDERPOWERED`; GATE 1 STOP;
+STOP_FOR_CLAUDE_VERIFICATION.*
 
 ---
 
@@ -202,13 +233,33 @@ PYTHONPATH=. .venv/bin/python -m v4.scripts.run_phase1_exit_model replay \
 ```
 
 **GATE 1 acceptance (exact, from `run_four_box_replay`):** verdict ∈
-`{INVALID, UNDERPOWERED, TIER_S_SUPPORTED, TIER_S_NOT_SUPPORTED}`. `TIER_S_SUPPORTED` requires ALL of:
+`{INVALID, UNDERPOWERED, TIER_S_SUPPORTED, TIER_S_NOT_SUPPORTED}`.
+
+> **Corrected 2026-08-03 (Claude).** An earlier revision of this section listed only conditions 1–4 and
+> labelled them "exact". The implementation requires **seven**. The code at
+> `v4/research/pathd_phase1_replay.py:311-330` is authoritative; this list is now reconciled to it.
+> **If doc and code ever disagree again, fix the doc — never loosen the gate to match it.**
+
+`TIER_S_SUPPORTED` requires ALL of:
 1. learned-integrated `pooled_net_pnl_dollars` > the **best comparator** `pooled_net_pnl_dollars` (best
    of the fixed exits `stop50_target100`/`stop25_target50` + `matched_random_0..7`);
 2. learned `one_sided_95pct_session_bootstrap_lcb_dollars` > 0;
 3. positive per-fold delta vs the best comparator in **≥4 of 5** folds;
-4. `negative_control_accepted == false` (constant / sign-reversed / shuffled must NOT clear the gate).
+4. `negative_control_accepted == false` (constant / sign-reversed / shuffled must NOT clear the gate);
+5. **`not underpowered`** — `learned_integrated["sessions"] >= 30` AND `outer_fold.nunique() == 5`;
+6. **`positive_skill`** — `exit_campaign["positive_target_skill_folds"] > 0`;
+7. **all 8 fee/latency sensitivities `directionally_positive`** — every
+   `fee{1.5,2.0} x latency{0,1,2,5}` cell must have `delta_dollars > 0`. A single negative cell fails the
+   gate.
+
+Verdict precedence: any accepted negative control → `INVALID` (checked first, overrides everything);
+else underpowered → `UNDERPOWERED`; else `TIER_S_SUPPORTED` / `TIER_S_NOT_SUPPORTED`.
 Any of `INVALID` / `UNDERPOWERED` / `TIER_S_NOT_SUPPORTED` → **STOP** (honest no-edge; the likely outcome).
+
+**Condition 5 result correction (Codex, 2026-08-03):** the 1,031-row evaluation index does cover 166
+sessions and all 5 folds, but line 312 tests `learned_rows`, not the full index. The learned-entry subset
+has 60 sessions and only folds 0–2, so condition 5 fails and the verdict is `UNDERPOWERED`. Condition 7
+also fails: zero of eight fee/latency cells are directionally positive.
 
 **Hard stops:** decode ONLY the 215 development sessions; 36-firewall CLOSED (`holdout_open_count=0`); no
 broker/paper-order/promotion/default/cmbp-1; ABORT if allocation would exceed 150 GB or the drive would

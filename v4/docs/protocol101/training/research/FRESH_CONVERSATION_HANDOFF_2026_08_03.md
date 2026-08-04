@@ -28,20 +28,24 @@ implemented, **Claude-audited PASS** (clock, conservative fill/label law, entry�
 fixture-green, and **purchase-ready** (footprint 89.69 GB < 150 GB cap). **Stage 0 is complete:** the
 2 TB external encrypted-APFS SSD is mounted at `/Volumes/AR_TRADING_DATA`, the already-owned 12-month
 corpus was copied and independently checksum-verified (manifest `7929a43e...550d6`), and the internal
-source remains preserved. The SSD is the training WORKSPACE, not a data download. **No causal model has
-been trained yet.** Stage 1 is ready but still requires explicit owner training authorization;
-`NO_INCREMENTAL_EDGE` is the likely honest outcome.
+source remains preserved. The SSD is the training WORKSPACE, not a data download. **Stage 1 has now
+completed with the authoritative verdict `UNDERPOWERED`.** The learned entry+exit lost `-$7,024` versus
+best comparator `-$4,474`, its bootstrap LCB was negative, only 1/3 observed fold deltas was positive,
+and all 8 fee/latency cells were negative. The learned subset had 60 sessions but only 3 outer folds,
+which triggers the code-defined power stop. Stage 2 is not authorized; do not build ahead of this gate.
 
 ## Immediate next actions (gated; see the roadmap for exact commands)
-1. **Stage 0 — COMPLETE, pending Claude verification.** Preflight and relocation passed; source and
+1. **Stage 0 — COMPLETE; owner waived Claude verification.** Preflight and relocation passed; source and
    destination independently match 3,708 files / 21,484,792,678 bytes.
-2. **Stage 1 — causal training (Codex; explicit owner authorization required).** `materialize-entry → train-entry →
-   build-trajectories → train-exit → replay` → four-box verdict. **GATE 1** = `TIER_S_SUPPORTED` (beat best
-   comparator pooled + bootstrap LCB>0 + ≥4/5 positive fold deltas + no negative control accepted); else STOP.
+2. **Stage 1 — COMPLETE; `UNDERPOWERED`; STOP.** The full causal training/replay sequence ran. Gate 1
+   requires all seven conditions in `pathd_phase1_replay.py:311-330`: better pooled PnL, positive LCB,
+   ≥4/5 positive fold deltas, no accepted negative control, ≥30 learned sessions and all 5 learned folds,
+   positive exit target skill, and all 8 fee/latency cells directionally positive. Only the negative-control
+   and exit-skill conditions passed. Reproduction hashes matched byte-for-byte.
 3. **Suite-green — COMPLETE:** superseded v3.2 release reconciliation retired in `fa1d9b08`; immutable
    evidence preserved and the governance test file passes 7/7.
-4. Stages 2–5 (parity → live-shadow → guarded paper → real-money) are specified + gated in the roadmap;
-   Stage 3–4 need building; **do not build ahead of a Stage-1 edge.**
+4. Stages 2–5 (parity → live-shadow → guarded paper → real-money) remain gated and are **not authorized**;
+   **do not build ahead of the failed Stage-1 gate.**
 
 ## Critical rules & hard-won lessons (do not repeat these)
 - **The holdout is SPENT.** Never reopen the 36-session firewall (protected 30 + 6 smoke). Forward
@@ -75,12 +79,14 @@ supervised** (manual disk-ID confirmation). No paper-default or promotion change
 - **Codex:** read this handoff → the roadmap/status doc (engineer-grade Stage 0/1 commands + GATE 1
   acceptance) → CLAUDE.md safety rules. Execute only the goal the owner hands you; end with
   `STOP_FOR_CLAUDE_VERIFICATION`.
-- **Git:** branch `v4/phase-0`; local commits include `fa1d9b08` (v3.2 supersession) and `b0c5c73d`
-  (current-macOS storage-preflight compatibility); pushing is a separate owner action.
+- **Git:** branch `v4/phase-0`; Stage-1 support commits include `61419754` (official SPX provenance),
+  `14e874a5` (bounded trajectory parallelism), `0b2da32b` (exact sensitivity repricing reuse), and
+  `dd4b21bc` (terminal-zero/schema-local-ID corpus repairs). Pushing is a separate owner action.
 
 ## Working style (owner)
 Plain language + trader analogies; `AskUserQuestion` for genuine forks (recommendation first); challenge
 owner assumptions with evidence; own your own errors and correct them; update the ledger + this handoff +
 the status board as phases advance; keep commits curated (no data/secrets/checkpoints/backlog).
 
-*Signed: Codex — 2026-08-03 — Stage 0 complete; STOP_FOR_CLAUDE_VERIFICATION. Keep this current as phases advance.*
+*Signed: Codex — 2026-08-03 — Stage 1 `UNDERPOWERED`; GATE 1 STOP;
+STOP_FOR_CLAUDE_VERIFICATION. Keep this current as phases advance.*

@@ -1407,3 +1407,39 @@ then passed. The clean retry returned `COPIED_AND_VERIFIED`, `source_preserved:t
 
 **Next gate:** independent Claude verification of Stage 0, then explicit owner authorization for Stage 1
 causal model training. No model fit, firewall opening, broker/paper action, or paid data request occurred.
+
+---
+
+## Phase update 2026-08-03 (gg) — causal Phase-1 ran; authoritative verdict `UNDERPOWERED`; STOP
+
+The owner waived independent Claude verification of Stage 0 and explicitly authorized Stage 1. Codex
+ran `materialize-entry → train-entry → build-trajectories → train-exit → replay` over exactly the first
+215 development sessions. The 36-session firewall remained closed (`holdout_open_count=0` in the frozen
+assignment; every generated campaign/replay says `protected_holdout_opened:false`). No broker, paper
+order, paid download, promotion, default, runtime flag, or launch scheduling path ran.
+
+Entry campaign `c7a9ae05...71c` produced 1,167 OOF receipts, including 153 learned evaluation trades and
+878 deterministic-control evaluation trades. Exit construction produced 1,167 feature partitions,
+1,167 baseline-label partitions, and all 9,336 fee/latency partitions (13,730,079 baseline rows); a full
+identity/Parquet audit found zero errors. Exit campaign `69540b75...a36` produced exactly 1,031 OOF
+prediction partitions and positive target-skill correlation in 4/5 folds.
+
+The frozen replay returned **`UNDERPOWERED`**, semantic hash `b07784a0...5807`. The learned subset has
+60 sessions but only 3 outer folds; the gate checks that subset, not the full 166-session/all-five-fold
+evaluation index. Negative controls were all rejected, so underpowered takes precedence. Independently,
+the economics were adverse: learned integrated `-$7,024` versus best comparator `matched_random_3` at
+`-$4,474`; bootstrap LCB `-$150.20`; fold deltas `+$1,955 / -$4,195 / -$310`; zero of eight sensitivity
+cells directionally positive. Only 2/7 exact Gate-1 conditions passed (negative controls rejected and
+positive exit target skill). Byte-independent reproduction matched both `replay.json`
+(`b115b00a...4cf9`) and `trajectory_outcomes.parquet` (`9fa99aa6...691b`). Phase-1 tests pass 33/33.
+
+Real corpus execution exposed two narrow implementation contradictions. Eighteen exact raw symbols used
+schema-local Databento IDs shifted by `2^25` between CBBO-1m and CBBO-1s; unique-symbol authentication
+restored the same contract without substitution. Forty-seven held paths lacked a fresh 15:55 BBO; the
+loader had incorrectly aborted instead of applying the preregistered conservative zero terminal
+write-down. Both were repaired without dropping receipts, inventing prices, changing economic labels, or
+opening the firewall (`dd4b21bc`). Sensitivity labels were also repriced from the already-built causal
+feature matrix with all eight pre-optimization hashes preserved (`0b2da32b`).
+
+**Decision:** stop. Do not proceed to runtime parity, live shadow, paper promotion, or holdout reuse.
+This is honest no-edge/insufficient-coverage evidence, not a candidate for rescue by tuning.
