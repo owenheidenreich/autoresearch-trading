@@ -1,0 +1,138 @@
+{
+  "schema": "v5.measurement-review-analysis.v1",
+  "data": "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31/raw/databento/glbx_es_ohlcv_1m",
+  "session_files": 261,
+  "non_empty_sessions": 254,
+  "limit1_fixed_0935_slot": {
+    "15m": {
+      "sessions": 254,
+      "session_sd_points": 13.486,
+      "mde_net_points_per_session_at_80pct_power": 2.104,
+      "lag1_autocorr_across_sessions": -0.04,
+      "effective_sessions_after_lag1": 275.2,
+      "mde_with_effective_n": 2.022
+    },
+    "30m": {
+      "sessions": 254,
+      "session_sd_points": 18.099,
+      "mde_net_points_per_session_at_80pct_power": 2.824,
+      "lag1_autocorr_across_sessions": -0.1061,
+      "effective_sessions_after_lag1": 314.3,
+      "mde_with_effective_n": 2.539
+    },
+    "60m": {
+      "sessions": 254,
+      "session_sd_points": 24.807,
+      "mde_net_points_per_session_at_80pct_power": 3.871,
+      "lag1_autocorr_across_sessions": -0.1123,
+      "effective_sessions_after_lag1": 318.3,
+      "mde_with_effective_n": 3.458
+    }
+  },
+  "detectable_per_trade_by_frequency_iid": {
+    "1": 2.104,
+    "6": 0.859,
+    "26": 0.413
+  },
+  "mean_intraday_lag1_of_15m_returns": -0.055,
+  "sessions_needed_for_cost_scale_edge": {
+    "trades_per_session=1": {
+      "sessions_needed_for_0.358_per_trade": 8778,
+      "years_at_252": 34.8
+    },
+    "trades_per_session=6": {
+      "sessions_needed_for_0.358_per_trade": 1463,
+      "years_at_252": 5.8
+    },
+    "trades_per_session=26": {
+      "sessions_needed_for_0.358_per_trade": 338,
+      "years_at_252": 1.3
+    }
+  },
+  "forward_confirmation_sessions": {
+    "edge_0.5": {
+      "15m": {
+        "sessions": 4500,
+        "years": 17.86
+      },
+      "30m": {
+        "sessions": 8105,
+        "years": 32.16
+      },
+      "60m": {
+        "sessions": 15226,
+        "years": 60.42
+      }
+    },
+    "edge_1.0": {
+      "15m": {
+        "sessions": 1125,
+        "years": 4.46
+      },
+      "30m": {
+        "sessions": 2027,
+        "years": 8.04
+      },
+      "60m": {
+        "sessions": 3807,
+        "years": 15.11
+      }
+    },
+    "edge_2.0": {
+      "15m": {
+        "sessions": 282,
+        "years": 1.12
+      },
+      "30m": {
+        "sessions": 507,
+        "years": 2.01
+      },
+      "60m": {
+        "sessions": 952,
+        "years": 3.78
+      }
+    },
+    "edge_3.0": {
+      "15m": {
+        "sessions": 125,
+        "years": 0.5
+      },
+      "30m": {
+        "sessions": 226,
+        "years": 0.9
+      },
+      "60m": {
+        "sessions": 423,
+        "years": 1.68
+      }
+    },
+    "edge_4.0": {
+      "15m": {
+        "sessions": 71,
+        "years": 0.28
+      },
+      "30m": {
+        "sessions": 127,
+        "years": 0.5
+      },
+      "60m": {
+        "sessions": 238,
+        "years": 0.94
+      }
+    },
+    "edge_5.0": {
+      "15m": {
+        "sessions": 45,
+        "years": 0.18
+      },
+      "30m": {
+        "sessions": 82,
+        "years": 0.33
+      },
+      "60m": {
+        "sessions": 153,
+        "years": 0.61
+      }
+    }
+  }
+}
