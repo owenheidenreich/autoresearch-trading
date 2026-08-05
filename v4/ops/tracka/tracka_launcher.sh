@@ -7,16 +7,47 @@
 #     /bin/zsh: can't open input file: .../v4/ops/tracka/run_tracka_window.sh
 # The file was present, executable, and parseable from an interactive shell.
 #
-# Cause: ~/Documents is the iCloud "Desktop & Documents" sync target
-# (~/Library/Mobile Documents/com~apple~CloudDocs/Documents is a SYMLINK to it,
-# and FXICloudDriveDesktop=1). iCloud had evicted the wrapper to dataless after
-# ~19h untouched, and a launchd agent opening a dataless file fails. zsh reports
-# a dataless/missing open with the same message it uses for ENOENT, which is why
-# this first looked like a TCC denial -- it is not; no TCC denial was ever logged
-# and the shadowasof agents exec a binary from outside the synced tree.
+# RETRACTED DIAGNOSIS (was: iCloud eviction). CORRECTED 2026-08-05.
+# ----------------------------------------------------------------
+# This file was written believing iCloud had evicted the wrapper to dataless.
+# That was WRONG, and everything below it -- moving the entry point out of the
+# synced tree, brctl download, dd, the retry loop -- treats a symptom that does
+# not exist. The owner confirmed "Optimize Mac Storage" was already OFF, and the
+# TCC database then settled it:
 #
-# So the entry point must live outside the synced tree, and it must force the
-# repo paths it needs back onto local disk BEFORE invoking anything in them.
+#   sqlite3 ~/Library/Application\ Support/com.apple.TCC/TCC.db \
+#     'select client,auth_value from access
+#        where service="kTCCServiceSystemPolicyDocumentsFolder"'
+#
+# ~/Documents is TCC-protected. Grants exist for com.apple.Terminal,
+# com.microsoft.VSCode, com.anthropic.claude-code, com.openai.codex, and exactly
+# one non-app binary: the uv python3.12 at
+# ~/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12.
+# There is NO grant for /bin/zsh, /usr/bin/python3, head, dd, or mkdir.
+#
+# An interactive shell inherits the grant from the app that spawned it, so every
+# shell-fired run succeeds. A LaunchAgent has no granted parent: TCC evaluates
+# /bin/zsh, finds nothing, and denies the open. zsh reports that denial with the
+# same words it uses for ENOENT -- "can't open input file" -- which is what made
+# eviction look plausible. The kernel reads the "#!" line during exec WITHOUT a
+# TCC check, so the script starts and only then fails to read itself; that
+# exec-succeeds-then-open-fails signature is diagnostic of TCC, not of eviction.
+#
+# launchd itself is fine. com.autoresearch.protocol101.shadowasof.ledger runs a
+# .py from inside ~/Documents every 60 s under launchd, exit code 0 (verified
+# live 2026-08-05: runs 5243 -> 5246 in 140 s) -- because its program IS that
+# granted uv python3.12.
+#
+# CONSEQUENCE: the retry loop below CANNOT fix this. It retries a deterministic
+# permission denial 60 times and still fails. Do not read its presence as a
+# repair. Until a tier-1 fix lands (TCC grant, or moving the repo out of
+# ~/Documents), use the attended runner instead:
+#     v4/ops/tracka/run_tracka_attended.sh
+# which fires the windows from a shell that already holds the grant.
+#
+# Everything below is retained rather than deleted: it is harmless under an
+# attended run (the first read succeeds on attempt 1) and it is the record of
+# what was tried.
 
 set -uo pipefail
 
@@ -55,7 +86,7 @@ for p in \
     "$REPO/v4/checks" \
     "$REPO/v4/research" \
     "$REPO/v4/.env" \
-    "$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v5.json" \
+    "$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v6.json" \
     "$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/authorization.json"
 do
     materialize "$p" || echo "WARN: could not materialize $p"
@@ -79,9 +110,12 @@ materialize "$REPO/.venv/bin/python" || echo "WARN: venv interpreter not materia
 # launchd did NOT perform that retry. KeepAlive is unset and StartCalendarInterval
 # fires once, so the job's own record is runs=1, last exit code=74 -- a FAILURE.
 # The retry came from an unrelated ad-hoc shell that happened to exist that day.
-# Without this loop the 08-06 and 08-07 windows would fail exactly like the
-# 08-05 open window did. Retry here, in-process, and never rely on an external
-# retry that will not be there.
+#
+# CORRECTION 2026-08-05: the reasoning above is wrong. The 16:10:27Z success was
+# not a late fetch completing -- it was a DIFFERENT INVOKER. It ran from a shell
+# holding the Documents grant; the 16:10:00Z attempt ran under launchd, which
+# does not. Same file, same minute, different permission. See the retracted
+# diagnosis at the top. This loop will not save the 08-06 and 08-07 windows.
 #
 # Budget: 1 s spacing, 60 attempts. The observed recovery took 27 s. The window
 # tolerates this -- the open capture is declared 09:28-09:33 ET to centre the
