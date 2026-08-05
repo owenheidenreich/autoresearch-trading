@@ -1,5 +1,8 @@
 # Fresh-Conversation Handoff — Path-D Phase-1 (2026-08-03)
 
+> **SUPERSEDED 2026-08-05.** A point-in-time handoff from 2026-08-03. Current status and open jobs are in [`STATUS.md`](../../../../../STATUS.md).
+
+
 Seed a new Claude or Codex conversation with this. It captures the current state, the division of
 labor, the immediate next actions, and the hard-won rules so a cold session does not re-derive context
 or repeat past mistakes. **Single source of truth for the plan:**

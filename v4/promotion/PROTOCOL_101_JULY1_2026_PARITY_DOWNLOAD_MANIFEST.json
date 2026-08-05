@@ -1,0 +1,45 @@
+{
+  "manifest_id": "PROTOCOL_101_JULY1_2026_PARITY_DOWNLOAD_MANIFEST",
+  "created_for": "Protocol101 recorder-first IBKR-vs-historical paired replay",
+  "session_dates": [
+    "2026-07-01"
+  ],
+  "approval_required": {
+    "exact_approval_text": "I approve the Protocol101 July 1, 2026 parity download and validation: Databento OPRA definition/CBBO-1m/OHLCV-1m/statistics for filtered SPXW 0DTE contracts and ThetaData SPX/VIX one-minute bars, with a $2.00 Databento spending cap. Preserve the July 1 IBKR capture unchanged, rebuild both feeds through the repaired feature contract, run frozen Protocol101, and generate paired feature, candidate, ranking, score, action, and counterfactual attribution reports. Do not train, tune thresholds, modify breakout features, submit orders, change defaults, or promote models. Stop after reporting whether July 1 confirms or contradicts the June 30 findings."
+  },
+  "paid_data_request": {
+    "source": "Databento",
+    "dataset": "OPRA.PILLAR",
+    "date_range": {
+      "start_date": "2026-07-01",
+      "end_date": "2026-07-01"
+    },
+    "symbols": "SPXW.OPT parent, filtered to same-day SPXW 0DTE raw symbols",
+    "schemas": [
+      "definition",
+      "cbbo-1m",
+      "ohlcv-1m",
+      "statistics"
+    ],
+    "hard_cap_usd": 2.0
+  },
+  "subscription_data_request": {
+    "source": "ThetaData",
+    "product": "index_history_ohlc",
+    "symbols": [
+      "SPX",
+      "VIX"
+    ],
+    "granularity": "1m",
+    "estimated_incremental_cost_usd": 0.0
+  },
+  "forbidden_operations": [
+    "model training",
+    "threshold tuning",
+    "breakout-feature modification",
+    "promotion or paper-default changes",
+    "downloads for dates other than 2026-07-01",
+    "broker orders",
+    "real-money trading"
+  ]
+}

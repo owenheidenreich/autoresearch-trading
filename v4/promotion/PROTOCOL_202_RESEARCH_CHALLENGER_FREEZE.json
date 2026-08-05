@@ -1,0 +1,211 @@
+{
+  "broker_endpoint_called": false,
+  "decision": "freeze_protocol202_as_research_challenger_not_paper_default",
+  "evidence": {
+    "protocol202_comparison": [
+      {
+        "baseline_median_profit_factor": 2.038608400509122,
+        "baseline_median_total_pnl": 73440.0,
+        "baseline_median_trades": 278.0,
+        "baseline_positive_seed_fraction": 1.0,
+        "beats_baseline": true,
+        "delta_vs_baseline": 27585.000108718872,
+        "model_median_profit_factor": 13.827906827730645,
+        "model_median_total_pnl": 101025.00010871887,
+        "model_median_trades": 243.0,
+        "model_positive_seed_fraction": 1.0,
+        "reported_split": "march_2026"
+      },
+      {
+        "baseline_median_profit_factor": 2.2338603627022233,
+        "baseline_median_total_pnl": 202720.0,
+        "baseline_median_trades": 695.0,
+        "baseline_positive_seed_fraction": 1.0,
+        "beats_baseline": true,
+        "delta_vs_baseline": 67190.00291728973,
+        "model_median_profit_factor": 28.568628028985884,
+        "model_median_total_pnl": 269910.00291728973,
+        "model_median_trades": 659.0,
+        "model_positive_seed_fraction": 1.0,
+        "reported_split": "q1_2026"
+      },
+      {
+        "baseline_median_profit_factor": 2.4193693693693694,
+        "baseline_median_total_pnl": 25295.0,
+        "baseline_median_trades": 83.0,
+        "baseline_positive_seed_fraction": 1.0,
+        "beats_baseline": false,
+        "delta_vs_baseline": -3079.9996089935303,
+        "model_median_profit_factor": 17.76603708968908,
+        "model_median_total_pnl": 22215.00039100647,
+        "model_median_trades": 72.0,
+        "model_positive_seed_fraction": 1.0,
+        "reported_split": "recent_2026"
+      }
+    ],
+    "protocol202_decision": "mixed_protocol202_slot_aware_lifecycle_signal_requires_attribution",
+    "protocol203_decision": "protocol202_improves_q1_but_recent_gap_is_missed_slot_opportunity",
+    "protocol205_contribution_summary": {
+      "baseline_only_blocked_rows": 94,
+      "baseline_only_contribution": -1130.0000000000073,
+      "matched_exit_change_contribution": -4770.003140449531,
+      "net_contribution": -5900.0031404495385,
+      "protocol202_only_baseline_blocked_rows": 0,
+      "protocol202_only_contribution": 0.0
+    },
+    "protocol205_decision": "recent_gap_broad_across_combo_seeds",
+    "protocol205_side_summary": [
+      {
+        "baseline_only_contribution": -8940.000000000007,
+        "baseline_only_rows": 76,
+        "dimension": "right",
+        "matched_contribution": -14165.002123832703,
+        "matched_rows": 725,
+        "net_contribution": -23105.00212383271,
+        "protocol202_only_contribution": 0.0,
+        "protocol202_only_rows": 0,
+        "value": "C"
+      },
+      {
+        "baseline_only_contribution": 7809.999999999999,
+        "baseline_only_rows": 18,
+        "dimension": "right",
+        "matched_contribution": 9394.998983383175,
+        "matched_rows": 372,
+        "net_contribution": 17204.998983383175,
+        "protocol202_only_contribution": 0.0,
+        "protocol202_only_rows": 0,
+        "value": "P"
+      }
+    ],
+    "protocol205_time_bucket_summary": [
+      {
+        "baseline_only_contribution": -210.00000000000045,
+        "baseline_only_rows": 7,
+        "dimension": "time_bucket",
+        "matched_contribution": 39239.99899673462,
+        "matched_rows": 191,
+        "net_contribution": 39029.99899673462,
+        "protocol202_only_contribution": 0.0,
+        "protocol202_only_rows": 0,
+        "value": "first_30"
+      },
+      {
+        "baseline_only_contribution": -169.99999999999943,
+        "baseline_only_rows": 21,
+        "dimension": "time_bucket",
+        "matched_contribution": -38480.0025138855,
+        "matched_rows": 462,
+        "net_contribution": -38650.0025138855,
+        "protocol202_only_contribution": 0.0,
+        "protocol202_only_rows": 0,
+        "value": "late_afternoon"
+      },
+      {
+        "baseline_only_contribution": 3509.999999999999,
+        "baseline_only_rows": 26,
+        "dimension": "time_bucket",
+        "matched_contribution": -28190.00101184845,
+        "matched_rows": 244,
+        "net_contribution": -24680.00101184845,
+        "protocol202_only_contribution": 0.0,
+        "protocol202_only_rows": 0,
+        "value": "midday"
+      },
+      {
+        "baseline_only_contribution": -4260.000000000006,
+        "baseline_only_rows": 40,
+        "dimension": "time_bucket",
+        "matched_contribution": 22660.0013885498,
+        "matched_rows": 200,
+        "net_contribution": 18400.001388549794,
+        "protocol202_only_contribution": 0.0,
+        "protocol202_only_rows": 0,
+        "value": "post_open_morning"
+      }
+    ]
+  },
+  "live_orders": false,
+  "model_training": false,
+  "operational_rule": {
+    "protocol101_remains_paper_default": true,
+    "protocol202_allowed_use": "offline research challenger and future no-order shadow comparison only",
+    "protocol202_live_orders_enabled": false
+  },
+  "paid_data_downloaded_by_runner": false,
+  "paper_default": "Protocol101",
+  "protocol": "202_research_challenger_freeze",
+  "repeat_gap_watchlist": {
+    "do_not_change_model_unless": "The same gap pattern repeats on additional protected data or live-paper logs; otherwise treat the recent_2026 miss as too small to justify a new architecture knob.",
+    "gap_to_watch": "Protocol202 recent gap: calls and late_afternoon/midday exits gave back a small amount versus baseline.",
+    "repeat_condition": "On a new locked block or live-paper replay, flag if Protocol202 underperforms the matching baseline by more than $5,000 median and the gap is again call-heavy or late-afternoon/midday-heavy."
+  },
+  "source_file_hashes": [
+    {
+      "bytes": 32145,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_202_slot_aware_lifecycle_policy/summary.json",
+      "sha256": "0818601639e54632bba6c74786437385cfe989ae16ac52856345554fa602fbca"
+    },
+    {
+      "bytes": 1882,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_202_slot_aware_lifecycle_policy/report.md",
+      "sha256": "cb90ecb5076a34df365877be30fe3215c90459fb83362ab7acaa5d65ee7fe6d0"
+    },
+    {
+      "bytes": 5896540,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_202_slot_aware_lifecycle_policy/protocol202_model_serial_trades.csv",
+      "sha256": "c12e986d250829b3bcb90c7f18e7abcae24707a9703bedcc25cd7b83c7dc4d79"
+    },
+    {
+      "bytes": 2461464,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_202_slot_aware_lifecycle_policy/protocol194_baseline_serial_trades.csv",
+      "sha256": "89cd5cd66ac68e6e564004ac8817f62db71b9fa80db58f45daf6ac768f305351"
+    },
+    {
+      "bytes": 10785,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_202_slot_aware_lifecycle_policy/threshold_sweep.csv",
+      "sha256": "f93bf1fe19a6ba716ec3eb6b0e40c724094accffe9371182c5776b43fceca83f"
+    },
+    {
+      "bytes": 6534,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_203_protocol202_mixed_result_attribution/summary.json",
+      "sha256": "8c75f8aa86c2b4bb7b4714f1ea8a8369e07cf86ad6f25a72619072f90ec9c5bb"
+    },
+    {
+      "bytes": 1146,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_203_protocol202_mixed_result_attribution/report.md",
+      "sha256": "35a850e195ac86da42df2cc774527d7476d7cfd4341f47fcb6356a7a5b818e4d"
+    },
+    {
+      "bytes": 26810,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_205_protocol202_recent_gap_attribution/summary.json",
+      "sha256": "d30630da3ac2b93bc6227752e71a4e8938c5c944c5daa2acdf0366a89696aa84"
+    },
+    {
+      "bytes": 4769,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_205_protocol202_recent_gap_attribution/report.md",
+      "sha256": "b7e0644a356f19b8f24e0e95a84162a60daf1a58b86b596eeb8342b71d8e11a4"
+    },
+    {
+      "bytes": 1080,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_205_protocol202_recent_gap_attribution/combo_seed_summary.csv",
+      "sha256": "a6de01ba896a010857256c12a5c898d3a6f0fa00689485d76605f66b7d9c81c4"
+    },
+    {
+      "bytes": 320,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_205_protocol202_recent_gap_attribution/side_summary.csv",
+      "sha256": "2edba6b64032c9a37471087ab48f7a2b35aaa4594014b6e7d76161bba218f08c"
+    },
+    {
+      "bytes": 536,
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_205_protocol202_recent_gap_attribution/time_bucket_summary.csv",
+      "sha256": "d8890d66c469af25b56df73e6c6e9d52c6b321022d2fe2a73ab422056c00fafb"
+    }
+  ],
+  "source_protocols": {
+    "protocol202": "v4/audit/autoresearch/v4_aplus_hypothesis_202_slot_aware_lifecycle_policy",
+    "protocol203": "v4/audit/autoresearch/v4_aplus_hypothesis_203_protocol202_mixed_result_attribution",
+    "protocol205": "v4/audit/autoresearch/v4_aplus_hypothesis_205_protocol202_recent_gap_attribution"
+  },
+  "status": "research_challenger_not_paper_default"
+}

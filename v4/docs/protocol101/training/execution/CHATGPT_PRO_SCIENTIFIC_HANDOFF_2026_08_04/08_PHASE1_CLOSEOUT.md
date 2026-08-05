@@ -1,8 +1,5 @@
 # Path-D Phase-1 — Close-Out (2026-08-03)
 
-> **STILL IN FORCE as the Phase-1 terminal record** — its `NO_INCREMENTAL_EDGE` finding stands and is summarised in [`STATUS.md`](../../../../../STATUS.md) section 6. Not a current-status document.
-
-
 **Status: `CLOSED — NO_INCREMENTAL_EDGE`.** Stage 2 is not authorized. No further training is recommended
 on this strategy class. This document is the terminal record for Phase-1; the roadmap status board points
 here.

@@ -1,5 +1,8 @@
 # SPX 0DTE v4 - Current Research And Paper-Trading Stack
 
+> **NOT A STATUS DOCUMENT (2026-08-05).** Current status, gates, and open jobs are in [`STATUS.md`](../STATUS.md). The Protocol101 paper-default description below is the LEGACY spine, not the current Path-D research path.
+
+
 v4 is the current home of the SPX 0DTE research, validation, Protocol101 paper-default, paper-runtime, guard, monitoring, and artifact surface. The original clean-slate protocol language remains useful lineage, but older Phase 0 claims no longer describe the whole current state.
 
 Current repo map: [../PROJECT_SECTION_AND_FEATURE_MAP.md](../PROJECT_SECTION_AND_FEATURE_MAP.md).

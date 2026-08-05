@@ -1,0 +1,1476 @@
+{
+  "protocol_id": "protocol_054_051_stack",
+  "manifest_type": "deployment_artifact_pointer",
+  "created_at": "2026-05-12",
+  "status": "persisted_modular_stack_candidate_not_paper_or_live_approved",
+  "artifact_root": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts",
+  "artifact_run": "v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts",
+  "source_frozen_protocol_report": "v4/audit/autoresearch/v4_aplus_hypothesis_054_protocol052_lifecycle_10seed_validation/report.json",
+  "fold_count": 4,
+  "folds": [
+    "train_through_q1_2025_test_q2_2025",
+    "train_through_q2_2025_test_q3_2025",
+    "train_through_q3_2025_test_q4_2025",
+    "train_through_q4_2025_test_q1_2026"
+  ],
+  "seed_count_per_fold": {
+    "train_through_q1_2025_test_q2_2025": 10,
+    "train_through_q2_2025_test_q3_2025": 10,
+    "train_through_q3_2025_test_q4_2025": 10,
+    "train_through_q4_2025_test_q1_2026": 10
+  },
+  "artifact_bundle_count": 40,
+  "file_count": 200,
+  "model_classes": {
+    "entry": "v4.model.hypothesis_protocol.SurfaceActionModel",
+    "protocol054_risk": "v4.scripts.run_sequential_risk_protocol.RiskHeadroomModel"
+  },
+  "selection_note": "Frozen Protocol 054 selected configs were forced from the validated report. Metrics are a reproducible rerun, not byte-identical to the old report.",
+  "promotion_constraints": [
+    "no paid data download without explicit user approval",
+    "not broker-connected paper/live approved",
+    "must be routed with Protocol 066 residual override and live shadow parity before order placement"
+  ],
+  "artifacts": [
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 11,
+      "effective_seed": 1254702371,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_11/entry_model.pt",
+          "sha256": "01cb9fe4ddc83ff51c61ec2b6488c11a8781ef057eac01aa7a1a3517fba3bb85",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_11/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_11/protocol054_risk_model.pt",
+          "sha256": "90ccbfcad4fe0d26719fe4f44292c2d65c6983f7756b8d4fb6ee10118afe1800",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_11/protocol054_risk_scaler.json",
+          "sha256": "9eea13e680c7df91005b759b58e382767af6a18b28c86757478b5a15a455938d",
+          "bytes": 1775
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_11/manifest.json",
+          "sha256": "d8579f33fe2eff65d4d8c81b227360392aaa7d72e17237d2e288eb8cce210d3c",
+          "bytes": 13573
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 111,
+      "effective_seed": 1254702471,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_111/entry_model.pt",
+          "sha256": "78b5eae7f23458d1ed7b4132739ad3c04abc957fe8c056947ce04c782c8030bc",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_111/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_111/protocol054_risk_model.pt",
+          "sha256": "fb3daa2a060e49c9d14090460ebfe3c4efc4727898e46c72fb980a291595c879",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_111/protocol054_risk_scaler.json",
+          "sha256": "41762c7471bfcdb4309755a777cb2d2935c326e5ef8ffeffc64b760e41296701",
+          "bytes": 1769
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_111/manifest.json",
+          "sha256": "7289e697ccd953e394045d20ed1243fc752500ee712457f67edd18d22eee4e1d",
+          "bytes": 13571
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 22,
+      "effective_seed": 1254702382,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_22/entry_model.pt",
+          "sha256": "76d94083f622ee4eb9e1547d6e3a7eddf2809b928c0f2d2d3a06d788149f6c55",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_22/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_22/protocol054_risk_model.pt",
+          "sha256": "62d3493d6350c7dae9075f3ae05ef539b157486d41a1cb0a3a8c30cc0087ae0a",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_22/protocol054_risk_scaler.json",
+          "sha256": "22258c1be3837dc3442645116e591f6924ff1cb4b89d894f95be5809254e11b0",
+          "bytes": 1760
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_22/manifest.json",
+          "sha256": "6a21c656f63e6e9bd7bcbe77afe0b9994f73087f3701f4de87d26afc549ff930",
+          "bytes": 13571
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 33,
+      "effective_seed": 1254702393,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_33/entry_model.pt",
+          "sha256": "a9c1c55c433d12b86ca4a3921bba92d3ae01cd1ba73ab836eac370ef1dfe8e71",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_33/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_33/protocol054_risk_model.pt",
+          "sha256": "2e1be5d2d5e742a71d559cd2e8454266e200eb9dd867f9baef9e9741082e70f1",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_33/protocol054_risk_scaler.json",
+          "sha256": "36f5a5952a7389c3537b989bbfe07e0f3b8dc44c6763501129597f89393e9fc3",
+          "bytes": 1768
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_33/manifest.json",
+          "sha256": "71fb297010b0d8c377af7330852cd18fb3863c3acbec6008cf653b57fc1f987f",
+          "bytes": 13576
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 44,
+      "effective_seed": 1254702404,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_44/entry_model.pt",
+          "sha256": "119aa14bd0aabc34d961c5f8fc85f46200928d399ee27c4bcf1769fb711b05bd",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_44/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_44/protocol054_risk_model.pt",
+          "sha256": "4b0d54a170ec22757b57aa165236d5afb39fc8877e49bc8a0d986440f328423f",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_44/protocol054_risk_scaler.json",
+          "sha256": "47693269f846589c54bf18061ff19fb2d3edd7656ed4823e498d52f9488a3aa9",
+          "bytes": 1774
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_44/manifest.json",
+          "sha256": "501ba0a65f82973a96ed17f3daf3736ca24fda7b22788d4132bcf04be52e82a2",
+          "bytes": 13568
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 55,
+      "effective_seed": 1254702415,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_55/entry_model.pt",
+          "sha256": "c5e49b019c13b57b604be059c919a1a32c1202a273a33fbd7a72da1503f2019c",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_55/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_55/protocol054_risk_model.pt",
+          "sha256": "a16adefd0d4661f4b9fa7b151e4a47919e7d229e7ccc6f9799f964cb0c06bb8c",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_55/protocol054_risk_scaler.json",
+          "sha256": "3ade65e39c0bd320b58170db368cd7621bd9e6ebaab276e11df7486f862289c6",
+          "bytes": 1755
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_55/manifest.json",
+          "sha256": "35ad513f850061f4214a11153716a2945f93b8911817793156eafac48f13cb68",
+          "bytes": 13568
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 66,
+      "effective_seed": 1254702426,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_66/entry_model.pt",
+          "sha256": "245a002dbc121c266d943d44990d1c3f6ef78843a6648b946c7bc5854e129fe7",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_66/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_66/protocol054_risk_model.pt",
+          "sha256": "0452d0db386abfc84307d8b66b7ae3292e485278912b26f6460daa1ce4a77f17",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_66/protocol054_risk_scaler.json",
+          "sha256": "32dd2e22f426546e2870068312667d52630efdd102a53ea9a04db085647cc1a8",
+          "bytes": 1756
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_66/manifest.json",
+          "sha256": "851a61e1105f55cbedd402728f6dc28efb3423c0bb0f8876e5b35046cd9055c3",
+          "bytes": 13582
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 77,
+      "effective_seed": 1254702437,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_77/entry_model.pt",
+          "sha256": "39b9f2213cf7872e0fbcbc6fa668160165786709c235efe04ad831103419c0d1",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_77/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_77/protocol054_risk_model.pt",
+          "sha256": "9d556431caa07d74eb918c177b066c79e832f68eb6da39b07af32e2a127c8a89",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_77/protocol054_risk_scaler.json",
+          "sha256": "f5157e902f5137e875eee370c651c4388453c939a84c7069a4cc3ea38fdc237e",
+          "bytes": 1756
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_77/manifest.json",
+          "sha256": "f7cd454bb0e316f3529e0c07aa23cf8f6ba07bce3dd4b5faf0d0ea98e60ca870",
+          "bytes": 13572
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 88,
+      "effective_seed": 1254702448,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_88/entry_model.pt",
+          "sha256": "7a57b1d2034d8d79dfd72d21215bf9156e451f224f9fffede7dfcff0227c603b",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_88/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_88/protocol054_risk_model.pt",
+          "sha256": "a9609a0f24106789ab2882404e72284817892a9df41c83635593f46d8d0a008b",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_88/protocol054_risk_scaler.json",
+          "sha256": "9870c4f3aeccc27f24621ca29fed3107504894368f00583d889e6251b32e794d",
+          "bytes": 1792
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_88/manifest.json",
+          "sha256": "0bf90335c0780298eddd7a1cc1ccd4e40d175dd9fb1148e32a652bbbb14c902b",
+          "bytes": 13572
+        }
+      }
+    },
+    {
+      "fold": "train_through_q1_2025_test_q2_2025",
+      "split": "q2_2025",
+      "seed": 99,
+      "effective_seed": 1254702459,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac50",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_99/entry_model.pt",
+          "sha256": "863a763da49f66228d5e783a97a8a24f52109d085bf38b611a7d19b66156d0d0",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_99/entry_standardizer.json",
+          "sha256": "8576cec41bcb141b38c894ceabe03a43210f51c79f5236d829d540dfdf0e7ac8",
+          "bytes": 8477
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_99/protocol054_risk_model.pt",
+          "sha256": "5c231a17d87dae859c217b23ab69e7ab25cbf686657717d038933dee832d015c",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_99/protocol054_risk_scaler.json",
+          "sha256": "03e4b834feb8f5d6ff1cf3a5762dcd39cb512279cf287fd7ca4367fd2277d622",
+          "bytes": 1752
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q1_2025_test_q2_2025/seed_99/manifest.json",
+          "sha256": "7386d3845ad0fc157170c722761c228e4b937ae046b3186f5429bb9cd7826ec7",
+          "bytes": 13564
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 11,
+      "effective_seed": 850101646,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_11/entry_model.pt",
+          "sha256": "9af3b001698aa9dc6f26600e8d72d4a91de7598809fce2bec9078f805d3b9271",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_11/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_11/protocol054_risk_model.pt",
+          "sha256": "23a049a77a9e55067e0162440a18ca87d0e044fddae6c17b4e6f46167e09ae9b",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_11/protocol054_risk_scaler.json",
+          "sha256": "e31089dbaf152c1edd5a0e17c35fbb6fe5279781db11e65410e0782301b4c167",
+          "bytes": 1775
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_11/manifest.json",
+          "sha256": "c72f1d017bacd707d5fd8d205a99b274eab8c2a70591f519528eec45a435b4c3",
+          "bytes": 13588
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 111,
+      "effective_seed": 850101746,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_111/entry_model.pt",
+          "sha256": "166c4d16b79b85715cdbfcd5b0717cfdfb170c3c9be2321c3a535a9c76143874",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_111/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_111/protocol054_risk_model.pt",
+          "sha256": "b0469ff24d82c779a286fae107bfe3303106653b792cf6673092dcaddda6d666",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_111/protocol054_risk_scaler.json",
+          "sha256": "ea969cf085ec44a01b1c61edd9190dc286c8284bf15b12530035d70655275632",
+          "bytes": 1764
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_111/manifest.json",
+          "sha256": "c268554530ebf647381b238410e4ab5cd75babaa4f044a569bf35198432cd3a9",
+          "bytes": 13575
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 22,
+      "effective_seed": 850101657,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_22/entry_model.pt",
+          "sha256": "0263b56f70fed1dbc3048190e1e844e9b4c5470732cdac4385eeb9cd3944d9cc",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_22/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_22/protocol054_risk_model.pt",
+          "sha256": "725f7dc36caef8e531000a7c3487e98dc8c6e1581ce3932af1644b30e6f8bf36",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_22/protocol054_risk_scaler.json",
+          "sha256": "792576a11eeb4f798a08d3c01b9dd60131964cdbc63b4bfd22fe5995ea335cba",
+          "bytes": 1792
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_22/manifest.json",
+          "sha256": "3c96dd86ee702bb88bf9514a372d690988a861341984179c281855314e8a220a",
+          "bytes": 13580
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 33,
+      "effective_seed": 850101668,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_33/entry_model.pt",
+          "sha256": "350b61d336dba22bd39ddf0a761d59cecab4ea90b559c065af3e943ff5157b73",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_33/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_33/protocol054_risk_model.pt",
+          "sha256": "9cc91c61b252082438ee4341ccb990a0dc8ac5f2cc3734a6427c1d7c98eb2587",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_33/protocol054_risk_scaler.json",
+          "sha256": "2eab5db49e544e880c91f031dfe57e085694ea34312010944308bcc434ae4db3",
+          "bytes": 1762
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_33/manifest.json",
+          "sha256": "8e37a2582d7058b20cbb49815b9866b1c165c15a808f827364109f696c6d1e8b",
+          "bytes": 13575
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 44,
+      "effective_seed": 850101679,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_44/entry_model.pt",
+          "sha256": "82ef70737e3d154a234776953e34c3f287377198bbc2189272bf432376e17eec",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_44/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_44/protocol054_risk_model.pt",
+          "sha256": "af49d740c59f1fb04c1e5f713acb6b3c6dad985f5292f9b4d3164655b3e8abcb",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_44/protocol054_risk_scaler.json",
+          "sha256": "19a0103d24899be9e7386a0e4250de5d8dfcf22649d0b8f47eac3034237d592a",
+          "bytes": 1736
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_44/manifest.json",
+          "sha256": "825b2664ed0eb142557d1cd4998fb7c0b6a412472046652ade20f0c1add502d0",
+          "bytes": 13580
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 55,
+      "effective_seed": 850101690,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_55/entry_model.pt",
+          "sha256": "083f597e9a64421caf327340524d4b6bcc3678b7d128dd033cb2bc348133828b",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_55/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_55/protocol054_risk_model.pt",
+          "sha256": "04a2fa39e0f673af3e31f3cc37056dfc89c80587240c43ee2529fcb55c17cdc8",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_55/protocol054_risk_scaler.json",
+          "sha256": "e453f1a6c0f14f1e4376db488d69987a9b2fd985bef543efe45a41d7abaee780",
+          "bytes": 1785
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_55/manifest.json",
+          "sha256": "64d8728cd2707b19b1492e2c84f78aafbfa2406e5a0341d126cd32b5e30c2a57",
+          "bytes": 13590
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 66,
+      "effective_seed": 850101701,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_66/entry_model.pt",
+          "sha256": "7e37a5bbc416863869e148f620e36bd2212c73312c13fcb896a0d5a0a2701330",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_66/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_66/protocol054_risk_model.pt",
+          "sha256": "dd5376473245a08647e15bd003fa1d2d4acd886e412577328f8d9ea857504218",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_66/protocol054_risk_scaler.json",
+          "sha256": "cdc69d0ad90f7affe28ef1abae6a101a7ff03217a77761b711bdcb97df5c1798",
+          "bytes": 1774
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_66/manifest.json",
+          "sha256": "af9c20bdff1a0a7ef74dad67b006cd5daf6184c50769cd7597583acc56147b02",
+          "bytes": 13587
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 77,
+      "effective_seed": 850101712,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_77/entry_model.pt",
+          "sha256": "4b47194b982332f22d00c5685d7be22684e9668c10849aaa1e337f1c7e444618",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_77/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_77/protocol054_risk_model.pt",
+          "sha256": "165b7ca0140a581e9127784b95aada4d241342c80c8c72918a690ca5d0623478",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_77/protocol054_risk_scaler.json",
+          "sha256": "bbeeae3adef45d6894bafedf772d7aa0842dfddd15df8e8615c4d1424874fb8d",
+          "bytes": 1773
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_77/manifest.json",
+          "sha256": "919add1826321e2d3395ace3dc1952009099ece2bfb264df015c54a5ebcba7b2",
+          "bytes": 13580
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 88,
+      "effective_seed": 850101723,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_88/entry_model.pt",
+          "sha256": "6e015a2219b0f5c614694015edfc3d56718f6fdbd20e2224e4b5c7000383210d",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_88/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_88/protocol054_risk_model.pt",
+          "sha256": "437b20ba7e747f1f3e3d11e9385369501629b310800f131fd7cdb626db649689",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_88/protocol054_risk_scaler.json",
+          "sha256": "4f7c42da61b87ecea3b05d9b3f01a98c7012c95446d8902e4e754a3b31a43314",
+          "bytes": 1733
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_88/manifest.json",
+          "sha256": "9d1f1731e7483f8ba63bd3eed38b2459096ff6da9263c818ce6c6de9db4a5438",
+          "bytes": 13589
+        }
+      }
+    },
+    {
+      "fold": "train_through_q2_2025_test_q3_2025",
+      "split": "q3_2025",
+      "seed": 99,
+      "effective_seed": 850101734,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_99/entry_model.pt",
+          "sha256": "e5afd0a29706fa24e6e28bc811e486c85460270a53f8005a080f3ffcd53a6cb2",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_99/entry_standardizer.json",
+          "sha256": "6ce3f02aca630b890e42b878a0f0d1856a88579c3c8c9956ad3af9fb5e7cc8c9",
+          "bytes": 8510
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_99/protocol054_risk_model.pt",
+          "sha256": "eda4ee3833648a8276f8234461d9852dbaba44b404d823976c7e3ce141dbbea3",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_99/protocol054_risk_scaler.json",
+          "sha256": "52915b22bf33dbff57cbeb06b9ff1ce765157e7387318edb11ea24777591af66",
+          "bytes": 1746
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q2_2025_test_q3_2025/seed_99/manifest.json",
+          "sha256": "cafc4c0ada5de7c1589bd896a17d13d9867ff2cf6c3d733b01fcfcd22e55f8a7",
+          "bytes": 13587
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 11,
+      "effective_seed": 1669020234,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_11/entry_model.pt",
+          "sha256": "0108aaaef2f5b231ed21fd7217dc83e514b614edee28a66bbda4632311389bf5",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_11/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_11/protocol054_risk_model.pt",
+          "sha256": "e8dfc9023220416ae8b50f5e134d6da58c463577508b78acce066a36b4c44f2b",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_11/protocol054_risk_scaler.json",
+          "sha256": "e360b0d50d1115552ccc48c966d88f7e9f6797bdc6f0af8e73a68cf84055cd6f",
+          "bytes": 1788
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_11/manifest.json",
+          "sha256": "02535b9376fb13714cd1a9973ccfc52f0723b93b9cd7b5ee20f39de04480ec5a",
+          "bytes": 13589
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 111,
+      "effective_seed": 1669020334,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_111/entry_model.pt",
+          "sha256": "9968cbdb74e23b170c7278e00cc1ca018971db85833dddd82d9e52919c826800",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_111/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_111/protocol054_risk_model.pt",
+          "sha256": "7e07923d702b81f1a9b49eee3681e3925e83035b27810a4880a1bacc137f35ff",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_111/protocol054_risk_scaler.json",
+          "sha256": "2b823185aae4f26e7d28e921190d61e246c687a62977195036174f77c56a8f1c",
+          "bytes": 1758
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_111/manifest.json",
+          "sha256": "438239eea4f2d4eeb2b534959243d031bbcfb0703e6bf830a752f640bac3091c",
+          "bytes": 13608
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 22,
+      "effective_seed": 1669020245,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_22/entry_model.pt",
+          "sha256": "cf590e65c7db4b615a62ee0d0058890fdcea4e9cd5c22921a711a77a2220abe8",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_22/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_22/protocol054_risk_model.pt",
+          "sha256": "557e1202de82025ef2245306218e26d21cb0ca9082a3a09e3b073b95b467127f",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_22/protocol054_risk_scaler.json",
+          "sha256": "4d5f44d84cc13779245a8d73b5933b0737b0b2d0992b63202c5f60174731f602",
+          "bytes": 1775
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_22/manifest.json",
+          "sha256": "223c7da0ef7a263ffed7a8c3b207bb7beccc7d54e5f0c98447a29cd67aa6a345",
+          "bytes": 13604
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 33,
+      "effective_seed": 1669020256,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_33/entry_model.pt",
+          "sha256": "6f0b8582a38c93ea5d4aef61ef0e6d16a9e4f0e320d23b35f58fe320383f4f23",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_33/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_33/protocol054_risk_model.pt",
+          "sha256": "f86a96c0216cd35a16b05e6569bd05e2d4aebc6e6dfc33b6f5d153141a5dba5a",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_33/protocol054_risk_scaler.json",
+          "sha256": "54ac3bf001a8a67d965509d7b12ea729d517cb2f3eec519365ae6427617545bc",
+          "bytes": 1775
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_33/manifest.json",
+          "sha256": "724debde54202af4bc320d53db428542c189883cf6e4d93dd953854a074c4490",
+          "bytes": 13606
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 44,
+      "effective_seed": 1669020267,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_44/entry_model.pt",
+          "sha256": "b4979011a0a71a0718590e6fd1e702a39555967cfe5b42c2e6c7a9a0d6addcf3",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_44/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_44/protocol054_risk_model.pt",
+          "sha256": "1d11467f9467da7ab3b8977d6ed187f55286d8475aeae454565b2964f87efdcd",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_44/protocol054_risk_scaler.json",
+          "sha256": "db040bd0b6d304a79d58eeec7bca1ecadc26e3b53b3de074806b5f99dbd201bd",
+          "bytes": 1754
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_44/manifest.json",
+          "sha256": "6cdd1da6485cda48ab825ccc2b80ac0d11a4dba04f47771f9e576d7cd19cd270",
+          "bytes": 13596
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 55,
+      "effective_seed": 1669020278,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_55/entry_model.pt",
+          "sha256": "a590d6b9eb78109406418af3d2b671975308dc8de757c6697e6f74a2e6f6ddba",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_55/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_55/protocol054_risk_model.pt",
+          "sha256": "69b40109dba52cbab0475659b82c6512c85bc3b35cdb48b0cd0f433dc74d0d91",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_55/protocol054_risk_scaler.json",
+          "sha256": "3da8199b585b04e29d61c31bf76e3bbddf241217693ae421a8f31fee8aa3e71a",
+          "bytes": 1760
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_55/manifest.json",
+          "sha256": "ee3c8a65bbbaebfa2a84242f64ea4b45eb1ceaf5365032a43db2765785605e05",
+          "bytes": 13610
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 66,
+      "effective_seed": 1669020289,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_66/entry_model.pt",
+          "sha256": "029aa19cd5781e22e962bfce6d79f413e8f0931b8c7ce03faa4eea8d6c17882c",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_66/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_66/protocol054_risk_model.pt",
+          "sha256": "22a548df9c51e6ee62f71816ee8ddc3b64182bbda4b7f435e9bcea3aeddd3095",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_66/protocol054_risk_scaler.json",
+          "sha256": "da42ade00eaa674b76f6f10b11017f34f7944f56794c280201a58d7f97acf383",
+          "bytes": 1779
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_66/manifest.json",
+          "sha256": "47816b1b4f88c09d028d472465b956d57fe098f2fc041cbf3da46f455ae5d9ae",
+          "bytes": 13585
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 77,
+      "effective_seed": 1669020300,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_77/entry_model.pt",
+          "sha256": "5856c1f56a0d838563e5df89e90d6916d9964c364dba27056cae404da029651e",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_77/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_77/protocol054_risk_model.pt",
+          "sha256": "f212dfc7be8070560ac95da3621422047eff63b02f5657e54060eb0a78e932e9",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_77/protocol054_risk_scaler.json",
+          "sha256": "f5ce3d5d24771587be2775b29445d52705b0adc8eeb98eeec9d50708e0a30998",
+          "bytes": 1781
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_77/manifest.json",
+          "sha256": "a900c8940f441cde5cc6af3161e69dc2133b9efaaad2096ff58b872c246df229",
+          "bytes": 13598
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 88,
+      "effective_seed": 1669020311,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_88/entry_model.pt",
+          "sha256": "fee940b9d6e4650dba6fcd9c3c494a6c160ec310a1e756c820402b0d4923d174",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_88/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_88/protocol054_risk_model.pt",
+          "sha256": "e6003d8798ee89b4bb05d31680924c7e57c29c880216ff5532a5952f8f21cf06",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_88/protocol054_risk_scaler.json",
+          "sha256": "b8c6b629a8210f34c94ea46f909fa57704a598e3899d022f9a67e377e391443e",
+          "bytes": 1744
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_88/manifest.json",
+          "sha256": "65823e95d0205609a6b38b688956b4dda3b34ee9935ac57bc837f4471af69f53",
+          "bytes": 13599
+        }
+      }
+    },
+    {
+      "fold": "train_through_q3_2025_test_q4_2025",
+      "split": "q4_2025",
+      "seed": 99,
+      "effective_seed": 1669020322,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_99/entry_model.pt",
+          "sha256": "ebb8327c5070948f9ab3ab846116def0d34223f391aec50d7cf3810c7778bad7",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_99/entry_standardizer.json",
+          "sha256": "d3233f60d4708a5689ade0ffb17f4ac336d209454977cc4b860b12fa72c1e0a9",
+          "bytes": 8531
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_99/protocol054_risk_model.pt",
+          "sha256": "82dc0aacd99fa8f41e244972ebafb6d6ef723322eb8b15f3a747bd5b8cffa496",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_99/protocol054_risk_scaler.json",
+          "sha256": "6d4e22df11b5b66aecf4072b6f54edbb831778f8338497debcbc3a6d0d91b30e",
+          "bytes": 1794
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q3_2025_test_q4_2025/seed_99/manifest.json",
+          "sha256": "4acca2ce08162fad5cd5326cfd9a2d9e21498a4298de85295d974bb6960c11d3",
+          "bytes": 13594
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 11,
+      "effective_seed": 186312709,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_11/entry_model.pt",
+          "sha256": "db712866fc4f3c8e16158a2f94b6fba31fceb1213552454d6a8bae42acdea7a4",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_11/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_11/protocol054_risk_model.pt",
+          "sha256": "914b52c45b714a2c8e99dfe959673448071969e30eacad29666a68254cddb2aa",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_11/protocol054_risk_scaler.json",
+          "sha256": "c8408880e79dc3e63b63a472a7a89a1bfc62691c370505edc35454856c094c8b",
+          "bytes": 1778
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_11/manifest.json",
+          "sha256": "5b0ee8de8ed6a92e5f207f0a69e95425804014cd7f063585981fc3758f7a8aaa",
+          "bytes": 13587
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 111,
+      "effective_seed": 186312809,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_111/entry_model.pt",
+          "sha256": "33aba8c5f5f15eba2aa825349d301de9332ff82bf9ccde7b17aa186b280b9910",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_111/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_111/protocol054_risk_model.pt",
+          "sha256": "35f12b7e900f88a28a1fe8eb47cb8ff185e684fae458f4a05f4f1fed0a9a79fa",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_111/protocol054_risk_scaler.json",
+          "sha256": "a3f5acc1c37a98bc1b70e614b6a853aabce32682474972fa35cf27061a27893d",
+          "bytes": 1772
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_111/manifest.json",
+          "sha256": "b2e0cb232a82e5efb4e8555702a8424179e7e14d2a139523ebd063661e5ee0ae",
+          "bytes": 13611
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 22,
+      "effective_seed": 186312720,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_22/entry_model.pt",
+          "sha256": "39d488bfb928236bf956dd8c9673ac54de798e4bce59972d08f45824f3f4f246",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_22/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_22/protocol054_risk_model.pt",
+          "sha256": "34b40a2ce84d21a29d3f4b569dcdf33115491664fdf352b290763efeb414ee04",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_22/protocol054_risk_scaler.json",
+          "sha256": "52eaed6a448cf31c5627d7939c7f1790015a12dfc55a18f2274c7befcd26095d",
+          "bytes": 1775
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_22/manifest.json",
+          "sha256": "85aacc928e514d172408a14d6aa91b1f8c588791b0c51f998ca0a37c4d7c3bd3",
+          "bytes": 13600
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 33,
+      "effective_seed": 186312731,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_33/entry_model.pt",
+          "sha256": "703f9f56b10eebddee268c0a0d33a9d5b7d375f44f90d4360e78a920bdf227ea",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_33/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_33/protocol054_risk_model.pt",
+          "sha256": "cd634c851cd5ccbb4167c312d125d2c9977aae4775546f7d5b637e31b89734fc",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_33/protocol054_risk_scaler.json",
+          "sha256": "1167846fa5a301d9b39c63d8357a91e27851fcd54b2eee78aee26f707aeb3976",
+          "bytes": 1791
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_33/manifest.json",
+          "sha256": "9ba2fc285699876397511620e6910b6ff111d29a94e02b4d9390ee4281c4e3fb",
+          "bytes": 13609
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 44,
+      "effective_seed": 186312742,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_44/entry_model.pt",
+          "sha256": "eb4d582af6fe7e9c12cf2aef49119d10a2e4f44f691f283a23e1b7402e097be2",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_44/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_44/protocol054_risk_model.pt",
+          "sha256": "9a3ac4d79e86bfb9392b258974ca9c9598861f3b0f4592177f9a15eeb3e86fab",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_44/protocol054_risk_scaler.json",
+          "sha256": "cb18ce74e5459ae95aa74bfaeeeece16d7b7139ffa705d2f8a1cffc5160e6b52",
+          "bytes": 1761
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_44/manifest.json",
+          "sha256": "67b8e4f1c362c379539f82f42ddce368e992b11995dca588c588bcb8f040db15",
+          "bytes": 13594
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 55,
+      "effective_seed": 186312753,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_55/entry_model.pt",
+          "sha256": "97f40953815e1e4aa75fd48276f3b6018440afd993096087c5fd7eea33dd6d43",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_55/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_55/protocol054_risk_model.pt",
+          "sha256": "01f1cc47832d7ca33c8f9b4dd48517cfa8d18edbf18563e68134c243b7d83ee0",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_55/protocol054_risk_scaler.json",
+          "sha256": "02cfdce95765dbb7452066fc08446e81e9f5ad2c3ddf43f23b41300993cbcd81",
+          "bytes": 1792
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_55/manifest.json",
+          "sha256": "2431bd435b0dff2c1f1241b74a909c2efdc3c82d0a645c6d43379d54b72e7cd8",
+          "bytes": 13600
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 66,
+      "effective_seed": 186312764,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_66/entry_model.pt",
+          "sha256": "4a77db8c8ca4bd97ac7bf38413502434372963b0928b8c4a1fd2dc5c207cd75a",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_66/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_66/protocol054_risk_model.pt",
+          "sha256": "83247f046734ccdaf5f5caf88d869d7b82afa79ae83e4e5a32bc7eb5a9f87c84",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_66/protocol054_risk_scaler.json",
+          "sha256": "27dafa124c5090f4816e21c149836c1cdf0e39215b517a81fe759a0bd76403c5",
+          "bytes": 1760
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_66/manifest.json",
+          "sha256": "acd26784adea7864afbc60dd9311a818d44f27b6776ca0131aeba346fb716581",
+          "bytes": 13619
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 77,
+      "effective_seed": 186312775,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_77/entry_model.pt",
+          "sha256": "4bbdcd0cc0c7e68ff40944c4b2156c85fd9ceb8170360b625170e71e5d87ccb2",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_77/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_77/protocol054_risk_model.pt",
+          "sha256": "488273650782a7d64a94c8515c88d3b9fe9f4e5b071403378018813f72c1002d",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_77/protocol054_risk_scaler.json",
+          "sha256": "f65d3f9b19fdd284a6b1cd2e60ab74a61a6689e3388e0e8538c9402be532b333",
+          "bytes": 1760
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_77/manifest.json",
+          "sha256": "d1db88702b3ee0ed1ed6bbe0a71f4ca558b4f535cf0e88ebb671726e574b41cb",
+          "bytes": 13598
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 88,
+      "effective_seed": 186312786,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_88/entry_model.pt",
+          "sha256": "55f13a7aa204f4fe7e7fa7de0c03df0352cdd2f53e67ef37f8ebd13f0fb1f1ac",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_88/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_88/protocol054_risk_model.pt",
+          "sha256": "23dd3b9310be4f75d38c8ea31d7159d782ee65048054bde3e1ec0d7debbd0d72",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_88/protocol054_risk_scaler.json",
+          "sha256": "98895f77f8b192767b2f83d133e0172abee10386266b0fa0d78725c61f91808c",
+          "bytes": 1778
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_88/manifest.json",
+          "sha256": "4ed8ed58092401258f5e49103173519d7f188c9205f841cd2fae4d57c3e8d2e6",
+          "bytes": 13609
+        }
+      }
+    },
+    {
+      "fold": "train_through_q4_2025_test_q1_2026",
+      "split": "q1_2026",
+      "seed": 99,
+      "effective_seed": 186312797,
+      "selected_risk_config": "headroom_le_150_minhold_1_gb50_gbfrac35",
+      "variant_name": "surface_structure_aplus_side_value_rank",
+      "trial_name": "post_open_late_edge25_max2",
+      "files": {
+        "entry_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_99/entry_model.pt",
+          "sha256": "c4f8031ab5ca1cb2bfd71418fac1d8b05f56602b260565d05ae0d7a9adfdc41c",
+          "bytes": 303059
+        },
+        "entry_standardizer": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_99/entry_standardizer.json",
+          "sha256": "8d62b5248b3ff03680bd77b67eacddcd34fea7d19074e927e1fd26c246afa11d",
+          "bytes": 8501
+        },
+        "protocol054_risk_model": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_99/protocol054_risk_model.pt",
+          "sha256": "bcd741eede237452d9ca5429a679d050b08280cdaf251624ceb237097e1f7d41",
+          "bytes": 30047
+        },
+        "protocol054_risk_scaler": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_99/protocol054_risk_scaler.json",
+          "sha256": "a3e9fec706cdb2d9e40d6f20fe14fde87c96893ca9d480e03b56dde0946593d8",
+          "bytes": 1775
+        },
+        "manifest": {
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_99/manifest.json",
+          "sha256": "d14c1128023d9d5a380d43b5256d19d82b34ba1ee3a40e75192d2e06d34c1bd3",
+          "bytes": 13605
+        }
+      }
+    }
+  ]
+}

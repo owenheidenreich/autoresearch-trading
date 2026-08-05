@@ -1,0 +1,53 @@
+{
+  "protocol": "161_may_2026_historical_replay_download",
+  "purpose": "Download the minimum historical May 19-20 2026 data needed to replay frozen Protocol101 against the same days where the live paper trader abstained.",
+  "approval_required": {
+    "exact_approval_text": "I approve Protocol161 May 19-20 2026 historical replay data download with a hard Databento cap of $5.00."
+  },
+  "paid_data_request": {
+    "source": "Databento",
+    "dataset": "OPRA.PILLAR",
+    "date_range": {
+      "start_date": "2026-05-19",
+      "end_date": "2026-05-20"
+    },
+    "symbols": "SPXW.OPT parent, filtered to SPXW 0DTE raw symbols",
+    "schemas": [
+      "definition",
+      "cbbo-1m",
+      "ohlcv-1m",
+      "statistics"
+    ],
+    "estimated_cost_usd": 1.61,
+    "hard_cap_usd": 5.0,
+    "notes": [
+      "Definitions metadata estimate returned approximately $0.0696 total for the two sessions.",
+      "The full OPRA estimate is based on the prior complete two-day smoke-test cost because filtered raw symbols require definitions before precise schema estimates.",
+      "No CBBO-1s/tick data is included in this request."
+    ]
+  },
+  "subscription_data_request": {
+    "source": "ThetaData",
+    "product": "index_history_ohlc",
+    "date_range": {
+      "start_date": "2026-05-19",
+      "end_date": "2026-05-20"
+    },
+    "symbols": [
+      "SPX",
+      "VIX"
+    ],
+    "granularity": "1m",
+    "estimated_incremental_cost_usd": 0.0,
+    "notes": [
+      "Uses the existing ThetaData subscription if local SPX/VIX files for these sessions are missing.",
+      "This is still treated as licensed market data and requires the same approval gate."
+    ]
+  },
+  "excluded": [
+    "Databento CBBO-1s",
+    "Databento TCBBO",
+    "CMBP-1",
+    "Any live broker order endpoint"
+  ]
+}

@@ -1,5 +1,8 @@
 # Protocol101 Full Trader Program
 
+> **STALE SYNC DUPLICATE — DO NOT READ (2026-08-05).** This is a Finder/iCloud duplicate of `README.md`, dated 2026-07-28 and superseded by the real `README.md` (2026-07-31) beside it. Despite calling itself the canonical training front page, it is NOT. Current status is [`STATUS.md`](../../../../STATUS.md).
+
+
 Status: **CANONICAL TRAINING FRONT PAGE**
 
 Last reconciled: **2026-07-28, after policy-neutral selector and P5

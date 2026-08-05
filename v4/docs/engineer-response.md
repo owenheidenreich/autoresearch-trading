@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-08-05.** This document treats a **2026-05-23** handoff as the project source of truth. It is not. Current status is [`STATUS.md`](../../STATUS.md).
+
 I’m treating the attached handoff from **2026-05-23** as the project source of truth. The core project is a v4 SPXW 0DTE neural trading system whose intended final action space is: do nothing, buy one call, buy one put, hold, or exit, with ask-entry/bid-exit accounting, one account, one open position, one contract, affordability constraints, no lookahead, and mandatory flat-before-close.  
 
 ## 1. Plain-English restatement
@@ -621,6 +623,8 @@ My strongest recommendation is to stop thinking of the next model as “better e
 ---
 
 # Prioritized research agenda
+
+
 
 | Priority | What to try next                                                                                                                          | Why it is likely to help                                                                                                                                 | Evidence that would confirm it                                                                                                  | Evidence that would falsify it                                                                              |
 | -------: | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |

@@ -1,0 +1,40 @@
+{
+  "broker_endpoint_called": false,
+  "candidate": "CHALLENGER_SOURCE_PENALTY_BASELINE_ANCHORED_CONTINUATION_V1",
+  "changes_paper_default": false,
+  "decision": "freeze_protocol265_research_only_protocol101_unchanged",
+  "evidence": {
+    "artifact_file_count": 18,
+    "artifact_manifest": "v4/audit/autoresearch/v4_aplus_hypothesis_265_source_penalty_baseline_anchored_continuation/artifact_manifest.json",
+    "protocol265_decision": "research_only_source_penalty_baseline_anchor_beats_paper_but_not_base",
+    "protocol266_decision": "pass_protocol265_artifact_reproduction_exact",
+    "reproduction_exit_time_mismatches": 0,
+    "reproduction_extra_keys": 0,
+    "reproduction_max_abs_pnl_diff": 1.1368683772161603e-13,
+    "reproduction_missing_keys": 0,
+    "reproduction_reference_rows": 17232,
+    "reproduction_reproduced_rows": 17232,
+    "reproduction_rows_match": true
+  },
+  "historical_protocol": "Protocol267",
+  "live_orders": false,
+  "next_required_gates": [
+    "AUDIT_PROTOCOL265_EXTENSION_REGIME_ATTRIBUTION_V1",
+    "RUNTIME_PROTOCOL265_NO_ORDER_PARITY_V1",
+    "DATASET_FULL_SURFACE_ACTION_ADVANTAGE_V1"
+  ],
+  "not_paper_ready_reasons": [
+    "requires Protocol265 no-order runtime parity",
+    "candidate remains anchored to Protocol261 selected entries",
+    "not a full-action unified wait/enter/hold/exit policy",
+    "extension attribution is mixed across recent, March, and Q1"
+  ],
+  "paid_data_downloaded_by_runner": false,
+  "paper_default": "PAPER_DEFAULT_PROTOCOL101",
+  "paper_default_change": "none",
+  "reproduction_protocol": "Protocol266",
+  "role_label": "DECISION_FREEZE_PROTOCOL265_RESEARCH_ONLY_V1",
+  "source_protocol": "Protocol265",
+  "status": "research_only",
+  "what_is_this": "freeze / research-only decision packet"
+}

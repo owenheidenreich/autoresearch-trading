@@ -1,0 +1,57 @@
+{
+  "baseline_protocol": "protocol_054",
+  "entry_protocol": "protocol_051",
+  "freeze_type": "research_candidate_freeze",
+  "frozen_artifacts": {
+    "artifact_reproduction_summary": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_082_q4start_artifact_reproduction/summary.json",
+      "sha256": "9b6b7a4ec36a09d526e3c2361e3e9059ea936d2edd88f8360e6ed47fc70ac42b"
+    },
+    "deployment_artifacts": {
+      "path": "v4/promotion/PROTOCOL_081_DEPLOYMENT_ARTIFACTS.json",
+      "sha256": "19751fcbceb6625b1ec283225813483a29d43998eb2828a8e787de9e5068fd45"
+    },
+    "report_json": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/report.json",
+      "sha256": "387df6f214545f2330f2305d14e52701a9bdfc264f4a5dd83514a361cc4d42ac"
+    },
+    "selected_trades": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/selected_trades_sequence_exits.json",
+      "sha256": "7aa91f25101b3360406325ed6051da55a0d21ac740bad9558868dea94bdb5652"
+    },
+    "sequence_dataset_report": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_077_q4start_lifecycle_sequence_dataset/report.json",
+      "sha256": "696b25aac47eab1e1c0270826aba40d4fbc6cdfc2ae92e0bd37b6cc23408d530"
+    }
+  },
+  "frozen_at": "2026-05-12",
+  "model_protocol": {
+    "batch_size": 256,
+    "calibrate_threshold": true,
+    "decision_rule": "mandatory hard stop/target first; otherwise exit before Protocol 054 only when predicted residual value exceeds validation-selected threshold plus deterministic epsilon; if no override fires, use frozen Protocol 054 exit",
+    "epochs": 12,
+    "hidden_dim": 72,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "sequence_mode": "protocol054_residual_recovery_penalty",
+    "source_protocol": "protocol_081",
+    "validation_days": 10
+  },
+  "promotion_constraints": [
+    "no entry-side knobs while Protocol 081 is frozen",
+    "no paid data download without explicit user approval",
+    "paper/live approval requires live-data parity, order-state accounting, conservative slippage, and high-resolution path audit evidence"
+  ],
+  "protocol_id": "protocol_081",
+  "status": "frozen_challenger_not_paper_or_live_approved"
+}

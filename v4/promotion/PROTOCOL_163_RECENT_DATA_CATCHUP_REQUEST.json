@@ -1,0 +1,1076 @@
+{
+  "approval_required": {
+    "exact_approval_text": "I approve Protocol 163 recent data catch-up: Databento OPRA.PILLAR definition/cbbo-1m/ohlcv-1m/statistics for missing SPXW 0DTE sessions 2026-04-01 through 2026-05-18, plus ThetaData SPX/VIX 1-minute bars for the same missing sessions, reusing existing local May 19-20 files for the combined block through 2026-05-20, with a hard Databento spend cap of $30.00.",
+    "required_before": [
+      "Any Databento timeseries.get_range call",
+      "Any ThetaData historical index_history_ohlc call",
+      "Any paid retry of failed market-data downloads"
+    ]
+  },
+  "cost_estimate": {
+    "conservative_total_usd": 21.1491,
+    "estimated_total_usd": 17.6462,
+    "local_schema_cost_stats": [
+      {
+        "max": 0.034868717194,
+        "mean": 0.02846010523388594,
+        "median": 0.028391182423,
+        "observations": 377,
+        "p75": 0.029457360506,
+        "p90": 0.030585899949000003,
+        "schema": "definition"
+      },
+      {
+        "max": 0.064601004124,
+        "mean": 0.02636811540361804,
+        "median": 0.024139881134,
+        "observations": 377,
+        "p75": 0.027102082968,
+        "p90": 0.034707248210800026,
+        "schema": "cbbo-1m"
+      },
+      {
+        "max": 1.128647327423,
+        "mean": 0.4199388362368514,
+        "median": 0.39657741785,
+        "observations": 377,
+        "p75": 0.476091504097,
+        "p90": 0.5731059908868,
+        "schema": "ohlcv-1m"
+      },
+      {
+        "max": 0.003933906555,
+        "mean": 0.001900289039718833,
+        "median": 0.001766324043,
+        "observations": 377,
+        "p75": 0.00208234787,
+        "p90": 0.0024815082548,
+        "schema": "statistics"
+      }
+    ],
+    "local_total_cost_stats": {
+      "max": 1.196869686246,
+      "mean": 0.4766673459140743,
+      "median": 0.452512428164,
+      "observations": 377,
+      "p75": 0.5369917452340001,
+      "p90": 0.6319235056642001
+    },
+    "metadata_status": "skipped",
+    "method": "Databento metadata.get_cost for parent definition where available, plus local calibrated schema estimates from prior filtered SPXW 0DTE downloads for cbbo-1m, ohlcv-1m, and statistics. Exact raw-symbol costs require paid definition downloads and are therefore deferred until approval.",
+    "proposed_hard_cap_usd": 30.0,
+    "schema_estimates": [
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-01"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-02"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-06"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-07"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-08"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-09"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-10"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-13"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-14"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-15"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-16"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-17"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-20"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-21"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-22"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-23"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-24"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-27"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-28"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-29"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-04-30"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-01"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-04"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-05"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-06"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-07"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-08"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-11"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-12"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-13"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-14"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-15"
+      },
+      {
+        "conservative_total_usd": 0.640881,
+        "estimated_total_usd": 0.534733,
+        "schema_estimates": {
+          "cbbo-1m": {
+            "conservative_usd": 0.034707,
+            "estimated_usd": 0.027102,
+            "method": "local_calibrated_prior"
+          },
+          "definition": {
+            "conservative_usd": 0.030586,
+            "estimated_usd": 0.029457,
+            "method": "local_calibrated_prior"
+          },
+          "ohlcv-1m": {
+            "conservative_usd": 0.573106,
+            "estimated_usd": 0.476092,
+            "method": "local_calibrated_prior"
+          },
+          "statistics": {
+            "conservative_usd": 0.002482,
+            "estimated_usd": 0.002082,
+            "method": "local_calibrated_prior"
+          }
+        },
+        "session": "2026-05-18"
+      }
+    ]
+  },
+  "date_plan": {
+    "combined_processed_end": "2026-05-20",
+    "combined_processed_start": "2026-04-01",
+    "excluded_current_day": "2026-05-21",
+    "expected_sessions": [
+      "2026-04-01",
+      "2026-04-02",
+      "2026-04-06",
+      "2026-04-07",
+      "2026-04-08",
+      "2026-04-09",
+      "2026-04-10",
+      "2026-04-13",
+      "2026-04-14",
+      "2026-04-15",
+      "2026-04-16",
+      "2026-04-17",
+      "2026-04-20",
+      "2026-04-21",
+      "2026-04-22",
+      "2026-04-23",
+      "2026-04-24",
+      "2026-04-27",
+      "2026-04-28",
+      "2026-04-29",
+      "2026-04-30",
+      "2026-05-01",
+      "2026-05-04",
+      "2026-05-05",
+      "2026-05-06",
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-11",
+      "2026-05-12",
+      "2026-05-13",
+      "2026-05-14",
+      "2026-05-15",
+      "2026-05-18",
+      "2026-05-19",
+      "2026-05-20"
+    ],
+    "known_market_holidays_excluded": [
+      "2026-04-03"
+    ],
+    "missing_paid_sessions": [
+      "2026-04-01",
+      "2026-04-02",
+      "2026-04-06",
+      "2026-04-07",
+      "2026-04-08",
+      "2026-04-09",
+      "2026-04-10",
+      "2026-04-13",
+      "2026-04-14",
+      "2026-04-15",
+      "2026-04-16",
+      "2026-04-17",
+      "2026-04-20",
+      "2026-04-21",
+      "2026-04-22",
+      "2026-04-23",
+      "2026-04-24",
+      "2026-04-27",
+      "2026-04-28",
+      "2026-04-29",
+      "2026-04-30",
+      "2026-05-01",
+      "2026-05-04",
+      "2026-05-05",
+      "2026-05-06",
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-11",
+      "2026-05-12",
+      "2026-05-13",
+      "2026-05-14",
+      "2026-05-15",
+      "2026-05-18"
+    ],
+    "paid_databento_end": "2026-05-18",
+    "paid_databento_start": "2026-04-01",
+    "reuse_existing_sessions": [
+      "2026-05-19",
+      "2026-05-20"
+    ]
+  },
+  "decision": "approval_required_before_paid_download",
+  "download_endpoint_called": false,
+  "paid_data_downloaded": false,
+  "post_approval_build_steps": [
+    "Download only missing Databento OPRA.PILLAR files for missing_paid_sessions.",
+    "Download ThetaData SPX/VIX 1-minute bars for the same missing sessions.",
+    "Reuse existing local 2026-05-19 and 2026-05-20 raw/index files.",
+    "Build normalized official-context rows for 2026-04-01 through 2026-05-20.",
+    "Build processed neural rows for the same combined block.",
+    "Run continuity, contract, quote, index-context, and OI-source checks before retraining."
+  ],
+  "protocol": "163_recent_data_catchup_request",
+  "source": {
+    "databento": {
+      "dataset": "OPRA.PILLAR",
+      "schemas": [
+        "definition",
+        "cbbo-1m",
+        "ohlcv-1m",
+        "statistics"
+      ],
+      "symbols": "SPXW.OPT parent definitions, then filtered SPXW 0DTE raw symbols. The current known downloader uses all same-day SPXW 0DTE raw symbols; a stricter ATM +/- $50 downloader should be implemented before download if cost minimization is preferred."
+    },
+    "thetadata": {
+      "approval_still_required_before_download": true,
+      "incremental_subscription_cost_usd": 0.0,
+      "products": [
+        "SPX 1-minute index bars",
+        "VIX 1-minute index bars"
+      ]
+    }
+  },
+  "theta_historical_download_called": false,
+  "why_needed": "Protocol163 changes training to account-level serial opportunity cost. The official-context training stream currently ends at 2026-03-31, and recent April-May 2026 market action should be available before retraining so the new target is not fitted only to stale regimes."
+}

@@ -1,0 +1,28 @@
+{
+  "feature_name": "daily paper autopilot",
+  "current_model_id": "protocol101",
+  "selection_policy": "Run the latest paper-approved default model from this registry. Do not auto-select research-only, smoke-only, or newly trained artifacts until a promotion packet explicitly updates current_model_id.",
+  "updated_at": "2026-05-26",
+  "models": {
+    "protocol101": {
+      "display_name": "Protocol101",
+      "entrypoint": "v4.scripts.run_protocol160_protocol101_persistent_paper_trader",
+      "paper_trading_status": "approved_paper_default",
+      "runner_kind": "protocol101_persistent",
+      "run_id_template": "daily_paper_autopilot_{session}",
+      "approval_evidence": [
+        "v4/audit/autoresearch/tuesday_protocol101_paper_fill_observation/2026-05-26/live_trade_capability_20260526T194814Z/summary.json",
+        "v4/audit/autoresearch/tuesday_protocol101_paper_fill_observation/2026-05-26/live_trade_capability_20260526T194814Z/post_run_flat_position_check.json"
+      ],
+      "arguments": {
+        "surface_manifest": "v4/audit/autoresearch/v4_aplus_hypothesis_075_protocol054_frozen_stack_artifacts/model_artifacts/train_through_q4_2025_test_q1_2026/seed_11/manifest.json",
+        "protocol101_manifest": "v4/audit/autoresearch/v4_aplus_hypothesis_101_event_history_policy/model_artifacts/fold3_train_q1_q2_q3_validate_q4_test_q1_2026/seed_1/manifest.json",
+        "protocol101_summary": "v4/audit/autoresearch/v4_aplus_hypothesis_101_event_history_policy/summary.json",
+        "lifecycle_manifest": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_1/manifest.json",
+        "runtime_flag": "v4/runtime/protocol101_paper_order_enablement.json",
+        "runtime_state": "v4/runtime/protocol101_live_paper_state.json",
+        "live_index_context_log": "v4/runtime/protocol101_live_index_context.jsonl"
+      }
+    }
+  }
+}

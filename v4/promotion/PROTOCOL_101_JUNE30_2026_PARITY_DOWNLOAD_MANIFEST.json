@@ -1,0 +1,43 @@
+{
+  "manifest_id": "PROTOCOL_101_JUNE30_2026_PARITY_DOWNLOAD_MANIFEST",
+  "created_for": "Protocol101 recorder-first IBKR-vs-historical paired replay",
+  "session_dates": [
+    "2026-06-30"
+  ],
+  "approval_required": {
+    "exact_approval_text": "I approve the Protocol101 June 30 2026 parity data download: Databento OPRA.PILLAR definition/cbbo-1m/ohlcv-1m/statistics for filtered SPXW 0DTE raw symbols and ThetaData SPX/VIX 1-minute bars for 2026-06-30 only, with a hard Databento spend cap of $2.00, for live-vs-historical parity; no training, threshold tuning, promotion/default change, or real-money trading."
+  },
+  "paid_data_request": {
+    "source": "Databento",
+    "dataset": "OPRA.PILLAR",
+    "date_range": {
+      "start_date": "2026-06-30",
+      "end_date": "2026-06-30"
+    },
+    "symbols": "SPXW.OPT parent, filtered to same-day SPXW 0DTE raw symbols",
+    "schemas": [
+      "definition",
+      "cbbo-1m",
+      "ohlcv-1m",
+      "statistics"
+    ],
+    "hard_cap_usd": 2.0
+  },
+  "subscription_data_request": {
+    "source": "ThetaData",
+    "product": "index_history_ohlc",
+    "symbols": [
+      "SPX",
+      "VIX"
+    ],
+    "granularity": "1m",
+    "estimated_incremental_cost_usd": 0.0
+  },
+  "forbidden_operations": [
+    "model training",
+    "threshold tuning",
+    "promotion or paper-default changes",
+    "downloads for dates other than 2026-06-30",
+    "real-money trading"
+  ]
+}

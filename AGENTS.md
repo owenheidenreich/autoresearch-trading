@@ -60,6 +60,10 @@ Sprawl is the standing failure mode. Four competing roadmaps existed simultaneou
 - A dated document is evidence of what was true on that date. When superseded, add a banner pointing at
   what replaced it — do not silently rewrite it, and do not delete it.
 - Prefer verifying something cheaply over writing a document about it.
+- **Run `./.venv/bin/python v4/ops/check_docs.py` before claiming the docs are consistent.**
+  It catches broken STATUS links, files claiming authority without pointing at STATUS, work
+  documents missing a register row, retracted claims still being repeated, and Finder/iCloud
+  `* 2.md` sync duplicates that shadow the real file. Do not assert doc health from memory.
 
 ## 5. Evidence standard
 

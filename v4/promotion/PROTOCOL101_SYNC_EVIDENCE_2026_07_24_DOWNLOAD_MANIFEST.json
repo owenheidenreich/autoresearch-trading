@@ -1,0 +1,29 @@
+{
+  "purpose": "Complete the available Protocol101 canonical-v1.4 synchronization evidence inputs: the missing 2026-07-20 development rehearsal pair and matching historical vendor planes for presently sealed sessions.",
+  "owner_authorization": "Explicitly granted by the owner in Codex on 2026-07-24: download the evidence that is required.",
+  "sessions": [
+    "2026-07-15",
+    "2026-07-16",
+    "2026-07-17",
+    "2026-07-20",
+    "2026-07-21",
+    "2026-07-22",
+    "2026-07-23",
+    "2026-07-24"
+  ],
+  "sources": {
+    "databento": "OPRA.PILLAR SPXW definition, cbbo-1m, ohlcv-1m, statistics",
+    "thetadata": "SPX and VIX index_history_ohlc 1m bars"
+  },
+  "scope_guards": {
+    "databento_max_cost_usd": 10.0,
+    "sealed_ibkr_market_data_may_be_opened": false,
+    "model_training_authorized": false,
+    "threshold_tuning_authorized": false,
+    "broker_calls_authorized": false,
+    "paper_submit_authorized": false
+  },
+  "approval_required": {
+    "exact_approval_text": "APPROVED: paid vendor download of Databento OPRA SPXW definition, cbbo-1m, ohlcv-1m, and statistics plus ThetaData SPX/VIX 1m bars for Protocol101 sessions 2026-07-15, 2026-07-16, 2026-07-17, 2026-07-20, 2026-07-21, 2026-07-22, 2026-07-23, and 2026-07-24 for synchronization evidence."
+  }
+}

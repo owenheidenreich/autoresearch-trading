@@ -1,8 +1,5 @@
 # DATA_CONTRACT.md
 
-> **Still authoritative for the data contract itself.** It is not a status document — current status is [`STATUS.md`](../../STATUS.md).
-
-
 The data contract is the foundation of v4. Every row in every layer must be able to answer:
 
 > *What was known, when it was known, where it came from, how it was transformed, and whether it could have been used live?*

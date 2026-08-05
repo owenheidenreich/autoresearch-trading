@@ -1,0 +1,51 @@
+{
+  "manifest_id": "PROTOCOL_101_JUNE_2026_FIVEDAY_PARITY_DOWNLOAD_MANIFEST",
+  "created_for": "Protocol101 five-day IBKR-vs-historical parity replay",
+  "session_dates": [
+    "2026-06-04",
+    "2026-06-05",
+    "2026-06-08",
+    "2026-06-09",
+    "2026-06-10"
+  ],
+  "allowed_operations": [
+    {
+      "source": "Databento",
+      "dataset": "OPRA.PILLAR",
+      "schemas": [
+        "definition",
+        "cbbo-1m",
+        "ohlcv-1m",
+        "statistics"
+      ],
+      "symbols": "SPXW.OPT parent, then filtered same-day SPXW 0DTE raw symbols",
+      "purpose": "Build the same option-data inputs used by normal Protocol101 historical validation for paired live-vs-historical replay."
+    },
+    {
+      "source": "ThetaData",
+      "dataset": "index_history_ohlc",
+      "schemas": [
+        "1m OHLC"
+      ],
+      "symbols": [
+        "SPX",
+        "VIX"
+      ],
+      "purpose": "Provide official/live-equivalent SPX and VIX context for the same Protocol101 parity replay sessions."
+    }
+  ],
+  "forbidden_operations": [
+    "model training",
+    "threshold tuning",
+    "promotion/default changes",
+    "real-money trading",
+    "historical backfill beyond the listed session_dates"
+  ],
+  "approval_required": {
+    "exact_approval_text": "I approve the Protocol101 June 2026 five-day parity data download: Databento OPRA.PILLAR definition/cbbo-1m/ohlcv-1m/statistics for filtered SPXW 0DTE raw symbols and ThetaData SPX/VIX 1-minute bars for 2026-06-04, 2026-06-05, 2026-06-08, 2026-06-09, and 2026-06-10 only, for live-vs-historical replay calibration; no training, threshold tuning, promotion change, or real-money trading."
+  },
+  "cost_controls": {
+    "databento_hard_cap_usd": 25.0,
+    "thetadata": "Use the existing subscription only; do not initiate a new paid subscription or paid add-on."
+  }
+}

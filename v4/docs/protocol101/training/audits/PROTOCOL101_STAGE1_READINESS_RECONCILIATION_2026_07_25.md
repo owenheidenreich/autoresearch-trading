@@ -1,5 +1,8 @@
 # Protocol101 Stage-1 Readiness Reconciliation
 
+> **SUPERSEDED 2026-08-05.** Dated 2026-07-25; Stage-1 has since closed. Current status is [`STATUS.md`](../../../../../STATUS.md).
+
+
 Prepared: 2026-07-25
 
 This document is the current status map. It distinguishes evidence that is

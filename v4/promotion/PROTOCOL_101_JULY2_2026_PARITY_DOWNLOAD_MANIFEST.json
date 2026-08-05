@@ -1,0 +1,45 @@
+{
+  "manifest_id": "PROTOCOL_101_JULY2_2026_PARITY_DOWNLOAD_MANIFEST",
+  "created_for": "Protocol101 recorder-first IBKR-vs-historical paired replay",
+  "session_dates": [
+    "2026-07-02"
+  ],
+  "approval_required": {
+    "exact_approval_text": "July 2 Databento/ThetaData publication and separate download (if available). (i already approve this now)"
+  },
+  "paid_data_request": {
+    "source": "Databento",
+    "dataset": "OPRA.PILLAR",
+    "date_range": {
+      "start_date": "2026-07-02",
+      "end_date": "2026-07-02"
+    },
+    "symbols": "SPXW.OPT parent, filtered to same-day SPXW 0DTE raw symbols",
+    "schemas": [
+      "definition",
+      "cbbo-1m",
+      "ohlcv-1m",
+      "statistics"
+    ],
+    "hard_cap_usd": 2.0
+  },
+  "subscription_data_request": {
+    "source": "ThetaData",
+    "product": "index_history_ohlc",
+    "symbols": [
+      "SPX",
+      "VIX"
+    ],
+    "granularity": "1m",
+    "estimated_incremental_cost_usd": 0.0
+  },
+  "forbidden_operations": [
+    "model training",
+    "threshold tuning",
+    "breakout-feature modification",
+    "promotion or paper-default changes",
+    "downloads for dates other than 2026-07-02",
+    "broker orders",
+    "real-money trading"
+  ]
+}

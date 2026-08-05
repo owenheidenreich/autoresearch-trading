@@ -1,0 +1,1614 @@
+{
+  "artifact_bundle_count": 40,
+  "artifact_root": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts",
+  "artifact_run": "v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts",
+  "artifacts": [
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5896,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_1/manifest.json",
+          "sha256": "6786a3ac95742851ae03f27cb3be8abf3bf0f425af089e6301c33d8f0d8dcb6b"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_1/model.pt",
+          "sha256": "4240495f8faafb359efc2cba710ccb93a8b24f88d8565a1eefd9771a7afa2f90"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_1/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19160,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_1/threshold_sweep.json",
+          "sha256": "0bb51d3d69846da9f72ad5149e0dfdb8282cdf2ad38fc2d66f133d37c310b322"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 1,
+      "selected_override_threshold": 69.527,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5904,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_10/manifest.json",
+          "sha256": "07f5772a7d3ace0181de5a069903873ae8de0f6621b714c03c1b622f79861689"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_10/model.pt",
+          "sha256": "fc7cf354f5b7c31d55440fdf564a957e915b34382074a3de28c54d8e11a36ba1"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_10/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19236,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_10/threshold_sweep.json",
+          "sha256": "38acee6c4fc0314c8979e200d8517a61d59d4af3f48725a68e98744d1244663b"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 10,
+      "selected_override_threshold": 50.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5902,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_2/manifest.json",
+          "sha256": "dd7515d7a422f09af3ab1a8c6cca463849b34dda6af1026d731159fd6e1ad575"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_2/model.pt",
+          "sha256": "7e03e85342b93d939193c3f459e7bbb084f04b875cda1ee48b5d45fac8bda0ff"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_2/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19258,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_2/threshold_sweep.json",
+          "sha256": "7a6f12f7bc3f5f5f3e255eb90b44aa63d956bc071dd1adb49164e004c8e1c559"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 2,
+      "selected_override_threshold": 50.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5899,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_3/manifest.json",
+          "sha256": "5818c06ea2e88e6bf04fdc97b2d6bc262fbc9afd07c7e3667a1ff6ef4dcb1044"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_3/model.pt",
+          "sha256": "65902ba64f64cb95561c35ae9f9404be62399a5284f1fe9a2595a8e8ec3a640b"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_3/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19231,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_3/threshold_sweep.json",
+          "sha256": "3f647b77cbe5fd399a5fe0b40362bdba5218552afc269a855fa19102b41e5bd4"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 3,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5901,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_4/manifest.json",
+          "sha256": "f1418352a11e68e6b4cbbe09298aa77377e9dc4192fa68fb5250d569bd373b31"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_4/model.pt",
+          "sha256": "8387ae5e67b7b6460c542f06335cd5968e96d761f7842846c83a8bc4c57b09e8"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_4/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19190,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_4/threshold_sweep.json",
+          "sha256": "5c700fc22c9e05cfb9acba7e5727dd7b5cf9e310c09819771011730ff482fcb9"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 4,
+      "selected_override_threshold": 76.3717,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5892,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_5/manifest.json",
+          "sha256": "a773a1694b39bc2ff1756aeb86e8fbd32182bbc7a419b40e4c52c53eb97f8d16"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_5/model.pt",
+          "sha256": "a434bd07548e14cbc451defb1c2c4c85ae47a7dbe3c0aee612036812d61d4b93"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_5/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19239,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_5/threshold_sweep.json",
+          "sha256": "39146ef54a3fc19ed16be68ebe4406b116d6c6d9529688faaa1f6475ccd13a8e"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 5,
+      "selected_override_threshold": 100.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5905,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_6/manifest.json",
+          "sha256": "7c9c111d7964b2d36e2f6b1aafc7e9ea6ffd4074127fc94cfbf4adb25a64b984"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_6/model.pt",
+          "sha256": "dca9bb6bab529cf9919e3e9cadb3cf9bc473906928ded03859b4d20e08b67b34"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_6/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19226,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_6/threshold_sweep.json",
+          "sha256": "6db68704222c591975298451d776af22a056111c805473e0e6e4e739aeb68400"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 6,
+      "selected_override_threshold": 100.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5909,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_7/manifest.json",
+          "sha256": "b1122380ef8a403503cb6f2c2ae04730a4aced735359d7367c96ab99b7b766bc"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_7/model.pt",
+          "sha256": "eecb3f22aff007a85beb7961569371313244ad2caadb4c3e52fc09159adc450d"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_7/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19215,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_7/threshold_sweep.json",
+          "sha256": "19f21d5cd5f6549b2d13fadaf1595bcb62512fc09e01435324ca677bfe6daa25"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 7,
+      "selected_override_threshold": 118.2506,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5906,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_8/manifest.json",
+          "sha256": "69d4841a402cb1cd3bf2b568244fb5b89bac1b5913c49c2c99a78c3366942105"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_8/model.pt",
+          "sha256": "5fcbfa1baf126deaa920db293f2c4aebc060325218a3c8d1221756da22727f25"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_8/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19281,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_8/threshold_sweep.json",
+          "sha256": "4837dc92a71d3e13be204d95c98606e88bef1cb22cc9ff915bc208545976ba35"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 8,
+      "selected_override_threshold": 65.9045,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5900,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_9/manifest.json",
+          "sha256": "72c893092d33717e1c06ce1c1ef401f470b1d475fc01558e51d3202e335400b7"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_9/model.pt",
+          "sha256": "d51bc8b7c9a783859fb10227fcbe4e11fae644ef5081c62a76955d9f6c67971e"
+        },
+        "scaler": {
+          "bytes": 2519,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_9/scaler.json",
+          "sha256": "87f2524392f2aafe4273cffced9738a1b700a081f403120bda7dd006ef39e4b1"
+        },
+        "threshold_sweep": {
+          "bytes": 19213,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026/seed_9/threshold_sweep.json",
+          "sha256": "d9679583918bee78a3a8b3dbec5c58c188882faec1b2053dfb0f583746f84634"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+      "seed": 9,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q1_2026",
+      "test_trades": 1086,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025",
+        "q4_2025"
+      ],
+      "train_trades": 3978,
+      "validation_source": "q4_2025",
+      "validation_trades": 167
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5846,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_1/manifest.json",
+          "sha256": "a4db8966a8217ac4a940596403665d979cdadcaae77b2444de14f7ef67eebe96"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_1/model.pt",
+          "sha256": "d487baf03d482c9560fa94506330899d8e29ba4575b9cc325fc7f8351bb648b2"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_1/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19158,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_1/threshold_sweep.json",
+          "sha256": "1c96b1d2cf9b933611d911932f2ffe6af1feb8debaaf794e06d5d8926f8848ff"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 1,
+      "selected_override_threshold": 29.5363,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5849,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_10/manifest.json",
+          "sha256": "aa00ded574ea4e8b641f225d860d9fea37000cb19953fbefae9933e56cd28a27"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_10/model.pt",
+          "sha256": "bf3451c2272874be1daf6eaa8dd258b4afe8ac48a89af334c860c47d524be933"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_10/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19144,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_10/threshold_sweep.json",
+          "sha256": "3c48bbb56270af909977fee315c7e91391acddd4702e365c2cd53a26abe2d32a"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 10,
+      "selected_override_threshold": 50.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5849,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_2/manifest.json",
+          "sha256": "170413067425ef930463d12e672645e11bc1392501198ac1d18b7b5a1816769e"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_2/model.pt",
+          "sha256": "b0d932cc250f5f54d360b7070e5104dfee648d4f275b856f1fd246504842bc72"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_2/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19128,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_2/threshold_sweep.json",
+          "sha256": "2b715a56056f8c18e56df6fbab6931ab367fd816a7dbf32c61c2d3d0792521f1"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 2,
+      "selected_override_threshold": 25.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5847,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_3/manifest.json",
+          "sha256": "0b381801d6fd532a6e189bd3d604bb323158516ec47937407794f91ffeb92ea2"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_3/model.pt",
+          "sha256": "390e25190e2d73d5e5a2c2664fc7a0880731d71a5a4e5d230e75e7cc24954c5f"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_3/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19020,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_3/threshold_sweep.json",
+          "sha256": "abbb57a2249d117259acc4539d4d428bffe26595884a8805f71606f068bf1c6b"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 3,
+      "selected_override_threshold": 100.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5846,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_4/manifest.json",
+          "sha256": "0d4392c0c438ba9f1eb1acc42777dd5e9b1afe9f9500586c84727683a7ea8e90"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_4/model.pt",
+          "sha256": "cd40173e1d51d3608cdfa0cb4c1906a4b1d3bf3d8905cd67920ebe2b176ce90f"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_4/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19108,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_4/threshold_sweep.json",
+          "sha256": "7c9adb32c0dce4094a111b86b6aad24780ae115b2f7978e3f9764bb9dcc2fcb0"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 4,
+      "selected_override_threshold": 71.3107,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5847,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_5/manifest.json",
+          "sha256": "c28d1eed02d9567c47cab8313ba51356deea9b0f227090a2b782906de7029a0b"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_5/model.pt",
+          "sha256": "240c702c82e48a1f59cfd6c2a522bcf16d62e9dbcc0a793e6191b87fc0b46c38"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_5/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19115,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_5/threshold_sweep.json",
+          "sha256": "a7582970a8562c2a64e6e94c649a77bc4389ba9025a277b8a9b96beea97f8beb"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 5,
+      "selected_override_threshold": 63.71,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5840,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_6/manifest.json",
+          "sha256": "94773f9537be51817ef277eab9d43dfedfb77ff809a5787839453ef2ba250119"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_6/model.pt",
+          "sha256": "ee8fbd4d402fd747c47ae9099bee22e1e0362ee4eb2227093a8f79ba2f4dfc9c"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_6/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19053,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_6/threshold_sweep.json",
+          "sha256": "fe615e03e2188b4caeef62683676703f10cf88a490b0049ccd50ca3f74577cf6"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 6,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5846,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_7/manifest.json",
+          "sha256": "c179ea6feb7e93e9e5c4b0890c99e696fa9ec5d8e77bae975ea1e27aea466239"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_7/model.pt",
+          "sha256": "9fd43dc0c8aef992f1e6aa171bfac432659ab29a21c6b829d1897b62a361d815"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_7/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19183,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_7/threshold_sweep.json",
+          "sha256": "c5a3124b52d62ab67aa168ca4de5ea09c2287f1438dc7af235c0b33c01a221ed"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 7,
+      "selected_override_threshold": 25.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5846,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_8/manifest.json",
+          "sha256": "862c953ef75829e55e88a82fd817bb7a1d4bff6771e74f1803eaaed2714794b6"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_8/model.pt",
+          "sha256": "8202b970a1162bd71e7deda545a8e3cb370e459e1486941f6c2da0852cbf6ae7"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_8/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19174,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_8/threshold_sweep.json",
+          "sha256": "bc5d72a29310a4bea480b1b60bd68bede4e5e5881d78b0e62c8f3fa6338dfe8a"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 8,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5839,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_9/manifest.json",
+          "sha256": "d2af033aca4d15d8fbf1447dc8cf86d384dfa576756bc52a564e41d844b17c30"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_9/model.pt",
+          "sha256": "8de931bf25c11e72c3558544beac638fecdc827ad9a880bca391c52c620b448c"
+        },
+        "scaler": {
+          "bytes": 2516,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_9/scaler.json",
+          "sha256": "7933398bb4ee5d80e3bf9b1aa0bec96f74f431b87b04d04893d25f084353f3ae"
+        },
+        "threshold_sweep": {
+          "bytes": 19138,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_q3_2025_test_q4_2025/seed_9/threshold_sweep.json",
+          "sha256": "5577c7a0d818b4b55fa445781a48e412f67535afcd0574f1a62d5629497117fc"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+      "seed": 9,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q4_2025",
+      "test_trades": 1188,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025",
+        "q3_2025"
+      ],
+      "train_trades": 2811,
+      "validation_source": "q3_2025",
+      "validation_trades": 146
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5791,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_1/manifest.json",
+          "sha256": "2e72a714dacb0e488e25a724d8437f2abfec2edc4e0fd690339e283acc068dab"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_1/model.pt",
+          "sha256": "2de309c1ab959370103ba3c858d2aeafb72ba72feaae0c63719e35233d2b7097"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_1/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19470,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_1/threshold_sweep.json",
+          "sha256": "e71a45dd4f6588d02f1ae7a196e1e71ceffb2aca0ff6a94c52716eb8a2620e15"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 1,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5798,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_10/manifest.json",
+          "sha256": "541274d0548ca2274f807d021de9227e7010ca645e51c613cad211a388b7f0f5"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_10/model.pt",
+          "sha256": "0768070333f0924839e25fad02a0b79cba0cbe8cc3a020773e0fca7a27cded2c"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_10/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19498,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_10/threshold_sweep.json",
+          "sha256": "46423b67814de89d4a4ca58dbb9416dff8639d8bd734334f69f6e976f1319d13"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 10,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5787,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_2/manifest.json",
+          "sha256": "5024d586f936cc646a6a4b70de4b463f2bb0ca677ff58d5a3157c8073248b00a"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_2/model.pt",
+          "sha256": "798b7afbf7eea5b7abe02ab39df811d77d683215aa571029cf6d557c9af4c8d5"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_2/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19626,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_2/threshold_sweep.json",
+          "sha256": "1d3f48979a496e579dbcb32934d63b3b1be002bcda50f94bd84bf17c5a0dd293"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 2,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5785,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_3/manifest.json",
+          "sha256": "91b1c3ee0c0a6eb13db092c713140af6bca184257dd40e779e9c27bf0bed6f36"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_3/model.pt",
+          "sha256": "9c3193e5c3345326624b7ee4ed7cd30bf4d9e6d6b327e18c9047024e145f090e"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_3/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19638,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_3/threshold_sweep.json",
+          "sha256": "5b9489481963debe5345f027ee95748450da158a3f3ed9cac00cd42170f55a46"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 3,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5784,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_4/manifest.json",
+          "sha256": "980962c4b0ca2d34422896f069074ea4a03870b9d64e2eda235b98fce5d58501"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_4/model.pt",
+          "sha256": "ad4d88d3ae6ef2aa67a78413e487f508fddadd8ea9a1edb2342b3322a7f18374"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_4/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19605,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_4/threshold_sweep.json",
+          "sha256": "5c5c159457f6ebfae226021193eca3ed86c85d175ac3e2f0e4792b461ebcd1c6"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 4,
+      "selected_override_threshold": 25.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5782,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_5/manifest.json",
+          "sha256": "9a6a18d32ee3e9bdf7d578905cc98cdb3ebb37c7446a0a31c4c289faf2ccac33"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_5/model.pt",
+          "sha256": "7bcb568c43adfea85b029761de287e6bd45b1335ff0a1d898321de2405e6d082"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_5/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19632,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_5/threshold_sweep.json",
+          "sha256": "3e5b5b6486eb378e84802dcb8a80e072c0ddecdc87786c60cb0b9867221bfbd8"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 5,
+      "selected_override_threshold": 22.1907,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5785,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_6/manifest.json",
+          "sha256": "a0113f84533c659d237713d7360a06e3f5fd92eeb12ac3f144705dd679cada3c"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_6/model.pt",
+          "sha256": "aaf6468085f9d2a361ec6c5c7b69012d576be03da65351b198ab407e249e7b60"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_6/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19664,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_6/threshold_sweep.json",
+          "sha256": "85026bf8537bb8a5df978602b2550aee518f30ff59c3c9c495fac4bca572e5f1"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 6,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5791,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_7/manifest.json",
+          "sha256": "4783d17acbd1b3b4cea6a76251916cba83908eea80d2a653de650e1faa0f89a1"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_7/model.pt",
+          "sha256": "0ea0417427a7875adf68345882ea1db4b1407f2d8e04d76a1e7556da4e490834"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_7/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19504,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_7/threshold_sweep.json",
+          "sha256": "5aaaa0d832f34fbbc49a565daea57145d957170d4edd522e191bd66945711f9c"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 7,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5797,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_8/manifest.json",
+          "sha256": "e6fe028db89f17ab1b72fe891d955f44133b06b9740788990666cf0f3bd0e063"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_8/model.pt",
+          "sha256": "0f6b90711c230063c3953445d40dc7dd74c56ea4d0fbe2b2d252203ba364d931"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_8/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19668,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_8/threshold_sweep.json",
+          "sha256": "fb50ea85bf70f85ee29bd25dbde44806054ce1eb31bf7fe3ee968e5cd6f610b3"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 8,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5782,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_9/manifest.json",
+          "sha256": "223b335871febc126a863e4103c6bd948b7265a918469080bc2d88a92ffed52b"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_9/model.pt",
+          "sha256": "00c6e82deb8df97aa89a97ab98c956c85353ec7b9f71535a91629b65e8858639"
+        },
+        "scaler": {
+          "bytes": 2507,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_9/scaler.json",
+          "sha256": "497341698771aba945ef1cd1a5b4bbce96d35a4b5a7fef2a63ffbe0f01ed59a0"
+        },
+        "threshold_sweep": {
+          "bytes": 19530,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_q2_2025_test_q3_2025/seed_9/threshold_sweep.json",
+          "sha256": "ed8367009e9e5cf1bbaafd0d97753cf4a983cf70c2904a938b7ad1f2c6617175"
+        }
+      },
+      "fold": "train_q1_2025_q2_2025_test_q3_2025",
+      "seed": 9,
+      "selected_override_threshold": 0.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q3_2025",
+      "test_trades": 948,
+      "train_splits": [
+        "q1_2025",
+        "q2_2025"
+      ],
+      "train_trades": 1847,
+      "validation_source": "q2_2025",
+      "validation_trades": 162
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5738,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_1/manifest.json",
+          "sha256": "1a744fe27e462fb337512d402132a8ea47e557dfb31b3e3a556437fdc38ca869"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_1/model.pt",
+          "sha256": "a29824d67568a07fec754e0838994a1ae7e8bb6566601587db0a76c04563050b"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_1/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18955,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_1/threshold_sweep.json",
+          "sha256": "9467a4abadf1a35e6045be930ecbd2741454792f2bc8804353d151936fd0c12d"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 1,
+      "selected_override_threshold": 300.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5735,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_10/manifest.json",
+          "sha256": "1fc1f485af4622bc99fd1b061c946aacaf27b4abfa9b34eb857e73add1222101"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_10/model.pt",
+          "sha256": "fa56f1fe8cc4d62d3217c6491c0fc8317bba1660a435ba79f1eb555e5232675f"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_10/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18915,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_10/threshold_sweep.json",
+          "sha256": "6ca84d7f5a1f65dd333cc54d68b312743135a24203f67075c0b234cf38020d69"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 10,
+      "selected_override_threshold": 300.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5731,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_2/manifest.json",
+          "sha256": "08d8031a36f65f379ae8172238d96b178b90c9749b4ba17e064d0b330886a29b"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_2/model.pt",
+          "sha256": "5c6ef2f7bc526e743510615290044091d102bc909f9880b02734b285b8700a78"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_2/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18853,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_2/threshold_sweep.json",
+          "sha256": "b24686a6a65d83d152ab26299f5a614a579f7a32c7924e27b000eb618e97dbbe"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 2,
+      "selected_override_threshold": 300.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5735,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_3/manifest.json",
+          "sha256": "d0b5190a2af18b5b92b71c08053c6107db190087992c15e1807af5f8ef3b0817"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_3/model.pt",
+          "sha256": "566e53bccbd0250f8607f32829d594f86284d8438effba7eea8ade05d25553c8"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_3/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18867,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_3/threshold_sweep.json",
+          "sha256": "89f25eb5949d53d5cbc262b06bab6cc1975e6182eb36ba151e0cd2c2afde70a8"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 3,
+      "selected_override_threshold": 150.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5729,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_4/manifest.json",
+          "sha256": "0c4fa0f29262a36fd892e182b630d1e6a2652200155aecd3a58fd7d36e2f8bc7"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_4/model.pt",
+          "sha256": "50dbb61a67cf837dbf52b72caa21214a3785724c7264920adb30c00f20167946"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_4/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 19007,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_4/threshold_sweep.json",
+          "sha256": "3d15fd62047e2f691322205163e5b6c42839575ba2dc34e15121a386b3887a7f"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 4,
+      "selected_override_threshold": 300.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5741,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_5/manifest.json",
+          "sha256": "58fc6412105933738534d9f654f0384215cfb67e6d46a600618050c7c5eb58e7"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_5/model.pt",
+          "sha256": "b6509407c933aa4c279f1b19945846d8e68b565d431b7de2be702e73bcdea554"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_5/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18903,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_5/threshold_sweep.json",
+          "sha256": "5175c9635d52af8db37fa2c5dfbc434f59f46e1caf109e56586bf342f8b2acdd"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 5,
+      "selected_override_threshold": 150.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5737,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_6/manifest.json",
+          "sha256": "cb816f2ddd21bc9d92ddba5e64982609207a660d5a3d5fc0497cdabc58782f16"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_6/model.pt",
+          "sha256": "770a8ac8f0338d4291af891cf7c5f9d6301a06388df5b4764b323cec0ecec6ad"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_6/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18918,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_6/threshold_sweep.json",
+          "sha256": "65822799f3cf561c12a04c4d25c0da6c3c137630ca5bf1a231d9639382ab08d5"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 6,
+      "selected_override_threshold": 200.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5736,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_7/manifest.json",
+          "sha256": "6257be64691c820149e1062aac122409635aee95be1a90752de6c034dc3214c2"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_7/model.pt",
+          "sha256": "c1b786bfab6149d0014305eee689c5ae31b7622f3f6f472436cdbdecbbf70eb3"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_7/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18922,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_7/threshold_sweep.json",
+          "sha256": "22a134c59e089c1aa2cfa850184e246fbdf132e18448cdbd867db59bfe22cca5"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 7,
+      "selected_override_threshold": 100.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5731,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_8/manifest.json",
+          "sha256": "60aa3cb4baf80bc1dc1b918280fd08fd7a8cb8bbc8e6b3320ac1e38806525bc9"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_8/model.pt",
+          "sha256": "2fdb1bf13eb5c4e6c3b3740a4188b8611b9703b3b3725e4be577a48c103851fa"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_8/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18889,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_8/threshold_sweep.json",
+          "sha256": "6ac3dcb0065e0e1f4f52e43f4bcee80fe9fb9876351f85dd2d2e978116ac6be9"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 8,
+      "selected_override_threshold": 300.0,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    },
+    {
+      "calibrate_threshold": true,
+      "feature_count": 39,
+      "files": {
+        "manifest": {
+          "bytes": 5729,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_9/manifest.json",
+          "sha256": "cfddb658925ece76be52076d5d13e8a72747f6f7d9f24e0f87f64547a1fcfeaf"
+        },
+        "model": {
+          "bytes": 166407,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_9/model.pt",
+          "sha256": "71495420764f4c2fb7f62444f22f7cc12360674727add27fbd498dfcdd2ff0c8"
+        },
+        "scaler": {
+          "bytes": 2523,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_9/scaler.json",
+          "sha256": "016c25105e01f7feb6a2a2932773609f2b535810bdedd5c13c435acfd618ee3c"
+        },
+        "threshold_sweep": {
+          "bytes": 18862,
+          "path": "v4/audit/autoresearch/v4_aplus_hypothesis_081_q4start_residual_sequence_deterministic_artifacts/model_artifacts/train_q1_2025_test_q2_2025/seed_9/threshold_sweep.json",
+          "sha256": "18cd5b7ccfc085645dfcc5c9a6fd32de2416798013354422befe4f4ae86d02d3"
+        }
+      },
+      "fold": "train_q1_2025_test_q2_2025",
+      "seed": 9,
+      "selected_override_threshold": 114.6376,
+      "sequence_mode": "protocol054_residual_recovery_penalty",
+      "test_split": "q2_2025",
+      "test_trades": 995,
+      "train_splits": [
+        "q1_2025"
+      ],
+      "train_trades": 850,
+      "validation_source": "q1_2025",
+      "validation_trades": 164
+    }
+  ],
+  "created_at": "2026-05-12",
+  "file_count": 160,
+  "fold_count": 4,
+  "folds": [
+    "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026",
+    "train_q1_2025_q2_2025_q3_2025_test_q4_2025",
+    "train_q1_2025_q2_2025_test_q3_2025",
+    "train_q1_2025_test_q2_2025"
+  ],
+  "manifest_type": "deployment_artifact_pointer",
+  "model_class": "v4.scripts.run_protocol061_sequence_lifecycle_model.LifecycleSequenceModel",
+  "promotion_constraints": [
+    "no paid data download without explicit user approval",
+    "no broker-connected paper trading until no-order shadow-feed parity passes",
+    "entry quote timestamp and live stale-quote checks must be retained before paper trading",
+    "Protocol 054 fallback routing must remain explicit until replaced by a separately validated lifecycle model"
+  ],
+  "protocol_id": "protocol_081",
+  "scaler_class": "v4.model.supervised_pilot.FeatureScaler",
+  "seed_count_per_fold": {
+    "train_q1_2025_q2_2025_q3_2025_q4_2025_test_q1_2026": 10,
+    "train_q1_2025_q2_2025_q3_2025_test_q4_2025": 10,
+    "train_q1_2025_q2_2025_test_q3_2025": 10,
+    "train_q1_2025_test_q2_2025": 10
+  },
+  "selection_note": "These are persisted fold/seed research artifacts for Protocol 081. A live inference ensemble/router is not approved yet.",
+  "status": "persisted_research_challenger_not_paper_or_live_approved"
+}

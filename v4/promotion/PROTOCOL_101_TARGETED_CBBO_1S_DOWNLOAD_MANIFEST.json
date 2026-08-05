@@ -1,0 +1,3394 @@
+{
+  "approval_required": {
+    "exact_approval_text": "I approve the Protocol 101 targeted high-resolution validation batch exactly as specified in v4/audit/autoresearch/v4_aplus_hypothesis_116_protocol101_targeted_1s_request/request.md: Databento OPRA.PILLAR cmbp-1/cbbo-1s for Protocol 101 selected SPXW raw symbols only, using the listed sessions, with hard cap $10.00.",
+    "reason": "Any Databento timeseries.get_range request for CMBP-1 or CBBO-1s is a paid market-data download.",
+    "required": true
+  },
+  "cost_estimate": {
+    "estimated_total_usd": 4.79295397401,
+    "fallback_cost_per_symbol_session": {
+      "cbbo-1s": 0.003464495894883838,
+      "cmbp-1": 0.011
+    },
+    "hard_cap_usd": 10.0,
+    "metadata_status": "ok"
+  },
+  "decision": "ready_for_explicit_user_approval",
+  "implementation_note": "Use CMBP-1 before 2025-02-20 because CBBO-1s is not available for older OPRA.PILLAR history. Download should write a Protocol101-specific overlay or merge safely; do not overwrite existing broad/selected CBBO-1s files for sessions that already have partial one-second coverage.",
+  "live_orders": false,
+  "market_data_download_endpoint_called": false,
+  "model_training": false,
+  "paid_data_downloaded": false,
+  "protocol": "116_protocol101_targeted_1s_request",
+  "requested_data": {
+    "dataset": "OPRA.PILLAR",
+    "date_range": "2024-10-01 through 2026-03-30",
+    "schemas": [
+      "cbbo-1s",
+      "cmbp-1"
+    ],
+    "selected_trade_rows": 4969,
+    "session_count": 239,
+    "session_count_by_schema": {
+      "cbbo-1s": 175,
+      "cmbp-1": 64
+    },
+    "sessions": [
+      "2024-10-01",
+      "2024-10-02",
+      "2024-10-03",
+      "2024-10-04",
+      "2024-10-07",
+      "2024-10-08",
+      "2024-10-09",
+      "2024-10-10",
+      "2024-10-11",
+      "2024-10-14",
+      "2024-10-15",
+      "2024-10-16",
+      "2024-10-17",
+      "2024-10-18",
+      "2024-10-21",
+      "2024-10-22",
+      "2024-10-23",
+      "2024-10-24",
+      "2024-10-25",
+      "2024-10-28",
+      "2024-10-29",
+      "2024-10-30",
+      "2024-10-31",
+      "2024-11-01",
+      "2024-11-04",
+      "2024-11-05",
+      "2024-11-06",
+      "2024-11-07",
+      "2024-11-08",
+      "2024-11-11",
+      "2024-11-12",
+      "2024-11-13",
+      "2024-11-14",
+      "2024-11-15",
+      "2024-11-18",
+      "2024-11-19",
+      "2024-11-20",
+      "2024-11-21",
+      "2024-11-22",
+      "2024-11-25",
+      "2024-11-26",
+      "2024-11-27",
+      "2024-11-29",
+      "2024-12-02",
+      "2024-12-03",
+      "2024-12-04",
+      "2024-12-05",
+      "2024-12-06",
+      "2024-12-09",
+      "2024-12-10",
+      "2024-12-11",
+      "2024-12-12",
+      "2024-12-13",
+      "2024-12-16",
+      "2024-12-17",
+      "2024-12-18",
+      "2024-12-19",
+      "2024-12-20",
+      "2024-12-23",
+      "2024-12-24",
+      "2024-12-26",
+      "2024-12-27",
+      "2024-12-30",
+      "2024-12-31",
+      "2025-07-01",
+      "2025-07-02",
+      "2025-07-03",
+      "2025-07-07",
+      "2025-07-08",
+      "2025-07-09",
+      "2025-07-10",
+      "2025-07-11",
+      "2025-07-14",
+      "2025-07-15",
+      "2025-07-16",
+      "2025-07-17",
+      "2025-07-18",
+      "2025-07-21",
+      "2025-07-22",
+      "2025-07-23",
+      "2025-07-24",
+      "2025-07-25",
+      "2025-07-28",
+      "2025-07-29",
+      "2025-07-30",
+      "2025-07-31",
+      "2025-08-01",
+      "2025-08-04",
+      "2025-08-05",
+      "2025-08-06",
+      "2025-08-07",
+      "2025-08-08",
+      "2025-08-11",
+      "2025-08-12",
+      "2025-08-13",
+      "2025-08-14",
+      "2025-08-15",
+      "2025-08-18",
+      "2025-08-19",
+      "2025-08-20",
+      "2025-08-21",
+      "2025-08-22",
+      "2025-08-25",
+      "2025-08-26",
+      "2025-08-27",
+      "2025-08-28",
+      "2025-08-29",
+      "2025-09-02",
+      "2025-09-03",
+      "2025-09-04",
+      "2025-09-05",
+      "2025-09-08",
+      "2025-09-09",
+      "2025-09-10",
+      "2025-09-11",
+      "2025-09-12",
+      "2025-09-15",
+      "2025-09-16",
+      "2025-09-17",
+      "2025-09-18",
+      "2025-09-19",
+      "2025-09-22",
+      "2025-09-23",
+      "2025-09-24",
+      "2025-09-25",
+      "2025-09-26",
+      "2025-09-29",
+      "2025-09-30",
+      "2025-10-01",
+      "2025-10-02",
+      "2025-10-03",
+      "2025-10-06",
+      "2025-10-07",
+      "2025-10-08",
+      "2025-10-09",
+      "2025-10-10",
+      "2025-10-13",
+      "2025-10-14",
+      "2025-10-15",
+      "2025-10-16",
+      "2025-10-17",
+      "2025-10-20",
+      "2025-10-21",
+      "2025-10-22",
+      "2025-10-23",
+      "2025-10-24",
+      "2025-10-27",
+      "2025-10-28",
+      "2025-10-29",
+      "2025-10-30",
+      "2025-10-31",
+      "2025-11-03",
+      "2025-11-04",
+      "2025-11-05",
+      "2025-11-07",
+      "2025-11-10",
+      "2025-11-11",
+      "2025-11-12",
+      "2025-11-13",
+      "2025-11-14",
+      "2025-11-17",
+      "2025-11-18",
+      "2025-11-19",
+      "2025-11-20",
+      "2025-11-21",
+      "2025-11-24",
+      "2025-11-25",
+      "2025-11-26",
+      "2025-11-28",
+      "2025-12-01",
+      "2025-12-02",
+      "2025-12-03",
+      "2025-12-04",
+      "2025-12-05",
+      "2025-12-08",
+      "2025-12-09",
+      "2025-12-10",
+      "2025-12-11",
+      "2025-12-15",
+      "2025-12-16",
+      "2025-12-18",
+      "2025-12-19",
+      "2025-12-22",
+      "2025-12-23",
+      "2025-12-24",
+      "2025-12-26",
+      "2025-12-29",
+      "2025-12-30",
+      "2025-12-31",
+      "2026-01-05",
+      "2026-01-06",
+      "2026-01-07",
+      "2026-01-08",
+      "2026-01-09",
+      "2026-01-12",
+      "2026-01-13",
+      "2026-01-14",
+      "2026-01-15",
+      "2026-01-20",
+      "2026-01-21",
+      "2026-01-22",
+      "2026-01-23",
+      "2026-01-26",
+      "2026-01-27",
+      "2026-01-28",
+      "2026-01-29",
+      "2026-02-02",
+      "2026-02-03",
+      "2026-02-04",
+      "2026-02-05",
+      "2026-02-09",
+      "2026-02-10",
+      "2026-02-11",
+      "2026-02-12",
+      "2026-02-17",
+      "2026-02-18",
+      "2026-02-19",
+      "2026-02-20",
+      "2026-02-23",
+      "2026-02-24",
+      "2026-02-25",
+      "2026-02-26",
+      "2026-03-02",
+      "2026-03-03",
+      "2026-03-04",
+      "2026-03-05",
+      "2026-03-09",
+      "2026-03-10",
+      "2026-03-11",
+      "2026-03-12",
+      "2026-03-16",
+      "2026-03-17",
+      "2026-03-18",
+      "2026-03-19",
+      "2026-03-23",
+      "2026-03-24",
+      "2026-03-25",
+      "2026-03-26",
+      "2026-03-30"
+    ],
+    "source": "Databento",
+    "stype_in": "raw_symbol",
+    "symbol_session_count": 1053,
+    "symbols": "Only raw symbols selected by frozen Protocol 101 that are missing high-resolution coverage."
+  },
+  "requests": [
+    {
+      "estimated_cost_usd": 0.076798844337,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 31,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 31,
+      "session": "2024-10-01",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.018760848045,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-10-02",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.069427800179,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 19,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 19,
+      "session": "2024-10-03",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.04638004303,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 18,
+      "session": "2024-10-04",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.042855024338,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 22,
+      "session": "2024-10-07",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.008693742752,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-10-08",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.005998158455,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-10-09",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.011103880405,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-10-10",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.016618049145,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 19,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 19,
+      "session": "2024-10-11",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.016472244263,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 20,
+      "session": "2024-10-14",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.018506443501,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-10-15",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.008572494984,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-10-16",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.039048302174,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 20,
+      "session": "2024-10-17",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.020456826687,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 25,
+      "session": "2024-10-18",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.040777254105,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-10-21",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.020417070389,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-10-22",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.022084593773,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 17,
+      "session": "2024-10-23",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.013762247562,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 8,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 8,
+      "session": "2024-10-24",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.029330408573,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 25,
+      "session": "2024-10-25",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.01956114769,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-10-28",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.01665084362,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 14,
+      "session": "2024-10-29",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.030668890476,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 16,
+      "session": "2024-10-30",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.026923906803,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 18,
+      "session": "2024-10-31",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.072317802906,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 25,
+      "session": "2024-11-01",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.035294055939,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-11-04",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.036865067482,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 32,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 32,
+      "session": "2024-11-05",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.130601012707,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 36,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 36,
+      "session": "2024-11-06",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 10
+    },
+    {
+      "estimated_cost_usd": 0.011351764202,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 7,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 7,
+      "session": "2024-11-07",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.010187542439,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-11-08",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.018436527252,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-11-11",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.020724987984,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 11,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 11,
+      "session": "2024-11-12",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.041433024406,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 16,
+      "session": "2024-11-13",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.032990658283,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-11-14",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.033419454098,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 17,
+      "session": "2024-11-15",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.016825771332,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-11-18",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.041005015373,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 23,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 23,
+      "session": "2024-11-19",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.053571879864,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 22,
+      "session": "2024-11-20",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.066628456116,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 18,
+      "session": "2024-11-21",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.086976635456,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 22,
+      "session": "2024-11-22",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.040829658508,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 24,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 24,
+      "session": "2024-11-25",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.029147064686,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 16,
+      "session": "2024-11-26",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.03718675375,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 20,
+      "session": "2024-11-27",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.001019239426,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 5,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 5,
+      "session": "2024-11-29",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 1
+    },
+    {
+      "estimated_cost_usd": 0.004952096939,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-12-02",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.014486217499,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-12-03",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.018880450726,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-12-04",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.005004811287,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-12-05",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.024582457542,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-12-06",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.021822583675,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 14,
+      "session": "2024-12-09",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.012291276455,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 11,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 11,
+      "session": "2024-12-10",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.004579293728,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-12-11",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.011927366257,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-12-12",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.015855574608,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 10,
+      "session": "2024-12-13",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.01146851778,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 15,
+      "session": "2024-12-16",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.071208739281,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 21,
+      "session": "2024-12-17",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.021834027767,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 13,
+      "session": "2024-12-18",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.057843494415,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 13,
+      "session": "2024-12-19",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.027230346203,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 11,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 11,
+      "session": "2024-12-20",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.073864901066,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 28,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 28,
+      "session": "2024-12-23",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.001892983913,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 5,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 5,
+      "session": "2024-12-24",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 1
+    },
+    {
+      "estimated_cost_usd": 0.00834184885,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 13,
+      "session": "2024-12-26",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.066403162479,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 22,
+      "session": "2024-12-27",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.107358431816,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 32,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 32,
+      "session": "2024-12-30",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 8
+    },
+    {
+      "estimated_cost_usd": 0.049422860146,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cmbp-1",
+      "selected_trades": 13,
+      "session": "2024-12-31",
+      "splits": [
+        "q4_2024_external"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.017014145851,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 23,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 23,
+      "session": "2025-07-01",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.013352632523,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-07-02",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.003643035889,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 12,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 12,
+      "session": "2025-07-03",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.020577758551,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 24,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 24,
+      "session": "2025-07-07",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.010344386101,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-07-08",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.017137527466,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 17,
+      "session": "2025-07-09",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.013213306665,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2025-07-10",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013717859983,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-07-11",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.016829669476,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-07-14",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.020741373301,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 23,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 23,
+      "session": "2025-07-15",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.019937604666,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 36,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 36,
+      "session": "2025-07-16",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.00961959362,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-07-17",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.003388226032,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 5,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 5,
+      "session": "2025-07-18",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 1
+    },
+    {
+      "estimated_cost_usd": 0.010024905205,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-07-21",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.009995251894,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-07-22",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.013558417559,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 14,
+      "session": "2025-07-23",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.010013580322,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-07-24",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.006554871798,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-07-25",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.013748705387,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-07-28",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.006918311119,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-07-29",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.027359575033,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 38,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 38,
+      "session": "2025-07-30",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 8
+    },
+    {
+      "estimated_cost_usd": 0.010403841734,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 17,
+      "session": "2025-07-31",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.017432570457,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 27,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 27,
+      "session": "2025-08-01",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.006828606129,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-08-04",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.027829110622,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 25,
+      "session": "2025-08-05",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 8
+    },
+    {
+      "estimated_cost_usd": 0.013784021139,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 17,
+      "session": "2025-08-06",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.020652264357,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 24,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 24,
+      "session": "2025-08-07",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.006906539202,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-08-08",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.01040443778,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-08-11",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.019365996122,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 25,
+      "session": "2025-08-12",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.01043394208,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-08-13",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.010352432728,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-08-14",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.017289072275,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-08-15",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.013827085495,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-08-18",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013770312071,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-08-19",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013837367296,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 25,
+      "session": "2025-08-20",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013910233974,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-08-21",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.016660839319,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2025-08-22",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.0168402493,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2025-08-25",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.013530254364,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-08-26",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.01006141305,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 14,
+      "session": "2025-08-27",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.020336657763,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-08-28",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.020323395729,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 27,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 27,
+      "session": "2025-08-29",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.013921111822,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-09-02",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.017383992672,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2025-09-03",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.018313974142,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 28,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 28,
+      "session": "2025-09-04",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.034616142511,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 53,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 53,
+      "session": "2025-09-05",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 10
+    },
+    {
+      "estimated_cost_usd": 0.017320513725,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 24,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 24,
+      "session": "2025-09-08",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.010024011135,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-09-09",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.010405182838,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-09-10",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.012887120247,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 24,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 24,
+      "session": "2025-09-11",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.012699365616,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2025-09-12",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.010014623404,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-09-15",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.010036677122,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-09-16",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.031128525734,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 40,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 40,
+      "session": "2025-09-17",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 9
+    },
+    {
+      "estimated_cost_usd": 0.020546764135,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 32,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 32,
+      "session": "2025-09-18",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.016423910856,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-09-19",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.011023879051,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2025-09-22",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.02321138978,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 34,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 34,
+      "session": "2025-09-23",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.010346025229,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-09-24",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.006958693266,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-09-25",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.030611306429,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 37,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 37,
+      "session": "2025-09-26",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 9
+    },
+    {
+      "estimated_cost_usd": 0.010309964418,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 13,
+      "session": "2025-09-29",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.013765841722,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-09-30",
+      "splits": [
+        "q3_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.006392598152,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-10-01",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.016644746065,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-10-02",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.010264664888,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-10-03",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.015656799078,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 33,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 33,
+      "session": "2025-10-06",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.010159909725,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-10-07",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.012644827366,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-10-08",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013624876738,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 14,
+      "session": "2025-10-09",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.01279219985,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-10-10",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.017288029194,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-10-13",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.027420818806,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 31,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 31,
+      "session": "2025-10-14",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 8
+    },
+    {
+      "estimated_cost_usd": 0.024123191833,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 38,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 38,
+      "session": "2025-10-15",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.013555288315,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 14,
+      "session": "2025-10-16",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013872087002,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 21,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-10-17",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.016758143902,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 19,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 19,
+      "session": "2025-10-20",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.006855875254,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-10-21",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.020147413015,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-10-22",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.016747415066,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-10-23",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.016669481993,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2025-10-24",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.012044161558,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 27,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 27,
+      "session": "2025-10-27",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.016282051802,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 25,
+      "session": "2025-10-28",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.017340481281,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 32,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 32,
+      "session": "2025-10-29",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.017279237509,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-10-30",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.017322301865,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 31,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 31,
+      "session": "2025-10-31",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.024295449257,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 35,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 35,
+      "session": "2025-11-03",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.031277686357,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 44,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 44,
+      "session": "2025-11-04",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 9
+    },
+    {
+      "estimated_cost_usd": 0.010233968496,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 14,
+      "session": "2025-11-05",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.017336457968,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 24,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 24,
+      "session": "2025-11-07",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.013747215271,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-11-10",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.016726106405,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-11-11",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.017389059067,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 17,
+      "session": "2025-11-12",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.010069906712,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 12,
+      "schema": "cbbo-1s",
+      "selected_trades": 12,
+      "session": "2025-11-13",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.024358183146,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 33,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 33,
+      "session": "2025-11-14",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.027297884226,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 33,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 33,
+      "session": "2025-11-17",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 8
+    },
+    {
+      "estimated_cost_usd": 0.006973445415,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 19,
+      "schema": "cbbo-1s",
+      "selected_trades": 19,
+      "session": "2025-11-18",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.031352937222,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 42,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 42,
+      "session": "2025-11-19",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 9
+    },
+    {
+      "estimated_cost_usd": 0.017127245665,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 31,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 31,
+      "session": "2025-11-20",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.031107664108,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 43,
+      "schema": "cbbo-1s",
+      "selected_trades": 43,
+      "session": "2025-11-21",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 9
+    },
+    {
+      "estimated_cost_usd": 0.013488531113,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-11-24",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.009601414204,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 12,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 12,
+      "session": "2025-11-25",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.010292679071,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 13,
+      "session": "2025-11-26",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.003433078527,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-11-28",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.010389536619,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 14,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 14,
+      "session": "2025-12-01",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.010438263416,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 13,
+      "session": "2025-12-02",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.013289302588,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2025-12-03",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.020885169506,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 31,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 31,
+      "session": "2025-12-04",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.020865648985,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 30,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 30,
+      "session": "2025-12-05",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.013685971498,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 17,
+      "session": "2025-12-08",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.017293840647,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2025-12-09",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.010394752026,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2025-12-10",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.009975582361,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 11,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 11,
+      "session": "2025-12-11",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.013932734728,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2025-12-15",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.006971806288,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 11,
+      "schema": "cbbo-1s",
+      "selected_trades": 11,
+      "session": "2025-12-16",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.017423778772,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2025-12-18",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.023880004883,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 26,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 26,
+      "session": "2025-12-19",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.020188838243,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2025-12-22",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.012467801571,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 11,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 11,
+      "session": "2025-12-23",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.003152489662,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2025-12-24",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.013246387243,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2025-12-26",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.009967982769,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 18,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 18,
+      "session": "2025-12-29",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.019144713879,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 32,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 32,
+      "session": "2025-12-30",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.006687343121,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2025-12-31",
+      "splits": [
+        "q4_2025"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.010252147913,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 17,
+      "session": "2026-01-05",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.016011297703,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2026-01-06",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.02019777894,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 19,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 19,
+      "session": "2026-01-07",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.006945133209,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 11,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 11,
+      "session": "2026-01-08",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.013424158096,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 15,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 15,
+      "session": "2026-01-09",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.012878030539,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2026-01-12",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013872236013,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2026-01-13",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013924390078,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2026-01-14",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013788938522,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2026-01-15",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.020321905613,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 23,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 23,
+      "session": "2026-01-20",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.02420425415,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 21,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 21,
+      "session": "2026-01-21",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.017236918211,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2026-01-22",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.010399222374,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 19,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 19,
+      "session": "2026-01-23",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.006549060345,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2026-01-26",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.01275524497,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2026-01-27",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013685971498,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 13,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 13,
+      "session": "2026-01-28",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.017278939486,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 25,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 25,
+      "session": "2026-01-29",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.003450363874,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 5,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 5,
+      "session": "2026-02-02",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 1
+    },
+    {
+      "estimated_cost_usd": 0.013892203569,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 19,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 19,
+      "session": "2026-02-03",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.02785295248,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 26,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 26,
+      "session": "2026-02-04",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 8
+    },
+    {
+      "estimated_cost_usd": 0.020911693573,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 33,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 33,
+      "session": "2026-02-05",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.01363530755,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2026-02-09",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.003483742476,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2026-02-10",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 1
+    },
+    {
+      "estimated_cost_usd": 0.027748942375,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 29,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 29,
+      "session": "2026-02-11",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 8
+    },
+    {
+      "estimated_cost_usd": 0.006924271584,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2026-02-12",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 2
+    },
+    {
+      "estimated_cost_usd": 0.020627677441,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 17,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 17,
+      "session": "2026-02-17",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.024322867393,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 23,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 23,
+      "session": "2026-02-18",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.02432897687,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 28,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 28,
+      "session": "2026-02-19",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.010434538126,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 24,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 24,
+      "session": "2026-02-20",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.013766884804,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2026-02-23",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.02398326993,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 20,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 20,
+      "session": "2026-02-24",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.009398311377,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 10,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 10,
+      "session": "2026-02-25",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 3
+    },
+    {
+      "estimated_cost_usd": 0.016996413469,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 16,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 16,
+      "session": "2026-02-26",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.01739770174,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 46,
+      "schema": "cbbo-1s",
+      "selected_trades": 46,
+      "session": "2026-03-02",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.023975521326,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 54,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 54,
+      "session": "2026-03-03",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.017277300358,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 52,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 52,
+      "session": "2026-03-04",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.013917535543,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 40,
+      "schema": "cbbo-1s",
+      "selected_trades": 40,
+      "session": "2026-03-05",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.013688802719,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 36,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 36,
+      "session": "2026-03-09",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.020847320557,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 36,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 36,
+      "session": "2026-03-10",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.013932734728,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 24,
+      "schema": "cbbo-1s",
+      "selected_trades": 24,
+      "session": "2026-03-11",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.024351030588,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 52,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 52,
+      "session": "2026-03-12",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.024383813143,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 56,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 56,
+      "session": "2026-03-16",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 7
+    },
+    {
+      "estimated_cost_usd": 0.017360299826,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 40,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 40,
+      "session": "2026-03-17",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.013935565948,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 22,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 22,
+      "session": "2026-03-18",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.02090960741,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 52,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 52,
+      "session": "2026-03-19",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.013942271471,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 34,
+      "schema": "cbbo-1s",
+      "selected_trades": 34,
+      "session": "2026-03-23",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 4
+    },
+    {
+      "estimated_cost_usd": 0.020904690027,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 44,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 44,
+      "session": "2026-03-24",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 6
+    },
+    {
+      "estimated_cost_usd": 0.01741245389,
+      "existing_1s_file": true,
+      "missing_1s_session_rows": 0,
+      "missing_symbol_rows": 34,
+      "schema": "cbbo-1s",
+      "selected_trades": 34,
+      "session": "2026-03-25",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 5
+    },
+    {
+      "estimated_cost_usd": 0.030927807093,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 54,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 54,
+      "session": "2026-03-26",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 9
+    },
+    {
+      "estimated_cost_usd": 0.027674734592,
+      "existing_1s_file": false,
+      "missing_1s_session_rows": 62,
+      "missing_symbol_rows": 0,
+      "schema": "cbbo-1s",
+      "selected_trades": 62,
+      "session": "2026-03-30",
+      "splits": [
+        "q1_2026"
+      ],
+      "symbols": 8
+    }
+  ],
+  "scope": "all_missing",
+  "source_replay_json": "v4/audit/autoresearch/v4_aplus_hypothesis_115_protocol101_existing_1s_path_audit/report.json",
+  "why": "Protocol 114 showed timing sensitivity, and Protocol 115 found supportive but incomplete one-second evidence. This request fills only the Protocol 101 selected-contract 1s gaps instead of buying broad history."
+}

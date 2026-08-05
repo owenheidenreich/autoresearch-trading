@@ -1,5 +1,8 @@
 # Protocol101 Stage-1 Adversarial Audit Specification
 
+> **SUPERSEDED 2026-08-05** as current work. Stage-1 is closed; see [`STATUS.md`](../../STATUS.md). Retained as the audit spec of record.
+
+
 Status: FROZEN SPECIFICATION FOR GOAL A  
 Date: 2026-07-26
 

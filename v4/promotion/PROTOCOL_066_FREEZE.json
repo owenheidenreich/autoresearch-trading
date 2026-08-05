@@ -1,0 +1,43 @@
+{
+  "protocol_id": "protocol_066",
+  "freeze_type": "research_candidate_freeze",
+  "frozen_at": "2026-05-12",
+  "status": "frozen_challenger_not_live_approved",
+  "baseline_protocol": "protocol_054",
+  "entry_protocol": "protocol_051",
+  "model_protocol": {
+    "source_protocol": "protocol_065",
+    "validation_protocol": "protocol_066",
+    "sequence_mode": "protocol054_residual_recovery_penalty",
+    "calibrate_threshold": true,
+    "seeds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "epochs": 12,
+    "batch_size": 256,
+    "hidden_dim": 72,
+    "validation_days": 10,
+    "decision_rule": "mandatory hard stop/target first; otherwise exit before Protocol 054 only when predicted residual value exceeds validation-selected threshold; if no override fires, use frozen Protocol 054 exit"
+  },
+  "frozen_artifacts": {
+    "report_json": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_066_protocol065_10seed_validation/report.json",
+      "sha256": "dea01374b0a1868f6f0705819bac34122220af18fe6f78752adda38eb1f2446a"
+    },
+    "selected_trades": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_066_protocol065_10seed_validation/selected_trades_sequence_exits.json",
+      "sha256": "df5c06bf3e84a9c38710f1105c78d52fc069ffd2f95795e3f217a00646cf3219"
+    },
+    "override_diagnostic": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_066_protocol065_10seed_validation/override_diagnostic/report.json",
+      "sha256": "0b5027d8a8a042f04c966b386b75f734f82d76f41de5d551d474fe0437d8c676"
+    },
+    "one_second_path_audit": {
+      "path": "v4/audit/autoresearch/v4_aplus_hypothesis_066_protocol065_10seed_validation/one_second_path_audit/report.json",
+      "sha256": "96950ad43f545be30cce0e4cec22ecccdf6db700d77f3c1346433a743e7d4f2c"
+    }
+  },
+  "promotion_constraints": [
+    "no entry-side knobs while Protocol 066 is frozen",
+    "no paid data download without explicit user approval",
+    "paper/live approval requires persisted model/scaler artifacts, live-data parity, order-state accounting, and path audit evidence"
+  ]
+}
