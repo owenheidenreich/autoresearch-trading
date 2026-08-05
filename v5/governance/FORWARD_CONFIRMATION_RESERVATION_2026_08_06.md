@@ -1,7 +1,7 @@
 # Forward Confirmation Reservation — declaration
 
-**Status: DRAFT — awaiting owner signature. Drafted 2026-08-05 on the owner's decision of the same
-day. The reservation binds from the moment the owner signs, retroactive to the start date below.**
+**Status: SIGNED AND IN FORCE — owner signed 2026-08-05. This reservation binds now and applies to
+every session from 2026-08-06 onward.**
 
 ## What this declares
 
@@ -43,8 +43,18 @@ edge is found, not after.
 ## Signature
 
 - Owner decision to reserve: **recorded 2026-08-05** (plan approval conversation).
-- Owner signature on this declaration text: **PENDING** — sign by replacing this line with
-  `Signed: <name>, <date>`.
+- **Signed: repository owner, 2026-08-05.** Signature instruction given in conversation on
+  2026-08-05: *"sign these today."* The reservation is in force from this date and covers every
+  ES and SPXW session from 2026-08-06 onward.
 
-*Drafted by Claude Fable 5, 2026-08-05, on owner instruction. This draft contacts nothing and
-changes no runtime state.*
+## Effect on work already scheduled
+
+- **Track-A capture on 2026-08-06 and 2026-08-07 proceeds unchanged.** It measures arrival latency,
+  feed parity, and capture completeness — infrastructure evidence that evaluates no policy — which
+  rule 2 above explicitly permits.
+- **G1 runs on development data only:** the owned corpus through 2026-08-05. Its 254-session index
+  ends before the reservation starts, so nothing about G1 changes.
+- The first opening of the reserve requires a frozen pre-registration under rule 4. None exists yet.
+
+*Drafted by Claude Fable 5, 2026-08-05, on owner instruction; signed by the owner the same day.
+Signing this document contacts nothing and changes no runtime state.*

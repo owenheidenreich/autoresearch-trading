@@ -18,9 +18,9 @@ A committed work packet must appear here. No row means no job.
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **RELEASED 08-05 — current job; targets a large edge under "large edge or stop"** | Implementation | [`v5/work/g1-direction/`](work/g1-direction/) |
 | 4 | Track-A option-feature arrival capture | G3 | **RUNNING ATTENDED — 0 of 2 evidence sessions banked** | The 08-06 and 08-07 recordings | [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md) |
-| 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **OWNER DECIDED 08-05 — move approved; manifest drafted; execute after Track-A banks** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md) | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository) |
+| 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — held until Track-A banks; earliest 08-08** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md) | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
-| 6 | Rebuild a confirmation firewall | G8 | **FORWARD DESIGN DECIDED 08-05 — reservation from 2026-08-06 drafted** | Owner signature on the [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) | [§4](#4-the-measurement-problem) |
+| 6 | Rebuild a confirmation firewall | G8 | **SIGNED 08-05 — every session from 2026-08-06 onward is confirmation-only** | — | [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) |
 | 7 | Programme restart after the 08-04 stop | all | **CLOSED 08-05** | — | [restart record](governance/PROGRAM_RESTART_RECORD_2026_08_05.md) |
 | 8 | Quarantine stale v4 documentation | infrastructure | **DONE 08-05 — 117 files preserved** | — | [manifest](../_cleanup_quarantine/2026-08-05-docs/MANIFEST.md) |
 | 9 | Inventory and promote training-readiness controls | infrastructure | **DONE 08-05** | — | [capability audit](research/findings/V5_WORKFLOW_CAPABILITY_AUDIT_2026_08_05.md) |
@@ -211,6 +211,12 @@ mistake. No past result changes; no candidate has been run through the new gate.
 - Track-A capture dates are **2026-08-06 and 2026-08-07**, declared in `capture_declaration_v6.json` and
   driven by an attended runner started by hand. 2026-08-05 was deliberately excluded: its open window was
   lost to the defect above and its midday window is classified as an infrastructure test, not evidence.
+- **A forward confirmation reservation is in force, signed 2026-08-05.** Every ES and SPXW session
+  from **2026-08-06 onward is confirmation-only**: no research analysis, screen, model, chart, or
+  summary may compute strategy economics on those sessions until a pre-registered protocol opens the
+  reserve once. Development data ends **2026-08-05**. Infrastructure evidence that evaluates no
+  policy — arrival latency, feed parity, capture completeness, including Track-A on 08-06/08-07 — is
+  explicitly permitted. Full rules: [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md).
 - No model is accepted for current research promotion.
 - No training, data purchase, broker contact, paper submission, or runtime mutation is authorized by this
   status page.

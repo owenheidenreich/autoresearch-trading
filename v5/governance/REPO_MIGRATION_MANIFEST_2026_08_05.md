@@ -1,7 +1,12 @@
 # Repository Migration Manifest — moving out of `~/Documents`
 
-**Status: DRAFT procedure — owner-executed, Tier 1. Drafted 2026-08-05 on the owner's decision of
-the same day. Do not execute before the Track-A capture sessions (2026-08-06/07) are banked.**
+**Status: AUTHORIZED 2026-08-05 — owner-executed, Tier 1. NOT YET EXECUTED.**
+
+The owner authorized this migration on 2026-08-05 (*"execute the repo move after Track-A banks"*).
+The authorization is recorded here; the move is **held until both Track-A capture sessions
+(2026-08-06 and 2026-08-07) are banked**, because step 1 below forbids moving while a capture or
+attended runner is live. **Earliest execution: 2026-08-08.** Every step remains owner-executed — no
+agent moves this repository.
 
 ## Why
 
