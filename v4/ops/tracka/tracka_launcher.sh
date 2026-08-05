@@ -68,8 +68,39 @@ materialize "$REPO/.venv/bin/python" || echo "WARN: venv interpreter not materia
 # precise check whose absence cost the 2026-08-05 open window: launchd produced
 # a one-line error and an otherwise empty output tree, which looks identical to
 # "never fired" unless you read the launchd stderr file specifically.
-if ! /usr/bin/head -1 "$REPO/v4/ops/tracka/run_tracka_window.sh" >/dev/null 2>&1; then
-    echo "FATAL: wrapper still unreadable after materialization -- aborting"
+#
+# WHY THIS RETRIES (2026-08-05 midday)
+# -----------------------------------
+# The single materialization pass above is NOT sufficient. brctl download is
+# asynchronous, so the first read can still hit a dataless file. On 2026-08-05
+# the launchd invocation at 16:10:00Z failed this check and exited 74; a second
+# invocation 27 s later passed and captured normally.
+#
+# launchd did NOT perform that retry. KeepAlive is unset and StartCalendarInterval
+# fires once, so the job's own record is runs=1, last exit code=74 -- a FAILURE.
+# The retry came from an unrelated ad-hoc shell that happened to exist that day.
+# Without this loop the 08-06 and 08-07 windows would fail exactly like the
+# 08-05 open window did. Retry here, in-process, and never rely on an external
+# retry that will not be there.
+#
+# Budget: 1 s spacing, 60 attempts. The observed recovery took 27 s. The window
+# tolerates this -- the open capture is declared 09:28-09:33 ET to centre the
+# 09:30 bell, so tens of seconds of drift still covers it.
+readable=0
+for attempt in $(seq 1 60); do
+    if /usr/bin/head -1 "$REPO/v4/ops/tracka/run_tracka_window.sh" >/dev/null 2>&1; then
+        readable=1
+        echo "wrapper readable on attempt ${attempt}"
+        break
+    fi
+    [ "$attempt" -eq 1 ] && echo "wrapper not yet readable -- retrying materialization"
+    /usr/bin/brctl download "$REPO/v4/ops/tracka/run_tracka_window.sh" 2>/dev/null
+    /bin/dd if="$REPO/v4/ops/tracka/run_tracka_window.sh" of=/dev/null bs=1m 2>/dev/null
+    sleep 1
+done
+
+if [ "$readable" -ne 1 ]; then
+    echo "FATAL: wrapper still unreadable after 60 attempts -- aborting"
     exit 74
 fi
 echo "materialization OK; handing off to the versioned wrapper"
