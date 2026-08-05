@@ -14,7 +14,10 @@ set -euo pipefail
 REPO="/Users/gduby/Documents/autoresearch-trading"
 WINDOW="${1:?usage: run_tracka_window.sh <open|midday>}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-DECL="$ROOT/capture_declaration_v5.json"
+# v6 narrows the certified sample to 2026-08-06 and 08-07 (owner, 2026-08-05).
+# 08-05 is deliberately absent: its open window was lost to iCloud eviction and
+# its midday window was an infrastructure verification run, not evidence.
+DECL="$ROOT/capture_declaration_v6.json"
 APPROVAL="$ROOT/authorization.json"
 SESSION="$(date +%Y-%m-%d)"
 LOGDIR="$ROOT/run_logs"
