@@ -1,5 +1,8 @@
 # Project Section And Feature Map
 
+> **SUPERSEDED 2026-08-05 as a status document.** Generated 2026-05-26. Current status is [`STATUS.md`](STATUS.md). Still useful as a repo *map* (where code lives); its status and active/stale claims are stale.
+
+
 Generated: 2026-05-26  
 Repository: `/Users/gduby/Documents/autoresearch-trading`  
 Primary artifact type: cartography report  

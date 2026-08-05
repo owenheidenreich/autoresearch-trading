@@ -1,5 +1,8 @@
 # Autoresearch Trading — SPX 0DTE Research And Paper-Trading System
 
+> **Current status, gates, and open jobs live in [`STATUS.md`](STATUS.md).** This README describes the repository; it is not a status document. The 'current front door' line below is stale — the current research path is Path-D, not the legacy Protocol101 paper spine.
+
+
 Research system for building, auditing, falsifying, and guarded-paper-testing strategies for same-day SPX options. The current front door is the v4 Protocol101 paper-trading spine, with older v2/v3/archive material preserved as project history unless a current import, registry, runtime pointer, or owner workflow proves otherwise.
 
 For the current end-to-end map, start with [PROJECT_SECTION_AND_FEATURE_MAP.md](PROJECT_SECTION_AND_FEATURE_MAP.md).

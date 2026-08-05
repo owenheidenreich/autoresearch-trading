@@ -1,5 +1,8 @@
 # FOUNDATION_TRUTH_GROUNDED_REPLACEMENT_PROGRAM_V1
 
+> **SUPERSEDED 2026-08-05.** Current status and gates are in [`STATUS.md`](../../STATUS.md).
+
+
 What is this: foundation / truth-grounded Protocol101 replacement research program
 Does it change the paper-trading default: no
 Paper default baseline: `PAPER_DEFAULT_PROTOCOL101`

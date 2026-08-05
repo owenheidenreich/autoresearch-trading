@@ -1,5 +1,8 @@
 # Current Trading Bot Single Source Of Truth
 
+> **SUPERSEDED 2026-08-05.** Despite the filename, this is NOT the source of truth. Current status is [`STATUS.md`](../STATUS.md). Retained as legacy paper-runtime evidence only.
+
+
 > **SUPERSEDED-BY for Path-D model-building status (2026-08-01):** [`v4/docs/protocol101/PATH_D_CURRENT_STATE.md`](../v4/docs/protocol101/PATH_D_CURRENT_STATE.md); this document remains legacy paper-runtime evidence and does not authorize Path-D training, backtesting, or paper readiness.
 
 Audit date: 2026-05-24

@@ -10,6 +10,22 @@ one, this one wins and the other one is stale. Written in plain English on purpo
 
 ---
 
+## 0. Open jobs — the register
+
+Every active piece of work, its state, and where it lives. **A job does not exist unless it is on this
+table.** If you create a document, add its row here in the same change.
+
+| # | Job | Gate | State | Waiting on | Document |
+|---|---|---|---|---|---|
+| 1 | **Fable review — is this project measurable at all?** | G1/G4/G5/G8 | **QUEUED** | Owner to send it | [FABLE_REVIEW_MEASUREMENT_CAPACITY](v4/docs/protocol101/training/research/FABLE_REVIEW_MEASUREMENT_CAPACITY_2026_08_05.md) |
+| 2 | G1 direction screen (M1 opening range, M3 overnight gap) | G1 | **HOLD** — do not start until job 1 answers, so the question is framed before results are seen | Job 1 | plan in job 3's §3 |
+| 3 | Codex gate-chain audit | all | **DONE** 08-05; headline verified independently | — | [PATHD_GATE_CHAIN_RESEARCH](v4/docs/protocol101/training/research/PATHD_GATE_CHAIN_RESEARCH_2026_08_05.md) |
+| 4 | Track-A arrival capture, sessions 08-06 + 08-07 | G3 | **ARMED** — run attended, not via the scheduled job | Owner to start the attended runner | declaration v6 (audit tree) |
+| 5 | Track-A scheduled job cannot read the repo | G3 | **RESOLVED** 08-05 — macOS permissions (TCC), not iCloud. Durable fix is still an owner call | Owner, for the durable fix | [HANDOFF_TRACKA_LAUNCHD](v4/docs/protocol101/training/research/HANDOFF_TRACKA_LAUNCHD_CANNOT_READ_REPO_2026_08_05.md) |
+| 6 | Repair the G5 validation gate (4 defects) | G5 | **OPEN**, unassigned. Must land before any future replay is believed | — | §7a below |
+| 7 | Rebuild a confirmation firewall | G8 | **BLOCKED** — no clean date range identified; the one proposed was already used | Job 1 | §3a limit 2 |
+| 8 | Programme reopened after the 08-04 stand-down | — | **CLOSED** 08-05 | — | [restart record](v4/docs/protocol101/training/contracts/PATHD_PROGRAMME_RESTART_RECORD_2026_08_05.md) |
+
 ## 1. What we are building
 
 An automated day-trading bot that buys SPX 0DTE call and put options — a machine-learning model that
@@ -125,7 +141,10 @@ From the do-not-retest ledger — the most valuable document in this repo:
 | The 18-feature entry contract | Zero ranking power — deciles flat and non-monotonic |
 | The exit-repair family (6 arms) | All lost to their comparator |
 
-## 7. The gate chain — everything between here and a working bot
+## 7. THE GATE CHAIN — everything between here and a working bot
+
+*This is the gates file. There is no other one. The older `v4/docs/PROJECT_SECTIONS_AND_HILL_CLIMB_GATES.md`
+is superseded.*
 
 Each gate must pass before the next is attempted.
 

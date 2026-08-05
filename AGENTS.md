@@ -46,7 +46,12 @@ and what you recommend. Never present a tier-1 choice without a recommendation.
 
 Sprawl is the standing failure mode. Four competing roadmaps existed simultaneously in August 2026.
 
-- **One status page: [STATUS.md](STATUS.md).** Update it when a gate moves. Never create a second one.
+- **One status page: [STATUS.md](STATUS.md).** It holds the job register (§0), the gate chain (§7),
+  and current state. Update it when a gate moves or a job changes state. **Never create a second
+  status, truth, roadmap, or gates document** — five already had to be superseded because they
+  each claimed to be the truth.
+- **A job does not exist unless it is a row in STATUS.md §0.** If you create a document, add its
+  row in the same change. This is what stops handoffs and reviews from getting lost in the tree.
 - **No new roadmap or plan document without marking an existing one superseded** in the same change.
 - **Every research finding goes into the do-not-retest ledger**
   (`v4/docs/protocol101/training/history/PROTOCOL101_PRIOR_CAMPAIGN_DISTILLATION.md`) — what was tested,

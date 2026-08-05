@@ -1,5 +1,8 @@
 # Project Sections And Hill-Climb Gates
 
+> **SUPERSEDED 2026-08-05 — this is the OLD gates file.** The current gate chain is **STATUS.md §7 (G1–G9)**. Retained as the record of the pre-Path-D section/gate model.
+
+
 This document defines the project sections used before any renewed model hill climbing. It is intentionally operational: each section owns a distinct part of the system, has explicit allowed mutations, and has gates that prevent skipping ahead.
 
 ## Section Map
