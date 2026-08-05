@@ -1,53 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  STAGED, NOT INSTALLED.
-
-  Track A capture, Wed/Thu/Fri 2026-08-05..07, two windows per session.
-  Times are LOCAL (America/Los_Angeles), which is what launchd uses:
-      06:28 PT = 09:28 ET  (open window,   300 s, through 09:33 ET)
-      09:10 PT = 12:10 ET  (midday window, 180 s)
-
-  Weekday 3/4/5 = Wednesday/Thursday/Friday. launchd cannot express "only these
-  three dates", so this WILL also fire on 2026-08-12 and later Wednesdays if it
-  is still loaded. The wrapper's declared-session check is what prevents an
-  out-of-declaration capture — that check is load-bearing, not decorative.
-
-  Install (owner-authorized only):
-      cp com.autoresearch.tracka.capture.plist.staged \
-         ~/Library/LaunchAgents/com.autoresearch.tracka.capture.plist
-      launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.autoresearch.tracka.capture.plist
-
-  UNINSTALL AFTER 2026-08-07 — this is a temporary job, not a standing service:
-      launchctl bootout gui/$(id -u)/com.autoresearch.tracka.capture
-      rm ~/Library/LaunchAgents/com.autoresearch.tracka.capture.plist
--->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Label</key>
-    <string>com.autoresearch.tracka.capture</string>
-
-    <key>ProgramArguments</key>
-    <array>
-        <string>/Users/gduby/Documents/autoresearch-trading/v4/ops/tracka/run_tracka_window.sh</string>
-        <string>open</string>
-    </array>
-
-    <key>StartCalendarInterval</key>
-    <array>
-        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>28</integer></dict>
-        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>28</integer></dict>
-        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>28</integer></dict>
-    </array>
-
-    <key>RunAtLoad</key>
-    <false/>
-
-    <key>StandardOutPath</key>
-    <string>/Users/gduby/Documents/autoresearch-trading/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/run_logs/launchd.open.out</string>
-    <key>StandardErrorPath</key>
-    <string>/Users/gduby/Documents/autoresearch-trading/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/run_logs/launchd.open.err</string>
-
-    <key>WorkingDirectory</key>
-    <string>/Users/gduby/Documents/autoresearch-trading</string>
+	<key>Label</key>
+	<string>com.autoresearch.tracka.capture</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/gduby/.autoresearch-trading/tracka/tracka_launcher.sh</string>
+		<string>open</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/gduby/.autoresearch-trading/tracka/logs/launchd.open.err</string>
+	<key>StandardOutPath</key>
+	<string>/Users/gduby/.autoresearch-trading/tracka/logs/launchd.open.out</string>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Hour</key>
+			<integer>6</integer>
+			<key>Minute</key>
+			<integer>28</integer>
+			<key>Weekday</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>6</integer>
+			<key>Minute</key>
+			<integer>28</integer>
+			<key>Weekday</key>
+			<integer>4</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>6</integer>
+			<key>Minute</key>
+			<integer>28</integer>
+			<key>Weekday</key>
+			<integer>5</integer>
+		</dict>
+	</array>
 </dict>
 </plist>
