@@ -30,7 +30,7 @@ def test_catalog_has_one_contract_id_and_explicit_terminal_classification() -> N
     assert FIT_READY not in statuses
 
 
-def test_no_entry_feature_class_is_fit_ready_before_foundation_receipts() -> None:
+def test_contract_clock_catalog_snapshot_defers_to_signed_phase0_ledger() -> None:
     ready = [row.contract_id for row in ENTRY_FEATURE_FAMILY_CATALOG if row.fit_status == FIT_READY]
     assert ready == []
     assert lint_executable_live_twin(

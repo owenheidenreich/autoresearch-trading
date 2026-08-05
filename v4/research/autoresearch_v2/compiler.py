@@ -99,8 +99,22 @@ def _lint(spec: HypothesisSpec, *, require_fit_ready: bool = True) -> list[str]:
         if feature.available_at not in CAUSAL_AVAILABILITY:
             errors.append(f"future_or_unknown_feature_availability:{feature.name}:{feature.available_at}")
         errors.extend(
-            lint_executable_live_twin(feature, require_fit_ready=require_fit_ready)
+            lint_executable_live_twin(feature, require_fit_ready=False)
         )
+        if require_fit_ready:
+            # Lazy import avoids a package-initialization cycle because the
+            # ledger enumerates this package's frozen feature catalog.
+            from v4.research.pathd_feature_admission_ledger import (
+                AdmissionLedgerError,
+                assert_feature_matrix_admitted,
+            )
+
+            try:
+                assert_feature_matrix_admitted((feature.name,))
+            except AdmissionLedgerError as exc:
+                errors.append(
+                    f"live_twin_not_fit_ready:{feature.name}:{feature.live_twin}:{exc}"
+                )
         if feature.name == "last_causal_open_interest" and feature.available_at != "prior_day_eod_static":
             errors.append("feature_without_live_twin:last_causal_open_interest:intraday")
     if spec.threshold.kind not in CAUSAL_THRESHOLDS:

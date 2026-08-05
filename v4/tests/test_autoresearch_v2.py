@@ -72,7 +72,7 @@ def test_observed_but_unproved_cbbo_feature_is_not_fit_ready() -> None:
             "live_twin": "entry.opra_cbbo1m_native.v1",
         }
     ]
-    with pytest.raises(ExperimentCompileError, match="PENDING_SAME_SESSION_REPLAY"):
+    with pytest.raises(ExperimentCompileError, match=r"size_imbalance:BARRED"):
         compile_hypothesis(spec)
 
 

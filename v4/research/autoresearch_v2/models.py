@@ -12,6 +12,7 @@ from .cache import PredictionCache, prediction_cache_key, stable_hash
 from .causality import assert_mutate_future_invariant
 from .dataset import POLICY_INDEX, target_column
 from .schema import HypothesisSpec
+from v4.research.pathd_feature_admission_ledger import admitted_feature_matrix
 
 
 def compose_target(frame: pd.DataFrame, spec: HypothesisSpec) -> np.ndarray:
@@ -37,6 +38,9 @@ def fit_oof(
     cache: PredictionCache,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     features = tuple(feature.name for feature in spec.features)
+    # Phase-0 admission is checked before any estimator is constructed or any
+    # fit matrix can be materialized.  Missing/tampered ledgers fail closed.
+    admitted_feature_matrix(frame, features)
     future_columns = [
         column
         for column in frame.columns
