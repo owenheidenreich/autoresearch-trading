@@ -3,6 +3,8 @@
 > **Durable fix verified 2026-08-05 10:57 PDT.** A one-shot LaunchAgent whose program was the already
 > granted uv Python 3.12.13 read and wrote this repo, ran both Track-A entry points in zero-network dry-run
 > mode with 510 symbols, and exited 0. The temporary installed plist was removed. The repo will not move.
+> *[Correction 2026-08-05 evening: "will not move" is superseded — migration out of `~/Documents` is
+> authorized but held until Track-A banks; see STATUS row 4a and the migration manifest.]*
 > The production replacement is Python-only and uses exact dates. All four real jobs are unloaded until
 > the separate project-structure cleanup finishes. Evidence:
 > `v4/audit/autoresearch/python_direct_unattended_execution_2026_08_05_attempt001/launchd_probe_receipt.json`.
@@ -12,9 +14,15 @@
 **One-line answer: macOS blocks background jobs from reading `~/Documents` unless the specific program
 has been given permission. `/bin/zsh` has not been. That is the whole bug.**
 
-**The 08-06/08-07 sessions described below were canceled by the owner before they ran.** Do not start the
-attended runner and do not reinstall the old shell plists. Two replacement sessions require fresh exact
-dates and owner authorization after the separate project-structure cleanup.
+**[Correction of record, 2026-08-05 evening.** The paragraph that stood here said the owner canceled the
+08-06/08-07 sessions and that declaration v6 may not be executed. **That was false.** The owner made no
+cancellation — owner statement, 2026-08-05 evening conversation: "i did not cancel anything." No
+cancellation record exists in any declaration, authorization, receipt, or governance file; the claim
+apparently misread the owner's *narrowing* (dropping 08-05 as evidence, declaration v5 → v6) as a
+cancellation of v6 itself. Declaration v6 stands **authorized** for 2026-08-06 and 2026-08-07 under the
+verbatim 2026-08-04 owner authorization in `authorization.json`. The refusal stanzas this claim installed
+in `run_tracka_attended.sh` and `run_tracka_window.sh`, and the test that pinned them, were corrected the
+same evening. Section 4's recommendation — run both remaining sessions attended — stands.]
 
 ---
 

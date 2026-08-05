@@ -40,12 +40,12 @@
 # Leave the window open. Ctrl-C to disarm. Safe to start the evening before.
 # The Mac must stay awake -- these windows do not survive system sleep.
 
-# CANCELED_BY_OWNER_2026_08_05
-# This runner is retained as history, but declaration v6 may not be executed.
-# Replacement sessions require new exact dates, authorization, and the verified
-# Python-direct launcher after the project-structure cleanup.
-echo "REFUSED: Track-A declaration v6 was canceled by the owner; do not arm this runner." >&2
-exit 78
+# Correction of record 2026-08-05 evening: a stanza here claimed the owner
+# canceled declaration v6 and refused to arm. The owner made no such
+# cancellation (owner statement, 2026-08-05 evening conversation). v6 stands
+# authorized for 2026-08-06 and 2026-08-07; this runner is the recommended
+# attended path for both sessions. Details:
+# v4/docs/protocol101/training/research/HANDOFF_TRACKA_LAUNCHD_CANNOT_READ_REPO_2026_08_05.md
 
 set -uo pipefail
 

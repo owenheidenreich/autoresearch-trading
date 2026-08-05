@@ -9,12 +9,11 @@
 # Sequence per window: capture definitions (30 s) -> capture market data.
 # The recorder requires --definition-path, and definitions must be current-session.
 
-# CANCELED_BY_OWNER_2026_08_05
-# Declaration v6 is frozen history, not current permission to capture. Replacement
-# sessions must use the Python-direct launcher with a new authorization and sealed
-# declaration after the project-structure cleanup.
-echo "REFUSED: Track-A declaration v6 was canceled by the owner; no live capture is authorized." >&2
-exit 78
+# Correction of record 2026-08-05 evening: a stanza here claimed the owner
+# canceled declaration v6 and refused all capture. The owner made no such
+# cancellation (owner statement, 2026-08-05 evening conversation). v6 stands
+# authorized for 2026-08-06 and 2026-08-07. Details:
+# v4/docs/protocol101/training/research/HANDOFF_TRACKA_LAUNCHD_CANNOT_READ_REPO_2026_08_05.md
 
 set -euo pipefail
 
@@ -22,7 +21,8 @@ REPO="/Users/gduby/Documents/autoresearch-trading"
 WINDOW="${1:?usage: run_tracka_window.sh <open|midday>}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
 # v6 narrows the certified sample to 2026-08-06 and 08-07 (owner, 2026-08-05).
-# 08-05 is deliberately absent: its open window was lost to iCloud eviction and
+# 08-05 is deliberately absent: its open window was lost to the launchd TCC
+# permission refusal (the eviction diagnosis was retracted; see the handoff) and
 # its midday window was an infrastructure verification run, not evidence.
 DECL="$ROOT/capture_declaration_v6.json"
 APPROVAL="$ROOT/authorization.json"
