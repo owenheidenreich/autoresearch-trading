@@ -1,5 +1,9 @@
 # Project Section And Feature Map
 
+> **FROZEN LEGACY CARTOGRAPHY — 2026-08-05.** The active project boundary, tool directory, jobs, and gates
+> are in [`v5/`](v5/README.md). This dated map remains evidence of the earlier mixed v4 tree; do not use it
+> to decide what happens next.
+
 > **SUPERSEDED 2026-08-05 as a status document.** Generated 2026-05-26. Current status is [`STATUS.md`](STATUS.md). Still useful as a repo *map* (where code lives); its status and active/stale claims are stale.
 
 

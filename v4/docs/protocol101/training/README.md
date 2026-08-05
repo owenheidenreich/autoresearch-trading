@@ -1,4 +1,8 @@
-# Protocol101 Full Trader Program
+# Protocol101 Full Trader Program — Frozen Legacy Front Page
+
+> **V4 FROZEN 2026-08-05.** The sole active project front door is [`v5/README.md`](../../../../v5/README.md),
+> with current jobs and gates in [`v5/STATUS.md`](../../../../v5/STATUS.md). This file remains historical
+> Protocol101 product and graph evidence; do not add plans or current status here.
 
 > **Current-status pointer (2026-08-01):** This front page predates the
 > walking-skeleton A6/A7 record and the owner-selected Path-D planning pivot.

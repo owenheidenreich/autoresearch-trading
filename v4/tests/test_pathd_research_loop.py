@@ -18,6 +18,11 @@ from v4.research.pathd_research_loop import (
     prior_art_check,
     run_wave,
 )
+from v5.research.prior_art import (
+    LoopError as V5LoopError,
+    blocked_by_prior_art as v5_blocked_by_prior_art,
+    prior_art_check as v5_prior_art_check,
+)
 
 
 def _tests_pass():
@@ -85,6 +90,12 @@ def test_prior_art_is_quiet_on_a_novel_mechanism() -> None:
 def test_prior_art_requires_a_mechanism() -> None:
     with pytest.raises(LoopError):
         prior_art_check("   ")
+
+
+def test_legacy_prior_art_api_reexports_v5() -> None:
+    assert prior_art_check is v5_prior_art_check
+    assert blocked_by_prior_art is v5_blocked_by_prior_art
+    assert LoopError is V5LoopError
 
 
 # --- wave validation --------------------------------------------------------

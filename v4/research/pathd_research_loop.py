@@ -25,22 +25,18 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from v4.research.pathd_model_gate import TestResult, acceptance_tier
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-HISTORY_DIR = REPO_ROOT / "v4/docs/protocol101/training/history"
-DISTILLATION = HISTORY_DIR / "PROTOCOL101_PRIOR_CAMPAIGN_DISTILLATION.md"
-FARM_LINEAGE = HISTORY_DIR / "PROTOCOL101_PROTOCOL_FARM_LINEAGE_2026_07_19.md"
-
-
-class LoopError(RuntimeError):
-    """A loop precondition failed. Fail closed rather than run a bad wave."""
+from v5.research.prior_art import (
+    LoopError,
+    PriorArtHit,
+    blocked_by_prior_art,
+    prior_art_check,
+)
 
 
 # --------------------------------------------------------------------------
@@ -107,96 +103,6 @@ class ExperimentResult:
 
 
 Runner = Callable[[Hypothesis], ExperimentResult]
-
-
-# --------------------------------------------------------------------------
-# Executable prior-art check
-# --------------------------------------------------------------------------
-
-
-# A rejecting verdict in the protocol decoder is as binding as a do-not-retest row.
-# The April distillation's section 4 does NOT cover the May protocol farm, which is
-# precisely how Path-D re-ran Protocols 029/030/031: "loss-only damage-control exit"
-# is recorded as "Reject / exit-loop stop" in the lineage, but appears nowhere in
-# section 4, so a section-4-only check waves it through.
-_REJECTING_VERDICT = re.compile(
-    r"\*\*(reject|falsified|null|abandoned|failed|no-op)"
-    r"|exit-loop stop"
-    r"|loop stop"
-    r"|do not retest"
-    r"|proof failure",
-    re.IGNORECASE,
-)
-
-
-@dataclass(frozen=True)
-class PriorArtHit:
-    source: str
-    line_number: int
-    text: str
-    in_do_not_retest: bool
-    rejecting_verdict: bool = False
-
-    @property
-    def blocking(self) -> bool:
-        return self.in_do_not_retest or self.rejecting_verdict
-
-
-def _do_not_retest_span(text: str) -> tuple[int, int]:
-    """Line span of the distillation's section 4 do-not-retest table."""
-
-    lines = text.splitlines()
-    start = end = None
-    for index, line in enumerate(lines):
-        if start is None and re.match(r"^##\s*4\.\s*Do-not-retest", line, re.IGNORECASE):
-            start = index
-        elif start is not None and line.startswith("## ") and index > start:
-            end = index
-            break
-    if start is None:
-        return (-1, -1)
-    return (start, end if end is not None else len(lines))
-
-
-def prior_art_check(mechanism: str, *, extra_terms: Sequence[str] = ()) -> list[PriorArtHit]:
-    """Search the canonical history documents for a mechanism.
-
-    Returns every match, flagging those inside the do-not-retest table AND those
-    carrying a rejecting verdict in the protocol decoder. Either is a STOP:
-    proceeding requires a materially different causal variable, target, data
-    source, or game -- not another seed, threshold, or weight.
-    """
-
-    terms = [t.strip().lower() for t in [mechanism, *extra_terms] if t and t.strip()]
-    if not terms:
-        raise LoopError("prior_art_check requires a mechanism")
-
-    hits: list[PriorArtHit] = []
-    for path in (DISTILLATION, FARM_LINEAGE):
-        if not path.exists():
-            raise LoopError(
-                f"canonical history document missing: {path}. The prior-art check cannot "
-                "be skipped; restore the document or fix the canonical path."
-            )
-        text = path.read_text(encoding="utf-8")
-        span = _do_not_retest_span(text) if path == DISTILLATION else (-1, -1)
-        for index, line in enumerate(text.splitlines()):
-            low = line.lower()
-            if any(term in low for term in terms):
-                hits.append(
-                    PriorArtHit(
-                        source=str(path.relative_to(REPO_ROOT)),
-                        line_number=index + 1,
-                        text=line.strip()[:400],
-                        in_do_not_retest=bool(span[0] <= index < span[1]),
-                        rejecting_verdict=bool(_REJECTING_VERDICT.search(line)),
-                    )
-                )
-    return hits
-
-
-def blocked_by_prior_art(hits: Sequence[PriorArtHit]) -> bool:
-    return any(hit.blocking for hit in hits)
 
 
 # --------------------------------------------------------------------------

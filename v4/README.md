@@ -1,4 +1,9 @@
-# SPX 0DTE v4 - Current Research And Paper-Trading Stack
+# SPX 0DTE v4 - Frozen Legacy Research And Paper-Trading Stack
+
+> **V4 FROZEN 2026-08-05.** New research, plans, status updates, and agent instructions live in
+> [`v5/`](../v5/README.md). Use [`v5/TOOLBOX.md`](../v5/TOOLBOX.md) to find the few vetted v4 dependencies.
+> This tree preserves history, generated evidence, and dangerous paper/broker capabilities; it is not the
+> active project boundary.
 
 > **NOT A STATUS DOCUMENT (2026-08-05).** Current status, gates, and open jobs are in [`STATUS.md`](../STATUS.md). The Protocol101 paper-default description below is the LEGACY spine, not the current Path-D research path.
 
