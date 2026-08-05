@@ -40,6 +40,13 @@
 # Leave the window open. Ctrl-C to disarm. Safe to start the evening before.
 # The Mac must stay awake -- these windows do not survive system sleep.
 
+# CANCELED_BY_OWNER_2026_08_05
+# This runner is retained as history, but declaration v6 may not be executed.
+# Replacement sessions require new exact dates, authorization, and the verified
+# Python-direct launcher after the project-structure cleanup.
+echo "REFUSED: Track-A declaration v6 was canceled by the owner; do not arm this runner." >&2
+exit 78
+
 set -uo pipefail
 
 REPO="/Users/gduby/Documents/autoresearch-trading"

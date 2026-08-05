@@ -1,4 +1,23 @@
-"""Strict-serial Phase-1 replay and bounded negative-control packet."""
+"""Strict-serial Phase-1 replay and bounded negative-control packet.
+
+SUPERSEDED 2026-08-05 — DO NOT RUN. Four confirmed defects make any pass from
+this module untrustworthy:
+
+1. The fee sensitivity cancels: each cell gives policy and comparator the same
+   fee and tests only their difference, so the eight cells are four latency
+   tests duplicated (see the ``for fee_per_side in (1.5, 2.0)`` loop).
+2. The ``time_shifted`` negative control is built with ``shift(-1)``, which is
+   the next row, importing future information.
+3. ``positive_skill`` accepts ``positive_target_skill_folds > 0``, so one fold
+   of five suffices.
+4. ``underpowered`` checks ``sessions >= 30`` and five distinct fold labels,
+   which counts rows rather than measuring statistical power.
+
+The corrected gate is ``v5/research/validation/replay_gate.py``. This module is
+kept unmodified below the guard because it is the record of what earlier runs
+actually computed; its past *negative* results are unaffected by these defects.
+``run_four_box_replay`` now refuses rather than silently producing a verdict.
+"""
 from __future__ import annotations
 
 import hashlib
@@ -116,8 +135,23 @@ def run_four_box_replay(
     entry_campaign_path: Path,
     exit_campaign_path: Path,
     report_root: Path,
+    i_understand_this_gate_is_defective: bool = False,
 ) -> dict[str, Any]:
-    """Replay learned/control entries against hold/learned exits identically."""
+    """Replay learned/control entries against hold/learned exits identically.
+
+    Refuses by default. See the module docstring for the four defects and use
+    ``v5.research.validation.replay_gate`` instead. The escape hatch exists only
+    so an auditor can reproduce a historical run byte for byte; a verdict it
+    produces is not evidence.
+    """
+
+    if not i_understand_this_gate_is_defective:
+        raise Phase1ReplayError(
+            "SUPERSEDED 2026-08-05: this gate has four confirmed defects (fee cancellation, "
+            "shift(-1) look-ahead in time_shifted, 1-of-5 fold skill, and a power check that "
+            "counts rows). Use v5.research.validation.replay_gate.evaluate instead. Pass "
+            "i_understand_this_gate_is_defective=True only to reproduce a historical run."
+        )
 
     entry = _load_campaign(entry_campaign_path)
     exit_campaign = _load_campaign(exit_campaign_path)

@@ -4,8 +4,9 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
-from v4.research.pathd_phase1_replay import run_four_box_replay
+from v4.research.pathd_phase1_replay import Phase1ReplayError, run_four_box_replay
 from v4.research.phase1_exit_model import stable_hash
 from v4.research.phase1_exit_model import sensitivity_label_path
 
@@ -79,11 +80,22 @@ def test_four_box_replay_is_hash_bound_and_reports_underpowered(tmp_path: Path) 
     exit_path = _campaign(
         exit_root / "campaign.json", {"positive_target_skill_folds": 1}
     )
+    # The gate is superseded and refuses by default; this test reproduces the
+    # historical behaviour, which is the only sanctioned use of the escape hatch.
+    with pytest.raises(Phase1ReplayError, match="SUPERSEDED 2026-08-05"):
+        run_four_box_replay(
+            scratch_root=scratch,
+            entry_campaign_path=entry_path,
+            exit_campaign_path=exit_path,
+            report_root=tmp_path / "report",
+        )
+
     result = run_four_box_replay(
         scratch_root=scratch,
         entry_campaign_path=entry_path,
         exit_campaign_path=exit_path,
         report_root=tmp_path / "report",
+        i_understand_this_gate_is_defective=True,
     )
     assert result["verdict"] == "UNDERPOWERED"
     assert set(result["four_boxes"]) == {

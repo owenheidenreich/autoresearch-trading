@@ -1,13 +1,20 @@
 # RESOLVED — Track-A launchd jobs cannot read the repo. Cause confirmed: macOS file permissions.
 
+> **Durable fix verified 2026-08-05 10:57 PDT.** A one-shot LaunchAgent whose program was the already
+> granted uv Python 3.12.13 read and wrote this repo, ran both Track-A entry points in zero-network dry-run
+> mode with 510 symbols, and exited 0. The temporary installed plist was removed. The repo will not move.
+> The production replacement is Python-only and uses exact dates. All four real jobs are unloaded until
+> the separate project-structure cleanup finishes. Evidence:
+> `v4/audit/autoresearch/python_direct_unattended_execution_2026_08_05_attempt001/launchd_probe_receipt.json`.
+
 **Opened 2026-08-05 morning. Closed 2026-08-05 10:00 PDT, before the next capture (06:28 PDT Thu 08-06).**
 
 **One-line answer: macOS blocks background jobs from reading `~/Documents` unless the specific program
 has been given permission. `/bin/zsh` has not been. That is the whole bug.**
 
-**What to do tomorrow: do not rely on the scheduled job. Start
-`./v4/ops/tracka/run_tracka_attended.sh` in a Terminal window tonight and leave it open.** It fires both
-windows itself, from a process that already has the permission. Nothing else needs to change first.
+**The 08-06/08-07 sessions described below were canceled by the owner before they ran.** Do not start the
+attended runner and do not reinstall the old shell plists. Two replacement sessions require fresh exact
+dates and owner authorization after the separate project-structure cleanup.
 
 ---
 

@@ -9,6 +9,13 @@
 # Sequence per window: capture definitions (30 s) -> capture market data.
 # The recorder requires --definition-path, and definitions must be current-session.
 
+# CANCELED_BY_OWNER_2026_08_05
+# Declaration v6 is frozen history, not current permission to capture. Replacement
+# sessions must use the Python-direct launcher with a new authorization and sealed
+# declaration after the project-structure cleanup.
+echo "REFUSED: Track-A declaration v6 was canceled by the owner; no live capture is authorized." >&2
+exit 78
+
 set -euo pipefail
 
 REPO="/Users/gduby/Documents/autoresearch-trading"

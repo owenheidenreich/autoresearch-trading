@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from v4.research.pathd_model_gate import TestResult, acceptance_tier
+from v5.research.knobs import KnobError, assert_search_space
 from v5.research.prior_art import (
     LoopError,
     PriorArtHit,
@@ -143,12 +144,17 @@ def run_wave(
     *,
     registry_path: Path,
     allow_prior_art_override: bool = False,
+    released_gates: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Execute one bounded wave and return its report.
 
     Stops early on TIER_A (found what we were looking for) or INVALID (an accepted
     negative control discards the family). Otherwise runs to budget exhaustion and
     returns NO_EDGE, which is a successful outcome.
+
+    ``released_gates`` names the gates that have actually passed. It defaults to
+    nothing, so a caller that forgets it gets a wave where every searchable knob
+    is still locked rather than one that quietly searches everything.
     """
 
     spec.validate()
@@ -186,6 +192,19 @@ def run_wave(
 
         if blocked_by_prior_art(hits) and not allow_prior_art_override:
             entry["status"] = "BLOCKED_BY_PRIOR_ART"
+            results.append(entry)
+            registry.record(entry)
+            continue
+
+        # Prior art says the idea is new. The knob registry says whether this
+        # wave is allowed to vary what it proposes to vary. A frozen constant,
+        # an uncertified number, or a parameter nobody declared all stop the
+        # hypothesis before it consumes a look at the data.
+        try:
+            assert_search_space(hypothesis.params, released_gates=released_gates)
+        except KnobError as exc:
+            entry["status"] = "BLOCKED_BY_KNOB_REGISTRY"
+            entry["knob_refusal"] = str(exc)
             results.append(entry)
             registry.record(entry)
             continue
