@@ -35,6 +35,7 @@ from v4.research.pathd_feature_admission_ledger import (
     DEFAULT_LEDGER_PATH,
     REPO_ROOT,
     ledger_sha256,
+    root_blocking_parents,
     sha256_file,
     verify_ledger,
 )
@@ -586,28 +587,22 @@ def build_track_a_preflight() -> dict[str, Any]:
 
 
 def _unadmitted_parents(contract_id: str, features) -> list[str]:
-    """Parents of ``contract_id`` that are not ADMITTED in the current ledger.
+    """Root ancestors of ``contract_id`` that block it in the current ledger.
 
-    Resolved transitively, so a grandparent gap (greeks -> implied_spot ->
-    cbbo1m_native) blocks the child rather than being hidden one level down.
+    Delegates to the single shared resolver so this writer and
+    ``generate_ledger`` cannot drift apart.  Both previously computed parent
+    blockers independently and disagreed with each other and with the signed
+    artifact, producing three different ledger_sha256 values for identical
+    admission state.  See ``root_blocking_parents``.
     """
 
     status_by_family: dict[str, set[str]] = {}
     for row in features:
         status_by_family.setdefault(str(row["contract_id"]), set()).add(str(row["status"]))
-
-    blockers: list[str] = []
-    seen: set[str] = set()
-    queue = list(PARENTS.get(contract_id, ()))
-    while queue:
-        parent = queue.pop(0)
-        if parent in seen:
-            continue
-        seen.add(parent)
-        if status_by_family.get(parent) != {ADMITTED}:
-            blockers.append(parent)
-        queue.extend(PARENTS.get(parent, ()))
-    return blockers
+    admitted = {
+        family for family, statuses in status_by_family.items() if statuses == {ADMITTED}
+    }
+    return root_blocking_parents(contract_id, admitted)
 
 
 def regenerate_ledger(track_b: Mapping[str, Any], track_c: Mapping[str, Any], *, ledger_path: Path = DEFAULT_LEDGER_PATH) -> dict[str, Any]:

@@ -1,5 +1,15 @@
 # Path-D Phase 0 feature certification report — 2026-08-04
 
+> **SUPERSEDED — NOT THE ADMISSION AUTHORITY.** This report predates the
+> 2026-08-04 parent correction. Two things below are wrong against the signed
+> ledger now on disk: the ledger SHA is `04b5e9584b295c97...`, not
+> `fbdf4d125adbade4...`; and `entry.self_computed_greeks.v1` /
+> `entry.opra_implied_volatility.v1` are barred on
+> `entry.opra_cbbo1m_native.v1` (the root blocker), not on
+> `entry.opra_implied_spot.v1`. Current authority:
+> [PATHD_PHASE0B_UNBLOCK_CERTIFICATION_REPORT_2026_08_04.md](PATHD_PHASE0B_UNBLOCK_CERTIFICATION_REPORT_2026_08_04.md).
+> Retained as the Phase-0 audit trail only.
+
 Status: **STOP_FOR_CLAUDE_VERIFICATION**
 
 Ledger SHA-256: `fbdf4d125adbade45defd535567f17c4534645e8c3f01dfc36204273968df55d`

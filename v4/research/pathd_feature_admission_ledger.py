@@ -12,7 +12,7 @@ import inspect
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Collection, Iterable, Mapping, Sequence
 
 import pandas as pd
 
@@ -34,7 +34,10 @@ ADMITTED = "ADMITTED"
 BARRED = "BARRED"
 DEFAULT_LEDGER_PATH = REPO_ROOT / "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/feature_admission_ledger.json"
 DEFAULT_RECEIPT_DIR = REPO_ROOT / "v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/receipts"
-DEFAULT_REPORT_PATH = REPO_ROOT / "v4/docs/protocol101/training/research/PATHD_PHASE0_FEATURE_CERTIFICATION_REPORT_2026_08_04.md"
+# The Phase-0 report is superseded: it cites ledger fbdf4d12... and bars the
+# greeks on entry.opra_implied_spot.v1, both from before the parent correction.
+# The Phase-0b report carries the SHA of the signed ledger on disk.
+DEFAULT_REPORT_PATH = REPO_ROOT / "v4/docs/protocol101/training/research/PATHD_PHASE0B_UNBLOCK_CERTIFICATION_REPORT_2026_08_04.md"
 
 PHASE0_CONTRACT_IDS = (
     "entry.contract_clock.v1",
@@ -63,6 +66,44 @@ PARENTS = {
     # See test_parent_graph_covers_declared_substrate_dependencies.
     "entry.opra_implied_spot.v1": ("entry.opra_cbbo1m_native.v1",),
 }
+
+def root_blocking_parents(
+    contract_id: str, admitted_families: Collection[str]
+) -> list[str]:
+    """Ancestors of ``contract_id`` that block it and are not themselves blocked.
+
+    A child is blocked by the *root* of its unadmitted ancestry, not by every
+    ancestor on the path.  ``self_computed_greeks -> implied_spot ->
+    cbbo1m_native`` reports ``cbbo1m_native`` alone: naming ``implied_spot`` as
+    well is noise, because implied_spot is barred for exactly the same missing
+    receipt.
+
+    This is the single authority on parent-blocker reasons.  Two writers
+    previously disagreed -- ``generate_ledger`` named the direct parent and the
+    Phase-0b regenerator named every ancestor -- and because the reason string
+    is inside the signed payload, the same admission state produced three
+    different ``ledger_sha256`` values.  ``verify_ledger`` checks only the
+    self-hash, so that drift was silent.
+    """
+
+    admitted = set(admitted_families)
+    ancestors: list[str] = []
+    seen: set[str] = set()
+    queue = list(PARENTS.get(contract_id, ()))
+    while queue:
+        parent = queue.pop(0)
+        if parent in seen:
+            continue
+        seen.add(parent)
+        ancestors.append(parent)
+        queue.extend(PARENTS.get(parent, ()))
+    blocked = [family for family in ancestors if family not in admitted]
+    return [
+        family
+        for family in blocked
+        if all(grandparent in admitted for grandparent in PARENTS.get(family, ()))
+    ]
+
 
 # Clock kinds that may back an ADMITTED row. A local compute p99 measures how
 # long an adapter takes to RUN; it is not when the feature becomes available at
@@ -230,8 +271,27 @@ def _contract_clock_receipts(receipt_dir: Path) -> tuple[list[dict[str, str]], f
 
 
 def generate_ledger(
-    *, ledger_path: Path = DEFAULT_LEDGER_PATH, receipt_dir: Path = DEFAULT_RECEIPT_DIR
+    *,
+    ledger_path: Path = DEFAULT_LEDGER_PATH,
+    receipt_dir: Path = DEFAULT_RECEIPT_DIR,
+    allow_overwrite: bool = False,
 ) -> dict[str, Any]:
+    # A signed ledger on this path may carry Phase-0b refinements that Phase-0
+    # generation cannot reproduce (Track-B/C certifications supply their own
+    # receipts and reasons).  Regenerating over it would silently replace the
+    # signed artifact and change ledger_sha256 while still verifying, because
+    # verify_ledger only checks the payload against its own self-hash.
+    if not allow_overwrite and ledger_path.exists() and ledger_path.stat().st_size > 0:
+        try:
+            verify_ledger(ledger_path)
+        except AdmissionLedgerError:
+            pass
+        else:
+            raise AdmissionLedgerError(
+                "refusing to overwrite a verifying signed ledger: "
+                f"{ledger_path}; pass allow_overwrite=True only with an "
+                "explicit re-certification decision"
+            )
     contract_receipts, availability_ms = _contract_clock_receipts(receipt_dir)
     family_status: dict[str, str] = {contract_id: BARRED for contract_id in PHASE0_CONTRACT_IDS}
     family_status["entry.contract_clock.v1"] = ADMITTED
@@ -263,7 +323,10 @@ def generate_ledger(
             missing_receipts = [
                 name for name in missing_receipts if name not in produced_names
             ]
-            parent_blockers = [parent for parent in parents if family_status[parent] != ADMITTED]
+            admitted_families = {
+                family for family, value in family_status.items() if value == ADMITTED
+            }
+            parent_blockers = root_blocking_parents(contract_id, admitted_families)
             if parent_blockers:
                 barred_reason = "parent_family_not_admitted:" + ",".join(parent_blockers)
             else:
@@ -442,8 +505,39 @@ def main() -> None:
     parser.add_argument("--ledger", type=Path, default=DEFAULT_LEDGER_PATH)
     parser.add_argument("--receipt-dir", type=Path, default=DEFAULT_RECEIPT_DIR)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT_PATH)
+    parser.add_argument(
+        "--verify",
+        action="store_true",
+        help="Verify the signed ledger and its receipts. Writes nothing.",
+    )
+    parser.add_argument(
+        "--allow-overwrite",
+        action="store_true",
+        help="Re-certify over an existing signed ledger. Changes ledger_sha256.",
+    )
     args = parser.parse_args()
-    payload = generate_ledger(ledger_path=args.ledger, receipt_dir=args.receipt_dir)
+    if args.verify:
+        payload = verify_ledger(args.ledger)
+        counts: dict[str, int] = {}
+        for row in payload["features"]:
+            counts[str(row["status"])] = counts.get(str(row["status"]), 0) + 1
+        print(
+            json.dumps(
+                {
+                    "ledger": str(args.ledger),
+                    "ledger_sha256": payload["ledger_sha256"],
+                    "counts": counts,
+                    "status": "LEDGER_VERIFIED",
+                },
+                sort_keys=True,
+            )
+        )
+        return
+    payload = generate_ledger(
+        ledger_path=args.ledger,
+        receipt_dir=args.receipt_dir,
+        allow_overwrite=args.allow_overwrite,
+    )
     write_report(payload, args.report)
     print(json.dumps({"ledger": str(args.ledger), "ledger_sha256": payload["ledger_sha256"], "status": "STOP_FOR_CLAUDE_VERIFICATION"}, sort_keys=True))
 
