@@ -1,5 +1,8 @@
 # Path-D Build Order — certify first, train second
 
+> **SUPERSEDED 2026-08-05 — see [`STATUS.md`](../../../../../STATUS.md) for current status.**
+> **Still in force as the build ORDER** — certify features before training. Only its §3 certification table is stale (Phase 1 enforcement shipped in `3acafb85`). The phases map to gates G3-G5 in STATUS.md.
+
 **Status: proposed architecture, owner-directed 2026-08-04.** This document fixes the ORDER in which the
 system is built. It supersedes ad-hoc wave planning; every future wave must state which phase it belongs to.
 

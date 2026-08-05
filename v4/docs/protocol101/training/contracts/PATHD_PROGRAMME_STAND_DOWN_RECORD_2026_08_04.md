@@ -1,5 +1,8 @@
 # Path-D — Programme Stand-Down Record (Option C)
 
+> **SUPERSEDED 2026-08-05 — see [`STATUS.md`](../../../../../STATUS.md) for current status.**
+> **The programme was REOPENED on 2026-08-05** — see the [restart record](PATHD_PROGRAMME_RESTART_RECORD_2026_08_05.md). §4 (live-state audit) and §5's certification-queue freeze are superseded. **§1, §2, §3, §6 and §7 remain fully in force**: the five negatives stand, the holdout is still SPENT, and §6's restart conditions are the standard the reopened programme must meet.
+
 **Status: OWNER-DECIDED — the directional research programme is STOOD DOWN as of 2026-08-04.**
 
 Owner instruction: *"proceed with option C"*, 2026-08-04, following the closure of the last live

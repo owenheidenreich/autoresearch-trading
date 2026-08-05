@@ -1,5 +1,8 @@
 # Master Plan — Mechanism Screen to Trained Model (2026-08-05 → 2026-08-10)
 
+> **SUPERSEDED 2026-08-05 — see [`STATUS.md`](../../../../../STATUS.md) for current status.**
+> Never signed, and its §3 carries a DO-NOT-FREEZE banner because five of six mechanisms died on verification. Retained as the audit trail for that verification. The surviving direction question is now gate G1 in STATUS.md.
+
 **Status: PROPOSED — awaiting owner sign-off. Freezing §3 is what starts the clock.**
 
 Owner chose "mechanism screen, then train" on 2026-08-04 after asking for a path from here to a trained

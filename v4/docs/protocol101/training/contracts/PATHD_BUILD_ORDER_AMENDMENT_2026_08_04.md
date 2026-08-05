@@ -1,5 +1,8 @@
 # Path-D Build Order Amendment — Freeze the Certification Queue
 
+> **SUPERSEDED 2026-08-05 — see [`STATUS.md`](../../../../../STATUS.md) for current status.**
+> **§2 is SUPERSEDED — do NOT run its `bootout` block.** The Track-A capture was reopened by owner decision; see the [restart record](PATHD_PROGRAMME_RESTART_RECORD_2026_08_05.md).
+
 Status: **OWNER-AUTHORIZED AND BINDING**
 
 Effective date: 2026-08-04

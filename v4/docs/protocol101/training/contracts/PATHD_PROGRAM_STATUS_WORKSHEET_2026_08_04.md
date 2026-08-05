@@ -1,5 +1,8 @@
 # Path-D Program Status Worksheet — where we actually are (2026-08-04)
 
+> **SUPERSEDED 2026-08-05 — see [`STATUS.md`](../../../../../STATUS.md) for current status.**
+> Its capability scoring and dependency chain were accurate on 2026-08-04 and are folded into STATUS.md. Its §7 queue is stale: the capture is now two sessions (08-06, 08-07), and the launchd uninstall row is withdrawn.
+
 **One line:** the machine is nearly built and nothing is wrong with it. What is missing is a **reason to
 trade** — no edge has been found, and no market feature is yet certified to exist live at decision time.
 

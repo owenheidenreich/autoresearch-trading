@@ -1,5 +1,8 @@
 # Protocol101 Path-D current state
 
+> **SUPERSEDED 2026-08-05 — see [`STATUS.md`](../../../STATUS.md) for current status.**
+> Dated 2026-08-01 and overtaken by events. See STATUS.md.
+
 - As of: **2026-08-01**
 - Current sequencing: **architecture first; offline foundation steps 1–6 implemented locally and awaiting independent Claude verification**
 - Active paper runtime: **unchanged and separate**

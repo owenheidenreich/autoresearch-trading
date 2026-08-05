@@ -1,5 +1,8 @@
 # Path-D Phase-1 → Live-Market Roadmap & Living Status
 
+> **SUPERSEDED 2026-08-05 — see [`STATUS.md`](../../../../../STATUS.md) for current status.**
+> This was one of four competing roadmaps. Its **status board is stale** (it records the Track-A capture as stood down and as five sessions; both are wrong — see the [restart record](../contracts/PATHD_PROGRAMME_RESTART_RECORD_2026_08_05.md)). Its **Stage 2-5 engineer specs remain valid** and are now gates G6-G9 in STATUS.md.
+
 **Living planning + handoff document.** Tracks every gate from the causal Phase-1 rebuild to a model
 that could trade the live market (guarded paper first; real money is a separate owner+governance step).
 Each phase is SIGNED with status so Codex/Claude can resume without re-deriving context. Update the
