@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
 
 from v4.scripts.capture_databento_live_opra_training_twin import (
     ALLOWED_SCHEMAS,
+    ONE_MINUTE_NS,
+    _interval_end_ns,
     _stable_hash,
     select_session_symbols,
 )
@@ -73,3 +76,12 @@ def test_feature_surface_schemas_are_explicitly_bounded() -> None:
         "statistics",
         "status",
     }
+
+
+def test_interval_end_clock_is_family_specific() -> None:
+    cbbo = SimpleNamespace(ts_recv=123, ts_event=99)
+    ohlcv = SimpleNamespace(ts_recv=None, ts_event=1_000)
+    assert _interval_end_ns(cbbo, 192) == 123
+    assert _interval_end_ns(cbbo, 193) == 123
+    assert _interval_end_ns(ohlcv, 33) == 1_000 + ONE_MINUTE_NS
+    assert _interval_end_ns(cbbo, 0) is None

@@ -43,6 +43,8 @@ DEFAULT_APPROVAL_MANIFEST = Path(
     "v4/audit/autoresearch/databento_live_opra_training_twin_2026_08_03/authorization.json"
 )
 SUMMARY_SCHEMA = "autoresearch.databento-live-opra-training-twin-capture.v1"
+LOCAL_RECEIPT_SCHEMA = "autoresearch.databento-live-opra-local-receipt.v1"
+ONE_MINUTE_NS = 60_000_000_000
 
 
 def _sha256_path(path: Path) -> str:
@@ -113,11 +115,42 @@ def _quantiles(values: Iterable[int]) -> dict[str, int] | None:
     }
 
 
+def _optional_int(record: Any, name: str) -> int | None:
+    value = getattr(record, name, None)
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _interval_end_ns(record: Any, rtype_value: int | None) -> int | None:
+    """Return the end of the closed interval represented by a live record.
+
+    OPRA CBBO-1s/1m records are stamped at the completed interval boundary in
+    ``ts_recv``. Native OHLCV-1m is bar-open stamped in ``ts_event`` and is not
+    causal until that open plus one minute. Other schemas have no interval-end
+    clock and intentionally return ``None``.
+    """
+
+    if rtype_value in {192, 193}:
+        return _optional_int(record, "ts_recv")
+    if rtype_value == 33:
+        ts_event = _optional_int(record, "ts_event")
+        return ts_event + ONE_MINUTE_NS if ts_event is not None else None
+    return None
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--session-date", type=date.fromisoformat, required=True)
     parser.add_argument("--definition-path", type=Path, required=True)
     parser.add_argument("--duration-seconds", type=float, default=90.0)
+    parser.add_argument(
+        "--expected-symbol-count",
+        type=int,
+        default=None,
+        help="Fail closed before connection if the current-session universe count differs.",
+    )
     parser.add_argument(
         "--schemas", nargs="+", choices=ALLOWED_SCHEMAS, default=list(ALLOWED_SCHEMAS)
     )
@@ -134,6 +167,12 @@ def main() -> int:
         raise SystemExit("--duration-seconds must be between 1 and 300")
     schemas = tuple(dict.fromkeys(args.schemas))
     symbols = select_session_symbols(args.definition_path, args.session_date)
+    if args.expected_symbol_count is not None and len(symbols) != args.expected_symbol_count:
+        raise SystemExit(
+            "current-session SPXW 0DTE universe count mismatch: "
+            f"expected {args.expected_symbol_count}, observed {len(symbols)}; "
+            "do not trim the universe"
+        )
     plan = {
         "dataset": DATASET,
         "schemas": list(schemas),
@@ -141,6 +180,7 @@ def main() -> int:
         "definition_path": str(args.definition_path.resolve()),
         "definition_sha256": _sha256_path(args.definition_path),
         "symbol_count": len(symbols),
+        "expected_symbol_count": args.expected_symbol_count,
         "symbols_sha256": hashlib.sha256("\n".join(symbols).encode()).hexdigest(),
         "duration_seconds": float(args.duration_seconds),
         "output_dir": str(args.output_dir.resolve()),
@@ -175,11 +215,16 @@ def main() -> int:
     first_local_ns: dict[str, int] = {}
     last_local_ns: dict[str, int] = {}
     receipt_minus_ts_recv_ns: dict[str, list[int]] = defaultdict(list)
+    receipt_minus_interval_end_ns: dict[str, list[int]] = defaultdict(list)
     ts_out_minus_ts_recv_ns: dict[str, list[int]] = defaultdict(list)
     local_minus_ts_out_ns: dict[str, list[int]] = defaultdict(list)
     callback_errors: list[str] = []
+    local_receipt_path = args.output_dir / "local_receipts.jsonl"
+    local_receipt_handle = local_receipt_path.open("x", encoding="utf-8", buffering=1 << 20)
+    local_receipt_rows = 0
 
     def on_record(record: Any) -> None:
+        nonlocal local_receipt_rows
         local_ns = time.time_ns()
         rtype = getattr(record, "rtype", None)
         rtype_value = int(rtype) if rtype is not None else None
@@ -194,39 +239,116 @@ def main() -> int:
         ts_recv = getattr(record, "ts_recv", None)
         if isinstance(ts_recv, int) and 0 < ts_recv <= local_ns:
             receipt_minus_ts_recv_ns[name].append(local_ns - ts_recv)
+        interval_end_ns = _interval_end_ns(record, rtype_value)
+        if interval_end_ns is not None and 0 < interval_end_ns <= local_ns:
+            receipt_minus_interval_end_ns[name].append(local_ns - interval_end_ns)
         ts_out = getattr(record, "ts_out", None)
         if isinstance(ts_recv, int) and isinstance(ts_out, int) and ts_recv <= ts_out:
             ts_out_minus_ts_recv_ns[name].append(ts_out - ts_recv)
             if ts_out <= local_ns:
                 local_minus_ts_out_ns[name].append(local_ns - ts_out)
+        local_receipt_handle.write(
+            json.dumps(
+                {
+                    "schema_version": LOCAL_RECEIPT_SCHEMA,
+                    "sequence_index": local_receipt_rows,
+                    "local_receipt_unix_ns": local_ns,
+                    "record_class": type(record).__name__,
+                    "rtype": rtype_value,
+                    "publisher_id": _optional_int(record, "publisher_id"),
+                    "instrument_id": _optional_int(record, "instrument_id"),
+                    "ts_event": _optional_int(record, "ts_event"),
+                    "ts_recv": _optional_int(record, "ts_recv"),
+                    "ts_out": _optional_int(record, "ts_out"),
+                    "interval_end_unix_ns": interval_end_ns,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        )
+        local_receipt_rows += 1
 
     def on_callback_error(exc: Exception) -> None:
         callback_errors.append(f"{type(exc).__name__}:{exc}")
 
     capture_started_ns = time.time_ns()
-    client = db.Live(
-        key=key,
-        ts_out=True,
-        compression=db.Compression.ZSTD,
-        reconnect_policy="none",
-    )
-    for schema in schemas:
-        client.subscribe(
-            dataset=DATASET,
-            schema=schema,
-            symbols=symbols,
-            stype_in="raw_symbol",
+    capture_exception: str | None = None
+    try:
+        client = db.Live(
+            key=key,
+            ts_out=True,
+            compression=db.Compression.ZSTD,
+            reconnect_policy="none",
         )
-    client.add_stream(raw_path, exception_callback=on_callback_error)
-    client.add_callback(on_record, exception_callback=on_callback_error)
-    client.start()
-    client.block_for_close(timeout=float(args.duration_seconds))
+        for schema in schemas:
+            client.subscribe(
+                dataset=DATASET,
+                schema=schema,
+                symbols=symbols,
+                stype_in="raw_symbol",
+            )
+        client.add_stream(raw_path, exception_callback=on_callback_error)
+        client.add_callback(on_record, exception_callback=on_callback_error)
+        client.start()
+        client.block_for_close(timeout=float(args.duration_seconds))
+    except Exception as exc:  # preserve a signed failure receipt for tier/network errors
+        capture_exception = f"{type(exc).__name__}:{exc}"
+    finally:
+        local_receipt_handle.flush()
+        os.fsync(local_receipt_handle.fileno())
+        local_receipt_handle.close()
     capture_finished_ns = time.time_ns()
 
-    if callback_errors:
-        raise RuntimeError(f"live capture callback errors: {callback_errors[:5]}")
+    failure_reasons = list(callback_errors)
+    if capture_exception is not None:
+        failure_reasons.append(capture_exception)
     if not raw_path.exists() or raw_path.stat().st_size <= 0:
-        raise RuntimeError("Databento live capture produced no raw DBN bytes")
+        failure_reasons.append("Databento live capture produced no raw DBN bytes")
+    if failure_reasons:
+        failure: dict[str, Any] = {
+            "schema_version": SUMMARY_SCHEMA,
+            "status": "FAILED_LIVE_CAPTURE_RECORDED_NO_ORDER",
+            "plan": plan,
+            "capture_started_unix_ns": capture_started_ns,
+            "capture_finished_unix_ns": capture_finished_ns,
+            "elapsed_seconds": (capture_finished_ns - capture_started_ns) / 1e9,
+            "failure_reasons": failure_reasons,
+            "records_total": int(sum(counts.values())),
+            "record_counts_by_class": dict(sorted(counts.items())),
+            "partial_raw_dbn": (
+                {
+                    "path": str(raw_path.resolve()),
+                    "bytes": raw_path.stat().st_size,
+                    "sha256": _sha256_path(raw_path),
+                }
+                if raw_path.exists()
+                else None
+            ),
+            "partial_local_receipts": {
+                "schema_version": LOCAL_RECEIPT_SCHEMA,
+                "path": str(local_receipt_path.resolve()),
+                "rows": local_receipt_rows,
+                "bytes": local_receipt_path.stat().st_size,
+                "sha256": _sha256_path(local_receipt_path),
+            },
+            "hard_stops": {
+                "broker_accessed": False,
+                "order_path_accessed": False,
+                "paper_runtime_accessed": False,
+                "model_loaded_or_fit": False,
+                "holdout_open_count": 0,
+                "promotion_or_default_changed": False,
+            },
+        }
+        failure["summary_sha256"] = _stable_hash(failure)
+        (args.output_dir / "capture_summary.json").write_text(
+            json.dumps(failure, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(json.dumps(failure, indent=2, sort_keys=True))
+        return 2
+    if local_receipt_rows != sum(counts.values()):
+        raise RuntimeError("per-message local receipt sidecar row count drift")
 
     classes = sorted(counts)
     result: dict[str, Any] = {
@@ -247,6 +369,9 @@ def main() -> int:
         "local_receipt_minus_ts_recv_ns": {
             name: _quantiles(receipt_minus_ts_recv_ns[name]) for name in classes
         },
+        "local_receipt_minus_interval_end_ns": {
+            name: _quantiles(receipt_minus_interval_end_ns[name]) for name in classes
+        },
         "ts_out_minus_ts_recv_ns": {
             name: _quantiles(ts_out_minus_ts_recv_ns[name]) for name in classes
         },
@@ -257,6 +382,14 @@ def main() -> int:
             "path": str(raw_path.resolve()),
             "bytes": raw_path.stat().st_size,
             "sha256": _sha256_path(raw_path),
+        },
+        "local_receipts": {
+            "schema_version": LOCAL_RECEIPT_SCHEMA,
+            "path": str(local_receipt_path.resolve()),
+            "rows": local_receipt_rows,
+            "bytes": local_receipt_path.stat().st_size,
+            "sha256": _sha256_path(local_receipt_path),
+            "measurement": "time.time_ns captured before callback-side serialization",
         },
         "hard_stops": {
             "broker_accessed": False,

@@ -32,6 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--duration-seconds", type=float, default=30.0)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--env-file", type=Path, default=Path("v4/.env"))
+    parser.add_argument("--dry-run", action="store_true")
     add_paid_data_approval_args(parser, default_manifest=DEFAULT_APPROVAL_MANIFEST)
     return parser.parse_args()
 
@@ -40,6 +41,21 @@ def main() -> int:
     args = parse_args()
     if not 1.0 <= args.duration_seconds <= 60.0:
         raise SystemExit("--duration-seconds must be between 1 and 60")
+    plan = {
+        "dataset": DATASET,
+        "schema": "definition",
+        "symbols": "SPXW.OPT",
+        "stype_in": "parent",
+        "start": 0,
+        "session_date": args.session_date.isoformat(),
+        "duration_seconds": float(args.duration_seconds),
+        "output_dir": str(args.output_dir.resolve()),
+        "network": not args.dry_run,
+        "broker_or_order_path": False,
+    }
+    if args.dry_run:
+        print(json.dumps(plan, indent=2, sort_keys=True))
+        return 0
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         raise SystemExit(f"output directory must be absent or empty: {args.output_dir}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
