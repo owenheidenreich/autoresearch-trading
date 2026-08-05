@@ -12,7 +12,8 @@ v4 is the current home of the SPX 0DTE research, validation, Protocol101 paper-d
 
 Current repo map: [../PROJECT_SECTION_AND_FEATURE_MAP.md](../PROJECT_SECTION_AND_FEATURE_MAP.md).
 
-Current trading-bot truth doc: [../docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md](../docs/CURRENT_TRADING_BOT_SINGLE_SOURCE_OF_TRUTH.md).
+Current trading-bot state: [`v5/STATUS.md`](../v5/STATUS.md). The former root `docs/` truth doc was
+superseded on 2026-08-05 and quarantined; nothing outside `v5/` describes current state.
 
 Historical research protocol: `/Users/gduby/.claude/plans/ok-well-this-just-declarative-puppy.md` (filename is historical; canonical title is `SPX_0DTE_v4_RESEARCH_PROTOCOL.md`).
 

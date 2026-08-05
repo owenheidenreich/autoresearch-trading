@@ -52,7 +52,10 @@ specification.
    no-order **ThetaData** samples. The source says so explicitly in
    [legacy one-second exit implementation](../../../v4/docs/protocol101/training/research/PHASE1_ONE_SECOND_EXIT_MODEL_IMPLEMENTATION_2026_08_03.md).
    The same file separates ThetaData p99 2,335.230 ms from Databento p99 319.521 ms; STATUS records a later
-   OPRA CBBO-1m p99 of 584.6 ms. The Track-A declaration also explicitly says `theta_2336ms_used: false`
+   OPRA CBBO-1m p99 of 584.6 ms. **[Correction, 2026-08-05: the 584.6 ms figure is `UNKNOWN`. It appears in
+   no surviving receipt and in no current STATUS; the STATUS it cited was superseded. The measured CBBO-1m
+   p99 is 319.521 ms per `attempt002/capture_summary.json`. Do not carry 584.6 ms forward.]** The Track-A
+   declaration also explicitly says `theta_2336ms_used: false`
    in `v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v6.json`.
 
 3. **“65 unblocked features” is backwards.** The current ledger contains 83 features: 8 `ADMITTED` and
