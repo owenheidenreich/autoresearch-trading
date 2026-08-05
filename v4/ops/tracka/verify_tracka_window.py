@@ -66,21 +66,24 @@ def verify_window(session: str, window: str) -> dict[str, Any]:
     else:
         if definitions.get("status") != "CAPTURED_CURRENT_SESSION_DEFINITIONS":
             problems.append(f"DEFINITION_STATUS: {definitions.get('status')}")
-        count = (definitions.get("current_session_parquet") or {}).get("rows")
-        notes.append(f"definition rows: {count}")
+        count = definitions.get("current_session_definition_count")
+        notes.append(f"current-session definitions: {count}")
+        if not count:
+            problems.append("EMPTY_DEFINITION_UNIVERSE")
 
     quotes = _load(out / "market" / "capture_summary.json")
     if quotes is None:
         problems.append("NO_CAPTURE_SUMMARY: the market window produced no summary")
         return _result(session, window, problems, notes)
 
-    symbol_count = quotes.get("symbol_count")
-    expected = quotes.get("expected_symbol_count")
+    plan = quotes.get("plan") or {}
+    symbol_count = plan.get("symbol_count")
+    expected = plan.get("expected_symbol_count")
     notes.append(f"symbols: {symbol_count} (expected {expected})")
     if expected is not None and symbol_count != expected:
         problems.append(f"UNIVERSE_DRIFT: {symbol_count} != {expected}")
 
-    interval = quotes.get("receipt_minus_interval_end_ns") or {}
+    interval = quotes.get("local_receipt_minus_interval_end_ns") or {}
     if not interval:
         problems.append(
             "NO_INTERVAL_END_LATENCY: capture ran but produced no arrival "
@@ -110,12 +113,12 @@ def verify_window(session: str, window: str) -> dict[str, Any]:
         if rows < 100:
             problems.append(f"THIN_CAPTURE: only {rows} records")
 
-    for flag, label in (
-        ("broker_or_order_path", "broker/order path"),
-        ("paper_order_submitted", "paper order"),
-    ):
-        if quotes.get(flag):
-            problems.append(f"SAFETY: {label} reported true in the capture summary")
+    stops = quotes.get("hard_stops") or {}
+    if not stops:
+        problems.append("NO_HARD_STOPS_BLOCK: cannot confirm the capture stayed no-order")
+    for flag, value in sorted(stops.items()):
+        if value not in (False, 0):
+            problems.append(f"SAFETY: hard_stops.{flag} = {value!r}")
 
     return _result(session, window, problems, notes)
 
