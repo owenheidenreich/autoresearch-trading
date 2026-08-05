@@ -159,11 +159,43 @@ def test_semantic_duplicate_is_skipped_even_under_a_new_name(tmp_path) -> None:
 def test_changing_params_is_a_new_hypothesis(tmp_path) -> None:
     registry = tmp_path / "r.jsonl"
     mech = "novel mechanism xyzzy gamma"
-    run_wave(WaveSpec("w1", "o", [Hypothesis("h1", mech, {"k": 1})], budget=5),
-             lambda h: _result(), registry_path=registry)
-    report = run_wave(WaveSpec("w2", "o", [Hypothesis("h2", mech, {"k": 2})], budget=5),
-                      lambda h: _result(), registry_path=registry)
+    gates = ("G1",)
+    run_wave(WaveSpec("w1", "o", [Hypothesis("h1", mech, {"horizon_minutes": 15})], budget=5),
+             lambda h: _result(), registry_path=registry, released_gates=gates)
+    report = run_wave(WaveSpec("w2", "o", [Hypothesis("h2", mech, {"horizon_minutes": 30})], budget=5),
+                      lambda h: _result(), registry_path=registry, released_gates=gates)
     assert report["results"][0]["status"] == "RAN"
+
+
+def test_a_wave_cannot_vary_a_frozen_constant(tmp_path) -> None:
+    """The knob registry stops a search before it spends a look at the data."""
+
+    report = run_wave(
+        WaveSpec(
+            "w",
+            "o",
+            [Hypothesis("h1", "novel mechanism plugh delta", {"es_round_trip_friction_points": 0.2})],
+            budget=5,
+        ),
+        lambda h: _result(),
+        registry_path=tmp_path / "r.jsonl",
+        released_gates=("G1", "G4"),
+    )
+    assert report["results"][0]["status"] == "BLOCKED_BY_KNOB_REGISTRY"
+    assert "FROZEN" in report["results"][0]["knob_refusal"]
+    assert report["budget_spent"] == 0
+
+
+def test_a_wave_defaults_to_every_gate_locked(tmp_path) -> None:
+    """Forgetting released_gates locks the search rather than opening it."""
+
+    report = run_wave(
+        WaveSpec("w", "o", [Hypothesis("h1", "novel mechanism thud epsilon", {"horizon_minutes": 60})], budget=5),
+        lambda h: _result(),
+        registry_path=tmp_path / "r.jsonl",
+    )
+    assert report["results"][0]["status"] == "BLOCKED_BY_KNOB_REGISTRY"
+    assert "G1 has not passed" in report["results"][0]["knob_refusal"]
 
 
 def test_budget_exhaustion_ends_the_wave_as_no_edge(tmp_path) -> None:
