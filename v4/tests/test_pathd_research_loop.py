@@ -72,10 +72,10 @@ def test_prior_art_blocks_a_rejected_protocol_outside_section_four() -> None:
     assert blocked_by_prior_art(hits), "a rejecting verdict must still block"
 
 
-def test_prior_art_allows_the_known_fix() -> None:
-    """P065's recovery penalty is the repair, not a closed failure."""
+def test_prior_art_blocks_the_completed_wave1_recovery_fix() -> None:
+    """P065 was allowed before Wave 1; its completed NO_EDGE rerun is now closed."""
 
-    assert not blocked_by_prior_art(prior_art_check("recovery penalty"))
+    assert blocked_by_prior_art(prior_art_check("recovery penalty"))
 
 
 def test_prior_art_is_quiet_on_a_novel_mechanism() -> None:
