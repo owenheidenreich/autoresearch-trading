@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 import subprocess
 import sys
-from typing import Any
+import time
+from typing import Any, Mapping
 
 from v4.checks.paid_data_guard import add_paid_data_approval_args
 from v4.path_d.contracts import (
@@ -22,7 +23,24 @@ from v4.research.pathd_phase1_entry import load_entry_artifact
 from v4.research.phase1_exit_model import load_exit_artifact
 
 
-MODES = ("databento-no-order", "ibkr-paper-dry-run")
+# Frozen in v4/audit/autoresearch/thetadata_completed_minute_timing_2026_08_03/
+# shared_emission_lag.json (status FROZEN, L = ceil(max observed) over five
+# samples spanning 608-2335 ms). Thin and dispersed; re-derive from the
+# Track-A union and only ever raise it.
+FROZEN_EMISSION_LAG_MS = 2336
+
+MODES = ("databento-no-order", "ibkr-paper-dry-run", "joint-live-no-order")
+
+# Path-D's production target is "Databento Live OPRA for decisions, IBKR for
+# execution only", but the two adapters had never run in one process: the modes
+# above were mutually exclusive, so nothing measured the clock that actually
+# governs legality -- OPRA completed-interval end to IBKR order-ready.
+#
+# Training emits a decision at interval end plus a frozen emission lag L. If
+# the real end-to-end path is slower than L, the model is deciding earlier than
+# is live-possible. That is the signed18 look-ahead class, and no offline
+# artifact can detect it.
+JOINT_SCHEMA = "pathd.candidate-joint-live-no-order.v1"
 
 
 def _utc_now() -> str:
@@ -233,9 +251,101 @@ def _ibkr_dry_run(args: argparse.Namespace) -> dict[str, Any]:
         ib.disconnect()
 
 
+def joint_latency_ledger(
+    quote_summary: Mapping[str, Any],
+    *,
+    ibkr_ready_ns: int,
+    emission_lag_ms: int = FROZEN_EMISSION_LAG_MS,
+) -> dict[str, Any]:
+    """Tie the OPRA arrival clock to the IBKR order-ready clock.
+
+    ``receipt_minus_interval_end_ns`` is the only measurement that answers "how
+    stale is the quote when we first hold it"; the broker leg is measured here
+    as wall clock from the last captured record to a qualified, previewed
+    order. Their sum is the earliest a decision on that interval could reach
+    the broker, and it must not exceed the emission lag the model trained on.
+
+    Returns a verdict rather than raising: a slow run is evidence, and the
+    caller records it. Only a decision made FASTER than reality is a defect.
+    """
+
+    families = quote_summary.get("receipt_minus_interval_end_ns") or {}
+    worst_p99_ns = 0
+    per_family: dict[str, Any] = {}
+    for name, quantiles in families.items():
+        if not isinstance(quantiles, Mapping):
+            continue
+        p99 = int(quantiles.get("p99") or 0)
+        per_family[str(name)] = {"p99_ns": p99, "p99_ms": round(p99 / 1e6, 3)}
+        worst_p99_ns = max(worst_p99_ns, p99)
+    total_ns = worst_p99_ns + max(0, int(ibkr_ready_ns))
+    budget_ns = int(emission_lag_ms) * 1_000_000
+    return {
+        "schema_version": "pathd.joint-latency-ledger.v1",
+        "opra_receipt_minus_interval_end_p99_by_family": per_family,
+        "opra_worst_p99_ns": worst_p99_ns,
+        "ibkr_qualify_and_preview_ns": int(ibkr_ready_ns),
+        "end_to_end_ns": total_ns,
+        "end_to_end_ms": round(total_ns / 1e6, 3),
+        "frozen_emission_lag_ms": int(emission_lag_ms),
+        "within_emission_lag_budget": total_ns <= budget_ns,
+        "verdict": (
+            "END_TO_END_WITHIN_TRAINED_EMISSION_LAG"
+            if total_ns <= budget_ns
+            else "END_TO_END_EXCEEDS_TRAINED_EMISSION_LAG"
+        ),
+        "interpretation": (
+            "The trained emission lag is an upper bound on how late a decision "
+            "may be. Exceeding it means the live path cannot reproduce the "
+            "training clock and the lag must be re-frozen upward, never the "
+            "measurement discarded."
+        ),
+    }
+
+
+def _joint_live_no_order(args: argparse.Namespace) -> dict[str, Any]:
+    """One process: live OPRA capture, then IBKR readonly preview. No submit."""
+
+    if not args.session_date:
+        raise SystemExit("--session-date is required in joint-live-no-order mode")
+    if not args.intent:
+        raise SystemExit("at least one --intent is required in joint-live-no-order mode")
+    captured = _databento_no_order(args)
+    broker_started_ns = time.time_ns()
+    previewed = _ibkr_dry_run(args)
+    ibkr_ready_ns = time.time_ns() - broker_started_ns
+    latency = joint_latency_ledger(captured["quotes"], ibkr_ready_ns=ibkr_ready_ns)
+    # Both legs assert this independently; re-assert on the joined payload so a
+    # future edit to either cannot quietly relax it here.
+    if previewed["broker_submit_endpoint_called"] or captured["broker_submit_endpoint_called"]:
+        raise RuntimeError("joint mode observed a broker submit endpoint call")
+    return {
+        "schema_version": JOINT_SCHEMA,
+        "status": "JOINT_LIVE_NO_ORDER_COMPLETE",
+        "mode": "joint-live-no-order",
+        "session_date": args.session_date,
+        "definitions": captured["definitions"],
+        "quotes": captured["quotes"],
+        "previews": previewed["previews"],
+        "account_id_redacted": previewed["account_id_redacted"],
+        "snapshot_versions": previewed["snapshot_versions"],
+        "latency": latency,
+        "artifacts": previewed["artifacts"],
+        "vendors_exercised_in_one_process": ["DATABENTO_LIVE_OPRA", "IBKR"],
+        "ibkr_readonly_connection": True,
+        "broker_submit_endpoint_called": False,
+        "paper_order_submitted": False,
+    }
+
+
 def main() -> int:
     args = parse_args()
-    payload = _databento_no_order(args) if args.mode == "databento-no-order" else _ibkr_dry_run(args)
+    if args.mode == "databento-no-order":
+        payload = _databento_no_order(args)
+    elif args.mode == "ibkr-paper-dry-run":
+        payload = _ibkr_dry_run(args)
+    else:
+        payload = _joint_live_no_order(args)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     path = args.output_dir / "candidate_run.json"
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
