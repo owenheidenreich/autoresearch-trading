@@ -23,6 +23,11 @@ import pyarrow.dataset as pads
 import joblib
 from sklearn.ensemble import HistGradientBoostingRegressor
 
+from v4.research.pathd_exit_admission_ledger import (
+    DEFAULT_EXIT_LEDGER_PATH,
+    assert_exit_feature_matrix_admitted,
+)
+
 from v4.greeks.repair import compute_repaired_greeks
 from v4.research.pathd_feature_live_twin import EXIT47_CORRECTED_FEATURE_NAMES
 
@@ -837,8 +842,15 @@ def fit_hgb_baseline(
     *,
     sample_weight: np.ndarray | None = None,
     seeds: Sequence[int] = (301, 302, 303),
+    exit_ledger_path: Path = DEFAULT_EXIT_LEDGER_PATH,
 ) -> ExitHGBEnsembleV1:
     validate_feature_registry()
+    # Exit admission is checked before any estimator is constructed, mirroring
+    # the entry path in autoresearch_v2.models.fit_oof. Until Track A supplies
+    # the OPRA arrival distribution and Track C the execution-report arrival
+    # clock, every exit family is BARRED and this raises -- which is correct:
+    # an uncertified exit feature is exactly how signed18 happened.
+    assert_exit_feature_matrix_admitted(EXIT_FEATURE_NAMES, ledger_path=exit_ledger_path)
     if tuple(train_features.columns) != EXIT_FEATURE_NAMES or tuple(calibration_features.columns) != EXIT_FEATURE_NAMES:
         raise ExitModelContractError("HGB fit feature registry drift")
     if len(train_features) != len(train_labels) or len(calibration_features) != len(calibration_labels):

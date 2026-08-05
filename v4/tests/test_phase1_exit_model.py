@@ -232,13 +232,55 @@ def test_five_expanding_folds_have_one_session_embargo() -> None:
         assert max(fold["train"]) < fold["embargo"][0] < min(fold["test"])
 
 
-def test_hgb_baseline_emits_frozen_action_geometry() -> None:
+def _fully_admitted_exit_ledger(tmp_path) -> "Path":
+    """A test ledger admitting every exit family.
+
+    The signed ledger bars all 54 features until Track A and Track C land, so
+    the fit path is unreachable by design. This exercises estimator geometry
+    without weakening the real admission law.
+    """
+
+    import hashlib
+    import json as _json
+
+    from v4.research.pathd_exit_admission_ledger import (
+        EXIT_FAMILIES,
+        generate_exit_ledger,
+    )
+
+    receipt = tmp_path / "test_receipt.json"
+    receipt.write_text(_json.dumps({"test": True}), encoding="utf-8")
+    digest = hashlib.sha256(receipt.read_bytes()).hexdigest()
+    certification = {
+        "receipts": [{"name": "test", "path": str(receipt), "sha256": digest}],
+        "availability_clock_ms": 1.0,
+        "tolerance": 0.0,
+    }
+    path = tmp_path / "exit_ledger.json"
+    generate_exit_ledger(
+        ledger_path=path,
+        entry_admitted_families=(
+            "entry.opra_cbbo1s_rolling.v1",
+            "entry.causal_account_state.v1",
+        ),
+        admit={family: certification for family in EXIT_FAMILIES},
+    )
+    return path
+
+
+def test_hgb_baseline_emits_frozen_action_geometry(tmp_path) -> None:
     rng = np.random.default_rng(7)
     matrix = pd.DataFrame(
         rng.normal(size=(160, len(EXIT_FEATURE_NAMES))), columns=EXIT_FEATURE_NAMES
     )
     target = pd.Series(matrix.iloc[:, 0] * 2.0 - matrix.iloc[:, 1])
-    model = fit_hgb_baseline(matrix.iloc[:120], target.iloc[:120], matrix.iloc[120:], target.iloc[120:])
+    model = fit_hgb_baseline(
+        matrix.iloc[:120],
+        target.iloc[:120],
+        matrix.iloc[120:],
+        target.iloc[120:],
+        exit_ledger_path=_fully_admitted_exit_ledger(tmp_path),
+    )
     prediction = model.predict(matrix.iloc[120:])
     assert set(prediction["action"]) <= {"HOLD", "EXIT"}
     assert (prediction["q10"] <= prediction["q50"]).all()
