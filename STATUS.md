@@ -3,6 +3,11 @@
 **Last updated: 2026-08-05.** This is the only status document. If another document disagrees with this
 one, this one wins and the other one is stale. Written in plain English on purpose.
 
+> **2026-08-05 — the bottleneck moved.** A gate-chain audit found that the problem is no longer "we haven't
+> found a signal." It is that **we cannot measure a signal of the size we would plausibly find, and we
+> could not confirm one if we did.** See §3a. This affects G1, G4, G5, G8 and the project's viability
+> premise, so it is queued for independent review before it drives any decision.
+
 ---
 
 ## 1. What we are building
@@ -48,6 +53,37 @@ That reduces the whole project to **one question**:
 > ### Can we predict SPX direction over 15–60 minutes well enough to clear measured trading costs?
 
 Everything else is downstream of that answer.
+
+## 3a. The measurement problem (new, 2026-08-05)
+
+Two independent limits, both about **resolution** rather than ideas. Neither is fixed by a better model,
+more features, or a bigger network.
+
+**Limit 1 — we cannot detect a cost-scale edge in the data we own.**
+
+With 254 ES sessions, the smallest edge detectable at 80% power depends on how often the strategy trades:
+
+| Trades per session | Smallest detectable edge, points/trade | vs the 0.358 cost bar |
+|---:|---:|---:|
+| 1 | 2.104 | **5.9×** |
+| 6 (the frozen session cap) | 0.859 | **2.4×** |
+| 26 (theoretical 15-min maximum) | 0.413 | **1.2×** |
+
+Verified independently: the session standard deviations (13.486 / 18.099 / 24.807 points at 15/30/60 min)
+reproduce exactly from the raw files, and the effect-size arithmetic is conservative, not inflated.
+
+Read it this way: **even trading as often as the instrument physically allows, this year of data cannot
+resolve an edge that merely covers costs** — and the table is optimistic, because it assumes trades within
+a session are independent, which they are not. The honest reading is that the owned sample can answer
+*"is there a large edge?"* and cannot answer *"is there an edge?"*
+
+**Limit 2 — we could not confirm an edge if we found one.** The protected holdout is spent, no clean
+replacement date range has been identified (the range previously proposed turned out to be already used),
+and forward paper confirmation is estimated at roughly one year to multiple decades depending on effect
+size.
+
+**Consequence.** A negative result at G1 no longer means "no edge exists." It means "this data cannot find
+one." Those are different conclusions and must never again be reported as the same thing.
 
 ## 4. The cost bar every idea must clear
 
@@ -95,17 +131,33 @@ Each gate must pass before the next is attempted.
 
 | # | Gate | Plain meaning | Status |
 |---|---|---|---|
-| **G1** | **Direction** | Predict SPX/ES direction over 15–60 min, beating 0.358 pts/trade gross, under one-position-at-a-time accounting | 🔴 **OPEN — this is the whole project right now** |
-| **G2** | Option wrapper re-opens | Only if G1 passes. Row 181's stated re-entry condition | 🔴 blocked by G1 |
-| **G3** | Feature certification | Prove each feature is actually available live at decision time, so we never train on data we would not have had | 🟡 in flight — 8/73 admitted; capture 08-06/07 |
-| **G4** | Train | Fit entry + exit models on certified features only | ⬜ needs G1 + G3 |
-| **G5** | Validation replay | Beat the comparator, positive confidence bound, 4/5 folds, negative controls clean — **7 conditions, all required** | ⬜ needs G4 |
-| **G6** | Runtime parity | Live decisions match offline decisions **100%**. This is the gate that caught the `signed18` leak at 18.44% | ⬜ built, ready to run |
-| **G7** | Live shadow | Model runs on live data, decides, submits nothing | ⬜ not built |
-| **G8** | Guarded paper | Real paper orders over a pre-registered window. **This replaces the spent holdout** | ⬜ not built |
+| **G1** | **Direction** | Predict SPX/ES direction over 15–60 min, beating 0.358 pts/trade gross, under one-position-at-a-time accounting | 🔴 **OPEN — question narrowed by §3a: it can only find a LARGE edge.** Chance of passing: 5–15% |
+| **G2** | Option wrapper re-opens | Only if G1 passes. Row 181's stated re-entry condition | 🔴 blocked by G1. **Not structurally impossible** — measured 60-min directional break-even is 57.99% |
+| **G3** | Feature certification | Prove each feature is actually available live at decision time, so we never train on data we would not have had | 🟡 capture 08-06/07, **but NOT on G1's critical path** — these are option features; G1 runs on ES bars. Two days give an observed envelope, not a worst case |
+| **G4** | Train | Fit entry + exit models on certified features only | ⬜ needs G1. **A neural network is unjustified at 254 sessions** — training cannot create information G1 did not find |
+| **G5** | Validation replay | Beat the comparator, positive confidence bound, 4/5 folds, negative controls clean | 🔴 **DEFECTIVE — must be repaired before any future replay.** See §7a |
+| **G6** | Runtime parity | Live decisions match offline decisions **100%**. This is the gate that caught the `signed18` leak at 18.44% | ⬜ built and sound; tolerance already frozen at 1e-12 abs / 0 rel |
+| **G7** | Live shadow | Model runs on live data, decides, submits nothing | ⬜ not built; ~3 engineering days + 20 sessions |
+| **G8** | Guarded paper | Real paper orders over a pre-registered window. **This replaces the spent holdout** | ⬜ not built. **~1 year to decades** depending on effect size — see §3a limit 2 |
 | **G9** | Real money | Separate owner decision and safety packet | ⬜ out of scope |
 
-**G3 runs in parallel and is free. G1 is what actually blocks everything.**
+**G1 is what actually blocks everything. G3 is the only safe parallel branch — worth finishing because its
+cost is already sunk, but it does not answer the direction question.**
+
+## 7a. G5 is defective — repair before trusting any future verdict
+
+Four defects, all confirmed in `v4/research/pathd_phase1_replay.py`:
+
+| Line | Defect |
+|---|---|
+| — | The 8-cell fee/latency grid is really 4 latency tests run twice. `delta = learned − comparator` and both carry the same fee, so the fee cancels exactly. **Fee robustness is not measured at all.** |
+| `:177` | The `time_shifted` negative control uses `.shift(-1)`, importing the **next row's** value. A control holding future information is not testing what it claims. |
+| `:306` | "Positive skill" passes when **one** of five folds is positive. |
+| `:311` | "Powered" means only ≥30 sessions and 5 fold labels present. **There is no power calculation in the gate** — which is exactly how the last campaign was surprised by `UNDERPOWERED` after the fact. |
+
+**These do not threaten the five past negatives.** A gate that is too weak produces false *positives*; every
+past campaign that ran through it still returned "no edge," which makes those results stronger, not weaker.
+The defects threaten any *future* pass.
 
 ## 8. Why G6 and G8 exist (the expensive lesson)
 
