@@ -39,9 +39,17 @@ if pgrep -f "run_tracka_attended.sh" >/dev/null 2>&1; then
     exit 1
 fi
 
+# REFUSAL, not a warning. On 2026-08-06 this was a warning, the Mac was moved to
+# battery, and the whole session was lost: caffeinate -s is valid ONLY on AC
+# power, so on battery the no-sleep assertion is silently void and the machine
+# sleeps straight through the bell.
 if ! pmset -g batt | grep -q "AC Power"; then
-    say "WARNING: not on AC power. Plug the Mac in NOW -- the schedule spans"
-    say "two days and cannot complete on battery."
+    say "REFUSED: this Mac is on battery power."
+    say "caffeinate -s is void on battery, so the no-sleep hold would silently"
+    say "fail and the capture would sleep through its window -- this is exactly"
+    say "how the 2026-08-06 session was lost."
+    say "Plug the Mac in, then run this again."
+    exit 2
 fi
 
 mkdir -p "$LOGDIR"

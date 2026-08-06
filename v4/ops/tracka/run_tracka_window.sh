@@ -20,12 +20,13 @@ set -euo pipefail
 REPO="/Users/gduby/Documents/autoresearch-trading"
 WINDOW="${1:?usage: run_tracka_window.sh <open|midday>}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-# v6 narrows the certified sample to 2026-08-06 and 08-07 (owner, 2026-08-05).
-# 08-05 is deliberately absent: its open window was lost to the launchd TCC
-# permission refusal (the eviction diagnosis was retracted; see the handoff) and
-# its midday window was an infrastructure verification run, not evidence.
-DECL="$ROOT/capture_declaration_v6.json"
-APPROVAL="$ROOT/authorization.json"
+# v7 declares 2026-08-10 through 08-13 (owner, 2026-08-06), replacing v6 after
+# 08-06 banked nothing and 08-07 was canceled. 08-05 remains absent: its open
+# window was lost to the launchd TCC permission refusal (the eviction diagnosis
+# was retracted; see the handoff) and its midday window was an infrastructure
+# verification run, not evidence.
+DECL="$ROOT/capture_declaration_v7.json"
+APPROVAL="$ROOT/authorization_v2.json"
 SESSION="$(date +%Y-%m-%d)"
 LOGDIR="$ROOT/run_logs"
 mkdir -p "$LOGDIR"
@@ -78,11 +79,15 @@ DEFPATH="$DEFDIR/opra_live_definitions.dbn.zst"
 
 # --- market capture -----------------------------------------------------------
 echo "--- market capture (${DURATION}s) ---"
+# No --expected-symbol-count. The 0DTE strike listing changes daily -- it was
+# 510 on 2026-08-05 and 574 on 2026-08-06, and pinning 510 is exactly what made
+# the 08-06 capture fail closed. The recorder's default is None, which skips the
+# equality check while still recording plan.symbol_count and plan.symbols_sha256,
+# so the universe actually taken stays auditable. Never trim it.
 PYTHONPATH=. ./.venv/bin/python -m v4.scripts.capture_databento_live_opra_training_twin \
     --session-date "$SESSION" \
     --definition-path "$DEFPATH" \
     --duration-seconds "$DURATION" \
-    --expected-symbol-count 510 \
     --schemas cbbo-1s cbbo-1m ohlcv-1m trades \
     --output-dir "$OUT/market" \
     --env-file v4/.env \

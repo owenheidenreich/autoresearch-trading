@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.autoresearch.python-direct-documents-probe</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/gduby/.autoresearch-trading/runtime-venv/bin/python</string>
+    <string>/Users/gduby/Documents/autoresearch-trading/v4/ops/tracka/probe_python_documents_access.py</string>
+    <string>--repo-root</string>
+    <string>/Users/gduby/Documents/autoresearch-trading</string>
+    <string>--receipt</string>
+    <string>/Users/gduby/Documents/autoresearch-trading/v4/audit/autoresearch/python_direct_unattended_execution_2026_08_05_attempt001/launchd_probe_receipt.json</string>
+    <string>--session-date</string>
+    <string>2026-08-05</string>
+    <string>--definition-path</string>
+    <string>/Users/gduby/Documents/autoresearch-trading/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/2026-08-05/midday/definitions/current_session_definitions.parquet</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>/Users/gduby/Documents/autoresearch-trading</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardErrorPath</key>
+  <string>/Users/gduby/.autoresearch-trading/tracka/logs/python-direct-probe.err</string>
+  <key>StandardOutPath</key>
+  <string>/Users/gduby/.autoresearch-trading/tracka/logs/python-direct-probe.out</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/gduby/Documents/autoresearch-trading</string>
+</dict>
+</plist>

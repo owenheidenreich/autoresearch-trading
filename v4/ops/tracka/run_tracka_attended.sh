@@ -51,11 +51,15 @@ set -uo pipefail
 
 REPO="/Users/gduby/Documents/autoresearch-trading"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-DECL="$ROOT/capture_declaration_v6.json"
+DECL="$ROOT/capture_declaration_v7.json"
 WRAPPER="$REPO/v4/ops/tracka/run_tracka_window.sh"
 PY="$REPO/.venv/bin/python"
 
 say() { echo "[$(date '+%Y-%m-%d %H:%M:%S %Z')] $*"; }
+
+# How late a window may start and still be the window the declaration froze.
+# The wait loop polls every second near the target, so an on-time fire is <2 s.
+MAX_LATE_SECONDS=60
 
 # --- gate 0: prove we hold the Documents grant BEFORE arming ------------------
 # The whole point of this script is to run inside a granted process tree. If it
@@ -83,7 +87,7 @@ PYEOF
 )"
 [ -n "$SCHEDULE" ] || { say "REFUSED: could not read a schedule from $DECL"; exit 1; }
 
-say "Declared windows (frozen in capture_declaration_v6.json):"
+say "Declared windows (frozen in $(basename "$DECL")):"
 echo "$SCHEDULE" | while IFS=$'\t' read -r s n t tz dur; do
     say "    $s  $n  $t $tz  (${dur}s)"
 done
@@ -112,9 +116,26 @@ print(int(dt.timestamp()))
     # Sleep in short chunks and re-check the wall clock. A single long sleep
     # silently overshoots if the machine suspends; this notices and still fires
     # (late, and it says so) rather than sleeping through the window.
+    #
+    # The loop also watches the power source. On 2026-08-06 the Mac was on AC at
+    # launch and was moved to battery afterwards, where caffeinate -s is void, so
+    # a start-time check alone would not have caught it. This cannot restore
+    # power, but it timestamps the transition in the log so the cause is visible
+    # immediately instead of being reconstructed from pmset days later.
+    on_battery=0
     while :; do
         remaining=$(( target_epoch - $(date +%s) ))
         [ "$remaining" -le 0 ] && break
+        if pmset -g batt | grep -q "AC Power"; then
+            if [ "$on_battery" -eq 1 ]; then
+                say "POWER RESTORED -- back on AC."
+                on_battery=0
+            fi
+        elif [ "$on_battery" -eq 0 ]; then
+            say "POWER WARNING: now on BATTERY. caffeinate -s is void on battery and"
+            say "               the Mac will sleep through this window. Plug it in."
+            on_battery=1
+        fi
         if [ "$remaining" -gt 300 ]; then
             sleep 60
         elif [ "$remaining" -gt 30 ]; then
@@ -124,7 +145,18 @@ print(int(dt.timestamp()))
         fi
     done
 
+    # A window that does not start when the frozen declaration says it starts is
+    # NOT that window. On 2026-08-06 the open fired 1298 s late, which records
+    # 09:49 ET while labelling the output "open" -- the 09:30 bell the envelope
+    # law requires would have been absent from data presented as containing it.
+    # Only the unrelated symbol-count guard stopped that from banking. Refuse.
     late=$(( $(date +%s) - target_epoch ))
+    if [ "$late" -gt "$MAX_LATE_SECONDS" ]; then
+        say "SKIP  $session $name -- ${late}s late (limit ${MAX_LATE_SECONDS}s)."
+        say "      A late start is a different window than the one declared, so"
+        say "      capturing it would bank mislabelled evidence. Nothing captured."
+        continue
+    fi
     if [ "$late" -gt 10 ]; then
         say "WARNING: firing ${late}s late -- the machine may have slept."
     fi

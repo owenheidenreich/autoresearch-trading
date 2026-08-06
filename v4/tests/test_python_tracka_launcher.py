@@ -237,3 +237,79 @@ def test_shell_runners_carry_the_correction_not_the_false_cancellation() -> None
 
     attended = (REPO_ROOT / "v4/ops/tracka/run_tracka_attended.sh").read_text(encoding="utf-8")
     assert "does not hold Documents access" in attended
+
+
+def test_the_universe_count_is_never_pinned_again() -> None:
+    """2026-08-06 cause 2: the wrapper pinned 510 symbols while that day's 0DTE
+    universe was 574, so the recorder failed closed and banked nothing. The
+    count varies daily and must never be pinned; the recorder still records
+    plan.symbol_count and plan.symbols_sha256, so the universe stays auditable."""
+
+    window = (REPO_ROOT / "v4/ops/tracka/run_tracka_window.sh").read_text(encoding="utf-8")
+    # The flag must not be *passed*. It may still be named in a comment saying
+    # why it is absent, which is the point worth preserving for the next reader.
+    executable = [
+        line for line in window.splitlines() if not line.strip().startswith("#")
+    ]
+    assert not [line for line in executable if "--expected-symbol-count" in line]
+    assert "do not trim" in window.lower() or "never trim" in window.lower()
+
+
+def test_a_late_window_is_skipped_rather_than_mislabelled() -> None:
+    """2026-08-06 cause 1: the open fired 1298 s late, which records 09:49 ET
+    while labelling the output "open". Only an unrelated guard stopped it from
+    banking. A window that misses its declared start is not that window."""
+
+    attended = (REPO_ROOT / "v4/ops/tracka/run_tracka_attended.sh").read_text(encoding="utf-8")
+    assert "MAX_LATE_SECONDS=60" in attended
+    assert 'late" -gt "$MAX_LATE_SECONDS"' in attended
+    assert "mislabelled evidence" in attended
+
+
+def test_the_runners_are_wired_to_the_signed_declaration() -> None:
+    """The capture may only run from a sealed, owner-authorized declaration."""
+
+    import hashlib
+
+    for relative in (
+        "v4/ops/tracka/run_tracka_window.sh",
+        "v4/ops/tracka/run_tracka_attended.sh",
+    ):
+        source = (REPO_ROOT / relative).read_text(encoding="utf-8")
+        assert "capture_declaration_v7.json" in source
+        assert "capture_declaration_v6.json" not in source
+
+    root = (
+        REPO_ROOT
+        / "v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
+    )
+    declaration_path = root / "capture_declaration_v7.json"
+    if not declaration_path.is_file():  # evidence tree is gitignored
+        pytest.skip("capture declaration v7 not present in this checkout")
+
+    declaration = json.loads(declaration_path.read_text(encoding="utf-8"))
+    assert declaration["status"] == "AUTHORIZED_BY_OWNER_2026_08_06"
+    assert declaration["capture_window"]["sessions"] == [
+        "2026-08-10",
+        "2026-08-11",
+        "2026-08-12",
+        "2026-08-13",
+    ]
+    assert declaration["subscription"]["expected_symbol_count"] is None
+
+    # The seal must verify by the declaration's own stated rule.
+    material = dict(declaration)
+    claimed = material.pop("declaration_sha256")
+    recomputed = hashlib.sha256(
+        json.dumps(material, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert claimed == recomputed
+
+    # The text the capture guard enforces must be the text the owner signed.
+    authorization = json.loads(
+        (root / "authorization_v2.json").read_text(encoding="utf-8")
+    )
+    assert (
+        authorization["approval_required"]["exact_approval_text"]
+        == declaration["authorization_gate"]["exact_approval_text"]
+    )
