@@ -57,9 +57,13 @@ def test_reserved_rows_are_refused_rather_than_silently_dropped() -> None:
 def test_the_owned_corpus_is_entirely_development_data() -> None:
     """The G1 index must sit wholly on the development side of the firewall."""
 
-    corpus = Path(
-        "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31"
-        "/raw/databento/glbx_es_ohlcv_1m"
+    # Home-relative: an absolute path here silently skipped this test after the
+    # 2026-08-06 home-directory rename, leaving the suite green while the one
+    # check that touches the real corpus never ran.
+    corpus = (
+        Path.home()
+        / ".autoresearch-trading/pathd_2025-08-01_2026-07-31"
+        / "raw/databento/glbx_es_ohlcv_1m"
     )
     if not corpus.is_dir():
         pytest.skip("owned corpus not mounted")

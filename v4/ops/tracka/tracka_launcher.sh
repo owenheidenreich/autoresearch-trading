@@ -51,7 +51,8 @@
 
 set -uo pipefail
 
-REPO="/Users/gduby/Documents/autoresearch-trading"
+# Derived from this script's own location -- it lives at REPO/v4/ops/tracka/.
+REPO="${0:A:h:h:h:h}"
 WINDOW="${1:?usage: tracka_launcher.sh <open|midday>}"
 LOGDIR="$HOME/.autoresearch-trading/tracka/logs"
 mkdir -p "$LOGDIR"

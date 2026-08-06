@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import hashlib
 import json
+from pathlib import Path
 from typing import Any, Mapping
 
 from v5.research import knobs
@@ -37,9 +38,15 @@ FREEZE_SCHEMA_VERSION = "v5.g1-direction-family.v1"
 # Counts reproduced 2026-08-06 from
 # ~/.autoresearch-trading/pathd_2025-08-01_2026-07-31/raw/databento/glbx_es_ohlcv_1m
 # by reading only session dates and instrument ids -- never a return.
-ES_BARS_ROOT = (
-    "/Users/gduby/.autoresearch-trading/pathd_2025-08-01_2026-07-31"
-    "/raw/databento/glbx_es_ohlcv_1m"
+# Home-relative by re-freeze on 2026-08-06. The original declaration named an
+# absolute path under a home directory that was renamed the same day; the bytes
+# were reissued while no economic outcome had been inspected, so nothing about
+# the search space moved. The corpus itself is unchanged -- same 261 files, same
+# 254/249 eligible index. See the re-freeze record for both hashes and the diff.
+ES_BARS_ROOT = str(
+    Path.home()
+    / ".autoresearch-trading/pathd_2025-08-01_2026-07-31"
+    / "raw/databento/glbx_es_ohlcv_1m"
 )
 CORPUS_FIRST_SESSION = "2025-08-01"
 CORPUS_LAST_SESSION = "2026-07-31"

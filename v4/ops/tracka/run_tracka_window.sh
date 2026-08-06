@@ -17,7 +17,8 @@
 
 set -euo pipefail
 
-REPO="/Users/gduby/Documents/autoresearch-trading"
+# Derived from this script's own location -- it lives at REPO/v4/ops/tracka/.
+REPO="${0:A:h:h:h:h}"
 WINDOW="${1:?usage: run_tracka_window.sh <open|midday>}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
 # v8 declares 2026-08-10, 08-11 and 08-12 -- v7's four sessions narrowed to

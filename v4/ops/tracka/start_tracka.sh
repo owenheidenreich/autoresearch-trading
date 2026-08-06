@@ -17,7 +17,10 @@
 
 set -uo pipefail
 
-REPO="/Users/gduby/Documents/autoresearch-trading"
+# Derived from this script's own location -- it lives at REPO/v4/ops/tracka/.
+# It was hardcoded to an absolute home path until 2026-08-06, when that path
+# stopped existing and this script would have refused on Sunday with exit 77.
+REPO="${0:A:h:h:h:h}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
 RUNNER="$REPO/v4/ops/tracka/run_tracka_attended.sh"
 LOGDIR="$ROOT/run_logs"

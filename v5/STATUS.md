@@ -18,7 +18,7 @@ A committed work packet must appear here. No row means no job.
 |---|---|---|---|---|---|
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
-| 3 | ES direction screen: opening range and overnight gap | G1 | **RUNNING — family FROZEN 08-06 (18 members, hash `5ec8b5a4…`); next is the surrogate campaign** | Loader, gate, surrogates | [`v5/work/g1-direction/`](work/g1-direction/), [`family.py`](research/direction/family.py) |
+| 3 | ES direction screen: opening range and overnight gap | G1 | **RUNNING — family FROZEN 08-06 (18 members, hash `f43b92c2…`, reissued from `5ec8b5a4…` for a renamed home directory, one field of 213, no outcome inspected); next is the surrogate campaign** | Loader, gate, surrogates | [`v5/work/g1-direction/`](work/g1-direction/), [`family.py`](research/direction/family.py), [re-freeze](work/g1-direction/REFREEZE_2026_08_06.md) |
 | 4 | Track-A option-feature arrival capture | G3 | **0 banked — 08-06 failed, 08-07 canceled; AUTHORIZED and armed for 08-10/11/12** | The three attended recordings, started on AC power | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md), [§13](#13-track-a-capture-attempt-2026-08-06) |
 | 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — held until Track-A banks; earliest 08-08** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md) | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
@@ -124,8 +124,11 @@ A candidate that does not beat measured costs is not a strategy.
   IDs changed in the observed session.
 - Native v5 clock, parity, feature-admission, and candidate-packet controls now exist. They are model-free,
   network-free building blocks and do not authorize training.
-- The already-granted Python interpreter can run unattended and read this repository. All real jobs remain
-  unloaded after the owner canceled the prior Track-A dates.
+- The already-granted Python interpreter could run unattended and read this repository. **This is now
+  UNKNOWN**: the macOS Documents grant recorded in the TCC database was keyed to that interpreter's
+  absolute path under the old home directory, which the 2026-08-06 rename destroyed. It must be re-read
+  before anything relies on it. No real job is loaded — the two Track-A jobs were unloaded on owner
+  authorization 2026-08-06 and the two 2026-07-18 agents exit 78. See [§14](#14-home-directory-rename-2026-08-06).
 - The prior-art refusal machinery blocks unchanged retries of closed ideas.
 - Costs above are measured rather than assumed.
 
@@ -207,9 +210,20 @@ mistake. No past result changes; no candidate has been run through the new gate.
   granted programs may read it; a scheduled job has no parent whose permission it can inherit. This blocks
   the later live-shadow and guarded-paper rungs as well as Track-A capture. See
   [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository).
-- Two long-running background agents remain loaded from 2026-07-18 and do execute on schedule, because
-  their program is the one Python interpreter that holds the permission grant. They are self-gated and
-  contact nothing. Removing them is an owner decision.
+- **The home directory was renamed `gduby` → `och` on 2026-08-06, breaking every absolute path into the
+  old home.** Real directories survived; absolute symlinks and hardcoded paths did not. Repaired the same
+  day: both Python environments, the five Track-A shell scripts (now derived from their own location, so
+  the pending repo migration cannot break them again), and the corpus paths in the G1 declaration and the
+  corpus tests. See [§14](#14-home-directory-rename-2026-08-06).
+- The two background agents loaded 2026-07-18 **no longer execute** — both exit 78, because their plists
+  name the interpreter, script, `PYTHONPATH`, and working directory under the vanished home. The
+  runtime venv they use was repaired on owner authorization 2026-08-06, which does **not** revive them:
+  their plists still point at `/Users/gduby/...`. Rewriting those plists is an owner decision and has not
+  been made, so they remain dead. They contacted nothing while working and contact nothing now.
+- The two Track-A launchd capture jobs were **unloaded and their plists disabled on owner authorization
+  2026-08-06** (`launchctl bootout`, plists renamed `*.disabled_20260806_stale_v6_dates`, fully
+  recoverable). They were built for the spent v6 dates and fired Wednesday/Thursday/Friday, so 08-12
+  would have collided with the attended runner. Track-A capture is attended-only.
 - Track-A capture has **banked no evidence yet**. The v6 dates 08-06/08-07 are spent: 08-06 failed both
   windows and 08-07 was canceled by the owner. Replacement sessions **2026-08-10, 08-11 and 08-12** are
   sealed in `capture_declaration_v8.json` and the runners are wired to it. The owner signed four sessions
@@ -287,5 +301,26 @@ Three sessions cannot support a population worst-case claim: the max of `n` days
 current evidence the practical difference is likely nil: the guard is `L = max(10,000 ms, 4 × worst p99)`,
 and the measured CBBO-1m p99 of 527.622 ms on 08-05 leaves the 10-second floor binding unless a session's
 p99 exceeds 2,500 ms.
+
+## 14. Home-directory rename, 2026-08-06
+
+The macOS account home was renamed `gduby` → `och`. Real directories and all data survived; every
+absolute path pointing into the old home stopped resolving. 153 files in the repository still contain the
+old prefix — most are receipts and findings, which are records of what was run and are **never edited**.
+
+What it broke, and what was done, all on 2026-08-06:
+
+| Broken | State |
+|---|---|
+| Both Python environments — `.venv` and the runtime venv — had dangling interpreter symlinks | **Repaired.** The runtime-venv repair was owner-authorized. `./.venv/bin/python` works; `check_project.py` and the 145 tests run again |
+| `start_tracka.sh` and four sibling scripts hardcoded the repo path; the Sunday start would have exited 77 | **Repaired.** All five now derive the repo from their own location, so the pending repo migration cannot break them either |
+| The G1 declaration's corpus root, which is inside the hashed freeze | **Re-frozen** on owner authorization: `5ec8b5a4…` → `f43b92c2…`, one field of 213, no outcome inspected. [Record](work/g1-direction/REFREEZE_2026_08_06.md) |
+| Three corpus tests silently **skipped** while the suite still reported success | **Repaired.** Skip conditions are home-relative; the suite is 145 passed, 0 skipped |
+| Two Track-A launchd jobs on stale Wednesday/Thursday/Friday dates | **Unloaded and disabled** on owner authorization; 08-12 would have collided with the attended runner |
+| Two 2026-07-18 background agents | **Still dead** (exit 78). Their plists name the old home; rewriting them is an owner decision not yet made |
+| The TCC Documents grant for the unattended interpreter | **UNKNOWN** — keyed to the old absolute path. Blocks job 4a until re-read |
+
+The lesson worth keeping is the fifth row: an absolute path inside a test's skip condition turns a broken
+environment into a green test run. The failure was invisible until the skip reasons were printed.
 
 *Update this page when a job or gate changes. Do not create another status, roadmap, or gate file.*

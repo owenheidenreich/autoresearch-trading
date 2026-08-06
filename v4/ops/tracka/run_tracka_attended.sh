@@ -15,6 +15,12 @@
 #   ...|com.anthropic.claude-code|2   <- allowed
 #   ...|/Users/gduby/.local/share/uv/python/cpython-3.12.13-.../python3.12|2
 #
+# That TCC.db output is quoted as observed on 2026-08-05 and is left unedited.
+# Note as of 2026-08-06 the home path in the last line no longer exists, so that
+# binary-path grant should be re-read before anyone relies on it. This attended
+# runner does not depend on it -- it inherits the grant from Terminal or VS Code,
+# which are granted as applications. Only the unattended launchd path needs it.
+#
 # ~/Documents is a TCC-protected location. The ONLY non-app binary holding a
 # grant is that uv python3.12. /bin/zsh, /usr/bin/python3, head, dd, mkdir --
 # every other binary the capture path uses -- hold no grant.
@@ -33,8 +39,7 @@
 # job -- three things that are all tier 1 and none of which can be validated
 # before the 2026-08-06 open window.
 #
-# USAGE
-#   cd /Users/gduby/Documents/autoresearch-trading
+# USAGE -- from the repository root, whatever its path:
 #   ./v4/ops/tracka/run_tracka_attended.sh
 #
 # Leave the window open. Ctrl-C to disarm. Safe to start the evening before.
@@ -51,7 +56,8 @@
 
 set -uo pipefail
 
-REPO="/Users/gduby/Documents/autoresearch-trading"
+# Derived from this script's own location -- it lives at REPO/v4/ops/tracka/.
+REPO="${0:A:h:h:h:h}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
 DECL="$ROOT/capture_declaration_v8.json"
 WRAPPER="$REPO/v4/ops/tracka/run_tracka_window.sh"

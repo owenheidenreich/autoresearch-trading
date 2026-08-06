@@ -19,7 +19,11 @@ merely cost-scale one. A negative result therefore means "no large edge here", n
 
 The complete declaration is code, not prose:
 [`v5/research/direction/family.py`](../../research/direction/family.py), content hash
-`5ec8b5a46cf5cbeb7a36be14613288a88a3eea34612ec5d13926c6095caab742`.
+`f43b92c2ed33a84e53732983999fdf889d31453cfe8663e3e09af1f182d8db49`.
+
+That hash was reissued from `5ec8b5a4…` on 2026-08-06 when the machine's home directory was renamed and
+the declared corpus root stopped resolving. Exactly one of 213 declaration fields changed — the path —
+and no outcome had been inspected. Both hashes and the proof: [re-freeze record](REFREEZE_2026_08_06.md).
 
 - **M1** — first-five-minute acceptance, taken when opening volume is at or above the expanding median
   of strictly earlier sessions.
