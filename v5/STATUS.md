@@ -17,7 +17,7 @@ A committed work packet must appear here. No row means no job.
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **RELEASED 08-05 — current job; targets a large edge under "large edge or stop"** | Implementation | [`v5/work/g1-direction/`](work/g1-direction/) |
-| 4 | Track-A option-feature arrival capture | G3 | **RUNNING ATTENDED — 0 of 2 evidence sessions banked** | The 08-06 and 08-07 recordings | [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md) |
+| 4 | Track-A option-feature arrival capture | G3 | **0 banked — 08-06 failed, 08-07 canceled; re-declared for 08-10…08-13, AWAITING OWNER SIGNATURE** | Owner authorization on the [v7 draft](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v7.DRAFT.json) | [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md), [§13](#13-track-a-capture-attempt-2026-08-06) |
 | 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — held until Track-A banks; earliest 08-08** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md) | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
 | 6 | Rebuild a confirmation firewall | G8 | **SIGNED 08-05 — every session from 2026-08-06 onward is confirmation-only** | — | [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) |
@@ -208,9 +208,12 @@ mistake. No past result changes; no candidate has been run through the new gate.
 - Two long-running background agents remain loaded from 2026-07-18 and do execute on schedule, because
   their program is the one Python interpreter that holds the permission grant. They are self-gated and
   contact nothing. Removing them is an owner decision.
-- Track-A capture dates are **2026-08-06 and 2026-08-07**, declared in `capture_declaration_v6.json` and
-  driven by an attended runner started by hand. 2026-08-05 was deliberately excluded: its open window was
-  lost to the defect above and its midday window is classified as an infrastructure test, not evidence.
+- Track-A capture has **banked no evidence**. The v6 dates 08-06/08-07 are spent: 08-06 failed both windows
+  and 08-07 was canceled by the owner. Replacement dates **2026-08-10 through 2026-08-13** are drafted in
+  `capture_declaration_v7.DRAFT.json` and **await owner signature** — the draft is deliberately unsealed so
+  no runner can execute it. See [§13](#13-track-a-capture-attempt-2026-08-06). 2026-08-05 remains excluded:
+  its open window was lost to the permission defect and its midday window is an infrastructure test, not
+  evidence.
 - **A forward confirmation reservation is in force, signed 2026-08-05.** Every ES and SPXW session
   from **2026-08-06 onward is confirmation-only**: no research analysis, screen, model, chart, or
   summary may compute strategy economics on those sessions until a pre-registered protocol opens the
@@ -246,5 +249,28 @@ Not blocking, recorded so it is not rediscovered as new:
   satisfy a naming rule; removing them is an owner decision.
 - The git object store holds 455 loose object filenames ending in `" 2"`. All referenced objects are
   present and none is missing, so this is disk clutter rather than corruption.
+
+## 13. Track-A capture attempt, 2026-08-06
+
+The first attended capture banked **no evidence**. Both causes are fixed in the v7 draft; neither was a
+data or capture-code problem.
+
+| What happened | Why |
+|---|---|
+| The open window fired 06:49:38 PDT instead of 06:28:00 — 1,298 s late | The Mac was moved to battery power. `caffeinate -s` is valid **only on AC power**; on battery the assertion is void and the machine slept. A 06:49 start records 09:49 ET, which is not the declared 09:30 bell. |
+| That window then failed anyway | The definitions capture found **574** current-session SPXW symbols; the wrapper pinned **510**; the recorder failed closed with "do not trim the universe" and exited 1. The 0DTE strike listing changes daily — it was 510 on 08-05. |
+| The midday window was skipped | The open wrapper did not return until 09:48:08 PDT because the machine slept mid-run, by which time the 09:10 start had passed by 2,288 s. |
+| 2026-08-07 did not run | Canceled by the owner on 08-06; the laptop is away for the weekend. The armed runner was stopped at owner instruction. |
+
+**The fail-closed universe check worked as designed** and prevented a silently trimmed capture. The defect
+was pinning a daily-varying count in advance, not the check itself.
+
+The v7 draft therefore declares four sessions (08-10…08-13, owner decision 08-06, taken before any 08-10
+data was observed), takes the complete current-session universe at whatever size it is on the day —
+recording `symbol_count` and `symbols_sha256` rather than asserting a count in advance — and records AC
+power and an open lid as operational preconditions. Four sessions still cannot support a population
+worst-case claim: the max of `n` days exceeds the daily `q`-th percentile with probability `1 − q^n`,
+which is 18.5% at `q=0.95` and 3.9% at `q=0.99` for `n=4`. Certification wording stays limited to the
+observed four-session envelope.
 
 *Update this page when a job or gate changes. Do not create another status, roadmap, or gate file.*
