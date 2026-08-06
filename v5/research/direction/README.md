@@ -1,11 +1,17 @@
 # G1 Direction Research
 
-This is the future home of the ES-only opening-range and overnight-gap direction screen.
+The ES-only opening-range and overnight-gap direction screen.
 
-**State: HOLD. No implementation belongs here yet.** The independent measurement-capacity review must be
-recorded first. The frozen intent and pass conditions are in
-[`v5/work/g1-direction/PLAN.md`](../../work/g1-direction/PLAN.md).
+**State: RELEASED and FROZEN.** [`family.py`](family.py) is the frozen declaration of the 18-member
+family, the causal clock, the economics, the fold and comparator rules, and the surrogate known-answer
+gates. It computes nothing about returns and reads no bars; it exists so the search space cannot widen
+after a result is seen.
 
-When released, code in this directory must use only information available at the decision time, clear the
-0.358-point gross cost bar, use one-position-at-a-time accounting, and pass the matched-surrogate
-known-answer test before real economics are inspected.
+Freeze hash: `5ec8b5a46cf5cbeb7a36be14613288a88a3eea34612ec5d13926c6095caab742`.
+
+Code added here must use only information available at the decision time, clear the 0.358-point cost bar,
+use one-position-at-a-time accounting with every no-trade day contributing zero, and pass the
+matched-surrogate known-answer test **before** real economics are inspected. Session-shuffle nulls are
+forbidden — see ledger row 183.
+
+Plan and current step: [`v5/work/g1-direction/PLAN.md`](../../work/g1-direction/PLAN.md).

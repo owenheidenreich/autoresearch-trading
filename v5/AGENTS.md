@@ -10,7 +10,9 @@ whether SPX/ES direction over 15–60 minutes can be predicted well enough to cl
 friction of 0.358 ES points / $17.92.
 
 Every proposal must state how it serves that question. Model training on the option layer is prohibited
-until G1 direction passes. The current G1 plan is itself on hold for the independent measurement review.
+until G1 direction passes. The measurement review closed on 2026-08-05 with verdict B — the owned year
+can detect only a large edge — so G1 is released under "large edge or stop" and its family was frozen on
+2026-08-06. A negative G1 result means "no large edge here", never "no edge exists".
 
 ## 2. Write for the owner
 

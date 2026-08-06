@@ -5,8 +5,10 @@ If another file disagrees, this page wins and the conflict must be reported.
 
 > **The measurement review returned verdict B on 2026-08-05: only a large edge (~2.2–4.0 net
 > points/session) is detectable on the owned year.** The owner accepted "large edge or stop," so the
-> G1 direction screen is **released** under that reduced claim. The current job is implementing and
-> running G1 per [`work/g1-direction/PLAN.md`](work/g1-direction/PLAN.md).
+> G1 direction screen is **released** under that reduced claim. Its 18-member family was **frozen
+> 2026-08-06** before any outcome was inspected; the next step is the surrogate known-answer campaign,
+> which must pass before real economics are read. See [`work/g1-direction/PLAN.md`](work/g1-direction/PLAN.md).
+> G1 runs in parallel with the Track-A capture and does not depend on it.
 
 ## 0. Job register
 
@@ -16,7 +18,7 @@ A committed work packet must appear here. No row means no job.
 |---|---|---|---|---|---|
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
-| 3 | ES direction screen: opening range and overnight gap | G1 | **RELEASED 08-05 — current job; targets a large edge under "large edge or stop"** | Implementation | [`v5/work/g1-direction/`](work/g1-direction/) |
+| 3 | ES direction screen: opening range and overnight gap | G1 | **RUNNING — family FROZEN 08-06 (18 members, hash `5ec8b5a4…`); next is the surrogate campaign** | Loader, gate, surrogates | [`v5/work/g1-direction/`](work/g1-direction/), [`family.py`](research/direction/family.py) |
 | 4 | Track-A option-feature arrival capture | G3 | **0 banked — 08-06 failed, 08-07 canceled; AUTHORIZED and armed for 08-10/11/12** | The three attended recordings, started on AC power | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md), [§13](#13-track-a-capture-attempt-2026-08-06) |
 | 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — held until Track-A banks; earliest 08-08** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md) | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
