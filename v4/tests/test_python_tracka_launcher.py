@@ -276,25 +276,37 @@ def test_the_runners_are_wired_to_the_signed_declaration() -> None:
         "v4/ops/tracka/run_tracka_attended.sh",
     ):
         source = (REPO_ROOT / relative).read_text(encoding="utf-8")
-        assert "capture_declaration_v7.json" in source
-        assert "capture_declaration_v6.json" not in source
+        executable = [
+            line for line in source.splitlines() if not line.strip().startswith("#")
+        ]
+        wired = "\n".join(executable)
+        assert "capture_declaration_v8.json" in wired
+        # Superseded declarations may be named in comments as history, never run.
+        assert "capture_declaration_v7.json" not in wired
+        assert "capture_declaration_v6.json" not in wired
 
     root = (
         REPO_ROOT
         / "v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
     )
-    declaration_path = root / "capture_declaration_v7.json"
+    declaration_path = root / "capture_declaration_v8.json"
     if not declaration_path.is_file():  # evidence tree is gitignored
-        pytest.skip("capture declaration v7 not present in this checkout")
+        pytest.skip("capture declaration v8 not present in this checkout")
 
     declaration = json.loads(declaration_path.read_text(encoding="utf-8"))
-    assert declaration["status"] == "AUTHORIZED_BY_OWNER_2026_08_06"
+    assert declaration["status"].startswith("AUTHORIZED_BY_OWNER_2026_08_06")
     assert declaration["capture_window"]["sessions"] == [
         "2026-08-10",
         "2026-08-11",
         "2026-08-12",
-        "2026-08-13",
     ]
+    # A narrowing must be a subset of what the owner actually signed, and must
+    # have been decided before those sessions were observed.
+    signed = json.loads((root / "authorization_v2.json").read_text(encoding="utf-8"))
+    assert set(declaration["capture_window"]["sessions"]).issubset(
+        set(signed["authorized_scope"]["sessions"])
+    )
+    assert declaration["narrowed_from"]["pre_observation"] is True
     assert declaration["subscription"]["expected_symbol_count"] is None
 
     # The seal must verify by the declaration's own stated rule.

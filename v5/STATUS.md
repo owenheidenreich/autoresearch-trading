@@ -17,7 +17,7 @@ A committed work packet must appear here. No row means no job.
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **RELEASED 08-05 — current job; targets a large edge under "large edge or stop"** | Implementation | [`v5/work/g1-direction/`](work/g1-direction/) |
-| 4 | Track-A option-feature arrival capture | G3 | **0 banked — 08-06 failed, 08-07 canceled; re-declared and AUTHORIZED for 08-10…08-13** | The four attended recordings, started on AC power | [declaration v7](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v7.json), [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md), [§13](#13-track-a-capture-attempt-2026-08-06) |
+| 4 | Track-A option-feature arrival capture | G3 | **0 banked — 08-06 failed, 08-07 canceled; AUTHORIZED and armed for 08-10/11/12** | The three attended recordings, started on AC power | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md), [§13](#13-track-a-capture-attempt-2026-08-06) |
 | 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — held until Track-A banks; earliest 08-08** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md) | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
 | 6 | Rebuild a confirmation firewall | G8 | **SIGNED 08-05 — every session from 2026-08-06 onward is confirmation-only** | — | [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) |
@@ -209,11 +209,14 @@ mistake. No past result changes; no candidate has been run through the new gate.
   their program is the one Python interpreter that holds the permission grant. They are self-gated and
   contact nothing. Removing them is an owner decision.
 - Track-A capture has **banked no evidence yet**. The v6 dates 08-06/08-07 are spent: 08-06 failed both
-  windows and 08-07 was canceled by the owner. Replacement sessions **2026-08-10 through 2026-08-13** are
-  sealed and owner-authorized in `capture_declaration_v7.json` (signed 2026-08-06, manifest
-  `authorization_v2.json`), and the runners are wired to it. See
-  [§13](#13-track-a-capture-attempt-2026-08-06). 2026-08-05 remains excluded: its open window was lost to
-  the permission defect and its midday window is an infrastructure test, not evidence.
+  windows and 08-07 was canceled by the owner. Replacement sessions **2026-08-10, 08-11 and 08-12** are
+  sealed in `capture_declaration_v8.json` and the runners are wired to it. The owner signed four sessions
+  on 2026-08-06 (`authorization_v2.json`, declaration v7); v8 narrows that to three by owner instruction
+  the same day, decided **before any of those sessions was observed**, so nothing was dropped after seeing
+  an outcome. Narrowing needs no new signature; widening would. `authorization_v2.json` is deliberately
+  left unedited as the record of what was signed. See [§13](#13-track-a-capture-attempt-2026-08-06).
+  2026-08-05 remains excluded: its open window was lost to the permission defect and its midday window is
+  an infrastructure test, not evidence.
 - **A forward confirmation reservation is in force, signed 2026-08-05.** Every ES and SPXW session
   from **2026-08-06 onward is confirmation-only**: no research analysis, screen, model, chart, or
   summary may compute strategy economics on those sessions until a pre-registered protocol opens the
@@ -270,12 +273,17 @@ refuses to start on battery, warns on any battery transition while waiting, and 
 misses its declared start by more than 60 seconds rather than capturing a different window under the
 declared name.
 
-The v7 draft therefore declares four sessions (08-10…08-13, owner decision 08-06, taken before any 08-10
-data was observed), takes the complete current-session universe at whatever size it is on the day —
-recording `symbol_count` and `symbols_sha256` rather than asserting a count in advance — and records AC
-power and an open lid as operational preconditions. Four sessions still cannot support a population
-worst-case claim: the max of `n` days exceeds the daily `q`-th percentile with probability `1 − q^n`,
-which is 18.5% at `q=0.95` and 3.9% at `q=0.99` for `n=4`. Certification wording stays limited to the
-observed four-session envelope.
+The replacement declaration therefore takes the complete current-session universe at whatever size it is
+on the day — recording `symbol_count` and `symbols_sha256` rather than asserting a count in advance — and
+records AC power and an open lid as operational preconditions. The owner signed four sessions
+(08-10…08-13) on 08-06 and narrowed them to three (08-10/11/12) the same day, before any of those
+sessions was observed.
+
+Three sessions cannot support a population worst-case claim: the max of `n` days exceeds the daily
+`q`-th percentile with probability `1 − q^n`, which is 14.3% at `q=0.95` and 3.0% at `q=0.99` for `n=3`
+(18.5% and 3.9% at `n=4`). Certification wording stays limited to the observed three-session envelope. On
+current evidence the practical difference is likely nil: the guard is `L = max(10,000 ms, 4 × worst p99)`,
+and the measured CBBO-1m p99 of 527.622 ms on 08-05 leaves the 10-second floor binding unless a session's
+p99 exceeds 2,500 ms.
 
 *Update this page when a job or gate changes. Do not create another status, roadmap, or gate file.*

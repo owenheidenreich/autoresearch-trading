@@ -42,16 +42,18 @@
 
 # Correction of record 2026-08-05 evening: a stanza here claimed the owner
 # canceled declaration v6 and refused to arm. The owner made no such
-# cancellation (owner statement, 2026-08-05 evening conversation). v6 stands
-# authorized for 2026-08-06 and 2026-08-07; this runner is the recommended
-# attended path for both sessions. Details:
+# cancellation (owner statement, 2026-08-05 evening conversation). Details:
 # v4/docs/protocol101/training/research/HANDOFF_TRACKA_LAUNCHD_CANNOT_READ_REPO_2026_08_05.md
+#
+# Current declaration is v8: 2026-08-10, 08-11 and 08-12. v6's own sessions are
+# spent -- 08-06 banked nothing and the owner canceled 08-07 for real on
+# 2026-08-06, which is a genuine cancellation and not the retracted one above.
 
 set -uo pipefail
 
 REPO="/Users/gduby/Documents/autoresearch-trading"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-DECL="$ROOT/capture_declaration_v7.json"
+DECL="$ROOT/capture_declaration_v8.json"
 WRAPPER="$REPO/v4/ops/tracka/run_tracka_window.sh"
 PY="$REPO/.venv/bin/python"
 
