@@ -175,5 +175,5 @@ def test_start_labelled_bars_pass_including_a_short_session() -> None:
 )
 def test_the_real_corpus_is_start_labelled_on_every_session() -> None:
     sessions = loader.load_sessions()
-    assert len(sessions) == loader.family.M1_ELIGIBLE_SESSIONS
+    assert len(sessions) == 254  # all owned sessions load; 7 are ineligible
     assert all(s.minute_et[0] == "09:30" for s in sessions)

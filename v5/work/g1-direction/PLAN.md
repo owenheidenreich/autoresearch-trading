@@ -1,7 +1,14 @@
 # G1 ES Direction Screen
 
-**State: RELEASED 2026-08-05 by the measurement review (verdict B), under "large edge or stop".
-Family FROZEN 2026-08-06.** Work started 2026-08-06 in parallel with the Track-A capture, which G1 does
+**State: CLOSED 2026-08-09 with the verdict `UNDERPOWERED`.** The known-answer campaign passed both null
+criteria and failed the recovery criterion; the gate's real detection floor is 8-16 net points/session
+against a 0.358-point cost bar. **No member's profit and loss was ever computed.** Verdict and evidence:
+[finding](../../research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md). The history below is kept as
+the record of what was declared and built.
+
+Originally: RELEASED 2026-08-05 by the measurement review (verdict B), under "large edge or stop".
+Family FROZEN 2026-08-06, re-frozen twice (renamed home directory 08-06; the seven no-option sessions
+08-09). Work started 2026-08-06 in parallel with the Track-A capture, which G1 does
 not depend on: M1 and M3 read owned ES bars only, and per the
 [gate-chain audit §2.4](../../research/findings/GATE_CHAIN_AUDIT_2026_08_05.md) no barred option feature
 is on this screen's critical path.
@@ -49,14 +56,18 @@ deliberately a minute later than the decision because the ES emission lag is UNC
    **Matched surrogates done 2026-08-09** ([`surrogate.py`](../../research/direction/surrogate.py)):
    volume, calendar, gap magnitude and per-bar close-to-close magnitude preserved exactly; only the gap
    sign and each bar's change sign randomized; the whole path, every feature, selection and target
-   rebuilt by the identical feature code. Verified on the owned corpus — 254 sessions, 97,469 bars, the
-   254/249 eligible index reproduced, gap magnitudes identical and gap signs randomized. The two
-   fixtures remain.
-4. Run the 1,000-campaign known-answer study **without inspecting real-policy economics**: false pass
-   ≤ 5.0% with Wilson upper ≤ 7.5%, fixture ≤ 5.0%, injected MDE-size effect recovered ≥ 80%.
-5. Repair the null **at most once** if that gate fails, then refreeze.
-6. Recompute the MDE from the frozen realized occupancy, before reading the economic outcome.
-7. One raw economic replay. Report `PASS`, `NO_LARGE_EDGE`, or `UNDERPOWERED` honestly.
+   rebuilt by the identical feature code. Verified on the owned corpus — 97,469 bars, the eligible index
+   reproduced exactly, gap magnitudes identical and gap signs randomized. Both fixtures followed the same
+   day; each had a defect the campaign caught, recorded in the finding.
+4. ~~Run the 1,000-campaign known-answer study~~ **Done 08-09.** False pass **0.7%** (Wilson upper
+   1.29%) and shared-term fixture **1.0%**, both inside their 5.0% limits. Recovery of an MDE-size
+   effect **failed**: the floor is 8 points/session for M3 and 16 for M1 and JOINT.
+5. ~~Repair the null at most once~~ **Used 08-09** on familywise control, which cut false pass from
+   11.7% to 0.7%. The repair is spent.
+6. ~~Recompute the MDE from frozen realized occupancy~~ **Done 08-09**, from surrogate dispersion only,
+   so no real outcome was touched.
+7. ~~One raw economic replay~~ **Not run, and must not be.** The recovery criterion failed, so the
+   frozen order of work forbids reading real economics. Verdict: **`UNDERPOWERED`**.
 
 ## Pass consequence
 

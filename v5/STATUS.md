@@ -3,12 +3,17 @@
 **Last updated: 2026-08-09.** This is the only current-state, job-register, and gate-chain document.
 If another file disagrees, this page wins and the conflict must be reported.
 
-> **The measurement review returned verdict B on 2026-08-05: only a large edge (~2.2–4.0 net
-> points/session) is detectable on the owned year.** The owner accepted "large edge or stop," so the
-> G1 direction screen is **released** under that reduced claim. Its 18-member family was **frozen
-> 2026-08-06** before any outcome was inspected; the next step is the surrogate known-answer campaign,
-> which must pass before real economics are read. See [`work/g1-direction/PLAN.md`](work/g1-direction/PLAN.md).
-> G1 runs in parallel with the Track-A capture and does not depend on it.
+> **G1 closed on 2026-08-09 with the verdict `UNDERPOWERED`.** The screen was released under "large edge
+> or stop"; this is the stop. The gate itself is sound — it falsely passes matched surrogates only 0.7% of
+> the time and row 183's shared-term artifact only 1.0% — but on 247 owned sessions it can only detect an
+> edge of **8-16 net points per session, which is 22 to 88 times the cost of trading**. The real
+> profit-and-loss was therefore **never computed**, which keeps the mechanisms legitimately available to a
+> future screen with more data. See the
+> [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md).
+>
+> **The only thing that moves this is calendar time.** The detection floor scales as 1/sqrt(n): roughly
+> four years of further sessions to halve it. The active work is therefore the Track-A capture, armed and
+> waiting for 2026-08-10/11/12.
 
 ## 0. Job register
 
@@ -18,7 +23,7 @@ A committed work packet must appear here. No row means no job.
 |---|---|---|---|---|---|
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
-| 3 | ES direction screen: opening range and overnight gap | G1 | **RUNNING — family FROZEN 08-06 (18 members, hash `f43b92c2…`, reissued from `5ec8b5a4…` for a renamed home directory, one field of 213, no outcome inspected). Step 3 started 08-09: matched surrogates built and verified; the two fixtures and the 1,000-campaign study remain. No economics read.** | The shared-term and injected-effect fixtures, then the known-answer campaign | [`v5/work/g1-direction/`](work/g1-direction/), [`family.py`](research/direction/family.py), [`surrogate.py`](research/direction/surrogate.py), [re-freeze](work/g1-direction/REFREEZE_2026_08_06.md) |
+| 3 | ES direction screen: opening range and overnight gap | G1 | **CLOSED 08-09 — `UNDERPOWERED`. The known-answer campaign passed both nulls and failed recovery; the gate needs 8-16 net points/session (22-88x the cost bar). Real economics were never computed.** | — | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md), [`v5/work/g1-direction/`](work/g1-direction/), [ledger row](research/history/DO_NOT_RETEST.md) |
 | 4 | Track-A option-feature arrival capture | G3 | **0 banked — runner ARMED and RUNNING since 08-09 08:45 PDT for 08-10/11/12; Phase-2 certification READY** | The six windows to fire; then one local certification command | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [`certify_tracka_arrival.py`](ops/certify_tracka_arrival.py), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
 | 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — a capture is now live, and the manifest forbids moving during one, so this waits until after 08-12** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md); the TCC grant is also UNKNOWN since the rename | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository), [§14](#14-home-directory-rename-2026-08-06) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
@@ -29,7 +34,7 @@ A committed work packet must appear here. No row means no job.
 | 10 | Retire the documentation drawers and enforce it repo-wide | infrastructure | **DONE 08-05 — 75 files preserved** | — | [manifest](../_cleanup_quarantine/2026-08-05b-docs/MANIFEST.md), [`ops/check_project.py`](ops/check_project.py) |
 | 11 | Build the two training preconditions | G3/G4 | **DONE 08-05 — built, not satisfied** | Rung 4 must supply usable latency and freshness receipts | [`research/knobs.py`](research/knobs.py), [arrival finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md) |
 | 12 | Close six control-machinery gaps found by the training-readiness review: gate-pass receipts, computed power bound to the session index, trades→session aggregator, entry-freeze lock, knob-registry expansion, pipeline composition test | G1–G6 controls | **DONE 08-05 — 97 tests green** | — | [`research/gate_receipts.py`](research/gate_receipts.py), [`research/entry_stream.py`](research/entry_stream.py), [`research/validation/session_index.py`](research/validation/session_index.py) |
-| 13 | Register every way training data can differ from what the live system sees | G4/G6/G7 | **BUILT 08-09 — 16 axes, 7 blocking; one owner decision raised** | Owner ruling on `product_session_existence`; the rest settle at their named gates | [`research/divergence.py`](research/divergence.py), [§15](#15-the-trainlive-divergence-register) |
+| 13 | Register every way training data can differ from what the live system sees | G4/G6/G7 | **BUILT 08-09 — 16 axes, 7 blocking; `product_session_existence` settled by owner ruling the same day** | The remaining axes settle at their named gates | [`research/divergence.py`](research/divergence.py), [§15](#15-the-trainlive-divergence-register) |
 
 ## 1. What we are building
 
@@ -41,13 +46,14 @@ prove itself in guarded paper trading before any real-money decision.
 
 This is the only route document. Each rung names what it produces, which gate it clears, and what
 authorizes it. A rung may not start until the row above it has passed — except rung 4, the one safe
-parallel branch. Rung 1 completed 2026-08-05 with a favourable (verdict-B) answer; rung 2 is the
-authorized frontier. Nothing below rung 2 is authorized today.
+parallel branch. Rungs 1 and 2 are both complete: rung 1 returned verdict B, and rung 2 stopped on
+2026-08-09 as `UNDERPOWERED`. **Rung 3 is therefore not reachable on the owned corpus, and rung 4 —
+Track-A — is the only active branch.** Nothing below rung 4 is authorized today.
 
 | # | Step | Produces | Gate | Authorized by | Where |
 |---:|---|---|---|---|---|
 | 1 | **Measurement review** | A verdict on whether 254 sessions can resolve any edge worth trading | precondition to G1 | **DONE 08-05 — verdict B** | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md) |
-| 2 | **ES direction screen** | One raw, no-model replay of the frozen M1/M3 family on owned ES | G1 | **Released by rung 1 under "large edge or stop"** | [`work/g1-direction/`](work/g1-direction/) |
+| 2 | **ES direction screen** | One raw, no-model replay of the frozen M1/M3 family on owned ES | G1 | **CLOSED 08-09 — `UNDERPOWERED`; stopped before the replay** | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md) |
 | 3 | **Option-dollar replay** | One locked 60-minute replay of the G1 policy in SPXW dollars | G2 | An exact 60-minute G1 pass | not yet registered |
 | 4 | **Track-A capture and feature certification** | Multi-session OPRA arrival and freshness evidence; a re-derived emission lag; a signed feature ledger | G3 | Fresh owner authorization — vendor contact and unattended jobs are Tier 1 | [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md) |
 | 5 | **Bounded entry search** | A frozen shallow entry ranker, chronological out-of-fold | G4 | A G1 pass **and** separate owner training authorization | not yet registered |
@@ -68,15 +74,24 @@ Two preconditions cut across rungs 5–7 and are built but not satisfied:
 
 ## 3. Where we actually are
 
-**The plumbing works. We do not yet have a reason to trade.** Five research campaigns returned no edge.
-The immediate uncertainty is more basic: the data may be unable to measure the size of edge the project
-would plausibly find.
+**The plumbing works. We do not have a reason to trade, and as of 2026-08-09 we know the owned data
+cannot give us one.** Six research campaigns have now returned no edge, and the sixth returned something
+more useful than the first five: a measured statement of *why*.
 
-The only active research question is:
+The open research question was:
 
 > Can we predict SPX/ES direction over 15–60 minutes well enough to clear 0.358 ES points per trade?
 
-Until that is answered, option-model training cannot create useful information and is prohibited.
+G1 could not answer it. Not because the mechanisms failed — their economics were never computed — but
+because a correctly-built gate on 247 sessions can only see an edge of 8–16 points per session, 22 to 88
+times the cost bar. The uncertainty the measurement review raised is now settled, and settled against us:
+**the owned year cannot measure an edge of the size this project would plausibly find.**
+
+That is not a failure of method. The screen was built so that this answer would arrive *before* anyone
+looked at a profit-and-loss number, and it did. The mechanisms stay legitimately open for a future screen
+with more sessions.
+
+Until direction is demonstrated, option-model training cannot create useful information and is prohibited.
 
 ## 4. The measurement problem
 
@@ -178,7 +193,7 @@ The binding details and legitimate reopening conditions are in the
 
 | Gate | Meaning | Current state |
 |---|---|---|
-| G1 Direction | Predict ES direction and clear 0.358 points/trade | **HOLD for measurement review; only a large edge is detectable** |
+| G1 Direction | Predict ES direction and clear 0.358 points/trade | **STOPPED 08-09 — `UNDERPOWERED`. Detection floor 8-16 points/session vs a 0.358-point bar. Not falsified: economics never read** |
 | G2 Option wrapper | Replay one locked 60-minute G1 policy in option dollars | Blocked by a 60-minute G1 pass |
 | G3 Feature certification | Prove option features exist live at decision time | **8/73 scoped features currently admitted.** Phase-2 is ready to re-issue 51/73 only after v8 evidence banks; no new ledger exists yet |
 | G4 Train | Fit a shallow model on admitted features | Blocked by G1 and separate owner authorization |
@@ -396,7 +411,7 @@ divergence nobody wrote down.
 | `MEASURED_DIFFERENT` | 5 | Known to differ; **blocks unless it names its repair** |
 | `UNKNOWN` | 7 | Nobody has checked |
 
-Seven axes currently block a fit. That is the honest number, and it is expected to be large on day one.
+Seven axes currently block a fit. That is the honest number, and it is expected to be large early on.
 
 ### What building it immediately found
 
@@ -411,15 +426,19 @@ Seven axes currently block a fit. That is the honest number, and it is expected 
   equity-market holidays when SPXW does not trade at all. Verified against the owned corpus: those seven
   sessions (2.8% of the M1 index, six of the 249 gap-eligible) have no SPXW option session whatsoever.
 
-### The owner decision this raises
+### The owner decision this raised, and how it was settled
 
-G1 measures ES direction **in order to justify buying SPXW options**. On those seven sessions the option
-does not exist, so any edge measured there cannot be taken in the product. The question is whether the G1
-index should exclude sessions on which the traded instrument does not trade.
+G1 measured ES direction **in order to justify buying SPXW options**. On those seven sessions the option
+does not exist, so any edge measured there could not be taken in the product.
 
-No G1 outcome has been inspected, so deciding this now is still a **pre-outcome** narrowing rather than a
-post-hoc one — the same standing that made the 08-06 re-freeze legitimate. It would change the frozen
-family hash a second time. It is the owner's call, not the agent's, and G1's surrogate campaign is not
-blocked while it is pending.
+**Settled 2026-08-09: the owner excluded them.** The G1 index was re-frozen from 254/249 to **247/243**
+(hash `f43b92c2…` → `157fe437…`), at a cost of about 1.4% in minimum detectable effect. The alternative
+offered was to keep all 254 and bind the constraint at G2, since G1 is judged against ES friction and ES
+does trade those days; the owner chose the stricter reading, so that G1's number would mean "tradeable in
+the actual product" rather than "tradeable in ES."
+
+This was decided **before any G1 economics existed**, which is the only reason it was a legitimate
+narrowing rather than the post-hoc kind row 183 warns about. Record:
+[re-freeze](work/g1-direction/REFREEZE_2026_08_06.md).
 
 *Update this page when a job or gate changes. Do not create another status, roadmap, or gate file.*

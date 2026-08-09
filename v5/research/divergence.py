@@ -327,13 +327,18 @@ _AXES: tuple[Axis, ...] = (
             "sessions."
         ),
         settles_when=(
-            "The owner decides whether the G1 index excludes sessions on which "
-            "the traded product does not exist. No G1 outcome has been "
-            "inspected, so deciding now is still a pre-outcome narrowing rather "
-            "than a post-hoc one -- but it changes the frozen family hash and "
-            "is the owner's call, not the agent's."
+            "Settled 2026-08-09 for G1. Any future screen must make the same "
+            "ruling for its own index before its outcome is inspected; the "
+            "decision is only legitimate while no economics exist."
         ),
         binds_at_gate="G2",
+        repair=(
+            "Owner ruling 2026-08-09: the seven sessions are excluded from the "
+            "G1 eligible index, re-frozen 254/249 -> 247/243 at a cost of about "
+            "1.4% in minimum detectable effect. They remain in the price chain, "
+            "so the following session's overnight gap is still measured against "
+            "the ES close the live system would have seen."
+        ),
     ),
     Axis(
         name="clock_and_dst",

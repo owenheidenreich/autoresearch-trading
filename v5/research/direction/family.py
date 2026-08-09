@@ -50,8 +50,30 @@ ES_BARS_ROOT = str(
 )
 CORPUS_FIRST_SESSION = "2025-08-01"
 CORPUS_LAST_SESSION = "2026-07-31"
-M1_ELIGIBLE_SESSIONS = 254
-GAP_ELIGIBLE_SESSIONS = 249
+M1_ELIGIBLE_SESSIONS = 247
+GAP_ELIGIBLE_SESSIONS = 243
+
+# US equity-market holidays on which ES trades a shortened session but SPXW
+# does not trade at all. Verified 2026-08-09 against the owned corpus: each of
+# these has an ES session and no SPXW option session whatsoever, and each is
+# one of the seven 13:00-close ES days.
+#
+# They are excluded because this screen exists to justify buying SPXW options.
+# An edge measured on a day the option does not exist cannot be taken in the
+# product. Owner decision 2026-08-09, made before any G1 outcome was inspected.
+#
+# They remain in the *price* chain: the next session's overnight gap is still
+# measured against the ES close of the excluded day, because that is the close
+# the live system would actually have seen.
+NO_OPTION_SESSIONS = (
+    "2025-09-01",
+    "2025-11-27",
+    "2026-01-19",
+    "2026-02-16",
+    "2026-05-25",
+    "2026-06-19",
+    "2026-07-03",
+)
 
 # Cross-session contract changes. Excluded by instrument id *before* any outcome
 # is read, never "adjusted": the expiring/new-contract spread is not owned, so a
@@ -277,9 +299,12 @@ def declaration() -> dict[str, Any]:
             "m1_eligible_sessions": M1_ELIGIBLE_SESSIONS,
             "gap_eligible_sessions": GAP_ELIGIBLE_SESSIONS,
             "roll_boundary_sessions": list(ROLL_BOUNDARY_SESSIONS),
+            "no_option_sessions": list(NO_OPTION_SESSIONS),
             "verified": (
                 "session count and roll boundaries reproduced 2026-08-06 from "
-                "session dates and instrument ids only"
+                "session dates and instrument ids only; the seven sessions on "
+                "which SPXW does not trade verified 2026-08-09 against the "
+                "owned option corpus"
             ),
         },
         "clock": {

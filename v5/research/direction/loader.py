@@ -232,17 +232,29 @@ def session_features(sessions: Sequence[SessionBars]) -> pd.DataFrame:
 def eligible_sessions(features: pd.DataFrame, mechanism: str) -> pd.Series:
     """The declared calendar for a mechanism, as a boolean mask.
 
-    M1 evaluates every non-empty session; its first session simply cannot trade
-    because the volume baseline is undefined, and contributes an explicit zero.
-    The gap mechanisms *exclude* roll boundaries and the first session outright,
-    because there the gap is undefined rather than declined -- an undefined
-    session is not a no-trade day and must not be averaged in as one.
+    M1 evaluates every tradeable non-empty session; its first session simply
+    cannot trade because the volume baseline is undefined, and contributes an
+    explicit zero. The gap mechanisms *exclude* roll boundaries and the first
+    session outright, because there the gap is undefined rather than declined --
+    an undefined session is not a no-trade day and must not be averaged in as
+    one.
+
+    All mechanisms additionally exclude ``family.NO_OPTION_SESSIONS``: ES trades
+    those days but SPXW does not, so an edge measured there could never be taken
+    in the product this screen exists to justify. They stay in the price chain,
+    so the following session's overnight gap is still measured against the ES
+    close the live system would have seen.
     """
 
+    tradeable = ~features["session"].isin(family.NO_OPTION_SESSIONS)
     if mechanism == "M1":
-        return pd.Series(True, index=features.index)
+        return tradeable
     if mechanism in {"M3", "JOINT"}:
-        return features["has_prior_session"] & ~features["is_roll_boundary"]
+        return (
+            tradeable
+            & features["has_prior_session"]
+            & ~features["is_roll_boundary"]
+        )
     raise LoaderError(f"unknown mechanism: {mechanism}")
 
 

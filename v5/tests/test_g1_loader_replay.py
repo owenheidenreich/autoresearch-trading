@@ -101,8 +101,8 @@ def test_exit_price_falls_back_to_the_close_when_the_horizon_runs_past_it() -> N
 
 
 def test_folds_are_contiguous_and_never_shorten_the_newest_block() -> None:
-    labels = loader.chronological_folds(254, 5)
-    assert len(labels) == 254
+    labels = loader.chronological_folds(247, 5)
+    assert len(labels) == 247
     assert sorted(set(labels.tolist())) == [0, 1, 2, 3, 4]
     assert (np.diff(labels) >= 0).all()  # contiguous, chronological
     counts = np.bincount(labels)
@@ -115,9 +115,13 @@ def test_folds_are_contiguous_and_never_shorten_the_newest_block() -> None:
 
 
 def _features_for_replay(n: int = 10, **overrides) -> pd.DataFrame:
+    # Dated in 2030 so a synthetic session can never collide with a real
+    # calendar constant. It previously ran through 2026-01, which silently
+    # collided with 2026-01-19, one of the declared no-option sessions, and
+    # quietly dropped a row from every replay fixture.
     frame = pd.DataFrame(
         {
-            "session": [f"2026-01-{day:02d}" for day in range(1, n + 1)],
+            "session": [f"2030-01-{day:02d}" for day in range(1, n + 1)],
             "instrument_id": 1,
             "first_five_minute_return": 1.0,
             "first_five_minute_volume": 100.0,
@@ -142,25 +146,25 @@ def _member(name: str) -> family.Member:
 
 
 def test_every_declared_session_produces_a_row_including_no_trade_days() -> None:
-    features = _features_for_replay(n=254, volume_surprise=0.5)  # never occupied
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS, volume_surprise=0.5)  # never occupied
     result = replay.replay_member(features, _member("M1.with.15m"))
-    assert len(result) == 254
+    assert len(result) == family.M1_ELIGIBLE_SESSIONS
     assert result["trades"].sum() == 0
     assert (result["net_points"] == 0.0).all()
 
 
 def test_friction_is_charged_once_per_completed_round_trip() -> None:
-    features = _features_for_replay(n=254)
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS)
     features["exit_price_15m"] = 102.0  # +2 points with side +1
     result = replay.replay_member(features, _member("M1.with.15m"))
     traded = result[result.trades == 1]
-    assert len(traded) == 254
+    assert len(traded) == family.M1_ELIGIBLE_SESSIONS
     assert traded["gross_points"].unique().tolist() == [2.0]
     assert traded["net_points"].unique() == pytest.approx([2.0 - 0.358])
 
 
 def test_the_against_direction_is_the_exact_sign_flip() -> None:
-    features = _features_for_replay(n=254)
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS)
     features["exit_price_15m"] = 102.0
     with_ = replay.replay_member(features, _member("M1.with.15m"))
     against = replay.replay_member(features, _member("M1.against.15m"))
@@ -173,13 +177,13 @@ def test_the_against_direction_is_the_exact_sign_flip() -> None:
 def test_a_zero_score_is_no_position() -> None:
     """sign(0) = 0 follows from the declared side rule; it is not a tie-break."""
 
-    features = _features_for_replay(n=254, first_five_minute_return=0.0)
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS, first_five_minute_return=0.0)
     result = replay.replay_member(features, _member("M1.with.15m"))
     assert result["trades"].sum() == 0
 
 
 def test_joint_trades_only_when_the_first_five_minutes_confirm_the_gap() -> None:
-    features = _features_for_replay(n=254)
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS)
     features.loc[: len(features) // 2, "first_five_minute_return"] = -1.0  # disagrees
     mask = replay.occupancy_mask(features, "JOINT")
     assert mask.sum() == len(features) - (len(features) // 2 + 1)
@@ -188,7 +192,7 @@ def test_joint_trades_only_when_the_first_five_minutes_confirm_the_gap() -> None
 
 
 def test_an_undeclared_member_cannot_be_replayed() -> None:
-    features = _features_for_replay(n=254)
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS)
     rogue = family.Member(
         name="M1.with.45m",
         mechanism="M1",
@@ -196,7 +200,7 @@ def test_an_undeclared_member_cannot_be_replayed() -> None:
         score="whatever",
         side_rule=family.DIRECTIONS["with"],
         horizon_minutes=45,
-        eligible_sessions=254,
+        eligible_sessions=family.M1_ELIGIBLE_SESSIONS,
     )
     with pytest.raises(ValueError, match="not in the frozen G1 family"):
         replay.replay_member(features, rogue)
@@ -209,7 +213,7 @@ def test_a_short_session_index_is_refused_rather_than_padded() -> None:
 
 
 def test_the_comparator_never_sees_the_fold_it_is_judged_against() -> None:
-    features = _features_for_replay(n=254)
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS)
     # Long wins everywhere, so every fold after the first should choose it.
     features["exit_price_15m"] = 105.0
     _, chosen = replay.causal_comparator_net(features, _member("M1.with.15m"))
@@ -218,7 +222,7 @@ def test_the_comparator_never_sees_the_fold_it_is_judged_against() -> None:
 
 
 def test_the_comparator_uses_the_members_own_clock_and_friction() -> None:
-    features = _features_for_replay(n=254)
+    features = _features_for_replay(n=family.M1_ELIGIBLE_SESSIONS)
     features["exit_price_15m"] = 102.0
     control = replay.constant_side_sessions(features, _member("M1.with.15m"), "always_long")
     assert control["net_points"].iloc[0] == pytest.approx(2.0 - 0.358)
@@ -240,8 +244,8 @@ def _corpus_available() -> bool:
 def test_the_owned_corpus_matches_the_frozen_index() -> None:
     sessions = loader.load_sessions()
     features = loader.session_features(sessions)
-    assert len(sessions) == family.M1_ELIGIBLE_SESSIONS == 254
-    assert loader.eligible_sessions(features, "M1").sum() == 254
+    assert len(sessions) == 254  # every owned session is loaded
+    assert loader.eligible_sessions(features, "M1").sum() == family.M1_ELIGIBLE_SESSIONS
     assert loader.eligible_sessions(features, "M3").sum() == family.GAP_ELIGIBLE_SESSIONS
 
     rolls = features.loc[features["is_roll_boundary"], "session"].tolist()

@@ -1,0 +1,65 @@
+{
+  "family_hash": "157fe437998d968d41e7312a914dd65fa110b82c25600df0523c62a01699985a",
+  "family_size": 18,
+  "m1_eligible": 247,
+  "gap_eligible": 243,
+  "familywise_confidence": 0.9972222222222222,
+  "campaigns": 1000,
+  "false_pass": {
+    "name": "matched_surrogate_false_pass",
+    "trials": 1000,
+    "passes": 7,
+    "rate": 0.007,
+    "wilson_upper": 0.012860687650996136,
+    "limit": 0.05,
+    "is_floor": false,
+    "satisfied": true
+  },
+  "shared_term": {
+    "name": "shared_term_fixture",
+    "trials": 1000,
+    "passes": 10,
+    "rate": 0.01,
+    "wilson_upper": 0.01665699252236511,
+    "limit": 0.05,
+    "is_floor": false,
+    "satisfied": true
+  },
+  "floor_M3": {
+    "curve": {
+      "4.0": 0.175,
+      "6.0": 0.5583333333333333,
+      "8.0": 0.85,
+      "10.0": 0.9666666666666667,
+      "12.0": 0.9916666666666667,
+      "16.0": 1.0,
+      "20.0": 1.0
+    },
+    "achieved_at_points": 8.0
+  },
+  "floor_M1": {
+    "curve": {
+      "4.0": 0.06666666666666667,
+      "6.0": 0.2,
+      "8.0": 0.43333333333333335,
+      "10.0": 0.575,
+      "12.0": 0.7666666666666667,
+      "16.0": 0.9416666666666667,
+      "20.0": 0.9833333333333333
+    },
+    "achieved_at_points": 16.0
+  },
+  "floor_JOINT": {
+    "curve": {
+      "4.0": 0.058333333333333334,
+      "6.0": 0.14166666666666666,
+      "8.0": 0.39166666666666666,
+      "10.0": 0.475,
+      "12.0": 0.7,
+      "16.0": 0.925,
+      "20.0": 0.975
+    },
+    "achieved_at_points": 16.0
+  },
+  "elapsed_seconds": 441.7
+}

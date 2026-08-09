@@ -45,19 +45,26 @@ def test_an_undeclared_member_is_refused() -> None:
 
 
 def test_the_eligible_index_matches_the_verified_corpus() -> None:
-    """254 sessions, 4 roll boundaries, 249 gap-eligible. Reproduced from the
+    """247 tradeable sessions, 4 roll boundaries, 243 gap-eligible. From the
     bars on 2026-08-06 using session dates and instrument ids only."""
 
-    assert family.M1_ELIGIBLE_SESSIONS == 254
-    assert family.GAP_ELIGIBLE_SESSIONS == 249
+    assert family.M1_ELIGIBLE_SESSIONS == 247
+    assert family.GAP_ELIGIBLE_SESSIONS == 243
     assert len(family.ROLL_BOUNDARY_SESSIONS) == 4
-    # 254 minus the first session (no prior close) minus the four rolls.
+    assert len(family.NO_OPTION_SESSIONS) == 7
+    # The two exclusion sets overlap: 2026-06-19 is both a contract roll and a
+    # session on which SPXW does not trade, so it must be subtracted once, not
+    # twice. Gap eligibility is the 247 tradeable sessions, less the first
+    # (no prior close), less the rolls that are not already excluded.
+    overlapping = set(family.ROLL_BOUNDARY_SESSIONS) & set(family.NO_OPTION_SESSIONS)
+    assert overlapping == {"2026-06-19"}
+    remaining_rolls = len(family.ROLL_BOUNDARY_SESSIONS) - len(overlapping)
     assert (
-        family.M1_ELIGIBLE_SESSIONS - 1 - len(family.ROLL_BOUNDARY_SESSIONS)
+        family.M1_ELIGIBLE_SESSIONS - 1 - remaining_rolls
         == family.GAP_ELIGIBLE_SESSIONS
     )
     for member in family.FAMILY:
-        expected = 254 if member.mechanism == "M1" else 249
+        expected = 247 if member.mechanism == "M1" else 243
         assert member.eligible_sessions == expected
 
 
