@@ -46,6 +46,12 @@ deliberately a minute later than the decision because the ES emission lag is UNC
    2026-08-06**, before any outcome was inspected.
 2. Build the session loader, the per-member replay, and the family economic gate.
 3. Build matched surrogates, the bounded-path shared-term fixture, and the injected-effect fixture.
+   **Matched surrogates done 2026-08-09** ([`surrogate.py`](../../research/direction/surrogate.py)):
+   volume, calendar, gap magnitude and per-bar close-to-close magnitude preserved exactly; only the gap
+   sign and each bar's change sign randomized; the whole path, every feature, selection and target
+   rebuilt by the identical feature code. Verified on the owned corpus — 254 sessions, 97,469 bars, the
+   254/249 eligible index reproduced, gap magnitudes identical and gap signs randomized. The two
+   fixtures remain.
 4. Run the 1,000-campaign known-answer study **without inspecting real-policy economics**: false pass
    ≤ 5.0% with Wilson upper ≤ 7.5%, fixture ≤ 5.0%, injected MDE-size effect recovered ≥ 80%.
 5. Repair the null **at most once** if that gate fails, then refreeze.
