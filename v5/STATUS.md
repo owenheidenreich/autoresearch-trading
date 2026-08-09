@@ -29,6 +29,7 @@ A committed work packet must appear here. No row means no job.
 | 10 | Retire the documentation drawers and enforce it repo-wide | infrastructure | **DONE 08-05 — 75 files preserved** | — | [manifest](../_cleanup_quarantine/2026-08-05b-docs/MANIFEST.md), [`ops/check_project.py`](ops/check_project.py) |
 | 11 | Build the two training preconditions | G3/G4 | **DONE 08-05 — built, not satisfied** | Rung 4 must supply usable latency and freshness receipts | [`research/knobs.py`](research/knobs.py), [arrival finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md) |
 | 12 | Close six control-machinery gaps found by the training-readiness review: gate-pass receipts, computed power bound to the session index, trades→session aggregator, entry-freeze lock, knob-registry expansion, pipeline composition test | G1–G6 controls | **DONE 08-05 — 97 tests green** | — | [`research/gate_receipts.py`](research/gate_receipts.py), [`research/entry_stream.py`](research/entry_stream.py), [`research/validation/session_index.py`](research/validation/session_index.py) |
+| 13 | Register every way training data can differ from what the live system sees | G4/G6/G7 | **BUILT 08-09 — 16 axes, 7 blocking; one owner decision raised** | Owner ruling on `product_session_existence`; the rest settle at their named gates | [`research/divergence.py`](research/divergence.py), [§15](#15-the-trainlive-divergence-register) |
 
 ## 1. What we are building
 
@@ -278,6 +279,13 @@ Not blocking, recorded so it is not rediscovered as new:
 
 ## 13. Track-A capture: 2026-08-06 failure and 08-10 arming
 
+**Why this capture exists, stated wider than before.** It has been described as "get a latency number and
+unblock 43 features." That is true and undersells it. Track-A is the **first systematic measurement of
+how the training data differs from what the live system sees** — latency is simply the axis measured
+first, and the same recording also settles sparse-minute coverage and confirms universe composition. Three
+of the sixteen axes in [§15](#15-the-trainlive-divergence-register) are settled or repaired by this one
+capture. Nothing about the recording changes; only the stated purpose is wider.
+
 The first attended capture banked **no evidence**. Both causes are fixed in the v7 draft; neither was a
 data or capture-code problem.
 
@@ -365,5 +373,53 @@ What it broke, and what was done, all on 2026-08-06:
 
 The lesson worth keeping is the fifth row: an absolute path inside a test's skip condition turns a broken
 environment into a green test run. The failure was invisible until the skip reasons were printed.
+
+## 15. The train/live divergence register
+
+**Every gate tests the model. None systematically tested whether the training data describes the same
+game the live system plays.** G6 comes closest and is still not it: G6 is a *same-input* test — identical
+inputs in, identical decisions out. Every divergence of this class lives upstream of it, in how the inputs
+are built. If historical and live inputs are constructed differently, G6 passes perfectly and the model is
+still learning a game nobody plays.
+
+Two instances were already known — the corpus stores zero arrival lag on all 47,707,186 rows, and the
+emission allowance comes from the wrong feed — but both were found by stumbling into them. "Look harder"
+is not a control, so [`research/divergence.py`](research/divergence.py) makes it one: 16 axes, each with a
+status, its evidence, the gate it binds at, and the exact condition that would settle it. An axis with no
+exit condition is refused at import. `assert_no_unknown_on_path` refuses a fit that depends on an
+unchecked axis, and refuses an axis name nobody declared — because the failure it exists to prevent is a
+divergence nobody wrote down.
+
+| Status | Count | Meaning |
+|---|---:|---|
+| `PROVEN_EQUAL` | 4 | Checked, with evidence |
+| `MEASURED_DIFFERENT` | 5 | Known to differ; **blocks unless it names its repair** |
+| `UNKNOWN` | 7 | Nobody has checked |
+
+Seven axes currently block a fit. That is the honest number, and it is expected to be large on day one.
+
+### What building it immediately found
+
+- **Bar labelling is confirmed and now asserted.** A bar labelled 09:35 covers 09:35:00–09:36:00; all 254
+  owned sessions open with a 09:30 bar. G1 was already correct, but by convention agreement rather than
+  assertion — a flipped convention would shift every feature one minute and still look plausible. The
+  loader now raises instead of assuming.
+- **Nine sessions are short.** Seven close at 13:00 and two at 13:15. G1's horizons exit at 09:50, 10:05
+  and 10:35, all clearing the earliest short close by more than two hours, so the frozen family is
+  unaffected. A longer horizon would need a declared rule first.
+- **Seven of G1's 254 sessions cannot be traded in the product.** ES trades a shortened session on US
+  equity-market holidays when SPXW does not trade at all. Verified against the owned corpus: those seven
+  sessions (2.8% of the M1 index, six of the 249 gap-eligible) have no SPXW option session whatsoever.
+
+### The owner decision this raises
+
+G1 measures ES direction **in order to justify buying SPXW options**. On those seven sessions the option
+does not exist, so any edge measured there cannot be taken in the product. The question is whether the G1
+index should exclude sessions on which the traded instrument does not trade.
+
+No G1 outcome has been inspected, so deciding this now is still a **pre-outcome** narrowing rather than a
+post-hoc one — the same standing that made the 08-06 re-freeze legitimate. It would change the frozen
+family hash a second time. It is the owner's call, not the agent's, and G1's surrogate campaign is not
+blocked while it is pending.
 
 *Update this page when a job or gate changes. Do not create another status, roadmap, or gate file.*

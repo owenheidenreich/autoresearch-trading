@@ -68,6 +68,42 @@ def _minute_labels(index: pd.DatetimeIndex) -> tuple[str, ...]:
     return tuple(index.tz_convert("America/New_York").strftime("%H:%M"))
 
 
+# Regular hours open at 09:30 ET. A start-labelled first bar is therefore
+# 09:30, because it covers [09:30, 09:31). An end-labelled one would be 09:31.
+# Only the FIRST bar tests the convention: the last bar varies with session
+# length, which is a different question tracked as the session_boundaries axis.
+_RTH_FIRST_MINUTE = "09:30"
+_RTH_LAST_MINUTE = "16:00"
+
+
+def _assert_start_labelled(session: str, minutes: Sequence[str]) -> None:
+    """Refuse bars that are not start-labelled on their interval.
+
+    This is load-bearing and was previously only assumed. The frozen clock law
+    reads a bar labelled ``t`` as covering ``[t, t+60s)``, so the 09:30-09:34
+    feature bars are complete at 09:35:00 and entry at the 09:35 close lands a
+    genuine minute after the decision. Under the opposite convention every
+    feature shifts one minute earlier -- and still looks entirely plausible,
+    which is exactly why this raises rather than being checked by eye.
+
+    Verified across all 254 owned sessions on 2026-08-09: every one opens with
+    a 09:30 bar. Recorded as the ``bar_interval_labelling`` axis in
+    :mod:`v5.research.divergence`.
+    """
+
+    regular = [m for m in minutes if _RTH_FIRST_MINUTE <= m <= _RTH_LAST_MINUTE]
+    if not regular:
+        return
+    if regular[0] != _RTH_FIRST_MINUTE:
+        raise LoaderError(
+            f"{session}: first regular-hours bar is {regular[0]}, expected "
+            f"{_RTH_FIRST_MINUTE}. The frozen clock law assumes start-labelled "
+            "intervals; end-labelled bars would shift every G1 feature by one "
+            "minute. See the bar_interval_labelling axis in "
+            "v5/research/divergence.py."
+        )
+
+
 def load_sessions(root: str | Path = family.ES_BARS_ROOT) -> tuple[SessionBars, ...]:
     """Every non-empty owned session, chronologically, with its full path."""
 
@@ -89,11 +125,13 @@ def load_sessions(root: str | Path = family.ES_BARS_ROOT) -> tuple[SessionBars, 
                 f"{session} mixes {len(identifiers)} instrument ids; the frozen "
                 "declaration assumes one contract per session"
             )
+        minutes = _minute_labels(frame.index)
+        _assert_start_labelled(session, minutes)
         sessions.append(
             SessionBars(
                 session=session,
                 instrument_id=int(identifiers[0]),
-                minute_et=_minute_labels(frame.index),
+                minute_et=minutes,
                 open=frame["open"].to_numpy(float),
                 high=frame["high"].to_numpy(float),
                 low=frame["low"].to_numpy(float),
