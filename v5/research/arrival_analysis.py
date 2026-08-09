@@ -21,9 +21,13 @@ Scope rules encoded here rather than remembered:
 - Certification wording is limited to "causal under this fixed guard and the
   observed N-session envelope".  It may not say "worst case": two sessions
   cannot support an extreme-value claim (audit §2.8).
+- The eleven native rows are barred for **two** things — a receipt-latency
+  distribution and a sparse-minute/freshness receipt — so the re-issue requires
+  a signed receipt for each.  Latency describes the rows that arrive; freshness
+  describes the ones that never do.
 - This module deliberately does **not** call ``reservation.assert_development_only``:
   arrival latency and feed parity evaluate no policy, and the signed forward
-  confirmation reservation explicitly permits them on 08-06/08-07.
+  confirmation reservation explicitly permits them on reserved sessions.
 
 Model-free and network-free; it only reads files it is given.
 """
@@ -32,20 +36,38 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 import numpy as np
 
 from v5.research import feature_admission
-from v5.research.training_twin import LatencyReceipt, make_latency_receipt
+from v5.research.training_twin import (
+    FreshnessReceipt,
+    LatencyReceipt,
+    make_freshness_receipt,
+    make_latency_receipt,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CAPTURE_ROOT = (
     REPO_ROOT / "v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
 )
-DECLARATION_PATH = CAPTURE_ROOT / "capture_declaration_v6.json"
+
+# The live declaration, stated once.  It is NOT discovered by scanning for the
+# highest version on disk: a draft or a superseded file would then silently
+# become the evidence law.  It is also named by the capture runners in
+# v4/ops/tracka/, so `test_module_declaration_matches_the_capture_runners` pins
+# the two together.
+#
+# This was `v6` until 2026-08-06.  v6 declared 2026-08-06 and 08-07, both of
+# which are spent and banked nothing, so every window of the live v8 capture
+# would have been classified `is_evidence=False` and `evidence_envelope` would
+# have raised `no_evidence_windows` on the first day real evidence existed.
+DECLARATION_VERSION = "v8"
+DECLARATION_PATH = CAPTURE_ROOT / f"capture_declaration_{DECLARATION_VERSION}.json"
 
 OPRA_CBBO_1M_FAMILY = "DATABENTO_OPRA_CBBO_1M"
 CBBO_1M_CLASS = "CBBOMsg:rtype=193"
@@ -108,6 +130,15 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def canonical_mapping_sha256(payload: Mapping[str, Any]) -> str:
+    """Hash structured evidence independently of JSON whitespace on disk."""
+
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -228,15 +259,47 @@ def analyze_window(
                 )
 
     plan = summary.get("plan", {})
-    coverage_out = {
-        name: {
+    duration_seconds = float(plan.get("duration_seconds", 0.0))
+    expected_minute_ends = duration_seconds / 60.0
+    if expected_minute_ends <= 0.0 or not expected_minute_ends.is_integer():
+        raise ArrivalAnalysisError(
+            f"invalid_declared_minute_duration:{session}/{window}:{duration_seconds}"
+        )
+    symbol_count = int(plan.get("symbol_count", 0))
+    if symbol_count < 1:
+        raise ArrivalAnalysisError(f"invalid_symbol_count:{session}/{window}:{symbol_count}")
+
+    coverage_out: dict[str, dict[str, int]] = {}
+    for name, slot in coverage.items():
+        if name == "CBBOMsg:rtype=192":
+            expected_interval_ends = int(duration_seconds)
+        elif name in {CBBO_1M_CLASS, "OHLCVMsg:rtype=33"}:
+            expected_interval_ends = int(expected_minute_ends)
+        else:
+            raise ArrivalAnalysisError(
+                f"unknown_interval_cadence:{session}/{window}:{name}"
+            )
+        observed = len(slot["instrument_intervals"])
+        expected = symbol_count * expected_interval_ends
+        coverage_out[name] = {
             "instruments": len(slot["instruments"]),
-            "instrument_intervals": len(slot["instrument_intervals"]),
+            "instrument_intervals": observed,
             "interval_ends": len({iv for _, iv in slot["instrument_intervals"]}),
+            "expected_interval_ends": expected_interval_ends,
+            "expected_instrument_intervals": expected,
+            "missing_instrument_intervals": expected - observed,
             "early_rows": int(slot["early_rows"]),
         }
-        for name, slot in coverage.items()
-    }
+    overfull = [
+        name
+        for name, slot in coverage_out.items()
+        if slot["missing_instrument_intervals"] < 0
+    ]
+    if overfull:
+        raise ArrivalAnalysisError(
+            f"coverage_exceeds_declared_minutes:{session}/{window}:"
+            + ",".join(sorted(overfull))
+        )
     evidence_pairs = declared_evidence_windows(declaration)
     return WindowAnalysis(
         session=str(session),
@@ -244,7 +307,7 @@ def analyze_window(
         is_evidence=(str(session), str(window)) in evidence_pairs,
         status=status,
         records_total=total,
-        symbol_count=int(plan.get("symbol_count", 0)),
+        symbol_count=symbol_count,
         lag_ns_by_class=recomputed,
         coverage_by_class=coverage_out,
     )
@@ -328,6 +391,111 @@ def build_cbbo1m_latency_receipt(
     )
 
 
+def evidence_coverage(
+    windows: Iterable[WindowAnalysis], *, record_class: str = CBBO_1M_CLASS
+) -> dict[str, Any]:
+    """Worst observed *completeness* for one record class across evidence windows.
+
+    The envelope law applies to coverage the same way it applies to latency: a
+    guard must survive the sparsest window, not the average one.  So the reported
+    coverage ratio is the **minimum** across evidence windows and ``early_rows``
+    is the total, while instrument and minute counts are summed to describe the
+    whole sample the receipt is signed against.
+    """
+
+    evidence = [w for w in windows if w.is_evidence]
+    if not evidence:
+        raise ArrivalAnalysisError("no_evidence_windows: nothing banked yet")
+    missing = [
+        f"{w.session}/{w.window}"
+        for w in evidence
+        if record_class not in w.coverage_by_class
+    ]
+    if missing:
+        raise ArrivalAnalysisError(
+            f"record_class_absent:{record_class}: " + ",".join(missing)
+        )
+
+    per_window: dict[str, dict[str, Any]] = {}
+    ratios: list[float] = []
+    instruments = interval_ends = expected_ends = observed = expected = early = 0
+    for window in evidence:
+        slot = window.coverage_by_class[record_class]
+        window_expected = int(slot["expected_instrument_intervals"])
+        if window_expected <= 0:
+            raise ArrivalAnalysisError(
+                f"empty_coverage:{window.session}/{window.window}:{record_class}"
+            )
+        ratio = int(slot["instrument_intervals"]) / window_expected
+        ratios.append(ratio)
+        instruments += int(slot["instruments"])
+        interval_ends += int(slot["interval_ends"])
+        expected_ends += int(slot["expected_interval_ends"])
+        observed += int(slot["instrument_intervals"])
+        expected += window_expected
+        early += int(slot["early_rows"])
+        per_window[f"{window.session}/{window.window}"] = {
+            **{k: int(v) for k, v in slot.items()},
+            "coverage_ratio": ratio,
+        }
+
+    sessions = sorted({w.session for w in evidence})
+    return {
+        "record_class": record_class,
+        "sessions": sessions,
+        "session_count": len(sessions),
+        "window_count": len(evidence),
+        "instruments": instruments,
+        "interval_ends": interval_ends,
+        "expected_interval_ends": expected_ends,
+        "instrument_intervals": observed,
+        "expected_instrument_intervals": expected,
+        "missing_instrument_intervals": expected - observed,
+        "early_rows": early,
+        "worst_coverage_ratio": min(ratios),
+        "per_window": per_window,
+    }
+
+
+def build_cbbo1m_freshness_receipt(
+    coverage: Mapping[str, Any],
+    *,
+    measured_on: str,
+    valid_until: str,
+    evidence_path: str,
+) -> FreshnessReceipt:
+    """Sign the OPRA CBBO-1m coverage envelope as a v5 freshness receipt.
+
+    This is the second half of the recorded blocker on the eleven native rows:
+    ``...local receipt-latency distribution|sparse-minute and freshness receipt``.
+    A latency receipt alone answers only the first half.
+    """
+
+    if coverage.get("record_class") != CBBO_1M_CLASS:
+        raise ArrivalAnalysisError(
+            f"coverage_is_not_cbbo1m:{coverage.get('record_class')}"
+        )
+    session_count = int(coverage.get("session_count", 0))
+    if session_count < 1:
+        raise ArrivalAnalysisError("freshness_receipt_needs_at_least_one_session")
+    return make_freshness_receipt(
+        source_family=OPRA_CBBO_1M_FAMILY,
+        record_class=CBBO_1M_CLASS,
+        session_count=session_count,
+        instruments=int(coverage["instruments"]),
+        interval_ends=int(coverage["interval_ends"]),
+        expected_interval_ends=int(coverage["expected_interval_ends"]),
+        instrument_intervals=int(coverage["instrument_intervals"]),
+        expected_instrument_intervals=int(coverage["expected_instrument_intervals"]),
+        worst_window_coverage_ratio=float(coverage["worst_coverage_ratio"]),
+        early_rows=int(coverage["early_rows"]),
+        coverage_sha256=canonical_mapping_sha256(coverage),
+        measured_on=measured_on,
+        valid_until=valid_until,
+        evidence_path=evidence_path,
+    )
+
+
 def certification_wording(session_count: int) -> str:
     return CERTIFICATION_WORDING.format(sessions=int(session_count))
 
@@ -336,12 +504,19 @@ def reissue_ledger(
     *,
     legacy_path: Path = feature_admission.LEGACY_LEDGER_PATH,
     latency_receipt: LatencyReceipt,
+    freshness_receipt: FreshnessReceipt,
     receipt_files: Sequence[Path],
     availability_clock_ms: float,
     valid_until: str,
     issued_on: str,
 ) -> dict[str, Any]:
     """Transform the verified legacy ledger into a v5 ledger with validity.
+
+    Both receipts are required, and that is the point rather than an
+    inconvenience.  The eleven native rows record **two** blockers —
+    ``multi-session local receipt-latency distribution`` *and* ``sparse-minute
+    and freshness receipt`` — so admitting them on a latency receipt alone would
+    clear a two-part requirement with evidence for one part.
 
     Row law, applied mechanically:
 
@@ -359,14 +534,39 @@ def reissue_ledger(
     the full fail-closed verifier on the written bytes.
     """
 
-    if availability_clock_ms < GUARD_FLOOR_MS:
+    expected_guard_ms = guard_clock_ms(latency_receipt.p99_ms)
+    if not math.isclose(
+        float(availability_clock_ms), expected_guard_ms, rel_tol=0.0, abs_tol=1e-12
+    ):
         raise ArrivalAnalysisError(
-            f"availability_clock_below_guard_floor:{availability_clock_ms}"
+            "availability_clock_differs_from_preregistered_law:"
+            f"{availability_clock_ms}!={expected_guard_ms}"
         )
     if latency_receipt.assert_usable(
         source_family=OPRA_CBBO_1M_FAMILY, as_of=issued_on
     ).valid_until != valid_until:
         raise ArrivalAnalysisError("ledger_and_receipt_validity_windows_differ")
+    if freshness_receipt.assert_usable(
+        source_family=OPRA_CBBO_1M_FAMILY, as_of=issued_on
+    ).valid_until != valid_until:
+        raise ArrivalAnalysisError("ledger_and_freshness_validity_windows_differ")
+    if freshness_receipt.session_count != latency_receipt.session_count:
+        raise ArrivalAnalysisError(
+            "receipts_describe_different_samples: latency covers "
+            f"{latency_receipt.session_count} sessions, freshness covers "
+            f"{freshness_receipt.session_count}"
+        )
+    if freshness_receipt.record_class != CBBO_1M_CLASS:
+        raise ArrivalAnalysisError(
+            f"freshness_receipt_is_not_cbbo1m:{freshness_receipt.record_class}"
+        )
+    if (
+        freshness_receipt.measured_on != latency_receipt.measured_on
+        or freshness_receipt.evidence_path != latency_receipt.evidence_path
+    ):
+        raise ArrivalAnalysisError(
+            "receipts_describe_different_samples: dates or evidence paths differ"
+        )
 
     # The receipt compares plain ``YYYY-MM-DD`` strings; the admission verifier
     # requires a timezone-aware instant.  End-of-day UTC makes the two agree
@@ -375,10 +575,22 @@ def reissue_ledger(
 
     legacy = feature_admission.verify_ledger(legacy_path)
     new_receipt_entries = []
+    persisted_latency = False
+    persisted_freshness = False
     for path in receipt_files:
         resolved = Path(path)
         if not resolved.is_file():
             raise ArrivalAnalysisError(f"receipt_file_missing:{resolved}")
+        try:
+            receipt_payload = json.loads(resolved.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ArrivalAnalysisError(f"receipt_file_unreadable:{resolved}") from exc
+        persisted_latency = persisted_latency or (
+            receipt_payload == latency_receipt.to_dict()
+        )
+        persisted_freshness = persisted_freshness or (
+            receipt_payload == freshness_receipt.to_dict()
+        )
         try:
             relative = str(resolved.relative_to(REPO_ROOT))
         except ValueError:
@@ -386,6 +598,10 @@ def reissue_ledger(
         new_receipt_entries.append({"path": relative, "sha256": sha256_file(resolved)})
     if not new_receipt_entries:
         raise ArrivalAnalysisError("reissue_requires_at_least_one_receipt_file")
+    if not (persisted_latency and persisted_freshness):
+        raise ArrivalAnalysisError(
+            "reissue_requires_exact_persisted_latency_and_freshness_receipts"
+        )
 
     rows = [dict(row) for row in legacy["features"]]
 
@@ -447,6 +663,12 @@ def reissue_ledger(
             "multiplier": GUARD_MULTIPLIER,
             "clock_ms": float(availability_clock_ms),
             "latency_receipt_sha256": latency_receipt.receipt_sha256,
+            "freshness_receipt_sha256": freshness_receipt.receipt_sha256,
+            "freshness_coverage_sha256": freshness_receipt.coverage_sha256,
+            "worst_coverage_ratio": freshness_receipt.worst_window_coverage_ratio,
+            "missing_instrument_intervals": (
+                freshness_receipt.missing_instrument_intervals
+            ),
         },
         "features": rows,
     }

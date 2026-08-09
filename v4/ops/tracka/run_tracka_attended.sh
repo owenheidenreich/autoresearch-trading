@@ -134,7 +134,10 @@ print(int(dt.timestamp()))
     while :; do
         remaining=$(( target_epoch - $(date +%s) ))
         [ "$remaining" -le 0 ] && break
-        if pmset -g batt | grep -q "AC Power"; then
+        # Matched in-shell rather than `pmset | grep -q`: under `set -o pipefail`
+        # that pipeline can report failure via SIGPIPE even when grep matches,
+        # which would log a false battery transition. See check_tracka.sh.
+        if [[ "$(pmset -g batt 2>/dev/null)" == *"AC Power"* ]]; then
             if [ "$on_battery" -eq 1 ]; then
                 say "POWER RESTORED -- back on AC."
                 on_battery=0

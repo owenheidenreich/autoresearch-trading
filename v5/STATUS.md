@@ -1,6 +1,6 @@
 # V5 Project Status — the one page
 
-**Last updated: 2026-08-05.** This is the only current-state, job-register, and gate-chain document.
+**Last updated: 2026-08-09.** This is the only current-state, job-register, and gate-chain document.
 If another file disagrees, this page wins and the conflict must be reported.
 
 > **The measurement review returned verdict B on 2026-08-05: only a large edge (~2.2–4.0 net
@@ -19,15 +19,15 @@ A committed work packet must appear here. No row means no job.
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **RUNNING — family FROZEN 08-06 (18 members, hash `f43b92c2…`, reissued from `5ec8b5a4…` for a renamed home directory, one field of 213, no outcome inspected); next is the surrogate campaign** | Loader, gate, surrogates | [`v5/work/g1-direction/`](work/g1-direction/), [`family.py`](research/direction/family.py), [re-freeze](work/g1-direction/REFREEZE_2026_08_06.md) |
-| 4 | Track-A option-feature arrival capture | G3 | **0 banked — 08-06 failed, 08-07 canceled; AUTHORIZED and armed for 08-10/11/12** | The three attended recordings, started on AC power | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md), [§13](#13-track-a-capture-attempt-2026-08-06) |
-| 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — held until Track-A banks; earliest 08-08** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md) | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository) |
+| 4 | Track-A option-feature arrival capture | G3 | **0 banked — runner ARMED and RUNNING since 08-09 08:45 PDT for 08-10/11/12; Phase-2 certification READY** | The six windows to fire; then one local certification command | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [`certify_tracka_arrival.py`](ops/certify_tracka_arrival.py), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
+| 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — a capture is now live, and the manifest forbids moving during one, so this waits until after 08-12** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md); the TCC grant is also UNKNOWN since the rename | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository), [§14](#14-home-directory-rename-2026-08-06) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
 | 6 | Rebuild a confirmation firewall | G8 | **SIGNED 08-05 — every session from 2026-08-06 onward is confirmation-only** | — | [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) |
 | 7 | Programme restart after the 08-04 stop | all | **CLOSED 08-05** | — | [restart record](governance/PROGRAM_RESTART_RECORD_2026_08_05.md) |
 | 8 | Quarantine stale v4 documentation | infrastructure | **DONE 08-05 — 117 files preserved** | — | [manifest](../_cleanup_quarantine/2026-08-05-docs/MANIFEST.md) |
 | 9 | Inventory and promote training-readiness controls | infrastructure | **DONE 08-05** | — | [capability audit](research/findings/V5_WORKFLOW_CAPABILITY_AUDIT_2026_08_05.md) |
 | 10 | Retire the documentation drawers and enforce it repo-wide | infrastructure | **DONE 08-05 — 75 files preserved** | — | [manifest](../_cleanup_quarantine/2026-08-05b-docs/MANIFEST.md), [`ops/check_project.py`](ops/check_project.py) |
-| 11 | Build the two training preconditions | G3/G4 | **DONE 08-05 — built, not satisfied** | Rung 4 must supply a latency receipt | [`research/knobs.py`](research/knobs.py), [arrival finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md) |
+| 11 | Build the two training preconditions | G3/G4 | **DONE 08-05 — built, not satisfied** | Rung 4 must supply usable latency and freshness receipts | [`research/knobs.py`](research/knobs.py), [arrival finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md) |
 | 12 | Close six control-machinery gaps found by the training-readiness review: gate-pass receipts, computed power bound to the session index, trades→session aggregator, entry-freeze lock, knob-registry expansion, pipeline composition test | G1–G6 controls | **DONE 08-05 — 97 tests green** | — | [`research/gate_receipts.py`](research/gate_receipts.py), [`research/entry_stream.py`](research/entry_stream.py), [`research/validation/session_index.py`](research/validation/session_index.py) |
 
 ## 1. What we are building
@@ -48,7 +48,7 @@ authorized frontier. Nothing below rung 2 is authorized today.
 | 1 | **Measurement review** | A verdict on whether 254 sessions can resolve any edge worth trading | precondition to G1 | **DONE 08-05 — verdict B** | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md) |
 | 2 | **ES direction screen** | One raw, no-model replay of the frozen M1/M3 family on owned ES | G1 | **Released by rung 1 under "large edge or stop"** | [`work/g1-direction/`](work/g1-direction/) |
 | 3 | **Option-dollar replay** | One locked 60-minute replay of the G1 policy in SPXW dollars | G2 | An exact 60-minute G1 pass | not yet registered |
-| 4 | **Track-A capture and feature certification** | Multi-session OPRA arrival evidence; a re-derived emission lag; a signed feature ledger | G3 | Fresh owner authorization — vendor contact and unattended jobs are Tier 1 | [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md) |
+| 4 | **Track-A capture and feature certification** | Multi-session OPRA arrival and freshness evidence; a re-derived emission lag; a signed feature ledger | G3 | Fresh owner authorization — vendor contact and unattended jobs are Tier 1 | [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md) |
 | 5 | **Bounded entry search** | A frozen shallow entry ranker, chronological out-of-fold | G4 | A G1 pass **and** separate owner training authorization | not yet registered |
 | 6 | **Exit search on a frozen entry stream** | An exit policy fitted only after entries are locked | G4 | Rung 5 complete and frozen | not yet registered |
 | 7 | **Validation packet** | Authoritative `trades.csv` and manifest, SPX entry/exit chart, equity curve | G5 | Rung 6 complete; the corrected gate in [`validation/replay_gate.py`](research/validation/replay_gate.py) | not yet registered |
@@ -61,7 +61,7 @@ Two preconditions cut across rungs 5–7 and are built but not satisfied:
 
 - **Arrival parity.** The corpus records zero arrival latency on all 47,707,186 rows while live measured
   227 ms at the median. See [the arrival-parity finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md).
-  Rung 4 must supply the missing latency receipt.
+  Rung 4 must supply matching usable latency and sparse-minute/freshness receipts.
 - **Frozen knobs.** [`research/knobs.py`](research/knobs.py) records which constants a search may vary and
   which are frozen. Any search touching a `FROZEN` or `UNCERTIFIED` knob is refused.
 
@@ -179,7 +179,7 @@ The binding details and legitimate reopening conditions are in the
 |---|---|---|
 | G1 Direction | Predict ES direction and clear 0.358 points/trade | **HOLD for measurement review; only a large edge is detectable** |
 | G2 Option wrapper | Replay one locked 60-minute G1 policy in option dollars | Blocked by a 60-minute G1 pass |
-| G3 Feature certification | Prove option features exist live at decision time | Native enforcement exists; evidence branch on hold; only 8/73 scoped features admitted in the legacy ledger |
+| G3 Feature certification | Prove option features exist live at decision time | **8/73 scoped features currently admitted.** Phase-2 is ready to re-issue 51/73 only after v8 evidence banks; no new ledger exists yet |
 | G4 Train | Fit a shallow model on admitted features | Blocked by G1 and separate owner authorization |
 | G5 Validation | Beat comparator with positive confidence, 4/5 folds, and clean controls | Corrected gate rebuilt natively; the defective v4 replay now refuses to run |
 | G6 Runtime parity | Reproduce offline decisions live | Existing tolerance frozen at 1e-12 absolute / 0 relative |
@@ -224,15 +224,22 @@ mistake. No past result changes; no candidate has been run through the new gate.
   2026-08-06** (`launchctl bootout`, plists renamed `*.disabled_20260806_stale_v6_dates`, fully
   recoverable). They were built for the spent v6 dates and fired Wednesday/Thursday/Friday, so 08-12
   would have collided with the attended runner. Track-A capture is attended-only.
-- Track-A capture has **banked no evidence yet**. The v6 dates 08-06/08-07 are spent: 08-06 failed both
-  windows and 08-07 was canceled by the owner. Replacement sessions **2026-08-10, 08-11 and 08-12** are
-  sealed in `capture_declaration_v8.json` and the runners are wired to it. The owner signed four sessions
-  on 2026-08-06 (`authorization_v2.json`, declaration v7); v8 narrows that to three by owner instruction
-  the same day, decided **before any of those sessions was observed**, so nothing was dropped after seeing
-  an outcome. Narrowing needs no new signature; widening would. `authorization_v2.json` is deliberately
-  left unedited as the record of what was signed. See [§13](#13-track-a-capture-attempt-2026-08-06).
+- Track-A capture has **banked no evidence yet, and the runner is now armed and running.** It was started
+  on owner authorization at **2026-08-09 08:45 PDT** on AC power, holds a verified `PreventSystemSleep`
+  assertion, and is waiting to fire all six windows across **2026-08-10, 08-11 and 08-12**. The v6 dates
+  08-06/08-07 are spent: 08-06 failed both windows and 08-07 was canceled by the owner. The replacement
+  sessions are sealed in `capture_declaration_v8.json`, and analysis and all four runners are now pinned
+  to that one file by test. The owner signed four sessions on 2026-08-06 (`authorization_v2.json`,
+  declaration v7); v8 narrows that to three by owner instruction the same day, decided **before any of
+  those sessions was observed**, so nothing was dropped after seeing an outcome. Narrowing needs no new
+  signature; widening would. `authorization_v2.json` is deliberately left unedited as the record of what
+  was signed. See [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming).
   2026-08-05 remains excluded: its open window was lost to the permission defect and its midday window is
   an infrastructure test, not evidence.
+- **Nothing automated arms this capture.** The runner is hand-started and monitors are advisory only. Any
+  scheduled reminder that lives inside a desktop application depends on that application still running and
+  is not an OS-level guarantee; it reports, it does not start. Treat "armed" as true only when
+  `./v4/ops/tracka/check_tracka.sh` prints `RUNNER ALIVE` together with `SLEEP held off`.
 - **A forward confirmation reservation is in force, signed 2026-08-05.** Every ES and SPXW session
   from **2026-08-06 onward is confirmation-only**: no research analysis, screen, model, chart, or
   summary may compute strategy economics on those sessions until a pre-registered protocol opens the
@@ -269,7 +276,7 @@ Not blocking, recorded so it is not rediscovered as new:
 - The git object store holds 455 loose object filenames ending in `" 2"`. All referenced objects are
   present and none is missing, so this is disk clutter rather than corruption.
 
-## 13. Track-A capture attempt, 2026-08-06
+## 13. Track-A capture: 2026-08-06 failure and 08-10 arming
 
 The first attended capture banked **no evidence**. Both causes are fixed in the v7 draft; neither was a
 data or capture-code problem.
@@ -301,6 +308,42 @@ Three sessions cannot support a population worst-case claim: the max of `n` days
 current evidence the practical difference is likely nil: the guard is `L = max(10,000 ms, 4 × worst p99)`,
 and the measured CBBO-1m p99 of 527.622 ms on 08-05 leaves the 10-second floor binding unless a session's
 p99 exceeds 2,500 ms.
+
+**Phase-2 is ready as of 2026-08-08, but has issued nothing while the bank is empty.** The analysis and
+capture runners are pinned by test to the same v8 declaration. A single local, model-free command now
+recomputes every banked declared window, refuses partial or non-reproducing windows, signs separate latency
+and sparse-minute/freshness receipts, applies the fixed guard above, and re-issues the ledger without
+overwriting the legacy file:
+
+```text
+./.venv/bin/python -m v5.ops.certify_tracka_arrival --measured-on YYYY-MM-DD
+```
+
+The receipt expiry is pre-registered at **2026-11-10** and is not a command-line choice. Output goes to a
+new `phase2_issuance_YYYY-MM-DD/` directory under the Track-A audit tree. The command adapts to the actual
+number `N` of sessions represented by whatever windows bank: only `N=0` is fatal, and it prints
+`1 − 0.95^N` and `1 − 0.99^N` alongside the required observed-`N` wording. Until a dated issuance exists,
+G3 remains 8/73; the expected mechanical result after usable CBBO-1m evidence is 51/73 scoped features
+(51/83 total), leaving 32 barred.
+
+### The monitor was lying about the one thing that killed 08-06
+
+Found and fixed 2026-08-09, while arming. `check_tracka.sh` reported
+`*** no PreventSystemSleep assertion held ***` while `caffeinate` was demonstrably holding that exact
+assertion — a **false negative on the precise failure that lost the 08-06 session.**
+
+The cause is `pmset -g assertions | grep -q "..."` under `set -o pipefail`. `grep -q` exits at its first
+match, `pmset` is then killed writing to a closed pipe (SIGPIPE, status 141), and `pipefail` promotes 141
+to the pipeline's status, so a *successful* match reads as failure. Measured on 2026-08-09: **20 failures
+in 20 runs.**
+
+The same idiom guarded three other checks, including the battery **refusal** in `start_tracka.sh` — which
+could have refused a valid start on AC power. Those survived only by luck: `pmset -g batt` output is small
+enough that it finishes writing before `grep` exits, measured 0 failures in 200 runs. All four now read
+`pmset` into a variable and match in-shell, so no pipeline exists to fail.
+
+The lesson generalises past this script: **a safety check that fails open is worse than no check**, and a
+monitor that cries wolf trains its reader to ignore the one alarm that matters.
 
 ## 14. Home-directory rename, 2026-08-06
 

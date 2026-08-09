@@ -153,17 +153,32 @@ The status page is the authority on what is authorized; this finding does not ch
 rows above is a status-page edit, and it should be made before the 08-06 window so the register matches
 what will actually happen.
 
+> **Resolved 2026-08-09.** All three rows were reconciled in `STATUS.md`. Job 4 now records the armed
+> runner and the v8 dates; §10 records that the two background agents are dead (exit 78) and that the
+> Track-A launchd jobs were unloaded. The 08-06 window itself failed and banked nothing — see
+> [STATUS §13](../../STATUS.md#13-track-a-capture-2026-08-06-failure-and-08-10-arming).
+
 ## 7. How to check the state yourself
 
-```bash
-cd /Users/gduby/Documents/autoresearch-trading
+> **Updated 2026-08-09.** The commands below originally named `/Users/gduby/...` and
+> `capture_declaration_v6.json`. Neither resolves now: the home directory was renamed on 08-06, and v6's
+> sessions (08-06/08-07) are spent and superseded by **v8** (08-10/11/12). The findings above are left as
+> the record of what was measured on 08-05; only these instructions are corrected, because a runbook that
+> cannot run is worth nothing. Paths are relative to the repository root.
 
+```bash
 # Which sessions are certified evidence, and which recordings exist
-python3 -c "import json;print(json.load(open('v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v6.json'))['capture_window']['sessions'])"
+./.venv/bin/python -c "import json;print(json.load(open('v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json'))['capture_window']['sessions'])"
 ls -d v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/2026-08-*/*/
 
+# Is the capture armed, on AC, and holding the no-sleep assertion?
+./v4/ops/tracka/check_tracka.sh
+
 # Verify a recording is complete rather than merely present
-PYTHONPATH=. python v4/ops/tracka/verify_tracka_window.py --session 2026-08-05 --window midday
+PYTHONPATH=. ./.venv/bin/python v4/ops/tracka/verify_tracka_window.py --session 2026-08-05 --window midday
+
+# Rehearse the Phase-2 certification without issuing anything
+./.venv/bin/python -m v5.ops.certify_tracka_arrival --dry-run-window 2026-08-05/midday
 ```
 
 Read-only on owned local data. No model was fitted, no recording started, no vendor or broker contacted.

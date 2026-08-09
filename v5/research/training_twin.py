@@ -27,6 +27,7 @@ DEFAULT_MAX_ENTRY_QUOTE_AGE_NS = 2 * SECOND_NS
 CLOCK_SCHEMA_VERSION = "v5.training-twin-clock.v1"
 PARITY_SCHEMA_VERSION = "v5.training-live-parity-receipt.v1"
 LATENCY_SCHEMA_VERSION = "v5.source-latency-receipt.v1"
+FRESHNESS_SCHEMA_VERSION = "v5.source-freshness-receipt.v1"
 REVIEWED_ANTECEDENT = {
     "path": "v4/research/autoresearch_v2/live_opra_training_twin.py",
     "sha256": "30322c68019b29a90b3e056da86fa7db2b42f496e1f30b5751351f5321e78755",
@@ -624,6 +625,157 @@ def make_latency_receipt(
         "evidence_path": evidence_path,
     }
     return LatencyReceipt(
+        **unsigned, receipt_sha256=hashlib.sha256(_canonical_json(unsigned)).hexdigest()
+    )
+
+
+@dataclass(frozen=True)
+class FreshnessReceipt:
+    """A signed, dated measurement of how *complete* one source stream is.
+
+    A latency receipt answers "how late is a row that arrives".  It says nothing
+    about the rows that never arrive.  An option chain is sparse: an illiquid
+    strike may quote in one minute and not the next, so a feature computed as
+    though every instrument reports every minute would assume coverage the live
+    feed does not deliver.
+
+    ``instrument_intervals`` is the number of (instrument, interval-end) pairs
+    actually observed. ``expected_instrument_intervals`` is the sum of the dense
+    maximum in each capture window (declared universe size times declared minute
+    count); it must not be reconstructed by multiplying totals across windows.
+    The gap is the measured missing-minute count. ``early_rows`` counts rows
+    whose local receipt preceded the interval they describe — these are excluded
+    from the latency statistic rather than averaged into it, so they are recorded
+    here instead of vanishing.
+    """
+
+    schema_version: str
+    source_family: str
+    record_class: str
+    session_count: int
+    instruments: int
+    interval_ends: int
+    expected_interval_ends: int
+    instrument_intervals: int
+    expected_instrument_intervals: int
+    missing_instrument_intervals: int
+    coverage_ratio: float
+    worst_window_coverage_ratio: float
+    early_rows: int
+    coverage_sha256: str
+    measured_on: str
+    valid_until: str
+    evidence_path: str
+    receipt_sha256: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def unsigned(self) -> dict[str, Any]:
+        payload = self.to_dict()
+        payload.pop("receipt_sha256")
+        return payload
+
+    def assert_usable(self, *, source_family: str, as_of: str) -> "FreshnessReceipt":
+        """Refuse a receipt that does not describe this stream on this date."""
+
+        if self.schema_version != FRESHNESS_SCHEMA_VERSION:
+            raise TrainingTwinError(
+                f"unknown freshness receipt schema: {self.schema_version}"
+            )
+        if _hash_payload(self.to_dict()) != self.receipt_sha256:
+            raise TrainingTwinError(
+                "freshness receipt self-hash mismatch; the bytes were edited"
+            )
+        if self.source_family != source_family:
+            raise TrainingTwinError(
+                f"freshness receipt covers {self.source_family}, not {source_family}; "
+                "coverage measured on one feed does not describe another"
+            )
+        if self.session_count < 1:
+            raise TrainingTwinError("freshness receipt records no sessions")
+        if (
+            self.instruments < 1
+            or self.interval_ends < 1
+            or self.expected_interval_ends < 1
+        ):
+            raise TrainingTwinError("freshness receipt observed no instruments or minutes")
+        if self.instrument_intervals > self.expected_instrument_intervals:
+            raise TrainingTwinError(
+                "freshness receipt claims more observations than the declared maximum"
+            )
+        if self.missing_instrument_intervals != (
+            self.expected_instrument_intervals - self.instrument_intervals
+        ):
+            raise TrainingTwinError("freshness receipt missing-minute arithmetic differs")
+        expected_ratio = self.instrument_intervals / self.expected_instrument_intervals
+        if not math.isclose(self.coverage_ratio, expected_ratio, rel_tol=0.0, abs_tol=1e-15):
+            raise TrainingTwinError("freshness receipt coverage ratio differs")
+        if not 0.0 <= self.worst_window_coverage_ratio <= self.coverage_ratio <= 1.0:
+            raise TrainingTwinError("freshness receipt coverage ratios are invalid")
+        if re.fullmatch(r"[0-9a-f]{64}", self.coverage_sha256) is None:
+            raise TrainingTwinError("freshness receipt coverage hash is invalid")
+        if as_of > self.valid_until:
+            raise TrainingTwinError(
+                f"freshness receipt expired on {self.valid_until}; re-measure before fitting"
+            )
+        return self
+
+
+def make_freshness_receipt(
+    *,
+    source_family: str,
+    record_class: str,
+    session_count: int,
+    instruments: int,
+    interval_ends: int,
+    expected_interval_ends: int,
+    instrument_intervals: int,
+    expected_instrument_intervals: int,
+    worst_window_coverage_ratio: float,
+    early_rows: int,
+    coverage_sha256: str,
+    measured_on: str,
+    valid_until: str,
+    evidence_path: str,
+) -> FreshnessReceipt:
+    """Build a content-addressed freshness receipt from observed coverage."""
+
+    expected = int(expected_instrument_intervals)
+    observed = int(instrument_intervals)
+    if expected <= 0:
+        raise TrainingTwinError("freshness receipt needs at least one instrument-minute")
+    if observed < 0 or observed > expected:
+        raise TrainingTwinError(
+            "observed instrument-intervals exceed the declared maximum; "
+            "the coverage counts do not describe the declared windows"
+        )
+    coverage_ratio = float(observed / expected)
+    worst_ratio = float(worst_window_coverage_ratio)
+    if not 0.0 <= worst_ratio <= coverage_ratio <= 1.0:
+        raise TrainingTwinError("freshness receipt coverage ratios are invalid")
+    if re.fullmatch(r"[0-9a-f]{64}", coverage_sha256) is None:
+        raise TrainingTwinError("freshness receipt coverage hash is invalid")
+    unsigned = {
+        "schema_version": FRESHNESS_SCHEMA_VERSION,
+        "source_family": source_family,
+        "record_class": record_class,
+        "session_count": int(session_count),
+        "instruments": int(instruments),
+        "interval_ends": int(interval_ends),
+        "expected_interval_ends": int(expected_interval_ends),
+        "instrument_intervals": observed,
+        "expected_instrument_intervals": expected,
+        "missing_instrument_intervals": expected - observed,
+        "coverage_ratio": coverage_ratio,
+        "worst_window_coverage_ratio": worst_ratio,
+        "early_rows": int(early_rows),
+        "coverage_sha256": coverage_sha256,
+        "measured_on": measured_on,
+        "valid_until": valid_until,
+        "evidence_path": evidence_path,
+    }
+    return FreshnessReceipt(
         **unsigned, receipt_sha256=hashlib.sha256(_canonical_json(unsigned)).hexdigest()
     )
 

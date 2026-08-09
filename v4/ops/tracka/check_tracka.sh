@@ -34,14 +34,25 @@ fi
 echo
 
 # --- 2. power -----------------------------------------------------------------
-if pmset -g batt | grep -q "AC Power"; then
+# Read pmset into a variable and match in the shell rather than piping into
+# `grep -q`. Under `set -o pipefail` that pipeline reports FAILURE even when
+# grep matches: grep -q exits at the first hit, pmset dies with SIGPIPE (141),
+# and pipefail promotes 141 to the pipeline status. With the long `assertions`
+# output that was deterministic -- measured 20 failures in 20 runs on
+# 2026-08-09 -- so this check reported "no assertion held" while caffeinate was
+# demonstrably holding PreventSystemSleep. The battery checks used the same
+# idiom and happened to survive (0 in 200) only because their output is small
+# enough that pmset finishes writing before grep exits.
+BATT="$(pmset -g batt 2>/dev/null)"
+ASSERTIONS="$(pmset -g assertions 2>/dev/null)"
+if [[ "$BATT" == *"AC Power"* ]]; then
     echo "POWER     AC - good"
 else
     echo "POWER     *** ON BATTERY *** caffeinate -s is void; the Mac will sleep"
     echo "          through its window. Plug it in now."
 fi
-pmset -g batt | tail -1 | sed 's/^/          /'
-if pmset -g assertions 2>/dev/null | grep -q "PreventSystemSleep.*1"; then
+echo "$BATT" | tail -1 | sed 's/^/          /'
+if [[ "$ASSERTIONS" =~ 'PreventSystemSleep[[:space:]]+1' ]]; then
     echo "SLEEP     held off (PreventSystemSleep active)"
 else
     echo "SLEEP     *** no PreventSystemSleep assertion held ***"

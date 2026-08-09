@@ -46,7 +46,11 @@ fi
 # battery, and the whole session was lost: caffeinate -s is valid ONLY on AC
 # power, so on battery the no-sleep assertion is silently void and the machine
 # sleeps straight through the bell.
-if ! pmset -g batt | grep -q "AC Power"; then
+# Matched in-shell, not through `pmset | grep -q`: under `set -o pipefail` that
+# pipeline can report failure via SIGPIPE even when grep matches, which here
+# would REFUSE a valid start on AC power. See check_tracka.sh for the measured
+# case.
+if [[ "$(pmset -g batt 2>/dev/null)" != *"AC Power"* ]]; then
     say "REFUSED: this Mac is on battery power."
     say "caffeinate -s is void on battery, so the no-sleep hold would silently"
     say "fail and the capture would sleep through its window -- this is exactly"
