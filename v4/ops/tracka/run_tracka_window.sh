@@ -21,13 +21,16 @@ set -euo pipefail
 REPO="${0:A:h:h:h:h}"
 WINDOW="${1:?usage: run_tracka_window.sh <open|midday>}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-# v8 declares 2026-08-10, 08-11 and 08-12 -- v7's four sessions narrowed to
+# v9 declares 2026-08-10, 08-11 and 08-12 -- v7's four sessions narrowed to
 # three by owner instruction 2026-08-06, before any of those sessions was
 # observed. v7 replaced v6 after 08-06 banked nothing and 08-07 was canceled.
+# v9 replaced v8 on 2026-08-10 to record the repaired capture implementation
+# after a shutdown race voided that day's midday window; the capture_window
+# block is byte-identical to v8, so nothing about the declared scope moved.
 # 08-05 remains absent: its open window was lost to the launchd TCC permission
 # refusal (the eviction diagnosis was retracted; see the handoff) and its midday
 # window was an infrastructure verification run, not evidence.
-DECL="$ROOT/capture_declaration_v8.json"
+DECL="$ROOT/capture_declaration_v9.json"
 APPROVAL="$ROOT/authorization_v2.json"
 SESSION="$(date +%Y-%m-%d)"
 LOGDIR="$ROOT/run_logs"

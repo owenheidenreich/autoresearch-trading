@@ -222,9 +222,23 @@ def main() -> int:
     local_receipt_path = args.output_dir / "local_receipts.jsonl"
     local_receipt_handle = local_receipt_path.open("x", encoding="utf-8", buffering=1 << 20)
     local_receipt_rows = 0
+    # `block_for_close(timeout=...)` returns when the declared duration ends, but
+    # the client's delivery thread is still running. On 2026-08-10 midday a record
+    # arrived after the receipt file had been closed, raising
+    # `ValueError: write to closed file`, which the error callback recorded as a
+    # failure_reason and which voided an otherwise complete 180-second window.
+    #
+    # Records that arrive after the declared duration are outside the window by
+    # definition and were never evidence, so they are counted and dropped rather
+    # than written. This changes nothing that is measured inside the window.
+    window_closed = False
+    late_records_after_window = 0
 
     def on_record(record: Any) -> None:
-        nonlocal local_receipt_rows
+        nonlocal local_receipt_rows, late_records_after_window
+        if window_closed:
+            late_records_after_window += 1
+            return
         local_ns = time.time_ns()
         rtype = getattr(record, "rtype", None)
         rtype_value = int(rtype) if rtype is not None else None
@@ -274,6 +288,7 @@ def main() -> int:
 
     capture_started_ns = time.time_ns()
     capture_exception: str | None = None
+    client = None  # so the finally block cannot raise NameError on a failed connect
     try:
         client = db.Live(
             key=key,
@@ -295,6 +310,15 @@ def main() -> int:
     except Exception as exc:  # preserve a signed failure receipt for tier/network errors
         capture_exception = f"{type(exc).__name__}:{exc}"
     finally:
+        # Order matters. Close the window to callbacks first, then stop the
+        # client, and only then close the file. Reversing any of these reopens
+        # the race that voided 2026-08-10 midday.
+        window_closed = True
+        if client is not None:
+            try:
+                client.stop()
+            except Exception as exc:  # a failed stop must not mask the capture
+                callback_errors.append(f"stop:{type(exc).__name__}:{exc}")
         local_receipt_handle.flush()
         os.fsync(local_receipt_handle.fileno())
         local_receipt_handle.close()
@@ -315,6 +339,7 @@ def main() -> int:
             "elapsed_seconds": (capture_finished_ns - capture_started_ns) / 1e9,
             "failure_reasons": failure_reasons,
             "records_total": int(sum(counts.values())),
+            "late_records_after_window": int(late_records_after_window),
             "record_counts_by_class": dict(sorted(counts.items())),
             "partial_raw_dbn": (
                 {
@@ -360,6 +385,7 @@ def main() -> int:
         "elapsed_seconds": (capture_finished_ns - capture_started_ns) / 1e9,
         "record_counts_by_class": {name: counts[name] for name in classes},
         "records_total": int(sum(counts.values())),
+        "late_records_after_window": int(late_records_after_window),
         "first_local_receipt_unix_ns_by_class": {
             name: first_local_ns[name] for name in classes
         },

@@ -87,7 +87,7 @@ for p in \
     "$REPO/v4/checks" \
     "$REPO/v4/research" \
     "$REPO/v4/.env" \
-    "$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json" \
+    "$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v9.json" \
     "$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/authorization.json"
 do
     materialize "$p" || echo "WARN: could not materialize $p"

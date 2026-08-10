@@ -586,7 +586,9 @@ def _sealed_declaration_matrix(
 def test_phase2_driver_runs_end_to_end_and_writes_a_new_dated_tree(
     tmp_path, capsys
 ) -> None:
-    session, window = "2026-08-10", "midday"
+    # Must be an open window: a quiet-window-only envelope is refused by the
+    # declaration's envelope_law.
+    session, window = "2026-08-10", "open"
     _write_window(
         tmp_path,
         session,
@@ -737,3 +739,67 @@ def test_phase2_driver_rehearses_real_infrastructure_without_issuing(capsys) -> 
     output = capsys.readouterr().out
     assert "evidence=False" in output
     assert "no receipt or ledger was issued" in output
+
+
+def test_a_failed_window_is_excluded_not_fatal(tmp_path, capsys) -> None:
+    """One dead window must not permanently poison every good one.
+
+    2026-08-10 midday failed on a shutdown race and can never be re-run. An
+    abort here would have blocked certification forever.
+    """
+
+    sessions, windows = ["2026-08-10", "2026-08-11"], ["open", "midday"]
+    for session in sessions:
+        for window in windows:
+            _write_window(
+                tmp_path, session, window,
+                lags_ns=[100_000_000, 200_000_000, 400_000_000],
+                duration_seconds=300.0 if window == "open" else 180.0,
+            )
+    # Break one window the way the real one broke.
+    broken = tmp_path / "2026-08-10/midday/market/capture_summary.json"
+    payload = json.loads(broken.read_text())
+    payload["status"] = "FAILED_LIVE_CAPTURE_RECORDED_NO_ORDER"
+    payload["failure_reasons"] = ["ValueError:write to closed file"]
+    broken.write_text(json.dumps(payload))
+
+    declaration = _sealed_declaration_matrix(
+        tmp_path / "capture_declaration_v9.json", sessions=sessions, windows=windows
+    )
+    out_dir = tmp_path / "phase2_issuance_2026-08-11"
+    assert driver.main([
+        "--capture-root", str(tmp_path), "--declaration", str(declaration),
+        "--measured-on", "2026-08-11", "--out-dir", str(out_dir),
+    ]) == 0, capsys.readouterr()
+
+    summary = json.loads((out_dir / "issuance_summary.json").read_text())
+    assert summary["window_count"] == 3
+    assert [e["window"] for e in summary["excluded_windows"]] == ["2026-08-10/midday"]
+    assert "FAILED_LIVE_CAPTURE" in summary["excluded_windows"][0]["reason"]
+
+
+def test_a_midday_only_envelope_is_refused(tmp_path, capsys) -> None:
+    """The declaration's envelope_law: a quiet window is a floor, not the p99."""
+
+    sessions, windows = ["2026-08-10", "2026-08-11"], ["open", "midday"]
+    for session in sessions:
+        for window in windows:
+            _write_window(
+                tmp_path, session, window,
+                lags_ns=[100_000_000, 200_000_000, 400_000_000],
+                duration_seconds=300.0 if window == "open" else 180.0,
+            )
+    for session in sessions:  # break every open, leaving only quiet windows
+        path = tmp_path / session / "open/market/capture_summary.json"
+        payload = json.loads(path.read_text())
+        payload["status"] = "FAILED_LIVE_CAPTURE_RECORDED_NO_ORDER"
+        path.write_text(json.dumps(payload))
+
+    declaration = _sealed_declaration_matrix(
+        tmp_path / "capture_declaration_v9.json", sessions=sessions, windows=windows
+    )
+    assert driver.main([
+        "--capture-root", str(tmp_path), "--declaration", str(declaration),
+        "--measured-on", "2026-08-11", "--out-dir", str(tmp_path / "out"),
+    ]) != 0
+    assert "no_open_window_survived" in capsys.readouterr().err

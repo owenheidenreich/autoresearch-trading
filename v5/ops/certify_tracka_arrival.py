@@ -212,7 +212,7 @@ def _derive_certification(
     *,
     capture_root: Path,
     declaration: Mapping[str, Any],
-) -> tuple[list[aa.WindowAnalysis], dict[str, Any], dict[str, Any], float]:
+) -> tuple[list[aa.WindowAnalysis], dict[str, Any], dict[str, Any], float, list[dict[str, str]]]:
     banked, absent = _banked_declared_windows(capture_root, declaration)
     declared = aa.declared_evidence_windows(declaration)
     print(
@@ -226,6 +226,7 @@ def _derive_certification(
         raise Phase2DriverError("nothing_banked_yet:no_evidence_to_certify")
 
     windows: list[aa.WindowAnalysis] = []
+    excluded: list[dict[str, str]] = []
     for session, window in banked:
         try:
             analysis = aa.analyze_window(
@@ -235,14 +236,43 @@ def _derive_certification(
                 declaration=declaration,
             )
         except aa.ArrivalAnalysisError as exc:
-            raise Phase2DriverError(
-                f"declared_window_failed:{session}/{window}:{exc}"
-            ) from exc
+            # A window that failed to capture is excluded, not fatal. Aborting
+            # the whole certification would let one dead window permanently
+            # poison every good one -- 2026-08-10 midday failed on a shutdown
+            # race and can never be re-run, so an abort here would block
+            # certification forever.
+            #
+            # This is not cherry-picking: a failed window has no usable outcome
+            # to select on, its exclusion is forced rather than chosen, and it
+            # is recorded by name and reason in the issuance summary.
+            excluded.append({"window": f"{session}/{window}", "reason": str(exc)})
+            continue
         if not analysis.is_evidence:
-            raise Phase2DriverError(
-                f"declared_window_classified_non_evidence:{session}/{window}"
+            excluded.append(
+                {
+                    "window": f"{session}/{window}",
+                    "reason": "classified_non_evidence_by_the_declaration",
+                }
             )
+            continue
         windows.append(analysis)
+
+    if excluded:
+        print("excluded      " + ", ".join(e["window"] for e in excluded))
+        for entry in excluded:
+            print(f"              {entry['window']}: {entry['reason']}")
+    if not windows:
+        raise Phase2DriverError("no_healthy_evidence_windows:nothing_to_certify")
+    # The declaration's envelope_law is explicit that a quiet-window-only
+    # measurement is a floor rather than the operating p99 and may not back an
+    # admitted row. Losing middays leaves a conservative envelope; losing every
+    # open leaves an unusable one.
+    if not any(w.window == "open" for w in windows):
+        raise Phase2DriverError(
+            "no_open_window_survived:a quiet-window-only envelope is a floor, "
+            "not the operating p99, and may not back an admitted feature "
+            "(declaration envelope_law)"
+        )
         print(
             f"  {session} {window:7s} rows={analysis.records_total:>7d} "
             f"symbols={analysis.symbol_count:>4d} evidence={analysis.is_evidence}"
@@ -275,7 +305,7 @@ def _derive_certification(
     )
     print(f"wording       {aa.certification_wording(n)}")
     print(f"valid until   {VALID_UNTIL} (pre-registered 2026-08-06)")
-    return windows, envelope, coverage, guard_ms
+    return windows, envelope, coverage, guard_ms, excluded
 
 
 def _build_ledger(
@@ -366,7 +396,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 declaration=declaration,
             )
 
-        windows, envelope, coverage, guard_ms = _derive_certification(
+        windows, envelope, coverage, guard_ms, excluded = _derive_certification(
             capture_root=args.capture_root,
             declaration=declaration,
         )
@@ -465,6 +495,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "record_class": aa.CBBO_1M_CLASS,
             "session_count": envelope["session_count"],
             "window_count": envelope["window_count"],
+            # Named and reasoned, so an excluded window can never be quietly
+            # dropped from the record of what this certification rests on.
+            "excluded_windows": excluded,
             # The sentence that bounds the claim. It is already inside the
             # re-issued ledger, but the summary is what a reader opens first,
             # and a limitation only a second file records is a limitation that

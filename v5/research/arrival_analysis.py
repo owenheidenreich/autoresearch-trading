@@ -63,10 +63,15 @@ CAPTURE_ROOT = (
 # the two together.
 #
 # This was `v6` until 2026-08-06.  v6 declared 2026-08-06 and 08-07, both of
-# which are spent and banked nothing, so every window of the live v8 capture
-# would have been classified `is_evidence=False` and `evidence_envelope` would
-# have raised `no_evidence_windows` on the first day real evidence existed.
-DECLARATION_VERSION = "v8"
+# which are spent and banked nothing, so every window of the live capture would
+# have been classified `is_evidence=False` and `evidence_envelope` would have
+# raised `no_evidence_windows` on the first day real evidence existed.
+#
+# v8 -> v9 on 2026-08-10 repairs the recorded capture implementation after a
+# shutdown race voided the 08-10 midday window.  The `capture_window` block is
+# byte-identical across the two, so the declared sessions, windows, durations
+# and selection laws are unchanged and no new signature was required.
+DECLARATION_VERSION = "v9"
 DECLARATION_PATH = CAPTURE_ROOT / f"capture_declaration_{DECLARATION_VERSION}.json"
 
 OPRA_CBBO_1M_FAMILY = "DATABENTO_OPRA_CBBO_1M"

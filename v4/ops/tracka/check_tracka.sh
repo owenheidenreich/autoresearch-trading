@@ -15,7 +15,7 @@ set -uo pipefail
 # Derived from this script's own location -- it lives at REPO/v4/ops/tracka/.
 REPO="${0:A:h:h:h:h}"
 ROOT="$REPO/v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04"
-DECL="$ROOT/capture_declaration_v8.json"
+DECL="$ROOT/capture_declaration_v9.json"
 PY="$REPO/.venv/bin/python"
 
 echo "=== Track A status @ $(date '+%Y-%m-%d %H:%M:%S %Z') ==="

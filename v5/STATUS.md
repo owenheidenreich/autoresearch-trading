@@ -24,7 +24,7 @@ A committed work packet must appear here. No row means no job.
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **CLOSED 08-09 — `UNDERPOWERED`. The known-answer campaign passed both nulls and failed recovery; the gate needs 8-16 net points/session (22-88x the cost bar). Real economics were never computed.** | — | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md), [`v5/work/g1-direction/`](work/g1-direction/), [ledger row](research/history/DO_NOT_RETEST.md) |
-| 4 | Track-A option-feature arrival capture | G3 | **1 of 6 windows banked — 2026-08-10 open verified 08-10: 97,636 rows, 562 symbols, CBBO-1m p99 815.391 ms. Certification rehearsed end to end on it; deliberately NOT issued until the capture completes** | The remaining five windows, then one local certification command | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [`certify_tracka_arrival.py`](ops/certify_tracka_arrival.py), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
+| 4 | Track-A option-feature arrival capture | G3 | **1 of 6 usable — 08-10 open banked and verified; 08-10 midday VOID on a capture defect, now repaired as declaration v9; re-armed for 08-11/08-12** | Four remaining windows, then one local certification command | [declaration v9](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v9.json), [`certify_tracka_arrival.py`](ops/certify_tracka_arrival.py), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
 | 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — a capture is now live, and the manifest forbids moving during one, so this waits until after 08-12** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md); the TCC grant is also UNKNOWN since the rename | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository), [§14](#14-home-directory-rename-2026-08-06) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
 | 6 | Rebuild a confirmation firewall | G8 | **SIGNED 08-05 — every session from 2026-08-06 onward is confirmation-only** | — | [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) |
@@ -398,6 +398,38 @@ closed on at least one of the three days.
 and `POWER RESTORED` at 20:17 — seven and a half hours on battery, which is the exact condition that
 destroyed the 08-06 session. It survived only because power returned about ten hours before the window
 fired. The transition guard worked and timestamped both events.
+
+### The 08-10 midday window was lost to a shutdown race, now repaired
+
+The capture ran its full declared 180.5 seconds, collected 40,708 rows with every hard stop clean, and
+was still **voided** — correctly. `block_for_close(timeout=...)` returns when the declared duration ends,
+but the vendor client's delivery thread is still running, so a record arriving after the receipt file had
+been closed raised `ValueError: write to closed file`. The error callback recorded that as a failure
+reason and the whole window became `FAILED_LIVE_CAPTURE_RECORDED_NO_ORDER`.
+
+**The 08-10 open window survived this by luck, not by design.** On the one-second stream at roughly 178
+records per second, any gap wider than about 6 ms between closing the file and the thread stopping catches
+a record. Open overran its duration by 0.377 s, midday by 0.521 s.
+
+The repair closes the window to callbacks, stops the client, and only then closes the file; records
+arriving afterwards are counted in `late_records_after_window` rather than written. It is
+**measurement-neutral** — those records fall outside the declared duration and were never evidence — so
+nothing measured inside a window changes.
+
+That changed the capture script's hash, which the declaration pins, so **declaration v9** was issued. Its
+`capture_window`, `authorization_gate` and `hard_stops` blocks are byte-identical to v8, so the declared
+sessions, windows, durations and selection laws did not move and no new signature was required. v9 records
+both implementation hashes and which sessions used which, because the evidence is now heterogeneous and
+must say so.
+
+**A second defect the failure exposed.** The certification driver treated any failed declared window as
+fatal. Since 08-10 midday can never be re-run, that would have blocked certification *permanently*, letting
+one dead window poison four good ones. A failed window is now excluded and recorded by name and reason in
+the issuance summary rather than aborting the run — which is not cherry-picking, because a failed window
+has no outcome to select on and its exclusion is forced rather than chosen. Two guards replace the old
+one: the run still refuses if no healthy window survives, and it refuses if **no open window** survives,
+since the declaration's `envelope_law` says a quiet-window-only measurement is a floor rather than the
+operating 99th percentile and may not back an admitted feature.
 
 ## 14. Home-directory rename, 2026-08-06
 
