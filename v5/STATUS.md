@@ -24,7 +24,7 @@ A committed work packet must appear here. No row means no job.
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **CLOSED 08-09 — `UNDERPOWERED`. The known-answer campaign passed both nulls and failed recovery; the gate needs 8-16 net points/session (22-88x the cost bar). Real economics were never computed.** | — | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md), [`v5/work/g1-direction/`](work/g1-direction/), [ledger row](research/history/DO_NOT_RETEST.md) |
-| 4 | Track-A option-feature arrival capture | G3 | **0 banked — runner ARMED and RUNNING since 08-09 08:45 PDT for 08-10/11/12; Phase-2 certification READY** | The six windows to fire; then one local certification command | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [`certify_tracka_arrival.py`](ops/certify_tracka_arrival.py), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
+| 4 | Track-A option-feature arrival capture | G3 | **1 of 6 windows banked — 2026-08-10 open verified 08-10: 97,636 rows, 562 symbols, CBBO-1m p99 815.391 ms. Certification rehearsed end to end on it; deliberately NOT issued until the capture completes** | The remaining five windows, then one local certification command | [declaration v8](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v8.json), [`certify_tracka_arrival.py`](ops/certify_tracka_arrival.py), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
 | 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — a capture is now live, and the manifest forbids moving during one, so this waits until after 08-12** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md); the TCC grant is also UNKNOWN since the rename | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository), [§14](#14-home-directory-rename-2026-08-06) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
 | 6 | Rebuild a confirmation firewall | G8 | **SIGNED 08-05 — every session from 2026-08-06 onward is confirmation-only** | — | [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) |
@@ -367,6 +367,37 @@ enough that it finishes writing before `grep` exits, measured 0 failures in 200 
 
 The lesson generalises past this script: **a safety check that fails open is worse than no check**, and a
 monitor that cries wolf trains its reader to ignore the one alarm that matters.
+
+### First evidence banked, 2026-08-10 open
+
+Verified by recomputation from the raw receipt rows, not read from the capture's own summary — every
+statistic matched, which is what `analyze_window` refuses to proceed without.
+
+| | 2026-08-03 | 2026-08-05 midday | **2026-08-10 open** |
+|---|---:|---:|---:|
+| CBBO-1m p50 | — | 369.619 ms | **502.193 ms** |
+| CBBO-1m p99 | 319.5 ms | 527.622 ms | **815.391 ms** |
+| Symbols | — | 510 | **562** |
+
+**The open window is materially slower than midday, which is the first direct proof the envelope law was
+right.** Its p99 is 1.55x the 08-05 midday figure and 2.55x the 08-03 one. A quiet-window-only measurement
+would have understated the operating 99th percentile by about a third, which is exactly what the
+declaration forbids backing an admitted feature with.
+
+The guard is unchanged: `4 x 815.391 ms = 3,262 ms`, so the **10-second floor still binds** as predicted.
+
+**Coverage is the genuinely new number: 58.2%.** Only 1,635 of 2,810 expected CBBO-1m instrument-minutes
+arrived — about 42% of the chain does not quote in a given minute. A feature written as though every
+instrument reports every minute would assume far more data than exists. This is what the freshness receipt
+records, and why a latency receipt alone was never enough.
+
+Symbol count was **562**, against 510 on 08-05 and 574 on 08-06. Any pinned count would have failed
+closed on at least one of the three days.
+
+**A power episode worth noting.** The runner logged `POWER WARNING: now on BATTERY` at 12:43 PDT on 08-09
+and `POWER RESTORED` at 20:17 — seven and a half hours on battery, which is the exact condition that
+destroyed the 08-06 session. It survived only because power returned about ten hours before the window
+fired. The transition guard worked and timestamped both events.
 
 ## 14. Home-directory rename, 2026-08-06
 
