@@ -184,6 +184,13 @@ def scan() -> list[str]:
     for path in sorted(V5.rglob("*")):
         if path.is_dir():
             continue
+        # `rglob` descends into caches that the repository scope already prunes.
+        # Without this the check flagged iCloud-duplicated .pyc files as sync
+        # duplicates, so `test_v5_project_structure_is_clean` passed or failed
+        # on whether iCloud happened to have synced -- a guard that fails on
+        # timing rather than on project health teaches its reader to ignore it.
+        if PRUNED_DIRS.intersection(path.parts):
+            continue
         rel = path.relative_to(ROOT).as_posix()
         if BANNED_NAME.search(path.name):
             problems.append(f"BANNED NAME       {rel}")
