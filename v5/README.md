@@ -10,7 +10,7 @@ toolbox and history, but they do not define what happens next.
   skill has been demonstrated on SPX/ES itself.
 - **Current blocker:** with 254 owned ES sessions, the project cannot reliably measure an edge as small as
   the measured trading cost, and no clean historical confirmation set has been identified.
-- **Current job:** obtain the independent [measurement-capacity review](work/measurement-review/BRIEF.md).
+- **Current job:** obtain the independent [measurement-capacity review](history/jobs/measurement-review/BRIEF.md).
 - **Next permitted action:** review the measurement limits. Do not run the G1 direction screen until that
   review is recorded in [STATUS.md](STATUS.md).
 - **Cost bar:** a strategy must beat **0.358 ES points, or $17.92 per round trip**, before it has economic
@@ -36,8 +36,8 @@ The authoritative job register, gate chain, and current facts are in [STATUS.md]
 | Available tools and their safety class | [TOOLBOX.md](TOOLBOX.md) |
 | Evidence supporting current claims | [evidence/INDEX.md](evidence/INDEX.md) |
 | What has been built and what is still missing | [workflow capability audit](research/findings/V5_WORKFLOW_CAPABILITY_AUDIT_2026_08_05.md) |
-| Active measurement review | [work/measurement-review/BRIEF.md](work/measurement-review/BRIEF.md) |
-| Held G1 direction plan | [work/g1-direction/PLAN.md](work/g1-direction/PLAN.md) |
+| Active measurement review | [history/jobs/measurement-review/BRIEF.md](history/jobs/measurement-review/BRIEF.md) |
+| Held G1 direction plan | [history/jobs/g1-direction/PLAN.md](history/jobs/g1-direction/PLAN.md) |
 | What must not be repeated | [research/history/DO_NOT_RETEST.md](research/history/DO_NOT_RETEST.md) |
 
 ## End-to-end order

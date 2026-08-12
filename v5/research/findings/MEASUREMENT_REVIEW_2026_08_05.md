@@ -21,8 +21,8 @@ than the MDE can exist and still produce a null result.
 
 All numbers below were recomputed this session directly from the owned ES 1-minute bars
 (`~/.autoresearch-trading/pathd_2025-08-01_2026-07-31/raw/databento/glbx_es_ohlcv_1m`, 261 files,
-254 non-empty sessions) by [`analysis.py`](../../work/measurement-review/analysis.py); the raw
-output is [`analysis_receipt.json`](../../work/measurement-review/analysis_receipt.json).
+254 non-empty sessions) by [`analysis.py`](../../history/jobs/measurement-review/analysis.py); the raw
+output is [`analysis_receipt.json`](../../history/jobs/measurement-review/analysis_receipt.json).
 
 | Quantity | Brief / audit claim | Recomputed | Match |
 |---|---:|---:|---|
@@ -130,7 +130,7 @@ untouched.
 ---
 
 *Read-only provenance: every number above reproduces by running
-`./.venv/bin/python v5/work/measurement-review/analysis.py` (reads owned parquet only, writes one
+`./.venv/bin/python v5/history/jobs/measurement-review/analysis.py` (reads owned parquet only, writes one
 JSON receipt beside itself) and the receipt-range check on
 `v4/audit/databento_es_vwap_downloads.jsonl`. No model was fitted, no capture touched, no vendor or
 broker contacted, no reserved evidence opened.*

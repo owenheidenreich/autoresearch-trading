@@ -35,8 +35,8 @@ REQUIRED = (
     V5 / "research/training_twin.py",
     V5 / "research/feature_admission.py",
     V5 / "research/validation/candidate_packet.py",
-    V5 / "work/measurement-review/BRIEF.md",
-    V5 / "work/g1-direction/PLAN.md",
+    V5 / "history/jobs/measurement-review/BRIEF.md",
+    V5 / "history/jobs/g1-direction/PLAN.md",
 )
 ROOT_POINTERS = {
     ROOT / "README.md": "v5/README.md",
@@ -175,6 +175,7 @@ def scan() -> list[str]:
         problems.append("AGENT DRIFT       v5/AGENTS.md and v5/CLAUDE.md differ")
 
     work_root = V5 / "work"
+    history_root = V5 / "history/jobs"
     if work_root.exists():
         for directory in sorted(path for path in work_root.iterdir() if path.is_dir()):
             marker = f"work/{directory.name}/"
@@ -194,7 +195,9 @@ def scan() -> list[str]:
         rel = path.relative_to(ROOT).as_posix()
         if BANNED_NAME.search(path.name):
             problems.append(f"BANNED NAME       {rel}")
-        if path.name == "PLAN.md" and not path.is_relative_to(work_root):
+        if path.name == "PLAN.md" and not (
+            path.is_relative_to(work_root) or path.is_relative_to(history_root)
+        ):
             problems.append(f"MISPLACED PLAN    {rel}")
         numbered = NUMBERED_COPY.match(path.name)
         if numbered:

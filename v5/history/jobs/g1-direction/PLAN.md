@@ -3,14 +3,14 @@
 **State: CLOSED 2026-08-09 with the verdict `UNDERPOWERED`.** The known-answer campaign passed both null
 criteria and failed the recovery criterion; the gate's real detection floor is 8-16 net points/session
 against a 0.358-point cost bar. **No member's profit and loss was ever computed.** Verdict and evidence:
-[finding](../../research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md). The history below is kept as
+[finding](../../../research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md). The history below is kept as
 the record of what was declared and built.
 
 Originally: RELEASED 2026-08-05 by the measurement review (verdict B), under "large edge or stop".
 Family FROZEN 2026-08-06, re-frozen twice (renamed home directory 08-06; the seven no-option sessions
 08-09). Work started 2026-08-06 in parallel with the Track-A capture, which G1 does
 not depend on: M1 and M3 read owned ES bars only, and per the
-[gate-chain audit §2.4](../../research/findings/GATE_CHAIN_AUDIT_2026_08_05.md) no barred option feature
+[gate-chain audit §2.4](../../../research/findings/GATE_CHAIN_AUDIT_2026_08_05.md) no barred option feature
 is on this screen's critical path.
 
 ## Purpose
@@ -25,7 +25,7 @@ merely cost-scale one. A negative result therefore means "no large edge here", n
 ## Frozen family
 
 The complete declaration is code, not prose:
-[`v5/research/direction/family.py`](../../research/direction/family.py), content hash
+[`v5/research/direction/family.py`](../../../research/direction/family.py), content hash
 `f43b92c2ed33a84e53732983999fdf889d31453cfe8663e3e09af1f182d8db49`.
 
 That hash was reissued from `5ec8b5a4…` on 2026-08-06 when the machine's home directory was renamed and
@@ -53,7 +53,7 @@ deliberately a minute later than the decision because the ES emission lag is UNC
    2026-08-06**, before any outcome was inspected.
 2. Build the session loader, the per-member replay, and the family economic gate.
 3. Build matched surrogates, the bounded-path shared-term fixture, and the injected-effect fixture.
-   **Matched surrogates done 2026-08-09** ([`surrogate.py`](../../research/direction/surrogate.py)):
+   **Matched surrogates done 2026-08-09** ([`surrogate.py`](../../../research/direction/surrogate.py)):
    volume, calendar, gap magnitude and per-bar close-to-close magnitude preserved exactly; only the gap
    sign and each bar's change sign randomized; the whole path, every feature, selection and target
    rebuilt by the identical feature code. Verified on the owned corpus — 97,469 bars, the eligible index

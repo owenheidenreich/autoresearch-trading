@@ -77,9 +77,9 @@ edge that merely covers costs.**
 
 ## Context
 
-- [`v5/STATUS.md`](../../STATUS.md) §3 and §7 — the current state and gate chain.
-- [Gate-chain audit](../../research/findings/GATE_CHAIN_AUDIT_2026_08_05.md) — the full audit.
-- [Programme restart record](../../governance/PROGRAM_RESTART_RECORD_2026_08_05.md)
+- [`v5/STATUS.md`](../../../STATUS.md) §3 and §7 — the current state and gate chain.
+- [Gate-chain audit](../../../research/findings/GATE_CHAIN_AUDIT_2026_08_05.md) — the full audit.
+- [Programme restart record](../../../governance/PROGRAM_RESTART_RECORD_2026_08_05.md)
   — what binds and what is superseded.
 - Owner's goal, unchanged: an automated bot that buys SPX 0DTE calls and puts and makes money.
 

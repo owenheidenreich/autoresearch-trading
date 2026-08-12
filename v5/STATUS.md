@@ -26,8 +26,8 @@ A committed work packet must appear here. No row means no job.
 | # | Job | Gate | State | Waiting on | Work packet |
 |---|---|---|---|---|---|
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
-| 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
-| 3 | ES direction screen: opening range and overnight gap | G1 | **CLOSED 08-09 — `UNDERPOWERED`. The known-answer campaign passed both nulls and failed recovery; the gate needs 8-16 net points/session (22-88x the cost bar). Real economics were never computed.** | — | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md), [`v5/work/g1-direction/`](work/g1-direction/), [ledger row](research/history/DO_NOT_RETEST.md) |
+| 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/history/jobs/measurement-review/`](history/jobs/measurement-review/) |
+| 3 | ES direction screen: opening range and overnight gap | G1 | **CLOSED 08-09 — `UNDERPOWERED`. The known-answer campaign passed both nulls and failed recovery; the gate needs 8-16 net points/session (22-88x the cost bar). Real economics were never computed.** | — | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md), [`v5/history/jobs/g1-direction/`](history/jobs/g1-direction/), [ledger row](research/history/DO_NOT_RETEST.md) |
 | 4 | Track-A option-feature arrival capture | G3 | **DONE 08-12 — capture complete (5 usable windows over 3 sessions), certification ISSUED. G3 moves 8/73 → 51/73 scoped** | — | [issuance](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/phase2_issuance_2026-08-12/), [declaration v9](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v9.json), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
 | 4a | Unattended jobs cannot read this repository | blocks G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — unblocked 08-12 now the capture is finished; no longer blocks G3, which has passed** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md); the TCC grant is also UNKNOWN since the rename | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository), [§14](#14-home-directory-rename-2026-08-06) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
@@ -480,7 +480,7 @@ What it broke, and what was done, all on 2026-08-06:
 |---|---|
 | Both Python environments — `.venv` and the runtime venv — had dangling interpreter symlinks | **Repaired.** The runtime-venv repair was owner-authorized. `./.venv/bin/python` works; `check_project.py` and the 145 tests run again |
 | `start_tracka.sh` and four sibling scripts hardcoded the repo path; the Sunday start would have exited 77 | **Repaired.** All five now derive the repo from their own location, so the pending repo migration cannot break them either |
-| The G1 declaration's corpus root, which is inside the hashed freeze | **Re-frozen** on owner authorization: `5ec8b5a4…` → `f43b92c2…`, one field of 213, no outcome inspected. [Record](work/g1-direction/REFREEZE_2026_08_06.md) |
+| The G1 declaration's corpus root, which is inside the hashed freeze | **Re-frozen** on owner authorization: `5ec8b5a4…` → `f43b92c2…`, one field of 213, no outcome inspected. [Record](history/jobs/g1-direction/REFREEZE_2026_08_06.md) |
 | Three corpus tests silently **skipped** while the suite still reported success | **Repaired.** Skip conditions are home-relative; the suite is 145 passed, 0 skipped |
 | Two Track-A launchd jobs on stale Wednesday/Thursday/Friday dates | **Unloaded and disabled** on owner authorization; 08-12 would have collided with the attended runner |
 | Two 2026-07-18 background agents | **Still dead** (exit 78). Their plists name the old home; rewriting them is an owner decision not yet made |
@@ -539,6 +539,6 @@ the actual product" rather than "tradeable in ES."
 
 This was decided **before any G1 economics existed**, which is the only reason it was a legitimate
 narrowing rather than the post-hoc kind row 183 warns about. Record:
-[re-freeze](work/g1-direction/REFREEZE_2026_08_06.md).
+[re-freeze](history/jobs/g1-direction/REFREEZE_2026_08_06.md).
 
 *Update this page when a job or gate changes. Do not create another status, roadmap, or gate file.*
