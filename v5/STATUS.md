@@ -1,6 +1,6 @@
 # V5 Project Status — the one page
 
-**Last updated: 2026-08-09.** This is the only current-state, job-register, and gate-chain document.
+**Last updated: 2026-08-12.** This is the only current-state, job-register, and gate-chain document.
 If another file disagrees, this page wins and the conflict must be reported.
 
 > **G1 closed on 2026-08-09 with the verdict `UNDERPOWERED`.** The screen was released under "large edge
@@ -11,9 +11,13 @@ If another file disagrees, this page wins and the conflict must be reported.
 > future screen with more data. See the
 > [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md).
 >
-> **The only thing that moves this is calendar time.** The detection floor scales as 1/sqrt(n): roughly
-> four years of further sessions to halve it. The active work is therefore the Track-A capture, armed and
-> waiting for 2026-08-10/11/12.
+> **The only thing that moves G1 is calendar time.** The detection floor scales as 1/sqrt(n): roughly
+> four years of further sessions to halve it.
+>
+> **The Track-A capture completed on 2026-08-12 and its certification is issued.** G3 has passed: 51 of 73
+> scoped option features are now admitted, up from 8, on a signed three-session latency and freshness
+> envelope. That was the last thing on the board that could be done without new data. **Both active
+> branches are now closed, and the project is waiting on calendar time.**
 
 ## 0. Job register
 
@@ -24,15 +28,15 @@ A committed work packet must appear here. No row means no job.
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/work/measurement-review/`](work/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **CLOSED 08-09 — `UNDERPOWERED`. The known-answer campaign passed both nulls and failed recovery; the gate needs 8-16 net points/session (22-88x the cost bar). Real economics were never computed.** | — | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md), [`v5/work/g1-direction/`](work/g1-direction/), [ledger row](research/history/DO_NOT_RETEST.md) |
-| 4 | Track-A option-feature arrival capture | G3 | **1 of 6 usable — 08-10 open banked and verified; 08-10 midday VOID on a capture defect, now repaired as declaration v9; re-armed for 08-11/08-12** | Four remaining windows, then one local certification command | [declaration v9](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v9.json), [`certify_tracka_arrival.py`](ops/certify_tracka_arrival.py), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
-| 4a | Unattended jobs cannot read this repository | blocks G3/G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — a capture is now live, and the manifest forbids moving during one, so this waits until after 08-12** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md); the TCC grant is also UNKNOWN since the rename | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository), [§14](#14-home-directory-rename-2026-08-06) |
+| 4 | Track-A option-feature arrival capture | G3 | **DONE 08-12 — capture complete (5 usable windows over 3 sessions), certification ISSUED. G3 moves 8/73 → 51/73 scoped** | — | [issuance](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/phase2_issuance_2026-08-12/), [declaration v9](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/capture_declaration_v9.json), [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming) |
+| 4a | Unattended jobs cannot read this repository | blocks G7/G8 | **AUTHORIZED 08-05, NOT YET EXECUTED — unblocked 08-12 now the capture is finished; no longer blocks G3, which has passed** | Owner executing the [migration manifest](governance/REPO_MIGRATION_MANIFEST_2026_08_05.md); the TCC grant is also UNKNOWN since the rename | [requirement finding §5](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md#5-the-blocker--scheduled-jobs-cannot-read-this-repository), [§14](#14-home-directory-rename-2026-08-06) |
 | 5 | Repair four defects in the validation gate | G5 | **DONE 08-05 — rebuilt natively** | — | [`validation/replay_gate.py`](research/validation/replay_gate.py), [§9](#9-g5-validation-is-defective) |
 | 6 | Rebuild a confirmation firewall | G8 | **SIGNED 08-05 — every session from 2026-08-06 onward is confirmation-only** | — | [reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md) |
 | 7 | Programme restart after the 08-04 stop | all | **CLOSED 08-05** | — | [restart record](governance/PROGRAM_RESTART_RECORD_2026_08_05.md) |
 | 8 | Quarantine stale v4 documentation | infrastructure | **DONE 08-05 — 117 files preserved** | — | [manifest](../_cleanup_quarantine/2026-08-05-docs/MANIFEST.md) |
 | 9 | Inventory and promote training-readiness controls | infrastructure | **DONE 08-05** | — | [capability audit](research/findings/V5_WORKFLOW_CAPABILITY_AUDIT_2026_08_05.md) |
 | 10 | Retire the documentation drawers and enforce it repo-wide | infrastructure | **DONE 08-05 — 75 files preserved** | — | [manifest](../_cleanup_quarantine/2026-08-05b-docs/MANIFEST.md), [`ops/check_project.py`](ops/check_project.py) |
-| 11 | Build the two training preconditions | G3/G4 | **DONE 08-05 — built, not satisfied** | Rung 4 must supply usable latency and freshness receipts | [`research/knobs.py`](research/knobs.py), [arrival finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md) |
+| 11 | Build the two training preconditions | G3/G4 | **DONE 08-05; arrival parity SATISFIED 08-12 by the signed latency and freshness receipts. Frozen knobs still bind** | — | [`research/knobs.py`](research/knobs.py), [arrival finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md) |
 | 12 | Close six control-machinery gaps found by the training-readiness review: gate-pass receipts, computed power bound to the session index, trades→session aggregator, entry-freeze lock, knob-registry expansion, pipeline composition test | G1–G6 controls | **DONE 08-05 — 97 tests green** | — | [`research/gate_receipts.py`](research/gate_receipts.py), [`research/entry_stream.py`](research/entry_stream.py), [`research/validation/session_index.py`](research/validation/session_index.py) |
 | 13 | Register every way training data can differ from what the live system sees | G4/G6/G7 | **BUILT 08-09 — 16 axes, 7 blocking; `product_session_existence` settled by owner ruling the same day** | The remaining axes settle at their named gates | [`research/divergence.py`](research/divergence.py), [§15](#15-the-trainlive-divergence-register) |
 
@@ -46,16 +50,17 @@ prove itself in guarded paper trading before any real-money decision.
 
 This is the only route document. Each rung names what it produces, which gate it clears, and what
 authorizes it. A rung may not start until the row above it has passed — except rung 4, the one safe
-parallel branch. Rungs 1 and 2 are both complete: rung 1 returned verdict B, and rung 2 stopped on
-2026-08-09 as `UNDERPOWERED`. **Rung 3 is therefore not reachable on the owned corpus, and rung 4 —
-Track-A — is the only active branch.** Nothing below rung 4 is authorized today.
+parallel branch. Rungs 1, 2 and 4 are all complete: rung 1 returned verdict B, rung 2 stopped on
+2026-08-09 as `UNDERPOWERED`, and rung 4 certified on 2026-08-12. **Rung 3 needs a G1 pass that the owned
+corpus cannot produce, and rungs 5 onward need that same pass. No rung is startable today** — the
+binding constraint is the number of owned sessions, which only calendar time changes.
 
 | # | Step | Produces | Gate | Authorized by | Where |
 |---:|---|---|---|---|---|
 | 1 | **Measurement review** | A verdict on whether 254 sessions can resolve any edge worth trading | precondition to G1 | **DONE 08-05 — verdict B** | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md) |
 | 2 | **ES direction screen** | One raw, no-model replay of the frozen M1/M3 family on owned ES | G1 | **CLOSED 08-09 — `UNDERPOWERED`; stopped before the replay** | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md) |
 | 3 | **Option-dollar replay** | One locked 60-minute replay of the G1 policy in SPXW dollars | G2 | An exact 60-minute G1 pass | not yet registered |
-| 4 | **Track-A capture and feature certification** | Multi-session OPRA arrival and freshness evidence; a re-derived emission lag; a signed feature ledger | G3 | Fresh owner authorization — vendor contact and unattended jobs are Tier 1 | [requirement finding](research/findings/TRACK_A_ARRIVAL_CAPTURE_REQUIREMENT_2026_08_05.md) |
+| 4 | **Track-A capture and feature certification** | Multi-session OPRA arrival and freshness evidence; a re-derived emission lag; a signed feature ledger | G3 | **DONE 08-12** | [issuance](../v4/audit/autoresearch/pathd_phase0b_tracka_live_capture_2026_08_04/phase2_issuance_2026-08-12/) |
 | 5 | **Bounded entry search** | A frozen shallow entry ranker, chronological out-of-fold | G4 | A G1 pass **and** separate owner training authorization | not yet registered |
 | 6 | **Exit search on a frozen entry stream** | An exit policy fitted only after entries are locked | G4 | Rung 5 complete and frozen | not yet registered |
 | 7 | **Validation packet** | Authoritative `trades.csv` and manifest, SPX entry/exit chart, equity curve | G5 | Rung 6 complete; the corrected gate in [`validation/replay_gate.py`](research/validation/replay_gate.py) | not yet registered |
@@ -195,7 +200,7 @@ The binding details and legitimate reopening conditions are in the
 |---|---|---|
 | G1 Direction | Predict ES direction and clear 0.358 points/trade | **STOPPED 08-09 — `UNDERPOWERED`. Detection floor 8-16 points/session vs a 0.358-point bar. Not falsified: economics never read** |
 | G2 Option wrapper | Replay one locked 60-minute G1 policy in option dollars | Blocked by a 60-minute G1 pass |
-| G3 Feature certification | Prove option features exist live at decision time | **8/73 scoped features currently admitted.** Phase-2 is ready to re-issue 51/73 only after v8 evidence banks; no new ledger exists yet |
+| G3 Feature certification | Prove option features exist live at decision time | **PASSED 08-12 — 51/73 scoped features admitted (was 8/73) on a signed 3-session latency and freshness envelope; 32 remain barred for evidence this capture cannot supply** |
 | G4 Train | Fit a shallow model on admitted features | Blocked by G1 and separate owner authorization |
 | G5 Validation | Beat comparator with positive confidence, 4/5 folds, and clean controls | Corrected gate rebuilt natively; the defective v4 replay now refuses to run |
 | G6 Runtime parity | Reproduce offline decisions live | Existing tolerance frozen at 1e-12 absolute / 0 relative |
@@ -430,6 +435,38 @@ has no outcome to select on and its exclusion is forced rather than chosen. Two 
 one: the run still refuses if no healthy window survives, and it refuses if **no open window** survives,
 since the declaration's `envelope_law` says a quiet-window-only measurement is a floor rather than the
 operating 99th percentile and may not back an admitted feature.
+
+### Capture complete and certified, 2026-08-12
+
+Six windows attempted over three sessions; **five usable**, with 08-10 midday void on the shutdown race.
+Every window verified by recomputing its statistics from the raw receipt rows.
+
+| Session | Window | Rows | CBBO-1m p99 | Coverage |
+|---|---|---:|---:|---:|
+| 2026-08-10 | open | 97,636 | 815.391 ms | 58.19% |
+| 2026-08-10 | midday | — | **VOID** | — |
+| 2026-08-11 | open | 114,534 | 741.909 ms | 97.19% |
+| 2026-08-11 | midday | 37,164 | 473.169 ms | 75.39% |
+| 2026-08-12 | open | 123,590 | **926.294 ms** | 98.29% |
+| 2026-08-12 | midday | 41,573 | 484.477 ms | 69.75% |
+
+**The envelope law is vindicated by the data, not just by argument.** Every open is slower than every
+midday — 742 to 926 ms against 473 to 484 ms. A quiet-window-only capture would have certified roughly
+480 ms as the operating 99th percentile when the true observed worst is **926.294 ms**, nearly double.
+The declaration's refusal to let a midday measurement back an admitted feature was correct.
+
+Certification issued from the worst observed values: envelope p50/p99/max **523.641 / 926.294 /
+1004.346 ms**, guard `L = max(10 s, 4 x 926.294 ms)` so the **10-second floor still binds**, and the
+wording fixed to a three-session envelope with sample-max exceedance 14.3% at the daily 95th percentile
+and 3.0% at the 99th. Receipt expiry 2026-11-10, pre-registered on 2026-08-06 and not a run-time choice.
+
+**G3 passes: 51 of 73 scoped features admitted, up from 8.** Eleven CBBO-1m native rows admit directly and
+32 cascade through the parent-family chain. Thirty-two stay barred on evidence this capture cannot supply:
+12 one-second rolling (needs Historical API value identity), 10 permanently barred with no live twin, 6
+account-state (needs broker evidence), 4 bar-sparsity (needs a zero-fill invariance proof).
+
+Admitting features is not permission to train. G4 still requires a G1 pass, which the owned corpus cannot
+produce, plus separate owner authorization.
 
 ## 14. Home-directory rename, 2026-08-06
 
