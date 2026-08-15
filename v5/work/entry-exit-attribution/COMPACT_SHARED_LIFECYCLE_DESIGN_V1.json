@@ -1,0 +1,63 @@
+{
+  "architecture": {
+    "budget_headroom": 2,
+    "built_parameter_count": 120,
+    "independent_specialists": false,
+    "name": "compact_shared_lifecycle",
+    "opening_regime_owned_exit": true,
+    "parameter_count_source": "computed_parameter_count() over built CompactSharedLifecyclePolicy",
+    "position_features_used": 8,
+    "projected_worst_conservative_budget": 122,
+    "shared_representation": true,
+    "whole_ladder_context_features": [
+      "spread",
+      "self_iv",
+      "self_gamma",
+      "self_theta_per_minute",
+      "moneyness_itm_points"
+    ]
+  },
+  "created_on": "2026-08-14",
+  "evidence": {
+    "backfill_value": {
+      "path": "v5/work/entry-exit-attribution/SPXW_0DTE_BACKFILL_VALUE_V1.json",
+      "sha256": "10197aa91a72615859451577ec39f5a1a67fddc4083d2796bc3dc5e165e482ce"
+    },
+    "design": {
+      "path": "v5/work/entry-exit-attribution/COMPACT_SHARED_LIFECYCLE_DESIGN_V1.md",
+      "sha256": "f3372053afe2ae40dce57a97281800887ae483c7ebc9a0d3a32054bd2fa8381b"
+    },
+    "implementation": {
+      "path": "v5/research/causal_day_compact_shared_lifecycle.py",
+      "sha256": "31664c5ab81e537db937b4cf29dfbb9cea7b319ce6f1938fb7f02a6729c58b4b"
+    },
+    "test": "v5/tests/test_causal_day_compact_shared_lifecycle.py"
+  },
+  "fit_boundary": {
+    "fit_permitted": false,
+    "reason": "design-only prerequisite; future evidence and owner gate required",
+    "registered_in_active_architecture_family": false
+  },
+  "implementation_sha256": "90bc9e6037f4508299d5808365556b2dadfc4bcfca5853c5fe4275479779e9ff",
+  "integrity": {
+    "data_downloaded": false,
+    "economics_read": false,
+    "fit_performed": false,
+    "money_spent": false,
+    "reserved_sessions_used": false,
+    "vendor_contacted": false
+  },
+  "question": "Can one shared entry/exit representation fit the worst projected conservative backfill budget?",
+  "receipt_sha256": "1f167ba4b9aae68db9cf414b1ba6ead818f956e48fd6940aef02ae6bfa54d865",
+  "schema_version": "v5.compact-shared-lifecycle-design.v1",
+  "scope": {
+    "actions": [
+      "WAIT",
+      "BUY_ONE",
+      "HOLD",
+      "SELL_SAME_CONTRACT"
+    ],
+    "context": "SPXW and optional SPX only",
+    "traded_position": "one long SPXW 0DTE call or put only"
+  }
+}

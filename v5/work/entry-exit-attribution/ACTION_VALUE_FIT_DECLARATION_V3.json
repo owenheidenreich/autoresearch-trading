@@ -1,0 +1,136 @@
+{
+  "architecture": {
+    "canonical_parameter_counts": {
+      "compact_interaction_entry": 48,
+      "four_independent": 1250,
+      "neural_four_head": 341,
+      "neural_joint": 322,
+      "shallow_four_head": 245,
+      "shallow_joint": 226
+    },
+    "computed_parameters": 48,
+    "name": "compact_interaction_entry",
+    "parameter_count_source": "computed_parameter_counts()['compact_interaction_entry']",
+    "state_contract_interactions": [
+      "state_x_is_call",
+      "state_x_moneyness"
+    ],
+    "trained_actions": "WAIT and every eligible affordable contract"
+  },
+  "current_fit_blockers": [],
+  "declared_on": "2026-08-14",
+  "evaluation": {
+    "bid_and_fee_only_after_positive_mid": true,
+    "chronological_positive_folds_required": 4,
+    "failure_consequence": "non-positive mid gross or less than 4/5 chronology closes the long-selector branch; no retry",
+    "folds": 5,
+    "kill_conditions": [
+      "mid_to_mid_gross_positive",
+      "beats_composition_matched_control",
+      "beats_shuffled_label_null",
+      "per_feature_timestamp_audit",
+      "no_post_entry_slot_filter",
+      "chronological_out_of_sample",
+      "no_reserved_sessions"
+    ],
+    "matched_control": "session opportunity, regime, minute, side, delta, premium and trade count",
+    "mid_to_mid_first": true
+  },
+  "forbidden": [
+    "run while any fit blocker remains",
+    "change architecture, target, cap, horizon, seed, loss, epochs, or null after fit",
+    "threshold or operating-point search",
+    "open reserved sessions"
+  ],
+  "gate_law": {
+    "assert_fit_permitted_before_target_load_or_optimizer": true,
+    "canonical_architecture_registered": "compact_interaction_entry",
+    "corpus": "causal_day_quote_243",
+    "new_label_requires_signed_scope_widening": true,
+    "reopening_sha256": "4d45402344dedfdb2a0cb7ac8bc5714dbff8aab3f4aabd7ad42d9d322b7a04af"
+  },
+  "implementation_hashes": {
+    "v5/ops/train_causal_day_action_value.py": "fc1a9f534ef99cef12ba65ce24709d9a86636f093853bbe614de4c1b450d00fe",
+    "v5/ops/write_causal_day_action_value_fit_declaration.py": "b614ada60cd1157ff539a8f8472ba9ae62cf8babefd30b052226c9f6e2f2a7fd",
+    "v5/research/causal_day_action_value_attainability.py": "1879b1584dcac427bae3b2c8cb196c677116a1497b550fb034730124eaed594b",
+    "v5/research/causal_day_action_value_targets.py": "64d47ee182019916fbf9b01fa48b052fd225e4cd4f96be147b9316f5d3055ef6",
+    "v5/research/causal_day_architectures.py": "5a18f0097cc4fbf136cdf1a2a90cc149280ac0774c80e0ac77f061fffd3301df",
+    "v5/research/causal_day_compact_interaction.py": "88277e1abc5e380d82ef1791bcde58ec00ee78ed96f19279c95738fc67adc687",
+    "v5/research/causal_day_declaration_reseal.py": "b61115619e5ba3da19e0bc0334e00bec336316c79e6393fa065fdaedb5b52c0f",
+    "v5/research/causal_day_policy_gate.py": "a59e83ef351ba67725f2e8a03f4116c7f924e50541f62882871a214a2e830721"
+  },
+  "inference": {
+    "action": "first minute whose best current ENTER is strictly greater than max($0, predicted WAIT)",
+    "current_day_rank": false,
+    "external_threshold": false,
+    "forced_time": false
+  },
+  "inputs": {
+    "action_value_receipt_sha256": "80e4ff7c4c4f16463121c53cff6310e17d86c972a372cb5fb4f15ec180b441cc",
+    "feature_cache_receipt_sha256": "b8a78360b6995cfb16f04fba4fd554d4ee958216792ddd084e2d17da82eaccf9",
+    "target_cache_receipt_sha256": "904a251fcb05e92edeab19de38b2f0597c9334435a58c89f63c676743ad52c14"
+  },
+  "label": {
+    "common_scale_preserves_action_argmax": true,
+    "horizon_minutes": 120,
+    "name": "serial_action_advantage_120m",
+    "prediction_clip_bounds": null,
+    "target_clip_bounds": null,
+    "target_scale_usd": 1000.0,
+    "target_transform": "q_value_usd / 1000.0",
+    "trade_cap": 1
+  },
+  "mechanical_reseal": {
+    "allowed_differences": "mechanical fields only; enforced before fit",
+    "paired_evaluation_declaration": "v5/work/entry-exit-attribution/ACTION_VALUE_EVALUATION_DECLARATION_V3.json",
+    "research_law_sha256": "3a7e26e78ad8c6f1c972ba779fd7a6ac1b640e95979dda49ce74891248499627",
+    "source_evaluation_declaration": "v5/work/entry-exit-attribution/ACTION_VALUE_EVALUATION_DECLARATION_V2.json",
+    "source_evaluation_self_hash": "68b520ea0785ae5866843101d2f57c9d66f86f05ab1c0683d1cffb376108b3e2",
+    "source_fit_declaration": "v5/work/entry-exit-attribution/ACTION_VALUE_FIT_DECLARATION_V2.json",
+    "source_fit_self_hash": "86fb0ef30b251d298661b8a59448570c045e3e7a4d0466955fd866446bbb7ab3"
+  },
+  "null": {
+    "law": "deterministically permute all executable Q(enter) values within each training session and recompute Q(wait) from the shuffled surface",
+    "preserves": [
+      "session payoff distribution",
+      "candidate counts",
+      "minute clock",
+      "one-trade action-value law"
+    ],
+    "removes": "association between causal state/contract and its actual future payoff"
+  },
+  "outputs": {
+    "evidence_dir": "v4/audit/autoresearch/causal_day_action_value_fit_2026_08_14_attempt003",
+    "root": "/Volumes/AR_TRADING_DATA/derived/causal_day_action_value_fit_v3"
+  },
+  "purpose": "one decisive canonically counted WAIT-versus-ENTER fit; no neighboring retry",
+  "receipt_sha256": "8dfbad0cb7a548c1f6931f33643d933eb0b05b02c1fe7de888dd5c1e790e77a1",
+  "schema_version": "v5.causal-day-action-value-fit-declaration.v3",
+  "selector_attainability": {
+    "absolute_threshold": null,
+    "no_trade_floor": 0.0,
+    "prediction_clip_bounds": null,
+    "proof_source": "computed canonical compact model with all weights zero and only contract_base.bias=1; action_value_loss uses q/TARGET_SCALE_USD without clamp",
+    "rule_kind": "relative_action_value",
+    "selector_name": "first_enter_above_structural_wait_floor",
+    "target_clip_bounds": null,
+    "witness_enter": 1000.0,
+    "witness_wait": 0.0
+  },
+  "supersedes": "v5/work/entry-exit-attribution/ACTION_VALUE_FIT_DECLARATION_V2.json",
+  "training": {
+    "batch_minutes": 16,
+    "feature_scaler": "mean/std from initial 93-session prefix only, frozen forward, clipped [-10,10]",
+    "folds": "existing 93-session initial prefix plus five chronological 30-session score blocks",
+    "gradient_clip": 5.0,
+    "initial_epochs": 3,
+    "learning_rate": 0.003,
+    "loss": "0.5 mean-per-minute ENTER Smooth-L1 + 0.5 WAIT Smooth-L1",
+    "optimizer": "AdamW",
+    "seed": 3930120260814,
+    "smooth_l1_beta_scaled_units": 0.25,
+    "update_epochs": 1,
+    "updates": "fold 1 trains on 93; each later fold updates only on the immediately prior 30 scored sessions",
+    "weight_decay": 0.0001
+  }
+}

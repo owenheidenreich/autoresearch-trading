@@ -1,0 +1,134 @@
+{
+  "created_on": "2026-08-14",
+  "debit_vertical_translation": {
+    "decision": "DO_NOT_OPEN_ECONOMICS_UNSATISFIABLE_CHRONOLOGY",
+    "four_of_five_chronology_attainable_for_any_audited_width": false,
+    "frozen_selector_entries": 35,
+    "maximum_fold_coverage": 2,
+    "widths": [
+      {
+        "exact_live_pairs": 15,
+        "four_of_five_chronology_attainable": false,
+        "frozen_entries": 35,
+        "median_entry_max_loss_usd": 131.16,
+        "risk_eligible_by_fold": {
+          "1": 13,
+          "2": 2
+        },
+        "risk_eligible_fold_count": 2,
+        "risk_eligible_folds": [
+          "1",
+          "2"
+        ],
+        "risk_eligible_pairs": 15,
+        "width_points": 5
+      },
+      {
+        "exact_live_pairs": 14,
+        "four_of_five_chronology_attainable": false,
+        "frozen_entries": 35,
+        "median_entry_max_loss_usd": 201.16,
+        "risk_eligible_by_fold": {
+          "1": 12,
+          "2": 2
+        },
+        "risk_eligible_fold_count": 2,
+        "risk_eligible_folds": [
+          "1",
+          "2"
+        ],
+        "risk_eligible_pairs": 14,
+        "width_points": 10
+      },
+      {
+        "exact_live_pairs": 11,
+        "four_of_five_chronology_attainable": false,
+        "frozen_entries": 35,
+        "median_entry_max_loss_usd": 251.16000000000003,
+        "risk_eligible_by_fold": {
+          "1": 9,
+          "2": 2
+        },
+        "risk_eligible_fold_count": 2,
+        "risk_eligible_folds": [
+          "1",
+          "2"
+        ],
+        "risk_eligible_pairs": 11,
+        "width_points": 15
+      },
+      {
+        "exact_live_pairs": 8,
+        "four_of_five_chronology_attainable": false,
+        "frozen_entries": 35,
+        "median_entry_max_loss_usd": 281.16,
+        "risk_eligible_by_fold": {
+          "1": 6,
+          "2": 2
+        },
+        "risk_eligible_fold_count": 2,
+        "risk_eligible_folds": [
+          "1",
+          "2"
+        ],
+        "risk_eligible_pairs": 8,
+        "width_points": 20
+      },
+      {
+        "exact_live_pairs": 0,
+        "four_of_five_chronology_attainable": false,
+        "frozen_entries": 35,
+        "median_entry_max_loss_usd": null,
+        "risk_eligible_by_fold": {},
+        "risk_eligible_fold_count": 0,
+        "risk_eligible_folds": [],
+        "risk_eligible_pairs": 0,
+        "width_points": 25
+      },
+      {
+        "exact_live_pairs": 0,
+        "four_of_five_chronology_attainable": false,
+        "frozen_entries": 35,
+        "median_entry_max_loss_usd": null,
+        "risk_eligible_by_fold": {},
+        "risk_eligible_fold_count": 0,
+        "risk_eligible_folds": [],
+        "risk_eligible_pairs": 0,
+        "width_points": 30
+      }
+    ]
+  },
+  "implementation_sha256": "76a82ad1d237fed4163359c968ec16598e2cc3e3d65376308a5209ee6924d982",
+  "inputs": {
+    "definition_files": 251,
+    "definition_manifest_sha256": "2c9d0f9e207b3d5b61ac6195239cf5a565280e8007c3ca02f9e11f18b781ffff",
+    "definition_root": "/Users/och/.autoresearch-trading/pathd_2025-08-01_2026-07-31/raw/databento/opra_spxw_definition",
+    "ladder_path": "/Volumes/AR_TRADING_DATA/derived/causal_day_trader_v2/ladder.parquet",
+    "ladder_sha256": "f7d75c04cbe9b8a9e0cb18feae676fbfad1732aa961db3e5b8518cd666a34abc",
+    "quote_files": 251,
+    "quote_manifest_sha256": "88e0430934978cb04065e99710cd7984cc96defd142add604d1188c29f313def",
+    "quote_root": "/Users/och/.autoresearch-trading/pathd_2025-08-01_2026-07-31/raw/databento/opra_spxw_cbbo_1m",
+    "selected_path": "/Volumes/AR_TRADING_DATA/derived/causal_day_action_value_economics_v3/real_selected_mid_only.parquet",
+    "selected_sha256": "c2d84aa50a631fe3a7950625b2125ffb34186493dc72bec8d647bd893afafd70"
+  },
+  "integrity": {
+    "economic_cell_opened": false,
+    "entry_quotes_only_for_verticals": true,
+    "future_option_prices_read": false,
+    "model_fit": false,
+    "pnl_columns_read": false,
+    "reserved_sessions_used": false
+  },
+  "owned_quote_inventory": {
+    "all_quoted_contracts_are_0dte": true,
+    "first_session": "2025-08-01",
+    "future_expiration_quoted_instruments": 0,
+    "last_session": "2026-07-31",
+    "same_day_only_sessions": 251,
+    "sessions": 251,
+    "sessions_with_future_expiration_quotes": 0
+  },
+  "purpose": "outcome-blind inventory of owned SPXW quote expirations and frozen-selector debit-vertical attainability",
+  "receipt_sha256": "c234cffedcf45ba390046c6991215f717c0e826448312766aa1ec33e9008a0e6",
+  "schema_version": "v5.spxw-owned-quote-scope-audit.v1"
+}

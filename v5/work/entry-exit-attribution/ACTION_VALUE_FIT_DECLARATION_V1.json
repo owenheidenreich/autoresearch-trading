@@ -1,0 +1,100 @@
+{
+  "architecture": {
+    "computed_parameters": 48,
+    "name": "compact_interaction_entry",
+    "state_contract_interactions": [
+      "state_x_is_call",
+      "state_x_moneyness"
+    ],
+    "trained_actions": "WAIT and every eligible affordable contract"
+  },
+  "current_fit_blockers": [
+    "architecture 'compact_interaction_entry' is not in the hashed family"
+  ],
+  "declared_on": "2026-08-14",
+  "evaluation": {
+    "bid_and_fee_only_after_positive_mid": true,
+    "chronological_positive_folds_required": 4,
+    "failure_consequence": "non-positive mid gross or less than 4/5 chronology closes the long-selector branch; no retry",
+    "folds": 5,
+    "kill_conditions": [
+      "mid_to_mid_gross_positive",
+      "beats_composition_matched_control",
+      "beats_shuffled_label_null",
+      "per_feature_timestamp_audit",
+      "no_post_entry_slot_filter",
+      "chronological_out_of_sample",
+      "no_reserved_sessions"
+    ],
+    "matched_control": "session opportunity, regime, minute, side, delta, premium and trade count",
+    "mid_to_mid_first": true
+  },
+  "forbidden": [
+    "run while any fit blocker remains",
+    "change architecture, target, cap, horizon, seed, loss, epochs, or null after fit",
+    "threshold or operating-point search",
+    "open reserved sessions"
+  ],
+  "gate_law": {
+    "assert_fit_permitted_before_target_load_or_optimizer": true,
+    "corpus": "causal_day_quote_243",
+    "gate_edits_by_codex": false,
+    "reopening_sha256": "99adf54570de8f1b8ea5b6a9e864bfb76543d8ce765e12be7b85fd0f64bdb444"
+  },
+  "implementation_hashes": {
+    "v5/ops/train_causal_day_action_value.py": "982502bd1a24dc20aa45bb3b0bc6b7a08c465ce49e019731d49bea673868a64c",
+    "v5/ops/write_causal_day_action_value_fit_declaration.py": "97194ab9775c121ec2d609de43bf7cc558d57fab812e3f20444e1352752ae219",
+    "v5/research/causal_day_action_value_targets.py": "64d47ee182019916fbf9b01fa48b052fd225e4cd4f96be147b9316f5d3055ef6",
+    "v5/research/causal_day_compact_interaction.py": "88277e1abc5e380d82ef1791bcde58ec00ee78ed96f19279c95738fc67adc687"
+  },
+  "inference": {
+    "action": "argmax of WAIT and current eligible contract predictions",
+    "current_day_rank": false,
+    "external_threshold": false,
+    "forced_time": false
+  },
+  "inputs": {
+    "action_value_receipt_sha256": "80e4ff7c4c4f16463121c53cff6310e17d86c972a372cb5fb4f15ec180b441cc",
+    "feature_cache_receipt_sha256": "b8a78360b6995cfb16f04fba4fd554d4ee958216792ddd084e2d17da82eaccf9",
+    "target_cache_receipt_sha256": "904a251fcb05e92edeab19de38b2f0597c9334435a58c89f63c676743ad52c14"
+  },
+  "label": {
+    "common_scale_preserves_action_argmax": true,
+    "horizon_minutes": 120,
+    "name": "serial_action_advantage_120m",
+    "target_scale_usd": 1000.0,
+    "trade_cap": 1
+  },
+  "null": {
+    "law": "deterministically permute all executable Q(enter) values within each training session and recompute Q(wait) from the shuffled surface",
+    "preserves": [
+      "session payoff distribution",
+      "candidate counts",
+      "minute clock",
+      "one-trade action-value law"
+    ],
+    "removes": "association between causal state/contract and its actual future payoff"
+  },
+  "outputs": {
+    "evidence_dir": "v4/audit/autoresearch/causal_day_action_value_fit_2026_08_14_attempt001",
+    "root": "/Volumes/AR_TRADING_DATA/derived/causal_day_action_value_fit_v1"
+  },
+  "purpose": "one decisive 48-parameter WAIT-versus-ENTER fit; no neighboring retry",
+  "receipt_sha256": "04b29a248289bc8a35433c1d734ade09a91ffe82c871a39407fca7423afd3e49",
+  "schema_version": "v5.causal-day-action-value-fit-declaration.v1",
+  "training": {
+    "batch_minutes": 16,
+    "feature_scaler": "mean/std from initial 93-session prefix only, frozen forward, clipped [-10,10]",
+    "folds": "existing 93-session initial prefix plus five chronological 30-session score blocks",
+    "gradient_clip": 5.0,
+    "initial_epochs": 3,
+    "learning_rate": 0.003,
+    "loss": "0.5 mean-per-minute ENTER Smooth-L1 + 0.5 WAIT Smooth-L1",
+    "optimizer": "AdamW",
+    "seed": 3930120260814,
+    "smooth_l1_beta_scaled_units": 0.25,
+    "update_epochs": 1,
+    "updates": "fold 1 trains on 93; each later fold updates only on the immediately prior 30 scored sessions",
+    "weight_decay": 0.0001
+  }
+}

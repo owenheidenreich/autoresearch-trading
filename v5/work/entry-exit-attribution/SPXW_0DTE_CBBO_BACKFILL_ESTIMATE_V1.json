@@ -1,0 +1,47 @@
+{
+  "created_on": "2026-08-14",
+  "estimate": {
+    "additional_sessions": 794,
+    "estimated_cbbo_usd": 21.556897281194427,
+    "estimated_combined_usd": 44.58527095157862,
+    "estimated_definitions_usd": 23.028373670384195,
+    "recommended_hard_cap_usd": 75,
+    "recorded_cbbo_cost_sessions": 420,
+    "recorded_cbbo_daily_mean_usd": 0.027149744686642857,
+    "recorded_definition_cost_sessions": 420,
+    "recorded_definition_daily_mean_usd": 0.029002989509299994
+  },
+  "implementation_sha256": "50336a39423f01b20de11cb04b3936848c2be8fec9080197ab3fd819b01ff37f",
+  "inputs": {
+    "audit_root": "v4/audit",
+    "ohlcv_manifest_sha256": "1cc50d7789c49e70b40aee66e712bd7bb061c74ec26db8501b1c7b95f7339699",
+    "ohlcv_root": "/Volumes/AR_TRADING_DATA/spxw_0dte_2022-06-01_2026-07-31/raw",
+    "owned_nonempty_sessions": 794
+  },
+  "integrity": {
+    "data_downloaded": false,
+    "money_spent": false,
+    "reserved_sessions_used": false,
+    "vendor_contacted": false
+  },
+  "method_limits": [
+    "This is an extrapolation from recorded historical costs, not a fresh vendor quote.",
+    "An authorized exact cost preflight must precede any paid request.",
+    "The downloader must stop before purchase above the hard cap."
+  ],
+  "purpose": "owner decision estimate for the missing same-day SPXW full-ladder quote history",
+  "receipt_sha256": "ad60ab5af2df11b5c1e81647a2aa589f2ed8f898a36fe1b3433f42bc004fd9a6",
+  "schema_version": "v5.spxw-0dte-cbbo-backfill-estimate.v1",
+  "scope": {
+    "context": "SPXW or SPX only",
+    "first_session": "2022-06-01",
+    "last_session": "2025-07-31",
+    "no_longer_tenor_or_multileg_data": true,
+    "same_day_expiry_only": true,
+    "schemas": [
+      "definition",
+      "cbbo-1m"
+    ],
+    "traded_position": "one long SPXW 0DTE call or put only"
+  }
+}

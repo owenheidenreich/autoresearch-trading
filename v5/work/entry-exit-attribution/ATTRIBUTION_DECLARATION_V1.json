@@ -1,0 +1,156 @@
+{
+  "architectural_hypothesis": {
+    "failure_consequence": "If verified, no existing Job-39 architecture can answer the owner's state-conditioned direction/contract-choice question; a next policy must contain an explicit state-by-contract interaction",
+    "numerical_proof": [
+      "reconstruct every stored OOF score as state_offset + contract_node_contribution",
+      "require maximum absolute reconstruction error <= 1e-5",
+      "require the state offset to be constant within every session-minute",
+      "require full-score and contract-node argmax identity on every minute"
+    ],
+    "statement": "The linear ContractHead is additive in [state,node], so every candle, clock, account and global-ladder state contributes one common offset to all contracts in a routed minute. Contract score differences and the call/put/strike argmax depend only on the contract node and role head."
+  },
+  "classification_rules": {
+    "architectural_separability": "all four numerical proof conditions pass",
+    "early_entry_collapse": "at least 75% of activated sessions first cross during 09:35--09:39",
+    "next_policy_if_not_separable_but_proxy_dominated": "PROXY_DOMINATED_DO_NOT_FIT_SEQUENCE_POLICY",
+    "next_policy_if_separable": "COMPACT_STATE_CONTRACT_INTERACTION_REQUIRED",
+    "otherwise": "ATTRIBUTION_INCONCLUSIVE_REQUIRE_MORE_DIAGNOSIS"
+  },
+  "closed_policy": {
+    "architecture": "neural_four_head",
+    "computed_parameters": 341,
+    "declaration": {
+      "path": "v5/work/entry-exit-attribution/DECLARATION_V5.json",
+      "sha256": "639e95238dccfed6acedff3e53656885e34d1a69bc8aabbdad2ee42d293d25ee"
+    },
+    "horizon_minutes": 120,
+    "new_fit": false,
+    "new_operating_point": false
+  },
+  "declared_diagnostics": {
+    "activation_drift": {
+      "cells": "all five frozen fold cutoffs applied only to their original OOF score blocks",
+      "metrics": [
+        "cutoff percentile and scored maximum",
+        "crossing minutes and sessions",
+        "first crossing minute",
+        "share of first crossings at 09:35--09:39"
+      ],
+      "severe_rule": "cutoff exceeds every scored minute in at least 2 of 5 folds"
+    },
+    "contract_proxies": {
+      "candidate_columns_read": [
+        "session",
+        "entry_minute",
+        "contract_id",
+        "right",
+        "self_delta",
+        "entry_ask_usd",
+        "spread_usd",
+        "moneyness_itm_points",
+        "self_iv",
+        "self_gamma",
+        "self_theta_per_minute",
+        "self_vega",
+        "volume",
+        "open_interest"
+      ],
+      "metrics": [
+        "pooled Spearman",
+        "within-minute Pearson after demeaning"
+      ],
+      "proxy_dominated_rule": "largest absolute within-minute correlation >= 0.75",
+      "reported_proxies": [
+        "is_call",
+        "abs_delta",
+        "entry_ask_usd",
+        "spread_usd",
+        "moneyness_itm_points",
+        "self_iv",
+        "self_gamma",
+        "self_theta_per_minute",
+        "self_vega",
+        "volume",
+        "open_interest"
+      ]
+    },
+    "exact_score_decomposition": [
+      "state offset",
+      "contract node contribution",
+      "within-minute and between-minute variance fractions",
+      "state/node covariance"
+    ],
+    "state_channel_neutralizations": {
+      "candle_state": "replace the GRU terminal state by zero at the fitted fusion input",
+      "clock_baseline": [
+        0.42948707938194275,
+        0.5705129504203796,
+        0.5858895778656006,
+        0.08048249781131744,
+        -0.1696133315563202
+      ],
+      "explicit_clock": "replace the five clock channels by their frozen all-entry-minute mean",
+      "global_ladder_summary": "replace the permutation-invariant ladder summary by zero while preserving contract nodes",
+      "interpretation": "descriptive fitted-model sensitivity, not causal economic importance"
+    },
+    "time_surface": {
+      "bands": [
+        "opening_0935_0949",
+        "magic_0950_1010",
+        "morning_rest_1011_1245",
+        "afternoon_pre_algo_1246_1319",
+        "algo_1320_1340",
+        "afternoon_rest_1341_1500"
+      ],
+      "named_minutes": [
+        "10:00",
+        "13:30"
+      ],
+      "outcome_comparison": false
+    }
+  },
+  "declared_on": "2026-08-14",
+  "forbidden": [
+    "read P&L, bid, exit value, MFE, MAE or any forward target column",
+    "evaluate a new threshold, rank target, selector, seed, architecture or horizon",
+    "report a profitable time, side, premium, delta or fold subgroup",
+    "use target correlation to choose an attribution result",
+    "fit or update any model",
+    "open reserved sessions"
+  ],
+  "immutable_inputs": {
+    "cache_receipt": {
+      "path": "/Volumes/AR_TRADING_DATA/derived/causal_day_magnitude_cache_v3/receipt.json",
+      "sha256": "b8a78360b6995cfb16f04fba4fd554d4ee958216792ddd084e2d17da82eaccf9"
+    },
+    "candidate_table": {
+      "path": "/Volumes/AR_TRADING_DATA/derived/causal_day_trader_v2/candidates.parquet",
+      "sha256": "04fe488b71f168cc23e714ca2a64cdeb6acffd059091ddd26d62154077f7983e"
+    },
+    "fit_receipt": {
+      "path": "v4/audit/autoresearch/causal_day_magnitude_fit_2026_08_14_attempt001/receipt.json",
+      "sha256": "a16118cc86b57baedaa046074915c3bc634022f8f01cb045509ffa9cd4d87474"
+    },
+    "rank_calibration": {
+      "path": "v4/audit/autoresearch/causal_day_rank_selector_calibration_2026_08_14_attempt001/receipt.json",
+      "sha256": "b9f46e01f72043641300e8cec97282bd1623bc8283a7e3c9b110dac72848dfd5"
+    }
+  },
+  "implementation_hashes": {
+    "v5/ops/analyze_causal_day_v5_instability.py": "7c947198fa40eb8e2e045d47a67c43398c4e16b224c8f051d25b54045d31ff09",
+    "v5/ops/write_causal_day_v5_attribution_declaration.py": "9aa023b2012b06e4bb59b87af20a43d264ae12be60872d64c06b0b881e02c418",
+    "v5/research/causal_day_attribution.py": "396088345889ecec75348b89df5b15e8d067ed18e9fe718e60b46614620923c4"
+  },
+  "outputs": {
+    "evidence_dir": "v4/audit/autoresearch/causal_day_v5_instability_attribution_2026_08_14_attempt001",
+    "root": "/Volumes/AR_TRADING_DATA/derived/causal_day_v5_instability_attribution_v1"
+  },
+  "population": {
+    "folds": 5,
+    "law": "The unchanged 150 OOF scored sessions and 423,053 real neural-four-head 120m contract predictions",
+    "reserved_sessions_forbidden_on_or_after": "2026-08-06"
+  },
+  "purpose": "Explain V5 fold concentration and opening-minute activation without reading P&L, fitting a new model, changing a selector, or choosing an economic subgroup",
+  "receipt_sha256": "f6da20c4236ec560ed925a332af282777a2379a0c1c6e2fe49e1fee92a77f4d0",
+  "schema_version": "v5.causal-day-v5-instability-attribution-declaration.v1"
+}

@@ -1,0 +1,318 @@
+{
+  "action_family": {
+    "contract_choice": "Highest predicted depth at the declared horizon among currently eligible affordable contracts",
+    "entry_clock": [
+      "09:35",
+      "15:00"
+    ],
+    "exit_for_entry_screen": "Matching fixed 60/90/120-minute clock with the frozen first-later-bid and validated terminal settlement law",
+    "one_position_at_a_time": true,
+    "predicted_depth_thresholds_points": [
+      10,
+      20,
+      30
+    ],
+    "risk_modes": [
+      "ticket_only",
+      "ticket_and_breaker"
+    ],
+    "same_minute_reentry_after_exit": false,
+    "threshold_learning_or_tuning": false,
+    "tie_break": [
+      "lower contemporaneous spread",
+      "closer to ATM from the OTM side",
+      "lexicographically smaller contract_id"
+    ],
+    "trade_caps": [
+      1,
+      2,
+      3
+    ]
+  },
+  "architectures": {
+    "count_source": "computed_parameter_counts() over canonical built models and declared tensorizer dimensions",
+    "exit_heads_during_entry_screen": "Present in the built parameter count but not optimized until the entry screen survives all signed kill conditions",
+    "hidden_size": 3,
+    "horizon_models": "One canonical scalar contract-head model per architecture and declared horizon; no uncounted multi-output head",
+    "permitted": {
+      "neural_four_head": 341,
+      "neural_joint": 322,
+      "shallow_four_head": 245,
+      "shallow_joint": 226
+    },
+    "refused": {
+      "four_independent": {
+        "parameters": 1250,
+        "reason": "Exceeds the measured 377-parameter ceiling and remains conditional on prior shared-head specialization"
+      }
+    }
+  },
+  "cache_reuse": {
+    "law": "Reuse the completed model-free whole-prefix/whole-chain cache after verifying its immutable receipt and population; width does not enter cached tensors or labels",
+    "root": "/Volumes/AR_TRADING_DATA/derived/causal_day_magnitude_cache_v3",
+    "v3_remains_history": true
+  },
+  "conditional_exit_stage_if_primary_passes": {
+    "authorized_only_after_all_seven_kill_conditions_pass": true,
+    "comparison": [
+      "matching clock",
+      "holding-time-matched peak trails"
+    ],
+    "label_scope": "Remaining ITM-depth magnitude path within the entry's declared horizon",
+    "originating_regime_owns_exit": true,
+    "perfect_foresight": "ceiling only",
+    "training_entries": "Nested out-of-fold entries from the matching entry architecture and regime only"
+  },
+  "controls_and_reporting": {
+    "bid_net": "ask in, bid out, measured fees",
+    "bootstrap_unit": "session",
+    "confidence": "one-sided 95% with the complete declared family size",
+    "family_formula": "4 architectures x 3 horizons x 3 depth thresholds x 3 trade caps x 2 risk modes x 3 selectors (model, matched, shuffled)",
+    "family_members_before_exit_stage": 648,
+    "matched_control": "For every real-policy cell, reproduce its joint side x delta-quintile x premium-quintile composition on the same scored sessions, then sample timing/contracts without replacement and apply identical occupancy/cap rules",
+    "mid_gross": "clock exit mid * 100 - entry mid * 100; spread and fees both removed",
+    "mid_net": "mid gross less measured fees",
+    "report_all_cells": true,
+    "shuffled_null": "Same architecture, folds, action thresholds, clock exits and caps, fitted only on the frozen shuffled outcomes",
+    "v5_composition_match_law": {
+      "cells": "same scored session x entry regime x option side x absolute-delta quintile x entry-ask-premium quintile",
+      "occupancy": "exact 120-minute clock intervals must not overlap; same-minute re-entry remains forbidden",
+      "outcome_blind": true,
+      "quintile_source": "causal values from the initial 93-session training prefix only, frozen before economics",
+      "required_completeness": "every model trade must receive an exact matched trade or kill condition 2 fails",
+      "sampling": "deterministic hash order without replacement, excluding model trades"
+    },
+    "v5_corrected_bootstrap": {
+      "declared_family_size": 648,
+      "family_choice": "retain V4's complete pre-exit family size rather than narrowing multiplicity after fit",
+      "fold_rule": "absolute real and paired deltas versus both controls must each be positive in at least 4 of 5 chronological folds",
+      "method": "moving whole-session block bootstrap",
+      "one_sided_level": 0.95
+    },
+    "v5_primary_family": "One corrected primary selector fixed before economics; its matched and shuffled controls remain conditional on kill condition 1"
+  },
+  "declared_on": "2026-08-14",
+  "evidence_bindings": {
+    "coverage_receipt": "fa257a815fb5c7f87d592d2fd5eece53987684ec93ba7c2f6e73a0ba4c430671",
+    "dataset_receipt": "db0fa2616137c209ccf837f2f620fb11d9941d02b05cf4a7b056d3ab8a009e95",
+    "whole_observation_receipt": "d28d745434bdde4fe381190e81c80d83867edc22124a43456fb60358cad294dd"
+  },
+  "evidence_budget": {
+    "measured_effective_observations_design_effect_range": [
+      590,
+      1016
+    ],
+    "measured_effective_observations_generous": 7557,
+    "minimum_observations_per_parameter": 20,
+    "ruling": "The generous route authorizes comparison; the conservative route admits no architecture and must accompany every result",
+    "trainable_parameter_budget_design_effect_range": [
+      29,
+      50
+    ],
+    "trainable_parameter_budget_generous": 377
+  },
+  "fit_reuse": {
+    "architecture": "neural_four_head",
+    "computed_trainable_parameters": 341,
+    "fit_receipt": {
+      "path": "v4/audit/autoresearch/causal_day_magnitude_fit_2026_08_14_attempt001/receipt.json",
+      "sha256": "a16118cc86b57baedaa046074915c3bc634022f8f01cb045509ffa9cd4d87474"
+    },
+    "horizon_minutes": 120,
+    "model_refit": false,
+    "policy_fit_gate": "PERMITTED through load_reopening() and assert_fit_permitted() with all seven required kill conditions",
+    "reason": "The model and out-of-fold ranking remain valid; only activation was defective",
+    "v4_declaration": {
+      "path": "v5/work/entry-exit-attribution/DECLARATION_V4.json",
+      "sha256": "d7cea32dadcc5f222f127655948a255e2086922913b8400c5c9c26a1da0224ee"
+    }
+  },
+  "folds": {
+    "initial_training_range": [
+      "2025-08-01",
+      "2025-12-16"
+    ],
+    "initial_training_sessions": 93,
+    "method": "expanding chronological prequential",
+    "normalization": "Mean and standard deviation fitted on the initial 93-session prefix only, frozen forward, with transformed values clipped to [-10,10]",
+    "score_blocks": [
+      [
+        "2025-12-17",
+        "2026-02-03"
+      ],
+      [
+        "2026-02-04",
+        "2026-03-18"
+      ],
+      [
+        "2026-03-19",
+        "2026-05-01"
+      ],
+      [
+        "2026-05-04",
+        "2026-06-15"
+      ],
+      [
+        "2026-06-16",
+        "2026-07-30"
+      ]
+    ],
+    "score_sessions_per_block": 30,
+    "scored_sessions_total": 150,
+    "thresholds_or_normalizers_from_score_blocks": false,
+    "update_law": "After a block is scored, its labels become eligible and the frozen model receives one incremental epoch on that block before the next score block"
+  },
+  "forbidden": [
+    "any alternate label",
+    "any alternate horizon",
+    "threshold or seed search",
+    "post-result relabel or operating-point change",
+    "four-independent fit",
+    "reserved or post-cutoff sessions",
+    "promotion",
+    "broker or vendor contact",
+    "runtime mutation",
+    "commit",
+    "hidden size other than frozen width 3",
+    "uncounted multi-output magnitude head",
+    "absolute prediction threshold at or above the label clip ceiling",
+    "whole-session top-N or percentile computed from the scored session",
+    "cutoff calibration from scored-session predictions",
+    "cutoff calibration from labels, P&L, spreads or trade outcomes"
+  ],
+  "implementation_hashes": {
+    "v5/ops/audit_causal_day_fit_features.py": "f8115f82ae96bda78a5a43cb4593b6ea7622ba5ef2b44da0c66c191eaed77b42",
+    "v5/ops/build_causal_day_fit_cache.py": "93388ad7ac9a42122d72dd55fb7f9373cd905e3507e9ab7ab0bc593c8325e306",
+    "v5/ops/evaluate_causal_day_magnitude.py": "1d5139adc97d286717a48337b8b6309c2e1a7aa023bf7835447a5d5870e58939",
+    "v5/ops/train_causal_day_magnitude.py": "02470e45191b123dc58a72ea1ef6cd046991e5fed7f35ebfe987513dd6957331",
+    "v5/ops/write_causal_day_fit_declaration.py": "4370c490364742c3f9b9f8b05e838be27374756ecfde10b13ad79eb414423dea",
+    "v5/research/causal_day_fit_cache.py": "9bd3ca1941338e2a1f173b883bdf985410883b8b94bc07b57ee59b6252fb2276",
+    "v5/research/causal_day_magnitude.py": "276ce8c8a52d2c093e9f1ccf529dc8665f5028313c0433bb4461ec02d7a33bd5",
+    "v5/research/causal_day_policy_gate.py": "a0ac5e0a800a771b5017ba8c5db32b8c4c24be46b6ba6c89501f5e971021355a"
+  },
+  "label": {
+    "economic_pnl_used_as_training_label": false,
+    "fields": [
+      "maximum_itm_depth_60m",
+      "maximum_itm_depth_90m",
+      "maximum_itm_depth_120m"
+    ],
+    "imbalance_weighting": "Initial-prefix inverse-frequency per horizon/stratum, normalized to mean one and capped at 20, then frozen",
+    "loss": "Per-horizon smooth-L1 beta 0.25 over every eligible contract; each horizon uses its own canonical scalar contract-head model",
+    "meaning": "Maximum signed SPX points in the money reached after entry and within each declared horizon",
+    "post_entry_survival_filter": false,
+    "strata_points": [
+      0,
+      10,
+      20,
+      30
+    ],
+    "training_transform": "Clip each field to [-25,30] points and divide by 30"
+  },
+  "optimizer": {
+    "batch_minutes": 16,
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "gradient_clip": 5.0,
+    "incremental_epochs": 1,
+    "initial_epochs": 3,
+    "learning_rate": 0.003,
+    "name": "AdamW",
+    "retry_or_seed_search": false,
+    "seed": 3920260814,
+    "weight_decay": 0.0001
+  },
+  "primary_kill_cell": {
+    "architecture": "neural_four_head",
+    "exit": "120-minute clock",
+    "failure_consequence": "If measured gross mid-to-mid is non-positive, record a negative result and stop before matched control, shuffled economics, bid economics or exit fitting",
+    "horizon_minutes": 120,
+    "metric": "mean gross mid-to-mid dollars per trade before fees",
+    "pass_rule": "at least one selected trade and mean gross mid-to-mid dollars per trade strictly greater than zero",
+    "risk_mode": "ticket_only",
+    "selector": {
+      "application": "freeze one cutoff per fold, then walk each scored session minute by minute under the existing occupancy and trade-cap state",
+      "current_scored_session_statistics_used": false,
+      "fold_cutoff": "k-th largest training-minute maximum where k = 2 * number of strictly earlier training sessions",
+      "mode": "causal_training_prefix_rank",
+      "outcomes_or_pnl_used_for_cutoff": false,
+      "score_unit": "maximum predicted 120-minute ITM depth among eligible contracts in each minute",
+      "target_signal_minutes_per_training_session": 2,
+      "tie_break": [
+        "lower contemporaneous spread",
+        "closer to ATM from the OTM side",
+        "lexicographically smaller contract_id"
+      ],
+      "whole_day_top_n_on_scored_session": false
+    },
+    "trade_cap": 2
+  },
+  "purpose": "Correct the pre-outcome V4 selector defect while reusing the unchanged valid width-3 fit and preserving all seven signed kill conditions",
+  "ranking_diagnostics_before_economics": [
+    "Pearson correlation of real OOF predictions with actual 120-minute ITM depth",
+    "actual 120-minute depth mean and count in ten equal-count prediction ranks",
+    "real and shuffled counts with predicted depth at or above 25 points",
+    "real and shuffled prediction standard deviations"
+  ],
+  "receipt_sha256": "64090b316ee590c508fdb4d1a117e839d8bb3642ffb39600afb19ff8470bb972",
+  "reopening": {
+    "corpus": "causal_day_quote_243",
+    "horizons_minutes": [
+      60,
+      90,
+      120
+    ],
+    "label": "itm_depth_magnitude",
+    "path": "v5/governance/CAUSAL_DAY_FIT_REOPENING_2026_08_14.md",
+    "required_kill_conditions": [
+      "mid_to_mid_gross_positive",
+      "beats_composition_matched_control",
+      "beats_shuffled_label_null",
+      "per_feature_timestamp_audit",
+      "no_post_entry_slot_filter",
+      "chronological_out_of_sample",
+      "no_reserved_sessions"
+    ],
+    "reruling_path": "v5/governance/CAUSAL_DAY_FIT_RERULING_2026_08_14.md",
+    "reruling_sha256": "cbb42c2fb31352239fece9464a331a5116da23882ab0f9f70757f57ca5fb4d7c",
+    "sha256": "99adf54570de8f1b8ea5b6a9e864bfb76543d8ce765e12be7b85fd0f64bdb444"
+  },
+  "schema_version": "v5.causal-day-trader-fit-declaration.v5",
+  "selector_attainability_gate": {
+    "absolute_rule": "refuse every absolute prediction threshold greater than or equal to the label clip ceiling",
+    "implementation": "v5/research/causal_day_selection.py",
+    "label_clip_ceiling_points": 30.0,
+    "rank_rule": "require a finite interior training-prefix rank cutoff strictly below the observed training maximum and strictly before every score session",
+    "v4_defect_reproduced_before_economics": true,
+    "voided_v4_threshold_points": 30.0
+  },
+  "shuffled_label_null": {
+    "fit_for_every_architecture": true,
+    "law": "Within each newly eligible training block, permute the complete three-horizon outcome vector among candidates with the same option side and rounded 5-point moneyness node; each horizon model consumes its corresponding permuted component",
+    "score_blocks_identical_to_real_model": true
+  },
+  "source_population": {
+    "causal_minute_states": 93798,
+    "compact_label_table_is_not_policy_observation": true,
+    "eligible_candidate_contracts": 698231,
+    "entry_minutes_per_complete_session": 326,
+    "first_session": "2025-08-01",
+    "last_session": "2026-07-30",
+    "sessions": 243,
+    "sessions_on_or_after_2026_08_06": 0,
+    "whole_chain_observation": true
+  },
+  "supersedes_declaration_sha256": "d7cea32dadcc5f222f127655948a255e2086922913b8400c5c9c26a1da0224ee",
+  "v4_interpretation": {
+    "defect_proof": "absolute prediction threshold must be strictly below the clipped label ceiling: 30 >= 30",
+    "negative_result_void": true,
+    "status": "INCONCLUSIVE_SPECIFICATION_DEFECT",
+    "zero_trade_receipt_is_audit_history_only": true
+  },
+  "v5_implementation_hashes": {
+    "v5/ops/calibrate_causal_day_rank_selector.py": "25a469c731d0408d9f86c73c46717765d07f4cf30562f9eefb856e5ca39aa651",
+    "v5/ops/evaluate_causal_day_magnitude_v5.py": "88ec5fcb595104e455e092f073ec8ca63bf4193f87f50676f3b5a87b7464b72c",
+    "v5/ops/write_causal_day_fit_declaration_v5.py": "6713f4e912461c73418b65e35efa0a76d513a91cad857f060124068416285e72",
+    "v5/research/causal_day_selection.py": "11dc06a40d1275e20ed9ab9a26a793d080188b1060259763a62d3a6e3a3c7669"
+  }
+}

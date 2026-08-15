@@ -1,0 +1,142 @@
+{
+  "created_on": "2026-08-14",
+  "declaration": {
+    "path": "v5/work/entry-exit-attribution/SPXW_0DTE_BACKFILL_VALUE_DECLARATION_V1.json",
+    "sha256": "90cea5bac0bd7f7364b02c9812ba5a1438292c2d36cbe1c68d73f0b58e6e508e"
+  },
+  "implementation_sha256": "980da638706b41ec5dbec9f7cd65daeff809a9c0ad4cbb15175bea28be3dd2f3",
+  "inputs": {
+    "architecture_declaration": {
+      "path": "v5/work/entry-exit-attribution/ACTION_VALUE_FIT_DECLARATION_V3.json",
+      "sha256": "40cb5e7d996332f40412d6cf57e59adddeccd25391b310639e9d5b2ea857d256"
+    },
+    "backfill_cost_receipt": {
+      "path": "v5/work/entry-exit-attribution/SPXW_0DTE_CBBO_BACKFILL_ESTIMATE_V1.json",
+      "sha256": "8b136cee4bcaf6a5b288e57e61074ac0c51d6145dd92b33eebb752b850d103bd"
+    },
+    "compact_economics_receipt": {
+      "path": "v4/audit/autoresearch/causal_day_action_value_economics_2026_08_14_attempt003/receipt.json",
+      "sha256": "b8976f9befecdcc403eb4f3cc1c337472d8a8c3c61365582c7535a81fa028c56"
+    },
+    "effective_sample_receipt": {
+      "path": "v4/audit/autoresearch/effective_sample_size_2026_08_14/receipt.json",
+      "sha256": "4c043735030f5eca0feb4dd496e4e295fa8b8be82014c6043259e5d200d4bd46"
+    }
+  },
+  "integrity": {
+    "data_downloaded": false,
+    "fit_performed": false,
+    "money_spent": false,
+    "new_economics_read": false,
+    "reserved_sessions_used": false,
+    "vendor_contacted": false
+  },
+  "receipt_sha256": "b3823ff914734122b8928efc4aca887c76f916066aab4af42e2be47874f1e1b6",
+  "result": {
+    "architecture_support": {
+      "compact_interaction_entry": {
+        "closed_on_current_corpus": true,
+        "complete_sessions_required_design_effect": [
+          230,
+          396
+        ],
+        "parameters": 48,
+        "supported_all_nonempty_complete": true,
+        "supported_observed_completeness": true
+      },
+      "four_independent": {
+        "closed_on_current_corpus": false,
+        "complete_sessions_required_design_effect": [
+          5978,
+          10295
+        ],
+        "parameters": 1250,
+        "supported_all_nonempty_complete": false,
+        "supported_observed_completeness": false
+      },
+      "neural_four_head": {
+        "closed_on_current_corpus": false,
+        "complete_sessions_required_design_effect": [
+          1631,
+          2809
+        ],
+        "parameters": 341,
+        "supported_all_nonempty_complete": false,
+        "supported_observed_completeness": false
+      },
+      "neural_joint": {
+        "closed_on_current_corpus": false,
+        "complete_sessions_required_design_effect": [
+          1540,
+          2652
+        ],
+        "parameters": 322,
+        "supported_all_nonempty_complete": false,
+        "supported_observed_completeness": false
+      },
+      "shallow_four_head": {
+        "closed_on_current_corpus": false,
+        "complete_sessions_required_design_effect": [
+          1172,
+          2018
+        ],
+        "parameters": 245,
+        "supported_all_nonempty_complete": false,
+        "supported_observed_completeness": false
+      },
+      "shallow_joint": {
+        "closed_on_current_corpus": false,
+        "complete_sessions_required_design_effect": [
+          1081,
+          1862
+        ],
+        "parameters": 226,
+        "supported_all_nonempty_complete": false,
+        "supported_observed_completeness": false
+      }
+    },
+    "decision": "BACKFILL_MULTIPLIES_EVIDENCE_BUT_NEEDS_A_NEW_SMALLER_SHARED_LIFECYCLE_DESIGN",
+    "new_architecture_requirement": {
+      "parameters_at_most_for_full_conservative_support": 122,
+      "parameters_at_most_under_optimistic_conservative_case": 216
+    },
+    "projected_additional_complete_sessions": 768,
+    "scenarios": {
+      "all_nonempty_complete": {
+        "conservative_parameter_budget": [
+          125,
+          216
+        ],
+        "evidence_multiplier": 4.267489711934156,
+        "projected_complete_sessions": 1037,
+        "projected_effective_n_design_effect": [
+          2518.245679012346,
+          4337.049794238683
+        ]
+      },
+      "observed_completeness": {
+        "conservative_parameter_budget": [
+          122,
+          211
+        ],
+        "evidence_multiplier": 4.160493827160494,
+        "projected_complete_sessions": 1011,
+        "projected_effective_n_design_effect": [
+          2455.1074074074077,
+          4228.30987654321
+        ]
+      }
+    },
+    "smallest_open_existing_architecture": {
+      "name": "shallow_joint",
+      "parameters": 226,
+      "supported_under_full_conservative_range": false
+    }
+  },
+  "schema_version": "v5.spxw-0dte-backfill-value.v1",
+  "scope": {
+    "context": "SPXW and optional SPX only",
+    "position": "one long SPXW 0DTE call or put",
+    "pricing": "no new prices or outcomes opened"
+  }
+}

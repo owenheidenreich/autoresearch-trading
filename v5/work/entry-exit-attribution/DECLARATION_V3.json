@@ -1,0 +1,169 @@
+{
+  "schema_version": "v5.causal-day-trader-fit-declaration.v3",
+  "declared_on": "2026-08-14",
+  "supersedes_declaration_sha256": "811cb21d2c5bab3c2f18b58833d7e9043ed1621d0c1baf722ab8bf199ca516b4",
+  "purpose": "One scoped chronological comparison of causal ITM-depth magnitude policies under the signed reopening",
+  "reopening": {
+    "path": "v5/governance/CAUSAL_DAY_FIT_REOPENING_2026_08_14.md",
+    "sha256": "99adf54570de8f1b8ea5b6a9e864bfb76543d8ce765e12be7b85fd0f64bdb444",
+    "label": "itm_depth_magnitude",
+    "corpus": "causal_day_quote_243",
+    "horizons_minutes": [60, 90, 120],
+    "required_kill_conditions": [
+      "mid_to_mid_gross_positive",
+      "beats_composition_matched_control",
+      "beats_shuffled_label_null",
+      "per_feature_timestamp_audit",
+      "no_post_entry_slot_filter",
+      "chronological_out_of_sample",
+      "no_reserved_sessions"
+    ]
+  },
+  "source_population": {
+    "sessions": 243,
+    "first_session": "2025-08-01",
+    "last_session": "2026-07-30",
+    "causal_minute_states": 93798,
+    "entry_minutes_per_complete_session": 326,
+    "eligible_candidate_contracts": 698231,
+    "whole_chain_observation": true,
+    "compact_label_table_is_not_policy_observation": true,
+    "sessions_on_or_after_2026_08_06": 0
+  },
+  "folds": {
+    "method": "expanding chronological prequential",
+    "initial_training_sessions": 93,
+    "initial_training_range": ["2025-08-01", "2025-12-16"],
+    "score_blocks": [
+      ["2025-12-17", "2026-02-03"],
+      ["2026-02-04", "2026-03-18"],
+      ["2026-03-19", "2026-05-01"],
+      ["2026-05-04", "2026-06-15"],
+      ["2026-06-16", "2026-07-30"]
+    ],
+    "score_sessions_per_block": 30,
+    "scored_sessions_total": 150,
+    "update_law": "After a block is scored, its labels become eligible and the frozen model receives one incremental epoch on that block before the next score block",
+    "normalization": "Mean and standard deviation fitted on the initial 93-session prefix only, frozen forward, with transformed values clipped to [-10,10]",
+    "thresholds_or_normalizers_from_score_blocks": false
+  },
+  "label": {
+    "fields": [
+      "maximum_itm_depth_60m",
+      "maximum_itm_depth_90m",
+      "maximum_itm_depth_120m"
+    ],
+    "meaning": "Maximum signed SPX points in the money reached after entry and within each declared horizon",
+    "training_transform": "Clip each field to [-25,30] points and divide by 30",
+    "loss": "Smooth-L1 beta 0.25 over every eligible contract and all three horizons",
+    "strata_points": [0, 10, 20, 30],
+    "imbalance_weighting": "Initial-prefix inverse-frequency per horizon/stratum, normalized to mean one and capped at 20, then frozen",
+    "post_entry_survival_filter": false,
+    "economic_pnl_used_as_training_label": false
+  },
+  "architectures": {
+    "hidden_size": 8,
+    "permitted": {
+      "shallow_joint": 701,
+      "shallow_four_head": 770,
+      "neural_joint": 1277,
+      "neural_four_head": 1346
+    },
+    "refused": {
+      "four_independent": "Outside the 4689-parameter amended ceiling and still conditional on prior shared-head specialization"
+    },
+    "multi_horizon_head": "Three predicted depths per eligible exact contract; the three horizons share one fitted representation",
+    "exit_heads_during_entry_screen": "Present in parameter count but not optimized until the entry screen survives the signed kill conditions"
+  },
+  "optimizer": {
+    "device": "cpu",
+    "seed": 3920260814,
+    "batch_minutes": 16,
+    "initial_epochs": 3,
+    "incremental_epochs": 1,
+    "name": "AdamW",
+    "learning_rate": 0.003,
+    "weight_decay": 0.0001,
+    "gradient_clip": 5.0,
+    "deterministic_algorithms": true,
+    "retry_or_seed_search": false
+  },
+  "shuffled_label_null": {
+    "fit_for_every_architecture": true,
+    "law": "Within each newly eligible training block, permute the complete three-horizon outcome vector among candidates with the same option side and rounded 5-point moneyness node",
+    "score_blocks_identical_to_real_model": true
+  },
+  "action_family": {
+    "predicted_depth_thresholds_points": [10, 20, 30],
+    "threshold_learning_or_tuning": false,
+    "contract_choice": "Highest predicted depth at the declared horizon among currently eligible affordable contracts",
+    "tie_break": [
+      "lower contemporaneous spread",
+      "closer to ATM from the OTM side",
+      "lexicographically smaller contract_id"
+    ],
+    "entry_clock": ["09:35", "15:00"],
+    "exit_for_entry_screen": "Matching fixed 60/90/120-minute clock with the frozen first-later-bid and validated terminal settlement law",
+    "trade_caps": [1, 2, 3],
+    "risk_modes": ["ticket_only", "ticket_and_breaker"],
+    "one_position_at_a_time": true,
+    "same_minute_reentry_after_exit": false
+  },
+  "primary_kill_cell": {
+    "architecture": "neural_four_head",
+    "horizon_minutes": 120,
+    "predicted_depth_threshold_points": 30,
+    "trade_cap": 2,
+    "risk_mode": "ticket_only",
+    "exit": "120-minute clock",
+    "metric": "mean gross mid-to-mid dollars per trade before fees",
+    "pass_rule": "strictly greater than zero",
+    "failure_consequence": "Record a negative result and do not fit an exit policy, relabel, change an operating point, or retry this reopening"
+  },
+  "controls_and_reporting": {
+    "matched_control": "For every real-policy cell, reproduce its joint side x delta-quintile x premium-quintile composition on the same scored sessions, then sample timing/contracts without replacement and apply identical occupancy/cap rules",
+    "shuffled_null": "Same architecture, folds, action thresholds, clock exits and caps, fitted only on the frozen shuffled outcomes",
+    "family_members_before_exit_stage": 648,
+    "family_formula": "4 architectures x 3 horizons x 3 depth thresholds x 3 trade caps x 2 risk modes x 3 selectors (model, matched, shuffled)",
+    "bootstrap_unit": "session",
+    "confidence": "one-sided 95% with the complete declared family size",
+    "report_all_cells": true,
+    "mid_gross": "clock exit mid * 100 - entry mid * 100; spread and fees both removed",
+    "mid_net": "mid gross less measured fees",
+    "bid_net": "ask in, bid out, measured fees"
+  },
+  "conditional_exit_stage_if_primary_passes": {
+    "authorized_only_after_all_seven_kill_conditions_pass": true,
+    "training_entries": "Nested out-of-fold entries from the matching entry architecture and regime only",
+    "label_scope": "Remaining ITM-depth magnitude path within the entry's declared horizon",
+    "comparison": ["matching clock", "holding-time-matched peak trails"],
+    "originating_regime_owns_exit": true,
+    "perfect_foresight": "ceiling only"
+  },
+  "implementation_hashes": {
+    "v5/research/causal_day_policy_gate.py": "d7ac4afe495a98f473e5a84cb16c228f6f86bdb20e1e4a18fb1dd60e347a3964",
+    "v5/research/causal_day_magnitude.py": "c1ed990bc089dcf15f1b2441ab83b387b041c9f070e8c1046aebc02f614c53ce",
+    "v5/research/causal_day_fit_cache.py": "69fc6dc017c64508eea6654812284e1fbbcbdfc1fe7844e9eb00b931bd9d1a3d",
+    "v5/ops/build_causal_day_fit_cache.py": "93388ad7ac9a42122d72dd55fb7f9373cd905e3507e9ab7ab0bc593c8325e306",
+    "v5/ops/train_causal_day_magnitude.py": "f080d59d75924c96def585ac6a5cde25f7f759e463ce08edccb130c81d063967",
+    "v5/ops/audit_causal_day_fit_features.py": "697ceeaa276ab237bc00c90b41b14a64cb962dd045b002bd9494b36a671c9404"
+  },
+  "evidence_bindings": {
+    "coverage_receipt": "fa257a815fb5c7f87d592d2fd5eece53987684ec93ba7c2f6e73a0ba4c430671",
+    "dataset_receipt": "db0fa2616137c209ccf837f2f620fb11d9941d02b05cf4a7b056d3ab8a009e95",
+    "whole_observation_receipt": "d28d745434bdde4fe381190e81c80d83867edc22124a43456fb60358cad294dd"
+  },
+  "forbidden": [
+    "any alternate label",
+    "any alternate horizon",
+    "threshold or seed search",
+    "post-result relabel or operating-point change",
+    "four-independent fit",
+    "reserved or post-cutoff sessions",
+    "promotion",
+    "broker or vendor contact",
+    "runtime mutation",
+    "commit"
+  ],
+  "receipt_sha256": "fb44339cdec0c111aed8db7e7b1dc7de89365fc181eed828125c77cad9afeb49"
+}

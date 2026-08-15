@@ -1,0 +1,103 @@
+{
+  "architecture": "compact_shared_lifecycle",
+  "built_parameter_count": 120,
+  "cells": [
+    {
+      "completed_candles": 30,
+      "eligible_actions": 3,
+      "minute": "10:00",
+      "session": "2025-08-01",
+      "visible_contracts": 364
+    },
+    {
+      "completed_candles": 240,
+      "eligible_actions": 9,
+      "minute": "13:30",
+      "session": "2025-08-01",
+      "visible_contracts": 330
+    },
+    {
+      "completed_candles": 330,
+      "eligible_actions": 10,
+      "minute": "15:00",
+      "session": "2025-08-01",
+      "visible_contracts": 284
+    },
+    {
+      "completed_candles": 30,
+      "eligible_actions": 8,
+      "minute": "10:00",
+      "session": "2026-02-02",
+      "visible_contracts": 316
+    },
+    {
+      "completed_candles": 240,
+      "eligible_actions": 10,
+      "minute": "13:30",
+      "session": "2026-02-02",
+      "visible_contracts": 280
+    },
+    {
+      "completed_candles": 330,
+      "eligible_actions": 10,
+      "minute": "15:00",
+      "session": "2026-02-02",
+      "visible_contracts": 261
+    },
+    {
+      "completed_candles": 30,
+      "eligible_actions": 6,
+      "minute": "10:00",
+      "session": "2026-07-30",
+      "visible_contracts": 342
+    },
+    {
+      "completed_candles": 240,
+      "eligible_actions": 10,
+      "minute": "13:30",
+      "session": "2026-07-30",
+      "visible_contracts": 229
+    },
+    {
+      "completed_candles": 330,
+      "eligible_actions": 10,
+      "minute": "15:00",
+      "session": "2026-07-30",
+      "visible_contracts": 289
+    }
+  ],
+  "checks": {
+    "finite_entry_wait_hold_sell_scores": true,
+    "first_middle_last_sessions": true,
+    "masked_future_invariance": true,
+    "morning_and_afternoon_entry_routes": true,
+    "origin_owned_exit_routes": true,
+    "whole_chain_exceeds_entry_actions": true
+  },
+  "created_on": "2026-08-14",
+  "implementation_sha256": "23db48038c74dee62f7dd596e3a0917e36e32d03c3765ff5a8ceb071fe2110a0",
+  "inputs": {
+    "cache_manifest": {
+      "path": "/Volumes/AR_TRADING_DATA/derived/causal_day_magnitude_cache_v3/cache_manifest.parquet",
+      "sha256": "30bceb46f6c20ebd5f939c9e0d1a6d95cc0cfc0c468c6f9edcad08d7855302c7"
+    },
+    "design_receipt": {
+      "path": "v5/work/entry-exit-attribution/COMPACT_SHARED_LIFECYCLE_DESIGN_V1.json",
+      "sha256": "bf150c24142275c6424799a7f287b58d792fac5bdc5f36efd460b8090759408e"
+    },
+    "scaler": {
+      "path": "/Volumes/AR_TRADING_DATA/derived/causal_day_action_value_fit_v3/initial_prefix_scaler.json",
+      "sha256": "9ba34730740e9bd79e056a258d6d052999b8d21ee5775154853a46d8b2e07313"
+    }
+  },
+  "integrity": {
+    "data_downloaded": false,
+    "economics_read": false,
+    "fit_performed": false,
+    "reserved_sessions_used": false,
+    "target_array_accessed": false,
+    "vendor_contacted": false
+  },
+  "receipt_sha256": "1649d79aad875de6de3132530ea1a1165931d5a5a2926e3b5e1011caa66971b7",
+  "schema_version": "v5.compact-shared-lifecycle-real-interface.v1"
+}

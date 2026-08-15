@@ -1,0 +1,127 @@
+{
+  "action_values": {
+    "candidate_path": "/Volumes/AR_TRADING_DATA/derived/causal_day_action_advantage_v2/candidate_action_values.parquet",
+    "candidate_rows": 698231,
+    "candidate_sha256": "65cf2d6383746bec5fb560966b504cbd6cf144f57361a0c9cf9ec4b16fad510a",
+    "receipt_path": "v4/audit/autoresearch/causal_day_action_advantage_2026_08_14_attempt002/receipt.json",
+    "receipt_sha256": "80e4ff7c4c4f16463121c53cff6310e17d86c972a372cb5fb4f15ec180b441cc"
+  },
+  "additional_completion_requirements": [
+    "executable net corrected lower bound above zero",
+    "risk compatible with the $10,000 account"
+  ],
+  "architecture": {
+    "computed_parameters": 48,
+    "horizon_minutes": 120,
+    "label": "serial_action_advantage_120m",
+    "name": "compact_interaction_entry"
+  },
+  "current_fit_blockers": [
+    "architecture 'compact_interaction_entry' is not in the hashed family"
+  ],
+  "declared_on": "2026-08-14",
+  "failure_consequence": "any primary, executable, control, chronology, confidence or risk failure closes this long-selector branch; no target, horizon, seed, architecture or operating-point retry",
+  "feature_audit": {
+    "path": "v4/audit/autoresearch/causal_day_fit_feature_audit_2026_08_14_attempt001/receipt.json",
+    "sha256": "923e26acbcc5eda22da4fd88a4efb819049db765ba5283519546b6400f97ab8c"
+  },
+  "fit_declaration": {
+    "path": "v5/work/entry-exit-attribution/ACTION_VALUE_FIT_DECLARATION_V1.json",
+    "self_hash": "04b29a248289bc8a35433c1d734ade09a91ffe82c871a39407fca7423afd3e49",
+    "sha256": "ed4596755199e1d6ea61a8c1c27d41576eea31ab65cd60ce55d3afd138a7befb"
+  },
+  "forbidden": [
+    "run while any fit blocker remains",
+    "alter the structural zero-dollar WAIT floor after fit",
+    "select a scored-session threshold or top-N rank",
+    "read executable economics if midpoint primary is non-positive",
+    "retry a neighboring policy after failure",
+    "open reserved sessions, promote, paper trade, or submit an order"
+  ],
+  "future_fit_receipt": "v4/audit/autoresearch/causal_day_action_value_fit_2026_08_14_attempt001/receipt.json",
+  "gate_law": {
+    "corpus": "causal_day_quote_243",
+    "fit_and_evaluation_both_call_unchanged_gate": true,
+    "gate_edits_by_codex": false,
+    "reopening_sha256": "99adf54570de8f1b8ea5b6a9e864bfb76543d8ce765e12be7b85fd0f64bdb444"
+  },
+  "implementation_hashes": {
+    "v5/ops/evaluate_causal_day_action_value.py": "27cdb085d03c71b42fd91d062dabbb78dd1f4ae972f90d14f138bf626bfda919",
+    "v5/ops/write_causal_day_action_value_evaluation_declaration.py": "984825ab8d2caf2245bf0116dacabd2d474fb58180b7fc08c6839a3ca0a594bd",
+    "v5/research/causal_day_action_value_selection.py": "c1eb26a541e044889195eed04f49dc140a155d9692281a1a2cc8a6fe7084f9dc"
+  },
+  "inference": {
+    "contract_tie_break": "lexicographically first contract_id at the same maximum current prediction",
+    "current_day_rank": false,
+    "external_threshold": false,
+    "forced_time": false,
+    "later_same_day_prediction_used": false,
+    "law": "walk each score session from 09:35 through 15:00; enter the first minute where the largest current predicted Q(enter) strictly exceeds max(0, predicted Q(wait)); otherwise abstain",
+    "no_trade_floor_reason": "doing nothing is always available for zero dollars; regression error cannot make abstention economically negative",
+    "no_trade_floor_usd": 0.0,
+    "trade_cap": 1
+  },
+  "inference_standard": {
+    "bootstrap_seed": 3940120260814,
+    "corrected_lower_bound_above_zero_required_for_all_vectors": true,
+    "declared_family_size": 649,
+    "family_reason": "retain Job 39's 648-member family and add exactly one compact successor",
+    "moving_block_sessions": 5,
+    "one_sided_alpha": 0.05,
+    "positive_chronological_folds_required": 4,
+    "required_positive_vectors": [
+      "real executable net",
+      "real minus matched executable net",
+      "real minus shuffled executable net"
+    ]
+  },
+  "kill_conditions": [
+    "mid_to_mid_gross_positive",
+    "beats_composition_matched_control",
+    "beats_shuffled_label_null",
+    "per_feature_timestamp_audit",
+    "no_post_entry_slot_filter",
+    "chronological_out_of_sample",
+    "no_reserved_sessions"
+  ],
+  "matched_control": {
+    "fallback": "nearest eligible minute in the same session, opening regime and side",
+    "law": "one alternate per real selected session; exact session, opening regime and side; exclude the selected action; minimize minute distance, then absolute-delta distance, then log-premium distance, then contract_id",
+    "payoff_read_during_match": false,
+    "report_maximum_minute_distance": true,
+    "same_minute_preferred": true,
+    "trade_count_preserved": true
+  },
+  "outcome_firewall": {
+    "only_after_primary_positive": [
+      "ask-entry/bid-exit net outcomes including measured fee",
+      "outcome-blind composition-matched control",
+      "identically fitted shuffled-label policy"
+    ],
+    "operating_point_search": false,
+    "primary_first": "mean gross mid-to-mid P&L per all 150 scored sessions, with abstentions zero",
+    "stop_if": "no selected trade or primary mean <= 0"
+  },
+  "outputs": {
+    "evidence_dir": "v4/audit/autoresearch/causal_day_action_value_economics_2026_08_14_attempt001",
+    "root": "/Volumes/AR_TRADING_DATA/derived/causal_day_action_value_economics_v1"
+  },
+  "purpose": "complete outcome-firewalled evaluation of the single compact WAIT-versus-ENTER fit",
+  "receipt_sha256": "33ef2e0d96d73370ab529f91fd3b3fb47ad7f9a9208fc4a12920c5c3e0d08bef",
+  "risk": {
+    "maximum_loss_share": 0.05,
+    "maximum_loss_usd": 500.0,
+    "reason": "the fixed 120-minute policy has no proven early stop, so the signed 5% daily breaker must bind to premium-at-risk rather than an assumed exit",
+    "requirements": [
+      "largest selected ask ticket plus fee <= $500",
+      "worst realised selected trade >= -$500"
+    ],
+    "starting_equity_usd": 10000.0
+  },
+  "schema_version": "v5.causal-day-action-value-evaluation-declaration.v1",
+  "shuffled_control": {
+    "comparison_unit": "paired all-session vectors; abstentions are zero",
+    "law": "deterministically permute all executable Q(enter) values within each training session and recompute Q(wait) from the shuffled surface",
+    "training_and_inference_identical_to_real": true
+  }
+}

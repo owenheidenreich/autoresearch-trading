@@ -1,0 +1,58 @@
+{
+  "calibration_sources": [
+    "research/findings/EFFECTIVE_SAMPLE_SIZE_2026_08_14.md (10-27 min autocorrelation; 20 chosen)",
+    "research/findings/SELECTIVE_POLICY_AND_THE_PRINT_ARTIFACT_2026_08_14.md ($102.60 value-noise scale; $100 chosen)",
+    "STATUS.md section 5 (round-trip drag $15 + per-contract spread $2-10)"
+  ],
+  "created_on": "2026-08-15",
+  "decision_rule": "smallest n in (243, 404, 650, 890) with edge_small recovery_rate >= 0.8 and null clean_rate >= 0.95; compare against the per-fit linear-scaled budget claim and against the row-43 full-corpus convention",
+  "declaration_sha256": "d8cd12f16b02d03733da48c730efa906242aec30812bfb9feb5f6046e2004d28",
+  "implementation_sha256": "03eb932b98133194129ff256fb0e4473c189f69ed63dc92de57d41d89fb301c7",
+  "integrity": {
+    "money_spent": false,
+    "real_economics_opened": false,
+    "real_targets_opened": false,
+    "vendor_contacted": false
+  },
+  "law": {
+    "autocorrelation_minutes": 20.0,
+    "base_drag_usd": 15.0,
+    "distractor_sd": 1.0,
+    "effect_medium_usd_per_sd": 120.0,
+    "effect_small_usd_per_sd": 40.0,
+    "eligible_nodes": 6,
+    "epochs": 60,
+    "ladder_nodes": 16,
+    "learning_rate": 0.01,
+    "minibatch_rows": 8192,
+    "minutes_per_session": 150,
+    "null_clean_rate_required": 0.95,
+    "null_entry_rate_tolerance": 0.05,
+    "observation_noise_sd": 0.5,
+    "recovery_fraction_of_oracle": 0.5,
+    "recovery_rate_required": 0.8,
+    "score_sessions": 120,
+    "signal_feature": "body_points",
+    "spread_high_usd": 10.0,
+    "spread_low_usd": 2.0,
+    "training_sessions": [
+      243,
+      404,
+      650,
+      890
+    ],
+    "trials_per_cell": 40,
+    "value_noise_usd": 100.0
+  },
+  "law_sha256": "7bc909994cb203ff5db91559e66170473f95f905fbc0cb816a5165f7202c758e",
+  "motivation": "2026-08-15 external adversarial review: per-fit linear-scaled conservative budgets (~49-107) exclude the 96-parameter entry phase at most outer folds, and the 20-observations-per-parameter rule was never measured. Owner chose to measure.",
+  "question": "What is the smallest chronological training-session count at which the real compact_shared_lifecycle entry phase (96 trainable parameters, exit head frozen) recovers a planted, architecture-representable entry edge at >=80% of trials while keeping >=95% of null-world trials at <=5% entry rate?",
+  "runner_sha256": "9a8b121934b867975cae8dff8018d6a6bd9d10b278a8d30eae7c33049f5bc25d",
+  "schema_version": "v5.capacity-known-answer-declaration.v1",
+  "scope_limits": [
+    "Phase A measures the ENTRY phase only; the 24-parameter exit head and trajectory-level ESS are Phase B.",
+    "Stateless per-minute action evaluation: measures representational recovery, not trading economics.",
+    "Synthetic worlds: a measured minimum here calibrates the capacity law; it does not by itself authorize any real fit.",
+    "Smoke runs before this declaration were timing-only; their metrics were discarded unread."
+  ]
+}

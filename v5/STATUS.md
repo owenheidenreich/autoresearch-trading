@@ -1,23 +1,29 @@
 # V5 Project Status — the one page
 
-**Last updated: 2026-08-12.** This is the only current-state, job-register, and gate-chain document.
+**Last updated: 2026-08-14.** This is the only current-state, job-register, and gate-chain document.
 If another file disagrees, this page wins and the conflict must be reported.
 
-> **G1 closed on 2026-08-09 with the verdict `UNDERPOWERED`.** The screen was released under "large edge
-> or stop"; this is the stop. The gate itself is sound — it falsely passes matched surrogates only 0.7% of
-> the time and row 183's shared-term artifact only 1.0% — but on 247 owned sessions it can only detect an
-> edge of **8-16 net points per session, which is 22 to 88 times the cost of trading**. The real
-> profit-and-loss was therefore **never computed**, which keeps the mechanisms legitimately available to a
-> future screen with more data. See the
-> [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md).
+> **G1 remains blocked, but not for the reason this page gave until 2026-08-14.** The first campaign
+> closed on 08-09 as `UNDERPOWERED` on 247 sessions, and this header then concluded that *"the only thing
+> that moves G1 is calendar time."* **The project's own work falsified that three days later.** Job 17
+> bought **2,541 sessions — a tenfold increase in `n` — for $3.20 on 08-12**, with no calendar time at all,
+> and roughly twenty jobs have run since. The old lead is corrected here rather than left to be
+> rediscovered as new.
 >
-> **The only thing that moves G1 is calendar time.** The detection floor scales as 1/sqrt(n): roughly
-> four years of further sessions to halve it.
+> **The current reason G1 is blocked is effect size, not sample size.** Row 20's second known-answer
+> campaign ran on the expanded corpus (2,435 eligible sessions) and stopped on 08-13 at **8% recovery
+> against the 80% required**, with both nulls clean at 0.0000 false pass. The gate is sound; the effect it
+> is asked to find is not there at the declared threshold. Another tenfold increase in data is what
+> 1/sqrt(n) would now demand, so **buying history is no longer the obvious escape.**
 >
-> **The Track-A capture completed on 2026-08-12 and its certification is issued.** G3 has passed: 51 of 73
-> scoped option features are now admitted, up from 8, on a signed three-session latency and freshness
-> envelope. That was the last thing on the board that could be done without new data. **Both active
-> branches are now closed, and the project is waiting on calendar time.**
+> **Two branches are open and neither needs new data.** (1) The causal day trader (row 39) is a complete,
+> tested, unfitted foundation whose fit is refused by two owner-rulable gates — and one of those gates
+> **contradicts row 41's own stated next step** (see §16). (2) The short side and defined-risk spreads are
+> named by five separate ledger rows as the one place the measured variance premium accrues rather than
+> drains; they are barred by a **charter clause, not by evidence** (see §17).
+>
+> **Track-A completed 08-12 and G3 has passed:** 51 of 73 scoped option features are admitted, up from 8,
+> on a signed three-session latency and freshness envelope.
 
 ## 0. Job register
 
@@ -39,6 +45,36 @@ A committed work packet must appear here. No row means no job.
 | 11 | Build the two training preconditions | G3/G4 | **DONE 08-05; arrival parity SATISFIED 08-12 by the signed latency and freshness receipts. Frozen knobs still bind** | — | [`research/knobs.py`](research/knobs.py), [arrival finding](research/findings/HISTORICAL_ARRIVAL_PARITY_2026_08_05.md) |
 | 12 | Close six control-machinery gaps found by the training-readiness review: gate-pass receipts, computed power bound to the session index, trades→session aggregator, entry-freeze lock, knob-registry expansion, pipeline composition test | G1–G6 controls | **DONE 08-05 — 97 tests green** | — | [`research/gate_receipts.py`](research/gate_receipts.py), [`research/entry_stream.py`](research/entry_stream.py), [`research/validation/session_index.py`](research/validation/session_index.py) |
 | 13 | Register every way training data can differ from what the live system sees | G4/G6/G7 | **BUILT 08-09 — 16 axes, 7 blocking; `product_session_existence` settled by owner ruling the same day** | The remaining axes settle at their named gates | [`research/divergence.py`](research/divergence.py), [§15](#15-the-trainlive-divergence-register) |
+| 14 | Re-derive the emission allowance from the new OPRA evidence | G4 | **RULE DRAFTED 08-12, AWAITING SIGNATURE — no value re-derived and none may be until signed. The choice of statistic decides whether the number rises or falls, so it is an owner decision, not a computation** | Owner signing or rejecting the rule. Nothing is unblocked either way while G1 is underpowered | [pre-registration](governance/EMISSION_LAG_LOWERING_RULE_2026_08_12.md) |
+| 15 | Higher-occupancy direction screen: is any occupancy/horizon cell measurable on the owned corpus? | G1 | **ANSWERED 08-12 — NO FAMILY RECOMMENDED. Occupancy works as row 186 predicted: at a 5-minute horizon with ≤6 members the measurement floor drops *below* the friction bar, versus 22–88× for frozen G1. But the smallest edge any cell requires is 6.8% of a move's SD per trade — an implied annualised Sharpe near 9. Measurable, not winnable** | Owner decision: accept the recommendation not to declare a family | [finding](work/occupancy-feasibility/PLAN.md), [receipt](work/occupancy-feasibility/feasibility_receipt.json) |
+| 16 | Phase 0: audit the cost bar and clear the free divergence axes | G1/G5/G6 | **DONE 08-12 — cost bar decomposed and three documentation errors corrected; `slippage_accounting`, `clock_and_dst` and `reconnects_and_gaps` all settled; blocking axes 7 → 4; two live defects found and repaired. 232 tests green** | — | [friction decomposition](research/findings/FRICTION_DECOMPOSITION_2026_08_12.md), [`research/statistics.py`](research/statistics.py), [§5](#5-measured-cost-bars), [§15](#15-the-trainlive-divergence-register) |
+| 17 | Phase 1: acquire ten years of ES history | G1 | **DONE 08-12 — $3.2036 spent against a $25 cap. The corpus is now **2,541 non-empty sessions, 2016-08-01 to 2026-07-31** (2,534 eligible), all opening 09:30 and loader-clean. New root; the Path-D tree is untouched and the owned year is hardlinked, not copied** | — | [receipt](../v4/audit/autoresearch/es_history_acquisition_2026_08_12/acquisition_receipt.json), [manifest](../v4/audit/autoresearch/protocol101_pathd_data_acquisition/paid_data_approval_manifest_es_history_2026_08_12.json), [degraded-session policy](../v4/audit/autoresearch/es_history_acquisition_2026_08_12/degraded_session_policy.json) |
+| 18 | Set G1's pass criterion from what the option layer needs | G1/G2 | **DERIVED 08-12 — the bar is **65.73% directional accuracy at 60 minutes**, not 0.358 ES points. 0.358 answers "profitable in ES?", which was never the question. Stated in accuracy because the expanded corpus revealed a **7.08x volatility range** across years, making any absolute points bar incomparable. Undetectable on 247 sessions (floor 71.77%), detectable on 2,531 (floor 56.80%)** | — | [finding](research/findings/G1_THRESHOLD_FROM_THE_OPTION_LAYER_2026_08_12.md) |
+| 21 | Charter amendment: position sizing and the contract universe | G2/G4 | **SIGNED 08-13 — declares `moneyness_band` explicitly (bounded both sides; deep OTM barred as unwinnable), raises the single-contract premium ceiling to 13% of equity on measured evidence that an early exit takes 4.29% of the account rather than 13%, and establishes an amendment procedure the charter never had. **CONFLICT FOUND 08-13 by job 24: the 13% ceiling and the 5% daily breaker cannot both hold.** A near-ATM ticket at 10.5% of a $10,000 account loses ~6.1% of the account on a typical wrong call, so one losing trade trips the breaker and the bot gets about one trade a session at any hold length. The amendment's own 4.29% figure assumed the −30% exit; without it the figure is 7.55%, and this corpus cannot re-measure the exit credibly. Needs an owner ruling, not a silent re-reading** | Owner ruling on which clause gives | [amendment](governance/CHARTER_AMENDMENT_POSITION_SIZING_2026_08_13.md), [risk receipt](../v4/audit/autoresearch/occupancy_risk_2026_08_13/receipt.json), [moneyness receipt](../v4/audit/autoresearch/option_payoff_by_moneyness_2026_08_13/receipt.json), [stop receipt](../v4/audit/autoresearch/stop_effectiveness_2026_08_13/receipt.json) |
+| 43 | Re-rule §4: are 93,798 causal decision states worth 93,798 independent observations? | G4 | **MEASURED 08-14 — NO, AND §4 COLLAPSES. THE ANSWER IS ABOUT 1,000–7,500, NOT 93,798.** Two independent routes: integrated within-session autocorrelation returns **2,879–7,557** effective observations, the clustering design effect returns **590–1,016**. Autocorrelation times are **10–27 minutes**, which is what a 60-minute forward label must show. **This kills the budget: §4's 4,689 parameters was too large by 12x to 100x.** Neither 243 nor 93,798 was right; the measured answer is **12–31 effective observations per session** (2–4 by design effect). **Resolved by re-ruling the same day** — budget set at the generous **377 parameters** and `causal_day_hidden_size` frozen at **3**, the largest width that fits, which admits all four comparison architectures (226/245/322/341) and refuses `four_independent` (1,250). At the previously used width 8 nothing fits. The budget now binds shallow architectures too, which §4 did not. **The conservative design-effect route admits nothing at any width; the re-ruling proceeds on the generous route as a stated judgement and requires the conservative figure reported alongside any result.** 744 tests green | Owner: none — the fit is authorized at width 3 and Codex may proceed | [finding](research/findings/EFFECTIVE_SAMPLE_SIZE_2026_08_14.md), [receipt](../v4/audit/autoresearch/effective_sample_size_2026_08_14/receipt.json), [tool](ops/measure_effective_sample_size.py), [suspension](governance/CAUSAL_DAY_FIT_SUSPENSION_2026_08_14.md) |
+| 42 | Price the owner's sparse 10-30 point target: what would the answer cost in sessions? | G1/G4 | **RUN 08-14 — THE DATA WAS NEVER THE CONSTRAINT ON THIS TARGET.** Every prior screen here measured a *marginal* edge against a friction bar, where `detectable_sharpe` and the 1/sqrt(n) wall bind. The owner's strategy is a *tail*: a rare large payoff funding many small losses. Priced from banked prevalence (698,231 candidates, 243 sessions, $519.20 mean entry ask, $17.54 measured exit spread, $3.08 fees, family of 9): if the thesis holds at the size claimed it is provable on **27 sessions** and the project owns 243. **What blocks it is the required precision lift — 1.57% base rate to 17.51% break-even on the 30-point target, an 11.1x lift.** Nothing measured here has produced one; job 39 round 1's best entry effect was ~1.24x. **This reverses the standing "buy more history" recommendation for this branch.** It also vindicates the owner's instinct about move size: the 10-point target pays 0.9:1 and breaks even at **53.16%**, the 30-point target pays 4.7:1 and breaks even at **17.51%** — holding for the bigger move lowers the accuracy bar by **35 points**. 711 tests green | Owner ruling on §16 (row 41 vs ledger row 340) before any fit | [finding](research/findings/PRICING_THE_SPARSE_TARGET_2026_08_14.md), [receipt](../v4/audit/autoresearch/sparse_target_price_2026_08_14/receipt.json), [tool](ops/price_sparse_target.py) |
+| 41 | The exit is conditionally powerful and unconditionally zero | G4 | **RUN 08-14 on owner correction — THIS EXPLAINS EVERY NULL EXIT RESULT THE PROJECT HAS.** Owner's point: a 30-minute label truncates a 60-minute move, and an exit holding 7.9 minutes cannot monetise a trend at all. Added a **trailing-stop family** — the first exit here that can *ride* rather than only leave early. On a random entry the trails lose (mid: hold-5m −$0.2 vs trail-25% −$17.8). **That does not refute the thesis; it exposes a defect in the attribution packet** — Phase 3 fits the exit on random entries, which is correct only for exits whose value is entry-**independent**, and a trail's whole value is conditional. Measured conditionally: on the **36.7%** of trades that become big movers, holding 60 minutes returns **+$675**; on the 26.6% that never move, holding 60 returns **−$598** while a 5-minute clock returns −$214. **Those cancel almost exactly under a random entry, which is the only regime every prior exit study measured.** Trap check passes — big movers are not cheap contracts ($1,096 vs $1,103 mean premium). **The entry would need 38.9% precision against a 36.7% base rate — a +2.2pp gap — to make a 60-minute hold break even; round 1's entry model showed +7.1pp on a different label.** 651 tests green | Owner: relabel the entry to predict sustained excursion and score it through a long clock | [log](work/entry-exit-attribution/LOG.md), [receipt](../v4/audit/autoresearch/quoted_exit_trailing_2026_08_14/receipt.json) |
+| 40 | Preregistered test of the owner's two "magic times", and a blind spot it exposed | G4 | **RUN 08-14 — BOTH MINUTES FAIL; THE WINDOWS ARE REAL.** Owner named **10:00** and **13:30** before any test, which makes this a two-member preregistered family rather than a search. **A blocking defect surfaced first: every dataset built before this round began at 10:35.** `path_features` required 61 minutes of prior history for the 60-minute lookback against a 09:30 open, so the **09:30-10:30 window contributed zero candidates to the census, the selective policy, the exit study and the factorial** — a blind spot nothing asserted against. Fixed with adaptive lookbacks recording `history_minutes`; the fixed form stays the default so earlier tables reproduce. Rebuilt 707,171 → 851,567 candidates. **Against their own local neighbourhoods both named minutes lose:** 10:00 **−$36.7** vs −$27.7 either side; 13:30 **−$37.7** vs −$22.6 either side. The unconditional claim is dead; the *conditional* one ("long at 1330 **at a support level**") is untested and is a model question. **The greeks reasoning is confirmed:** afternoon theta runs **2.4x** faster with **1.75x** the gamma on a contract costing **40%** less. **And the windows differ in what they ask:** morning needs **+2.7pp** of hit rate to break even, afternoon **+5.2pp**. 647 tests green | Owner: run the factorial per window and compare `(p, W, L)` signatures before committing to separate models | [log](work/entry-exit-attribution/LOG.md) |
+| 39 | Causal time-aware 0DTE day trader: whole developing day, ladder, contract choice and origin-owned exit | G4 | **NON-FIT FOUNDATION COMPLETE 08-14; FIT-DEPENDENT ANSWER REFUSED BY CURRENT EVIDENCE RULES.** The four roles are routing responsibilities—morning entry/exit and afternoon entry/exit—not an assumption that four independent models win. **243 complete episodes, 93,798 causal minute states, 1,880,427 compact near-band label rows and 698,231 affordable OTM candidates** cover the sparse OTM→10/20/30-ITM 60/90/120m target. Exact 10:00/13:30 opportunity and economic comparisons all have corrected intervals containing zero: the times are diagnostic areas, not forced trades. Terminal accounting is resolved on all 243 sessions from the owned official, non-derived SPX 16:00 source; missing-bid paths are labelled settlement, never fills. A completion audit caught two under-scopes despite green tests: the first tensor bridge discarded the open after 120 candles and showed only the ±25-point chain. Declaration v2 now preserves the whole completed session prefix and whole live chain (historical median 313 contracts/minute) while masking entry actions separately to affordable near-OTM contracts. Twelve real-data cells match the source chain count exactly and retain the 09:30 candle through 15:00. The deterministic $10k simulator resets episode state, preserves held-contract visibility, exports the full considered chain, and records entry/max/final ITM depth, conversion, time-to-cross and underlying/option excursions. Five interfaces and family-corrected reporting are implemented but unfitted. **No model, threshold or profitability claim:** G1 still prohibits option fitting and the later quote-corpus closure prohibits another selective long-side fit; neural comparison additionally needs 1,140 sessions and 20 sessions/parameter (the 1,296-parameter shared candidate would require 25,920 sessions). | To fit: explicit evidence-backed reopening of both general blockers; neural work also needs its frozen sample rules satisfied or legitimately amended. Then run the declared chronological comparison, matched controls, model-selected replays, complete economics and behavioral attribution | [finding](research/findings/CAUSAL_DAY_TRADER_ATLAS_2026_08_14.md), [work packet](work/entry-exit-attribution/PLAN.md), [goal](work/entry-exit-attribution/GOAL.md), [log](work/entry-exit-attribution/LOG.md), [coverage](../v4/audit/autoresearch/causal_day_trader_coverage_2026_08_14_attempt002/receipt.json), [settlement](../v4/audit/autoresearch/causal_day_terminal_settlement_2026_08_14/receipt.json), [dataset v2](../v4/audit/autoresearch/causal_day_dataset_settlement_validated_2026_08_14/receipt.json), [atlas v2](../v4/audit/autoresearch/causal_day_atlas_settlement_validated_2026_08_14/receipt.json), [whole observation](../v4/audit/autoresearch/causal_day_observation_contract_2026_08_14/receipt.json), [simulator v3](../v4/audit/autoresearch/causal_day_simulator_2026_08_14_attempt005/receipt.json), [interfaces v3](../v4/audit/autoresearch/causal_day_architecture_interfaces_2026_08_14_attempt003/receipt.json), [replays v2](../v4/audit/autoresearch/causal_day_replay_plumbing_2026_08_14_attempt005/receipt.json), [model block v2](../v4/audit/autoresearch/causal_day_model_block_2026_08_14_attempt003/receipt.json) |
+| 38 | Re-establish the exit at the touch: is it solved, or was that the tape too? | G4 | **RUN 08-14 on owner instruction — IT WAS NEVER SOLVED. THE EXIT IS A STOPWATCH.** The 08-13 claim ("optimal stopping drives gross −$7.3 → −$0.2, so every dollar must come from the entry") was measured on prints, where the value iteration `V = max(price, C)` takes a maximum over a series whose parity residual has an SD of **$102.60**. Rebuilt on quotes: 32,976 trades, 251 sessions, entry at the ask, exit at the bid, `fit_continuation` **imported unchanged** so only the price series differs — plus the control the original lacked, a **fixed-clock ladder**. Paired trade by trade, the fitted rule minus a **5-minute stopwatch** is **−$0.8 at the bid and −$2.8 at the mid** — indistinguishable at every clock setting and against a random exit, point estimate **worse** than the clock. Its whole apparent "+$5.8 vs a 30-minute hold" is holding less time; the stopwatch collects more of it with no features and no fit. At the mid with the spread removed entirely the best policy returns **−$0.2**, and perfect foresight keeps **+$623** that no causal rule touches. **The number survives; the premise does not** — exit and entry are both null, which is one observation seen twice. 625 tests green | Owner decision on the two axes left: the **short side / defined-risk spreads**, where the one measured non-martingale effect accrues rather than drains, and **sub-minute data**, since the whole $623 prize sits below the minute grid | [finding](research/findings/THE_EXIT_IS_A_STOPWATCH_2026_08_14.md), [receipt](../v4/audit/autoresearch/quoted_exit_2026_08_14/receipt.json), [ledger row](research/history/DO_NOT_RETEST.md) |
+| 37 | Price the selective policy at the touch: does the timing edge survive real spreads? | G4 | **RUN 08-14 on owner approval — NO. THE EDGE IS ZERO BEFORE COSTS, NOT EATEN BY THEM.** Rebuilt on the owned quote corpus: **707,171 candidates over 251 sessions**, entry charged at the **ask**, exit paid at the **bid**, fees only on top, features read from the mid, greeks recomputed rather than taken from the vendor. Feature set identical to job 36, so only the price source changed. Trained and scored on quotes the policy **loses to its own matched control** (−$123.2 vs −$37.2). Trained out-of-time on 794 trade-corpus sessions and scored on all 251 quote sessions — disjoint windows, full training data — the decomposition is **mid-to-mid −$3.5/trade on average** (i.e. zero with the spread removed entirely), spread **−$48.70 (1.21% of premium)**, fees −$3.08, net −$51 to −$57. Job 36's +$20.9 was the tape. **Every control the project owns passed while the defect was present**, because each tests the mechanism it was aimed at and none asks whether the price is real. 609 tests green | Owner decision on the two axes this does not close: an **exit model on a quote-priced stream** (every exit result held, including the optimal-stopping gross ≈ $0, was measured in contaminated print units), and the **short side / defined-risk spreads** | [finding](research/findings/QUOTED_PRICING_CLOSES_THE_SELECTIVE_POLICY_2026_08_14.md), [quote receipt](../v4/audit/autoresearch/selective_policy_quoted_2026_08_14/receipt.json), [out-of-time receipt](../v4/audit/autoresearch/policy_out_of_time_2026_08_14/receipt.json), [ledger row](research/history/DO_NOT_RETEST.md) |
+| 36 | Learned selective entry policy: does a model that chooses when to trade find an edge? | G4 | **RUN 08-14 on owner authorization — IT LEARNS, AND WHAT IT LEARNS IS THE TAPE.** Built the system the owner specified: greeks, time of day, price action and **volume** (never used before), free choice of contract across an open chain, abstention, one position at a time, cost scaling with the contract. **2.38M candidate trades over 1,045 sessions.** It learns hard — **52.0% hit rate vs 31.8% random**, monotone in selectivity, **+$20.9/trade vs −$47.1** for a control matched on side/delta/premium, **positive in all four out-of-sample years**. It is an artifact of last-trade bars: the put/call-parity residual has an SD of **$102.60** against a **$19.79** round trip, so entry-price noise is **5x the toll**. The model's mean residual is −$20.4 vs −$2.0 for the control, and rescoring the same trades at fair value turns **+$20.9 into −$2.1**. Retraining on the clean label inverts rather than fixes it: **net = residual − $16.5, SD $1.3** — an identity. Every existing control passed while the defect was present. 601 tests green | Owner decision: re-price the same policy on the owned 251-session quote corpus, entry at the ask and exit at the bid — the one measurement that settles it, and it needs no purchase | [finding](research/findings/SELECTIVE_POLICY_AND_THE_PRINT_ARTIFACT_2026_08_14.md), [print receipt](../v4/audit/autoresearch/selective_policy_2026_08_14/receipt.json), [fair receipt](../v4/audit/autoresearch/selective_policy_fair_2026_08_14/receipt.json), [ledger row](research/history/DO_NOT_RETEST.md) |
+| 35 | Conditional drift census: is there ANY observable state where buying pays? | G4 | **ANSWERED 08-13 — NO, and job 34 should be re-aimed before it runs.** One measurement, no model and no rule: **375 declared causal cells** over 1,045 sessions and 27,025 slots, nine observables plus two crosses, long call / put / straddle, 15- and 60-minute fixed holds, quartile cuts from a trailing window of prior sessions only. **Not one cell clears zero after correction; 1 clears uncorrected against ~9.4 predicted by chance, and 77 are significantly negative** — the drift is not zero-and-unpredictable, it is reliably negative almost everywhere. A rule is a function of state, so a census with no positive cell admits **no** profitable rule built on those states, which closes the rule space rather than one more rule. Reproduces the published variance premium exactly as its positive control. Two defects found and fixed in the measurement's own machinery: an expanding quantile window that turns a state cell into a calendar bucket, and a NaN in a permutation null that counted failed draws as evidence *for* the hypothesis. 574 tests green | Owner decision on where to re-aim job 34 | [finding](research/findings/CONDITIONAL_DRIFT_CENSUS_2026_08_13.md), [receipt](../v4/audit/autoresearch/conditional_drift_2026_08_13/receipt.json), [ledger row](research/history/DO_NOT_RETEST.md) |
+| 34 | Autoresearch loop: find an entry signal with positive gross | G4 | **REGISTERED 08-13, NOT STARTED — and job 35 says do not start it as written.** The packet's premise — "the exit is solved, so every dollar must come from the entry" — does not follow: `gross ~ $0` is a property of the price process, not of the exit, and it caps causal entries exactly as it caps exits. The census then measured the space the search would explore and found no positive cell in 375. Re-aim before running. Original packet below. The target is precise and follows from job 33: the exit is solved and produces **gross ~$0**, the round trip is **$23.00 measured**, and no entry signal ever tested has produced positive gross. The loop hypothesises, makes **one** change, runs, analyses, annotates, and reverts to the best-so-far. Guardrails encode this session's two costly defects: a per-feature **timestamp audit** (the shuffled-label null cannot catch feature leakage) and a ban on filtering slots by anything measured after entry | Owner running it | [goal packet](work/entry-edge-search/PLAN.md) |
+| 33 | All three fixes: optimal-stopping exit, greeks, sub-minute bound | G4 | **DONE 08-13 on owner approval — the exit is solved, the entry is not, and I nearly reported a leak.** (1) **Exit as optimal stopping** (fitted value iteration, no threshold) drives gross P&L from -$7.3 to **-$0.2** holding **2.8 min** instead of 30 — it removes the option's decay exactly and stops, which is the ceiling for an exit on a random entry and means profit must come from the entry. (2) **Greeks computed from price**, not taken from a vendor, so the same function runs offline and live and cannot diverge; solved on 99.9% of 1.49M rows, 34 tests incl. put/call parity. They bought **nothing** — the +0.31 correlation is mostly contract size. (3) **Sub-minute bounded from owned data at $63.5, 16% of the ceiling** — not the big lever, so no purchase requested. **A leak was found and removed**: an entry feature read the minute *after* the decision and lifted the top cell to **+$119/trade**; the shuffled-label null could not catch it, only a timestamp audit did. With everything causal the system is a **clean null** (-$29.6 vs -$26.5 random), and the earlier +$2.80 **does not reproduce**. 554 tests green | Owner steer: no entry signal tested so far produces positive gross, and the $23 round trip exceeds every gross figure found | [finding](research/findings/ALL_THREE_FIXES_2026_08_13.md), [receipt](../v4/audit/autoresearch/full_system_2026_08_13/receipt.json) |
+| 32 | Trained entry and exit models | G4 | **RUN 08-13 on owner approval — both halves learn, the stated label was wrong, and the system is break-even.** Exit model: out-of-fold correlation **+0.379**, worth **+$7.2/trade** over holding (about half survives a matched-holding-time null), which takes gross P&L from -$7.1 to **+$0.10** — it recovers the option's decay exactly and leaves nothing for the spread. Entry model: correlation **+0.310**; selecting the top 5% by **percentage** excursion doubles the excursion (39% -> 74%) and **loses $8/trade more than random**, because percentage selects cheap contracts where the fixed $23 cost dominates. **Re-labelled in dollars net of cost it beats random and its own shuffled null at all four selection rates** (+$25.9/+$6.7/+$5.8/+$3.9) and reaches **+$2.80/trade at the top 5%** — the first non-negative figure this project has produced — with CI **[-$33.6, +$42.1]**, so break-even, not profitable. The residual gap is the **$23 round trip**: the same trades at $12 would be +$13.8. 510 tests green | Owner steer on the four next steps, chiefly a proper hold-versus-exit objective and greeks in the entry features | [finding](research/findings/ENTRY_AND_EXIT_TRAINED_2026_08_13.md), [receipt](../v4/audit/autoresearch/entry_and_exit_2026_08_13/receipt.json) |
+| 31 | The exit is the strategy: excursions, not terminal values | G2/G4 | **RUN 08-13 on owner correction — I closed the question too early.** Every option measurement this project ever made used only the **close** of each minute bar; the corpus also carries **high and low** and nobody had read them. Near-ATM contracts reach a best price of **+28.2% median within 30 minutes**, **60.9% touch +20%**, median **12 minutes to the peak**. Selling at the best minute close earns **+$321/trade** against **-$32** for a clock exit — a **$348 prize** on a $989 premium. **Every declared exit rule captures none of it and most make the bar worse** (take-20/stop-20 moves break-even 54.35% -> 69.62%, because a 20% stop sits inside the -35% of normal noise). The fixed-horizon findings are scope-corrected, not withdrawn: the variance premium describes the **terminal** distribution, a scalp lives on the **path**. 496 tests green | Owner go-ahead to train the exit model, which is the experiment that decides the strategy | [finding](research/findings/THE_EXIT_IS_THE_STRATEGY_2026_08_13.md), [receipt](../v4/audit/autoresearch/scalp_exits_2026_08_13/receipt.json) |
+| 30 | Autoresearch loop: what would it search, and what does execution really cost? | G2/G4 | **ANSWERED 08-13. The loop is cheap; the instrument is not.** The alpha ledger prices experiments at `sqrt(log k)`, so going from **1 to 5,000 experiments costs 1.66 accuracy points** (57.89% -> 59.55% true accuracy needed) — multiplicity was never the constraint. But **experiment #1 already needs 57.89%** against a 53.72% break-even, and the best rule ever measured reached 53.52% and lost money. Fill quality, the last open lever, is now **measured on 1,912,157 contract-minutes**: the round trip is **$23.00** (the carried $25 was honest), the spread runs **1.44% of mid at 09:00 to 9.04% at 15:00** — worst exactly where the premium is largest — and a passive order at the midpoint **saves $10 of spread and pays $60-86 of adverse selection**. The $3.08 execution the one clearing cell needed is measured to be unavailable to anyone who posts and waits. 484 tests green | Owner decision on the three charter amendments, which are the only remaining levers | [finding](research/findings/FILL_QUALITY_AND_THE_LOOP_2026_08_13.md), [receipt](../v4/audit/autoresearch/fill_quality_2026_08_13/receipt.json) |
+| 29 | Two-sided model: buy, sell or stand aside | G2/G4 | **RUN 08-13 on owner instruction — the short side is where the edge is, and it is still too small.** Every earlier screen tested **buying only**, which was a real omission. Scoring both sides: `late_session` **short** keeps **+$32.3/trade at the full $25 round trip** where long lost $132. Under scrutiny it fails — Bonferroni over the 32 cells inspected gives a lower bound of **-$50.9**, it is **negative in 2 of 5 years**, and its worst trade lost **529% of premium collected**. A gradient-boosted model with 12 causal features, chronological walk-forward and free choice of side scored out-of-fold correlation **+0.03**; at 15 minutes the **shuffled-label null beat it**, and it lost to the simple declared rule. **Exactly one cell clears: 15-min short at $3.08/leg (+$15.2, lower bound +$3.5) — market-maker execution.** 476 tests green | Owner decision: measure fill quality on the owned quote corpus, the one thing that decides it | [finding](research/findings/TWO_SIDED_MODEL_2026_08_13.md), [receipt](../v4/audit/autoresearch/two_sided_model_2026_08_13/receipt.json) |
+| 28 | Magnitude, the variance premium, and the definitive answer | G1/G2 | **CLOSED 08-13. The instrument is efficiently priced and the spread is five times the mispricing.** Five chained experiments on 1,045 sessions. **Magnitude is predictable and fully priced**: selecting the busiest third raises the realised move **+51%** and the straddle premium **+42%**, leaving P&L unchanged to **30 cents**; nothing in the 8-rule family cleared zero. Measured directly, a near-ATM straddle is priced above delivery by **-0.55% of premium over 15 min** (CI [-12.6,-6.4]) and **-1.42% over an hour**, present in **every year** and shrinking (0.77% -> 0.44%), concentrated in the last two hours (**-2.74%** at 15:00). Two legs at $25 cost **2.83% of premium**, so **buyer and seller both lose at retail execution**; the seller profits only at fee-only, against a tail of **549% of premium**. No call/put skew edge. 462 tests green | Owner decision on the three barred levers: selling premium, defined-risk spreads, and fill quality | [finding](research/findings/WHY_0DTE_DOES_NOT_WORK_HERE_2026_08_13.md), [variance premium](../v4/audit/autoresearch/variance_premium_2026_08_13/receipt.json) |
+| 27 | First directional screen on the option corpus, and a look-ahead I introduced | G1/G2 | **RUN 08-13 — CLEAN NEGATIVE, and a defect in my own chain.** Seven declared closed-form rules, hashed before running, two holds, 1,045 sessions, family 14, session-block bootstrap: **every rule loses money and none clears zero.** Separately, **every measurement I made on 08-13 dropped 18.7% of slots** — those where the strike-grid spot did not move, averaging **-$186.90/trade** — a look-ahead filter worth **3.27 accuracy points**. Corrected: 60-min break-even **53.69%** (I said 50.43%), provable **55.36%** (I said 52.28%); **occupancy is harmful, not neutral** (5-min needs 59.30% vs 55.36% hourly); the ES-vs-option comparison **reverses**, so the training-precondition draft loses its argument and must not be signed as written. **The real finding: long 0DTE premium is a MAGNITUDE bet.** A rule right **53.52%** of the time still loses $22.70/trade, because it is right where options are dearest. By move size: 0-2pts unwinnable, 10-20pts break-even 49.54%, 20+pts **35.53%**. Median hour moves 6.79pts and loses. 448 tests green | Owner decision on testing a **magnitude** label instead of direction | [finding](research/findings/DIRECTION_SCREEN_AND_A_LOOKAHEAD_I_INTRODUCED_2026_08_13.md), [screen receipt](../v4/audit/autoresearch/intraday_direction_screen_2026_08_13/receipt.json) |
+| 26 | Owner challenge: why is the answer always "no edge"? | all | **ANSWERED 08-13 — because it was never the answer. One measured negative exists (ledger row 181); both G1 attempts closed `UNDERPOWERED` with **economics never computed**, and **no signal has ever been tested for directional edge on the option corpus**. Three things were never examined and all three move the number: (a) **profitable is not provable** — a 51.5% strategy earns 33%/yr on $50k and is uncertifiable on every session owned; (b) **execution** — the project charges the $25 aggressive round trip everywhere, and $3.08–$14 is worth **1.7–4.5 accuracy points**, more than every lever chased to date; (c) **time of day** — break-even falls all day, 51.80% at the open to **49.90% in the last hour** at a 15-minute hold, where the ticket is also $529 rather than $1,529. 429 tests green | Owner decision on matching the confidence standard to position size, and on whether to test a signal at all | [finding](research/findings/WHAT_WE_NEVER_TESTED_2026_08_13.md), [receipt](../v4/audit/autoresearch/time_of_day_2026_08_13/receipt.json) |
+| 25 | Would a charter change improve the chance of a profitable model? | G2/G4 | **MEASURED 08-13 — NO on the risk limits, YES on two clauses. 420 declared cells of ticket size x daily breaker: widening the breaker buys occupancy and leaves the survival floor unchanged; shrinking the ticket raises the bar steeply because the round trip is 1.6% of a $1,600 contract and **26.6% of a $50 one**. The binding constraint is the **account**: the lowest bar the instrument offers is **~52.4%** and needs ~$100,000; at $10,000 the survivable tickets ask **55.1–59.5%**. Separately, the ES screen the training block is gated on is now **harder than a direct option screen at every horizon** (52.50–55.12% vs 51.83–52.52%). **A resampling defect was found and repaired**: drawing from a quantile grid trimmed the right tail and understated winning trades by 6–19%, biasing every prior risk number pessimistic. 422 tests green | Owner signature on two drafts, or rejection | [finding](research/findings/TICKET_SIZE_AND_THE_BINDING_SCREEN_2026_08_13.md), [ticket/account draft](governance/CHARTER_AMENDMENT_TICKET_AND_ACCOUNT_2026_08_13.md), [training draft](governance/TRAINING_PRECONDITION_AMENDMENT_2026_08_13.md) |
+| 24 | Option-layer approach plan: hold length, occupancy and the achievable bar | G1/G2 | **PHASES 0 AND 2 DONE 08-13; PHASE 1 HELD, PHASE 3 NOT STARTED.** Phase 0 settled the disputed break-even at the optimistic **50.94%**, clearing the plan's kill condition — the contracts that stop printing are **91.9% winners**, not zeroes, and pricing them from real quotes moves the answer 0.0002 points. Carrying that correction forward **cut every bar by 1–5 points** (60-minute cell **57.11% → 52.28%**) **and destroyed the plan's thesis**: occupancy is worth **0.69 points, not 3**, because the old convention taxed long holds twice as hard as short ones. Phase 2's charter risk check then rules out every cell at a $10,000 account — a $1,050 ticket is 10.5% of equity, so one losing trade costs 6.1% of it and every cell keeps only **15–17% of its nominal occupancy**; the smallest account passing is **$250,000**. Risk figures corrected 08-13 after a resampling defect that biased them pessimistic. 422 tests green | Owner decision on the two questions in the [result](work/option-approach/RESULT.md): the 4.8-point lower bar, and the conflict between the 13% ticket and the 5% breaker. Phase 1 needs a Tier-1 signature | [plan](work/option-approach/PLAN.md), [result](work/option-approach/RESULT.md), [Phase 0](research/findings/EXIT_PRICE_CONVENTION_2026_08_13.md), [Phase 2](research/findings/OCCUPANCY_AND_CHARTER_RISK_2026_08_13.md) |
+| 23 | Stopping-rule override and SPXW history acquisition | G1/G2 | **OVERRIDE SIGNED 08-13; ACQUISITION RUNNING — SPXW `ohlcv-1m` is $0.00 at every era back to 2013, so ~1,050 further 0DTE sessions cost nothing. Downloading 2022-06-01..2026-07-31 to the owner's SSD under a $5 cap. 0DTE membership is DERIVED from each contract's own OSI expiry, never assumed from a calendar** | The download, then a fresh known-answer campaign at the near-ATM bar | [override](governance/STOPPING_RULE_OVERRIDE_2026_08_13.md), [manifest](../v4/audit/autoresearch/protocol101_pathd_data_acquisition/paid_data_approval_manifest_spxw_history_2026_08_13.json), [`ops/download_spxw_history.py`](ops/download_spxw_history.py) |
+| 22 | Autoresearch loop: alpha ledger, experiment layer, outer constraint search, candidate generator | G4 | **BUILT 08-13, COMPLETE — append-only hash-chained ledger; every experiment *and* every constraint setting spends alpha; `knobs.py` refereed via `assert_search_space`, verified to reject a friction-lowering setting. A signed charter amendment can release a SEARCHABLE knob but never a FROZEN or UNCERTIFIED one. Generator enumerates 6 entry x 4 exit = **24 declared candidates**, multiplicity knowable before the run (a full sweep costs 1.23 accuracy points on 2,520 sessions). Stops take the fill available, not the level declared** | A G1 pass before any of it may touch real economics | [`research/autoresearch/`](research/autoresearch/) |
+| 19 | Phase 2: freeze the second G1 hypothesis | G1 | **FROZEN 08-12, hash `e940a388…` — M3 overnight gap, 60-minute horizon, **both directions** (2 members), on 2,435 eligible sessions. Required accuracy **65.73%**, detectable **57.81%**, margin **7.92pp**, detectable Sharpe **0.90**. Every exclusion structural; no economics computed. The 18-member family is untouched** | — | [`research/direction/hypothesis_2026_08.py`](research/direction/hypothesis_2026_08.py), [tests](tests/test_hypothesis_2026_08.py) |
+| 20 | Phase 3: known-answer campaign for the frozen hypothesis | G1 | **STOPPED 08-13 — `UNDERPOWERED AT THE REQUIRED EFFECT`. Ran 01:00–01:41, 1,000 trials/question. Both nulls are clean at **0.0000** false pass (Wilson upper 0.0027), so the gate is sound. Recovery at the declared 4.01-point threshold is **8%** against 80% required; the operational floor is **6.0 points**. Monotonic, so a power limit rather than a defect. **Economics were never read.** The pre-committed stopping rule binds** | Owner decision on the stopping rule | [receipt](../v4/audit/autoresearch/g1_campaign_2026_08_13/known_answer_campaign.json), [ledger row 187](research/history/DO_NOT_RETEST.md) |
 
 ## 1. What we are building
 
@@ -52,8 +88,10 @@ This is the only route document. Each rung names what it produces, which gate it
 authorizes it. A rung may not start until the row above it has passed — except rung 4, the one safe
 parallel branch. Rungs 1, 2 and 4 are all complete: rung 1 returned verdict B, rung 2 stopped on
 2026-08-09 as `UNDERPOWERED`, and rung 4 certified on 2026-08-12. **Rung 3 needs a G1 pass that the owned
-corpus cannot produce, and rungs 5 onward need that same pass. No rung is startable today** — the
-binding constraint is the number of owned sessions, which only calendar time changes.
+corpus cannot produce, and rungs 5 onward need that same pass. No rung is startable today** — G1 is
+blocked by effect size at the declared threshold, not by session count (see the header correction of
+2026-08-14; this sentence previously repeated the falsified "only calendar time" lead, a contradiction
+found by the 2026-08-15 external adversarial review).
 
 | # | Step | Produces | Gate | Authorized by | Where |
 |---:|---|---|---|---|---|
@@ -118,15 +156,109 @@ autocorrelation is mildly negative). Verdict B — proceed under "large edge or 
 [measurement review](research/findings/MEASUREMENT_REVIEW_2026_08_05.md) and the
 [gate-chain audit](research/findings/GATE_CHAIN_AUDIT_2026_08_05.md).
 
+### The general form, found 2026-08-12
+
+The table above is one slice of a relationship that holds everywhere. At the point where a screen can just
+detect a marginally-profitable strategy:
+
+> **minimum detectable annualised Sharpe = (z × penalty) × √(252 / n)**
+
+**Move dispersion, horizon, trades per session, tradeable minutes and the friction bar all cancel
+algebraically.** What a screen can see depends on the session count and the statistical standard, and on
+nothing else. Derivation, code and regression tests:
+[`research/statistics.py`](research/statistics.py), `detectable_sharpe`.
+
+It is verified against two results reached by unrelated routes: it reproduces all six horizon cells of the
+[job-15 occupancy surface](work/occupancy-feasibility/feasibility_receipt.json) to within 0.03%, and it
+reproduces G1's separately measured floor of 8 net points per session.
+
+| Sessions | Single pre-registered hypothesis | With the strict conjunction penalty | G1's 18-member gate |
+|---:|---:|---:|---:|
+| **247 (owned today)** | 2.51 | 6.92 | 10.06 |
+| 500 | 1.77 | 4.86 | 7.07 |
+| 2,520 (ten years) | **0.79** | 2.17 | 3.15 |
+| 11,824 | 0.36 | 1.00 | 1.45 |
+
+Realistic intraday strategies run a Sharpe of roughly 0.5–2. **This is why the owned corpus has returned
+six negative results, and why neither a higher-occupancy design nor a different instrument can rescue it:
+both move a screen along this curve rather than moving the curve.** `n` is the only lever, which is what
+makes buying history the decisive move rather than an optimisation.
+
 ## 5. Measured cost bars
 
-| Item | Measured value |
-|---|---:|
-| ES futures round-trip friction | **0.358 points / $17.92** |
-| SPX option round-trip friction | **$3.08** |
-| Option friction as share of $565 average premium | **4.68%** |
+| Item | Value | What it contains |
+|---|---:|---|
+| ES futures round-trip friction | **0.358 points / $17.92** | 0.26835 pts **measured** spread + 0.09 pts **assumed** commission + **no slippage** |
+| SPX option round-trip **fee** | **$3.08** (0.545% of the $565 average premium) | Fees only, measured from a real IBKR paper fill |
+| SPX option **aggressive round trip** | **$26.48** (4.68% of the $565 average premium) | Fees **and** spread crossing |
 
 A candidate that does not beat measured costs is not a strategy.
+
+**But beating cost is the wrong bar for G1.** G1 exists only to reopen the option class that ledger row 181
+closed, so its threshold must be what the *option layer* needs to survive translation, not what ES friction
+costs. Derived 2026-08-12: the option layer needs **65.73% 60-minute directional accuracy** to be
+detectable on 251 owned option sessions, against 57.99% merely to break even.
+
+The threshold is stated in **accuracy, not points**, and that correction matters. The expanded corpus shows
+the 60-minute move dispersion varying **7.08x** across years — 3.88 points in 2017 against 27.51 in 2026 —
+so the same accuracy implies 0.93 ES points in one year and 6.84 in another. Any absolute points bar would
+be far too strict in calm years and far too lax in violent ones. Full derivation, the correction, and the
+one assumption Phase 2 must declare rather than inherit:
+[G1 threshold from the option layer](research/findings/G1_THRESHOLD_FROM_THE_OPTION_LAYER_2026_08_12.md).
+
+**The option bar depends on which contracts the bot may buy, and there is a clear optimum the current
+`$3–8` range misses.** Measured 2026-08-13 on 232 owned sessions and 82,709 contract observations, with
+the **quoted spread measured per contract** rather than assumed flat
+([receipt](../v4/audit/autoresearch/option_payoff_by_moneyness_2026_08_13/receipt.json)):
+
+| Contracts | Premium | Measured round trip | Break-even | Loop bar, 1 experiment |
+|---|---:|---:|---:|---:|
+| deep OTM | $35 | $9 | **impossible** | — |
+| OTM — what `$3–8` forces | $333 | $12 | 54.50% | 64.92% |
+| **near ATM** | $1,945 | $25 | **50.60%** | **61.05%** |
+| ITM | $6,778 | $84 | 52.59% | 63.03% |
+| deep ITM | $19,865 | $369 | 60.17% | not affordable at $10k |
+| very deep ITM | $98,809 | $822 | 73.45% | not affordable at $10k |
+
+**Near-ATM is the optimum, and its 50.60% break-even is below ES futures at 51.40%** — so the options
+product is not structurally harder than futures once the contract universe is chosen well. Widening from
+`$3–8` to near-ATM is worth **3.9 accuracy points** at no cost.
+
+Two corrections to the first version of this table, both from measuring the spread instead of assuming a
+flat $26.48. The gain from widening is **3.9 points, not 7.2**. Also note the ladder is not monotonic —
+deeper ITM gets *worse*, because the dollar spread grows faster than the payoff.
+
+**Corrected 2026-08-13 by job 24: the near-ATM break-even is lower again, and the 60-minute bar is 4.8
+accuracy points lower than the row above implies.** Both the 50.60% quote figure and the 54.24% trade
+figure were computed on populations that **dropped contracts which stopped trading before the exit
+minute** — a look-ahead filter, and one that removes contracts that are **91.9% winners**. Measured on 909
+sessions with the correction, and settled against real quotes to within 0.0002 accuracy points
+([finding](research/findings/EXIT_PRICE_CONVENTION_2026_08_13.md)):
+
+| At 60 minutes, near ATM | Break-even | Accuracy a screen could prove |
+|---|---:|---:|
+| As believed before 2026-08-13 | 54.10% | 57.11% |
+| **Measured with the settled convention** | **50.43%** | **52.28%** |
+
+Hold length barely moves either number — the provable bar spans 51.83% to 52.52% across every hold from 5
+to 60 minutes ([finding](research/findings/OCCUPANCY_AND_CHARTER_RISK_2026_08_13.md)).
+
+**The frozen 57.99% is now reconciled** (2026-08-13, once the external SSD was mounted and
+`reports/phase1_four_box/trajectory_outcomes.parquet` became readable). Its 1,031 trajectories held entry
+premiums of **$390–$810, median $700** — squarely the `$3.00–$8.00` band the charter's price filter
+enforced — and it scored them through that era's **learned exit** (`learned_exit_value`), not a clean
+60-minute hold. So 57.99% was never a property of SPX options; it was a property of a price filter nobody
+had written down as a decision, measured through a retired exit model. Both figures are correct and they
+answer different questions.
+
+**Decomposed 2026-08-12** ([finding](research/findings/FRICTION_DECOMPOSITION_2026_08_12.md)). Three
+corrections came out of it. The ES bar contains **no slippage term**, though `knobs.py` and the evidence
+index both described it as a "spread, fee and slippage study" — the bar is nonetheless robust, because 75%
+of it is measured and the worst precedent error moves it only −15% to +35%. The two option numbers are
+**8.6x apart and were previously listed as one row**, with $3.08 shown against the 4.68% share that belongs
+to $26.48. And [`candidate_packet.py`](research/validation/candidate_packet.py) charges the **fee-only**
+$3.08 by default, so its summary now emits a `cost_model` block naming what was and was not charged. The
+`slippage_accounting` divergence axis is settled by this work; blocking axes fall from 7 to 6.
 
 ## 6. What is proven
 
@@ -245,21 +377,22 @@ mistake. No past result changes; no candidate has been run through the new gate.
   2026-08-06** (`launchctl bootout`, plists renamed `*.disabled_20260806_stale_v6_dates`, fully
   recoverable). They were built for the spent v6 dates and fired Wednesday/Thursday/Friday, so 08-12
   would have collided with the attended runner. Track-A capture is attended-only.
-- Track-A capture has **banked no evidence yet, and the runner is now armed and running.** It was started
-  on owner authorization at **2026-08-09 08:45 PDT** on AC power, holds a verified `PreventSystemSleep`
-  assertion, and is waiting to fire all six windows across **2026-08-10, 08-11 and 08-12**. The v6 dates
-  08-06/08-07 are spent: 08-06 failed both windows and 08-07 was canceled by the owner. The replacement
-  sessions are sealed in `capture_declaration_v8.json`, and analysis and all four runners are now pinned
-  to that one file by test. The owner signed four sessions on 2026-08-06 (`authorization_v2.json`,
-  declaration v7); v8 narrows that to three by owner instruction the same day, decided **before any of
-  those sessions was observed**, so nothing was dropped after seeing an outcome. Narrowing needs no new
-  signature; widening would. `authorization_v2.json` is deliberately left unedited as the record of what
-  was signed. See [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming).
-  2026-08-05 remains excluded: its open window was lost to the permission defect and its midday window is
-  an infrastructure test, not evidence.
-- **Nothing automated arms this capture.** The runner is hand-started and monitors are advisory only. Any
-  scheduled reminder that lives inside a desktop application depends on that application still running and
-  is not an OS-level guarantee; it reports, it does not start. Treat "armed" as true only when
+- **Track-A capture is finished and nothing is armed.** All six declared windows across 2026-08-10, 08-11
+  and 08-12 have been attempted; **five banked, one void** (08-10 midday, to the shutdown race). The runner
+  is no longer running and no window remains to fire. Certification was issued 2026-08-12 from the five
+  usable windows. The sessions were sealed in `capture_declaration_v9.json`, which the analysis and all
+  four runners are pinned to by test; v9 supersedes the v8 pin after the shutdown-race repair changed the
+  capture script's hash, and its declared sessions, windows, durations and selection laws are byte-identical
+  to v8. The owner signed four sessions on 2026-08-06 (`authorization_v2.json`, declaration v7); v8 narrowed
+  that to three by owner instruction the same day, decided **before any of those sessions was observed**, so
+  nothing was dropped after seeing an outcome. Narrowing needs no new signature; widening would.
+  `authorization_v2.json` is deliberately left unedited as the record of what was signed. The v6 dates
+  08-06/08-07 are spent: 08-06 failed both windows and 08-07 was canceled by the owner. 2026-08-05 remains
+  excluded: its open window was lost to the permission defect and its midday window is an infrastructure
+  test, not evidence. See [§13](#13-track-a-capture-2026-08-06-failure-and-08-10-arming).
+- **Nothing automated arms a capture.** Any future runner is hand-started and monitors are advisory only.
+  Any scheduled reminder that lives inside a desktop application depends on that application still running
+  and is not an OS-level guarantee; it reports, it does not start. Treat "armed" as true only when
   `./v4/ops/tracka/check_tracka.sh` prints `RUNNER ALIVE` together with `SLEEP held off`.
 - **A forward confirmation reservation is in force, signed 2026-08-05.** Every ES and SPXW session
   from **2026-08-06 onward is confirmation-only**: no research analysis, screen, model, chart, or
@@ -392,9 +525,23 @@ declaration forbids backing an admitted feature with.
 The guard is unchanged: `4 x 815.391 ms = 3,262 ms`, so the **10-second floor still binds** as predicted.
 
 **Coverage is the genuinely new number: 58.2%.** Only 1,635 of 2,810 expected CBBO-1m instrument-minutes
-arrived — about 42% of the chain does not quote in a given minute. A feature written as though every
-instrument reports every minute would assume far more data than exists. This is what the freshness receipt
-records, and why a latency receipt alone was never enough.
+arrived. A feature written as though every instrument reports every minute would assume more data than
+exists. This is what the freshness receipt records, and why a latency receipt alone was never enough.
+
+**Corrected 2026-08-12: that 58.2% is not market sparsity, and the earlier reading of it as "about 42% of
+the chain does not quote in a given minute" was wrong.** The receipt records `interval_ends: 3` against
+`expected_interval_ends: 5` for this window: **two of the five expected minute boundaries produced no
+CBBO-1m records at all.** Among the three boundaries that did report, coverage was **96.98%**
+(1,635 of 3 x 562). Pooled across the five usable windows the same split is 81.13% reported against
+**92.08%** among observed boundaries (9,575 of 10,399), with 19 of 21 expected boundaries present.
+The two readings mean different things — an absent boundary is a gap in the *recording*, while a
+non-quoting instrument is a fact about the *market* — and only the second is a property a feature must
+tolerate. The receipt itself is correct and stores both counts; only this narrative misread them.
+The error is **conservative**: admission was held to a coverage floor lower than the market actually
+imposes, so no admitted feature is over-credited and the certification stands. It matters for the
+emission-lag re-derivation, where a boundary that produced nothing is evidence about window truncation
+rather than about arrival timing. See the
+[pre-registration](governance/EMISSION_LAG_LOWERING_RULE_2026_08_12.md).
 
 Symbol count was **562**, against 510 on 08-05 and 574 on 08-06. Any pinned count would have failed
 closed on at least one of the three days.
@@ -507,11 +654,28 @@ divergence nobody wrote down.
 
 | Status | Count | Meaning |
 |---|---:|---|
-| `PROVEN_EQUAL` | 4 | Checked, with evidence |
-| `MEASURED_DIFFERENT` | 5 | Known to differ; **blocks unless it names its repair** |
-| `UNKNOWN` | 7 | Nobody has checked |
+| `PROVEN_EQUAL` | 6 | Checked, with evidence |
+| `MEASURED_DIFFERENT` | 6 | Known to differ; **blocks unless it names its repair** |
+| `UNKNOWN` | 4 | Nobody has checked |
 
-Seven axes currently block a fit. That is the honest number, and it is expected to be large early on.
+**Four axes block a fit, down from seven.** `clock_and_dst`, `reconnects_and_gaps` and
+`slippage_accounting` were all settled on 2026-08-12 as Phase 0 of the project plan, at zero spend and
+with no new data. The remaining four are `revisions_vs_first_print` and `definitions_survivorship` (each
+needs a small paid Databento Historical request), `emission_lag` (needs the
+[drafted signature](governance/EMISSION_LAG_LOWERING_RULE_2026_08_12.md)), and
+`partial_fills_and_rejects` (genuinely broker- and calendar-bound behind G7).
+
+**Settling them found two defects that no review had caught.** The friction bar contains no slippage term
+despite three documents saying it did, and the option cost used by the validation packet is 8.6x smaller
+than the option cost the project measured — see [§5](#5-measured-cost-bars). And the CBBO-1s entry
+selector, which sets the **fill price**, resolved a duplicate or a correction by vendor delivery order
+rather than refusing: `max()` returns the first maximal element, so a correction was silently discarded in
+favour of the value it corrected. Both are repaired with regression fixtures.
+
+Two discrepancies from the [costing study](research/findings/DIVERGENCE_AXIS_SCOPING_2026_08_12.md) remain
+open and are reported rather than resolved: `definitions_survivorship` names **G3** as its gate and G3
+passed on 08-12 while it was still `UNKNOWN`, and `assert_no_unknown_on_path` has **no production
+caller** — only its own tests — so the register currently binds whoever remembers to call it.
 
 ### What building it immediately found
 
@@ -540,5 +704,143 @@ the actual product" rather than "tradeable in ES."
 This was decided **before any G1 economics existed**, which is the only reason it was a legitimate
 narrowing rather than the post-hoc kind row 183 warns about. Record:
 [re-freeze](history/jobs/g1-direction/REFREEZE_2026_08_06.md).
+
+## 16. Two current rules point opposite ways, and only the owner can rule
+
+Found 2026-08-14 while checking why the causal day trader (row 39) cannot be fitted. This is a conflict
+between two live rules, not a blocker to work around, and the file policy requires reporting it rather
+than silently resolving it.
+
+| | Says |
+|---|---|
+| **Row 41**, waiting-on field | *"Owner: relabel the entry to predict sustained excursion and score it through a long clock."* It quantifies the target: the entry needs **38.9% precision against a 36.7% base rate**, a +2.2pp gap, where round 1 already showed +7.1pp on a different label. |
+| **[DO_NOT_RETEST.md](research/history/DO_NOT_RETEST.md) row 340** | Bars *"any further selective long-side entry model… on this corpus, priced either way."* |
+
+The causal day trader **is** the relabelled long-clock entry row 41 asks for. So one row instructs the
+work and another forbids it. Both are dated 2026-08-14 and both are current.
+
+The fit gate at [`research/causal_day_policy_gate.py`](research/causal_day_policy_gate.py) fails closed on
+this, correctly. Two clarifications about that gate, both verified by reading it:
+
+- It names **three** blockers, but the third — the 1,140-session floor and the 20-sessions-per-parameter
+  rule — sits inside `if spec.sequence:` and therefore binds **only the sequence architectures**. The
+  shallow forms (`shallow_joint`, 676 parameters; `shallow_four_head`, 720) never touch it. With G1 and
+  the ledger reopened, `fit_blockers("shallow_joint", …)` returns empty.
+- So the real gate is **two owner rulings**, and the neural ambition is a separate, data-gated question:
+  `neural_joint` at 1,252 parameters would require 25,040 sessions.
+
+**RULED 2026-08-14, then SUSPENDED the same day.** The owner reopened narrowly
+([ruling](governance/CAUSAL_DAY_FIT_REOPENING_2026_08_14.md)) and then withdrew §4 of it
+([suspension](governance/CAUSAL_DAY_FIT_SUSPENSION_2026_08_14.md)) after **every parameter count in §4's
+table was found to be wrong by roughly 2.4x**. **Nothing may be fitted — simple or complex — until §4 is
+re-ruled.** The suspension is enforced in `fit_blockers`, so a hand-built `Reopening` cannot bypass it,
+and it does not depend on the document's presence on disk: deleting a file is not a way to start fitting.
+
+| Architecture | §4 claimed | Actual, built | Share of the 4,689 budget |
+|---|---:|---:|---:|
+| `shallow_joint` | 676 | **1,604** | 34.2% |
+| `shallow_four_head` | 720 | **1,688** | 36.0% |
+| `neural_joint` | 1,252 | **3,780** | 80.6% |
+| `neural_four_head` | 1,296 | **3,864** | **82.4%** — §4's table implies 27.6% |
+| `four_independent` | 4,920 | **14,952** | 318.9% |
+
+**↑ THE TABLE ABOVE IS WITHDRAWN. It is kept only so the error is legible.** The review recomputed at
+`ArchitectureDimensions.hidden_size`'s former dataclass default of **16**; every artifact this project
+built used width **8**, set explicitly at
+[`ops/record_causal_day_architecture_interfaces.py:23`](ops/record_causal_day_architecture_interfaces.py),
+where §4's counts were exact. The arithmetic was verified; the premise was not. `hidden_size` now has
+**no default**, so the trap cannot recur.
+
+**RE-RULED 2026-08-14 and the fit is authorized.** The same review found a real and larger defect:
+§4 charged the 20-per-parameter rule against **93,798 raw decision states**, which were never measured.
+Measured, they are worth **2,879–7,557** effective observations (integrated autocorrelation) or
+**590–1,016** (design effect), so §4's 4,689-parameter budget was too large by 12x to 100x. The
+[re-ruling](governance/CAUSAL_DAY_FIT_RERULING_2026_08_14.md) takes the generous route — **budget 377
+parameters** — and freezes `causal_day_hidden_size` at **3**, the largest width that fits. **The width is
+set by the evidence, not chosen for capacity.**
+
+| Architecture | Width 8 | Width 3 | Budget 377 |
+|---|---:|---:|---|
+| `shallow_joint` | 676 | **226** | permitted |
+| `shallow_four_head` | 720 | **245** | permitted |
+| `neural_joint` | 1,252 | **322** | permitted |
+| `neural_four_head` | 1,296 | **341** | permitted |
+| `four_independent` | 4,920 | 1,250 | refused |
+
+Three repairs: the gate verifies a declared count against a **built model** instead of trusting a caller's
+integer; the budget binds **every** architecture, not only the sequence ones as §4 had it; and
+`causal_day_hidden_size` is a registered frozen knob so the budget cannot move silently. **The
+conservative route admits nothing at any width — that limitation is accepted explicitly and must be
+reported alongside any result.** The suspension machinery remains and is proven by test against
+reinstatement; it is lifted by a named document, never by deleting one.
+
+The gate was **not** loosened at any point. It reads the signed ruling and refuses anything outside its
+scope, which is verified by test:
+
+| Blocker | Disposition |
+|---|---|
+| G1 prohibits option fitting | Released for this experiment by owner authorization via [`GOAL.md`](work/entry-exit-attribution/GOAL.md) §9 — the same per-job route jobs 29, 32, 36, 37 and 41 each used |
+| Ledger row 340 | Released **only** for the ITM-depth magnitude label at 60/90/120 minutes on the 243-session causal-day corpus. Any other label, horizon or corpus is still refused |
+| 20 sessions per parameter, 1,140 floor | **SUSPENDED.** §4 kept the ratio of 20 and changed its unit from sessions to causal decision states (93,798 owned), admitting 4,689 parameters. The frozen knobs are unchanged in the registry. Withdrawn pending re-ruling — see the table above and §16a |
+
+**Seven kill conditions are pre-committed and binding**, each encoding a failure this project already
+suffered. The first is decisive: **mid-to-mid gross must be positive**. Row 340's finding was that the
+long-side edge is absent *with the spread removed entirely*, so a run that cannot clear zero mid-to-mid is
+a negative result and the reopening is spent. The others require a composition-matched control, a
+shuffled-label null, a per-feature timestamp audit, no post-entry slot filtering, chronological
+out-of-sample scoring, and no reserved sessions.
+
+**The odds are poor and were stated before signing.** Job 42 measured the bar at an 11.1x precision lift;
+the best this project has produced is about 1.24x. Row 335's census found 0 of 375 causal cells positive.
+The ruling records that counter-evidence in its own §2 rather than omitting it.
+
+## 16a. What the §4 re-ruling has to answer
+
+Correcting the parameter counts is the easy half. The re-ruling must also confront the objection §4 never
+addressed, which is the real question and was not raised when it was signed:
+
+> **93,798 causal minute states are not 93,798 independent observations.** They are 243 sessions x ~386
+> minutes, and consecutive states share almost all of their history, ladder and label. §4 argued the unit
+> should be "the decision the model is asked to make" — true of what a model *consumes*, but silent on
+> *independent information*. The effective sample size lies somewhere between 243 and 93,798, and §4
+> assumed the top of that range without measuring it.
+
+**MEASURED 2026-08-14 (job 43): §4 collapses.** The answer is **2,879–7,557** effective observations by
+integrated autocorrelation and **590–1,016** by design effect, against the 77,254–93,798 §4 assumed.
+Autocorrelation times run 10–27 minutes, as a 60-minute forward label must.
+
+At the most generous budget this allows — **377 parameters** — nothing fits at the width the project had
+been using (8): `shallow_joint` alone is 676. **The door taken was the first of three: shrink.** At width
+**3** the four comparison architectures are 226 / 245 / 322 / 341 and all fit; `four_independent` at 1,250
+does not. The other two doors — arguing the 20:1 ratio down on published grounds, or acquiring sessions —
+remain unopened and would be needed for anything larger.
+
+This retires a claim §16 carried until the re-ruling: that the shallow forms were safely fittable because
+they never trip the sequence floor. They clear the rule as written; at width 8 they do not clear the
+measured number, which is why the width moved. Full result:
+[effective sample size](research/findings/EFFECTIVE_SAMPLE_SIZE_2026_08_14.md), settled by the
+[re-ruling](governance/CAUSAL_DAY_FIT_RERULING_2026_08_14.md).
+
+## 17. The short side is barred by a charter clause, not by evidence
+
+Five separate ledger rows — 332, 333, 338, 340 and 341 — each independently name **the short side and
+defined-risk spreads** as the one place the measured variance premium accrues rather than drains. Every
+one of them marks it "owner-gated."
+
+The bar is a single sentence in a signed charter amendment
+([`governance/CHARTER_AMENDMENT_POSITION_SIZING_2026_08_13.md:76`](governance/CHARTER_AMENDMENT_POSITION_SIZING_2026_08_13.md)):
+
+> **Long premium only.** No selling premium, no spreads, no overnight holds.
+
+That is a style-drift control, and it was a reasonable one. But it means the project has spent six
+campaigns measuring the side of the trade its own evidence says loses, while the side its evidence says
+wins has never been screened. Job 29 found `late_session` **short** keeps **+$32.3/trade at the full $25
+round trip** where long lost $132, and job 28 measured the seller's edge directly — a near-ATM straddle is
+priced above delivery in **every year** of the corpus.
+
+**This needs no new data and no reopening of G1.** It needs an owner decision on whether to amend the
+long-premium-only clause, using the amendment procedure that same document established. Defined-risk
+spreads also address the two objections that killed the naked short: they cut the round trip and they cap
+the 529%-of-premium tail.
 
 *Update this page when a job or gate changes. Do not create another status, roadmap, or gate file.*

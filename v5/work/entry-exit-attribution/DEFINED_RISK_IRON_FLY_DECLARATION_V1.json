@@ -1,0 +1,69 @@
+{
+  "controls": [
+    "same-minute naked short straddle",
+    "same-minute long straddle",
+    "iron-fly mid-to-mid gross"
+  ],
+  "declared_on": "2026-08-14",
+  "failure_consequence": "this exact tight-risk direction-neutral structure closes without a width/time retry; broader spread classes remain owner-gated and unproven",
+  "family": {
+    "nearby_width_time_or_horizon_retry_forbidden": true,
+    "primary_members": 1,
+    "project_multiplicity_family": 33,
+    "reason": "retain the 32 previously inspected two-sided cells plus this selected defined-risk translation"
+  },
+  "forbidden": [
+    "choose a different width, time, horizon, side, or fill after outcomes",
+    "drop sessions lacking an entry structure or later executable combo",
+    "market-maker or midpoint fill claim",
+    "model fit, paper order, live order, or reserved session"
+  ],
+  "implementation_hashes": {
+    "v5/ops/measure_defined_risk_iron_fly.py": "3021f0dd9056580a1ba51642e82d15f1774bc273b630bfa8618b89d115ed186c",
+    "v5/ops/write_defined_risk_iron_fly_declaration.py": "584436f5f2e12ccad037f03f958d6ba6fb1ff4aec27d76385e21dee0e3680ef3",
+    "v5/research/defined_risk_iron_fly.py": "4fabc1d993f8c33d47033598ede291254735f3dc9a9d8be1ea80a8aa9bef9c41"
+  },
+  "inference_standard": {
+    "alpha": 0.05,
+    "chronological_blocks": 5,
+    "multiplicity_family": 33,
+    "one_sided_bootstrap_draws": 20000,
+    "positive_blocks_required": 4,
+    "strategic_breakthrough": "positive mean, corrected lower bound >0, >=4/5 positive blocks, and max loss <=$500"
+  },
+  "inputs": {
+    "coverage_path": "v4/audit/autoresearch/causal_day_trader_coverage_2026_08_14_attempt002/session_coverage.csv",
+    "coverage_sha256": "0bee147c05f3aa86b63361b5d3654516a27f76dceec525ad0f33e6cf890a8fd9",
+    "settlement_receipt_path": "v4/audit/autoresearch/causal_day_terminal_settlement_2026_08_14/receipt.json",
+    "settlement_receipt_sha256": "49245deb755daed4d7c5d9fb54fe5758c6232501ae1c329d357a332d5acd0cfe"
+  },
+  "outputs": {
+    "evidence_dir": "v4/audit/autoresearch/defined_risk_iron_fly_2026_08_14_attempt001",
+    "root": "/Volumes/AR_TRADING_DATA/derived/defined_risk_iron_fly_v1"
+  },
+  "primary_metric": "mean aggressive-touch net P&L per all 243 sessions, counting abstentions as zero",
+  "purpose": "one model-free test of the strongest $10,000-compatible direction-neutral short-premium structure",
+  "receipt_sha256": "e9ef53caf5ddaa63176b4ae446edcfa40d73cbc292b15d2bb0824768575bbae9",
+  "schema_version": "v5.defined-risk-iron-fly-declaration.v1",
+  "selection_basis_before_outcomes": {
+    "direction_neutral": "the measured effect is variance premium and no stable directional selector exists",
+    "time": "prior evidence locates the measured variance premium in the final two hours and names 15:00; multiplicity is retained",
+    "width": "5 points is the widest expiry-defined risk compatible with the existing 5% daily breaker"
+  },
+  "structure": {
+    "center": "nearest entry-visible strike with ATM call/put and exact +/-5 point wings; lower strike wins distance tie",
+    "entry_minute": "15:00",
+    "exit": "first complete four-leg touch at/after 15:15 with combo debit <=5 points; otherwise validated PM settlement",
+    "fees": "four measured $3.08 option round trips",
+    "legs": [
+      "short ATM call at bid",
+      "short ATM put at bid",
+      "long K+5 call at ask",
+      "long K-5 put at ask"
+    ],
+    "name": "five_point_atm_iron_fly",
+    "risk": "entry-defined maximum loss including fees must be <=$500, exactly 5% of $10,000; otherwise abstain",
+    "target_exit_minute": "15:15",
+    "trade_cap": 1
+  }
+}

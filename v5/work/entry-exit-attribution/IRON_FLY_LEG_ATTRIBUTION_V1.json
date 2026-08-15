@@ -1,0 +1,91 @@
+{
+  "components": {
+    "call_mid_gross_usd": {
+      "fold_means_usd": [
+        5.96938775510205,
+        -0.51020408163265,
+        10.40816326530613,
+        -43.38541666666666,
+        23.38541666666666
+      ],
+      "mean_per_session_usd": -0.7510288065843577,
+      "mean_per_trade_usd": -0.7510288065843577,
+      "positive_chronological_folds": 3,
+      "worst_trade_usd": -275.0
+    },
+    "call_touch_net_usd": {
+      "fold_means_usd": [
+        -21.36408163265307,
+        -32.282448979591834,
+        -20.037551020408163,
+        -76.78500000000003,
+        -5.0141666666666636
+      ],
+      "mean_per_session_usd": -31.015967078189302,
+      "mean_per_trade_usd": -31.015967078189302,
+      "positive_chronological_folds": 0,
+      "worst_trade_usd": -296.1600000000001
+    },
+    "put_mid_gross_usd": {
+      "fold_means_usd": [
+        -6.275510204081621,
+        5.510204081632652,
+        -11.989795918367328,
+        44.32291666666669,
+        -21.458333333333343
+      ],
+      "mean_per_session_usd": 1.9444444444444533,
+      "mean_per_trade_usd": 1.9444444444444533,
+      "positive_chronological_folds": 2,
+      "worst_trade_usd": -347.5
+    },
+    "put_touch_net_usd": {
+      "fold_means_usd": [
+        -36.057959183673475,
+        -26.46612244897959,
+        -45.24163265306122,
+        11.235833333333332,
+        -50.8475
+      ],
+      "mean_per_session_usd": -29.55506172839506,
+      "mean_per_trade_usd": -29.55506172839506,
+      "positive_chronological_folds": 1,
+      "worst_trade_usd": -361.16
+    }
+  },
+  "created_on": "2026-08-14",
+  "implementation_sha256": "5dc8eecda57405b0e12f9816d9815c9e7f01f99ad581aa0f9480dd035cc63481",
+  "inputs": {
+    "ladder_path": "/Volumes/AR_TRADING_DATA/derived/causal_day_trader_v2/ladder.parquet",
+    "ladder_sha256": "f7d75c04cbe9b8a9e0cb18feae676fbfad1732aa961db3e5b8518cd666a34abc",
+    "raw_fallbacks": [
+      {
+        "path": "/Users/och/.autoresearch-trading/pathd_2025-08-01_2026-07-31/aligned/normalized/databento_spxw_0dte_2026-06-05.parquet",
+        "sha256": "791d1d6679c5746bff72ab2f9b263bc71f326936ffe423ba72a1b0eaa3fe1d47"
+      }
+    ],
+    "session_results_path": "/Volumes/AR_TRADING_DATA/derived/defined_risk_iron_fly_v1/session_results.parquet",
+    "session_results_sha256": "cacd38da10468fd27e4fc0caf45244633df2bf8de9e2a799616754520074355f",
+    "settlement_receipt_path": "v4/audit/autoresearch/causal_day_terminal_settlement_2026_08_14/receipt.json",
+    "settlement_receipt_sha256": "49245deb755daed4d7c5d9fb54fe5758c6232501ae1c329d357a332d5acd0cfe"
+  },
+  "integrity": {
+    "component_sides_not_promotable": true,
+    "model_fit": false,
+    "new_economic_cell": false,
+    "new_entry_or_exit_selected": false,
+    "reserved_sessions_used": false,
+    "same_frozen_exit_for_both_components": true
+  },
+  "population": {
+    "sessions": 243,
+    "trades": 243
+  },
+  "purpose": "failure attribution of the already-spent iron-fly result at identical entries and exits",
+  "receipt_sha256": "d9e966f915140db33f22d1e572d2c0dfd5074aaf092bc18e94ad3a9e6320d963",
+  "reproduction": {
+    "maximum_mid_sum_error_usd": 3.694822225952521e-13,
+    "maximum_touch_sum_error_usd": 4.547473508864641e-13
+  },
+  "schema_version": "v5.defined-risk-iron-fly-leg-attribution.v1"
+}

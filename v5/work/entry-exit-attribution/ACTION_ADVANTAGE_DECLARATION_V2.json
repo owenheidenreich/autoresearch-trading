@@ -1,0 +1,95 @@
+{
+  "declared_on": "2026-08-14",
+  "diagnostic_consequence": "integrity and scale assessment only; no diagnostic may change horizon, cap, architecture, loss, subgroup, or operating law",
+  "diagnostics_declared_before_values": [
+    "fixed quantiles of q_enter_bid, q_wait_bid, a_enter_bid, q_enter_mid and session oracle values",
+    "positive q_enter and positive advantage row counts",
+    "positive best-advantage minute count",
+    "primary oracle counts by the six predeclared clock bands",
+    "primary oracle counts by call and put"
+  ],
+  "family": {
+    "members": 1,
+    "multiplicity_spent": 1,
+    "nearby_retries_forbidden": true
+  },
+  "forbidden": [
+    "fit a model during this label build",
+    "read or choose an alternative horizon",
+    "change the one-trade cap after diagnostics",
+    "select a time, side, premium, delta, or payoff subgroup",
+    "use the oracle action as a causal feature",
+    "open reserved sessions"
+  ],
+  "future_fit_if_separately_authorized": {
+    "action_vector": "WAIT plus every currently eligible affordable contract",
+    "architecture": "compact_interaction_entry",
+    "chronology": "the existing five OOF folds",
+    "computed_parameters": 48,
+    "controls": "identically fitted session-surface shuffled null and outcome-blind composition-matched control",
+    "inference": "argmax over the action vector; no external threshold or current-day rank",
+    "kill_conditions": [
+      "mid_to_mid_gross_positive",
+      "beats_composition_matched_control",
+      "beats_shuffled_label_null",
+      "per_feature_timestamp_audit",
+      "no_post_entry_slot_filter",
+      "chronological_out_of_sample",
+      "no_reserved_sessions"
+    ],
+    "loss": "one frozen robust joint regression of q_wait and q_enter after training-prefix scaling"
+  },
+  "immutable_input": {
+    "candidates": {
+      "path": "/Volumes/AR_TRADING_DATA/derived/causal_day_trader_v2/candidates.parquet",
+      "sha256": "04fe488b71f168cc23e714ca2a64cdeb6acffd059091ddd26d62154077f7983e"
+    },
+    "dataset_receipt": {
+      "path": "v4/audit/autoresearch/causal_day_dataset_settlement_validated_2026_08_14/receipt.json",
+      "sha256": "db0fa2616137c209ccf837f2f620fb11d9941d02b05cf4a7b056d3ab8a009e95"
+    }
+  },
+  "implementation_hashes": {
+    "v5/ops/build_causal_day_action_advantage.py": "611b872b5b9a2f6a737dc84f4f417f9187a38d82ab58d81cbb6412b751574797",
+    "v5/ops/write_causal_day_action_advantage_declaration.py": "f7e3b8a2dff68fe6929eaae8d82e40501606a7a0837c0610fb1323cc0df3dee3",
+    "v5/research/causal_day_action_advantage.py": "3201c0923bb032d8965d9b662b81905eae0b5905ea3e96cda3edd26b162a513b"
+  },
+  "label": {
+    "a_enter": "q_enter - q_wait",
+    "best_price_or_mfe_forbidden": true,
+    "mid_values": "parallel diagnostics only; not an alternate training target",
+    "minutes_without_candidates": "retain the decision minute with no Q(enter) actions and a valid Q(wait); never drop the state",
+    "name": "serial_action_advantage_120m",
+    "position_cap": 1,
+    "primary_oracle_tie_break": "earliest global-maximum minute, then lexicographically first contract_id and trade_id",
+    "q_enter": "the existing net_bid_120m_usd: ask entry, first bid at/after 120m or validated settlement, measured fee included",
+    "q_wait": "max(0, every q_enter at a strictly later eligible minute in the same session)",
+    "starting_equity_usd": 10000.0,
+    "trade_cap": 1
+  },
+  "outputs": {
+    "evidence_dir": "v4/audit/autoresearch/causal_day_action_advantage_2026_08_14_attempt002",
+    "root": "/Volumes/AR_TRADING_DATA/derived/causal_day_action_advantage_v2"
+  },
+  "population": {
+    "candidate_rows": 698231,
+    "decision_minutes": 79218,
+    "decision_minutes_per_session": 326,
+    "first_session": "2025-08-01",
+    "last_session": "2026-07-30",
+    "reserved_sessions_forbidden_on_or_after": "2026-08-06",
+    "sessions": 243,
+    "structurally_measured_wait_only_minutes": 1964
+  },
+  "purpose": "freeze a dense executable Q(enter) versus Q(wait) target before reading its values or fitting",
+  "receipt_sha256": "2abdf192bcac3eba5f3fd2e38cc3f45c499eee92af22724ac6cb043638c31e39",
+  "schema_version": "v5.causal-day-action-advantage-declaration.v2",
+  "supersedes": {
+    "defect": "V1 assumed every decision minute had an eligible contract row; 1,964 of 79,218 minute states are correctly WAIT-only",
+    "outcome_metric_computed": false,
+    "output_or_evidence_written": false,
+    "path": "v5/work/entry-exit-attribution/ACTION_ADVANTAGE_DECLARATION_V1.json",
+    "receipt_sha256": "3cf17e53754245e78ab0a43c9b174520f8670f5a881ae46b84ee7938661d2cb3",
+    "status": "FAILED_SAFE_BEFORE_OUTPUT"
+  }
+}

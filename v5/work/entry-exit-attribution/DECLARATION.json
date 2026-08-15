@@ -1,0 +1,112 @@
+{
+  "schema_version": "v5.causal-day-trader-declaration.v1",
+  "declared_on": "2026-08-14",
+  "goal": "Causal per-day SPXW 0DTE trader targeting sparse OTM-to-10/20/30-point-ITM moves",
+  "coverage_receipt": "v4/audit/autoresearch/causal_day_trader_coverage_2026_08_14_attempt002/receipt.json",
+  "economic_cutoff": "2026-08-05",
+  "latest_owned_session_allowed": "2026-07-31",
+  "episode_family": {
+    "primary_sessions": 243,
+    "session_start_equity_usd": 10000,
+    "quote_clock_et": ["09:31", "16:00"],
+    "entry_clock_et": ["09:35", "15:00"],
+    "entry_every_minutes": 1,
+    "exit_every_minutes": 1,
+    "morning_interval": "09:30:00 <= t < 12:46:00",
+    "afternoon_interval": "12:46:00 <= t <= 16:00:00",
+    "maximum_hold_minutes": 120,
+    "trade_caps_per_day": [1, 2, 3],
+    "one_position_at_a_time": true,
+    "originating_regime_owns_exit": true
+  },
+  "minute_boundary_law": {
+    "decision_timestamp": "Eastern minute boundary t",
+    "latest_es_bar": "[t-1 minute,t), stamped t-1 minute",
+    "option_state": "completed aligned ladder snapshot stamped t",
+    "action_order": ["completed candle", "ladder snapshot", "state update", "action", "touch fill"],
+    "entry_fill": "displayed ask at t with ask_size >= 1",
+    "exit_fill": "displayed bid at t with bid_size >= 1"
+  },
+  "instrument_family": {
+    "root": "SPXW",
+    "expiry": "same session",
+    "position": "one long call or put contract",
+    "state_moneyness_itm_points_inclusive": [-25, 25],
+    "entry_moneyness_itm_points": [-25, 0],
+    "entry_upper_bound_exclusive": true,
+    "maximum_entry_ask_usd": 1300,
+    "quote_age_cap_ms": 90000,
+    "deep_otm_barred": true,
+    "contract_multiplier": 100,
+    "round_trip_fee_usd": 3.08
+  },
+  "ladder_surface": {
+    "representation": "all actual live two-sided contracts inside the signed state band",
+    "fixed_tensor_nodes_itm_points": [-25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25],
+    "sides": ["call", "put"],
+    "node_tolerance_points": 2.5,
+    "channels": [
+      "bid", "ask", "mid", "spread", "bid_size", "ask_size", "volume",
+      "open_interest", "self_iv", "self_delta", "self_gamma", "self_theta", "self_vega", "live_mask"
+    ],
+    "vendor_greeks_used": false
+  },
+  "candle_state": {
+    "source": "owned ES continuous 1-minute OHLCV",
+    "maximum_sequence_minutes": 120,
+    "adaptive_from_open": true,
+    "lookbacks_minutes": [1, 3, 5, 15, 30, 60, 120],
+    "raw_channels": ["open", "high", "low", "close", "volume"],
+    "causal_summaries": [
+      "history_minutes", "move_from_open", "session_range", "range_position",
+      "body", "upper_wick", "lower_wick", "returns", "realized_volatility", "volume_context"
+    ]
+  },
+  "label_surface": {
+    "horizons_minutes": [60, 90, 120],
+    "itm_depth_points": [0, 10, 20, 30],
+    "fields": [
+      "time_to_cross", "time_to_10_itm", "time_to_20_itm", "time_to_30_itm",
+      "maximum_itm_depth", "underlying_mfe", "underlying_mae",
+      "executable_option_mfe", "executable_option_mae",
+      "clock_exit_bid", "clock_exit_mid", "clock_exit_delay", "net_bid_usd", "net_mid_usd"
+    ],
+    "post_entry_survival_filter": false,
+    "percentage_return_objective": false
+  },
+  "key_time_family": {
+    "diagnostic_bands_et": [["09:50", "10:10"], ["13:20", "13:40"]],
+    "named_minutes_et": ["10:00", "13:30"],
+    "forced_entry": false,
+    "other_time_search": "blocked unless discovered in prior training data, frozen forward, and charged"
+  },
+  "terminal_family": {
+    "at_max_hold": "first executable bid at or after target through 16:00",
+    "later_best_price_forbidden": true,
+    "cash_settlement": "blocked until official settlement source is validated",
+    "zero_recovery_sensitivity_required": true
+  },
+  "proposed_model_family": {
+    "status": "BLOCKED_NOT_FIT",
+    "shallow": ["one time-aware policy", "shared regime-specialist heads"],
+    "neural": ["one joint sequence policy", "shared encoder with four heads"],
+    "conditional_only": ["four independent specialists"],
+    "blockers": [
+      "STATUS.md prohibits option-model training until G1 passes; G1 is UNDERPOWERED",
+      "DO_NOT_RETEST.md closes further selective long-side entry models on this quote corpus",
+      "knobs.py requires 1140 sessions and 20 sessions per neural parameter; owned complete sessions are 243"
+    ]
+  },
+  "evaluation_family_if_reopened": {
+    "folds": 5,
+    "assignment": "expanding chronological train prefix and contiguous future score block",
+    "bid_and_mid": true,
+    "matched_entry_controls": ["time regime", "side", "delta", "premium", "trade count"],
+    "exit_controls_minutes": [30, 60, 90, 120],
+    "multiplicity_scope": "every architecture, cap, horizon, depth, regime and threshold inspected"
+  },
+  "forbidden": [
+    "model fitting while blockers bind", "threshold tuning", "post-cutoff evidence",
+    "external contact", "broker action", "runtime mutation", "promotion", "commit"
+  ]
+}

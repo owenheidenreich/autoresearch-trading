@@ -1,0 +1,34 @@
+{
+  "created_on": "2026-08-14",
+  "forbidden": [
+    "read new policy economics",
+    "fit or retrain a model",
+    "contact a vendor",
+    "download data",
+    "change the traded product, expiration, or position structure"
+  ],
+  "inputs": {
+    "architecture_declaration": "v5/work/entry-exit-attribution/ACTION_VALUE_FIT_DECLARATION_V3.json",
+    "backfill_cost_receipt": "v5/work/entry-exit-attribution/SPXW_0DTE_CBBO_BACKFILL_ESTIMATE_V1.json",
+    "compact_economics_receipt": "v4/audit/autoresearch/causal_day_action_value_economics_2026_08_14_attempt003/receipt.json",
+    "effective_sample_receipt": "v4/audit/autoresearch/effective_sample_size_2026_08_14/receipt.json"
+  },
+  "method": {
+    "complete_session_projection": "floor(additional_nonempty_sessions * current_complete_sessions / current_quote_sessions)",
+    "effective_information_projection": "scale each measured effective_n linearly by projected_complete_total / current_complete_sessions",
+    "parameter_budget": "floor(projected_effective_n / 20)",
+    "parameter_support_requirement": "ceil(parameters * 20 / current_effective_observations_per_session)",
+    "scenarios": [
+      "observed current completeness rate",
+      "all additional nonempty sessions are complete"
+    ]
+  },
+  "question": "Would the same-day SPXW CBBO backfill create enough independent information to support an existing shared long-call/long-put lifecycle architecture under the conservative design-effect evidence route?",
+  "scope": {
+    "context": "SPXW and optional SPX only",
+    "position": "one long SPXW 0DTE call or put",
+    "pricing": "no new prices or outcomes opened"
+  },
+  "schema_version": "v5.spxw-0dte-backfill-value-declaration.v1",
+  "self_hash": "cec398a30883cb60a26f1f0d94977ca9999aed0efea3665c7b0079a94479107c"
+}
